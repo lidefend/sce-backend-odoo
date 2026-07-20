@@ -152,9 +152,9 @@ async function main() {
     await page.locator('.financial-workspace[data-workspace-kind="settlement"]').waitFor({ timeout: 45000 });
     await page.getByRole('button', { name: '新建付款申请' }).click();
     await page.waitForURL((url) => /\/(?:r|f)\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
-    const projectField = page.locator('[data-field-name="project_id"]');
-    const contractField = page.locator('[data-field-name="contract_id"]');
-    const settlementField = page.locator('[data-field-name="settlement_id"]');
+    const projectField = page.locator('[data-field-name="project_id"]').first();
+    const contractField = page.locator('[data-field-name="contract_id"]').first();
+    const settlementField = page.locator('[data-field-name="settlement_id"]').first();
     await projectField.waitFor({ timeout: 45000 });
     await page.waitForFunction(() => {
       const project = document.querySelector('[data-field-name="project_id"]')?.textContent || '';
