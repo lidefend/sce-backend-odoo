@@ -119,7 +119,11 @@ if [[ "$profile" == RC-C03 ]]; then
 fi
 
 run_modules() {
-  "${compose[@]}" run --rm --no-deps --entrypoint odoo odoo \
+  local -a projection_handoff=()
+  if [[ "$profile" == RC-C03 ]]; then
+    projection_handoff=(-e SC_ALLOW_EXTERNAL_PROJECTION_HANDOFF=1)
+  fi
+  "${compose[@]}" run --rm --no-deps "${projection_handoff[@]}" --entrypoint odoo odoo \
     -c /var/lib/odoo/odoo.conf -d "$database" "$@" --without-demo=all \
     --workers=0 --max-cron-threads=0 --no-http --stop-after-init
 }

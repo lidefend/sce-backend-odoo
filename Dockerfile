@@ -102,6 +102,8 @@ COPY --chown=odoo:odoo addons/smart_construction_portal/ /mnt/product-addons/sma
 COPY --chown=odoo:odoo addons/smart_construction_scene/ /mnt/product-addons/smart_construction_scene/
 COPY --chown=odoo:odoo addons/smart_construction_bundle/ /mnt/product-addons/smart_construction_bundle/
 COPY --chown=odoo:odoo addons/smart_construction_seed/ /mnt/product-addons/smart_construction_seed/
+COPY --chown=odoo:odoo addons/smart_owner_core/ /mnt/product-addons/smart_owner_core/
+COPY --chown=odoo:odoo addons/smart_owner_bundle/ /mnt/product-addons/smart_owner_bundle/
 COPY --chown=odoo:odoo addons_external/oca_server_ux/ /mnt/addons_external/oca_server_ux/
 COPY --chown=odoo:odoo --from=frontend-verified /build/frontend/apps/web/dist/ /opt/sce/frontend/
 
