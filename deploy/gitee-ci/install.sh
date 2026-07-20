@@ -71,6 +71,7 @@ umask 0077
   printf '%s\n' \
     'GITEE_ALLOWED_REPOSITORY=leegege/sce-product-odoo' \
     'GITEE_ALLOWED_SENDER=leegege' \
+    'GITEE_ALLOWED_PR_SENDER=sce-ci-bot' \
     "GITEE_WEBHOOK_SECRET=${secret}" \
     'GITEE_WEBHOOK_PATH=/hooks/gitee' \
     'GITEE_WEBHOOK_MAX_SKEW_SECONDS=300' \
