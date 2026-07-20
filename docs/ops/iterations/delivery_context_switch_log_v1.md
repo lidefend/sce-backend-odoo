@@ -150,3 +150,18 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Standard vs User-Specific: the repository owns only the generic product and delivery protocol; synthetic payloads are test-only and Baosheng code/data remain in authorized private storage
 - Why Here / Why Not Elsewhere: image assembly and admission checks are P4 responsibilities; P0/P1 modules remain the product facts, and no customer semantics enter platform, industry, frontend, or low-code layers
 - Blast Radius: product module closure, production static assets, candidate container contents, isolated databases, external read-only mounts, release reports, and no production or 175GB attachment writes
+
+## 2026-07-20 — NAV-PRO-01 Product Navigation Exposure
+
+- Branch: `release/tenant-rc-01-product-image`
+- Starting product commit: `43a30985a4eb`
+- Formal Product Layer: P1 construction-product exposure policy, P0 generic authorization projection, P4 verification
+- Layer Target: matrix-derived primary navigation, contextual route authority, and fail-closed native-menu intersection
+- Module: `smart_construction_core`, `smart_core` delivery/identity services, shared frontend router/session, and NAV-PRO-01 audit/verification tooling
+- Reason: replace historical 70/80 menu-count assumptions with the 324-row authoritative role/menu matrix and expose only task- or journey-backed primary entries
+- Standard vs User-Specific: standard construction role policy; no customer identity, preference, payload, production data, or low-code override
+- Why Here: P1 owns role/menu product decisions, P0 owns identifier-only projection and contract transport, the frontend consumes the delivered authority without inferring business semantics, and P4 proves the result
+- Why Not Elsewhere: platform code must not encode construction roles or XML-ID sets, the frontend must not infer authorization from labels/models, customer modules must not repair the standard product, and ops scripts must not become runtime policy
+- Blast Radius: four formal roles, 138 authorized role/menu assignments, 31 primary/home assignments, 100 contextual assignments, 7 explicit denials, two stale legacy action domains, shared route admission, and no ACL or record-rule expansion
+- Validation: deterministic matrix regeneration, Python syntax, frontend lint/strict typecheck, Odoo role-surface tests, native visibility, HTTP contract/data probes, browser primary/contextual navigation smoke, and zero HTTP 5xx
+- Browser closure: contextual authorities carry native action metadata and seed `currentAction` before route rendering, preventing an async metadata transition from trapping hidden contextual actions in a blank-page render loop while keeping those menus out of the primary tree.
