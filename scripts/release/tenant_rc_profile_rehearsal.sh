@@ -105,6 +105,14 @@ PY
   "${compose[@]}" run --rm --no-deps --user root --entrypoint sh odoo -c \
     "rm -rf '/var/lib/odoo/filestore/$database' /tmp/rc-filestore; mkdir -p /tmp/rc-filestore /var/lib/odoo/filestore; tar -C /tmp/rc-filestore -xzf -; cp -a '/tmp/rc-filestore/$source_database' '/var/lib/odoo/filestore/$database'; rm -rf /tmp/rc-filestore" \
     < "$history_backup/filestore.tar.gz"
+fi
+
+# The normal image entrypoint renders /var/lib/odoo/odoo.conf.  All subsequent
+# one-shot Odoo commands consume that generated production configuration.
+"${compose[@]}" up -d --wait odoo
+"${compose[@]}" stop odoo >/dev/null
+
+if [[ "$profile" == RC-C03 ]]; then
   "${compose[@]}" run --rm --no-deps -T --user odoo -e SC_CONFIRM_CUSTOMER_MODULE_RENAME=1 \
     --entrypoint odoo odoo shell -d "$database" -c /var/lib/odoo/odoo.conf --log-level=error \
     < "$identity_migration" > "$artifacts/profiles/RC-C03-module-identity.json"
