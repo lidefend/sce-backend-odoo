@@ -182,6 +182,8 @@ async function interceptNextBusiness(page, handler, expectedTarget) {
 
 async function main() {
   for (const key of ['project', 'contract', 'settlement', 'payment_request', 'payment_execution', 'journey_request', 'work_settlement']) check(TARGETS[key]?.record_id > 0, `missing ${key}`);
+  const journeyName = String(TARGETS.journey_request.display_name || '').trim();
+  check(journeyName.length > 0, 'missing journey_request display_name');
   const browser = await launchChromium({ headless: true });
   const report = { git_sha: process.env.GIT_SHA || '', database: DB_NAME, base_url: BASE_URL, pass: false, journeys: {}, runtime: {} };
   const errorRecovery = {};
@@ -259,12 +261,12 @@ async function main() {
     await page.keyboard.press('Enter');
     await page.locator('.product-work').waitFor({ timeout: 45000 });
     await page.locator('.count-card[data-section-key="todo"]').press('Enter');
-    const cardButton = page.locator('.work-section[data-section-key="todo"] .work-card').filter({ hasText: 'FE-JOURNEY-PAYMENT-001' }).getByRole('button', { name: '打开详情' }).first();
+    const cardButton = page.locator('.work-section[data-section-key="todo"] .work-card').filter({ hasText: journeyName }).getByRole('button', { name: '打开详情' }).first();
     const workUrl = page.url();
     await cardButton.focus(); await cardButton.press('Enter');
     await page.waitForFunction((previous) => window.location.href !== previous, workUrl, { timeout: 45000 });
     check(new URL(page.url()).pathname.startsWith('/r/payment.request/'), `J10 My Work target route invalid: ${page.url()}`);
-    await page.locator('h1').filter({ hasText: 'FE-JOURNEY-PAYMENT-001' }).waitFor({ timeout: 45000 });
+    await page.locator('h1').filter({ hasText: journeyName }).waitFor({ timeout: 45000 });
     await open(page, recordRoute(TARGETS.journey_request));
     const submit = page.locator('.template-page-header-actions button').filter({ hasText: /^提交$/ }).first();
     await submit.focus(); await submit.press('Enter');
@@ -298,12 +300,12 @@ async function main() {
     await page.goto(`${BASE_URL}/my-work`, { waitUntil: 'domcontentloaded' });
     await page.locator('.product-work').waitFor({ timeout: 45000 });
     const workText = await page.locator('body').innerText();
-    check(workText.includes('FE-C-PR-001') && !workText.includes('FE-JOURNEY-PAYMENT-001'), 'stale company response polluted final B context');
+    check(workText.includes('FE-C-PR-001') && !workText.includes(journeyName), 'stale company response polluted final B context');
     await page.unroute('**/api/v1/intent**', reorder);
     await logout(page); await login(page, 'fixture_role_project_a_member');
     await page.goto(`${BASE_URL}/my-work`); await page.locator('.product-work').waitFor({ timeout: 45000 });
     const memberText = await page.locator('body').innerText();
-    check(!/FE-C-PR-001|FE-JOURNEY-PAYMENT|80\.00|100\.00/.test(memberText), 'finance data survived role switch');
+    check(!/FE-C-PR-001|FE-JOURNEY-PAYMENT|FE-DELIVERY-HARDENING|80\.00|100\.00/.test(memberText), 'finance data survived role switch');
     report.journeys.J11 = 'PASS';
     assertRuntimeClean(runtime, 'J10-J11');
 
