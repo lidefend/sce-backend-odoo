@@ -8,6 +8,7 @@ import { findActionMeta, findActionMetaByMenu, findActionNodeByModel, findMenuNo
 import { BUSINESS_CONFIG_MODELS } from '../app/businessConfigBoundaries';
 import { beginPageIdentity } from '../app/pageIdentityRuntime';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
+import type { NavMeta } from '@sc/schema';
 
 function routeTitle(routeName: string | symbol | null | undefined): string {
   const name = typeof routeName === 'string' ? routeName : '';
@@ -299,8 +300,26 @@ router.beforeEach(async (to) => {
   if (!isLoginRoute && to.name !== 'access-denied' && session.isReady) {
     const actionId = positiveInteger(to.params.actionId || to.query.action_id);
     const menuId = positiveInteger(to.params.menuId || to.query.menu_id);
-    const actionAuthorized = actionId <= 0 || Boolean(findActionMeta(session.menuTree, actionId));
-    const menuAuthorized = menuId <= 0 || Boolean(findMenuNode(session.menuTree, menuId));
+    const contextualAuthority = session.contextualRouteAuthorities.find((row) => (
+      (actionId <= 0 || row.action_id === actionId)
+      && (menuId <= 0 || row.menu_id === menuId)
+    ));
+    const contextualAuthorized = Boolean(contextualAuthority);
+    if (to.name === 'action' && contextualAuthority && !currentActionMatches(session, actionId)) {
+      session.setActionMeta({
+        action_id: contextualAuthority.action_id,
+        menu_id: contextualAuthority.menu_id,
+        menu_xmlid: contextualAuthority.menu_xmlid,
+        name: contextualAuthority.name,
+        model: contextualAuthority.model,
+        view_modes: contextualAuthority.view_modes,
+        view_id: contextualAuthority.view_id,
+        domain: contextualAuthority.domain,
+        context: contextualAuthority.context,
+      } as NavMeta);
+    }
+    const actionAuthorized = actionId <= 0 || Boolean(findActionMeta(session.menuTree, actionId)) || contextualAuthorized;
+    const menuAuthorized = menuId <= 0 || Boolean(findMenuNode(session.menuTree, menuId)) || contextualAuthorized;
     const authorityBoundRoute = to.name === 'action' || to.name === 'menu'
       || ((to.name === 'record' || to.name === 'model-form') && (actionId > 0 || menuId > 0));
     if (authorityBoundRoute && (!actionAuthorized || !menuAuthorized)) {

@@ -74,6 +74,19 @@ export interface SceneActionHint {
   menuId?: number;
 }
 
+export interface ContextualRouteAuthority {
+  menu_id: number;
+  action_id: number;
+  menu_xmlid: string;
+  name: string;
+  model: string;
+  view_modes: string[];
+  view_id?: number;
+  domain: string;
+  context: string;
+  route: string;
+}
+
 export interface ProductFacts {
   license: {
     level: string;
@@ -367,6 +380,7 @@ export interface SessionState {
   sessionDb: string;
   user: AppInitResponse['user'] | null;
   menuTree: NavNode[];
+  contextualRouteAuthorities: ContextualRouteAuthority[];
   menuExpandedKeys: string[];
   currentAction: NavMeta | null;
   capabilities: string[];
@@ -793,6 +807,7 @@ export const useSessionStore = defineStore('session', {
     sessionDb: '',
     user: null,
     menuTree: [],
+    contextualRouteAuthorities: [],
     menuExpandedKeys: [],
     currentAction: null,
     capabilities: [],
@@ -1128,6 +1143,7 @@ export const useSessionStore = defineStore('session', {
       this.sceneVersion = null;
       this.roleSurface = null;
       this.roleSurfaceMap = {};
+      this.contextualRouteAuthorities = [];
       this.projectContext = null;
       this.activityPages = [];
       this.activeActivityPageKey = '';
@@ -1755,8 +1771,29 @@ export const useSessionStore = defineStore('session', {
       }).release_navigation_v1;
       const deliveryEngine = (result as AppInitResponse & {
         release_navigation_v1?: { nav?: unknown };
-        delivery_engine_v1?: { nav?: unknown };
+        delivery_engine_v1?: { nav?: unknown; contextual_routes?: unknown };
       }).delivery_engine_v1;
+      this.contextualRouteAuthorities = (Array.isArray(deliveryEngine?.contextual_routes)
+        ? deliveryEngine.contextual_routes
+        : [])
+        .map((raw) => {
+          const row = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+          return {
+            menu_id: Number(row.menu_id || 0),
+            action_id: Number(row.action_id || 0),
+            menu_xmlid: String(row.menu_xmlid || ''),
+            name: String(row.name || ''),
+            model: String(row.model || ''),
+            view_modes: Array.isArray(row.view_modes)
+              ? row.view_modes.map((item) => String(item || '').trim()).filter(Boolean)
+              : [],
+            view_id: Number(row.view_id || 0) || undefined,
+            domain: String(row.domain || ''),
+            context: String(row.context || ''),
+            route: String(row.route || ''),
+          };
+        })
+        .filter((row) => row.menu_id > 0 && row.action_id > 0 && Boolean(row.menu_xmlid));
       const candidates = [releaseNavigation?.nav, deliveryEngine?.nav, result.nav];
       if (debugIntent) {
         console.info('[debug] system.init candidates:', candidates.map(c => ({
