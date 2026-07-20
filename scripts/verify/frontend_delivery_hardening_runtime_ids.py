@@ -5,7 +5,7 @@ import json
 
 def target(menu_xmlid, record_xmlid):
     menu = env.ref(menu_xmlid)
-    action = env.ref("smart_construction_core.action_payment_request") if menu_xmlid == "smart_construction_core.menu_sc_user_payment_apply_acceptance" else menu.action
+    action = menu.action
     record = env.ref(record_xmlid)
     return {
         "menu_id": int(menu.id),

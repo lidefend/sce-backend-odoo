@@ -196,7 +196,11 @@ async function main() {
     let runtime = capture(page);
     const releasedNavigation = captureReleasedNavigation(page);
     await login(page, 'fixture_role_finance');
-    applyReleasedNavigationTarget(TARGETS, ['payment_request', 'journey_request'], await releasedNavigation.target('smart_construction_core.action_payment_request'));
+    applyReleasedNavigationTarget(
+      TARGETS,
+      ['payment_request', 'journey_request'],
+      await releasedNavigation.targetByMenuXmlid(TARGETS.payment_request.menu_xmlid),
+    );
 
     if (process.env.DELIVERY_HARDENING_A11Y_PROBE === '1') {
       await open(page, recordRoute(TARGETS.work_settlement));

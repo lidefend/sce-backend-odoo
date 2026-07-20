@@ -15,9 +15,26 @@ def load(relative):
 
 surface = load("page-identity/full-surface-report.json")
 summary = surface.get("summary", {})
-if summary.get("authoritative_leaf_count") != 80 or summary.get("scanned") != 80:
-    raise SystemExit("RC_RUNTIME_NAVIGATION_NOT_80_OF_80")
-if summary.get("reachable") != 80 or summary.get("forbidden") or summary.get("unresolved"):
+expected_role_leaf_counts = {
+    "fixture_role_finance": 10,
+    "fixture_role_project_a_member": 7,
+    "fixture_role_pm": 10,
+    "fixture_role_owner": 4,
+}
+expected_navigation_total = sum(expected_role_leaf_counts.values())
+if surface.get("leaf_counts") != expected_role_leaf_counts:
+    raise SystemExit("RC_RUNTIME_NAVIGATION_ROLE_COUNTS_MISMATCH")
+if (
+    summary.get("authoritative_leaf_count") != expected_navigation_total
+    or summary.get("scanned") != expected_navigation_total
+):
+    raise SystemExit("RC_RUNTIME_NAVIGATION_DENOMINATOR_MISMATCH")
+if (
+    summary.get("reachable") != expected_navigation_total
+    or summary.get("identity_pass") != expected_navigation_total
+    or summary.get("forbidden")
+    or summary.get("unresolved")
+):
     raise SystemExit("RC_RUNTIME_NAVIGATION_FAILURE")
 for row in surface.get("rows", []):
     if row.get("console_errors") or row.get("page_errors") or row.get("http_errors"):
@@ -43,7 +60,7 @@ payload = {
     "source_sha": os.environ["SOURCE_SHA"],
     "product_image_digest": os.environ["IMAGE_DIGEST"],
     "runtime": "production-static-nginx",
-    "navigation": "80/80",
+    "navigation": f"{expected_navigation_total}/{expected_navigation_total}",
     "roles": 4,
     "journeys": "J02-J13",
     "responsive_widths": [390, 768, 1440, 1920],
