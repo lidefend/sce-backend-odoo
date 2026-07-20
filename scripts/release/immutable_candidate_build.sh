@@ -39,6 +39,7 @@ locked_product_paths=(
   Dockerfile.production-candidate
   Dockerfile.production-frontend-builder
   config/product_addons_allowlist.txt
+  config/product_optional_addons_allowlist.txt
 )
 if git diff --quiet "$source_sha" -- "${locked_product_paths[@]}"; then
   :
