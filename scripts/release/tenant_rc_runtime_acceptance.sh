@@ -67,7 +67,6 @@ export_ids scripts/verify/frontend_productization_fixture_runtime_ids.py FRONTEN
 export_ids scripts/verify/frontend_page_identity_runtime_metadata.py FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON=
 AUDIT_ROLES=fixture_role_finance,fixture_role_project_a_member,fixture_role_pm,fixture_role_owner \
   ARTIFACTS_DIR="$artifacts/page-identity" \
-  FRONTEND_PAGE_IDENTITY_INVENTORY_PATH=docs/frontend_productization/frontend_surface_inventory_v1.csv \
   node frontend/apps/web/scripts/frontend_product_maturity_audit.mjs
 
 ARTIFACTS_DIR="$artifacts/j02-j03" node scripts/verify/frontend_productization_fixture_browser.mjs

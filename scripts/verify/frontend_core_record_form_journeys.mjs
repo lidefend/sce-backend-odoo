@@ -174,7 +174,7 @@ async function main() {
       applyReleasedNavigationTarget(
         TARGETS,
         ['contract'],
-        await releasedNavigation.target(TARGETS.contract.action_xmlid),
+        await releasedNavigation.targetByMenuXmlid(TARGETS.contract.menu_xmlid),
       );
       report.j12 = await j12(page);
       await context.close();
@@ -188,7 +188,7 @@ async function main() {
       applyReleasedNavigationTarget(
         TARGETS,
         ['payment_request', 'journey_request'],
-        await releasedNavigation.target('smart_construction_core.action_payment_request'),
+        await releasedNavigation.targetByMenuXmlid(TARGETS.payment_request.menu_xmlid),
       );
       report.j13 = await j13(page);
       await page.screenshot({ path: path.join(OUTPUT, 'j13-recovered-390x844.png'), fullPage: true });

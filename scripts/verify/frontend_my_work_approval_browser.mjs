@@ -106,7 +106,11 @@ async function main() {
     runtime = captureRuntime(page);
     const releasedNavigation = captureReleasedNavigation(page);
     await login(page, 'fixture_role_finance');
-    applyReleasedNavigationTarget(TARGETS, ['draft', 'approval', 'reject', 'completed'], await releasedNavigation.target('smart_construction_core.action_payment_request'));
+    applyReleasedNavigationTarget(
+      TARGETS,
+      ['draft', 'approval', 'reject', 'completed'],
+      await releasedNavigation.targetByMenuXmlid(TARGETS.draft.menu_xmlid),
+    );
     resetRuntime(runtime);
 
     // J07: authoritative counts, detail round-trip, submit and company A/B/A invalidation.
