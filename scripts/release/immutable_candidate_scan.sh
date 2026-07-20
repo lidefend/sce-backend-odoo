@@ -4,6 +4,8 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$root"
 artifacts="${CANDIDATE_ARTIFACTS:-artifacts/release/immutable-production-candidate-v1}"
+mkdir -p "$artifacts"
+artifacts="$(realpath "$artifacts")"
 manifest="$artifacts/image-manifest.json"
 [[ -f "$manifest" ]] || { echo "[candidate.scan] image manifest missing" >&2; exit 2; }
 image="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["image"])' "$manifest")"
@@ -17,7 +19,7 @@ docker run --rm \
 set +e
 docker run --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v "$root/$artifacts/trivy-cache:/root/.cache/" \
+  -v "$artifacts/trivy-cache:/root/.cache/" \
   aquasec/trivy:0.63.0@sha256:6fb0646988fcd2fdf7bf123f7174945ebc2c9c72d1fa1567c8d7daeeb70f8037 \
   image --format json --scanners vuln,secret \
   --severity HIGH,CRITICAL --ignore-unfixed=false --timeout 30m --skip-version-check \

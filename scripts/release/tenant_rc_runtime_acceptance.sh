@@ -50,7 +50,8 @@ fixture_output="$(odoo_shell scripts/verify/frontend_productization_fixture.py)"
 odoo_shell scripts/verify/frontend_productization_fixture_nonfixture_regression.py \
   > "$artifacts/fixture-nonfixture-regression.log"
 
-export FRONTEND_URL="http://127.0.0.1:$frontend_port" BASE_URL="$FRONTEND_URL" DB_NAME="$database"
+export FRONTEND_URL="http://127.0.0.1:$frontend_port"
+export BASE_URL="$FRONTEND_URL" DB_NAME="$database"
 export SC_ACCEPTANCE_FIXTURE_PASSWORD="$password" ROLE_SMOKE_PASSWORD="$password"
 
 export_ids() {
