@@ -16,15 +16,6 @@ from odoo.addons.smart_core.core.view_contract_presence import (
     normalize_contract_view_type,
 )
 
-FORMAL_LIST_ACTION_IDS = {
-    506, 525, 529, 530, 531, 545, 549, 565, 566, 615,
-    642, 644, 645, 646, 647, 669, 701, 751, 752, 753,
-    754, 756, 757, 758, 759, 761, 762, 764, 768, 769,
-    770, 771, 772, 773, 776, 777, 778, 779, 780, 781,
-    782, 783, 784, 786, 787, 805, 814, 841, 859, 862,
-    868, 869, 871, 901, 902, 906, 907, 935, 936, 949,
-    963, 964,
-}
 TEST_PLACEHOLDER_TOKENS = ("CODEX_", "codex_view_orch_surface")
 
 
@@ -149,8 +140,6 @@ class UIBusinessConfigContract(models.Model):
     def _check_formal_surface_no_test_placeholders(self):
         for rec in self:
             if not rec.active or rec.status != "published":
-                continue
-            if int(rec.action_id.id or 0) not in FORMAL_LIST_ACTION_IDS:
                 continue
             if rec._contains_test_placeholder(rec.name) or rec._contains_test_placeholder(rec.contract_json):
                 raise ValidationError(

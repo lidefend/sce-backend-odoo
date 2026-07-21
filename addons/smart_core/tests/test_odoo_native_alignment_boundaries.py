@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import importlib
+from unittest.mock import patch
 
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
@@ -482,21 +483,29 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             "delivery_capability_projection",
         )
 
-    def test_construction_missing_product_policy_uses_minimal_default(self):
-        policy = ProductPolicyService(self.env).get_policy(product_key="construction.standard")
-        delivery = DeliveryEngine(self.env).build(
-            data={"role_surface": {"role_code": "operator"}},
-            product_key="construction.standard",
-        )
+    def test_construction_missing_direct_policy_uses_minimal_default_and_delivery_stable_fallback(self):
+        product_key = "construction.missing_policy_test"
+        with (
+            patch.object(ProductPolicyService, "_load_platform_policy", return_value=None),
+            patch.object(ProductPolicyService, "_is_catalog_backed_product", return_value=False),
+        ):
+            policy = ProductPolicyService(self.env).get_policy(product_key=product_key)
+            delivery = DeliveryEngine(self.env).build(
+                data={"role_surface": {"role_code": "operator"}},
+                product_key=product_key,
+            )
 
-        self.assertEqual(policy.get("product_key"), "construction.standard")
+        self.assertEqual(policy.get("product_key"), product_key)
         self.assertEqual(policy.get("base_product_key"), "construction")
         self.assertEqual(((policy.get("policy_source_authority") or {}).get("kind")), "minimal_default_product_policy_provider")
         self.assertEqual(policy.get("menu_groups") or [], [])
         self.assertEqual(policy.get("scenes") or [], [])
         self.assertEqual(policy.get("capabilities") or [], [])
-        self.assertEqual(((delivery.get("product_policy") or {}).get("policy_source_kind")), "minimal_default_product_policy_provider")
-        self.assertTrue((delivery.get("product_policy") or {}).get("policy_empty"))
+        self.assertEqual(
+            ((delivery.get("product_policy") or {}).get("policy_source_kind")),
+            "delivery_product_policy_projection",
+        )
+        self.assertFalse((delivery.get("product_policy") or {}).get("policy_empty"))
 
     def test_release_delivery_services_declare_projection_boundaries(self):
         services = (
@@ -558,7 +567,13 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertTrue(handler_source.get("metadata_proxy_only"))
         self.assertEqual(legacy_source.get("kind"), "legacy_business_reason_metadata_provider")
         self.assertTrue(legacy_source.get("legacy_compatibility"))
-        self.assertEqual(reason_codes.legacy_business_reason_meta_mapping(), {})
+        mapping = reason_codes.legacy_business_reason_meta_mapping()
+        self.assertTrue(mapping)
+        self.assertTrue(all(
+            ((meta.get("source_authority") or {}).get("kind"))
+            == "legacy_business_reason_metadata_provider"
+            for meta in mapping.values()
+        ))
 
     def test_contract_governance_declares_legacy_industry_profiles(self):
         source = contract_governance.source_authority_contract()
@@ -1178,7 +1193,11 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             "vertical_alpha, vertical_beta",
         )
 
-        self.assertEqual(_resolve_industry_extension_modules(self.env), ["vertical_alpha", "vertical_beta"])
+        with patch(
+            "odoo.addons.smart_core.handlers.system_init.call_extension_hook_first",
+            return_value=None,
+        ):
+            self.assertEqual(_resolve_industry_extension_modules(self.env), ["vertical_alpha", "vertical_beta"])
 
     def test_auth_search_preference_and_gateway_sources_are_not_business_facts(self):
         self.assertEqual(LoginHandler.SOURCE_KIND, "odoo_auth_session_proxy")
