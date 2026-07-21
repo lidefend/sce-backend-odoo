@@ -13,14 +13,14 @@ concurrency:
 jobs:
   infra_stage_gate:
     if: >-
-      github.repository == 'Leedefend/sce-product-odoo' &&
-      github.actor == 'Leedefend' &&
+      github.repository == 'lidefend/sce-backend-odoo' &&
+      github.actor == github.repository_owner &&
       github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, huawei, ubuntu22]
     timeout-minutes: 60
 
     env:
-      CI_REMOTE_URL: git@gitee.com:leegege/sce-product-odoo.git
+      CI_REMOTE_URL: https://github.com/lidefend/sce-backend-odoo.git
       HEAD_REF: ${{ github.ref_name }}
       HEAD_SHA: ${{ github.sha }}
       COMPOSE_PROJECT_NAME: sc-ci-${{ github.run_id }}
@@ -32,18 +32,9 @@ jobs:
         working-directory: ${{ github.workspace }}
 
     steps:
-      - name: Checkout from Gitee
+      - name: Checkout exact authoritative GitHub commit
         run: |
           set -euo pipefail
-          GITEE_KNOWN_HOSTS="${RUNNER_TEMP}/gitee_known_hosts"
-          umask 077
-          printf '%s\n' \
-            'gitee.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKxHSJ7084RmkJ4YdEi5tngynE8aZe2uEoVVsB/OvYN' \
-            > "${GITEE_KNOWN_HOSTS}"
-          fingerprint="$(ssh-keygen -lf "${GITEE_KNOWN_HOSTS}" -E sha256 | awk '{print $2}')"
-          test "${fingerprint}" = 'SHA256:+ULzij2u99B9eWYFTw1Q4ErYG/aepHLbu96PAUCoV88'
-          export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${GITEE_KNOWN_HOSTS} -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3"
-          umask 022
           find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
           git init "${GITHUB_WORKSPACE}"
           cd "${GITHUB_WORKSPACE}"
@@ -58,7 +49,7 @@ jobs:
             fi
             sleep "$((attempt * 5))"
           done
-          echo "Gitee checkout failed for ${HEAD_REF}/${HEAD_SHA}" >&2
+          echo "GitHub checkout failed for ${HEAD_REF}/${HEAD_SHA}" >&2
           exit 1
 
       - name: Docker info

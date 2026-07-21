@@ -211,7 +211,7 @@ pr.update: guard.prod.forbid
 	'
 
 pr.push: guard.prod.forbid
-	@GITEE_AUTH_REMOTE="$(or $(GITEE_AUTH_REMOTE),gitee)" bash scripts/ops/git_safe_push.sh
+	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
 pr.merge: guard.prod.forbid
 	@bash -lc '\

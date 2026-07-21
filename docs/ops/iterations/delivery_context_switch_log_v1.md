@@ -236,3 +236,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: every construction deployment needs governed personnel and project membership; these are not P0 platform semantics, customer preferences, frontend inference, or low-code configuration
 - Blast Radius: controlled `res.users`/`hr.employee` linkage, company-scoped employee maintenance, auditable project-member assignments backed by existing followers, scoped profile documents, runtime user views, and targeted permission/regression tests
 - Migration boundary: `sc.project.member.staging` and its 23,190 rows, 7,860 references, and 6,803 locators are archive-only; approved formal identity mappings never use old database auto-increment IDs
+
+## 2026-07-21 — REPO-GOVERNANCE-GITHUB-AUTHORITY-02
+
+- Branch: `fix/github-authority-governance`
+- Starting commit: `aaad9e06d5e0d70d92041b65b8a4ae9003fb7cda`
+- Formal Product Layer: P4 repository and continuous-integration governance only
+- Layer Target: make `lidefend/sce-backend-odoo` the explicit GitHub authority while keeping authorization fail-closed and actor-independent
+- Module: GitHub Actions workflows, repository security guard and tests, safe-push/mirror tooling, CODEOWNERS, and repository governance documentation
+- Reason: the authoritative repository moved from `Leedefend/sce-product-odoo`; the former fixed repository and actor identities prevented required checks from running under the new authority
+- Standard vs User-Specific: repository governance constants and auditable trust rules only; no user-module product behavior, tenant payload, production data, or customer-specific policy changes
+- Why Here / Why Not Elsewhere: P4 owns repository identity, CI admission, push direction, and mirror policy; product modules must not encode source-host ownership or CI actors
+- Blast Radius: workflow admission and checkout, public governance verification, GitHub branch-push safety, GitHub-to-Gitee fast-forward mirroring, and documentation; no runtime, database, deployment, image, or migration impact
+- Validation: workflow YAML parsing, authorization positive/negative tests, public guard, generated-report guard, safe-push self-tests, shell syntax, sensitive-data scan, and product-diff isolation

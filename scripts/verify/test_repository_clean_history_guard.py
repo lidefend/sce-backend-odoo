@@ -26,6 +26,7 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
                     "schema_version": "sce.repository_clean_history_policy.v1",
                     "allowed_remotes": {"origin": "https://example.invalid/new-product.git"},
                     "forbidden_repository_tokens": ["old-private-repository"],
+                    "repository_token_exempt_paths": ["docs/migration-history.md"],
                     "forbidden_commit_objects": [],
                     "forbidden_path_prefixes": ["filestore/", "attachments/", "artifacts/migration/"],
                     "forbidden_archive_suffixes": [".dump", ".tar", ".zip", ".zst"],
@@ -113,6 +114,27 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
         result = self.run_guard()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("TRACKED_RUNTIME_ENV_FILE", result.stderr)
+
+    def test_current_old_repository_identity_is_rejected(self) -> None:
+        self.write("scripts/checkout.sh", "git clone old-private-repository\n")
+        self.commit("add stale executable repository identity")
+        result = self.run_guard()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("OLD_REPOSITORY_REFERENCE", result.stderr)
+
+    def test_historical_old_repository_identity_is_preserved(self) -> None:
+        self.write("scripts/checkout.sh", "git clone old-private-repository\n")
+        self.commit("record old repository identity")
+        (self.root / "scripts/checkout.sh").unlink()
+        self.commit("remove stale executable repository identity")
+        result = self.run_guard()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_explicit_migration_history_path_is_exempt(self) -> None:
+        self.write("docs/migration-history.md", "moved from old-private-repository\n")
+        self.commit("document repository migration")
+        result = self.run_guard()
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_tag_pointing_to_sensitive_commit_is_rejected(self) -> None:
         self.write(".env.prod", "DB_PASSWORD=not-a-real-password\n")

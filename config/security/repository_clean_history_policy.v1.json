@@ -2,14 +2,22 @@
   "schema_version": "sce.repository_clean_history_policy.v1",
   "allowed_remotes": {
     "origin": [
-      "https://github.com/Leedefend/sce-product-odoo.git",
-      "https://github.com/Leedefend/sce-product-odoo",
-      "git@gitee.com:leegege/sce-product-odoo.git"
+      "https://github.com/lidefend/sce-backend-odoo.git",
+      "https://github.com/lidefend/sce-backend-odoo"
     ],
-    "gitee": "git@gitee.com:leegege/sce-product-odoo.git"
+    "gitee-mirror": "git@gitee.com:leegege/sce-product-odoo.git",
+    "github-legacy": [
+      "https://github.com/Leedefend/sce-product-odoo.git",
+      "https://github.com/Leedefend/sce-product-odoo"
+    ]
   },
   "forbidden_repository_tokens": [
-    "sce-backend-odoo"
+    "Leedefend/sce-product-odoo"
+  ],
+  "repository_token_exempt_paths": [
+    "config/security/clean_repository_bootstrap_manifest.v1.json",
+    "docs/ops/iterations/delivery_context_switch_log_v1.md",
+    "scripts/verify/test_github_actions_security_guard.py"
   ],
   "forbidden_commit_objects": [
     "3b2820179ae7f1e3644024063a57ce9714cd4b13",
