@@ -1,25 +1,28 @@
 services:
   db:
-    image: postgres:15
+    image: postgres:15@sha256:386166d1a81e5ed9dfbbbbd8d4abe439d35ced9cc845eb3d09bc43b0b3860117
+    platform: linux/amd64
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${CANDIDATE_DB:-sc_user_data_rehearsal_candidate}
+      # The application database is deliberately not auto-created by Postgres.
+      POSTGRES_DB: postgres
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - candidate_db_data:/var/lib/postgresql/data
+      - database_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${CANDIDATE_DB:-sc_user_data_rehearsal_candidate}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 20
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:b1addbe72465a718643cff9e60a58e6df1841e29d6d7d60c9a85d8d72f08d1a7
+    platform: linux/amd64
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
-      - candidate_redis_data:/data
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -39,22 +42,38 @@ services:
       DB_PORT: 5432
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${CANDIDATE_DB:-sc_user_data_rehearsal_candidate}
-      ODOO_DB: ${CANDIDATE_DB:-sc_user_data_rehearsal_candidate}
-      ODOO_DBFILTER: ^${CANDIDATE_DB:-sc_user_data_rehearsal_candidate}$$
-      ODOO_CONF_OUT: /var/lib/odoo/odoo.conf
+      TARGET_DB: ${TARGET_DB:?TARGET_DB is required}
+      DB_NAME: ${TARGET_DB:?TARGET_DB is required}
+      ODOO_DB: ${TARGET_DB:?TARGET_DB is required}
+      ODOO_DBFILTER: ^${TARGET_DB:?TARGET_DB is required}$$
+      ODOO_CONF_OUT: /opt/sce-runtime/config/odoo.conf
+      TMPDIR: /opt/sce-runtime/tmp
       ADMIN_PASSWD: ${ADMIN_PASSWD}
       JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
-      SC_ENVIRONMENT: production_candidate_rehearsal
+      SC_ENVIRONMENT: ${SC_ENVIRONMENT:?SC_ENVIRONMENT is required}
+      SC_FILESTORE_SCOPE: ${TARGET_DB:?TARGET_DB is required}
+      SC_DATABASE_VOLUME: ${SC_DATABASE_VOLUME:?SC_DATABASE_VOLUME is required}
+      SC_REDIS_VOLUME: ${SC_REDIS_VOLUME:?SC_REDIS_VOLUME is required}
+      SC_FILESTORE_VOLUME: ${SC_FILESTORE_VOLUME:?SC_FILESTORE_VOLUME is required}
+      SC_SESSION_VOLUME: ${SC_SESSION_VOLUME:?SC_SESSION_VOLUME is required}
+      SC_TMP_VOLUME: ${SC_TMP_VOLUME:?SC_TMP_VOLUME is required}
+      SC_LOG_VOLUME: ${SC_LOG_VOLUME:?SC_LOG_VOLUME is required}
+      EXPECTED_RELEASE_SHA: ${EXPECTED_RELEASE_SHA:?EXPECTED_RELEASE_SHA is required}
+      SC_PRODUCTION_CHANGE_APPROVED: ${SC_PRODUCTION_CHANGE_APPROVED:-}
+      TARGET_MODULE: ${TARGET_MODULE:-}
+      SC_CONTRACT_TEST_MODE: ${SC_CONTRACT_TEST_MODE:-0}
       SC_ALLOW_DEMO_DATA: "0"
       SCENE_CHANNEL: ${SCENE_CHANNEL:-stable}
       SCENE_USE_PINNED: ${SCENE_USE_PINNED:-1}
       SCENE_ROLLBACK: ${SCENE_ROLLBACK:-0}
     volumes:
-      - candidate_odoo_data:/var/lib/odoo
+      - filestore_data:/opt/sce-runtime/filestore
+      - session_data:/opt/sce-runtime/sessions
+      - tmp_data:/opt/sce-runtime/tmp
+      - log_data:/opt/sce-runtime/logs
     ports:
-      - "${CANDIDATE_ODOO_PORT:-18089}:8069"
+      - "127.0.0.1:${CANDIDATE_ODOO_PORT:-18089}:8069"
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8069/web/login', timeout=8)\""]
       interval: 10s
@@ -71,9 +90,9 @@ services:
       odoo:
         condition: service_healthy
     environment:
-      ODOO_DB: ${CANDIDATE_DB:-sc_user_data_rehearsal_candidate}
+      ODOO_DB: ${TARGET_DB:?TARGET_DB is required}
     ports:
-      - "${CANDIDATE_NGINX_PORT:-18088}:80"
+      - "127.0.0.1:${CANDIDATE_NGINX_PORT:-18088}:80"
     healthcheck:
       test: ["CMD-SHELL", "nginx -t"]
       interval: 10s
@@ -81,9 +100,15 @@ services:
       retries: 10
 
 volumes:
-  candidate_db_data:
-    name: ${CANDIDATE_PROJECT:-sc-production-candidate}-db
-  candidate_redis_data:
-    name: ${CANDIDATE_PROJECT:-sc-production-candidate}-redis
-  candidate_odoo_data:
-    name: ${CANDIDATE_PROJECT:-sc-production-candidate}-odoo
+  database_data:
+    name: ${SC_DATABASE_VOLUME:?SC_DATABASE_VOLUME is required}
+  redis_data:
+    name: ${SC_REDIS_VOLUME:?SC_REDIS_VOLUME is required}
+  filestore_data:
+    name: ${SC_FILESTORE_VOLUME:?SC_FILESTORE_VOLUME is required}
+  session_data:
+    name: ${SC_SESSION_VOLUME:?SC_SESSION_VOLUME is required}
+  tmp_data:
+    name: ${SC_TMP_VOLUME:?SC_TMP_VOLUME is required}
+  log_data:
+    name: ${SC_LOG_VOLUME:?SC_LOG_VOLUME is required}

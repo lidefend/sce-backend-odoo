@@ -249,3 +249,30 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns repository identity, CI admission, push direction, and mirror policy; product modules must not encode source-host ownership or CI actors
 - Blast Radius: workflow admission and checkout, public governance verification, GitHub branch-push safety, GitHub-to-Gitee fast-forward mirroring, and documentation; no runtime, database, deployment, image, or migration impact
 - Validation: workflow YAML parsing, authorization positive/negative tests, public guard, generated-report guard, safe-push self-tests, shell syntax, sensitive-data scan, and product-diff isolation
+
+## 2026-07-21 — PRODUCTION-RELEASE-CONTRACT-HARDENING-06
+
+- Branch: `fix/production-release-contract-hardening`
+- Starting commit: `fd7ac52b7ee2d8d5588804a69cdaf68bc7c82312`
+- Formal Product Layer: P4 operations delivery tooling and release contract only
+- Layer Target: immutable production image inputs, fail-closed runtime database admission, explicit database lifecycle entrypoints, and isolated persistent volumes
+- Module: production candidate Dockerfile/Compose, Odoo entrypoint/config, release Make targets, contract tests, and bilingual operations documentation
+- Reason: remove nondeterministic image upgrades and implicit database bootstrap while making `sc_migration_rehearsal`, `sc_production`, and archived `sc_prod` boundaries mechanically auditable
+- Standard vs User-Specific: repository-wide production delivery safety mechanism; no platform, construction-domain, customer preference, low-code, or business-data semantics
+- Why Here: P4 owns build, startup, release orchestration, database lifecycle gating, and verification without becoming a product fact authority
+- Why Not Elsewhere: no Odoo product module or frontend layer should decide image provenance, create databases, or encode operator release approval
+- Blast Radius: production candidate image and future explicit lifecycle commands only; no existing server, database, attachment, TLS, Nginx, business model, ACL, record rule, or frontend behavior
+- Validation: registry digest verification, static and negative contract tests, Compose parsing, repository CI, isolated image build, fail-closed missing-database probe, explicit temporary-database lifecycle, precise local resource cleanup, and a fail-closed `PR_DRAFT=0/1` option on the existing governed PR creation target
+
+## 2026-07-21 — PRODUCTION-RELEASE-CONTRACT-HARDENING-06R1
+
+- Branch: `fix/production-release-contract-hardening`
+- Starting commit: `a2b68823bc01e88bb1f8bcadfebafc5f2f05a30c`
+- Formal Product Layer: P4 operations delivery tooling only
+- Layer Target: invocation-owned database initialization compensation and safe retry
+- Module: explicit production database manager, isolated image acceptance, release contract tests, and bilingual operations documentation
+- Reason: an Odoo `base` initialization failure after `CREATE DATABASE` must not leave a half-initialized database that blocks a guarded retry
+- Standard vs User-Specific: generic release safety; no product, tenant, business-data, server, or environment-specific semantics
+- Why Here / Why Not Elsewhere: P4 owns explicit lifecycle compensation; normal runtime, product modules, frontend, and database schema must not expose or infer destructive cleanup authority
+- Blast Radius: only a database proven to have been created by the current `init` invocation; pre-existing and reserved databases remain immutable to this path
+- Validation: pre-existing preservation, no cleanup before successful creation, injected Odoo failure cleanup, retry success, cleanup-failure fail-closed behavior, production confirmation revalidation, full CI, and isolated image lifecycle cleanup
