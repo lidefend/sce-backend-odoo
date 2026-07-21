@@ -40,6 +40,7 @@ from odoo.addons.smart_core.utils.contract_governance import (
     register_legacy_record_context_clear_model,
     register_legacy_standard_list_profile,
     register_scene_semantic_profile,
+    register_tier_review_list_nav_action_prefix,
 )
 from odoo.addons.smart_core.utils.reason_codes import (
     REASON_PAYMENT_ATTACHMENTS_REQUIRED,
@@ -50,6 +51,7 @@ from odoo.addons.smart_core.utils.reason_codes import (
     REASON_PAYMENT_SETTLEMENT_NOT_READY,
     register_legacy_business_reason_meta,
 )
+
 from odoo.addons.smart_construction_core import core_extension_project_layout as _project_layout
 from odoo.addons.smart_construction_core import core_extension_contract_helpers as _contract_helpers
 from odoo.addons.smart_construction_core import core_extension_policy_maps as _policy_maps
@@ -68,6 +70,9 @@ from odoo.addons.smart_construction_core.services.financial_workspace_contract i
 
 _logger = logging.getLogger(__name__)
 
+register_tier_review_list_nav_action_prefix(
+    "smart_construction_core.action_sc_tier_review_my_"
+)
 register_current_project_scope_model("project.project")
 register_legacy_project_scope_model("project.project")
 register_operation_strategy("direct")

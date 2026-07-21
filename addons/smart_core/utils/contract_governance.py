@@ -361,6 +361,10 @@ def register_legacy_standard_list_profile(profile: dict[str, Any]) -> None:
     _registry.register_legacy_standard_list_profile(profile)
 
 
+def register_tier_review_list_nav_action_prefix(prefix: str) -> None:
+    _registry.register_tier_review_list_nav_action_prefix(prefix)
+
+
 def register_legacy_record_context_clear_model(model_name: str) -> None:
     _registry.register_legacy_record_context_clear_model(model_name)
 
