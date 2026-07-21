@@ -249,3 +249,17 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns repository identity, CI admission, push direction, and mirror policy; product modules must not encode source-host ownership or CI actors
 - Blast Radius: workflow admission and checkout, public governance verification, GitHub branch-push safety, GitHub-to-Gitee fast-forward mirroring, and documentation; no runtime, database, deployment, image, or migration impact
 - Validation: workflow YAML parsing, authorization positive/negative tests, public guard, generated-report guard, safe-push self-tests, shell syntax, sensitive-data scan, and product-diff isolation
+
+## 2026-07-21 — PRODUCTION-RELEASE-CONTRACT-HARDENING-06
+
+- Branch: `fix/production-release-contract-hardening`
+- Starting commit: `fd7ac52b7ee2d8d5588804a69cdaf68bc7c82312`
+- Formal Product Layer: P4 operations delivery tooling and release contract only
+- Layer Target: immutable production image inputs, fail-closed runtime database admission, explicit database lifecycle entrypoints, and isolated persistent volumes
+- Module: production candidate Dockerfile/Compose, Odoo entrypoint/config, release Make targets, contract tests, and bilingual operations documentation
+- Reason: remove nondeterministic image upgrades and implicit database bootstrap while making `sc_migration_rehearsal`, `sc_production`, and archived `sc_prod` boundaries mechanically auditable
+- Standard vs User-Specific: repository-wide production delivery safety mechanism; no platform, construction-domain, customer preference, low-code, or business-data semantics
+- Why Here: P4 owns build, startup, release orchestration, database lifecycle gating, and verification without becoming a product fact authority
+- Why Not Elsewhere: no Odoo product module or frontend layer should decide image provenance, create databases, or encode operator release approval
+- Blast Radius: production candidate image and future explicit lifecycle commands only; no existing server, database, attachment, TLS, Nginx, business model, ACL, record rule, or frontend behavior
+- Validation: registry digest verification, static and negative contract tests, Compose parsing, repository CI, isolated image build, fail-closed missing-database probe, explicit temporary-database lifecycle, precise local resource cleanup, and a fail-closed `PR_DRAFT=0/1` option on the existing governed PR creation target
