@@ -2,16 +2,16 @@
 
 ## Scope
 
-This control applies to the public `Leedefend/sce-product-odoo` repository and
+This control applies to the public `lidefend/sce-backend-odoo` repository and
 implements CLEAN-REPO-01F/01G only. It does not authorize attachment recovery,
 release-candidate image construction, or production deployment.
 
 ## Trust boundary
 
 Public pull-request code is untrusted. Approval of a fork workflow is not a
-sandbox boundary and must never authorize that code to execute on a
-self-hosted runner. Unknown external fork workflows must not be manually
-approved for self-hosted execution.
+sandbox boundary and must never authorize that code to execute the
+professional quality gate. Unknown external fork workflows must not be
+manually approved for professional execution.
 
 CI is split into two layers:
 
@@ -21,15 +21,20 @@ CI is split into two layers:
    workflow-policy checks.
 2. `professional_quality_gate` first executes
    `professional_authorization` on GitHub-hosted infrastructure. The
-   self-hosted job is eligible only when the repository is
-   `Leedefend/sce-product-odoo`, the actor is `Leedefend`, and a pull request's
-   head repository is the same repository. A fork fails authorization and
-   never receives a self-hosted job.
+   professional job is eligible only when the repository and repository owner
+   exactly match `lidefend/sce-backend-odoo` and `lidefend`. A pull request's
+   head repository must be the same repository. Manual dispatch additionally
+   requires the actor to equal the current repository owner. A fork, unknown
+   event, or non-owner dispatch fails authorization and never receives a
+   professional job. A single actor login is not a PR trust boundary. The job
+   uses an isolated GitHub-hosted runner because no self-hosted runner is
+   registered to the new authoritative repository.
 
-The self-hosted runner must be single-purpose. Prefer an ephemeral runner for
-each professional run. A persistent runner must be treated as replaceable and
-must not contain production credentials, production SSH keys, user passwords,
-or reusable credentials outside the minimum read-only CI scope.
+Each professional run uses a fresh GitHub-hosted runner with read-only token
+permissions. If a dedicated runner is introduced later, it requires a separate
+governance change and must be single-purpose, replaceable, and free of
+production credentials, production SSH keys, user passwords, or reusable
+credentials outside the minimum read-only CI scope.
 
 ## Repository Actions settings
 
@@ -41,7 +46,7 @@ Required repository settings under **Settings → Actions → General**:
 - Default `GITHUB_TOKEN` permission is read-only contents/packages.
 - GitHub Actions cannot create or approve pull requests.
 - All external contributors require workflow approval.
-- No unknown external workflow may be approved to use self-hosted runners.
+- No unknown external workflow may be approved to run the professional gate.
 - Artifact and log retention is seven days unless an audit requirement
   explicitly establishes a shorter period.
 
@@ -60,8 +65,9 @@ access to secrets, and production credentials are prohibited.
 The clean repository starts with no Actions secrets or variables. Add only a
 credential that an enabled job demonstrably needs:
 
-- Gitee checkout: use anonymous public HTTPS where possible. If rate or policy
-  constraints require credentials, use a repository-scoped read-only key.
+- Authoritative source checkout: use public HTTPS from
+  `https://github.com/lidefend/sce-backend-odoo.git` and verify the fetched ref
+  equals the event's exact SHA before execution.
 - Private customer package: use a read-only deploy key limited to that single
   private repository; it must not write any branch and must be rotatable.
 - Test secrets: generate ephemeral values inside the job when possible.
@@ -123,9 +129,10 @@ does not access production projects, databases, images, or attachment stores.
    artifact retention through the GitHub API.
 2. Register a clean, single-purpose ephemeral runner with only the required
    labels.
-3. Push the governance branch to GitHub and Gitee at the same SHA.
+3. Push the governance branch only to the authoritative GitHub repository.
 4. Open the pull request and require all three checks.
 5. Merge through the protected branch; do not push directly to `main`.
-6. Fast-forward Gitee `main` to the merged GitHub `main` SHA.
+6. Fast-forward Gitee `main` to the merged GitHub `main` SHA; never sync in the
+   opposite direction.
 7. Clone both remotes into new directories and run the 12/12 product release
    scan again.

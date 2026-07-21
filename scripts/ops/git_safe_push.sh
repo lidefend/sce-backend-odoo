@@ -38,7 +38,7 @@ if [[ "${GIT_SAFE_PUSH_FAKE_GIT:-0}" == "1" && "$(basename "$0")" == "git" ]]; t
         if contains_word "${FAKE_INACCESSIBLE_REMOTES:-}" "$remote"; then
           exit 128
         fi
-        contains_word "${FAKE_EXISTING_REMOTES:-origin gitee}" "$remote"
+        contains_word "${FAKE_EXISTING_REMOTES:-origin}" "$remote"
       else
         remote="${2:-}"
         if contains_word "${FAKE_INACCESSIBLE_REMOTES:-}" "$remote"; then
@@ -93,7 +93,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
         FAKE_BRANCH="${FAKE_BRANCH:-fix/test-branch}" \
         FAKE_MISSING_REMOTES="${FAKE_MISSING_REMOTES:-}" \
         FAKE_INACCESSIBLE_REMOTES="${FAKE_INACCESSIBLE_REMOTES:-}" \
-        FAKE_EXISTING_REMOTES="${FAKE_EXISTING_REMOTES:-origin gitee}" \
+        FAKE_EXISTING_REMOTES="${FAKE_EXISTING_REMOTES:-origin}" \
         FAKE_PUSH_FAIL_REMOTES="${FAKE_PUSH_FAIL_REMOTES:-}" \
         FAKE_DIRTY="${FAKE_DIRTY:-0}" \
         FAKE_INVALID_BRANCH="${FAKE_INVALID_BRANCH:-0}" \
@@ -117,10 +117,10 @@ if [[ "${1:-}" == "--self-test" ]]; then
     [[ "$count" -eq "$2" ]] || fail "$1: expected $2 push calls, got $count"
   }
 
-  FAKE_MISSING_REMOTES=gitee run_push
-  assert_nonzero 'missing gitee'; assert_output 'missing gitee' "required remote 'gitee' not configured"; assert_push_count 'missing gitee' 0
-  FAKE_INACCESSIBLE_REMOTES=gitee run_push
-  assert_nonzero 'gitee inaccessible'; assert_output 'gitee inaccessible' "remote 'gitee' is not accessible"; assert_push_count 'gitee inaccessible' 0
+  FAKE_MISSING_REMOTES=origin run_push
+  assert_nonzero 'missing origin'; assert_output 'missing origin' "required remote 'origin' not configured"; assert_push_count 'missing origin' 0
+  FAKE_INACCESSIBLE_REMOTES=origin run_push
+  assert_nonzero 'origin inaccessible'; assert_output 'origin inaccessible' "remote 'origin' is not accessible"; assert_push_count 'origin inaccessible' 0
 
   FAKE_GENERATED_REPORTS_STALE=1 run_push
   assert_nonzero 'stale generated reports'
@@ -128,19 +128,19 @@ if [[ "${1:-}" == "--self-test" ]]; then
   assert_push_count 'stale generated reports' 0
   grep -q '^make --no-print-directory ci.generated_reports.guard$' "$log_file" || fail 'stale generated reports: local guard missing'
 
-  FAKE_EXISTING_REMOTES='origin gitee' run_push
+  FAKE_EXISTING_REMOTES=origin run_push
   assert_zero 'existing branches'; assert_push_count 'existing branches' 1
-  grep -q '^push gitee fix/test-branch$' "$log_file" || fail 'existing branches: gitee update push missing'
+  grep -q '^push origin fix/test-branch$' "$log_file" || fail 'existing branches: GitHub update push missing'
 
   FAKE_EXISTING_REMOTES=none run_push
   assert_zero 'new branches'; assert_push_count 'new branches' 1
-  grep -q '^push -u gitee fix/test-branch$' "$log_file" || fail 'new branches: Gitee tracking push missing'
+  grep -q '^push -u origin fix/test-branch$' "$log_file" || fail 'new branches: GitHub tracking push missing'
 
-  FAKE_PUSH_FAIL_REMOTES=gitee run_push
-  assert_nonzero 'gitee write failure'
-  assert_output 'gitee write failure' 'sync_failed: successful_remotes=none failed_remote=gitee'
-  assert_output 'gitee write failure' 'recovery_command: make pr.push'
-  assert_push_count 'gitee write failure' 1
+  FAKE_PUSH_FAIL_REMOTES=origin run_push
+  assert_nonzero 'GitHub write failure'
+  assert_output 'GitHub write failure' 'sync_failed: successful_remotes=none failed_remote=origin'
+  assert_output 'GitHub write failure' 'recovery_command: make pr.push'
+  assert_push_count 'GitHub write failure' 1
 
   for protected_branch in main master prod prod/production; do
     FAKE_BRANCH="$protected_branch" run_push
@@ -150,7 +150,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   done
 
   for allowed_branch in feature/test fix/test refactor/test audit/test release/test codex/test; do
-    FAKE_BRANCH="$allowed_branch" FAKE_EXISTING_REMOTES='origin gitee' run_push
+    FAKE_BRANCH="$allowed_branch" FAKE_EXISTING_REMOTES=origin run_push
     assert_zero "allowed branch $allowed_branch"
     assert_push_count "allowed branch $allowed_branch" 1
   done
@@ -198,14 +198,14 @@ if ! make --no-print-directory ci.generated_reports.guard; then
   exit 2
 fi
 
-remote="${GITEE_AUTH_REMOTE:-gitee}"
+remote="${GITHUB_AUTH_REMOTE:-origin}"
 if ! git remote get-url "$remote" >/dev/null 2>&1; then
   echo "❌ required remote '${remote}' not configured" >&2
   exit 2
 fi
 remote_url="$(git remote get-url "$remote")"
-if [[ "${GIT_SAFE_PUSH_FAKE_GIT:-0}" != "1" && "$remote_url" != "git@gitee.com:leegege/sce-product-odoo.git" ]]; then
-  echo "❌ authoritative remote is not the approved Gitee repository" >&2
+if [[ "${GIT_SAFE_PUSH_FAKE_GIT:-0}" != "1" && "$remote_url" != "https://github.com/lidefend/sce-backend-odoo.git" ]]; then
+  echo "❌ authoritative remote is not the approved GitHub repository" >&2
   exit 2
 fi
 echo "[pr.push] preflight authoritative_remote=${remote}"

@@ -5,7 +5,7 @@ set -euo pipefail
 
 REPO_NAME="${GITEE_REPO_NAME:-sce-product-odoo}"
 REPO_PATH="${GITEE_REPO_PATH:-${REPO_NAME}}"
-REPO_DESCRIPTION="${GITEE_REPO_DESCRIPTION:-Domestic CI mirror for Leedefend/sce-product-odoo}"
+REPO_DESCRIPTION="${GITEE_REPO_DESCRIPTION:-Domestic read-only mirror for lidefend/sce-backend-odoo}"
 REPO_PRIVATE="${GITEE_REPO_PRIVATE:-true}"
 GITEE_API_BASE="${GITEE_API_BASE:-https://gitee.com/api/v5}"
 

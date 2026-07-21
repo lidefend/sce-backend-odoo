@@ -224,3 +224,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Runtime Contract: `system.init` exposes only `product_version` and `source_revision`; the frontend system HUD reads both without exposing internal paths or environment variables
 - Build Contract: one versioned source SHA produces the human version tag and short-SHA tag in one Docker build; deployment remains digest-addressed and save/remove/load must preserve both tags and the image ID
 - Customer Compatibility: the signed external manifest declares an inclusive minimum, exclusive maximum, and required generic contracts; incompatibility fails before archive extraction or database access
+
+## 2026-07-21 — REPO-GOVERNANCE-GITHUB-AUTHORITY-02
+
+- Branch: `fix/github-authority-governance`
+- Starting commit: `aaad9e06d5e0d70d92041b65b8a4ae9003fb7cda`
+- Formal Product Layer: P4 repository and continuous-integration governance only
+- Layer Target: make `lidefend/sce-backend-odoo` the explicit GitHub authority while keeping authorization fail-closed and actor-independent
+- Module: GitHub Actions workflows, repository security guard and tests, safe-push/mirror tooling, CODEOWNERS, and repository governance documentation
+- Reason: the authoritative repository moved from `Leedefend/sce-product-odoo`; the former fixed repository and actor identities prevented required checks from running under the new authority
+- Standard vs User-Specific: repository governance constants and auditable trust rules only; no user-module product behavior, tenant payload, production data, or customer-specific policy changes
+- Why Here / Why Not Elsewhere: P4 owns repository identity, CI admission, push direction, and mirror policy; product modules must not encode source-host ownership or CI actors
+- Blast Radius: workflow admission and checkout, public governance verification, GitHub branch-push safety, GitHub-to-Gitee fast-forward mirroring, and documentation; no runtime, database, deployment, image, or migration impact
+- Validation: workflow YAML parsing, authorization positive/negative tests, public guard, generated-report guard, safe-push self-tests, shell syntax, sensitive-data scan, and product-diff isolation
