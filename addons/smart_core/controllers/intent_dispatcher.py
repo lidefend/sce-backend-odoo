@@ -11,6 +11,7 @@ from werkzeug.exceptions import Unauthorized, Forbidden, BadRequest, NotFound
 from odoo.exceptions import AccessError, MissingError, AccessDenied
 
 from ..core.intent_router import route_intent_payload
+from ..core.database_request_boundary import normalize_database_params
 from ..core.context import RequestContext
 from ..core.http_result_policy import (
     normalize_result_ok,
@@ -297,13 +298,13 @@ class IntentDispatcher(http.Controller):
 
             # 兼容 params/payload
             params = body.get("params")
-            params = params if isinstance(params, dict) else {}
+            params = dict(params) if isinstance(params, dict) else {}
             if not params and isinstance(body.get("payload"), dict):
-                params = body.get("payload")
+                params = dict(body.get("payload"))
             request_explicit_db_param = "db" in params or "database" in params
 
             # 仅接收 dict 的 context
-            context_in: Dict[str, Any] = body.get("context") if isinstance(body.get("context"), dict) else {}
+            context_in: Dict[str, Any] = dict(body.get("context")) if isinstance(body.get("context"), dict) else {}
 
             # 兼容：旧 context 里可能混入业务字段，不覆盖 params 显式给出的
             for k in (
@@ -398,7 +399,11 @@ class IntentDispatcher(http.Controller):
                     and db_source in {"locked_header", "query", "header", "session", "env_default"}
                 )
                 if not db_is_login_routing_context:
-                    params["db"] = params.get("db") or effective_db
+                    params, effective_db = normalize_database_params(
+                        params,
+                        effective_db=effective_db,
+                        trusted_lock=db_source == "locked_header",
+                    )
                 elif intent_name in {"login", "auth.login"}:
                     params["_login_routing_db"] = effective_db
                 if request.session.db != effective_db:

@@ -217,6 +217,7 @@ class _FakeRequest:
         self.env = env
         self.uid = None
         self.registry_envs = registry_envs or {}
+        self.registry_calls = []
 
 
 class _Ctx:
@@ -233,7 +234,11 @@ def _load_module(fake_request, user_provider=None):
 
     odoo_mod = types.ModuleType("odoo")
     odoo_mod.api = _FakeApi
-    odoo_mod.registry = lambda db: _FakeRegistry(fake_request.registry_envs[db])
+    def _registry(db):
+        fake_request.registry_calls.append(db)
+        return _FakeRegistry(fake_request.registry_envs[db])
+
+    odoo_mod.registry = _registry
     http_mod = types.ModuleType("odoo.http")
     http_mod.request = fake_request
     exc_mod = types.ModuleType("odoo.exceptions")
@@ -307,6 +312,35 @@ class TestIntentPermissionOperationPolicy(unittest.TestCase):
         self.assertEqual(target_model.access_modes, ["read"])
         self.assertTrue(target_env.cr.closed)
         self.assertIs(ctx.env, target_env)
+
+    def test_locked_database_normalization_keeps_permission_registry_on_effective_db(self):
+        root = Path(__file__).resolve().parents[1]
+        boundary_path = root / "core" / "database_request_boundary.py"
+        spec = importlib.util.spec_from_file_location("permission_database_boundary_test", boundary_path)
+        boundary = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(boundary)
+        request = _FakeRequest(self.env)
+        self.permission = _load_module(request)
+
+        for client_db in ("sc_prod", "r8_missing_database"):
+            with self.subTest(client_db=client_db):
+                params, target = boundary.normalize_database_params(
+                    {"db": client_db, "database": client_db},
+                    effective_db="sc_demo",
+                    trusted_lock=True,
+                )
+                env, user, cursor = self.permission._permission_env_for_params(
+                    self.env,
+                    self.env.user,
+                    params,
+                )
+                self.assertEqual(target, "sc_demo")
+                self.assertEqual(params, {"db": "sc_demo", "database": "sc_demo"})
+                self.assertIs(env, self.env)
+                self.assertIs(user, self.env.user)
+                self.assertIsNone(cursor)
+
+        self.assertEqual(request.registry_calls, [])
 
     def test_existing_context_user_is_reused_without_redecoding_token(self):
         def _unexpected_auth():

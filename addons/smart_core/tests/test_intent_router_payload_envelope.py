@@ -55,7 +55,14 @@ def _load_router(fake_request, handler_cls):
     odoo_mod = types.ModuleType("odoo")
     odoo_mod.SUPERUSER_ID = 1
     odoo_mod.registry = lambda db: None
-    api_mod = types.SimpleNamespace(Environment=lambda cr, uid, context: types.SimpleNamespace(cr=cr, uid=uid, context=context))
+    api_mod = types.SimpleNamespace(
+        Environment=lambda cr, uid, context: types.SimpleNamespace(
+            cr=cr,
+            uid=uid,
+            context=context,
+            registry=object(),
+        )
+    )
     odoo_mod.api = api_mod
 
     http_mod = types.ModuleType("odoo.http")
@@ -103,7 +110,40 @@ def _load_router(fake_request, handler_cls):
     return module
 
 
+def _load_database_boundary():
+    root = Path(__file__).resolve().parents[1]
+    path = root / "core" / "database_request_boundary.py"
+    spec = importlib.util.spec_from_file_location("router_database_boundary_test", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class TestIntentRouterPayloadEnvelope(unittest.TestCase):
+    def test_locked_database_normalization_keeps_router_registry_on_effective_db(self):
+        class Handler:
+            pass
+
+        router = _load_router(_FakeRequest(), Handler)
+        boundary = _load_database_boundary()
+        registry_calls = []
+        router.odoo.registry = lambda db: registry_calls.append(db)
+
+        for client_db in ("sc_prod", "r8_missing_database"):
+            with self.subTest(client_db=client_db):
+                params, target = boundary.normalize_database_params(
+                    {"db": client_db, "database": client_db},
+                    effective_db="test_db",
+                    trusted_lock=True,
+                )
+                env, _su_env, cursor = router._build_envs(params, {})
+                self.assertEqual(target, "test_db")
+                self.assertEqual(params, {"db": "test_db", "database": "test_db"})
+                self.assertEqual(env.cr.dbname, "test_db")
+                self.assertIsNone(cursor)
+
+        self.assertEqual(registry_calls, [])
+
     def test_dispatch_keeps_handler_payload_as_canonical_envelope(self):
         seen = {}
 
