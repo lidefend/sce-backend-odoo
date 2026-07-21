@@ -4,7 +4,6 @@ USER root
 
 COPY requirements-odoo.txt /tmp/requirements-odoo.txt
 RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gettext-base nginx \
     && apt-get purge -y nodejs npm node-less libnode-dev libnode72 \
     && apt-get autoremove -y --purge \
@@ -20,6 +19,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /tmp/requirements-odoo.txt
 
 RUN mkdir -p /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons \
+        /opt/sce-runtime/filestore /opt/sce-runtime/sessions /opt/sce-runtime/tmp \
+        /opt/sce-runtime/logs /opt/sce-runtime/config \
     && ln -s /mnt/product-addons /mnt/extra-addons
 COPY addons/sc_norm_engine /mnt/product-addons/sc_norm_engine
 COPY addons/smart_core /mnt/product-addons/smart_core
@@ -38,16 +39,21 @@ COPY config/odoo.conf.template /etc/odoo/odoo.conf.template
 COPY config/nginx/conf.d/production-candidate.conf /etc/nginx/templates/default.conf.template
 COPY scripts/render_odoo_conf.py /usr/local/bin/render_odoo_conf.py
 COPY scripts/render_nginx_conf.sh /usr/local/bin/render_nginx_conf.sh
-COPY scripts/odoo-entrypoint.sh /usr/local/bin/odoo-entrypoint.sh
+COPY scripts/release/production_odoo_entrypoint.sh /usr/local/bin/odoo-entrypoint.sh
+COPY scripts/release/production_db_contract.py /usr/local/bin/production_db_contract.py
+COPY scripts/release/production_db_init.py /usr/local/bin/production_db_init.py
+COPY scripts/release/production_db_manage.sh /usr/local/bin/production-db-manage
 COPY frontend/apps/web/dist-production-candidate /usr/share/nginx/html
 COPY VERSION /opt/sce-product/VERSION
 COPY release/product-release.yaml /opt/sce-product/product-release.yaml
 
 RUN chmod 0755 /usr/local/bin/odoo-entrypoint.sh /usr/local/bin/render_odoo_conf.py /usr/local/bin/render_nginx_conf.sh \
+        /usr/local/bin/production_db_contract.py /usr/local/bin/production_db_init.py /usr/local/bin/production-db-manage \
     && rm -f /etc/nginx/sites-enabled/default \
     && find /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external -type d -exec chmod 0755 {} + \
     && find /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external -type f -exec chmod 0644 {} + \
-    && chown -R root:root /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external /usr/share/nginx/html
+    && chown -R root:root /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external /usr/share/nginx/html \
+    && chown -R odoo:odoo /opt/sce-runtime
 
 ARG SOURCE_SHA
 ARG PRODUCT_VERSION
