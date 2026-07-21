@@ -36,6 +36,8 @@ EXPECTED_RELEASE_SHA=<40-char-commit> TARGET_MODULE=smart_construction_core \
 make release.production.module.upgrade
 ```
 
+`init` owns failure compensation only for a database successfully created by that invocation. If the subsequent Odoo `base` initialization fails, the command revalidates the full contract, terminates residual connections to that database, removes only that newly created database, and returns the original initialization status so the same guarded command can be retried. A database that existed before invocation is always rejected and never removed; a pre-creation failure never triggers cleanup. If cleanup itself fails, the command stops with a distinct error and explicitly reports that an orphan database may remain. No general-purpose drop entry is provided.
+
 The corresponding exact volume variables and candidate image must also be supplied. For `sc_production`, initialization or upgrade additionally requires the one-time operator acknowledgement `SC_PRODUCTION_CHANGE_APPROVED=I_ACKNOWLEDGE_SC_PRODUCTION_CHANGE` and an image revision equal to `EXPECTED_RELEASE_SHA`. This acknowledgement is not stored in Compose or source control.
 
 Production sets `list_db = False`, uses an exact `dbfilter`, and fixes `SC_ALLOW_DEMO_DATA=0`. `sc_production` rejects demo/fixture modules even if a caller tries to enable demo data. Database initialization is always `--without-demo=all`.

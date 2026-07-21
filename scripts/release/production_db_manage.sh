@@ -36,20 +36,7 @@ PY
 case "$ACTION" in
   preflight|health) readonly_probe ;;
   init)
-    python3 - "$DB" <<'PY'
-import os, sys, psycopg2
-from psycopg2 import sql
-db = sys.argv[1]
-conn = psycopg2.connect(host=os.environ.get("DB_HOST", "db"), port=int(os.environ.get("DB_PORT", "5432")), user=os.environ.get("DB_USER"), password=os.environ.get("DB_PASSWORD"), dbname="postgres")
-conn.autocommit = True
-try:
-    with conn.cursor() as cr:
-        cr.execute("SELECT 1 FROM pg_database WHERE datname=%s", (db,))
-        if cr.fetchone(): raise SystemExit("target database already exists; refusing initialization")
-        cr.execute(sql.SQL("CREATE DATABASE {} WITH TEMPLATE template0 ENCODING 'UTF8'").format(sql.Identifier(db)))
-finally: conn.close()
-PY
-    exec odoo -c "$CONF" -d "$DB" --no-http --workers=0 --max-cron-threads=0 -i base --without-demo=all --stop-after-init ;;
+    exec python3 /usr/local/bin/production_db_init.py "$CONF" ;;
   install) readonly_probe; exec odoo -c "$CONF" -d "$DB" --no-http --workers=0 --max-cron-threads=0 -i "$TARGET_MODULE" --without-demo=all --stop-after-init ;;
   upgrade) readonly_probe; exec odoo -c "$CONF" -d "$DB" --no-http --workers=0 --max-cron-threads=0 -u "$TARGET_MODULE" --without-demo=all --stop-after-init ;;
 esac

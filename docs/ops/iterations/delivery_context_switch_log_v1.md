@@ -263,3 +263,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Not Elsewhere: no Odoo product module or frontend layer should decide image provenance, create databases, or encode operator release approval
 - Blast Radius: production candidate image and future explicit lifecycle commands only; no existing server, database, attachment, TLS, Nginx, business model, ACL, record rule, or frontend behavior
 - Validation: registry digest verification, static and negative contract tests, Compose parsing, repository CI, isolated image build, fail-closed missing-database probe, explicit temporary-database lifecycle, precise local resource cleanup, and a fail-closed `PR_DRAFT=0/1` option on the existing governed PR creation target
+
+## 2026-07-21 — PRODUCTION-RELEASE-CONTRACT-HARDENING-06R1
+
+- Branch: `fix/production-release-contract-hardening`
+- Starting commit: `a2b68823bc01e88bb1f8bcadfebafc5f2f05a30c`
+- Formal Product Layer: P4 operations delivery tooling only
+- Layer Target: invocation-owned database initialization compensation and safe retry
+- Module: explicit production database manager, isolated image acceptance, release contract tests, and bilingual operations documentation
+- Reason: an Odoo `base` initialization failure after `CREATE DATABASE` must not leave a half-initialized database that blocks a guarded retry
+- Standard vs User-Specific: generic release safety; no product, tenant, business-data, server, or environment-specific semantics
+- Why Here / Why Not Elsewhere: P4 owns explicit lifecycle compensation; normal runtime, product modules, frontend, and database schema must not expose or infer destructive cleanup authority
+- Blast Radius: only a database proven to have been created by the current `init` invocation; pre-existing and reserved databases remain immutable to this path
+- Validation: pre-existing preservation, no cleanup before successful creation, injected Odoo failure cleanup, retry success, cleanup-failure fail-closed behavior, production confirmation revalidation, full CI, and isolated image lifecycle cleanup

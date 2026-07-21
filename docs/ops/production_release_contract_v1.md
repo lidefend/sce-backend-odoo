@@ -37,6 +37,8 @@ EXPECTED_RELEASE_SHA=<40-char-commit> TARGET_MODULE=smart_construction_core \
 make release.production.module.upgrade
 ```
 
+`init` 只对当前调用成功创建的数据库拥有失败补偿权。如果随后的 Odoo `base` 初始化失败，命令会重新执行完整门禁、终止该库的残留连接并删除本次创建的数据库，然后返回原初始化失败状态，使同一安全命令可以重试。调用开始前已经存在的数据库永远拒绝初始化且绝不删除；创建前失败不会触发清理。清理自身失败时命令以独立错误码停止并明确报告可能存在孤儿库，不得宣称可以安全重试。仓库不提供通用 drop 入口。
+
 还必须显式提供精确卷变量和候选镜像。`sc_production` 初始化或升级另需一次性确认 `SC_PRODUCTION_CHANGE_APPROVED=I_ACKNOWLEDGE_SC_PRODUCTION_CHANGE`，且镜像 revision 必须等于 `EXPECTED_RELEASE_SHA`。该确认值不得写入 Compose 或版本库。
 
 生产配置设置 `list_db = False`、精确 `dbfilter` 和 `SC_ALLOW_DEMO_DATA=0`。即使调用方尝试启用 demo，`sc_production` 也拒绝 demo/fixture 模块。初始化始终使用 `--without-demo=all`。
