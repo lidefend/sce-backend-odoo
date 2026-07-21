@@ -88,7 +88,7 @@ sc-backend-odoo/
 ### 4.1 拉取代码
 
 ```bash
-git clone https://github.com/Leedefend/sce-product-odoo.git
+git clone https://github.com/lidefend/sce-backend-odoo.git
 cd sc-backend-odoo
 git checkout main
 ```

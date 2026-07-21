@@ -1,47 +1,35 @@
-# Gitee 权威仓库到 GitHub 只读镜像
+# GitHub 权威仓库到 Gitee 只读镜像
 
 ## 固定边界
 
-- Gitee `leegege/sce-product-odoo` 是唯一开发、PR 和合并入口。
-- GitHub `Leedefend/sce-product-odoo` 只接收 Gitee `main` 的同一提交 SHA。
-- 普通身份不能直接写 GitHub `main`；GitHub Ruleset 仅允许 Deploy Key 绕过。
-- 仓库只能存在一个 write Deploy Key，名称为 `sce-gitee-to-github-mirror`。
-- 禁止 force push、force-with-lease、删除 `main`、反向覆盖 Gitee 或按 WebHook 分支文本推送。
+- GitHub `lidefend/sce-backend-odoo` 是唯一开发、PR、Checks 和 `main` 合并入口。
+- Gitee `leegege/sce-product-odoo` 只接收 GitHub `main` 的普通快进镜像。
+- GitHub `main` 必须由 active ruleset 保护：必须 PR、required checks、线程解决、禁止删除和非快进，并且没有 bypass actor。
+- Gitee→GitHub 的 write Deploy Key、反向镜像和独立 Gitee `main` 合并均被禁止。
+- 禁止 force push、force-with-lease、删除 `main` 或从 Gitee 反向覆盖 GitHub。
 
 ## 凭据隔离
 
 ```text
-Gitee WebHook receiver（仅签名 secret）
-        ↓
-Gitee CI worker（仅 Gitee 只读 Deploy Key）
-        ↓ 门禁通过且 SHA == Gitee main
-/var/lib/gitee-mirror/source.git（无远端凭据 handoff）
-        ↓
-gitee-mirror service（仅 GitHub write Deploy Key）
-        ↓ 精确 SHA + fast-forward
-GitHub main
+GitHub PR + required checks + review/thread gates
+        ↓ 正常合并
+GitHub main（唯一权威历史）
+        ↓ 精确 SHA + fast-forward only
+Gitee main（只读镜像与国内服务器拉取源）
 ```
 
-`gitee-ci` 无权读取 `/etc/gitee-mirror/github_ed25519`。`gitee-mirror`
-通过 systemd `ReadOnlyPaths` 只读 handoff 对象库，不能修改候选 ref。
+镜像同步失败不得阻止 GitHub 的正常治理，但必须报警。同步任务不得持有
+GitHub `main` 写凭据，也不得把 Gitee 的任何提交反向写入 GitHub。
 
 ## 安装与验证
 
-所有写操作必须通过 Make 入口：
+合并后镜像同步必须先验证 Gitee `main` 是 GitHub `main` 的祖先，再通过受控
+Make 入口执行：
 
 ```bash
-GITEE_MIRROR_SERVER_CONFIRM=1 make gitee.github.mirror.install
-GITHUB_MIRROR_RULESET_CONFIRM=1 make github.mirror.ruleset.configure
-GITEE_MIRROR_SEED_CONFIRM=1 \
-GITEE_MIRROR_SEED_SHA=<exact-gitee-main-sha> \
-make gitee.github.mirror.seed
-GITEE_MIRROR_RUN_CONFIRM=1 make gitee.github.mirror.run
-make github.mirror.non_mirror_push.test
+make mirror.main.gitee
 ```
 
-`github.mirror.ruleset.configure` 先创建并回读 active Ruleset，再删除旧 Branch
-Protection，避免规则叠加。它发现第二个 write Deploy Key 时必须停止。
-
-GitHub fresh clone 应使用公开 HTTPS URL；历史守卫故意拒绝 GitHub SSH
-origin，防止普通开发工作区获得镜像写入路径。Gitee 工作区使用只读或最小权限
-SSH 身份，并通过 `make pr.push` 只写 Gitee 权威远端。
+若祖先检查失败，必须输出 `GITEE_MIRROR_DIVERGED` 并停止；不得 merge、rebase、
+cherry-pick 或 force push。国内服务器可从 Gitee 拉取，但部署前必须核对该 SHA
+已存在于 GitHub `main`，且部署仍需要独立授权。

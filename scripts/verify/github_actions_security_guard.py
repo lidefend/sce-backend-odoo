@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Enforce the public/self-hosted GitHub Actions trust boundary."""
+"""Enforce the public/professional GitHub Actions trust boundary."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = ROOT / ".github/workflows"
+EXPECTED_REPOSITORY = "lidefend/sce-backend-odoo"
+EXPECTED_OWNER = "lidefend"
 PINNED_ACTION = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s@]+)@([0-9a-f]{40})\s*$", re.MULTILINE)
 ANY_ACTION = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s]+)\s*$", re.MULTILINE)
 
@@ -20,6 +22,24 @@ class Finding:
     rule_id: str
     path: str
     classification: str
+
+
+def authorization_allowed(
+    *,
+    event_name: str,
+    repository: str,
+    repository_owner: str,
+    actor: str,
+    head_repository: str = "",
+) -> bool:
+    """Mirror the fail-closed professional workflow identity decision."""
+    if repository != EXPECTED_REPOSITORY or repository_owner != EXPECTED_OWNER:
+        return False
+    if event_name == "pull_request":
+        return bool(head_repository) and head_repository == repository
+    if event_name == "workflow_dispatch":
+        return actor == repository_owner
+    return False
 
 
 def scan(root: Path) -> list[Finding]:
@@ -52,10 +72,10 @@ def scan(root: Path) -> list[Finding]:
                 findings.add(Finding("GA006", f"{relative}:{reference}", "UNAPPROVED_ACTION_OWNER"))
 
         if "self-hosted" in text:
-            if "github.repository == 'Leedefend/sce-product-odoo'" not in text:
+            if f"github.repository == '{EXPECTED_REPOSITORY}'" not in text:
                 findings.add(Finding("GA007", relative, "SELF_HOSTED_REPOSITORY_GATE_MISSING"))
-            if "github.actor == 'Leedefend'" not in text:
-                findings.add(Finding("GA008", relative, "SELF_HOSTED_ACTOR_GATE_MISSING"))
+            if "github.actor == github.repository_owner" not in text:
+                findings.add(Finding("GA008", relative, "SELF_HOSTED_OWNER_DISPATCH_GATE_MISSING"))
             if "pull_request:" in text and "github.event.pull_request.head.repo.full_name == github.repository" not in text:
                 findings.add(Finding("GA009", relative, "SELF_HOSTED_FORK_GATE_MISSING"))
 
@@ -68,8 +88,13 @@ def scan(root: Path) -> list[Finding]:
         if path.name == "professional_quality_gate.yml":
             required = (
                 "professional_authorization",
+                f"EXPECTED_REPOSITORY: {EXPECTED_REPOSITORY}",
+                f"EXPECTED_OWNER: {EXPECTED_OWNER}",
+                "REPOSITORY_OWNER: ${{ github.repository_owner }}",
                 "github.event.pull_request.head.repo.full_name == github.repository",
+                "github.actor == github.repository_owner",
                 "needs: professional_authorization",
+                "runs-on: ubuntu-latest",
                 "scripts/ci/self_hosted_runner_cleanup.sh",
             )
             if any(item not in text for item in required):
@@ -87,7 +112,7 @@ def main() -> int:
                 file=sys.stderr,
             )
         return 1
-    print("[github_actions_security_guard] PASS permissions=read fork_self_hosted=denied actions=pinned")
+    print("[github_actions_security_guard] PASS permissions=read fork_professional=denied actions=pinned")
     return 0
 
 
