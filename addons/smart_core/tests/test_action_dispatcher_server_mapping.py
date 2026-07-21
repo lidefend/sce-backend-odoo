@@ -101,7 +101,7 @@ class TestActionDispatcherServerMapping(TransactionCase):
         self.assertTrue(model, f"ui.contract(action_open) returned empty model: {result}")
         self.assertNotEqual(contract_type, "diagnostic", f"unexpected diagnostic contract: {result}")
 
-    def test_ui_contract_action_open_project_list_preserves_list_multi_actions(self):
+    def test_ui_contract_action_open_project_list_matches_current_product_contract(self):
         action = self.env.ref("smart_construction_core.action_sc_project_list", raise_if_not_found=False)
         if not action:
             self.skipTest("smart_construction_core.action_sc_project_list not installed")
@@ -127,27 +127,28 @@ class TestActionDispatcherServerMapping(TransactionCase):
             for row in buttons + header_rows
             if isinstance(row, dict) and row.get("selection") == "multi"
         ]
-        self.assertTrue(multi_rows, f"expected list multi actions in project list contract: {result}")
+        self.assertFalse(multi_rows, f"list contract fabricated an unbound multi action: {result}")
         list_profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
         self.assertEqual(
             list_profile.get("columns") or [],
             [
                 "name",
-                "user_id",
-                "partner_id",
-                "stage_id",
+                "project_code",
+                "owner_id",
+                "sc_partner_display_name",
+                "operation_strategy",
                 "lifecycle_state",
-                "date_start",
-                "date",
-                "create_uid",
-                "create_date",
+                "user_id",
+                "contract_amount",
+                "dashboard_progress_rate",
+                "write_date",
             ],
         )
         self.assertEqual((list_profile.get("column_labels") or {}).get("name"), "名称")
-        self.assertEqual((list_profile.get("column_labels") or {}).get("user_id"), "项目管理员")
-        self.assertEqual((list_profile.get("column_labels") or {}).get("date"), "有效期")
+        self.assertEqual((list_profile.get("column_labels") or {}).get("user_id"), "项目负责人")
+        self.assertEqual((list_profile.get("column_labels") or {}).get("write_date"), "更新时间")
 
-    def test_ui_contract_action_open_payment_list_preserves_list_multi_actions(self):
+    def test_ui_contract_action_open_payment_list_matches_current_product_contract(self):
         action = self.env.ref("smart_construction_core.action_sc_finance_dashboard", raise_if_not_found=False)
         if not action:
             self.skipTest("smart_construction_core.action_sc_finance_dashboard not installed")
@@ -173,29 +174,36 @@ class TestActionDispatcherServerMapping(TransactionCase):
             for row in buttons + header_rows
             if isinstance(row, dict) and row.get("selection") == "multi"
         ]
-        self.assertTrue(multi_rows, f"expected list multi actions in payment list contract: {result}")
+        self.assertFalse(multi_rows, f"list contract fabricated an unbound multi action: {result}")
         list_profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
-        self.assertEqual(
-            list_profile.get("columns") or [],
-            [
-                "name",
-                "type",
-                "project_id",
-                "contract_id",
-                "settlement_id",
-                "settlement_amount_payable",
-                "partner_id",
-                "amount",
-                "state",
-                "date_request",
-                "create_uid",
-                "create_date",
-            ],
-        )
-        self.assertEqual((list_profile.get("column_labels") or {}).get("name"), "申请单号")
-        self.assertEqual((list_profile.get("column_labels") or {}).get("date_request"), "申请日期")
+        expected_product_columns = [
+            "p1_visible_06fa8c6f628f",
+            "p1_visible_8fa8662ad38f",
+            "p1_visible_3e7255522b33",
+            "p1_visible_2c346345746e",
+            "p1_visible_ccfa1326c88f",
+            "p1_visible_c00fc55a25b8",
+            "p1_visible_9469a2ad32f8",
+            "p1_visible_ae1abe750af6",
+            "p1_visible_63c5facb9f66",
+            "p1_visible_e0361480e3a5",
+            "p1_visible_1874b0ce5103",
+            "p1_visible_3759fcfc297a",
+            "p1_visible_6cf6e39bece9",
+            "p1_visible_a103d7cee046",
+            "p1_visible_48a64eb40c71",
+            "p1_visible_901384917949",
+            "p1_visible_71e47f617269",
+            "p1_visible_dfc25d77dc39",
+        ]
+        actual_columns = list_profile.get("columns") or []
+        self.assertEqual(actual_columns[: len(expected_product_columns)], expected_product_columns)
+        self.assertIn("name", actual_columns)
+        self.assertIn("document_status_display", actual_columns)
+        self.assertEqual((list_profile.get("column_labels") or {}).get("p1_visible_8fa8662ad38f"), "单据编号")
+        self.assertEqual((list_profile.get("column_labels") or {}).get("p1_visible_2c346345746e"), "申请日期")
 
-    def test_ui_contract_action_open_material_plan_list_preserves_list_multi_actions(self):
+    def test_ui_contract_action_open_material_plan_list_matches_current_product_contract(self):
         action = self.env.ref("smart_construction_core.action_project_material_plan", raise_if_not_found=False)
         if not action:
             self.skipTest("smart_construction_core.action_project_material_plan not installed")
@@ -221,11 +229,27 @@ class TestActionDispatcherServerMapping(TransactionCase):
             for row in buttons + header_rows
             if isinstance(row, dict) and row.get("selection") == "multi"
         ]
-        self.assertTrue(multi_rows, f"expected list multi actions in material plan contract: {result}")
+        self.assertFalse(multi_rows, f"list contract fabricated an unbound multi action: {result}")
         list_profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
         self.assertEqual(
             list_profile.get("columns") or [],
-            ["name", "project_id", "date_plan", "state", "create_uid", "create_date"],
+            [
+                "name",
+                "project_id",
+                "date_plan",
+                "state",
+                "business_category_id",
+                "material_name_summary",
+                "material_spec_summary",
+                "material_uom_summary",
+                "total_plan_qty",
+                "total_bill_qty",
+                "total_unplanned_qty",
+                "line_note_summary",
+                "line_attachment_count",
+                "create_uid",
+                "create_date",
+            ],
         )
         self.assertEqual((list_profile.get("column_labels") or {}).get("name"), "单号")
         self.assertEqual((list_profile.get("column_labels") or {}).get("date_plan"), "需用日期")

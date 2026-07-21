@@ -255,8 +255,10 @@ class AppActionConfig(models.Model):
         """扫描 ir.actions.server（服务端动作），统一为 kind='server'"""
         res = []
         Srv = self.env['ir.actions.server'].sudo()
-        # 绑定到该模型或通用（binding_model_id 为空的视情况纳入）
-        srvs = Srv.search(['|', ('binding_model_id.model', '=', model_name), ('model_id.model', '=', model_name)])
+        # Only actions explicitly bound to the model belong to its contextual
+        # toolbar.  ``model_id`` also identifies cron/internal execution
+        # actions, which must not become user-visible multi-record actions.
+        srvs = Srv.search([('binding_model_id.model', '=', model_name)])
         for s in srvs:
             key = s.xml_id or f"srv_{s.id}"
             label = s.name or key

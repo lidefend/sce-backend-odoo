@@ -514,7 +514,7 @@ _CONTRACT_KEY_CANONICAL_MAP = {
     "groupIcon": "group_icon",
     "groupSequence": "group_sequence",
 }
-_TIER_REVIEW_LIST_NAV_ACTION_PREFIXES = ()
+_TIER_REVIEW_LIST_NAV_ACTION_PREFIXES: list[str] = []
 _BUSINESS_FIELD_LABEL_OVERRIDES = {
     "display_name": "名称",
 }
@@ -532,6 +532,14 @@ _USER_SURFACE_NOISE_MARKERS = (
     "ir_cron",
     "project_update_all_action",
 )
+
+
+def register_tier_review_list_nav_action_prefix(prefix: str) -> None:
+    normalized = _safe_text(prefix)
+    if normalized and normalized not in _TIER_REVIEW_LIST_NAV_ACTION_PREFIXES:
+        _TIER_REVIEW_LIST_NAV_ACTION_PREFIXES.append(normalized)
+
+
 _USER_SURFACE_FILTER_MAX = 8
 _USER_SURFACE_ACTION_MAX = 8
 _USER_SURFACE_PRIMARY_FILTER_MAX = 5

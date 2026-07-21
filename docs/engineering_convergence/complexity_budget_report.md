@@ -39,9 +39,9 @@ Generated from repository source files. This report is informational during the 
 | 1741 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1634 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1628 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
+| 1593 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1591 | Python source | `addons/smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py` |
-| 1588 | Python source | `addons/smart_construction_core/core_extension.py` |
-| 1552 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
+| 1571 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 1546 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1523 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -58,7 +58,7 @@ Generated from repository source files. This report is informational during the 
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1417 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1400 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1370 | Python source | `addons/smart_core/utils/contract_governance.py` |
+| 1374 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1336 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1330 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1323 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
@@ -134,9 +134,9 @@ Generated from repository source files. This report is informational during the 
 | 1711 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1634 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1628 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
+| 1593 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1591 | split_plan_required | Python source | `addons/smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py` |
-| 1588 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
-| 1552 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
+| 1571 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 1546 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1523 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
@@ -144,7 +144,7 @@ Generated from repository source files. This report is informational during the 
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1417 | warning | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1400 | warning | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1370 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
+| 1374 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1336 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1330 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1323 | warning | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
