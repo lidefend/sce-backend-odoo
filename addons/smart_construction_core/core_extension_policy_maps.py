@@ -91,6 +91,34 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_approval_policy",
         ],
         "denied_menu_xmlids": [],
+        "admin_action_authorities": [
+            {
+                "action_xmlid": "smart_construction_core.action_sc_runtime_user_management",
+                "allowed_operation": "read",
+                "required_capability": "business_config_admin",
+                "context_requirements": {},
+                "source": "nav_policy_01.business_config_admin",
+            },
+        ],
+    },
+    "system_admin": {
+        "label": "系统管理员",
+        "landing_scene_candidates": ["workspace.home"],
+        "menu_xmlids": [],
+        "primary_menu_xmlids": [],
+        "role_home_menu_xmlids": [],
+        "contextual_menu_xmlids": [],
+        "admin_menu_xmlids": [],
+        "denied_menu_xmlids": [],
+        "admin_action_authorities": [
+            {
+                "action_xmlid": "smart_construction_core.action_sc_runtime_user_management",
+                "allowed_operation": "read",
+                "required_capability": "platform_admin",
+                "context_requirements": {},
+                "source": "nav_policy_01.system_admin",
+            },
+        ],
     },
     "owner": {
         "label": "企业负责人",
@@ -181,6 +209,23 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_tender_opening",
             "smart_construction_core.menu_sc_tender_won",
             "smart_construction_core.menu_sc_tender_guarantee",
+        ],
+        "contextual_action_authorities": [
+            {
+                "action_xmlid": "smart_construction_core.action_construction_contract_income_execution",
+                "allowed_operation": "read",
+                "required_capability": "contract_read",
+                "context_requirements": {
+                    "required_query": ["company_id", "project_id", "contract_id"],
+                    "company_query": "company_id",
+                    "project_query": "project_id",
+                    "record_query": "contract_id",
+                    "record_model": "construction.contract",
+                    "record_project_field": "project_id",
+                    "record_company_field": "company_id",
+                },
+                "source": "nav_policy_01.pm.contract_relation",
+            },
         ],
         "menu_blocklist_xmlids": ["smart_construction_core.menu_sc_project_manage"],
     },
@@ -282,6 +327,9 @@ ROLE_SURFACE_OVERRIDES = {
 }
 
 ROLE_GROUPS_EXPLICIT = {
+    "system_admin": {
+        "smart_core.group_smart_core_admin",
+    },
     "owner": {
         "smart_construction_core.group_sc_role_owner",
     },
@@ -315,7 +363,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
     },
 }
 
-ROLE_PRECEDENCE = ("business_config_admin", "executive", "owner", "pm", "finance")
+ROLE_PRECEDENCE = ("system_admin", "business_config_admin", "executive", "owner", "pm", "finance")
 
 NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",

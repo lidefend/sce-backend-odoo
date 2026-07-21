@@ -10,6 +10,7 @@ from odoo.addons.smart_construction_core.core_extension_policy_maps import (
 )
 from odoo.addons.smart_core.delivery.menu_service import MenuService
 from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
+from odoo.addons.smart_core.handlers.route_authority_validate import RouteAuthorityValidateHandler
 
 
 @tagged("post_install", "-at_install", "user_data_boundary")
@@ -33,6 +34,11 @@ class TestProjectMemberRoleSurface(TransactionCase):
         for expected, groups in matrix.items():
             with self.subTest(expected=expected):
                 self.assertEqual(resolver.resolve_role_code(groups), expected)
+
+        self.assertEqual(
+            resolver.resolve_role_code({"smart_core.group_smart_core_admin"}),
+            "system_admin",
+        )
 
     def test_formal_role_surface_uses_authoritative_product_label_and_home(self):
         resolver = self._resolver()
@@ -116,6 +122,73 @@ class TestProjectMemberRoleSurface(TransactionCase):
             target["route"],
             "/a/%s?menu_id=%s" % (target["action_id"], target["menu_id"]),
         )
+
+    def test_route_authority_contract_separates_admin_and_contextual_action_only_entries(self):
+        Users = self.env["res.users"].with_context(no_reset_password=True)
+        base_group = self.env.ref("base.group_user")
+        pm_group = self.env.ref("smart_construction_core.group_sc_role_project_manager")
+        config_group = self.env.ref("smart_construction_core.group_sc_cap_business_config_admin")
+        pm_user = Users.create({
+            "name": "Route Authority PM",
+            "login": "route.authority.pm",
+            "groups_id": [(6, 0, [base_group.id, pm_group.id])],
+        })
+        config_user = Users.create({
+            "name": "Route Authority Config Admin",
+            "login": "route.authority.config",
+            "groups_id": [(6, 0, [base_group.id, config_group.id])],
+        })
+        resolver = self._resolver()
+        pm_surface = resolver.build_role_surface(
+            {"smart_construction_core.group_sc_role_project_manager"},
+            [],
+            {"workspace.home"},
+            ROLE_SURFACE_OVERRIDES,
+        )
+        config_surface = resolver.build_role_surface(
+            {"smart_construction_core.group_sc_cap_business_config_admin"},
+            [],
+            {"workspace.home"},
+            ROLE_SURFACE_OVERRIDES,
+        )
+
+        pm_contract = MenuService(self.env(user=pm_user)).build_route_authority(pm_surface)
+        config_contract = MenuService(self.env(user=config_user)).build_route_authority(config_surface)
+
+        self.assertEqual(pm_contract["contract_version"], "route_authority.v1")
+        execution = next(
+            row for row in pm_contract["contextual_actions"]
+            if row["action_xmlid"] == "smart_construction_core.action_construction_contract_income_execution"
+        )
+        self.assertEqual(execution["route_kind"], "CONTEXTUAL_ROUTE")
+        self.assertEqual(
+            execution["context_requirements"]["required_query"],
+            ["company_id", "project_id", "contract_id"],
+        )
+        self.assertFalse(pm_contract["admin_actions"])
+
+        user_management = next(
+            row for row in config_contract["admin_actions"]
+            if row["action_xmlid"] == "smart_construction_core.action_sc_runtime_user_management"
+        )
+        self.assertEqual(user_management["route_kind"], "ADMIN_ROUTE")
+        self.assertFalse(config_contract["primary_actions"])
+        self.assertFalse(config_contract["role_home_actions"])
+
+        admin_result = RouteAuthorityValidateHandler(self.env(user=config_user)).handle({
+            "params": {"action_id": user_management["action_id"]},
+        })
+        denied_result = RouteAuthorityValidateHandler(self.env(user=pm_user)).handle({
+            "params": {"action_id": user_management["action_id"]},
+        })
+        missing_context_result = RouteAuthorityValidateHandler(self.env(user=pm_user)).handle({
+            "params": {"action_id": execution["action_id"]},
+        })
+        self.assertTrue(admin_result.ok)
+        self.assertFalse(denied_result.ok)
+        self.assertEqual(denied_result.code, 403)
+        self.assertFalse(missing_context_result.ok)
+        self.assertEqual(missing_context_result.code, 403)
 
     def test_delivery_projection_keeps_synthetic_ancestors_without_granting_them(self):
         nodes = [{

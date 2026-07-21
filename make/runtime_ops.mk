@@ -2137,7 +2137,7 @@ gate.full: guard.codex.fast.noheavy guard.prod.forbid check-compose-project chec
 	@$(MAKE) audit.pull DB_NAME=$(DB_NAME)
 
 include make/release.mk
-.PHONY: verify.nav.pro01.policy nav.pro01.runtime.prepare verify.nav.pro01.native_visibility verify.nav.pro01.http verify.nav.pro01.browser
+.PHONY: verify.nav.pro01.policy nav.pro01.runtime.prepare verify.nav.pro01.native_visibility verify.nav.pro01.http verify.nav.pro01.browser verify.nav.pro01r.route_authority.unit verify.nav.pro01r.route_authority.http verify.nav.pro01r.route_authority.browser
 verify.nav.pro01.policy: guard.prod.forbid
 	@python3 scripts/audit/generate_nav_product_exposure.py \
 		--input docs/audit/native/nav_policy_01/authoritative_navigation_matrix.csv \
@@ -2161,3 +2161,15 @@ verify.nav.pro01.http: guard.prod.forbid
 verify.nav.pro01.browser: guard.prod.forbid verify.nav.pro01.native_visibility
 	@test -n "$(NAV_PRO_PASSWORD)" || { echo "NAV_PRO_PASSWORD is required"; exit 2; }
 	@DB_NAME=$(DB_NAME) FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:$(NGINX_PORT)}" NAV_PRO_PASSWORD="$(NAV_PRO_PASSWORD)" node scripts/verify/nav_pro_01_browser_smoke.mjs
+
+verify.nav.pro01r.route_authority.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/route_authority_guard_test.ts --bundle --platform=node --format=cjs --outfile=/tmp/nav-pro-01r-route-authority-test.cjs
+	@node /tmp/nav-pro-01r-route-authority-test.cjs
+
+verify.nav.pro01r.route_authority.http: guard.prod.forbid
+	@test -n "$(NAV_PRO_PASSWORD)" || { echo "NAV_PRO_PASSWORD is required"; exit 2; }
+	@DB_NAME=$(DB_NAME) E2E_BASE_URL="$${E2E_BASE_URL:-http://127.0.0.1:$(ODOO_PORT)}" NAV_PRO_PASSWORD="$(NAV_PRO_PASSWORD)" python3 scripts/verify/nav_pro_01r_route_authority_http.py
+
+verify.nav.pro01r.route_authority.browser: guard.prod.forbid
+	@test -n "$(NAV_PRO_PASSWORD)" || { echo "NAV_PRO_PASSWORD is required"; exit 2; }
+	@DB_NAME=$(DB_NAME) FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:$(NGINX_PORT)}" NAV_PRO_PASSWORD="$(NAV_PRO_PASSWORD)" node scripts/verify/nav_pro_01r_route_authority_browser.mjs

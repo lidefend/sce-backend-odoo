@@ -182,6 +182,9 @@ class IdentityResolver:
             "contextual_menu_xmlids",
             "admin_menu_xmlids",
             "denied_menu_xmlids",
+            "contextual_action_authorities",
+            "admin_action_authorities",
+            "denied_action_authorities",
             "menu_blocklist_xmlids",
             "action_blocklist_xmlids",
             "model_blocklist",
@@ -292,6 +295,9 @@ class IdentityResolver:
         contextual_menu_xmlids = list(role_meta.get("contextual_menu_xmlids") or [])
         admin_menu_xmlids = list(role_meta.get("admin_menu_xmlids") or [])
         denied_menu_xmlids = list(role_meta.get("denied_menu_xmlids") or [])
+        contextual_action_authorities = list(role_meta.get("contextual_action_authorities") or [])
+        admin_action_authorities = list(role_meta.get("admin_action_authorities") or [])
+        denied_action_authorities = list(role_meta.get("denied_action_authorities") or [])
         menu_blocklist_xmlids = list(role_meta.get("menu_blocklist_xmlids") or [])
         action_blocklist_xmlids = list(role_meta.get("action_blocklist_xmlids") or [])
         model_blocklist = list(role_meta.get("model_blocklist") or [])
@@ -324,6 +330,9 @@ class IdentityResolver:
             "contextual_menu_xmlids": contextual_menu_xmlids,
             "admin_menu_xmlids": admin_menu_xmlids,
             "denied_menu_xmlids": denied_menu_xmlids,
+            "contextual_action_authorities": contextual_action_authorities,
+            "admin_action_authorities": admin_action_authorities,
+            "denied_action_authorities": denied_action_authorities,
             "exposure_policy_declared": any(
                 field in role_meta
                 for field in (
@@ -332,6 +341,9 @@ class IdentityResolver:
                     "contextual_menu_xmlids",
                     "admin_menu_xmlids",
                     "denied_menu_xmlids",
+                    "contextual_action_authorities",
+                    "admin_action_authorities",
+                    "denied_action_authorities",
                 )
             ),
             "menu_blocklist_xmlids": menu_blocklist_xmlids,
@@ -363,6 +375,9 @@ class IdentityResolver:
                 "contextual_menu_xmlids": list(role_meta.get("contextual_menu_xmlids") or []),
                 "admin_menu_xmlids": list(role_meta.get("admin_menu_xmlids") or []),
                 "denied_menu_xmlids": list(role_meta.get("denied_menu_xmlids") or []),
+                "contextual_action_authorities": list(role_meta.get("contextual_action_authorities") or []),
+                "admin_action_authorities": list(role_meta.get("admin_action_authorities") or []),
+                "denied_action_authorities": list(role_meta.get("denied_action_authorities") or []),
                 "exposure_policy_declared": any(
                     field in role_meta
                     for field in (
@@ -371,6 +386,9 @@ class IdentityResolver:
                         "contextual_menu_xmlids",
                         "admin_menu_xmlids",
                         "denied_menu_xmlids",
+                        "contextual_action_authorities",
+                        "admin_action_authorities",
+                        "denied_action_authorities",
                     )
                 ),
                 "menu_blocklist_xmlids": list(role_meta.get("menu_blocklist_xmlids") or []),
