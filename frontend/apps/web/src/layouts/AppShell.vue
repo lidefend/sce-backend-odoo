@@ -951,6 +951,8 @@ const hudEntries = computed(() => {
   { label: 'route', value: route.fullPath },
   { label: 'user', value: userName.value || '-' },
   { label: 'db', value: effectiveDb.value || '-' },
+  { label: 'product_version', value: asText(initMeta.value?.product_version) || '-' },
+  { label: 'source_revision', value: asText(initMeta.value?.source_revision) || '-' },
   { label: 'nav_version', value: navVersion.value || '-' },
   { label: 'model', value: asText(asDict(session.currentAction)?.model) || '-' },
   { label: 'sa_kind', value: latestSuggestedAction.value?.suggested_action_kind || '-' },

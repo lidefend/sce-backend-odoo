@@ -50,8 +50,7 @@ spec = importlib.util.spec_from_file_location("customer_package_preflight", root
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 manifest = json.loads(path.read_text(encoding="utf-8"))
-release = json.loads((root / "config/product_release.v1.json").read_text(encoding="utf-8"))
-validated = module.load_package_manifest(path, str(manifest.get("archive_sha256") or ""), release["product_version"])
+validated = module.load_package_manifest(path, str(manifest.get("archive_sha256") or ""))
 if validated["tenant_id"] != tenant_key:
     raise SystemExit("CUSTOMER_PACKAGE_TENANT_MISMATCH")
 print(hashlib.sha256(tenant_key.encode("utf-8")).hexdigest()[:12])

@@ -16,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PREFLIGHT = ROOT / "scripts" / "release" / "customer_package_preflight.py"
+PRODUCT_RELEASE = ROOT / "scripts" / "release" / "product_release.py"
 PAYLOAD_BUILDER = ROOT / "scripts" / "tenant_payload" / "build_synthetic_payload.py"
 SAMPLE = ROOT / "customer_addons" / "sce_customer_sample"
 
@@ -62,13 +63,21 @@ class CustomerPackagePreflightTests(unittest.TestCase):
         tenant_id: str = "sample",
         modules: list[str] | None = None,
         archive_sha: str | None = None,
+        minimum_product_version: str | None = None,
+        maximum_product_version_exclusive: str = "2.0.0",
+        required_contracts: list[str] | None = None,
     ) -> None:
+        release = json.loads(subprocess.check_output(
+            [sys.executable, str(PRODUCT_RELEASE), "--json"], cwd=ROOT, text=True
+        ))
         payload = {
             "schema_version": "sce.tenant_customer_addon_package.v1",
             "package_kind": "tenant_customer_addon",
             "tenant_id": tenant_id,
             "modules": modules or ["sce_customer_sample"],
-            "product_compatibility": {"min_inclusive": "17.0.0", "max_exclusive": "18.0.0"},
+            "minimum_product_version": minimum_product_version or release["product_version"],
+            "maximum_product_version_exclusive": maximum_product_version_exclusive,
+            "required_contracts": required_contracts or list(release["contracts"].values()),
             "archive_sha256": archive_sha or self.archive_sha,
             "signature": {"algorithm": "hmac-sha256", "key_id": "test-package-key", "value": ""},
         }
@@ -217,6 +226,25 @@ class CustomerPackagePreflightTests(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("CUSTOMER_PACKAGE_SIGNATURE_INVALID", result.stderr)
         self.assertFalse((self.root / "prepared").exists())
+
+    def test_incompatible_product_version_fails_before_preparation(self) -> None:
+        self.write_package_manifest(
+            minimum_product_version="2.0.0",
+            maximum_product_version_exclusive="3.0.0",
+        )
+        result = self.run_preflight()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("CUSTOMER_PACKAGE_PRODUCT_VERSION_INCOMPATIBLE", result.stderr)
+        self.assertFalse((self.root / "prepared").exists())
+        self.assertFalse((self.root / "report.json").exists())
+
+    def test_unsupported_required_contract_fails_before_preparation(self) -> None:
+        self.write_package_manifest(required_contracts=["unsupported_contract.v9"])
+        result = self.run_preflight()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("CUSTOMER_PACKAGE_REQUIRED_CONTRACT_UNSUPPORTED", result.stderr)
+        self.assertFalse((self.root / "prepared").exists())
+        self.assertFalse((self.root / "report.json").exists())
 
 
 if __name__ == "__main__":
