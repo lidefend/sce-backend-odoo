@@ -1,6 +1,6 @@
 [options]
-db_host = db
-db_port = 5432
+db_host = ${DB_HOST}
+db_port = ${DB_PORT}
 db_user = ${DB_USER}
 db_password = ${DB_PASSWORD}
 db_name = ${ODOO_DB}
@@ -8,11 +8,12 @@ admin_passwd = ${ADMIN_PASSWD}
 
 addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/product-addons,/mnt/customer-addons,/mnt/test-addons,/mnt/source-addons,/mnt/addons_external/oca_server_ux
 server_wide_modules = web,smart_core
-logfile =
+logfile = /opt/sce-runtime/logs/odoo.log
+list_db = False
 
 ; 锁库：只允许指定库（由 ODOO_DBFILTER 控制）
 dbfilter = ${ODOO_DBFILTER}
-data_dir = /var/lib/odoo
+data_dir = /opt/sce-runtime
 
 proxy_mode = True
 limit_time_real = 1800

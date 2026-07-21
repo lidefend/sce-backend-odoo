@@ -7,7 +7,8 @@ RELEASE_PRODUCT_MODULES ?= $(shell python3 scripts/ops/tenant_module_set.py prod
 RELEASE_COMPOSE = $(COMPOSE_BIN) -p $(RELEASE_PROJECT) -f docker-compose.yml -f docker-compose.release-rehearsal.yml
 RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) ODOO_DB=$(RELEASE_DB) ODOO_DBFILTER=^$(RELEASE_DB)$$ COMPOSE_PROJECT_NAME=$(RELEASE_PROJECT) DB_DATA=$(RELEASE_PROJECT)-db REDIS_DATA=$(RELEASE_PROJECT)-redis ODOO_DATA=$(RELEASE_PROJECT)-odoo ODOO_PORT=18087 NGINX_PORT=18086 FRONTEND_DIST_DIR=./frontend/apps/web/dist-release
 
-.PHONY: verify.release.guard verify.release.tooling release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
+.PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
+.PHONY: release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.contract.image.acceptance
 
 verify.release.guard: verify.repository.release_hygiene
 	@SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) python3 scripts/release/rehearsal_guard.py
@@ -19,6 +20,35 @@ verify.release.tooling:
 	@bash -n scripts/release/product_lifecycle.sh
 	@node --check scripts/release/release_static_server.mjs
 	@python3 scripts/verify/frontend_pilot_readiness_guard.py
+	@$(MAKE) --no-print-directory verify.production.release_contract
+
+verify.production.release_contract:
+	@python3 -m py_compile scripts/release/production_db_contract.py scripts/release/test_production_release_contract.py
+	@python3 scripts/release/test_production_release_contract.py
+	@bash -n scripts/release/production_odoo_entrypoint.sh scripts/release/production_db_manage.sh scripts/release/production_contract_image_acceptance.sh
+
+PRODUCTION_CONTRACT_COMPOSE = $(COMPOSE_BIN) -f docker-compose.production-candidate.yml
+PRODUCTION_DB_MANAGER = $(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo
+
+release.production.db.preflight:
+	@$(PRODUCTION_DB_MANAGER) preflight
+
+release.production.db.init:
+	@$(PRODUCTION_DB_MANAGER) init
+
+release.production.module.install:
+	@test -n "$(TARGET_MODULE)" || (echo "TARGET_MODULE is required"; exit 2)
+	@$(PRODUCTION_DB_MANAGER) install
+
+release.production.module.upgrade:
+	@test -n "$(TARGET_MODULE)" || (echo "TARGET_MODULE is required"; exit 2)
+	@$(PRODUCTION_DB_MANAGER) upgrade
+
+release.production.health.readonly:
+	@$(PRODUCTION_DB_MANAGER) health
+
+release.production.contract.image.acceptance:
+	@bash scripts/release/production_contract_image_acceptance.sh
 
 release.rehearsal.prepare: verify.release.guard
 	@mkdir -p $(RELEASE_ARTIFACTS)/backup $(RELEASE_ARTIFACTS)/fingerprints

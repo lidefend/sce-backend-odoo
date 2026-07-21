@@ -158,6 +158,7 @@ codex.run: guard.prod.forbid
 PR_BASE ?= main
 PR_TITLE ?=
 PR_BODY_FILE ?= artifacts/pr_body.md
+PR_DRAFT ?= 0
 PR_MERGE_METHOD ?= squash
 PR_MERGE_SUBJECT ?=
 PR_MERGE_BODY ?= Merged by Codex through make pr.merge.
@@ -173,8 +174,11 @@ pr.create: guard.prod.forbid
 	if [ ! -f "$(PR_BODY_FILE)" ]; then \
 	  echo "❌ PR_BODY_FILE not found: $(PR_BODY_FILE)"; exit 2; \
 	fi; \
-	echo "[pr.create] base=$(PR_BASE) head=$$branch title=$(PR_TITLE) body=$(PR_BODY_FILE)"; \
-	gh pr create --base "$(PR_BASE)" --head "$$branch" --title "$(PR_TITLE)" --body-file "$(PR_BODY_FILE)"
+	case "$(PR_DRAFT)" in 0) draft_arg="" ;; 1) draft_arg="--draft" ;; \
+	  *) echo "❌ PR_DRAFT must be 0 or 1"; exit 2 ;; \
+	esac; \
+	echo "[pr.create] base=$(PR_BASE) head=$$branch title=$(PR_TITLE) body=$(PR_BODY_FILE) draft=$(PR_DRAFT)"; \
+	gh pr create --base "$(PR_BASE)" --head "$$branch" --title "$(PR_TITLE)" --body-file "$(PR_BODY_FILE)" $$draft_arg
 
 pr.update: guard.prod.forbid
 	@bash -lc '\
