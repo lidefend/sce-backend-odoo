@@ -1,36 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-[ "${GITHUB_MIRROR_RULESET_CONFIRM:-}" = "1" ] || {
-  echo "[github_mirror_ruleset] GITHUB_MIRROR_RULESET_CONFIRM=1 is required" >&2
-  exit 2
-}
-readonly repository="Leedefend/sce-product-odoo"
-readonly key_title="sce-gitee-to-github-mirror"
-readonly ruleset_name="main-gitee-authoritative-mirror"
-readonly public_key_file="${GITHUB_MIRROR_PUBLIC_KEY_FILE:-}"
-
-other_write_keys="$(gh api "repos/${repository}/keys" --jq ".[] | select(.read_only == false and .title != \"${key_title}\") | .id")"
-[ -z "${other_write_keys}" ] || {
-  echo "[github_mirror_ruleset] BLOCKED unexpected_write_deploy_key" >&2
+# Retained at the historical path for callers, but now configures the GitHub
+# authority ruleset. It never provisions a deploy key or a bypass actor.
+[ "${GITHUB_AUTHORITY_RULESET_CONFIRM:-}" = "1" ] || {
+  echo "[github_authority_ruleset] GITHUB_AUTHORITY_RULESET_CONFIRM=1 is required" >&2
   exit 2
 }
 
-existing_key_id="$(gh api "repos/${repository}/keys" --jq ".[] | select(.title == \"${key_title}\") | .id" | head -1)"
-if [ -z "${existing_key_id}" ]; then
-  if [ -n "${public_key_file}" ]; then
-    test -s "${public_key_file}"
-    public_key="$(cat "${public_key_file}")"
-  else
-    public_key="$(ssh -o BatchMode=yes root@1.95.2.123 'cat /etc/gitee-mirror/github_ed25519.pub')"
-  fi
-  existing_key_id="$(gh api --method POST "repos/${repository}/keys" \
-    -f title="${key_title}" -f key="${public_key}" -F read_only=false --jq .id)"
-fi
-test -n "${existing_key_id}"
+readonly repository="lidefend/sce-backend-odoo"
+readonly ruleset_name="main-github-authoritative-pr"
+
 write_key_count="$(gh api "repos/${repository}/keys" --jq '[.[] | select(.read_only == false)] | length')"
-[ "${write_key_count}" = "1" ] || {
-  echo "[github_mirror_ruleset] BLOCKED write_deploy_key_count" >&2
+[ "${write_key_count}" = "0" ] || {
+  echo "[github_authority_ruleset] BLOCKED write_deploy_key_present" >&2
   exit 2
 }
 
@@ -40,7 +23,7 @@ jq -n --arg name "${ruleset_name}" '{
   name: $name,
   target: "branch",
   enforcement: "active",
-  bypass_actors: [{actor_id: null, actor_type: "DeployKey", bypass_mode: "always"}],
+  bypass_actors: [],
   conditions: {ref_name: {include: ["refs/heads/main"], exclude: []}},
   rules: [
     {type: "deletion"},
@@ -72,13 +55,15 @@ else
   ruleset_id="$(gh api --method POST "repos/${repository}/rulesets" --input "${payload}" --jq .id)"
 fi
 
-gh api "repos/${repository}/rulesets/${ruleset_id}" --jq \
-  'select(.enforcement == "active") | select(any(.bypass_actors[]; .actor_type == "DeployKey" and .bypass_mode == "always")) | .id' \
-  | grep -qx "${ruleset_id}"
+gh api "repos/${repository}/rulesets/${ruleset_id}" --jq '
+  select(.enforcement == "active")
+  | select(.target == "branch")
+  | select(.conditions.ref_name.include == ["refs/heads/main"])
+  | select((.bypass_actors | length) == 0)
+  | select(any(.rules[]; .type == "pull_request"))
+  | select(any(.rules[]; .type == "required_status_checks"))
+  | select(any(.rules[]; .type == "deletion"))
+  | select(any(.rules[]; .type == "non_fast_forward"))
+  | .id' | grep -qx "${ruleset_id}"
 
-# Classic protection layers with rulesets. Remove it only after the active
-# replacement has been read back and verified.
-if gh api "repos/${repository}/branches/main/protection" >/dev/null 2>&1; then
-  gh api --method DELETE "repos/${repository}/branches/main/protection" >/dev/null
-fi
-echo "[github_mirror_ruleset] PASS ruleset_id=${ruleset_id} deploy_key_id=${existing_key_id}"
+echo "[github_authority_ruleset] PASS ruleset_id=${ruleset_id} bypass_actors=none write_deploy_keys=0"
