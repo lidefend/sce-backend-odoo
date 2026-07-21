@@ -190,6 +190,40 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertFalse(missing_context_result.ok)
         self.assertEqual(missing_context_result.code, 403)
 
+    def test_shell_only_role_keeps_scoped_empty_route_authority(self):
+        Users = self.env["res.users"].with_context(no_reset_password=True)
+        base_group = self.env.ref("base.group_user")
+        executive_group = self.env.ref("smart_construction_core.group_sc_role_executive")
+        executive_user = Users.create({
+            "name": "Route Authority Executive",
+            "login": "route.authority.executive",
+            "groups_id": [(6, 0, [base_group.id, executive_group.id])],
+        })
+        surface = self._resolver().build_role_surface(
+            {"smart_construction_core.group_sc_role_executive"},
+            [],
+            {"workspace.home"},
+            ROLE_SURFACE_OVERRIDES,
+        )
+
+        self.assertEqual(surface["role_code"], "executive")
+        self.assertFalse(surface["exposure_policy_declared"])
+        contract = MenuService(self.env(user=executive_user)).build_route_authority(surface)
+        self.assertEqual(contract["principal_scope"], {
+            "user_id": executive_user.id,
+            "company_id": executive_user.company_id.id,
+            "role_code": "executive",
+        })
+        for bucket in (
+            "primary_actions",
+            "role_home_actions",
+            "contextual_actions",
+            "admin_actions",
+            "denied_actions",
+            "menu_containers",
+        ):
+            self.assertFalse(contract[bucket], bucket)
+
     def test_delivery_projection_keeps_synthetic_ancestors_without_granting_them(self):
         nodes = [{
             "key": "group:synthetic",
