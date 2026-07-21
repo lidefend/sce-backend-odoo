@@ -14,16 +14,17 @@ Protect `main` with these rules:
 - Require at least one approving review.
 - Require CODEOWNERS review when owned files change.
 - Require status checks to pass before merging.
-- Require the `v1.1 quality gate / quality_gate` workflow check on the
-  dedicated self-hosted CI runner.
+- Require the `professional_quality_gate` workflow check on an isolated
+  GitHub-hosted runner.
 - Require branches to be up to date before merging.
 - Block force pushes.
 - Block branch deletion.
 - Restrict direct pushes to release administrators only, preferably nobody.
 
-The dedicated CI runner is `ci-1-95-2-123` on server `1.95.2.123` with labels
-`self-hosted`, `huawei`, `ubuntu22`, `ci`, and `docker`. Heavy Docker/Odoo
-stage workflows must target this runner class.
+The new authoritative repository has no registered self-hosted runner. The
+professional gate therefore uses a fresh GitHub-hosted runner. Introducing a
+dedicated runner requires a separate governance change and must not restore an
+old-repository trust or credential path.
 
 ### Milestone
 

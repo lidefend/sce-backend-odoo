@@ -48,7 +48,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'workflow_dispatch' &&
       github.actor == github.repository_owner))
-    runs-on: [self-hosted, huawei, ubuntu22]
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
       CI_REMOTE_URL: https://github.com/lidefend/sce-backend-odoo.git
@@ -94,6 +94,6 @@ jobs:
       - name: Run professional quality gate
         run: make ci
 
-      - name: Clean self-hosted runner state
+      - name: Clean isolated runner state
         if: always()
         run: bash scripts/ci/self_hosted_runner_cleanup.sh

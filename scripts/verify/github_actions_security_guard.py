@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Enforce the public/self-hosted GitHub Actions trust boundary."""
+"""Enforce the public/professional GitHub Actions trust boundary."""
 
 from __future__ import annotations
 
@@ -94,6 +94,7 @@ def scan(root: Path) -> list[Finding]:
                 "github.event.pull_request.head.repo.full_name == github.repository",
                 "github.actor == github.repository_owner",
                 "needs: professional_authorization",
+                "runs-on: ubuntu-latest",
                 "scripts/ci/self_hosted_runner_cleanup.sh",
             )
             if any(item not in text for item in required):
@@ -111,7 +112,7 @@ def main() -> int:
                 file=sys.stderr,
             )
         return 1
-    print("[github_actions_security_guard] PASS permissions=read fork_self_hosted=denied actions=pinned")
+    print("[github_actions_security_guard] PASS permissions=read fork_professional=denied actions=pinned")
     return 0
 
 

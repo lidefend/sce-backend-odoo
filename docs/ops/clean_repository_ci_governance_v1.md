@@ -9,9 +9,9 @@ release-candidate image construction, or production deployment.
 ## Trust boundary
 
 Public pull-request code is untrusted. Approval of a fork workflow is not a
-sandbox boundary and must never authorize that code to execute on a
-self-hosted runner. Unknown external fork workflows must not be manually
-approved for self-hosted execution.
+sandbox boundary and must never authorize that code to execute the
+professional quality gate. Unknown external fork workflows must not be
+manually approved for professional execution.
 
 CI is split into two layers:
 
@@ -21,17 +21,20 @@ CI is split into two layers:
    workflow-policy checks.
 2. `professional_quality_gate` first executes
    `professional_authorization` on GitHub-hosted infrastructure. The
-   self-hosted job is eligible only when the repository and repository owner
+   professional job is eligible only when the repository and repository owner
    exactly match `lidefend/sce-backend-odoo` and `lidefend`. A pull request's
    head repository must be the same repository. Manual dispatch additionally
    requires the actor to equal the current repository owner. A fork, unknown
    event, or non-owner dispatch fails authorization and never receives a
-   self-hosted job. A single actor login is not a PR trust boundary.
+   professional job. A single actor login is not a PR trust boundary. The job
+   uses an isolated GitHub-hosted runner because no self-hosted runner is
+   registered to the new authoritative repository.
 
-The self-hosted runner must be single-purpose. Prefer an ephemeral runner for
-each professional run. A persistent runner must be treated as replaceable and
-must not contain production credentials, production SSH keys, user passwords,
-or reusable credentials outside the minimum read-only CI scope.
+Each professional run uses a fresh GitHub-hosted runner with read-only token
+permissions. If a dedicated runner is introduced later, it requires a separate
+governance change and must be single-purpose, replaceable, and free of
+production credentials, production SSH keys, user passwords, or reusable
+credentials outside the minimum read-only CI scope.
 
 ## Repository Actions settings
 
@@ -43,7 +46,7 @@ Required repository settings under **Settings → Actions → General**:
 - Default `GITHUB_TOKEN` permission is read-only contents/packages.
 - GitHub Actions cannot create or approve pull requests.
 - All external contributors require workflow approval.
-- No unknown external workflow may be approved to use self-hosted runners.
+- No unknown external workflow may be approved to run the professional gate.
 - Artifact and log retention is seven days unless an audit requirement
   explicitly establishes a shorter period.
 
