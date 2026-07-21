@@ -14,16 +14,17 @@ Protect `main` with these rules:
 - Require at least one approving review.
 - Require CODEOWNERS review when owned files change.
 - Require status checks to pass before merging.
-- Require the `v1.1 quality gate / quality_gate` workflow check on the
-  dedicated self-hosted CI runner.
+- Require the `professional_quality_gate` workflow check on an isolated
+  GitHub-hosted runner.
 - Require branches to be up to date before merging.
 - Block force pushes.
 - Block branch deletion.
 - Restrict direct pushes to release administrators only, preferably nobody.
 
-The dedicated CI runner is `ci-1-95-2-123` on server `1.95.2.123` with labels
-`self-hosted`, `huawei`, `ubuntu22`, `ci`, and `docker`. Heavy Docker/Odoo
-stage workflows must target this runner class.
+The new authoritative repository has no registered self-hosted runner. The
+professional gate therefore uses a fresh GitHub-hosted runner. Introducing a
+dedicated runner requires a separate governance change and must not restore an
+old-repository trust or credential path.
 
 ### Milestone
 
@@ -91,15 +92,15 @@ GitHub quality gate to run.
 
 ## Review Identity Rule
 
-`Leedefend` is the repository CODEOWNER for this convergence baseline. A CODEOWNER
+`lidefend` is the repository CODEOWNER for this convergence baseline. A CODEOWNER
 approval only counts when the approving account is not the pull-request author.
 
 For protected `main` changes:
 
 - The PR author and required CODEOWNER reviewer must be different GitHub accounts.
 - Commit author metadata does not change the PR author and does not satisfy review separation.
-- Automation or collaborators may prepare and open PRs, but `Leedefend` remains the required owner reviewer unless CODEOWNERS is intentionally changed in a separate governance PR.
-- If a PR was opened by `Leedefend`, it can still run CI and collect evidence, but it cannot satisfy the required `Leedefend` approval by self-review. Reopen or recreate it from a non-owner author account when strict branch protection is being exercised.
+- Automation or collaborators may prepare and open PRs, but `lidefend` remains the required owner reviewer unless CODEOWNERS is intentionally changed in a separate governance PR.
+- If a PR was opened by `lidefend`, it can still run CI and collect evidence, but it cannot satisfy the required `lidefend` approval by self-review. Reopen or recreate it from a non-owner author account when strict branch protection is being exercised.
 
 ## Phase 0 Exit Checklist
 

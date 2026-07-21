@@ -162,6 +162,7 @@ def blob_findings(
     rules: dict[str, object],
     *,
     rule_prefix: str = "",
+    scan_repository_identity: bool = False,
 ) -> set[Finding]:
     findings = path_findings(row.path, row.object_id, rules)
     display = f"{row.path}@{row.object_id[:12]}"
@@ -174,8 +175,16 @@ def blob_findings(
         return findings
     text = data.decode("utf-8", errors="ignore")
     forbidden_tokens = tuple(str(item).encode("utf-8") for item in rules.get("forbidden_repository_tokens", []))
+    repository_token_exempt_paths = {
+        str(item) for item in rules.get("repository_token_exempt_paths", [])
+    }
     policy_relative = str(rules.get("_policy_relative", ""))
-    if row.path != policy_relative and any(token in data for token in forbidden_tokens):
+    if (
+        scan_repository_identity
+        and row.path != policy_relative
+        and row.path not in repository_token_exempt_paths
+        and any(token in data for token in forbidden_tokens)
+    ):
         findings.add(Finding("RH008", display, f"{rule_prefix}OLD_REPOSITORY_REFERENCE"))
     if is_customer_runtime_scope(row.path) and (CUSTOMER_SOURCE_TOKEN.search(text) or CUSTOMER_SQL_ID.search(text)):
         findings.add(Finding("RH015", display, f"{rule_prefix}CUSTOMER_CONFIG_SQL_SOURCE_ID"))
@@ -310,6 +319,12 @@ def main(argv: list[str] | None = None) -> int:
     for row in object_rows(root, ("--all",)):
         if row.object_type == "blob" and row.path:
             errors.update(blob_findings(root, row, rules))
+
+    # Repository identity is mutable governance state, unlike secrets and
+    # customer payloads. Preserve migration/audit history while rejecting a
+    # stale executable identity in the current authoritative tree.
+    for row in tree_rows(root, "HEAD"):
+        errors.update(blob_findings(root, row, rules, scan_repository_identity=True))
 
     hygiene = {"reflog_only": 0, "unreachable": 0, "tags": 0, "stale_remote_refs": 0}
     if args.local_hygiene:
