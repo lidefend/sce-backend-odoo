@@ -98,7 +98,7 @@ Generated from repository source files. This report is informational during the 
 | 807 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 426 | Shell script | `scripts/demo/verify.sh` |
-| 352 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
+| 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
 
 ## Largest Files
