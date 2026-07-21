@@ -40,6 +40,8 @@ COPY scripts/render_odoo_conf.py /usr/local/bin/render_odoo_conf.py
 COPY scripts/render_nginx_conf.sh /usr/local/bin/render_nginx_conf.sh
 COPY scripts/odoo-entrypoint.sh /usr/local/bin/odoo-entrypoint.sh
 COPY frontend/apps/web/dist-production-candidate /usr/share/nginx/html
+COPY VERSION /opt/sce-product/VERSION
+COPY release/product-release.yaml /opt/sce-product/product-release.yaml
 
 RUN chmod 0755 /usr/local/bin/odoo-entrypoint.sh /usr/local/bin/render_odoo_conf.py /usr/local/bin/render_nginx_conf.sh \
     && rm -f /etc/nginx/sites-enabled/default \
@@ -48,6 +50,7 @@ RUN chmod 0755 /usr/local/bin/odoo-entrypoint.sh /usr/local/bin/render_odoo_conf
     && chown -R root:root /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external /usr/share/nginx/html
 
 ARG SOURCE_SHA
+ARG PRODUCT_VERSION
 ARG FRONTEND_BUILD_SHA256
 ARG BUILD_TIME
 ARG ODOO_VERSION=17.0
@@ -55,10 +58,13 @@ ARG PYTHON_VERSION
 ARG NODE_VERSION
 ARG PNPM_VERSION
 
+ENV SC_PRODUCT_VERSION="${PRODUCT_VERSION}" \
+    SC_SOURCE_REVISION="${SOURCE_SHA}"
+
 LABEL org.opencontainers.image.revision="${SOURCE_SHA}" \
       org.opencontainers.image.created="${BUILD_TIME}" \
-      org.opencontainers.image.title="SCE immutable production candidate" \
-      org.opencontainers.image.version="${SOURCE_SHA}" \
+      org.opencontainers.image.title="sce-product" \
+      org.opencontainers.image.version="${PRODUCT_VERSION}" \
       com.sce.frontend.sha256="${FRONTEND_BUILD_SHA256}" \
       com.sce.odoo.version="${ODOO_VERSION}" \
       com.sce.python.version="${PYTHON_VERSION}" \

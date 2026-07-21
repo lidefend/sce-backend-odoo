@@ -130,7 +130,7 @@ def verify_package_signature(payload: dict) -> None:
         raise ValueError("CUSTOMER_PACKAGE_SIGNATURE_INVALID")
 
 
-def load_package_manifest(path: Path, expected_archive_sha: str, product_version: str) -> dict:
+def load_package_manifest(path: Path, expected_archive_sha: str) -> dict:
     if not path.is_file() or path.is_symlink():
         raise ValueError("CUSTOMER_PACKAGE_MANIFEST_MISSING")
     try:
@@ -138,7 +138,8 @@ def load_package_manifest(path: Path, expected_archive_sha: str, product_version
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError("CUSTOMER_PACKAGE_MANIFEST_INVALID") from exc
     required = {
-        "schema_version", "package_kind", "tenant_id", "modules", "product_compatibility",
+        "schema_version", "package_kind", "tenant_id", "modules",
+        "minimum_product_version", "maximum_product_version_exclusive", "required_contracts",
         "archive_sha256", "signature",
     }
     if set(payload) != required or payload.get("schema_version") != PACKAGE_SCHEMA_VERSION:
@@ -158,8 +159,12 @@ def load_package_manifest(path: Path, expected_archive_sha: str, product_version
     if payload.get("archive_sha256") != expected_archive_sha:
         raise ValueError("CUSTOMER_PACKAGE_ARCHIVE_DECLARATION_MISMATCH")
     verify_package_signature(payload)
-    validator = load_module("sce_tenant_delivery_manifest", "addons/smart_core/utils/tenant_delivery_manifest.py")
-    validator._verify_product_range(payload.get("product_compatibility"), product_version)
+    release = load_module("sce_product_release", "scripts/release/product_release.py")
+    release.verify_customer_compatibility(
+        payload.get("minimum_product_version"),
+        payload.get("maximum_product_version_exclusive"),
+        payload.get("required_contracts"),
+    )
     return payload
 
 
@@ -180,13 +185,8 @@ def main() -> int:
     expected_archive_sha = os.environ.get("SC_CUSTOMER_ARCHIVE_SHA256", "").strip()
     if not SHA256_RE.fullmatch(expected_archive_sha):
         raise SystemExit("CUSTOMER_ARCHIVE_SHA256_INVALID")
-    product_release = json.loads((ROOT / "config" / "product_release.v1.json").read_text(encoding="utf-8"))
     try:
-        package_manifest = load_package_manifest(
-            package_manifest_path,
-            expected_archive_sha,
-            product_release["product_version"],
-        )
+        package_manifest = load_package_manifest(package_manifest_path, expected_archive_sha)
     except (ValueError, RuntimeError) as exc:
         raise SystemExit(str(exc)) from exc
     tenant_id = str(package_manifest["tenant_id"])

@@ -1712,6 +1712,8 @@ export const useSessionStore = defineStore('session', {
       this.initMeta = {
         ...(result.meta ?? {}),
         nav_meta: (result as AppInitResponse & { nav_meta?: unknown }).nav_meta ?? null,
+        product_version: String((result as AppInitResponse & { product_version?: unknown }).product_version || ''),
+        source_revision: String((result as AppInitResponse & { source_revision?: unknown }).source_revision || ''),
       } as AppInitResponse['meta'];
       const defaultRouteRaw = (result as AppInitResponse & { default_route?: unknown }).default_route;
       if (defaultRouteRaw && typeof defaultRouteRaw === 'object') {

@@ -46,3 +46,8 @@ print("[candidate.scan] " + json.dumps(payload, separators=(",", ":")))
 if not payload["pass"]:
     raise SystemExit(1)
 PY
+
+python3 scripts/release/product_release_manifest.py \
+  --image-manifest "$manifest" \
+  --sbom "$artifacts/sbom.cyclonedx.json" \
+  --output "$artifacts/product-release-manifest.json"

@@ -4,6 +4,7 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 from .navigation_entry_target import build_scene_entry_target
+from ..utils.product_release import runtime_product_identity
 from .request_params import parse_bool
 
 
@@ -736,6 +737,7 @@ class SystemInitPayloadBuilder:
 
     @staticmethod
     def attach_layered_contract(data: dict) -> None:
+        data.update(runtime_product_identity())
         role_surface = data.get("role_surface") if isinstance(data.get("role_surface"), dict) else {}
         landing_scene_key = str(role_surface.get("landing_scene_key") or "").strip() or "workspace.home"
         contract_version = str(data.get("contract_version") or "1.0.0")
