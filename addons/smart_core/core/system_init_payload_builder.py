@@ -12,6 +12,7 @@ class SystemInitPayloadBuilder:
     SOURCE_AUTHORITIES = (
         "system_init_runtime_payload",
         "delivery_engine_v1",
+        "route_authority_v1",
         "release_navigation_v1",
         "scene_ready_contract_v1",
         "page_contracts",
@@ -24,6 +25,7 @@ class SystemInitPayloadBuilder:
     BUILD_MODE_DEBUG = "debug"
     MINIMAL_ALLOWED_KEYS = {
         "delivery_engine_v1",
+        "route_authority_v1",
         "edition_runtime_v1",
         "user",
         "nav",
@@ -379,6 +381,8 @@ class SystemInitPayloadBuilder:
             minimal["scene_action_surface_strategy"] = row.get("scene_action_surface_strategy")
         if isinstance(row.get("delivery_engine_v1"), dict):
             minimal["delivery_engine_v1"] = row.get("delivery_engine_v1")
+        if isinstance(row.get("route_authority_v1"), dict):
+            minimal["route_authority_v1"] = row.get("route_authority_v1")
         if isinstance(row.get("edition_runtime_v1"), dict):
             minimal["edition_runtime_v1"] = row.get("edition_runtime_v1")
         if isinstance(row.get("release_navigation_v1"), dict):

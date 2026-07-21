@@ -9,6 +9,8 @@ import { BUSINESS_CONFIG_MODELS } from '../app/businessConfigBoundaries';
 import { beginPageIdentity } from '../app/pageIdentityRuntime';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import type { NavMeta } from '@sc/schema';
+import { findRouteAuthority } from '../app/routeAuthority';
+import { intentRequest } from '../api/intents';
 
 function routeTitle(routeName: string | symbol | null | undefined): string {
   const name = typeof routeName === 'string' ? routeName : '';
@@ -300,29 +302,47 @@ router.beforeEach(async (to) => {
   if (!isLoginRoute && to.name !== 'access-denied' && session.isReady) {
     const actionId = positiveInteger(to.params.actionId || to.query.action_id);
     const menuId = positiveInteger(to.params.menuId || to.query.menu_id);
-    const contextualAuthority = session.contextualRouteAuthorities.find((row) => (
-      (actionId <= 0 || row.action_id === actionId)
-      && (menuId <= 0 || row.menu_id === menuId)
-    ));
-    const contextualAuthorized = Boolean(contextualAuthority);
-    if (to.name === 'action' && contextualAuthority && !currentActionMatches(session, actionId)) {
+    const routeAuthority = actionId > 0 || menuId > 0 ? findRouteAuthority(session.routeAuthority, {
+      actionId,
+      menuId,
+      query: to.query as Record<string, unknown>,
+      companyId: Number(session.projectContext?.company_id || session.projectContext?.selected?.company_id || 0) || null,
+      projectId: Number(session.projectContext?.selected?.id || 0) || null,
+    }) : null;
+    let runtimeRouteAuthorized = Boolean(routeAuthority);
+    if (routeAuthority && Array.isArray(routeAuthority.context_requirements.required_query)
+      && routeAuthority.context_requirements.required_query.length > 0) {
+      try {
+        const validation = await intentRequest<{ allowed?: boolean }>({
+          intent: 'route.authority.validate',
+          params: {
+            action_id: actionId,
+            ...Object.fromEntries(
+              routeAuthority.context_requirements.required_query.map((key) => [String(key), to.query[String(key)]]),
+            ),
+          },
+        });
+        runtimeRouteAuthorized = validation.allowed === true;
+      } catch {
+        runtimeRouteAuthorized = false;
+      }
+    }
+    if (to.name === 'action' && routeAuthority && runtimeRouteAuthorized && !currentActionMatches(session, actionId)) {
       session.setActionMeta({
-        action_id: contextualAuthority.action_id,
-        menu_id: contextualAuthority.menu_id,
-        menu_xmlid: contextualAuthority.menu_xmlid,
-        name: contextualAuthority.name,
-        model: contextualAuthority.model,
-        view_modes: contextualAuthority.view_modes,
-        view_id: contextualAuthority.view_id,
-        domain: contextualAuthority.domain,
-        context: contextualAuthority.context,
+        action_id: routeAuthority.action_id,
+        menu_id: routeAuthority.menu_id || undefined,
+        menu_xmlid: routeAuthority.menu_xmlid,
+        name: routeAuthority.name,
+        model: routeAuthority.model,
+        view_modes: routeAuthority.view_modes,
+        view_id: routeAuthority.view_id,
+        domain: routeAuthority.domain,
+        context: routeAuthority.context,
       } as NavMeta);
     }
-    const actionAuthorized = actionId <= 0 || Boolean(findActionMeta(session.menuTree, actionId)) || contextualAuthorized;
-    const menuAuthorized = menuId <= 0 || Boolean(findMenuNode(session.menuTree, menuId)) || contextualAuthorized;
     const authorityBoundRoute = to.name === 'action' || to.name === 'menu'
       || ((to.name === 'record' || to.name === 'model-form') && (actionId > 0 || menuId > 0));
-    if (authorityBoundRoute && (!actionAuthorized || !menuAuthorized)) {
+    if (authorityBoundRoute && (actionId > 0 || menuId > 0) && !runtimeRouteAuthorized) {
       return {
         name: 'access-denied',
         query: { from: to.fullPath, reason: 'NAVIGATION_AUTHORITY_DENIED' },

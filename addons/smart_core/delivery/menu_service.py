@@ -32,6 +32,8 @@ def register_customer_acceptance_group_label(label: str) -> None:
 
 
 class MenuService:
+    ROUTE_AUTHORITY_CONTRACT_VERSION = "route_authority.v1"
+
     @staticmethod
     def _role_surface_menu_allowed(menu: dict, role_surface: dict | None) -> bool:
         """Apply identifier-based role projection without owning industry semantics."""
@@ -217,6 +219,216 @@ class MenuService:
                 "route": f"/a/{action_id}?menu_id={menu_id}",
             })
         return routes
+
+    @staticmethod
+    def _record_xmlid(record) -> str:
+        if not record:
+            return ""
+        try:
+            return str(record.get_external_id().get(record.id) or "").strip()
+        except Exception:
+            return ""
+
+    def _action_is_runtime_allowed(self, action, allowed_operation: str) -> bool:
+        if not action or not bool(getattr(action, "active", True)):
+            return False
+        # Role authority is declared by stable XML-ID in the role surface. For
+        # menu-backed entries, Odoo menu visibility has already intersected
+        # the current user's groups. Action groups are metadata used by the
+        # native client and are not enforced by ui.contract.v2; model ACL is
+        # the backend execution boundary and must agree with the declaration.
+        model_name = str(getattr(action, "res_model", "") or "").strip()
+        if not model_name and str(getattr(action, "_name", "") or "") == "ir.actions.server":
+            # ir.model is configuration metadata. Read only the declared model
+            # name with sudo, then enforce that model's ACL in the request
+            # user's environment below; sudo never decides route success.
+            metadata_action = action.sudo()
+            model_name = str(getattr(getattr(metadata_action, "model_id", None), "model", "") or "").strip()
+        if not model_name or model_name not in self.env:
+            return False
+        operation = str(allowed_operation or "read").strip().lower() or "read"
+        try:
+            return bool(self.env[model_name].check_access_rights(operation, raise_exception=False))
+        except Exception:
+            return False
+
+    def _route_entry_from_menu(self, row: dict, *, route_kind: str, source: str) -> dict | None:
+        if not isinstance(row, dict) or not row.get("action_exists"):
+            return None
+        menu_id = row.get("menu_id")
+        action_id = row.get("action_id")
+        if not isinstance(menu_id, int) or menu_id <= 0 or not isinstance(action_id, int) or action_id <= 0:
+            return None
+        action_model = str(row.get("action_model") or "").strip()
+        action = self.env[action_model].browse(action_id).exists() if action_model in self.env else None
+        if not action or not self._action_is_runtime_allowed(action, "read"):
+            return None
+        action_meta = row.get("action_meta") if isinstance(row.get("action_meta"), dict) else {}
+        model_name = str(action_meta.get("res_model") or "").strip()
+        if not model_name and str(getattr(action, "_name", "") or "") == "ir.actions.server":
+            metadata_action = action.sudo()
+            model_name = str(getattr(getattr(metadata_action, "model_id", None), "model", "") or "").strip()
+        view_modes = [item.strip() for item in str(action_meta.get("view_mode") or "").split(",") if item.strip()]
+        return {
+            "action_xmlid": self._record_xmlid(action),
+            "route_kind": route_kind,
+            "menu_id": menu_id,
+            "menu_xmlid": str(row.get("menu_xmlid") or "").strip(),
+            "action_id": action_id,
+            "name": str(row.get("name") or "").strip(),
+            "model": model_name,
+            "view_modes": view_modes,
+            "view_id": action_meta.get("view_id"),
+            "domain": str(action_meta.get("domain") or "").strip(),
+            "context": str(action_meta.get("context") or "").strip(),
+            "route": f"/a/{action_id}?menu_id={menu_id}",
+            "allowed_operation": "read",
+            "required_capability": "menu_action_read",
+            "context_requirements": {},
+            "source": source,
+        }
+
+    def _route_entry_from_action_spec(self, spec: dict, *, route_kind: str) -> dict | None:
+        row = spec if isinstance(spec, dict) else {}
+        action_xmlid = str(row.get("action_xmlid") or "").strip()
+        action = self.env.ref(action_xmlid, raise_if_not_found=False) if action_xmlid else None
+        if not action or str(getattr(action, "_name", "") or "") != "ir.actions.act_window":
+            return None
+        allowed_operation = str(row.get("allowed_operation") or "read").strip().lower() or "read"
+        if not self._action_is_runtime_allowed(action, allowed_operation):
+            return None
+        menu_xmlid = str(row.get("menu_xmlid") or "").strip()
+        menu = self.env.ref(menu_xmlid, raise_if_not_found=False) if menu_xmlid else None
+        menu_id = int(menu.id) if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" else 0
+        view_modes = [item.strip() for item in str(action.view_mode or "").split(",") if item.strip()]
+        return {
+            "action_xmlid": action_xmlid,
+            "route_kind": route_kind,
+            "menu_id": menu_id,
+            "menu_xmlid": menu_xmlid if menu_id else "",
+            "action_id": int(action.id),
+            "name": str(action.name or "").strip(),
+            "model": str(action.res_model or "").strip(),
+            "view_modes": view_modes,
+            "view_id": int(action.view_id.id) if action.view_id else None,
+            "domain": str(action.domain or "").strip(),
+            "context": str(action.context or "").strip(),
+            "route": f"/a/{int(action.id)}" + (f"?menu_id={menu_id}" if menu_id else ""),
+            "allowed_operation": allowed_operation,
+            "required_capability": str(row.get("required_capability") or "").strip(),
+            "context_requirements": dict(row.get("context_requirements") or {}),
+            "source": str(row.get("source") or "role_surface.route_authority").strip(),
+        }
+
+    def _denied_route_entry(self, menu_xmlid: str) -> dict | None:
+        xmlid = str(menu_xmlid or "").strip()
+        menu = self.env.ref(xmlid, raise_if_not_found=False) if xmlid else None
+        action = menu.action if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" else None
+        if not action or str(getattr(action, "_name", "")) != "ir.actions.act_window":
+            return None
+        action_xmlid = self._record_xmlid(action)
+        if not action_xmlid:
+            return None
+        return {
+            "action_xmlid": action_xmlid,
+            "route_kind": "DENIED",
+            "menu_id": int(menu.id),
+            "menu_xmlid": xmlid,
+            "action_id": int(action.id),
+            "name": str(action.name or "").strip(),
+            "model": str(action.res_model or "").strip(),
+            "view_modes": [item.strip() for item in str(action.view_mode or "").split(",") if item.strip()],
+            "route": f"/a/{int(action.id)}?menu_id={int(menu.id)}",
+            "allowed_operation": "none",
+            "required_capability": "product_denied",
+            "context_requirements": {},
+            "source": "role_surface.denied_menu_xmlids",
+        }
+
+    def build_route_authority(self, role_surface: dict | None) -> dict:
+        surface = role_surface if isinstance(role_surface, dict) else {}
+        buckets = {
+            "primary_actions": [],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "admin_actions": [],
+            "denied_actions": [],
+            "menu_containers": [],
+        }
+        if self.env is None or not surface.get("exposure_policy_declared"):
+            return {
+                "contract_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
+                "source": "delivery_engine_v1.route_authority",
+                "principal_scope": {},
+                **buckets,
+            }
+
+        facts = MenuFactService(self.env).export_visible_menu_facts()
+        visible_by_xmlid = {
+            str(row.get("menu_xmlid") or "").strip(): row
+            for row in facts.flat
+            if isinstance(row, dict) and str(row.get("menu_xmlid") or "").strip()
+        }
+        menu_fields = (
+            ("primary_menu_xmlids", "primary_actions", "PRIMARY_NAV"),
+            ("role_home_menu_xmlids", "role_home_actions", "ROLE_HOME_ACTION"),
+            ("contextual_menu_xmlids", "contextual_actions", "CONTEXTUAL_ROUTE"),
+            ("admin_menu_xmlids", "admin_actions", "ADMIN_ROUTE"),
+        )
+        for field, bucket, route_kind in menu_fields:
+            for menu_xmlid in surface.get(field) or []:
+                fact = visible_by_xmlid.get(str(menu_xmlid).strip())
+                entry = self._route_entry_from_menu(
+                    fact,
+                    route_kind=route_kind,
+                    source=f"role_surface.{field}",
+                )
+                if entry:
+                    buckets[bucket].append(entry)
+                elif fact and isinstance(fact.get("menu_id"), int) and fact.get("menu_id") > 0:
+                    buckets["menu_containers"].append({
+                        "route_kind": route_kind,
+                        "menu_id": int(fact["menu_id"]),
+                        "menu_xmlid": str(fact.get("menu_xmlid") or "").strip(),
+                        "route": f"/m/{int(fact['menu_id'])}",
+                        "allowed_operation": "navigate",
+                        "required_capability": "menu_container_visible",
+                        "context_requirements": {},
+                        "source": f"role_surface.{field}",
+                    })
+
+        action_fields = (
+            ("contextual_action_authorities", "contextual_actions", "CONTEXTUAL_ROUTE"),
+            ("admin_action_authorities", "admin_actions", "ADMIN_ROUTE"),
+        )
+        for field, bucket, route_kind in action_fields:
+            for spec in surface.get(field) or []:
+                entry = self._route_entry_from_action_spec(spec, route_kind=route_kind)
+                if entry:
+                    buckets[bucket].append(entry)
+
+        for menu_xmlid in surface.get("denied_menu_xmlids") or []:
+            entry = self._denied_route_entry(menu_xmlid)
+            if entry:
+                buckets["denied_actions"].append(entry)
+
+        for bucket_name, bucket in buckets.items():
+            deduped = {
+                (int(item.get("action_id") or 0), int(item.get("menu_id") or 0)): item
+                for item in bucket
+            }
+            bucket[:] = list(deduped.values())
+            bucket.sort(key=lambda item: (str(item.get("action_xmlid") or item.get("menu_xmlid") or ""), int(item.get("menu_id") or 0)))
+        return {
+            "contract_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
+            "source": "delivery_engine_v1.route_authority",
+            "principal_scope": {
+                "user_id": int(self.env.user.id),
+                "company_id": int(self.env.company.id),
+                "role_code": str(surface.get("role_code") or "").strip(),
+            },
+            **buckets,
+        }
 
     @classmethod
     def _filter_role_surface_nodes(cls, nodes: list[dict], role_surface: dict | None) -> list[dict]:

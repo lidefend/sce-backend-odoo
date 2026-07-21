@@ -286,6 +286,7 @@ import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRu
 import { applyTheme, nextTheme, persistTheme, type ScTheme } from '../styles/theme';
 import { config } from '../config';
 import { openAction } from '../services/action_service';
+import { routeAuthorityEntries } from '../app/routeAuthority';
 import type { BusinessScopeOperationOption, NavNode, ProjectContextOption } from '@sc/schema';
 import {
   exportSuggestedActionTraces,
@@ -377,11 +378,16 @@ const rootNode = computed(() => (menuTree.value.length === 1 ? menuTree.value[0]
 const menuNodes = computed(() => rootNode.value?.children ?? menuTree.value);
 const visibleMenuNodes = computed(() => menuNodes.value);
 const menuCount = computed(() => visibleMenuNodes.value.length);
-const routeAllowsEmptyMenu = computed(() => (
-  route.meta?.adminOnly === true
-  || route.path.startsWith('/admin/')
-  || ['my-work', 'scene-my-work'].includes(String(route.name || ''))
-));
+const routeAllowsEmptyMenu = computed(() => {
+  const actionId = asInteger(route.params.actionId || route.query.action_id) || 0;
+  const explicitActionRoute = actionId > 0 && routeAuthorityEntries(session.routeAuthority).some((entry) => (
+    entry.action_id === actionId && entry.menu_id === 0
+  ));
+  return route.meta?.adminOnly === true
+    || route.path.startsWith('/admin/')
+    || ['my-work', 'scene-my-work'].includes(String(route.name || ''))
+    || explicitActionRoute;
+});
 const rootTitle = computed(() => {
   const root = rootNode.value;
   const rawTitle = normalizeDeliveryText(root?.title || root?.name || root?.label || '');
