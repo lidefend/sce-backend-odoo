@@ -23,7 +23,8 @@ verify.release.tooling:
 	@$(MAKE) --no-print-directory verify.production.release_contract
 
 verify.production.release_contract:
-	@python3 -m py_compile scripts/release/production_db_contract.py scripts/release/test_production_release_contract.py
+	@python3 -m py_compile scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/test_production_db_init.py scripts/release/test_production_release_contract.py
+	@python3 scripts/release/test_production_db_init.py
 	@python3 scripts/release/test_production_release_contract.py
 	@bash -n scripts/release/production_odoo_entrypoint.sh scripts/release/production_db_manage.sh scripts/release/production_contract_image_acceptance.sh
 

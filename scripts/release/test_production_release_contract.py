@@ -81,7 +81,7 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("/opt/sce-runtime/filestore", self.dockerfile)
         self.assertNotIn("/var/lib/odoo/filestore", self.dockerfile)
     def test_normal_entrypoint_never_mutates_database(self):
-        for token in ("CREATE DATABASE", "createdb", "-i base", " -u ", "restore"): self.assertNotIn(token, self.entrypoint)
+        for token in ("CREATE DATABASE", "DROP DATABASE", "createdb", "-i base", " -u ", "restore"): self.assertNotIn(token, self.entrypoint)
     def test_normal_entrypoint_uses_read_only_session(self): self.assertIn("default_transaction_read_only=on", self.entrypoint)
     def test_health_path_is_read_only(self):
         self.assertIn("preflight|health) readonly_probe", self.manager)
@@ -104,6 +104,12 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("PR_DRAFT ?= 0", codex_make)
         self.assertIn('1) draft_arg="--draft"', codex_make)
         self.assertIn("PR_DRAFT must be 0 or 1", codex_make)
+    def test_init_cleanup_is_not_exposed_as_general_management_action(self):
+        actions = self.manager.split('case "$ACTION" in', 1)[1].split(") ;;", 1)[0]
+        self.assertNotIn("drop", actions)
+        helper = (ROOT / "scripts/release/production_db_init.py").read_text()
+        self.assertIn("cleanup_created", helper)
+        self.assertIn('validate("init", active_env)', helper)
 
 
 if __name__ == "__main__":

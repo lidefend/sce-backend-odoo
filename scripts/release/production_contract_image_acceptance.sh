@@ -118,7 +118,31 @@ if docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" "$imag
 fi
 [[ "$(docker exec "$db_container" psql -U odoo -d postgres -Atc "SELECT count(*) FROM pg_database WHERE datname='$db'")" == "0" ]]
 
+failure_bin="$log_dir/failure-bin"
+mkdir -p "$failure_bin"
+printf '%s\n' '#!/bin/sh' 'exit 42' >"$failure_bin/odoo"
+chmod 0755 "$failure_bin" "$failure_bin/odoo"
+set +e
+docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" \
+  -e PATH=/contract-failure-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  -v "$failure_bin:/contract-failure-bin:ro" --entrypoint /usr/local/bin/production-db-manage "$image" init \
+  >"$log_dir/init-injected-failure.log" 2>&1
+injected_failure_status=$?
+set -e
+[[ "$injected_failure_status" == "42" ]] || {
+  echo "[contract-image] expected injected initialization status 42, got $injected_failure_status" >&2; exit 1;
+}
+grep -q "removed the database created by this invocation" "$log_dir/init-injected-failure.log"
+[[ "$(docker exec "$db_container" psql -U odoo -d postgres -Atc "SELECT count(*) FROM pg_database WHERE datname='$db'")" == "0" ]]
+
 docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" --entrypoint /usr/local/bin/production-db-manage "$image" init >"$log_dir/init.log" 2>&1
+[[ "$(docker exec "$db_container" psql -U odoo -d postgres -Atc "SELECT count(*) FROM pg_database WHERE datname='$db'")" == "1" ]]
+if docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" --entrypoint /usr/local/bin/production-db-manage "$image" init \
+    >"$log_dir/init-preexisting.log" 2>&1; then
+  echo "[contract-image] pre-existing database initialization unexpectedly succeeded" >&2; exit 1
+fi
+grep -q "already exists; refusing initialization and cleanup" "$log_dir/init-preexisting.log"
+[[ "$(docker exec "$db_container" psql -U odoo -d postgres -Atc "SELECT count(*) FROM pg_database WHERE datname='$db'")" == "1" ]]
 docker run -d --name "$odoo_container" --network "$network" "${common_env[@]}" "${mounts[@]}" "$image" >/dev/null
 wait_for_odoo() {
   for _ in $(seq 1 90); do
