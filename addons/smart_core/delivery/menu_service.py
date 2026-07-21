@@ -355,11 +355,23 @@ class MenuService:
             "denied_actions": [],
             "menu_containers": [],
         }
-        if self.env is None or not surface.get("exposure_policy_declared"):
+        if self.env is None:
             return {
                 "contract_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
                 "source": "delivery_engine_v1.route_authority",
                 "principal_scope": {},
+                **buckets,
+            }
+        principal_scope = {
+            "user_id": int(self.env.user.id),
+            "company_id": int(self.env.company.id),
+            "role_code": str(surface.get("role_code") or "").strip(),
+        }
+        if not surface.get("exposure_policy_declared"):
+            return {
+                "contract_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
+                "source": "delivery_engine_v1.route_authority",
+                "principal_scope": principal_scope,
                 **buckets,
             }
 
@@ -422,11 +434,7 @@ class MenuService:
         return {
             "contract_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
             "source": "delivery_engine_v1.route_authority",
-            "principal_scope": {
-                "user_id": int(self.env.user.id),
-                "company_id": int(self.env.company.id),
-                "role_code": str(surface.get("role_code") or "").strip(),
-            },
+            "principal_scope": principal_scope,
             **buckets,
         }
 

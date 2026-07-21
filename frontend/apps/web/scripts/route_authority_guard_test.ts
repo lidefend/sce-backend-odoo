@@ -3,6 +3,7 @@ import {
   findRouteAuthority,
   normalizeRouteAuthorityContract,
   routeAuthorityContextAllowed,
+  routeAuthorityForPrincipal,
 } from '../src/app/routeAuthority';
 
 const raw = {
@@ -73,5 +74,34 @@ assert.equal(findRouteAuthority(contract, {
   menuId: 0,
   query: {},
 }), null);
+
+const shellOnly = {
+  ...raw,
+  principal_scope: { user_id: 8, company_id: 3, role_code: 'executive' },
+  contextual_actions: [],
+  admin_actions: [],
+};
+const shellOnlyContract = routeAuthorityForPrincipal(
+  shellOnly,
+  { userId: 8, companyId: 3, roleCode: 'executive' },
+);
+assert.ok(shellOnlyContract);
+assert.equal(findRouteAuthority(shellOnlyContract, {
+  actionId: 41,
+  menuId: 0,
+  query: {},
+}), null);
+assert.equal(routeAuthorityForPrincipal(
+  shellOnly,
+  { userId: 9, companyId: 3, roleCode: 'executive' },
+), null);
+assert.equal(routeAuthorityForPrincipal(
+  shellOnly,
+  { userId: 8, companyId: 4, roleCode: 'executive' },
+), null);
+assert.equal(routeAuthorityForPrincipal(
+  shellOnly,
+  { userId: 8, companyId: 3, roleCode: 'pm' },
+), null);
 
 console.log('[route-authority-guard] PASS');
