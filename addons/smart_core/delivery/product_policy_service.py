@@ -12,6 +12,7 @@ except Exception:
     Registry = None
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
+from odoo.addons.smart_core.core.platform_database_contract import resolve_platform_database
 
 try:
     from .product_identity import LEGACY_DEFAULT_BASE_PRODUCT_KEY
@@ -144,11 +145,7 @@ class ProductPolicyService:
         )
 
     def _platform_policy_db(self) -> str:
-        try:
-            configured = self.env["ir.config_parameter"].sudo().get_param("smart_core.platform_release_db", "")
-        except Exception:
-            configured = ""
-        return str(configured or "").strip() or "sc_platform_core"
+        return resolve_platform_database(self.env)
 
     def _load_platform_policy(self, *, product_key: str) -> dict | None:
         if api is None or Registry is None:

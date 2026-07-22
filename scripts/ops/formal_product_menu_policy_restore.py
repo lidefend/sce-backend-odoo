@@ -340,7 +340,9 @@ def _write_snapshot(read_env, product_key: str, pages: list[dict], *, platform_d
 
 
 def _sync_platform_release_gate(product_key: str, pages: list[dict]) -> dict:
-    platform_db = _text(env["ir.config_parameter"].sudo().get_param("smart_core.platform_release_db", "")) or "sc_platform_core"  # noqa: F821
+    platform_db = _text(env["ir.config_parameter"].sudo().get_param("smart_core.platform_release_db", ""))  # noqa: F821
+    if not platform_db:
+        return {"status": "FAIL", "reason": "platform_release_db_required", "platform_db": ""}
     current_db = _text(env.cr.dbname)  # noqa: F821
     if platform_db == current_db:
         return _write_snapshot(env, product_key, pages, platform_db=platform_db)  # noqa: F821

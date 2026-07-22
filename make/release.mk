@@ -8,7 +8,7 @@ RELEASE_COMPOSE = $(COMPOSE_BIN) -p $(RELEASE_PROJECT) -f docker-compose.yml -f 
 RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) ODOO_DB=$(RELEASE_DB) ODOO_DBFILTER=^$(RELEASE_DB)$$ COMPOSE_PROJECT_NAME=$(RELEASE_PROJECT) DB_DATA=$(RELEASE_PROJECT)-db REDIS_DATA=$(RELEASE_PROJECT)-redis ODOO_DATA=$(RELEASE_PROJECT)-odoo ODOO_PORT=18087 NGINX_PORT=18086 FRONTEND_DIST_DIR=./frontend/apps/web/dist-release
 
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
-.PHONY: release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.contract.image.acceptance
+.PHONY: release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
 
 verify.release.guard: verify.repository.release_hygiene
 	@SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) python3 scripts/release/rehearsal_guard.py
@@ -23,9 +23,11 @@ verify.release.tooling:
 	@$(MAKE) --no-print-directory verify.production.release_contract
 
 verify.production.release_contract:
-	@python3 -m py_compile scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/test_production_db_init.py scripts/release/test_production_release_contract.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_production_db_init.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py
+	@python3 addons/smart_core/tests/test_platform_database_contract.py
 	@python3 scripts/release/test_production_db_init.py
 	@python3 scripts/release/test_production_release_contract.py
+	@python3 scripts/release/test_production_colocated_release.py
 	@bash -n scripts/release/production_odoo_entrypoint.sh scripts/release/production_db_manage.sh scripts/release/production_contract_image_acceptance.sh
 
 PRODUCTION_CONTRACT_COMPOSE = $(COMPOSE_BIN) -f docker-compose.production-candidate.yml
@@ -47,6 +49,22 @@ release.production.module.upgrade:
 
 release.production.health.readonly:
 	@$(PRODUCTION_DB_MANAGER) health
+
+release.production.platform.configure:
+	@test "$(SC_COLOCATED_PLATFORM_CONFIG_APPLY)" = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_CONFIGURATION" || (echo "explicit colocated platform configuration acknowledgement is required"; exit 2)
+	@$(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps \
+		-e SC_COLOCATED_PLATFORM_CONFIG_APPLY="$(SC_COLOCATED_PLATFORM_CONFIG_APPLY)" \
+		--entrypoint /usr/local/bin/production-db-manage odoo configure-platform
+
+release.production.platform.snapshot.initialize:
+	@test "$(SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY)" = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION" || (echo "explicit snapshot initialization acknowledgement is required"; exit 2)
+	@test -n "$(PLATFORM_RELEASE_PRODUCT_KEY)" || (echo "PLATFORM_RELEASE_PRODUCT_KEY is required"; exit 2)
+	@test -n "$(PLATFORM_RELEASE_VERSION)" || (echo "PLATFORM_RELEASE_VERSION is required"; exit 2)
+	@$(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps \
+		-e SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY="$(SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY)" \
+		-e PLATFORM_RELEASE_PRODUCT_KEY="$(PLATFORM_RELEASE_PRODUCT_KEY)" \
+		-e PLATFORM_RELEASE_VERSION="$(PLATFORM_RELEASE_VERSION)" \
+		--entrypoint /usr/local/bin/production-db-manage odoo initialize-platform-snapshot
 
 release.production.contract.image.acceptance:
 	@bash scripts/release/production_contract_image_acceptance.sh

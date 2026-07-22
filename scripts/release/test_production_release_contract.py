@@ -22,6 +22,7 @@ def formal_env(db: str = "sc_migration_rehearsal") -> dict[str, str]:
         "SC_SOURCE_REVISION": "a" * 40,
         "EXPECTED_RELEASE_SHA": "a" * 40,
         "TARGET_MODULE": "smart_construction_core",
+        "PLATFORM_RELEASE_DB": db,
     }
     for key, suffix in {
         "SC_DATABASE_VOLUME": "postgres", "SC_REDIS_VOLUME": "redis", "SC_FILESTORE_VOLUME": "filestore",
@@ -48,6 +49,11 @@ class DatabaseGuardTests(unittest.TestCase):
     def test_production_upgrade_accepts_exact_confirmation(self):
         env = formal_env("sc_production"); env["SC_PRODUCTION_CHANGE_APPROVED"] = contract.PRODUCTION_CONFIRMATION
         contract.validate("upgrade", env)
+    def test_platform_configuration_is_a_guarded_mutation(self):
+        env = formal_env("sc_production")
+        with self.assertRaises(contract.ContractError): contract.validate("configure-platform", env)
+        env["SC_PRODUCTION_CHANGE_APPROVED"] = contract.PRODUCTION_CONFIRMATION
+        contract.validate("configure-platform", env)
     def test_release_sha_must_match_image(self):
         env = formal_env(); env["EXPECTED_RELEASE_SHA"] = "b" * 40
         with self.assertRaises(contract.ContractError): contract.validate("upgrade", env)
@@ -62,6 +68,12 @@ class DatabaseGuardTests(unittest.TestCase):
         with self.assertRaises(contract.ContractError): contract.validate("runtime", env)
     def test_filestore_volumes_are_isolated(self):
         env = formal_env(); env["SC_FILESTORE_VOLUME"] = "sce-sc_production-filestore"
+        with self.assertRaises(contract.ContractError): contract.validate("runtime", env)
+    def test_platform_database_is_required_explicitly(self):
+        env = formal_env(); env.pop("PLATFORM_RELEASE_DB")
+        with self.assertRaises(contract.ContractError): contract.validate("runtime", env)
+    def test_platform_database_must_match_business_database(self):
+        env = formal_env(); env["PLATFORM_RELEASE_DB"] = "sc_platform_core"
         with self.assertRaises(contract.ContractError): contract.validate("runtime", env)
 
 
@@ -89,6 +101,8 @@ class StaticContractTests(unittest.TestCase):
     def test_compose_images_are_digest_pinned(self): self.assertEqual(len(re.findall(r"image: .*@sha256:[0-9a-f]{64}", self.compose)), 2)
     def test_compose_does_not_default_target_database(self): self.assertIn("TARGET_DB:?TARGET_DB is required", self.compose)
     def test_compose_disables_demo(self): self.assertIn('SC_ALLOW_DEMO_DATA: "0"', self.compose)
+    def test_compose_requires_explicit_colocated_platform_database(self):
+        self.assertIn("PLATFORM_RELEASE_DB:?PLATFORM_RELEASE_DB is required", self.compose)
     def test_compose_binds_odoo_to_loopback(self): self.assertIn('127.0.0.1:${CANDIDATE_ODOO_PORT', self.compose)
     def test_odoo_config_disables_database_manager(self): self.assertIn("list_db = False", (ROOT / "config/odoo.conf.template").read_text())
     def test_odoo_database_endpoint_is_explicit(self):

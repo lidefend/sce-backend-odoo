@@ -107,6 +107,7 @@ common_env=(
   -e ADMIN_PASSWD=contract-test-only -e JWT_SECRET=contract-test-only -e REDIS_HOST="$redis_container"
   -e ODOO_CONF_OUT=/opt/sce-runtime/config/odoo.conf -e TMPDIR=/opt/sce-runtime/tmp
   -e SC_ENVIRONMENT=contract_test -e SC_CONTRACT_TEST_MODE=1 -e SC_ALLOW_DEMO_DATA=0
+  -e "PLATFORM_RELEASE_DB=$db"
   -e "SC_FILESTORE_SCOPE=$db" -e "SC_DATABASE_VOLUME=$database_volume" -e "SC_REDIS_VOLUME=$redis_volume"
   -e "SC_FILESTORE_VOLUME=$filestore_volume" -e "SC_SESSION_VOLUME=$session_volume"
   -e "SC_TMP_VOLUME=$tmp_volume" -e "SC_LOG_VOLUME=$log_volume" -e "EXPECTED_RELEASE_SHA=$source_sha"
@@ -137,6 +138,9 @@ grep -q "removed the database created by this invocation" "$log_dir/init-injecte
 
 docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" --entrypoint /usr/local/bin/production-db-manage "$image" init >"$log_dir/init.log" 2>&1
 [[ "$(docker exec "$db_container" psql -U odoo -d postgres -Atc "SELECT count(*) FROM pg_database WHERE datname='$db'")" == "1" ]]
+docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" \
+  -e SC_COLOCATED_PLATFORM_CONFIG_APPLY=I_ACKNOWLEDGE_COLOCATED_PLATFORM_CONFIGURATION \
+  --entrypoint /usr/local/bin/production-db-manage "$image" configure-platform >"$log_dir/configure-platform.log" 2>&1
 if docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" --entrypoint /usr/local/bin/production-db-manage "$image" init \
     >"$log_dir/init-preexisting.log" 2>&1; then
   echo "[contract-image] pre-existing database initialization unexpectedly succeeded" >&2; exit 1

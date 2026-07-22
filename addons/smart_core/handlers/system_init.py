@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import os
 import time
 from typing import List
 
@@ -63,6 +64,10 @@ from odoo.addons.smart_core.core.runtime_page_contract_builder import mirror_wor
 from odoo.addons.smart_core.core.scene_governance_payload_builder import build_scene_governance_payload_v1
 from odoo.addons.smart_core.core.ui_base_contract_asset_event_queue import get_queue_metrics
 from odoo.addons.smart_core.core.release_navigation_contract_builder import build_release_navigation_contract
+from odoo.addons.smart_core.core.platform_database_contract import (
+    PlatformDatabaseContractError,
+    resolve_platform_database,
+)
 from odoo.addons.smart_core.core.request_params import parse_bool
 from odoo.addons.smart_core.core.scene_delivery_policy import (
     filter_delivery_scenes,
@@ -536,12 +541,18 @@ def _load_platform_release_gate(env, *, product_key: str) -> dict:
     requested_product_key = _text(product_key)
     if not requested_product_key:
         return {}
-    try:
-        platform_db = _text(env["ir.config_parameter"].sudo().get_param("smart_core.platform_release_db", ""))
-    except Exception:
-        platform_db = ""
-    platform_db = platform_db or "sc_platform_core"
     current_db = _text(getattr(getattr(env, "cr", None), "dbname", ""))
+    production = os.environ.get("SC_ENVIRONMENT") == "production"
+    try:
+        platform_db = resolve_platform_database(env)
+    except PlatformDatabaseContractError as exc:
+        return {
+            "applied": False,
+            "fail_closed": production,
+            "product_key": requested_product_key,
+            "platform_db": "",
+            "reason": _text(exc),
+        }
 
     def _read_from(read_env) -> dict:
         try:
@@ -572,6 +583,7 @@ def _load_platform_release_gate(env, *, product_key: str) -> dict:
         except Exception as exc:
             return {
                 "applied": False,
+                "fail_closed": production,
                 "product_key": requested_product_key,
                 "platform_db": platform_db,
                 "reason": "PLATFORM_RELEASE_DB_UNAVAILABLE",
@@ -580,6 +592,7 @@ def _load_platform_release_gate(env, *, product_key: str) -> dict:
     if not snapshot:
         return {
             "applied": False,
+            "fail_closed": production,
             "product_key": requested_product_key,
             "platform_db": platform_db,
             "reason": "ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND",
@@ -588,6 +601,7 @@ def _load_platform_release_gate(env, *, product_key: str) -> dict:
     if int(contract.get("page_count") or 0) <= 0:
         return {
             "applied": False,
+            "fail_closed": production,
             "product_key": requested_product_key,
             "platform_db": platform_db,
             "reason": "ACTIVE_RELEASE_HAS_NO_PAGES",
@@ -2036,11 +2050,15 @@ class SystemInitHandler(BaseIntentHandler):
             meta["platform_release_gate_after_user_menu_config"] = post_overlay_gate_meta
             meta["user_menu_config"] = user_menu_config_meta
         else:
-            delivery_nav, user_menu_config_meta = _apply_user_menu_config_to_delivery_nav(
-                env,
-                delivery_payload.get("nav") if isinstance(delivery_payload.get("nav"), list) else [],
-            )
-            delivery_payload["nav"] = delivery_nav
+            if release_gate.get("fail_closed"):
+                delivery_payload["nav"] = []
+                user_menu_config_meta = {"applied": False, "reason": "PLATFORM_RELEASE_GATE_FAIL_CLOSED"}
+            else:
+                delivery_nav, user_menu_config_meta = _apply_user_menu_config_to_delivery_nav(
+                    env,
+                    delivery_payload.get("nav") if isinstance(delivery_payload.get("nav"), list) else [],
+                )
+                delivery_payload["nav"] = delivery_nav
             meta = delivery_payload.get("meta")
             if not isinstance(meta, dict):
                 meta = {}

@@ -275,7 +275,9 @@ def _merge_pages(existing_pages: list, required_pages: list[dict]) -> tuple[list
 
 
 def _sync_platform_release_gate(product_key: str, pages: list[dict]) -> dict:
-    platform_db = str(env["ir.config_parameter"].sudo().get_param("smart_core.platform_release_db", "") or "").strip() or "sc_platform_core"  # noqa: F821
+    platform_db = str(env["ir.config_parameter"].sudo().get_param("smart_core.platform_release_db", "") or "").strip()  # noqa: F821
+    if not platform_db:
+        return {"status": "FAIL", "reason": "platform_release_db_required", "platform_db": ""}
     current_db = str(env.cr.dbname)  # noqa: F821
 
     def update_in(read_env):
