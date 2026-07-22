@@ -290,3 +290,24 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns explicit lifecycle compensation; normal runtime, product modules, frontend, and database schema must not expose or infer destructive cleanup authority
 - Blast Radius: only a database proven to have been created by the current `init` invocation; pre-existing and reserved databases remain immutable to this path
 - Validation: pre-existing preservation, no cleanup before successful creation, injected Odoo failure cleanup, retry success, cleanup-failure fail-closed behavior, production confirmation revalidation, full CI, and isolated image lifecycle cleanup
+
+## 2026-07-22 — R11F0S Independent Permission Test Gates
+
+- Branch: `fix/preexisting-permission-test-gates`
+- Starting commit: `e276e93745c2f8788c74350953ab58e4a2888ebb`
+- Formal Product Layer: P4 governance validation and P1 permission/record-rule test contracts
+- Layer Target: remove a migration-only model from the formal ACL matrix and align record-rule fixtures with existing company and settlement-direction constraints
+- Module: `smart_construction_core` tests only
+- Standard vs User-Specific: repository-wide security gates; no customer data, runtime configuration, or new business capability
+- Why Here / Why Not Elsewhere: tests must describe the registered formal runtime and valid business fixtures without changing production ACLs, record rules, or domain constraints
+- Blast Radius: ACL and record-rule tests only; no model, security definition, locked baseline, production data, snapshot, runtime, or image mutation
+- Validation: ACL matrix and real-model drift probe, settlement multi-company visibility, invalid-direction rejection, `sc_perm`, release contracts, baseline integrity, and full CI
+
+### R11C locked-menu transfer record
+
+- Original files: `addons/smart_construction_core/services/locked_menu_policy_contract.py`, `addons/smart_construction_core/models/support/product_policy_sync.py`, and `scripts/release/test_locked_menu_policy_contract.py`
+- Original failure: the R11C-only initialization specification treated the unresolved “外经证登记” entry as the runtime model `sc.legacy.payment.residual.fact`
+- Root cause: an unapproved legacy/menu-contract entry was duplicated as a resolvable runtime action specification
+- Required R11C repair: remove the invented runtime model specification, retain the stable menu/action identity as `BUSINESS_DECISION_REQUIRED`, and reject it before resolving any historical database action
+- Target branch: the future clean R11C branch recreated from the then-current `main`; this replacement branch intentionally contains no locked-menu code
+- Fixed boundaries: do not create `sc.legacy.payment.residual.fact`, do not bind `sc.invoice.registration`, do not alter the 97-entry baseline, and keep formal initialization fail-closed until the business disposition is approved

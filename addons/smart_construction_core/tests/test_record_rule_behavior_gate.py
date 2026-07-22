@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -63,7 +63,10 @@ class TestRecordRuleBehaviorGate(TransactionCase):
             ["smart_construction_core.group_sc_cap_settlement_user"],
         )
 
-        project_vals = {"privacy_visibility": "followers"}
+        project_vals = {
+            "privacy_visibility": "followers",
+            "company_id": company.id,
+        }
         cls.project_read = _ctx("project.project").create(
             dict(project_vals, name="RR Project Read", user_id=cls.user_project_read.id)
         )
@@ -85,6 +88,12 @@ class TestRecordRuleBehaviorGate(TransactionCase):
         cls.project_settlement_read = _ctx("project.project").create(
             dict(project_vals, name="RR Project Settlement Read", user_id=cls.user_settlement_read.id)
         )
+
+        # Finance record rules admit the project responsible user or an
+        # explicit project follower. Keep the fixture independent from mail's
+        # automatic subscription side effects by declaring membership here.
+        cls.project_finance.message_subscribe(partner_ids=[cls.user_finance_user.partner_id.id])
+        cls.project_finance_read.message_subscribe(partner_ids=[cls.user_finance_read.partner_id.id])
 
         cls.task_read = _ctx("project.task").create(
             {"name": "RR Task Read", "project_id": cls.project_read.id}
@@ -160,6 +169,7 @@ class TestRecordRuleBehaviorGate(TransactionCase):
                 "project_id": cls.project_settlement_read.id,
                 "partner_id": cls.partner.id,
                 "contract_id": cls.contract_settlement_read.id,
+                "settlement_type": "in",
                 "line_ids": [(0, 0, {"name": "RR Line Read", "amount": 10.0})],
             }
         )
@@ -168,6 +178,7 @@ class TestRecordRuleBehaviorGate(TransactionCase):
                 "project_id": cls.project_settlement.id,
                 "partner_id": cls.partner.id,
                 "contract_id": cls.contract_settlement_user.id,
+                "settlement_type": "in",
                 "line_ids": [(0, 0, {"name": "RR Line User", "amount": 20.0})],
             }
         )
@@ -176,6 +187,7 @@ class TestRecordRuleBehaviorGate(TransactionCase):
                 "project_id": cls.project_other.id,
                 "partner_id": cls.partner.id,
                 "contract_id": cls.contract_settlement_other.id,
+                "settlement_type": "in",
                 "line_ids": [(0, 0, {"name": "RR Line Other", "amount": 30.0})],
             }
         )
@@ -276,3 +288,18 @@ class TestRecordRuleBehaviorGate(TransactionCase):
             self.settlement_other,
             {"note": "RR Settlement Other Updated"},
         )
+
+    def test_settlement_contract_direction_constraint_remains_enforced(self):
+        with self.assertRaisesRegex(
+            ValidationError,
+            "合同类型与收支类型不一致",
+        ), self.env.cr.savepoint():
+            self.env["sc.settlement.order"].create(
+                {
+                    "project_id": self.project_settlement.id,
+                    "partner_id": self.partner.id,
+                    "contract_id": self.contract_settlement_user.id,
+                    "settlement_type": "out",
+                    "line_ids": [(0, 0, {"name": "RR Invalid Direction", "amount": 1.0})],
+                }
+            )
