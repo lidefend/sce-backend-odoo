@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3253`
+- Scanned files: `3260`
 - Files requiring split plan: `34`
 - Files above warning threshold: `49`
 
@@ -23,7 +23,7 @@ Generated from repository source files. This report is informational during the 
 | 2830 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 2484 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2443 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 2340 | Python source | `addons/smart_core/handlers/system_init.py` |
+| 2358 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2289 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 2193 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2091 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
@@ -116,7 +116,7 @@ Generated from repository source files. This report is informational during the 
 | 2830 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 2484 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2443 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 2340 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
+| 2358 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2289 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 2193 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2091 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |

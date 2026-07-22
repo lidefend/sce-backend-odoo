@@ -1,0 +1,12 @@
+[Unit]
+Description=SCEMS sc_production paired database and filestore backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/scems/production-backup.env
+ExecStart=/usr/bin/python3 /opt/ops/production_colocated_backup.py backup
+User=root
+Group=root
+UMask=0077

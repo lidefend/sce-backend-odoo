@@ -3,6 +3,20 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-22 — PRODUCTION-DEPLOYMENT-11-R10E Colocated Platform Core
+
+- Branch: `fix/r10e-colocated-platform-core-release-contract`
+- Starting product commit: `8caaaa63e105a3cc280b80e397c466a61860234e`
+- Formal Product Layer: P0 platform database-selection mechanism plus P4 release, backup, restore, and verification tooling
+- Layer Target: `smart_core` server-owned platform database contract and production release orchestration
+- Module: `smart_core`, production candidate contract, release scripts, deployment templates, ADR, and runbook
+- Reason: make `sc_production` the explicit source of truth for both business and currently enabled platform data, removing the unsafe mismatch between a single-database deployment and an implicit `sc_platform_core` code fallback
+- Standard vs User-Specific: generic current-production architecture and release safety; no construction-industry or customer-specific business semantics
+- Why Here: P0 owns generic platform registry selection and release-gate behavior; P4 owns deterministic initialization, paired recovery, and release admission
+- Why Not Elsewhere: frontend/Nginx client input cannot choose databases, industry/customer modules cannot redefine platform topology, and ops scripts cannot become platform data authority
+- Blast Radius: platform policy/snapshot reads, production preflight, candidate configuration, snapshot initialization, and paired database/filestore recovery; no ACL, record rule, formal database, formal config, Nginx, attachment, deployment, traffic, or production service mutation
+- Validation: 103/103 `smart_core` HttpCases completed (102 passed, one approved missing-demo-data skip), 45 client database/trust override requests safely served or rejected with zero HTTP 500 and zero invalid-database connections, colocated configuration and snapshot idempotency on an isolated production clone, paired backup validation and isolated restore equality for platform/business tables and filestore, production release-contract tests, and full `make ci`
+
 ## 2026-07-18 — TENANT-SEC-01
 
 - Branch: `feature/security-product-history-customer-payload-closure`

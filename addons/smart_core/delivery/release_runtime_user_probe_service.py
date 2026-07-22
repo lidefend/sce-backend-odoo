@@ -13,6 +13,7 @@ except Exception:  # pragma: no cover - lightweight unit-test stubs may not load
     Registry = None
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
+from odoo.addons.smart_core.core.platform_database_contract import resolve_platform_database
 
 from .delivery_engine import DeliveryEngine
 from .product_identity import resolve_product_identity
@@ -69,7 +70,7 @@ class ReleaseRuntimeUserProbeService:
         return self._config_param("smart_core.release_operator.catalog_source_db", "") or "sc_demo"
 
     def _platform_db_name(self) -> str:
-        return self._config_param("smart_core.platform_release_db", "") or "sc_platform_core"
+        return resolve_platform_database(self.env)
 
     def _probe_login(self, explicit_login: str = "") -> str:
         return _text(explicit_login) or self._config_param("smart_core.release_operator.runtime_probe_login", "") or "wutao"

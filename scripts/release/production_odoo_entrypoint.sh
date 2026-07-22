@@ -39,6 +39,11 @@ try:
         row = cr.fetchone()
         if not row or row[0] != "installed":
             raise SystemExit("[entrypoint] base is not installed; use the explicit management entry")
+        cr.execute("SELECT value FROM ir_config_parameter WHERE key='smart_core.platform_release_db' LIMIT 1")
+        row = cr.fetchone()
+        expected_platform_db = os.environ.get("PLATFORM_RELEASE_DB", "").strip()
+        if not row or (row[0] or "").strip() != expected_platform_db or expected_platform_db != db:
+            raise SystemExit("[entrypoint] smart_core.platform_release_db must explicitly match the target database")
 finally:
     conn.rollback()
     conn.close()

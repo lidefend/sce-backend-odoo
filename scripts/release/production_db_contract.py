@@ -10,7 +10,7 @@ import sys
 SAFE_NAME = re.compile(r"^[a-z][a-z0-9_]{2,62}$")
 FORMAL_DATABASES = {"sc_migration_rehearsal", "sc_production"}
 RESERVED_DATABASES = {"postgres", "template0", "template1", "sc_prod"}
-MUTATING_ACTIONS = {"init", "install", "upgrade"}
+MUTATING_ACTIONS = {"init", "install", "upgrade", "configure-platform", "initialize-platform-snapshot"}
 PRODUCTION_CONFIRMATION = "I_ACKNOWLEDGE_SC_PRODUCTION_CHANGE"
 
 
@@ -41,6 +41,12 @@ def validate(action: str, env: dict[str, str] | None = None) -> str:
         raise ContractError("sc_production requires SC_ENVIRONMENT=production")
     if db == "sc_migration_rehearsal" and env.get("SC_ENVIRONMENT") != "migration_rehearsal":
         raise ContractError("rehearsal database requires SC_ENVIRONMENT=migration_rehearsal")
+
+    platform_db = (env.get("PLATFORM_RELEASE_DB") or "").strip()
+    if not platform_db:
+        raise ContractError("PLATFORM_RELEASE_DB is required")
+    if platform_db != db:
+        raise ContractError("PLATFORM_RELEASE_DB must match the target database")
 
     allow_demo = _truthy(env.get("SC_ALLOW_DEMO_DATA"))
     if db == "sc_production" and allow_demo:

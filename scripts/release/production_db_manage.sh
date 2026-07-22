@@ -3,8 +3,8 @@ set -eu
 
 ACTION="${1:-}"
 case "$ACTION" in
-  preflight|health|init|install|upgrade) ;;
-  *) echo "usage: production-db-manage {preflight|health|init|install|upgrade}" >&2; exit 64 ;;
+  preflight|health|init|install|upgrade|configure-platform|initialize-platform-snapshot) ;;
+  *) echo "usage: production-db-manage {preflight|health|init|install|upgrade|configure-platform|initialize-platform-snapshot}" >&2; exit 64 ;;
 esac
 
 python3 /usr/local/bin/production_db_contract.py "$ACTION"
@@ -33,10 +33,30 @@ finally:
 PY
 }
 
+platform_contract_probe() {
+  python3 - "$DB" <<'PY'
+import os, sys, psycopg2
+db = sys.argv[1]
+conn = psycopg2.connect(host=os.environ.get("DB_HOST", "db"), port=int(os.environ.get("DB_PORT", "5432")), user=os.environ.get("DB_USER"), password=os.environ.get("DB_PASSWORD"), dbname=db, options="-c default_transaction_read_only=on")
+try:
+    conn.set_session(readonly=True)
+    with conn.cursor() as cr:
+        cr.execute("SELECT value FROM ir_config_parameter WHERE key='smart_core.platform_release_db' LIMIT 1")
+        row = cr.fetchone()
+        expected = os.environ.get("PLATFORM_RELEASE_DB", "").strip()
+        if not row or (row[0] or "").strip() != expected or expected != db:
+            raise SystemExit("smart_core.platform_release_db must explicitly match the target database")
+finally:
+    conn.rollback(); conn.close()
+PY
+}
+
 case "$ACTION" in
-  preflight|health) readonly_probe ;;
+  preflight|health) readonly_probe; platform_contract_probe ;;
   init)
     exec python3 /usr/local/bin/production_db_init.py "$CONF" ;;
   install) readonly_probe; exec odoo -c "$CONF" -d "$DB" --no-http --workers=0 --max-cron-threads=0 -i "$TARGET_MODULE" --without-demo=all --stop-after-init ;;
   upgrade) readonly_probe; exec odoo -c "$CONF" -d "$DB" --no-http --workers=0 --max-cron-threads=0 -u "$TARGET_MODULE" --without-demo=all --stop-after-init ;;
+  configure-platform) readonly_probe; exec odoo shell -c "$CONF" -d "$DB" < /usr/local/share/sce/configure_colocated_platform_core.py ;;
+  initialize-platform-snapshot) readonly_probe; platform_contract_probe; exec odoo shell -c "$CONF" -d "$DB" < /usr/local/share/sce/initialize_colocated_platform_snapshot.py ;;
 esac
