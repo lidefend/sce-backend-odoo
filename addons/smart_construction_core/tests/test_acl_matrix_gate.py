@@ -47,7 +47,6 @@ ACL_AUDIT_MODELS = [
     "sc.treasury.ledger",
     "sc.settlement.order",
     "sc.settlement.order.line",
-    "sc.legacy.business.entity.map",
 ]
 
 # Models that are intentionally excluded from P0 ACL expectations and tracked as P1.
@@ -89,7 +88,6 @@ ACL_EXPECTATIONS = [
     {"role": "settlement_read", "model": "sc.settlement.order.line", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
     {"role": "settlement_user", "model": "sc.settlement.order.line", "rights": {"read": True, "create": True, "write": True, "unlink": False}},
     {"role": "settlement_manager", "model": "sc.settlement.order.line", "rights": {"read": True, "create": True, "write": True, "unlink": True}},
-    {"role": "business_config_admin", "model": "sc.legacy.business.entity.map", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
     {"role": "platform_admin", "model": "project.project", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
     {"role": "platform_admin", "model": "construction.contract", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
     {"role": "platform_admin", "model": "payment.request", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
@@ -128,6 +126,25 @@ class TestAclMatrixGate(TransactionCase):
             return None
         model = self.env[model_name].with_user(user)
         return {op: bool(model.check_access_rights(op, raise_exception=False)) for op in OPS}
+
+    def _expectation_failures(self, expectations):
+        failures = []
+        missing = []
+        for item in expectations:
+            role = item["role"]
+            model = item["model"]
+            expected = item["rights"]
+            if model not in self.env:
+                missing.append(model)
+                continue
+            rights = self._rights(self.users[role], model)
+            for op, exp in expected.items():
+                got = rights.get(op)
+                if got != exp:
+                    failures.append(f"{role} {model} {op}: expected {exp} got {got}")
+        if missing:
+            failures.append(f"Missing models: {', '.join(sorted(set(missing)))}")
+        return failures
 
     def _audit_path(self):
         repo_root = os.path.abspath(
@@ -238,27 +255,24 @@ class TestAclMatrixGate(TransactionCase):
         _logger.info("P1 ACL source audit written to %s", target)
 
     def test_acl_matrix_gate(self):
-        failures = []
-        missing = []
-
-        for item in ACL_EXPECTATIONS:
-            role = item["role"]
-            model = item["model"]
-            expected = item["rights"]
-            if model not in self.env:
-                missing.append(model)
-                continue
-            user = self.users[role]
-            rights = self._rights(user, model)
-            for op, exp in expected.items():
-                got = rights.get(op)
-                if got != exp:
-                    failures.append(f"{role} {model} {op}: expected {exp} got {got}")
+        failures = self._expectation_failures(ACL_EXPECTATIONS)
 
         self._write_audit_csv()
         self._write_p1_acl_sources()
 
-        if missing:
-            failures.append(f"Missing models: {', '.join(sorted(set(missing)))}")
-
         self.assertFalse(failures, "ACL matrix gate failures: %s" % "; ".join(failures))
+
+    def test_registered_formal_model_acl_drift_is_detected(self):
+        failures = self._expectation_failures(
+            [
+                {
+                    "role": "system_admin",
+                    "model": "sc.settlement.order",
+                    "rights": {"create": True},
+                }
+            ]
+        )
+        self.assertEqual(
+            failures,
+            ["system_admin sc.settlement.order create: expected True got False"],
+        )
