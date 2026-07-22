@@ -46,6 +46,7 @@ services:
       DB_NAME: ${TARGET_DB:?TARGET_DB is required}
       ODOO_DB: ${TARGET_DB:?TARGET_DB is required}
       ODOO_DBFILTER: ^${TARGET_DB:?TARGET_DB is required}$$
+      PLATFORM_RELEASE_DB: ${PLATFORM_RELEASE_DB:?PLATFORM_RELEASE_DB is required}
       ODOO_CONF_OUT: /opt/sce-runtime/config/odoo.conf
       TMPDIR: /opt/sce-runtime/tmp
       ADMIN_PASSWD: ${ADMIN_PASSWD}

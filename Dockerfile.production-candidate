@@ -43,6 +43,8 @@ COPY scripts/release/production_odoo_entrypoint.sh /usr/local/bin/odoo-entrypoin
 COPY scripts/release/production_db_contract.py /usr/local/bin/production_db_contract.py
 COPY scripts/release/production_db_init.py /usr/local/bin/production_db_init.py
 COPY scripts/release/production_db_manage.sh /usr/local/bin/production-db-manage
+COPY scripts/release/configure_colocated_platform_core.py /usr/local/share/sce/configure_colocated_platform_core.py
+COPY scripts/release/initialize_colocated_platform_snapshot.py /usr/local/share/sce/initialize_colocated_platform_snapshot.py
 COPY frontend/apps/web/dist-production-candidate /usr/share/nginx/html
 COPY VERSION /opt/sce-product/VERSION
 COPY release/product-release.yaml /opt/sce-product/product-release.yaml

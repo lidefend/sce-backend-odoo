@@ -25,6 +25,7 @@ def environment(database: str = "sc_migration_rehearsal") -> dict[str, str]:
         "SC_ALLOW_DEMO_DATA": "0",
         "SC_SOURCE_REVISION": "a" * 40,
         "EXPECTED_RELEASE_SHA": "a" * 40,
+        "PLATFORM_RELEASE_DB": database,
     }
     for key, suffix in {
         "SC_DATABASE_VOLUME": "postgres", "SC_REDIS_VOLUME": "redis",
