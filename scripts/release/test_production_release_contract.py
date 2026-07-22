@@ -89,6 +89,13 @@ class StaticContractTests(unittest.TestCase):
     def test_no_distribution_upgrade(self): self.assertNotRegex(self.dockerfile, r"apt(?:-get)?\s+(?:dist-upgrade|full-upgrade|upgrade)")
     def test_empty_addon_directories_created(self):
         for path in ("/mnt/customer-addons", "/mnt/test-addons", "/mnt/source-addons"): self.assertIn(path, self.dockerfile)
+    def test_candidate_image_copies_versioned_locked_menu_contract(self):
+        for name in (
+            "formal_business_product_menu_policy_v1.json",
+            "formal_business_product_menu_policy_v1.json.sha256",
+        ):
+            self.assertIn(f"COPY scripts/verify/baselines/{name} /opt/sce-product/contracts/{name}", self.dockerfile)
+            self.assertTrue((ROOT / "scripts/verify/baselines" / name).is_file())
     def test_runtime_storage_avoids_base_image_volume(self):
         self.assertIn("/opt/sce-runtime/filestore", self.dockerfile)
         self.assertNotIn("/var/lib/odoo/filestore", self.dockerfile)

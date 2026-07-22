@@ -9,6 +9,14 @@ from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     MENU_CONFIG_POLICY_MODEL,
     NAV_USER_DATA_ACCEPTANCE_ONLY_PARAM,
 )
+from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
+    FORMAL_ACTION_ONLY_MENU_TARGETS,
+    FORMAL_INITIALIZATION_ACTION_SPECS,
+    LockedMenuPolicyContractError,
+    assert_policy_matches_locked_contract,
+    canonical_group_label,
+    load_locked_menu_policy_contract,
+)
 
 
 FORMAL_CONTRACT_PRODUCT_MENU_XMLIDS = {
@@ -632,6 +640,184 @@ def _integration_model_from_target(target):
 
 class ScProductPolicy(models.Model):
     _inherit = "sc.product.policy"
+
+    @api.model
+    def _resolve_or_create_formal_initialization_action(self, action_xmlid):
+        action = self.env.ref(action_xmlid, raise_if_not_found=False)
+        if action:
+            return action
+        spec = FORMAL_INITIALIZATION_ACTION_SPECS.get(action_xmlid)
+        if not spec:
+            return False
+        model_name = _text(spec.get("res_model"))
+        if model_name not in self.env:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
+                f"missing action model {model_name}",
+            )
+        module, name = action_xmlid.split(".", 1)
+        action = self.env["ir.actions.act_window"].sudo().create(
+            {
+                "name": _text(spec.get("name")),
+                "res_model": model_name,
+                "view_mode": "tree,form",
+                "domain": _text(spec.get("domain")) or "[]",
+                "context": _text(spec.get("context")) or "{}",
+            }
+        )
+        self.env["ir.model.data"].sudo().create(
+            {
+                "module": module,
+                "name": name,
+                "model": action._name,
+                "res_id": action.id,
+                "noupdate": True,
+            }
+        )
+        return action
+
+    @api.model
+    def synchronize_locked_formal_menu_policy(
+        self,
+        product_key,
+        *,
+        baseline_path=None,
+        checksum_path=None,
+    ):
+        """Converge one formal construction policy without catalog fallback."""
+        product_key = _text(product_key)
+        contract = load_locked_menu_policy_contract(
+            baseline_path=baseline_path,
+            checksum_path=checksum_path,
+        )
+        product = contract["products"].get(product_key)
+        if not isinstance(product, dict):
+            raise LockedMenuPolicyContractError("LOCKED_MENU_BASELINE_PRODUCT_MISMATCH", product_key)
+
+        menu_groups = []
+        hydrated_by_xmlid = {}
+        for group in product.get("menu_groups") or []:
+            legacy_label = _text(group.get("group_label") or group.get("label") or group.get("title"))
+            group_label = canonical_group_label(legacy_label)
+            next_group = dict(group)
+            next_group.update(
+                {
+                    "group_label": group_label,
+                    "group_key": "construction.%s" % group_label,
+                    "label": group_label,
+                    "title": group_label,
+                }
+            )
+            menus = []
+            for menu in group.get("menus") or []:
+                row = dict(menu)
+                menu_xmlid = _text(row.get("menu_xmlid") or row.get("page_key") or row.get("menu_key"))
+                menu_rec = self.env.ref(menu_xmlid, raise_if_not_found=False) if menu_xmlid else False
+                action_xmlid = _text(row.get("action_xmlid")) or FORMAL_ACTION_ONLY_MENU_TARGETS.get(menu_xmlid, "")
+                action = menu_rec.action if menu_rec else (
+                    self._resolve_or_create_formal_initialization_action(action_xmlid) if action_xmlid else False
+                )
+                if not menu_rec and not action_xmlid:
+                    raise LockedMenuPolicyContractError(
+                        "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
+                        f"{product_key} unresolved menu without stable action target {menu_xmlid}",
+                    )
+                if hasattr(menu_rec, "active") and not menu_rec.active:
+                    menu_rec.sudo().write({"active": True})
+                if not action:
+                    raise LockedMenuPolicyContractError(
+                        "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
+                        f"{product_key} unresolved action {action_xmlid or menu_xmlid}",
+                    )
+                resolved_action_xmlid = action.get_external_id().get(action.id, "") or ""
+                if action_xmlid and resolved_action_xmlid != action_xmlid:
+                    raise LockedMenuPolicyContractError(
+                        "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
+                        f"{product_key} action identity mismatch {menu_xmlid}",
+                    )
+                action_id = int(action.id or 0)
+                menu_id = int(menu_rec.id or 0) if menu_rec else 0
+                action_res_model = _text(getattr(action, "res_model", ""))
+                locked_res_model = _text(row.get("res_model") or row.get("model"))
+                if locked_res_model and action_res_model != locked_res_model:
+                    raise LockedMenuPolicyContractError(
+                        "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
+                        f"{product_key} action model mismatch {menu_xmlid}",
+                    )
+                res_model = action_res_model or locked_res_model
+                route = "/a/%s?menu_id=%s" % (action_id, menu_id) if menu_id else "/a/%s" % action_id
+                row.update(
+                    {
+                        "menu_xmlid": menu_xmlid,
+                        "menu_key": menu_xmlid,
+                        "page_key": menu_xmlid,
+                        "menu_id": menu_id,
+                        "action_id": action_id,
+                        "action_xmlid": resolved_action_xmlid,
+                        "route": route,
+                        "res_model": res_model,
+                        "model": res_model,
+                        "enabled": True,
+                        "release_state": "released",
+                        "access_level": "public",
+                    }
+                )
+                row.pop("id", None)
+                menus.append(row)
+                hydrated_by_xmlid[menu_xmlid] = row
+            next_group["menus"] = menus
+            menu_groups.append(next_group)
+
+        capabilities = []
+        for capability in product.get("capabilities") or []:
+            if not isinstance(capability, dict):
+                continue
+            row = dict(capability)
+            menu_xmlid = _text(row.get("menu_xmlid") or row.get("target_page_key"))
+            hydrated = hydrated_by_xmlid.get(menu_xmlid)
+            if hydrated:
+                row.update(
+                    {
+                        "menu_xmlid": menu_xmlid,
+                        "target_page_key": menu_xmlid,
+                        "action_id": int(hydrated.get("action_id") or 0),
+                        "res_model": _text(hydrated.get("res_model")),
+                    }
+                )
+            row.pop("id", None)
+            capabilities.append(row)
+
+        values = {
+            "active": True,
+            "product_key": product_key,
+            "base_product_key": _text(product.get("base_product_key")) or "construction",
+            "edition_key": _text(product.get("edition_key")) or product_key.split(".", 1)[1],
+            "state": _text(product.get("state")) or ("preview" if product_key.endswith(".preview") else "stable"),
+            "access_level": "public",
+            "allowed_role_codes": product.get("allowed_role_codes") if isinstance(product.get("allowed_role_codes"), list) else [],
+            "label": _text(product.get("label")) or product_key,
+            "version": _text(product.get("version")) or "v1",
+            "scene_version_bindings": product.get("scene_version_bindings") if isinstance(product.get("scene_version_bindings"), dict) else {},
+            "menu_groups": menu_groups,
+            "scenes": product.get("scenes") if isinstance(product.get("scenes"), list) else [],
+            "capabilities": capabilities,
+            "note": "synchronized from versioned locked formal menu policy baseline",
+        }
+        rec = self.sudo().search([("product_key", "=", product_key)], limit=1)
+        if rec:
+            changed = any(rec[field_name] != field_value for field_name, field_value in values.items())
+            if changed:
+                rec.write(values)
+        else:
+            rec = self.sudo().create(values)
+            changed = True
+        match = assert_policy_matches_locked_contract(contract, product_key, rec.menu_groups)
+        return {
+            "policy": rec,
+            "contract": contract,
+            "changed": changed,
+            "match": match,
+        }
 
     @api.model
     def sync_construction_menu_product_policies(self):

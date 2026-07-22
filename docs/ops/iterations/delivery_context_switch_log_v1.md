@@ -290,3 +290,17 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns explicit lifecycle compensation; normal runtime, product modules, frontend, and database schema must not expose or infer destructive cleanup authority
 - Blast Radius: only a database proven to have been created by the current `init` invocation; pre-existing and reserved databases remain immutable to this path
 - Validation: pre-existing preservation, no cleanup before successful creation, injected Odoo failure cleanup, retry success, cleanup-failure fail-closed behavior, production confirmation revalidation, full CI, and isolated image lifecycle cleanup
+
+## 2026-07-22 — R11C Locked Menu Policy Initialization
+
+- Branch: `fix/first-deployment-locked-menu-policy-initialization`
+- Starting commit: `e276e93745c2f8788c74350953ab58e4a2888ebb`
+- Formal Product Layer: P1 construction industry menu baseline plus P4 release initialization and immutable image packaging
+- Layer Target: one versioned, checksummed locked-menu contract shared by formal policy synchronization, snapshot initialization, and the production menu release guard
+- Module: `smart_construction_core`, production candidate Dockerfile, colocated snapshot initializer, and isolated release-contract acceptance
+- Reason: first deployment silently lost the locked baseline inside the production image, generated a 214-entry catalog fallback policy, and froze that candidate policy before comparing it with the 97-entry repository release contract
+- Standard vs User-Specific: construction standard/preview release policy only; no customer preference, low-code override, production data baseline, or frontend behavior
+- Why Here: P1 owns the construction menu contract and its stable XML-ID identity; P4 packages and applies that authority transactionally during first deployment
+- Why Not Elsewhere: P0 snapshot infrastructure remains generic, the frontend cannot choose product menus, runtime configuration cannot replace a versioned release contract, and production data is not a policy authority
+- Blast Radius: formal initialization of `construction.standard` and `construction.preview`, candidate image contract contents, and guard normalization; catalog fallback remains available only to explicitly non-formal development flows
+- Validation: locked baseline missing/invalid/product/normalization negatives, numeric-ID independence, 214-to-97 isolated clone convergence, pre/post snapshot gates, transactional rollback, standard/preview isolation, repeated initialization idempotency, candidate-image contract acceptance, release-contract tests, and full CI
