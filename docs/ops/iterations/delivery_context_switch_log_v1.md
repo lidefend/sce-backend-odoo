@@ -304,3 +304,15 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Not Elsewhere: P0 snapshot infrastructure remains generic, the frontend cannot choose product menus, runtime configuration cannot replace a versioned release contract, and production data is not a policy authority
 - Blast Radius: formal initialization of `construction.standard` and `construction.preview`, candidate image contract contents, and guard normalization; catalog fallback remains available only to explicitly non-formal development flows
 - Validation: locked baseline missing/invalid/product/normalization negatives, numeric-ID independence, 214-to-97 isolated clone convergence, pre/post snapshot gates, transactional rollback, standard/preview isolation, repeated initialization idempotency, candidate-image contract acceptance, release-contract tests, and full CI
+
+## 2026-07-22 — R11F0 Baseline Governance Gate Repair
+
+- Branch: `fix/preexisting-governance-gate-repair`
+- Starting commit: `f0629ce818eb459da9ffa6229405fc28968c32ab`
+- Formal Product Layer: P4 release governance and P1 permission/record-rule test contracts
+- Layer Target: preserve unresolved locked-menu entries as fail-closed, remove a migration-only model from the formal ACL matrix, and align record-rule fixtures with the existing settlement direction constraint
+- Module: `smart_construction_core` and release contract tests
+- Standard vs User-Specific: generic release and security gates only; no tenant data, production state, menu baseline, or business capability implementation
+- Why Here / Why Not Elsewhere: governance tests must describe the registered formal runtime without inventing legacy models, while product constraints remain unchanged and independently asserted
+- Blast Radius: test and release-gate semantics only; no production database, snapshot, runtime, image, ACL definition, record rule, or locked 97-entry baseline mutation
+- Validation: static legacy boundary, locked-menu fail-closed contract, ACL matrix drift probe, settlement direction negative case, permission regression suite, release-contract checks, baseline checksum, and full CI

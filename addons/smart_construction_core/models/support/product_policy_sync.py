@@ -13,6 +13,7 @@ from odoo.addons.smart_construction_core.services.locked_menu_policy_contract im
     FORMAL_ACTION_ONLY_MENU_TARGETS,
     FORMAL_INITIALIZATION_ACTION_SPECS,
     LockedMenuPolicyContractError,
+    assert_formal_action_target_approved,
     assert_policy_matches_locked_contract,
     canonical_group_label,
     load_locked_menu_policy_contract,
@@ -643,6 +644,7 @@ class ScProductPolicy(models.Model):
 
     @api.model
     def _resolve_or_create_formal_initialization_action(self, action_xmlid):
+        assert_formal_action_target_approved(action_xmlid)
         action = self.env.ref(action_xmlid, raise_if_not_found=False)
         if action:
             return action

@@ -37,6 +37,13 @@ FORMAL_ACTION_ONLY_MENU_TARGETS = {
     "smart_construction_core.menu_sc_tax_certificate_registration_user": "smart_construction_core.action_sc_tax_certificate_registration_user",
 }
 
+# Locked baseline entries whose product semantics have not yet been approved.
+# Keeping the stable action target here preserves the contract discrepancy and
+# makes formal initialization fail closed without inventing a runtime model.
+UNRESOLVED_FORMAL_ACTION_TARGETS = {
+    "smart_construction_core.action_sc_tax_certificate_registration_user": "BUSINESS_DECISION_REQUIRED",
+}
+
 # Versioned definitions for action-only targets that are not installed by the
 # module data set. They are created only inside the formal initialization
 # transaction and receive the stable XMLID above before a policy can use them.
@@ -65,12 +72,6 @@ FORMAL_INITIALIZATION_ACTION_SPECS = {
         "domain": "[('fact_type', '=', 'company_document_archive')]",
         "context": "{'default_fact_type': 'company_document_archive'}",
     },
-    "smart_construction_core.action_sc_tax_certificate_registration_user": {
-        "name": "外经证登记",
-        "res_model": "sc.legacy.payment.residual.fact",
-        "domain": "[]",
-        "context": "{'create': False}",
-    },
 }
 
 
@@ -81,6 +82,15 @@ class LockedMenuPolicyContractError(RuntimeError):
         self.code = str(code or "LOCKED_MENU_BASELINE_INVALID")
         self.detail = str(detail or "").strip()
         super().__init__(f"{self.code}: {self.detail}" if self.detail else self.code)
+
+
+def assert_formal_action_target_approved(action_xmlid: str) -> None:
+    unresolved_reason = UNRESOLVED_FORMAL_ACTION_TARGETS.get(action_xmlid)
+    if unresolved_reason:
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
+            f"unresolved formal action {action_xmlid}: {unresolved_reason}",
+        )
 
 
 def _text(value) -> str:

@@ -42,6 +42,30 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             self.assertIn("domain", spec)
             self.assertIn("context", spec)
 
+    def test_unapproved_formal_entry_remains_explicit_and_fail_closed(self):
+        action_xmlid = "smart_construction_core.action_sc_tax_certificate_registration_user"
+        self.assertEqual(
+            CONTRACT.FORMAL_ACTION_ONLY_MENU_TARGETS[
+                "smart_construction_core.menu_sc_tax_certificate_registration_user"
+            ],
+            action_xmlid,
+        )
+        self.assertEqual(
+            CONTRACT.UNRESOLVED_FORMAL_ACTION_TARGETS[action_xmlid],
+            "BUSINESS_DECISION_REQUIRED",
+        )
+        self.assertNotIn(action_xmlid, CONTRACT.FORMAL_INITIALIZATION_ACTION_SPECS)
+        self.assertTrue(
+            set(CONTRACT.UNRESOLVED_FORMAL_ACTION_TARGETS).isdisjoint(
+                CONTRACT.FORMAL_INITIALIZATION_ACTION_SPECS
+            )
+        )
+        with self.assertRaisesRegex(
+            CONTRACT.LockedMenuPolicyContractError,
+            "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH.*BUSINESS_DECISION_REQUIRED",
+        ):
+            CONTRACT.assert_formal_action_target_approved(action_xmlid)
+
     def _write_contract(self, root: Path, payload) -> tuple[Path, Path]:
         baseline = root / CONTRACT.BASELINE_FILE
         checksum = root / CONTRACT.BASELINE_CHECKSUM_FILE
