@@ -3,6 +3,20 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-23 — RELEASE-CANDIDATE-02R
+
+- Branch: `fix/release-candidate-02r-contract`
+- Starting product commit: `2554617a7a31b07e02cba5d9278213d9ac0d8acf`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: formal scan observation, release manifest identity, production Git authority diagnosis, and digest-addressed Compose admission
+- Module: `scripts/release`, `scripts/verify`, production candidate Compose, release schema/tests, and production remediation documentation
+- Reason: fail closed when scan observations or artifact identity are incomplete, reject stale Git authority evidence, and prevent tag-only or legacy-target production admission
+- Standard vs User-Specific: generic release safety; no construction-industry or customer business semantics
+- Why Here: repository-owned P4 tooling is the authority for build evidence, release admission, and non-mutating production diagnostics
+- Why Not Elsewhere: application modules must not own deployment identity, frontend cannot validate server artifacts, and production runtime configuration cannot repair a missing source contract
+- Blast Radius: the next candidate scan/manifest, release identity preflight, Git diagnostic evidence, and production candidate Compose inputs; no business model, baseline content, rc.1 artifact, production connection, database, container, or runtime mutation
+- Validation: unit matrices for scan, manifest, authority and Compose contracts; release-contract suite; repository lint/type/unit gates; one standard `make ci`
+
 ## 2026-07-22 — PRODUCTION-DEPLOYMENT-11-R10E Colocated Platform Core
 
 - Branch: `fix/r10e-colocated-platform-core-release-contract`

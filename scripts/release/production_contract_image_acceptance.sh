@@ -119,9 +119,29 @@ manifest = root / "product-release-manifest.json"
 manifest.write_text(
     json.dumps(
         {
+            "schema_version": "product_release_manifest.v2",
+            "repository": "lidefend/sce-backend-odoo",
+            "branch": "main",
             "source_sha": os.environ["SOURCE_SHA"],
             "oci_revision": os.environ["SOURCE_SHA"],
+            "container_source_revision": os.environ["SOURCE_SHA"],
             "image_digest": os.environ["IMAGE_DIGEST"],
+            "archive_sha256": "a" * 64,
+            "archive_reload_digest": os.environ["IMAGE_DIGEST"],
+            "baseline_checksum": "b" * 64,
+            "scan": {
+                "status": "completed",
+                "source_sha": os.environ["SOURCE_SHA"],
+                "image_digest": os.environ["IMAGE_DIGEST"],
+                "counts": {
+                    "CRITICAL": 0,
+                    "HIGH": 0,
+                    "MEDIUM": 0,
+                    "LOW": 0,
+                    "SECRET": 0,
+                },
+                "policy": {"result": "pass"},
+            },
         },
         sort_keys=True,
     )

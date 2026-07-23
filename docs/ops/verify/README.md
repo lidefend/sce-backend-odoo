@@ -307,8 +307,8 @@
 - `make verify.production_deployment.record.guard`
   - Verifies concrete production deployment records under `docs/ops/releases/current/production_deployment_*.md`, or a single record via `PRODUCTION_DEPLOYMENT_RECORD=<path>`.
   - Enforces required sections, explicit `incremental package` / `full tree` / `hotfix` release type, sha256 evidence, production backup paths, post-deployment validation PASS rows, demo cleanup evidence, and explicit non-full-alignment wording when full-tree alignment is not checked.
-  - For full-tree releases, requires production Git authority evidence: `production_git_authority_guard: PASS`, `HEAD=origin/main=`, clean Git status, and the `.env.prod` `skip-worktree` exception.
-  - The deployment record template requires future full-tree releases to preserve the full `production_git_authority_guard` JSON evidence with `status`, `branch`, `head`, `remote_head`, `status_porcelain`, `remote_auth_ok`, and `env_file_skip_worktree`.
+  - For full-tree releases, requires production Git authority evidence: `production_git_authority_guard: PASS`, `HEAD=live_remote_main=EXPECTED_RELEASE_SHA=`, clean Git status, and the approved remote URL.
+  - The deployment record template requires future full-tree releases to preserve the full `production_git_authority_guard` JSON evidence with `status`, `branch`, `head`, `expected_release_sha`, `live_remote_main_sha`, `remote_url`, `status_porcelain`, `detached_head`, `live_remote_query_ok`, and `stale_remote_ref_detected`.
   - If the record claims production and daily development are fully aligned, also requires `full tree` release type, zero full-tree diff, module-version target evidence, and module-version diff `PASS`.
   - Rejects open-ended production record placeholders, including the common
     three-letter placeholder, `待填写`, `| open |`, and ``| `open` |``.
@@ -322,10 +322,10 @@
   - Enforces the production read-only attachment validation targets remain registered for attachment-scope releases.
 - `make verify.production_git.authority.guard`
   - Verifies the production Git work tree authority baseline.
-  - Checks the work tree is on `main`, `HEAD` equals `origin/main`, `git status --porcelain` is clean, and the configured remote can read `main`.
-  - Does not use Odoo, Docker Compose, or `PROD_READONLY_VERIFY`; it is a host Git/worktree authority check controlled by `PRODUCTION_GIT_AUTHORITY_*` environment variables.
-  - In production, run with `PRODUCTION_GIT_AUTHORITY_REQUIRE_ENV_SKIP=1` so `.env.prod` must be explicitly protected by `skip-worktree`.
-  - A `remote_auth_ok=false` failure means the current commit may still be aligned through bundle/release package, but the server is not yet ready for standard autonomous `git fetch origin main` production upgrades.
+  - Requires an explicit full `EXPECTED_RELEASE_SHA`, `main`, a non-detached clean work tree, the approved remote URL, and equality between local HEAD, expected SHA, and live remote main.
+  - Uses `git ls-remote` for live authority; a stale tracking ref is reported but never accepted as a replacement.
+  - Does not use Odoo, Docker Compose, or `PROD_READONLY_VERIFY`, and never pulls, checks out, resets, or changes the remote.
+  - A failed/unavailable live remote query is BLOCKED. Production deployment still uses the immutable manifest image digest rather than building from the checkout.
 - `make verify.scene.product_delivery.readiness.guard`
   - Enforces final product delivery readiness thresholds from `scripts/verify/baselines/scene_product_delivery_readiness_guard.json`.
   - Writes reports: `artifacts/backend/scene_product_delivery_readiness_report.json` and `artifacts/backend/scene_product_delivery_readiness_report.md`.

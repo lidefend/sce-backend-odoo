@@ -29,9 +29,29 @@ def formal_env(db: str = "sc_migration_rehearsal") -> dict[str, str]:
     manifest.write_text(
         json.dumps(
             {
+                "schema_version": "product_release_manifest.v2",
+                "repository": "lidefend/sce-backend-odoo",
+                "branch": "main",
                 "source_sha": source_sha,
                 "oci_revision": source_sha,
+                "container_source_revision": source_sha,
                 "image_digest": image_digest,
+                "archive_sha256": "c" * 64,
+                "archive_reload_digest": image_digest,
+                "baseline_checksum": "d" * 64,
+                "scan": {
+                    "status": "completed",
+                    "source_sha": source_sha,
+                    "image_digest": image_digest,
+                    "counts": {
+                        "CRITICAL": 0,
+                        "HIGH": 0,
+                        "MEDIUM": 1,
+                        "LOW": 2,
+                        "SECRET": 0
+                    },
+                    "policy": {"result": "pass"}
+                }
             },
             sort_keys=True,
         )
@@ -146,17 +166,16 @@ class StaticContractTests(unittest.TestCase):
         ):
             self.assertIn(f"COPY scripts/verify/baselines/{name} /opt/sce-product/contracts/{name}", self.dockerfile)
             self.assertTrue((ROOT / "scripts/verify/baselines" / name).is_file())
-    def test_unapproved_locked_menu_acceptance_is_fail_closed_and_non_mutating(self):
+    def test_approved_tax_certificate_initialization_remains_formal_and_non_legacy(self):
         for token in (
-            "BUSINESS_DECISION_REQUIRED",
-            "decision_artifact_state",
-            "policies_unchanged=true",
-            "snapshots_unchanged=true",
-            "invented_action=false",
-            "invented_model=false",
+            "TAX_CERTIFICATE_INITIALIZATION PASS",
+            "sc.tax.certificate.registration",
+            "action_sc_tax_certificate_registration_user",
+            "menu_sc_tax_certificate_registration_user",
+            "sc.legacy.payment.residual.fact",
         ):
             self.assertIn(token, self.acceptance)
-        self.assertNotIn("old=214 synchronized=97 snapshots=97", self.acceptance)
+        self.assertNotIn("CREATE MODEL sc.legacy.payment.residual.fact", self.acceptance)
     def test_runtime_storage_avoids_base_image_volume(self):
         self.assertIn("/opt/sce-runtime/filestore", self.dockerfile)
         self.assertNotIn("/var/lib/odoo/filestore", self.dockerfile)
@@ -167,6 +186,11 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("preflight|health) readonly_probe", self.manager)
         self.assertIn("base is not installed", self.manager)
     def test_compose_images_are_digest_pinned(self): self.assertEqual(len(re.findall(r"image: .*@sha256:[0-9a-f]{64}", self.compose)), 2)
+    def test_application_services_require_digest_addressed_refs(self):
+        self.assertIn("ODOO_IMAGE_REF with image@sha256 digest is required", self.compose)
+        self.assertIn("NGINX_IMAGE_REF with image@sha256 digest is required", self.compose)
+        self.assertNotIn("image: ${CANDIDATE_IMAGE", self.compose)
+        self.assertIn("PRODUCTION_COMPOSE_PROJECT:?PRODUCTION_COMPOSE_PROJECT is required", self.compose)
     def test_compose_does_not_default_target_database(self): self.assertIn("TARGET_DB:?TARGET_DB is required", self.compose)
     def test_compose_disables_demo(self): self.assertIn('SC_ALLOW_DEMO_DATA: "0"', self.compose)
     def test_compose_requires_explicit_colocated_platform_database(self):

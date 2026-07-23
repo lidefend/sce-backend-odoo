@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lidefend/sce-backend-odoo/schemas/release/product_release_manifest.v2.schema.json",
+  "title": "SCE product release manifest v2",
+  "type": "object",
+  "required": [
+    "schema_version", "repository", "branch", "release_version", "source_sha",
+    "image", "image_tags", "image_digest", "oci_revision",
+    "container_source_revision", "base_image_digests", "baseline_checksum",
+    "scan", "archive_sha256", "archive_reload_digest", "candidate_status",
+    "deployment_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "product_release_manifest.v2"},
+    "repository": {"const": "lidefend/sce-backend-odoo"},
+    "branch": {"const": "main"},
+    "release_version": {"type": "string", "minLength": 1},
+    "source_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "image": {"type": "string", "minLength": 1},
+    "image_tags": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "image_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "oci_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "container_source_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "base_image_digests": {
+      "type": "object",
+      "required": ["frontend_builder", "odoo_runtime"],
+      "additionalProperties": false,
+      "properties": {
+        "frontend_builder": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "odoo_runtime": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "baseline_checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "scan": {"type": "object"},
+    "archive_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "archive_reload_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "candidate_status": {"const": "rc"},
+    "deployment_status": {"enum": ["not_deployed", "blocked"]}
+  }
+}

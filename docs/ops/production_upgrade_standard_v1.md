@@ -127,19 +127,17 @@ curl -sS -I --max-time 8 http://127.0.0.1:8072/ | sed -n '1,12p'
 
 ```bash
 git status --short
-git fetch origin
-git checkout <approved_commit_or_tag>
-PRODUCTION_GIT_AUTHORITY_REQUIRE_ENV_SKIP=1 \
+EXPECTED_RELEASE_SHA=<approved-full-40-char-main-sha> \
   make verify.production_git.authority.guard
 ```
 
-`make verify.production_git.authority.guard` 只读检查生产工作区是否在 `main`、`HEAD`
-是否等于 `origin/main`、工作区是否干净、`.env.prod` 是否作为生产配置例外被
-`skip-worktree` 保护，以及生产服务器是否具备直接从 GitHub 只读拉取主线的能力。
-该检查不连接 Odoo 或 Docker Compose，不使用 `PROD_READONLY_VERIFY`；其运行边界由
-`PRODUCTION_GIT_AUTHORITY_*` 环境变量控制。
-如果 `git_auth` 失败，不能把生产服务器声明为长期可自治升级状态；只能声明当前
-commit 已对齐，并必须补齐 deploy key。
+`make verify.production_git.authority.guard` 只读检查生产工作区是否在 `main`、
+是否非 detached HEAD、工作区是否干净、remote URL 是否为批准权威源，以及
+`HEAD = EXPECTED_RELEASE_SHA = GitHub 实时 main`。它用实时 `ls-remote` 结果，
+不会把陈旧 remote-tracking ref 当成权威证据；网络或鉴权失败直接 BLOCKED。
+该检查不连接 Odoo 或 Docker Compose，不使用 `PROD_READONLY_VERIFY`，也不自动
+pull、checkout、reset 或修改 remote。生产最终从 manifest 锁定的不可变镜像
+digest 部署，不得把生产 Git checkout 重新作为现场构建来源。
 
 生产目录不是 Git 工作区时：
 

@@ -47,11 +47,32 @@ def _validate_release_manifest(env: dict[str, str], expected_sha: str) -> None:
         raise ContractError("release manifest checksum mismatch")
     if not isinstance(payload, dict):
         raise ContractError("release manifest must be a JSON object")
-    for field in ("source_sha", "oci_revision"):
+    if payload.get("schema_version") != "product_release_manifest.v2":
+        raise ContractError("release manifest schema must be product_release_manifest.v2")
+    if payload.get("repository") != "lidefend/sce-backend-odoo" or payload.get("branch") != "main":
+        raise ContractError("release manifest repository/branch authority mismatch")
+    for field in ("source_sha", "oci_revision", "container_source_revision"):
         if payload.get(field) != expected_sha:
             raise ContractError(f"release manifest {field} must match EXPECTED_RELEASE_SHA")
     if payload.get("image_digest") != expected_digest:
         raise ContractError("release manifest image_digest must match EXPECTED_IMAGE_DIGEST")
+    if payload.get("archive_reload_digest") != expected_digest:
+        raise ContractError("release manifest archive reload digest must match EXPECTED_IMAGE_DIGEST")
+    for field in ("archive_sha256", "baseline_checksum"):
+        if not re.fullmatch(r"[0-9a-f]{64}", str(payload.get(field) or "")):
+            raise ContractError(f"release manifest {field} is required")
+    scan = payload.get("scan")
+    counts = scan.get("counts") if isinstance(scan, dict) else None
+    if (
+        not isinstance(scan, dict)
+        or scan.get("status") != "completed"
+        or scan.get("source_sha") != expected_sha
+        or scan.get("image_digest") != expected_digest
+        or not isinstance(counts, dict)
+        or set(("CRITICAL", "HIGH", "MEDIUM", "LOW", "SECRET")) - set(counts)
+        or (scan.get("policy") or {}).get("result") != "pass"
+    ):
+        raise ContractError("release manifest scan contract is incomplete or mismatched")
 
 
 def validate(action: str, env: dict[str, str] | None = None) -> str:

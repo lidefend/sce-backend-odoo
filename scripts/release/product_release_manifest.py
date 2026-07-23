@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the repository-external manifest for a scanned product image."""
+"""Generate and validate the repository-external release manifest v2."""
 
 from __future__ import annotations
 
@@ -12,6 +12,33 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+EXPECTED_REPOSITORY = "lidefend/sce-backend-odoo"
+EXPECTED_BRANCH = "main"
+FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
+DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
+CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
+REQUIRED_FIELDS = (
+    "repository",
+    "branch",
+    "release_version",
+    "source_sha",
+    "image",
+    "image_tags",
+    "image_digest",
+    "oci_revision",
+    "container_source_revision",
+    "base_image_digests",
+    "baseline_checksum",
+    "scan",
+    "archive_sha256",
+    "archive_reload_digest",
+    "candidate_status",
+    "deployment_status",
+)
+
+
+class ManifestContractError(ValueError):
+    pass
 
 
 def sha256_file(path: Path) -> str:
@@ -32,35 +59,144 @@ def load_release_module():
     return module
 
 
+def _load(path: Path, label: str) -> dict:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ManifestContractError(f"{label} is missing or invalid") from exc
+    if not isinstance(payload, dict):
+        raise ManifestContractError(f"{label} must be an object")
+    return payload
+
+
+def validate_manifest(payload: dict, *, expected_source_sha: str, expected_image_digest: str) -> None:
+    for field in REQUIRED_FIELDS:
+        value = payload.get(field)
+        if value is None or value == "" or value == [] or value == {}:
+            raise ManifestContractError(f"required manifest field is missing or empty: {field}")
+    if payload.get("schema_version") != "product_release_manifest.v2":
+        raise ManifestContractError("manifest schema_version must be product_release_manifest.v2")
+    if payload["repository"] != EXPECTED_REPOSITORY:
+        raise ManifestContractError("manifest repository is not the approved authority")
+    if payload["branch"] != EXPECTED_BRANCH:
+        raise ManifestContractError("manifest branch must be main")
+    if not FULL_SHA.fullmatch(expected_source_sha):
+        raise ManifestContractError("expected source SHA must be full lowercase SHA")
+    if not DIGEST.fullmatch(expected_image_digest):
+        raise ManifestContractError("expected image digest is invalid")
+    for field in ("source_sha", "oci_revision", "container_source_revision"):
+        if payload[field] != expected_source_sha:
+            raise ManifestContractError(f"manifest {field} does not match source SHA")
+    for field in ("image_digest", "archive_reload_digest"):
+        if payload[field] != expected_image_digest:
+            raise ManifestContractError(f"manifest {field} does not match image digest")
+    tags = payload["image_tags"]
+    if not isinstance(tags, list) or len(tags) != 2 or payload["image"] != tags[0]:
+        raise ManifestContractError("manifest must contain version and source image tags")
+    if not tags[1].endswith(expected_source_sha[:12]):
+        raise ManifestContractError("source image tag does not match source SHA")
+    base_images = payload["base_image_digests"]
+    if set(base_images) != {"frontend_builder", "odoo_runtime"}:
+        raise ManifestContractError("both frontend builder and Odoo base image digests are required")
+    if any(not DIGEST.fullmatch(str(value)) for value in base_images.values()):
+        raise ManifestContractError("base image digest is invalid")
+    if not CHECKSUM.fullmatch(str(payload["baseline_checksum"])):
+        raise ManifestContractError("baseline checksum is invalid")
+    if not CHECKSUM.fullmatch(str(payload["archive_sha256"])):
+        raise ManifestContractError("archive checksum is invalid")
+    scan = payload["scan"]
+    if not isinstance(scan, dict):
+        raise ManifestContractError("scan record is invalid")
+    if scan.get("source_sha") != expected_source_sha or scan.get("image_digest") != expected_image_digest:
+        raise ManifestContractError("scan identity does not match manifest")
+    counts = scan.get("counts")
+    if not isinstance(counts, dict) or set(("CRITICAL", "HIGH", "MEDIUM", "LOW", "SECRET")) - set(counts):
+        raise ManifestContractError("scan severity counts are incomplete")
+    if scan.get("status") != "completed" or (scan.get("policy") or {}).get("result") != "pass":
+        raise ManifestContractError("scan is incomplete or policy did not pass")
+    if payload["candidate_status"] != "rc":
+        raise ManifestContractError("candidate_status must be rc")
+    if payload["deployment_status"] not in {"not_deployed", "blocked"}:
+        raise ManifestContractError("deployment_status must be not_deployed or blocked")
+
+
+def build_manifest(
+    *,
+    image: dict,
+    scan: dict,
+    sbom_sha256: str,
+    archive_sha256: str,
+    archive_reload_digest: str,
+    release: dict,
+    expected_source_sha: str,
+) -> dict:
+    expected_digest = str(image.get("image_digest") or "")
+    payload = {
+        "schema_version": "product_release_manifest.v2",
+        "repository": EXPECTED_REPOSITORY,
+        "branch": EXPECTED_BRANCH,
+        "release_version": release["product_version"],
+        "product_version": release["product_version"],
+        "source_sha": image.get("source_sha"),
+        "source_tree_sha": image.get("source_tree_sha"),
+        "image": image.get("image"),
+        "image_tags": image.get("image_tags"),
+        "image_digest": expected_digest,
+        "oci_revision": image.get("oci_revision"),
+        "container_source_revision": image.get("container_source_revision"),
+        "base_image_digests": image.get("base_image_digests"),
+        "baseline_checksum": image.get("baseline_checksum"),
+        "scan": scan,
+        "archive_sha256": archive_sha256,
+        "archive_reload_digest": archive_reload_digest,
+        "sbom_sha256": sbom_sha256,
+        "frontend_sha256": image.get("frontend_build_sha256"),
+        "module_version_matrix": image.get("module_version_matrix"),
+        "tenant_payload_contract": release["contracts"]["tenant_payload"],
+        "route_authority_contract": release["contracts"]["route_authority"],
+        "built_at": image.get("build_time"),
+        "candidate_status": "rc",
+        "deployment_status": "not_deployed",
+    }
+    validate_manifest(
+        payload,
+        expected_source_sha=expected_source_sha,
+        expected_image_digest=expected_digest,
+    )
+    return payload
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image-manifest", required=True, type=Path)
     parser.add_argument("--sbom", required=True, type=Path)
+    parser.add_argument("--scan-summary", required=True, type=Path)
+    parser.add_argument("--archive", required=True, type=Path)
+    parser.add_argument("--archive-reload-digest-file", required=True, type=Path)
     parser.add_argument("--expected-source-sha", required=True)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    image = json.loads(args.image_manifest.read_text(encoding="utf-8"))
-    if not re.fullmatch(r"[0-9a-f]{40}", args.expected_source_sha):
-        raise SystemExit("RELEASE_MANIFEST_SOURCE_SHA_INVALID")
-    for field in ("source_sha", "oci_revision", "container_source_revision"):
-        if image.get(field) != args.expected_source_sha:
-            raise SystemExit(f"RELEASE_MANIFEST_{field.upper()}_MISMATCH")
-    release = load_release_module().load_release_config()
-    if image.get("product_version") != release["product_version"]:
-        raise SystemExit("RELEASE_MANIFEST_PRODUCT_VERSION_MISMATCH")
-    payload = {
-        "product_version": release["product_version"],
-        "source_sha": image["source_sha"],
-        "oci_revision": image["oci_revision"],
-        "source_tree_sha": image["source_tree_sha"],
-        "image_digest": image["image_digest"],
-        "frontend_sha256": image["frontend_build_sha256"],
-        "sbom_sha256": sha256_file(args.sbom),
-        "module_version_matrix": image["module_version_matrix"],
-        "tenant_payload_contract": release["contracts"]["tenant_payload"],
-        "route_authority_contract": release["contracts"]["route_authority"],
-        "built_at": image["build_time"],
-    }
+    try:
+        image = _load(args.image_manifest, "image manifest")
+        scan = _load(args.scan_summary, "scan summary")
+        release = load_release_module().load_release_config()
+        if image.get("product_version") != release["product_version"]:
+            raise ManifestContractError("product version mismatch")
+        archive_sha = sha256_file(args.archive)
+        if archive_sha != image.get("archive_sha256"):
+            raise ManifestContractError("archive checksum does not match image manifest")
+        reload_digest = args.archive_reload_digest_file.read_text(encoding="utf-8").strip()
+        payload = build_manifest(
+            image=image,
+            scan=scan,
+            sbom_sha256=sha256_file(args.sbom),
+            archive_sha256=archive_sha,
+            archive_reload_digest=reload_digest,
+            release=release,
+            expected_source_sha=args.expected_source_sha,
+        )
+    except (ManifestContractError, OSError) as exc:
+        raise SystemExit(f"RELEASE_MANIFEST_CONTRACT_BLOCKED: {exc}") from exc
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     manifest_sha = sha256_file(args.output)

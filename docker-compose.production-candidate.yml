@@ -1,3 +1,5 @@
+name: ${PRODUCTION_COMPOSE_PROJECT:?PRODUCTION_COMPOSE_PROJECT is required}
+
 services:
   db:
     image: postgres:15@sha256:386166d1a81e5ed9dfbbbbd8d4abe439d35ced9cc845eb3d09bc43b0b3860117
@@ -30,7 +32,7 @@ services:
       retries: 20
 
   odoo:
-    image: ${CANDIDATE_IMAGE:?CANDIDATE_IMAGE is required}
+    image: ${ODOO_IMAGE_REF:?ODOO_IMAGE_REF with image@sha256 digest is required}
     restart: unless-stopped
     depends_on:
       db:
@@ -88,7 +90,7 @@ services:
       start_period: 90s
 
   nginx:
-    image: ${CANDIDATE_IMAGE:?CANDIDATE_IMAGE is required}
+    image: ${NGINX_IMAGE_REF:?NGINX_IMAGE_REF with image@sha256 digest is required}
     user: root
     entrypoint: ["/usr/local/bin/render_nginx_conf.sh"]
     restart: unless-stopped
