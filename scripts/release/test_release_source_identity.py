@@ -52,15 +52,19 @@ def image_manifest() -> dict:
 
 def release_manifest() -> dict:
     return {
-        "schema_version": "product_release_manifest.v2",
+        "schema_version": "product_release_manifest.v3",
         "repository": "lidefend/sce-backend-odoo",
         "branch": "main",
         "source_sha": SHA,
         "oci_revision": SHA,
         "container_source_revision": SHA,
         "image_digest": DIGEST,
+        "registry_repository": "ghcr.io/lidefend/sce-product",
+        "registry_refs": [f"ghcr.io/lidefend/sce-product@{DIGEST}"] * 2,
+        "local_image_id": "sha256:" + "1" * 64,
+        "archive_config_digest": "sha256:" + "2" * 64,
+        "archive_reload_image_id": "sha256:" + "3" * 64,
         "archive_sha256": "c" * 64,
-        "archive_reload_digest": DIGEST,
         "baseline_checksum": "d" * 64,
         "base_image_digests": {
             "frontend_builder": "sha256:" + "e" * 64,
@@ -125,7 +129,7 @@ class ArtifactIdentityTests(unittest.TestCase):
             release_manifest=release_manifest(),
             oci_revision=SHA,
             container_revision=SHA,
-            actual_image_digest=DIGEST,
+            actual_registry_digests=[f"ghcr.io/lidefend/sce-product@{DIGEST}"],
         )
         self.assertEqual(result, {"source_sha": SHA, "image_digest": DIGEST})
 
@@ -147,7 +151,7 @@ class ArtifactIdentityTests(unittest.TestCase):
                         release_manifest=release_manifest(),
                         oci_revision=SHA,
                         container_revision=SHA,
-                        actual_image_digest=DIGEST,
+                        actual_registry_digests=[f"ghcr.io/lidefend/sce-product@{DIGEST}"],
                     )
 
     def test_release_manifest_mismatch_is_rejected(self):
@@ -161,7 +165,7 @@ class ArtifactIdentityTests(unittest.TestCase):
                 release_manifest=candidate,
                 oci_revision=SHA,
                 container_revision=SHA,
-                actual_image_digest=DIGEST,
+                actual_registry_digests=[f"ghcr.io/lidefend/sce-product@{DIGEST}"],
             )
 
     def test_incomplete_manifest_or_scan_fails_closed(self):
@@ -183,11 +187,11 @@ class ArtifactIdentityTests(unittest.TestCase):
                     release_manifest=candidate,
                     oci_revision=SHA,
                     container_revision=SHA,
-                    actual_image_digest=DIGEST,
+                    actual_registry_digests=[f"ghcr.io/lidefend/sce-product@{DIGEST}"],
                 )
 
     def test_image_digest_mismatch_is_rejected(self):
-        with self.assertRaisesRegex(identity.ReleaseIdentityError, "actual image digest"):
+        with self.assertRaisesRegex(identity.ReleaseIdentityError, "registry digest"):
             identity.validate_artifact_identity(
                 expected_sha=SHA,
                 expected_image_digest=DIGEST,
@@ -195,7 +199,9 @@ class ArtifactIdentityTests(unittest.TestCase):
                 release_manifest=release_manifest(),
                 oci_revision=SHA,
                 container_revision=SHA,
-                actual_image_digest="sha256:" + "c" * 64,
+                actual_registry_digests=[
+                    "ghcr.io/lidefend/sce-product@sha256:" + "c" * 64
+                ],
             )
 
     def test_release_manifest_checksum_is_required(self):

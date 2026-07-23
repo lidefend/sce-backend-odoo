@@ -55,6 +55,16 @@ def build_summary(
         raise ScanContractError("scan source SHA does not match image manifest")
     if image_manifest.get("image_digest") != expected_image_digest:
         raise ScanContractError("scan image digest does not match image manifest")
+    if (
+        image_manifest.get("schema_version") != 2
+        or image_manifest.get("registry_repository") != "ghcr.io/lidefend/sce-product"
+        or image_manifest.get("publish_status") != "published"
+    ):
+        raise ScanContractError("scan requires a published formal registry manifest")
+    registry_refs = image_manifest.get("registry_refs")
+    expected_ref = f"ghcr.io/lidefend/sce-product@{expected_image_digest}"
+    if not isinstance(registry_refs, list) or registry_refs != [expected_ref, expected_ref]:
+        raise ScanContractError("scan registry references do not match image digest")
     if not isinstance(report.get("Results"), list):
         raise ScanContractError("Trivy Results is unavailable")
 

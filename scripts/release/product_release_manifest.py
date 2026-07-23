@@ -24,14 +24,18 @@ REQUIRED_FIELDS = (
     "source_sha",
     "image",
     "image_tags",
+    "registry_repository",
+    "registry_refs",
     "image_digest",
+    "local_image_id",
     "oci_revision",
     "container_source_revision",
     "base_image_digests",
     "baseline_checksum",
     "scan",
     "archive_sha256",
-    "archive_reload_digest",
+    "archive_config_digest",
+    "archive_reload_image_id",
     "candidate_status",
     "deployment_status",
 )
@@ -74,8 +78,8 @@ def validate_manifest(payload: dict, *, expected_source_sha: str, expected_image
         value = payload.get(field)
         if value is None or value == "" or value == [] or value == {}:
             raise ManifestContractError(f"required manifest field is missing or empty: {field}")
-    if payload.get("schema_version") != "product_release_manifest.v2":
-        raise ManifestContractError("manifest schema_version must be product_release_manifest.v2")
+    if payload.get("schema_version") != "product_release_manifest.v3":
+        raise ManifestContractError("manifest schema_version must be product_release_manifest.v3")
     if payload["repository"] != EXPECTED_REPOSITORY:
         raise ManifestContractError("manifest repository is not the approved authority")
     if payload["branch"] != EXPECTED_BRANCH:
@@ -87,9 +91,16 @@ def validate_manifest(payload: dict, *, expected_source_sha: str, expected_image
     for field in ("source_sha", "oci_revision", "container_source_revision"):
         if payload[field] != expected_source_sha:
             raise ManifestContractError(f"manifest {field} does not match source SHA")
-    for field in ("image_digest", "archive_reload_digest"):
-        if payload[field] != expected_image_digest:
-            raise ManifestContractError(f"manifest {field} does not match image digest")
+    if payload["image_digest"] != expected_image_digest:
+        raise ManifestContractError("manifest image_digest does not match registry digest")
+    if payload["registry_repository"] != "ghcr.io/lidefend/sce-product":
+        raise ManifestContractError("manifest registry repository is not approved")
+    expected_ref = f"{payload['registry_repository']}@{expected_image_digest}"
+    if payload["registry_refs"] != [expected_ref, expected_ref]:
+        raise ManifestContractError("manifest registry refs do not match image digest")
+    for field in ("local_image_id", "archive_config_digest", "archive_reload_image_id"):
+        if not DIGEST.fullmatch(str(payload[field])):
+            raise ManifestContractError(f"manifest {field} is invalid")
     tags = payload["image_tags"]
     if not isinstance(tags, list) or len(tags) != 2 or payload["image"] != tags[0]:
         raise ManifestContractError("manifest must contain version and source image tags")
@@ -126,13 +137,13 @@ def build_manifest(
     scan: dict,
     sbom_sha256: str,
     archive_sha256: str,
-    archive_reload_digest: str,
+    archive_reload_image_id: str,
     release: dict,
     expected_source_sha: str,
 ) -> dict:
     expected_digest = str(image.get("image_digest") or "")
     payload = {
-        "schema_version": "product_release_manifest.v2",
+        "schema_version": "product_release_manifest.v3",
         "repository": EXPECTED_REPOSITORY,
         "branch": EXPECTED_BRANCH,
         "release_version": release["product_version"],
@@ -141,14 +152,18 @@ def build_manifest(
         "source_tree_sha": image.get("source_tree_sha"),
         "image": image.get("image"),
         "image_tags": image.get("image_tags"),
+        "registry_repository": image.get("registry_repository"),
+        "registry_refs": image.get("registry_refs"),
         "image_digest": expected_digest,
+        "local_image_id": image.get("local_image_id"),
         "oci_revision": image.get("oci_revision"),
         "container_source_revision": image.get("container_source_revision"),
         "base_image_digests": image.get("base_image_digests"),
         "baseline_checksum": image.get("baseline_checksum"),
         "scan": scan,
         "archive_sha256": archive_sha256,
-        "archive_reload_digest": archive_reload_digest,
+        "archive_config_digest": image.get("archive_config_digest"),
+        "archive_reload_image_id": archive_reload_image_id,
         "sbom_sha256": sbom_sha256,
         "frontend_sha256": image.get("frontend_build_sha256"),
         "module_version_matrix": image.get("module_version_matrix"),
@@ -185,13 +200,13 @@ def main() -> int:
         archive_sha = sha256_file(args.archive)
         if archive_sha != image.get("archive_sha256"):
             raise ManifestContractError("archive checksum does not match image manifest")
-        reload_digest = args.archive_reload_digest_file.read_text(encoding="utf-8").strip()
+        reload_image_id = args.archive_reload_digest_file.read_text(encoding="utf-8").strip()
         payload = build_manifest(
             image=image,
             scan=scan,
             sbom_sha256=sha256_file(args.sbom),
             archive_sha256=archive_sha,
-            archive_reload_digest=reload_digest,
+            archive_reload_image_id=reload_image_id,
             release=release,
             expected_source_sha=args.expected_source_sha,
         )

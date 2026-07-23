@@ -47,8 +47,8 @@ def _validate_release_manifest(env: dict[str, str], expected_sha: str) -> None:
         raise ContractError("release manifest checksum mismatch")
     if not isinstance(payload, dict):
         raise ContractError("release manifest must be a JSON object")
-    if payload.get("schema_version") != "product_release_manifest.v2":
-        raise ContractError("release manifest schema must be product_release_manifest.v2")
+    if payload.get("schema_version") != "product_release_manifest.v3":
+        raise ContractError("release manifest schema must be product_release_manifest.v3")
     if payload.get("repository") != "lidefend/sce-backend-odoo" or payload.get("branch") != "main":
         raise ContractError("release manifest repository/branch authority mismatch")
     for field in ("source_sha", "oci_revision", "container_source_revision"):
@@ -56,8 +56,14 @@ def _validate_release_manifest(env: dict[str, str], expected_sha: str) -> None:
             raise ContractError(f"release manifest {field} must match EXPECTED_RELEASE_SHA")
     if payload.get("image_digest") != expected_digest:
         raise ContractError("release manifest image_digest must match EXPECTED_IMAGE_DIGEST")
-    if payload.get("archive_reload_digest") != expected_digest:
-        raise ContractError("release manifest archive reload digest must match EXPECTED_IMAGE_DIGEST")
+    expected_ref = f"ghcr.io/lidefend/sce-product@{expected_digest}"
+    if payload.get("registry_repository") != "ghcr.io/lidefend/sce-product":
+        raise ContractError("release manifest registry repository is not approved")
+    if payload.get("registry_refs") != [expected_ref, expected_ref]:
+        raise ContractError("release manifest registry refs must match EXPECTED_IMAGE_DIGEST")
+    for field in ("local_image_id", "archive_config_digest", "archive_reload_image_id"):
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(payload.get(field) or "")):
+            raise ContractError(f"release manifest {field} is required")
     for field in ("archive_sha256", "baseline_checksum"):
         if not re.fullmatch(r"[0-9a-f]{64}", str(payload.get(field) or "")):
             raise ContractError(f"release manifest {field} is required")
