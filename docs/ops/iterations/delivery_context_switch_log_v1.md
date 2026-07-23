@@ -407,3 +407,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns production mutation authorization and recovery sequencing; rc.4, P0/P1 modules, Nginx, credentials, and database schema remain immutable
 - Blast Radius: one new production Make target that accepts no caller module selection and makes at most one Odoo install invocation after a validated backup; negative preflight performs zero production writes
 - Validation: exact environment/confirmation/allowlist, manifest topology and data boundary, safe retry, pending/history/business/seed/demo drift rejection, backup-failure zero-install, 10/10 postcondition, Nginx fingerprint preservation, release contracts, security/generated gates, and PR required checks
+
+## 2026-07-23 — Production Backup Configuration Loading Guard
+
+- Branch: `fix/backup-config-loading`
+- Starting commit: `8d17b82241422c096d31790cf47e057a4ff045f4`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: fixed production backup configuration admission for the guarded three-module closure
+- Module: formal-module installation orchestrator, versioned production-backup environment template, focused release-contract tests, and production command policy
+- Reason: the versioned installation tool required process-level `BACKUP_*` values but did not load the approved `/etc/scems/production-backup.env`, making a persistent audited backup configuration unusable without a forbidden command-line override
+- Standard vs User-Specific: repository-wide production safety mechanism; no application behavior, business semantics, tenant preference, runtime data, or image content
+- Why Here / Why Not Elsewhere: P4 owns backup identity admission and production mutation sequencing; neither rc.4 nor the Odoo modules should read host configuration
+- Blast Radius: the existing formal-module target now admits exactly six root-owned `0600` backup identity fields from one fixed non-symlink file and rejects process overrides; no backup, module installation, database write, or Nginx operation occurs during deployment of the tool
+- Validation: missing/unsafe/symlink/unknown/duplicate/incomplete/identity-drift configuration rejection, process-override rejection, exact backup identity propagation, existing backup-before-install and zero-install-on-failure tests, release contracts, and standard CI
