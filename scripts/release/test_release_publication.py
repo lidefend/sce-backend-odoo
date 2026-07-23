@@ -30,6 +30,8 @@ publication = load_module()
 VERSION = "1.0.0-rc.5"
 SOURCE = "a" * 40
 TREE = "b" * 40
+LIVE_MAIN = "1" * 40
+LIVE_TREE = "2" * 40
 CANDIDATE_ATTEMPT = "20260724T120000Z-" + "1" * 32
 IMAGE_ID = "sha256:" + "c" * 64
 REMOTE_DIGEST = "sha256:" + "d" * 64
@@ -144,9 +146,12 @@ class FakeBackend:
         self.tags = {"origin": None, "gitee-mirror": None}
         self.release_payload: dict | None = None
         self.events: list[str] = []
-        self.github_main = SOURCE
-        self.gitee_main = SOURCE
-        self.tree = TREE
+        self.github_main = LIVE_MAIN
+        self.gitee_main = LIVE_MAIN
+        self.tree = LIVE_TREE
+        self.tool_sha = LIVE_MAIN
+        self.tool_tree = LIVE_TREE
+        self.candidate_reachable = True
         self.checks = {name: "success" for name in publication.REQUIRED_CHECKS}
         self.fail_registry_once = False
         self.fail_registry_partial_once = False
@@ -154,6 +159,7 @@ class FakeBackend:
         self.fail_release_once = False
         self.credentials_ready = True
         self.move_main_after_registry = False
+        self.move_main_before_first_write = False
 
     def remote_main(self, remote):
         return (
@@ -161,11 +167,24 @@ class FakeBackend:
             self.tree,
         )
 
+    def publication_tool_identity(self):
+        return self.tool_sha, self.tool_tree
+
+    def candidate_is_first_parent_ancestor(self, candidate_source_sha, live_main_sha):
+        return (
+            self.candidate_reachable
+            and candidate_source_sha == SOURCE
+            and live_main_sha == self.github_main
+        )
+
     def required_checks(self, head_sha):
         self.events.append("preflight_checks")
         return dict(self.checks)
 
     def local_image_id(self, reference):
+        if self.move_main_before_first_write:
+            self.move_main_before_first_write = False
+            self.github_main = "8" * 40
         return IMAGE_ID
 
     def registry_credentials_ready(self):
@@ -246,6 +265,8 @@ class PublicationContractTests(unittest.TestCase):
             "version": VERSION,
             "candidate_attempt_id": CANDIDATE_ATTEMPT,
             "expected_source_sha": SOURCE,
+            "expected_publication_tool_sha": LIVE_MAIN,
+            "expected_live_main_sha": LIVE_MAIN,
             "backend": self.backend,
             "root": self.root,
         }
@@ -306,6 +327,17 @@ class PublicationContractTests(unittest.TestCase):
         self.assertEqual(report["external"]["tags"]["github"], SOURCE)
         self.assertEqual(report["external"]["tags"]["gitee"], SOURCE)
         self.assertEqual(report["external"]["release"]["tag"], f"v{VERSION}")
+        identity = report["identity"]
+        self.assertEqual(identity["candidate_source_sha"], SOURCE)
+        self.assertEqual(identity["candidate_source_tree"], TREE)
+        self.assertEqual(identity["publication_tool_source_sha"], LIVE_MAIN)
+        self.assertEqual(identity["live_github_main_sha"], LIVE_MAIN)
+        self.assertEqual(identity["live_gitee_main_sha"], LIVE_MAIN)
+        self.assertTrue(identity["candidate_reachable_from_live_main"])
+        self.assertEqual(
+            identity["candidate_required_checks_evidence"],
+            {name: "success" for name in publication.REQUIRED_CHECKS},
+        )
         manifest_path = report_path.parent / "publication-manifest.json"
         self.assertEqual(
             report["publication_manifest"]["sha256"], sha(manifest_path)
@@ -313,6 +345,78 @@ class PublicationContractTests(unittest.TestCase):
         release_body = self.backend.release_payload["body"]
         self.assertNotIn(str(self.root), release_body)
         self.assertIn(result["publication_attempt_id"], release_body)
+        self.assertIn(SOURCE, release_body)
+        self.assertIn(LIVE_MAIN, release_body)
+
+    def test_candidate_source_may_equal_or_precede_live_main(self):
+        advanced = self.pipeline().execute()
+        self.assertEqual(
+            advanced["identity"]["candidate_source_sha"], SOURCE
+        )
+        self.assertEqual(
+            advanced["identity"]["expected_live_main_sha"], LIVE_MAIN
+        )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_fixture(root)
+            backend = FakeBackend()
+            backend.github_main = SOURCE
+            backend.gitee_main = SOURCE
+            backend.tree = TREE
+            backend.tool_sha = SOURCE
+            backend.tool_tree = TREE
+            same = publication.Publication(
+                version=VERSION,
+                candidate_attempt_id=CANDIDATE_ATTEMPT,
+                expected_source_sha=SOURCE,
+                expected_publication_tool_sha=SOURCE,
+                expected_live_main_sha=SOURCE,
+                backend=backend,
+                root=root,
+            ).execute()
+            self.assertEqual(same["state"], "PUBLICATION_COMPLETE")
+
+    def test_candidate_creation_identity_and_check_evidence_are_required(self):
+        for mutation in ("remote", "checks", "checks_head", "tree"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                attempt = write_fixture(root)
+                report_path = attempt / "release-report.json"
+                report = json.loads(report_path.read_text())
+                if mutation == "remote":
+                    report["source"]["remote_main"]["gitee"] = "9" * 40
+                elif mutation == "checks":
+                    report["source"]["required_checks"]["public_guard"] = "failure"
+                elif mutation == "checks_head":
+                    report["source"]["required_checks_head_sha"] = ""
+                else:
+                    report["source"]["tree_sha"] = "9" * 40
+                report_path.write_text(json.dumps(report))
+                backend = FakeBackend()
+                pipe = publication.Publication(
+                    version=VERSION,
+                    candidate_attempt_id=CANDIDATE_ATTEMPT,
+                    expected_source_sha=SOURCE,
+                    expected_publication_tool_sha=LIVE_MAIN,
+                    expected_live_main_sha=LIVE_MAIN,
+                    backend=backend,
+                    root=root,
+                )
+                with self.assertRaises(publication.PublicationError):
+                    pipe.execute()
+                self.assertFalse(
+                    {"registry_push", "tag_create", "release_create"}
+                    & set(backend.events)
+                )
+
+    def test_live_main_drift_after_preflight_blocks_before_first_write(self):
+        self.backend.move_main_before_first_write = True
+        with self.assertRaises(publication.PublicationError):
+            self.pipeline().execute()
+        self.assertNotIn("registry_push", self.backend.events)
+        self.assertNotIn("tag_create", self.backend.events)
+        self.assertNotIn("release_create", self.backend.events)
 
     def test_all_preflight_finishes_before_first_external_write(self):
         self.backend.registry[f"{publication.REGISTRY_REPOSITORY}:{VERSION}"] = (
@@ -345,7 +449,15 @@ class PublicationContractTests(unittest.TestCase):
         self.assertEqual(self.backend.events, [])
 
     def test_source_tree_remote_and_check_mismatch_fail_closed(self):
-        cases = ("source", "tree", "remote", "checks")
+        cases = (
+            "source",
+            "live_tree",
+            "remote",
+            "checks",
+            "tool_sha",
+            "tool_tree",
+            "ancestry",
+        )
         for case in cases:
             with self.subTest(case=case):
                 with tempfile.TemporaryDirectory() as temporary:
@@ -356,16 +468,24 @@ class PublicationContractTests(unittest.TestCase):
                         kwargs = {"expected_source_sha": "9" * 40}
                     else:
                         kwargs = {}
-                    if case == "tree":
+                    if case == "live_tree":
                         backend.tree = "8" * 40
                     if case == "remote":
                         backend.gitee_main = "7" * 40
                     if case == "checks":
                         backend.checks["public_guard"] = "failure"
+                    if case == "tool_sha":
+                        backend.tool_sha = "6" * 40
+                    if case == "tool_tree":
+                        backend.tool_tree = "5" * 40
+                    if case == "ancestry":
+                        backend.candidate_reachable = False
                     pipe = publication.Publication(
                         version=VERSION,
                         candidate_attempt_id=CANDIDATE_ATTEMPT,
                         expected_source_sha=kwargs.get("expected_source_sha", SOURCE),
+                        expected_publication_tool_sha=LIVE_MAIN,
+                        expected_live_main_sha=LIVE_MAIN,
                         backend=backend,
                         root=root,
                     )
@@ -392,6 +512,8 @@ class PublicationContractTests(unittest.TestCase):
                 version=VERSION,
                 candidate_attempt_id=CANDIDATE_ATTEMPT,
                 expected_source_sha=SOURCE,
+                expected_publication_tool_sha=LIVE_MAIN,
+                expected_live_main_sha=LIVE_MAIN,
                 backend=backend,
                 root=root,
             )
@@ -466,6 +588,8 @@ class PublicationContractTests(unittest.TestCase):
         with self.assertRaises(publication.PublicationError):
             self.pipeline(
                 expected_source_sha="9" * 40,
+                expected_publication_tool_sha=LIVE_MAIN,
+                expected_live_main_sha=LIVE_MAIN,
                 requested_publication_attempt_id=pipe.attempt_dir.name,
             ).execute()
         self.assertEqual(before, report.read_bytes())
@@ -490,6 +614,8 @@ class PublicationContractTests(unittest.TestCase):
                     version=VERSION,
                     candidate_attempt_id=CANDIDATE_ATTEMPT,
                     expected_source_sha=SOURCE,
+                    expected_publication_tool_sha=LIVE_MAIN,
+                    expected_live_main_sha=LIVE_MAIN,
                     backend=backend,
                     root=root,
                 )
@@ -528,6 +654,8 @@ class PublicationContractTests(unittest.TestCase):
             {"candidate_attempt_id": "../../escape"},
             {"expected_source_sha": "a" * 39},
             {"expected_source_sha": "g" * 40},
+            {"expected_publication_tool_sha": "a" * 39},
+            {"expected_live_main_sha": "g" * 40},
         )
         for overrides in invalid:
             with self.subTest(overrides=overrides), self.assertRaises(
@@ -604,6 +732,8 @@ class PublicationContractTests(unittest.TestCase):
         self.assertIn("release.publish:", makefile)
         self.assertIn("CANDIDATE_ATTEMPT_ID", makefile)
         self.assertIn("EXPECTED_SOURCE_SHA", makefile)
+        self.assertIn("EXPECTED_PUBLICATION_TOOL_SHA", makefile)
+        self.assertIn("EXPECTED_LIVE_MAIN_SHA", makefile)
         self.assertNotIn("docker push", legacy)
         self.assertIn("release.publish", legacy)
 

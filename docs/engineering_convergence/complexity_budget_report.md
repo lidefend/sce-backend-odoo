@@ -57,6 +57,7 @@ Generated from repository source files. This report is informational during the 
 | 1461 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1417 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1402 | Python source | `scripts/release/release_publication.py` |
 | 1400 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1374 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1336 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
@@ -72,7 +73,6 @@ Generated from repository source files. This report is informational during the 
 | 1226 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1223 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1201 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1191 | Python source | `scripts/release/release_publication.py` |
 | 1190 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
@@ -147,6 +147,7 @@ Generated from repository source files. This report is informational during the 
 | 1461 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1417 | warning | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1402 | warning | Python source | `scripts/release/release_publication.py` |
 | 1400 | warning | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1374 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1336 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
@@ -162,7 +163,6 @@ Generated from repository source files. This report is informational during the 
 | 1226 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1223 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1201 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1191 | warning | Python source | `scripts/release/release_publication.py` |
 | 1190 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |

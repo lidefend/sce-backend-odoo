@@ -24,30 +24,80 @@
       "required": [
         "version",
         "candidate_attempt_id",
-        "source_sha",
-        "source_tree",
+        "candidate_source_sha",
+        "candidate_source_tree",
+        "candidate_created_github_main_sha",
+        "candidate_created_github_main_tree",
+        "candidate_created_gitee_main_sha",
+        "candidate_created_gitee_main_tree",
+        "candidate_required_checks_head_sha",
+        "candidate_required_checks_evidence",
+        "candidate_evidence_sha256",
         "candidate_report_sha256",
         "candidate_manifest_sha256",
         "candidate_archive_sha256",
         "candidate_sbom_sha256",
         "candidate_image_content_id",
         "candidate_tool_contract_sha256",
-        "publication_workflow_sha256"
+        "publication_tool_source_sha",
+        "publication_tool_source_tree",
+        "publication_tool_contract_sha256",
+        "expected_live_main_sha",
+        "live_github_main_sha",
+        "live_github_main_tree",
+        "live_gitee_main_sha",
+        "live_gitee_main_tree",
+        "candidate_reachable_from_live_main"
       ],
       "properties": {
         "version": {"pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"},
         "candidate_attempt_id": {
           "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$"
         },
-        "source_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "source_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_source_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_source_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_created_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_created_github_main_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_created_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_created_gitee_main_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_required_checks_head_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_required_checks_evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "public_guard",
+            "professional_authorization",
+            "professional_quality_gate"
+          ],
+          "properties": {
+            "public_guard": {"const": "success"},
+            "professional_authorization": {"const": "success"},
+            "professional_quality_gate": {"const": "success"}
+          }
+        },
+        "candidate_evidence_sha256": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {"pattern": "^[0-9a-f]{64}$"},
+          "propertyNames": {
+            "pattern": "^(attempts/[A-Za-z0-9._/-]+|latest\\.json)$"
+          }
+        },
         "candidate_report_sha256": {"pattern": "^[0-9a-f]{64}$"},
         "candidate_manifest_sha256": {"pattern": "^[0-9a-f]{64}$"},
         "candidate_archive_sha256": {"pattern": "^[0-9a-f]{64}$"},
         "candidate_sbom_sha256": {"pattern": "^[0-9a-f]{64}$"},
         "candidate_image_content_id": {"pattern": "^sha256:[0-9a-f]{64}$"},
         "candidate_tool_contract_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "publication_workflow_sha256": {"pattern": "^[0-9a-f]{64}$"}
+        "publication_tool_source_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "publication_tool_source_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "publication_tool_contract_sha256": {"pattern": "^[0-9a-f]{64}$"},
+        "expected_live_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "live_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "live_github_main_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "live_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "live_gitee_main_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_reachable_from_live_main": {"const": true}
       }
     },
     "targets": {
@@ -79,18 +129,23 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "github_main",
-        "gitee_main",
-        "source_tree",
-        "required_checks",
+        "candidate_created_github_main_sha",
+        "candidate_created_gitee_main_sha",
+        "candidate_required_checks",
+        "publication_tool_source_sha",
+        "publication_tool_source_tree",
+        "live_github_main_sha",
+        "live_github_main_tree",
+        "live_gitee_main_sha",
+        "live_gitee_main_tree",
+        "candidate_reachable_from_live_main",
         "external_targets_absent",
         "candidate_evidence_verified"
       ],
       "properties": {
-        "github_main": {"pattern": "^[0-9a-f]{40}$"},
-        "gitee_main": {"pattern": "^[0-9a-f]{40}$"},
-        "source_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "required_checks": {
+        "candidate_created_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_created_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_required_checks": {
           "type": "object",
           "additionalProperties": false,
           "required": [
@@ -104,6 +159,13 @@
             "professional_quality_gate": {"const": "success"}
           }
         },
+        "publication_tool_source_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "publication_tool_source_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "live_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "live_github_main_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "live_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "live_gitee_main_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_reachable_from_live_main": {"const": true},
         "external_targets_absent": {"const": true},
         "candidate_evidence_verified": {"const": true}
       }
