@@ -158,6 +158,9 @@ class StaticContractTests(unittest.TestCase):
         cls.acceptance = (ROOT / "scripts/release/production_contract_image_acceptance.sh").read_text()
         cls.release_make = (ROOT / "make/release.mk").read_text()
         cls.identity = (ROOT / "scripts/release/release_source_identity.py").read_text()
+        cls.first_fresh_cleanup = (
+            ROOT / "scripts/release/production_first_fresh_cleanup.py"
+        ).read_text()
 
     def test_base_image_has_digest(self): self.assertRegex(self.dockerfile.splitlines()[0], r"^FROM odoo:17\.0@sha256:[0-9a-f]{64}$")
     def test_no_distribution_upgrade(self): self.assertNotRegex(self.dockerfile, r"apt(?:-get)?\s+(?:dist-upgrade|full-upgrade|upgrade)")
@@ -232,6 +235,36 @@ class StaticContractTests(unittest.TestCase):
         helper = (ROOT / "scripts/release/production_db_init.py").read_text()
         self.assertIn("cleanup_created", helper)
         self.assertIn('validate("init", active_env)', helper)
+
+    def test_production_identity_preflight_is_not_forbidden_in_production(self):
+        target = self.release_make.split(
+            "release.production.identity.preflight:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertNotIn("guard.prod.forbid", target)
+
+    def test_production_mutations_keep_danger_guard(self):
+        for name in (
+            "release.production.infrastructure.up",
+            "release.production.runtime.up",
+            "release.production.db.init",
+            "release.production.module.install",
+            "release.production.module.upgrade",
+            "release.production.platform.configure",
+            "release.production.platform.snapshot.initialize",
+        ):
+            declaration = self.release_make.split(f"{name}:", 1)[1].splitlines()[0]
+            self.assertIn("guard.prod.danger", declaration)
+
+    def test_first_fresh_cleanup_is_fixed_scope_and_confirmation_guarded(self):
+        self.assertIn(
+            "CONFIRM_FRESH_PRODUCTION_DEPLOY=YES_DELETE_OLD_PROJECT_DATA is required",
+            self.release_make,
+        )
+        self.assertIn("OLD_CONTAINERS = {", self.first_fresh_cleanup)
+        self.assertIn("OLD_NETWORKS = {", self.first_fresh_cleanup)
+        self.assertIn("OLD_VOLUMES = {", self.first_fresh_cleanup)
+        self.assertNotIn("system prune", self.first_fresh_cleanup)
+        self.assertNotIn("volume prune", self.first_fresh_cleanup)
 
 
 if __name__ == "__main__":
