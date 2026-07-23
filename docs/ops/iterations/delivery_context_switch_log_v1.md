@@ -446,3 +446,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns explicit production mutation authorization and evidence; the P1 identity resolver and P2 role policy remain the facts consumed by the tool and are not weakened or duplicated
 - Blast Radius: at apply time only the missing `smart_core.group_smart_core_admin` relation may be appended to the unique active internal `admin`; password, login, company, allowed companies, products, menus, modules, and business data are immutable
 - Validation: dry-run zero writes, exact database/user/current-role/XML-ID guards, 10/10 modules and zero pending operations, conflicting-role rejection, explicit apply confirmation, transactional postcondition, idempotent NOOP, redacted atomic evidence, nonempty navigation projection, and release contract tests
+
+## 2026-07-23 — Administrator Identity Dry-Run Evidence Guard
+
+- Branch: `fix/admin-identity-dry-run-evidence-guard`
+- Starting commit: `cfbfd872bd888a807d95dddb718efb9b2109e671`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: database-enforced dry-run safety and reviewable production identity evidence
+- Module: administrator identity baseline runner, focused tests, release static contract, and production command policy
+- Reason: the first version relied on rollback, copied observed current identity into the planned-after fields, and omitted exact relation-plan, write-audit, and stable state-fingerprint evidence
+- Standard vs User-Specific: one repository-wide production mutation admission control; no customer preference, company initialization, application behavior, menu policy, demo data, or historical data
+- Why Here / Why Not Elsewhere: P4 owns production mutation authorization and evidence; the installed P1/P2 identity resolver remains the only role-policy authority and is consumed through its side-effect-free resolution methods
+- Blast Radius: dry-run now enables and verifies PostgreSQL transaction read-only before target queries, computes the proposed role from an in-memory XML-ID set, records one allowed relation append or NOOP, and atomically emits redacted observed/planned evidence; apply semantics and rc.4 are unchanged
+- Validation: read-only ordering and failure closure, database write rejection in tests, current/planned/observed separation, shared-policy role projection, zero write counters, stable user/module/menu/product fingerprints, atomic evidence failure, redaction, apply confirmation/rollback/idempotency regression, release contracts, and standard CI
