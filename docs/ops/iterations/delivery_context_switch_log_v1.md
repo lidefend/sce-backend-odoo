@@ -3,6 +3,19 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-24 — Atomic candidate retry attempt evidence isolation
+
+- Branch: `fix/release-candidate-attempt-evidence-isolation`
+- Starting product commit: `530d40bf701adf1d9e1c3fa4cd2eac96ce901871`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: immutable retry attempt identity, evidence custody, and resume admission
+- Module: atomic release candidate orchestrator, report schema, contract tests, and bilingual runbook
+- Reason: prevent a legal same-version retry with a new tool contract from appending to or overwriting the first failed candidate report and stage logs
+- Standard vs User-Specific: repository-wide release safety; no application, customer, or runtime business semantics
+- Why Here / Why Not Elsewhere: P4 owns release attempt lifecycle and evidence paths; Git history cleanup, application modules, and production configuration cannot safely implement retry custody
+- Blast Radius: local pre-publication candidate attempt directories, reports, logs, source repositories, outputs, latest index, resume and locking only; no candidate execution, registry push, tag, publication, deployment, production access, gc, or prune
+- Validation: legacy evidence hash preservation, unique attempt identity, retry/resume distinction, tool/source/tree mismatch rejection, ready-version guard, atomic report/index, log/path isolation, concurrency, schema, release contract, and formal CI
+
 ## 2026-07-24 — Atomic candidate clean source repository
 
 - Branch: `fix/release-candidate-clean-source-repository`

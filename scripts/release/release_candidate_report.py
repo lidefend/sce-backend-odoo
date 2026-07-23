@@ -176,6 +176,10 @@ def validate_build_artifacts(
 def build_ready_report(
     artifacts: Path,
     *,
+    attempt_id: str,
+    attempt_number: int,
+    retry_of_attempt_id: str | None,
+    created_at: str,
     expected_source_sha: str,
     expected_source_tree: str,
     expected_version: str,
@@ -245,6 +249,11 @@ def build_ready_report(
     }
     return {
         "schema_version": "release_candidate_report.v1",
+        "attempt_id": attempt_id,
+        "attempt_number": attempt_number,
+        "retry_of_attempt_id": retry_of_attempt_id,
+        "created_at": created_at,
+        "finished_at": utc_now(),
         "status": "ready",
         "CANDIDATE_READY": True,
         "source": {
@@ -312,6 +321,10 @@ def write_ready_outputs(output: Path, report: dict) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--artifacts", required=True, type=Path)
+    parser.add_argument("--attempt-id", required=True)
+    parser.add_argument("--attempt-number", required=True, type=int)
+    parser.add_argument("--retry-of-attempt-id")
+    parser.add_argument("--created-at", required=True)
     parser.add_argument("--expected-source-sha", required=True)
     parser.add_argument("--expected-source-tree", required=True)
     parser.add_argument("--expected-version", required=True)
@@ -327,6 +340,10 @@ def main() -> int:
         checks = dict(item.split("=", 1) for item in args.required_check)
         report = build_ready_report(
             args.artifacts,
+            attempt_id=args.attempt_id,
+            attempt_number=args.attempt_number,
+            retry_of_attempt_id=args.retry_of_attempt_id,
+            created_at=args.created_at,
             expected_source_sha=args.expected_source_sha,
             expected_source_tree=args.expected_source_tree,
             expected_version=args.expected_version,

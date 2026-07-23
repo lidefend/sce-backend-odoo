@@ -42,6 +42,8 @@ TREE = "b" * 40
 VERSION = "1.0.0-rc.5"
 IMAGE_ID = "sha256:" + "c" * 64
 CONTRACT = "f" * 64
+ATTEMPT = "20260724T120000Z-" + "1" * 32
+CREATED_AT = "2026-07-24T12:00:00Z"
 
 
 def write_candidate(root: Path) -> None:
@@ -116,6 +118,10 @@ class ReleaseCandidateReportTests(unittest.TestCase):
     def build(self, root: Path, **overrides):
         values = {
             "artifacts": root,
+            "attempt_id": ATTEMPT,
+            "attempt_number": 1,
+            "retry_of_attempt_id": None,
+            "created_at": CREATED_AT,
             "expected_source_sha": SHA,
             "expected_source_tree": TREE,
             "expected_version": VERSION,
@@ -212,6 +218,10 @@ class ReleaseCandidateReportTests(unittest.TestCase):
 
     def test_resume_state_names_only_failed_stage_and_evidence(self):
         payload = pipeline.state_payload(
+            attempt_id=ATTEMPT,
+            attempt_number=1,
+            retry_of_attempt_id=None,
+            created_at=CREATED_AT,
             version=VERSION,
             status="failed",
             stage="scan_sbom",
@@ -282,6 +292,10 @@ class ReleaseCandidateReportTests(unittest.TestCase):
             root = Path(temporary)
             path = root / "release-report.json"
             payload = pipeline.state_payload(
+                attempt_id=ATTEMPT,
+                attempt_number=1,
+                retry_of_attempt_id=None,
+                created_at=CREATED_AT,
                 version=VERSION,
                 status="failed",
                 stage="build",
@@ -297,6 +311,7 @@ class ReleaseCandidateReportTests(unittest.TestCase):
             ):
                 pipeline.report_matches_identity(
                     path,
+                    ATTEMPT,
                     VERSION,
                     SHA,
                     "1" * 40,
@@ -307,6 +322,7 @@ class ReleaseCandidateReportTests(unittest.TestCase):
             ):
                 pipeline.report_matches_identity(
                     path,
+                    ATTEMPT,
                     VERSION,
                     SHA,
                     TREE,
@@ -344,18 +360,24 @@ class ReleaseCandidateReportTests(unittest.TestCase):
             ):
                 result = pipeline.main()
             self.assertEqual(result, 1)
-            payload = json.loads((root / "release-report.json").read_text())
+            attempts = list((root / "attempts").glob("*/release-report.json"))
+            self.assertEqual(len(attempts), 1)
+            payload = json.loads(attempts[0].read_text())
             self.assertEqual(payload["status"], "failed")
             self.assertFalse(payload["CANDIDATE_READY"])
             self.assertEqual(payload["failed_stage"], "main_sync")
             self.assertEqual(payload["exit_code"], 19)
             self.assertEqual(payload["evidence"]["log"], "logs/main_sync.log")
 
-    def test_failed_report_is_archived_before_retry_state_replaces_it(self):
+    def test_legacy_failed_evidence_is_read_only_and_retry_is_attempt_isolated(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             path = root / "release-report.json"
             payload = pipeline.state_payload(
+                attempt_id=ATTEMPT,
+                attempt_number=1,
+                retry_of_attempt_id=None,
+                created_at=CREATED_AT,
                 version=VERSION,
                 status="failed",
                 stage="scan_sbom",
@@ -366,11 +388,23 @@ class ReleaseCandidateReportTests(unittest.TestCase):
                 exit_code=2,
             )
             path.write_text(json.dumps(payload), encoding="utf-8")
-            archived = pipeline.archive_failed_report(path)
-            self.assertIsNotNone(archived)
-            assert archived is not None
-            self.assertEqual(json.loads(archived.read_text()), payload)
+            log = root / "logs" / "build.log"
+            log.parent.mkdir()
+            log.write_text("immutable failure\n", encoding="utf-8")
+            report_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+            log_hash = hashlib.sha256(log.read_bytes()).hexdigest()
+            with mock.patch.object(pipeline, "new_attempt_id", return_value=ATTEMPT):
+                attempt, attempt_id, number, retry_of, resuming = pipeline.select_attempt(
+                    root, VERSION, None
+                )
+            self.assertEqual(attempt_id, ATTEMPT)
+            self.assertEqual(number, 2)
+            self.assertEqual(retry_of, pipeline.legacy_attempt_id(path))
+            self.assertFalse(resuming)
+            self.assertEqual(attempt, root / "attempts" / ATTEMPT)
             self.assertEqual(json.loads(path.read_text()), payload)
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), report_hash)
+            self.assertEqual(hashlib.sha256(log.read_bytes()).hexdigest(), log_hash)
 
     def test_candidate_lock_blocks_concurrent_process_and_releases(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -402,6 +436,186 @@ class ReleaseCandidateReportTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(released.returncode, 0, released.stderr)
+
+    def test_attempt_ids_are_collision_safe_and_paths_are_isolated(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / VERSION
+            first = pipeline.new_attempt_id()
+            second = pipeline.new_attempt_id()
+            self.assertRegex(first, pipeline.ATTEMPT_ID)
+            self.assertRegex(second, pipeline.ATTEMPT_ID)
+            self.assertNotEqual(first, second)
+            self.assertNotEqual(
+                pipeline.attempt_directory(root, first),
+                pipeline.attempt_directory(root, second),
+            )
+            for invalid in ("../escape", "short", "x" * 40, "bad;touch"):
+                with self.assertRaises(pipeline.CandidatePipelineError):
+                    pipeline.attempt_directory(root, invalid)
+
+    def test_retry_after_failed_attempt_has_new_identity_and_atomic_latest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / VERSION
+            first_dir = pipeline.attempt_directory(root, ATTEMPT)
+            first_dir.mkdir(parents=True)
+            first = pipeline.state_payload(
+                attempt_id=ATTEMPT,
+                attempt_number=1,
+                retry_of_attempt_id=None,
+                created_at=CREATED_AT,
+                version=VERSION,
+                status="failed",
+                stage="build",
+                source_sha=SHA,
+                source_tree=TREE,
+                pipeline_contract="3" * 64,
+                error="injected",
+                exit_code=2,
+            )
+            pipeline.write_state(first_dir / "release-report.json", first)
+            pipeline.write_latest_index(root, first)
+            next_id = "20260724T120001Z-" + "2" * 32
+            with mock.patch.object(pipeline, "new_attempt_id", return_value=next_id):
+                new_dir, selected, number, retry_of, resuming = pipeline.select_attempt(
+                    root, VERSION, None
+                )
+            self.assertEqual(selected, next_id)
+            self.assertEqual(number, 2)
+            self.assertEqual(retry_of, ATTEMPT)
+            self.assertFalse(resuming)
+            self.assertNotEqual(new_dir, first_dir)
+            self.assertEqual(first["source"]["pipeline_contract_sha256"], "3" * 64)
+
+    def test_resume_is_explicit_and_identity_mismatch_is_read_only(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / VERSION
+            attempt = pipeline.attempt_directory(root, ATTEMPT)
+            attempt.mkdir(parents=True)
+            report_path = attempt / "release-report.json"
+            payload = pipeline.state_payload(
+                attempt_id=ATTEMPT,
+                attempt_number=1,
+                retry_of_attempt_id=None,
+                created_at=CREATED_AT,
+                version=VERSION,
+                status="running",
+                stage="build",
+                source_sha=SHA,
+                source_tree=TREE,
+                pipeline_contract="3" * 64,
+            )
+            pipeline.write_state(report_path, payload)
+            before = hashlib.sha256(report_path.read_bytes()).hexdigest()
+            selected = pipeline.select_attempt(root, VERSION, ATTEMPT)
+            self.assertTrue(selected[-1])
+            with self.assertRaisesRegex(
+                pipeline.CandidatePipelineError, "tool contract differs"
+            ):
+                pipeline.report_matches_identity(
+                    report_path, ATTEMPT, VERSION, SHA, TREE, "7" * 64
+                )
+            self.assertEqual(hashlib.sha256(report_path.read_bytes()).hexdigest(), before)
+
+    def test_ready_version_rejects_unapproved_rebuild(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / VERSION
+            attempt = pipeline.attempt_directory(root, ATTEMPT)
+            attempt.mkdir(parents=True)
+            payload = pipeline.state_payload(
+                attempt_id=ATTEMPT,
+                attempt_number=1,
+                retry_of_attempt_id=None,
+                created_at=CREATED_AT,
+                version=VERSION,
+                status="ready",
+                stage="report",
+                source_sha=SHA,
+                source_tree=TREE,
+                pipeline_contract=CONTRACT,
+            )
+            payload["CANDIDATE_READY"] = True
+            pipeline.write_state(attempt / "release-report.json", payload)
+            pipeline.write_latest_index(root, payload)
+            with self.assertRaisesRegex(
+                pipeline.CandidatePipelineError, "already ready"
+            ):
+                pipeline.select_attempt(root, VERSION, None)
+
+    def test_logs_do_not_append_across_attempts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            old_log = root / ATTEMPT / "logs" / "build.log"
+            new_log = root / ("20260724T120001Z-" + "2" * 32) / "logs" / "build.log"
+            old_log.parent.mkdir(parents=True)
+            old_log.write_text("old evidence\n", encoding="utf-8")
+            before = hashlib.sha256(old_log.read_bytes()).hexdigest()
+            pipeline.run_logged(
+                "build",
+                [sys.executable, "-c", "print('new attempt')"],
+                new_log,
+                env=dict(os.environ),
+            )
+            self.assertEqual(hashlib.sha256(old_log.read_bytes()).hexdigest(), before)
+            self.assertIn("new attempt", new_log.read_text(encoding="utf-8"))
+
+    def test_schema_rejects_missing_attempt_identity_and_unsafe_evidence_path(self):
+        schema = json.loads(
+            (
+                ROOT / "schemas" / "release" / "release_candidate_report.v1.schema.json"
+            ).read_text()
+        )
+        payload = pipeline.state_payload(
+            attempt_id=ATTEMPT,
+            attempt_number=1,
+            retry_of_attempt_id=None,
+            created_at=CREATED_AT,
+            version=VERSION,
+            status="failed",
+            stage="build",
+            source_sha=SHA,
+            source_tree=TREE,
+            pipeline_contract=CONTRACT,
+            error="injected",
+            exit_code=2,
+        )
+        Draft202012Validator(schema).validate(payload)
+        missing = dict(payload)
+        missing.pop("attempt_id")
+        self.assertTrue(list(Draft202012Validator(schema).iter_errors(missing)))
+        unsafe = json.loads(json.dumps(payload))
+        unsafe["evidence"]["log"] = "logs/../../secret.log"
+        self.assertTrue(list(Draft202012Validator(schema).iter_errors(unsafe)))
+
+    def test_latest_index_failure_does_not_damage_attempt_report(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / VERSION
+            attempt = pipeline.attempt_directory(root, ATTEMPT)
+            attempt.mkdir(parents=True)
+            payload = pipeline.state_payload(
+                attempt_id=ATTEMPT,
+                attempt_number=1,
+                retry_of_attempt_id=None,
+                created_at=CREATED_AT,
+                version=VERSION,
+                status="failed",
+                stage="build",
+                source_sha=SHA,
+                source_tree=TREE,
+                pipeline_contract=CONTRACT,
+                error="injected",
+                exit_code=2,
+            )
+            report_path = attempt / "release-report.json"
+            pipeline.write_state(report_path, payload)
+            before = report_path.read_bytes()
+            with mock.patch.object(
+                pipeline, "atomic_write_json", side_effect=OSError("injected index failure")
+            ):
+                with self.assertRaises(OSError):
+                    pipeline.write_latest_index(root, payload)
+            self.assertEqual(report_path.read_bytes(), before)
+            recovered = pipeline.load_latest_attempt(root)
+            self.assertEqual(recovered["attempt_id"], ATTEMPT)
 
     def test_clean_source_clone_is_independent_and_identity_bound(self):
         with tempfile.TemporaryDirectory() as temporary:
