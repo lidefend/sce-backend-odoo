@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `3286`
 - Files requiring split plan: `34`
-- Files above warning threshold: `50`
+- Files above warning threshold: `51`
 
 ## Split Plan Required
 
@@ -90,6 +90,7 @@ Generated from repository source files. This report is informational during the 
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 867 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 827 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
@@ -181,11 +182,11 @@ Generated from repository source files. This report is informational during the 
 | 879 | warning | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 867 | warning | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 845 | warning | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | warning | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 828 | warning | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 827 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 825 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 821 | warning | Python source | `addons/smart_construction_core/models/support/tender.py` |
 
 ## Interpretation
 

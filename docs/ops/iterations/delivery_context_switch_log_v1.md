@@ -459,3 +459,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns production mutation authorization and evidence; the installed P1/P2 identity resolver remains the only role-policy authority and is consumed through its side-effect-free resolution methods
 - Blast Radius: dry-run now enables and verifies PostgreSQL transaction read-only before target queries, computes the proposed role from an in-memory XML-ID set, records one allowed relation append or NOOP, and atomically emits redacted observed/planned evidence; apply semantics and rc.4 are unchanged
 - Validation: read-only ordering and failure closure, database write rejection in tests, current/planned/observed separation, shared-policy role projection, zero write counters, stable user/module/menu/product fingerprints, atomic evidence failure, redaction, apply confirmation/rollback/idempotency regression, release contracts, and standard CI
+
+## 2026-07-23 — Administrator Identity Evidence Execution Binding Guard
+
+- Branch: `fix/admin-identity-evidence-binding-guard`
+- Starting commit: `0c957786f2bd1d9f617dd477e4da3ad9e85cad9d`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: immutable execution-to-tool-to-evidence identity binding before production database access
+- Module: administrator identity baseline runner, production Make entry, focused tests, release static contract, and production command policy
+- Reason: v2 evidence proved database read-only behavior and exact planned state but did not internally bind its unique execution ID, merged tool source, deployed directory, or deployed file digests
+- Standard vs User-Specific: repository-wide production evidence custody; no customer preference, application behavior, company initialization, menu policy, demo data, historical data, or production database mutation
+- Why Here / Why Not Elsewhere: P4 owns deployed-tool provenance and operational evidence; rc.4 and the P1/P2 identity policy remain immutable inputs and cannot establish host-tool custody
+- Blast Radius: each dry-run/apply now fails before database queries unless its safe UTC run ID, evidence filename, 40-character source SHA, versioned path, deployment marker, metadata, script digest, and release Make digest agree; v3 JSON binds execution/tool/target identity and a non-self-referential canonical payload digest
+- Validation: missing/invalid/mismatched run ID and source identity, metadata and file-digest drift, pre-query failure ordering, path traversal/symlink/existing-file rejection, exact 0600 atomic output, canonical digest recomputation and tamper detection, v2 read-only/plan/fingerprint regressions, apply confirmation/rollback/idempotency, release contracts, and standard CI
