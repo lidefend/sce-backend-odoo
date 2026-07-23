@@ -420,3 +420,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns backup identity admission and production mutation sequencing; neither rc.4 nor the Odoo modules should read host configuration
 - Blast Radius: the existing formal-module target now admits exactly six root-owned `0600` backup identity fields from one fixed non-symlink file and rejects process overrides; no backup, module installation, database write, or Nginx operation occurs during deployment of the tool
 - Validation: missing/unsafe/symlink/unknown/duplicate/incomplete/identity-drift configuration rejection, process-override rejection, exact backup identity propagation, existing backup-before-install and zero-install-on-failure tests, release contracts, and standard CI
+
+## 2026-07-23 — Formal Module Pre-Install Backup Artifact Guard
+
+- Branch: `fix/formal-module-backup-artifact-guard`
+- Starting commit: `47c50401c0edc21ecdbd831f4f34a27027734891`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: atomic paired recovery-point acceptance before the guarded first-production module installation
+- Module: `production_colocated_backup.py`, its direct formal-module caller, focused backup tests, and release-contract evidence
+- Reason: the existing backup produced a validated dump, filestore archive, and manifest but relied on the caller for restrictive umask, final permissions, and an external `SHA256SUMS`; the formal installation contract must complete those controls before its sole module-install call
+- Standard vs User-Specific: repository-wide production recovery safety; no application behavior, business semantics, tenant preference, database data, runtime configuration, Compose, Nginx, or image change
+- Why Here / Why Not Elsewhere: the paired backup implementation owns artifact creation, integrity, permissions, and atomic publication; installation orchestration only consumes a strictly accepted recovery point and must not repair it afterward
+- Blast Radius: new recovery points use an in-root `0700` incomplete directory, four `0600` artifacts, relative three-file SHA-256 inventory, structure validation, additive schema-v1 manifest evidence, fsync and atomic rename; legacy manifest validation remains readable
+- Validation: caller umask `0022`/`0000`, exact modes/owners, checksum inventory and tampering, missing/empty/symlink artifacts, dump/filestore/manifest/structure/permission/checksum failure cleanup, path escape and time ordering, old-manifest compatibility, backup-before-single-install order, release contracts, and standard CI

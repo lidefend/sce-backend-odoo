@@ -3,9 +3,12 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -76,8 +79,13 @@ class ColocatedReleaseStaticTests(unittest.TestCase):
         self.assertEqual(BACKUP.PRODUCTION_DB, "sc_production")
         self.assertIn("database.dump", self.backup)
         self.assertIn("filestore.tar.gz", self.backup)
+        self.assertIn("SHA256SUMS", self.backup)
         self.assertIn("required platform table missing", self.backup)
-        self.assertIn("find '{filestore_root}/{database}' -type f -print -quit", self.backup)
+        self.assertIn(f"test -d '{{filestore_root}}/{{database}}'", self.backup)
+        self.assertNotIn(
+            "find '{filestore_root}/{database}' -type f -print -quit",
+            self.backup,
+        )
 
     def test_restore_drill_namespace_and_container_isolation_are_enforced(self):
         self.assertTrue(BACKUP.RESTORE_DB.fullmatch("r10e_restore_acceptance"))
@@ -114,6 +122,345 @@ class BackupManifestValidationTests(unittest.TestCase):
             (root / "manifest.json").write_text(json.dumps({"database": "sc_prod", "checksums": {}}))
             with self.assertRaisesRegex(BACKUP.BackupError, "identity"):
                 BACKUP.validate_backup(root)
+
+
+class BackupArtifactContractTests(unittest.TestCase):
+    def _environment(self) -> dict[str, str]:
+        return {
+            "BACKUP_TARGET_DB": "sc_production",
+            "BACKUP_DB_CONTAINER": "sc_production-db-1",
+            "BACKUP_ODOO_CONTAINER": "sc_production-odoo-1",
+            "BACKUP_DB_USER": "odoo",
+            "BACKUP_FILESTORE_ROOT": "/opt/sce-runtime/filestore",
+            "BACKUP_TOOL_REVISION": "a" * 40,
+        }
+
+    def _fake_run(self, calls, *, fail_at: str | None = None):
+        def run(args, *, input_bytes=None):
+            calls.append((tuple(args), input_bytes))
+            command = " ".join(args)
+            if fail_at and fail_at in command:
+                raise BACKUP.BackupError(f"simulated failure: {fail_at}")
+            if "pg_dump" in args:
+                return b"postgresql-custom-dump"
+            if "tar" in args:
+                return b"gzip-filestore-archive"
+            if "SELECT current_database()" in args:
+                return b"sc_production\n"
+            if "pg_restore" in args:
+                return b"restore catalog\n"
+            return b""
+
+        return run
+
+    def _create_backup(self, root: Path, *, caller_umask: int = 0o022):
+        calls = []
+        previous = os.umask(caller_umask)
+        try:
+            with (
+                mock.patch.dict(os.environ, self._environment(), clear=False),
+                mock.patch.object(
+                    BACKUP, "_run", side_effect=self._fake_run(calls)
+                ),
+            ):
+                directory = BACKUP.backup(root)
+        finally:
+            os.umask(previous)
+        return directory, calls
+
+    def test_backup_enforces_modes_independently_of_caller_umask(self):
+        for caller_umask in (0o022, 0o000):
+            with self.subTest(caller_umask=oct(caller_umask)):
+                with tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    root.chmod(0o700)
+                    directory, _calls = self._create_backup(
+                        root, caller_umask=caller_umask
+                    )
+                    self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
+                    for name in BACKUP.ARTIFACTS + (
+                        BACKUP.CHECKSUM_FILE,
+                    ):
+                        self.assertEqual(
+                            (directory / name).stat().st_mode & 0o777,
+                            0o600,
+                        )
+
+    def test_backup_generates_complete_relative_checksum_inventory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o700)
+            directory, _calls = self._create_backup(root)
+            lines = (directory / BACKUP.CHECKSUM_FILE).read_text().splitlines()
+            self.assertEqual(len(lines), 3)
+            self.assertEqual(
+                {line.split("  ", 1)[1] for line in lines},
+                set(BACKUP.ARTIFACTS),
+            )
+            self.assertFalse(
+                any(
+                    line.endswith(BACKUP.CHECKSUM_FILE)
+                    or line.split("  ", 1)[1].startswith("/")
+                    for line in lines
+                )
+            )
+            BACKUP.validate_backup(
+                directory, require_artifact_contract=True
+            )
+            result = subprocess.run(
+                ["sha256sum", "-c", BACKUP.CHECKSUM_FILE],
+                cwd=directory,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_checksum_validation_rejects_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o700)
+            directory, _calls = self._create_backup(root)
+            with (directory / "database.dump").open("ab") as stream:
+                stream.write(b"tamper")
+            with self.assertRaisesRegex(BACKUP.BackupError, "validation"):
+                BACKUP.validate_backup(
+                    directory, require_artifact_contract=True
+                )
+
+    def test_missing_empty_and_symlink_artifacts_are_rejected(self):
+        for mutation in ("missing", "empty", "symlink"):
+            with self.subTest(mutation=mutation):
+                with tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    root.chmod(0o700)
+                    directory, _calls = self._create_backup(root)
+                    target = directory / "filestore.tar.gz"
+                    if mutation == "missing":
+                        target.unlink()
+                    elif mutation == "empty":
+                        target.write_bytes(b"")
+                        target.chmod(0o600)
+                    else:
+                        payload = directory / "filestore-copy"
+                        payload.write_bytes(target.read_bytes())
+                        target.unlink()
+                        target.symlink_to(payload)
+                    with self.assertRaises(BACKUP.BackupError):
+                        BACKUP.validate_backup(
+                            directory, require_artifact_contract=True
+                        )
+
+    def test_missing_manifest_is_a_controlled_failure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o700)
+            directory, _calls = self._create_backup(root)
+            (directory / "manifest.json").unlink()
+            with self.assertRaisesRegex(BACKUP.BackupError, "manifest"):
+                BACKUP.validate_backup(
+                    directory, require_artifact_contract=True
+                )
+
+    def test_pg_restore_failure_leaves_no_final_or_partial_directory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o700)
+            calls = []
+            with (
+                mock.patch.dict(os.environ, self._environment(), clear=False),
+                mock.patch.object(
+                    BACKUP,
+                    "_run",
+                    side_effect=self._fake_run(calls, fail_at="pg_restore"),
+                ),
+                self.assertRaises(BACKUP.BackupError),
+            ):
+                BACKUP.backup(root)
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_database_or_filestore_command_failure_leaves_no_backup(self):
+        for failure in ("pg_dump", " tar "):
+            with self.subTest(failure=failure):
+                with tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    root.chmod(0o700)
+                    calls = []
+                    with (
+                        mock.patch.dict(
+                            os.environ, self._environment(), clear=False
+                        ),
+                        mock.patch.object(
+                            BACKUP,
+                            "_run",
+                            side_effect=self._fake_run(calls, fail_at=failure),
+                        ),
+                        self.assertRaises(BACKUP.BackupError),
+                    ):
+                        BACKUP.backup(root)
+                    self.assertEqual(list(root.iterdir()), [])
+
+    def test_empty_database_or_filestore_payload_leaves_no_backup(self):
+        for empty_command in ("pg_dump", "tar"):
+            with self.subTest(empty_command=empty_command):
+                with tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    root.chmod(0o700)
+                    calls = []
+                    normal = self._fake_run(calls)
+
+                    def empty_one(args, *, input_bytes=None):
+                        if empty_command in args:
+                            return b""
+                        return normal(args, input_bytes=input_bytes)
+
+                    with (
+                        mock.patch.dict(
+                            os.environ, self._environment(), clear=False
+                        ),
+                        mock.patch.object(
+                            BACKUP, "_run", side_effect=empty_one
+                        ),
+                        self.assertRaises(BACKUP.BackupError),
+                    ):
+                        BACKUP.backup(root)
+                    self.assertEqual(list(root.iterdir()), [])
+
+    def test_manifest_write_failure_leaves_no_backup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o700)
+            calls = []
+            with (
+                mock.patch.dict(os.environ, self._environment(), clear=False),
+                mock.patch.object(
+                    BACKUP, "_run", side_effect=self._fake_run(calls)
+                ),
+                mock.patch.object(
+                    BACKUP, "_write_text", side_effect=OSError("write failed")
+                ),
+                self.assertRaises(BACKUP.BackupError),
+            ):
+                BACKUP.backup(root)
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_checksum_creation_failure_leaves_no_installable_backup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o700)
+            calls = []
+            with (
+                mock.patch.dict(os.environ, self._environment(), clear=False),
+                mock.patch.object(
+                    BACKUP, "_run", side_effect=self._fake_run(calls)
+                ),
+                mock.patch.object(
+                    BACKUP,
+                    "_write_checksums",
+                    side_effect=OSError("write failed"),
+                ),
+                self.assertRaises(BACKUP.BackupError),
+            ):
+                BACKUP.backup(root)
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_permission_validation_failure_removes_partial_backup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o700)
+            calls = []
+            with (
+                mock.patch.dict(os.environ, self._environment(), clear=False),
+                mock.patch.object(
+                    BACKUP, "_run", side_effect=self._fake_run(calls)
+                ),
+                mock.patch.object(
+                    BACKUP,
+                    "_validate_artifacts",
+                    side_effect=BACKUP.BackupError("unsafe permissions"),
+                ),
+                self.assertRaises(BACKUP.BackupError),
+            ):
+                BACKUP.backup(root)
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_checksum_validation_failure_removes_partial_backup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o700)
+            calls = []
+            with (
+                mock.patch.dict(os.environ, self._environment(), clear=False),
+                mock.patch.object(
+                    BACKUP, "_run", side_effect=self._fake_run(calls)
+                ),
+                mock.patch.object(
+                    BACKUP,
+                    "_validate_checksums",
+                    side_effect=BACKUP.BackupError("checksum mismatch"),
+                ),
+                self.assertRaises(BACKUP.BackupError),
+            ):
+                BACKUP.backup(root)
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_symlink_root_and_existing_newer_recovery_point_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            target = base / "target"
+            target.mkdir(mode=0o700)
+            linked = base / "linked"
+            linked.symlink_to(target, target_is_directory=True)
+            with (
+                mock.patch.dict(os.environ, self._environment(), clear=False),
+                self.assertRaises(BACKUP.BackupError),
+            ):
+                BACKUP.backup(linked)
+
+            future = target / "sc_production-99991231T235959Z"
+            future.mkdir(mode=0o700)
+            with (
+                mock.patch.dict(os.environ, self._environment(), clear=False),
+                self.assertRaisesRegex(BACKUP.BackupError, "later"),
+            ):
+                BACKUP.backup(target)
+
+    def test_manifest_additions_preserve_schema_one_compatibility(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o700)
+            directory, calls = self._create_backup(root)
+            manifest = json.loads(
+                (directory / "manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["schema_version"], 1)
+            self.assertEqual(manifest["database"], "sc_production")
+            self.assertEqual(manifest["database_format"], "postgresql_custom")
+            self.assertEqual(manifest["filestore_artifact"], "filestore.tar.gz")
+            self.assertEqual(manifest["tool_revision"], "a" * 40)
+            self.assertEqual(manifest["backup_status"], "complete")
+            self.assertEqual(
+                manifest["structure_validation"], "pg_restore_list_passed"
+            )
+            commands = [" ".join(args) for args, _input in calls]
+            self.assertLess(
+                next(i for i, value in enumerate(commands) if "pg_dump" in value),
+                next(
+                    i
+                    for i, value in enumerate(commands)
+                    if "pg_restore" in value
+                ),
+            )
+            serialized = json.dumps(manifest)
+            for forbidden in (
+                "password",
+                "token",
+                "cookie",
+                "authorization",
+                "secrets.env",
+            ):
+                self.assertNotIn(forbidden, serialized.lower())
 
 
 if __name__ == "__main__":
