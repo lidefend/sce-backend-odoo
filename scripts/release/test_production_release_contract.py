@@ -335,6 +335,25 @@ class StaticContractTests(unittest.TestCase):
             "BACKUP_ROOT=/data/backups/sc_production", backup_template
         )
         self.assertNotIn("sce-sc-production-", backup_template)
+        backup_source = (
+            ROOT / "scripts/release/production_colocated_backup.py"
+        ).read_text()
+        for token in (
+            'CHECKSUM_FILE = "SHA256SUMS"',
+            "previous_umask = os.umask(0o077)",
+            "temporary_directory.chmod(0o700)",
+            "path.chmod(0o600)",
+            "require_artifact_contract=True",
+            "os.rename(temporary_directory, final_directory)",
+            "pg_restore\", \"-l",
+        ):
+            self.assertIn(token, backup_source)
+        self.assertLess(
+            backup_source.index("_write_checksums(temporary_directory)"),
+            backup_source.index(
+                "os.rename(temporary_directory, final_directory)"
+            ),
+        )
 
 
 if __name__ == "__main__":
