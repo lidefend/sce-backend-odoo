@@ -4,12 +4,16 @@ RELEASE_ROLLBACK_DB ?= sc_release_rehearsal_rollback
 RELEASE_PROJECT ?= sc-release-rehearsal
 RELEASE_ARTIFACTS ?= artifacts/release/frontend-pilot-readiness
 RELEASE_PRODUCT_MODULES ?= $(shell python3 scripts/ops/tenant_module_set.py product)
+ADMIN_IDENTITY_BASELINE_MODE ?= dry-run
+ADMIN_IDENTITY_LOGIN ?= admin
+ADMIN_IDENTITY_EXPECTED_USER_COUNT ?= 1
+ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE ?= restricted
 RELEASE_COMPOSE = $(COMPOSE_BIN) -p $(RELEASE_PROJECT) -f docker-compose.yml -f docker-compose.release-rehearsal.yml
 RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) ODOO_DB=$(RELEASE_DB) ODOO_DBFILTER=^$(RELEASE_DB)$$ COMPOSE_PROJECT_NAME=$(RELEASE_PROJECT) DB_DATA=$(RELEASE_PROJECT)-db REDIS_DATA=$(RELEASE_PROJECT)-redis ODOO_DATA=$(RELEASE_PROJECT)-odoo ODOO_PORT=18087 NGINX_PORT=18086 FRONTEND_DIST_DIR=./frontend/apps/web/dist-release
 
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
-.PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.formal_modules.install_missing
+.PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.formal_modules.install_missing
 
 verify.release.guard: verify.repository.release_hygiene
 	@SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) python3 scripts/release/rehearsal_guard.py
@@ -24,7 +28,7 @@ verify.release.tooling:
 	@$(MAKE) --no-print-directory verify.production.release_contract
 
 verify.production.release_contract:
-	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
 	@python3 addons/smart_core/tests/test_platform_database_contract.py
 	@python3 scripts/release/test_candidate_scan_contract.py
 	@python3 scripts/release/test_product_release.py
@@ -32,6 +36,7 @@ verify.production.release_contract:
 	@python3 scripts/release/test_production_compose_contract.py
 	@python3 scripts/release/test_production_db_init.py
 	@python3 scripts/release/test_production_admin_harden.py
+	@python3 scripts/release/test_production_admin_identity_baseline.py
 	@python3 scripts/release/test_production_formal_module_install.py
 	@python3 scripts/release/test_production_first_fresh_cleanup.py
 	@python3 scripts/release/test_production_release_contract.py
@@ -145,6 +150,45 @@ release.production.admin.harden: guard.prod.danger release.production.compose.pr
 			python3 /usr/local/bin/render_odoo_conf.py /etc/odoo/odoo.conf.template "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}"; \
 			exec odoo shell -c "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}" -d "$${TARGET_DB}"' \
 		< scripts/release/production_admin_harden.py
+
+release.production.admin_identity.baseline: guard.prod.danger release.production.compose.preflight
+	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)
+	@test "$(TARGET_DB)" = "sc_production" || (echo "TARGET_DB must be sc_production"; exit 2)
+	@test "$(ADMIN_IDENTITY_BASELINE_MODE)" = "dry-run" -o "$(ADMIN_IDENTITY_BASELINE_MODE)" = "apply" || \
+		(echo "ADMIN_IDENTITY_BASELINE_MODE must be dry-run or apply"; exit 2)
+	@test "$(ADMIN_IDENTITY_LOGIN)" = "admin" || (echo "ADMIN_IDENTITY_LOGIN must be admin"; exit 2)
+	@test "$(ADMIN_IDENTITY_EXPECTED_USER_COUNT)" = "1" || (echo "ADMIN_IDENTITY_EXPECTED_USER_COUNT must be 1"; exit 2)
+	@test "$(ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE)" = "restricted" || (echo "ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE must be restricted"; exit 2)
+	@test -n "$(ADMIN_IDENTITY_EVIDENCE_OUTPUT)" || (echo "ADMIN_IDENTITY_EVIDENCE_OUTPUT is required"; exit 2)
+	@if [ "$(ADMIN_IDENTITY_BASELINE_MODE)" = "apply" ]; then \
+		test "$(CONFIRM_ADMIN_IDENTITY_BASELINE)" = "YES_APPLY_FRESH_PRODUCTION_ADMIN_IDENTITY_BASELINE" || \
+			(echo "CONFIRM_ADMIN_IDENTITY_BASELINE=YES_APPLY_FRESH_PRODUCTION_ADMIN_IDENTITY_BASELINE is required"; exit 2); \
+	fi
+	@ENV="$(ENV)" PROD_DANGER="$${PROD_DANGER:-}" TARGET_DB="$(TARGET_DB)" \
+		ADMIN_IDENTITY_BASELINE_MODE="$(ADMIN_IDENTITY_BASELINE_MODE)" \
+		ADMIN_IDENTITY_LOGIN="$(ADMIN_IDENTITY_LOGIN)" \
+		ADMIN_IDENTITY_EXPECTED_USER_COUNT="$(ADMIN_IDENTITY_EXPECTED_USER_COUNT)" \
+		ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE="$(ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE)" \
+		ADMIN_IDENTITY_EVIDENCE_OUTPUT="$(ADMIN_IDENTITY_EVIDENCE_OUTPUT)" \
+		CONFIRM_ADMIN_IDENTITY_BASELINE="$(CONFIRM_ADMIN_IDENTITY_BASELINE)" \
+		FORMAL_MODULE_CONTRACT="$(RELEASE_PRODUCT_MODULES)" \
+		python3 scripts/release/production_admin_identity_baseline.py
+	@$(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps -T \
+		-e ENV=prod \
+		-e PROD_DANGER=1 \
+		-e TARGET_DB="$(TARGET_DB)" \
+		-e ADMIN_IDENTITY_BASELINE_MODE="$(ADMIN_IDENTITY_BASELINE_MODE)" \
+		-e ADMIN_IDENTITY_LOGIN="$(ADMIN_IDENTITY_LOGIN)" \
+		-e ADMIN_IDENTITY_EXPECTED_USER_COUNT="$(ADMIN_IDENTITY_EXPECTED_USER_COUNT)" \
+		-e ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE="$(ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE)" \
+		-e ADMIN_IDENTITY_EVIDENCE_OUTPUT="$(ADMIN_IDENTITY_EVIDENCE_OUTPUT)" \
+		-e CONFIRM_ADMIN_IDENTITY_BASELINE="$(CONFIRM_ADMIN_IDENTITY_BASELINE)" \
+		-e FORMAL_MODULE_CONTRACT="$(RELEASE_PRODUCT_MODULES)" \
+		--entrypoint /bin/sh odoo -eu -c '\
+			python3 /usr/local/bin/production_db_contract.py health; \
+			python3 /usr/local/bin/render_odoo_conf.py /etc/odoo/odoo.conf.template "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}"; \
+			exec odoo shell -c "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}" -d "$${TARGET_DB}"' \
+		< scripts/release/production_admin_identity_baseline.py
 
 release.production.formal_modules.install_missing: guard.prod.danger release.production.compose.preflight
 	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)

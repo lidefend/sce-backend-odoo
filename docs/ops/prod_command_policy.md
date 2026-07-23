@@ -40,6 +40,12 @@ Makefile guards and script-level guards.
   `CONFIRM_FORMAL_MODULE_INSTALL=YES_INSTALL_MISSING_FORMAL_MODULES` contract;
   loads the root-owned `0600` backup identity only from
   `/etc/scems/production-backup.env`)
+- `make release.production.admin_identity.baseline` (defaults to dry-run;
+  apply requires the exact
+  `CONFIRM_ADMIN_IDENTITY_BASELINE=YES_APPLY_FRESH_PRODUCTION_ADMIN_IDENTITY_BASELINE`
+  contract and may only append the canonical
+  `smart_core.group_smart_core_admin` role to the sole active internal
+  `admin` in `sc_production`)
 - `make legacy_attachment.custody_marker.backfill.prod`
 - `make policy.restore.formal_product_menu`
 - `make smoke.business_full`
