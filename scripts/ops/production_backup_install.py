@@ -39,6 +39,7 @@ FILES = {
         SYSTEMD_ROOT / "scems-production-backup.timer",
 }
 STALE_TOKENS = ("sc-backend-odoo-prod-db-1", "sc_prod")
+IDENTITY_CHARACTER_CLASS = "A-Za-z0-9_"
 
 
 class InstallError(RuntimeError):
@@ -46,6 +47,19 @@ class InstallError(RuntimeError):
 
 
 Runner = Callable[[list[str]], bytes]
+
+
+def contains_stale_identity(text: str) -> bool:
+    return any(
+        re.search(
+            rf"(?<![{IDENTITY_CHARACTER_CLASS}])"
+            rf"{re.escape(token)}"
+            rf"(?![{IDENTITY_CHARACTER_CLASS}])",
+            text,
+        )
+        is not None
+        for token in STALE_TOKENS
+    )
 
 
 def run(args: list[str]) -> bytes:
@@ -205,8 +219,9 @@ def preflight(identity: Identity, runner: Runner = run) -> dict:
         if target.parent not in {INSTALL_ROOT, SYSTEMD_ROOT}:
             raise InstallError("installation target escaped approved roots")
         text = source.read_text(encoding="utf-8")
-        if source.suffix in {".service", ".timer"} and any(
-            token in text for token in STALE_TOKENS
+        if (
+            source.suffix in {".service", ".timer"}
+            and contains_stale_identity(text)
         ):
             raise InstallError(f"stale production identity in installation source: {source}")
     if not ENVIRONMENT_FILE.is_file() or ENVIRONMENT_FILE.is_symlink():
