@@ -118,6 +118,42 @@ def validate_artifact_identity(
     for label, value in digests.items():
         if str(value or "").strip() != expected_image_digest:
             raise ReleaseIdentityError(f"{label} does not match EXPECTED_IMAGE_DIGEST")
+    if release_manifest.get("repository") != EXPECTED_REPOSITORY:
+        raise ReleaseIdentityError("release manifest repository is not approved")
+    if release_manifest.get("branch") != "main":
+        raise ReleaseIdentityError("release manifest branch must be main")
+    if release_manifest.get("schema_version") != "product_release_manifest.v2":
+        raise ReleaseIdentityError("release manifest schema is not v2")
+    if release_manifest.get("container_source_revision") != expected_sha:
+        raise ReleaseIdentityError("release manifest container revision mismatch")
+    if release_manifest.get("archive_reload_digest") != expected_image_digest:
+        raise ReleaseIdentityError("release manifest archive reload digest mismatch")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(release_manifest.get("archive_sha256") or "")):
+        raise ReleaseIdentityError("release manifest archive checksum is missing")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(release_manifest.get("baseline_checksum") or "")):
+        raise ReleaseIdentityError("release manifest baseline checksum is missing")
+    base_images = release_manifest.get("base_image_digests")
+    if not isinstance(base_images, dict) or set(base_images) != {"frontend_builder", "odoo_runtime"}:
+        raise ReleaseIdentityError("release manifest base image digests are incomplete")
+    if any(not re.fullmatch(r"sha256:[0-9a-f]{64}", str(value)) for value in base_images.values()):
+        raise ReleaseIdentityError("release manifest base image digest is invalid")
+    scan = release_manifest.get("scan")
+    if not isinstance(scan, dict):
+        raise ReleaseIdentityError("release manifest scan record is missing")
+    counts = scan.get("counts")
+    if (
+        scan.get("status") != "completed"
+        or scan.get("source_sha") != expected_sha
+        or scan.get("image_digest") != expected_image_digest
+        or not isinstance(counts, dict)
+        or set(("CRITICAL", "HIGH", "MEDIUM", "LOW", "SECRET")) - set(counts)
+        or (scan.get("policy") or {}).get("result") != "pass"
+    ):
+        raise ReleaseIdentityError("release manifest scan record is incomplete or mismatched")
+    if release_manifest.get("candidate_status") != "rc":
+        raise ReleaseIdentityError("release manifest candidate status is invalid")
+    if release_manifest.get("deployment_status") not in {"not_deployed", "blocked"}:
+        raise ReleaseIdentityError("release manifest deployment status is invalid")
     return {"source_sha": expected_sha, "image_digest": expected_image_digest}
 
 

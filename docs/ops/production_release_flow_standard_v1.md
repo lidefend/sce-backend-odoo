@@ -95,7 +95,8 @@ where name in (...);
 10. 生产目录不是 Git 工作区时，不得临场 `git pull` 或整目录覆盖；必须使用 release package 或已审定的文件清单，并记录备份和 sha256。
 11. 生产目录是 Git 工作区后，主线 `main` 是生产代码权威来源；生产服务器必须具备只读 deploy key，允许直接 `git fetch origin main`。
 12. 若生产服务器临时缺少 GitHub deploy key，只能使用 Git bundle 或 release package 作为过渡，部署记录必须记录 `git_auth` 缺口，不能把该状态视为长期标准。
-13. 全量主线对齐发布必须在部署记录中留存 `production_git_authority_guard` 完整 JSON 证据；至少包含 `status`、`branch`、`head`、`remote_head`、`status_porcelain`、`remote_auth_ok`、`env_file_skip_worktree`。
+13. 全量主线对齐发布必须在部署记录中留存 `production_git_authority_guard` 完整 JSON 证据；至少包含 `status`、`branch`、`head`、`expected_release_sha`、`live_remote_main_sha`、`remote_url`、`status_porcelain`、`detached_head`、`live_remote_query_ok`、`stale_remote_ref_detected`。
+14. 生产 Git guard 仅用于只读身份诊断；正式部署来源是 manifest 锁定的不可变镜像 digest，不得在生产现场从 Git checkout 构建应用镜像。
 
 ## 5. 标准发布流程
 

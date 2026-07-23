@@ -23,6 +23,7 @@ FILES = {
     "record_guard": ROOT / "scripts/verify/production_deployment_record_guard.py",
     "makefile": ROOT / "Makefile",
 }
+MAKE_FRAGMENTS = tuple(sorted((ROOT / "make").glob("*.mk")))
 
 FLOW_TOKENS = (
     "生产发布链路规范 v1",
@@ -47,7 +48,7 @@ FLOW_TOKENS = (
     "发布结论区分了“发布包对齐”和“全量对齐”",
     "生产目录不是 Git 工作区时，不得临场 `git pull` 或整目录覆盖",
     "全量主线对齐发布必须在部署记录中留存 `production_git_authority_guard` 完整 JSON 证据",
-    "至少包含 `status`、`branch`、`head`、`remote_head`、`status_porcelain`、`remote_auth_ok`、`env_file_skip_worktree`",
+    "至少包含 `status`、`branch`、`head`、`expected_release_sha`、`live_remote_main_sha`、`remote_url`、`status_porcelain`、`detached_head`、`live_remote_query_ok`、`stale_remote_ref_detected`",
 )
 
 UPGRADE_STANDARD_TOKENS = (
@@ -62,7 +63,7 @@ UPGRADE_STANDARD_TOKENS = (
     "生产 Git 工作区必须具备只读拉取主线的 deploy key",
     "`make verify.production_git.authority.guard`",
     "该检查不连接 Odoo 或 Docker Compose，不使用 `PROD_READONLY_VERIFY`",
-    "`PRODUCTION_GIT_AUTHORITY_*` 环境变量控制",
+    "`HEAD = EXPECTED_RELEASE_SHA = GitHub 实时 main`",
     "changed_files.txt",
     "module_upgrade.txt",
     "SHA256SUMS",
@@ -89,10 +90,10 @@ TEMPLATE_TOKENS = (
     "`verify.non_demo_data_contamination`",
     "smart_construction_demo",
     "Production Git authority evidence for `full tree` releases",
-    "PRODUCTION_GIT_AUTHORITY_REQUIRE_ENV_SKIP=1",
+    "EXPECTED_RELEASE_SHA=<approved-full-40-char-main-sha>",
     "\"guard\": \"production_git_authority_guard\"",
-    "\"remote_auth_ok\": true",
-    "\"env_file_skip_worktree\": true",
+    "\"live_remote_query_ok\": true",
+    "\"stale_remote_ref_detected\": false",
     "生产与日常开发服务器不是全量一致",
     "`planned: <meaning>` / `retained: <meaning>` / `tracked: <meaning>` / `closed: <evidence>`",
 )
@@ -129,7 +130,7 @@ VERIFY_README_TOKENS = (
     "explicit `incremental package` / `full tree` / `hotfix` release type",
     "For full-tree releases, requires production Git authority evidence",
     "future full-tree releases to preserve the full `production_git_authority_guard` JSON evidence",
-    "`status`, `branch`, `head`, `remote_head`, `status_porcelain`, `remote_auth_ok`, and `env_file_skip_worktree`",
+    "`status`, `branch`, `head`, `expected_release_sha`, `live_remote_main_sha`, `remote_url`, `status_porcelain`, `detached_head`, `live_remote_query_ok`, and `stale_remote_ref_detected`",
     "If the record claims production and daily development are fully aligned",
     "explicit non-full-alignment wording",
     "Rejects open-ended production record placeholders",
@@ -267,7 +268,9 @@ def _require_production_git_authority_target(text: str, errors: list[str]) -> No
         errors.append(f"makefile: {target} must remain host-only with no prerequisites, got {prereqs!r}")
 
     expected_recipe = (
-        "@python3 -m py_compile scripts/verify/production_git_authority_guard.py",
+        "@python3 -m py_compile scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py",
+        "@python3 scripts/verify/test_production_git_authority_guard.py",
+        '@test -n "$(EXPECTED_RELEASE_SHA)" || (echo "EXPECTED_RELEASE_SHA is required"; exit 2)',
         "@python3 scripts/verify/production_git_authority_guard.py",
     )
     recipe = _makefile_recipe(text, target)
@@ -282,6 +285,9 @@ def _require_production_git_authority_target(text: str, errors: list[str]) -> No
 def main() -> int:
     errors: list[str] = []
     contents = {label: _read(path, errors) for label, path in FILES.items()}
+    contents["makefile"] = "\n".join(
+        [contents["makefile"], *(_read(path, errors) for path in MAKE_FRAGMENTS)]
+    )
 
     _require_tokens("flow", contents["flow"], FLOW_TOKENS, errors)
     _require_tokens("upgrade_standard", contents["upgrade_standard"], UPGRADE_STANDARD_TOKENS, errors)

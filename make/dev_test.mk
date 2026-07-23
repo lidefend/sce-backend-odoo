@@ -1259,7 +1259,9 @@ verify.production_release.flow.guard: guard.prod.forbid
 
 .PHONY: verify.production_git.authority.guard
 verify.production_git.authority.guard:
-	@python3 -m py_compile scripts/verify/production_git_authority_guard.py
+	@python3 -m py_compile scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
+	@python3 scripts/verify/test_production_git_authority_guard.py
+	@test -n "$(EXPECTED_RELEASE_SHA)" || (echo "EXPECTED_RELEASE_SHA is required"; exit 2)
 	@python3 scripts/verify/production_git_authority_guard.py
 
 

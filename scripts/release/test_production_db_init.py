@@ -33,9 +33,29 @@ def environment(database: str = "sc_migration_rehearsal") -> dict[str, str]:
     manifest.write_text(
         json.dumps(
             {
+                "schema_version": "product_release_manifest.v2",
+                "repository": "lidefend/sce-backend-odoo",
+                "branch": "main",
                 "source_sha": source_sha,
                 "oci_revision": source_sha,
+                "container_source_revision": source_sha,
                 "image_digest": image_digest,
+                "archive_sha256": "c" * 64,
+                "archive_reload_digest": image_digest,
+                "baseline_checksum": "d" * 64,
+                "scan": {
+                    "status": "completed",
+                    "source_sha": source_sha,
+                    "image_digest": image_digest,
+                    "counts": {
+                        "CRITICAL": 0,
+                        "HIGH": 0,
+                        "MEDIUM": 0,
+                        "LOW": 0,
+                        "SECRET": 0
+                    },
+                    "policy": {"result": "pass"}
+                }
             },
             sort_keys=True,
         )
