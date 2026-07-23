@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
 import branch_governance_consistency_guard as guard
+
+
+ROOT = Path(__file__).resolve().parents[2]
+FULL_SHA = "a" * 40
+OTHER_SHA = "b" * 40
 
 
 class BranchGovernanceConsistencyGuardTests(unittest.TestCase):
@@ -61,6 +68,132 @@ class BranchGovernanceConsistencyGuardTests(unittest.TestCase):
                 "make/codex.mk: CODEX_ALLOWED_WRITE_BRANCH_REGEX diverges",
                 guard.validate(root),
             )
+
+
+class ControlledMergeExpectedHeadTests(unittest.TestCase):
+    def run_merge(
+        self,
+        *,
+        expected_head: str | None,
+        actual_head: str = FULL_SHA,
+        method: str = "merge",
+    ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            merge_log = root / "merge.log"
+            git = bin_dir / "git"
+            git.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                "if [[ \"$1 $2 $3\" == \"rev-parse --abbrev-ref HEAD\" ]]; then\n"
+                "  printf '%s\\n' 'fix/controlled-merge-expected-head-guard'\n"
+                "else\n"
+                "  echo \"unexpected git invocation: $*\" >&2\n"
+                "  exit 90\n"
+                "fi\n",
+                encoding="utf-8",
+            )
+            gh = bin_dir / "gh"
+            gh.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                "if [[ \"$1 $2 ${3:-}\" == \"pr merge --help\" ]]; then\n"
+                "  echo '      --match-head-commit SHA'\n"
+                "elif [[ \"$1 $2\" == \"pr view\" ]]; then\n"
+                "  printf '%s\\n' \"${FAKE_ACTUAL_HEAD:?}\"\n"
+                "elif [[ \"$1 $2\" == \"pr merge\" ]]; then\n"
+                "  shift 2\n"
+                "  printf '%s\\n' \"$@\" >\"${FAKE_MERGE_LOG:?}\"\n"
+                "else\n"
+                "  echo \"unexpected gh invocation: $*\" >&2\n"
+                "  exit 91\n"
+                "fi\n",
+                encoding="utf-8",
+            )
+            git.chmod(0o755)
+            gh.chmod(0o755)
+            environment = dict(os.environ)
+            environment.update(
+                {
+                    "ENV": "test",
+                    "PATH": f"{bin_dir}:{environment['PATH']}",
+                    "FAKE_ACTUAL_HEAD": actual_head,
+                    "FAKE_MERGE_LOG": str(merge_log),
+                }
+            )
+            command = [
+                "make",
+                "--no-print-directory",
+                "pr.merge",
+                "PR=30",
+                f"PR_MERGE_METHOD={method}",
+            ]
+            if expected_head is not None:
+                command.append(f"EXPECTED_HEAD={expected_head}")
+            completed = subprocess.run(
+                command,
+                cwd=ROOT,
+                env=environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            arguments = (
+                merge_log.read_text(encoding="utf-8").splitlines()
+                if merge_log.exists()
+                else []
+            )
+            return completed, arguments
+
+    def test_missing_expected_head_is_rejected_without_merge(self) -> None:
+        completed, arguments = self.run_merge(expected_head=None)
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("EXPECTED_HEAD must be", completed.stdout)
+        self.assertEqual(arguments, [])
+
+    def test_short_and_non_hex_expected_heads_are_rejected_without_merge(self) -> None:
+        for value in ("abc123", "g" * 40):
+            with self.subTest(value=value):
+                completed, arguments = self.run_merge(expected_head=value)
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertIn("EXPECTED_HEAD must be", completed.stdout)
+                self.assertEqual(arguments, [])
+
+    def test_shell_metacharacters_are_rejected_without_merge(self) -> None:
+        completed, arguments = self.run_merge(expected_head=FULL_SHA + ";touch /tmp/x")
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("EXPECTED_HEAD must be", completed.stdout)
+        self.assertEqual(arguments, [])
+
+    def test_live_head_mismatch_is_rejected_without_merge(self) -> None:
+        completed, arguments = self.run_merge(
+            expected_head=FULL_SHA,
+            actual_head=OTHER_SHA,
+        )
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn(f"expected_head={FULL_SHA} actual_head={OTHER_SHA}", completed.stdout)
+        self.assertEqual(arguments, [])
+
+    def test_matching_head_is_propagated_with_approved_method(self) -> None:
+        completed, arguments = self.run_merge(expected_head=FULL_SHA)
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertEqual(
+            arguments,
+            [
+                "30",
+                "--merge",
+                "--match-head-commit",
+                FULL_SHA,
+                "--subject",
+                "Merge PR #30",
+                "--body",
+                "Merged by Codex through make pr.merge.",
+            ],
+        )
+        self.assertNotIn("--auto", arguments)
 
 
 if __name__ == "__main__":
