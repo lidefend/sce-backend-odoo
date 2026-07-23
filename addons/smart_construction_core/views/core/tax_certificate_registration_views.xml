@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_sc_tax_certificate_registration_search" model="ir.ui.view">
+        <field name="name">sc.tax.certificate.registration.search</field>
+        <field name="model">sc.tax.certificate.registration</field>
+        <field name="arch" type="xml">
+            <search string="外经证登记">
+                <field name="name" />
+                <field name="company_id" />
+                <field name="project_id" />
+                <field name="taxpayer_name" />
+                <field name="taxpayer_identifier" />
+                <field name="tax_report_management_no" />
+                <field name="handler_id" />
+                <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]" />
+                <filter string="办理中" name="registered" domain="[('state', '=', 'registered')]" />
+                <filter string="已完成" name="completed" domain="[('state', '=', 'completed')]" />
+                <group expand="0" string="分组">
+                    <filter string="公司" name="group_company" context="{'group_by': 'company_id'}" />
+                    <filter string="项目" name="group_project" context="{'group_by': 'project_id'}" />
+                    <filter string="状态" name="group_state" context="{'group_by': 'state'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_sc_tax_certificate_registration_tree" model="ir.ui.view">
+        <field name="name">sc.tax.certificate.registration.tree</field>
+        <field name="model">sc.tax.certificate.registration</field>
+        <field name="arch" type="xml">
+            <tree string="外经证登记" create="true" edit="true" delete="false">
+                <field name="name" />
+                <field name="company_id" />
+                <field name="project_id" />
+                <field name="taxpayer_name" />
+                <field name="taxpayer_identifier" optional="hide" />
+                <field name="tax_report_management_no" />
+                <field name="cross_region_business_address" optional="hide" />
+                <field name="validity_start_date" />
+                <field name="validity_end_date" />
+                <field name="prepaid_tax_date" optional="show" />
+                <field name="tax_payment_certificate_no" optional="show" />
+                <field name="handler_id" />
+                <field name="state" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_sc_tax_certificate_registration_form" model="ir.ui.view">
+        <field name="name">sc.tax.certificate.registration.form</field>
+        <field name="model">sc.tax.certificate.registration</field>
+        <field name="arch" type="xml">
+            <form string="外经证登记" delete="false">
+                <header>
+                    <button name="action_register" string="登记" type="object" class="btn-primary"
+                            groups="smart_construction_core.group_sc_cap_finance_user"
+                            invisible="state != 'draft'" />
+                    <button name="action_complete" string="完成" type="object" class="btn-primary"
+                            groups="smart_construction_core.group_sc_cap_finance_manager"
+                            invisible="state != 'registered'" />
+                    <button name="action_cancel" string="取消" type="object"
+                            groups="smart_construction_core.group_sc_cap_finance_user"
+                            invisible="state != 'registered'" />
+                    <field name="state" widget="statusbar" statusbar_visible="draft,registered,completed,cancelled" />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" />
+                        <h1><field name="name" readonly="1" /></h1>
+                    </div>
+                    <group>
+                        <group string="归属">
+                            <field name="company_id" readonly="state != 'draft'" />
+                            <field name="project_id" readonly="state != 'draft'" />
+                            <field name="handler_id" readonly="state in ('completed', 'cancelled')" />
+                        </group>
+                        <group string="报验身份">
+                            <field name="taxpayer_name" readonly="state != 'draft'" />
+                            <field name="taxpayer_identifier" readonly="state != 'draft'" />
+                            <field name="tax_report_management_no" readonly="state != 'draft'" />
+                        </group>
+                    </group>
+                    <group string="跨区域经营">
+                        <field name="cross_region_business_address" readonly="state != 'draft'" />
+                        <field name="validity_start_date" readonly="state != 'draft'" />
+                        <field name="validity_end_date" readonly="state != 'draft'" />
+                    </group>
+                    <group string="预缴税与完税凭证">
+                        <field name="prepaid_tax_date" readonly="state in ('completed', 'cancelled')" />
+                        <field name="tax_payment_certificate_no" readonly="state in ('completed', 'cancelled')" />
+                    </group>
+                    <notebook>
+                        <page string="附件">
+                            <field name="attachment_ids" widget="many2many_binary"
+                                   readonly="state in ('completed', 'cancelled')" />
+                        </page>
+                        <page string="备注">
+                            <field name="note" nolabel="1" readonly="state in ('completed', 'cancelled')" />
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sc_tax_certificate_registration_user" model="ir.actions.act_window">
+        <field name="name">外经证登记</field>
+        <field name="res_model">sc.tax.certificate.registration</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="smart_construction_core.view_sc_tax_certificate_registration_tree" />
+        <field name="views" eval="[(ref('smart_construction_core.view_sc_tax_certificate_registration_tree'), 'tree'), (ref('smart_construction_core.view_sc_tax_certificate_registration_form'), 'form')]" />
+        <field name="search_view_id" ref="smart_construction_core.view_sc_tax_certificate_registration_search" />
+        <field name="context">{'search_default_registered': 1}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read'), ref('smart_construction_core.group_sc_cap_finance_read'), ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]" />
+    </record>
+</odoo>

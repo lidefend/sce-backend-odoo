@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo.tests.common import TransactionCase, tagged
 
-from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
-    LockedMenuPolicyContractError,
-)
-
-
 @tagged("post_install", "-at_install", "r11c_locked_menu")
 class TestLockedMenuPolicyInitialization(TransactionCase):
     def _artifact_state(self):
@@ -17,28 +12,29 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         return {
             "policies": policies,
             "snapshots": self.env["sc.edition.release.snapshot"].search_count([]),
-            "invented_action": self.env["ir.model.data"].search_count(
+            "formal_action": self.env["ir.model.data"].search_count(
                 [
                     ("module", "=", "smart_construction_core"),
                     ("name", "=", "action_sc_tax_certificate_registration_user"),
                 ]
             ),
-            "invented_model": self.env["ir.model"].search_count(
+            "legacy_model": self.env["ir.model"].search_count(
                 [("model", "=", "sc.legacy.payment.residual.fact")]
             ),
         }
 
-    def test_unapproved_target_fails_before_artifact_mutation(self):
-        before = self._artifact_state()
-        with self.assertRaises(LockedMenuPolicyContractError) as raised:
-            with self.env.cr.savepoint():
-                self.env["sc.product.policy"].synchronize_locked_formal_menu_policy(
-                    "construction.standard"
-                )
-        self.assertEqual(raised.exception.code, "BUSINESS_DECISION_REQUIRED")
-        self.assertIn(
-            "smart_construction_core.menu_sc_tax_certificate_registration_user",
-            raised.exception.detail,
+    def test_approved_tax_certificate_target_initializes_without_legacy_model(self):
+        self.env["sc.product.policy"].synchronize_locked_formal_menu_policy("construction.standard")
+        policy = self.env["sc.product.policy"].search(
+            [("product_key", "=", "construction.standard")], limit=1
         )
-        self.env.invalidate_all()
-        self.assertEqual(self._artifact_state(), before)
+        row = next(
+            menu
+            for group in policy.menu_groups
+            for menu in group.get("menus", [])
+            if menu.get("menu_xmlid") == "smart_construction_core.menu_sc_tax_certificate_registration_user"
+        )
+        self.assertEqual(row.get("res_model"), "sc.tax.certificate.registration")
+        self.assertGreater(row.get("menu_id"), 0)
+        self.assertEqual(self._artifact_state()["formal_action"], 1)
+        self.assertEqual(self._artifact_state()["legacy_model"], 0)

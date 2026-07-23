@@ -1,4 +1,11 @@
 <odoo>
+    <record id="seq_sc_tax_certificate_registration" model="ir.sequence">
+        <field name="name">外经证登记单号</field>
+        <field name="code">sc.tax.certificate.registration</field>
+        <field name="prefix">WJZ%(y)s%(month)s</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False" />
+    </record>
     <record id="seq_sc_project_document" model="ir.sequence">
         <field name="name">工程资料</field>
         <field name="code">sc.project.document</field>
