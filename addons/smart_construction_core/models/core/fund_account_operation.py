@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
+
+
+_LEGACY_DIRECT_SOURCE_MODEL = "online_old_legacy_direct:direct_acceptance"
+_READONLY_ARCHIVE_SOURCE_TABLES = frozenset(
+    {
+        "direct_acceptance:油卡登记",
+        "direct_acceptance:充值登记",
+    }
+)
 
 
 class ScFundAccountOperation(models.Model):
@@ -8,6 +17,27 @@ class ScFundAccountOperation(models.Model):
     _description = "资金账户操作单"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "operation_date desc, id desc"
+
+    @api.model
+    def _is_readonly_legacy_archive_values(self, values):
+        """Return whether values identify one of the two approved archives."""
+        return (
+            values.get("legacy_source_model") == _LEGACY_DIRECT_SOURCE_MODEL
+            and values.get("legacy_source_table") in _READONLY_ARCHIVE_SOURCE_TABLES
+        )
+
+    def _is_readonly_legacy_archive(self):
+        self.ensure_one()
+        return self._is_readonly_legacy_archive_values(
+            {
+                "legacy_source_model": self.legacy_source_model,
+                "legacy_source_table": self.legacy_source_table,
+            }
+        )
+
+    def _assert_readonly_legacy_archive_not_mutated(self):
+        if any(record._is_readonly_legacy_archive() for record in self):
+            raise AccessError(_("油卡登记和充值登记是历史只读归档，不允许修改、删除或执行状态流转。"))
 
     name = fields.Char(string="单据编号", required=True, default="/", copy=False, tracking=True)
     operation_type = fields.Selection(
@@ -311,6 +341,8 @@ class ScFundAccountOperation(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(self._is_readonly_legacy_archive_values(vals) for vals in vals_list):
+            raise AccessError(_("油卡登记和充值登记是历史只读归档，不允许通过运行时接口新建。"))
         seq = self.env["ir.sequence"].sudo()
         for vals in vals_list:
             project_id = self._context_project_id()
@@ -339,6 +371,24 @@ class ScFundAccountOperation(models.Model):
                 vals["name"] = seq.next_by_code("sc.fund.account.operation") or _("资金账户操作单")
         return super().create(vals_list)
 
+    def write(self, vals):
+        self._assert_readonly_legacy_archive_not_mutated()
+        if any(
+            self._is_readonly_legacy_archive_values(
+                {
+                    "legacy_source_model": vals.get("legacy_source_model", record.legacy_source_model),
+                    "legacy_source_table": vals.get("legacy_source_table", record.legacy_source_table),
+                }
+            )
+            for record in self
+        ):
+            raise AccessError(_("普通资金记录不能被转换为历史只读归档。"))
+        return super().write(vals)
+
+    def unlink(self):
+        self._assert_readonly_legacy_archive_not_mutated()
+        return super().unlink()
+
     @api.model
     def _resolve_business_category_code(self, vals):
         code = (
@@ -366,6 +416,7 @@ class ScFundAccountOperation(models.Model):
         return category.id if category else False
 
     def action_confirm(self):
+        self._assert_readonly_legacy_archive_not_mutated()
         for rec in self:
             if rec.state != "draft":
                 raise UserError(_("只有草稿状态的资金账户操作单可以确认。"))
@@ -380,6 +431,7 @@ class ScFundAccountOperation(models.Model):
             )
 
     def action_done(self):
+        self._assert_readonly_legacy_archive_not_mutated()
         for rec in self:
             if rec.state != "confirmed":
                 raise UserError(_("只有已确认的资金账户操作单可以完成。"))
@@ -509,6 +561,7 @@ class ScFundAccountOperation(models.Model):
             raise UserError(_("资金账户 %s 未启用，不能办理该操作。") % ", ".join(inactive.mapped("display_name")))
 
     def action_cancel(self):
+        self._assert_readonly_legacy_archive_not_mutated()
         for rec in self:
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的资金账户操作单可以取消。"))
@@ -522,6 +575,7 @@ class ScFundAccountOperation(models.Model):
             )
 
     def action_reset_draft(self):
+        self._assert_readonly_legacy_archive_not_mutated()
         for rec in self:
             if rec.state != "cancelled":
                 raise UserError(_("只有已取消的资金账户操作单可以重置为草稿。"))

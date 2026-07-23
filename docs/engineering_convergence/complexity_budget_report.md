@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3263`
+- Scanned files: `3265`
 - Files requiring split plan: `34`
 - Files above warning threshold: `50`
 
@@ -51,7 +51,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 2090 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 2122 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 1711 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1461 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
@@ -120,8 +120,8 @@ Generated from repository source files. This report is informational during the 
 | 2358 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2289 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 2193 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
+| 2122 | warning | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 2091 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2090 | warning | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 2051 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2028 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 2005 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
