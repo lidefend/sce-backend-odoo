@@ -561,3 +561,15 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns publication provenance and remote-state admission; the frozen candidate and application layers must not absorb later delivery-tool commits
 - Blast Radius: publication preflight/reporting only; candidate evidence remains immutable and tag/image/Release remain bound to candidate source
 - Validation: candidate creation evidence, first-parent ancestry, live dual-remote and tool identity, pre-write drift checks, tag/Release bindings, resume/idempotency, schemas, release contract, standard CI, and evidence hash/size/mtime custody
+## 2026-07-24 — Governed Production Backup Install and Isolated Restore Contract
+
+- Branch: `fix/production-backup-restore-contract`
+- Starting commit: `c62ce848defee501a4de99e758a5d8286a2f1348`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: controlled backup-tool installation, atomic triple recovery point, and fully isolated restore rehearsal
+- Module: release Make targets, atomic installer, backup/rehearsal runner, systemd templates, schemas, tests, production command policy, and bilingual runbook
+- Reason: the production timer still targeted legacy container/database identities, while the repository had no approved installation entry, no deployment-metadata member in the recovery set, no operation lock, and no tool-owned isolated Odoo rehearsal
+- Standard vs User-Specific: repository-wide production recovery governance; no application behavior, business semantics, customer preference, candidate evidence, publication evidence, or production data mutation
+- Why Here / Why Not Elsewhere: P4 owns host installation, backup custody, rehearsal isolation, and timer sequencing; P0–P3 modules and frozen release evidence must remain immutable
+- Blast Radius: five default-deny Make entries; two versioned operations tools; database/filestore/sanitized-metadata backup schema; isolated internal Docker rehearsal namespace; timer remains stopped until backup and rehearsal evidence pass
+- Validation: identity and drift rejection, install rollback, triple-set atomicity, independent locks, checksum/resume rejection, sanitized metadata, internal-network restore, zero cron/egress, Odoo stop-after-init, table/attachment/filestore comparison, timer evidence gate, release contracts, standard CI, and static diff checks

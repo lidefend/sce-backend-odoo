@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "production_restore_rehearsal.v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "contract_version",
+    "restore_id",
+    "backup_set_id",
+    "status",
+    "external_write_side_effects",
+    "production_database_connected"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "contract_version": {"const": "production_backup_restore.v1"},
+    "restore_id": {
+      "type": "string",
+      "pattern": "^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$"
+    },
+    "backup_set_id": {
+      "type": "string",
+      "pattern": "^sc_production-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$"
+    },
+    "status": {"enum": ["PASS", "FAIL"]},
+    "rto_seconds": {"type": "number", "minimum": 0},
+    "isolated_internal_network": {"type": "boolean"},
+    "production_network_reused": {"const": false},
+    "production_volume_reused": {"const": false},
+    "production_database_connected": {"const": false},
+    "cron_disabled": {"type": "boolean"},
+    "mail_disabled": {"type": "boolean"},
+    "webhook_queue_payment_disabled_by_no_egress": {"type": "boolean"},
+    "external_write_side_effects": {"const": 0},
+    "odoo_healthcheck": {"type": "string"},
+    "table_counts": {"type": "object"},
+    "filestore_digest": {"type": "string"},
+    "resources": {"type": "object"},
+    "cleanup_authorized_separately": {"type": "boolean"},
+    "failure_stage": {"type": "string"},
+    "error_class": {"type": "string"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "PASS"}}},
+      "then": {
+        "required": [
+          "rto_seconds",
+          "isolated_internal_network",
+          "production_network_reused",
+          "production_volume_reused",
+          "cron_disabled",
+          "mail_disabled",
+          "webhook_queue_payment_disabled_by_no_egress",
+          "odoo_healthcheck",
+          "table_counts",
+          "filestore_digest",
+          "resources",
+          "cleanup_authorized_separately"
+        ]
+      },
+      "else": {"required": ["failure_stage", "error_class"]}
+    }
+  ]
+}
