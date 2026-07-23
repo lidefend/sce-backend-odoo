@@ -4,6 +4,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$root"
 artifacts="${CANDIDATE_ARTIFACTS:-artifacts/release/immutable-production-candidate-v1}"
+source_sha="${SOURCE_SHA:?SOURCE_SHA is required}"
 mkdir -p "$artifacts"
 artifacts="$(realpath "$artifacts")"
 manifest="$artifacts/image-manifest.json"
@@ -50,4 +51,5 @@ PY
 python3 scripts/release/product_release_manifest.py \
   --image-manifest "$manifest" \
   --sbom "$artifacts/sbom.cyclonedx.json" \
+  --expected-source-sha "$source_sha" \
   --output "$artifacts/product-release-manifest.json"

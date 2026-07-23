@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import atexit
+import hashlib
 import importlib.util
 import io
+import json
 import subprocess
+import tempfile
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
@@ -16,15 +20,42 @@ assert SPEC and SPEC.loader
 db_init = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(db_init)
 
+RELEASE_IDENTITY_TMP = tempfile.TemporaryDirectory()
+atexit.register(RELEASE_IDENTITY_TMP.cleanup)
+RELEASE_IDENTITY_ROOT = Path(RELEASE_IDENTITY_TMP.name)
+
 
 def environment(database: str = "sc_migration_rehearsal") -> dict[str, str]:
+    source_sha = "a" * 40
+    image_digest = "sha256:" + "b" * 64
+    manifest = RELEASE_IDENTITY_ROOT / f"{database}-product-release-manifest.json"
+    checksum = RELEASE_IDENTITY_ROOT / f"{database}-product-release-manifest.sha256"
+    manifest.write_text(
+        json.dumps(
+            {
+                "source_sha": source_sha,
+                "oci_revision": source_sha,
+                "image_digest": image_digest,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    checksum.write_text(
+        f"{hashlib.sha256(manifest.read_bytes()).hexdigest()}  {manifest.name}\n",
+        encoding="utf-8",
+    )
     env = {
         "TARGET_DB": database,
         "SC_ENVIRONMENT": "migration_rehearsal" if database == "sc_migration_rehearsal" else "production",
         "SC_FILESTORE_SCOPE": database,
         "SC_ALLOW_DEMO_DATA": "0",
-        "SC_SOURCE_REVISION": "a" * 40,
-        "EXPECTED_RELEASE_SHA": "a" * 40,
+        "SC_SOURCE_REVISION": source_sha,
+        "EXPECTED_RELEASE_SHA": source_sha,
+        "EXPECTED_IMAGE_DIGEST": image_digest,
+        "RELEASE_MANIFEST_PATH": str(manifest),
+        "RELEASE_MANIFEST_CHECKSUM_PATH": str(checksum),
         "PLATFORM_RELEASE_DB": database,
     }
     for key, suffix in {

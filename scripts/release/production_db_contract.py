@@ -3,9 +3,12 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import re
 import sys
+from pathlib import Path
 
 SAFE_NAME = re.compile(r"^[a-z][a-z0-9_]{2,62}$")
 FORMAL_DATABASES = {"sc_migration_rehearsal", "sc_production"}
@@ -20,6 +23,35 @@ class ContractError(ValueError):
 
 def _truthy(value: str | None) -> bool:
     return (value or "").lower() in {"1", "true", "yes"}
+
+
+def _validate_release_manifest(env: dict[str, str], expected_sha: str) -> None:
+    manifest_value = (env.get("RELEASE_MANIFEST_PATH") or "").strip()
+    checksum_value = (env.get("RELEASE_MANIFEST_CHECKSUM_PATH") or "").strip()
+    expected_digest = (env.get("EXPECTED_IMAGE_DIGEST") or "").strip()
+    if not manifest_value or not checksum_value:
+        raise ContractError("release manifest and checksum paths are required")
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", expected_digest):
+        raise ContractError("EXPECTED_IMAGE_DIGEST must be a sha256 digest")
+    manifest = Path(manifest_value)
+    checksum = Path(checksum_value)
+    try:
+        raw = manifest.read_bytes()
+        locked_sha256 = checksum.read_text(encoding="utf-8").strip().split()[0]
+        payload = json.loads(raw)
+    except (OSError, IndexError, json.JSONDecodeError) as exc:
+        raise ContractError("release manifest or checksum is missing or invalid") from exc
+    if not re.fullmatch(r"[0-9a-f]{64}", locked_sha256):
+        raise ContractError("release manifest checksum is invalid")
+    if hashlib.sha256(raw).hexdigest() != locked_sha256:
+        raise ContractError("release manifest checksum mismatch")
+    if not isinstance(payload, dict):
+        raise ContractError("release manifest must be a JSON object")
+    for field in ("source_sha", "oci_revision"):
+        if payload.get(field) != expected_sha:
+            raise ContractError(f"release manifest {field} must match EXPECTED_RELEASE_SHA")
+    if payload.get("image_digest") != expected_digest:
+        raise ContractError("release manifest image_digest must match EXPECTED_IMAGE_DIGEST")
 
 
 def validate(action: str, env: dict[str, str] | None = None) -> str:
@@ -74,6 +106,7 @@ def validate(action: str, env: dict[str, str] | None = None) -> str:
         image_sha = env.get("SC_SOURCE_REVISION", "")
         if not re.fullmatch(r"[0-9a-f]{40}", expected_sha) or expected_sha != image_sha:
             raise ContractError("EXPECTED_RELEASE_SHA must match the immutable image revision")
+        _validate_release_manifest(env, expected_sha)
         if db == "sc_production" and env.get("SC_PRODUCTION_CHANGE_APPROVED") != PRODUCTION_CONFIRMATION:
             raise ContractError("explicit sc_production change approval is required")
         module = env.get("TARGET_MODULE", "base" if action == "init" else "")
