@@ -84,11 +84,30 @@ class StaticContractTests(unittest.TestCase):
         cls.entrypoint = (ROOT / "scripts/release/production_odoo_entrypoint.sh").read_text()
         cls.manager = (ROOT / "scripts/release/production_db_manage.sh").read_text()
         cls.compose = (ROOT / "docker-compose.production-candidate.yml").read_text()
+        cls.acceptance = (ROOT / "scripts/release/production_contract_image_acceptance.sh").read_text()
 
     def test_base_image_has_digest(self): self.assertRegex(self.dockerfile.splitlines()[0], r"^FROM odoo:17\.0@sha256:[0-9a-f]{64}$")
     def test_no_distribution_upgrade(self): self.assertNotRegex(self.dockerfile, r"apt(?:-get)?\s+(?:dist-upgrade|full-upgrade|upgrade)")
     def test_empty_addon_directories_created(self):
         for path in ("/mnt/customer-addons", "/mnt/test-addons", "/mnt/source-addons"): self.assertIn(path, self.dockerfile)
+    def test_candidate_image_copies_versioned_locked_menu_contract(self):
+        for name in (
+            "formal_business_product_menu_policy_v1.json",
+            "formal_business_product_menu_policy_v1.json.sha256",
+        ):
+            self.assertIn(f"COPY scripts/verify/baselines/{name} /opt/sce-product/contracts/{name}", self.dockerfile)
+            self.assertTrue((ROOT / "scripts/verify/baselines" / name).is_file())
+    def test_unapproved_locked_menu_acceptance_is_fail_closed_and_non_mutating(self):
+        for token in (
+            "BUSINESS_DECISION_REQUIRED",
+            "decision_artifact_state",
+            "policies_unchanged=true",
+            "snapshots_unchanged=true",
+            "invented_action=false",
+            "invented_model=false",
+        ):
+            self.assertIn(token, self.acceptance)
+        self.assertNotIn("old=214 synchronized=97 snapshots=97", self.acceptance)
     def test_runtime_storage_avoids_base_image_volume(self):
         self.assertIn("/opt/sce-runtime/filestore", self.dockerfile)
         self.assertNotIn("/var/lib/odoo/filestore", self.dockerfile)
