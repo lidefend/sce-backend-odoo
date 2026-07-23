@@ -8,13 +8,19 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import stat
 import subprocess
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
 
 PRODUCTION_DB = "sc_production"
 RESTORE_DB = re.compile(r"^r10e_restore_[a-z0-9_]+$")
+BACKUP_ID = re.compile(r"^sc_production-[0-9]{8}T[0-9]{6}Z$")
+ARTIFACTS = ("database.dump", "filestore.tar.gz", "manifest.json")
+CHECKSUM_FILE = "SHA256SUMS"
 PLATFORM_TABLES = (
     "sc_subscription_plan", "sc_subscription", "sc_entitlement", "sc_usage_counter",
     "sc_ops_job", "sc_product_policy", "sc_edition_release_snapshot", "sc_release_action", "sc_login_route",
@@ -52,14 +58,140 @@ def _manifest_path(directory: Path) -> Path:
     return directory / "manifest.json"
 
 
-def validate_backup(directory: Path) -> dict:
-    manifest = json.loads(_manifest_path(directory).read_text(encoding="utf-8"))
+def _tool_revision() -> str:
+    marker = Path(__file__).resolve().parents[2] / "DEPLOYMENT_TOOL_SHA"
+    value = (
+        marker.read_text(encoding="utf-8").strip()
+        if marker.is_file()
+        else str(os.environ.get("BACKUP_TOOL_REVISION") or "").strip()
+    )
+    if not re.fullmatch(r"[0-9a-f]{40}", value):
+        raise BackupError("backup tool revision is unavailable")
+    return value
+
+
+def _safe_root(root: Path) -> Path:
+    if not root.is_absolute() or root == Path("/"):
+        raise BackupError("backup root must be a scoped absolute path")
+    try:
+        resolved = root.resolve(strict=True)
+    except OSError as exc:
+        raise BackupError("backup root is unavailable") from exc
+    if resolved != root or root.is_symlink() or not root.is_dir():
+        raise BackupError("backup root must not contain symlink indirection")
+    metadata = root.stat()
+    if stat.S_IMODE(metadata.st_mode) & 0o077:
+        raise BackupError("backup root permissions must not exceed 0700")
+    return root
+
+
+def _write_bytes(path: Path, payload: bytes) -> None:
+    if not payload:
+        raise BackupError(f"backup artifact is empty: {path.name}")
+    path.write_bytes(payload)
+    path.chmod(0o600)
+
+
+def _write_text(path: Path, payload: str) -> None:
+    _write_bytes(path, payload.encode("utf-8"))
+
+
+def _write_checksums(directory: Path) -> None:
+    lines = [f"{_sha(directory / name)}  {name}" for name in ARTIFACTS]
+    _write_text(directory / CHECKSUM_FILE, "\n".join(lines) + "\n")
+
+
+def _fsync_path(path: Path) -> None:
+    descriptor = os.open(
+        path,
+        os.O_RDONLY | (os.O_DIRECTORY if path.is_dir() else 0),
+    )
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _validate_checksums(directory: Path) -> None:
+    checksum_path = directory / CHECKSUM_FILE
+    if (
+        checksum_path.is_symlink()
+        or not checksum_path.is_file()
+        or checksum_path.stat().st_size <= 0
+    ):
+        raise BackupError("SHA256SUMS is missing or invalid")
+    entries: dict[str, str] = {}
+    for line in checksum_path.read_text(encoding="utf-8").splitlines():
+        match = re.fullmatch(r"([0-9a-f]{64})  ([A-Za-z0-9_.-]+)", line)
+        if not match:
+            raise BackupError("SHA256SUMS format is invalid")
+        digest, name = match.groups()
+        if name == CHECKSUM_FILE or name in entries or Path(name).is_absolute():
+            raise BackupError("SHA256SUMS inventory is invalid")
+        entries[name] = digest
+    if set(entries) != set(ARTIFACTS):
+        raise BackupError("SHA256SUMS artifact inventory differs")
+    for name, expected in entries.items():
+        if _sha(directory / name) != expected:
+            raise BackupError(f"backup checksum validation failed: {name}")
+
+
+def _validate_artifacts(directory: Path) -> None:
+    if directory.is_symlink() or not directory.is_dir():
+        raise BackupError("backup directory mode must be 0700")
+    directory_metadata = directory.stat()
+    if (
+        stat.S_IMODE(directory_metadata.st_mode) != 0o700
+        or directory_metadata.st_uid != os.geteuid()
+        or directory_metadata.st_gid != os.getegid()
+    ):
+        raise BackupError("backup directory mode must be 0700")
+    for name in ARTIFACTS + (CHECKSUM_FILE,):
+        path = directory / name
+        if path.is_symlink() or not path.is_file():
+            raise BackupError(f"backup artifact contract failed: {name}")
+        metadata = path.stat()
+        if (
+            metadata.st_size <= 0
+            or stat.S_IMODE(metadata.st_mode) != 0o600
+            or metadata.st_uid != os.geteuid()
+            or metadata.st_gid != os.getegid()
+        ):
+            raise BackupError(f"backup artifact contract failed: {name}")
+    if set(item.name for item in directory.iterdir()) != set(
+        ARTIFACTS + (CHECKSUM_FILE,)
+    ):
+        raise BackupError("backup directory contains unexpected artifacts")
+    _validate_checksums(directory)
+
+
+def validate_backup(
+    directory: Path, *, require_artifact_contract: bool = False
+) -> dict:
+    try:
+        manifest = json.loads(
+            _manifest_path(directory).read_text(encoding="utf-8")
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise BackupError("backup manifest is missing or invalid") from exc
     if manifest.get("database") != PRODUCTION_DB:
         raise BackupError("backup database identity is not sc_production")
     for name, expected in manifest.get("checksums", {}).items():
         path = directory / name
         if not path.is_file() or path.stat().st_size <= 0 or _sha(path) != expected:
             raise BackupError(f"backup validation failed: {name}")
+    if require_artifact_contract:
+        if (
+            manifest.get("backup_status") != "complete"
+            or manifest.get("database_format") != "postgresql_custom"
+            or manifest.get("structure_validation") != "pg_restore_list_passed"
+            or manifest.get("filestore_artifact") != "filestore.tar.gz"
+            or not re.fullmatch(
+                r"[0-9a-f]{40}", str(manifest.get("tool_revision") or "")
+            )
+        ):
+            raise BackupError("backup manifest artifact contract is incomplete")
+        _validate_artifacts(directory)
     return manifest
 
 
@@ -72,39 +204,104 @@ def backup(root: Path) -> Path:
     db_user = _required("BACKUP_DB_USER")
     filestore_root = str(os.environ.get("BACKUP_FILESTORE_ROOT") or "/opt/sce-runtime/filestore").rstrip("/")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    directory = root / f"sc_production-{stamp}"
-    directory.mkdir(parents=True, exist_ok=False)
-    dump = directory / "database.dump"
-    filestore = directory / "filestore.tar.gz"
-    dump.write_bytes(_run(["docker", "exec", db_container, "pg_dump", "-U", db_user, "-d", database, "-Fc"]))
-    _run([
-        "docker", "exec", odoo_container, "sh", "-eu", "-c",
-        f"test -d '{filestore_root}/{database}'; test -n \"$(find '{filestore_root}/{database}' -type f -print -quit)\"",
-    ])
-    filestore.write_bytes(_run([
-        "docker", "exec", odoo_container, "tar", "-C", filestore_root, "-czf", "-", database,
-    ]))
-    if dump.stat().st_size <= 0 or filestore.stat().st_size <= 0:
-        raise BackupError("database and filestore backups must both be non-empty")
-    identity = _run([
-        "docker", "exec", db_container, "psql", "-U", db_user, "-d", database, "-Atc", "SELECT current_database()",
-    ]).decode().strip()
-    if identity != database:
-        raise BackupError("database identity validation failed")
-    _run(["docker", "exec", "-i", db_container, "pg_restore", "-l"], input_bytes=dump.read_bytes())
-    manifest = {
-        "schema_version": 1,
-        "architecture": "single_database_colocated_platform_core",
-        "database": database,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "database_bytes": dump.stat().st_size,
-        "filestore_bytes": filestore.stat().st_size,
-        "covered_platform_tables": list(PLATFORM_TABLES),
-        "checksums": {"database.dump": _sha(dump), "filestore.tar.gz": _sha(filestore)},
-    }
-    _manifest_path(directory).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    validate_backup(directory)
-    return directory
+    identifier = f"sc_production-{stamp}"
+    if not BACKUP_ID.fullmatch(identifier):
+        raise BackupError("backup identifier is invalid")
+    root = _safe_root(root)
+    final_directory = root / identifier
+    existing = sorted(
+        item.name
+        for item in root.iterdir()
+        if item.is_dir() and BACKUP_ID.fullmatch(item.name)
+    )
+    if existing and identifier <= existing[-1]:
+        raise BackupError("new recovery point must be later than the existing one")
+    if final_directory.exists() or final_directory.is_symlink():
+        raise BackupError("final recovery point already exists")
+
+    previous_umask = os.umask(0o077)
+    temporary_directory: Path | None = None
+    published = False
+    completed = False
+    try:
+        temporary_directory = Path(
+            tempfile.mkdtemp(prefix=f".incomplete-{identifier}-", dir=root)
+        )
+        temporary_directory.chmod(0o700)
+        dump = temporary_directory / "database.dump"
+        filestore = temporary_directory / "filestore.tar.gz"
+        _write_bytes(
+            dump,
+            _run([
+                "docker", "exec", db_container, "pg_dump", "-U", db_user,
+                "-d", database, "-Fc",
+            ]),
+        )
+        _run([
+            "docker", "exec", odoo_container, "sh", "-eu", "-c",
+            f"test -d '{filestore_root}/{database}'",
+        ])
+        _write_bytes(
+            filestore,
+            _run([
+                "docker", "exec", odoo_container, "tar", "-C",
+                filestore_root, "-czf", "-", database,
+            ]),
+        )
+        identity = _run([
+            "docker", "exec", db_container, "psql", "-U", db_user,
+            "-d", database, "-Atc", "SELECT current_database()",
+        ]).decode().strip()
+        if identity != database:
+            raise BackupError("database identity validation failed")
+        _run(
+            ["docker", "exec", "-i", db_container, "pg_restore", "-l"],
+            input_bytes=dump.read_bytes(),
+        )
+        manifest = {
+            "schema_version": 1,
+            "architecture": "single_database_colocated_platform_core",
+            "database": database,
+            "backup_id": identifier,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "database_format": "postgresql_custom",
+            "database_bytes": dump.stat().st_size,
+            "filestore_artifact": "filestore.tar.gz",
+            "filestore_bytes": filestore.stat().st_size,
+            "tool_revision": _tool_revision(),
+            "backup_status": "complete",
+            "structure_validation": "pg_restore_list_passed",
+            "covered_platform_tables": list(PLATFORM_TABLES),
+            "checksums": {
+                "database.dump": _sha(dump),
+                "filestore.tar.gz": _sha(filestore),
+            },
+        }
+        _write_text(
+            _manifest_path(temporary_directory),
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        )
+        _write_checksums(temporary_directory)
+        _validate_artifacts(temporary_directory)
+        for name in ARTIFACTS + (CHECKSUM_FILE,):
+            _fsync_path(temporary_directory / name)
+        _fsync_path(temporary_directory)
+        os.rename(temporary_directory, final_directory)
+        temporary_directory = None
+        published = True
+        _fsync_path(root)
+        _validate_artifacts(final_directory)
+        validate_backup(final_directory, require_artifact_contract=True)
+        completed = True
+        return final_directory
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise BackupError("production backup artifact creation failed") from exc
+    finally:
+        os.umask(previous_umask)
+        if temporary_directory is not None and temporary_directory.exists():
+            shutil.rmtree(temporary_directory)
+        if published and not completed and final_directory.exists():
+            shutil.rmtree(final_directory)
 
 
 def _counts(container: str, user: str, database: str) -> str:
