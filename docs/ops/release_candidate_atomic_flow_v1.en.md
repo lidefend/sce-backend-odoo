@@ -15,10 +15,12 @@ In a clean, dedicated release workspace the entry point automatically:
 1. synchronizes GitHub `main` through controlled `main.sync`;
 2. freezes the full commit SHA, tree, and `VERSION`;
 3. verifies aligned GitHub/Gitee `main` and successful required checks;
-4. builds the immutable candidate image;
-5. exports and reloads the image archive;
-6. runs Trivy vulnerability/secret scanning and creates a CycloneDX SBOM;
-7. emits machine-readable `release-report.json` and concise
+4. creates an independent, main-only source repository without alternates,
+   binds the full commit/tree, and runs RH010;
+5. builds the immutable candidate image from that clean source repository;
+6. exports and reloads the image archive;
+7. runs Trivy vulnerability/secret scanning and creates a CycloneDX SBOM;
+8. emits machine-readable `release-report.json` and concise
    `release-summary.txt`.
 
 A successful summary contains:
@@ -46,6 +48,9 @@ created, a Release was published, or production was deployed.
   tool contract all match, so a scan failure does not force an image rebuild.
 - A version already associated with another source fails closed and is never
   overwritten.
+- The source repository may not use shared/reference cloning, alternates, or
+  caller objects. Preparation, identity, and RH010 failures remain separate
+  stages and are never repaired with gc/prune.
 - A non-blocking per-version lock serializes execution; concurrent invocations
   fail without sharing or overwriting the candidate directory.
 

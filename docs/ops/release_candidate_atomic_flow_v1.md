@@ -15,10 +15,12 @@ ENV=dev make release.candidate VERSION=1.0.0-rc.5
 1. 通过受控 `main.sync` 同步 GitHub `main`；
 2. 冻结完整 commit SHA、tree、`VERSION`；
 3. 验证 GitHub/Gitee `main` 一致及 required checks 全部成功；
-4. 构建不可变候选镜像；
-5. 导出并重载镜像归档；
-6. 执行 Trivy 漏洞/secret 扫描并生成 CycloneDX SBOM；
-7. 生成机器可读 `release-report.json` 和简短 `release-summary.txt`。
+4. 创建无 alternates、仅含 `main` 的独立 source repository，绑定完整
+   commit/tree 后先执行 RH010；
+5. 从该 clean source repository 构建不可变候选镜像；
+6. 导出并重载镜像归档；
+7. 执行 Trivy 漏洞/secret 扫描并生成 CycloneDX SBOM；
+8. 生成机器可读 `release-report.json` 和简短 `release-summary.txt`。
 
 成功报告包含：
 
@@ -41,6 +43,8 @@ DEPLOYED=false
 - 相同版本、源码、tree 和工具合同重试时，已验证的构建产物才会被复用；
   扫描失败不会强制重建镜像。任一身份或工具合同变化均 fail closed。
 - 相同版本若对应不同源码，流程 fail closed，不覆盖既有候选证据。
+- source repository 禁止 shared/reference clone、alternates 和调用者对象复用；
+  准备、身份与 RH010 失败分阶段记录，且不以 gc/prune 修复。
 - 同一版本使用非阻塞文件锁串行化；并发调用立即失败，不会共享或覆盖候选目录。
 
 ## 对外影响边界
