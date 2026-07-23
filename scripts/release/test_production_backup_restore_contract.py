@@ -455,6 +455,76 @@ class InstallAndTimerTests(unittest.TestCase):
         with self.assertRaisesRegex(INSTALL.InstallError, "drift"):
             INSTALL.preflight(self.identity(), runner)
 
+    def test_reject_exact_sc_prod(self):
+        self.assertTrue(INSTALL.contains_stale_identity('database "sc_prod"'))
+
+    def test_reject_sc_prod_after_assignment(self):
+        for value in ("db_name=sc_prod", "dbname=sc_prod"):
+            with self.subTest(value=value):
+                self.assertTrue(INSTALL.contains_stale_identity(value))
+
+    def test_reject_sc_prod_in_database_url_or_path(self):
+        for value in ("postgresql://host/sc_prod", "/var/lib/sc_prod/data"):
+            with self.subTest(value=value):
+                self.assertTrue(INSTALL.contains_stale_identity(value))
+
+    def test_accept_sc_production(self):
+        self.assertFalse(INSTALL.contains_stale_identity("sc_production"))
+
+    def test_accept_sc_production_restore(self):
+        self.assertFalse(INSTALL.contains_stale_identity("sc_production_restore"))
+
+    def test_accept_sc_prod2(self):
+        self.assertFalse(INSTALL.contains_stale_identity("sc_prod2"))
+
+    def test_accept_my_sc_prod(self):
+        self.assertFalse(INSTALL.contains_stale_identity("my_sc_prod"))
+
+    def test_accept_sc_product(self):
+        self.assertFalse(INSTALL.contains_stale_identity("sc_product"))
+
+    def test_other_stale_tokens_still_rejected(self):
+        self.assertTrue(
+            INSTALL.contains_stale_identity("container=sc-backend-odoo-prod-db-1")
+        )
+
+    def test_legitimate_systemd_description_with_sc_production_passes(self):
+        service = (
+            ROOT / "deploy/production-backup/scems-production-backup.service"
+        ).read_text()
+        timer = (
+            ROOT / "deploy/production-backup/scems-production-backup.timer"
+        ).read_text()
+        self.assertFalse(INSTALL.contains_stale_identity(service))
+        self.assertFalse(INSTALL.contains_stale_identity(timer))
+
+    def test_preflight_accepts_legitimate_sc_production_units(self):
+        responses = {
+            ("git", "rev-parse", "HEAD"): ("a" * 40).encode(),
+            ("git", "rev-parse", "HEAD^{tree}"): ("b" * 40).encode(),
+            ("git", "status", "--short"): b"",
+            ("git", "ls-remote", "--heads", "origin", "refs/heads/main"):
+                (("a" * 40) + "\trefs/heads/main\n").encode(),
+            ("git", "ls-remote", "--heads", "gitee-mirror", "refs/heads/main"):
+                (("a" * 40) + "\trefs/heads/main\n").encode(),
+        }
+
+        def runner(args):
+            return responses[tuple(args)]
+
+        environment = mock.Mock()
+        environment.is_file.return_value = True
+        environment.is_symlink.return_value = False
+        environment.stat.return_value = mock.Mock(
+            st_uid=0,
+            st_gid=0,
+            st_mode=0o100600,
+        )
+        with mock.patch.object(INSTALL, "ENVIRONMENT_FILE", environment):
+            result = INSTALL.preflight(self.identity(), runner)
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["writes"], 0)
+
     def test_unit_verification_failure_triggers_rollback_before_reload_success(self):
         source = (ROOT / "scripts/ops/production_backup_install.py").read_text()
         verify_at = source.index('"systemd-analyze"')
