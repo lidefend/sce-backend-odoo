@@ -633,37 +633,16 @@ def _tax_deduction_policy() -> dict:
 
 
 def _tax_certificate_policy() -> dict:
-    trace = (
-        "source_table",
-        "legacy_record_id",
-        "legacy_pid",
-        "residual_reason",
-        "document_state",
-        "document_state_label",
-        "deleted_flag",
-        "project_legacy_id",
-        "partner_legacy_id",
-        "contract_legacy_id",
-        "request_legacy_id",
-        "creator_legacy_user_id",
-        "creator_name",
-        "created_time",
-        "attachment_ref",
-        "active",
-    )
     return _policy(
         [
-            _section("business_identity", "办理类型", ["payment_family", "document_state_label", "document_no"], 10),
-            _section("business_object", "项目与合同", ["project_id", "project_name", "partner_id", "partner_name", "contract_no", "contract_name"], 20),
-            _section("certificate", "外经证信息", ["document_date", "taxpayer_name", "taxpayer_identifier", "counterparty_tax_identifier", "tax_report_management_no", "operation_address"], 30),
-            _section("contact", "经办与税务联系人", ["handler_name", "handler_phone", "regional_tax_contact", "regional_tax_contact_phone"], 40),
-            _section("amount", "合同与票款", ["planned_amount", "paid_amount", "invoice_amount", "payment_method", "bank_account"], 50),
-            _section("handling", "办理说明", ["note", "attachment_ids", "attachment_links"], 60),
-            _section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True),
+            _section("business_identity", "登记状态", ["name", "state", "company_id", "project_id"], 10),
+            _section("certificate", "外经证信息", ["taxpayer_name", "taxpayer_identifier", "tax_report_management_no", "cross_region_business_address"], 20),
+            _section("validity", "有效期", ["validity_start_date", "validity_end_date"], 30),
+            _section("tax_payment", "预缴税与完税凭证", ["prepaid_tax_date", "tax_payment_certificate_no"], 40),
+            _section("handling", "办理说明", ["handler_id", "note", "attachment_ids"], 50),
         ],
-        required=("project_id", "document_date", "taxpayer_name", "tax_report_management_no"),
-        readonly_all=("payment_family", "document_state_label"),
-        trace=trace,
+        required=("company_id", "project_id", "taxpayer_name", "taxpayer_identifier", "tax_report_management_no", "cross_region_business_address", "validity_start_date", "validity_end_date"),
+        readonly_all=("name", "state"),
     )
 
 

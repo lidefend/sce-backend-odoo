@@ -2118,5 +2118,52 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
         </record>
 
+        <record id="rule_sc_tax_certificate_registration_allowed_company" model="ir.rule">
+            <field name="name">SC Tax Certificate Registration - allowed company</field>
+            <field name="model_id" ref="model_sc_tax_certificate_registration" />
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True" />
+            <field name="perm_read" eval="True" />
+            <field name="perm_write" eval="True" />
+            <field name="perm_create" eval="True" />
+            <field name="perm_unlink" eval="True" />
+        </record>
+
+        <record id="rule_sc_project_read_tax_certificate_registration" model="ir.rule">
+            <field name="name">SC Project Read - tax certificate by project member</field>
+            <field name="model_id" ref="model_sc_tax_certificate_registration" />
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True" />
+            <field name="perm_write" eval="False" />
+            <field name="perm_create" eval="False" />
+            <field name="perm_unlink" eval="False" />
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]" />
+        </record>
+
+        <record id="rule_sc_finance_read_tax_certificate_registration" model="ir.rule">
+            <field name="name">SC Finance Read - tax certificate by allowed company</field>
+            <field name="model_id" ref="model_sc_tax_certificate_registration" />
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True" />
+            <field name="perm_write" eval="False" />
+            <field name="perm_create" eval="False" />
+            <field name="perm_unlink" eval="False" />
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read'))]" />
+        </record>
+
+        <record id="rule_sc_finance_user_tax_certificate_registration" model="ir.rule">
+            <field name="name">SC Finance User - tax certificate by allowed company</field>
+            <field name="model_id" ref="model_sc_tax_certificate_registration" />
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_user'))]" />
+        </record>
+
+        <record id="rule_sc_finance_manager_tax_certificate_registration" model="ir.rule">
+            <field name="name">SC Finance Manager - tax certificate by allowed company</field>
+            <field name="model_id" ref="model_sc_tax_certificate_registration" />
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]" />
+        </record>
+
     </data>
 </odoo>

@@ -2324,10 +2324,15 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                 if tax_menus[menu_xmlid].get("fact_model") == "sc.invoice.registration":
                     self.assertEqual(tax_menus[menu_xmlid].get("integration_target"), "sc.invoice.registration 发票税务")
             certificate_menu = tax_menus["smart_construction_core.menu_sc_tax_certificate_registration_user"]
-            self.assertEqual(certificate_menu.get("route"), "/a/%s" % certificate_menu.get("action_id"))
-            self.assertFalse(certificate_menu.get("menu_id"))
+            self.assertEqual(certificate_menu.get("fact_model"), "sc.tax.certificate.registration")
+            self.assertEqual(certificate_menu.get("integration_target"), "sc.tax.certificate.registration 外经证登记")
+            self.assertEqual(
+                certificate_menu.get("route"),
+                "/a/%s?menu_id=%s" % (certificate_menu.get("action_id"), certificate_menu.get("menu_id")),
+            )
+            self.assertTrue(certificate_menu.get("menu_id"))
 
-    def test_tax_certificate_runtime_entry_does_not_rehydrate_hidden_menu_id(self):
+    def test_tax_certificate_runtime_entry_uses_installed_menu_identity(self):
         self.env["sc.product.policy"].sync_construction_menu_product_policies()
         payload = DeliveryEngine(self.env).build(
             data={"role_surface": {"role_code": "business_config_admin"}, "scenes": [], "capabilities": []},
@@ -2351,10 +2356,13 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertTrue(certificate_node)
         certificate_meta = certificate_node.get("meta") or {}
         certificate_entry = certificate_meta.get("entry_target") or {}
-        self.assertEqual(certificate_node.get("route"), "/a/762")
-        self.assertEqual(certificate_meta.get("route"), "/a/762")
-        self.assertFalse(certificate_meta.get("menu_id"))
-        self.assertNotIn("menu_id", (certificate_entry.get("compatibility_refs") or {}))
+        menu = self.env.ref("smart_construction_core.menu_sc_tax_certificate_registration_user")
+        action = self.env.ref("smart_construction_core.action_sc_tax_certificate_registration_user")
+        expected_route = "/a/%s?menu_id=%s" % (action.id, menu.id)
+        self.assertEqual(certificate_node.get("route"), expected_route)
+        self.assertEqual(certificate_meta.get("route"), expected_route)
+        self.assertEqual(certificate_meta.get("menu_id"), menu.id)
+        self.assertEqual((certificate_entry.get("compatibility_refs") or {}).get("menu_id"), menu.id)
 
     def test_product_menu_business_domains_are_released_as_formal_capabilities(self):
         self.env["sc.product.policy"].sync_construction_menu_product_policies()

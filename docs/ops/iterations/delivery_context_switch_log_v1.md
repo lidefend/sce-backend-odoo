@@ -353,3 +353,17 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Not Elsewhere: product modules and frontend code must not infer repository identity or authorize deployment artifacts
 - Blast Radius: formal candidate build/scan and guarded database lifecycle commands only; no image is built, no database is created, and no environment is deployed by this change
 - Validation: explicit/full SHA, exact repository remote, clean worktree, HEAD/remote-main equality, old-SHA rejection, OCI/container/manifest/digest equality, manifest checksum, missing-input negatives, release contract tests, and one standard pre-PR CI run
+
+## 2026-07-23 — R11F2 Formal Tax Certificate Registration
+
+- Branch: `fix/r11f2-tax-certificate-registration`
+- Starting commit: `5ee305a060767f4039d7b3c54b90990b43116ca6`
+- Formal Product Layer: P1 construction industry tax-center product capability with P4 initialization contract alignment
+- Layer Target: independent formal registration and inquiry lifecycle for cross-region tax certificates
+- Module: `smart_construction_core` model, views, stable action/menu identity, role ACLs, multi-company/project record rules, locked product baseline, and focused verification contracts
+- Reason: the approved business decision requires “外经证登记” to be an independent tax matter rather than an invoice-registration variant, a legacy runtime model, or a historical read-only downgrade
+- Standard vs User-Specific: construction standard/preview formal product capability; no tenant preference, customer data, historical migration, or production initialization
+- Why Here: P1 owns the formal tax business model and stable entry identity; P4 consumes the same locked 97-entry product contract during formal initialization
+- Why Not Elsewhere: `sc.invoice.registration` has a different lifecycle, `sc.legacy.payment.residual.fact` is forbidden, and release-source identity plus existing `ci.full` reason-code debt remain independent workstreams
+- Blast Radius: one approved tax-center entry in each locked 97-row baseline, its independent records, views, roles, company/project visibility, and transactional initialization expectations; no release SHA tooling, production database, image, runtime, or historical data
+- Validation: static model/action/menu/ACL/rule/baseline/checksum contracts, locked-menu policy tests, legacy-carrier and baseline-integrity guards, targeted module initialization attempt, standard pre-PR CI, and PR-bound required checks

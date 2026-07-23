@@ -265,32 +265,22 @@ if [[ -n "$r11c_source_dump" ]]; then
   grep -q 'LOCKED_MENU_BASELINE_INVALID' "$log_dir/r11c-invalid-baseline.log"
   [[ "$(policy_snapshot_state)" == "$initial_state" ]]
 
-  decision_artifact_state() {
+  tax_certificate_artifact_state() {
     docker exec "$db_container" psql -U odoo -d "$db" -At -F '|' -c \
-      "SELECT count(*) FROM ir_model_data WHERE module='smart_construction_core' AND name='action_sc_tax_certificate_registration_user'; SELECT count(*) FROM ir_model WHERE model='sc.legacy.payment.residual.fact'; SELECT COALESCE((SELECT res_model FROM ir_act_window a JOIN ir_model_data d ON d.model='ir.actions.act_window' AND d.res_id=a.id WHERE d.module='smart_construction_core' AND d.name='action_sc_invoice_registration' LIMIT 1),'');"
+      "SELECT count(*) FROM ir_model_data WHERE module='smart_construction_core' AND name='action_sc_tax_certificate_registration_user'; SELECT count(*) FROM ir_model WHERE model='sc.legacy.payment.residual.fact'; SELECT COALESCE((SELECT res_model FROM ir_act_window a JOIN ir_model_data d ON d.model='ir.actions.act_window' AND d.res_id=a.id WHERE d.module='smart_construction_core' AND d.name='action_sc_tax_certificate_registration_user' LIMIT 1),''); SELECT count(*) FROM ir_model_data WHERE module='smart_construction_core' AND name='menu_sc_tax_certificate_registration_user';"
   }
-  run_snapshot_init_expect_decision() {
+  run_snapshot_init() {
     product_key="$1"
     output="$2"
-    if docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" "${snapshot_env[@]}" \
+    docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" "${snapshot_env[@]}" \
         -e "PLATFORM_RELEASE_PRODUCT_KEY=$product_key" \
-        --entrypoint /usr/local/bin/production-db-manage "$image" initialize-platform-snapshot >"$output" 2>&1; then
-      echo "[contract-image] unapproved locked-menu target unexpectedly initialized" >&2; exit 1
-    fi
-    grep -q 'BUSINESS_DECISION_REQUIRED' "$output"
+        --entrypoint /usr/local/bin/production-db-manage "$image" initialize-platform-snapshot >"$output" 2>&1
   }
-  decision_state="$initial_state"
-  decision_artifacts="$(decision_artifact_state)"
-  run_snapshot_init_expect_decision construction.standard "$log_dir/r11c-standard-decision.log"
-  [[ "$(policy_snapshot_state)" == "$decision_state" ]]
-  [[ "$(decision_artifact_state)" == "$decision_artifacts" ]]
-  run_snapshot_init_expect_decision construction.preview "$log_dir/r11c-preview-decision.log"
-  [[ "$(policy_snapshot_state)" == "$decision_state" ]]
-  [[ "$(decision_artifact_state)" == "$decision_artifacts" ]]
-  run_snapshot_init_expect_decision construction.standard "$log_dir/r11c-standard-decision-repeat.log"
-  [[ "$(policy_snapshot_state)" == "$decision_state" ]]
-  [[ "$(decision_artifact_state)" == "$decision_artifacts" ]]
-  echo "[contract-image] R11C BUSINESS_DECISION_REQUIRED PASS database=$db policies_unchanged=true snapshots_unchanged=true invented_action=false invented_model=false"
+  run_snapshot_init construction.standard "$log_dir/r11f2-standard.log"
+  run_snapshot_init construction.preview "$log_dir/r11f2-preview.log"
+  run_snapshot_init construction.standard "$log_dir/r11f2-standard-repeat.log"
+  [[ "$(tax_certificate_artifact_state)" == $'1\n0\nsc.tax.certificate.registration\n1' ]]
+  echo "[contract-image] R11F2 TAX_CERTIFICATE_INITIALIZATION PASS database=$db formal_action=true formal_menu=true legacy_model=false"
 fi
 
 image_size="$(docker image inspect "$image" --format '{{.Size}}')"

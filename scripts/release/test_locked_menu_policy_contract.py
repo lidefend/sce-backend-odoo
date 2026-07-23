@@ -62,11 +62,11 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertIn("direct_acceptance:充值登记", xml)
         self.assertIn('create="false" edit="false" delete="false" duplicate="false"', xml)
 
-    def test_unresolved_tax_certificate_target_requires_business_decision(self):
+    def test_tax_certificate_target_is_resolved_as_installed_menu(self):
         menu_xmlid = "smart_construction_core.menu_sc_tax_certificate_registration_user"
         action_xmlid = "smart_construction_core.action_sc_tax_certificate_registration_user"
-        self.assertEqual(CONTRACT.FORMAL_ACTION_ONLY_MENU_TARGETS[menu_xmlid], action_xmlid)
-        self.assertEqual(CONTRACT.FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS[menu_xmlid], action_xmlid)
+        self.assertNotIn(menu_xmlid, CONTRACT.FORMAL_ACTION_ONLY_MENU_TARGETS)
+        self.assertNotIn(menu_xmlid, CONTRACT.FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS)
         self.assertNotIn(action_xmlid, CONTRACT.FORMAL_INITIALIZATION_ACTION_SPECS)
         self.assertNotEqual(action_xmlid, "smart_construction_core.action_sc_invoice_registration")
 
@@ -82,7 +82,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         self.assertEqual(
             contract["sha256"],
-            "5bc14fa2496e244ab14efa722f38f199659f5a4f506f7958e8d595a7b24dcee2",
+            "14d55f53a336c5ece307abe76ae8f503a02d3597cb41109964014fe157c1507f",
         )
         for product_key in CONTRACT.REQUIRED_PRODUCT_KEYS:
             self.assertEqual(len(CONTRACT.baseline_rows(contract, product_key)), 97)
