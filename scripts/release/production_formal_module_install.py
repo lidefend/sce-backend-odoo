@@ -523,7 +523,7 @@ class ProductionOperations:
         try:
             os.environ.update(backup_env)
             directory = module.backup(Path(backup_env["BACKUP_ROOT"]))
-            module.validate_backup(directory)
+            module.validate_backup(directory, require_artifact_contract=True)
         except Exception as exc:
             raise FormalModuleInstallError("production backup failed validation") from exc
         finally:

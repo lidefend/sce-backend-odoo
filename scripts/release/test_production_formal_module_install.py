@@ -475,6 +475,17 @@ class OrchestrationTests(unittest.TestCase):
         self.assertNotIn("nginx -s reload", source)
         self.assertNotIn("systemctl reload", source)
         self.assertEqual(source.count("operations.install(ordered_missing)"), 1)
+        self.assertIn(
+            "module.validate_backup(directory, require_artifact_contract=True)",
+            source,
+        )
+        self.assertLess(
+            source.index(
+                "module.validate_backup("
+                "directory, require_artifact_contract=True)"
+            ),
+            source.index("operations.install(ordered_missing)"),
+        )
 
 
 if __name__ == "__main__":
