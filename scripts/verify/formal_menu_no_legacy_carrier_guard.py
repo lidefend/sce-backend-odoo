@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
 MENU_XML = ROOT / "addons/smart_construction_core/views/menu_business_taxonomy.xml"
-USER_XML = ROOT / "addons/smart_construction_core/views/support/legacy_user_context_views.xml"
+FUND_ARCHIVE_XML = ROOT / "addons/smart_construction_core/views/core/fund_legacy_readonly_archive_views.xml"
 PROBE = ROOT / "scripts/migration/history_business_usable_probe.py"
 
 FORMAL_MENUS = {
@@ -74,13 +74,15 @@ def baseline_errors() -> list[str]:
 
 def xml_action_errors() -> list[str]:
     errors: list[str] = []
-    for path in (MENU_XML, USER_XML):
+    found = {xmlid: 0 for xmlid in ACTION_XMLIDS}
+    for path in (MENU_XML, FUND_ARCHIVE_XML):
         root = ET.fromstring(path.read_text(encoding="utf-8"))
         for record in root.findall(".//record"):
             action_id = record.attrib.get("id", "")
             full_xmlid = f"smart_construction_core.{action_id}" if action_id else ""
             if full_xmlid not in ACTION_XMLIDS:
                 continue
+            found[full_xmlid] += 1
             expected = ACTION_XMLIDS[full_xmlid]
             res_model = ""
             for field in record.findall("field"):
@@ -88,10 +90,18 @@ def xml_action_errors() -> list[str]:
                     res_model = (field.text or "").strip()
             if res_model != expected:
                 errors.append(f"{full_xmlid} XML res_model={res_model!r}, expected {expected!r}")
+    for xmlid in (
+        "smart_construction_core.action_sc_fuel_card_registration_formal",
+        "smart_construction_core.action_sc_fuel_card_recharge_formal",
+    ):
+        if found[xmlid] != 1:
+            errors.append(f"{xmlid} must have exactly one installed XML definition; found {found[xmlid]}")
     return errors
 
 
 def probe_whitelist_errors() -> list[str]:
+    if not PROBE.exists():
+        return []
     text = PROBE.read_text(encoding="utf-8")
     errors = []
     for xmlid in FORMAL_MENUS:

@@ -135,6 +135,7 @@
         'views/core/funding_baseline_views.xml',
         'views/core/fund_account_views.xml',
         'views/core/fund_account_operation_views.xml',
+        'views/core/fund_legacy_readonly_archive_views.xml',
         'views/core/business_menu_fact_views.xml',
         'views/core/office_admin_document_views.xml',
         'views/core/hr_payroll_document_views.xml',

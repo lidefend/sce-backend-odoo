@@ -325,3 +325,17 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Not Elsewhere: P0 snapshot infrastructure remains generic, the frontend cannot choose product menus, runtime configuration cannot replace a versioned release contract, and production data is not a policy authority
 - Blast Radius: formal initialization of `construction.standard` and `construction.preview`, candidate image contract contents, and guard normalization; catalog fallback remains available only to explicitly non-formal development flows
 - Validation: locked baseline missing/invalid/product/normalization negatives, numeric-ID independence, pre-resolution `BUSINESS_DECISION_REQUIRED`, transactional rollback without policy/action/model/snapshot mutation, standard/preview isolation, repeatable fail-closed initialization, candidate-image contract acceptance, release-contract tests, and full CI
+
+## 2026-07-23 — R11F1 Fund Legacy Read-Only Archives
+
+- Branch: `fix/r11f1-fund-legacy-readonly-archive`
+- Starting commit: `66e9e663f7b754dca56765eea11d4c25e1ede91c`
+- Formal Product Layer: P1 construction industry standard
+- Layer Target: L2 finance-domain historical archive model boundary plus native Odoo XML entry surfaces
+- Module: `smart_construction_core`
+- Reason: oil-card registration and recharge registration are approved historical archives, not new fund-processing workflows; each needs a stable, source-isolated and server-enforced read-only entry
+- Standard vs User-Specific: construction product standard; no tenant preference, production data mutation, frontend-only policy, or platform-core behavior
+- Why Here: the owning finance-domain model must enforce immutable archive identity, while its module-owned XML defines the stable actions, menus and dedicated read-only views
+- Why Not Elsewhere: P0 snapshot governance cannot enforce record mutation safety, frontend context is not a security boundary, and P4 release tooling is not a business-model authority
+- Blast Radius: only the exact `online_old_legacy_direct:direct_acceptance` oil-card and recharge source pairs, their finance-read entry surfaces, and company-scoped access; ordinary `sc.fund.account.operation` workflows remain writable under their existing roles
+- Validation: stable XML identity, fixed distinct domains, server-side create/write/unlink/workflow denial, finance-read access, non-finance exclusion, multi-company isolation, ordinary fund workflow regression, clean-database module loading, release contract tests, and full CI
