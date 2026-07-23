@@ -108,7 +108,9 @@ ROLE_SURFACE_OVERRIDES = {
         "primary_menu_xmlids": [],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [],
-        "admin_menu_xmlids": [],
+        "admin_menu_xmlids": [
+            "smart_construction_core.menu_ui_menu_config_policy_business_config",
+        ],
         "denied_menu_xmlids": [],
         "admin_action_authorities": [
             {
