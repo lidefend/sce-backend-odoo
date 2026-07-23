@@ -26,6 +26,7 @@ class ColocatedReleaseStaticTests(unittest.TestCase):
         cls.backup = (ROOT / "scripts/release/production_colocated_backup.py").read_text()
         cls.matrix = (ROOT / "scripts/release/verify_colocated_platform_matrix.py").read_text()
         cls.system_init = (ROOT / "addons/smart_core/handlers/system_init.py").read_text()
+        cls.policy_sync = (ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py").read_text()
 
     def test_snapshot_uses_release_service_not_direct_table_insert(self):
         self.assertIn("EditionReleaseSnapshotService", self.snapshot)
@@ -36,6 +37,33 @@ class ColocatedReleaseStaticTests(unittest.TestCase):
     def test_snapshot_has_idempotent_fingerprint_short_circuit(self):
         self.assertIn("_text(existing_draft.get(\"fingerprint\")) == fingerprint", self.snapshot)
         self.assertIn('"idempotent": True', self.snapshot)
+
+    def test_snapshot_synchronizes_and_gates_locked_policy_before_freeze(self):
+        body = self.snapshot.split("def main():", 1)[1]
+        sync_at = body.index("synchronize_locked_formal_menu_policy")
+        pre_gate_at = body.index("assert_policy_matches_locked_contract")
+        freeze_at = body.index("freeze_release_surface")
+        post_gate_at = body.index("assert_snapshot_matches_locked_contract")
+        self.assertLess(sync_at, pre_gate_at)
+        self.assertLess(pre_gate_at, freeze_at)
+        self.assertLess(freeze_at, post_gate_at)
+        self.assertIn("env.cr.rollback()", self.snapshot)
+
+    def test_formal_synchronization_has_no_catalog_fallback(self):
+        method = self.policy_sync.split("def synchronize_locked_formal_menu_policy", 1)[1].split(
+            "def sync_construction_menu_product_policies", 1
+        )[0]
+        self.assertIn("load_locked_menu_policy_contract", method)
+        self.assertNotIn("ProductPolicyCatalogSyncService", method)
+
+    def test_formal_synchronization_stops_before_resolving_unapproved_target(self):
+        method = self.policy_sync.split("def synchronize_locked_formal_menu_policy", 1)[1].split(
+            "def sync_construction_menu_product_policies", 1
+        )[0]
+        decision_at = method.index("FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS")
+        menu_resolution_at = method.index("self.env.ref(menu_xmlid")
+        self.assertLess(decision_at, menu_resolution_at)
+        self.assertIn('"BUSINESS_DECISION_REQUIRED"', method)
 
     def test_configuration_requires_exact_ack_and_current_database(self):
         self.assertIn("I_ACKNOWLEDGE_COLOCATED_PLATFORM_CONFIGURATION", self.configure)

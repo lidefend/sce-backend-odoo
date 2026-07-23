@@ -32,6 +32,8 @@ log_volume="sce-${db}-logs"
 context_dir="$(mktemp -d -t sc-contract-hardening-context.XXXXXX)"
 log_dir="$(mktemp -d -t sc-contract-hardening-logs.XXXXXX)"
 password="contract-test-only"
+r11c_source_dump="${R11C_SOURCE_DUMP:-}"
+r11c_source_dump_sha256="${R11C_SOURCE_DUMP_SHA256:-}"
 
 cleanup() {
   status=$?
@@ -88,6 +90,8 @@ docker run --rm --entrypoint sh "$image" -eu -c '
   for path in /opt/sce-runtime/filestore /opt/sce-runtime/sessions /opt/sce-runtime/tmp /opt/sce-runtime/logs /opt/sce-runtime/config; do
     test -d "$path" && test -r "$path" && test -w "$path" && test -x "$path"
   done
+  cd /opt/sce-product/contracts
+  sha256sum -c formal_business_product_menu_policy_v1.json.sha256
 '
 
 docker network create "$network" >/dev/null
@@ -161,6 +165,94 @@ docker restart "$odoo_container" >/dev/null
 wait_for_odoo
 demo_count="$(docker exec "$db_container" psql -U odoo -d "$db" -Atc "SELECT count(*) FROM ir_module_module WHERE state='installed' AND (name LIKE '%demo%' OR name LIKE '%fixture%')")"
 [[ "$demo_count" == "0" ]]
+
+if [[ -n "$r11c_source_dump" ]]; then
+  [[ -f "$r11c_source_dump" && -r "$r11c_source_dump" ]] || {
+    echo "[contract-image] R11C_SOURCE_DUMP must be a readable file" >&2; exit 2;
+  }
+  if [[ -n "$r11c_source_dump_sha256" ]]; then
+    [[ "$(sha256sum "$r11c_source_dump" | awk '{print $1}')" == "$r11c_source_dump_sha256" ]] || {
+      echo "[contract-image] R11C source dump checksum mismatch" >&2; exit 2;
+    }
+  fi
+  docker rm -f "$odoo_container" >/dev/null
+  odoo_container=""
+  docker exec "$db_container" psql -U odoo -d postgres -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS \"$db\"" >/dev/null
+  docker exec "$db_container" psql -U odoo -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$db\" OWNER odoo" >/dev/null
+  docker cp "$r11c_source_dump" "$db_container:/tmp/r11c-source.dump"
+  docker exec "$db_container" pg_restore -U odoo -d "$db" --no-owner --no-privileges --exit-on-error /tmp/r11c-source.dump
+  docker exec "$db_container" rm -f /tmp/r11c-source.dump
+
+  docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" \
+    -e SC_COLOCATED_PLATFORM_CONFIG_APPLY=I_ACKNOWLEDGE_COLOCATED_PLATFORM_CONFIGURATION \
+    --entrypoint /usr/local/bin/production-db-manage "$image" configure-platform >"$log_dir/r11c-configure.log" 2>&1
+
+  policy_snapshot_state() {
+    docker exec "$db_container" psql -U odoo -d "$db" -At -F '|' -c \
+      "SELECT product_key, (SELECT count(*) FROM jsonb_array_elements(menu_groups) g, jsonb_array_elements(g->'menus') m WHERE (m->>'enabled')::boolean AND m->>'release_state'='released'), note FROM sc_product_policy WHERE product_key IN ('construction.standard','construction.preview') ORDER BY product_key; SELECT count(*) FROM sc_edition_release_snapshot;"
+  }
+  initial_state="$(policy_snapshot_state)"
+  grep -q 'construction.standard|214|' <<<"$initial_state"
+  grep -q 'construction.preview|214|' <<<"$initial_state"
+  [[ "$(tail -1 <<<"$initial_state")" == "0" ]]
+
+  snapshot_env=(
+    -e SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY=I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION
+    -e PLATFORM_RELEASE_VERSION=1.0.0-rc.1
+  )
+  missing_contracts="$log_dir/missing-contracts"
+  mkdir -p "$missing_contracts"
+  if docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" "${snapshot_env[@]}" \
+      -e PLATFORM_RELEASE_PRODUCT_KEY=construction.standard \
+      -v "$missing_contracts:/opt/sce-product/contracts:ro" \
+      --entrypoint /usr/local/bin/production-db-manage "$image" initialize-platform-snapshot \
+      >"$log_dir/r11c-missing-baseline.log" 2>&1; then
+    echo "[contract-image] missing locked baseline unexpectedly initialized" >&2; exit 1
+  fi
+  grep -q 'LOCKED_MENU_BASELINE_MISSING' "$log_dir/r11c-missing-baseline.log"
+  [[ "$(policy_snapshot_state)" == "$initial_state" ]]
+
+  invalid_contracts="$log_dir/invalid-contracts"
+  mkdir -p "$invalid_contracts"
+  printf '%s\n' '{"schema":"corrupt"}' >"$invalid_contracts/formal_business_product_menu_policy_v1.json"
+  cp scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256 "$invalid_contracts/"
+  if docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" "${snapshot_env[@]}" \
+      -e PLATFORM_RELEASE_PRODUCT_KEY=construction.standard \
+      -v "$invalid_contracts:/opt/sce-product/contracts:ro" \
+      --entrypoint /usr/local/bin/production-db-manage "$image" initialize-platform-snapshot \
+      >"$log_dir/r11c-invalid-baseline.log" 2>&1; then
+    echo "[contract-image] invalid locked baseline unexpectedly initialized" >&2; exit 1
+  fi
+  grep -q 'LOCKED_MENU_BASELINE_INVALID' "$log_dir/r11c-invalid-baseline.log"
+  [[ "$(policy_snapshot_state)" == "$initial_state" ]]
+
+  decision_artifact_state() {
+    docker exec "$db_container" psql -U odoo -d "$db" -At -F '|' -c \
+      "SELECT count(*) FROM ir_model_data WHERE module='smart_construction_core' AND name='action_sc_tax_certificate_registration_user'; SELECT count(*) FROM ir_model WHERE model='sc.legacy.payment.residual.fact'; SELECT COALESCE((SELECT res_model FROM ir_act_window a JOIN ir_model_data d ON d.model='ir.actions.act_window' AND d.res_id=a.id WHERE d.module='smart_construction_core' AND d.name='action_sc_invoice_registration' LIMIT 1),'');"
+  }
+  run_snapshot_init_expect_decision() {
+    product_key="$1"
+    output="$2"
+    if docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" "${snapshot_env[@]}" \
+        -e "PLATFORM_RELEASE_PRODUCT_KEY=$product_key" \
+        --entrypoint /usr/local/bin/production-db-manage "$image" initialize-platform-snapshot >"$output" 2>&1; then
+      echo "[contract-image] unapproved locked-menu target unexpectedly initialized" >&2; exit 1
+    fi
+    grep -q 'BUSINESS_DECISION_REQUIRED' "$output"
+  }
+  decision_state="$initial_state"
+  decision_artifacts="$(decision_artifact_state)"
+  run_snapshot_init_expect_decision construction.standard "$log_dir/r11c-standard-decision.log"
+  [[ "$(policy_snapshot_state)" == "$decision_state" ]]
+  [[ "$(decision_artifact_state)" == "$decision_artifacts" ]]
+  run_snapshot_init_expect_decision construction.preview "$log_dir/r11c-preview-decision.log"
+  [[ "$(policy_snapshot_state)" == "$decision_state" ]]
+  [[ "$(decision_artifact_state)" == "$decision_artifacts" ]]
+  run_snapshot_init_expect_decision construction.standard "$log_dir/r11c-standard-decision-repeat.log"
+  [[ "$(policy_snapshot_state)" == "$decision_state" ]]
+  [[ "$(decision_artifact_state)" == "$decision_artifacts" ]]
+  echo "[contract-image] R11C BUSINESS_DECISION_REQUIRED PASS database=$db policies_unchanged=true snapshots_unchanged=true invented_action=false invented_model=false"
+fi
 
 image_id="$(docker image inspect "$image" --format '{{.Id}}')"
 image_size="$(docker image inspect "$image" --format '{{.Size}}')"
