@@ -12,8 +12,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
+import stat
 import tempfile
 from collections.abc import Callable, Mapping
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -29,11 +32,16 @@ CANONICAL_ROLE_XMLIDS = ("smart_core.group_smart_core_admin",)
 FORMAL_MODULE_COUNT = 10
 CONFIRMATION = "YES_APPLY_FRESH_PRODUCTION_ADMIN_IDENTITY_BASELINE"
 EVIDENCE_ROOT = Path("/opt/sce-runtime/logs")
+DEPLOYMENT_ROOT = Path("/opt/sce/deployment-tools")
+DEPLOYMENT_METADATA_NAME = "deployment-tool-metadata.json"
 PLANNED_WRITE_MODEL = "res_users_groups_rel"
 PRODUCT_FINGERPRINT_MODELS = (
     "sc.product.policy",
     "ui.business.config.contract",
 )
+RUN_ID_PATTERN = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[a-z0-9]{6,32}$")
+SOURCE_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+EVIDENCE_SCHEMA_VERSION = "admin-identity-baseline-evidence-v3"
 
 
 class AdminIdentityBaselineError(RuntimeError):
@@ -80,10 +88,113 @@ def _evidence_path(active_env: Mapping[str, str]) -> Path:
         )
     if path.name in {"", ".", ".."}:
         raise AdminIdentityBaselineError("invalid evidence output name")
+    if path.exists() or path.is_symlink():
+        raise AdminIdentityBaselineError(
+            "evidence output must be a new non-symlink path"
+        )
     return path
 
 
-def validate_control_plane(active_env: Mapping[str, str]) -> str:
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _execution_binding(
+    active_env: Mapping[str, str], mode: str
+) -> dict[str, Any]:
+    run_id = active_env.get("ADMIN_IDENTITY_RUN_ID", "")
+    if not RUN_ID_PATTERN.fullmatch(run_id):
+        raise AdminIdentityBaselineError(
+            "ADMIN_IDENTITY_RUN_ID must be UTC timestamp plus safe random suffix"
+        )
+    source_sha = active_env.get("ADMIN_IDENTITY_TOOL_SOURCE_SHA", "")
+    if not SOURCE_SHA_PATTERN.fullmatch(source_sha):
+        raise AdminIdentityBaselineError(
+            "ADMIN_IDENTITY_TOOL_SOURCE_SHA must be 40 lowercase hexadecimal characters"
+        )
+    raw_deployed_path = active_env.get("ADMIN_IDENTITY_DEPLOYED_PATH", "")
+    if not raw_deployed_path or not Path(raw_deployed_path).is_absolute():
+        raise AdminIdentityBaselineError(
+            "ADMIN_IDENTITY_DEPLOYED_PATH must be an absolute versioned path"
+        )
+    deployed_path = Path(raw_deployed_path)
+    if deployed_path.is_symlink():
+        raise AdminIdentityBaselineError("deployed tool path must not be a symlink")
+    try:
+        resolved_path = deployed_path.resolve(strict=True)
+        resolved_root = DEPLOYMENT_ROOT.resolve(strict=True)
+    except OSError as exc:
+        raise AdminIdentityBaselineError(
+            "deployed tool path or deployment root is unavailable"
+        ) from exc
+    if (
+        resolved_path != deployed_path
+        or resolved_path.parent != resolved_root
+        or resolved_path.name != source_sha
+    ):
+        raise AdminIdentityBaselineError(
+            "source SHA, deployed directory, and deployment root do not match"
+        )
+
+    marker = resolved_path / "DEPLOYMENT_TOOL_SHA"
+    metadata_path = resolved_path / DEPLOYMENT_METADATA_NAME
+    script_path = resolved_path / "scripts/release/production_admin_identity_baseline.py"
+    release_mk_path = resolved_path / "make/release.mk"
+    for candidate in (marker, metadata_path, script_path, release_mk_path):
+        if (
+            not candidate.is_file()
+            or candidate.is_symlink()
+            or not stat.S_ISREG(candidate.stat().st_mode)
+        ):
+            raise AdminIdentityBaselineError(
+                f"deployed tool identity file is missing or unsafe: {candidate.name}"
+            )
+    if marker.read_text(encoding="utf-8").strip() != source_sha:
+        raise AdminIdentityBaselineError("deployment source marker does not match")
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise AdminIdentityBaselineError("deployment metadata is invalid") from exc
+    required_metadata = {
+        "schema_version": "admin-identity-tool-deployment.v1",
+        "source_sha": source_sha,
+    }
+    if any(metadata.get(key) != value for key, value in required_metadata.items()):
+        raise AdminIdentityBaselineError("deployment metadata identity does not match")
+    script_sha256 = _sha256_file(script_path)
+    release_mk_sha256 = _sha256_file(release_mk_path)
+    if metadata.get("script_sha256") != script_sha256:
+        raise AdminIdentityBaselineError("deployed script digest does not match metadata")
+    if metadata.get("release_mk_sha256") != release_mk_sha256:
+        raise AdminIdentityBaselineError(
+            "deployed release.mk digest does not match metadata"
+        )
+
+    evidence_path = _evidence_path(active_env)
+    expected_name = re.compile(
+        rf"^admin-identity-baseline-{re.escape(run_id)}-"
+        rf"{re.escape(mode)}(?:-[a-z0-9-]+)?\.json$"
+    )
+    if not expected_name.fullmatch(evidence_path.name):
+        raise AdminIdentityBaselineError(
+            "evidence filename must bind the exact run ID and execution mode"
+        )
+    return {
+        "run_id": run_id,
+        "source_sha": source_sha,
+        "deployed_path": str(resolved_path),
+        "script_sha256": script_sha256,
+        "release_mk_sha256": release_mk_sha256,
+    }
+
+
+def _validated_control_plane(
+    active_env: Mapping[str, str],
+) -> tuple[str, dict[str, Any]]:
     if active_env.get("ENV") != "prod":
         raise AdminIdentityBaselineError("ENV=prod is required")
     if active_env.get("TARGET_DB") != TARGET_DATABASE:
@@ -103,7 +214,7 @@ def validate_control_plane(active_env: Mapping[str, str]) -> str:
         )
     mode = _mode(active_env)
     _formal_modules(active_env)
-    _evidence_path(active_env)
+    binding = _execution_binding(active_env, mode)
     if mode == "apply":
         if active_env.get("PROD_DANGER") != "1":
             raise AdminIdentityBaselineError("PROD_DANGER=1 is required for apply")
@@ -112,6 +223,11 @@ def validate_control_plane(active_env: Mapping[str, str]) -> str:
                 "CONFIRM_ADMIN_IDENTITY_BASELINE="
                 f"{CONFIRMATION} is required for apply"
             )
+    return mode, binding
+
+
+def validate_control_plane(active_env: Mapping[str, str]) -> str:
+    mode, _binding = _validated_control_plane(active_env)
     return mode
 
 
@@ -324,6 +440,10 @@ def _state_evidence(
 
 
 def _write_evidence(path: Path, payload: Mapping[str, Any]) -> None:
+    if not verify_payload_digest(payload):
+        raise AdminIdentityBaselineError(
+            "evidence payload digest must be valid before publication"
+        )
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     if path.exists() or path.is_symlink():
         raise AdminIdentityBaselineError("evidence output must not already exist")
@@ -331,6 +451,7 @@ def _write_evidence(path: Path, payload: Mapping[str, Any]) -> None:
         prefix=f".{path.name}.", dir=path.parent
     )
     temporary = Path(temporary_name)
+    published = False
     try:
         os.fchmod(descriptor, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
@@ -338,9 +459,37 @@ def _write_evidence(path: Path, payload: Mapping[str, Any]) -> None:
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
+        temporary_stat = temporary.lstat()
+        persisted = json.loads(temporary.read_text(encoding="utf-8"))
+        if (
+            not stat.S_ISREG(temporary_stat.st_mode)
+            or stat.S_IMODE(temporary_stat.st_mode) != 0o600
+            or temporary_stat.st_uid != os.geteuid()
+            or not verify_payload_digest(persisted)
+        ):
+            raise AdminIdentityBaselineError(
+                "temporary evidence integrity, ownership, or mode is unsafe"
+            )
         os.replace(temporary, path)
+        published = True
+        final_stat = path.lstat()
+        if (
+            not stat.S_ISREG(final_stat.st_mode)
+            or stat.S_IMODE(final_stat.st_mode) != 0o600
+            or final_stat.st_uid != os.geteuid()
+        ):
+            raise AdminIdentityBaselineError(
+                "final evidence ownership or mode is unsafe"
+            )
+        final_payload = json.loads(path.read_text(encoding="utf-8"))
+        if not verify_payload_digest(final_payload):
+            raise AdminIdentityBaselineError(
+                "persisted evidence payload digest is invalid"
+            )
     except Exception:
         temporary.unlink(missing_ok=True)
+        if published:
+            path.unlink(missing_ok=True)
         raise
     finally:
         temporary.unlink(missing_ok=True)
@@ -365,13 +514,29 @@ def _apply_canonical_relation(
     write_audit["relation_rows_added"] += len(canonical)
 
 
+def _payload_digest(payload: Mapping[str, Any]) -> str:
+    core = {key: value for key, value in payload.items() if key != "integrity"}
+    return _digest(core)
+
+
+def verify_payload_digest(payload: Mapping[str, Any]) -> bool:
+    integrity = payload.get("integrity")
+    return bool(
+        isinstance(integrity, Mapping)
+        and integrity.get("algorithm") == "sha256"
+        and integrity.get("coverage") == "canonical-json-excluding-integrity"
+        and integrity.get("payload_sha256") == _payload_digest(payload)
+    )
+
+
 def baseline_admin_identity(
     odoo_env: Any,
     active_env: Mapping[str, str],
     *,
     resolver_factory: Callable[[Any], Any] = _resolver_factory,
 ) -> dict[str, Any]:
-    mode = validate_control_plane(active_env)
+    mode, binding = _validated_control_plane(active_env)
+    started_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     if getattr(odoo_env.cr, "dbname", None) != TARGET_DATABASE:
         raise AdminIdentityBaselineError(
             "live database identity must be sc_production"
@@ -496,11 +661,29 @@ def baseline_admin_identity(
     if mode == "dry-run" and not fingerprints_unchanged:
         raise AdminIdentityBaselineError("dry-run state fingerprints changed")
 
+    completed_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     payload = {
-        "schema_version": "production_admin_identity_baseline.v2",
+        "schema_version": EVIDENCE_SCHEMA_VERSION,
         "result": "PASS",
         "status": status,
         "mode": mode,
+        "execution": {
+            "run_id": binding["run_id"],
+            "mode": mode,
+            "started_at_utc": started_at,
+            "completed_at_utc": completed_at,
+        },
+        "tool": {
+            "source_sha": binding["source_sha"],
+            "deployed_path": binding["deployed_path"],
+            "script_sha256": binding["script_sha256"],
+            "release_mk_sha256": binding["release_mk_sha256"],
+        },
+        "target": {
+            "database": TARGET_DATABASE,
+            "login_fingerprint": _digest({"login": TARGET_LOGIN}),
+            "expected_user_count": EXPECTED_USER_COUNT,
+        },
         "database": {
             "name": TARGET_DATABASE,
             "formal_module_count": len(module_state["states"]),
@@ -547,6 +730,11 @@ def baseline_admin_identity(
             "unchanged": fingerprints_unchanged,
         },
         "unrelated_user_fields_unchanged": _safe_snapshot(target) == before_snapshot,
+    }
+    payload["integrity"] = {
+        "algorithm": "sha256",
+        "coverage": "canonical-json-excluding-integrity",
+        "payload_sha256": _payload_digest(payload),
     }
     if mode == "dry-run":
         odoo_env.cr.rollback()

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -321,9 +322,53 @@ class BaselineTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
+        self.temp_root = Path(self.temp.name).resolve()
+        self.logs_root = self.temp_root / "logs"
+        self.logs_root.mkdir(mode=0o700)
+        self.source_sha = "a" * 40
+        self.run_id = "20260723T120000Z-abcdef"
+        self.deployment_root = self.temp_root / "deployment-tools"
+        self.deployment_root.mkdir()
+        self.deployed_path = self.deployment_root / self.source_sha
+        (self.deployed_path / "scripts/release").mkdir(parents=True)
+        (self.deployed_path / "make").mkdir()
+        shutil.copy2(
+            HELPER_PATH,
+            self.deployed_path
+            / "scripts/release/production_admin_identity_baseline.py",
+        )
+        shutil.copy2(
+            ROOT / "make/release.mk",
+            self.deployed_path / "make/release.mk",
+        )
+        (self.deployed_path / "DEPLOYMENT_TOOL_SHA").write_text(
+            f"{self.source_sha}\n", encoding="utf-8"
+        )
+        metadata = {
+            "schema_version": "admin-identity-tool-deployment.v1",
+            "source_sha": self.source_sha,
+            "script_sha256": helper._sha256_file(
+                self.deployed_path
+                / "scripts/release/production_admin_identity_baseline.py"
+            ),
+            "release_mk_sha256": helper._sha256_file(
+                self.deployed_path / "make/release.mk"
+            ),
+        }
+        (self.deployed_path / helper.DEPLOYMENT_METADATA_NAME).write_text(
+            json.dumps(metadata), encoding="utf-8"
+        )
         self.previous_root = helper.EVIDENCE_ROOT
-        helper.EVIDENCE_ROOT = Path(self.temp.name).resolve()
+        self.previous_deployment_root = helper.DEPLOYMENT_ROOT
+        helper.EVIDENCE_ROOT = self.logs_root
+        helper.DEPLOYMENT_ROOT = self.deployment_root
         self.addCleanup(setattr, helper, "EVIDENCE_ROOT", self.previous_root)
+        self.addCleanup(
+            setattr,
+            helper,
+            "DEPLOYMENT_ROOT",
+            self.previous_deployment_root,
+        )
 
     def env(self, mode="dry-run", **updates):
         values = {
@@ -333,10 +378,16 @@ class BaselineTests(unittest.TestCase):
             "ADMIN_IDENTITY_LOGIN": "admin",
             "ADMIN_IDENTITY_EXPECTED_USER_COUNT": "1",
             "ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE": "restricted",
+            "ADMIN_IDENTITY_RUN_ID": self.run_id,
+            "ADMIN_IDENTITY_TOOL_SOURCE_SHA": self.source_sha,
+            "ADMIN_IDENTITY_DEPLOYED_PATH": str(self.deployed_path),
             "FORMAL_MODULE_CONTRACT": ",".join(FORMAL_MODULES),
             "ADMIN_IDENTITY_EVIDENCE_OUTPUT": str(
-                Path(self.temp.name)
-                / f"{mode}-{len(list(Path(self.temp.name).iterdir()))}.json"
+                self.logs_root
+                / (
+                    f"admin-identity-baseline-{self.run_id}-{mode}-"
+                    f"{len(list(self.logs_root.iterdir()))}.json"
+                )
             ),
         }
         if mode == "apply":
@@ -353,6 +404,140 @@ class BaselineTests(unittest.TestCase):
         return helper.baseline_admin_identity(
             environment, active_env, resolver_factory=resolver_factory
         )
+
+    def metadata_path(self):
+        return self.deployed_path / helper.DEPLOYMENT_METADATA_NAME
+
+    def test_execution_binding_is_required_before_database_queries(self):
+        cases = (
+            ("ADMIN_IDENTITY_RUN_ID", ""),
+            ("ADMIN_IDENTITY_RUN_ID", "bad/run id"),
+            ("ADMIN_IDENTITY_TOOL_SOURCE_SHA", ""),
+            ("ADMIN_IDENTITY_TOOL_SOURCE_SHA", "ABC"),
+            ("ADMIN_IDENTITY_DEPLOYED_PATH", ""),
+        )
+        for key, value in cases:
+            with self.subTest(key=key, value=value):
+                environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+                active = self.env()
+                active[key] = value
+                with self.assertRaises(helper.AdminIdentityBaselineError):
+                    self.call(environment, active)
+                self.assertNotIn("target-user-query", environment.events)
+                self.assertNotIn("formal-module-query", environment.events)
+
+    def test_run_id_must_match_evidence_filename(self):
+        environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+        active = self.env()
+        active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"] = str(
+            self.logs_root / "admin-identity-baseline-other-dry-run.json"
+        )
+        with self.assertRaises(helper.AdminIdentityBaselineError):
+            self.call(environment, active)
+        self.assertNotIn("target-user-query", environment.events)
+
+    def test_source_sha_must_match_deployed_path_and_marker(self):
+        environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+        active = self.env()
+        active["ADMIN_IDENTITY_TOOL_SOURCE_SHA"] = "b" * 40
+        with self.assertRaises(helper.AdminIdentityBaselineError):
+            self.call(environment, active)
+        self.assertNotIn("target-user-query", environment.events)
+
+        active = self.env()
+        (self.deployed_path / "DEPLOYMENT_TOOL_SHA").write_text(
+            f"{'b' * 40}\n", encoding="utf-8"
+        )
+        with self.assertRaises(helper.AdminIdentityBaselineError):
+            self.call(FakeEnvironment([FakeUser(groups=[INTERNAL])]), active)
+
+    def test_source_sha_and_file_digests_must_match_metadata(self):
+        metadata = json.loads(self.metadata_path().read_text(encoding="utf-8"))
+        metadata["source_sha"] = "b" * 40
+        self.metadata_path().write_text(json.dumps(metadata), encoding="utf-8")
+        with self.assertRaises(helper.AdminIdentityBaselineError):
+            self.call(
+                FakeEnvironment([FakeUser(groups=[INTERNAL])]), self.env()
+            )
+
+    def test_script_and_release_make_digest_drift_are_rejected(self):
+        for relative in (
+            "scripts/release/production_admin_identity_baseline.py",
+            "make/release.mk",
+        ):
+            with self.subTest(relative=relative):
+                environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+                target = self.deployed_path / relative
+                original = target.read_text(encoding="utf-8")
+                target.write_text(original + "\n# drift\n", encoding="utf-8")
+                with self.assertRaises(helper.AdminIdentityBaselineError):
+                    self.call(environment, self.env())
+                self.assertNotIn("target-user-query", environment.events)
+                target.write_text(original, encoding="utf-8")
+
+    def test_existing_or_symlink_evidence_target_is_rejected_pre_query(self):
+        for kind in ("existing", "symlink"):
+            with self.subTest(kind=kind):
+                environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+                active = self.env()
+                path = Path(active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"])
+                if kind == "existing":
+                    path.write_text("occupied", encoding="utf-8")
+                else:
+                    target = self.logs_root / "target"
+                    target.write_text("occupied", encoding="utf-8")
+                    path.symlink_to(target)
+                with self.assertRaises(helper.AdminIdentityBaselineError):
+                    self.call(environment, active)
+                self.assertNotIn("target-user-query", environment.events)
+                path.unlink()
+                if kind == "symlink":
+                    target.unlink()
+
+    def test_evidence_v3_binds_execution_tool_target_and_digest(self):
+        active = self.env()
+        result = self.call(
+            FakeEnvironment([FakeUser(groups=[INTERNAL])]), active
+        )
+        self.assertEqual(
+            result["schema_version"], "admin-identity-baseline-evidence-v3"
+        )
+        self.assertEqual(result["execution"]["run_id"], self.run_id)
+        self.assertEqual(result["execution"]["mode"], "dry-run")
+        self.assertTrue(result["execution"]["started_at_utc"].endswith("Z"))
+        self.assertTrue(result["execution"]["completed_at_utc"].endswith("Z"))
+        self.assertEqual(result["tool"]["source_sha"], self.source_sha)
+        self.assertEqual(
+            result["tool"]["deployed_path"], str(self.deployed_path)
+        )
+        self.assertEqual(result["target"]["database"], "sc_production")
+        self.assertNotEqual(result["target"]["login_fingerprint"], "admin")
+        self.assertTrue(helper.verify_payload_digest(result))
+        persisted = json.loads(
+            Path(active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"]).read_text()
+        )
+        self.assertEqual(persisted, result)
+        self.assertEqual(
+            Path(active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"]).stat().st_mode & 0o777,
+            0o600,
+        )
+
+    def test_payload_digest_rejects_tampering(self):
+        active = self.env()
+        result = self.call(
+            FakeEnvironment([FakeUser(groups=[INTERNAL])]), active
+        )
+        self.assertTrue(helper.verify_payload_digest(result))
+        result["target"]["expected_user_count"] = 2
+        self.assertFalse(helper.verify_payload_digest(result))
+
+    def test_apply_evidence_mode_cannot_be_confused_with_dry_run(self):
+        result = self.call(
+            FakeEnvironment([FakeUser(groups=[INTERNAL])]), self.env("apply")
+        )
+        self.assertEqual(result["mode"], "apply")
+        self.assertEqual(result["execution"]["mode"], "apply")
+        self.assertIn("-apply-", self.env("apply")["ADMIN_IDENTITY_EVIDENCE_OUTPUT"])
 
     def test_dry_run_sets_and_verifies_read_only_before_target_queries(self):
         environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
@@ -444,12 +629,18 @@ class BaselineTests(unittest.TestCase):
         self.assertFalse(Path(active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"]).exists())
 
     def test_atomic_evidence_failure_leaves_no_partial_pass(self):
-        path = Path(self.temp.name) / "atomic.json"
+        path = self.logs_root / "atomic.json"
+        payload = {"result": "PASS"}
+        payload["integrity"] = {
+            "algorithm": "sha256",
+            "coverage": "canonical-json-excluding-integrity",
+            "payload_sha256": helper._payload_digest(payload),
+        }
         with mock.patch.object(helper.os, "replace", side_effect=OSError("fail")):
             with self.assertRaises(OSError):
-                helper._write_evidence(path, {"result": "PASS"})
+                helper._write_evidence(path, payload)
         self.assertFalse(path.exists())
-        self.assertEqual(list(Path(self.temp.name).glob(".atomic.json.*")), [])
+        self.assertEqual(list(self.logs_root.glob(".atomic.json.*")), [])
 
     def test_evidence_is_redacted_and_contains_no_complete_group_membership(self):
         active = self.env()
@@ -589,6 +780,13 @@ class BaselineTests(unittest.TestCase):
 
         active = self.env()
         active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"] = "/tmp/evidence.json"
+        with self.assertRaises(helper.AdminIdentityBaselineError):
+            helper.validate_control_plane(active)
+
+        active = self.env()
+        active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"] = str(
+            self.logs_root / ".." / "escaped.json"
+        )
         with self.assertRaises(helper.AdminIdentityBaselineError):
             helper.validate_control_plane(active)
 

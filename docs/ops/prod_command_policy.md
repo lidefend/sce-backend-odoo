@@ -46,6 +46,14 @@ Makefile guards and script-level guards.
   redacted evidence separates current state, shared-policy planned state, and
   observed-after state, and records the exact relation plan, zero write audit,
   and stable before/after fingerprints;
+  every execution also requires a safe UTC `ADMIN_IDENTITY_RUN_ID`, the exact
+  40-character `ADMIN_IDENTITY_TOOL_SOURCE_SHA`, and its matching
+  `ADMIN_IDENTITY_DEPLOYED_PATH`; the tool validates the immutable deployment
+  marker plus `deployment-tool-metadata.json`, script digest, and
+  `make/release.mk` digest before any database query; v3 evidence binds those
+  identities, execution timestamps, target fingerprint, and a reproducible
+  canonical-payload SHA-256 while the external report separately records the
+  complete evidence-file SHA-256;
   apply requires the exact
   `CONFIRM_ADMIN_IDENTITY_BASELINE=YES_APPLY_FRESH_PRODUCTION_ADMIN_IDENTITY_BASELINE`
   contract and may only append the canonical

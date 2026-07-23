@@ -356,6 +356,29 @@ class StaticContractTests(unittest.TestCase):
             '"fingerprints"',
             self.admin_identity_baseline,
         )
+        for contract in (
+            "ADMIN_IDENTITY_RUN_ID",
+            "ADMIN_IDENTITY_TOOL_SOURCE_SHA",
+            "ADMIN_IDENTITY_DEPLOYED_PATH",
+        ):
+            self.assertIn(contract, target)
+            self.assertIn(contract, self.admin_identity_baseline)
+        self.assertIn(
+            'EVIDENCE_SCHEMA_VERSION = "admin-identity-baseline-evidence-v3"',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            'DEPLOYMENT_METADATA_NAME = "deployment-tool-metadata.json"',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            '"coverage": "canonical-json-excluding-integrity"',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            '$(ADMIN_IDENTITY_DEPLOYED_PATH):$(ADMIN_IDENTITY_DEPLOYED_PATH):ro',
+            target,
+        )
         self.assertNotIn("base.group_system", self.admin_identity_baseline)
         self.assertNotIn("group_sc_super_admin", self.admin_identity_baseline)
         self.assertIn(
