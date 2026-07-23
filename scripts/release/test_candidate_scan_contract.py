@@ -21,10 +21,8 @@ DIGEST = "sha256:" + "b" * 64
 def summary(report: dict, **overrides):
     values = {
         "report": report,
-        "trivy_version": {
-            "Version": "0.63.0",
-            "VulnerabilityDB": {"UpdatedAt": "2026-07-23T00:00:00Z"},
-        },
+        "trivy_version": {"Version": "0.63.0"},
+        "trivy_db_metadata": {"UpdatedAt": "2026-07-23T00:00:00Z"},
         "syft_version": {"version": "1.27.1"},
         "image_manifest": {"source_sha": SHA, "image_digest": DIGEST},
         "expected_source_sha": SHA,
@@ -53,7 +51,12 @@ class CandidateScanContractTests(unittest.TestCase):
         with self.assertRaises(scan.ScanContractError):
             summary({})
         with self.assertRaises(scan.ScanContractError):
-            summary({"Results": []}, trivy_version={"Version": "0.63.0"})
+            summary({"Results": []}, trivy_db_metadata={})
+
+    def test_formal_entrypoint_reads_trivy_db_metadata_from_cache(self):
+        entrypoint = (ROOT / "scripts/release/immutable_candidate_scan.sh").read_text()
+        self.assertIn("trivy-cache/trivy/db/metadata.json", entrypoint)
+        self.assertIn("--trivy-db-metadata", entrypoint)
 
     def test_critical_high_and_secret_each_block(self):
         rows = (

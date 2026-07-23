@@ -36,10 +36,17 @@ docker run --rm \
 trivy_status=$?
 set -e
 [[ "$trivy_status" -eq 0 ]] || { echo "[candidate.scan] trivy execution failed" >&2; exit "$trivy_status"; }
+trivy_db_metadata="$artifacts/trivy-cache/trivy/db/metadata.json"
+[[ -f "$trivy_db_metadata" ]] || {
+  echo "[candidate.scan] Trivy vulnerability DB metadata missing" >&2
+  exit 2
+}
+cp "$trivy_db_metadata" "$artifacts/trivy-db-metadata.json"
 
 python3 scripts/release/candidate_scan_contract.py \
   --trivy-report "$artifacts/trivy.json" \
   --trivy-version "$artifacts/trivy-version.json" \
+  --trivy-db-metadata "$artifacts/trivy-db-metadata.json" \
   --syft-version "$artifacts/syft-version.json" \
   --image-manifest "$manifest" \
   --expected-source-sha "$source_sha" \

@@ -40,6 +40,7 @@ def build_summary(
     *,
     report: dict,
     trivy_version: dict,
+    trivy_db_metadata: dict,
     syft_version: dict,
     image_manifest: dict,
     expected_source_sha: str,
@@ -77,10 +78,7 @@ def build_summary(
         counts["SECRET"] += len(secrets or [])
 
     trivy = _required_text(trivy_version, "Version", "trivy")
-    vulnerability_db = trivy_version.get("VulnerabilityDB")
-    if not isinstance(vulnerability_db, dict):
-        raise ScanContractError("trivy.VulnerabilityDB is required")
-    db_updated_at = _required_text(vulnerability_db, "UpdatedAt", "trivy.VulnerabilityDB")
+    db_updated_at = _required_text(trivy_db_metadata, "UpdatedAt", "trivy_db_metadata")
     syft = _required_text(syft_version, "version", "syft")
     try:
         datetime.fromisoformat(scanned_at.replace("Z", "+00:00"))
@@ -116,6 +114,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--trivy-report", required=True, type=Path)
     parser.add_argument("--trivy-version", required=True, type=Path)
+    parser.add_argument("--trivy-db-metadata", required=True, type=Path)
     parser.add_argument("--syft-version", required=True, type=Path)
     parser.add_argument("--image-manifest", required=True, type=Path)
     parser.add_argument("--expected-source-sha", required=True)
@@ -130,6 +129,7 @@ def main() -> int:
         summary = build_summary(
             report=_load(args.trivy_report, "Trivy report"),
             trivy_version=_load(args.trivy_version, "Trivy version"),
+            trivy_db_metadata=_load(args.trivy_db_metadata, "Trivy DB metadata"),
             syft_version=_load(args.syft_version, "Syft version"),
             image_manifest=_load(args.image_manifest, "image manifest"),
             expected_source_sha=args.expected_source_sha,
