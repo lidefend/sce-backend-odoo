@@ -339,3 +339,17 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Not Elsewhere: P0 snapshot governance cannot enforce record mutation safety, frontend context is not a security boundary, and P4 release tooling is not a business-model authority
 - Blast Radius: only the exact `online_old_legacy_direct:direct_acceptance` oil-card and recharge source pairs, their finance-read entry surfaces, and company-scoped access; ordinary `sc.fund.account.operation` workflows remain writable under their existing roles
 - Validation: stable XML identity, fixed distinct domains, server-side create/write/unlink/workflow denial, finance-read access, non-finance exclusion, multi-company isolation, ordinary fund workflow regression, clean-database module loading, release contract tests, and full CI
+
+## 2026-07-23 — REL-SHA-01 Formal Release Source Identity Binding
+
+- Branch: `fix/rel-sha-source-identity-binding`
+- Starting commit: `2b4b3fea350a0835600fb4c3f16a079add4544ec`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: formal repository admission, immutable candidate source identity, release manifests, and deployment-time artifact identity
+- Module: release Make targets, candidate build/scan scripts, production candidate Compose, and production database lifecycle contract
+- Reason: remove the stale candidate SHA default and require the approved repository, clean HEAD, authoritative remote main, explicit source SHA, OCI revision, container revision, image manifest, release manifest, image digest, and deployment input to resolve to one identity
+- Standard vs User-Specific: repository-wide formal release safety mechanism; no platform runtime behavior, construction business semantics, customer preference, low-code configuration, or production data
+- Why Here: P4 owns source admission, artifact generation, manifest custody, and deployment guards
+- Why Not Elsewhere: product modules and frontend code must not infer repository identity or authorize deployment artifacts
+- Blast Radius: formal candidate build/scan and guarded database lifecycle commands only; no image is built, no database is created, and no environment is deployed by this change
+- Validation: explicit/full SHA, exact repository remote, clean worktree, HEAD/remote-main equality, old-SHA rejection, OCI/container/manifest/digest equality, manifest checksum, missing-input negatives, release contract tests, and one standard pre-PR CI run
