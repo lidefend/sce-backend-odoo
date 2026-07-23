@@ -6,6 +6,11 @@
   "additionalProperties": false,
   "required": [
     "schema_version",
+    "attempt_id",
+    "attempt_number",
+    "retry_of_attempt_id",
+    "created_at",
+    "finished_at",
     "status",
     "CANDIDATE_READY",
     "source",
@@ -14,6 +19,26 @@
   "properties": {
     "schema_version": {
       "const": "release_candidate_report.v1"
+    },
+    "attempt_id": {
+      "type": "string",
+      "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$"
+    },
+    "attempt_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "retry_of_attempt_id": {
+      "type": ["string", "null"],
+      "pattern": "^(?:[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}|legacy-[0-9a-f]{16})$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
     },
     "status": {
       "enum": ["running", "failed", "ready"]
@@ -104,7 +129,7 @@
         },
         "log": {
           "type": "string",
-          "pattern": "^logs/.+\\.log$"
+          "pattern": "^logs/[A-Za-z0-9_.-]+\\.log$"
         }
       }
     },

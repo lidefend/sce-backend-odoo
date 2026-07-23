@@ -41,18 +41,26 @@ created, a Release was published, or production was deployed.
   a registry digest.
 - `release-report.json` binds the commit, tree, version, tool-contract digest,
   archive checksum, reloaded image ID, frontend checksum, security scan, and SBOM.
-- Reports are written atomically. Failures expose `failed_stage`, the exit code,
-  the error, and the relevant log path. Before retry, the previous failure report
-  is archived under `failures/`.
-- A retry reuses validated build artifacts only when version, source, tree, and
-  tool contract all match, so a scan failure does not force an image rebuild.
-- A version already associated with another source fails closed and is never
-  overwritten.
+- Every real run first creates a collision-safe `attempt_id`. Its report, stage
+  logs, clean source repository, and outputs live under
+  `artifacts/release/candidates/<version>/attempts/<attempt-id>/`.
+- Reports and the `latest.json` index are written atomically. The index is only
+  a pointer, never the sole evidence, so an index-write failure cannot corrupt a
+  completed attempt.
+- A retry always creates a new attempt. It may bind a new source, tree, and tool
+  contract and links to the prior failure through `retry_of_attempt_id`. Prior
+  attempt reports and logs are never moved, truncated, appended to, or rewritten.
+- Resume is limited to one explicitly selected attempt and requires exact
+  version, source SHA, tree, tool-contract, source-repository, and
+  workflow/schema identity. A mismatch fails closed without modifying evidence.
+- A version with `CANDIDATE_READY=true` cannot be silently rebuilt. Legacy
+  single-directory failed evidence is recognized read-only and is never migrated
+  or rewritten in place.
 - The source repository may not use shared/reference cloning, alternates, or
   caller objects. Preparation, identity, and RH010 failures remain separate
   stages and are never repaired with gc/prune.
-- A non-blocking per-version lock serializes execution; concurrent invocations
-  fail without sharing or overwriting the candidate directory.
+- A non-blocking per-version lock serializes execution; versions and attempts
+  never share or overwrite their evidence directories.
 
 ## External-effect boundary
 

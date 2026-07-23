@@ -38,14 +38,22 @@ DEPLOYED=false
 - pre-publication 扫描绑定本地不可变 image ID；不得伪造 registry digest。
 - `release-report.json` 同时绑定 commit、tree、版本、工具合同摘要、归档摘要、
   重载 image ID、前端摘要、安全扫描和 SBOM。
-- 报告使用原子写入；失败时记录 `failed_stage`、退出码、错误和对应日志路径；
-  重试前会把上一份失败报告归档到 `failures/`，不会覆盖事故证据。
-- 相同版本、源码、tree 和工具合同重试时，已验证的构建产物才会被复用；
-  扫描失败不会强制重建镜像。任一身份或工具合同变化均 fail closed。
-- 相同版本若对应不同源码，流程 fail closed，不覆盖既有候选证据。
+- 每次真实运行先创建碰撞安全的 `attempt_id`，报告、阶段日志、clean source
+  repository 和输出都位于
+  `artifacts/release/candidates/<version>/attempts/<attempt-id>/`。
+- 报告与 `latest.json` 索引均使用原子写入。`latest.json` 只是指针，不是唯一
+  证据；指针更新失败不会损坏已完成 attempt。
+- `retry` 总是创建新 attempt，可绑定新的源码、tree 和工具合同，并通过
+  `retry_of_attempt_id` 关联旧失败；旧 attempt 的报告和日志不移动、不截断、
+  不追加、不改写。
+- `resume` 只恢复显式指定的同一 attempt，且 version、source SHA、tree、
+  工具合同、source repository 与 workflow/schema 身份必须完全一致；不匹配
+  时 fail closed 且不修改旧证据。
+- 已 `CANDIDATE_READY=true` 的版本不会静默新建候选。同一版本的旧单目录失败
+  证据可被只读识别为 legacy attempt，但不会原地迁移或改写。
 - source repository 禁止 shared/reference clone、alternates 和调用者对象复用；
   准备、身份与 RH010 失败分阶段记录，且不以 gc/prune 修复。
-- 同一版本使用非阻塞文件锁串行化；并发调用立即失败，不会共享或覆盖候选目录。
+- 同一版本使用非阻塞文件锁串行化；不同版本和不同 attempt 的目录互不覆盖。
 
 ## 对外影响边界
 
