@@ -328,7 +328,34 @@ class StaticContractTests(unittest.TestCase):
             '"groups_id"',
             self.admin_identity_baseline,
         )
-        self.assertNotIn(".execute(", self.admin_identity_baseline)
+        self.assertEqual(
+            self.admin_identity_baseline.count("odoo_env.cr.execute("),
+            2,
+        )
+        self.assertIn(
+            'odoo_env.cr.execute("SET TRANSACTION READ ONLY")',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            'odoo_env.cr.execute("SHOW transaction_read_only")',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            '"planned_write_model": PLANNED_WRITE_MODEL',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            '"planned_relation_append_count": append_count',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            '"observed_after_dry_run"',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            '"fingerprints"',
+            self.admin_identity_baseline,
+        )
         self.assertNotIn("base.group_system", self.admin_identity_baseline)
         self.assertNotIn("group_sc_super_admin", self.admin_identity_baseline)
         self.assertIn(
