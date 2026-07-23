@@ -34,16 +34,12 @@ FORMAL_ACTION_ONLY_MENU_TARGETS = {
     "smart_construction_core.menu_sc_company_user_roster_formal": "smart_construction_core.action_sc_company_user_roster_formal",
     "smart_construction_core.menu_sc_salary_registration_legacy_55_formal": "smart_construction_core.action_sc_salary_registration",
     "smart_construction_core.menu_sc_company_document_archive": "smart_construction_core.action_sc_company_document_archive",
-    "smart_construction_core.menu_sc_tax_certificate_registration_user": "smart_construction_core.action_sc_tax_certificate_registration_user",
 }
 
-# These stable menu/action identities are present in the locked 97-entry
-# contract, but their business disposition has not been approved. Formal
-# initialization must stop before resolving either historical database object
-# or inventing a runtime model/action for them.
-FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS = {
-    "smart_construction_core.menu_sc_tax_certificate_registration_user": "smart_construction_core.action_sc_tax_certificate_registration_user",
-}
+# Business-decision targets remain fail-closed until their formal product
+# ownership is approved. R11F2 resolved the only outstanding target by
+# installing the independent tax-certificate model, action, and menu.
+FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS = {}
 
 # Versioned definitions for action-only targets that are not installed by the
 # module data set. They are created only inside the formal initialization
