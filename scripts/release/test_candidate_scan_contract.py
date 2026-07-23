@@ -70,17 +70,22 @@ class CandidateScanContractTests(unittest.TestCase):
 
     def test_local_candidate_scan_precedes_registry_publication(self):
         build = (ROOT / "scripts/release/immutable_candidate_build.sh").read_text()
-        publish = (ROOT / "scripts/release/immutable_candidate_publish.sh").read_text()
+        legacy_publish = (
+            ROOT / "scripts/release/immutable_candidate_publish.sh"
+        ).read_text()
+        publish = (ROOT / "scripts/release/release_publication.py").read_text()
         scan_entry = (ROOT / "scripts/release/immutable_candidate_scan.sh").read_text()
         makefile = (ROOT / "make/release.mk").read_text()
         self.assertIn('image_repository="ghcr.io/lidefend/sce-product"', build)
         self.assertIn('"image_digest": None', build)
         self.assertIn("--expected-local-image-id", scan_entry)
         self.assertIn('"$publish_status" == "published"', scan_entry)
-        self.assertIn('docker push "$image"', publish)
-        self.assertIn('docker push "$source_tag"', publish)
-        self.assertIn("docker manifest inspect --verbose", publish)
+        self.assertIn('["docker", "push", reference]', publish)
+        self.assertIn('["docker", "manifest", "inspect", "--verbose", reference]', publish)
+        self.assertNotIn("docker push", legacy_publish)
+        self.assertIn("legacy manifest-mutating publisher is disabled", legacy_publish)
         self.assertIn("release.candidate:", makefile)
+        self.assertIn("release.publish:", makefile)
         self.assertIn("release.candidate.publish:", makefile)
 
     def test_unpublished_candidate_binds_scan_to_local_image_id(self):
