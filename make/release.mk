@@ -321,10 +321,14 @@ release.publish: guard.prod.forbid
 	@test -n "$(VERSION)" || (echo "VERSION is required"; exit 2)
 	@test -n "$(CANDIDATE_ATTEMPT_ID)" || (echo "CANDIDATE_ATTEMPT_ID is required"; exit 2)
 	@test -n "$(EXPECTED_SOURCE_SHA)" || (echo "EXPECTED_SOURCE_SHA is required"; exit 2)
+	@test -n "$(EXPECTED_PUBLICATION_TOOL_SHA)" || (echo "EXPECTED_PUBLICATION_TOOL_SHA is required"; exit 2)
+	@test -n "$(EXPECTED_LIVE_MAIN_SHA)" || (echo "EXPECTED_LIVE_MAIN_SHA is required"; exit 2)
 	@ENV="$(ENV)" python3 scripts/release/release_publication.py \
 		--version "$(VERSION)" \
 		--candidate-attempt-id "$(CANDIDATE_ATTEMPT_ID)" \
 		--expected-source-sha "$(EXPECTED_SOURCE_SHA)" \
+		--expected-publication-tool-sha "$(EXPECTED_PUBLICATION_TOOL_SHA)" \
+		--expected-live-main-sha "$(EXPECTED_LIVE_MAIN_SHA)" \
 		$(if $(PUBLICATION_ATTEMPT_ID),--publication-attempt-id "$(PUBLICATION_ATTEMPT_ID)",)
 
 # Compatibility name: all calls are routed through the immutable publication

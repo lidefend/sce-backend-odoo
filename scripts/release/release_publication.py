@@ -129,6 +129,12 @@ def validate_source_sha(value: str) -> str:
     return value
 
 
+def validate_named_sha(value: str, label: str) -> str:
+    if not FULL_SHA.fullmatch(value):
+        raise PublicationError(f"{label} must be a full lowercase SHA")
+    return value
+
+
 def publication_id() -> str:
     return f"{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}-{uuid.uuid4().hex}"
 
@@ -205,6 +211,9 @@ def candidate_identity(
         name: "success" for name in REQUIRED_CHECKS
     }:
         raise PublicationError("candidate report required checks differ")
+    checks_head = str(source.get("required_checks_head_sha") or "")
+    if not FULL_SHA.fullmatch(checks_head):
+        raise PublicationError("candidate required-checks head is invalid")
     if report.get("external_effects") != {
         "registry_push": False,
         "git_tag": False,
@@ -268,6 +277,29 @@ def candidate_identity(
     ):
         raise PublicationError("candidate report/image manifest identity differs")
 
+    immutable_evidence: dict[str, str] = {}
+    for directory, names, files in os.walk(attempt, topdown=True):
+        current = Path(directory)
+        if current == attempt:
+            names[:] = [
+                name
+                for name in names
+                if name not in {"source-repository", "trivy-cache"}
+            ]
+        names.sort()
+        for name in sorted(files):
+            path = current / name
+            if path.is_symlink() or not path.is_file():
+                raise PublicationError("candidate evidence file is unsafe")
+            immutable_evidence[
+                safe_relative_path(path, version_root, "candidate evidence")
+            ] = sha256_file(path)
+    latest = version_root / "latest.json"
+    if latest.is_file() and not latest.is_symlink():
+        immutable_evidence["latest.json"] = sha256_file(latest)
+    if not immutable_evidence:
+        raise PublicationError("candidate immutable evidence set is empty")
+
     return {
         "version_root": version_root,
         "attempt": attempt,
@@ -275,17 +307,22 @@ def candidate_identity(
         "report_sha256": sha256_file(report_path),
         "source_sha": expected_source_sha,
         "source_tree": source_tree,
+        "candidate_created_github_main_sha": expected_source_sha,
+        "candidate_created_github_main_tree": source_tree,
+        "candidate_created_gitee_main_sha": expected_source_sha,
+        "candidate_created_gitee_main_tree": source_tree,
         "candidate_tool_contract_sha256": str(
             source.get("pipeline_contract_sha256") or ""
         ),
         "artifact_hashes": verified_hashes,
+        "immutable_evidence_hashes": immutable_evidence,
         "manifest_sha256": verified_hashes["image-manifest.json"],
         "archive_sha256": verified_hashes["candidate-image.tar"],
         "sbom_sha256": verified_hashes["sbom.cyclonedx.json"],
         "local_image_id": local_image_id,
         "image_tags": expected_tags,
         "required_checks": source.get("required_checks") or {},
-        "required_checks_head_sha": source.get("required_checks_head_sha"),
+        "required_checks_head_sha": checks_head,
     }
 
 
@@ -336,6 +373,23 @@ class ExternalBackend:
         sha = rows[0][0]
         tree = self.run(["git", "rev-parse", f"{sha}^{{tree}}"])
         return sha, tree
+
+    def publication_tool_identity(self) -> tuple[str, str]:
+        sha = self.run(["git", "rev-parse", "HEAD"])
+        tree = self.run(["git", "rev-parse", "HEAD^{tree}"])
+        if not FULL_SHA.fullmatch(sha) or not FULL_SHA.fullmatch(tree):
+            raise PublicationError("publication tool repository identity is invalid")
+        if self.run(["git", "status", "--porcelain"]):
+            raise PublicationError("publication tool worktree must be clean")
+        return sha, tree
+
+    def candidate_is_first_parent_ancestor(
+        self, candidate_source_sha: str, live_main_sha: str
+    ) -> bool:
+        history = self.run(
+            ["git", "rev-list", "--first-parent", live_main_sha]
+        ).splitlines()
+        return candidate_source_sha in history
 
     def required_checks(self, head_sha: str) -> dict[str, str]:
         raw = self.run(
@@ -564,6 +618,8 @@ class Publication:
         version: str,
         candidate_attempt_id: str,
         expected_source_sha: str,
+        expected_publication_tool_sha: str,
+        expected_live_main_sha: str,
         requested_publication_attempt_id: str | None = None,
         backend: ExternalBackend | None = None,
         root: Path = ROOT,
@@ -573,6 +629,12 @@ class Publication:
             candidate_attempt_id, "CANDIDATE_ATTEMPT_ID"
         )
         self.expected_source_sha = validate_source_sha(expected_source_sha)
+        self.expected_publication_tool_sha = validate_named_sha(
+            expected_publication_tool_sha, "EXPECTED_PUBLICATION_TOOL_SHA"
+        )
+        self.expected_live_main_sha = validate_named_sha(
+            expected_live_main_sha, "EXPECTED_LIVE_MAIN_SHA"
+        )
         self.requested_publication_attempt_id = requested_publication_attempt_id
         if requested_publication_attempt_id:
             validate_attempt_id(
@@ -678,7 +740,10 @@ class Publication:
         return (
             identity.get("version") == self.version
             and identity.get("candidate_attempt_id") == self.candidate_attempt_id
-            and identity.get("source_sha") == self.expected_source_sha
+            and identity.get("candidate_source_sha") == self.expected_source_sha
+            and identity.get("publication_tool_source_sha")
+            == self.expected_publication_tool_sha
+            and identity.get("expected_live_main_sha") == self.expected_live_main_sha
         )
 
     def build_plan(self) -> dict:
@@ -689,15 +754,27 @@ class Publication:
             root=self.root,
         )
         self.identity = identity
+        tool_sha, tool_tree = self.backend.publication_tool_identity()
+        if tool_sha != self.expected_publication_tool_sha:
+            raise PublicationError("publication tool source SHA differs")
+        publication_contract = workflow_digest(self.root)
         github_sha, github_tree = self.backend.remote_main(GITHUB_REMOTE)
         gitee_sha, gitee_tree = self.backend.remote_main(GITEE_REMOTE)
         if (
-            github_sha != self.expected_source_sha
-            or gitee_sha != self.expected_source_sha
-            or github_tree != identity["source_tree"]
-            or gitee_tree != identity["source_tree"]
+            github_sha != self.expected_live_main_sha
+            or gitee_sha != self.expected_live_main_sha
+            or github_sha != gitee_sha
+            or github_tree != gitee_tree
         ):
-            raise PublicationError("GitHub/Gitee main identity differs")
+            raise PublicationError("live GitHub/Gitee main identity differs")
+        if tool_sha != github_sha or tool_tree != github_tree:
+            raise PublicationError("publication tool is not the approved live main")
+        if not self.backend.candidate_is_first_parent_ancestor(
+            self.expected_source_sha, github_sha
+        ):
+            raise PublicationError(
+                "candidate source is not in approved live-main first-parent history"
+            )
         checks_head = str(identity["required_checks_head_sha"] or "")
         checks = self.backend.required_checks(checks_head)
         if checks != {name: "success" for name in REQUIRED_CHECKS}:
@@ -725,8 +802,23 @@ class Publication:
             "identity": {
                 "version": self.version,
                 "candidate_attempt_id": self.candidate_attempt_id,
-                "source_sha": self.expected_source_sha,
-                "source_tree": identity["source_tree"],
+                "candidate_source_sha": self.expected_source_sha,
+                "candidate_source_tree": identity["source_tree"],
+                "candidate_created_github_main_sha": identity[
+                    "candidate_created_github_main_sha"
+                ],
+                "candidate_created_github_main_tree": identity[
+                    "candidate_created_github_main_tree"
+                ],
+                "candidate_created_gitee_main_sha": identity[
+                    "candidate_created_gitee_main_sha"
+                ],
+                "candidate_created_gitee_main_tree": identity[
+                    "candidate_created_gitee_main_tree"
+                ],
+                "candidate_required_checks_head_sha": checks_head,
+                "candidate_required_checks_evidence": checks,
+                "candidate_evidence_sha256": identity["immutable_evidence_hashes"],
                 "candidate_report_sha256": identity["report_sha256"],
                 "candidate_manifest_sha256": identity["manifest_sha256"],
                 "candidate_archive_sha256": identity["archive_sha256"],
@@ -735,7 +827,15 @@ class Publication:
                 "candidate_tool_contract_sha256": identity[
                     "candidate_tool_contract_sha256"
                 ],
-                "publication_workflow_sha256": workflow_digest(self.root),
+                "publication_tool_source_sha": tool_sha,
+                "publication_tool_source_tree": tool_tree,
+                "publication_tool_contract_sha256": publication_contract,
+                "expected_live_main_sha": self.expected_live_main_sha,
+                "live_github_main_sha": github_sha,
+                "live_github_main_tree": github_tree,
+                "live_gitee_main_sha": gitee_sha,
+                "live_gitee_main_tree": gitee_tree,
+                "candidate_reachable_from_live_main": True,
             },
             "targets": {
                 "registry_repository": REGISTRY_REPOSITORY,
@@ -746,10 +846,20 @@ class Publication:
                 "gitee_tag": tag,
             },
             "preflight": {
-                "github_main": github_sha,
-                "gitee_main": gitee_sha,
-                "source_tree": github_tree,
-                "required_checks": checks,
+                "candidate_created_github_main_sha": identity[
+                    "candidate_created_github_main_sha"
+                ],
+                "candidate_created_gitee_main_sha": identity[
+                    "candidate_created_gitee_main_sha"
+                ],
+                "candidate_required_checks": checks,
+                "publication_tool_source_sha": tool_sha,
+                "publication_tool_source_tree": tool_tree,
+                "live_github_main_sha": github_sha,
+                "live_github_main_tree": github_tree,
+                "live_gitee_main_sha": gitee_sha,
+                "live_gitee_main_tree": gitee_tree,
+                "candidate_reachable_from_live_main": True,
                 "external_targets_absent": True,
                 "candidate_evidence_verified": True,
             },
@@ -810,8 +920,25 @@ class Publication:
         comparisons = {
             "version": self.version,
             "candidate_attempt_id": self.candidate_attempt_id,
-            "source_sha": self.expected_source_sha,
-            "source_tree": identity["source_tree"],
+            "candidate_source_sha": self.expected_source_sha,
+            "candidate_source_tree": identity["source_tree"],
+            "candidate_created_github_main_sha": identity[
+                "candidate_created_github_main_sha"
+            ],
+            "candidate_created_github_main_tree": identity[
+                "candidate_created_github_main_tree"
+            ],
+            "candidate_created_gitee_main_sha": identity[
+                "candidate_created_gitee_main_sha"
+            ],
+            "candidate_created_gitee_main_tree": identity[
+                "candidate_created_gitee_main_tree"
+            ],
+            "candidate_required_checks_head_sha": identity[
+                "required_checks_head_sha"
+            ],
+            "candidate_required_checks_evidence": identity["required_checks"],
+            "candidate_evidence_sha256": identity["immutable_evidence_hashes"],
             "candidate_report_sha256": identity["report_sha256"],
             "candidate_manifest_sha256": identity["manifest_sha256"],
             "candidate_archive_sha256": identity["archive_sha256"],
@@ -820,7 +947,17 @@ class Publication:
             "candidate_tool_contract_sha256": identity[
                 "candidate_tool_contract_sha256"
             ],
-            "publication_workflow_sha256": workflow_digest(self.root),
+            "publication_tool_source_sha": self.expected_publication_tool_sha,
+            "publication_tool_source_tree": plan["identity"][
+                "publication_tool_source_tree"
+            ],
+            "publication_tool_contract_sha256": workflow_digest(self.root),
+            "expected_live_main_sha": self.expected_live_main_sha,
+            "live_github_main_sha": plan["identity"]["live_github_main_sha"],
+            "live_github_main_tree": plan["identity"]["live_github_main_tree"],
+            "live_gitee_main_sha": plan["identity"]["live_gitee_main_sha"],
+            "live_gitee_main_tree": plan["identity"]["live_gitee_main_tree"],
+            "candidate_reachable_from_live_main": True,
         }
         if expected != comparisons or self.state.get("identity") != comparisons:
             raise PublicationError(
@@ -869,8 +1006,10 @@ class Publication:
                 (
                     f"# {self.version}",
                     "",
-                    f"- Source SHA: `{identity['source_sha']}`",
-                    f"- Source tree: `{identity['source_tree']}`",
+                    f"- Candidate source SHA: `{identity['candidate_source_sha']}`",
+                    f"- Candidate source tree: `{identity['candidate_source_tree']}`",
+                    f"- Publication tool SHA: `{identity['publication_tool_source_sha']}`",
+                    f"- Live main SHA: `{identity['expected_live_main_sha']}`",
                     f"- Candidate attempt: `{identity['candidate_attempt_id']}`",
                     f"- Publication attempt: `{self.attempt_dir.name}`",
                     f"- Image: `{REGISTRY_REPOSITORY}@{digest}`",
@@ -883,13 +1022,75 @@ class Publication:
         )
         return notes
 
-    def verify_main_identity(self, plan: dict, *, stage: str) -> None:
-        expected_tree = plan["identity"]["source_tree"]
+    def verify_publication_context(self, plan: dict, *, stage: str) -> None:
+        identity = plan["identity"]
+        tool_sha, tool_tree = self.backend.publication_tool_identity()
+        if (
+            tool_sha != identity["publication_tool_source_sha"]
+            or tool_tree != identity["publication_tool_source_tree"]
+            or workflow_digest(self.root)
+            != identity["publication_tool_contract_sha256"]
+        ):
+            raise PublicationError(
+                "publication tool identity moved after preflight", stage=stage
+            )
         for remote in (GITHUB_REMOTE, GITEE_REMOTE):
             sha, tree = self.backend.remote_main(remote)
-            if (sha, tree) != (self.expected_source_sha, expected_tree):
+            expected_sha = identity[
+                "live_github_main_sha"
+                if remote == GITHUB_REMOTE
+                else "live_gitee_main_sha"
+            ]
+            expected_tree = identity[
+                "live_github_main_tree"
+                if remote == GITHUB_REMOTE
+                else "live_gitee_main_tree"
+            ]
+            if (sha, tree) != (expected_sha, expected_tree):
                 raise PublicationError(
                     f"{remote} main moved after publication preflight",
+                    stage=stage,
+                )
+        if not self.backend.candidate_is_first_parent_ancestor(
+            self.expected_source_sha, self.expected_live_main_sha
+        ):
+            raise PublicationError(
+                "candidate source left approved live-main first-parent history",
+                stage=stage,
+            )
+        current_candidate = candidate_identity(
+            self.version,
+            self.candidate_attempt_id,
+            self.expected_source_sha,
+            root=self.root,
+        )
+        if (
+            current_candidate["report_sha256"]
+            != identity["candidate_report_sha256"]
+            or current_candidate["immutable_evidence_hashes"]
+            != identity["candidate_evidence_sha256"]
+        ):
+            raise PublicationError(
+                "candidate evidence moved after publication preflight", stage=stage
+            )
+        tag = plan["targets"]["git_tag"]
+        for remote in (GITHUB_REMOTE, GITEE_REMOTE):
+            tag_commit = self.backend.tag_commit(remote, tag)
+            if tag_commit not in (None, self.expected_source_sha):
+                raise PublicationError(
+                    "target Git tag identity conflicts after publication preflight",
+                    stage=stage,
+                )
+        release = self.backend.release(tag)
+        if release is not None:
+            body = str(release.get("body") or "")
+            if (
+                release.get("tagName") != tag
+                or self.expected_source_sha not in body
+                or self.attempt_dir.name not in body
+            ):
+                raise PublicationError(
+                    "target GitHub Release identity conflicts after preflight",
                     stage=stage,
                 )
 
@@ -901,7 +1102,11 @@ class Publication:
             "version": self.version,
             "candidate_attempt_id": self.candidate_attempt_id,
             "source_sha": self.expected_source_sha,
-            "source_tree": plan["identity"]["source_tree"],
+            "source_tree": plan["identity"]["candidate_source_tree"],
+            "publication_tool_source_sha": plan["identity"][
+                "publication_tool_source_sha"
+            ],
+            "live_main_sha": plan["identity"]["expected_live_main_sha"],
             "candidate_manifest_sha256": plan["identity"][
                 "candidate_manifest_sha256"
             ],
@@ -964,7 +1169,9 @@ class Publication:
                                 "identity": {
                                     "version": self.version,
                                     "candidate_attempt_id": self.candidate_attempt_id,
-                                    "source_sha": self.expected_source_sha,
+                                    "candidate_source_sha": self.expected_source_sha,
+                                    "publication_tool_source_sha": self.expected_publication_tool_sha,
+                                    "expected_live_main_sha": self.expected_live_main_sha,
                                 },
                                 "plan": None,
                                 "external": {
@@ -999,7 +1206,7 @@ class Publication:
                 "REGISTRY_PUSH_IN_PROGRESS",
                 "FAILED_REGISTRY_PUSH",
             }:
-                self.verify_main_identity(plan, stage="registry_push")
+                self.verify_publication_context(plan, stage="registry_push")
                 self.transition("REGISTRY_PUSH_IN_PROGRESS")
                 existing = [
                     self.backend.registry_digest(ref)
@@ -1057,7 +1264,7 @@ class Publication:
                 "TAG_CREATE_IN_PROGRESS",
                 "FAILED_TAG_CREATE",
             }:
-                self.verify_main_identity(plan, stage="tag_create")
+                self.verify_publication_context(plan, stage="tag_create")
                 self.transition("TAG_CREATE_IN_PROGRESS")
                 tag = plan["targets"]["git_tag"]
                 tags = self.backend.ensure_tags(
@@ -1076,7 +1283,7 @@ class Publication:
                 "RELEASE_CREATE_IN_PROGRESS",
                 "FAILED_RELEASE_CREATE",
             }:
-                self.verify_main_identity(plan, stage="release_create")
+                self.verify_publication_context(plan, stage="release_create")
                 self.transition("RELEASE_CREATE_IN_PROGRESS")
                 tag = plan["targets"]["git_tag"]
                 release = self.backend.release(tag)
@@ -1164,6 +1371,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--version", required=True)
     parser.add_argument("--candidate-attempt-id", required=True)
     parser.add_argument("--expected-source-sha", required=True)
+    parser.add_argument("--expected-publication-tool-sha", required=True)
+    parser.add_argument("--expected-live-main-sha", required=True)
     parser.add_argument("--publication-attempt-id")
     return parser.parse_args()
 
@@ -1175,6 +1384,8 @@ def main() -> int:
             version=args.version,
             candidate_attempt_id=args.candidate_attempt_id,
             expected_source_sha=args.expected_source_sha,
+            expected_publication_tool_sha=args.expected_publication_tool_sha,
+            expected_live_main_sha=args.expected_live_main_sha,
             requested_publication_attempt_id=args.publication_attempt_id,
         ).execute()
     except PublicationError as exc:
