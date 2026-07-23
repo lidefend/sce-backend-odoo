@@ -28,10 +28,11 @@ verify.release.tooling:
 	@$(MAKE) --no-print-directory verify.production.release_contract
 
 verify.production.release_contract:
-	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/release_candidate.py scripts/release/release_candidate_report.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_release_candidate.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/release_candidate.py scripts/release/release_candidate_report.py scripts/release/release_publication.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_release_candidate.py scripts/release/test_release_publication.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
 	@python3 addons/smart_core/tests/test_platform_database_contract.py
 	@python3 scripts/release/test_candidate_scan_contract.py
 	@python3 scripts/release/test_release_candidate.py
+	@python3 scripts/release/test_release_publication.py
 	@python3 scripts/release/test_product_release.py
 	@python3 scripts/release/test_release_source_identity.py
 	@python3 scripts/release/test_production_compose_contract.py
@@ -285,7 +286,7 @@ HISTORY_SOURCE_BACKUP ?= artifacts/production-blocker/source/daily-dev-history-s
 DAILY_DEV_PROJECT ?= sc-backend-odoo-dev
 CANDIDATE_ARTIFACTS ?= artifacts/release/immutable-production-candidate-v1
 
-.PHONY: release.workspace.prepare release.production.readonly_baseline release.candidate release.candidate.build release.boundary.candidate.build release.candidate.publish release.candidate.scan
+.PHONY: release.workspace.prepare release.production.readonly_baseline release.candidate release.candidate.build release.boundary.candidate.build release.publish release.candidate.publish release.candidate.scan
 .PHONY: product.install product.upgrade product.verify tenant.rc.payload.export tenant.rc.profile.product tenant.rc.profile.sample tenant.rc.profile.customer tenant.rc.profile.digest.verify tenant.rc.runtime.acceptance
 .PHONY: release.history.source_probe release.history.backup release.history.restore release.history.upgrade
 .PHONY: release.history.source_restore
@@ -316,10 +317,19 @@ release.boundary.candidate.build: guard.prod.forbid verify.repository.release_hy
 		CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" \
 		bash scripts/release/immutable_candidate_build.sh
 
-release.candidate.publish: guard.prod.forbid
-	@test -n "$(SOURCE_SHA)" || (echo "SOURCE_SHA is required"; exit 2)
-	@SOURCE_SHA="$(SOURCE_SHA)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" \
-		bash scripts/release/immutable_candidate_publish.sh
+release.publish: guard.prod.forbid
+	@test -n "$(VERSION)" || (echo "VERSION is required"; exit 2)
+	@test -n "$(CANDIDATE_ATTEMPT_ID)" || (echo "CANDIDATE_ATTEMPT_ID is required"; exit 2)
+	@test -n "$(EXPECTED_SOURCE_SHA)" || (echo "EXPECTED_SOURCE_SHA is required"; exit 2)
+	@ENV="$(ENV)" python3 scripts/release/release_publication.py \
+		--version "$(VERSION)" \
+		--candidate-attempt-id "$(CANDIDATE_ATTEMPT_ID)" \
+		--expected-source-sha "$(EXPECTED_SOURCE_SHA)" \
+		$(if $(PUBLICATION_ATTEMPT_ID),--publication-attempt-id "$(PUBLICATION_ATTEMPT_ID)",)
+
+# Compatibility name: all calls are routed through the immutable publication
+# attempt contract. The former manifest-mutating shell implementation is denied.
+release.candidate.publish: release.publish
 
 release.candidate.scan: guard.prod.forbid
 	@test -n "$(SOURCE_SHA)" || (echo "SOURCE_SHA is required"; exit 2)

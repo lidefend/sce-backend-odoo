@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sce.example/schemas/release/release_publication_plan.v1.schema.json",
+  "title": "Frozen release publication plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "publication_attempt_id",
+    "created_at",
+    "identity",
+    "targets",
+    "preflight"
+  ],
+  "properties": {
+    "schema_version": {"const": "release_publication_plan.v1"},
+    "publication_attempt_id": {
+      "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$"
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "candidate_attempt_id",
+        "source_sha",
+        "source_tree",
+        "candidate_report_sha256",
+        "candidate_manifest_sha256",
+        "candidate_archive_sha256",
+        "candidate_sbom_sha256",
+        "candidate_image_content_id",
+        "candidate_tool_contract_sha256",
+        "publication_workflow_sha256"
+      ],
+      "properties": {
+        "version": {"pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"},
+        "candidate_attempt_id": {
+          "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$"
+        },
+        "source_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "source_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_report_sha256": {"pattern": "^[0-9a-f]{64}$"},
+        "candidate_manifest_sha256": {"pattern": "^[0-9a-f]{64}$"},
+        "candidate_archive_sha256": {"pattern": "^[0-9a-f]{64}$"},
+        "candidate_sbom_sha256": {"pattern": "^[0-9a-f]{64}$"},
+        "candidate_image_content_id": {"pattern": "^sha256:[0-9a-f]{64}$"},
+        "candidate_tool_contract_sha256": {"pattern": "^[0-9a-f]{64}$"},
+        "publication_workflow_sha256": {"pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_repository",
+        "registry_tags",
+        "git_tag",
+        "github_repository",
+        "github_release",
+        "gitee_tag"
+      ],
+      "properties": {
+        "registry_repository": {"const": "ghcr.io/lidefend/sce-product"},
+        "registry_tags": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"type": "string", "pattern": "^[A-Za-z0-9./:_-]+$"}
+        },
+        "git_tag": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"},
+        "github_repository": {"const": "lidefend/sce-backend-odoo"},
+        "github_release": {"type": "string"},
+        "gitee_tag": {"type": "string"}
+      }
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "github_main",
+        "gitee_main",
+        "source_tree",
+        "required_checks",
+        "external_targets_absent",
+        "candidate_evidence_verified"
+      ],
+      "properties": {
+        "github_main": {"pattern": "^[0-9a-f]{40}$"},
+        "gitee_main": {"pattern": "^[0-9a-f]{40}$"},
+        "source_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "required_checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "public_guard",
+            "professional_authorization",
+            "professional_quality_gate"
+          ],
+          "properties": {
+            "public_guard": {"const": "success"},
+            "professional_authorization": {"const": "success"},
+            "professional_quality_gate": {"const": "success"}
+          }
+        },
+        "external_targets_absent": {"const": true},
+        "candidate_evidence_verified": {"const": true}
+      }
+    }
+  }
+}

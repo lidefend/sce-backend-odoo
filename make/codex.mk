@@ -153,7 +153,7 @@ codex.run: guard.prod.forbid
 	esac
 
 # ------------------ PR (Codex-safe) ------------------
-.PHONY: pr.create pr.status pr.push pr.update pr.merge
+.PHONY: pr.create pr.status pr.push pr.update pr.ready pr.merge
 
 PR_BASE ?= main
 PR_TITLE ?=
@@ -215,6 +215,46 @@ pr.update: guard.prod.forbid
 	fi; \
 	echo "[pr.update] branch=$$BR ENV=$$ENV_NAME PR=$$PR"; \
 	eval "gh pr edit $$PR $$ARGS"; \
+	'
+
+pr.ready: guard.prod.forbid
+	@bash -c '\
+	set -euo pipefail; \
+	BR="$$(git rev-parse --abbrev-ref HEAD)"; \
+	if ! echo "$$BR" | grep -Eq "$(CODEX_ALLOWED_WRITE_BRANCH_REGEX)"; then \
+	  echo "[DENY] pr.ready: branch not allowed: $$BR"; exit 2; \
+	fi; \
+	ENV_NAME="$${ENV:-dev}"; \
+	if [ "$$ENV_NAME" = "prod" ]; then \
+	  echo "[DENY] pr.ready: ENV=prod is forbidden"; exit 3; \
+	fi; \
+	if [ -n "$${PROD_DANGER:-}" ]; then \
+	  echo "[DENY] pr.ready: PROD_DANGER is set (forbidden)"; exit 4; \
+	fi; \
+	if ! command -v gh >/dev/null 2>&1; then \
+	  echo "[DENY] pr.ready: gh CLI not found"; exit 5; \
+	fi; \
+	PR="$${PR:-}"; \
+	if ! [[ "$$PR" =~ ^[0-9]+$$ ]]; then \
+	  echo "[DENY] pr.ready: PR must be a numeric pull request number"; exit 6; \
+	fi; \
+	EXPECTED="$${EXPECTED_HEAD:-}"; \
+	if ! [[ "$$EXPECTED" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] pr.ready: EXPECTED_HEAD must be a full 40-character lowercase commit SHA"; exit 7; \
+	fi; \
+	read -r ACTUAL DRAFT < <(gh pr view "$$PR" --json headRefOid,isDraft --jq "[.headRefOid, (.isDraft|tostring)] | @tsv"); \
+	if ! [[ "$$ACTUAL" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] pr.ready: live PR head is invalid"; exit 8; \
+	fi; \
+	echo "[pr.ready] expected_head=$$EXPECTED actual_head=$$ACTUAL draft=$$DRAFT"; \
+	if [ "$$ACTUAL" != "$$EXPECTED" ]; then \
+	  echo "[DENY] pr.ready: live PR head does not match EXPECTED_HEAD"; exit 9; \
+	fi; \
+	if [ "$$DRAFT" != "true" ]; then \
+	  echo "[DENY] pr.ready: PR is not draft"; exit 10; \
+	fi; \
+	echo "[pr.ready] branch=$$BR ENV=$$ENV_NAME PR=$$PR expected_head=$$EXPECTED"; \
+	gh pr ready "$$PR"; \
 	'
 
 pr.push: guard.prod.forbid

@@ -65,4 +65,5 @@ DEPLOYED=false
 - provenance/attestation 发布和签名；
 - 生产部署。
 
-现有 `release.candidate.publish` 与生产部署入口不会被原子候选流程调用。
+候选入口不会调用发布或生产部署。对外发布使用独立的、可恢复且保持候选证据
+不可变的 [`release.publish` 事务合同](release_publication_transaction_v1.md)。
