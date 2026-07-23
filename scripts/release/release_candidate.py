@@ -36,6 +36,7 @@ REQUIRED_CHECKS = (
     "professional_quality_gate",
 )
 GITEE_MAIN = "git@gitee.com:leegege/sce-product-odoo.git"
+APPROVED_ORIGIN = "https://github.com/lidefend/sce-backend-odoo.git"
 CONTRACT_FILES = (
     "make/release.mk",
     "scripts/release/immutable_candidate_build.sh",
@@ -78,14 +79,21 @@ def command_output(command: list[str]) -> str:
     return completed.stdout.strip()
 
 
-def run_logged(stage: str, command: list[str], log_path: Path, *, env: dict[str, str]) -> None:
+def run_logged(
+    stage: str,
+    command: list[str],
+    log_path: Path,
+    *,
+    env: dict[str, str],
+    cwd: Path = ROOT,
+) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a", encoding="utf-8") as log:
         log.write(f"\n[{utc_now()}] stage={stage} command={' '.join(command)}\n")
         log.flush()
         process = subprocess.Popen(
             command,
-            cwd=ROOT,
+            cwd=cwd,
             env=env,
             text=True,
             stdout=subprocess.PIPE,
@@ -293,6 +301,83 @@ def preflight_identity(
     return source_sha, source_tree, remotes, checks_head_sha, checks
 
 
+def source_repository_identity(path: Path) -> tuple[str, str]:
+    def output(*args: str) -> str:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=path,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if completed.returncode:
+            raise CandidatePipelineError(f"source repository git command failed: {' '.join(args)}")
+        return completed.stdout.strip()
+
+    if (path / ".git" / "objects" / "info" / "alternates").exists():
+        raise CandidatePipelineError("source repository must not use alternates")
+    if output("remote", "get-url", "origin") != APPROVED_ORIGIN:
+        raise CandidatePipelineError("source repository origin is not approved")
+    if output("status", "--porcelain=v1", "--untracked-files=all"):
+        raise CandidatePipelineError("source repository worktree is not clean")
+    return output("rev-parse", "HEAD"), output("rev-parse", "HEAD^{tree}")
+
+
+def prepare_source_repository(
+    artifacts: Path,
+    source_sha: str,
+    source_tree: str,
+    github_main: str,
+    *,
+    env: dict[str, str],
+) -> Path:
+    source = artifacts / "source-repository"
+    if not source.exists():
+        staging = artifacts / f".source-repository-{os.getpid()}"
+        if staging.exists():
+            raise CandidatePipelineError("source repository staging path already exists")
+        run_logged(
+            "source_repository_prepare",
+            [
+                "git",
+                "clone",
+                "--no-local",
+                "--no-tags",
+                "--single-branch",
+                "--branch",
+                "main",
+                APPROVED_ORIGIN,
+                str(staging),
+            ],
+            artifacts / "logs" / "source_repository_prepare.log",
+            env=env,
+        )
+        os.replace(staging, source)
+    actual_sha, actual_tree = source_repository_identity(source)
+    if (actual_sha, actual_tree) != (source_sha, source_tree):
+        raise CandidatePipelineError("source repository SHA/tree differs from frozen identity")
+    if github_main != source_sha:
+        raise CandidatePipelineError("source repository commit is not the approved GitHub main")
+    return source
+
+
+def validate_source_history(source: Path, artifacts: Path, *, env: dict[str, str]) -> None:
+    run_logged(
+        "history_hygiene",
+        [
+            sys.executable,
+            "scripts/verify/repository_clean_history_guard.py",
+            "--root",
+            str(source),
+            "--local-hygiene",
+        ],
+        artifacts / "logs" / "history_hygiene.log",
+        env=env,
+        cwd=source,
+    )
+
+
 def report_matches_identity(
     path: Path,
     version: str,
@@ -452,6 +537,28 @@ def main() -> int:
             ),
         )
 
+        stage = "source_repository_prepare"
+        write_state(
+            report_path,
+            state_payload(
+                version=version,
+                status="running",
+                stage=stage,
+                source_sha=source_sha,
+                source_tree=source_tree,
+                pipeline_contract=pipeline_contract,
+            ),
+        )
+        source_repository = prepare_source_repository(
+            artifacts,
+            source_sha,
+            source_tree,
+            remotes["github"],
+            env=env,
+        )
+        stage = "history_hygiene"
+        validate_source_history(source_repository, artifacts, env=env)
+
         stage = "build"
         try:
             validate_build_artifacts(
@@ -474,6 +581,7 @@ def main() -> int:
                 ],
                 artifacts / "logs" / f"{stage}.log",
                 env=env,
+                cwd=source_repository,
             )
             validate_build_artifacts(
                 artifacts,
@@ -526,6 +634,7 @@ def main() -> int:
             ],
             artifacts / "logs" / f"{stage}.log",
             env=env,
+            cwd=source_repository,
         )
 
         stage = "report"

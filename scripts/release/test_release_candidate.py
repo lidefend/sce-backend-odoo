@@ -206,6 +206,9 @@ class ReleaseCandidateReportTests(unittest.TestCase):
         self.assertNotIn("docker push", entry)
         self.assertNotIn("git tag", entry)
         self.assertNotIn("release.candidate.publish", entry)
+        self.assertIn('"--single-branch"', entry)
+        self.assertIn('"--no-local"', entry)
+        self.assertIn('"history_hygiene"', entry)
 
     def test_resume_state_names_only_failed_stage_and_evidence(self):
         payload = pipeline.state_payload(
@@ -399,6 +402,67 @@ class ReleaseCandidateReportTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(released.returncode, 0, released.stderr)
+
+    def test_clean_source_clone_is_independent_and_identity_bound(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            artifacts = Path(temporary) / VERSION
+            artifacts.mkdir()
+
+            def fake_logged(stage, command, log_path, *, env, cwd=pipeline.ROOT):
+                self.assertEqual(stage, "source_repository_prepare")
+                self.assertIn("--no-local", command)
+                self.assertIn("--single-branch", command)
+                self.assertIn("--no-tags", command)
+                self.assertEqual(command[-2], pipeline.APPROVED_ORIGIN)
+                destination = Path(command[-1])
+                (destination / ".git" / "objects" / "info").mkdir(parents=True)
+
+            with (
+                mock.patch.object(pipeline, "run_logged", side_effect=fake_logged),
+                mock.patch.object(
+                    pipeline, "source_repository_identity", return_value=(SHA, TREE)
+                ),
+            ):
+                source = pipeline.prepare_source_repository(
+                    artifacts, SHA, TREE, SHA, env={}
+                )
+            self.assertEqual(source, artifacts / "source-repository")
+            self.assertFalse((source / ".git" / "objects" / "info" / "alternates").exists())
+
+    def test_clean_source_rejects_sha_tree_and_main_drift(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            artifacts = Path(temporary)
+            source = artifacts / "source-repository"
+            source.mkdir()
+            cases = (
+                (("1" * 40, TREE), SHA, "SHA/tree differs"),
+                ((SHA, "2" * 40), SHA, "SHA/tree differs"),
+                ((SHA, TREE), "3" * 40, "approved GitHub main"),
+            )
+            for identity, github_main, message in cases:
+                with (
+                    self.subTest(identity=identity, github_main=github_main),
+                    mock.patch.object(
+                        pipeline, "source_repository_identity", return_value=identity
+                    ),
+                ):
+                    with self.assertRaisesRegex(pipeline.CandidatePipelineError, message):
+                        pipeline.prepare_source_repository(
+                            artifacts, SHA, TREE, github_main, env={}
+                        )
+
+    def test_history_hygiene_runs_inside_clean_source(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            artifacts = Path(temporary) / "artifacts"
+            source = Path(temporary) / "source"
+            artifacts.mkdir()
+            source.mkdir()
+            with mock.patch.object(pipeline, "run_logged") as logged:
+                pipeline.validate_source_history(source, artifacts, env={"ENV": "test"})
+            args, kwargs = logged.call_args
+            self.assertEqual(args[0], "history_hygiene")
+            self.assertEqual(kwargs["cwd"], source)
+            self.assertIn("--local-hygiene", args[1])
 
 
 if __name__ == "__main__":
