@@ -72,5 +72,6 @@ The following actions remain separate, explicitly approved operations:
 - provenance/attestation publication and signing;
 - production deployment.
 
-The atomic candidate flow never invokes the existing
-`release.candidate.publish` or production deployment entries.
+The candidate flow never invokes publication or production deployment.
+External publication uses the separate, resumable, candidate-immutable
+[`release.publish` transaction contract](release_publication_transaction_v1.en.md).

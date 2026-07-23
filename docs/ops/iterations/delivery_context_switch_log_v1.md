@@ -3,6 +3,19 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-24 — Immutable resumable RC publication contract
+
+- Branch: `fix/atomic-release-publication-contract`
+- Starting product commit: `378b1c49543b08e95a5f4007ada481360fd3822a`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: externally visible RC publication transaction admission and evidence custody
+- Module: release Make entry, publication orchestrator/state machine, report/plan schemas, mock contract tests, and bilingual runbook
+- Reason: replace the legacy manifest-mutating image push with a recoverable registry/tag/Release workflow that never invalidates accepted candidate evidence
+- Standard vs User-Specific: repository-wide release safety; no application, customer, runtime, or database semantics
+- Why Here / Why Not Elsewhere: P4 owns registry/SCM publication and cross-system recovery; candidate evidence, application modules, production configuration, and deployment tooling must not absorb or emulate publication state
+- Blast Radius: publication preflight, registry digest verification, GitHub/Gitee annotated tags, GitHub prerelease creation, per-version publication locking, and publication-only evidence; no real publication, deployment, production access, candidate mutation, main push, or mirror
+- Validation: candidate immutability, full preflight no-side-effect, state transitions, partial-stage resume, digest/tag/Release identity, concurrency, atomic report/index, schema, path/shell/secret safety, formal Release Contract, CI, and diff checks
+
 ## 2026-07-24 — Atomic candidate retry attempt evidence isolation
 
 - Branch: `fix/release-candidate-attempt-evidence-isolation`
