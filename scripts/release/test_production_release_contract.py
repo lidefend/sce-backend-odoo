@@ -316,6 +316,25 @@ class StaticContractTests(unittest.TestCase):
             'CONFIRMATION = "YES_INSTALL_MISSING_FORMAL_MODULES"',
             self.formal_module_install,
         )
+        self.assertIn(
+            'BACKUP_CONFIG_PATH = Path("/etc/scems/production-backup.env")',
+            self.formal_module_install,
+        )
+        self.assertIn(
+            'BACKUP_ROOT = "/data/backups/sc_production"',
+            self.formal_module_install,
+        )
+        self.assertIn(
+            "process environment backup override is forbidden",
+            self.formal_module_install,
+        )
+        backup_template = (
+            ROOT / "deploy/production-backup/production-backup.env.example"
+        ).read_text()
+        self.assertIn(
+            "BACKUP_ROOT=/data/backups/sc_production", backup_template
+        )
+        self.assertNotIn("sce-sc-production-", backup_template)
 
 
 if __name__ == "__main__":
