@@ -161,6 +161,9 @@ class StaticContractTests(unittest.TestCase):
         cls.first_fresh_cleanup = (
             ROOT / "scripts/release/production_first_fresh_cleanup.py"
         ).read_text()
+        cls.admin_harden = (
+            ROOT / "scripts/release/production_admin_harden.py"
+        ).read_text()
 
     def test_base_image_has_digest(self): self.assertRegex(self.dockerfile.splitlines()[0], r"^FROM odoo:17\.0@sha256:[0-9a-f]{64}$")
     def test_no_distribution_upgrade(self): self.assertNotRegex(self.dockerfile, r"apt(?:-get)?\s+(?:dist-upgrade|full-upgrade|upgrade)")
@@ -251,6 +254,7 @@ class StaticContractTests(unittest.TestCase):
             "release.production.module.upgrade",
             "release.production.platform.configure",
             "release.production.platform.snapshot.initialize",
+            "release.production.admin.harden",
         ):
             declaration = self.release_make.split(f"{name}:", 1)[1].splitlines()[0]
             self.assertIn("guard.prod.danger", declaration)
@@ -265,6 +269,23 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("OLD_VOLUMES = {", self.first_fresh_cleanup)
         self.assertNotIn("system prune", self.first_fresh_cleanup)
         self.assertNotIn("volume prune", self.first_fresh_cleanup)
+
+    def test_admin_harden_is_exact_scope_and_confirmation_guarded(self):
+        target = self.release_make.split(
+            "release.production.admin.harden:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("guard.prod.danger", target.splitlines()[0])
+        self.assertIn(
+            "CONFIRM_ADMIN_HARDEN=YES_HARDEN_FRESH_PRODUCTION_ADMIN is required",
+            target,
+        )
+        self.assertIn("-e SC_BOOTSTRAP_ADMIN_PASSWORD", target)
+        self.assertNotIn("FORMAL_ACCEPTANCE_PASSWORD", target)
+        self.assertNotIn("ADMIN_PASSWD", target)
+        self.assertIn('TARGET_LOGIN = "admin"', self.admin_harden)
+        self.assertIn('TARGET_DATABASE = "sc_production"', self.admin_harden)
+        self.assertIn('target.write({"password": password})', self.admin_harden)
+        self.assertNotIn(".execute(", self.admin_harden)
 
 
 if __name__ == "__main__":
