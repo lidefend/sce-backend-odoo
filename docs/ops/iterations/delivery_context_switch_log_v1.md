@@ -3,6 +3,19 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-23 — v1.0.0-rc.2 version lock
+
+- Branch: `release/v1.0.0-rc.2`
+- Starting product commit: `adfd725eda45b8f2c8c41e8b30571dfa43d7e633`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: candidate release version authority
+- Module: `VERSION` and isolated production-contract image acceptance
+- Reason: assign the next candidate version only after RELEASE-CANDIDATE-02R merged and ensure snapshot acceptance consumes the same version authority
+- Standard vs User-Specific: generic release identity; no business or customer semantics
+- Why Here / Why Not Elsewhere: `VERSION` is the formal product release source; image tags, manifests, and snapshot acceptance consume it rather than duplicating a stale literal
+- Blast Radius: next candidate image tag and release manifest version only; no production connection, database, runtime, baseline, rc.1 artifact, or application behavior change
+- Validation: product release version tests, shell syntax, generated-report guard, and PR required checks
+
 ## 2026-07-23 — RELEASE-CANDIDATE-02R
 
 - Branch: `fix/release-candidate-02r-contract`
