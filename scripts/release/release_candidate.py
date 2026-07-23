@@ -9,10 +9,10 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 from release_candidate_report import (
@@ -53,6 +53,8 @@ BUILD_OUTPUTS = (
     "reloaded-image-id.txt",
 )
 LOCK_FD_ENV = "RELEASE_CANDIDATE_LOCK_FD"
+ATTEMPT_ID_ENV = "RELEASE_CANDIDATE_ATTEMPT_ID"
+ATTEMPT_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$")
 
 
 class CandidatePipelineError(RuntimeError):
@@ -100,9 +102,12 @@ def run_logged(
             stderr=subprocess.STDOUT,
         )
         assert process.stdout is not None
-        for line in process.stdout:
-            sys.stdout.write(line)
-            log.write(line)
+        try:
+            for line in process.stdout:
+                sys.stdout.write(line)
+                log.write(line)
+        finally:
+            process.stdout.close()
         result = process.wait()
         log.write(f"[{utc_now()}] stage={stage} exit_code={result}\n")
     if result:
@@ -120,6 +125,144 @@ def validate_version(value: str) -> str:
 
 def artifact_directory(version: str) -> Path:
     return ROOT / "artifacts" / "release" / "candidates" / version
+
+
+def new_attempt_id() -> str:
+    return f"{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}-{uuid.uuid4().hex}"
+
+
+def attempt_directory(version_root: Path, attempt_id: str) -> Path:
+    if not ATTEMPT_ID.fullmatch(attempt_id):
+        raise CandidatePipelineError("attempt ID is invalid")
+    attempts = version_root / "attempts"
+    if attempts.is_symlink():
+        raise CandidatePipelineError("attempts directory must not be a symlink")
+    destination = attempts / attempt_id
+    if destination.parent != attempts:
+        raise CandidatePipelineError("attempt path escapes the version directory")
+    if destination.is_symlink():
+        raise CandidatePipelineError("attempt directory must not be a symlink")
+    return destination
+
+
+def legacy_attempt_id(report_path: Path) -> str:
+    if report_path.is_symlink():
+        raise CandidatePipelineError("legacy candidate report must not be a symlink")
+    return f"legacy-{hashlib.sha256(report_path.read_bytes()).hexdigest()[:16]}"
+
+
+def latest_index_path(version_root: Path) -> Path:
+    return version_root / "latest.json"
+
+
+def attempt_report_path(version_root: Path, attempt_id: str) -> Path:
+    return attempt_directory(version_root, attempt_id) / "release-report.json"
+
+
+def load_latest_attempt(version_root: Path) -> dict | None:
+    path = latest_index_path(version_root)
+    indexed: dict | None = None
+    if path.is_symlink():
+        raise CandidatePipelineError("candidate latest index must not be a symlink")
+    if path.is_file():
+        indexed = load_json(path, "candidate latest index")
+        relative = indexed.get("report")
+        attempt_id = indexed.get("attempt_id")
+        if not isinstance(relative, str) or relative != f"attempts/{attempt_id}/release-report.json":
+            raise CandidatePipelineError("candidate latest index report path is invalid")
+        if not attempt_report_path(version_root, str(attempt_id)).is_file():
+            raise CandidatePipelineError("candidate latest index references a missing report")
+
+    reports: list[dict] = []
+    attempts = version_root / "attempts"
+    if attempts.is_dir() and not attempts.is_symlink():
+        for child in attempts.iterdir():
+            if child.is_symlink() or not child.is_dir() or not ATTEMPT_ID.fullmatch(child.name):
+                raise CandidatePipelineError("candidate attempts directory contains an unsafe entry")
+            report_path = child / "release-report.json"
+            if report_path.is_symlink():
+                raise CandidatePipelineError("candidate attempt report must not be a symlink")
+            if report_path.is_file():
+                payload = load_json(report_path, "candidate report")
+                if payload.get("attempt_id") != child.name:
+                    raise CandidatePipelineError("candidate attempt directory/report identity differs")
+                reports.append(payload)
+    if not reports:
+        return indexed
+    numbers = [int(item["attempt_number"]) for item in reports]
+    if len(numbers) != len(set(numbers)):
+        raise CandidatePipelineError("candidate attempt sequence is ambiguous")
+    newest = max(reports, key=lambda item: int(item["attempt_number"]))
+    return {
+        "attempt_id": newest["attempt_id"],
+        "report": f"attempts/{newest['attempt_id']}/release-report.json",
+        "status": newest["status"],
+    }
+
+
+def write_latest_index(version_root: Path, report: dict) -> None:
+    attempt_id = str(report["attempt_id"])
+    atomic_write_json(
+        latest_index_path(version_root),
+        {
+            "schema_version": "release_candidate_latest.v1",
+            "version": report["source"]["product_version"],
+            "attempt_id": attempt_id,
+            "report": f"attempts/{attempt_id}/release-report.json",
+            "status": report["status"],
+            "updated_at": utc_now(),
+        },
+    )
+
+
+def select_attempt(version_root: Path, version: str, requested_attempt: str | None) -> tuple[Path, str, int, str | None, bool]:
+    """Select an immutable attempt. Only an explicit ID can resume an attempt."""
+    latest = load_latest_attempt(version_root)
+    if requested_attempt:
+        report_path = attempt_report_path(version_root, requested_attempt)
+        if report_path.is_symlink():
+            raise CandidatePipelineError("requested resume report must not be a symlink")
+        if not report_path.is_file():
+            raise CandidatePipelineError("requested resume attempt does not exist")
+        payload = load_json(report_path, "candidate report")
+        if payload.get("attempt_id") != requested_attempt:
+            raise CandidatePipelineError("requested resume attempt identity differs")
+        if (payload.get("source") or {}).get("product_version") != version:
+            raise CandidatePipelineError("requested resume version differs")
+        if payload.get("status") != "running":
+            raise CandidatePipelineError("terminal candidate attempt cannot be resumed")
+        return report_path.parent, requested_attempt, int(payload["attempt_number"]), payload.get("retry_of_attempt_id"), True
+
+    if latest:
+        latest_report = load_json(
+            attempt_report_path(version_root, str(latest["attempt_id"])),
+            "candidate report",
+        )
+        if latest_report.get("status") == "ready" and latest_report.get("CANDIDATE_READY") is True:
+            raise CandidatePipelineError("candidate version is already ready")
+        if latest_report.get("status") != "failed":
+            raise CandidatePipelineError(
+                "non-terminal candidate attempt requires explicit resume"
+            )
+        retry_of = str(latest_report["attempt_id"])
+        number = int(latest_report["attempt_number"]) + 1
+    else:
+        legacy_report = version_root / "release-report.json"
+        retry_of = None
+        number = 1
+        if legacy_report.is_file():
+            legacy = load_json(legacy_report, "legacy candidate report")
+            if legacy.get("status") == "ready" and legacy.get("CANDIDATE_READY") is True:
+                raise CandidatePipelineError("legacy candidate version is already ready")
+            if legacy.get("status") != "failed":
+                raise CandidatePipelineError("legacy candidate evidence is not terminal")
+            retry_of = legacy_attempt_id(legacy_report)
+            number = 2
+
+    attempt_id = new_attempt_id()
+    destination = attempt_directory(version_root, attempt_id)
+    destination.mkdir(parents=True, exist_ok=False)
+    return destination, attempt_id, number, retry_of, False
 
 
 def acquire_candidate_lock(artifacts: Path) -> int:
@@ -174,22 +317,20 @@ def bind_pipeline_contract(artifacts: Path, contract_sha256: str) -> None:
     atomic_write_text(path, contract_sha256 + "\n")
 
 
-def archive_failed_report(report_path: Path) -> Path | None:
-    if not report_path.is_file():
-        return None
-    payload = load_json(report_path, "candidate report")
-    if payload.get("status") != "failed":
-        return None
-    failures = report_path.parent / "failures"
-    failures.mkdir(parents=True, exist_ok=True)
-    failed_stage = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(payload.get("failed_stage") or "unknown"))
-    destination = failures / f"{time.time_ns()}-{failed_stage}.json"
-    shutil.copyfile(report_path, destination)
-    return destination
+def validate_pipeline_contract_binding(artifacts: Path, contract_sha256: str) -> None:
+    path = artifacts / "candidate-contract.sha256"
+    if not path.is_file():
+        raise CandidatePipelineError("resume candidate tool contract binding is missing")
+    if path.read_text(encoding="utf-8").strip() != contract_sha256:
+        raise CandidatePipelineError("existing candidate tool contract differs")
 
 
 def state_payload(
     *,
+    attempt_id: str,
+    attempt_number: int,
+    retry_of_attempt_id: str | None,
+    created_at: str,
     version: str,
     status: str,
     stage: str,
@@ -201,6 +342,11 @@ def state_payload(
 ) -> dict:
     return {
         "schema_version": "release_candidate_report.v1",
+        "attempt_id": attempt_id,
+        "attempt_number": attempt_number,
+        "retry_of_attempt_id": retry_of_attempt_id,
+        "created_at": created_at,
+        "finished_at": utc_now() if status in {"failed", "ready"} else None,
         "status": status,
         "CANDIDATE_READY": False,
         "source": {
@@ -333,6 +479,8 @@ def prepare_source_repository(
     env: dict[str, str],
 ) -> Path:
     source = artifacts / "source-repository"
+    if source.is_symlink():
+        raise CandidatePipelineError("source repository must not be a symlink")
     if not source.exists():
         staging = artifacts / f".source-repository-{os.getpid()}"
         if staging.exists():
@@ -380,6 +528,7 @@ def validate_source_history(source: Path, artifacts: Path, *, env: dict[str, str
 
 def report_matches_identity(
     path: Path,
+    attempt_id: str,
     version: str,
     source_sha: str,
     source_tree: str,
@@ -388,6 +537,8 @@ def report_matches_identity(
     if not path.is_file():
         return False
     payload = load_json(path, "candidate report")
+    if payload.get("attempt_id") != attempt_id:
+        raise CandidatePipelineError("existing candidate report attempt ID differs")
     source = payload.get("source") or {}
     if source.get("product_version") != version:
         raise CandidatePipelineError("existing candidate report version differs")
@@ -407,6 +558,10 @@ def finalize_candidate(
     artifacts: Path,
     report_path: Path,
     *,
+    attempt_id: str,
+    attempt_number: int,
+    retry_of_attempt_id: str | None,
+    created_at: str,
     source_sha: str,
     source_tree: str,
     version: str,
@@ -429,6 +584,10 @@ def finalize_candidate(
         required_checks=checks,
         required_checks_head_sha=checks_head_sha,
         image_architecture=architecture,
+        attempt_id=attempt_id,
+        attempt_number=attempt_number,
+        retry_of_attempt_id=retry_of_attempt_id,
+        created_at=created_at,
     )
     write_ready_outputs(report_path, ready)
 
@@ -442,43 +601,96 @@ def main() -> int:
     if environment not in {"dev", "test"}:
         raise SystemExit("RELEASE_CANDIDATE_BLOCKED: ENV must be dev or test")
 
-    artifacts = artifact_directory(version)
-    report_path = artifacts / "release-report.json"
+    version_root = artifact_directory(version)
+    if version_root.is_symlink():
+        raise SystemExit("RELEASE_CANDIDATE_BLOCKED: version directory must not be a symlink")
     try:
-        lock_descriptor = acquire_candidate_lock(artifacts)
+        lock_descriptor = acquire_candidate_lock(version_root)
     except CandidatePipelineError as exc:
         print(f"RELEASE_CANDIDATE_BLOCKED: {exc}", file=sys.stderr)
         return exc.exit_code
-    if artifacts.exists() and not report_path.is_file():
-        raise SystemExit(
-            f"RELEASE_CANDIDATE_BLOCKED: pre-existing unowned artifact directory: {artifacts}"
+    requested_attempt = os.environ.get(ATTEMPT_ID_ENV)
+    try:
+        artifacts, attempt_id, attempt_number, retry_of_attempt_id, resuming = select_attempt(
+            version_root, version, requested_attempt
         )
-    artifacts.mkdir(parents=True, exist_ok=True)
-    previous_ready = False
-    if report_path.is_file():
+    except (CandidatePipelineError, CandidateReportError, OSError, KeyError, ValueError) as exc:
+        print(f"RELEASE_CANDIDATE_BLOCKED: {exc}", file=sys.stderr)
+        return getattr(exc, "exit_code", 1)
+    report_path = artifacts / "release-report.json"
+    created_at = utc_now()
+    if resuming:
         existing = load_json(report_path, "candidate report")
-        previous_ready = (
-            existing.get("status") == "ready"
-            and existing.get("CANDIDATE_READY") is True
-        )
-        if not previous_ready:
-            archive_failed_report(report_path)
+        created_at = str(existing["created_at"])
     source_sha: str | None = None
     source_tree: str | None = None
     pipeline_contract: str | None = None
     stage = "main_sync"
     env = dict(os.environ)
     synchronized = env.get("RELEASE_CANDIDATE_MAIN_SYNCED") == "1"
+    resume_identity_verified = False
+    existing_contract: str | None = None
+
+    def payload(status: str, current_stage: str, **extra: object) -> dict:
+        return state_payload(
+            attempt_id=attempt_id,
+            attempt_number=attempt_number,
+            retry_of_attempt_id=retry_of_attempt_id,
+            created_at=created_at,
+            version=version,
+            status=status,
+            stage=current_stage,
+            source_sha=source_sha,
+            source_tree=source_tree,
+            pipeline_contract=pipeline_contract,
+            **extra,
+        )
+
+    def persist(state: dict) -> None:
+        write_state(report_path, state)
+        write_latest_index(version_root, state)
+
+    def finalize(
+        current_source_sha: str,
+        current_source_tree: str,
+        current_pipeline_contract: str,
+        remotes: dict[str, str],
+        checks_head_sha: str,
+        checks: dict[str, str],
+    ) -> None:
+        finalize_candidate(
+            artifacts,
+            report_path,
+            attempt_id=attempt_id,
+            attempt_number=attempt_number,
+            retry_of_attempt_id=retry_of_attempt_id,
+            created_at=created_at,
+            source_sha=current_source_sha,
+            source_tree=current_source_tree,
+            version=version,
+            pipeline_contract=current_pipeline_contract,
+            remotes=remotes,
+            checks_head_sha=checks_head_sha,
+            checks=checks,
+        )
+        write_latest_index(version_root, load_json(report_path, "candidate report"))
 
     try:
+        if resuming and not synchronized:
+            raise CandidatePipelineError(
+                "resume requires the already-synchronized attempt process"
+            )
+        if resuming:
+            pipeline_contract = pipeline_contract_sha256()
+            existing_source = (load_json(report_path, "candidate report").get("source") or {})
+            existing_contract = existing_source.get("pipeline_contract_sha256")
+            if existing_contract not in (None, pipeline_contract):
+                raise CandidatePipelineError("existing candidate report tool contract differs")
+
         if not synchronized:
             if command_output(["git", "status", "--porcelain=v1", "--untracked-files=all"]):
                 raise CandidatePipelineError("release workspace must be clean before main.sync")
-            if not previous_ready:
-                write_state(
-                    report_path,
-                    state_payload(version=version, status="running", stage=stage),
-                )
+            persist(payload("running", stage))
             run_logged(
                 stage,
                 ["make", "--no-print-directory", "main.sync"],
@@ -490,6 +702,7 @@ def main() -> int:
             # main candidate after main.sync changes the worktree contents.
             env["RELEASE_CANDIDATE_MAIN_SYNCED"] = "1"
             env[LOCK_FD_ENV] = str(lock_descriptor)
+            env[ATTEMPT_ID_ENV] = attempt_id
             os.execve(
                 sys.executable,
                 [
@@ -504,51 +717,29 @@ def main() -> int:
         stage = "identity"
         source_sha, source_tree, remotes, checks_head_sha, checks = preflight_identity(version)
         pipeline_contract = pipeline_contract_sha256()
-        bind_pipeline_contract(artifacts, pipeline_contract)
-        if report_matches_identity(
+        if resuming and existing_contract is not None:
+            validate_pipeline_contract_binding(artifacts, pipeline_contract)
+        else:
+            bind_pipeline_contract(artifacts, pipeline_contract)
+        already_ready = report_matches_identity(
             report_path,
+            attempt_id,
             version,
             source_sha,
             source_tree,
             pipeline_contract,
-        ):
-            finalize_candidate(
-                artifacts,
-                report_path,
-                source_sha=source_sha,
-                source_tree=source_tree,
-                version=version,
-                pipeline_contract=pipeline_contract,
-                remotes=remotes,
-                checks_head_sha=checks_head_sha,
-                checks=checks,
-            )
+        )
+        resume_identity_verified = True
+        if already_ready:
+            finalize(source_sha, source_tree, pipeline_contract, remotes, checks_head_sha, checks)
             print(f"[release.candidate] CANDIDATE_READY=true evidence={report_path}")
             return 0
-        write_state(
-            report_path,
-            state_payload(
-                version=version,
-                status="running",
-                stage=stage,
-                source_sha=source_sha,
-                source_tree=source_tree,
-                pipeline_contract=pipeline_contract,
-            ),
-        )
+        if not resuming:
+            persist(payload("running", stage))
 
         stage = "source_repository_prepare"
-        write_state(
-            report_path,
-            state_payload(
-                version=version,
-                status="running",
-                stage=stage,
-                source_sha=source_sha,
-                source_tree=source_tree,
-                pipeline_contract=pipeline_contract,
-            ),
-        )
+        if not resuming:
+            persist(payload("running", stage))
         source_repository = prepare_source_repository(
             artifacts,
             source_sha,
@@ -556,6 +747,8 @@ def main() -> int:
             remotes["github"],
             env=env,
         )
+        if resuming:
+            persist(payload("running", stage))
         stage = "history_hygiene"
         validate_source_history(source_repository, artifacts, env=env)
 
@@ -590,32 +783,12 @@ def main() -> int:
                 expected_version=version,
                 expected_pipeline_contract=pipeline_contract,
             )
-        write_state(
-            report_path,
-            state_payload(
-                version=version,
-                status="running",
-                stage="scan_sbom",
-                source_sha=source_sha,
-                source_tree=source_tree,
-                pipeline_contract=pipeline_contract,
-            ),
-        )
+        persist(payload("running", "scan_sbom"))
 
         # If a previous attempt completed scan/SBOM but stopped while emitting
         # the report, finish from those verified artifacts without rescanning.
         try:
-            finalize_candidate(
-                artifacts,
-                report_path,
-                source_sha=source_sha,
-                source_tree=source_tree,
-                version=version,
-                pipeline_contract=pipeline_contract,
-                remotes=remotes,
-                checks_head_sha=checks_head_sha,
-                checks=checks,
-            )
+            finalize(source_sha, source_tree, pipeline_contract, remotes, checks_head_sha, checks)
             print("[release.candidate] resume: validated scan/SBOM artifacts; scan skipped")
             print(f"[release.candidate] CANDIDATE_READY=true evidence={report_path}")
             return 0
@@ -638,34 +811,23 @@ def main() -> int:
         )
 
         stage = "report"
-        finalize_candidate(
-            artifacts,
-            report_path,
-            source_sha=source_sha,
-            source_tree=source_tree,
-            version=version,
-            pipeline_contract=pipeline_contract,
-            remotes=remotes,
-            checks_head_sha=checks_head_sha,
-            checks=checks,
-        )
+        finalize(source_sha, source_tree, pipeline_contract, remotes, checks_head_sha, checks)
         print(f"[release.candidate] CANDIDATE_READY=true evidence={report_path}")
         return 0
     except (CandidatePipelineError, CandidateReportError, OSError, KeyError) as exc:
-        if not previous_ready:
-            write_state(
-                report_path,
-                state_payload(
-                    version=version,
-                    status="failed",
-                    stage=stage,
-                    source_sha=source_sha,
-                    source_tree=source_tree,
-                    pipeline_contract=pipeline_contract,
-                    error=str(exc),
-                    exit_code=getattr(exc, "exit_code", 1),
-                ),
+        # A resume identity mismatch must leave the existing attempt immutable.
+        if not resuming or resume_identity_verified:
+            failed = payload(
+                "failed",
+                stage,
+                error=str(exc),
+                exit_code=getattr(exc, "exit_code", 1),
             )
+            write_state(report_path, failed)
+            try:
+                write_latest_index(version_root, failed)
+            except (CandidateReportError, OSError, KeyError, ValueError):
+                pass
         print(
             f"[release.candidate] FAILED stage={stage} evidence={report_path}: {exc}",
             file=sys.stderr,

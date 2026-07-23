@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `3289`
 - Files requiring split plan: `34`
-- Files above warning threshold: `51`
+- Files above warning threshold: `52`
 
 ## Split Plan Required
 
@@ -92,6 +92,7 @@ Generated from repository source files. This report is informational during the 
 | 862 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
+| 839 | Python source | `scripts/release/release_candidate.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 827 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 825 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
@@ -184,9 +185,9 @@ Generated from repository source files. This report is informational during the 
 | 862 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 845 | warning | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | warning | Python source | `scripts/verify/contract_evidence_guard.py` |
+| 839 | warning | Python source | `scripts/release/release_candidate.py` |
 | 828 | warning | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 827 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
-| 825 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 
 ## Interpretation
 
