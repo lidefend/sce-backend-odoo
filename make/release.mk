@@ -9,7 +9,7 @@ RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RE
 
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
-.PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden
+.PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.formal_modules.install_missing
 
 verify.release.guard: verify.repository.release_hygiene
 	@SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) python3 scripts/release/rehearsal_guard.py
@@ -24,7 +24,7 @@ verify.release.tooling:
 	@$(MAKE) --no-print-directory verify.production.release_contract
 
 verify.production.release_contract:
-	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
 	@python3 addons/smart_core/tests/test_platform_database_contract.py
 	@python3 scripts/release/test_candidate_scan_contract.py
 	@python3 scripts/release/test_product_release.py
@@ -32,6 +32,7 @@ verify.production.release_contract:
 	@python3 scripts/release/test_production_compose_contract.py
 	@python3 scripts/release/test_production_db_init.py
 	@python3 scripts/release/test_production_admin_harden.py
+	@python3 scripts/release/test_production_formal_module_install.py
 	@python3 scripts/release/test_production_first_fresh_cleanup.py
 	@python3 scripts/release/test_production_release_contract.py
 	@python3 scripts/release/test_production_colocated_release.py
@@ -144,6 +145,15 @@ release.production.admin.harden: guard.prod.danger release.production.compose.pr
 			python3 /usr/local/bin/render_odoo_conf.py /etc/odoo/odoo.conf.template "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}"; \
 			exec odoo shell -c "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}" -d "$${TARGET_DB}"' \
 		< scripts/release/production_admin_harden.py
+
+release.production.formal_modules.install_missing: guard.prod.danger release.production.compose.preflight
+	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)
+	@test "$(TARGET_DB)" = "sc_production" || (echo "TARGET_DB must be sc_production"; exit 2)
+	@test "$(CONFIRM_FORMAL_MODULE_INSTALL)" = "YES_INSTALL_MISSING_FORMAL_MODULES" || \
+		(echo "CONFIRM_FORMAL_MODULE_INSTALL=YES_INSTALL_MISSING_FORMAL_MODULES is required"; exit 2)
+	@ENV="$(ENV)" PROD_DANGER="$${PROD_DANGER:-}" TARGET_DB="$(TARGET_DB)" \
+		CONFIRM_FORMAL_MODULE_INSTALL="$(CONFIRM_FORMAL_MODULE_INSTALL)" \
+		python3 scripts/release/production_formal_module_install.py execute
 
 release.rehearsal.prepare: verify.release.guard
 	@mkdir -p $(RELEASE_ARTIFACTS)/backup $(RELEASE_ARTIFACTS)/fingerprints

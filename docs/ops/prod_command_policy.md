@@ -36,6 +36,8 @@ Makefile guards and script-level guards.
 - `make audit.project.actions`
 - `make prod.upgrade.core`
 - `make history.production.fresh_init`
+- `make release.production.formal_modules.install_missing` (requires the exact
+  `CONFIRM_FORMAL_MODULE_INSTALL=YES_INSTALL_MISSING_FORMAL_MODULES` contract)
 - `make legacy_attachment.custody_marker.backfill.prod`
 - `make policy.restore.formal_product_menu`
 - `make smoke.business_full`

@@ -67,6 +67,7 @@ Codex 在生产协助模式下可以执行：
   - `make mod.install`
   - `make mod.upgrade`
   - `make prod.upgrade.core`
+  - `make release.production.formal_modules.install_missing`
 - 生产服务重启：
   - `make restart`
   - `make prod.restart.safe`

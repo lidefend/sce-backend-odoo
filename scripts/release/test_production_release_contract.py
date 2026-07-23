@@ -164,6 +164,12 @@ class StaticContractTests(unittest.TestCase):
         cls.admin_harden = (
             ROOT / "scripts/release/production_admin_harden.py"
         ).read_text()
+        cls.formal_module_install = (
+            ROOT / "scripts/release/production_formal_module_install.py"
+        ).read_text()
+        cls.production_command_policy = (
+            ROOT / "docs/ops/prod_command_policy.md"
+        ).read_text()
 
     def test_base_image_has_digest(self): self.assertRegex(self.dockerfile.splitlines()[0], r"^FROM odoo:17\.0@sha256:[0-9a-f]{64}$")
     def test_no_distribution_upgrade(self): self.assertNotRegex(self.dockerfile, r"apt(?:-get)?\s+(?:dist-upgrade|full-upgrade|upgrade)")
@@ -255,6 +261,7 @@ class StaticContractTests(unittest.TestCase):
             "release.production.platform.configure",
             "release.production.platform.snapshot.initialize",
             "release.production.admin.harden",
+            "release.production.formal_modules.install_missing",
         ):
             declaration = self.release_make.split(f"{name}:", 1)[1].splitlines()[0]
             self.assertIn("guard.prod.danger", declaration)
@@ -286,6 +293,29 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn('TARGET_DATABASE = "sc_production"', self.admin_harden)
         self.assertIn('target.write({"password": password})', self.admin_harden)
         self.assertNotIn(".execute(", self.admin_harden)
+
+    def test_formal_module_closure_has_a_dedicated_production_contract(self):
+        target = self.release_make.split(
+            "release.production.formal_modules.install_missing:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("guard.prod.danger", target.splitlines()[0])
+        self.assertIn(
+            "CONFIRM_FORMAL_MODULE_INSTALL=YES_INSTALL_MISSING_FORMAL_MODULES is required",
+            target,
+        )
+        self.assertIn(
+            "production_formal_module_install.py execute",
+            target,
+        )
+        self.assertNotIn("TARGET_MODULE=", target)
+        self.assertIn(
+            "release.production.formal_modules.install_missing",
+            self.production_command_policy,
+        )
+        self.assertIn(
+            'CONFIRMATION = "YES_INSTALL_MISSING_FORMAL_MODULES"',
+            self.formal_module_install,
+        )
 
 
 if __name__ == "__main__":
