@@ -15,6 +15,10 @@ from odoo.addons.smart_core.handlers.route_authority_validate import RouteAuthor
 
 @tagged("post_install", "-at_install", "user_data_boundary")
 class TestProjectMemberRoleSurface(TransactionCase):
+    SYSTEM_ADMIN_MENU_XMLIDS = {
+        "smart_construction_core.menu_ui_menu_config_policy_business_config",
+    }
+
     def _resolver(self):
         resolver = IdentityResolver()
         resolver._role_groups_explicit = ROLE_GROUPS_EXPLICIT
@@ -64,7 +68,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
                 self.assertTrue(surface["primary_menu_xmlids"] or surface["role_home_menu_xmlids"])
 
     def test_primary_navigation_policy_is_explicit_and_identifier_only(self):
-        for role in ("finance", "project_member", "pm", "owner", "business_config_admin"):
+        for role in ("finance", "project_member", "pm", "owner", "business_config_admin", "system_admin"):
             with self.subTest(role=role):
                 policy = ROLE_SURFACE_OVERRIDES[role]
                 exposed = set(policy.get("primary_menu_xmlids") or []) | set(policy.get("role_home_menu_xmlids") or [])
@@ -72,6 +76,123 @@ class TestProjectMemberRoleSurface(TransactionCase):
                 denied = set(policy.get("denied_menu_xmlids") or [])
                 self.assertFalse(exposed & denied)
                 self.assertTrue(all(xmlid.startswith("smart_construction_core.menu_") for xmlid in exposed | denied))
+
+    def test_system_admin_navigation_exposes_only_approved_admin_entry(self):
+        resolver = self._resolver()
+        surface = resolver.build_role_surface(
+            {"smart_core.group_smart_core_admin"},
+            [],
+            {"workspace.home"},
+            ROLE_SURFACE_OVERRIDES,
+        )
+        self.assertEqual(surface["role_code"], "system_admin")
+        self.assertTrue(surface["exposure_policy_declared"])
+        self.assertFalse(surface["deny_all_navigation"])
+        self.assertEqual(set(surface["admin_menu_xmlids"]), self.SYSTEM_ADMIN_MENU_XMLIDS)
+        self.assertFalse(surface["primary_menu_xmlids"])
+        self.assertFalse(surface["role_home_menu_xmlids"])
+
+        approved_xmlid = next(iter(self.SYSTEM_ADMIN_MENU_XMLIDS))
+        unapproved_xmlid = "smart_construction_core.menu_sc_project_project"
+        native = [{
+            "xmlid": "smart_construction_core.menu_sc_root",
+            "label": "智能施工 2.0",
+            "menu_id": 10,
+            "children": [
+                {
+                    "xmlid": approved_xmlid,
+                    "label": "菜单配置",
+                    "menu_id": 11,
+                    "action_id": 21,
+                    "model": "ui.menu.config.policy",
+                    "route": "/a/21?menu_id=11",
+                    "meta": {
+                        "menu_xmlid": approved_xmlid,
+                        "action_id": 21,
+                        "model": "ui.menu.config.policy",
+                        "route": "/a/21?menu_id=11",
+                    },
+                },
+                {
+                    "xmlid": unapproved_xmlid,
+                    "label": "项目列表",
+                    "menu_id": 12,
+                    "action_id": 22,
+                    "model": "project.project",
+                    "route": "/a/22?menu_id=12",
+                    "meta": {
+                        "menu_xmlid": unapproved_xmlid,
+                        "action_id": 22,
+                        "model": "project.project",
+                        "route": "/a/22?menu_id=12",
+                    },
+                },
+            ],
+        }]
+        policy = {"menu_groups": [{
+            "group_key": "platform.config",
+            "group_label": "配置中心",
+            "menus": [
+                {
+                    "menu_key": "approved",
+                    "label": "菜单配置",
+                    "menu_id": 11,
+                    "action_id": 21,
+                    "menu_xmlid": approved_xmlid,
+                    "model": "ui.menu.config.policy",
+                    "route": "/a/21?menu_id=11",
+                    "release_state": "released",
+                },
+                {
+                    "menu_key": "unapproved",
+                    "label": "项目列表",
+                    "menu_id": 12,
+                    "action_id": 22,
+                    "menu_xmlid": unapproved_xmlid,
+                    "model": "project.project",
+                    "route": "/a/22?menu_id=12",
+                    "release_state": "released",
+                },
+            ],
+        }]}
+        runtime_surface = {**surface, "is_platform_admin": True}
+
+        nav = MenuService().build_nav(
+            policy=policy,
+            role_surface=runtime_surface,
+            native_nav=native,
+        )
+
+        self.assertEqual(len(nav), 1)
+        self.assertEqual(len(nav[0].get("children") or []), 1)
+        visible_leaves = [
+            child
+            for group in nav[0].get("children") or []
+            for child in group.get("children") or []
+        ]
+        self.assertEqual(
+            {
+                child.get("menu_xmlid") or child.get("meta", {}).get("menu_xmlid")
+                for child in visible_leaves
+            },
+            self.SYSTEM_ADMIN_MENU_XMLIDS,
+        )
+        self.assertEqual(len(visible_leaves), 1)
+        self.assertEqual(visible_leaves[0]["route"], "/a/21?menu_id=11")
+        self.assertNotIn(
+            unapproved_xmlid,
+            {
+                child.get("menu_xmlid") or child.get("meta", {}).get("menu_xmlid")
+                for child in visible_leaves
+            },
+        )
+        self.assertEqual(
+            MenuService._filter_primary_delivery_nodes(
+                nav[0].get("children") or [],
+                {"exposure_policy_declared": True},
+            ),
+            [],
+        )
 
     def test_primary_native_projection_rebuilds_ancestors_and_fails_closed(self):
         nodes = [{
