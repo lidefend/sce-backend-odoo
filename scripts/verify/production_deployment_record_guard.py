@@ -139,9 +139,9 @@ def _check_record(path: Path) -> list[str]:
     if is_full_tree_release:
         required_full_tree_tokens = [
             "production_git_authority_guard: PASS",
-            "HEAD=origin/main=",
+            "HEAD=live_remote_main=EXPECTED_RELEASE_SHA=",
             "git status --short: clean",
-            "skip-worktree",
+            "https://github.com/lidefend/sce-backend-odoo.git",
         ]
         for token in required_full_tree_tokens:
             if token not in text:

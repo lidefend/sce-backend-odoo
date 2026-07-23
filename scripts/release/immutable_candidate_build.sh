@@ -72,6 +72,18 @@ source_tree_sha="$(git rev-parse "${source_sha}^{tree}")"
 node_version="v22.17.0-build-only"
 pnpm_version="9.12.3-build-only"
 runtime_base="odoo:17.0@sha256:f88f646a0f5fc0b225995ee28953d9ce7367cc731b1756765114691fb97d18e5"
+frontend_base="$(awk '$1 == "FROM" {print $2; exit}' Dockerfile.production-frontend-builder)"
+[[ "$frontend_base" =~ @sha256:[0-9a-f]{64}$ ]] || {
+  echo "[candidate.build] frontend builder base must be digest pinned" >&2
+  exit 2
+}
+frontend_base_digest="${frontend_base##*@}"
+runtime_base_digest="${runtime_base##*@}"
+baseline_checksum="$(awk 'NF {print $1; exit}' scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256)"
+[[ "$baseline_checksum" =~ ^[0-9a-f]{64}$ ]] || {
+  echo "[candidate.build] formal baseline checksum is invalid" >&2
+  exit 2
+}
 python_version="$(docker run --rm --entrypoint python3 "$runtime_base" --version | awk '{print $2}')"
 module_matrix="$(python3 scripts/release/product_module_matrix.py --json)"
 
@@ -140,6 +152,8 @@ IMAGE="$image" SHA_IMAGE="$sha_image" IMAGE_ID="$image_id" SOURCE_SHA="$source_s
 SOURCE_TREE_SHA="$source_tree_sha" PRODUCT_VERSION="$product_version" FRONTEND_HASH="$frontend_hash" \
 BUILD_TIME="$build_time" ODOO_VERSION="$odoo_version" PYTHON_VERSION="$image_python" \
 NODE_VERSION="$node_version" PNPM_VERSION="$pnpm_version" ARCHIVE_SHA="$archive_sha" \
+FRONTEND_BASE_DIGEST="$frontend_base_digest" RUNTIME_BASE_DIGEST="$runtime_base_digest" \
+BASELINE_CHECKSUM="$baseline_checksum" \
 MODULE_MATRIX_JSON="$module_matrix" \
 python3 - <<'PY'
 import json, os
@@ -157,6 +171,11 @@ payload = {
     "image_tags": [os.environ["IMAGE"], os.environ["SHA_IMAGE"]],
     "image_id": os.environ["IMAGE_ID"],
     "image_digest": os.environ["IMAGE_ID"],
+    "base_image_digests": {
+        "frontend_builder": os.environ["FRONTEND_BASE_DIGEST"],
+        "odoo_runtime": os.environ["RUNTIME_BASE_DIGEST"],
+    },
+    "baseline_checksum": os.environ["BASELINE_CHECKSUM"],
     "frontend_build_sha256": os.environ["FRONTEND_HASH"],
     "build_time": os.environ["BUILD_TIME"],
     "versions": {

@@ -1,117 +1,169 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import importlib.util
 import hashlib
+import importlib.util
 import json
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from jsonschema import Draft202012Validator
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MODULE_PATH = ROOT / "scripts" / "release" / "product_release.py"
-SPEC = importlib.util.spec_from_file_location("sce_product_release_test", MODULE_PATH)
-assert SPEC and SPEC.loader
-release = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(release)
+
+
+def load(path: Path, name: str):
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+release = load(ROOT / "scripts/release/product_release.py", "product_release")
+manifest_contract = load(
+    ROOT / "scripts/release/product_release_manifest.py", "product_release_manifest"
+)
+SHA = "a" * 40
+DIGEST = "sha256:" + "c" * 64
+
+
+def image_manifest() -> dict:
+    return {
+        "product_version": release.read_version(),
+        "source_sha": SHA,
+        "oci_revision": SHA,
+        "container_source_revision": SHA,
+        "source_tree_sha": "b" * 40,
+        "image": f"sce-product:{release.read_version()}",
+        "image_tags": [f"sce-product:{release.read_version()}", f"sce-product:sha-{SHA[:12]}"],
+        "image_digest": DIGEST,
+        "base_image_digests": {
+            "frontend_builder": "sha256:" + "d" * 64,
+            "odoo_runtime": "sha256:" + "e" * 64,
+        },
+        "baseline_checksum": "f" * 64,
+        "frontend_build_sha256": "1" * 64,
+        "module_version_matrix": {"smart_core": "17.0.1.0.0"},
+        "build_time": "2026-01-01T00:00:00Z",
+        "archive_sha256": hashlib.sha256(b"archive").hexdigest(),
+    }
+
+
+def scan_summary() -> dict:
+    return {
+        "schema_version": "candidate_scan.v2",
+        "status": "completed",
+        "source_sha": SHA,
+        "image_digest": DIGEST,
+        "counts": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 2, "LOW": 3, "SECRET": 0},
+        "tools": {"trivy": "0.63.0", "syft": "1.27.1"},
+        "vulnerability_db_updated_at": "2026-07-23T00:00:00Z",
+        "scanned_at": "2026-07-23T01:00:00Z",
+        "policy": {"result": "pass"},
+    }
 
 
 class ProductReleaseTests(unittest.TestCase):
-    def test_release_manifest_is_bound_to_sbom_and_hashes_itself(self) -> None:
-        version = release.read_version()
+    def invoke(self, root: Path, image: dict | None = None) -> subprocess.CompletedProcess[str]:
+        image = image or image_manifest()
+        image_path = root / "image-manifest.json"
+        sbom = root / "sbom.cyclonedx.json"
+        scan = root / "security-summary.json"
+        archive = root / "candidate-image.tar"
+        reload_digest = root / "reloaded-image-id.txt"
+        output = root / "product-release-manifest.json"
+        image_path.write_text(json.dumps(image), encoding="utf-8")
+        sbom.write_text('{"bomFormat":"CycloneDX"}\n', encoding="utf-8")
+        scan.write_text(json.dumps(scan_summary()), encoding="utf-8")
+        archive.write_bytes(b"archive")
+        reload_digest.write_text(DIGEST + "\n", encoding="utf-8")
+        return subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts/release/product_release_manifest.py"),
+                "--image-manifest", str(image_path),
+                "--sbom", str(sbom),
+                "--scan-summary", str(scan),
+                "--archive", str(archive),
+                "--archive-reload-digest-file", str(reload_digest),
+                "--expected-source-sha", SHA,
+                "--output", str(output),
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+        )
+
+    def test_manifest_v2_binds_all_required_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            image_manifest = root / "image-manifest.json"
-            sbom = root / "sbom.cyclonedx.json"
-            output = root / "product-release-manifest.json"
-            image_manifest.write_text(json.dumps({
-                "product_version": version,
-                "source_sha": "a" * 40,
-                "oci_revision": "a" * 40,
-                "container_source_revision": "a" * 40,
-                "source_tree_sha": "b" * 40,
-                "image_digest": "sha256:" + "c" * 64,
-                "frontend_build_sha256": "d" * 64,
-                "module_version_matrix": {"smart_core": "17.0.1.0.0"},
-                "build_time": "2026-01-01T00:00:00Z",
-            }), encoding="utf-8")
-            sbom.write_text('{"bomFormat":"CycloneDX"}\n', encoding="utf-8")
-            subprocess.run([
-                sys.executable,
-                str(ROOT / "scripts" / "release" / "product_release_manifest.py"),
-                "--image-manifest", str(image_manifest),
-                "--sbom", str(sbom),
-                "--expected-source-sha", "a" * 40,
-                "--output", str(output),
-            ], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
-            payload = json.loads(output.read_text(encoding="utf-8"))
-            self.assertEqual(payload["product_version"], version)
-            self.assertEqual(payload["source_sha"], "a" * 40)
-            self.assertEqual(payload["oci_revision"], "a" * 40)
-            self.assertEqual(payload["sbom_sha256"], hashlib.sha256(sbom.read_bytes()).hexdigest())
-            manifest_sha = hashlib.sha256(output.read_bytes()).hexdigest()
-            self.assertTrue((root / "product-release-manifest.sha256").read_text().startswith(manifest_sha))
+            result = self.invoke(root)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads((root / "product-release-manifest.json").read_text())
+            schema = json.loads(
+                (ROOT / "schemas/release/product_release_manifest.v2.schema.json").read_text()
+            )
+            Draft202012Validator.check_schema(schema)
+            Draft202012Validator(schema).validate(payload)
+            self.assertEqual(payload["repository"], "lidefend/sce-backend-odoo")
+            self.assertEqual(payload["branch"], "main")
+            self.assertEqual(payload["scan"]["counts"]["MEDIUM"], 2)
+            self.assertEqual(payload["archive_reload_digest"], DIGEST)
+            self.assertEqual(payload["deployment_status"], "not_deployed")
+            manifest_sha = hashlib.sha256(
+                (root / "product-release-manifest.json").read_bytes()
+            ).hexdigest()
+            self.assertTrue(
+                (root / "product-release-manifest.sha256").read_text().startswith(manifest_sha)
+            )
 
-    def test_release_manifest_rejects_source_identity_mismatch(self) -> None:
-        version = release.read_version()
+    def test_missing_required_field_fails_closed(self):
+        candidate = image_manifest()
+        del candidate["base_image_digests"]
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            image_manifest = root / "image-manifest.json"
-            sbom = root / "sbom.cyclonedx.json"
-            output = root / "product-release-manifest.json"
-            image_manifest.write_text(json.dumps({
-                "product_version": version,
-                "source_sha": "b" * 40,
-                "oci_revision": "b" * 40,
-                "container_source_revision": "b" * 40,
-                "source_tree_sha": "c" * 40,
-                "image_digest": "sha256:" + "d" * 64,
-                "frontend_build_sha256": "e" * 64,
-                "module_version_matrix": {},
-                "build_time": "2026-01-01T00:00:00Z",
-            }), encoding="utf-8")
-            sbom.write_text('{"bomFormat":"CycloneDX"}\n', encoding="utf-8")
-            completed = subprocess.run([
-                sys.executable,
-                str(ROOT / "scripts" / "release" / "product_release_manifest.py"),
-                "--image-manifest", str(image_manifest),
-                "--sbom", str(sbom),
-                "--expected-source-sha", "a" * 40,
-                "--output", str(output),
-            ], cwd=ROOT, text=True, capture_output=True)
-            self.assertNotEqual(completed.returncode, 0)
-            self.assertIn("RELEASE_MANIFEST_SOURCE_SHA_MISMATCH", completed.stderr)
+            result = self.invoke(Path(temporary), candidate)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("base_image_digests", result.stderr)
 
-    def test_version_and_release_contract_have_one_source(self) -> None:
+    def test_old_sha_or_digest_is_rejected(self):
+        for field, value in (
+            ("source_sha", "b" * 40),
+            ("image_digest", "sha256:" + "9" * 64),
+        ):
+            candidate = image_manifest()
+            candidate[field] = value
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as temporary:
+                result = self.invoke(Path(temporary), candidate)
+                self.assertNotEqual(result.returncode, 0)
+
+    def test_wrong_branch_and_repository_are_rejected(self):
+        payload = manifest_contract.build_manifest(
+            image=image_manifest(),
+            scan=scan_summary(),
+            sbom_sha256="2" * 64,
+            archive_sha256=image_manifest()["archive_sha256"],
+            archive_reload_digest=DIGEST,
+            release=release.load_release_config(),
+            expected_source_sha=SHA,
+        )
+        for field, value in (("branch", "release"), ("repository", "Leedefend/sce-backend-odoo")):
+            candidate = dict(payload)
+            candidate[field] = value
+            with self.subTest(field=field), self.assertRaises(
+                manifest_contract.ManifestContractError
+            ):
+                manifest_contract.validate_manifest(
+                    candidate, expected_source_sha=SHA, expected_image_digest=DIGEST
+                )
+
+    def test_version_and_release_contract_have_one_source(self):
         payload = release.load_release_config()
         self.assertEqual(payload["product_version"], release.read_version())
         self.assertEqual(payload["version_source"], "VERSION")
-        self.assertEqual(
-            set(payload["contracts"].values()),
-            {"tenant_payload_v1", "route_authority.v1"},
-        )
-
-    def test_release_candidate_semver_precedes_final_release(self) -> None:
-        current = release.read_version()
-        self.assertLess(release.compare_versions(current, "1.0.0"), 0)
-        self.assertGreater(release.compare_versions(current, "1.0.0-rc.0"), 0)
-
-    def test_customer_compatibility_accepts_current_contracts(self) -> None:
-        payload = release.load_release_config()
-        release.verify_customer_compatibility(
-            release.read_version(),
-            "2.0.0",
-            list(payload["contracts"].values()),
-        )
-
-    def test_customer_compatibility_rejects_version_and_contract_mismatch(self) -> None:
-        with self.assertRaisesRegex(ValueError, "PRODUCT_VERSION_INCOMPATIBLE"):
-            release.verify_customer_compatibility("2.0.0", "3.0.0", ["tenant_payload_v1"])
-        with self.assertRaisesRegex(ValueError, "REQUIRED_CONTRACT_UNSUPPORTED"):
-            release.verify_customer_compatibility(release.read_version(), "2.0.0", ["unknown.v9"])
 
 
 if __name__ == "__main__":

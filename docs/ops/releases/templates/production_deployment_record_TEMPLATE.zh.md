@@ -180,7 +180,7 @@ where name='smart_construction_demo';
 Production Git authority evidence for `full tree` releases:
 
 ```bash
-PRODUCTION_GIT_AUTHORITY_REQUIRE_ENV_SKIP=1 \
+EXPECTED_RELEASE_SHA=<approved-full-40-char-main-sha> \
   make verify.production_git.authority.guard
 ```
 
@@ -190,10 +190,13 @@ PRODUCTION_GIT_AUTHORITY_REQUIRE_ENV_SKIP=1 \
   "status": "PASS",
   "branch": "main",
   "head": "<production-head-sha>",
-  "remote_head": "<origin-main-sha>",
+  "expected_release_sha": "<approved-full-40-char-main-sha>",
+  "live_remote_main_sha": "<github-live-main-sha>",
+  "remote_url": "https://github.com/lidefend/sce-backend-odoo.git",
   "status_porcelain": "",
-  "remote_auth_ok": true,
-  "env_file_skip_worktree": true
+  "detached_head": false,
+  "live_remote_query_ok": true,
+  "stale_remote_ref_detected": false
 }
 ```
 

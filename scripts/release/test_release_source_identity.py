@@ -51,7 +51,31 @@ def image_manifest() -> dict:
 
 
 def release_manifest() -> dict:
-    return {"source_sha": SHA, "oci_revision": SHA, "image_digest": DIGEST}
+    return {
+        "schema_version": "product_release_manifest.v2",
+        "repository": "lidefend/sce-backend-odoo",
+        "branch": "main",
+        "source_sha": SHA,
+        "oci_revision": SHA,
+        "container_source_revision": SHA,
+        "image_digest": DIGEST,
+        "archive_sha256": "c" * 64,
+        "archive_reload_digest": DIGEST,
+        "baseline_checksum": "d" * 64,
+        "base_image_digests": {
+            "frontend_builder": "sha256:" + "e" * 64,
+            "odoo_runtime": "sha256:" + "f" * 64,
+        },
+        "scan": {
+            "status": "completed",
+            "source_sha": SHA,
+            "image_digest": DIGEST,
+            "counts": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 1, "LOW": 2, "SECRET": 0},
+            "policy": {"result": "pass"},
+        },
+        "candidate_status": "rc",
+        "deployment_status": "not_deployed",
+    }
 
 
 class RepositoryIdentityTests(unittest.TestCase):
@@ -139,6 +163,28 @@ class ArtifactIdentityTests(unittest.TestCase):
                 container_revision=SHA,
                 actual_image_digest=DIGEST,
             )
+
+    def test_incomplete_manifest_or_scan_fails_closed(self):
+        for mutation in ("missing_medium", "wrong_repository", "missing_archive"):
+            candidate = release_manifest()
+            if mutation == "missing_medium":
+                del candidate["scan"]["counts"]["MEDIUM"]
+            elif mutation == "wrong_repository":
+                candidate["repository"] = "Leedefend/sce-backend-odoo"
+            else:
+                candidate.pop("archive_sha256")
+            with self.subTest(mutation=mutation), self.assertRaises(
+                identity.ReleaseIdentityError
+            ):
+                identity.validate_artifact_identity(
+                    expected_sha=SHA,
+                    expected_image_digest=DIGEST,
+                    image_manifest=image_manifest(),
+                    release_manifest=candidate,
+                    oci_revision=SHA,
+                    container_revision=SHA,
+                    actual_image_digest=DIGEST,
+                )
 
     def test_image_digest_mismatch_is_rejected(self):
         with self.assertRaisesRegex(identity.ReleaseIdentityError, "actual image digest"):
