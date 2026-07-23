@@ -485,3 +485,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns deployed-tool provenance and operational evidence; rc.4 and the P1/P2 identity policy remain immutable inputs and cannot establish host-tool custody
 - Blast Radius: each dry-run/apply now fails before database queries unless its safe UTC run ID, evidence filename, 40-character source SHA, versioned path, deployment marker, metadata, script digest, and release Make digest agree; v3 JSON binds execution/tool/target identity and a non-self-referential canonical payload digest
 - Validation: missing/invalid/mismatched run ID and source identity, metadata and file-digest drift, pre-query failure ordering, path traversal/symlink/existing-file rejection, exact 0600 atomic output, canonical digest recomputation and tamper detection, v2 read-only/plan/fingerprint regressions, apply confirmation/rollback/idempotency, release contracts, and standard CI
+
+## 2026-07-23 — Atomic RC candidate workflow
+
+- Branch: `refactor/atomic-release-candidate`
+- Starting product commit: `99953f4964f2ead1f8f69fa56f1cbef3680216ce`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: atomic RC candidate orchestration, local immutable scan identity, and machine-readable readiness evidence
+- Module: `make/release.mk`, `scripts/release`, and the paired atomic-flow runbook
+- Reason: replace repeated conversational build/scan/SBOM approvals with one fail-closed repository entry while retaining separate publication and production approvals
+- Standard vs User-Specific: generic repository release automation; no business or customer semantics
+- Why Here / Why Not Elsewhere: P4 owns build and release evidence; application modules, frontend, and runtime configuration must not own delivery-state orchestration
+- Blast Radius: pre-publication candidate build, scan, SBOM, retry, and reporting only; no registry push, Git tag, Release publication, deployment, production connection, or database write
+- Validation: local/published scan identity tests, schema positive/negative cases, failure injection and preserved evidence, resume identity/tool-contract mismatch, per-version concurrency lock, report integrity, release contract, shell/static checks, and formal CI
