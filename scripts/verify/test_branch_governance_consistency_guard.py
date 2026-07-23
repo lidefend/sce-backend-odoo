@@ -196,5 +196,107 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
         self.assertNotIn("--auto", arguments)
 
 
+class ControlledReadyExpectedHeadTests(unittest.TestCase):
+    def run_ready(
+        self,
+        *,
+        expected_head: str | None,
+        actual_head: str = FULL_SHA,
+        is_draft: str = "true",
+    ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            ready_log = root / "ready.log"
+            git = bin_dir / "git"
+            git.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                "if [[ \"$1 $2 $3\" == \"rev-parse --abbrev-ref HEAD\" ]]; then\n"
+                "  printf '%s\\n' 'fix/atomic-release-publication-contract'\n"
+                "else\n"
+                "  echo \"unexpected git invocation: $*\" >&2\n"
+                "  exit 90\n"
+                "fi\n",
+                encoding="utf-8",
+            )
+            gh = bin_dir / "gh"
+            gh.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                "if [[ \"$1 $2\" == \"pr view\" ]]; then\n"
+                "  printf '%s\\t%s\\n' \"${FAKE_ACTUAL_HEAD:?}\" \"${FAKE_IS_DRAFT:?}\"\n"
+                "elif [[ \"$1 $2\" == \"pr ready\" ]]; then\n"
+                "  printf '%s\\n' \"$@\" >\"${FAKE_READY_LOG:?}\"\n"
+                "else\n"
+                "  echo \"unexpected gh invocation: $*\" >&2\n"
+                "  exit 91\n"
+                "fi\n",
+                encoding="utf-8",
+            )
+            git.chmod(0o755)
+            gh.chmod(0o755)
+            environment = dict(os.environ)
+            environment.update(
+                {
+                    "ENV": "test",
+                    "PATH": f"{bin_dir}:{environment['PATH']}",
+                    "FAKE_ACTUAL_HEAD": actual_head,
+                    "FAKE_IS_DRAFT": is_draft,
+                    "FAKE_READY_LOG": str(ready_log),
+                }
+            )
+            command = ["make", "--no-print-directory", "pr.ready", "PR=34"]
+            if expected_head is not None:
+                command.append(f"EXPECTED_HEAD={expected_head}")
+            completed = subprocess.run(
+                command,
+                cwd=ROOT,
+                env=environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            arguments = (
+                ready_log.read_text(encoding="utf-8").splitlines()
+                if ready_log.exists()
+                else []
+            )
+            return completed, arguments
+
+    def test_missing_or_invalid_expected_head_is_rejected(self) -> None:
+        for value in (None, "abc123", "g" * 40, FULL_SHA + ";touch /tmp/x"):
+            with self.subTest(value=value):
+                completed, arguments = self.run_ready(expected_head=value)
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertIn("EXPECTED_HEAD must be", completed.stdout)
+                self.assertEqual(arguments, [])
+
+    def test_live_head_mismatch_is_rejected_without_ready_write(self) -> None:
+        completed, arguments = self.run_ready(
+            expected_head=FULL_SHA,
+            actual_head=OTHER_SHA,
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn(f"expected_head={FULL_SHA} actual_head={OTHER_SHA}", completed.stdout)
+        self.assertEqual(arguments, [])
+
+    def test_non_draft_pr_is_rejected_without_ready_write(self) -> None:
+        completed, arguments = self.run_ready(
+            expected_head=FULL_SHA,
+            is_draft="false",
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("PR is not draft", completed.stdout)
+        self.assertEqual(arguments, [])
+
+    def test_matching_draft_head_uses_ready_command_once(self) -> None:
+        completed, arguments = self.run_ready(expected_head=FULL_SHA)
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertEqual(arguments, ["pr", "ready", "34"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -244,6 +244,9 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("PR_DRAFT ?= 0", codex_make)
         self.assertIn('1) draft_arg="--draft"', codex_make)
         self.assertIn("PR_DRAFT must be 0 or 1", codex_make)
+        self.assertIn("pr.ready: guard.prod.forbid", codex_make)
+        self.assertIn("live PR head does not match EXPECTED_HEAD", codex_make)
+        self.assertIn('gh pr ready "$$PR"', codex_make)
     def test_init_cleanup_is_not_exposed_as_general_management_action(self):
         actions = self.manager.split('case "$ACTION" in', 1)[1].split(") ;;", 1)[0]
         self.assertNotIn("drop", actions)
