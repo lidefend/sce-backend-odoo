@@ -162,6 +162,9 @@ PR_DRAFT ?= 0
 PR_MERGE_METHOD ?= squash
 PR_MERGE_SUBJECT ?=
 PR_MERGE_BODY ?= Merged by Codex through make pr.merge.
+EXPECTED_HEAD ?=
+
+export PR PR_MERGE_METHOD PR_MERGE_SUBJECT PR_MERGE_BODY EXPECTED_HEAD
 
 pr.create: guard.prod.forbid
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
@@ -218,7 +221,7 @@ pr.push: guard.prod.forbid
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
 pr.merge: guard.prod.forbid
-	@bash -lc '\
+	@bash -c '\
 	set -euo pipefail; \
 	BR="$$(git rev-parse --abbrev-ref HEAD)"; \
 	if ! echo "$$BR" | grep -Eq "$(CODEX_ALLOWED_WRITE_BRANCH_REGEX)"; then \
@@ -235,15 +238,32 @@ pr.merge: guard.prod.forbid
 	  echo "[DENY] pr.merge: gh CLI not found"; exit 5; \
 	fi; \
 	PR="$${PR:-}"; \
-	if [ -z "$$PR" ]; then \
-	  echo "[DENY] pr.merge: missing PR=<number>"; exit 6; \
+	if ! [[ "$$PR" =~ ^[0-9]+$$ ]]; then \
+	  echo "[DENY] pr.merge: PR must be a numeric pull request number"; exit 6; \
 	fi; \
-	METHOD="$(PR_MERGE_METHOD)"; \
+	EXPECTED="$${EXPECTED_HEAD:-}"; \
+	if ! [[ "$$EXPECTED" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] pr.merge: EXPECTED_HEAD must be a full 40-character lowercase commit SHA"; exit 7; \
+	fi; \
+	METHOD="$${PR_MERGE_METHOD:-squash}"; \
 	case "$$METHOD" in merge|squash|rebase) ;; *) echo "[DENY] pr.merge: invalid PR_MERGE_METHOD=$$METHOD"; exit 7 ;; esac; \
-	SUBJECT="$(PR_MERGE_SUBJECT)"; \
+	if ! gh pr merge --help | grep -q -- "--match-head-commit"; then \
+	  echo "[DENY] pr.merge: gh CLI lacks --match-head-commit support"; exit 8; \
+	fi; \
+	ACTUAL="$$(gh pr view "$$PR" --json headRefOid --jq .headRefOid)"; \
+	if ! [[ "$$ACTUAL" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] pr.merge: live PR head is invalid"; exit 9; \
+	fi; \
+	echo "[pr.merge] expected_head=$$EXPECTED actual_head=$$ACTUAL"; \
+	if [ "$$ACTUAL" != "$$EXPECTED" ]; then \
+	  echo "[DENY] pr.merge: live PR head does not match EXPECTED_HEAD"; exit 10; \
+	fi; \
+	SUBJECT="$${PR_MERGE_SUBJECT:-}"; \
 	if [ -z "$$SUBJECT" ]; then SUBJECT="Merge PR #$$PR"; fi; \
-	echo "[pr.merge] branch=$$BR ENV=$$ENV_NAME PR=$$PR method=$$METHOD"; \
-	gh pr merge "$$PR" "--$$METHOD" --subject "$$SUBJECT" --body "$(PR_MERGE_BODY)"; \
+	BODY="$${PR_MERGE_BODY:-Merged by Codex through make pr.merge.}"; \
+	MERGE_ARGS=("$$PR" "--$$METHOD" "--match-head-commit" "$$EXPECTED" "--subject" "$$SUBJECT" "--body" "$$BODY"); \
+	echo "[pr.merge] branch=$$BR ENV=$$ENV_NAME PR=$$PR method=$$METHOD expected_head=$$EXPECTED"; \
+	gh pr merge "$${MERGE_ARGS[@]}"; \
 	'
 
 pr.status:
