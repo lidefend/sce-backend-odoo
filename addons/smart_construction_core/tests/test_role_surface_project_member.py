@@ -8,6 +8,7 @@ from odoo.addons.smart_construction_core.core_extension_policy_maps import (
     ROLE_PRECEDENCE,
     ROLE_SURFACE_OVERRIDES,
 )
+from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
 from odoo.addons.smart_core.delivery.menu_service import MenuService
 from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
 from odoo.addons.smart_core.handlers.route_authority_validate import RouteAuthorityValidateHandler
@@ -26,6 +27,36 @@ class TestProjectMemberRoleSurface(TransactionCase):
         resolver._role_precedence = ROLE_PRECEDENCE
         resolver._role_surface_map = {**resolver._role_surface_map, **ROLE_SURFACE_OVERRIDES}
         return resolver
+
+    @staticmethod
+    def _iter_renderable_leaves(nodes):
+        for node in nodes or []:
+            if not isinstance(node, dict):
+                continue
+            children = node.get("children") if isinstance(node.get("children"), list) else []
+            if children:
+                yield from TestProjectMemberRoleSurface._iter_renderable_leaves(children)
+                continue
+            meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+            if any(
+                node.get(field) or meta.get(field)
+                for field in ("route", "scene_key", "action_id", "model")
+            ):
+                yield node
+
+    @staticmethod
+    def _leaf_xmlid(node):
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        return str(node.get("menu_xmlid") or node.get("xmlid") or meta.get("menu_xmlid") or "")
+
+    def _register_test_xmlid(self, record, name):
+        self.env["ir.model.data"].create({
+            "module": "smart_construction_core",
+            "name": name,
+            "model": record._name,
+            "res_id": record.id,
+        })
+        return f"smart_construction_core.{name}"
 
     def test_role_matrix_uses_authoritative_groups(self):
         resolver = self._resolver()
@@ -100,32 +131,52 @@ class TestProjectMemberRoleSurface(TransactionCase):
             "menu_id": 10,
             "children": [
                 {
-                    "xmlid": approved_xmlid,
-                    "label": "菜单配置",
+                    "xmlid": "x.deep.approved.wrapper.one",
+                    "label": "批准一级包装",
                     "menu_id": 11,
-                    "action_id": 21,
-                    "model": "ui.menu.config.policy",
-                    "route": "/a/21?menu_id=11",
-                    "meta": {
-                        "menu_xmlid": approved_xmlid,
-                        "action_id": 21,
-                        "model": "ui.menu.config.policy",
-                        "route": "/a/21?menu_id=11",
-                    },
+                    "children": [{
+                        "xmlid": "x.deep.approved.wrapper.two",
+                        "label": "批准二级包装",
+                        "menu_id": 15,
+                        "children": [{
+                            "xmlid": approved_xmlid,
+                            "label": "菜单配置",
+                            "menu_id": 16,
+                            "action_id": 21,
+                            "model": "ui.menu.config.policy",
+                            "route": "/a/21?menu_id=16",
+                            "meta": {
+                                "menu_xmlid": approved_xmlid,
+                                "action_id": 21,
+                                "model": "ui.menu.config.policy",
+                                "route": "/a/21?menu_id=16",
+                            },
+                        }],
+                    }],
                 },
                 {
-                    "xmlid": unapproved_xmlid,
-                    "label": "项目列表",
+                    "xmlid": "x.deep.wrapper.one",
+                    "label": "一级包装",
                     "menu_id": 12,
-                    "action_id": 22,
-                    "model": "project.project",
-                    "route": "/a/22?menu_id=12",
-                    "meta": {
-                        "menu_xmlid": unapproved_xmlid,
-                        "action_id": 22,
-                        "model": "project.project",
-                        "route": "/a/22?menu_id=12",
-                    },
+                    "children": [{
+                        "xmlid": "x.deep.wrapper.two",
+                        "label": "二级包装",
+                        "menu_id": 13,
+                        "children": [{
+                            "xmlid": unapproved_xmlid,
+                            "label": "项目列表",
+                            "menu_id": 14,
+                            "action_id": 22,
+                            "model": "project.project",
+                            "route": "/a/22?menu_id=14",
+                            "meta": {
+                                "menu_xmlid": unapproved_xmlid,
+                                "action_id": 22,
+                                "model": "project.project",
+                                "route": "/a/22?menu_id=14",
+                            },
+                        }],
+                    }],
                 },
             ],
         }]
@@ -136,11 +187,11 @@ class TestProjectMemberRoleSurface(TransactionCase):
                 {
                     "menu_key": "approved",
                     "label": "菜单配置",
-                    "menu_id": 11,
+                    "menu_id": 16,
                     "action_id": 21,
                     "menu_xmlid": approved_xmlid,
                     "model": "ui.menu.config.policy",
-                    "route": "/a/21?menu_id=11",
+                    "route": "/a/21?menu_id=16",
                     "release_state": "released",
                 },
                 {
@@ -163,28 +214,23 @@ class TestProjectMemberRoleSurface(TransactionCase):
             native_nav=native,
         )
 
+        pre_filter_leaves = list(self._iter_renderable_leaves(native))
+        self.assertEqual(
+            {self._leaf_xmlid(node) for node in pre_filter_leaves},
+            {approved_xmlid, unapproved_xmlid},
+        )
         self.assertEqual(len(nav), 1)
         self.assertEqual(len(nav[0].get("children") or []), 1)
-        visible_leaves = [
-            child
-            for group in nav[0].get("children") or []
-            for child in group.get("children") or []
-        ]
+        visible_leaves = list(self._iter_renderable_leaves(nav))
         self.assertEqual(
-            {
-                child.get("menu_xmlid") or child.get("meta", {}).get("menu_xmlid")
-                for child in visible_leaves
-            },
+            {self._leaf_xmlid(child) for child in visible_leaves},
             self.SYSTEM_ADMIN_MENU_XMLIDS,
         )
         self.assertEqual(len(visible_leaves), 1)
-        self.assertEqual(visible_leaves[0]["route"], "/a/21?menu_id=11")
+        self.assertEqual(visible_leaves[0]["route"], "/a/21?menu_id=16")
         self.assertNotIn(
             unapproved_xmlid,
-            {
-                child.get("menu_xmlid") or child.get("meta", {}).get("menu_xmlid")
-                for child in visible_leaves
-            },
+            {self._leaf_xmlid(child) for child in visible_leaves},
         )
         self.assertEqual(
             MenuService._filter_primary_delivery_nodes(
@@ -193,6 +239,119 @@ class TestProjectMemberRoleSurface(TransactionCase):
             ),
             [],
         )
+
+    def test_system_admin_formal_menu_fact_chain_enforces_group_action_and_model_acl(self):
+        Users = self.env["res.users"].with_context(no_reset_password=True)
+        base_group = self.env.ref("base.group_user")
+        admin_group = self.env.ref("smart_core.group_smart_core_admin")
+        denied_group = self.env["res.groups"].create({"name": "Menu Fact Denied Group"})
+        user = Users.create({
+            "name": "Menu Fact System Admin",
+            "login": "menu.fact.system.admin",
+            "groups_id": [(6, 0, [base_group.id, admin_group.id])],
+        })
+        user_env = self.env(user=user)
+        approved_menu = self.env.ref(next(iter(self.SYSTEM_ADMIN_MENU_XMLIDS)))
+
+        allowed_action = self.env["ir.actions.act_window"].create({
+            "name": "Menu Fact Group Allowed",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+        })
+        allowed_menu = self.env["ir.ui.menu"].create({
+            "name": "Menu Fact Group Allowed",
+            "action": f"ir.actions.act_window,{allowed_action.id}",
+            "groups_id": [(6, 0, [admin_group.id])],
+        })
+        allowed_xmlid = self._register_test_xmlid(allowed_menu, "menu_test_fact_group_allowed")
+
+        denied_action = self.env["ir.actions.act_window"].create({
+            "name": "Menu Fact Group Denied",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+        })
+        denied_menu = self.env["ir.ui.menu"].create({
+            "name": "Menu Fact Group Denied",
+            "action": f"ir.actions.act_window,{denied_action.id}",
+            "groups_id": [(6, 0, [denied_group.id])],
+        })
+        denied_xmlid = self._register_test_xmlid(denied_menu, "menu_test_fact_group_denied")
+
+        acl_denied_action = self.env["ir.actions.act_window"].create({
+            "name": "Menu Fact ACL Denied",
+            "res_model": "ir.config_parameter",
+            "view_mode": "tree,form",
+        })
+        acl_denied_menu = self.env["ir.ui.menu"].create({
+            "name": "Menu Fact ACL Denied",
+            "action": f"ir.actions.act_window,{acl_denied_action.id}",
+        })
+        acl_denied_xmlid = self._register_test_xmlid(
+            acl_denied_menu,
+            "menu_test_fact_model_acl_denied",
+        )
+
+        missing_action = self.env["ir.actions.act_window"].create({
+            "name": "Menu Fact Missing Action",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+        })
+        missing_action_menu = self.env["ir.ui.menu"].create({
+            "name": "Menu Fact Missing Action",
+            "action": f"ir.actions.act_window,{missing_action.id}",
+        })
+        missing_action_xmlid = self._register_test_xmlid(
+            missing_action_menu,
+            "menu_test_fact_missing_action",
+        )
+        missing_action.unlink()
+
+        self.assertIn(allowed_menu.id, user_env["ir.ui.menu"]._visible_menu_ids())
+        self.assertNotIn(denied_menu.id, user_env["ir.ui.menu"]._visible_menu_ids())
+        self.assertFalse(
+            user_env["ir.config_parameter"].check_access_rights("read", raise_exception=False)
+        )
+        self.assertNotIn(acl_denied_menu.id, user_env["ir.ui.menu"]._visible_menu_ids())
+        self.assertTrue(missing_action_menu.exists())
+        self.assertNotIn(missing_action_menu.id, user_env["ir.ui.menu"]._visible_menu_ids())
+
+        facts = MenuFactService(user_env).export_visible_menu_facts()
+        facts_by_xmlid = {
+            str(row.get("menu_xmlid") or ""): row
+            for row in facts.flat
+            if str(row.get("menu_xmlid") or "")
+        }
+        approved_fact = facts_by_xmlid[next(iter(self.SYSTEM_ADMIN_MENU_XMLIDS))]
+        self.assertEqual(approved_fact["menu_id"], approved_menu.id)
+        self.assertTrue(approved_fact["action_exists"])
+        self.assertEqual(approved_fact["action_meta"]["res_model"], "ui.menu.config.policy")
+        self.assertIn(allowed_xmlid, facts_by_xmlid)
+        self.assertTrue(facts_by_xmlid[allowed_xmlid]["action_exists"])
+        self.assertNotIn(denied_xmlid, facts_by_xmlid)
+        self.assertNotIn(acl_denied_xmlid, facts_by_xmlid)
+        self.assertNotIn(missing_action_xmlid, facts_by_xmlid)
+
+        surface = self._resolver().build_role_surface(
+            {"smart_core.group_smart_core_admin"},
+            [],
+            {"workspace.home"},
+            ROLE_SURFACE_OVERRIDES,
+        )
+        nav = MenuService(user_env).build_nav(
+            policy={},
+            role_surface={**surface, "is_platform_admin": True},
+            native_nav=[],
+        )
+        visible_leaves = list(self._iter_renderable_leaves(nav))
+        self.assertEqual(
+            {self._leaf_xmlid(node) for node in visible_leaves},
+            self.SYSTEM_ADMIN_MENU_XMLIDS,
+        )
+        self.assertEqual(len(visible_leaves), 1)
+        self.assertTrue(str(visible_leaves[0].get("route") or "").startswith("/a/"))
+        self.assertNotIn(denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
+        self.assertNotIn(acl_denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
+        self.assertNotIn(missing_action_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
 
     def test_primary_native_projection_rebuilds_ancestors_and_fails_closed(self):
         nodes = [{
