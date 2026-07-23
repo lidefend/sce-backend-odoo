@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3291`
+- Scanned files: `3294`
 - Files requiring split plan: `34`
-- Files above warning threshold: `53`
+- Files above warning threshold: `54`
 
 ## Split Plan Required
 
@@ -77,6 +77,7 @@ Generated from repository source files. This report is informational during the 
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1135 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
+| 1108 | Python source | `scripts/release/production_backup_restore.py` |
 | 1093 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1092 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1058 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
@@ -167,6 +168,7 @@ Generated from repository source files. This report is informational during the 
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1135 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
+| 1108 | warning | Python source | `scripts/release/production_backup_restore.py` |
 | 1107 | within_budget | XML data/view | `addons/smart_construction_core/views/menu_business_taxonomy.xml` |
 | 1093 | warning | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1092 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
@@ -188,7 +190,6 @@ Generated from repository source files. This report is informational during the 
 | 845 | warning | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | warning | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 839 | warning | Python source | `scripts/release/release_candidate.py` |
-| 828 | warning | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 
 ## Interpretation
 

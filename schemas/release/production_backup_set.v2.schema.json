@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "production_backup_set.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract_version",
+    "backup_set_id",
+    "status",
+    "created_at",
+    "compose_project",
+    "database",
+    "database_container",
+    "filestore_source",
+    "tool_source_sha",
+    "encryption_status",
+    "retention_days",
+    "checksums",
+    "sizes",
+    "table_counts",
+    "attachment_sample",
+    "module_versions",
+    "filestore_digest",
+    "backup_pair_verified",
+    "secret_values_exposed"
+  ],
+  "properties": {
+    "schema_version": {"const": 2},
+    "contract_version": {"const": "production_backup_restore.v1"},
+    "backup_set_id": {
+      "type": "string",
+      "pattern": "^sc_production-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$"
+    },
+    "status": {"const": "complete"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "compose_project": {"const": "sc_production"},
+    "database": {"const": "sc_production"},
+    "database_container": {"const": "sc_production-db-1"},
+    "filestore_source": {"const": "/opt/sce-runtime/filestore/sc_production"},
+    "tool_source_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "encryption_status": {
+      "enum": ["encrypted_at_rest", "external_encryption_verified", "not_encrypted"]
+    },
+    "retention_days": {"type": "integer", "minimum": 1, "maximum": 3650},
+    "checksums": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["database.dump", "filestore.tar.gz", "deployment-metadata.json"],
+      "properties": {
+        "database.dump": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "filestore.tar.gz": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "deployment-metadata.json": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "sizes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["database.dump", "filestore.tar.gz", "deployment-metadata.json"],
+      "properties": {
+        "database.dump": {"type": "integer", "minimum": 1},
+        "filestore.tar.gz": {"type": "integer", "minimum": 1},
+        "deployment-metadata.json": {"type": "integer", "minimum": 1}
+      }
+    },
+    "table_counts": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": -1}
+    },
+    "attachment_sample": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {"type": "string"}
+    },
+    "module_versions": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "filestore_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "backup_pair_verified": {"const": true},
+    "secret_values_exposed": {"const": false}
+  }
+}
