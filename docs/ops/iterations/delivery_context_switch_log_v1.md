@@ -433,3 +433,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: the paired backup implementation owns artifact creation, integrity, permissions, and atomic publication; installation orchestration only consumes a strictly accepted recovery point and must not repair it afterward
 - Blast Radius: new recovery points use an in-root `0700` incomplete directory, four `0600` artifacts, relative three-file SHA-256 inventory, structure validation, additive schema-v1 manifest evidence, fsync and atomic rename; legacy manifest validation remains readable
 - Validation: caller umask `0022`/`0000`, exact modes/owners, checksum inventory and tampering, missing/empty/symlink artifacts, dump/filestore/manifest/structure/permission/checksum failure cleanup, path escape and time ordering, old-manifest compatibility, backup-before-single-install order, release contracts, and standard CI
+
+## 2026-07-23 — First Fresh Production Administrator Identity Baseline Tool
+
+- Branch: `fix/production-admin-identity-baseline`
+- Starting commit: `19e1c3766c56641adac9a911eb53709a618a0e13`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: guarded, versioned repair of the sole first-production administrator's missing authoritative role relation
+- Module: production release Make entry, identity-baseline runner, focused contract tests, and production command policy
+- Reason: the fresh `sc_production` administrator is an active internal user but resolves to `restricted/no_authoritative_role`, so the unchanged security policy correctly denies all navigation
+- Standard vs User-Specific: one first-production control-plane repair; no customer preference, company initialization, application behavior, menu definition, demo data, or historical data
+- Why Here / Why Not Elsewhere: P4 owns explicit production mutation authorization and evidence; the P1 identity resolver and P2 role policy remain the facts consumed by the tool and are not weakened or duplicated
+- Blast Radius: at apply time only the missing `smart_core.group_smart_core_admin` relation may be appended to the unique active internal `admin`; password, login, company, allowed companies, products, menus, modules, and business data are immutable
+- Validation: dry-run zero writes, exact database/user/current-role/XML-ID guards, 10/10 modules and zero pending operations, conflicting-role rejection, explicit apply confirmation, transactional postcondition, idempotent NOOP, redacted atomic evidence, nonempty navigation projection, and release contract tests

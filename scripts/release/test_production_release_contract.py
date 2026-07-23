@@ -164,6 +164,9 @@ class StaticContractTests(unittest.TestCase):
         cls.admin_harden = (
             ROOT / "scripts/release/production_admin_harden.py"
         ).read_text()
+        cls.admin_identity_baseline = (
+            ROOT / "scripts/release/production_admin_identity_baseline.py"
+        ).read_text()
         cls.formal_module_install = (
             ROOT / "scripts/release/production_formal_module_install.py"
         ).read_text()
@@ -261,6 +264,7 @@ class StaticContractTests(unittest.TestCase):
             "release.production.platform.configure",
             "release.production.platform.snapshot.initialize",
             "release.production.admin.harden",
+            "release.production.admin_identity.baseline",
             "release.production.formal_modules.install_missing",
         ):
             declaration = self.release_make.split(f"{name}:", 1)[1].splitlines()[0]
@@ -293,6 +297,44 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn('TARGET_DATABASE = "sc_production"', self.admin_harden)
         self.assertIn('target.write({"password": password})', self.admin_harden)
         self.assertNotIn(".execute(", self.admin_harden)
+
+    def test_admin_identity_baseline_is_canonical_and_confirmation_guarded(self):
+        target = self.release_make.split(
+            "release.production.admin_identity.baseline:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("guard.prod.danger", target.splitlines()[0])
+        self.assertIn(
+            "CONFIRM_ADMIN_IDENTITY_BASELINE="
+            "YES_APPLY_FRESH_PRODUCTION_ADMIN_IDENTITY_BASELINE is required",
+            target,
+        )
+        self.assertIn(
+            "release.production.admin_identity.baseline",
+            self.production_command_policy,
+        )
+        self.assertIn(
+            'CANONICAL_ROLE_XMLIDS = ("smart_core.group_smart_core_admin",)',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            'EXPECTED_CURRENT_EVIDENCE = "no_authoritative_role"',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            'target.write(',
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            '"groups_id"',
+            self.admin_identity_baseline,
+        )
+        self.assertNotIn(".execute(", self.admin_identity_baseline)
+        self.assertNotIn("base.group_system", self.admin_identity_baseline)
+        self.assertNotIn("group_sc_super_admin", self.admin_identity_baseline)
+        self.assertIn(
+            "ADMIN_IDENTITY_BASELINE_MODE ?= dry-run",
+            self.release_make,
+        )
 
     def test_formal_module_closure_has_a_dedicated_production_contract(self):
         target = self.release_make.split(
