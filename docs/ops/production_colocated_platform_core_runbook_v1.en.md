@@ -16,30 +16,63 @@ Never create a production `sc_platform_core`, copy development platform data, in
 4. Verify read-only that `smart_core` is installed, product policies exist, and record the current snapshot and data baseline.
 5. Verify Nginx remains locked to `sc_production` and client database inputs cannot alter registry selection.
 
-## Paired backup and validation
+## Governed installation, triple backup, and validation
 
-Install `scripts/release/production_colocated_backup.py` and the `deploy/production-backup/` templates through a separately authorized operations change, then run:
+Do not bootstrap production with direct `scp`, `install`, or `systemctl`
+commands. From an approved, clean `main` whose GitHub and Gitee identities
+match, run the read-only preflight and then the separately authorized atomic
+installer:
 
 ```bash
-python3 /opt/ops/production_colocated_backup.py backup
-python3 /opt/ops/production_colocated_backup.py validate --backup-dir <immutable-backup-directory>
+ENV=prod PRODUCTION_COMPOSE_PROJECT=sc_production TARGET_DB=sc_production \
+BACKUP_TOOL_SOURCE_SHA=<approved-main-sha> EXPECTED_LIVE_MAIN_SHA=<same-sha> \
+BACKUP_ENCRYPTION_STATUS=<verified-policy> BACKUP_RETENTION_DAYS=<days> \
+make production.backup.install.preflight
+
+ENV=prod PROD_DANGER=1 PRODUCTION_COMPOSE_PROJECT=sc_production \
+TARGET_DB=sc_production BACKUP_TOOL_SOURCE_SHA=<approved-main-sha> \
+EXPECTED_LIVE_MAIN_SHA=<same-sha> \
+BACKUP_ENCRYPTION_STATUS=<verified-policy> BACKUP_RETENTION_DAYS=<days> \
+CONFIRM_BACKUP_TOOL_INSTALL=YES_INSTALL_GOVERNED_BACKUP_TOOL \
+make production.backup.install
+
+ENV=prod PROD_DANGER=1 \
+CONFIRM_PRODUCTION_BACKUP=YES_CREATE_SC_PRODUCTION_TRIPLE_BACKUP \
+make production.backup.run
 ```
 
-The tool rejects targets other than `sc_production`, creates a new timestamped directory without overwriting old backups, and validates database identity, non-empty files, the dump catalog, and SHA-256 checksums. Database and filestore are always paired.
+The installer preserves old files, hashes, permissions, and timer state. It
+rolls back when offline unit verification fails and keeps the timer stopped
+after a successful installation until a manual backup and restore rehearsal
+both pass. Every immutable set atomically binds the `sc_production` database,
+its filestore, and sanitized deployment metadata. A non-blocking identity lock
+rejects concurrent runs; incomplete sets are never valid recovery points.
 
 ## Isolated restore drill
 
-Restore PostgreSQL and Odoo containers must differ from formal containers. The new database must use the `r10e_restore_*` namespace and must not already exist:
+The restore entry creates its own internal network, database volume, filestore
+volume, and container namespace. It never joins production networks, mounts
+production volumes, or connects to production PostgreSQL. Odoo starts with no
+egress and zero cron, using `--stop-after-init` as the health gate:
 
 ```bash
-RESTORE_DB_CONTAINER=<isolated-postgres> \
-RESTORE_ODOO_CONTAINER=<isolated-odoo> \
-RESTORE_TARGET_DB=r10e_restore_<run_id> \
-python3 /opt/ops/production_colocated_backup.py restore-drill \
-  --backup-dir <immutable-backup-directory>
+ENV=prod PROD_DANGER=1 \
+BACKUP_DIR=/data/backups/sc_production/<backup-set-id> \
+RESTORE_ID=sc_restore_<utc>_<random> \
+RESTORE_REPORT=/data/backups/sc_production/restore-rehearsals/<restore-id>.json \
+RESTORE_ODOO_IMAGE=<immutable-odoo-digest-ref> \
+RESTORE_POSTGRES_IMAGE=<immutable-postgres-digest-ref> \
+CONFIRM_RESTORE_REHEARSAL=YES_RUN_ISOLATED_RESTORE_REHEARSAL \
+make production.restore.rehearsal
 ```
 
-The drill compares business and `smart_core` platform table counts and source/restored filestore digests. Existing targets, non-isolated containers, or mismatches fail closed.
+The rehearsal compares key table counts, attachment samples, and filestore
+digests, and records RTO plus `external_write_side_effects=0`. A failed report
+is retained without automatic retry. Cleanup is a separate, explicitly
+confirmed operation scoped to resources recorded in the report. Only after
+installation, triple backup, and rehearsal all pass may
+`production.backup.timer.restore` restore a previously enabled equivalent
+schedule. A previously disabled timer requires a separate scheduling decision.
 
 ## Colocation parameter initialization
 
