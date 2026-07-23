@@ -28,9 +28,10 @@ verify.release.tooling:
 	@$(MAKE) --no-print-directory verify.production.release_contract
 
 verify.production.release_contract:
-	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/release_candidate.py scripts/release/release_candidate_report.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_release_candidate.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
 	@python3 addons/smart_core/tests/test_platform_database_contract.py
 	@python3 scripts/release/test_candidate_scan_contract.py
+	@python3 scripts/release/test_release_candidate.py
 	@python3 scripts/release/test_product_release.py
 	@python3 scripts/release/test_release_source_identity.py
 	@python3 scripts/release/test_production_compose_contract.py
@@ -284,7 +285,7 @@ HISTORY_SOURCE_BACKUP ?= artifacts/production-blocker/source/daily-dev-history-s
 DAILY_DEV_PROJECT ?= sc-backend-odoo-dev
 CANDIDATE_ARTIFACTS ?= artifacts/release/immutable-production-candidate-v1
 
-.PHONY: release.workspace.prepare release.production.readonly_baseline release.candidate.build release.boundary.candidate.build release.candidate.publish release.candidate.scan
+.PHONY: release.workspace.prepare release.production.readonly_baseline release.candidate release.candidate.build release.boundary.candidate.build release.candidate.publish release.candidate.scan
 .PHONY: product.install product.upgrade product.verify tenant.rc.payload.export tenant.rc.profile.product tenant.rc.profile.sample tenant.rc.profile.customer tenant.rc.profile.digest.verify tenant.rc.runtime.acceptance
 .PHONY: release.history.source_probe release.history.backup release.history.restore release.history.upgrade
 .PHONY: release.history.source_restore
@@ -297,6 +298,13 @@ release.workspace.prepare: guard.prod.forbid
 
 release.production.readonly_baseline: guard.prod.readonly check-compose-project check-compose-env
 	@CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/production_readonly_baseline.sh
+
+# Daily RC entry: synchronize the approved main, freeze its identity, build,
+# archive/reload, scan, generate an SBOM, and emit release-report.json. It never
+# pushes an image, creates a tag/release, or deploys.
+release.candidate: guard.prod.forbid
+	@test -n "$(VERSION)" || (echo "VERSION is required (example: VERSION=1.0.0-rc.5)"; exit 2)
+	@ENV="$(ENV)" python3 scripts/release/release_candidate.py --version "$(VERSION)"
 
 release.candidate.build: guard.prod.forbid verify.repository.release_hygiene
 	@test -n "$(SOURCE_SHA)" || (echo "SOURCE_SHA is required"; exit 2)

@@ -10,7 +10,9 @@ artifacts="$(realpath "$artifacts")"
 manifest="$artifacts/image-manifest.json"
 [[ -f "$manifest" ]] || { echo "[candidate.scan] image manifest missing" >&2; exit 2; }
 image="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["image"])' "$manifest")"
-image_digest="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["image_digest"])' "$manifest")"
+publish_status="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["publish_status"])' "$manifest")"
+image_digest="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("image_digest") or "")' "$manifest")"
+local_image_id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("local_image_id") or "")' "$manifest")"
 mkdir -p "$artifacts/trivy-cache"
 
 docker run --rm \
@@ -43,6 +45,14 @@ trivy_db_metadata="$artifacts/trivy-cache/trivy/db/metadata.json"
 }
 cp "$trivy_db_metadata" "$artifacts/trivy-db-metadata.json"
 
+identity_args=(--expected-local-image-id "$local_image_id")
+if [[ "$publish_status" == "published" ]]; then
+  identity_args=(--expected-image-digest "$image_digest")
+elif [[ "$publish_status" != "not_published" ]]; then
+  echo "[candidate.scan] image manifest publish status is invalid" >&2
+  exit 2
+fi
+
 python3 scripts/release/candidate_scan_contract.py \
   --trivy-report "$artifacts/trivy.json" \
   --trivy-version "$artifacts/trivy-version.json" \
@@ -50,14 +60,19 @@ python3 scripts/release/candidate_scan_contract.py \
   --syft-version "$artifacts/syft-version.json" \
   --image-manifest "$manifest" \
   --expected-source-sha "$source_sha" \
-  --expected-image-digest "$image_digest" \
+  "${identity_args[@]}" \
   --output "$artifacts/security-summary.json"
 
-python3 scripts/release/product_release_manifest.py \
-  --image-manifest "$manifest" \
-  --sbom "$artifacts/sbom.cyclonedx.json" \
-  --scan-summary "$artifacts/security-summary.json" \
-  --archive "$artifacts/candidate-image.tar" \
-  --archive-reload-digest-file "$artifacts/reloaded-image-id.txt" \
-  --expected-source-sha "$source_sha" \
-  --output "$artifacts/product-release-manifest.json"
+# The public release manifest remains registry-digest bound. A local immutable
+# candidate gets release-report.json from the atomic candidate orchestrator;
+# after publication this entry may be rerun to emit the registry manifest.
+if [[ "$publish_status" == "published" ]]; then
+  python3 scripts/release/product_release_manifest.py \
+    --image-manifest "$manifest" \
+    --sbom "$artifacts/sbom.cyclonedx.json" \
+    --scan-summary "$artifacts/security-summary.json" \
+    --archive "$artifacts/candidate-image.tar" \
+    --archive-reload-digest-file "$artifacts/reloaded-image-id.txt" \
+    --expected-source-sha "$source_sha" \
+    --output "$artifacts/product-release-manifest.json"
+fi
