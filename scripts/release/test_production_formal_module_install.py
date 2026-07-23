@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -29,7 +31,13 @@ def valid_env() -> dict[str, str]:
         "EXPECTED_IMAGE_DIGEST": tool.EXPECTED_IMAGE_DIGEST,
         "ODOO_IMAGE_REF": tool.EXPECTED_IMAGE_REFERENCE,
         "NGINX_IMAGE_REF": tool.EXPECTED_IMAGE_REFERENCE,
-        "BACKUP_ROOT": "/var/backups/scems/production",
+        "BACKUP_CONFIG_SOURCE": str(tool.BACKUP_CONFIG_PATH),
+        "BACKUP_ROOT": tool.BACKUP_ROOT,
+        "BACKUP_TARGET_DB": "sc_production",
+        "BACKUP_DB_CONTAINER": "sc_production-db-1",
+        "BACKUP_ODOO_CONTAINER": "sc_production-odoo-1",
+        "BACKUP_DB_USER": "odoo",
+        "BACKUP_FILESTORE_ROOT": "/opt/sce-runtime/filestore",
     }
 
 
@@ -133,6 +141,172 @@ class FakeOperations:
 
 
 class InvocationGuardTests(unittest.TestCase):
+    def _write_backup_config(self, directory: str, content: str) -> Path:
+        path = Path(directory) / "production-backup.env"
+        path.write_text(content, encoding="utf-8")
+        path.chmod(0o600)
+        return path
+
+    def _valid_backup_config(self) -> str:
+        return "\n".join(
+            (
+                f"BACKUP_ROOT={tool.BACKUP_ROOT}",
+                "BACKUP_TARGET_DB=sc_production",
+                "BACKUP_DB_CONTAINER=sc_production-db-1",
+                "BACKUP_ODOO_CONTAINER=sc_production-odoo-1",
+                "BACKUP_DB_USER=odoo",
+                "BACKUP_FILESTORE_ROOT=/opt/sce-runtime/filestore",
+                "",
+            )
+        )
+
+    def test_fixed_backup_configuration_is_loaded_without_shell_evaluation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self._write_backup_config(
+                directory, self._valid_backup_config()
+            )
+            original_path = tool.BACKUP_CONFIG_PATH
+            tool.BACKUP_CONFIG_PATH = path
+            try:
+                resolved = tool.load_backup_configuration(
+                    path,
+                    {"ENV": "prod"},
+                    expected_uid=os.getuid(),
+                    expected_gid=os.getgid(),
+                )
+            finally:
+                tool.BACKUP_CONFIG_PATH = original_path
+            self.assertEqual(resolved["BACKUP_ROOT"], tool.BACKUP_ROOT)
+            self.assertEqual(resolved["BACKUP_DB_USER"], "odoo")
+            self.assertEqual(resolved["BACKUP_CONFIG_SOURCE"], str(path))
+
+    def test_versioned_backup_configuration_template_matches_fixed_contract(self):
+        template = (
+            ROOT / "deploy/production-backup/production-backup.env.example"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(
+            set(
+                line.split("=", 1)[0]
+                for line in template.splitlines()
+                if line
+            ),
+            set(tool.BACKUP_CONFIG_KEYS),
+        )
+        self.assertIn(f"BACKUP_ROOT={tool.BACKUP_ROOT}", template)
+        self.assertIn("BACKUP_DB_CONTAINER=sc_production-db-1", template)
+        self.assertIn("BACKUP_ODOO_CONTAINER=sc_production-odoo-1", template)
+
+    def test_backup_configuration_rejects_process_override(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self._write_backup_config(
+                directory, self._valid_backup_config()
+            )
+            original_path = tool.BACKUP_CONFIG_PATH
+            tool.BACKUP_CONFIG_PATH = path
+            try:
+                with self.assertRaisesRegex(
+                    tool.FormalModuleInstallError, "override"
+                ):
+                    tool.load_backup_configuration(
+                        path,
+                        {"BACKUP_ROOT": "/tmp/override"},
+                        expected_uid=os.getuid(),
+                        expected_gid=os.getgid(),
+                    )
+            finally:
+                tool.BACKUP_CONFIG_PATH = original_path
+
+    def test_backup_configuration_rejects_unsafe_mode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self._write_backup_config(
+                directory, self._valid_backup_config()
+            )
+            path.chmod(0o640)
+            original_path = tool.BACKUP_CONFIG_PATH
+            tool.BACKUP_CONFIG_PATH = path
+            try:
+                with self.assertRaisesRegex(
+                    tool.FormalModuleInstallError, "0600"
+                ):
+                    tool.load_backup_configuration(
+                        path,
+                        {},
+                        expected_uid=os.getuid(),
+                        expected_gid=os.getgid(),
+                    )
+            finally:
+                tool.BACKUP_CONFIG_PATH = original_path
+
+    def test_backup_configuration_rejects_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = self._write_backup_config(
+                directory, self._valid_backup_config()
+            )
+            path = Path(directory) / "linked.env"
+            path.symlink_to(target)
+            original_path = tool.BACKUP_CONFIG_PATH
+            tool.BACKUP_CONFIG_PATH = path
+            try:
+                with self.assertRaisesRegex(
+                    tool.FormalModuleInstallError, "non-symlink"
+                ):
+                    tool.load_backup_configuration(
+                        path,
+                        {},
+                        expected_uid=os.getuid(),
+                        expected_gid=os.getgid(),
+                    )
+            finally:
+                tool.BACKUP_CONFIG_PATH = original_path
+
+    def test_backup_configuration_rejects_unknown_duplicate_and_missing_keys(self):
+        invalid_values = (
+            self._valid_backup_config() + "UNEXPECTED=value\n",
+            self._valid_backup_config() + f"BACKUP_ROOT={tool.BACKUP_ROOT}\n",
+            "BACKUP_ROOT=" + tool.BACKUP_ROOT + "\n",
+        )
+        for content in invalid_values:
+            with self.subTest(content=content):
+                with tempfile.TemporaryDirectory() as directory:
+                    path = self._write_backup_config(directory, content)
+                    original_path = tool.BACKUP_CONFIG_PATH
+                    tool.BACKUP_CONFIG_PATH = path
+                    try:
+                        with self.assertRaises(tool.FormalModuleInstallError):
+                            tool.load_backup_configuration(
+                                path,
+                                {},
+                                expected_uid=os.getuid(),
+                                expected_gid=os.getgid(),
+                            )
+                    finally:
+                        tool.BACKUP_CONFIG_PATH = original_path
+
+    def test_backup_configuration_rejects_identity_drift(self):
+        for old, new in (
+            (tool.BACKUP_ROOT, "/tmp/backup"),
+            ("sc_production-db-1", "other-db-1"),
+            ("sc_production", "sc_prod"),
+            ("/opt/sce-runtime/filestore", "/var/lib/odoo"),
+        ):
+            with self.subTest(value=new):
+                with tempfile.TemporaryDirectory() as directory:
+                    path = self._write_backup_config(
+                        directory, self._valid_backup_config().replace(old, new)
+                    )
+                    original_path = tool.BACKUP_CONFIG_PATH
+                    tool.BACKUP_CONFIG_PATH = path
+                    try:
+                        with self.assertRaises(tool.FormalModuleInstallError):
+                            tool.load_backup_configuration(
+                                path,
+                                {},
+                                expected_uid=os.getuid(),
+                                expected_gid=os.getgid(),
+                            )
+                    finally:
+                        tool.BACKUP_CONFIG_PATH = original_path
+
     def test_missing_prod_danger_is_rejected(self):
         active = valid_env()
         active.pop("PROD_DANGER")

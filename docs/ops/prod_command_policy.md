@@ -37,7 +37,9 @@ Makefile guards and script-level guards.
 - `make prod.upgrade.core`
 - `make history.production.fresh_init`
 - `make release.production.formal_modules.install_missing` (requires the exact
-  `CONFIRM_FORMAL_MODULE_INSTALL=YES_INSTALL_MISSING_FORMAL_MODULES` contract)
+  `CONFIRM_FORMAL_MODULE_INSTALL=YES_INSTALL_MISSING_FORMAL_MODULES` contract;
+  loads the root-owned `0600` backup identity only from
+  `/etc/scems/production-backup.env`)
 - `make legacy_attachment.custody_marker.backfill.prod`
 - `make policy.restore.formal_product_menu`
 - `make smoke.business_full`

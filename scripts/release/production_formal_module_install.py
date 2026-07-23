@@ -8,6 +8,7 @@ import importlib.util
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 from collections.abc import Mapping
@@ -16,6 +17,16 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
+BACKUP_CONFIG_PATH = Path("/etc/scems/production-backup.env")
+BACKUP_ROOT = "/data/backups/sc_production"
+BACKUP_CONFIG_KEYS = (
+    "BACKUP_ROOT",
+    "BACKUP_TARGET_DB",
+    "BACKUP_DB_CONTAINER",
+    "BACKUP_ODOO_CONTAINER",
+    "BACKUP_DB_USER",
+    "BACKUP_FILESTORE_ROOT",
+)
 TARGET_DATABASE = "sc_production"
 TARGET_PROJECT = "sc_production"
 DEPLOYMENT_MODE = "FIRST_FRESH_DEPLOY"
@@ -89,6 +100,96 @@ class FormalModuleInstallError(RuntimeError):
     pass
 
 
+def load_backup_configuration(
+    path: Path,
+    active_env: Mapping[str, str],
+    *,
+    expected_uid: int = 0,
+    expected_gid: int = 0,
+) -> dict[str, str]:
+    if path != BACKUP_CONFIG_PATH:
+        raise FormalModuleInstallError("backup configuration path is not approved")
+    try:
+        metadata = path.lstat()
+    except OSError as exc:
+        raise FormalModuleInstallError(
+            "approved backup configuration is unavailable"
+        ) from exc
+    if path.is_symlink() or not stat.S_ISREG(metadata.st_mode):
+        raise FormalModuleInstallError(
+            "backup configuration must be a regular non-symlink file"
+        )
+    if metadata.st_uid != expected_uid or metadata.st_gid != expected_gid:
+        raise FormalModuleInstallError(
+            "backup configuration must be owned by root:root"
+        )
+    if stat.S_IMODE(metadata.st_mode) != 0o600:
+        raise FormalModuleInstallError("backup configuration mode must be 0600")
+    if metadata.st_size <= 0 or metadata.st_size > 16 * 1024:
+        raise FormalModuleInstallError("backup configuration size is invalid")
+
+    configured: dict[str, str] = {}
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError) as exc:
+        raise FormalModuleInstallError(
+            "backup configuration cannot be read safely"
+        ) from exc
+    for line_number, raw_line in enumerate(lines, start=1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            raise FormalModuleInstallError(
+                f"invalid backup configuration line {line_number}"
+            )
+        name, value = line.split("=", 1)
+        if name not in BACKUP_CONFIG_KEYS:
+            raise FormalModuleInstallError(
+                f"unsupported backup configuration key: {name}"
+            )
+        if name in configured:
+            raise FormalModuleInstallError(
+                f"duplicate backup configuration key: {name}"
+            )
+        if not value or value != value.strip() or any(
+            character in value for character in ("\x00", "\n", "\r")
+        ):
+            raise FormalModuleInstallError(
+                f"invalid backup configuration value: {name}"
+            )
+        configured[name] = value
+
+    if set(configured) != set(BACKUP_CONFIG_KEYS):
+        raise FormalModuleInstallError(
+            "backup configuration keys differ from the fixed contract"
+        )
+    for name in BACKUP_CONFIG_KEYS:
+        if active_env.get(name):
+            raise FormalModuleInstallError(
+                f"process environment backup override is forbidden: {name}"
+            )
+    expected = {
+        "BACKUP_ROOT": BACKUP_ROOT,
+        "BACKUP_TARGET_DB": TARGET_DATABASE,
+        "BACKUP_DB_CONTAINER": "sc_production-db-1",
+        "BACKUP_ODOO_CONTAINER": "sc_production-odoo-1",
+        "BACKUP_FILESTORE_ROOT": "/opt/sce-runtime/filestore",
+    }
+    for name, value in expected.items():
+        if configured[name] != value:
+            raise FormalModuleInstallError(
+                f"backup configuration identity differs: {name}"
+            )
+    if not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", configured["BACKUP_DB_USER"]):
+        raise FormalModuleInstallError("backup database user identity is invalid")
+
+    resolved = dict(active_env)
+    resolved.update(configured)
+    resolved["BACKUP_CONFIG_SOURCE"] = str(path)
+    return resolved
+
+
 def _load_product_modules() -> tuple[str, ...]:
     path = ROOT / "config/tenant/module_sets.v1.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -116,6 +217,12 @@ def validate_invocation(active_env: Mapping[str, str]) -> None:
         "EXPECTED_IMAGE_DIGEST": EXPECTED_IMAGE_DIGEST,
         "ODOO_IMAGE_REF": EXPECTED_IMAGE_REFERENCE,
         "NGINX_IMAGE_REF": EXPECTED_IMAGE_REFERENCE,
+        "BACKUP_CONFIG_SOURCE": str(BACKUP_CONFIG_PATH),
+        "BACKUP_ROOT": BACKUP_ROOT,
+        "BACKUP_TARGET_DB": TARGET_DATABASE,
+        "BACKUP_DB_CONTAINER": "sc_production-db-1",
+        "BACKUP_ODOO_CONTAINER": "sc_production-odoo-1",
+        "BACKUP_FILESTORE_ROOT": "/opt/sce-runtime/filestore",
     }
     for name, value in expected.items():
         if active_env.get(name) != value:
@@ -125,9 +232,10 @@ def validate_invocation(active_env: Mapping[str, str]) -> None:
             raise FormalModuleInstallError(
                 f"caller-controlled module selection is forbidden: {name}"
             )
-    backup_root = Path(active_env.get("BACKUP_ROOT", ""))
-    if not backup_root.is_absolute() or backup_root == Path("/"):
-        raise FormalModuleInstallError("BACKUP_ROOT must be a scoped absolute path")
+    if not re.fullmatch(
+        r"[a-z_][a-z0-9_]{0,62}", active_env.get("BACKUP_DB_USER", "")
+    ):
+        raise FormalModuleInstallError("BACKUP_DB_USER is invalid")
 
 
 def dependency_order(manifests: Mapping[str, dict[str, Any]]) -> tuple[str, ...]:
@@ -409,12 +517,7 @@ class ProductionOperations:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         backup_env = {
-            "BACKUP_TARGET_DB": TARGET_DATABASE,
-            "BACKUP_DB_CONTAINER": "sc_production-db-1",
-            "BACKUP_ODOO_CONTAINER": "sc_production-odoo-1",
-            "BACKUP_DB_USER": self.env.get("DB_USER", ""),
-            "BACKUP_FILESTORE_ROOT": "/opt/sce-runtime/filestore",
-            "BACKUP_ROOT": self.env["BACKUP_ROOT"],
+            name: self.env[name] for name in BACKUP_CONFIG_KEYS
         }
         previous = {name: os.environ.get(name) for name in backup_env}
         try:
@@ -505,7 +608,8 @@ def main() -> int:
     if sys.argv[1:] != ["execute"]:
         raise SystemExit("usage: production_formal_module_install.py execute")
     try:
-        result = orchestrate(os.environ, ProductionOperations(os.environ))
+        active_env = load_backup_configuration(BACKUP_CONFIG_PATH, os.environ)
+        result = orchestrate(active_env, ProductionOperations(active_env))
     except FormalModuleInstallError as exc:
         raise SystemExit(
             f"[production.formal-modules.install] BLOCKED: {exc}"
