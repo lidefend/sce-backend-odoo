@@ -3,6 +3,19 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-23 — Atomic RC candidate workflow
+
+- Branch: `refactor/atomic-release-candidate`
+- Starting product commit: `99953f4964f2ead1f8f69fa56f1cbef3680216ce`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: atomic RC candidate orchestration, local immutable scan identity, and machine-readable readiness evidence
+- Module: `make/release.mk`, `scripts/release`, and the paired atomic-flow runbook
+- Reason: replace repeated conversational build/scan/SBOM approvals with one fail-closed repository entry while retaining separate publication and production approvals
+- Standard vs User-Specific: generic repository release automation; no business or customer semantics
+- Why Here / Why Not Elsewhere: P4 owns build and release evidence; application modules, frontend, and runtime configuration must not own delivery-state orchestration
+- Blast Radius: pre-publication candidate build, scan, SBOM, retry, and reporting only; no registry push, Git tag, Release publication, deployment, production connection, or database write
+- Validation: local/published scan identity tests, schema positive/negative cases, failure injection and preserved evidence, resume identity/tool-contract mismatch, per-version concurrency lock, report integrity, release contract, shell/static checks, and formal CI
+
 ## 2026-07-23 — v1.0.0-rc.2 version lock
 
 - Branch: `release/v1.0.0-rc.2`
