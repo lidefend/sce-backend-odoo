@@ -257,7 +257,7 @@ if [[ -n "$r11c_source_dump" ]]; then
 
   snapshot_env=(
     -e SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY=I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION
-    -e PLATFORM_RELEASE_VERSION=1.0.0-rc.1
+    -e "PLATFORM_RELEASE_VERSION=$product_version"
   )
   missing_contracts="$log_dir/missing-contracts"
   mkdir -p "$missing_contracts"
