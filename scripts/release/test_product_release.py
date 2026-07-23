@@ -38,9 +38,19 @@ def image_manifest() -> dict:
         "oci_revision": SHA,
         "container_source_revision": SHA,
         "source_tree_sha": "b" * 40,
-        "image": f"sce-product:{release.read_version()}",
-        "image_tags": [f"sce-product:{release.read_version()}", f"sce-product:sha-{SHA[:12]}"],
+        "image": f"ghcr.io/lidefend/sce-product:{release.read_version()}",
+        "image_tags": [
+            f"ghcr.io/lidefend/sce-product:{release.read_version()}",
+            f"ghcr.io/lidefend/sce-product:sha-{SHA[:12]}",
+        ],
+        "registry_repository": "ghcr.io/lidefend/sce-product",
+        "registry_refs": [
+            f"ghcr.io/lidefend/sce-product@{DIGEST}",
+            f"ghcr.io/lidefend/sce-product@{DIGEST}",
+        ],
         "image_digest": DIGEST,
+        "local_image_id": "sha256:" + "2" * 64,
+        "archive_config_digest": "sha256:" + "3" * 64,
         "base_image_digests": {
             "frontend_builder": "sha256:" + "d" * 64,
             "odoo_runtime": "sha256:" + "e" * 64,
@@ -98,21 +108,22 @@ class ProductReleaseTests(unittest.TestCase):
             capture_output=True,
         )
 
-    def test_manifest_v2_binds_all_required_identity(self):
+    def test_manifest_v3_binds_registry_and_archive_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             result = self.invoke(root)
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads((root / "product-release-manifest.json").read_text())
             schema = json.loads(
-                (ROOT / "schemas/release/product_release_manifest.v2.schema.json").read_text()
+                (ROOT / "schemas/release/product_release_manifest.v3.schema.json").read_text()
             )
             Draft202012Validator.check_schema(schema)
             Draft202012Validator(schema).validate(payload)
             self.assertEqual(payload["repository"], "lidefend/sce-backend-odoo")
             self.assertEqual(payload["branch"], "main")
             self.assertEqual(payload["scan"]["counts"]["MEDIUM"], 2)
-            self.assertEqual(payload["archive_reload_digest"], DIGEST)
+            self.assertEqual(payload["archive_reload_image_id"], DIGEST)
+            self.assertEqual(payload["image_digest"], DIGEST)
             self.assertEqual(payload["deployment_status"], "not_deployed")
             manifest_sha = hashlib.sha256(
                 (root / "product-release-manifest.json").read_bytes()
@@ -146,7 +157,7 @@ class ProductReleaseTests(unittest.TestCase):
             scan=scan_summary(),
             sbom_sha256="2" * 64,
             archive_sha256=image_manifest()["archive_sha256"],
-            archive_reload_digest=DIGEST,
+            archive_reload_image_id=DIGEST,
             release=release.load_release_config(),
             expected_source_sha=SHA,
         )

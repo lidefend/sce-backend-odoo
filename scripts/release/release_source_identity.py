@@ -91,7 +91,7 @@ def validate_artifact_identity(
     release_manifest: dict,
     oci_revision: str,
     container_revision: str,
-    actual_image_digest: str,
+    actual_registry_digests: list[str],
 ) -> dict[str, str]:
     expected_sha = _require_sha(expected_sha, "EXPECTED_RELEASE_SHA")
     revisions = {
@@ -111,23 +111,30 @@ def validate_artifact_identity(
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", expected_image_digest):
         raise ReleaseIdentityError("EXPECTED_IMAGE_DIGEST must be a sha256 digest")
     digests = {
-        "actual image digest": actual_image_digest,
         "image manifest digest": image_manifest.get("image_digest", ""),
         "release manifest digest": release_manifest.get("image_digest", ""),
     }
     for label, value in digests.items():
         if str(value or "").strip() != expected_image_digest:
             raise ReleaseIdentityError(f"{label} does not match EXPECTED_IMAGE_DIGEST")
+    expected_ref = f"ghcr.io/lidefend/sce-product@{expected_image_digest}"
+    if expected_ref not in actual_registry_digests:
+        raise ReleaseIdentityError("candidate image is not bound to the expected registry digest")
     if release_manifest.get("repository") != EXPECTED_REPOSITORY:
         raise ReleaseIdentityError("release manifest repository is not approved")
     if release_manifest.get("branch") != "main":
         raise ReleaseIdentityError("release manifest branch must be main")
-    if release_manifest.get("schema_version") != "product_release_manifest.v2":
-        raise ReleaseIdentityError("release manifest schema is not v2")
+    if release_manifest.get("schema_version") != "product_release_manifest.v3":
+        raise ReleaseIdentityError("release manifest schema is not v3")
     if release_manifest.get("container_source_revision") != expected_sha:
         raise ReleaseIdentityError("release manifest container revision mismatch")
-    if release_manifest.get("archive_reload_digest") != expected_image_digest:
-        raise ReleaseIdentityError("release manifest archive reload digest mismatch")
+    if release_manifest.get("registry_repository") != "ghcr.io/lidefend/sce-product":
+        raise ReleaseIdentityError("release manifest registry repository is not approved")
+    if release_manifest.get("registry_refs") != [expected_ref, expected_ref]:
+        raise ReleaseIdentityError("release manifest registry refs mismatch")
+    for field in ("local_image_id", "archive_config_digest", "archive_reload_image_id"):
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(release_manifest.get(field) or "")):
+            raise ReleaseIdentityError(f"release manifest {field} is missing or invalid")
     if not re.fullmatch(r"[0-9a-f]{64}", str(release_manifest.get("archive_sha256") or "")):
         raise ReleaseIdentityError("release manifest archive checksum is missing")
     if not re.fullmatch(r"[0-9a-f]{64}", str(release_manifest.get("baseline_checksum") or "")):
@@ -217,7 +224,9 @@ def main() -> int:
                 release_manifest=release_manifest,
                 oci_revision=str((config.get("Labels") or {}).get("org.opencontainers.image.revision") or ""),
                 container_revision=_container_revision(image_payload),
-                actual_image_digest=str(image_payload.get("Id") or ""),
+                actual_registry_digests=[
+                    str(value) for value in (image_payload.get("RepoDigests") or [])
+                ],
             )
     except (ReleaseIdentityError, subprocess.CalledProcessError, json.JSONDecodeError) as exc:
         raise SystemExit(f"[release.identity] BLOCKED: {exc}") from exc

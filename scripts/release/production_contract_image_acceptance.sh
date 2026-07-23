@@ -119,15 +119,22 @@ manifest = root / "product-release-manifest.json"
 manifest.write_text(
     json.dumps(
         {
-            "schema_version": "product_release_manifest.v2",
+            "schema_version": "product_release_manifest.v3",
             "repository": "lidefend/sce-backend-odoo",
             "branch": "main",
             "source_sha": os.environ["SOURCE_SHA"],
             "oci_revision": os.environ["SOURCE_SHA"],
             "container_source_revision": os.environ["SOURCE_SHA"],
             "image_digest": os.environ["IMAGE_DIGEST"],
+            "registry_repository": "ghcr.io/lidefend/sce-product",
+            "registry_refs": [
+                f"ghcr.io/lidefend/sce-product@{os.environ['IMAGE_DIGEST']}",
+                f"ghcr.io/lidefend/sce-product@{os.environ['IMAGE_DIGEST']}",
+            ],
+            "local_image_id": os.environ["IMAGE_DIGEST"],
+            "archive_config_digest": os.environ["IMAGE_DIGEST"],
+            "archive_reload_image_id": os.environ["IMAGE_DIGEST"],
             "archive_sha256": "a" * 64,
-            "archive_reload_digest": os.environ["IMAGE_DIGEST"],
             "baseline_checksum": "b" * 64,
             "scan": {
                 "status": "completed",

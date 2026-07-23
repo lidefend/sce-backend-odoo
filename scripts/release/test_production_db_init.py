@@ -33,15 +33,19 @@ def environment(database: str = "sc_migration_rehearsal") -> dict[str, str]:
     manifest.write_text(
         json.dumps(
             {
-                "schema_version": "product_release_manifest.v2",
+                "schema_version": "product_release_manifest.v3",
                 "repository": "lidefend/sce-backend-odoo",
                 "branch": "main",
                 "source_sha": source_sha,
                 "oci_revision": source_sha,
                 "container_source_revision": source_sha,
                 "image_digest": image_digest,
+                "registry_repository": "ghcr.io/lidefend/sce-product",
+                "registry_refs": [f"ghcr.io/lidefend/sce-product@{image_digest}"] * 2,
+                "local_image_id": "sha256:" + "1" * 64,
+                "archive_config_digest": "sha256:" + "2" * 64,
+                "archive_reload_image_id": "sha256:" + "3" * 64,
                 "archive_sha256": "c" * 64,
-                "archive_reload_digest": image_digest,
                 "baseline_checksum": "d" * 64,
                 "scan": {
                     "status": "completed",

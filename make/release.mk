@@ -34,7 +34,7 @@ verify.production.release_contract:
 	@python3 scripts/release/test_production_colocated_release.py
 	@python3 scripts/release/test_locked_menu_policy_contract.py
 	@python3 scripts/verify/test_production_git_authority_guard.py
-	@bash -n scripts/release/immutable_candidate_scan.sh scripts/release/production_odoo_entrypoint.sh scripts/release/production_db_manage.sh scripts/release/production_contract_image_acceptance.sh
+	@bash -n scripts/release/immutable_candidate_build.sh scripts/release/immutable_candidate_publish.sh scripts/release/immutable_candidate_scan.sh scripts/release/production_odoo_entrypoint.sh scripts/release/production_db_manage.sh scripts/release/production_contract_image_acceptance.sh
 
 PRODUCTION_CONTRACT_COMPOSE = $(COMPOSE_BIN) -f docker-compose.production-candidate.yml
 PRODUCTION_DB_MANAGER = $(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo
@@ -169,7 +169,8 @@ release.rehearsal.cleanup: verify.release.guard
 # never point at the production database or production compose project.
 SOURCE_SHA ?=
 CANDIDATE_SHORT_SHA := $(shell printf '%s' '$(SOURCE_SHA)' | cut -c1-12)
-CANDIDATE_IMAGE ?= sce-product:$(shell python3 scripts/release/product_release.py --version)
+CANDIDATE_IMAGE_REPOSITORY ?= ghcr.io/lidefend/sce-product
+CANDIDATE_IMAGE ?= $(CANDIDATE_IMAGE_REPOSITORY):$(shell python3 scripts/release/product_release.py --version)
 CANDIDATE_PROJECT ?= sc-production-candidate
 CANDIDATE_DB ?= sc_user_data_rehearsal_candidate
 HISTORY_SOURCE_DB ?= sc_demo
@@ -177,7 +178,7 @@ HISTORY_SOURCE_BACKUP ?= artifacts/production-blocker/source/daily-dev-history-s
 DAILY_DEV_PROJECT ?= sc-backend-odoo-dev
 CANDIDATE_ARTIFACTS ?= artifacts/release/immutable-production-candidate-v1
 
-.PHONY: release.workspace.prepare release.production.readonly_baseline release.candidate.build release.boundary.candidate.build release.candidate.scan
+.PHONY: release.workspace.prepare release.production.readonly_baseline release.candidate.build release.boundary.candidate.build release.candidate.publish release.candidate.scan
 .PHONY: product.install product.upgrade product.verify tenant.rc.payload.export tenant.rc.profile.product tenant.rc.profile.sample tenant.rc.profile.customer tenant.rc.profile.digest.verify tenant.rc.runtime.acceptance
 .PHONY: release.history.source_probe release.history.backup release.history.restore release.history.upgrade
 .PHONY: release.history.source_restore
@@ -200,6 +201,11 @@ release.boundary.candidate.build: guard.prod.forbid verify.repository.release_hy
 	@SOURCE_SHA="$(SOURCE_SHA)" CANDIDATE_SOURCE_REF=HEAD ALLOW_BOUNDARY_BRANCH_BUILD=1 \
 		CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" \
 		bash scripts/release/immutable_candidate_build.sh
+
+release.candidate.publish: guard.prod.forbid
+	@test -n "$(SOURCE_SHA)" || (echo "SOURCE_SHA is required"; exit 2)
+	@SOURCE_SHA="$(SOURCE_SHA)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" \
+		bash scripts/release/immutable_candidate_publish.sh
 
 release.candidate.scan: guard.prod.forbid
 	@test -n "$(SOURCE_SHA)" || (echo "SOURCE_SHA is required"; exit 2)
