@@ -394,3 +394,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Not Elsewhere: `sc.invoice.registration` has a different lifecycle, `sc.legacy.payment.residual.fact` is forbidden, and release-source identity plus existing `ci.full` reason-code debt remain independent workstreams
 - Blast Radius: one approved tax-center entry in each locked 97-row baseline, its independent records, views, roles, company/project visibility, and transactional initialization expectations; no release SHA tooling, production database, image, runtime, or historical data
 - Validation: static model/action/menu/ACL/rule/baseline/checksum contracts, locked-menu policy tests, legacy-carrier and baseline-integrity guards, targeted module initialization attempt, standard pre-PR CI, and PR-bound required checks
+
+## 2026-07-23 — First Fresh Production Formal Module Closure Tool
+
+- Branch: `fix/formal-module-install-tool`
+- Starting commit: `a3ab1b5349d6a7d97fcd7dfbfe72a7d2723b19b3`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: exact production backup, three-module installation, and post-install acceptance orchestration for the first fresh `sc_production` database
+- Module: release Make target, formal-module state probe, fixed installation orchestrator, production command policy, and focused contract tests
+- Reason: the existing generic single-module entry cannot bind one approval to the exact missing formal set, dependency topology, paired recovery point, zero-business-data boundary, and 10/10 postcondition
+- Standard vs User-Specific: one first-production delivery control; no customer preference, application behavior, runtime configuration, or long-term business fact
+- Why Here / Why Not Elsewhere: P4 owns production mutation authorization and recovery sequencing; rc.4, P0/P1 modules, Nginx, credentials, and database schema remain immutable
+- Blast Radius: one new production Make target that accepts no caller module selection and makes at most one Odoo install invocation after a validated backup; negative preflight performs zero production writes
+- Validation: exact environment/confirmation/allowlist, manifest topology and data boundary, safe retry, pending/history/business/seed/demo drift rejection, backup-failure zero-install, 10/10 postcondition, Nginx fingerprint preservation, release contracts, security/generated gates, and PR required checks
