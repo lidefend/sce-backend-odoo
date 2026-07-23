@@ -537,3 +537,15 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns build and release evidence; application modules, frontend, and runtime configuration must not own delivery-state orchestration
 - Blast Radius: pre-publication candidate build, scan, SBOM, retry, and reporting only; no registry push, Git tag, Release publication, deployment, production connection, or database write
 - Validation: local/published scan identity tests, schema positive/negative cases, failure injection and preserved evidence, resume identity/tool-contract mismatch, per-version concurrency lock, report integrity, release contract, shell/static checks, and formal CI
+
+## 2026-07-24 — Expected-head PR ready guard
+
+- Branch: `fix/atomic-release-publication-contract`
+- Starting commit: `54adfef911aff51b12b1a8b0b2383d62d5bb6c74`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target / Module: `make pr.ready`, execution allowlist, and focused governance contracts
+- Reason: the approved PR creation workflow can create a draft, while direct `gh pr ready` is forbidden and no governed transition existed
+- Standard vs User-Specific: repository-wide PR governance; no product, candidate, runtime, or customer semantics
+- Why Here / Why Not Elsewhere: P4 owns remote PR mutations; publication state and application modules must not own review-state transitions
+- Blast Radius: one expected-head-bound draft-to-ready mutation; no base, code, merge policy, auto-merge, main, release, registry, tag, or deployment mutation
+- Validation: missing/invalid/mismatched head rejection, non-draft rejection, exact ready invocation, release contract, standard CI, and static diff checks
