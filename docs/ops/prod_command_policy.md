@@ -41,6 +41,11 @@ Makefile guards and script-level guards.
   loads the root-owned `0600` backup identity only from
   `/etc/scems/production-backup.env`)
 - `make release.production.admin_identity.baseline` (defaults to dry-run;
+  dry-run establishes and verifies `transaction_read_only=on` before formal
+  module, user, role, menu, or product-configuration queries; its atomic,
+  redacted evidence separates current state, shared-policy planned state, and
+  observed-after state, and records the exact relation plan, zero write audit,
+  and stable before/after fingerprints;
   apply requires the exact
   `CONFIRM_ADMIN_IDENTITY_BASELINE=YES_APPLY_FRESH_PRODUCTION_ADMIN_IDENTITY_BASELINE`
   contract and may only append the canonical

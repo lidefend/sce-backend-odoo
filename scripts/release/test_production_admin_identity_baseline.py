@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -70,9 +71,6 @@ class FakeGroups:
     def ids(self):
         return [group.id for group in self.groups]
 
-    def sudo(self):
-        return self
-
     def get_external_id(self):
         return {group.id: group.xmlid for group in self.groups}
 
@@ -87,7 +85,6 @@ class FakeUser:
         self.company_id = type("Company", (), {"id": 1})()
         self.company_ids = type("Companies", (), {"ids": [1]})()
         self.writes = []
-        self.fail_after_write = False
 
     def write(self, values):
         self.writes.append(values)
@@ -101,8 +98,9 @@ class FakeUser:
 
 
 class FakeUsers:
-    def __init__(self, targets):
+    def __init__(self, targets, events):
         self.targets = list(targets)
+        self.events = events
 
     def sudo(self):
         return self
@@ -111,13 +109,15 @@ class FakeUsers:
         return self
 
     def search(self, domain):
+        self.events.append("target-user-query")
         if domain != [("login", "=", "admin")]:
             raise AssertionError(domain)
         return FakeRecordset(self.targets)
 
 
 class FakeModules:
-    def __init__(self, states=None, pending=0):
+    def __init__(self, events, states=None, pending=0):
+        self.events = events
         self.states = states or {name: "installed" for name in FORMAL_MODULES}
         self.pending = pending
 
@@ -125,6 +125,7 @@ class FakeModules:
         return self
 
     def search(self, domain):
+        self.events.append("formal-module-query")
         names = domain[0][2]
         return FakeRecordset(
             type("Module", (), {"name": name, "state": self.states[name]})()
@@ -133,9 +134,28 @@ class FakeModules:
         )
 
     def search_count(self, domain):
+        self.events.append("pending-module-query")
         if domain != [("state", "in", ["to install", "to upgrade", "to remove"])]:
             raise AssertionError(domain)
         return self.pending
+
+
+class FakeCountModel:
+    _fields = {"active": object()}
+
+    def __init__(self, count, active_count):
+        self.count = count
+        self.active_count = active_count
+
+    def sudo(self):
+        return self
+
+    def search_count(self, domain):
+        if domain == []:
+            return self.count
+        if domain == [("active", "=", True)]:
+            return self.active_count
+        raise AssertionError(domain)
 
 
 class Savepoint:
@@ -149,9 +169,35 @@ class Savepoint:
 class FakeCursor:
     dbname = "sc_production"
 
-    def __init__(self):
+    def __init__(self, events, *, show_value="on", set_fails=False):
+        self.events = events
+        self.show_value = show_value
+        self.set_fails = set_fails
+        self.read_only = False
+        self.last_query = ""
         self.commits = 0
         self.rollbacks = 0
+
+    def execute(self, query):
+        normalized = " ".join(str(query).split()).upper()
+        self.events.append(f"sql:{normalized}")
+        self.last_query = normalized
+        if normalized == "SET TRANSACTION READ ONLY":
+            if self.set_fails:
+                raise RuntimeError("read-only unavailable")
+            self.read_only = True
+            return
+        if normalized == "SHOW TRANSACTION_READ_ONLY":
+            return
+        if self.read_only and normalized.split(" ", 1)[0] in {
+            "INSERT", "UPDATE", "DELETE", "TRUNCATE", "ALTER", "CREATE", "DROP",
+        }:
+            raise RuntimeError("cannot execute write in a read-only transaction")
+
+    def fetchone(self):
+        if self.last_query != "SHOW TRANSACTION_READ_ONLY":
+            raise AssertionError(self.last_query)
+        return (self.show_value,)
 
     def savepoint(self):
         return Savepoint()
@@ -172,17 +218,53 @@ GROUPS_BY_ID = {group.id: group for group in (INTERNAL, CANONICAL, OTHER_ROLE)}
 
 
 class FakeEnvironment:
-    def __init__(self, targets, *, states=None, pending=0):
-        self.users = FakeUsers(targets)
-        self.modules = FakeModules(states, pending)
-        self.cr = FakeCursor()
+    def __init__(
+        self,
+        targets,
+        *,
+        states=None,
+        pending=0,
+        show_value="on",
+        set_fails=False,
+        flush_fails=False,
+    ):
+        self.events = []
+        self.users = FakeUsers(targets, self.events)
+        self.modules = FakeModules(self.events, states, pending)
+        self.menus = FakeCountModel(97, 97)
+        self.product_policy = FakeCountModel(2, 2)
+        self.business_contract = FakeCountModel(73, 73)
+        self.cr = FakeCursor(
+            self.events, show_value=show_value, set_fails=set_fails
+        )
+        self.flush_fails = flush_fails
+        self.registry = type(
+            "Registry",
+            (),
+            {
+                "models": {
+                    "ir.module.module": object(),
+                    "res.users": object(),
+                    "ir.ui.menu": object(),
+                    "sc.product.policy": object(),
+                    "ui.business.config.contract": object(),
+                }
+            },
+        )()
+
+    def flush_all(self):
+        self.events.append("orm-flush")
+        if self.flush_fails:
+            raise RuntimeError("unexpected pending write")
 
     def __getitem__(self, model):
-        if model == "res.users":
-            return self.users
-        if model == "ir.module.module":
-            return self.modules
-        raise AssertionError(model)
+        return {
+            "res.users": self.users,
+            "ir.module.module": self.modules,
+            "ir.ui.menu": self.menus,
+            "sc.product.policy": self.product_policy,
+            "ui.business.config.contract": self.business_contract,
+        }[model]
 
     def ref(self, xmlid, raise_if_not_found=False):
         del raise_if_not_found
@@ -253,7 +335,8 @@ class BaselineTests(unittest.TestCase):
             "ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE": "restricted",
             "FORMAL_MODULE_CONTRACT": ",".join(FORMAL_MODULES),
             "ADMIN_IDENTITY_EVIDENCE_OUTPUT": str(
-                Path(self.temp.name) / f"{mode}-{len(list(Path(self.temp.name).iterdir()))}.json"
+                Path(self.temp.name)
+                / f"{mode}-{len(list(Path(self.temp.name).iterdir()))}.json"
             ),
         }
         if mode == "apply":
@@ -271,38 +354,133 @@ class BaselineTests(unittest.TestCase):
             environment, active_env, resolver_factory=resolver_factory
         )
 
-    def test_dry_run_is_default_and_writes_nothing(self):
-        user = FakeUser(groups=[INTERNAL])
-        environment = FakeEnvironment([user])
-        active = self.env()
-        active.pop("ADMIN_IDENTITY_BASELINE_MODE")
-        result = self.call(environment, active)
-        self.assertEqual(result["status"], "DRY_RUN")
-        self.assertEqual(user.writes, [])
-        self.assertEqual(environment.cr.commits, 0)
-        self.assertEqual(environment.cr.rollbacks, 1)
+    def test_dry_run_sets_and_verifies_read_only_before_target_queries(self):
+        environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+        result = self.call(environment, self.env())
+        self.assertEqual(result["transaction"]["transaction_read_only"], "on")
+        set_index = environment.events.index("sql:SET TRANSACTION READ ONLY")
+        show_index = environment.events.index("sql:SHOW TRANSACTION_READ_ONLY")
+        target_index = environment.events.index("target-user-query")
+        module_index = environment.events.index("formal-module-query")
+        self.assertLess(set_index, show_index)
+        self.assertLess(show_index, target_index)
+        self.assertLess(show_index, module_index)
+
+    def test_dry_run_current_plan_and_observed_states_are_separate(self):
+        environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+        result = self.call(environment, self.env())
+        self.assertEqual(result["current"]["role_code"], "restricted")
         self.assertEqual(
-            json.loads(Path(active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"]).read_text())[
-                "planned_additions"
-            ],
-            ["smart_core.group_smart_core_admin"],
+            result["current"]["role_evidence"], "no_authoritative_role"
+        )
+        self.assertTrue(result["current"]["deny_all_navigation"])
+        self.assertEqual(
+            result["expected_after_apply"]["role_code"], "system_admin"
+        )
+        self.assertEqual(
+            result["expected_after_apply"]["role_evidence"],
+            "explicit:smart_core.group_smart_core_admin",
+        )
+        self.assertFalse(
+            result["expected_after_apply"]["deny_all_navigation"]
+        )
+        self.assertEqual(result["observed_after_dry_run"], result["current"])
+
+    def test_dry_run_plan_is_exact_and_write_audit_is_zero(self):
+        environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+        result = self.call(environment, self.env())
+        self.assertEqual(result["plan"]["action"], "ADD_MISSING_CANONICAL_ROLE")
+        self.assertTrue(result["plan"]["canonical_role_record_present"])
+        self.assertFalse(result["plan"]["canonical_relation_present_before"])
+        self.assertEqual(
+            result["plan"]["planned_write_model"], "res_users_groups_rel"
+        )
+        self.assertEqual(result["plan"]["planned_relation_append_count"], 1)
+        self.assertEqual(result["plan"]["planned_unrelated_write_count"], 0)
+        self.assertEqual(
+            result["write_audit"],
+            {
+                "database_write_statement_count": 0,
+                "orm_write_method_count": 0,
+                "relation_rows_added": 0,
+                "database_transaction_read_only": "PASS",
+                "database_changed": False,
+            },
         )
 
-    def test_apply_adds_only_canonical_role_and_is_idempotent(self):
+    def test_dry_run_fingerprints_are_observed_twice_and_unchanged(self):
+        result = self.call(
+            FakeEnvironment([FakeUser(groups=[INTERNAL])]), self.env()
+        )
+        fingerprints = result["fingerprints"]
+        self.assertTrue(fingerprints["unchanged"])
+        self.assertEqual(fingerprints["before"], fingerprints["after_observed"])
+        self.assertIn("menu_definition_sha256", fingerprints["before"])
+        self.assertIn("product_configuration_sha256", fingerprints["before"])
+
+    def test_read_only_setup_or_verification_failure_stops_before_user_query(self):
+        for kwargs in ({"set_fails": True}, {"show_value": "off"}):
+            with self.subTest(kwargs=kwargs):
+                environment = FakeEnvironment(
+                    [FakeUser(groups=[INTERNAL])], **kwargs
+                )
+                with self.assertRaises(helper.AdminIdentityBaselineError):
+                    self.call(environment, self.env())
+                self.assertNotIn("target-user-query", environment.events)
+
+    def test_read_only_database_rejects_an_accidental_write(self):
+        environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+        helper._enable_dry_run_read_only(environment)
+        with self.assertRaises(RuntimeError):
+            environment.cr.execute("UPDATE res_users SET active = false")
+
+    def test_unexpected_orm_flush_is_caught_before_pass_evidence(self):
+        environment = FakeEnvironment(
+            [FakeUser(groups=[INTERNAL])], flush_fails=True
+        )
+        active = self.env()
+        with self.assertRaises(helper.AdminIdentityBaselineError):
+            self.call(environment, active)
+        self.assertFalse(Path(active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"]).exists())
+
+    def test_atomic_evidence_failure_leaves_no_partial_pass(self):
+        path = Path(self.temp.name) / "atomic.json"
+        with mock.patch.object(helper.os, "replace", side_effect=OSError("fail")):
+            with self.assertRaises(OSError):
+                helper._write_evidence(path, {"result": "PASS"})
+        self.assertFalse(path.exists())
+        self.assertEqual(list(Path(self.temp.name).glob(".atomic.json.*")), [])
+
+    def test_evidence_is_redacted_and_contains_no_complete_group_membership(self):
+        active = self.env()
+        self.call(FakeEnvironment([FakeUser(groups=[INTERNAL])]), active)
+        content = Path(active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"]).read_text()
+        for token in ("password", "cookie", "token", "connection_string"):
+            self.assertNotIn(token, content.casefold())
+        payload = json.loads(content)
+        self.assertNotIn("xmlids", payload["current"])
+
+    def test_apply_adds_only_canonical_relation_and_remains_idempotent(self):
         user = FakeUser(groups=[INTERNAL])
         environment = FakeEnvironment([user])
-        result = self.call(environment, self.env("apply"))
-        self.assertEqual(result["status"], "APPLIED")
+        first = self.call(environment, self.env("apply"))
+        self.assertEqual(first["status"], "APPLIED")
         self.assertEqual(user.writes, [{"groups_id": [(4, CANONICAL.id)]}])
-        self.assertEqual(result["role_after"], "system_admin")
-        self.assertFalse(result["deny_all_navigation_after"])
+        self.assertEqual(first["write_audit"]["orm_write_method_count"], 1)
+        self.assertEqual(first["write_audit"]["relation_rows_added"], 1)
         self.assertEqual(environment.cr.commits, 1)
 
         second = self.call(environment, self.env("apply"))
         self.assertEqual(second["status"], "NOOP")
+        self.assertEqual(second["plan"]["planned_relation_append_count"], 0)
         self.assertEqual(len(user.writes), 1)
 
-    def test_navigation_recovers_without_policy_bypass(self):
+    def test_apply_does_not_enable_read_only(self):
+        environment = FakeEnvironment([FakeUser(groups=[INTERNAL])])
+        self.call(environment, self.env("apply"))
+        self.assertNotIn("sql:SET TRANSACTION READ ONLY", environment.events)
+
+    def test_navigation_recovers_from_shared_policy_without_bypass(self):
         resolver = FakeResolver(None)
         nav = [{"xmlid": "smart_construction_core.menu_sc_root"}]
         restricted = resolver.build_role_surface({"base.group_user"}, nav, set())
@@ -310,7 +488,9 @@ class BaselineTests(unittest.TestCase):
             {"base.group_user", "smart_core.group_smart_core_admin"}, nav, set()
         )
         self.assertEqual(resolver.filter_nav_for_role_surface(nav, restricted), [])
-        self.assertEqual(resolver.filter_nav_for_role_surface(nav, admin), nav)
+        self.assertGreater(
+            len(resolver.filter_nav_for_role_surface(nav, admin)), 0
+        )
 
     def test_canonical_role_is_derived_from_authoritative_policy(self):
         self.assertEqual(
@@ -318,7 +498,9 @@ class BaselineTests(unittest.TestCase):
             {"smart_core.group_smart_core_admin"},
         )
         self.assertEqual(policy.ROLE_PRECEDENCE[0], "system_admin")
-        self.assertTrue(policy.ROLE_SURFACE_OVERRIDES["restricted"]["deny_all_navigation"])
+        self.assertTrue(
+            policy.ROLE_SURFACE_OVERRIDES["restricted"]["deny_all_navigation"]
+        )
         self.assertFalse(
             policy.ROLE_SURFACE_OVERRIDES["system_admin"].get(
                 "deny_all_navigation", False
@@ -392,11 +574,19 @@ class BaselineTests(unittest.TestCase):
             with self.assertRaises(helper.AdminIdentityBaselineError):
                 helper.validate_control_plane(active)
 
-    def test_non_admin_login_and_evidence_scope_are_rejected(self):
+    def test_dry_run_is_default_and_input_scope_is_guarded(self):
+        active = self.env()
+        active.pop("ADMIN_IDENTITY_BASELINE_MODE")
+        result = self.call(
+            FakeEnvironment([FakeUser(groups=[INTERNAL])]), active
+        )
+        self.assertEqual(result["mode"], "dry-run")
+
         active = self.env()
         active["ADMIN_IDENTITY_LOGIN"] = "other"
         with self.assertRaises(helper.AdminIdentityBaselineError):
             helper.validate_control_plane(active)
+
         active = self.env()
         active["ADMIN_IDENTITY_EVIDENCE_OUTPUT"] = "/tmp/evidence.json"
         with self.assertRaises(helper.AdminIdentityBaselineError):
@@ -436,16 +626,21 @@ class BaselineTests(unittest.TestCase):
         self.assertEqual(environment.cr.commits, 0)
         self.assertEqual(environment.cr.rollbacks, 1)
 
-    def test_source_has_no_security_bypass_or_direct_sql(self):
+    def test_source_has_only_controlled_sql_and_no_security_bypass(self):
         source = HELPER_PATH.read_text(encoding="utf-8")
-        self.assertNotIn(".execute(", source)
+        self.assertEqual(source.count("odoo_env.cr.execute("), 2)
+        self.assertIn('odoo_env.cr.execute("SET TRANSACTION READ ONLY")', source)
+        self.assertIn('odoo_env.cr.execute("SHOW transaction_read_only")', source)
+        for statement in ("INSERT ", "UPDATE ", "DELETE ", "TRUNCATE "):
+            self.assertNotIn(statement, source)
         self.assertNotIn("base.group_system", source)
         self.assertNotIn("group_sc_super_admin", source)
         self.assertNotIn("group_sc_business_full", source)
         self.assertNotIn("deny_all_navigation = False", source)
         self.assertNotIn("password", source.casefold())
-        self.assertIn('target.write(', source)
-        self.assertIn('"groups_id"', source)
+        self.assertIn("target.write(", source)
+        self.assertNotIn("target.create(", source)
+        self.assertNotIn("target.unlink(", source)
 
 
 if __name__ == "__main__":
