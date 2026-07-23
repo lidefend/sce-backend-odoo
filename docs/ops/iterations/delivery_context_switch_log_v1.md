@@ -3,6 +3,19 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-24 — Atomic candidate clean source repository
+
+- Branch: `fix/release-candidate-clean-source-repository`
+- Starting product commit: `6dc2601460137759d4bb1dc1ef204e67a1f2abf9`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: isolated candidate source preparation and pre-build RH010 admission
+- Module: atomic release candidate orchestrator, tests, and runbook
+- Reason: prevent unreachable objects and stale refs from a long-lived caller clone from contaminating candidate history hygiene
+- Standard vs User-Specific: repository-wide release safety; no application or customer semantics
+- Why Here / Why Not Elsewhere: P4 owns source custody and build admission; RH010 remains unchanged and application modules must not manage Git object isolation
+- Blast Radius: pre-publication source preparation, identity, RH010, build and scan working directory only; no push, tag, publication, deployment, production access, gc or prune
+- Validation: independent main-only clone, no alternates, SHA/tree/main binding, RH010 isolation/failure, resume drift, concurrency, release contract and formal CI
+
 ## 2026-07-24 — Controlled PR merge expected-head guard
 
 - Branch: `fix/controlled-merge-expected-head-guard`
