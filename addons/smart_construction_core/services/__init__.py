@@ -16,3 +16,4 @@ from . import project_creation_service
 from . import scene_block_schema
 from . import workspace_contract_builder
 from . import dashboard_contract_builder
+from . import locked_menu_policy_contract

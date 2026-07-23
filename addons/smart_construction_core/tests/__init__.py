@@ -49,3 +49,4 @@ from . import test_workflow_contract_backend
 from . import test_runtime_user_management
 from . import test_user_module_product_closure
 from . import test_role_surface_project_member
+from . import test_locked_menu_policy_initialization
