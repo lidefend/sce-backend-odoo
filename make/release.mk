@@ -8,7 +8,8 @@ RELEASE_COMPOSE = $(COMPOSE_BIN) -p $(RELEASE_PROJECT) -f docker-compose.yml -f 
 RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) ODOO_DB=$(RELEASE_DB) ODOO_DBFILTER=^$(RELEASE_DB)$$ COMPOSE_PROJECT_NAME=$(RELEASE_PROJECT) DB_DATA=$(RELEASE_PROJECT)-db REDIS_DATA=$(RELEASE_PROJECT)-redis ODOO_DATA=$(RELEASE_PROJECT)-odoo ODOO_PORT=18087 NGINX_PORT=18086 FRONTEND_DIST_DIR=./frontend/apps/web/dist-release
 
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
-.PHONY: release.production.identity.preflight release.production.compose.preflight release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
+.PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
+.PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup
 
 verify.release.guard: verify.repository.release_hygiene
 	@SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) python3 scripts/release/rehearsal_guard.py
@@ -23,13 +24,14 @@ verify.release.tooling:
 	@$(MAKE) --no-print-directory verify.production.release_contract
 
 verify.production.release_contract:
-	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
 	@python3 addons/smart_core/tests/test_platform_database_contract.py
 	@python3 scripts/release/test_candidate_scan_contract.py
 	@python3 scripts/release/test_product_release.py
 	@python3 scripts/release/test_release_source_identity.py
 	@python3 scripts/release/test_production_compose_contract.py
 	@python3 scripts/release/test_production_db_init.py
+	@python3 scripts/release/test_production_first_fresh_cleanup.py
 	@python3 scripts/release/test_production_release_contract.py
 	@python3 scripts/release/test_production_colocated_release.py
 	@python3 scripts/release/test_locked_menu_policy_contract.py
@@ -39,7 +41,7 @@ verify.production.release_contract:
 PRODUCTION_CONTRACT_COMPOSE = $(COMPOSE_BIN) -f docker-compose.production-candidate.yml
 PRODUCTION_DB_MANAGER = $(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo
 
-release.production.identity.preflight: guard.prod.forbid
+release.production.identity.preflight:
 	@test -n "$(CANDIDATE_IMAGE)" || (echo "CANDIDATE_IMAGE is required"; exit 2)
 	@test -n "$(EXPECTED_RELEASE_SHA)" || (echo "EXPECTED_RELEASE_SHA is required"; exit 2)
 	@test -n "$(EXPECTED_IMAGE_DIGEST)" || (echo "EXPECTED_IMAGE_DIGEST is required"; exit 2)
@@ -67,30 +69,36 @@ release.production.compose.preflight: release.production.identity.preflight
 		--expected-digest "$(EXPECTED_IMAGE_DIGEST)" \
 		--release-manifest "$(RELEASE_MANIFEST_PATH)"
 
+release.production.infrastructure.up: guard.prod.danger release.production.compose.preflight
+	@$(PRODUCTION_CONTRACT_COMPOSE) up -d --wait db redis
+
+release.production.runtime.up: guard.prod.danger release.production.compose.preflight
+	@$(PRODUCTION_CONTRACT_COMPOSE) up -d --wait odoo nginx
+
 release.production.db.preflight: release.production.compose.preflight
 	@$(PRODUCTION_DB_MANAGER) preflight
 
-release.production.db.init: release.production.compose.preflight
+release.production.db.init: guard.prod.danger release.production.compose.preflight
 	@$(PRODUCTION_DB_MANAGER) init
 
-release.production.module.install: release.production.compose.preflight
+release.production.module.install: guard.prod.danger release.production.compose.preflight
 	@test -n "$(TARGET_MODULE)" || (echo "TARGET_MODULE is required"; exit 2)
 	@$(PRODUCTION_DB_MANAGER) install
 
-release.production.module.upgrade: release.production.compose.preflight
+release.production.module.upgrade: guard.prod.danger release.production.compose.preflight
 	@test -n "$(TARGET_MODULE)" || (echo "TARGET_MODULE is required"; exit 2)
 	@$(PRODUCTION_DB_MANAGER) upgrade
 
 release.production.health.readonly: release.production.compose.preflight
 	@$(PRODUCTION_DB_MANAGER) health
 
-release.production.platform.configure: release.production.compose.preflight
+release.production.platform.configure: guard.prod.danger release.production.compose.preflight
 	@test "$(SC_COLOCATED_PLATFORM_CONFIG_APPLY)" = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_CONFIGURATION" || (echo "explicit colocated platform configuration acknowledgement is required"; exit 2)
 	@$(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps \
 		-e SC_COLOCATED_PLATFORM_CONFIG_APPLY="$(SC_COLOCATED_PLATFORM_CONFIG_APPLY)" \
 		--entrypoint /usr/local/bin/production-db-manage odoo configure-platform
 
-release.production.platform.snapshot.initialize: release.production.compose.preflight
+release.production.platform.snapshot.initialize: guard.prod.danger release.production.compose.preflight
 	@test "$(SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY)" = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION" || (echo "explicit snapshot initialization acknowledgement is required"; exit 2)
 	@test -n "$(PLATFORM_RELEASE_PRODUCT_KEY)" || (echo "PLATFORM_RELEASE_PRODUCT_KEY is required"; exit 2)
 	@test -n "$(PLATFORM_RELEASE_VERSION)" || (echo "PLATFORM_RELEASE_VERSION is required"; exit 2)
@@ -102,6 +110,20 @@ release.production.platform.snapshot.initialize: release.production.compose.pref
 
 release.production.contract.image.acceptance:
 	@bash scripts/release/production_contract_image_acceptance.sh
+
+release.production.first_fresh.cleanup.preflight:
+	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)
+	@test "$(PRODUCTION_COMPOSE_PROJECT)" = "sc_production" || (echo "PRODUCTION_COMPOSE_PROJECT must be sc_production"; exit 2)
+	@test "$(TARGET_DB)" = "sc_production" || (echo "TARGET_DB must be sc_production"; exit 2)
+	@python3 scripts/release/production_first_fresh_cleanup.py plan
+
+release.production.first_fresh.cleanup.confirm:
+	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)
+	@test "$(CONFIRM_FRESH_PRODUCTION_DEPLOY)" = "YES_DELETE_OLD_PROJECT_DATA" || \
+		(echo "CONFIRM_FRESH_PRODUCTION_DEPLOY=YES_DELETE_OLD_PROJECT_DATA is required"; exit 2)
+
+release.production.first_fresh.cleanup: guard.prod.danger release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup.preflight
+	@python3 scripts/release/production_first_fresh_cleanup.py apply
 
 release.rehearsal.prepare: verify.release.guard
 	@mkdir -p $(RELEASE_ARTIFACTS)/backup $(RELEASE_ARTIFACTS)/fingerprints
