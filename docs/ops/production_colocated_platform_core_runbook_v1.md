@@ -16,30 +16,56 @@
 4. 只读确认 `smart_core` 已安装、产品策略存在、正式库当前活动快照数量和业务/平台数据基线。
 5. 确认 Nginx 锁库仍为 `sc_production`，客户端数据库输入矩阵不能改变 registry。
 
-## 成对备份与校验
+## 受控安装、三联备份与校验
 
-将 `scripts/release/production_colocated_backup.py` 和 `deploy/production-backup/` 模板安装到受控运维路径后，使用独立授权执行：
+生产端不得直接 `scp/install/systemctl`。从双远端一致、工作树干净的批准
+`main` 先执行只读预检，再在独立授权下原子安装：
 
 ```bash
-python3 /opt/ops/production_colocated_backup.py backup
-python3 /opt/ops/production_colocated_backup.py validate --backup-dir <immutable-backup-directory>
+ENV=prod PRODUCTION_COMPOSE_PROJECT=sc_production TARGET_DB=sc_production \
+BACKUP_TOOL_SOURCE_SHA=<approved-main-sha> EXPECTED_LIVE_MAIN_SHA=<same-sha> \
+BACKUP_ENCRYPTION_STATUS=<verified-policy> BACKUP_RETENTION_DAYS=<days> \
+make production.backup.install.preflight
+
+ENV=prod PROD_DANGER=1 PRODUCTION_COMPOSE_PROJECT=sc_production \
+TARGET_DB=sc_production BACKUP_TOOL_SOURCE_SHA=<approved-main-sha> \
+EXPECTED_LIVE_MAIN_SHA=<same-sha> \
+BACKUP_ENCRYPTION_STATUS=<verified-policy> BACKUP_RETENTION_DAYS=<days> \
+CONFIRM_BACKUP_TOOL_INSTALL=YES_INSTALL_GOVERNED_BACKUP_TOOL \
+make production.backup.install
+
+ENV=prod PROD_DANGER=1 \
+CONFIRM_PRODUCTION_BACKUP=YES_CREATE_SC_PRODUCTION_TRIPLE_BACKUP \
+make production.backup.run
 ```
 
-脚本固定拒绝 `sc_prod` 等其他生产目标，为每次执行创建新的时间戳目录，不覆盖或删除旧备份，并验证数据库身份、非空文件、dump 目录和 SHA-256。备份必须同时包含 `sc_production` 数据库与其 filestore。
+安装器保存旧文件、摘要、权限和 timer 状态；unit 离线验证失败时恢复旧状态，
+且成功安装后也保持 timer 暂停，直至手动备份和恢复演练均通过。每个 backup
+set 原子包含 `sc_production` 数据库、对应 filestore 和脱敏部署元数据。独立锁
+拒绝并发执行，完成目录不可覆盖，临时或失败目录不能作为恢复点。
 
 ## 隔离恢复演练
 
-恢复容器不得与正式 PostgreSQL/Odoo 容器相同；目标库必须使用 `r10e_restore_*` 且预先不存在：
+恢复入口自行建立固定范围的内部网络、数据库 volume、filestore volume 和
+容器命名空间；它不加入生产 network，不挂载生产 volume，不连接生产
+PostgreSQL，并通过无外网、零 cron 的 Odoo `--stop-after-init` 验证启动：
 
 ```bash
-RESTORE_DB_CONTAINER=<isolated-postgres> \
-RESTORE_ODOO_CONTAINER=<isolated-odoo> \
-RESTORE_TARGET_DB=r10e_restore_<run_id> \
-python3 /opt/ops/production_colocated_backup.py restore-drill \
-  --backup-dir <immutable-backup-directory>
+ENV=prod PROD_DANGER=1 \
+BACKUP_DIR=/data/backups/sc_production/<backup-set-id> \
+RESTORE_ID=sc_restore_<utc>_<random> \
+RESTORE_REPORT=/data/backups/sc_production/restore-rehearsals/<restore-id>.json \
+RESTORE_ODOO_IMAGE=<immutable-odoo-digest-ref> \
+RESTORE_POSTGRES_IMAGE=<immutable-postgres-digest-ref> \
+CONFIRM_RESTORE_REHEARSAL=YES_RUN_ISOLATED_RESTORE_REHEARSAL \
+make production.restore.rehearsal
 ```
 
-演练比较业务表与 `smart_core` 平台表计数，并比较源/恢复 filestore 内容摘要。恢复目标已存在、容器未隔离或摘要不一致时立即停止，不得覆盖。
+演练比较关键表计数、附件抽样和 filestore 内容摘要，并记录 RTO 与
+`external_write_side_effects=0`。失败报告保留且不自动重试。资源清理由单独的
+精确确认入口按报告中的固定资源清单执行。只有安装、三联备份和恢复演练全部
+通过后，才允许 `production.backup.timer.restore` 恢复安装前已启用的等价调度；
+安装前未启用时必须另行决定调度。
 
 ## 共置参数初始化
 

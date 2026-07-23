@@ -4,7 +4,8 @@ Description=Daily SCEMS sc_production paired backup
 [Timer]
 OnCalendar=*-*-* 02:30:00 Asia/Shanghai
 Persistent=true
-RandomizedDelaySec=15m
+RandomizedDelaySec=10m
+Unit=scems-production-backup.service
 
 [Install]
 WantedBy=timers.target

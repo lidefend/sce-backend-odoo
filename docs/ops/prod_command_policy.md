@@ -19,6 +19,7 @@ Makefile guards and script-level guards.
 - `make verify.legacy_online_attachment.mirror.job.audit.prod` (requires `PROD_READONLY_VERIFY=1`)
 - `make verify.production_menu.release_gate.guard.prod` (requires `PROD_READONLY_VERIFY=1`)
 - `make verify.production_git.authority.guard` (read-only Git/worktree/auth check)
+- `make production.backup.install.preflight` (read-only tool/main/runtime identity check)
 - `make verify.baseline` (requires PROD_DANGER=1)
 - `make verify.p0` (requires PROD_DANGER=1)
 - `make verify.p0.flow` (requires PROD_DANGER=1)
@@ -40,6 +41,23 @@ Makefile guards and script-level guards.
   `CONFIRM_FORMAL_MODULE_INSTALL=YES_INSTALL_MISSING_FORMAL_MODULES` contract;
   loads the root-owned `0600` backup identity only from
   `/etc/scems/production-backup.env`)
+- `make production.backup.install` (requires the exact
+  `CONFIRM_BACKUP_TOOL_INSTALL=YES_INSTALL_GOVERNED_BACKUP_TOOL` contract;
+  atomically installs only the versioned backup/rehearsal tools and units,
+  preserves a rollback manifest, validates units before daemon-reload, and
+  leaves the timer disabled until backup and restore evidence pass)
+- `make production.backup.run` (requires
+  `CONFIRM_PRODUCTION_BACKUP=YES_CREATE_SC_PRODUCTION_TRIPLE_BACKUP`; creates
+  one immutable database/filestore/sanitized-metadata backup set)
+- `make production.restore.rehearsal` (requires
+  `CONFIRM_RESTORE_REHEARSAL=YES_RUN_ISOLATED_RESTORE_REHEARSAL`; restores only
+  into an internal-network rehearsal namespace)
+- `make production.restore.cleanup` (requires
+  `CONFIRM_RESTORE_CLEANUP=YES_CLEANUP_SCOPED_RESTORE_RESOURCES`; removes only
+  resources recorded in one retained rehearsal report)
+- `make production.backup.timer.restore` (requires
+  `CONFIRM_BACKUP_TIMER_RESTORE=YES_RESTORE_VERIFIED_BACKUP_TIMER`; restores
+  the previously enabled schedule only after paired backup and restore PASS)
 - `make release.production.admin_identity.baseline` (defaults to dry-run;
   dry-run establishes and verifies `transaction_read_only=on` before formal
   module, user, role, menu, or product-configuration queries; its atomic,
