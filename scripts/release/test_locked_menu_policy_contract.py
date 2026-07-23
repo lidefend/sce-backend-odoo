@@ -22,6 +22,10 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
     def setUp(self):
         self.baseline = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
         self.checksum = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256"
+        self.archive_views = (
+            ROOT
+            / "addons/smart_construction_core/views/core/fund_legacy_readonly_archive_views.xml"
+        )
 
     def test_action_only_targets_use_stable_external_ids(self):
         self.assertEqual(
@@ -41,6 +45,22 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             self.assertTrue(spec["res_model"])
             self.assertIn("domain", spec)
             self.assertIn("context", spec)
+
+    def test_fund_archives_are_installed_xml_contracts_not_dynamic_fallbacks(self):
+        xml = self.archive_views.read_text(encoding="utf-8")
+        for action_xmlid in (
+            "action_sc_fuel_card_registration_formal",
+            "action_sc_fuel_card_recharge_formal",
+        ):
+            self.assertIn(f'id="{action_xmlid}"', xml)
+            self.assertNotIn(
+                f"smart_construction_core.{action_xmlid}",
+                CONTRACT.FORMAL_INITIALIZATION_ACTION_SPECS,
+            )
+        self.assertIn("online_old_legacy_direct:direct_acceptance", xml)
+        self.assertIn("direct_acceptance:油卡登记", xml)
+        self.assertIn("direct_acceptance:充值登记", xml)
+        self.assertIn('create="false" edit="false" delete="false" duplicate="false"', xml)
 
     def test_unresolved_tax_certificate_target_requires_business_decision(self):
         menu_xmlid = "smart_construction_core.menu_sc_tax_certificate_registration_user"

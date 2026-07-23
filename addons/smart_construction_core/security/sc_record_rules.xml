@@ -2061,6 +2061,38 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
         </record>
 
+        <record id="rule_sc_fund_account_operation_company" model="ir.rule">
+            <field name="name">SC Fund Account Operation - allowed company</field>
+            <field name="model_id" ref="model_sc_fund_account_operation"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_sc_finance_read_fund_account_operation" model="ir.rule">
+            <field name="name">SC Finance Read - fund account operation</field>
+            <field name="model_id" ref="model_sc_fund_account_operation"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read'))]"/>
+        </record>
+
+        <record id="rule_sc_business_initiator_fund_account_operation" model="ir.rule">
+            <field name="name">SC Business Initiator - exclude finance legacy archives</field>
+            <field name="model_id" ref="model_sc_fund_account_operation"/>
+            <field name="domain_force">['|', ('legacy_source_model', '!=', 'online_old_legacy_direct:direct_acceptance'), ('legacy_source_table', 'not in', ['direct_acceptance:油卡登记', 'direct_acceptance:充值登记'])]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_initiator'))]"/>
+        </record>
+
+        <record id="rule_sc_config_admin_fund_account_operation" model="ir.rule">
+            <field name="name">SC Config Admin - exclude finance legacy archives</field>
+            <field name="model_id" ref="model_sc_fund_account_operation"/>
+            <field name="domain_force">['|', ('legacy_source_model', '!=', 'online_old_legacy_direct:direct_acceptance'), ('legacy_source_table', 'not in', ['direct_acceptance:油卡登记', 'direct_acceptance:充值登记'])]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_config_admin'))]"/>
+        </record>
+
         <record id="rule_sc_business_config_admin_project_member_assignment" model="ir.rule">
             <field name="name">SC Business Config Admin - project member assignment company scope</field>
             <field name="model_id" ref="model_sc_project_member_assignment"/>
