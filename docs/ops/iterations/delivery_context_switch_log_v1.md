@@ -549,3 +549,15 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns remote PR mutations; publication state and application modules must not own review-state transitions
 - Blast Radius: one expected-head-bound draft-to-ready mutation; no base, code, merge policy, auto-merge, main, release, registry, tag, or deployment mutation
 - Validation: missing/invalid/mismatched head rejection, non-draft rejection, exact ready invocation, release contract, standard CI, and static diff checks
+
+## 2026-07-24 — Frozen Candidate Publication Source Contract
+
+- Branch: `fix/publication-candidate-source-preflight`
+- Starting commit: `1f0cc1e7e950fce37a63957dcdac6fbeb350837c`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target / Module: release publication preflight, identity schemas, contract tests, and bilingual runbook
+- Reason: merging the publication workflow advanced main after the immutable RC candidate was accepted, while the first publication preflight incorrectly required live main to remain the candidate source
+- Standard vs User-Specific: repository-wide release identity governance; no application, customer, runtime, image, or candidate-content change
+- Why Here / Why Not Elsewhere: P4 owns publication provenance and remote-state admission; the frozen candidate and application layers must not absorb later delivery-tool commits
+- Blast Radius: publication preflight/reporting only; candidate evidence remains immutable and tag/image/Release remain bound to candidate source
+- Validation: candidate creation evidence, first-parent ancestry, live dual-remote and tool identity, pre-write drift checks, tag/Release bindings, resume/idempotency, schemas, release contract, standard CI, and evidence hash/size/mtime custody
