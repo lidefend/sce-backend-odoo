@@ -30,6 +30,8 @@ class ProductReleaseTests(unittest.TestCase):
             image_manifest.write_text(json.dumps({
                 "product_version": version,
                 "source_sha": "a" * 40,
+                "oci_revision": "a" * 40,
+                "container_source_revision": "a" * 40,
                 "source_tree_sha": "b" * 40,
                 "image_digest": "sha256:" + "c" * 64,
                 "frontend_build_sha256": "d" * 64,
@@ -42,13 +44,46 @@ class ProductReleaseTests(unittest.TestCase):
                 str(ROOT / "scripts" / "release" / "product_release_manifest.py"),
                 "--image-manifest", str(image_manifest),
                 "--sbom", str(sbom),
+                "--expected-source-sha", "a" * 40,
                 "--output", str(output),
             ], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
             payload = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(payload["product_version"], version)
+            self.assertEqual(payload["source_sha"], "a" * 40)
+            self.assertEqual(payload["oci_revision"], "a" * 40)
             self.assertEqual(payload["sbom_sha256"], hashlib.sha256(sbom.read_bytes()).hexdigest())
             manifest_sha = hashlib.sha256(output.read_bytes()).hexdigest()
             self.assertTrue((root / "product-release-manifest.sha256").read_text().startswith(manifest_sha))
+
+    def test_release_manifest_rejects_source_identity_mismatch(self) -> None:
+        version = release.read_version()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            image_manifest = root / "image-manifest.json"
+            sbom = root / "sbom.cyclonedx.json"
+            output = root / "product-release-manifest.json"
+            image_manifest.write_text(json.dumps({
+                "product_version": version,
+                "source_sha": "b" * 40,
+                "oci_revision": "b" * 40,
+                "container_source_revision": "b" * 40,
+                "source_tree_sha": "c" * 40,
+                "image_digest": "sha256:" + "d" * 64,
+                "frontend_build_sha256": "e" * 64,
+                "module_version_matrix": {},
+                "build_time": "2026-01-01T00:00:00Z",
+            }), encoding="utf-8")
+            sbom.write_text('{"bomFormat":"CycloneDX"}\n', encoding="utf-8")
+            completed = subprocess.run([
+                sys.executable,
+                str(ROOT / "scripts" / "release" / "product_release_manifest.py"),
+                "--image-manifest", str(image_manifest),
+                "--sbom", str(sbom),
+                "--expected-source-sha", "a" * 40,
+                "--output", str(output),
+            ], cwd=ROOT, text=True, capture_output=True)
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("RELEASE_MANIFEST_SOURCE_SHA_MISMATCH", completed.stderr)
 
     def test_version_and_release_contract_have_one_source(self) -> None:
         payload = release.load_release_config()

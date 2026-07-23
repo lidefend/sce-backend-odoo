@@ -105,6 +105,35 @@ docker run -d --name "$redis_container" --network "$network" -v "$redis_volume:/
 for _ in $(seq 1 40); do docker exec "$db_container" pg_isready -U odoo -d postgres >/dev/null 2>&1 && break; sleep 1; done
 docker exec "$db_container" pg_isready -U odoo -d postgres >/dev/null
 
+image_id="$(docker image inspect "$image" --format '{{.Id}}')"
+release_identity_dir="$log_dir/release-identity"
+mkdir -p "$release_identity_dir"
+SOURCE_SHA="$source_sha" IMAGE_DIGEST="$image_id" RELEASE_IDENTITY_DIR="$release_identity_dir" python3 - <<'PY'
+import hashlib
+import json
+import os
+from pathlib import Path
+
+root = Path(os.environ["RELEASE_IDENTITY_DIR"])
+manifest = root / "product-release-manifest.json"
+manifest.write_text(
+    json.dumps(
+        {
+            "source_sha": os.environ["SOURCE_SHA"],
+            "oci_revision": os.environ["SOURCE_SHA"],
+            "image_digest": os.environ["IMAGE_DIGEST"],
+        },
+        sort_keys=True,
+    )
+    + "\n",
+    encoding="utf-8",
+)
+(root / "product-release-manifest.sha256").write_text(
+    f"{hashlib.sha256(manifest.read_bytes()).hexdigest()}  {manifest.name}\n",
+    encoding="utf-8",
+)
+PY
+
 common_env=(
   -e "TARGET_DB=$db" -e "DB_NAME=$db" -e "ODOO_DB=$db" -e "ODOO_DBFILTER=^${db}$"
   -e DB_HOST="$db_container" -e DB_PORT=5432 -e DB_USER=odoo -e DB_PASSWORD="$password"
@@ -115,8 +144,18 @@ common_env=(
   -e "SC_FILESTORE_SCOPE=$db" -e "SC_DATABASE_VOLUME=$database_volume" -e "SC_REDIS_VOLUME=$redis_volume"
   -e "SC_FILESTORE_VOLUME=$filestore_volume" -e "SC_SESSION_VOLUME=$session_volume"
   -e "SC_TMP_VOLUME=$tmp_volume" -e "SC_LOG_VOLUME=$log_volume" -e "EXPECTED_RELEASE_SHA=$source_sha"
+  -e "EXPECTED_IMAGE_DIGEST=$image_id"
+  -e RELEASE_MANIFEST_PATH=/opt/sce-release/product-release-manifest.json
+  -e RELEASE_MANIFEST_CHECKSUM_PATH=/opt/sce-release/product-release-manifest.sha256
 )
-mounts=(-v "$filestore_volume:/opt/sce-runtime/filestore" -v "$session_volume:/opt/sce-runtime/sessions" -v "$tmp_volume:/opt/sce-runtime/tmp" -v "$log_volume:/opt/sce-runtime/logs")
+mounts=(
+  -v "$filestore_volume:/opt/sce-runtime/filestore"
+  -v "$session_volume:/opt/sce-runtime/sessions"
+  -v "$tmp_volume:/opt/sce-runtime/tmp"
+  -v "$log_volume:/opt/sce-runtime/logs"
+  -v "$release_identity_dir/product-release-manifest.json:/opt/sce-release/product-release-manifest.json:ro"
+  -v "$release_identity_dir/product-release-manifest.sha256:/opt/sce-release/product-release-manifest.sha256:ro"
+)
 
 if docker run --rm --network "$network" "${common_env[@]}" "${mounts[@]}" "$image" >"$log_dir/missing-database.log" 2>&1; then
   echo "[contract-image] missing database unexpectedly started" >&2; exit 1
@@ -254,6 +293,5 @@ if [[ -n "$r11c_source_dump" ]]; then
   echo "[contract-image] R11C BUSINESS_DECISION_REQUIRED PASS database=$db policies_unchanged=true snapshots_unchanged=true invented_action=false invented_model=false"
 fi
 
-image_id="$(docker image inspect "$image" --format '{{.Id}}')"
 image_size="$(docker image inspect "$image" --format '{{.Size}}')"
 echo "[contract-image] PASS image=$image id=${image_id:7:12} size=$image_size user=$runtime_user database=$db"

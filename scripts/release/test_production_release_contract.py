@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import atexit
+import hashlib
 import importlib.util
+import json
 import re
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -12,15 +16,42 @@ assert SPEC and SPEC.loader
 contract = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(contract)
 
+RELEASE_IDENTITY_TMP = tempfile.TemporaryDirectory()
+atexit.register(RELEASE_IDENTITY_TMP.cleanup)
+RELEASE_IDENTITY_ROOT = Path(RELEASE_IDENTITY_TMP.name)
+
 
 def formal_env(db: str = "sc_migration_rehearsal") -> dict[str, str]:
+    source_sha = "a" * 40
+    image_digest = "sha256:" + "b" * 64
+    manifest = RELEASE_IDENTITY_ROOT / f"{db}-product-release-manifest.json"
+    checksum = RELEASE_IDENTITY_ROOT / f"{db}-product-release-manifest.sha256"
+    manifest.write_text(
+        json.dumps(
+            {
+                "source_sha": source_sha,
+                "oci_revision": source_sha,
+                "image_digest": image_digest,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    checksum.write_text(
+        f"{hashlib.sha256(manifest.read_bytes()).hexdigest()}  {manifest.name}\n",
+        encoding="utf-8",
+    )
     env = {
         "TARGET_DB": db,
         "SC_ENVIRONMENT": "migration_rehearsal" if db == "sc_migration_rehearsal" else "production",
         "SC_FILESTORE_SCOPE": db,
         "SC_ALLOW_DEMO_DATA": "0",
-        "SC_SOURCE_REVISION": "a" * 40,
-        "EXPECTED_RELEASE_SHA": "a" * 40,
+        "SC_SOURCE_REVISION": source_sha,
+        "EXPECTED_RELEASE_SHA": source_sha,
+        "EXPECTED_IMAGE_DIGEST": image_digest,
+        "RELEASE_MANIFEST_PATH": str(manifest),
+        "RELEASE_MANIFEST_CHECKSUM_PATH": str(checksum),
         "TARGET_MODULE": "smart_construction_core",
         "PLATFORM_RELEASE_DB": db,
     }
@@ -57,6 +88,22 @@ class DatabaseGuardTests(unittest.TestCase):
     def test_release_sha_must_match_image(self):
         env = formal_env(); env["EXPECTED_RELEASE_SHA"] = "b" * 40
         with self.assertRaises(contract.ContractError): contract.validate("upgrade", env)
+    def test_release_manifest_is_required_for_mutation(self):
+        env = formal_env(); env.pop("RELEASE_MANIFEST_PATH")
+        with self.assertRaises(contract.ContractError): contract.validate("upgrade", env)
+    def test_release_manifest_source_must_match(self):
+        env = formal_env()
+        manifest = Path(env["RELEASE_MANIFEST_PATH"])
+        payload = json.loads(manifest.read_text())
+        payload["source_sha"] = "b" * 40
+        manifest.write_text(json.dumps(payload) + "\n")
+        checksum = Path(env["RELEASE_MANIFEST_CHECKSUM_PATH"])
+        checksum.write_text(f"{hashlib.sha256(manifest.read_bytes()).hexdigest()}  {manifest.name}\n")
+        with self.assertRaises(contract.ContractError): contract.validate("upgrade", env)
+    def test_release_manifest_checksum_must_match(self):
+        env = formal_env()
+        Path(env["RELEASE_MANIFEST_CHECKSUM_PATH"]).write_text(f"{'0' * 64}  manifest.json\n")
+        with self.assertRaises(contract.ContractError): contract.validate("upgrade", env)
     def test_production_rejects_demo_flag(self):
         env = formal_env("sc_production"); env["SC_ALLOW_DEMO_DATA"] = "1"
         with self.assertRaises(contract.ContractError): contract.validate("runtime", env)
@@ -85,6 +132,8 @@ class StaticContractTests(unittest.TestCase):
         cls.manager = (ROOT / "scripts/release/production_db_manage.sh").read_text()
         cls.compose = (ROOT / "docker-compose.production-candidate.yml").read_text()
         cls.acceptance = (ROOT / "scripts/release/production_contract_image_acceptance.sh").read_text()
+        cls.release_make = (ROOT / "make/release.mk").read_text()
+        cls.identity = (ROOT / "scripts/release/release_source_identity.py").read_text()
 
     def test_base_image_has_digest(self): self.assertRegex(self.dockerfile.splitlines()[0], r"^FROM odoo:17\.0@sha256:[0-9a-f]{64}$")
     def test_no_distribution_upgrade(self): self.assertNotRegex(self.dockerfile, r"apt(?:-get)?\s+(?:dist-upgrade|full-upgrade|upgrade)")
@@ -122,6 +171,18 @@ class StaticContractTests(unittest.TestCase):
     def test_compose_disables_demo(self): self.assertIn('SC_ALLOW_DEMO_DATA: "0"', self.compose)
     def test_compose_requires_explicit_colocated_platform_database(self):
         self.assertIn("PLATFORM_RELEASE_DB:?PLATFORM_RELEASE_DB is required", self.compose)
+    def test_candidate_source_sha_has_no_hardcoded_default(self):
+        self.assertIn("SOURCE_SHA ?=", self.release_make)
+        self.assertNotIn("CANDIDATE_SOURCE_SHA ?=", self.release_make)
+        self.assertNotIn("c93e40c5e2613c0b9389492f185365c1d498e7d2", self.release_make)
+        self.assertIn("SOURCE_SHA is required", self.release_make)
+    def test_formal_repository_identity_is_exact(self):
+        self.assertIn('EXPECTED_REPOSITORY = "lidefend/sce-backend-odoo"', self.identity)
+        self.assertIn('EXPECTED_REMOTE_URL = "https://github.com/lidefend/sce-backend-odoo.git"', self.identity)
+    def test_compose_mounts_release_manifest_for_fail_closed_validation(self):
+        self.assertIn("RELEASE_MANIFEST_PATH:?RELEASE_MANIFEST_PATH is required", self.compose)
+        self.assertIn("RELEASE_MANIFEST_CHECKSUM_PATH:?RELEASE_MANIFEST_CHECKSUM_PATH is required", self.compose)
+        self.assertIn("EXPECTED_IMAGE_DIGEST:?EXPECTED_IMAGE_DIGEST is required", self.compose)
     def test_compose_binds_odoo_to_loopback(self): self.assertIn('127.0.0.1:${CANDIDATE_ODOO_PORT', self.compose)
     def test_odoo_config_disables_database_manager(self): self.assertIn("list_db = False", (ROOT / "config/odoo.conf.template").read_text())
     def test_odoo_database_endpoint_is_explicit(self):

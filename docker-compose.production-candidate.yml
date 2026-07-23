@@ -61,6 +61,9 @@ services:
       SC_TMP_VOLUME: ${SC_TMP_VOLUME:?SC_TMP_VOLUME is required}
       SC_LOG_VOLUME: ${SC_LOG_VOLUME:?SC_LOG_VOLUME is required}
       EXPECTED_RELEASE_SHA: ${EXPECTED_RELEASE_SHA:?EXPECTED_RELEASE_SHA is required}
+      EXPECTED_IMAGE_DIGEST: ${EXPECTED_IMAGE_DIGEST:?EXPECTED_IMAGE_DIGEST is required}
+      RELEASE_MANIFEST_PATH: /opt/sce-release/product-release-manifest.json
+      RELEASE_MANIFEST_CHECKSUM_PATH: /opt/sce-release/product-release-manifest.sha256
       SC_PRODUCTION_CHANGE_APPROVED: ${SC_PRODUCTION_CHANGE_APPROVED:-}
       TARGET_MODULE: ${TARGET_MODULE:-}
       SC_CONTRACT_TEST_MODE: ${SC_CONTRACT_TEST_MODE:-0}
@@ -73,6 +76,8 @@ services:
       - session_data:/opt/sce-runtime/sessions
       - tmp_data:/opt/sce-runtime/tmp
       - log_data:/opt/sce-runtime/logs
+      - ${RELEASE_MANIFEST_PATH:?RELEASE_MANIFEST_PATH is required}:/opt/sce-release/product-release-manifest.json:ro
+      - ${RELEASE_MANIFEST_CHECKSUM_PATH:?RELEASE_MANIFEST_CHECKSUM_PATH is required}:/opt/sce-release/product-release-manifest.sha256:ro
     ports:
       - "127.0.0.1:${CANDIDATE_ODOO_PORT:-18089}:8069"
     healthcheck:

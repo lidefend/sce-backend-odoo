@@ -8,7 +8,7 @@ RELEASE_COMPOSE = $(COMPOSE_BIN) -p $(RELEASE_PROJECT) -f docker-compose.yml -f 
 RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) ODOO_DB=$(RELEASE_DB) ODOO_DBFILTER=^$(RELEASE_DB)$$ COMPOSE_PROJECT_NAME=$(RELEASE_PROJECT) DB_DATA=$(RELEASE_PROJECT)-db REDIS_DATA=$(RELEASE_PROJECT)-redis ODOO_DATA=$(RELEASE_PROJECT)-odoo ODOO_PORT=18087 NGINX_PORT=18086 FRONTEND_DIST_DIR=./frontend/apps/web/dist-release
 
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
-.PHONY: release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
+.PHONY: release.production.identity.preflight release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
 
 verify.release.guard: verify.repository.release_hygiene
 	@SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) python3 scripts/release/rehearsal_guard.py
@@ -23,8 +23,9 @@ verify.release.tooling:
 	@$(MAKE) --no-print-directory verify.production.release_contract
 
 verify.production.release_contract:
-	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_production_db_init.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/release_source_identity.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_release_source_identity.py scripts/release/test_production_db_init.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_locked_menu_policy_contract.py
 	@python3 addons/smart_core/tests/test_platform_database_contract.py
+	@python3 scripts/release/test_release_source_identity.py
 	@python3 scripts/release/test_production_db_init.py
 	@python3 scripts/release/test_production_release_contract.py
 	@python3 scripts/release/test_production_colocated_release.py
@@ -34,30 +35,45 @@ verify.production.release_contract:
 PRODUCTION_CONTRACT_COMPOSE = $(COMPOSE_BIN) -f docker-compose.production-candidate.yml
 PRODUCTION_DB_MANAGER = $(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo
 
-release.production.db.preflight:
+release.production.identity.preflight: guard.prod.forbid
+	@test -n "$(CANDIDATE_IMAGE)" || (echo "CANDIDATE_IMAGE is required"; exit 2)
+	@test -n "$(EXPECTED_RELEASE_SHA)" || (echo "EXPECTED_RELEASE_SHA is required"; exit 2)
+	@test -n "$(EXPECTED_IMAGE_DIGEST)" || (echo "EXPECTED_IMAGE_DIGEST is required"; exit 2)
+	@test -n "$(IMAGE_MANIFEST_PATH)" || (echo "IMAGE_MANIFEST_PATH is required"; exit 2)
+	@test -n "$(RELEASE_MANIFEST_PATH)" || (echo "RELEASE_MANIFEST_PATH is required"; exit 2)
+	@test -n "$(RELEASE_MANIFEST_CHECKSUM_PATH)" || (echo "RELEASE_MANIFEST_CHECKSUM_PATH is required"; exit 2)
+	@python3 scripts/release/release_source_identity.py artifact-preflight \
+		--image "$(CANDIDATE_IMAGE)" \
+		--image-manifest "$(IMAGE_MANIFEST_PATH)" \
+		--release-manifest "$(RELEASE_MANIFEST_PATH)" \
+		--release-manifest-checksum "$(RELEASE_MANIFEST_CHECKSUM_PATH)" \
+		--expected-release-sha "$(EXPECTED_RELEASE_SHA)" \
+		--expected-image-digest "$(EXPECTED_IMAGE_DIGEST)"
+
+release.production.db.preflight: release.production.identity.preflight
 	@$(PRODUCTION_DB_MANAGER) preflight
 
-release.production.db.init:
+release.production.db.init: release.production.identity.preflight
 	@$(PRODUCTION_DB_MANAGER) init
 
-release.production.module.install:
+release.production.module.install: release.production.identity.preflight
 	@test -n "$(TARGET_MODULE)" || (echo "TARGET_MODULE is required"; exit 2)
 	@$(PRODUCTION_DB_MANAGER) install
 
-release.production.module.upgrade:
+release.production.module.upgrade: release.production.identity.preflight
 	@test -n "$(TARGET_MODULE)" || (echo "TARGET_MODULE is required"; exit 2)
 	@$(PRODUCTION_DB_MANAGER) upgrade
 
 release.production.health.readonly:
 	@$(PRODUCTION_DB_MANAGER) health
 
-release.production.platform.configure:
+release.production.platform.configure: release.production.identity.preflight
 	@test "$(SC_COLOCATED_PLATFORM_CONFIG_APPLY)" = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_CONFIGURATION" || (echo "explicit colocated platform configuration acknowledgement is required"; exit 2)
 	@$(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps \
 		-e SC_COLOCATED_PLATFORM_CONFIG_APPLY="$(SC_COLOCATED_PLATFORM_CONFIG_APPLY)" \
 		--entrypoint /usr/local/bin/production-db-manage odoo configure-platform
 
-release.production.platform.snapshot.initialize:
+release.production.platform.snapshot.initialize: release.production.identity.preflight
 	@test "$(SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY)" = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION" || (echo "explicit snapshot initialization acknowledgement is required"; exit 2)
 	@test -n "$(PLATFORM_RELEASE_PRODUCT_KEY)" || (echo "PLATFORM_RELEASE_PRODUCT_KEY is required"; exit 2)
 	@test -n "$(PLATFORM_RELEASE_VERSION)" || (echo "PLATFORM_RELEASE_VERSION is required"; exit 2)
@@ -134,9 +150,9 @@ release.rehearsal.cleanup: verify.release.guard
 
 # Immutable production candidate. These targets are restricted to dev/test and
 # never point at the production database or production compose project.
-CANDIDATE_SOURCE_SHA ?= c93e40c5e2613c0b9389492f185365c1d498e7d2
-CANDIDATE_SHORT_SHA := $(shell printf '%s' '$(CANDIDATE_SOURCE_SHA)' | cut -c1-12)
-CANDIDATE_IMAGE ?= sce-production-candidate:$(CANDIDATE_SHORT_SHA)
+SOURCE_SHA ?=
+CANDIDATE_SHORT_SHA := $(shell printf '%s' '$(SOURCE_SHA)' | cut -c1-12)
+CANDIDATE_IMAGE ?= sce-product:$(shell python3 scripts/release/product_release.py --version)
 CANDIDATE_PROJECT ?= sc-production-candidate
 CANDIDATE_DB ?= sc_user_data_rehearsal_candidate
 HISTORY_SOURCE_DB ?= sc_demo
@@ -159,15 +175,18 @@ release.production.readonly_baseline: guard.prod.readonly check-compose-project 
 	@CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/production_readonly_baseline.sh
 
 release.candidate.build: guard.prod.forbid verify.repository.release_hygiene
-	@CANDIDATE_SOURCE_SHA="$(CANDIDATE_SOURCE_SHA)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/immutable_candidate_build.sh
+	@test -n "$(SOURCE_SHA)" || (echo "SOURCE_SHA is required"; exit 2)
+	@SOURCE_SHA="$(SOURCE_SHA)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/immutable_candidate_build.sh
 
 release.boundary.candidate.build: guard.prod.forbid verify.repository.release_hygiene
-	@CANDIDATE_SOURCE_SHA="$(CANDIDATE_SOURCE_SHA)" CANDIDATE_SOURCE_REF=HEAD ALLOW_BOUNDARY_BRANCH_BUILD=1 \
+	@test -n "$(SOURCE_SHA)" || (echo "SOURCE_SHA is required"; exit 2)
+	@SOURCE_SHA="$(SOURCE_SHA)" CANDIDATE_SOURCE_REF=HEAD ALLOW_BOUNDARY_BRANCH_BUILD=1 \
 		CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" \
 		bash scripts/release/immutable_candidate_build.sh
 
 release.candidate.scan: guard.prod.forbid
-	@CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/immutable_candidate_scan.sh
+	@test -n "$(SOURCE_SHA)" || (echo "SOURCE_SHA is required"; exit 2)
+	@SOURCE_SHA="$(SOURCE_SHA)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/immutable_candidate_scan.sh
 
 PRODUCT_PROJECT ?= sc-tenant-rc-product
 

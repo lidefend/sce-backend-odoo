@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 
@@ -35,15 +36,22 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image-manifest", required=True, type=Path)
     parser.add_argument("--sbom", required=True, type=Path)
+    parser.add_argument("--expected-source-sha", required=True)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     image = json.loads(args.image_manifest.read_text(encoding="utf-8"))
+    if not re.fullmatch(r"[0-9a-f]{40}", args.expected_source_sha):
+        raise SystemExit("RELEASE_MANIFEST_SOURCE_SHA_INVALID")
+    for field in ("source_sha", "oci_revision", "container_source_revision"):
+        if image.get(field) != args.expected_source_sha:
+            raise SystemExit(f"RELEASE_MANIFEST_{field.upper()}_MISMATCH")
     release = load_release_module().load_release_config()
     if image.get("product_version") != release["product_version"]:
         raise SystemExit("RELEASE_MANIFEST_PRODUCT_VERSION_MISMATCH")
     payload = {
         "product_version": release["product_version"],
         "source_sha": image["source_sha"],
+        "oci_revision": image["oci_revision"],
         "source_tree_sha": image["source_tree_sha"],
         "image_digest": image["image_digest"],
         "frontend_sha256": image["frontend_build_sha256"],

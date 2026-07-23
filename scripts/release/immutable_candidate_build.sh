@@ -4,7 +4,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$root"
 
-source_sha="${CANDIDATE_SOURCE_SHA:?CANDIDATE_SOURCE_SHA is required}"
+source_sha="${SOURCE_SHA:?SOURCE_SHA is required}"
 source_ref="${CANDIDATE_SOURCE_REF:-origin/main}"
 if [[ "$source_ref" == "HEAD" ]]; then
   [[ "${ALLOW_BOUNDARY_BRANCH_BUILD:-0}" == "1" ]] || {
@@ -20,6 +20,9 @@ if [[ "$source_ref" == "HEAD" ]]; then
     exit 2
   }
 fi
+python3 scripts/release/release_source_identity.py source-preflight \
+  --root "$root" \
+  --source-sha "$source_sha"
 if [[ "$(git rev-parse "$source_ref")" != "$source_sha" ]]; then
   echo "[candidate.build] $source_ref no longer matches locked source SHA" >&2
   exit 2
@@ -146,6 +149,8 @@ out = Path(os.environ.get("CANDIDATE_ARTIFACTS", "artifacts/release/immutable-pr
 payload = {
     "schema_version": 1,
     "source_sha": os.environ["SOURCE_SHA"],
+    "oci_revision": os.environ["SOURCE_SHA"],
+    "container_source_revision": os.environ["SOURCE_SHA"],
     "source_tree_sha": os.environ["SOURCE_TREE_SHA"],
     "product_version": os.environ["PRODUCT_VERSION"],
     "image": os.environ["IMAGE"],

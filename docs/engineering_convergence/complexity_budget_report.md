@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3265`
+- Scanned files: `3267`
 - Files requiring split plan: `34`
 - Files above warning threshold: `50`
 
@@ -100,7 +100,7 @@ Generated from repository source files. This report is informational during the 
 | 426 | Shell script | `scripts/demo/verify.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
-| 259 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
+| 297 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 
 ## Largest Files
 
