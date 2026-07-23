@@ -68,16 +68,65 @@ class CandidateScanContractTests(unittest.TestCase):
         self.assertIn("trivy-cache/trivy/db/metadata.json", entrypoint)
         self.assertIn("--trivy-db-metadata", entrypoint)
 
-    def test_registry_publish_is_required_before_formal_scan(self):
+    def test_local_candidate_scan_precedes_registry_publication(self):
         build = (ROOT / "scripts/release/immutable_candidate_build.sh").read_text()
         publish = (ROOT / "scripts/release/immutable_candidate_publish.sh").read_text()
+        scan_entry = (ROOT / "scripts/release/immutable_candidate_scan.sh").read_text()
         makefile = (ROOT / "make/release.mk").read_text()
         self.assertIn('image_repository="ghcr.io/lidefend/sce-product"', build)
         self.assertIn('"image_digest": None', build)
+        self.assertIn("--expected-local-image-id", scan_entry)
+        self.assertIn('"$publish_status" == "published"', scan_entry)
         self.assertIn('docker push "$image"', publish)
         self.assertIn('docker push "$source_tag"', publish)
         self.assertIn("docker manifest inspect --verbose", publish)
+        self.assertIn("release.candidate:", makefile)
         self.assertIn("release.candidate.publish:", makefile)
+
+    def test_unpublished_candidate_binds_scan_to_local_image_id(self):
+        local_id = "sha256:" + "d" * 64
+        result = summary(
+            {"Results": []},
+            image_manifest={
+                "schema_version": 2,
+                "source_sha": SHA,
+                "image_digest": None,
+                "local_image_id": local_id,
+                "registry_repository": "ghcr.io/lidefend/sce-product",
+                "publish_status": "not_published",
+            },
+            expected_image_digest=None,
+            expected_local_image_id=local_id,
+        )
+        self.assertEqual(result["identity_kind"], "local_image_id")
+        self.assertEqual(result["local_image_id"], local_id)
+        self.assertIsNone(result["image_digest"])
+        self.assertEqual(result["publish_status"], "not_published")
+
+    def test_unpublished_candidate_rejects_registry_digest_or_wrong_local_id(self):
+        local_id = "sha256:" + "d" * 64
+        manifest = {
+            "schema_version": 2,
+            "source_sha": SHA,
+            "image_digest": None,
+            "local_image_id": local_id,
+            "registry_repository": "ghcr.io/lidefend/sce-product",
+            "publish_status": "not_published",
+        }
+        with self.assertRaises(scan.ScanContractError):
+            summary(
+                {"Results": []},
+                image_manifest=manifest,
+                expected_image_digest=DIGEST,
+                expected_local_image_id=local_id,
+            )
+        with self.assertRaises(scan.ScanContractError):
+            summary(
+                {"Results": []},
+                image_manifest=manifest,
+                expected_image_digest=None,
+                expected_local_image_id="sha256:" + "e" * 64,
+            )
 
     def test_critical_high_and_secret_each_block(self):
         rows = (

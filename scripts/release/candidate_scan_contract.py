@@ -44,27 +44,47 @@ def build_summary(
     syft_version: dict,
     image_manifest: dict,
     expected_source_sha: str,
-    expected_image_digest: str,
+    expected_image_digest: str | None,
     scanned_at: str,
+    expected_local_image_id: str | None = None,
 ) -> dict:
     if not FULL_SHA.fullmatch(expected_source_sha):
         raise ScanContractError("expected source SHA must be a full lowercase SHA")
-    if not IMAGE_DIGEST.fullmatch(expected_image_digest):
-        raise ScanContractError("expected image digest must be sha256:<64 hex>")
     if image_manifest.get("source_sha") != expected_source_sha:
         raise ScanContractError("scan source SHA does not match image manifest")
-    if image_manifest.get("image_digest") != expected_image_digest:
-        raise ScanContractError("scan image digest does not match image manifest")
-    if (
-        image_manifest.get("schema_version") != 2
-        or image_manifest.get("registry_repository") != "ghcr.io/lidefend/sce-product"
-        or image_manifest.get("publish_status") != "published"
-    ):
-        raise ScanContractError("scan requires a published formal registry manifest")
-    registry_refs = image_manifest.get("registry_refs")
-    expected_ref = f"ghcr.io/lidefend/sce-product@{expected_image_digest}"
-    if not isinstance(registry_refs, list) or registry_refs != [expected_ref, expected_ref]:
-        raise ScanContractError("scan registry references do not match image digest")
+    if image_manifest.get("schema_version") != 2:
+        raise ScanContractError("image manifest schema must be v2")
+    if image_manifest.get("registry_repository") != "ghcr.io/lidefend/sce-product":
+        raise ScanContractError("scan registry repository is not approved")
+
+    publish_status = image_manifest.get("publish_status")
+    if publish_status == "published":
+        if not expected_image_digest or not IMAGE_DIGEST.fullmatch(expected_image_digest):
+            raise ScanContractError("published scan requires a registry image digest")
+        if image_manifest.get("image_digest") != expected_image_digest:
+            raise ScanContractError("scan image digest does not match image manifest")
+        registry_refs = image_manifest.get("registry_refs")
+        expected_ref = f"ghcr.io/lidefend/sce-product@{expected_image_digest}"
+        if not isinstance(registry_refs, list) or registry_refs != [expected_ref, expected_ref]:
+            raise ScanContractError("scan registry references do not match image digest")
+        identity_kind = "registry_digest"
+        local_image_id = image_manifest.get("local_image_id")
+    elif publish_status == "not_published":
+        if expected_image_digest:
+            raise ScanContractError("unpublished scan must not claim a registry digest")
+        if image_manifest.get("image_digest") is not None:
+            raise ScanContractError("unpublished image manifest must not contain a registry digest")
+        if not expected_local_image_id or not IMAGE_DIGEST.fullmatch(expected_local_image_id):
+            raise ScanContractError("unpublished scan requires a local image ID")
+        if image_manifest.get("local_image_id") != expected_local_image_id:
+            raise ScanContractError("scan local image ID does not match image manifest")
+        if image_manifest.get("registry_refs") not in (None, []):
+            raise ScanContractError("unpublished image manifest must not contain registry refs")
+        identity_kind = "local_image_id"
+        local_image_id = expected_local_image_id
+    else:
+        raise ScanContractError("image manifest publish status is invalid")
+
     if not isinstance(report.get("Results"), list):
         raise ScanContractError("Trivy Results is unavailable")
 
@@ -105,6 +125,9 @@ def build_summary(
         "status": "completed",
         "source_sha": expected_source_sha,
         "image_digest": expected_image_digest,
+        "local_image_id": local_image_id,
+        "identity_kind": identity_kind,
+        "publish_status": publish_status,
         "counts": counts,
         "tools": {"trivy": trivy, "syft": syft},
         "vulnerability_db_updated_at": db_updated_at,
@@ -128,7 +151,8 @@ def main() -> int:
     parser.add_argument("--syft-version", required=True, type=Path)
     parser.add_argument("--image-manifest", required=True, type=Path)
     parser.add_argument("--expected-source-sha", required=True)
-    parser.add_argument("--expected-image-digest", required=True)
+    parser.add_argument("--expected-image-digest")
+    parser.add_argument("--expected-local-image-id")
     parser.add_argument(
         "--scanned-at",
         default=datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
@@ -144,6 +168,7 @@ def main() -> int:
             image_manifest=_load(args.image_manifest, "image manifest"),
             expected_source_sha=args.expected_source_sha,
             expected_image_digest=args.expected_image_digest,
+            expected_local_image_id=args.expected_local_image_id,
             scanned_at=args.scanned_at,
         )
     except ScanContractError as exc:

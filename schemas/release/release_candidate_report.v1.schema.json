@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sce.example/schemas/release/release_candidate_report.v1.schema.json",
+  "title": "Immutable release candidate state and readiness report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "CANDIDATE_READY",
+    "source",
+    "external_effects"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "release_candidate_report.v1"
+    },
+    "status": {
+      "enum": ["running", "failed", "ready"]
+    },
+    "CANDIDATE_READY": {
+      "type": "boolean"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit_sha", "tree_sha", "product_version"],
+      "properties": {
+        "commit_sha": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tree_sha": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "product_version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"
+        },
+        "pipeline_contract_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "remote_main": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["github", "gitee"],
+          "properties": {
+            "github": {
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "gitee": {
+              "pattern": "^[0-9a-f]{40}$"
+            }
+          }
+        },
+        "required_checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "public_guard",
+            "professional_authorization",
+            "professional_quality_gate"
+          ],
+          "properties": {
+            "public_guard": {
+              "const": "success"
+            },
+            "professional_authorization": {
+              "const": "success"
+            },
+            "professional_quality_gate": {
+              "const": "success"
+            }
+          }
+        },
+        "required_checks_head_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "stage": {
+      "type": "string",
+      "minLength": 1
+    },
+    "failed_stage": {
+      "type": ["string", "null"]
+    },
+    "error": {
+      "type": ["string", "null"]
+    },
+    "exit_code": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 255
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["report", "log"],
+      "properties": {
+        "report": {
+          "const": "release-report.json"
+        },
+        "log": {
+          "type": "string",
+          "pattern": "^logs/.+\\.log$"
+        }
+      }
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "tags",
+        "local_image_id",
+        "oci_revision",
+        "architecture",
+        "publish_status"
+      ],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "local_image_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "oci_revision": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "architecture": {
+          "const": "linux/amd64"
+        },
+        "publish_status": {
+          "const": "not_published"
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "archive_reload",
+        "frontend_digest",
+        "security_scan",
+        "sbom",
+        "critical",
+        "high",
+        "secret"
+      ],
+      "properties": {
+        "archive_reload": {
+          "const": "pass"
+        },
+        "frontend_digest": {
+          "const": "pass"
+        },
+        "security_scan": {
+          "const": "pass"
+        },
+        "sbom": {
+          "const": "pass"
+        },
+        "critical": {
+          "const": 0
+        },
+        "high": {
+          "const": 0
+        },
+        "secret": {
+          "const": 0
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directory", "sha256"],
+      "properties": {
+        "directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "object",
+          "minProperties": 10,
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "external_effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_push",
+        "git_tag",
+        "release_publication",
+        "deployment"
+      ],
+      "properties": {
+        "registry_push": {
+          "const": false
+        },
+        "git_tag": {
+          "const": false
+        },
+        "release_publication": {
+          "const": false
+        },
+        "deployment": {
+          "const": false
+        }
+      }
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ready"
+          }
+        }
+      },
+      "then": {
+        "required": ["image", "verification", "artifacts", "completed_at"],
+        "properties": {
+          "CANDIDATE_READY": {
+            "const": true
+          },
+          "source": {
+            "required": [
+              "remote_main",
+              "required_checks",
+              "required_checks_head_sha",
+              "pipeline_contract_sha256"
+            ]
+          }
+        }
+      },
+      "else": {
+        "required": [
+          "stage",
+          "failed_stage",
+          "error",
+          "exit_code",
+          "evidence",
+          "updated_at"
+        ],
+        "properties": {
+          "CANDIDATE_READY": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "failed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "failed_stage": {
+            "type": "string",
+            "minLength": 1
+          },
+          "error": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exit_code": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 255
+          }
+        }
+      }
+    }
+  ]
+}
