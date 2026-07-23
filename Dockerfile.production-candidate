@@ -45,6 +45,8 @@ COPY scripts/release/production_db_init.py /usr/local/bin/production_db_init.py
 COPY scripts/release/production_db_manage.sh /usr/local/bin/production-db-manage
 COPY scripts/release/configure_colocated_platform_core.py /usr/local/share/sce/configure_colocated_platform_core.py
 COPY scripts/release/initialize_colocated_platform_snapshot.py /usr/local/share/sce/initialize_colocated_platform_snapshot.py
+COPY scripts/verify/baselines/formal_business_product_menu_policy_v1.json /opt/sce-product/contracts/formal_business_product_menu_policy_v1.json
+COPY scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256 /opt/sce-product/contracts/formal_business_product_menu_policy_v1.json.sha256
 COPY frontend/apps/web/dist-production-candidate /usr/share/nginx/html
 COPY VERSION /opt/sce-product/VERSION
 COPY release/product-release.yaml /opt/sce-product/product-release.yaml

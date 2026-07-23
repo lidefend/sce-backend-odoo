@@ -311,3 +311,17 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Required R11C repair: remove the invented runtime model specification, retain the stable menu/action identity as `BUSINESS_DECISION_REQUIRED`, and reject it before resolving any historical database action
 - Target branch: the future clean R11C branch recreated from the then-current `main`; this replacement branch intentionally contains no locked-menu code
 - Fixed boundaries: do not create `sc.legacy.payment.residual.fact`, do not bind `sc.invoice.registration`, do not alter the 97-entry baseline, and keep formal initialization fail-closed until the business disposition is approved
+
+## 2026-07-23 — R11C Locked Menu Policy Initialization Repair
+
+- Branch: `fix/r11c-locked-menu-policy-repair`
+- Starting commit: `84db202b4732d3509cab7b796feec7d5ee0a18f3`
+- Formal Product Layer: P1 construction industry menu baseline plus P4 release initialization and immutable image packaging
+- Layer Target: one versioned, checksummed locked-menu contract shared by formal policy synchronization, snapshot initialization, and the production menu release guard
+- Module: `smart_construction_core`, production candidate Dockerfile, colocated snapshot initializer, and isolated release-contract acceptance
+- Reason: first deployment silently lost the locked baseline inside the production image, generated a 214-entry catalog fallback policy, and froze that candidate policy before comparing it with the 97-entry repository release contract
+- Standard vs User-Specific: construction standard/preview release policy only; no customer preference, low-code override, production data baseline, or frontend behavior
+- Why Here: P1 owns the construction menu contract and its stable XML-ID identity; P4 packages and applies that authority transactionally during first deployment
+- Why Not Elsewhere: P0 snapshot infrastructure remains generic, the frontend cannot choose product menus, runtime configuration cannot replace a versioned release contract, and production data is not a policy authority
+- Blast Radius: formal initialization of `construction.standard` and `construction.preview`, candidate image contract contents, and guard normalization; catalog fallback remains available only to explicitly non-formal development flows
+- Validation: locked baseline missing/invalid/product/normalization negatives, numeric-ID independence, pre-resolution `BUSINESS_DECISION_REQUIRED`, transactional rollback without policy/action/model/snapshot mutation, standard/preview isolation, repeatable fail-closed initialization, candidate-image contract acceptance, release-contract tests, and full CI

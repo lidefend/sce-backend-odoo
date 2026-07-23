@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import json
 
+from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
+    FORMAL_ACTION_ONLY_MENU_TARGETS,
+)
+
 
 ACCEPTANCE_PATH_TOKENS = ("用户核对菜单", "用户数据验收")
 PRODUCT_KEYS = ("construction.standard", "construction.preview")
@@ -27,23 +31,9 @@ FORMAL_EQUIVALENT_MENU_XMLIDS = (
 )
 
 FORMAL_MENU_ACTION_XMLIDS = {
+    **FORMAL_ACTION_ONLY_MENU_TARGETS,
     "smart_construction_core.menu_sc_arrival_confirmation": (
         "smart_construction_core.action_sc_receipt_income_arrival_confirmation"
-    ),
-    "smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance": (
-        "smart_construction_core.action_sc_fuel_card_registration_formal"
-    ),
-    "smart_construction_core.menu_sc_legacy_fuel_card_recharge_fact_acceptance": (
-        "smart_construction_core.action_sc_fuel_card_recharge_formal"
-    ),
-    "smart_construction_core.menu_sc_company_user_roster_formal": (
-        "smart_construction_core.action_sc_company_user_roster_formal"
-    ),
-    "smart_construction_core.menu_sc_material_rental_in_acceptance": (
-        "smart_construction_core.action_sc_material_rental_in_acceptance"
-    ),
-    "smart_construction_core.menu_sc_material_rental_return_acceptance": (
-        "smart_construction_core.action_sc_material_rental_return_acceptance"
     ),
     "smart_construction_core.menu_sc_self_funding_advance_income": (
         "smart_construction_core.action_sc_self_funding_registration_income"

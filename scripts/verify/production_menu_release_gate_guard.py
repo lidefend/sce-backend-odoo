@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
 from odoo.addons.smart_core.handlers.menu_configuration import (
@@ -16,6 +15,10 @@ from odoo.addons.smart_core.handlers.system_init import (
     _load_platform_release_gate,
 )
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
+from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
+    assert_policy_matches_locked_contract,
+    load_locked_menu_policy_contract,
+)
 
 
 PRODUCT_KEYS = ("construction.standard", "construction.preview")
@@ -24,7 +27,6 @@ EXPECTED_PLATFORM_RELEASE_DB_MATCH_CURRENT = True
 MIN_RELEASED_POLICY_MENU_COUNT = 1
 FORBIDDEN_RUNTIME_LABEL_TOKENS = ("用户核对菜单",)
 FORBIDDEN_POLICY_PATH_TOKENS = ("用户核对菜单", "旧业务数据核对", "直营项目数据核对")
-BASELINE_FILE = "formal_business_product_menu_policy_v1.json"
 EXPECTED_FORMAL_TOP_GROUPS = (
     "基础资料",
     "项目中心",
@@ -42,25 +44,6 @@ REQUIRED_FORMAL_MENU_XMLIDS = (
     "smart_construction_core.menu_sc_supplier_partner",
 )
 FORMAL_MENU_CONFIG_MAX_EXTRA_MENU_COUNT = 80
-CONFIG_CENTER_GROUP_LABEL = "配置中心"
-CONFIG_CENTER_LOWCODING_LABEL = "低代码系统配置"
-LEGACY_CONFIG_GROUP_LABELS = {"基础设置", "系统设置", "业务配置"}
-CONFIG_CENTER_LOWCODING_MENU_XMLIDS = {
-    "smart_construction_core.menu_sc_business_config_workbench",
-    "smart_construction_core.menu_ui_menu_config_policy_business_config",
-    "smart_construction_core.menu_ui_form_field_policy_business_config",
-    "smart_construction_core.menu_ui_form_custom_field_wizard_business_config",
-}
-
-
-def _baseline_candidates() -> list[Path]:
-    return [
-        Path("/mnt/scripts/verify/baselines") / BASELINE_FILE,
-        Path.cwd() / "scripts" / "verify" / "baselines" / BASELINE_FILE,
-        Path("/home/lidefend/workspace/sce-product-odoo/scripts/verify/baselines") / BASELINE_FILE,
-    ]
-
-
 def _text(value):
     return str(value or "").strip()
 
@@ -107,60 +90,8 @@ def _released_policy_menu_count(product_key: str) -> int:
     return len(_released_policy_menus(product_key))
 
 
-def _policy_row(group_label: str, menu: dict) -> tuple[str, str, str]:
-    group_label = _canonical_group_label(group_label)
-    menu = _normalize_menu_for_group(menu, group_label)
-    return (
-        _text(group_label),
-        _text(menu.get("label") or menu.get("name")),
-        _text(menu.get("menu_xmlid") or menu.get("page_key") or menu.get("menu_key")),
-    )
-
-
-def _canonical_group_label(label: str) -> str:
-    label = _text(label)
-    if label in LEGACY_CONFIG_GROUP_LABELS:
-        return CONFIG_CENTER_GROUP_LABEL
-    return label
-
-
-def _normalize_menu_for_group(menu: dict, group_label: str) -> dict:
-    row = dict(menu or {})
-    menu_xmlid = _text(row.get("menu_xmlid") or row.get("page_key") or row.get("menu_key"))
-    if group_label == CONFIG_CENTER_GROUP_LABEL and menu_xmlid in CONFIG_CENTER_LOWCODING_MENU_XMLIDS:
-        label = _text(row.get("label") or row.get("name") or row.get("page_label"))
-        if label:
-            row["visible_menu_path"] = "智慧施工管理平台 / %s / %s / %s" % (
-                CONFIG_CENTER_GROUP_LABEL,
-                CONFIG_CENTER_LOWCODING_LABEL,
-                label,
-            )
-    return row
-
-
-def _load_formal_baseline() -> dict[str, list[tuple[str, str, str]]]:
-    path = next((candidate for candidate in _baseline_candidates() if candidate.is_file()), None)
-    if not path:
-        raise AssertionError(f"missing formal product menu baseline: {BASELINE_FILE}")
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    products = payload.get("products") if isinstance(payload, dict) else payload
-    if not isinstance(products, list):
-        raise AssertionError(f"{BASELINE_FILE} products must be a list")
-    out: dict[str, list[tuple[str, str, str, str]]] = {}
-    for product in products:
-        if not isinstance(product, dict):
-            continue
-        product_key = _text(product.get("product_key"))
-        rows = []
-        for group in product.get("menu_groups") or []:
-            if not isinstance(group, dict):
-                continue
-            group_label = _text(group.get("group_label") or group.get("label"))
-            for menu in group.get("menus") or []:
-                if isinstance(menu, dict):
-                    rows.append(_policy_row(group_label, menu))
-        out[product_key] = rows
-    return out
+def _load_formal_baseline() -> dict:
+    return load_locked_menu_policy_contract()
 
 
 def _released_policy_menus(product_key: str) -> list[dict]:
@@ -192,22 +123,13 @@ def _released_policy_menus(product_key: str) -> list[dict]:
     return rows
 
 
-def _assert_policy_matches_formal_baseline(product_key: str, baseline: dict[str, list[tuple[str, str, str, str]]]) -> dict:
-    expected = baseline.get(product_key)
-    if expected is None:
-        raise AssertionError(f"formal baseline missing product: {product_key}")
+def _assert_policy_matches_formal_baseline(product_key: str, baseline: dict) -> dict:
     rows = _released_policy_menus(product_key)
-    actual = [_policy_row(_text(row.get("_group_label")), row) for row in rows]
-    if actual != expected:
-        expected_set = set(expected)
-        actual_set = set(actual)
-        raise AssertionError(
-            "%s formal product menu policy drift: only_expected=%s only_actual=%s"
-            % (product_key, sorted(expected_set - actual_set)[:20], sorted(actual_set - expected_set)[:20])
-        )
+    policy = env["sc.product.policy"].sudo().search([("product_key", "=", product_key)], limit=1)  # noqa: F821
+    match = assert_policy_matches_locked_contract(baseline, product_key, policy.menu_groups)
     return {
-        "baseline_menu_count": len(expected),
-        "policy_released_menu_count": len(actual),
+        "baseline_menu_count": int(match["menu_count"]),
+        "policy_released_menu_count": len(rows),
     }
 
 
