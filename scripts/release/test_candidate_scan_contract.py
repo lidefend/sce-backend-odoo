@@ -24,7 +24,17 @@ def summary(report: dict, **overrides):
         "trivy_version": {"Version": "0.63.0"},
         "trivy_db_metadata": {"UpdatedAt": "2026-07-23T00:00:00Z"},
         "syft_version": {"version": "1.27.1"},
-        "image_manifest": {"source_sha": SHA, "image_digest": DIGEST},
+        "image_manifest": {
+            "schema_version": 2,
+            "source_sha": SHA,
+            "image_digest": DIGEST,
+            "registry_repository": "ghcr.io/lidefend/sce-product",
+            "registry_refs": [
+                f"ghcr.io/lidefend/sce-product@{DIGEST}",
+                f"ghcr.io/lidefend/sce-product@{DIGEST}",
+            ],
+            "publish_status": "published",
+        },
         "expected_source_sha": SHA,
         "expected_image_digest": DIGEST,
         "scanned_at": "2026-07-23T01:00:00Z",
@@ -58,6 +68,17 @@ class CandidateScanContractTests(unittest.TestCase):
         self.assertIn("trivy-cache/trivy/db/metadata.json", entrypoint)
         self.assertIn("--trivy-db-metadata", entrypoint)
 
+    def test_registry_publish_is_required_before_formal_scan(self):
+        build = (ROOT / "scripts/release/immutable_candidate_build.sh").read_text()
+        publish = (ROOT / "scripts/release/immutable_candidate_publish.sh").read_text()
+        makefile = (ROOT / "make/release.mk").read_text()
+        self.assertIn('image_repository="ghcr.io/lidefend/sce-product"', build)
+        self.assertIn('"image_digest": None', build)
+        self.assertIn('docker push "$image"', publish)
+        self.assertIn('docker push "$source_tag"', publish)
+        self.assertIn("docker manifest inspect --verbose", publish)
+        self.assertIn("release.candidate.publish:", makefile)
+
     def test_critical_high_and_secret_each_block(self):
         rows = (
             {"Vulnerabilities": [{"Severity": "CRITICAL"}]},
@@ -72,12 +93,26 @@ class CandidateScanContractTests(unittest.TestCase):
         with self.assertRaises(scan.ScanContractError):
             summary(
                 {"Results": []},
-                image_manifest={"source_sha": "c" * 40, "image_digest": DIGEST},
+                image_manifest={
+                    "schema_version": 2,
+                    "source_sha": "c" * 40,
+                    "image_digest": DIGEST,
+                    "registry_repository": "ghcr.io/lidefend/sce-product",
+                    "registry_refs": [f"ghcr.io/lidefend/sce-product@{DIGEST}"] * 2,
+                    "publish_status": "published",
+                },
             )
         with self.assertRaises(scan.ScanContractError):
             summary(
                 {"Results": []},
-                image_manifest={"source_sha": SHA, "image_digest": "sha256:" + "c" * 64},
+                image_manifest={
+                    "schema_version": 2,
+                    "source_sha": SHA,
+                    "image_digest": "sha256:" + "c" * 64,
+                    "registry_repository": "ghcr.io/lidefend/sce-product",
+                    "registry_refs": [f"ghcr.io/lidefend/sce-product@{DIGEST}"] * 2,
+                    "publish_status": "published",
+                },
             )
 
 

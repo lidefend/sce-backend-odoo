@@ -59,13 +59,14 @@ artifacts="${CANDIDATE_ARTIFACTS:-artifacts/release/immutable-production-candida
 dist="frontend/apps/web/dist-production-candidate"
 short_sha="${source_sha:0:12}"
 product_version="$(python3 scripts/release/product_release.py --version)"
-expected_image="sce-product:${product_version}"
+image_repository="ghcr.io/lidefend/sce-product"
+expected_image="${image_repository}:${product_version}"
 image="${CANDIDATE_IMAGE:-$expected_image}"
 [[ "$image" == "$expected_image" ]] || {
   echo "[candidate.build] CANDIDATE_IMAGE must be $expected_image" >&2
   exit 2
 }
-sha_image="sce-product:sha-${short_sha}"
+sha_image="${image_repository}:sha-${short_sha}"
 frontend_builder="sce-production-frontend-builder:${short_sha}"
 build_time="${CANDIDATE_BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 source_tree_sha="$(git rev-parse "${source_sha}^{tree}")"
@@ -147,11 +148,28 @@ fi
 archive="$artifacts/candidate-image.tar"
 docker save --output "$archive" "$image" "$sha_image"
 archive_sha="$(sha256sum "$archive" | awk '{print $1}')"
+archive_config_digest="$(python3 - "$archive" <<'PY'
+import json
+import sys
+import tarfile
+
+with tarfile.open(sys.argv[1]) as archive:
+    rows = json.load(archive.extractfile("manifest.json"))
+if not isinstance(rows, list) or len(rows) != 1:
+    raise SystemExit("candidate archive must contain exactly one image")
+config = str(rows[0].get("Config") or "")
+prefix = "blobs/sha256/"
+if not config.startswith(prefix) or len(config) != len(prefix) + 64:
+    raise SystemExit("candidate archive config digest is invalid")
+print("sha256:" + config.removeprefix(prefix))
+PY
+)"
 
 IMAGE="$image" SHA_IMAGE="$sha_image" IMAGE_ID="$image_id" SOURCE_SHA="$source_sha" \
 SOURCE_TREE_SHA="$source_tree_sha" PRODUCT_VERSION="$product_version" FRONTEND_HASH="$frontend_hash" \
 BUILD_TIME="$build_time" ODOO_VERSION="$odoo_version" PYTHON_VERSION="$image_python" \
 NODE_VERSION="$node_version" PNPM_VERSION="$pnpm_version" ARCHIVE_SHA="$archive_sha" \
+ARCHIVE_CONFIG_DIGEST="$archive_config_digest" IMAGE_REPOSITORY="$image_repository" \
 FRONTEND_BASE_DIGEST="$frontend_base_digest" RUNTIME_BASE_DIGEST="$runtime_base_digest" \
 BASELINE_CHECKSUM="$baseline_checksum" \
 MODULE_MATRIX_JSON="$module_matrix" \
@@ -161,7 +179,7 @@ from pathlib import Path
 
 out = Path(os.environ.get("CANDIDATE_ARTIFACTS", "artifacts/release/immutable-production-candidate-v1"))
 payload = {
-    "schema_version": 1,
+    "schema_version": 2,
     "source_sha": os.environ["SOURCE_SHA"],
     "oci_revision": os.environ["SOURCE_SHA"],
     "container_source_revision": os.environ["SOURCE_SHA"],
@@ -169,8 +187,10 @@ payload = {
     "product_version": os.environ["PRODUCT_VERSION"],
     "image": os.environ["IMAGE"],
     "image_tags": [os.environ["IMAGE"], os.environ["SHA_IMAGE"]],
-    "image_id": os.environ["IMAGE_ID"],
-    "image_digest": os.environ["IMAGE_ID"],
+    "registry_repository": os.environ["IMAGE_REPOSITORY"],
+    "local_image_id": os.environ["IMAGE_ID"],
+    "image_digest": None,
+    "publish_status": "not_published",
     "base_image_digests": {
         "frontend_builder": os.environ["FRONTEND_BASE_DIGEST"],
         "odoo_runtime": os.environ["RUNTIME_BASE_DIGEST"],
@@ -187,6 +207,7 @@ payload = {
     "module_version_matrix": json.loads(os.environ["MODULE_MATRIX_JSON"]),
     "archive": "candidate-image.tar",
     "archive_sha256": os.environ["ARCHIVE_SHA"],
+    "archive_config_digest": os.environ["ARCHIVE_CONFIG_DIGEST"],
     "contains": ["odoo_backend", "production_frontend_static", "formal_addons", "python_dependencies", "startup_configuration", "nginx"],
     "host_source_mounts": 0,
 }
@@ -202,4 +223,4 @@ if [[ "$reloaded_id" != "$image_id" || "$reloaded_sha_id" != "$image_id" ]]; the
   exit 1
 fi
 printf '%s\n' "$reloaded_id" > "$artifacts/reloaded-image-id.txt"
-echo "[candidate.build] PASS image=$image source_tag=$sha_image digest=$image_id frontend=$frontend_hash"
+echo "[candidate.build] PASS image=$image source_tag=$sha_image local_image_id=$image_id archive_config=$archive_config_digest frontend=$frontend_hash"

@@ -6,6 +6,13 @@
 
 生产 Dockerfile 保留可读版本 tag，并以不可变 `sha256` digest 固定基础镜像。生产 Compose 同样按 digest 固定 PostgreSQL 与 Redis。构建必须使用 `EXPECTED_RELEASE_SHA` 指定的提交，最终 OCI revision label 必须与之相等。
 
+正式应用镜像仓库固定为 `ghcr.io/lidefend/sce-product`。本地 Docker image ID、
+archive config digest 与 registry manifest digest 是三个独立身份，不得互相替代。
+候选必须先推送 version tag 和 source tag，并确认二者解析为同一个 registry
+manifest digest；扫描、release manifest 和生产 Compose 只绑定该 registry digest。
+生产节点必须按 `ghcr.io/lidefend/sce-product@sha256:<digest>` 拉取，禁止把
+`docker save/load` 后的本地 image ID 冒充 registry digest。
+
 更新基础镜像时，必须读取官方 registry manifest，选择目标平台（当前为 `linux/amd64`）的 digest，直接向 registry 验证 `repository:tag@sha256:digest`，再更新引用并执行 `make verify.production.release_contract` 和隔离镜像验收。不得仅依赖浮动 tag 或本地缓存推断 digest。Odoo 或 PostgreSQL 大版本变更必须另立兼容性任务。
 
 ## 数据库身份与存储
