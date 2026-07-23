@@ -3,6 +3,19 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-24 — Controlled PR merge expected-head guard
+
+- Branch: `fix/controlled-merge-expected-head-guard`
+- Starting product commit: `99953f4964f2ead1f8f69fa56f1cbef3680216ce`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: race-safe protected-main PR merge admission
+- Module: `make pr.merge` and branch-governance contract tests
+- Reason: bind every approved merge write to the independently reviewed full PR head SHA and close the check-to-merge race window
+- Standard vs User-Specific: repository-wide governance control; no application, customer, release-candidate, runtime, or database semantics
+- Why Here / Why Not Elsewhere: the approved Make entry owns GitHub merge mutation admission; callers, release automation, and production tooling must not reproduce or bypass it
+- Blast Radius: one required `EXPECTED_HEAD` input, one live head comparison, and one `--match-head-commit` propagation; merge methods, protected-main checks, review policy, auto-merge, main push, mirroring, and release actions remain unchanged
+- Validation: missing/short/non-hex/shell input rejection, live-head mismatch zero-merge, exact matched-head argv propagation, governance tests, formal CI, and diff checks
+
 ## 2026-07-23 — Atomic RC candidate workflow
 
 - Branch: `refactor/atomic-release-candidate`
