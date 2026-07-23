@@ -49,18 +49,6 @@ FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS = {
 # module data set. They are created only inside the formal initialization
 # transaction and receive the stable XMLID above before a policy can use them.
 FORMAL_INITIALIZATION_ACTION_SPECS = {
-    "smart_construction_core.action_sc_fuel_card_registration_formal": {
-        "name": "油卡登记",
-        "res_model": "sc.fund.account.operation",
-        "domain": "[('legacy_source_model', '=', 'online_old_legacy_direct:direct_acceptance'), ('legacy_source_table', '=', 'direct_acceptance:油卡登记')]",
-        "context": "{'create': False}",
-    },
-    "smart_construction_core.action_sc_fuel_card_recharge_formal": {
-        "name": "充值登记",
-        "res_model": "sc.fund.account.operation",
-        "domain": "[('legacy_source_model', '=', 'online_old_legacy_direct:direct_acceptance'), ('legacy_source_table', '=', 'direct_acceptance:充值登记')]",
-        "context": "{'create': False}",
-    },
     "smart_construction_core.action_sc_company_user_roster_formal": {
         "name": "公司人员名册",
         "res_model": "res.users",
