@@ -173,6 +173,9 @@ class StaticContractTests(unittest.TestCase):
         cls.production_command_policy = (
             ROOT / "docs/ops/prod_command_policy.md"
         ).read_text()
+        cls.professional_quality_workflow = (
+            ROOT / ".github/workflows/professional_quality_gate.yml"
+        ).read_text()
 
     def test_base_image_has_digest(self): self.assertRegex(self.dockerfile.splitlines()[0], r"^FROM odoo:17\.0@sha256:[0-9a-f]{64}$")
     def test_no_distribution_upgrade(self): self.assertNotRegex(self.dockerfile, r"apt(?:-get)?\s+(?:dist-upgrade|full-upgrade|upgrade)")
@@ -385,6 +388,26 @@ class StaticContractTests(unittest.TestCase):
             "ADMIN_IDENTITY_BASELINE_MODE ?= dry-run",
             self.release_make,
         )
+
+    def test_admin_identity_tool_has_a_python310_ci_runtime_gate(self):
+        self.assertNotIn("from datetime import UTC", self.admin_identity_baseline)
+        self.assertIn(
+            "from datetime import datetime, timezone",
+            self.admin_identity_baseline,
+        )
+        self.assertIn(
+            "datetime.now(timezone.utc)",
+            self.admin_identity_baseline,
+        )
+        for contract in (
+            "python310_runtime_compatibility:",
+            'python-version: "3.10"',
+            "python -m py_compile scripts/release/production_admin_identity_baseline.py",
+            "python scripts/release/test_production_admin_identity_baseline.py",
+            "ENV=prod is required",
+            "needs: [professional_authorization, python310_runtime_compatibility]",
+        ):
+            self.assertIn(contract, self.professional_quality_workflow)
 
     def test_formal_module_closure_has_a_dedicated_production_contract(self):
         target = self.release_make.split(

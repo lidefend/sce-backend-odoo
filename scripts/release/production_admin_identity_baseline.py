@@ -16,7 +16,7 @@ import re
 import stat
 import tempfile
 from collections.abc import Callable, Mapping
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -536,7 +536,7 @@ def baseline_admin_identity(
     resolver_factory: Callable[[Any], Any] = _resolver_factory,
 ) -> dict[str, Any]:
     mode, binding = _validated_control_plane(active_env)
-    started_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     if getattr(odoo_env.cr, "dbname", None) != TARGET_DATABASE:
         raise AdminIdentityBaselineError(
             "live database identity must be sc_production"
@@ -661,7 +661,7 @@ def baseline_admin_identity(
     if mode == "dry-run" and not fingerprints_unchanged:
         raise AdminIdentityBaselineError("dry-run state fingerprints changed")
 
-    completed_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    completed_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     payload = {
         "schema_version": EVIDENCE_SCHEMA_VERSION,
         "result": "PASS",
