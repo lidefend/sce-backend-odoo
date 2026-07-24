@@ -636,3 +636,24 @@ customer delivery evidence belongs in private customer or payload repositories.
   UUID/backup/filestore guards, sensitive-output denylist, targeted comparison
   regressions, repeated primary captures, isolated restore equality and full CI
   prove containment.
+# RC6 daily candidate clone upgrade rehearsal admission — 2026-07-24
+
+- Branch / anchor: `audit/rc6-daily-clone-upgrade-rehearsal` at `8962c8e`
+- Formal Product Layer: P4 ops delivery tool
+- Layer Target / Module / Reason: immutable RC6 candidate admission, isolated
+  clone specification, deterministic migration plan, sentinel preservation,
+  upgrade idempotency, rollback-mode and redacted evidence contracts under
+  `scripts/ops`; an advancing main branch cannot be treated as a reproducible
+  upgrade candidate.
+- Standard vs User-Specific: generic stateful candidate-environment upgrade
+  governance; no customer business facts, product behavior or runtime
+  configuration are introduced.
+- Why Here / Why Not Elsewhere: clone recovery, migration orchestration and
+  promotion evidence belong to P4. They must not enter P0–P3 modules, frontend
+  rendering or the running daily repository.
+- Blast Radius / Validation: opt-in fail-closed Make admission only; immutable
+  SHA/digest/CI ancestry checks, source identity checks, isolation and
+  no-egress guards, destructive-path rejection, deterministic plans, sentinel
+  and idempotency regressions, mode-0600 evidence and full CI prove
+  containment. No clone restore or source operation occurs without a formally
+  frozen candidate.

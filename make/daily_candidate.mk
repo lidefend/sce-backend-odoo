@@ -5,8 +5,11 @@ DAILY_CANDIDATE_SSH_HOST ?=
 DAILY_CONTINUITY_TOOL_SHA ?= $(shell git rev-parse HEAD)
 DAILY_CONTINUITY_REMOTE_ROOT ?= /opt/sce/deployment-tools/$(DAILY_CONTINUITY_TOOL_SHA)
 DAILY_SENTINEL_TEMP_FILE ?=
+DAILY_CLONE_REHEARSAL_CONTRACT ?= scripts/ops/daily_candidate_clone_upgrade_contract_v1.json
+DAILY_CLONE_RC6_CANDIDATE_MANIFEST ?=
+DAILY_CLONE_RC6_CANDIDATE_REPOSITORY ?= $(CURDIR)
 
-.PHONY: daily.candidate.continuity.test daily.candidate.continuity.baseline daily.candidate.continuity.backup daily.candidate.continuity.validate daily.candidate.continuity.restore_drill daily.candidate.continuity.remote_install daily.candidate.continuity.remote_baseline daily.candidate.continuity.remote_backup daily.candidate.continuity.remote_restore_drill daily.candidate.continuity.remote_closeout daily.candidate.sentinel.test daily.candidate.sentinel.remote_capture daily.candidate.sentinel.remote_verify daily.candidate.sentinel.remote_cleanup_temp
+.PHONY: daily.candidate.continuity.test daily.candidate.continuity.baseline daily.candidate.continuity.backup daily.candidate.continuity.validate daily.candidate.continuity.restore_drill daily.candidate.continuity.remote_install daily.candidate.continuity.remote_baseline daily.candidate.continuity.remote_backup daily.candidate.continuity.remote_restore_drill daily.candidate.continuity.remote_closeout daily.candidate.sentinel.test daily.candidate.sentinel.remote_capture daily.candidate.sentinel.remote_verify daily.candidate.sentinel.remote_cleanup_temp daily.candidate.clone_rehearsal.test daily.candidate.clone_rehearsal.freeze
 
 daily.candidate.continuity.test: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_candidate_data_continuity.py
@@ -15,6 +18,18 @@ daily.candidate.continuity.test: guard.prod.forbid
 daily.candidate.sentinel.test: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_candidate_data_sentinel.py
 	@python3 scripts/ops/test_daily_candidate_data_sentinel.py
+
+daily.candidate.clone_rehearsal.test: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_candidate_clone_upgrade_rehearsal.py
+	@python3 scripts/ops/test_daily_candidate_clone_upgrade_rehearsal.py
+
+daily.candidate.clone_rehearsal.freeze: guard.prod.forbid
+	@test -n "$(DAILY_CLONE_RC6_CANDIDATE_MANIFEST)" || { echo "DAILY_CLONE_RC6_CANDIDATE_MANIFEST is required" >&2; exit 2; }
+	@test -f "$(DAILY_CLONE_RC6_CANDIDATE_MANIFEST)" || { echo "approved RC6 candidate manifest is unavailable" >&2; exit 2; }
+	@python3 scripts/ops/daily_candidate_clone_upgrade_rehearsal.py freeze \
+		--contract "$(DAILY_CLONE_REHEARSAL_CONTRACT)" \
+		--candidate-manifest "$(DAILY_CLONE_RC6_CANDIDATE_MANIFEST)" \
+		--repository "$(DAILY_CLONE_RC6_CANDIDATE_REPOSITORY)"
 
 daily.candidate.continuity.baseline: guard.prod.forbid
 	@DAILY_CONTINUITY_EVIDENCE="$(DAILY_CONTINUITY_EVIDENCE)" \
@@ -51,7 +66,9 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/ops/daily_candidate_data_continuity.py \
 		scripts/ops/daily_candidate_data_continuity_contract_v1.json \
 		scripts/ops/daily_candidate_data_sentinel.py \
-		scripts/ops/daily_candidate_data_sentinel_contract_v1.json | \
+		scripts/ops/daily_candidate_data_sentinel_contract_v1.json \
+		scripts/ops/daily_candidate_clone_upgrade_rehearsal.py \
+		scripts/ops/daily_candidate_clone_upgrade_contract_v1.json | \
 		ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'set -eu; root="/opt/sce/deployment-tools"; final="$(DAILY_CONTINUITY_REMOTE_ROOT)"; staging="$$root/.incomplete-$(DAILY_CONTINUITY_TOOL_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/DEPLOYMENT_TOOL_SHA")" = "$(DAILY_CONTINUITY_TOOL_SHA)"; exit 0; fi; test ! -e "$$staging"; install -d -m 0700 "$$staging"; tar -xf - -C "$$staging"; printf "%s\n" "$(DAILY_CONTINUITY_TOOL_SHA)" > "$$staging/DEPLOYMENT_TOOL_SHA"; chmod 0600 "$$staging/DEPLOYMENT_TOOL_SHA"; mv "$$staging" "$$final"'
 
