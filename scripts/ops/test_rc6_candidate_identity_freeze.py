@@ -44,7 +44,8 @@ def declaration() -> dict:
         "supersession_policy": freeze.SUPERSESSION_POLICY,
         "build_provenance": {
             "source_tree_sha": "b" * 40,
-            "local_image_config_digest": "sha256:" + "c" * 64,
+            "local_daemon_image_id": "sha256:" + "c" * 64,
+            "registry_config_digest": "sha256:" + "1" * 64,
             "frontend_build_sha256": "d" * 64,
             "archive_sha256": "e" * 64,
             "build_manifest_sha256": "f" * 64,
@@ -108,11 +109,22 @@ class DeclarationTests(unittest.TestCase):
         with self.assertRaises(freeze.FreezeError):
             freeze.validate_declaration(payload)
 
-    def test_provenance_requires_config_digest(self) -> None:
+    def test_provenance_distinguishes_daemon_id_and_config_digest(self) -> None:
         payload = declaration()
-        payload["build_provenance"]["local_image_config_digest"] = "c" * 64
+        payload["build_provenance"]["registry_config_digest"] = "1" * 64
         with self.assertRaises(freeze.FreezeError):
             freeze.validate_declaration(payload)
+
+    def test_registry_manifest_identity_keeps_manifest_and_config_separate(self) -> None:
+        response = {
+            "Descriptor": {"digest": "sha256:" + "a" * 64},
+            "OCIManifest": {"config": {"digest": "sha256:" + "b" * 64}},
+        }
+        completed = mock.Mock(returncode=0, stdout=json.dumps(response), stderr="")
+        with mock.patch.object(freeze, "run", return_value=completed):
+            identity = freeze._manifest_identity(freeze.SOURCE_TAG)
+        self.assertEqual(identity["manifest_digest"], "sha256:" + "a" * 64)
+        self.assertEqual(identity["config_digest"], "sha256:" + "b" * 64)
 
 
 class RegistryTests(unittest.TestCase):

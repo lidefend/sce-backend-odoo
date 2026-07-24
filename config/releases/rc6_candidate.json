@@ -1,0 +1,40 @@
+{
+  "approval_status": "FROZEN",
+  "build_provenance": {
+    "archive_sha256": "5917566e06dcaa87a32968ee6ee5e65f456c1d576e3dcc21c82f5e174f9bd45f",
+    "build_manifest_sha256": "43e12408af1e403061eb6e85c2b0776d9fc7b0a87a07d5a36c33dbd289805eca",
+    "frontend_build_sha256": "3a5ef1244abc41066e00eb2552d9e8f4681eaee8cb384716163347a177f6de31",
+    "local_daemon_image_id": "sha256:02edec2628b276834abd10ec3cc9ef96517fb499c6b0e8a60b19d59e3694fdeb",
+    "registry_config_digest": "sha256:f468dedc5daf5252f9d7631ee6b31a55a164b97d52f5f0e8b71e46035389e244",
+    "source_tree_sha": "52312ececcfe6f3d248c9b1a185e1778c8c47962"
+  },
+  "candidate_name": "RC6",
+  "ci_checks": {
+    "professional_authorization": "success",
+    "professional_quality_gate": "success",
+    "public_guard": "success",
+    "python310_runtime_compatibility": "success"
+  },
+  "ci_run_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/30066968527",
+  "ci_status": "PASS",
+  "freeze_evidence_sha256": "29db82a3c7388e37778da9612b6993a27fefa64d0d75ba56ea2f7a36923f652b",
+  "freeze_timestamp": "2026-07-24T05:30:53Z",
+  "image_locally_available": true,
+  "image_manifest_digest": "sha256:02edec2628b276834abd10ec3cc9ef96517fb499c6b0e8a60b19d59e3694fdeb",
+  "image_pull_policy": "never",
+  "image_ref": "ghcr.io/lidefend/sce-product@sha256:02edec2628b276834abd10ec3cc9ef96517fb499c6b0e8a60b19d59e3694fdeb",
+  "image_repository": "ghcr.io/lidefend/sce-product",
+  "image_revision_label": "fb1f2b5a6e93fb4d7865023e6cda2961848c3cb8",
+  "movable_image_reference_used": false,
+  "product_version_at_build": "1.0.0-rc.5",
+  "required_merge_commits": {
+    "PR_41": "207334b97310ec0ff2afc28f68ee909df906a540",
+    "PR_42": "8962c8e0b831c4ac93e15a6d503740113dcd2c57",
+    "PR_43": "fb1f2b5a6e93fb4d7865023e6cda2961848c3cb8"
+  },
+  "schema_version": "sce.rc6_candidate_identity.v1",
+  "source_sha": "fb1f2b5a6e93fb4d7865023e6cda2961848c3cb8",
+  "source_tag_used_for_single_push": "ghcr.io/lidefend/sce-product:sha-fb1f2b5a6e93",
+  "supersession_policy": "A different SHA or manifest digest requires a new reviewed declaration; main advancement and rebuilds never mutate this candidate.",
+  "version_tag_pushed": false
+}

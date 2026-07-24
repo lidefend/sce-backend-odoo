@@ -186,6 +186,11 @@ def _docker_config_has_ghcr_auth() -> bool:
 
 
 def _manifest_digest(reference: str) -> str | None:
+    inspection = _manifest_identity(reference)
+    return None if inspection is None else inspection["manifest_digest"]
+
+
+def _manifest_identity(reference: str) -> dict[str, str] | None:
     completed = run(
         ["docker", "manifest", "inspect", "--verbose", reference], check=False
     )
@@ -205,7 +210,15 @@ def _manifest_digest(reference: str) -> str | None:
     digest = str((descriptor or {}).get("digest") or "")
     if not DIGEST.fullmatch(digest):
         raise FreezeError("registry manifest digest is invalid")
-    return digest
+    manifest = payload.get("OCIManifest") if isinstance(payload, dict) else None
+    config = manifest.get("config") if isinstance(manifest, dict) else None
+    config_digest = str((config or {}).get("digest") or "")
+    if not DIGEST.fullmatch(config_digest):
+        raise FreezeError("registry manifest config digest is invalid")
+    return {
+        "manifest_digest": digest,
+        "config_digest": config_digest,
+    }
 
 
 def _local_image(reference: str) -> dict:
@@ -260,8 +273,12 @@ def publish_image(artifacts: Path, output: Path) -> dict:
     if len(push_digests) != 1:
         raise FreezeError("registry push did not report exactly one manifest digest")
     digest = next(iter(push_digests))
-    if _manifest_digest(SOURCE_TAG) != digest:
+    remote_identity = _manifest_identity(SOURCE_TAG)
+    if remote_identity is None or remote_identity["manifest_digest"] != digest:
         raise FreezeError("registry source tag digest verification failed")
+    archive_config_digest = str(manifest.get("archive_config_digest") or "")
+    if remote_identity["config_digest"] != archive_config_digest:
+        raise FreezeError("registry config digest differs from the build archive")
     immutable_ref = f"{IMAGE_REPOSITORY}@{digest}"
     run(["docker", "pull", immutable_ref])
     pulled = _local_image(immutable_ref)
@@ -278,7 +295,8 @@ def publish_image(artifacts: Path, output: Path) -> dict:
         "image_repository": IMAGE_REPOSITORY,
         "image_manifest_digest": digest,
         "image_ref": immutable_ref,
-        "local_image_config_digest": config_digest,
+        "local_daemon_image_id": config_digest,
+        "registry_config_digest": remote_identity["config_digest"],
         "oci_revision": revision,
         "container_source_revision": CANDIDATE_SHA,
         "build_time": str(manifest.get("build_time") or ""),
@@ -290,6 +308,52 @@ def publish_image(artifacts: Path, output: Path) -> dict:
         "version_tag_pushed": False,
         "registry_push_performed": True,
         "digest_pull_verification_pass": True,
+        "frozen_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    digest_file = atomic_write(output, payload)
+    return {**payload, "freeze_evidence_path": str(output), "freeze_evidence_sha256": digest_file}
+
+
+def verify_published_image(artifacts: Path, output: Path) -> dict:
+    artifacts = artifacts.resolve()
+    manifest_path = artifacts / "image-manifest.json"
+    manifest = load_json(manifest_path, "candidate image manifest")
+    if manifest.get("source_sha") != CANDIDATE_SHA:
+        raise FreezeError("candidate build manifest source SHA differs")
+    remote_identity = _manifest_identity(SOURCE_TAG)
+    if remote_identity is None:
+        raise FreezeError("frozen RC6 source tag is absent from the registry")
+    archive_config_digest = str(manifest.get("archive_config_digest") or "")
+    if remote_identity["config_digest"] != archive_config_digest:
+        raise FreezeError("registry config digest differs from the build archive")
+    immutable_ref = f"{IMAGE_REPOSITORY}@{remote_identity['manifest_digest']}"
+    run(["docker", "pull", immutable_ref])
+    pulled = _local_image(immutable_ref)
+    revision, local_daemon_image_id = _image_revision(pulled)
+    payload = {
+        "schema_version": "sce.rc6_candidate_registry_freeze.v1",
+        "candidate_name": "RC6",
+        "source_sha": CANDIDATE_SHA,
+        "source_tree_sha": str(manifest.get("source_tree_sha") or ""),
+        "product_version": str(manifest.get("product_version") or ""),
+        "source_tag": SOURCE_TAG,
+        "image_repository": IMAGE_REPOSITORY,
+        "image_manifest_digest": remote_identity["manifest_digest"],
+        "image_ref": immutable_ref,
+        "local_daemon_image_id": local_daemon_image_id,
+        "registry_config_digest": remote_identity["config_digest"],
+        "oci_revision": revision,
+        "container_source_revision": CANDIDATE_SHA,
+        "build_time": str(manifest.get("build_time") or ""),
+        "frontend_build_sha256": str(manifest.get("frontend_build_sha256") or ""),
+        "archive_sha256": str(manifest.get("archive_sha256") or ""),
+        "build_manifest_path": str(manifest_path),
+        "build_manifest_sha256": sha256_file(manifest_path),
+        "movable_image_reference_used": False,
+        "version_tag_pushed": False,
+        "registry_push_performed": True,
+        "digest_pull_verification_pass": True,
+        "manifest_to_config_chain_pass": True,
         "frozen_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     digest_file = atomic_write(output, payload)
@@ -332,14 +396,15 @@ def validate_declaration(payload: dict) -> dict:
     provenance = payload.get("build_provenance") or {}
     for key in (
         "source_tree_sha",
-        "local_image_config_digest",
+        "local_daemon_image_id",
+        "registry_config_digest",
         "frontend_build_sha256",
         "archive_sha256",
         "build_manifest_sha256",
     ):
         value = str(provenance.get(key) or "")
         pattern = FULL_SHA if key == "source_tree_sha" else (
-            DIGEST if key == "local_image_config_digest" else re.compile(r"^[0-9a-f]{64}$")
+            DIGEST if key in {"local_daemon_image_id", "registry_config_digest"} else re.compile(r"^[0-9a-f]{64}$")
         )
         if not pattern.fullmatch(value):
             raise FreezeError(f"RC6 declaration build provenance is invalid: {key}")
@@ -356,7 +421,13 @@ def validate_declaration(payload: dict) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "action", choices=("prepare-workspace", "publish-image", "verify-declaration")
+        "action",
+        choices=(
+            "prepare-workspace",
+            "publish-image",
+            "verify-published",
+            "verify-declaration",
+        ),
     )
     parser.add_argument("--workspace", type=Path)
     parser.add_argument("--artifacts", type=Path)
@@ -371,6 +442,10 @@ def main() -> None:
         if args.artifacts is None or args.output is None:
             raise FreezeError("--artifacts and --output are required")
         result = publish_image(args.artifacts, args.output)
+    elif args.action == "verify-published":
+        if args.artifacts is None or args.output is None:
+            raise FreezeError("--artifacts and --output are required")
+        result = verify_published_image(args.artifacts, args.output)
     else:
         result = validate_declaration(
             load_json(args.declaration, "RC6 candidate declaration")
