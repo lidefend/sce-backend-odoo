@@ -586,3 +586,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns acceptance orchestration and workspace lifecycle; application authentication semantics and P0-P3 business modules remain unchanged
 - Blast Radius: read-only HTTP login/system initialization/navigation/role/permission checks, clean-session evidence, immutable package verification, and clean merged linked-worktree removal only
 - Validation: no-request regression, credential redaction, two independent HTTP sessions, exact-command digest parity, daily-development server execution, dirty/unmerged worktree rejection, quick gate, and one full CI run
+
+## 2026-07-24 — RC5 production promotion configuration readiness
+
+- Branch: `fix/rc5-promotion-config-readiness`
+- Starting commit: `096f5d90e68f27ad616d97521500519b4347c4d8`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: fail-closed production promotion configuration admission before application-container replacement
+- Module: `scripts/ops`, release Make entry, production command policy, deployment runbook, and focused regression tests
+- Reason: the RC5 short promotion replaced the healthy application before discovering that the formal acceptance login was empty
+- Standard vs User-Specific: repository-wide production promotion safety; no product behavior, customer preference, account permission, production data, image content, or database migration
+- Why Here / Why Not Elsewhere: P4 owns promotion configuration provenance and deployment sequencing; Odoo modules, frontend, acceptance product semantics, and runtime business configuration must remain unchanged
+- Blast Radius: read-only validation of the governed promotion config/secret sources, fixed image, immutable acceptance package, current-production HTTP login/system initialization/core reads, and redacted readiness evidence only
+- Validation: undefined/empty/whitespace/placeholder login, missing secret, wrong URL/database/digest/role, complete-config pass, clean-session HTTP parity, exact local image identity, atomic `0600` evidence, daily server execution, production read-only preflight, release contracts, and full CI
