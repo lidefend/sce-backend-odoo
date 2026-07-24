@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import optional_customer_projection
+from . import projection_relation_lifecycle
 from . import core
 from . import projection
 from .support import direct_acceptance_formal_visible_fields

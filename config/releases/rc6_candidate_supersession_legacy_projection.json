@@ -1,0 +1,27 @@
+{
+  "candidate_name": "RC6",
+  "failed_candidate_sha": "fb1f2b5a6e93fb4d7865023e6cda2961848c3cb8",
+  "failed_image_ref": "ghcr.io/lidefend/sce-product@sha256:02edec2628b276834abd10ec3cc9ef96517fb499c6b0e8a60b19d59e3694fdeb",
+  "failed_rehearsal_evidence_sha256": "efe70143708f1d4287ee1075909b4c7535eec3c9c74ddaf6abf325816aeb271d",
+  "legacy_creator": {
+    "code_sha": "6095e2013d64c06a5ea936addd35858959d2a28f",
+    "module": "smart_construction_core",
+    "module_version": "17.0.0.61",
+    "origin_commit": "808115c7cfcdafe0e7ca6d9fb97a972713c38bb4"
+  },
+  "legacy_relation": {
+    "name": "sc_ar_ap_project_summary",
+    "relkind": "r",
+    "row_count": 12328,
+    "schema": "public",
+    "structure_fingerprint": "14ddeb6a0830f368a0613af8159aff60ad7d5a82d60addeddaf1aa6c5044b126"
+  },
+  "new_candidate_required": true,
+  "parent_evidence_package_sha256": "c0a737dea2c08e1b349c0b660f9f0ea64332ead899cc75ab01bb7db5bfd17743",
+  "promotion_allowed": false,
+  "reason": "The frozen RC6 candidate treated a populated core-owned physical projection as an external relation and attempted to replace its semantics with a typed-empty view.",
+  "schema_version": "sce.candidate_supersession.v1",
+  "status": "SUPERSEDED_DUE_TO_LEGACY_PROJECTION_COMPATIBILITY_DEFECT",
+  "supersession_policy": "This declaration does not mutate the frozen candidate. A repaired product SHA requires a new immutable image, identity freeze, and full clone rehearsal.",
+  "v2_evidence_package_sha256": "d951dfd99563f0c93c9f55207210b0188f3947c3a1c6d93cd8783889872f1de0"
+}

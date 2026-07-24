@@ -5,6 +5,8 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.osv import expression
 
+from ..projection_relation_lifecycle import ensure_ar_ap_project_summary_provider
+
 
 class ScArApProjectSummary(models.Model):
     _name = "sc.ar.ap.project.summary"
@@ -215,4 +217,4 @@ class ScArApProjectSummary(models.Model):
         }
 
     def init(self):
-        self._create_empty_projection_view()
+        ensure_ar_ap_project_summary_provider(self._cr)

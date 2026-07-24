@@ -5,6 +5,7 @@
 from ..core.base_handler import BaseIntentHandler
 from ..core.request_params import parse_positive_int
 from ..security.platform_admin import user_is_platform_admin
+from ..utils.reason_codes import REASON_PERMISSION_DENIED
 from .load_contract import LoadContractHandler
 
 
@@ -126,7 +127,7 @@ class LoadModelViewHandler(BaseIntentHandler):
             "error": {
                 "code": "PERMISSION_DENIED",
                 "message": "permission denied",
-                "reason_code": "PERMISSION_DENIED",
+                "reason_code": REASON_PERMISSION_DENIED,
                 "model": model,
             },
             "code": 403,
