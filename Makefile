@@ -263,7 +263,7 @@ include make/guards.mk
 include make/contract.mk
 include make/help.mk
 include make/dev.mk
-include make/runtime_ops.mk make/user_data.mk make/production_blocker.mk
+include make/runtime_ops.mk make/user_data.mk make/production_blocker.mk make/daily_candidate.mk
 include make/tenant_boundary.mk
 
 include make/frontend.mk

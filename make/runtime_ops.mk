@@ -1341,23 +1341,25 @@ diag.nav_root: check-compose-project check-compose-env
 # ==================== DB / Demo =======================
 # ======================================================
 .PHONY: db.reset demo.reset db.branch db.create db.reset.manual
-db.reset: guard.prod.forbid check-compose-project check-compose-env diag.project
+db.reset: guard.prod.forbid guard.daily_candidate.preserve check-compose-project check-compose-env diag.project
 	@$(RUN_ENV) bash scripts/db/reset.sh
 
 # demo.reset 必须走 scripts/demo/reset.sh（含 seed/demo 安装）
-demo.reset: guard.codex.fast.noheavy guard.prod.forbid check-compose-project check-compose-env diag.project
+demo.reset: guard.codex.fast.noheavy guard.prod.forbid guard.daily_candidate.preserve check-compose-project check-compose-env diag.project
 	@$(RUN_ENV) SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 bash scripts/demo/reset.sh
 
 # 兼容旧快捷命令：固定 sc_demo
 .PHONY: db.demo.reset
-db.demo.reset: guard.prod.forbid check-compose-project check-compose-env
+db.demo.reset: DAILY_CANDIDATE_TARGET_DB := sc_demo
+db.demo.reset: guard.prod.forbid guard.daily_candidate.preserve check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=sc_demo SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 bash scripts/demo/reset.sh
 
 db.branch:
 	@bash scripts/db/branch_db.sh
 db.create:
 	@bash scripts/db/create.sh $(DB)
-db.reset.manual: guard.prod.forbid check-compose-env
+db.reset.manual: DAILY_CANDIDATE_TARGET_DB := $(or $(DB),$(DB_NAME))
+db.reset.manual: guard.prod.forbid guard.daily_candidate.preserve check-compose-env
 	@bash scripts/db/reset_manual.sh $(DB)
 
 # ======================================================
