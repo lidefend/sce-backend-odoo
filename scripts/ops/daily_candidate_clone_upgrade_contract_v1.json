@@ -1,0 +1,79 @@
+{
+  "schema_version": "daily_candidate_clone_upgrade_rehearsal.v1",
+  "environment_classification": "DAILY_CANDIDATE_CLONE_REHEARSAL",
+  "source_environment_classification": "DAILY_CANDIDATE_ENVIRONMENT",
+  "source_database_name": "sc_demo",
+  "source_database_uuid": "c838b4b6-4cd6-11f1-9590-82245e4e7b62",
+  "current_daily_application_revision_prefix": "6095e201",
+  "continuity_backup_set_id": "sc_demo-20260724T032145Z-6eb277d1",
+  "continuity_backup_root": "/data/backups/daily_candidate/sc_demo-20260724T032145Z-6eb277d1",
+  "sentinel_set_id": "sc_demo-sentinel-20260724T040527Z-1fa42479",
+  "sentinel_evidence_path": "/data/backups/daily_candidate/sentinels/sc_demo-sentinel-20260724T040527Z-1fa42479.json",
+  "sentinel_evidence_sha256": "1083bae745568fbaef1404c060c76078bec33c4bb7c18a4a9033689c3762257f",
+  "fixed_repository_base_sha": "8962c8e0b831c4ac93e15a6d503740113dcd2c57",
+  "candidate": {
+    "name": "RC6",
+    "required_ancestor_commits": [
+      "207334b97310ec0ff2afc28f68ee909df906a540",
+      "8962c8e0b831c4ac93e15a6d503740113dcd2c57"
+    ],
+    "image_repository": "ghcr.io/lidefend/sce-product",
+    "require_full_sha": true,
+    "require_clean_checkout": true,
+    "require_full_ci_pass": true,
+    "require_frozen_approval": true,
+    "require_revision_label_match": true,
+    "pull_policy": "never",
+    "mutable_tags_allowed": false
+  },
+  "source_writes_allowed": {
+    "database": false,
+    "filestore": false,
+    "application_upgrade": false
+  },
+  "production_access_allowed": false,
+  "isolation": {
+    "resource_prefix": "sc-rc6-rehearsal-",
+    "database_network_internal": true,
+    "public_egress_allowed": false,
+    "cron_enabled": false,
+    "external_write_integrations": [
+      "email",
+      "sms",
+      "webhook",
+      "payment",
+      "object_storage"
+    ],
+    "forbidden_mount_roots": [
+      "/var/lib/docker/volumes/sc_dev_db_data/_data",
+      "/var/lib/docker/volumes/sc_dev_odoo_data/_data",
+      "/data/production",
+      "/opt/projects/repos/sce-backend-odoo"
+    ],
+    "production_secrets_allowed": false,
+    "source_database_connection_allowed": false,
+    "source_filestore_mount_allowed": false
+  },
+  "migration": {
+    "plan_schema_version": "daily_candidate_clone_migration_plan.v1",
+    "versioned_plan_required": true,
+    "module_reinstall_allowed": false,
+    "module_uninstall_allowed": false,
+    "temporary_sql_allowed": false,
+    "demo_fixture_write_allowed": false,
+    "unknown_origin_delete_allowed": false,
+    "unreferenced_filestore_delete_allowed": false,
+    "repeat_same_entrypoint_required": true
+  },
+  "rollback": {
+    "application_image_only_requires_backward_compatibility": true,
+    "paired_database_filestore_restore_required_for_irreversible_change": true,
+    "independent_restore_clone_required": true
+  },
+  "evidence": {
+    "root": "/data/backups/daily_candidate/rehearsals",
+    "mode": "0600",
+    "atomic_write": true,
+    "sensitive_values_allowed": false
+  }
+}
