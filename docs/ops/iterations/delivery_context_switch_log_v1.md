@@ -573,3 +573,16 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns host installation, backup custody, rehearsal isolation, and timer sequencing; P0–P3 modules and frozen release evidence must remain immutable
 - Blast Radius: five default-deny Make entries; two versioned operations tools; database/filestore/sanitized-metadata backup schema; isolated internal Docker rehearsal namespace; timer remains stopped until backup and rehearsal evidence pass
 - Validation: identity and drift rejection, install rollback, triple-set atomicity, independent locks, checksum/resume rejection, sanitized metadata, internal-network restore, zero cron/egress, Odoo stop-after-init, table/attachment/filestore comparison, timer evidence gate, release contracts, standard CI, and static diff checks
+
+## 2026-07-24 — RC5 production acceptance harness repair
+
+- Branch: `fix/rc5-production-acceptance-harness`
+- Starting commit: `3c79fa2f9e05286dc9a147afb7ba5927058f664b`
+- Formal Product Layer: P4 operations delivery tooling
+- Layer Target: immutable real-HTTP production acceptance package and governed local worktree cleanup
+- Module: `scripts/ops`, focused CI tests, Make entrypoints, and deployment acceptance evidence
+- Reason: the production deployment helper called request-bound token generation from a bare Odoo shell, while stale historical worktrees obscured the authoritative local development surface
+- Standard vs User-Specific: repository-wide delivery verification; no product behavior, customer preference, production data, role, or permission change
+- Why Here / Why Not Elsewhere: P4 owns acceptance orchestration and workspace lifecycle; application authentication semantics and P0-P3 business modules remain unchanged
+- Blast Radius: read-only HTTP login/system initialization/navigation/role/permission checks, clean-session evidence, immutable package verification, and clean merged linked-worktree removal only
+- Validation: no-request regression, credential redaction, two independent HTTP sessions, exact-command digest parity, daily-development server execution, dirty/unmerged worktree rejection, quick gate, and one full CI run

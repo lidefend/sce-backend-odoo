@@ -19,6 +19,11 @@ Makefile guards and script-level guards.
 - `make verify.legacy_online_attachment.mirror.job.audit.prod` (requires `PROD_READONLY_VERIFY=1`)
 - `make verify.production_menu.release_gate.guard.prod` (requires `PROD_READONLY_VERIFY=1`)
 - `make verify.production_git.authority.guard` (read-only Git/worktree/auth check)
+- `make release.production.acceptance.harness` (requires
+  `PROD_READONLY_VERIFY=1`, the locked immutable package digest, and one
+  credential supplied at execution time; performs only real-HTTP login,
+  authenticated reads, and negative authorization checks, without Odoo shell
+  or `auth.logout`)
 - `make production.backup.install.preflight` (read-only tool/main/runtime identity check)
 - `make verify.baseline` (requires PROD_DANGER=1)
 - `make verify.p0` (requires PROD_DANGER=1)
