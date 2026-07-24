@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import test_action_groups_gate
+from . import test_ar_ap_projection_relation_lifecycle
 from . import test_role_regression_minimal
 from . import test_smoke_security
 from . import test_smoke_registry
