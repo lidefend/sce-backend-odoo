@@ -109,6 +109,33 @@ ENV=prod ENV_FILE=.env.prod DB_NAME=sc_prod \
 
 ## 5. 标准部署流程
 
+### 5.0.1 生产晋级配置必须先于容器替换
+
+任何生产候选镜像晋级在停止或替换当前应用容器前，必须先运行：
+
+```bash
+ENV=prod PROD_READONLY_VERIFY=1 \
+  PROMOTION_CONFIG_FILE=/etc/scems/production-promotion.env \
+  PROMOTION_SECRET_FILE=/opt/sce/config/sc_production/secrets.env \
+  PROMOTION_READINESS_OUTPUT=/data/backups/deployments/<run-id>/promotion-readiness.json \
+  make release.production.promotion.config.preflight
+```
+
+配置文件必须提供非空且非占位的 `SC_BOOTSTRAP_LOGIN`、
+`PROMOTION_ENVIRONMENT=production`、`ACCEPTANCE_BASE_URL`、`DB_NAME`、
+`ACCEPTANCE_CONTRACT_PATH`、
+`ACCEPTANCE_PACKAGE_DIGEST`、`ACCEPTANCE_HTTP_TIMEOUT`、
+`ACCEPTANCE_TLS_VERIFY`、`ACCEPTANCE_PRODUCT_KEY`、
+`ACCEPTANCE_EXPECTED_ROLE_CODE` 和 `DEPLOYMENT_IMAGE_REF`。秘密文件必须通过
+现有 root-only 秘密管理提供 `FORMAL_ACCEPTANCE_PASSWORD`。秘密不得进入 Git、
+命令行参数或 evidence。
+
+只有 evidence 同时包含
+`formal_login_current_production_pass=true` 和
+`safe_to_replace_production_container=true`，部署锁持有者才可进入容器替换。
+任何字段未定义、空白、占位、来源错误或目标不匹配都必须输出
+`PREDEPLOY_CONFIG_NOT_READY`，且不得停止当前容器、启动候选镜像或触发回滚。
+
 ### 5.0 系统内支持运营入口
 
 生产交付不是只把服务拉起来，还必须让客户成功、实施和支持人员在系统内看到可解释的运营状态。

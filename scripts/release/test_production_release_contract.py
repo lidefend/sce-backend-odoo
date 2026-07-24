@@ -173,6 +173,15 @@ class StaticContractTests(unittest.TestCase):
         cls.production_command_policy = (
             ROOT / "docs/ops/prod_command_policy.md"
         ).read_text()
+        cls.promotion_config_preflight = (
+            ROOT / "scripts/ops/production_promotion_config_preflight.py"
+        ).read_text()
+        cls.promotion_config_contract = json.loads(
+            (
+                ROOT
+                / "scripts/ops/production_promotion_config_contract_v1.json"
+            ).read_text()
+        )
         cls.professional_quality_workflow = (
             ROOT / ".github/workflows/professional_quality_gate.yml"
         ).read_text()
@@ -213,6 +222,41 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("NGINX_IMAGE_REF with image@sha256 digest is required", self.compose)
         self.assertNotIn("image: ${CANDIDATE_IMAGE", self.compose)
         self.assertIn("PRODUCTION_COMPOSE_PROJECT:?PRODUCTION_COMPOSE_PROJECT is required", self.compose)
+
+    def test_promotion_config_preflight_is_read_only_and_fail_closed(self):
+        target = self.release_make.split(
+            "release.production.promotion.config.preflight:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("guard.prod.readonly", target.splitlines()[0])
+        self.assertIn("--run-http", target)
+        self.assertNotIn("docker compose", target)
+        self.assertNotIn("docker run", target)
+        self.assertIn(
+            "release.production.promotion.config.preflight",
+            self.production_command_policy,
+        )
+        self.assertIn(
+            "PREDEPLOY_CONFIG_NOT_READY", self.promotion_config_preflight
+        )
+        self.assertNotIn("docker compose", self.promotion_config_preflight)
+        self.assertEqual(
+            self.promotion_config_contract["schema_version"],
+            "production_promotion_config_contract.v1",
+        )
+        required = {
+            item["key"]
+            for item in self.promotion_config_contract["required_fields"]
+        }
+        self.assertTrue(
+            {
+                "SC_BOOTSTRAP_LOGIN",
+                "FORMAL_ACCEPTANCE_PASSWORD",
+                "ACCEPTANCE_BASE_URL",
+                "DB_NAME",
+                "ACCEPTANCE_PACKAGE_DIGEST",
+                "DEPLOYMENT_IMAGE_REF",
+            }.issubset(required)
+        )
     def test_compose_does_not_default_target_database(self): self.assertIn("TARGET_DB:?TARGET_DB is required", self.compose)
     def test_compose_disables_demo(self): self.assertIn('SC_ALLOW_DEMO_DATA: "0"', self.compose)
     def test_compose_requires_explicit_colocated_platform_database(self):

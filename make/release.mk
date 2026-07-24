@@ -21,7 +21,7 @@ RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RE
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
 .PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.formal_modules.install_missing
 .PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.rehearsal production.restore.cleanup production.backup.timer.restore verify.production.backup_restore_contract
-.PHONY: verify.production.acceptance.harness acceptance.package.verify release.daily_dev.production_acceptance.harness release.production.acceptance.harness
+.PHONY: verify.production.acceptance.harness acceptance.package.verify verify.production.promotion.config.preflight release.daily_dev.production_acceptance.harness release.production.acceptance.harness release.daily_dev.promotion.config.preflight release.production.promotion.config.preflight
 
 verify.release.guard: verify.repository.release_hygiene
 	@SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) python3 scripts/release/rehearsal_guard.py
@@ -36,8 +36,13 @@ verify.release.tooling:
 	@$(MAKE) --no-print-directory verify.production.release_contract
 
 verify.production.acceptance.harness: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/production_acceptance_harness.py scripts/ops/test_production_acceptance_harness.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py
-	@python3 -m unittest scripts/ops/test_production_acceptance_harness.py scripts/ops/test_safe_worktree_cleanup.py
+	@python3 -m py_compile scripts/ops/production_acceptance_harness.py scripts/ops/test_production_acceptance_harness.py scripts/ops/production_promotion_config_preflight.py scripts/ops/test_production_promotion_config_preflight.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py
+	@python3 -m unittest scripts/ops/test_production_acceptance_harness.py scripts/ops/test_production_promotion_config_preflight.py scripts/ops/test_safe_worktree_cleanup.py
+	@$(MAKE) --no-print-directory acceptance.package.verify
+
+verify.production.promotion.config.preflight: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/production_promotion_config_preflight.py scripts/ops/test_production_promotion_config_preflight.py
+	@python3 -m unittest scripts/ops/test_production_promotion_config_preflight.py
 	@$(MAKE) --no-print-directory acceptance.package.verify
 
 acceptance.package.verify:
@@ -78,8 +83,40 @@ release.production.acceptance.harness: guard.prod.readonly acceptance.package.ve
 	  ACCEPTANCE_HARNESS_OUTPUT="$(ACCEPTANCE_HARNESS_OUTPUT)" \
 	  python3 scripts/ops/production_acceptance_harness.py
 
+PROMOTION_CONFIG_FILE ?=
+PROMOTION_SECRET_FILE ?=
+PROMOTION_READINESS_OUTPUT ?=
+PROMOTION_PREFLIGHT_RUN_COUNT ?= 1
+
+release.daily_dev.promotion.config.preflight: guard.prod.forbid acceptance.package.verify
+	@test "$(ENV)" = "dev" || (echo "ENV=dev is required"; exit 2)
+	@test -n "$(PROMOTION_CONFIG_FILE)" || (echo "PROMOTION_CONFIG_FILE is required"; exit 2)
+	@test -n "$(PROMOTION_SECRET_FILE)" || (echo "PROMOTION_SECRET_FILE is required"; exit 2)
+	@test -n "$(PROMOTION_READINESS_OUTPUT)" || (echo "PROMOTION_READINESS_OUTPUT is required"; exit 2)
+	@python3 scripts/ops/production_promotion_config_preflight.py \
+	  --config-file "$(PROMOTION_CONFIG_FILE)" \
+	  --secret-file "$(PROMOTION_SECRET_FILE)" \
+	  --output "$(PROMOTION_READINESS_OUTPUT)" \
+	  --run-http \
+	  --run-count "2" \
+	  --expected-environment daily \
+	  --skip-image-check
+
+release.production.promotion.config.preflight: guard.prod.readonly acceptance.package.verify
+	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)
+	@test -n "$(PROMOTION_CONFIG_FILE)" || (echo "PROMOTION_CONFIG_FILE is required"; exit 2)
+	@test -n "$(PROMOTION_SECRET_FILE)" || (echo "PROMOTION_SECRET_FILE is required"; exit 2)
+	@test -n "$(PROMOTION_READINESS_OUTPUT)" || (echo "PROMOTION_READINESS_OUTPUT is required"; exit 2)
+	@python3 scripts/ops/production_promotion_config_preflight.py \
+	  --config-file "$(PROMOTION_CONFIG_FILE)" \
+	  --secret-file "$(PROMOTION_SECRET_FILE)" \
+	  --output "$(PROMOTION_READINESS_OUTPUT)" \
+	  --run-http \
+	  --run-count "$(PROMOTION_PREFLIGHT_RUN_COUNT)" \
+	  --expected-environment production
+
 verify.production.release_contract:
-	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/release_candidate.py scripts/release/release_candidate_report.py scripts/release/release_publication.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/production_backup_restore.py scripts/ops/production_backup_install.py scripts/ops/production_acceptance_harness.py scripts/ops/test_production_acceptance_harness.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_release_candidate.py scripts/release/test_release_publication.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_production_backup_restore_contract.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/release_candidate.py scripts/release/release_candidate_report.py scripts/release/release_publication.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/production_backup_restore.py scripts/ops/production_backup_install.py scripts/ops/production_acceptance_harness.py scripts/ops/test_production_acceptance_harness.py scripts/ops/production_promotion_config_preflight.py scripts/ops/test_production_promotion_config_preflight.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_release_candidate.py scripts/release/test_release_publication.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_production_backup_restore_contract.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
 	@python3 addons/smart_core/tests/test_platform_database_contract.py
 	@python3 scripts/release/test_candidate_scan_contract.py
 	@python3 scripts/release/test_release_candidate.py
@@ -96,7 +133,7 @@ verify.production.release_contract:
 	@python3 scripts/release/test_production_colocated_release.py
 	@python3 scripts/release/test_production_backup_restore_contract.py
 	@python3 scripts/release/test_locked_menu_policy_contract.py
-	@python3 -m unittest scripts/ops/test_production_acceptance_harness.py scripts/ops/test_safe_worktree_cleanup.py
+	@python3 -m unittest scripts/ops/test_production_acceptance_harness.py scripts/ops/test_production_promotion_config_preflight.py scripts/ops/test_safe_worktree_cleanup.py
 	@$(MAKE) --no-print-directory acceptance.package.verify
 	@python3 scripts/verify/test_production_git_authority_guard.py
 	@bash -n scripts/release/immutable_candidate_build.sh scripts/release/immutable_candidate_publish.sh scripts/release/immutable_candidate_scan.sh scripts/release/production_odoo_entrypoint.sh scripts/release/production_db_manage.sh scripts/release/production_contract_image_acceptance.sh
