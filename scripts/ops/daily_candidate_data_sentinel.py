@@ -767,6 +767,7 @@ def compare(
     candidate: dict,
     *,
     restore_equivalence: bool = False,
+    allowed_core_module_versions: dict[str, str] | None = None,
 ) -> dict:
     failures = []
     warnings = []
@@ -778,8 +779,19 @@ def compare(
         failures.append("COMPANY_IDENTITY_CHANGED")
     baseline_modules = baseline.get("installed_core_modules")
     candidate_modules = candidate.get("installed_core_modules")
-    if baseline_modules != candidate_modules:
-        failures.append("CORE_MODULE_IDENTITY_CHANGED")
+    if allowed_core_module_versions is None:
+        if baseline_modules != candidate_modules:
+            failures.append("CORE_MODULE_IDENTITY_CHANGED")
+    else:
+        expected_modules = [
+            {"module": name, "version": allowed_core_module_versions[name]}
+            for name in sorted(allowed_core_module_versions)
+        ]
+        observed_modules = sorted(
+            candidate_modules or [], key=lambda row: str(row.get("module") or "")
+        )
+        if observed_modules != expected_modules:
+            failures.append("CORE_MODULE_VERSION_DRIFT")
     for model, base_aggregate in baseline.get("aggregates", {}).items():
         current = candidate.get("aggregates", {}).get(model)
         if current is None:

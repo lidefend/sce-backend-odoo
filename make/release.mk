@@ -138,6 +138,9 @@ verify.production.release_contract:
 	@python3 scripts/verify/test_production_git_authority_guard.py
 	@python3 scripts/ops/test_rc6_candidate_identity_freeze.py
 	@python3 scripts/ops/rc6_candidate_identity_freeze.py verify-declaration --declaration config/releases/rc6_candidate.json
+	@$(MAKE) --no-print-directory daily.candidate.continuity.test
+	@$(MAKE) --no-print-directory daily.candidate.sentinel.test
+	@$(MAKE) --no-print-directory daily.candidate.clone_rehearsal.test
 	@bash -n scripts/release/immutable_candidate_build.sh scripts/release/immutable_candidate_publish.sh scripts/release/immutable_candidate_scan.sh scripts/release/production_odoo_entrypoint.sh scripts/release/production_db_manage.sh scripts/release/production_contract_image_acceptance.sh
 
 BACKUP_INSTALL_ROOT ?= /opt/ops

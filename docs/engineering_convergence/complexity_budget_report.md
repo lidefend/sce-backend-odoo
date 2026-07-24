@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3308`
+- Scanned files: `3310`
 - Files requiring split plan: `34`
-- Files above warning threshold: `56`
+- Files above warning threshold: `57`
 
 ## Split Plan Required
 
@@ -72,8 +72,9 @@ Generated from repository source files. This report is informational during the 
 | 1242 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1226 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1223 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
+| 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
+| 1204 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1201 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1196 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1190 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
@@ -165,8 +166,9 @@ Generated from repository source files. This report is informational during the 
 | 1242 | warning | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1226 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1223 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
+| 1208 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
+| 1204 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1201 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1196 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1190 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
@@ -191,7 +193,6 @@ Generated from repository source files. This report is informational during the 
 | 867 | warning | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 858 | warning | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
-| 845 | warning | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 
 ## Interpretation
 
