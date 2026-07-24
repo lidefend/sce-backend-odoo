@@ -39,7 +39,7 @@ pipeline = load(
 
 SHA = "a" * 40
 TREE = "b" * 40
-VERSION = "1.0.0-rc.5"
+VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 IMAGE_ID = "sha256:" + "c" * 64
 CONTRACT = "f" * 64
 ATTEMPT = "20260724T120000Z-" + "1" * 32

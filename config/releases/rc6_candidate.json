@@ -26,7 +26,6 @@
   "image_repository": "ghcr.io/lidefend/sce-product",
   "image_revision_label": "fb1f2b5a6e93fb4d7865023e6cda2961848c3cb8",
   "movable_image_reference_used": false,
-  "product_version_at_build": "1.0.0-rc.5",
   "required_merge_commits": {
     "PR_41": "207334b97310ec0ff2afc28f68ee909df906a540",
     "PR_42": "8962c8e0b831c4ac93e15a6d503740113dcd2c57",

@@ -250,8 +250,11 @@ def publish_image(artifacts: Path, output: Path) -> dict:
     manifest = load_json(manifest_path, "candidate image manifest")
     if manifest.get("source_sha") != CANDIDATE_SHA:
         raise FreezeError("candidate build manifest source SHA differs")
+    product_version = str(manifest.get("product_version") or "")
+    if not product_version:
+        raise FreezeError("candidate build manifest product version is missing")
     if manifest.get("image_tags") != [
-        "ghcr.io/lidefend/sce-product:1.0.0-rc.5",
+        f"{IMAGE_REPOSITORY}:{product_version}",
         SOURCE_TAG,
     ]:
         raise FreezeError("candidate build tags differ from the approved source build")

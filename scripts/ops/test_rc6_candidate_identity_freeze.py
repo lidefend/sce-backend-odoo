@@ -154,8 +154,9 @@ class RegistryTests(unittest.TestCase):
     def test_existing_source_tag_is_never_overwritten(self) -> None:
         artifacts_payload = {
             "source_sha": freeze.CANDIDATE_SHA,
+            "product_version": "test-release-version",
             "image_tags": [
-                "ghcr.io/lidefend/sce-product:1.0.0-rc.5",
+                f"{freeze.IMAGE_REPOSITORY}:test-release-version",
                 freeze.SOURCE_TAG,
             ],
             "publish_status": "not_published",
