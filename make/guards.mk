@@ -11,7 +11,7 @@ ifneq (,$(filter .env.prod,$(notdir $(ENV_FILE))))
 IS_PROD := 1
 endif
 
-.PHONY: guard.prod.forbid guard.prod.readonly guard.prod.danger
+.PHONY: guard.prod.forbid guard.prod.readonly guard.prod.danger guard.daily_candidate.preserve
 guard.prod.forbid:
 	@if [ "$(IS_PROD)" = "1" ]; then \
 	  echo "❌ forbidden in prod (ENV=prod/ENV_FILE=.env.prod)"; \
@@ -27,6 +27,16 @@ guard.prod.readonly:
 guard.prod.danger:
 	@if [ "$(IS_PROD)" = "1" ] && [ "$${PROD_DANGER:-}" != "1" ]; then \
 	  echo "❌ prod danger guard: set PROD_DANGER=1 to proceed"; \
+	  exit 2; \
+	fi
+
+# The historical "dev" stack now carries persistent candidate user data.
+# Destructive database/demo helpers must use a separate project or database.
+DAILY_CANDIDATE_TARGET_DB ?= $(or $(DB_NAME),$(DB),$(BD))
+guard.daily_candidate.preserve:
+	@if [ "$(COMPOSE_PROJECT_NAME)" = "sc-backend-odoo-dev" ] && [ "$(DAILY_CANDIDATE_TARGET_DB)" = "sc_demo" ]; then \
+	  echo "❌ daily candidate data is persistent: destructive reset/demo operation refused"; \
+	  echo "   Use an isolated personal/acceptance compose project and database."; \
 	  exit 2; \
 	fi
 
@@ -131,4 +141,3 @@ check-external-addons:
 check-odoo-conf:
 	@test "$(ODOO_CONF)" = "/var/lib/odoo/odoo.conf" || \
 	  (echo "❌ ODOO_CONF must be /var/lib/odoo/odoo.conf" && exit 1)
-

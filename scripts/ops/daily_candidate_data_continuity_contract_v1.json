@@ -1,0 +1,60 @@
+{
+  "schema_version": "daily_candidate_data_continuity.v1",
+  "environment_class": "DAILY_CANDIDATE_ENVIRONMENT",
+  "data_authority": "CANDIDATE",
+  "compose_project": "sc-backend-odoo-dev",
+  "database": "sc_demo",
+  "database_container": "sc-backend-odoo-dev-db-1",
+  "odoo_container": "sc-backend-odoo-dev-odoo-1",
+  "database_volume": "sc_dev_db_data",
+  "odoo_data_volume": "sc_dev_odoo_data",
+  "filestore_root": "/var/lib/odoo/filestore",
+  "source_repository": "/opt/projects/repos/sce-backend-odoo",
+  "backup_root": "/data/backups/daily_candidate",
+  "required_artifacts": [
+    "database.dump",
+    "filestore.tar.gz",
+    "manifest.json",
+    "SHA256SUMS"
+  ],
+  "sentinel_tables": [
+    "res_company",
+    "res_users",
+    "project_project",
+    "construction_contract",
+    "payment_request",
+    "ir_attachment",
+    "ir_module_module"
+  ],
+  "sample_tables": [
+    "project_project",
+    "construction_contract",
+    "payment_request",
+    "ir_attachment"
+  ],
+  "data_classes": {
+    "database_and_filestore": "CANDIDATE",
+    "legacy_source": "LEGACY_SOURCE",
+    "test_fixture": "TEST_FIXTURE",
+    "personal_development": "DISPOSABLE"
+  },
+  "forbidden_on_candidate_database": [
+    "database_recreate",
+    "filestore_recreate",
+    "demo_data_install",
+    "fixture_reset",
+    "module_uninstall",
+    "temporary_sql_repair",
+    "compose_down_with_volumes"
+  ],
+  "upgrade_contract": {
+    "database_migration_declared": true,
+    "versioned_migration_required": true,
+    "clone_rehearsal_required": true,
+    "paired_backup_required": true,
+    "fixture_write_allowed": false,
+    "demo_data_write_allowed": false,
+    "database_recreate_required": false,
+    "filestore_recreate_required": false
+  }
+}

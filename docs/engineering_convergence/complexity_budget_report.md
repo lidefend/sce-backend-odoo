@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3300`
+- Scanned files: `3302`
 - Files requiring split plan: `34`
-- Files above warning threshold: `54`
+- Files above warning threshold: `55`
 
 ## Split Plan Required
 
@@ -92,6 +92,7 @@ Generated from repository source files. This report is informational during the 
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 867 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 858 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 839 | Python source | `scripts/release/release_candidate.py` |
@@ -187,9 +188,9 @@ Generated from repository source files. This report is informational during the 
 | 879 | warning | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 867 | warning | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 858 | warning | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 845 | warning | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | warning | Python source | `scripts/verify/contract_evidence_guard.py` |
-| 839 | warning | Python source | `scripts/release/release_candidate.py` |
 
 ## Interpretation
 

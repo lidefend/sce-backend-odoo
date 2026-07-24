@@ -599,3 +599,21 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P4 owns promotion configuration provenance and deployment sequencing; Odoo modules, frontend, acceptance product semantics, and runtime business configuration must remain unchanged
 - Blast Radius: read-only validation of the governed promotion config/secret sources, fixed image, immutable acceptance package, current-production HTTP login/system initialization/core reads, and redacted readiness evidence only
 - Validation: undefined/empty/whitespace/placeholder login, missing secret, wrong URL/database/digest/role, complete-config pass, clean-session HTTP parity, exact local image identity, atomic `0600` evidence, daily server execution, production read-only preflight, release contracts, and full CI
+# Daily candidate data continuity baseline — 2026-07-24
+
+- Branch / anchor: `audit/daily-data-continuity-baseline` at `7a57a47c`
+- Formal Product Layer: P4 ops delivery tool
+- Layer Target / Module / Reason: versioned daily candidate continuity contract,
+  paired database/filestore backup, isolated restore drill and aggregate data
+  sentinels under `scripts/ops`; the daily server carries persistent candidate
+  user data and must not be governed as a disposable product sandbox.
+- Standard vs User-Specific: environment delivery governance for the confirmed
+  daily candidate state pair; no P0–P3 product or customer business semantics.
+- Why Here / Why Not Elsewhere: backup, restore and upgrade safety belong to P4;
+  they must not alter Odoo modules, frontend rendering, runtime business
+  configuration or make ops scripts a business-data source of truth.
+- Blast Radius / Validation: new opt-in Make targets only; exact environment,
+  database, container, volume and backup-root guards; the four shared
+  destructive reset/demo targets now refuse the exact daily candidate state
+  pair; unit regression, paired backup validation, isolated restore equality
+  and standard CI prove containment.
