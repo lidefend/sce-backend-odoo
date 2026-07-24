@@ -30,6 +30,8 @@ from .ui_contract import UiContractHandler
 from .ui_contract_preview import PreviewAccessDenied, build_projection_environments
 _logger = logging.getLogger(__name__)
 
+REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
+REASON_SCENE_CONTRACT_READY = "SCENE_CONTRACT_READY"
 BUSINESS_OPERATION_FIELD_PRIORITY = (
     "name",
     "document_no",
@@ -2982,7 +2984,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "classification": "danger",
                 "requires_confirm": False,
                 "confirm_message": "确认提交？",
-                "reason_code": "STANDARD_SUBMIT_ACTION",
+                "reason_code": REASON_STANDARD_SUBMIT_ACTION,
             },
             "payload": {
                 "method": method,
@@ -3332,7 +3334,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "state": {
                 "status": "ready",
                 "state_tone": "stable",
-                "reason_code": "SCENE_CONTRACT_READY",
+                "reason_code": REASON_SCENE_CONTRACT_READY,
             },
             "page": {
                 "layout": str(scene.get("layout") or scene.get("page_type") or "entry_shell").strip(),

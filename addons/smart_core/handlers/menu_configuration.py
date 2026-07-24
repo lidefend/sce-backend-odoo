@@ -22,10 +22,12 @@ from ..utils.backend_contract_boundaries import (
     ensure_menu_orchestration_source_status,
 )
 from ..utils.extension_hooks import call_extension_hook_first
+from ..utils.reason_codes import REASON_USER_ERROR
 
 
 BUSINESS_CONFIG_GROUP = "smart_core.group_smart_core_business_config_admin"
 PLATFORM_ADMIN_GROUP = "smart_core.group_smart_core_admin"
+REASON_MENU_CONFIG_SCOPE_VIOLATION = "MENU_CONFIG_SCOPE_VIOLATION"
 _logger = logging.getLogger(__name__)
 
 
@@ -1078,7 +1080,11 @@ class MenuConfigurationSaveHandler(MenuConfigurationLoadHandler):
             except ValidationError as exc:
                 return {
                     "ok": False,
-                    "error": {"code": "MENU_CONFIG_SCOPE_VIOLATION", "message": str(exc), "reason_code": "MENU_CONFIG_SCOPE_VIOLATION"},
+                    "error": {
+                        "code": REASON_MENU_CONFIG_SCOPE_VIOLATION,
+                        "message": str(exc),
+                        "reason_code": REASON_MENU_CONFIG_SCOPE_VIOLATION,
+                    },
                     "code": 400,
                 }
             vals = self._values_for_row(row, company_id)
@@ -1100,7 +1106,11 @@ class MenuConfigurationSaveHandler(MenuConfigurationLoadHandler):
         except ValidationError as exc:
             return {
                 "ok": False,
-                "error": {"code": "USER_ERROR", "message": str(exc), "reason_code": "USER_ERROR"},
+                "error": {
+                    "code": REASON_USER_ERROR,
+                    "message": str(exc),
+                    "reason_code": REASON_USER_ERROR,
+                },
                 "code": 400,
             }
 
