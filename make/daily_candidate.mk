@@ -4,12 +4,17 @@ DAILY_CONTINUITY_EVIDENCE ?= /tmp/daily-candidate-data-continuity.json
 DAILY_CANDIDATE_SSH_HOST ?=
 DAILY_CONTINUITY_TOOL_SHA ?= $(shell git rev-parse HEAD)
 DAILY_CONTINUITY_REMOTE_ROOT ?= /opt/sce/deployment-tools/$(DAILY_CONTINUITY_TOOL_SHA)
+DAILY_SENTINEL_TEMP_FILE ?=
 
-.PHONY: daily.candidate.continuity.test daily.candidate.continuity.baseline daily.candidate.continuity.backup daily.candidate.continuity.validate daily.candidate.continuity.restore_drill daily.candidate.continuity.remote_install daily.candidate.continuity.remote_baseline daily.candidate.continuity.remote_backup daily.candidate.continuity.remote_restore_drill daily.candidate.continuity.remote_closeout
+.PHONY: daily.candidate.continuity.test daily.candidate.continuity.baseline daily.candidate.continuity.backup daily.candidate.continuity.validate daily.candidate.continuity.restore_drill daily.candidate.continuity.remote_install daily.candidate.continuity.remote_baseline daily.candidate.continuity.remote_backup daily.candidate.continuity.remote_restore_drill daily.candidate.continuity.remote_closeout daily.candidate.sentinel.test daily.candidate.sentinel.remote_capture daily.candidate.sentinel.remote_verify daily.candidate.sentinel.remote_cleanup_temp
 
 daily.candidate.continuity.test: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_candidate_data_continuity.py
 	@python3 scripts/ops/test_daily_candidate_data_continuity.py
+
+daily.candidate.sentinel.test: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_candidate_data_sentinel.py
+	@python3 scripts/ops/test_daily_candidate_data_sentinel.py
 
 daily.candidate.continuity.baseline: guard.prod.forbid
 	@DAILY_CONTINUITY_EVIDENCE="$(DAILY_CONTINUITY_EVIDENCE)" \
@@ -44,7 +49,9 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 	@test -z "$$(git status --porcelain)" || { echo "clean worktree is required for immutable tool install" >&2; exit 2; }
 	@git archive --format=tar "$(DAILY_CONTINUITY_TOOL_SHA)" \
 		scripts/ops/daily_candidate_data_continuity.py \
-		scripts/ops/daily_candidate_data_continuity_contract_v1.json | \
+		scripts/ops/daily_candidate_data_continuity_contract_v1.json \
+		scripts/ops/daily_candidate_data_sentinel.py \
+		scripts/ops/daily_candidate_data_sentinel_contract_v1.json | \
 		ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'set -eu; root="/opt/sce/deployment-tools"; final="$(DAILY_CONTINUITY_REMOTE_ROOT)"; staging="$$root/.incomplete-$(DAILY_CONTINUITY_TOOL_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/DEPLOYMENT_TOOL_SHA")" = "$(DAILY_CONTINUITY_TOOL_SHA)"; exit 0; fi; test ! -e "$$staging"; install -d -m 0700 "$$staging"; tar -xf - -C "$$staging"; printf "%s\n" "$(DAILY_CONTINUITY_TOOL_SHA)" > "$$staging/DEPLOYMENT_TOOL_SHA"; chmod 0600 "$$staging/DEPLOYMENT_TOOL_SHA"; mv "$$staging" "$$final"'
 
@@ -69,3 +76,19 @@ daily.candidate.continuity.remote_closeout: daily.candidate.continuity.remote_in
 	@[[ "$(DAILY_CONTINUITY_BACKUP_DIR)" =~ ^/data/backups/daily_candidate/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid daily candidate backup directory" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_continuity.py" closeout --backup-dir "$(DAILY_CONTINUITY_BACKUP_DIR)"'
+
+daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_sentinel.py" capture --output "/tmp/daily-candidate-data-sentinel-$$(date -u +%Y%m%dT%H%M%SZ).json"'
+
+daily.candidate.sentinel.remote_verify: daily.candidate.continuity.remote_install
+	@test "$(DAILY_CONTINUITY_BACKUP_DIR)" = "/data/backups/daily_candidate/sc_demo-20260724T032145Z-6eb277d1" || { echo "fixed continuity backup directory is required" >&2; exit 2; }
+	@test "$${CONFIRM_DAILY_SENTINEL_VERIFY:-}" = "READ_ONLY_CAPTURE_AND_ISOLATED_RESTORE" || { echo "exact daily sentinel verification confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_DAILY_SENTINEL_VERIFY=READ_ONLY_CAPTURE_AND_ISOLATED_RESTORE python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_sentinel.py" verify --backup-dir "$(DAILY_CONTINUITY_BACKUP_DIR)"'
+
+daily.candidate.sentinel.remote_cleanup_temp: guard.prod.forbid
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@[[ "$(DAILY_SENTINEL_TEMP_FILE)" =~ ^/tmp/daily-candidate-data-sentinel-[0-9]{8}T[0-9]{6}Z[.]json$$ ]] || { echo "invalid exact sentinel temporary file" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'test -f "$(DAILY_SENTINEL_TEMP_FILE)"; rm -- "$(DAILY_SENTINEL_TEMP_FILE)"'

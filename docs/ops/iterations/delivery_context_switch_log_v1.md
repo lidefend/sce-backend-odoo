@@ -617,3 +617,22 @@ customer delivery evidence belongs in private customer or payload repositories.
   destructive reset/demo targets now refuse the exact daily candidate state
   pair; unit regression, paired backup validation, isolated restore equality
   and standard CI prove containment.
+# Daily candidate historical data sentinel baseline — 2026-07-24
+
+- Branch / anchor: `audit/daily-data-sentinel-baseline` at `207334b`
+- Formal Product Layer: P4 ops delivery tool
+- Layer Target / Module / Reason: versioned read-only historical data sentinel
+  contract, repeatable-read capture, deterministic samples, attachment/
+  relationship assertions, compare semantics and isolated clone verification
+  under `scripts/ops`; a restorable backup alone cannot detect silent data
+  damage during an upgrade.
+- Standard vs User-Specific: generic stateful candidate-environment governance
+  bound to the approved daily database identity; no customer record content or
+  product business rule becomes repository source.
+- Why Here / Why Not Elsewhere: observation, migration acceptance and recovery
+  proof belong to P4. No P0–P3 module, frontend, runtime configuration, running
+  repository, user data or filestore is modified.
+- Blast Radius / Validation: new opt-in Make targets and read-only scripts only;
+  UUID/backup/filestore guards, sensitive-output denylist, targeted comparison
+  regressions, repeated primary captures, isolated restore equality and full CI
+  prove containment.
