@@ -657,3 +657,25 @@ customer delivery evidence belongs in private customer or payload repositories.
   and idempotency regressions, mode-0600 evidence and full CI prove
   containment. No clone restore or source operation occurs without a formally
   frozen candidate.
+
+# RC6 candidate identity freeze — 2026-07-24
+
+- Branch / anchor: `release/tenant-rc-rc6-identity-freeze` at `fb1f2b5`
+- Formal Product Layer: P4 ops delivery tool
+- Layer Target / Module / Reason: exact-source build workspace, single-write
+  registry publication, manifest-to-config identity verification and a
+  versioned RC6 candidate declaration under `scripts/ops`, `make/release.mk`
+  and `config/releases`; clone rehearsal requires one immutable candidate
+  rather than an advancing `main`.
+- Standard vs User-Specific: repository-wide release identity governance; no
+  product behavior, customer preference, runtime configuration, database or
+  filestore change.
+- Why Here / Why Not Elsewhere: source/image provenance and supersession policy
+  belong to P4. They must not enter P0–P3 modules, frontend rendering, runtime
+  configuration or alter the frozen product source commit.
+- Blast Radius / Validation: one fixed source tag was pushed to GHCR; no
+  movable or product-version tag was published. Clean SHA-bound build, SBOM
+  and vulnerability scan, independent manifest/config inspection, OCI
+  revision check, required PR ancestry and CI checks, declaration regressions,
+  release contract and full CI prove containment. Daily and production
+  environments were not accessed.

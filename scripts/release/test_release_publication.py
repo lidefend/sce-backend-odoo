@@ -27,7 +27,7 @@ def load_module():
 
 publication = load_module()
 
-VERSION = "1.0.0-rc.5"
+VERSION = (REPO / "VERSION").read_text(encoding="utf-8").strip()
 SOURCE = "a" * 40
 TREE = "b" * 40
 LIVE_MAIN = "1" * 40
@@ -650,7 +650,7 @@ class PublicationContractTests(unittest.TestCase):
     def test_version_attempt_sha_and_symlink_inputs_are_rejected(self):
         invalid = (
             {"version": "../rc.5"},
-            {"version": "1.0.0-rc.5;touch /tmp/x"},
+            {"version": f"{VERSION};touch /tmp/x"},
             {"candidate_attempt_id": "../../escape"},
             {"expected_source_sha": "a" * 39},
             {"expected_source_sha": "g" * 40},
