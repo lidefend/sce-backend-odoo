@@ -126,6 +126,11 @@ class BoundaryTests(unittest.TestCase):
         source = (HERE / "daily_candidate_clone_upgrade_executor.py").read_text()
         self.assertIn('"archive",', source)
         self.assertIn('"addons/smart_construction_custom"', source)
+        self.assertGreaterEqual(
+            source.count('"--user",\n            "0:0",'),
+            3,
+            "all volume extraction containers must run as root",
+        )
         self.assertNotIn(
             "/var/lib/docker/volumes/sc_dev_odoo_data/_data:",
             source,
