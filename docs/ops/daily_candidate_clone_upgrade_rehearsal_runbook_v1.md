@@ -114,8 +114,54 @@ Never use an upgraded clone volume as the paired-restore recovery proof.
 
 ## Current admission status
 
-At the creation of this contract, the repository contained no formal RC6
-candidate declaration or SHA-bound immutable image digest. PR #41 and PR #42
-were merged and green, but that fact alone does not designate an RC6 release
-candidate. The actual clone rehearsal therefore remains closed until the
-minimal candidate declaration described above is approved.
+RC6 is frozen by `config/releases/rc6_candidate.json` at product source
+`fb1f2b5a6e93fb4d7865023e6cda2961848c3cb8` and immutable image manifest
+`sha256:02edec2628b276834abd10ec3cc9ef96517fb499c6b0e8a60b19d59e3694fdeb`.
+Later delivery-only commits do not change that product candidate.
+
+## Governed remote execution
+
+The daily host has no GHCR credential and the clone network must have no public
+egress. Import the already-built candidate without rebuilding or adding tags:
+
+```bash
+ENV=dev DAILY_CANDIDATE_SSH_HOST=sc-root \
+CONFIRM_RC6_OFFLINE_IMAGE_IMPORT=IMPORT_FROZEN_RC6_IMAGE_OFFLINE \
+make daily.candidate.clone_rehearsal.remote_image_import
+```
+
+The import archive must contain exactly one image, no `RepoTags`, config digest
+`sha256:f468dedc5daf5252f9d7631ee6b31a55a164b97d52f5f0e8b71e46035389e244`,
+and the frozen OCI revision. This is the manifest-to-config chain recorded in
+the candidate declaration; a classic Docker daemon's local `.Id` is not
+compared to the source daemon's `.Id` semantics.
+
+Install the immutable delivery tool and run the read-only preflight:
+
+```bash
+ENV=dev DAILY_CANDIDATE_SSH_HOST=sc-root \
+make daily.candidate.clone_rehearsal.remote_preflight
+```
+
+Only after preflight passes, execute the isolated rehearsal:
+
+```bash
+ENV=dev DAILY_CANDIDATE_SSH_HOST=sc-root \
+CONFIRM_RC6_DAILY_CLONE_REHEARSAL=RUN_FROZEN_RC6_ISOLATED_CLONE_REHEARSAL \
+make daily.candidate.clone_rehearsal.remote_execute
+```
+
+The executor restores the fixed pair into isolated volumes, copies the
+installed P2 `smart_construction_custom` code from the fixed DAILY Git commit
+into a separate read-only customer-addons volume, and never mounts the running
+repository. It runs the fixed RC6 product modules plus that unchanged customer
+module through the same versioned upgrade entry twice. Internal-only networks
+block email, payment, webhook and other external writes. Real-HTTP acceptance
+uses the approved DAILY clone identity without persisting or reporting its
+secret.
+
+Rollback proof restores the original database and filestore into a second
+independent state, copies the old fixed application tree into another isolated
+volume, starts the prescribed old application image, and compares the restored
+sentinels. All labeled clone resources are removed in `finally`; evidence and
+protected logs remain mode `0600`.

@@ -215,6 +215,28 @@ class ComparisonTests(unittest.TestCase):
         candidate["aggregates"]["project.project"]["write_date_max"] = "after"
         self.assertTrue(self.compare(candidate)["pass"])
 
+    def test_versioned_core_module_upgrade_is_allowed(self):
+        candidate = copy.deepcopy(self.baseline)
+        candidate["installed_core_modules"] = [
+            {"module": "smart_core", "version": "17.0.2.0.0"}
+        ]
+        result = self.compare(
+            candidate,
+            allowed_core_module_versions={"smart_core": "17.0.2.0.0"},
+        )
+        self.assertTrue(result["pass"])
+
+    def test_unexpected_core_module_version_still_fails(self):
+        candidate = copy.deepcopy(self.baseline)
+        candidate["installed_core_modules"] = [
+            {"module": "smart_core", "version": "17.0.2.0.1"}
+        ]
+        result = self.compare(
+            candidate,
+            allowed_core_module_versions={"smart_core": "17.0.2.0.0"},
+        )
+        self.assertIn("CORE_MODULE_VERSION_DRIFT", result["failures"])
+
     def test_restore_snapshot_count_difference_is_warning(self):
         candidate = copy.deepcopy(self.baseline)
         candidate["aggregates"]["project.project"]["record_count"] = 9

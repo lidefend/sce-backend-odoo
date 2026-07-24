@@ -8,8 +8,10 @@ DAILY_SENTINEL_TEMP_FILE ?=
 DAILY_CLONE_REHEARSAL_CONTRACT ?= scripts/ops/daily_candidate_clone_upgrade_contract_v1.json
 DAILY_CLONE_RC6_CANDIDATE_MANIFEST ?=
 DAILY_CLONE_RC6_CANDIDATE_REPOSITORY ?= $(CURDIR)
+DAILY_CLONE_RC6_IMAGE_REF := ghcr.io/lidefend/sce-product@sha256:02edec2628b276834abd10ec3cc9ef96517fb499c6b0e8a60b19d59e3694fdeb
+DAILY_CLONE_RC6_CONFIG_DIGEST := sha256:f468dedc5daf5252f9d7631ee6b31a55a164b97d52f5f0e8b71e46035389e244
 
-.PHONY: daily.candidate.continuity.test daily.candidate.continuity.baseline daily.candidate.continuity.backup daily.candidate.continuity.validate daily.candidate.continuity.restore_drill daily.candidate.continuity.remote_install daily.candidate.continuity.remote_baseline daily.candidate.continuity.remote_backup daily.candidate.continuity.remote_restore_drill daily.candidate.continuity.remote_closeout daily.candidate.sentinel.test daily.candidate.sentinel.remote_capture daily.candidate.sentinel.remote_verify daily.candidate.sentinel.remote_cleanup_temp daily.candidate.clone_rehearsal.test daily.candidate.clone_rehearsal.freeze
+.PHONY: daily.candidate.continuity.test daily.candidate.continuity.baseline daily.candidate.continuity.backup daily.candidate.continuity.validate daily.candidate.continuity.restore_drill daily.candidate.continuity.remote_install daily.candidate.continuity.remote_baseline daily.candidate.continuity.remote_backup daily.candidate.continuity.remote_restore_drill daily.candidate.continuity.remote_closeout daily.candidate.sentinel.test daily.candidate.sentinel.remote_capture daily.candidate.sentinel.remote_verify daily.candidate.sentinel.remote_cleanup_temp daily.candidate.clone_rehearsal.test daily.candidate.clone_rehearsal.freeze daily.candidate.clone_rehearsal.remote_image_import daily.candidate.clone_rehearsal.remote_preflight daily.candidate.clone_rehearsal.remote_execute
 
 daily.candidate.continuity.test: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_candidate_data_continuity.py
@@ -20,8 +22,9 @@ daily.candidate.sentinel.test: guard.prod.forbid
 	@python3 scripts/ops/test_daily_candidate_data_sentinel.py
 
 daily.candidate.clone_rehearsal.test: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/daily_candidate_clone_upgrade_rehearsal.py
+	@python3 -m py_compile scripts/ops/daily_candidate_clone_upgrade_rehearsal.py scripts/ops/daily_candidate_clone_upgrade_executor.py
 	@python3 scripts/ops/test_daily_candidate_clone_upgrade_rehearsal.py
+	@python3 scripts/ops/test_daily_candidate_clone_upgrade_executor.py
 
 daily.candidate.clone_rehearsal.freeze: guard.prod.forbid
 	@test -n "$(DAILY_CLONE_RC6_CANDIDATE_MANIFEST)" || { echo "DAILY_CLONE_RC6_CANDIDATE_MANIFEST is required" >&2; exit 2; }
@@ -68,7 +71,11 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/ops/daily_candidate_data_sentinel.py \
 		scripts/ops/daily_candidate_data_sentinel_contract_v1.json \
 		scripts/ops/daily_candidate_clone_upgrade_rehearsal.py \
-		scripts/ops/daily_candidate_clone_upgrade_contract_v1.json | \
+		scripts/ops/daily_candidate_clone_upgrade_contract_v1.json \
+		scripts/ops/daily_candidate_clone_upgrade_executor.py \
+		scripts/ops/production_acceptance_harness.py \
+		scripts/ops/production_acceptance_contract_v1.json \
+		scripts/ops/production_acceptance_package_v1.sha256 | \
 		ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'set -eu; root="/opt/sce/deployment-tools"; final="$(DAILY_CONTINUITY_REMOTE_ROOT)"; staging="$$root/.incomplete-$(DAILY_CONTINUITY_TOOL_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/DEPLOYMENT_TOOL_SHA")" = "$(DAILY_CONTINUITY_TOOL_SHA)"; exit 0; fi; test ! -e "$$staging"; install -d -m 0700 "$$staging"; tar -xf - -C "$$staging"; printf "%s\n" "$(DAILY_CONTINUITY_TOOL_SHA)" > "$$staging/DEPLOYMENT_TOOL_SHA"; chmod 0600 "$$staging/DEPLOYMENT_TOOL_SHA"; mv "$$staging" "$$final"'
 
@@ -109,3 +116,29 @@ daily.candidate.sentinel.remote_cleanup_temp: guard.prod.forbid
 	@[[ "$(DAILY_SENTINEL_TEMP_FILE)" =~ ^/tmp/daily-candidate-data-sentinel-[0-9]{8}T[0-9]{6}Z[.]json$$ ]] || { echo "invalid exact sentinel temporary file" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'test -f "$(DAILY_SENTINEL_TEMP_FILE)"; rm -- "$(DAILY_SENTINEL_TEMP_FILE)"'
+
+daily.candidate.clone_rehearsal.remote_image_import: guard.prod.forbid
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@[[ "$(DAILY_CANDIDATE_SSH_HOST)" =~ ^[A-Za-z0-9._-]+$$ ]] || { echo "invalid daily candidate SSH host" >&2; exit 2; }
+	@test "$${CONFIRM_RC6_OFFLINE_IMAGE_IMPORT:-}" = "IMPORT_FROZEN_RC6_IMAGE_OFFLINE" || { echo "exact RC6 offline image import confirmation is required" >&2; exit 2; }
+	@docker image inspect "$(DAILY_CLONE_RC6_IMAGE_REF)" >/dev/null
+	@set -eu; archive="$$(mktemp /tmp/rc6-candidate-image.XXXXXXXX.tar)"; \
+	  trap 'rm -f -- "$$archive"' EXIT INT TERM; \
+	  docker save --output "$$archive" "$(DAILY_CLONE_RC6_IMAGE_REF)"; \
+	  python3 scripts/ops/daily_candidate_clone_upgrade_executor.py verify-offline-archive --archive "$$archive"; \
+	  if ssh "$(DAILY_CANDIDATE_SSH_HOST)" 'docker image inspect "$(DAILY_CLONE_RC6_CONFIG_DIGEST)" >/dev/null 2>&1'; then \
+	    echo "[daily.clone.image] target config digest already available; import skipped"; \
+	  else \
+	    ssh "$(DAILY_CANDIDATE_SSH_HOST)" 'docker load >/dev/null' < "$$archive"; \
+	  fi; \
+	  ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+	    'test "$$(docker image inspect "$(DAILY_CLONE_RC6_CONFIG_DIGEST)" --format "{{.Id}}")" = "$(DAILY_CLONE_RC6_CONFIG_DIGEST)"; test "$$(docker image inspect "$(DAILY_CLONE_RC6_CONFIG_DIGEST)" --format "{{index .Config.Labels \"org.opencontainers.image.revision\"}}")" = "fb1f2b5a6e93fb4d7865023e6cda2961848c3cb8"; tags="$$(docker image inspect "$(DAILY_CLONE_RC6_CONFIG_DIGEST)" --format "{{json .RepoTags}}")"; test "$$tags" = "null" -o "$$tags" = "[]"; echo "[daily.clone.image] PASS immutable config and OCI revision"'
+
+daily.candidate.clone_rehearsal.remote_preflight: daily.candidate.continuity.remote_install
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_clone_upgrade_executor.py" preflight'
+
+daily.candidate.clone_rehearsal.remote_execute: daily.candidate.continuity.remote_install
+	@test "$${CONFIRM_RC6_DAILY_CLONE_REHEARSAL:-}" = "RUN_FROZEN_RC6_ISOLATED_CLONE_REHEARSAL" || { echo "exact RC6 clone rehearsal confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_RC6_DAILY_CLONE_REHEARSAL=RUN_FROZEN_RC6_ISOLATED_CLONE_REHEARSAL python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_clone_upgrade_executor.py" execute'

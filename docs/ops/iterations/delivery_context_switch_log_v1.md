@@ -679,3 +679,27 @@ customer delivery evidence belongs in private customer or payload repositories.
   revision check, required PR ancestry and CI checks, declaration regressions,
   release contract and full CI prove containment. Daily and production
   environments were not accessed.
+
+# RC6 daily candidate clone upgrade execution — 2026-07-24
+
+- Branch / anchor: `audit/rc6-daily-clone-upgrade-rehearsal-03` at `e1f258a`
+- Formal Product Layer: P4 ops delivery tool
+- Layer Target / Module / Reason: fixed-image offline import, isolated paired
+  restore, versioned module upgrade, historical-data comparison, real-HTTP
+  acceptance, idempotency and paired rollback execution under `scripts/ops`
+  and `make/daily_candidate.mk`; PR #43 supplied admission contracts but no
+  state-changing rehearsal executor.
+- Standard vs User-Specific: generic stateful candidate-environment delivery
+  governance. The existing P2 customer add-on is copied from its fixed DAILY
+  Git identity into an isolated read-only volume and is not promoted into the
+  product image or repository.
+- Why Here / Why Not Elsewhere: backup consumption, clone lifecycle, migration
+  sequencing, external-side-effect blocking and evidence custody belong to P4.
+  No P0–P3 product behavior, frontend contract, DAILY runtime configuration or
+  business data source is changed.
+- Blast Radius / Validation: explicit-confirmation Make targets only; one
+  tagless offline image import, exact manifest-to-config/OCI chain, independent
+  internal networks and volumes, no source mounts, fixed paired backup and
+  sentinel checks, two identical upgrade entries, real-HTTP role checks,
+  independent old-version rollback proof, exact labeled cleanup, targeted
+  regressions and full CI prove containment. Production access is forbidden.
