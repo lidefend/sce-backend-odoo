@@ -1,0 +1,49 @@
+{
+  "authentication": {
+    "anonymous_header": "X-Anonymous-Intent",
+    "endpoint": "/api/v1/intent",
+    "intent": "login",
+    "method": "REAL_HTTP_BEARER_TOKEN"
+  },
+  "core_read_probes": [
+    {
+      "fields": [
+        "id",
+        "name"
+      ],
+      "model": "project.project"
+    },
+    {
+      "fields": [
+        "id",
+        "name"
+      ],
+      "model": "construction.contract"
+    },
+    {
+      "fields": [
+        "id",
+        "name"
+      ],
+      "model": "payment.request"
+    }
+  ],
+  "expected_role_codes": [
+    "business_config_admin"
+  ],
+  "forbidden_navigation_fragments": [
+    "用户核对菜单",
+    "用户数据验收",
+    "用户验收",
+    "直营项目系统菜单"
+  ],
+  "required_navigation_fragments": [
+    "项目台账",
+    "合同",
+    "付款"
+  ],
+  "required_workspace_fragments": [
+    "my_work"
+  ],
+  "schema_version": "production_acceptance_contract.v1"
+}

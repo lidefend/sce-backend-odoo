@@ -63,8 +63,12 @@ else
   fi
 fi
 
-echo "[branch.cleanup.feature] deleting local: ${branch}"
-git branch -d "${branch}"
+delete_flag="-d"
+if [[ "${CLEANUP_FORCE:-0}" == "1" ]]; then
+  delete_flag="-D"
+fi
+echo "[branch.cleanup.feature] deleting local: ${branch} flag=${delete_flag}"
+git branch "${delete_flag}" -- "${branch}"
 
 echo "[branch.cleanup.feature] deleting remote: ${branch}"
 git push origin --delete "${branch}"

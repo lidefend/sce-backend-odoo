@@ -310,7 +310,7 @@ pr.status:
 	@gh pr status || true
 
 # ------------------ Branch cleanup (Codex-safe) ------------------
-.PHONY: branch.cleanup branch.cleanup.feature
+.PHONY: branch.cleanup branch.cleanup.feature workspace.worktree.cleanup
 
 CLEAN_BRANCH ?=
 
@@ -345,6 +345,10 @@ branch.cleanup: guard.prod.forbid
 
 branch.cleanup.feature: guard.prod.forbid
 	@bash scripts/ops/branch_cleanup_safe.sh "$(CLEAN_BRANCH)"
+
+workspace.worktree.cleanup: guard.prod.forbid
+	@if [ -z "$(CLEAN_WORKTREE)" ]; then echo "❌ CLEAN_WORKTREE is required"; exit 2; fi
+	@python3 scripts/ops/safe_worktree_cleanup.py --path "$(CLEAN_WORKTREE)" $(if $(filter 1,$(APPLY)),--apply,)
 
 # ------------------ Main sync (safe) ------------------
 .PHONY: main.sync mirror.main.gitee
