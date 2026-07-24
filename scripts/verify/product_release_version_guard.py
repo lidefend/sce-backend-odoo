@@ -67,8 +67,8 @@ def main() -> int:
     build = (ROOT / "scripts" / "release" / "immutable_candidate_build.sh").read_text(encoding="utf-8")
     for marker in (
         "product_release.py --version",
-        "sce-product:${product_version}",
-        "sce-product:sha-${short_sha}",
+        "${image_repository}:${product_version}",
+        "${image_repository}:sha-${short_sha}",
         'PRODUCT_VERSION=$product_version',
     ):
         if marker not in build:
