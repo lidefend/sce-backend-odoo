@@ -462,7 +462,7 @@ HISTORY_SOURCE_BACKUP ?= artifacts/production-blocker/source/daily-dev-history-s
 DAILY_DEV_PROJECT ?= sc-backend-odoo-dev
 CANDIDATE_ARTIFACTS ?= artifacts/release/immutable-production-candidate-v1
 
-.PHONY: release.workspace.prepare release.production.readonly_baseline release.candidate release.candidate.build release.boundary.candidate.build release.publish release.candidate.publish release.candidate.scan
+.PHONY: release.workspace.prepare release.rc6.workspace.prepare release.rc6.identity.publish verify.release.rc6.identity release.production.readonly_baseline release.candidate release.candidate.build release.boundary.candidate.build release.publish release.candidate.publish release.candidate.scan
 .PHONY: product.install product.upgrade product.verify tenant.rc.payload.export tenant.rc.profile.product tenant.rc.profile.sample tenant.rc.profile.customer tenant.rc.profile.digest.verify tenant.rc.runtime.acceptance
 .PHONY: release.history.source_probe release.history.backup release.history.restore release.history.upgrade
 .PHONY: release.history.source_restore
@@ -472,6 +472,30 @@ CANDIDATE_ARTIFACTS ?= artifacts/release/immutable-production-candidate-v1
 release.workspace.prepare: guard.prod.forbid
 	@test -n "$(RELEASE_WORKSPACE)" || (echo "RELEASE_WORKSPACE is required"; exit 2)
 	@RELEASE_WORKSPACE="$(RELEASE_WORKSPACE)" bash scripts/release/prepare_rc_workspace.sh
+
+RC6_FREEZE_WORKSPACE ?=
+RC6_BUILD_ARTIFACTS ?=
+RC6_FREEZE_EVIDENCE ?=
+RC6_FREEZE_DECLARATION ?= config/releases/rc6_candidate.json
+
+release.rc6.workspace.prepare: guard.prod.forbid
+	@test -n "$(RC6_FREEZE_WORKSPACE)" || (echo "RC6_FREEZE_WORKSPACE is required"; exit 2)
+	@python3 scripts/ops/rc6_candidate_identity_freeze.py prepare-workspace \
+		--workspace "$(RC6_FREEZE_WORKSPACE)"
+
+release.rc6.identity.publish: guard.prod.forbid
+	@test "$${CONFIRM_RC6_IMAGE_PUSH:-}" = "PUSH_FROZEN_RC6_SOURCE_TAG_ONLY" || { echo "exact RC6 image push confirmation is required" >&2; exit 2; }
+	@test -n "$(RC6_BUILD_ARTIFACTS)" || (echo "RC6_BUILD_ARTIFACTS is required"; exit 2)
+	@test -n "$(RC6_FREEZE_EVIDENCE)" || (echo "RC6_FREEZE_EVIDENCE is required"; exit 2)
+	@python3 scripts/ops/rc6_candidate_identity_freeze.py publish-image \
+		--artifacts "$(RC6_BUILD_ARTIFACTS)" \
+		--output "$(RC6_FREEZE_EVIDENCE)"
+
+verify.release.rc6.identity: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/rc6_candidate_identity_freeze.py scripts/ops/test_rc6_candidate_identity_freeze.py
+	@python3 scripts/ops/test_rc6_candidate_identity_freeze.py
+	@python3 scripts/ops/rc6_candidate_identity_freeze.py verify-declaration \
+		--declaration "$(RC6_FREEZE_DECLARATION)"
 
 release.production.readonly_baseline: guard.prod.readonly check-compose-project check-compose-env
 	@CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/production_readonly_baseline.sh
