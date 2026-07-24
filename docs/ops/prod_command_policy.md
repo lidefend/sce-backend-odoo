@@ -24,6 +24,11 @@ Makefile guards and script-level guards.
   credential supplied at execution time; performs only real-HTTP login,
   authenticated reads, and negative authorization checks, without Odoo shell
   or `auth.logout`)
+- `make release.production.promotion.config.preflight` (requires
+  `PROD_READONLY_VERIFY=1`, separate governed configuration and secret files,
+  and a new `0600` evidence path; validates every promotion field, the fixed
+  local image, immutable acceptance package, and current-production HTTP
+  acceptance before any application-container replacement)
 - `make production.backup.install.preflight` (read-only tool/main/runtime identity check)
 - `make verify.baseline` (requires PROD_DANGER=1)
 - `make verify.p0` (requires PROD_DANGER=1)

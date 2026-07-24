@@ -1,0 +1,91 @@
+{
+  "acceptance_contract_path": "scripts/ops/production_acceptance_contract_v1.json",
+  "acceptance_package_digest": "c0274b881052c463c9d3183843781a81cc42a08789b029de6374b69131298a5c",
+  "expected_product_key": "sce-product",
+  "expected_role_code": "business_config_admin",
+  "fixed_deployment_image_id": "sha256:f016afdee271ae33d68840591eff88f3fc706269447de33f51ba9b03fe2c3702",
+  "forbidden_login_values": [
+    "admin",
+    "bootstrap",
+    "demo",
+    "root",
+    "test"
+  ],
+  "required_fields": [
+    {
+      "key": "PROMOTION_ENVIRONMENT",
+      "kind": "configuration",
+      "source": "config"
+    },
+    {
+      "key": "SC_BOOTSTRAP_LOGIN",
+      "kind": "identity",
+      "source": "config"
+    },
+    {
+      "key": "FORMAL_ACCEPTANCE_PASSWORD",
+      "kind": "secret",
+      "source": "secret"
+    },
+    {
+      "key": "ACCEPTANCE_BASE_URL",
+      "kind": "configuration",
+      "source": "config"
+    },
+    {
+      "key": "DB_NAME",
+      "kind": "configuration",
+      "source": "config"
+    },
+    {
+      "key": "ACCEPTANCE_CONTRACT_PATH",
+      "kind": "artifact",
+      "source": "config"
+    },
+    {
+      "key": "ACCEPTANCE_PACKAGE_DIGEST",
+      "kind": "artifact",
+      "source": "config"
+    },
+    {
+      "key": "ACCEPTANCE_HTTP_TIMEOUT",
+      "kind": "configuration",
+      "source": "config"
+    },
+    {
+      "key": "ACCEPTANCE_TLS_VERIFY",
+      "kind": "configuration",
+      "source": "config"
+    },
+    {
+      "key": "ACCEPTANCE_PRODUCT_KEY",
+      "kind": "configuration",
+      "source": "config"
+    },
+    {
+      "key": "ACCEPTANCE_EXPECTED_ROLE_CODE",
+      "kind": "configuration",
+      "source": "config"
+    },
+    {
+      "key": "DEPLOYMENT_IMAGE_REF",
+      "kind": "artifact",
+      "source": "config"
+    }
+  ],
+  "target_profiles": {
+    "daily": {
+      "allowed_base_urls": [
+        "http://127.0.0.1:18081"
+      ],
+      "database": "sc_demo"
+    },
+    "production": {
+      "allowed_base_urls": [
+        "http://127.0.0.1:18088"
+      ],
+      "database": "sc_production"
+    }
+  },
+  "schema_version": "production_promotion_config_contract.v1"
+}
