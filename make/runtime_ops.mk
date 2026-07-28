@@ -1952,6 +1952,7 @@ verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-comp
 
 verify.frontend.release.unit:
 	@node scripts/verify/frontend_navigation_audit.test.mjs
+	@node scripts/verify/frontend_performance_budget.test.mjs
 	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_audit.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_gate.py
