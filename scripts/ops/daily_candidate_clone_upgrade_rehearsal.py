@@ -19,9 +19,16 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import release_candidate_eligibility as eligibility
+
 
 DEFAULT_CONTRACT = Path(__file__).with_name(
     "daily_candidate_clone_upgrade_contract_v1.json"
+)
+ROOT = Path(__file__).resolve().parents[2]
+CANDIDATE_DECLARATION = ROOT / "config/releases/rc6_candidate.json"
+SUPERSESSION_DECLARATION = (
+    ROOT / "config/releases/rc6_candidate_supersession_legacy_projection.json"
 )
 SHA = re.compile(r"^[0-9a-f]{40}$")
 DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -467,6 +474,10 @@ def main() -> None:
     parser.add_argument("--repository", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    eligibility.assert_candidate_eligible(
+        CANDIDATE_DECLARATION,
+        SUPERSESSION_DECLARATION,
+    )
     contract = load_contract(args.contract)
     if args.action == "freeze":
         if args.candidate_manifest is None:
@@ -493,6 +504,9 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
+    except eligibility.CandidateEligibilityError as exc:
+        print(eligibility.blocked_lines(exc))
+        raise SystemExit(42) from exc
     except CandidateNotFrozen as exc:
         raise SystemExit(f"RC6_CANDIDATE_NOT_FROZEN={exc}") from exc
     except RehearsalError as exc:

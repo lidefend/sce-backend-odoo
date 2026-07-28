@@ -116,7 +116,7 @@ release.production.promotion.config.preflight: guard.prod.readonly acceptance.pa
 	  --expected-environment production
 
 verify.production.release_contract:
-	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/release_candidate.py scripts/release/release_candidate_report.py scripts/release/release_publication.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/production_backup_restore.py scripts/ops/production_backup_install.py scripts/ops/production_acceptance_harness.py scripts/ops/test_production_acceptance_harness.py scripts/ops/production_promotion_config_preflight.py scripts/ops/test_production_promotion_config_preflight.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py scripts/ops/rc6_candidate_identity_freeze.py scripts/ops/test_rc6_candidate_identity_freeze.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_release_candidate.py scripts/release/test_release_publication.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_production_backup_restore_contract.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/release_candidate.py scripts/release/release_candidate_report.py scripts/release/release_publication.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/production_backup_restore.py scripts/ops/production_backup_install.py scripts/ops/production_acceptance_harness.py scripts/ops/test_production_acceptance_harness.py scripts/ops/production_promotion_config_preflight.py scripts/ops/test_production_promotion_config_preflight.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py scripts/ops/release_candidate_eligibility.py scripts/ops/test_release_candidate_eligibility.py scripts/ops/rc6_candidate_identity_freeze.py scripts/ops/test_rc6_candidate_identity_freeze.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_release_candidate.py scripts/release/test_release_publication.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_production_backup_restore_contract.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
 	@python3 addons/smart_core/tests/test_platform_database_contract.py
 	@python3 scripts/release/test_candidate_scan_contract.py
 	@python3 scripts/release/test_release_candidate.py
@@ -136,8 +136,11 @@ verify.production.release_contract:
 	@python3 -m unittest scripts/ops/test_production_acceptance_harness.py scripts/ops/test_production_promotion_config_preflight.py scripts/ops/test_safe_worktree_cleanup.py
 	@$(MAKE) --no-print-directory acceptance.package.verify
 	@python3 scripts/verify/test_production_git_authority_guard.py
+	@python3 scripts/ops/test_release_candidate_eligibility.py
 	@python3 scripts/ops/test_rc6_candidate_identity_freeze.py
-	@python3 scripts/ops/rc6_candidate_identity_freeze.py verify-declaration --declaration config/releases/rc6_candidate.json
+	@python3 scripts/ops/rc6_candidate_identity_freeze.py audit-supersession \
+		--declaration config/releases/rc6_candidate.json \
+		--supersession config/releases/rc6_candidate_supersession_legacy_projection.json
 	@$(MAKE) --no-print-directory daily.candidate.continuity.test
 	@$(MAKE) --no-print-directory daily.candidate.sentinel.test
 	@$(MAKE) --no-print-directory daily.candidate.clone_rehearsal.test
@@ -467,7 +470,7 @@ HISTORY_SOURCE_BACKUP ?= artifacts/production-blocker/source/daily-dev-history-s
 DAILY_DEV_PROJECT ?= sc-backend-odoo-dev
 CANDIDATE_ARTIFACTS ?= artifacts/release/immutable-production-candidate-v1
 
-.PHONY: release.workspace.prepare release.rc6.workspace.prepare release.rc6.identity.publish verify.release.rc6.identity release.production.readonly_baseline release.candidate release.candidate.build release.boundary.candidate.build release.publish release.candidate.publish release.candidate.scan
+.PHONY: release.workspace.prepare release.rc6.workspace.prepare release.rc6.identity.publish verify.release.rc6.identity verify.release.rc6.supersession release.production.readonly_baseline release.candidate release.candidate.build release.boundary.candidate.build release.publish release.candidate.publish release.candidate.scan
 .PHONY: product.install product.upgrade product.verify tenant.rc.payload.export tenant.rc.profile.product tenant.rc.profile.sample tenant.rc.profile.customer tenant.rc.profile.digest.verify tenant.rc.runtime.acceptance
 .PHONY: release.history.source_probe release.history.backup release.history.restore release.history.upgrade
 .PHONY: release.history.source_restore
@@ -497,10 +500,17 @@ release.rc6.identity.publish: guard.prod.forbid
 		--output "$(RC6_FREEZE_EVIDENCE)"
 
 verify.release.rc6.identity: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/rc6_candidate_identity_freeze.py scripts/ops/test_rc6_candidate_identity_freeze.py
+	@python3 -m py_compile scripts/ops/release_candidate_eligibility.py scripts/ops/test_release_candidate_eligibility.py scripts/ops/rc6_candidate_identity_freeze.py scripts/ops/test_rc6_candidate_identity_freeze.py
+	@python3 scripts/ops/test_release_candidate_eligibility.py
 	@python3 scripts/ops/test_rc6_candidate_identity_freeze.py
 	@python3 scripts/ops/rc6_candidate_identity_freeze.py verify-declaration \
-		--declaration "$(RC6_FREEZE_DECLARATION)"
+		--declaration "$(RC6_FREEZE_DECLARATION)" \
+		--supersession config/releases/rc6_candidate_supersession_legacy_projection.json
+
+verify.release.rc6.supersession: guard.prod.forbid
+	@python3 scripts/ops/rc6_candidate_identity_freeze.py audit-supersession \
+		--declaration "$(RC6_FREEZE_DECLARATION)" \
+		--supersession config/releases/rc6_candidate_supersession_legacy_projection.json
 
 release.production.readonly_baseline: guard.prod.readonly check-compose-project check-compose-env
 	@CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/production_readonly_baseline.sh
