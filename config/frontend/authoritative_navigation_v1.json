@@ -47,7 +47,7 @@
         "smart_construction_core.menu_sc_self_funding_advance_refund|smart_construction_core.action_sc_self_funding_registration_refund|sc.self.funding.registration",
         "smart_construction_core.menu_sc_settlement_adjustment|smart_construction_core.action_sc_settlement_adjustment|sc.settlement.adjustment",
         "smart_construction_core.menu_sc_settlement_order|smart_construction_core.action_sc_settlement_order|sc.settlement.order",
-        "smart_construction_core.menu_sc_tax_certificate_registration_user|smart_construction_core.action_sc_tax_certificate_registration_user|sc.legacy.payment.residual.fact",
+        "smart_construction_core.menu_sc_tax_certificate_registration_user|smart_construction_core.action_sc_tax_certificate_registration_user|sc.tax.certificate.registration",
         "smart_construction_core.menu_sc_tax_deduction_registration_user|smart_construction_core.action_sc_tax_deduction_registration_user|sc.tax.deduction.registration",
         "smart_construction_core.menu_sc_treasury_reconciliation|smart_construction_core.action_sc_treasury_reconciliation|sc.treasury.reconciliation",
         "smart_construction_core.menu_sc_user_income|smart_construction_core.action_sc_receipt_income_user_income|sc.receipt.income",

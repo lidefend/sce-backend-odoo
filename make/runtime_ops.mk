@@ -1818,7 +1818,7 @@ verify.frontend.page_identity.browser: guard.prod.forbid check-compose-project c
 	$(MAKE) --no-print-directory backend.acceptance.up; \
 	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
 	trap '$(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
-	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-page-identity FRONTEND_NAVIGATION_MANIFEST=config/frontend/authoritative_navigation_v1.json FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON="$${FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON}" node frontend/apps/web/scripts/frontend_product_maturity_audit.mjs
+	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} ROLE_SMOKE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-page-identity FRONTEND_NAVIGATION_MANIFEST=config/frontend/authoritative_navigation_v1.json FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON="$${FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON}" node frontend/apps/web/scripts/frontend_product_maturity_audit.mjs
 
 verify.frontend.page_identity.deep.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
