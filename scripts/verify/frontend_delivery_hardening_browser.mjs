@@ -19,6 +19,7 @@ const TARGETS = JSON.parse(process.env.FRONTEND_DELIVERY_HARDENING_TARGETS_JSON 
 const SCREENSHOTS = path.join(OUT, 'screenshots');
 const TRACES = path.join(OUT, 'traces');
 const PERF_ONLY = process.env.DELIVERY_HARDENING_PERF_ONLY === '1';
+const SKIP_PERF = process.env.DELIVERY_HARDENING_SKIP_PERF === '1';
 const PERF_BASELINE_CAPTURE = process.env.DELIVERY_HARDENING_BASELINE_CAPTURE === '1';
 const PERF_BUDGET_PATH = process.env.DELIVERY_HARDENING_BUDGET_JSON
   || 'config/frontend/release_performance_budgets_v1.json';
@@ -484,123 +485,132 @@ async function main() {
     check(accessibility.blocking === 0, `accessibility blocking findings=${accessibility.blocking}`);
     }
 
-    // Performance is a release signal, so measure it in a fresh renderer rather
-    // than inheriting the memory, event listeners, and accessibility tree churn
-    // from the 72-page responsive/axe sweep above. The browser context remains
-    // unchanged: company/session isolation and the same acceptance runtime still
-    // apply, while the measured page gets the same clean lifecycle in PR and
-    // merged-main runs.
-    await page.close();
-    page = await context.newPage();
-    runtime = capture(page);
+    if (SKIP_PERF) {
+      const performancePath = path.join(OUT, 'performance.json');
+      check(fs.existsSync(performancePath), 'isolated performance evidence is missing');
+      const isolatedPerformance = JSON.parse(fs.readFileSync(performancePath, 'utf8'));
+      check(isolatedPerformance.schema_version === 'frontend-performance/v2', 'isolated performance evidence schema mismatch');
+      check(isolatedPerformance.git_sha === (process.env.GIT_SHA || ''), 'isolated performance evidence SHA mismatch');
+      check(isolatedPerformance.result === 'PASS', 'isolated performance evidence is not PASS');
+      Object.assign(performanceReport, isolatedPerformance);
+    } else {
+      // Performance is a release signal, so measure it in a fresh renderer
+      // before the full release journey can contribute memory, listener, axe,
+      // or responsive-layout pressure. The Make release entrypoint runs this
+      // PERF_ONLY phase first, then consumes its SHA-bound evidence here.
+      await page.close();
+      page = await context.newPage();
+      runtime = capture(page);
 
-    // Five-run fixed-runtime measurements: login and true SPA navigation, without fixture mutation.
-    const performanceRequests = [];
-    page.on('request', (request) => {
-      if (!request.url().includes('/api/v1/intent')) return;
-      try {
-        const payload = JSON.parse(request.postData() || '{}');
-        performanceRequests.push(`${payload.intent || ''}:${payload.params?.op || ''}:${payload.params?.model || ''}`);
-      } catch {}
-    });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await logout(page).catch(() => {});
-    await login(page, 'fixture_role_finance');
-    await logout(page);
-    await login(page, 'fixture_role_finance');
-    const loginSamples = [];
-    for (let i = 0; i < PERF_RUNS; i += 1) {
+      // Five-run fixed-runtime measurements: login and true SPA navigation, without fixture mutation.
+      const performanceRequests = [];
+      page.on('request', (request) => {
+        if (!request.url().includes('/api/v1/intent')) return;
+        try {
+          const payload = JSON.parse(request.postData() || '{}');
+          performanceRequests.push(`${payload.intent || ''}:${payload.params?.op || ''}:${payload.params?.model || ''}`);
+        } catch {}
+      });
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await logout(page).catch(() => {});
+      await login(page, 'fixture_role_finance');
       await logout(page);
-      loginSamples.push(await time(() => login(page, 'fixture_role_finance')));
-    }
-    performanceReport.scenarios.login_to_interactive = stats(loginSamples);
-    for (const [name, route, readySelector] of [
-      ['my_work', '/my-work', '.product-work'],
-      ['payment_detail', recordRoute(TARGETS.payment_request), '.financial-workspace[data-workspace-kind="payment_request"]'],
-      ['settlement_detail', recordRoute(TARGETS.settlement), '.financial-workspace[data-workspace-kind="settlement"]'],
-      ['execution_detail', recordRoute(TARGETS.payment_execution), '.financial-workspace[data-workspace-kind="payment_execution"]'],
-    ]) {
-      const samples = [];
-      const requestSamples = [];
-      if (name === 'my_work') {
-        await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-        await page.waitForTimeout(2000);
-      } else {
-        await navigateSpa(page, '/my-work', '.product-work');
-      }
-      await navigateSpa(page, route, readySelector);
+      await login(page, 'fixture_role_finance');
+      const loginSamples = [];
       for (let i = 0; i < PERF_RUNS; i += 1) {
+        await logout(page);
+        loginSamples.push(await time(() => login(page, 'fixture_role_finance')));
+      }
+      performanceReport.scenarios.login_to_interactive = stats(loginSamples);
+      for (const [name, route, readySelector] of [
+        ['my_work', '/my-work', '.product-work'],
+        ['payment_detail', recordRoute(TARGETS.payment_request), '.financial-workspace[data-workspace-kind="payment_request"]'],
+        ['settlement_detail', recordRoute(TARGETS.settlement), '.financial-workspace[data-workspace-kind="settlement"]'],
+        ['execution_detail', recordRoute(TARGETS.payment_execution), '.financial-workspace[data-workspace-kind="payment_execution"]'],
+      ]) {
+        const samples = [];
+        const requestSamples = [];
         if (name === 'my_work') {
           await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
           await page.waitForTimeout(2000);
         } else {
           await navigateSpa(page, '/my-work', '.product-work');
         }
-        const requestOffset = performanceRequests.length;
-        samples.push(await time(() => navigateSpa(page, route, readySelector)));
-        requestSamples.push(performanceRequests.slice(requestOffset));
+        await navigateSpa(page, route, readySelector);
+        for (let i = 0; i < PERF_RUNS; i += 1) {
+          if (name === 'my_work') {
+            await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+            await page.waitForTimeout(2000);
+          } else {
+            await navigateSpa(page, '/my-work', '.product-work');
+          }
+          const requestOffset = performanceRequests.length;
+          samples.push(await time(() => navigateSpa(page, route, readySelector)));
+          requestSamples.push(performanceRequests.slice(requestOffset));
+        }
+        performanceReport.scenarios[name] = { ...stats(samples), request_samples: requestSamples };
       }
-      performanceReport.scenarios[name] = { ...stats(samples), request_samples: requestSamples };
-    }
-    const formSamples = [];
-    await navigateSpa(page, recordRoute(TARGETS.work_settlement), '.financial-workspace[data-workspace-kind="settlement"]');
-    await page.locator('.financial-workspace[data-workspace-kind="settlement"]').getByRole('button', { name: '新建付款申请', exact: true }).click();
-    await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
-    await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
-    for (let i = 0; i < PERF_RUNS; i += 1) {
+      const formSamples = [];
       await navigateSpa(page, recordRoute(TARGETS.work_settlement), '.financial-workspace[data-workspace-kind="settlement"]');
-      formSamples.push(await time(async () => {
-        await page.locator('.financial-workspace[data-workspace-kind="settlement"]').getByRole('button', { name: '新建付款申请', exact: true }).click();
-        await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
-        await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
+      await page.locator('.financial-workspace[data-workspace-kind="settlement"]').getByRole('button', { name: '新建付款申请', exact: true }).click();
+      await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
+      await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
+      for (let i = 0; i < PERF_RUNS; i += 1) {
+        await navigateSpa(page, recordRoute(TARGETS.work_settlement), '.financial-workspace[data-workspace-kind="settlement"]');
+        formSamples.push(await time(async () => {
+          await page.locator('.financial-workspace[data-workspace-kind="settlement"]').getByRole('button', { name: '新建付款申请', exact: true }).click();
+          await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
+          await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
+        }));
+      }
+      performanceReport.scenarios.form_open = stats(formSamples);
+      if (PERF_BASELINE_CAPTURE) {
+        performanceReport.baseline_scope = 'login_and_initialized_navigation';
+        fs.writeFileSync(path.join(OUT, 'performance-baseline.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
+        console.log('[verify.frontend.delivery_hardening.performance_baseline] CAPTURED');
+        return;
+      }
+      const switchSamples = [];
+      await selectCompany(page, 'FE Company B');
+      for (let i = 0; i < PERF_RUNS; i += 1) {
+        switchSamples.push(await time(() => selectCompany(page, i % 2 ? 'FE Company A' : 'FE Company B')));
+      }
+      performanceReport.scenarios.company_switch = stats(switchSamples);
+      const absoluteScenarioPass = Object.fromEntries(Object.entries(performanceReport.scenarios).map(([name, metrics]) => {
+        const budget = performanceReport.budgets[name];
+        check(budget, `performance budget missing: ${name}`);
+        return [name, (
+          metrics.sample_count >= Number(performanceBudgets.minimum_sample_count || 5)
+          && metrics.median_ms <= Number(budget.median_ms)
+          && metrics.p95_ms <= Number(budget.p95_ms)
+          && metrics.max_ms <= Number(budget.max_ms)
+        )];
       }));
-    }
-    performanceReport.scenarios.form_open = stats(formSamples);
-    if (PERF_BASELINE_CAPTURE) {
-      performanceReport.baseline_scope = 'login_and_initialized_navigation';
-      fs.writeFileSync(path.join(OUT, 'performance-baseline.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
-      console.log('[verify.frontend.delivery_hardening.performance_baseline] CAPTURED');
-      return;
-    }
-    const switchSamples = [];
-    await selectCompany(page, 'FE Company B');
-    for (let i = 0; i < PERF_RUNS; i += 1) {
-      switchSamples.push(await time(() => selectCompany(page, i % 2 ? 'FE Company A' : 'FE Company B')));
-    }
-    performanceReport.scenarios.company_switch = stats(switchSamples);
-    const absoluteScenarioPass = Object.fromEntries(Object.entries(performanceReport.scenarios).map(([name, metrics]) => {
-      const budget = performanceReport.budgets[name];
-      check(budget, `performance budget missing: ${name}`);
-      return [name, (
-        metrics.sample_count >= Number(performanceBudgets.minimum_sample_count || 5)
-        && metrics.median_ms <= Number(budget.median_ms)
-        && metrics.p95_ms <= Number(budget.p95_ms)
-        && metrics.max_ms <= Number(budget.max_ms)
-      )];
-    }));
-    performanceReport.absolute_scenario_pass = absoluteScenarioPass;
-    performanceReport.absolute_budget_pass = Object.values(absoluteScenarioPass).every(Boolean);
-    if (PERF_BASELINE_PATH) {
-      const baseline = JSON.parse(fs.readFileSync(PERF_BASELINE_PATH, 'utf8'));
-      const relative = evaluateRelativePerformanceBudget({
-        scenarios: performanceReport.scenarios,
-        budgets: performanceReport.budgets,
-        baseline,
-        maximumRegressionPercent: performanceBudgets.maximum_relative_regression_percent,
-      });
-      performanceReport.metric_regression_percent = relative.metric_regression_percent;
-      performanceReport.relative_regression_percent = relative.relative_regression_percent;
-      performanceReport.relative_baseline_path = PERF_BASELINE_PATH;
-      performanceReport.relative_budget_pass = relative.relative_budget_pass;
-    } else {
-      performanceReport.relative_budget_pass = false;
-    }
-    check(performanceReport.absolute_budget_pass || performanceReport.relative_budget_pass, `performance budget exceeded: ${JSON.stringify(performanceReport.scenarios)}`);
-    performanceReport.result = 'PASS';
-    if (PERF_ONLY) {
-      fs.writeFileSync(path.join(OUT, 'performance-probe.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
-      console.log('[verify.frontend.delivery_hardening.performance_probe] PASS');
-      return;
+      performanceReport.absolute_scenario_pass = absoluteScenarioPass;
+      performanceReport.absolute_budget_pass = Object.values(absoluteScenarioPass).every(Boolean);
+      if (PERF_BASELINE_PATH) {
+        const baseline = JSON.parse(fs.readFileSync(PERF_BASELINE_PATH, 'utf8'));
+        const relative = evaluateRelativePerformanceBudget({
+          scenarios: performanceReport.scenarios,
+          budgets: performanceReport.budgets,
+          baseline,
+          maximumRegressionPercent: performanceBudgets.maximum_relative_regression_percent,
+        });
+        performanceReport.metric_regression_percent = relative.metric_regression_percent;
+        performanceReport.relative_regression_percent = relative.relative_regression_percent;
+        performanceReport.relative_baseline_path = PERF_BASELINE_PATH;
+        performanceReport.relative_budget_pass = relative.relative_budget_pass;
+      } else {
+        performanceReport.relative_budget_pass = false;
+      }
+      check(performanceReport.absolute_budget_pass || performanceReport.relative_budget_pass, `performance budget exceeded: ${JSON.stringify(performanceReport.scenarios)}`);
+      performanceReport.result = 'PASS';
+      if (PERF_ONLY) {
+        fs.writeFileSync(path.join(OUT, 'performance.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
+        fs.writeFileSync(path.join(OUT, 'performance-probe.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
+        console.log('[verify.frontend.delivery_hardening.performance_probe] PASS');
+        return;
+      }
     }
 
     assertRuntimeClean(runtime, 'final delivery hardening runtime');
