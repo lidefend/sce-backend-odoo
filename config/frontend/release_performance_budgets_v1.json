@@ -1,0 +1,44 @@
+{
+  "schema_version": "frontend-release-performance-budgets/v1",
+  "minimum_sample_count": 5,
+  "percentile_rule": "nearest-rank-p95",
+  "relative_baseline_path": "docs/frontend_productization/frontend_delivery_performance_baseline_v1.json",
+  "maximum_relative_regression_percent": 10,
+  "scenarios": {
+    "login_to_interactive": {
+      "median_ms": 3000,
+      "p95_ms": 5000,
+      "max_ms": 5000
+    },
+    "my_work": {
+      "median_ms": 1200,
+      "p95_ms": 2500,
+      "max_ms": 2500
+    },
+    "payment_detail": {
+      "median_ms": 1200,
+      "p95_ms": 2500,
+      "max_ms": 2500
+    },
+    "settlement_detail": {
+      "median_ms": 1200,
+      "p95_ms": 2500,
+      "max_ms": 2500
+    },
+    "execution_detail": {
+      "median_ms": 1200,
+      "p95_ms": 2500,
+      "max_ms": 2500
+    },
+    "form_open": {
+      "median_ms": 1200,
+      "p95_ms": 2500,
+      "max_ms": 2500
+    },
+    "company_switch": {
+      "median_ms": 2000,
+      "p95_ms": 4000,
+      "max_ms": 4000
+    }
+  }
+}
