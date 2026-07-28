@@ -20,7 +20,7 @@
   ],
   "artifact": {
     "name_prefix": "frontend-release-evidence",
-    "retention_days": 14,
+    "retention_days": 30,
     "source_scope": "same_job_same_run_same_checkout",
     "downloaded_historical_artifacts_allowed": false
   },

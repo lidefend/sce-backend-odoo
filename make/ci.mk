@@ -764,6 +764,7 @@ ci.local.quick: guard.prod.forbid security.legacy_credential_guard verify.reposi
 	@python3 scripts/verify/frontend_page_contract_orchestration_consumption_guard.py
 	@python3 scripts/verify/frontend_contract_consumer_intrusion_guard.py
 	@python3 scripts/verify/frontend_shared_surface_semantic_boundary_guard.py
+	@python3 scripts/verify/test_frontend_release_evidence_bundle.py
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict
 	@git diff --check
