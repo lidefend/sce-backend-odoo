@@ -16,9 +16,14 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         (root / ".github/workflows").mkdir(parents=True)
         (root / "config/ci").mkdir(parents=True)
         (root / "make").mkdir(parents=True)
+        (root / "scripts/verify").mkdir(parents=True)
         shutil.copy(ROOT / ".github/workflows/frontend_release_gate.yml", root / ".github/workflows/")
         shutil.copy(ROOT / "config/ci/frontend_release_gate_v1.json", root / "config/ci/")
         shutil.copy(ROOT / "make/runtime_ops.mk", root / "make/")
+        shutil.copy(
+            ROOT / "scripts/verify/frontend_static_release_audit.py",
+            root / "scripts/verify/",
+        )
         return temporary, root
 
     def test_repository_contract_passes(self):

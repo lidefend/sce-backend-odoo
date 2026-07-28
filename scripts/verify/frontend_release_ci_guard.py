@@ -62,6 +62,11 @@ def findings(root: Path = ROOT) -> list[str]:
         or 'export FRONTEND_BUILD_SHA256="$$frontend_build_sha"' not in runtime_text
     ):
         errors.append("CURRENT_FRONTEND_BUILD_IDENTITY_NOT_PROPAGATED")
+    static_audit_text = (root / "scripts/verify/frontend_static_release_audit.py").read_text(
+        encoding="utf-8"
+    )
+    if "scripts/verify/frontend_build_fingerprint.sh" not in static_audit_text:
+        errors.append("CURRENT_FRONTEND_BUILD_IDENTITY_NOT_GENERATED")
     if policy.get("check_name") != "frontend_release_gate":
         errors.append("CHECK_NAME_DRIFT")
     after = policy.get("required_checks_after") or []
