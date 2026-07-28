@@ -16,6 +16,7 @@ from . import test_release_gate_category_options
 from . import test_usage_backend
 from . import test_business_config_change_set
 from . import test_admin_vis_p3_project_record_rule_orm
+from . import test_chatter_timeline_authorization_orm
 from . import test_um_p1_ownership_visibility_contract_orm
 from . import test_um_p1_payment_visibility_contract_orm
 from . import test_um_p1_invoice_deduction_visibility_contract_orm

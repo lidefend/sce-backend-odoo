@@ -13,6 +13,15 @@ if [[ "$#" -ne 0 ]]; then
   exit 2
 fi
 
+authorization_test_tags="${SC_AUTHORIZATION_ORM_TEST_TAGS:-admin_vis_p3_project_record_rule_orm}"
+case "$authorization_test_tags" in
+  admin_vis_p3_project_record_rule_orm|chatter_timeline_authorization_orm) ;;
+  *)
+    echo "[admin-vis-p3-orm][FATAL] unsupported fixed authorization test tag" >&2
+    exit 2
+    ;;
+esac
+
 case "${ENV:-dev}" in
   dev|test) ;;
   *)
@@ -58,6 +67,7 @@ validate_database_name "$temp_database" || {
 }
 
 export ENV=test
+export ENV_FILE="$ROOT_DIR/.env.test.example"
 export COMPOSE_PROJECT_NAME="$compose_project"
 export PROJECT="$compose_project"
 export DB_NAME="$temp_database"
@@ -265,7 +275,7 @@ set +e
   "${odoo_common[@]:1}" \
   -u smart_core \
   --test-enable \
-  --test-tags admin_vis_p3_project_record_rule_orm \
+  --test-tags "$authorization_test_tags" \
   --log-level=test 2>&1 | tee "$test_log"
 test_status="${PIPESTATUS[0]}"
 set -e

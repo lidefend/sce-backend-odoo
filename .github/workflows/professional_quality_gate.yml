@@ -18,7 +18,7 @@ jobs:
   professional_authorization:
     name: professional_authorization
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 30
     steps:
       - name: Deny forks and non-owner actors
         env:
@@ -43,6 +43,15 @@ jobs:
           else
             exit 1
           fi
+
+      - name: Checkout authorized commit without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Prove chatter timeline authorization with real ORM
+        run: make test.chatter-timeline.authorization.orm
 
   python310_runtime_compatibility:
     name: python310_runtime_compatibility

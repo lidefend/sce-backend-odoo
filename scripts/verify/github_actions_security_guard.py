@@ -103,6 +103,7 @@ def scan(root: Path) -> list[Finding]:
                 "runs-on: ubuntu-latest",
                 'git fetch --no-tags origin "${HEAD_SHA}"',
                 'test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"',
+                "make test.chatter-timeline.authorization.orm",
                 "scripts/ci/self_hosted_runner_cleanup.sh",
             )
             if any(item not in text for item in required):
