@@ -7,9 +7,31 @@ set -euo pipefail
   echo "[github_authority_ruleset] GITHUB_AUTHORITY_RULESET_CONFIRM=1 is required" >&2
   exit 2
 }
+readonly expected_sha="${GITHUB_AUTHORITY_RULESET_EXPECTED_SHA:-}"
+[[ "${expected_sha}" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "[github_authority_ruleset] GITHUB_AUTHORITY_RULESET_EXPECTED_SHA must be a full SHA" >&2
+  exit 2
+}
 
 readonly repository="lidefend/sce-backend-odoo"
 readonly ruleset_name="main-github-authoritative-pr"
+readonly required_checks="public_guard professional_authorization professional_quality_gate frontend_release_gate"
+
+remote_main="$(gh api "repos/${repository}/git/ref/heads/main" --jq .object.sha)"
+[ "${remote_main}" = "${expected_sha}" ] || {
+  echo "[github_authority_ruleset] BLOCKED remote_main_sha_mismatch" >&2
+  exit 2
+}
+for check in ${required_checks}; do
+  matching="$(
+    gh api "repos/${repository}/commits/${expected_sha}/check-runs" \
+      --jq "[.check_runs[] | select(.name == \"${check}\" and .status == \"completed\" and .conclusion == \"success\")] | length"
+  )"
+  [ "${matching}" = "1" ] || {
+    echo "[github_authority_ruleset] BLOCKED check_not_uniquely_successful check=${check} matches=${matching}" >&2
+    exit 2
+  }
+done
 
 write_key_count="$(gh api "repos/${repository}/keys" --jq '[.[] | select(.read_only == false)] | length')"
 [ "${write_key_count}" = "0" ] || {
@@ -34,7 +56,7 @@ jq -n --arg name "${ruleset_name}" '{
       require_last_push_approval: false,
       required_approving_review_count: 0,
       required_review_thread_resolution: true,
-      allowed_merge_methods: ["squash", "rebase"]
+      allowed_merge_methods: ["merge", "squash", "rebase"]
     }},
     {type: "required_status_checks", parameters: {
       do_not_enforce_on_create: false,
@@ -42,7 +64,8 @@ jq -n --arg name "${ruleset_name}" '{
       required_status_checks: [
         {context: "public_guard"},
         {context: "professional_authorization"},
-        {context: "professional_quality_gate"}
+        {context: "professional_quality_gate"},
+        {context: "frontend_release_gate"}
       ]
     }}
   ]
@@ -64,6 +87,11 @@ gh api "repos/${repository}/rulesets/${ruleset_id}" --jq '
   | select(any(.rules[]; .type == "required_status_checks"))
   | select(any(.rules[]; .type == "deletion"))
   | select(any(.rules[]; .type == "non_fast_forward"))
+  | select(
+      ([.rules[] | select(.type == "required_status_checks")
+        | .parameters.required_status_checks[].context] | sort)
+      == ["frontend_release_gate", "professional_authorization",
+          "professional_quality_gate", "public_guard"])
   | .id' | grep -qx "${ruleset_id}"
 
-echo "[github_authority_ruleset] PASS ruleset_id=${ruleset_id} bypass_actors=none write_deploy_keys=0"
+echo "[github_authority_ruleset] PASS ruleset_id=${ruleset_id} sha=${expected_sha} required_checks=4 bypass_actors=none write_deploy_keys=0"
