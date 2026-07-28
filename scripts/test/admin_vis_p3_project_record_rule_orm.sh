@@ -136,6 +136,7 @@ cleanup_result=0
 database_removed=false
 resources_removed=false
 test_log="$(mktemp)"
+frontend_artifact_dir=""
 
 cleanup() {
   local original_status="$1"
@@ -185,6 +186,9 @@ cleanup() {
   fi
   if [[ -f "$test_log" ]]; then
     find "$test_log" -delete
+  fi
+  if [[ -n "$frontend_artifact_dir" && -d "$frontend_artifact_dir" ]]; then
+    find "$frontend_artifact_dir" -depth -delete
   fi
 
   containers_after="$(container_inventory)"
@@ -248,6 +252,24 @@ for attempt in $(seq 1 60); do
   fi
   sleep 1
 done
+
+frontend_artifact_dir="$(mktemp -d)"
+provided_frontend_sha="${FRONTEND_BUILD_SHA256:-}"
+docker build \
+  --target frontend-artifact \
+  --output "type=local,dest=${frontend_artifact_dir}" \
+  --build-arg "APT_MIRROR=${APT_MIRROR:-default}" \
+  "$ROOT_DIR"
+frontend_build_sha="$(tr -d '[:space:]' <"${frontend_artifact_dir}/.build-sha256")"
+if ! [[ "$frontend_build_sha" =~ ^[0-9a-f]{64}$ ]]; then
+  echo "[admin-vis-p3-orm][FATAL] isolated frontend artifact digest is invalid" >&2
+  exit 5
+fi
+if [[ -n "$provided_frontend_sha" && "$provided_frontend_sha" != "$frontend_build_sha" ]]; then
+  echo "[admin-vis-p3-orm][FATAL] provided frontend artifact digest does not match the isolated build" >&2
+  exit 5
+fi
+export FRONTEND_BUILD_SHA256="$frontend_build_sha"
 
 odoo_common=(
   /usr/bin/odoo
