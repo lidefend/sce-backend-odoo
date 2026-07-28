@@ -99,8 +99,7 @@ def validate_performance(report: dict[str, Any], expected_sha: str) -> dict[str,
         for metric in ("median_ms", "p95_ms", "max_ms"):
             within_absolute = float(metrics.get(metric) or 0) <= float(budget.get(metric) or 0)
             within_relative = (
-                metric == "median_ms"
-                and isinstance((regressions.get(name) or {}).get(metric), (int, float))
+                isinstance((regressions.get(name) or {}).get(metric), (int, float))
                 and float((regressions.get(name) or {})[metric]) <= relative_limit
             )
             if not within_absolute and not (relative_pass and within_relative):

@@ -1,0 +1,209 @@
+name: frontend_release_evidence_bundle
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  checks: read
+
+concurrency:
+  group: frontend-release-evidence-main
+  cancel-in-progress: false
+
+jobs:
+  frontend_release_evidence_bundle:
+    name: frontend_release_evidence_bundle
+    if: >-
+      github.repository == 'lidefend/sce-backend-odoo' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EVIDENCE_ROOT: ${{ runner.temp }}/frontend-release-evidence-input
+      BUNDLE_ROOT: ${{ runner.temp }}/frontend-release-evidence-bundle
+
+    steps:
+      - name: Checkout exact main commit without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove candidate identity
+        id: identity
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          {
+            printf 'sha=%s\n' "$(git rev-parse HEAD)"
+            printf 'tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Collect current-main GitHub check and ruleset metadata
+        id: checks
+        env:
+          CANDIDATE_SHA: ${{ steps.identity.outputs.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_ROOT}/github" "${EVIDENCE_ROOT}/frontend"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/commits/${CANDIDATE_SHA}/check-runs?per_page=100" \
+            > "${EVIDENCE_ROOT}/github/check-runs.json"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/commits/${CANDIDATE_SHA}/status" \
+            > "${EVIDENCE_ROOT}/github/statuses.json"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/rulesets" \
+            > "${EVIDENCE_ROOT}/github/rulesets.json"
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          root = Path(os.environ["EVIDENCE_ROOT"]) / "github"
+          checks = json.loads((root / "check-runs.json").read_text())
+          required = {
+              "public_guard",
+              "professional_authorization",
+              "professional_quality_gate",
+              "frontend_release_gate",
+          }
+          selected = [row for row in checks.get("check_runs", []) if row.get("name") in required]
+          if {row.get("name") for row in selected} != required:
+              raise SystemExit("required checks are incomplete")
+          run_ids = {}
+          for row in selected:
+              match = re.search(r"/actions/runs/(\d+)/job/\d+$", row.get("details_url", ""))
+              if not match:
+                  raise SystemExit("check details URL is not a GitHub Actions job")
+              run_ids[match.group(1)] = None
+          for run_id in run_ids:
+              payload = subprocess.check_output(
+                  ["gh", "api", f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{run_id}"],
+                  text=True,
+              )
+              run_ids[run_id] = json.loads(payload)
+          (root / "runs.json").write_text(json.dumps(run_ids, indent=2) + "\n")
+          frontend = [row for row in selected if row.get("name") == "frontend_release_gate"]
+          if len(frontend) != 1:
+              raise SystemExit("frontend_release_gate must be unique")
+          frontend_run = re.search(
+              r"/actions/runs/(\d+)/job/\d+$", frontend[0]["details_url"]
+          ).group(1)
+          metadata = run_ids[frontend_run]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"frontend_run_id={frontend_run}\n")
+              out.write(f"frontend_run_attempt={metadata['run_attempt']}\n")
+          PY
+          ruleset_id="$(
+            jq -er '.[] | select(.name == "main-github-authoritative-pr") | .id' \
+              "${EVIDENCE_ROOT}/github/rulesets.json"
+          )"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/rulesets/${ruleset_id}" \
+            > "${EVIDENCE_ROOT}/github/branch-protection.json"
+
+      - name: Download exact frontend gate artifact
+        env:
+          CANDIDATE_SHA: ${{ steps.identity.outputs.sha }}
+          FRONTEND_RUN_ID: ${{ steps.checks.outputs.frontend_run_id }}
+          FRONTEND_RUN_ATTEMPT: ${{ steps.checks.outputs.frontend_run_attempt }}
+        run: |
+          set -euo pipefail
+          artifact="frontend-release-evidence-${FRONTEND_RUN_ID}-${FRONTEND_RUN_ATTEMPT}-${CANDIDATE_SHA}"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${FRONTEND_RUN_ID}/artifacts?per_page=100" \
+            > "${EVIDENCE_ROOT}/github/artifacts.json"
+          gh run download "${FRONTEND_RUN_ID}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name "${artifact}" \
+            --dir "${EVIDENCE_ROOT}/frontend"
+
+      - name: Install locked frontend toolchain and build exact tree
+        id: build
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@9.12.3 --activate
+          pnpm -C frontend install --frozen-lockfile
+          started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          pnpm -C frontend/apps/web build
+          completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          jq -n \
+            --arg node_version "$(node --version)" \
+            --arg pnpm_version "$(pnpm --version)" \
+            --arg frontend_package_version "$(jq -r '.version // "unversioned"' frontend/apps/web/package.json)" \
+            --arg build_started_at "${started_at}" \
+            --arg build_completed_at "${completed_at}" \
+            '{
+              node_version: $node_version,
+              pnpm_version: $pnpm_version,
+              frontend_package_version: $frontend_package_version,
+              build_started_at: $build_started_at,
+              build_completed_at: $build_completed_at,
+              source_map_policy: "repository-build-config",
+              public_environment_keys: []
+            }' > "${EVIDENCE_ROOT}/build-metadata.json"
+
+      - name: Generate qualification evidence bundle
+        env:
+          CANDIDATE_SHA: ${{ steps.identity.outputs.sha }}
+          CANDIDATE_TREE: ${{ steps.identity.outputs.tree }}
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/frontend-release-evidence-${CANDIDATE_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.zip"
+          python3 scripts/release/generate_frontend_release_evidence_bundle.py \
+            --output "${BUNDLE_ROOT}" \
+            --archive "${archive}" \
+            --frontend-root "${EVIDENCE_ROOT}/frontend" \
+            --dist frontend/apps/web/dist \
+            --checks "${EVIDENCE_ROOT}/github/check-runs.json" \
+            --runs "${EVIDENCE_ROOT}/github/runs.json" \
+            --statuses "${EVIDENCE_ROOT}/github/statuses.json" \
+            --artifacts "${EVIDENCE_ROOT}/github/artifacts.json" \
+            --branch-protection "${EVIDENCE_ROOT}/github/branch-protection.json" \
+            --build-metadata "${EVIDENCE_ROOT}/build-metadata.json" \
+            --candidate-sha "${CANDIDATE_SHA}" \
+            --candidate-tree "${CANDIDATE_TREE}" \
+            --source-run-id "${GITHUB_RUN_ID}" \
+            --source-run-attempt "${GITHUB_RUN_ATTEMPT}"
+          python3 scripts/verify/frontend_release_evidence_bundle.py \
+            --bundle "${archive}" \
+            --expected-sha "${CANDIDATE_SHA}" \
+            --expected-tree "${CANDIDATE_TREE}" \
+            --expected-bundle-sha256 "$(cut -d' ' -f1 "${archive}.sha256")" \
+            --output "${RUNNER_TEMP}/verification-report.json"
+          cp "${archive}" "${GITHUB_WORKSPACE}/"
+          cp "${archive}.sha256" "${GITHUB_WORKSPACE}/"
+          cp "${RUNNER_TEMP}/verification-report.json" "${GITHUB_WORKSPACE}/"
+
+      - name: Upload qualified current-main evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: frontend-release-qualification-${{ github.run_id }}-${{ github.run_attempt }}-${{ steps.identity.outputs.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            frontend-release-evidence-${{ steps.identity.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt }}.zip
+            frontend-release-evidence-${{ steps.identity.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt }}.zip.sha256
+            verification-report.json
+
+      - name: Clean temporary evidence inputs
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf "${EVIDENCE_ROOT}" "${BUNDLE_ROOT}"

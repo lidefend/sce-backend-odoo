@@ -123,11 +123,25 @@ def scan(root: Path) -> list[Finding]:
                 "frontend_release_gate.py",
                 "github.run_id",
                 "github.run_attempt",
-                "retention-days: 14",
+                "retention-days: 30",
                 "scripts/ci/self_hosted_runner_cleanup.sh",
             )
             if any(item not in text for item in required):
                 findings.add(Finding("GA013", relative, "FRONTEND_RELEASE_TRUST_BOUNDARY_INCOMPLETE"))
+        if path.name == "frontend_release_evidence_bundle.yml":
+            required = (
+                "workflow_dispatch:",
+                "contents: read",
+                "actions: read",
+                "checks: read",
+                "github.actor == github.repository_owner",
+                "github.ref == 'refs/heads/main'",
+                "frontend_release_evidence_bundle.py",
+                "generate_frontend_release_evidence_bundle.py",
+                "retention-days: 30",
+            )
+            if any(item not in text for item in required):
+                findings.add(Finding("GA014", relative, "RELEASE_EVIDENCE_TRUST_BOUNDARY_INCOMPLETE"))
     return sorted(findings)
 
 
