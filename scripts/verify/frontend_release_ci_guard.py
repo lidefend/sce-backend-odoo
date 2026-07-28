@@ -38,7 +38,7 @@ def findings(root: Path = ROOT) -> list[str]:
         "github.run_id",
         "github.run_attempt",
         "env.CHECKOUT_SHA",
-        "retention-days: 14",
+        "retention-days: 30",
         "if-no-files-found: error",
     )
     errors.extend(f"WORKFLOW_CONTRACT_MISSING:{item}" for item in required_text if item not in text)

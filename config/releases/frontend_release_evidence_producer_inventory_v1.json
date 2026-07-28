@@ -1,0 +1,81 @@
+{
+  "schema_version": "frontend-release-evidence-producer-inventory/v1",
+  "authoritative_bundle_workflow": ".github/workflows/frontend_release_evidence_bundle.yml",
+  "producers": [
+    {
+      "evidence_id": "public_guard",
+      "evidence_type": "governance_check",
+      "producer_workflow": ".github/workflows/public_guard.yml",
+      "producer_job": "public_guard",
+      "machine_readable_source": "GitHub Checks and Actions run APIs",
+      "required": true,
+      "sha_bound": true,
+      "tree_bound_by_bundle": true,
+      "trust_risk": "internal step logs are not copied into the offline bundle",
+      "candidate_qualification_allowed": true
+    },
+    {
+      "evidence_id": "professional_authorization",
+      "evidence_type": "authorization_check",
+      "producer_workflow": ".github/workflows/professional_quality_gate.yml",
+      "producer_job": "professional_authorization",
+      "machine_readable_source": "GitHub Checks and Actions run APIs",
+      "required": true,
+      "sha_bound": true,
+      "tree_bound_by_bundle": true,
+      "trust_risk": "internal step logs are not copied into the offline bundle",
+      "candidate_qualification_allowed": true
+    },
+    {
+      "evidence_id": "professional_quality_gate",
+      "evidence_type": "quality_check",
+      "producer_workflow": ".github/workflows/professional_quality_gate.yml",
+      "producer_job": "professional_quality_gate",
+      "machine_readable_source": "GitHub Checks and Actions run APIs",
+      "required": true,
+      "sha_bound": true,
+      "tree_bound_by_bundle": true,
+      "trust_risk": "internal step logs are not copied into the offline bundle",
+      "candidate_qualification_allowed": true
+    },
+    {
+      "evidence_id": "frontend_release_gate",
+      "evidence_type": "frontend_release_check_and_reports",
+      "producer_workflow": ".github/workflows/frontend_release_gate.yml",
+      "producer_job": "frontend_release_gate",
+      "machine_readable_source": "current-run frontend release artifact plus GitHub Checks and Actions run APIs",
+      "required": true,
+      "sha_bound": true,
+      "tree_bound_by_report": true,
+      "artifact_digest_required": true,
+      "trust_risk": "artifact retention is finite; qualification bundle must be retained independently",
+      "candidate_qualification_allowed": true
+    },
+    {
+      "evidence_id": "frontend_production_build",
+      "evidence_type": "build_identity",
+      "producer_workflow": ".github/workflows/frontend_release_evidence_bundle.yml",
+      "producer_job": "frontend_release_evidence_bundle",
+      "machine_readable_source": "build/build-manifest.json",
+      "required": true,
+      "sha_bound": true,
+      "tree_bound_by_report": true,
+      "trust_risk": "build output is integrity-bound but is not a signed provenance attestation",
+      "candidate_qualification_allowed": true
+    }
+  ],
+  "rejected_sources": [
+    "pull_request artifacts for final main qualification",
+    "historical workflow artifacts",
+    "manual commit statuses",
+    "caller-supplied report identities",
+    "unregistered files",
+    "production or DAILY database outputs"
+  ],
+  "integrity_boundary": {
+    "file_digests": "SHA-256",
+    "archive_digest": "SHA-256 sidecar and GitHub artifact digest",
+    "cryptographic_signature": false,
+    "claim": "tamper-detectable when verified against the trusted archive digest; not signed"
+  }
+}

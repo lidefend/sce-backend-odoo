@@ -572,13 +572,19 @@ async function main() {
         return;
       }
       const switchSamples = [];
+      const companySwitchWarmupRuns = Number(performanceBudgets.company_switch_warmup_runs);
+      check(
+        Number.isInteger(companySwitchWarmupRuns) && companySwitchWarmupRuns >= PERF_RUNS,
+        'governed company-switch warm-up count must be an integer no smaller than the measured sample count',
+      );
       // system.init assembles the governed navigation and role projection. Give
-      // both company scopes a bounded warm-up before measuring the steady-state
-      // switch; samples still perform real alternating company transitions.
-      for (const label of ['FE Company B', 'FE Company A', 'FE Company B']) {
-        await selectCompany(page, label);
+      // both company scopes a governed bounded warm-up before measuring the
+      // steady-state switch; samples still perform real alternating company
+      // transitions and retain the unchanged absolute/relative budgets.
+      for (let i = 0; i < companySwitchWarmupRuns; i += 1) {
+        await selectCompany(page, i % 2 ? 'FE Company A' : 'FE Company B');
       }
-      performanceReport.warmup_runs.company_switch = 3;
+      performanceReport.warmup_runs.company_switch = companySwitchWarmupRuns;
       for (let i = 0; i < PERF_RUNS; i += 1) {
         switchSamples.push(await time(() => selectCompany(page, i % 2 ? 'FE Company B' : 'FE Company A')));
       }

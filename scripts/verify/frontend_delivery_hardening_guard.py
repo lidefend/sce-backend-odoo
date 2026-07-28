@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import re
 import subprocess
 
@@ -105,9 +106,25 @@ require(
     "scripts/verify/frontend_delivery_hardening_browser.mjs",
     "DELIVERY_HARDENING_PERF_ONLY",
     "DELIVERY_HARDENING_SKIP_PERF",
+    "company_switch_warmup_runs",
+    "governed company-switch warm-up count",
     "isolated performance evidence SHA mismatch",
     "fs.writeFileSync(path.join(OUT, 'performance.json')",
 )
+performance_policy = json.loads(
+    (ROOT / "config/frontend/release_performance_budgets_v1.json").read_text(encoding="utf-8")
+)
+company_switch_warmup_runs = performance_policy.get("company_switch_warmup_runs")
+minimum_sample_count = performance_policy.get("minimum_sample_count")
+if (
+    not isinstance(company_switch_warmup_runs, int)
+    or not isinstance(minimum_sample_count, int)
+    or company_switch_warmup_runs < minimum_sample_count
+):
+    raise SystemExit(
+        "[frontend_delivery_hardening_guard] FAIL governed company-switch warm-up "
+        "count must cover at least the measured sample count"
+    )
 require(
     "make/runtime_ops.mk",
     "DELIVERY_HARDENING_PERF_ONLY=1",

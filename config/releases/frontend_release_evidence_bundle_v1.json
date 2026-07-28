@@ -1,0 +1,50 @@
+{
+  "schema_version": "frontend-release-evidence-policy/v1",
+  "bundle_schema": "frontend-release-evidence-bundle/v1",
+  "repository": "lidefend/sce-backend-odoo",
+  "source_branch": "main",
+  "allowed_qualification_states": [
+    "NOT_EVALUATED",
+    "BLOCKED",
+    "QUALIFIED_FOR_FREEZE_REVIEW"
+  ],
+  "required_checks": [
+    "public_guard",
+    "professional_authorization",
+    "professional_quality_gate",
+    "frontend_release_gate"
+  ],
+  "required_frontend_files": [
+    "frontend/frontend-release-report.json",
+    "frontend/frontend-release-gate-result.json",
+    "frontend/navigation-report.json",
+    "frontend/accessibility.json",
+    "frontend/performance.json",
+    "frontend/browser-journeys.json",
+    "frontend/responsive.json",
+    "frontend/recovery.json"
+  ],
+  "required_governance_files": [
+    "governance/public-guard.json",
+    "governance/professional-authorization.json",
+    "governance/professional-quality-gate.json",
+    "governance/frontend-release-gate.json",
+    "governance/branch-protection.json",
+    "governance/manual-statuses.json"
+  ],
+  "required_build_files": [
+    "build/build-manifest.json"
+  ],
+  "artifact_retention_days": 30,
+  "archive_limits": {
+    "maximum_files": 20000,
+    "maximum_uncompressed_bytes": 536870912,
+    "maximum_compression_ratio": 200
+  },
+  "prohibited_claims": [
+    "FROZEN",
+    "RELEASED",
+    "DEPLOYED",
+    "PRODUCTION_READY"
+  ]
+}

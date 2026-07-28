@@ -89,15 +89,24 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
             **valid,
             "absolute_budget_pass": False,
             "relative_budget_pass": True,
-            "scenarios": {"home": {**metrics, "median_ms": 21}},
+            "scenarios": {
+                "home": {
+                    **metrics,
+                    "median_ms": 21,
+                    "p95_ms": 31,
+                    "max_ms": 31,
+                }
+            },
             "metric_regression_percent": {
-                "home": {"median_ms": 5.0, "slowest_ms": -5.0}
+                "home": {"median_ms": 5.0, "p95_ms": -5.0, "max_ms": -5.0}
             },
         }
         validate_performance(relative, SHA)
-        relative["metric_regression_percent"]["home"]["median_ms"] = 11.0
-        with self.assertRaises(EvidenceError):
-            validate_performance(relative, SHA)
+        for metric in ("median_ms", "p95_ms", "max_ms"):
+            regressed = json.loads(json.dumps(relative))
+            regressed["metric_regression_percent"]["home"][metric] = 11.0
+            with self.assertRaises(EvidenceError):
+                validate_performance(regressed, SHA)
 
     def test_responsive_and_error_recovery_fail_closed(self):
         responsive = {
