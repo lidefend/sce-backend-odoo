@@ -13,6 +13,15 @@ if [[ "$#" -ne 0 ]]; then
   exit 2
 fi
 
+authorization_test_tags="${SC_AUTHORIZATION_ORM_TEST_TAGS:-admin_vis_p3_project_record_rule_orm}"
+case "$authorization_test_tags" in
+  admin_vis_p3_project_record_rule_orm|chatter_timeline_authorization_orm) ;;
+  *)
+    echo "[admin-vis-p3-orm][FATAL] unsupported fixed authorization test tag" >&2
+    exit 2
+    ;;
+esac
+
 case "${ENV:-dev}" in
   dev|test) ;;
   *)
@@ -58,6 +67,7 @@ validate_database_name "$temp_database" || {
 }
 
 export ENV=test
+export ENV_FILE="$ROOT_DIR/.env.test.example"
 export COMPOSE_PROJECT_NAME="$compose_project"
 export PROJECT="$compose_project"
 export DB_NAME="$temp_database"
@@ -126,6 +136,7 @@ cleanup_result=0
 database_removed=false
 resources_removed=false
 test_log="$(mktemp)"
+frontend_artifact_dir=""
 
 cleanup() {
   local original_status="$1"
@@ -175,6 +186,9 @@ cleanup() {
   fi
   if [[ -f "$test_log" ]]; then
     find "$test_log" -delete
+  fi
+  if [[ -n "$frontend_artifact_dir" && -d "$frontend_artifact_dir" ]]; then
+    find "$frontend_artifact_dir" -depth -delete
   fi
 
   containers_after="$(container_inventory)"
@@ -239,6 +253,24 @@ for attempt in $(seq 1 60); do
   sleep 1
 done
 
+frontend_artifact_dir="$(mktemp -d)"
+provided_frontend_sha="${FRONTEND_BUILD_SHA256:-}"
+docker build \
+  --target frontend-artifact \
+  --output "type=local,dest=${frontend_artifact_dir}" \
+  --build-arg "APT_MIRROR=${APT_MIRROR:-default}" \
+  "$ROOT_DIR"
+frontend_build_sha="$(tr -d '[:space:]' <"${frontend_artifact_dir}/.build-sha256")"
+if ! [[ "$frontend_build_sha" =~ ^[0-9a-f]{64}$ ]]; then
+  echo "[admin-vis-p3-orm][FATAL] isolated frontend artifact digest is invalid" >&2
+  exit 5
+fi
+if [[ -n "$provided_frontend_sha" && "$provided_frontend_sha" != "$frontend_build_sha" ]]; then
+  echo "[admin-vis-p3-orm][FATAL] provided frontend artifact digest does not match the isolated build" >&2
+  exit 5
+fi
+export FRONTEND_BUILD_SHA256="$frontend_build_sha"
+
 odoo_common=(
   /usr/bin/odoo
   --db_host=db
@@ -265,7 +297,7 @@ set +e
   "${odoo_common[@]:1}" \
   -u smart_core \
   --test-enable \
-  --test-tags admin_vis_p3_project_record_rule_orm \
+  --test-tags "$authorization_test_tags" \
   --log-level=test 2>&1 | tee "$test_log"
 test_status="${PIPESTATUS[0]}"
 set -e

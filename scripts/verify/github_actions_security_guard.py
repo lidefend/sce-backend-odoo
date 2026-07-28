@@ -31,12 +31,15 @@ def authorization_allowed(
     repository_owner: str,
     actor: str,
     head_repository: str = "",
+    ref: str = "",
 ) -> bool:
     """Mirror the fail-closed professional workflow identity decision."""
     if repository != EXPECTED_REPOSITORY or repository_owner != EXPECTED_OWNER:
         return False
     if event_name == "pull_request":
         return bool(head_repository) and head_repository == repository
+    if event_name == "push":
+        return ref == "refs/heads/main"
     if event_name == "workflow_dispatch":
         return actor == repository_owner
     return False
@@ -87,14 +90,20 @@ def scan(root: Path) -> list[Finding]:
 
         if path.name == "professional_quality_gate.yml":
             required = (
+                "push:\n    branches: [main]",
                 "professional_authorization",
                 f"EXPECTED_REPOSITORY: {EXPECTED_REPOSITORY}",
                 f"EXPECTED_OWNER: {EXPECTED_OWNER}",
                 "REPOSITORY_OWNER: ${{ github.repository_owner }}",
                 "github.event.pull_request.head.repo.full_name == github.repository",
+                "github.event_name == 'push'",
+                "github.ref == 'refs/heads/main'",
                 "github.actor == github.repository_owner",
                 "needs: professional_authorization",
                 "runs-on: ubuntu-latest",
+                'git fetch --no-tags origin "${HEAD_SHA}"',
+                'test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"',
+                "make test.chatter-timeline.authorization.orm",
                 "scripts/ci/self_hosted_runner_cleanup.sh",
             )
             if any(item not in text for item in required):

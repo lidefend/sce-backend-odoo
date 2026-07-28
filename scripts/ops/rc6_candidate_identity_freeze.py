@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import release_candidate_eligibility as eligibility
+
 
 CANDIDATE_SHA = "fb1f2b5a6e93fb4d7865023e6cda2961848c3cb8"
 SOURCE_TAG = "ghcr.io/lidefend/sce-product:sha-fb1f2b5a6e93"
@@ -23,6 +25,9 @@ IMAGE_REPOSITORY = "ghcr.io/lidefend/sce-product"
 REMOTE = "https://github.com/lidefend/sce-backend-odoo.git"
 DECLARATION_SCHEMA = "sce.rc6_candidate_identity.v1"
 DECLARATION_PATH = Path("config/releases/rc6_candidate.json")
+SUPERSESSION_PATH = Path(
+    "config/releases/rc6_candidate_supersession_legacy_projection.json"
+)
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 RFC3339_UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
@@ -430,34 +435,49 @@ def main() -> None:
             "publish-image",
             "verify-published",
             "verify-declaration",
+            "audit-supersession",
         ),
     )
     parser.add_argument("--workspace", type=Path)
     parser.add_argument("--artifacts", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--declaration", type=Path, default=DECLARATION_PATH)
+    parser.add_argument("--supersession", type=Path, default=SUPERSESSION_PATH)
     args = parser.parse_args()
-    if args.action == "prepare-workspace":
-        if args.workspace is None:
-            raise FreezeError("--workspace is required")
-        result = prepare_workspace(args.workspace)
-    elif args.action == "publish-image":
-        if args.artifacts is None or args.output is None:
-            raise FreezeError("--artifacts and --output are required")
-        result = publish_image(args.artifacts, args.output)
-    elif args.action == "verify-published":
-        if args.artifacts is None or args.output is None:
-            raise FreezeError("--artifacts and --output are required")
-        result = verify_published_image(args.artifacts, args.output)
-    else:
-        result = validate_declaration(
-            load_json(args.declaration, "RC6 candidate declaration")
+    if args.action == "audit-supersession":
+        result = eligibility.audit_supersession(
+            args.declaration,
+            args.supersession,
         )
+    else:
+        eligibility.assert_candidate_eligible(
+            args.declaration,
+            args.supersession,
+        )
+        if args.action == "prepare-workspace":
+            if args.workspace is None:
+                raise FreezeError("--workspace is required")
+            result = prepare_workspace(args.workspace)
+        elif args.action == "publish-image":
+            if args.artifacts is None or args.output is None:
+                raise FreezeError("--artifacts and --output are required")
+            result = publish_image(args.artifacts, args.output)
+        elif args.action == "verify-published":
+            if args.artifacts is None or args.output is None:
+                raise FreezeError("--artifacts and --output are required")
+            result = verify_published_image(args.artifacts, args.output)
+        else:
+            result = validate_declaration(
+                load_json(args.declaration, "RC6 candidate declaration")
+            )
     print("RC6_CANDIDATE_IDENTITY=" + json.dumps(result, sort_keys=True))
 
 
 if __name__ == "__main__":
     try:
         main()
+    except eligibility.CandidateEligibilityError as exc:
+        print(eligibility.blocked_lines(exc))
+        raise SystemExit(42) from exc
     except (FreezeError, json.JSONDecodeError) as exc:
         raise SystemExit(f"RC6_CANDIDATE_IDENTITY_ERROR={exc}") from exc

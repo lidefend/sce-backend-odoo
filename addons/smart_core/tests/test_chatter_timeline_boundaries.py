@@ -27,6 +27,9 @@ class _Model:
     def browse(self, record_id):
         return _Record()
 
+    def search(self, domain, limit=None):
+        return _Record()
+
     def check_access_rights(self, mode):
         return True
 

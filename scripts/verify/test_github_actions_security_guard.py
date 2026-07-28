@@ -139,6 +139,23 @@ jobs:
         self.assertTrue(guard.authorization_allowed(actor="lidefend", **common))
         self.assertFalse(guard.authorization_allowed(actor="collaborator", **common))
 
+    def test_push_requires_exact_main_ref(self) -> None:
+        common = {
+            "event_name": "push",
+            "repository": "lidefend/sce-backend-odoo",
+            "repository_owner": "lidefend",
+            "actor": "lidefend",
+        }
+        self.assertTrue(
+            guard.authorization_allowed(ref="refs/heads/main", **common)
+        )
+        self.assertFalse(
+            guard.authorization_allowed(
+                ref="refs/heads/fix/not-main",
+                **common,
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

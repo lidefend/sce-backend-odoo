@@ -3,6 +3,8 @@ name: professional_quality_gate
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,7 +18,7 @@ jobs:
   professional_authorization:
     name: professional_authorization
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 30
     steps:
       - name: Deny forks and non-owner actors
         env:
@@ -26,6 +28,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           ACTOR: ${{ github.actor }}
+          REF: ${{ github.ref }}
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || '' }}
         run: |
           set -euo pipefail
@@ -33,11 +36,22 @@ jobs:
           test "${REPOSITORY_OWNER}" = "${EXPECTED_OWNER}"
           if [ "${EVENT_NAME}" = "pull_request" ]; then
             test "${HEAD_REPOSITORY}" = "${REPOSITORY}"
+          elif [ "${EVENT_NAME}" = "push" ]; then
+            test "${REF}" = "refs/heads/main"
           elif [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
             test "${ACTOR}" = "${REPOSITORY_OWNER}"
           else
             exit 1
           fi
+
+      - name: Checkout authorized commit without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Prove chatter timeline authorization with real ORM
+        run: make test.chatter-timeline.authorization.orm
 
   python310_runtime_compatibility:
     name: python310_runtime_compatibility
@@ -46,6 +60,8 @@ jobs:
       github.repository == 'lidefend/sce-backend-odoo' &&
       ((github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'push' &&
+      github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' &&
       github.actor == github.repository_owner))
     runs-on: ubuntu-latest
@@ -80,13 +96,14 @@ jobs:
       github.repository == 'lidefend/sce-backend-odoo' &&
       ((github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'push' &&
+      github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' &&
       github.actor == github.repository_owner))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
       CI_REMOTE_URL: https://github.com/lidefend/sce-backend-odoo.git
-      HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       CI_PROJECT_NAME: sc-prof-${{ github.run_id }}
 
@@ -103,10 +120,10 @@ jobs:
           git init "${GITHUB_WORKSPACE}"
           git remote add origin "${CI_REMOTE_URL}"
           for attempt in 1 2 3 4 5; do
-            if timeout 90 git fetch --no-tags origin \
-              "+refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}" &&
-              test "$(git rev-parse "refs/remotes/origin/${HEAD_REF}")" = "${HEAD_SHA}"; then
-              git checkout --detach "${HEAD_SHA}"
+            if timeout 90 git fetch --no-tags origin "${HEAD_SHA}" &&
+              test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"; then
+              git checkout --detach FETCH_HEAD
+              test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
               exit 0
             fi
             sleep "$((attempt * 5))"

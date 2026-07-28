@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3377`
+- Scanned files: `3380`
 - Files requiring split plan: `38`
 - Files above warning threshold: `60`
 
@@ -75,9 +75,9 @@ Generated from repository source files. This report is informational during the 
 | 1245 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1226 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1223 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
+| 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1205 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1205 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1190 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
@@ -113,8 +113,8 @@ Generated from repository source files. This report is informational during the 
 | 426 | Shell script | `scripts/demo/verify.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
+| 313 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
-| 281 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 
 ## Largest Files
 
@@ -176,9 +176,9 @@ Generated from repository source files. This report is informational during the 
 | 1245 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1226 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1223 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
+| 1218 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1205 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1205 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1190 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
