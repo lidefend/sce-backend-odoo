@@ -49,6 +49,11 @@ def main() -> int:
         errors,
     )
     _assert(
+        "viewType: 'form'," in record_page_lifecycle,
+        "record page lifecycle action contract request must select the form view directly",
+        errors,
+    )
+    _assert(
         'params.get("view_id")' in ui_contract_v2 and 'params.get("viewId")' in ui_contract_v2,
         "ui.contract.v2 must preserve explicit view_id/viewId",
         errors,

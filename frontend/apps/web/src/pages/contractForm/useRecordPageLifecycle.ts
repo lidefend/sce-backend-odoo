@@ -120,6 +120,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       try {
         response = await loadActionContractRaw(actionId.value, {
           menuId: menuId.value || undefined,
+          viewType: 'form',
           viewId: requestedViewId || undefined,
           recordId: recordId.value,
           renderProfile: profile,
