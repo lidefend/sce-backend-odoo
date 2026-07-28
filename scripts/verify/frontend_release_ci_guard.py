@@ -15,10 +15,12 @@ def findings(root: Path = ROOT) -> list[str]:
     workflow = root / ".github/workflows/frontend_release_gate.yml"
     policy_path = root / "config/ci/frontend_release_gate_v1.json"
     runtime_make = root / "make/runtime_ops.mk"
+    compose_file = root / "docker-compose.yml"
     try:
         text = workflow.read_text(encoding="utf-8")
         policy = json.loads(policy_path.read_text(encoding="utf-8"))
         runtime_text = runtime_make.read_text(encoding="utf-8")
+        compose_text = compose_file.read_text(encoding="utf-8")
     except (OSError, json.JSONDecodeError) as exc:
         return [f"CI_GATE_INPUT_INVALID:{exc}"]
     required_text = (
@@ -67,6 +69,13 @@ def findings(root: Path = ROOT) -> list[str]:
     )
     if "scripts/verify/frontend_build_fingerprint.sh" not in static_audit_text:
         errors.append("CURRENT_FRONTEND_BUILD_IDENTITY_NOT_GENERATED")
+    if (
+        "VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB)" not in runtime_text
+        or "VITE_APP_ENV=acceptance" not in runtime_text
+        or "VITE_ODOO_DB: ${VITE_ODOO_DB:-sc_prod}" not in compose_text
+        or "VITE_APP_ENV: ${VITE_APP_ENV:-production}" not in compose_text
+    ):
+        errors.append("FRONTEND_BUILD_ENVIRONMENT_NOT_ALIGNED")
     if policy.get("check_name") != "frontend_release_gate":
         errors.append("CHECK_NAME_DRIFT")
     after = policy.get("required_checks_after") or []

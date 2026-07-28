@@ -1962,7 +1962,7 @@ verify.frontend.release.audit:
 	@set +e; \
 	status=0; \
 	$(MAKE) --no-print-directory verify.frontend.release.unit || status=$$?; \
-	python3 scripts/verify/frontend_static_release_audit.py || status=$$?; \
+	VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB) VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance python3 scripts/verify/frontend_static_release_audit.py || status=$$?; \
 	frontend_build_sha="$$(cat frontend/apps/web/dist/.build-sha256 2>/dev/null || true)"; \
 	if [ -z "$$frontend_build_sha" ]; then \
 		echo "[verify.frontend.release.audit] missing current frontend build fingerprint" >&2; \
@@ -1970,6 +1970,9 @@ verify.frontend.release.audit:
 	fi; \
 	if [ "$$status" -eq 0 ]; then \
 		export FRONTEND_BUILD_SHA256="$$frontend_build_sha"; \
+		export VITE_ODOO_DB="$(FRONTEND_ACCEPTANCE_DB)"; \
+		export VITE_ODOO_DB_LOCKED=1; \
+		export VITE_APP_ENV=acceptance; \
 		$(MAKE) --no-print-directory db.frontend.acceptance.ensure || status=$$?; \
 	fi; \
 	if [ "$$status" -eq 0 ]; then \
