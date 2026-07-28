@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+WORKFLOW = ROOT / ".github/workflows/frontend_release_gate.yml"
+POLICY = ROOT / "config/ci/frontend_release_gate_v1.json"
+
+
+def findings(root: Path = ROOT) -> list[str]:
+    errors: list[str] = []
+    workflow = root / ".github/workflows/frontend_release_gate.yml"
+    policy_path = root / "config/ci/frontend_release_gate_v1.json"
+    try:
+        text = workflow.read_text(encoding="utf-8")
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"CI_GATE_INPUT_INVALID:{exc}"]
+    required_text = (
+        "name: frontend_release_gate",
+        "  frontend_release_gate:",
+        "    name: frontend_release_gate",
+        "pull_request:",
+        "push:",
+        "workflow_dispatch:",
+        "cd frontend/apps/web",
+        "pnpm test:release",
+        "if: always()",
+        "steps.release.outcome",
+        "frontend_release_gate.py",
+        "github.run_id",
+        "github.run_attempt",
+        "env.CHECKOUT_SHA",
+        "retention-days: 14",
+        "if-no-files-found: error",
+    )
+    errors.extend(f"WORKFLOW_CONTRACT_MISSING:{item}" for item in required_text if item not in text)
+    forbidden = (
+        "continue-on-error:",
+        "actions/download-artifact",
+        "matrix:",
+        "|| true",
+        "DAILY",
+        ".env.prod",
+    )
+    errors.extend(f"WORKFLOW_FORBIDDEN:{item}" for item in forbidden if item in text)
+    workflow_occurrences = 0
+    for candidate in (root / ".github/workflows").glob("*.yml"):
+        candidate_text = candidate.read_text(encoding="utf-8")
+        workflow_occurrences += candidate_text.count("    name: frontend_release_gate")
+    if workflow_occurrences != 1:
+        errors.append(f"CHECK_NAME_NOT_UNIQUE:{workflow_occurrences}")
+    if policy.get("authoritative_command") != "cd frontend/apps/web && pnpm test:release":
+        errors.append("AUTHORITATIVE_COMMAND_DRIFT")
+    if policy.get("check_name") != "frontend_release_gate":
+        errors.append("CHECK_NAME_DRIFT")
+    after = policy.get("required_checks_after") or []
+    if after != [
+        "public_guard",
+        "professional_authorization",
+        "professional_quality_gate",
+        "frontend_release_gate",
+    ]:
+        errors.append("REQUIRED_CHECK_POLICY_DRIFT")
+    final_authorities = [
+        row for row in policy.get("release_entrypoint_inventory") or [] if row.get("final_release_authority")
+    ]
+    if len(final_authorities) != 1 or final_authorities[0].get("check_name") != "frontend_release_gate":
+        errors.append("FINAL_RELEASE_AUTHORITY_NOT_UNIQUE")
+    return errors
+
+
+def main() -> int:
+    errors = findings()
+    if errors:
+        print("[frontend_release_ci_guard] FAIL", file=sys.stderr)
+        for error in errors:
+            print(f"- {error}", file=sys.stderr)
+        return 2
+    print("[frontend_release_ci_guard] PASS authoritative_command=pnpm_test_release check=frontend_release_gate")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

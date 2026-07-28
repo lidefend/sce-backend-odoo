@@ -1759,6 +1759,7 @@ mod.upgrade: guard.codex.fast.upgrade guard.prod.danger check-compose-project ch
 FRONTEND_ACCEPTANCE_DB := $(if $(filter command line,$(origin DB_NAME)),$(DB_NAME),sc_frontend_acceptance)
 
 db.frontend.acceptance.ensure: guard.prod.forbid check-compose-project check-compose-env
+	@$(RUN_ENV) $(COMPOSE_BASE) up -d --wait db redis odoo
 	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/test/frontend_acceptance_db_ensure.sh
 
 acceptance.frontend.fixture: guard.prod.forbid check-compose-project check-compose-env
@@ -1953,14 +1954,20 @@ verify.frontend.release.unit:
 	@node scripts/verify/frontend_navigation_audit.test.mjs
 	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_audit.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_gate.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_ci_guard.py
+	@python3 scripts/verify/frontend_release_ci_guard.py
 
 verify.frontend.release.audit:
 	@set +e; \
 	status=0; \
 	$(MAKE) --no-print-directory verify.frontend.release.unit || status=$$?; \
 	python3 scripts/verify/frontend_static_release_audit.py || status=$$?; \
-	$(MAKE) --no-print-directory verify.frontend.page_identity.browser || status=$$?; \
-	$(MAKE) --no-print-directory verify.frontend.delivery_hardening.release.browser || status=$$?; \
+	$(MAKE) --no-print-directory db.frontend.acceptance.ensure || status=$$?; \
+	if [ "$$status" -eq 0 ]; then \
+		$(MAKE) --no-print-directory verify.frontend.page_identity.browser || status=$$?; \
+		$(MAKE) --no-print-directory verify.frontend.delivery_hardening.release.browser || status=$$?; \
+	fi; \
 	python3 scripts/verify/frontend_release_audit.py || status=$$?; \
 	exit $$status
 
