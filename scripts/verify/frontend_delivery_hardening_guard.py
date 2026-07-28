@@ -113,6 +113,13 @@ require(
     "DELIVERY_HARDENING_PERF_ONLY=1",
     "DELIVERY_HARDENING_SKIP_PERF=1",
 )
+require(
+    "frontend/apps/web/src/api/contract.ts",
+    "CREATE_CONTRACT_CACHE_TTL_MS",
+    "currentContextEpoch()",
+    "options?.renderProfile === 'create'",
+    "!Number(options?.recordId || 0)",
+)
 
 diff = subprocess.run(
     ["git", "diff", "--unified=0", "origin/main", "--", "frontend/apps/web/src"],
