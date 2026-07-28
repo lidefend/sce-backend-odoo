@@ -165,7 +165,12 @@ async function inspectPage(page, role, route, screenshotPath) {
     const technicalPattern = /(?:[a-z_][a-z0-9_]*\.)+[a-z_][a-z0-9_]*|\s#\d+|undefined|null|\b(?:action|menu|record)_?id\b/i;
     const genericTitle = mainTitle === '业务动作' || documentTitle === `业务动作 - 智能施工企业管理平台`;
     const technicalFallback = technicalPattern.test(mainTitle) || technicalPattern.test(documentTitle) || breadcrumbs.some((item) => technicalPattern.test(item));
-    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await page.screenshot({
+      path: screenshotPath,
+      fullPage: true,
+      animations: 'disabled',
+      timeout: 15000,
+    });
     return {
       role,
       route,
@@ -215,6 +220,10 @@ async function main() {
       }
       const selectedRows = maxSurfacesPerRole > 0 ? contractRows.slice(0, maxSurfacesPerRole) : contractRows;
       for (const [index, link] of selectedRows.entries()) {
+        console.log(
+          `[frontend-surface-audit] role=${role} surface=${index + 1}/${selectedRows.length} `
+          + `menu=${link.menu_xmlid || 'missing'}`
+        );
         const safeRoute = link.route;
         const screenshot = path.join(outputDir, `${role}-${String(index + 1).padStart(3, '0')}.png`);
         try {
