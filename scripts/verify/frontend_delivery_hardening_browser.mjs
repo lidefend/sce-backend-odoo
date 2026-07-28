@@ -263,6 +263,7 @@ async function main() {
     generated_at: generatedAt,
     environment,
     warmup_runs_per_scenario: 1,
+    warmup_runs: {},
     runs_per_scenario: PERF_RUNS,
     scenarios: {},
     budgets: performanceBudgets.scenarios || {},
@@ -571,9 +572,15 @@ async function main() {
         return;
       }
       const switchSamples = [];
-      await selectCompany(page, 'FE Company B');
+      // system.init assembles the governed navigation and role projection. Give
+      // both company scopes a bounded warm-up before measuring the steady-state
+      // switch; samples still perform real alternating company transitions.
+      for (const label of ['FE Company B', 'FE Company A', 'FE Company B']) {
+        await selectCompany(page, label);
+      }
+      performanceReport.warmup_runs.company_switch = 3;
       for (let i = 0; i < PERF_RUNS; i += 1) {
-        switchSamples.push(await time(() => selectCompany(page, i % 2 ? 'FE Company A' : 'FE Company B')));
+        switchSamples.push(await time(() => selectCompany(page, i % 2 ? 'FE Company B' : 'FE Company A')));
       }
       performanceReport.scenarios.company_switch = stats(switchSamples);
       const absoluteScenarioPass = Object.fromEntries(Object.entries(performanceReport.scenarios).map(([name, metrics]) => {
