@@ -484,6 +484,16 @@ async function main() {
     check(accessibility.blocking === 0, `accessibility blocking findings=${accessibility.blocking}`);
     }
 
+    // Performance is a release signal, so measure it in a fresh renderer rather
+    // than inheriting the memory, event listeners, and accessibility tree churn
+    // from the 72-page responsive/axe sweep above. The browser context remains
+    // unchanged: company/session isolation and the same acceptance runtime still
+    // apply, while the measured page gets the same clean lifecycle in PR and
+    // merged-main runs.
+    await page.close();
+    page = await context.newPage();
+    runtime = capture(page);
+
     // Five-run fixed-runtime measurements: login and true SPA navigation, without fixture mutation.
     const performanceRequests = [];
     page.on('request', (request) => {
