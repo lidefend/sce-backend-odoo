@@ -14,9 +14,11 @@ def findings(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     workflow = root / ".github/workflows/frontend_release_gate.yml"
     policy_path = root / "config/ci/frontend_release_gate_v1.json"
+    runtime_make = root / "make/runtime_ops.mk"
     try:
         text = workflow.read_text(encoding="utf-8")
         policy = json.loads(policy_path.read_text(encoding="utf-8"))
+        runtime_text = runtime_make.read_text(encoding="utf-8")
     except (OSError, json.JSONDecodeError) as exc:
         return [f"CI_GATE_INPUT_INVALID:{exc}"]
     required_text = (
@@ -55,6 +57,11 @@ def findings(root: Path = ROOT) -> list[str]:
         errors.append(f"CHECK_NAME_NOT_UNIQUE:{workflow_occurrences}")
     if policy.get("authoritative_command") != "cd frontend/apps/web && pnpm test:release":
         errors.append("AUTHORITATIVE_COMMAND_DRIFT")
+    if (
+        'frontend/apps/web/dist/.build-sha256' not in runtime_text
+        or 'export FRONTEND_BUILD_SHA256="$$frontend_build_sha"' not in runtime_text
+    ):
+        errors.append("CURRENT_FRONTEND_BUILD_IDENTITY_NOT_PROPAGATED")
     if policy.get("check_name") != "frontend_release_gate":
         errors.append("CHECK_NAME_DRIFT")
     after = policy.get("required_checks_after") or []

@@ -15,8 +15,10 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         root = Path(temporary.name)
         (root / ".github/workflows").mkdir(parents=True)
         (root / "config/ci").mkdir(parents=True)
+        (root / "make").mkdir(parents=True)
         shutil.copy(ROOT / ".github/workflows/frontend_release_gate.yml", root / ".github/workflows/")
         shutil.copy(ROOT / "config/ci/frontend_release_gate_v1.json", root / "config/ci/")
+        shutil.copy(ROOT / "make/runtime_ops.mk", root / "make/")
         return temporary, root
 
     def test_repository_contract_passes(self):

@@ -1963,7 +1963,15 @@ verify.frontend.release.audit:
 	status=0; \
 	$(MAKE) --no-print-directory verify.frontend.release.unit || status=$$?; \
 	python3 scripts/verify/frontend_static_release_audit.py || status=$$?; \
-	$(MAKE) --no-print-directory db.frontend.acceptance.ensure || status=$$?; \
+	frontend_build_sha="$$(cat frontend/apps/web/dist/.build-sha256 2>/dev/null || true)"; \
+	if [ -z "$$frontend_build_sha" ]; then \
+		echo "[verify.frontend.release.audit] missing current frontend build fingerprint" >&2; \
+		status=2; \
+	fi; \
+	if [ "$$status" -eq 0 ]; then \
+		export FRONTEND_BUILD_SHA256="$$frontend_build_sha"; \
+		$(MAKE) --no-print-directory db.frontend.acceptance.ensure || status=$$?; \
+	fi; \
 	if [ "$$status" -eq 0 ]; then \
 		$(MAKE) --no-print-directory verify.frontend.page_identity.browser || status=$$?; \
 		$(MAKE) --no-print-directory verify.frontend.delivery_hardening.release.browser || status=$$?; \
