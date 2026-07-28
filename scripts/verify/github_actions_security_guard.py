@@ -142,6 +142,12 @@ def scan(root: Path) -> list[Finding]:
             )
             if any(item not in text for item in required):
                 findings.add(Finding("GA014", relative, "RELEASE_EVIDENCE_TRUST_BOUNDARY_INCOMPLETE"))
+            job_env_match = re.search(
+                r"(?ms)^jobs:\n.*?^\s{4}env:\n(?P<env>(?:^\s{6}.+\n)+)",
+                text,
+            )
+            if job_env_match and "${{ runner." in job_env_match.group("env"):
+                findings.add(Finding("GA015", relative, "RUNNER_CONTEXT_FORBIDDEN_IN_JOB_ENV"))
     return sorted(findings)
 
 
