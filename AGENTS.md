@@ -8,6 +8,12 @@
 - Always follow `docs/ops/codex_workspace_execution_rules.md` before any write action.
 - Mandatory preflight before edits: `pwd` + `git rev-parse --show-toplevel` + `git branch --show-current` + `git status --short`.
 
+## Database Architecture Governance
+- `docs/governance/database_architecture_policy.md` is the single authoritative database architecture policy.
+- Before any task involving database creation, copy, upgrade, migration, destruction, module lifecycle, tenant provisioning, users or multi-company design, fixture or acceptance environments, filestore/session/backup/restore, or cross-tenant interfaces and analytics, read and apply that policy.
+- Every database-writing task must resolve the target database role, tenant, environment, exact database filter, and filestore identity before any write. An unresolved role or a policy violation is a fail-closed stop.
+- UM-P1 and all later user-module productization tasks inherit this policy. UM-P2 installation rehearsal must use a newly created isolated customer-tenant rehearsal database.
+
 ## Architecture Guard
 - Always follow `ARCHITECTURE_GUARD.md` and `docs/architecture/ai_development_guard.md` before making code changes.
 - For frontend page work, always follow `docs/architecture/native_view_reuse_frontend_spec_v1.md`.

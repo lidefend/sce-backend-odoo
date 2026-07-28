@@ -392,7 +392,7 @@
                         <group>
                             <field name="name"/>
                             <field name="project_id"/>
-                            <field name="register_id"/>
+                            <field name="register_id" readonly="1"/>
                             <field name="contract_id"/>
                             <field name="subcontractor_id"/>
                             <field name="settlement_date"/>
@@ -410,6 +410,7 @@
                             <field name="line_ids">
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle"/>
+                                    <field name="register_line_id"/>
                                     <field name="work_scope"/>
                                     <field name="work_content"/>
                                     <field name="qty"/>

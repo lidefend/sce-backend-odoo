@@ -1496,6 +1496,23 @@ class PaymentRequest(models.Model):
             if rec.contract_id.type != expected:
                 raise ValidationError(_("合同类型必须与申请类型一致。"))
 
+    @api.constrains(
+        "contract_id",
+        "settlement_id",
+        "material_settlement_id",
+        "project_id",
+        "outflow_line_ids",
+    )
+    def _check_payment_execution_basis_contract(self):
+        execution_model = self.env["sc.payment.execution"]
+        for request in self.filtered(lambda rec: rec.type == "pay"):
+            execution_model._payment_basis_contracts(request)
+            executions = execution_model.search(
+                [("payment_request_id", "=", request.id)]
+            )
+            for execution in executions:
+                execution._normalize_payment_relation_values({}, current=execution)
+
     def _check_settlement_remaining_amount(self):
         """防超付额度硬校验：提交/审批前必须满足结算额度（排除本申请）。"""
         for rec in self:

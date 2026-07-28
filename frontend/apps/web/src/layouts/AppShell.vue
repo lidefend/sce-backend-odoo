@@ -182,8 +182,41 @@
           <p v-if="!useMinimalTopbar && topbarSubtitle" class="headline-subtitle">{{ topbarSubtitle }}</p>
         </div>
         <div class="topbar-actions">
-          <div class="topbar-context" aria-label="当前工作上下文">
-            <span>{{ roleLabel }}</span>
+          <div class="topbar-account" @click.stop>
+            <button
+              class="topbar-context topbar-context-trigger"
+              type="button"
+              aria-haspopup="dialog"
+              :aria-expanded="roleContextOpen"
+              aria-controls="role-context-panel"
+              @click="roleContextOpen = !roleContextOpen"
+            >
+              <span class="topbar-context-kicker">当前岗位</span>
+              <strong>{{ roleLabel }}</strong>
+              <span class="topbar-context-caret" aria-hidden="true">▾</span>
+            </button>
+            <section
+              v-if="roleContextOpen"
+              id="role-context-panel"
+              class="topbar-account-panel"
+              role="dialog"
+              aria-label="当前账户信息"
+            >
+              <p class="topbar-account-name">{{ userName }}</p>
+              <dl>
+                <div>
+                  <dt>当前岗位</dt>
+                  <dd>{{ roleLabel }}</dd>
+                </div>
+                <div v-if="currentCompanyLabel">
+                  <dt>当前公司</dt>
+                  <dd>{{ currentCompanyLabel }}</dd>
+                </div>
+              </dl>
+              <button class="sc-btn sc-btn-sm sc-btn-ghost" type="button" @click="logout">
+                退出登录
+              </button>
+            </section>
           </div>
           <GlobalMessagePanel />
           <button
@@ -361,6 +394,7 @@ const mobileViewport = ref(false);
 const mobileSidebarOpen = ref(false);
 const sidebarToggleButton = ref<HTMLButtonElement | null>(null);
 const projectMenuOpen = ref(false);
+const roleContextOpen = ref(false);
 const projectSearch = ref('');
 const projectSearching = ref(false);
 const projectError = ref('');
@@ -410,6 +444,11 @@ const roleLabel = computed(() => {
   if (code) return normalizeDeliveryText(code.toUpperCase());
   return '当前用户';
 });
+const currentCompanyLabel = computed(() => String(
+  projectContext.value?.company_name
+  || projectContext.value?.selected?.company_name
+  || '',
+).trim());
 const projectContext = computed(() => session.projectContext);
 const projectContextEnabled = computed(() => Boolean(projectContext.value?.enabled));
 const projectContextReasonCode = computed(() => String(projectContext.value?.reason_code || '').trim());
@@ -821,7 +860,9 @@ function syncMobileViewport(event?: MediaQueryListEvent): void {
 }
 
 function handleShellEscape(event: KeyboardEvent): void {
-  if (event.key === 'Escape' && mobileSidebarOpen.value) closeMobileSidebar();
+  if (event.key !== 'Escape') return;
+  roleContextOpen.value = false;
+  if (mobileSidebarOpen.value) closeMobileSidebar();
 }
 
 function toggleSidebar(): void {
@@ -1016,6 +1057,7 @@ function handleTraceUpdate() {
 
 function closeProjectMenu() {
   projectMenuOpen.value = false;
+  roleContextOpen.value = false;
 }
 
 function emitProjectContextChanged(previousProjectId = 0, scopeChanged = false) {

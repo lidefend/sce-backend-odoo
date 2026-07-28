@@ -301,6 +301,79 @@ class ScFundAccountOperation(models.Model):
             return False
 
     @api.model
+    def _require_visible_company_scope(self, company_id, project_id=False):
+        allowed_company_ids = self.env.companies.ids
+        if not company_id or company_id not in allowed_company_ids:
+            raise AccessError(_("公司或项目不可用，或无权访问。"))
+        if not project_id:
+            return False
+        project = self.env["project.project"].search(
+            [
+                ("id", "=", project_id),
+                ("company_id", "=", company_id),
+                ("company_id", "in", allowed_company_ids),
+            ],
+            limit=1,
+        )
+        if not project:
+            raise AccessError(_("公司或项目不可用，或无权访问。"))
+        return project
+
+    @api.model
+    def _caller_visible_fund_account(self, account_id, company_id):
+        if not account_id:
+            return self.env["sc.fund.account"]
+        allowed_company_ids = self.env.companies.ids
+        if not company_id or company_id not in allowed_company_ids:
+            raise AccessError(_("资金账户不存在或当前用户无权访问。"))
+        account = self.env["sc.fund.account"].search(
+            [
+                ("id", "=", account_id),
+                ("company_id", "=", company_id),
+                ("company_id", "in", allowed_company_ids),
+                "|",
+                ("project_id", "=", False),
+                ("project_id.company_id", "=", company_id),
+            ],
+            limit=1,
+        )
+        if not account:
+            raise AccessError(_("资金账户不存在或当前用户无权访问。"))
+        return account
+
+    @api.model
+    def _normalize_fund_relation_values(self, vals, current=None):
+        values = dict(vals)
+
+        def relation_id(field_name):
+            if field_name in values:
+                return values.get(field_name) or False
+            return current[field_name].id if current and current[field_name] else False
+
+        company_id = relation_id("company_id") or self.env.company.id
+        operation_type = (
+            values.get("operation_type")
+            or (current.operation_type if current else False)
+            or self.env.context.get("default_operation_type")
+            or "transfer_between"
+        )
+        if operation_type in ("transfer_out", "transfer_between"):
+            self._caller_visible_fund_account(
+                relation_id("source_account_id"),
+                company_id,
+            )
+            self._caller_visible_fund_account(
+                relation_id("target_account_id"),
+                company_id,
+            )
+        elif relation_id("fund_account_id"):
+            self._caller_visible_fund_account(
+                relation_id("fund_account_id"),
+                company_id,
+            )
+        return values
+
+    @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
         project_id = res.get("project_id") or self._context_project_id()
@@ -348,6 +421,8 @@ class ScFundAccountOperation(models.Model):
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
+            company_id = vals.get("company_id") or self.env.company.id
+            self._require_visible_company_scope(company_id, vals.get("project_id"))
             context_date = self.env.context.get("default_operation_date") or self.env.context.get("current_document_date")
             if context_date:
                 vals.setdefault("operation_date", context_date)
@@ -366,6 +441,7 @@ class ScFundAccountOperation(models.Model):
             context_note = self.env.context.get("default_note")
             if context_note:
                 vals.setdefault("note", context_note)
+            vals = self._normalize_fund_relation_values(vals)
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
             if vals.get("name", "/") == "/":
                 vals["name"] = seq.next_by_code("sc.fund.account.operation") or _("资金账户操作单")
@@ -373,6 +449,14 @@ class ScFundAccountOperation(models.Model):
 
     def write(self, vals):
         self._assert_readonly_legacy_archive_not_mutated()
+        for record in self:
+            company_id = vals.get("company_id", record.company_id.id)
+            project_id = (
+                vals.get("project_id")
+                if "project_id" in vals
+                else record.project_id.id
+            )
+            self._require_visible_company_scope(company_id, project_id)
         if any(
             self._is_readonly_legacy_archive_values(
                 {
@@ -383,6 +467,25 @@ class ScFundAccountOperation(models.Model):
             for record in self
         ):
             raise AccessError(_("普通资金记录不能被转换为历史只读归档。"))
+        relation_fields = {
+            "operation_type",
+            "company_id",
+            "source_account_id",
+            "target_account_id",
+            "fund_account_id",
+        }
+        if relation_fields.intersection(vals):
+            result = True
+            for record in self:
+                normalized_vals = record._normalize_fund_relation_values(
+                    vals,
+                    current=record,
+                )
+                result = (
+                    super(ScFundAccountOperation, record).write(normalized_vals)
+                    and result
+                )
+            return result
         return super().write(vals)
 
     def unlink(self):

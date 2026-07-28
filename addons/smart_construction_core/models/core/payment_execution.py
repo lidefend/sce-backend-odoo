@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 
 from ..support.state_guard import raise_guard
@@ -372,22 +372,164 @@ class ScPaymentExecution(models.Model):
         for field_name, value in self._payment_request_values(self.payment_request_id).items():
             setattr(self, field_name, value)
 
+    @api.model
+    def _caller_visible_payment_relation(self, model_name, record_id, domain=None):
+        if not record_id:
+            return self.env[model_name]
+        relation_domain = [("id", "=", record_id)]
+        if domain:
+            relation_domain.extend(domain)
+        record = self.env[model_name].search(relation_domain, limit=1)
+        if not record:
+            raise ValidationError(_("付款归集关系不存在或当前用户无权访问。"))
+        return record
+
+    @api.model
+    def _payment_basis_contracts(self, request):
+        contracts = self.env["construction.contract"]
+        lines = self.env["payment.request.line"].search(
+            [
+                ("request_id", "=", request.id),
+                ("active", "=", True),
+                "|",
+                ("settlement_id", "!=", False),
+                ("contract_id", "!=", False),
+            ]
+        )
+        line_settlement_ids = set(lines.mapped("settlement_id").ids)
+
+        if lines:
+            if request.material_settlement_id:
+                raise ValidationError(_("付款申请的材料结算头部依据与结算明细依据冲突。"))
+            if request.settlement_id and request.settlement_id.id not in line_settlement_ids:
+                raise ValidationError(_("付款申请头部结算不属于其权威结算明细集合。"))
+            for line in lines:
+                line_contract = self.env["construction.contract"]
+                if line.settlement_id:
+                    settlement = self._caller_visible_payment_relation(
+                        "sc.settlement.order",
+                        line.settlement_id.id,
+                    )
+                    if settlement.project_id != request.project_id:
+                        raise ValidationError(_("付款申请结算明细项目与申请项目不一致。"))
+                    if settlement.contract_id:
+                        line_contract = self._caller_visible_payment_relation(
+                            "construction.contract",
+                            settlement.contract_id.id,
+                        )
+                if line.contract_id:
+                    explicit_line_contract = self._caller_visible_payment_relation(
+                        "construction.contract",
+                        line.contract_id.id,
+                    )
+                    if line_contract and explicit_line_contract != line_contract:
+                        raise ValidationError(_("付款申请明细合同与其结算合同不一致。"))
+                    line_contract = explicit_line_contract
+                if line_contract:
+                    if line_contract.project_id != request.project_id:
+                        raise ValidationError(_("付款申请明细合同项目与申请项目不一致。"))
+                    contracts |= line_contract
+        else:
+            if request.settlement_id and request.material_settlement_id:
+                raise ValidationError(_("付款申请不能同时使用标准结算与材料结算作为头部依据。"))
+            if request.settlement_id:
+                settlement = self._caller_visible_payment_relation(
+                    "sc.settlement.order",
+                    request.settlement_id.id,
+                )
+                if settlement.project_id != request.project_id:
+                    raise ValidationError(_("付款申请结算项目与申请项目不一致。"))
+                if settlement.contract_id:
+                    contracts |= self._caller_visible_payment_relation(
+                        "construction.contract",
+                        settlement.contract_id.id,
+                    )
+            elif request.material_settlement_id:
+                material_settlement = self._caller_visible_payment_relation(
+                    "sc.material.settlement",
+                    request.material_settlement_id.id,
+                )
+                if material_settlement.project_id != request.project_id:
+                    raise ValidationError(_("付款申请材料结算项目与申请项目不一致。"))
+        if request.contract_id:
+            request_contract = self._caller_visible_payment_relation(
+                "construction.contract",
+                request.contract_id.id,
+            )
+            if len(contracts) > 1:
+                raise ValidationError(_("多合同付款申请不得压缩到单值合同字段。"))
+            if not contracts:
+                raise ValidationError(_("付款申请合同没有对应的有效来源依据。"))
+            if request_contract != contracts:
+                raise ValidationError(_("付款申请合同与其有效来源合同不一致。"))
+        return contracts
+
+    @api.model
+    def _normalize_payment_relation_values(self, vals, current=None):
+        values = dict(vals)
+
+        def relation_id(field_name):
+            if field_name in values:
+                return values.get(field_name) or False
+            return current[field_name].id if current and current[field_name] else False
+
+        request_id = relation_id("payment_request_id")
+        execution_contract_id = relation_id("contract_id")
+        project_id = relation_id("project_id")
+        actual_payee_id = relation_id("partner_id")
+        if not request_id:
+            return values
+
+        request = self._caller_visible_payment_relation(
+            "payment.request",
+            request_id,
+            [("type", "=", "pay")],
+        )
+        contracts = self._payment_basis_contracts(request)
+        if project_id and project_id != request.project_id.id:
+            raise ValidationError(_("付款执行项目必须与付款申请项目一致。"))
+        if len(contracts) == 1:
+            unique_contract = contracts
+            if execution_contract_id and execution_contract_id != unique_contract.id:
+                raise ValidationError(_("付款执行合同必须与申请的唯一来源合同一致。"))
+            values.setdefault("contract_id", unique_contract.id)
+        elif len(contracts) > 1:
+            if execution_contract_id:
+                raise ValidationError(_("多合同付款依据不得写入任意单一执行合同。"))
+            values["contract_id"] = False
+        elif execution_contract_id:
+            raise ValidationError(_("付款执行合同没有对应的有效申请来源依据。"))
+
+        values.setdefault("project_id", request.project_id.id)
+        if actual_payee_id:
+            self._caller_visible_payment_relation("res.partner", actual_payee_id)
+        else:
+            values.setdefault("partner_id", request.partner_id.id)
+        return values
+
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
-        for vals in vals_list:
+        normalized_vals_list = []
+        for incoming_vals in vals_list:
+            vals = dict(incoming_vals)
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
-            request_id = vals.get("payment_request_id")
-            if request_id:
-                request = self.env["payment.request"].browse(request_id).exists()
+            vals = self._normalize_payment_relation_values(vals)
+            if vals.get("payment_request_id"):
+                request = self._caller_visible_payment_relation(
+                    "payment.request",
+                    vals["payment_request_id"],
+                    [("type", "=", "pay")],
+                )
                 for field_name, value in self._payment_request_values(request).items():
                     vals.setdefault(field_name, value)
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.payment.execution") or _("Payment Execution")
-        return super().create(vals_list)
+            normalized_vals_list.append(vals)
+        return super().create(normalized_vals_list)
 
     @api.model
     def _resolve_business_category_code(self, vals):
@@ -436,6 +578,16 @@ class ScPaymentExecution(models.Model):
             } | projection_fields | self._history_surface_allowed_write_fields()
             if set(vals) - allowed:
                 raise UserError(_("历史迁移付款执行单据已确认，只允许补充业务锚点和备注。"))
+        relation_fields = {"payment_request_id", "contract_id", "partner_id", "project_id"}
+        if relation_fields.intersection(vals):
+            result = True
+            for rec in self:
+                normalized_vals = rec._normalize_payment_relation_values(
+                    vals,
+                    current=rec,
+                )
+                result = super(ScPaymentExecution, rec).write(normalized_vals) and result
+            return result
         return super().write(vals)
 
     def action_confirm(self):
@@ -627,14 +779,14 @@ class ScPaymentExecution(models.Model):
                 raise UserError(_("付款登记只能关联付款类型的付款申请。"))
             if rec.project_id and request.project_id and rec.project_id != request.project_id:
                 raise UserError(_("付款登记项目必须与付款申请项目一致。"))
-            if rec.partner_id and request.partner_id and rec.partner_id != request.partner_id:
-                raise UserError(_("付款登记往来单位必须与付款申请往来单位一致。"))
             if rec.contract_id and request.contract_id and rec.contract_id != request.contract_id:
                 raise UserError(_("付款登记合同必须与付款申请合同一致。"))
 
     @api.constrains("payment_request_id", "project_id", "partner_id", "contract_id")
     def _check_payment_request_scope_consistency(self):
         """Reject forged execution anchors at ORM create/write, not only at actions."""
+        for rec in self:
+            rec._normalize_payment_relation_values({}, current=rec)
         self._check_payment_request_scope_or_raise()
 
     def _company_contractor_payment_responsibility_failures(self, summary, paid_amount):

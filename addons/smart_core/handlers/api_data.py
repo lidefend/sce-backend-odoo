@@ -1896,6 +1896,11 @@ class ApiDataHandler(BaseIntentHandler):
             meta["search_term_applied"] = True
         return data, meta
 
+    def _authorize_account_tax_create_scope(self, p: Dict[str, Any], ctx: Dict[str, Any]):
+        caller_env_model = self.env["account.tax"].with_context(ctx)
+        _, scope_meta = self._apply_record_scope(caller_env_model, [], p, ctx)
+        return caller_env_model, scope_meta
+
     def _op_create(self, model: str, p: Dict[str, Any], ctx: Dict[str, Any], sudo: bool):
         vals = self._dig(p, "vals") or self._dig(p, "values") or {}
         if not isinstance(vals, dict) or not vals:
@@ -1904,6 +1909,16 @@ class ApiDataHandler(BaseIntentHandler):
         denied = self._check_mutation_policy(model, "create")
         if denied:
             return denied
+
+        caller_env_model = None
+        preauthorized_scope_meta = None
+        if model == "account.tax":
+            caller_env_model, preauthorized_scope_meta = self._authorize_account_tax_create_scope(p, ctx)
+            if preauthorized_scope_meta.get("project_operation_strategy_mismatch"):
+                return self._record_scope_denied(
+                    "当前记录上下文与经营方式不一致，禁止创建业务数据",
+                    preauthorized_scope_meta,
+                )
 
         create_policy = self._create_execution_policy(model, vals, ctx, p)
         if create_policy.get("allowed") is False:
@@ -1915,7 +1930,7 @@ class ApiDataHandler(BaseIntentHandler):
         if create_policy.get("sudo") and not sudo:
             sudo = True
 
-        env_model = self.env[model].with_context(ctx)
+        env_model = caller_env_model if caller_env_model is not None else self.env[model].with_context(ctx)
         if sudo:
             env_model = env_model.sudo()
 
@@ -1936,7 +1951,10 @@ class ApiDataHandler(BaseIntentHandler):
             if not safe_vals:
                 return self._err(400, "vals 中无可写字段")
         project_id = self._current_project_id(p, ctx)
-        _, project_scope_meta = self._apply_record_scope(env_model, [], p, ctx)
+        if preauthorized_scope_meta is None:
+            _, project_scope_meta = self._apply_record_scope(env_model, [], p, ctx)
+        else:
+            project_scope_meta = preauthorized_scope_meta
         if project_scope_meta.get("project_operation_strategy_mismatch"):
             return self._record_scope_denied("当前记录上下文与经营方式不一致，禁止创建业务数据", project_scope_meta)
         scope_company_id = int(project_scope_meta.get("company_id") or 0)

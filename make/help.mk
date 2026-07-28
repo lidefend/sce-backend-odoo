@@ -44,6 +44,10 @@ help:
 	@echo "  make ci.scene.delivery.readiness | ci.gate | ci.smoke | ci.full | ci.repro"
 	@echo "  make ci.clean | ci.ps | ci.logs"
 	@echo "  make diag.compose | verify.ops"
+	@echo "  make admin-vis-p3.registry-audit   # isolated registry export with exact cleanup"
+	@echo "  make admin-vis-p3.registry-audit.validate [REGISTRY_AUDIT_RUN_ID=...]"
+	@echo "  make admin-vis-p3.registry-audit.export REGISTRY_AUDIT_RUN_ID=..."
+	@echo "  make admin-vis-p3.registry-audit.cleanup REGISTRY_AUDIT_RUN_ID=..."
 	@echo
 	@echo "Codex SOP:"
 	@echo "  make codex.fast [CODEX_MODULES=...] [CODEX_NEED_UPGRADE=1]   # 快迭代：默认不升级不重建"
@@ -54,4 +58,3 @@ help:
 	@echo "  MODULE=$(MODULE) DB_NAME=$(DB_NAME) DB_CI=$(DB_CI) TEST_TAGS=$(TEST_TAGS)"
 	@echo "  ENV=$(ENV) ENV_FILE=$(ENV_FILE)"
 	@echo "  COMPOSE_BIN='$(COMPOSE_BIN)' COMPOSE_PROJECT_NAME='$(COMPOSE_PROJECT_NAME)'"
-

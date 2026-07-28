@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 SMART_CORE_DIR = Path(__file__).resolve().parents[1]
+CONSTRUCTION_CORE_DIR = SMART_CORE_DIR.parent / "smart_construction_core"
 
 
 def _load_module(module_name: str, path: Path):
@@ -32,9 +33,40 @@ target = _load_module(
     "odoo.addons.smart_core.identity.identity_resolver",
     SMART_CORE_DIR / "identity" / "identity_resolver.py",
 )
+construction_policy = _load_module(
+    "smart_construction_core_policy_under_test",
+    CONSTRUCTION_CORE_DIR / "core_extension_policy_maps.py",
+)
 
 
 class TestIdentityResolverEntryTarget(unittest.TestCase):
+    def test_only_smart_core_admin_uses_daily_capability_discovery_surface(self):
+        resolver = target.IdentityResolver()
+        resolver._role_groups_explicit = construction_policy.ROLE_GROUPS_EXPLICIT
+        resolver._role_precedence = construction_policy.ROLE_PRECEDENCE
+
+        smart_admin_surface = resolver.build_role_surface(
+            {"smart_core.group_smart_core_admin"},
+            [],
+            {"workspace.home"},
+            construction_policy.ROLE_SURFACE_OVERRIDES,
+        )
+        self.assertEqual(smart_admin_surface["role_code"], "system_admin")
+        self.assertTrue(smart_admin_surface["discover_installed_capabilities"])
+        self.assertTrue(smart_admin_surface["system_configuration_visible"])
+        self.assertFalse(smart_admin_surface["deny_all_navigation"])
+
+        break_glass_surface = resolver.build_role_surface(
+            {"base.group_system"},
+            [],
+            {"workspace.home"},
+            construction_policy.ROLE_SURFACE_OVERRIDES,
+        )
+        self.assertEqual(break_glass_surface["role_code"], "restricted")
+        self.assertFalse(break_glass_surface["discover_installed_capabilities"])
+        self.assertFalse(break_glass_surface["system_configuration_visible"])
+        self.assertTrue(break_glass_surface["deny_all_navigation"])
+
     def test_build_role_surface_exposes_landing_entry_target(self):
         resolver = target.IdentityResolver()
         role_surface = resolver.build_role_surface(set(), [], {"workspace.home"})

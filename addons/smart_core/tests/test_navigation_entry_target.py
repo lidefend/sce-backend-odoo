@@ -100,6 +100,49 @@ class TestNavigationEntryTarget(unittest.TestCase):
         self.assertEqual(action["entry_target"]["compatibility_refs"]["action_id"], 77)
         self.assertEqual(action["params"]["next"]["entry_target"], action["entry_target"])
 
+    def test_modal_form_action_opens_create_form_without_source_record_leakage(self):
+        action = navigation_entry_target.normalize_odoo_action_result(
+            None,
+            {
+                "type": "ir.actions.act_window",
+                "res_model": "x.relation.wizard",
+                "view_mode": "form",
+                "target": "new",
+                "context": {"default_source_id": 42},
+            },
+            source_model="x.source",
+            source_record_id=42,
+        )
+
+        entry_target = action["entry_target"]
+        self.assertEqual(entry_target["route"], "/f/x.relation.wizard/new")
+        self.assertEqual(entry_target["compatibility_refs"]["model"], "x.relation.wizard")
+        self.assertNotIn("record_entry", entry_target)
+
+    def test_modal_form_action_preserves_explicit_view_without_guessing_menu_action(self):
+        class _ActionModel:
+            def sudo(self):
+                return self
+
+            def search(self, *_args, **_kwargs):
+                raise AssertionError("explicit modal view must not guess a menu action")
+
+        action = navigation_entry_target.normalize_odoo_action_result(
+            {"ir.actions.act_window": _ActionModel()},
+            {
+                "type": "ir.actions.act_window",
+                "res_model": "x.relation.wizard",
+                "view_mode": "form",
+                "view_id": 812,
+                "target": "new",
+            },
+        )
+
+        entry_target = action["entry_target"]
+        self.assertEqual(entry_target["route"], "/f/x.relation.wizard/new")
+        self.assertEqual(entry_target["compatibility_refs"]["view_id"], 812)
+        self.assertNotIn("action_id", entry_target["compatibility_refs"])
+
 
 if __name__ == "__main__":
     unittest.main()

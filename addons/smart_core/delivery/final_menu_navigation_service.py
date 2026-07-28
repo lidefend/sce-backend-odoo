@@ -10,7 +10,10 @@ except Exception:  # pragma: no cover - lightweight unit-test stubs
 from odoo.addons.smart_core.delivery.menu_delivery_convergence_service import MenuDeliveryConvergenceService
 from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
 from odoo.addons.smart_core.delivery.menu_target_interpreter_service import MenuTargetInterpreterService
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import (
+    can_discover_platform_capabilities,
+    user_is_platform_admin,
+)
 from odoo.addons.smart_core.utils.backend_contract_boundaries import MENU_CONFIG_NAV_ENABLED_PARAM, MENU_CONFIG_POLICY_MODEL
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
@@ -253,12 +256,30 @@ class FinalMenuNavigationService:
             root = None
         return _to_int(getattr(root, "id", 0)) if root and _text(getattr(root, "_name", "")) == "ir.ui.menu" else 0
 
-    def _runtime_role_surface(self) -> dict:
+    def _runtime_role_surface(self, identity: dict | None = None) -> dict:
         is_platform_admin = self._is_platform_admin_user()
+        discovers_capabilities = self._can_discover_platform_capabilities()
         is_business_config_admin = self._is_business_config_user()
+        declared = (
+            identity.get("role_surface")
+            if isinstance(identity, dict)
+            and isinstance(identity.get("role_surface"), dict)
+            else {}
+        )
+        if declared:
+            surface = dict(declared)
+            surface["is_platform_admin"] = is_platform_admin
+            surface["is_business_config_admin"] = is_business_config_admin
+            surface["system_configuration_visible"] = bool(
+                surface.get("system_configuration_visible")
+                and (is_platform_admin or is_business_config_admin)
+            )
+            return surface
         return {
             "role_code": "business_config_admin" if is_business_config_admin else "",
             "is_platform_admin": is_platform_admin,
+            "discover_installed_capabilities": discovers_capabilities,
+            "system_configuration_visible": discovers_capabilities,
             "is_business_config_admin": is_business_config_admin,
         }
 
@@ -287,7 +308,7 @@ class FinalMenuNavigationService:
             OdooNavAdapter().enrich(self.env, native_nav)
             identity = self._current_delivery_identity()
             delivery_payload = DeliveryEngine(self.env).build(
-                data={"role_surface": self._runtime_role_surface()},
+                data={"role_surface": self._runtime_role_surface(identity)},
                 product_key=_text(identity.get("product_key")) if isinstance(identity, dict) else "",
                 edition_key=_text(identity.get("edition_key")) if isinstance(identity, dict) else "",
                 base_product_key=_text(identity.get("base_product_key")) if isinstance(identity, dict) else "",
@@ -358,6 +379,12 @@ class FinalMenuNavigationService:
     def _is_platform_admin_user(self) -> bool:
         try:
             return bool(user_is_platform_admin(self.env.user))
+        except Exception:
+            return False
+
+    def _can_discover_platform_capabilities(self) -> bool:
+        try:
+            return bool(can_discover_platform_capabilities(self.env.user))
         except Exception:
             return False
 

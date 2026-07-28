@@ -75,6 +75,48 @@ assert.equal(findRouteAuthority(contract, {
   query: {},
 }), null);
 
+const discoveredContract = normalizeRouteAuthorityContract({
+  ...raw,
+  primary_actions: [{
+    action_xmlid: 'x.project_ledger',
+    route_kind: 'DISCOVERED_PRIMARY_NAV',
+    menu_id: 379,
+    action_id: 506,
+    model: 'sc.project',
+    allowed_operation: 'read',
+    required_capability: 'model_read_acl',
+    context_requirements: {},
+  }],
+});
+assert.ok(discoveredContract);
+assert.equal(discoveredContract.primary_actions.length, 1);
+assert.equal(findRouteAuthority(discoveredContract, {
+  actionId: 506,
+  menuId: 379,
+  query: { menu_id: '379', action_id: '506', view_mode: 'tree' },
+})?.route_kind, 'DISCOVERED_PRIMARY_NAV');
+
+const menuBoundActionWithoutActionXmlid = normalizeRouteAuthorityContract({
+  ...raw,
+  primary_actions: [{
+    action_xmlid: '',
+    menu_xmlid: 'smart_construction_core.menu_sc_salary_registration_legacy_tenant_fixture_formal',
+    route_kind: 'DISCOVERED_PRIMARY_NAV',
+    menu_id: 805,
+    action_id: 862,
+    model: 'sc.hr.payroll.document',
+    allowed_operation: 'read',
+    required_capability: 'menu_action_read',
+    context_requirements: {},
+  }],
+});
+assert.ok(menuBoundActionWithoutActionXmlid);
+assert.equal(findRouteAuthority(menuBoundActionWithoutActionXmlid, {
+  actionId: 862,
+  menuId: 805,
+  query: {},
+})?.menu_xmlid, 'smart_construction_core.menu_sc_salary_registration_legacy_tenant_fixture_formal');
+
 const shellOnly = {
   ...raw,
   principal_scope: { user_id: 8, company_id: 3, role_code: 'executive' },

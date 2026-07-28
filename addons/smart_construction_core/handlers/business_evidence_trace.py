@@ -51,21 +51,39 @@ class BusinessEvidenceTraceHandler(BaseIntentHandler):
                 },
             }
 
-        evidence_chain = EvidenceChainService(self.env).build_chain(business_model, business_id)
-        timeline = self.env["sc.evidence.timeline.service"].build_timeline(business_model, business_id)
+        evidence_service = EvidenceChainService(self.env)
+        carrier = evidence_service.resolve_visible_carrier(business_model, business_id)
+        evidence_chain = (
+            evidence_service.build_chain(business_model, business_id)
+            if carrier is not None
+            else evidence_service.empty_chain()
+        )
+        timeline = []
+        if carrier is not None:
+            try:
+                timeline = self.env["sc.evidence.timeline.service"].build_timeline(
+                    business_model,
+                    business_id,
+                )
+            except Exception:
+                timeline = []
         evidence_type = str((params or {}).get("evidence_type") or "").strip()
+        public_business_model = str(
+            evidence_chain.get("business_model") or ""
+        )
+        public_business_id = int(evidence_chain.get("business_id") or 0)
         return {
             "ok": True,
             "data": {
-                "business_model": business_model,
-                "business_id": business_id,
-                "requested_evidence_type": evidence_type,
+                "business_model": public_business_model,
+                "business_id": public_business_id,
+                "requested_evidence_type": evidence_type if carrier is not None else "",
                 "trace_entry": {
                     "intent": self.INTENT_TYPE,
                     "payload": {
-                        "business_model": business_model,
-                        "business_id": business_id,
-                        "evidence_type": evidence_type,
+                        "business_model": public_business_model,
+                        "business_id": public_business_id,
+                        "evidence_type": evidence_type if carrier is not None else "",
                     },
                 },
                 "evidence_chain": evidence_chain.get("groups") or {},

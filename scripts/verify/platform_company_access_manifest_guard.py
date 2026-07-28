@@ -136,10 +136,13 @@ SCENE_GOVERNANCE_ADMIN_ACLS = {
 CONSTRUCTION_PLATFORM_ADMIN_ACLS = {
     "access_sc_workflow_def_admin",
     "access_sc_workflow_node_admin",
+}
+CONSTRUCTION_TENANT_BUSINESS_ADMIN_ACLS = {
     "access_sc_workflow_instance_admin",
     "access_sc_workflow_workitem_admin",
     "access_sc_workflow_log_admin",
 }
+TENANT_BUSINESS_ADMIN_GROUP = "smart_construction_core.group_sc_role_business_admin"
 CONSTRUCTION_PLATFORM_SURFACE_FILES = {
     "addons/smart_construction_core/views/menu_root.xml",
     "addons/smart_construction_core/views/menu_centers.xml",
@@ -154,18 +157,21 @@ CONSTRUCTION_PLATFORM_SURFACE_XMLIDS = {
     "menu_sc_config_center",
     "menu_sc_workflow_root",
     "menu_sc_workflow_def",
-    "menu_sc_workflow_instance",
-    "menu_sc_workflow_workitem",
-    "menu_sc_workflow_log",
     "action_sc_project_manage",
     "action_sc_workflow_def",
-    "action_sc_workflow_instance",
-    "action_sc_workflow_workitem",
-    "action_sc_workflow_log",
     "base.menu_action_res_groups",
     "base.action_res_groups",
     "action_sc_runtime_user_management",
     "menu_sc_runtime_user_management",
+}
+CONSTRUCTION_TENANT_BUSINESS_SURFACE_XMLIDS = {
+    "menu_sc_workflow_runtime_root",
+    "menu_sc_workflow_instance",
+    "menu_sc_workflow_workitem",
+    "menu_sc_workflow_log",
+    "action_sc_workflow_instance",
+    "action_sc_workflow_workitem",
+    "action_sc_workflow_log",
 }
 FORBIDDEN_LEGACY_ADMIN_CHECKS = {
     "addons/smart_construction_core/controllers/scene_controller.py",
@@ -269,8 +275,8 @@ assert_true(not forbidden, f"construction manifest still owns platform files: {f
 construction_security = ROOT / "addons" / "smart_construction_core" / LEGACY_PLATFORM_BRIDGE_FILE
 construction_security_text = construction_security.read_text(encoding="utf-8")
 assert_true(
-    "ref('smart_core.group_smart_core_admin')" in construction_security_text,
-    "legacy construction platform admin group must imply smart_core.group_smart_core_admin",
+    "ref('smart_core.group_smart_core_admin')" not in construction_security_text,
+    "construction capability groups must not imply the platform configuration admin identity",
 )
 
 platform_view = ROOT / "addons" / "smart_core" / "views" / "platform_company_access_views.xml"
@@ -414,6 +420,19 @@ assert_true(
     not platform_acl_group_gaps,
     f"workflow platform ACLs must use {CANONICAL_PLATFORM_ADMIN_GROUP}: {platform_acl_group_gaps}",
 )
+tenant_business_acl_group_gaps = [
+    {
+        "id": row.get("id"),
+        "group_id:id": row.get("group_id:id"),
+    }
+    for row in construction_acl_rows
+    if row.get("id") in CONSTRUCTION_TENANT_BUSINESS_ADMIN_ACLS
+    and row.get("group_id:id") != TENANT_BUSINESS_ADMIN_GROUP
+]
+assert_true(
+    not tenant_business_acl_group_gaps,
+    f"workflow runtime ACLs must use {TENANT_BUSINESS_ADMIN_GROUP}: {tenant_business_acl_group_gaps}",
+)
 for rel_path in sorted(CONSTRUCTION_PLATFORM_SURFACE_FILES):
     surfaces = _xml_group_surfaces(ROOT / rel_path, CONSTRUCTION_PLATFORM_SURFACE_XMLIDS)
     for xmlid, group_expr in sorted(surfaces.items()):
@@ -424,6 +443,16 @@ for rel_path in sorted(CONSTRUCTION_PLATFORM_SURFACE_FILES):
         assert_true(
             LEGACY_PLATFORM_ADMIN_GROUP not in group_expr,
             f"{rel_path}: platform governance surface {xmlid} must not use {LEGACY_PLATFORM_ADMIN_GROUP}",
+        )
+    runtime_surfaces = _xml_group_surfaces(ROOT / rel_path, CONSTRUCTION_TENANT_BUSINESS_SURFACE_XMLIDS)
+    for xmlid, group_expr in sorted(runtime_surfaces.items()):
+        assert_true(
+            TENANT_BUSINESS_ADMIN_GROUP in group_expr,
+            f"{rel_path}: workflow runtime surface {xmlid} must use {TENANT_BUSINESS_ADMIN_GROUP}",
+        )
+        assert_true(
+            CANONICAL_PLATFORM_ADMIN_GROUP not in group_expr,
+            f"{rel_path}: workflow runtime surface {xmlid} must not use {CANONICAL_PLATFORM_ADMIN_GROUP}",
         )
 runtime_user_management_text = (
     ROOT / "addons/smart_construction_core/views/support/runtime_user_management_views.xml"

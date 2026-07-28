@@ -34,6 +34,8 @@ from . import test_api_data_search_fields_extension
 from . import test_core_extension_v2_finalize
 from . import test_api_data_write_unlink_idempotency_backend
 from . import test_project_context_resolver
+from . import test_project_authorization_foundation
+from . import test_patch_b_read_aggregate_security
 from . import test_my_work_backend
 from . import test_reason_codes_backend
 from . import test_payment_request_permission
@@ -53,3 +55,6 @@ from . import test_user_module_product_closure
 from . import test_role_surface_project_member
 from . import test_locked_menu_policy_initialization
 from . import test_tax_certificate_registration
+from . import test_um_p3_subcontract_cumulative_settlement_boundaries
+from . import test_um_p3_payment_ledger_request_permission_boundaries
+from . import test_um_p3_subcontract_cumulative_amount_boundaries

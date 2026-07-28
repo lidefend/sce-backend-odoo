@@ -1,0 +1,103 @@
+{
+  "SCHEMA_VERSION": 1,
+  "SLICE_ID": "UM-P2-S02-PAYMENT-RELATION-AGGREGATION",
+  "APPROVAL_SOURCE": "USER_DECISION_2026-07-25",
+  "BUSINESS_CLASSIFICATION": "PAYMENT_EXECUTION_RELATION_AGGREGATION",
+  "RELATION_CARDINALITY": {
+    "EXECUTION_TO_APPLICATION": "MANY_TO_ONE_SINGLE_VALUE",
+    "APPLICATION_TO_EXECUTION": "ONE_TO_MANY",
+    "APPLICATION_TO_STANDARD_SETTLEMENT_HEADER": "MANY_TO_ONE_OPTIONAL",
+    "APPLICATION_TO_MATERIAL_SETTLEMENT_HEADER": "MANY_TO_ONE_OPTIONAL",
+    "APPLICATION_TO_SETTLEMENT_DETAILS": "ONE_TO_MANY",
+    "DETAIL_TO_STANDARD_SETTLEMENT": "MANY_TO_ONE",
+    "BASIS_TO_CONTRACT_SET": "ZERO_ONE_OR_MANY",
+    "EXECUTION_TO_CONTRACT": "MANY_TO_ONE_OPTIONAL_ONLY_WHEN_BASIS_CONTRACT_SET_IS_UNIQUE"
+  },
+  "PRIMARY_RELATION_ANCHOR": "payment.request via sc.payment.execution.payment_request_id",
+  "BASIS_AUTHORITY": "PAYMENT_REQUEST_DETAIL_SET_WHEN_PRESENT_OTHERWISE_EXCLUSIVE_STANDARD_OR_MATERIAL_HEADER",
+  "HEADER_DETAIL_RELATIONSHIP": "DETAIL_SET_AUTHORITATIVE_HEADER_MAY_ONLY_CONFIRM_A_MEMBER_OF_THAT_SET",
+  "CONTRACT_DERIVATION_POLICY": "DERIVE_FROM_COMPLETE_VALID_BASIS_SET_AND_WRITE_SCALAR_ONLY_WHEN_UNIQUE",
+  "APPLICATION_COUNTERPARTY_ROLE": "BUSINESS_TRANSACTION_COUNTERPARTY",
+  "ACTUAL_PAYEE_ROLE": "EXECUTION_LEVEL_FUNDS_RECIPIENT",
+  "ACTUAL_PAYEE_DIFFERENCE_ALLOWED": true,
+  "CONFLICT_POLICY": "REJECT_EXPLICIT_OR_HEADER_VALUES_THAT_CONFLICT_WITH_AUTHORITATIVE_BASIS",
+  "MULTI_CONTRACT_POLICY": "PRESERVE_DETAIL_RELATIONS_AND_KEEP_EXECUTION_CONTRACT_EMPTY",
+  "NO_CONTRACT_BASIS_POLICY": "KEEP_EXECUTION_CONTRACT_EMPTY_AND_REJECT_UNSUPPORTED_EXPLICIT_CONTRACT",
+  "MODEL_FIELD_MATRIX": {
+    "sc.payment.execution": {
+      "APPLICATION": "payment_request_id|optional-at-model|single-many2one=payment.request",
+      "PROJECT": "project_id|required|many2one",
+      "COMPANY": "company_id|related=project_id.company_id|stored|readonly",
+      "CONTRACT": "contract_id|optional|single-many2one=construction.contract",
+      "ACTUAL_PAYEE": "partner_id|required|single-many2one=res.partner"
+    },
+    "payment.request": {
+      "PROJECT": "project_id|required|many2one",
+      "COMPANY": "company_id|related=project_id.company_id|stored|readonly",
+      "STANDARD_HEADER": "settlement_id|optional|single-many2one=sc.settlement.order",
+      "MATERIAL_HEADER": "material_settlement_id|optional|single-many2one=sc.material.settlement",
+      "DETAILS": "outflow_line_ids|one2many=payment.request.line",
+      "CONTRACT": "contract_id|optional-consistency-field",
+      "APPLICATION_COUNTERPARTY": "partner_id|required|single-many2one=res.partner"
+    },
+    "payment.request.line": {
+      "APPLICATION": "request_id|required|many2one=payment.request",
+      "STANDARD_SETTLEMENT": "settlement_id|optional|many2one=sc.settlement.order",
+      "CONTRACT": "contract_id|optional-consistency-field"
+    },
+    "sc.settlement.order": {
+      "PROJECT": "project_id|required|many2one",
+      "COMPANY": "company_id|required|many2one",
+      "CONTRACT": "contract_id|required-for-tested-standard-basis|many2one"
+    },
+    "sc.material.settlement": {
+      "PROJECT": "project_id|required|many2one",
+      "COMPANY": "company_id|related=project_id.company_id",
+      "CONTRACT": "NOT_IMPLEMENTED"
+    }
+  },
+  "IMPLEMENTATION": {
+    "EXECUTION_MODEL_FILE": "addons/smart_construction_core/models/core/payment_execution.py",
+    "REQUEST_MODEL_FILE": "addons/smart_construction_core/models/core/payment_request.py",
+    "DETAIL_MODEL_FILE": "addons/smart_construction_core/models/core/payment_request_line.py",
+    "CALLER_SCOPED_LOOKUP": "_caller_visible_payment_relation",
+    "BASIS_AGGREGATOR": "_payment_basis_contracts",
+    "EXECUTION_NORMALIZER": "_normalize_payment_relation_values",
+    "CREATE_BOUNDARY": "ScPaymentExecution.create before super().create",
+    "WRITE_BOUNDARY": "ScPaymentExecution.write before super().write",
+    "REQUEST_REVALIDATION": "PaymentRequest._check_payment_execution_basis_contract",
+    "DETAIL_REVALIDATION": "PaymentRequestLine._check_payment_basis_relation",
+    "USES_SUDO": false,
+    "USES_BROWSE_EXISTS_PROBE": false,
+    "USES_HEURISTIC_MATCHING": false,
+    "MODIFIES_ACL_OR_RECORD_RULE": false
+  },
+  "ACCEPTANCE": {
+    "STATIC_TEST": "addons/smart_construction_core/tests/test_um_p2_payment_relation_aggregation_boundaries.py",
+    "REAL_ORM_TEST": "addons/smart_core/tests/test_um_p2_payment_relation_aggregation_orm.py",
+    "REAL_ORM_ENTRYPOINT": "make test.admin-vis-p3.project-record-rule-orm",
+    "REAL_ORM_RESULT": "PASS_72_TESTS_0_FAILURES_0_ERRORS",
+    "UNIQUE_STANDARD_CONTRACT": "PASS",
+    "MATERIAL_NO_CONTRACT_UNAGGREGATED": "PASS",
+    "MULTI_SOURCE_SAME_CONTRACT": "PASS",
+    "MULTI_CONTRACT_PRESERVATION": "PASS",
+    "CONTRACT_WITHOUT_BASIS_REJECTION": "PASS",
+    "EXPLICIT_CONTRACT_CONFLICT_REJECTION": "PASS",
+    "HEADER_DETAIL_CONFLICT_REJECTION": "PASS",
+    "SAME_ACTUAL_PAYEE": "PASS",
+    "DIFFERENT_ACTUAL_PAYEE": "PASS",
+    "ACTUAL_PAYEE_NON_OVERRIDE": "PASS",
+    "WRITE_REVALIDATION": "PASS",
+    "TEMP_DATABASE": "sc_test_admin_vis_p3_20260726004901_5d46541c",
+    "TEMP_DATABASE_REMOVED": true,
+    "TEMP_RESOURCE_RESIDUE_COUNT": 0,
+    "EXISTING_RESOURCE_INVENTORIES_UNCHANGED": true
+  },
+  "HEURISTIC_MATCHING_USED": false,
+  "HISTORICAL_INFERENCE_USED": false,
+  "ACL_CHANGED": false,
+  "RECORD_RULE_CHANGED": false,
+  "DATA_MIGRATION_REQUIRED": false,
+  "STATUS": "IMPLEMENTED_AND_VERIFIED",
+  "NEXT_SLICE": "UM-P2-S03-INTERFUND-RELATION-AGGREGATION"
+}

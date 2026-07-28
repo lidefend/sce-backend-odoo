@@ -9,12 +9,15 @@ from odoo.addons.smart_construction_core.services.project_state_explain_service 
 from odoo.addons.smart_construction_core.services.cost_tracking_entry_service import CostTrackingEntryService
 from odoo.addons.smart_construction_core.services.cost_tracking_builders import BUILDERS
 from odoo.addons.smart_construction_core.services.cost_tracking_native_adapter import CostTrackingNativeAdapter
+from odoo.addons.smart_construction_core.services.project_authorization_service import (
+    CallerScopedProjectServiceMixin,
+)
 
 
 _logger = logging.getLogger(__name__)
 
 
-class CostTrackingService:
+class CostTrackingService(CallerScopedProjectServiceMixin):
     """Prepared cost tracking service backed by account.move facts."""
 
     SOURCE_KIND = "cost_tracking_business_fact_projection"
@@ -37,6 +40,10 @@ class CostTrackingService:
     }
 
     def __init__(self, env):
+        self._initialize_project_authorization(env)
+        self._bind_caller_env(env)
+
+    def _bind_caller_env(self, env):
         self.env = env
         self._adapter = CostTrackingNativeAdapter(env)
         self._entry_service = CostTrackingEntryService(env)
@@ -62,61 +69,6 @@ class CostTrackingService:
             return self.env[model_name]
         except Exception:
             return None
-
-    def _project_domain_for_user(self):
-        model = self._model("project.project")
-        if model is None:
-            return []
-        field_map = getattr(model, "_fields", {})
-        uid = int(self.env.user.id)
-        ors = []
-        for field_name in ("manager_id", "owner_id", "user_id"):
-            if field_name in field_map:
-                ors.append((field_name, "=", uid))
-        if "create_uid" in field_map:
-            ors.append(("create_uid", "=", uid))
-        for field_name in ("user_ids", "member_ids", "member_user_ids"):
-            if field_name in field_map:
-                ors.append((field_name, "in", [uid]))
-        if not ors:
-            return []
-        if len(ors) == 1:
-            return [ors[0]]
-        return (["|"] * (len(ors) - 1)) + ors
-
-    def resolve_project_with_diagnostics(self, project_id):
-        Project = self._model("project.project")
-        if Project is None:
-            return None, {"resolved_project_id": 0, "reason": "project.project model not available"}
-        requested_project_id = int(project_id or 0) if str(project_id or "").strip() else 0
-        if requested_project_id > 0:
-            try:
-                record = Project.browse(requested_project_id).exists()
-                if record:
-                    return record, {"resolved_project_id": int(record.id), "reason": "explicit_project_id"}
-            except Exception:
-                _logger.debug("Unable to resolve explicit cost tracking project.", exc_info=True)
-        try:
-            if "create_uid" in getattr(Project, "_fields", {}):
-                record = Project.search([("create_uid", "=", int(self.env.user.id))], order="create_date desc,id desc", limit=1)
-                if record:
-                    return record, {"resolved_project_id": int(record.id), "reason": "creator_domain"}
-        except Exception:
-            _logger.debug("Unable to resolve cost tracking project by creator domain.", exc_info=True)
-        domain = self._project_domain_for_user()
-        try:
-            record = Project.search(domain, order="write_date desc,id desc", limit=1)
-            if record:
-                return record, {"resolved_project_id": int(record.id), "reason": "user_domain"}
-        except Exception:
-            _logger.debug("Unable to resolve cost tracking project by user domain.", exc_info=True)
-        try:
-            record = Project.search([], order="write_date desc,id desc", limit=1)
-            if record:
-                return record, {"resolved_project_id": int(record.id), "reason": "global_search"}
-        except Exception:
-            _logger.debug("Unable to resolve cost tracking project by global fallback.", exc_info=True)
-        return None, {"resolved_project_id": 0, "reason": "no project resolved"}
 
     def project_payload(self, project):
         def _safe_text(value):

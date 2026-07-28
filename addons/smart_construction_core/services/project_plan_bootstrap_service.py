@@ -7,12 +7,15 @@ from odoo import fields
 
 from odoo.addons.smart_construction_core.services.project_state_explain_service import lifecycle_state_label
 from odoo.addons.smart_construction_core.services.project_plan_bootstrap_builders import BUILDERS
+from odoo.addons.smart_construction_core.services.project_authorization_service import (
+    CallerScopedProjectServiceMixin,
+)
 
 
 _logger = logging.getLogger(__name__)
 
 
-class ProjectPlanBootstrapService:
+class ProjectPlanBootstrapService(CallerScopedProjectServiceMixin):
     """Provide business-truth-backed plan data for orchestration carriers."""
     SOURCE_KIND = "project_plan_bootstrap_business_fact_projection"
     SOURCE_AUTHORITIES = (
@@ -35,6 +38,10 @@ class ProjectPlanBootstrapService:
     }
 
     def __init__(self, env):
+        self._initialize_project_authorization(env)
+        self._bind_caller_env(env)
+
+    def _bind_caller_env(self, env):
         self.env = env
         self._builders = [builder_cls(env) for builder_cls in BUILDERS]
         self._builder_map = {builder.block_key: builder for builder in self._builders}
@@ -60,142 +67,6 @@ class ProjectPlanBootstrapService:
             return self.env[model_name]
         except Exception:
             return None
-
-    def _project_domain_for_user(self):
-        model = self._model("project.project")
-        if model is None:
-            return []
-        f = getattr(model, "_fields", {})
-        uid = int(self.env.user.id)
-        ors = []
-        for field in ("manager_id", "owner_id", "user_id"):
-            if field in f:
-                ors.append((field, "=", uid))
-        if "create_uid" in f:
-            ors.append(("create_uid", "=", uid))
-        for field in ("user_ids", "member_ids", "member_user_ids"):
-            if field in f:
-                ors.append((field, "in", [uid]))
-        if not ors:
-            return []
-        if len(ors) == 1:
-            return [ors[0]]
-        return (["|"] * (len(ors) - 1)) + ors
-
-    def resolve_project_with_diagnostics(self, project_id):
-        model_in_env = False
-        model_error = ""
-        try:
-            model_in_env = "project.project" in self.env
-        except Exception as exc:
-            model_error = str(exc)
-        Project = None
-        try:
-            Project = self.env["project.project"]
-        except Exception as exc:
-            model_error = str(exc)
-        if Project is None:
-            return None, {
-                "requested_project_id": int(project_id or 0),
-                "resolved_project_id": 0,
-                "resolution_path": "model_missing",
-                "reason": "project.project model not available",
-                "model_in_env": model_in_env,
-                "model_error": model_error,
-            }
-        requested_project_id = 0
-        try:
-            requested_project_id = int(project_id or 0)
-        except Exception:
-            requested_project_id = 0
-        diagnostics = {
-            "requested_project_id": requested_project_id,
-            "resolved_project_id": 0,
-            "resolution_path": "",
-            "reason": "",
-            "candidate_counts": {},
-        }
-        if project_id:
-            try:
-                record = Project.browse(int(project_id)).exists()
-                if record:
-                    diagnostics.update(
-                        {
-                            "resolved_project_id": int(record.id),
-                            "resolution_path": "explicit_project_id",
-                            "reason": "matched explicit project_id",
-                        }
-                    )
-                    return record, diagnostics
-                diagnostics["reason"] = "explicit project_id not found or inaccessible"
-            except Exception:
-                _logger.debug("Unable to resolve explicit project plan bootstrap project.", exc_info=True)
-                diagnostics["reason"] = "explicit project_id browse failed"
-        try:
-            if "create_uid" in getattr(Project, "_fields", {}):
-                creator_domain = [("create_uid", "=", int(self.env.user.id))]
-                diagnostics["candidate_counts"]["creator_domain"] = int(Project.search_count(creator_domain))
-                record = Project.search(creator_domain, order="create_date desc,id desc", limit=1)
-                if record:
-                    diagnostics.update(
-                        {
-                            "resolved_project_id": int(record.id),
-                            "resolution_path": "creator_domain",
-                            "reason": "matched latest project created by current user",
-                        }
-                    )
-                    return record, diagnostics
-            else:
-                diagnostics["candidate_counts"]["creator_domain"] = 0
-        except Exception:
-            _logger.debug("Unable to resolve project plan bootstrap project by creator domain.", exc_info=True)
-            diagnostics["candidate_counts"]["creator_domain"] = -1
-            diagnostics["reason"] = "creator_domain search failed"
-        domain = self._project_domain_for_user()
-        diagnostics["user_domain"] = domain
-        try:
-            if domain:
-                diagnostics["candidate_counts"]["user_domain"] = int(Project.search_count(domain))
-            else:
-                diagnostics["candidate_counts"]["user_domain"] = 0
-            record = Project.search(domain, order="write_date desc,id desc", limit=1)
-            if record:
-                diagnostics.update(
-                    {
-                        "resolved_project_id": int(record.id),
-                        "resolution_path": "user_domain",
-                        "reason": "matched project by user ownership/member domain",
-                    }
-                )
-                return record, diagnostics
-        except Exception:
-            _logger.debug("Unable to resolve project plan bootstrap project by user domain.", exc_info=True)
-            diagnostics["candidate_counts"]["user_domain"] = -1
-            diagnostics["reason"] = "user_domain search failed"
-        try:
-            diagnostics["candidate_counts"]["global"] = int(Project.search_count([]))
-            record = Project.search([], order="write_date desc,id desc", limit=1)
-            if record:
-                diagnostics.update(
-                    {
-                        "resolved_project_id": int(record.id),
-                        "resolution_path": "global_search",
-                        "reason": "matched latest project in global search",
-                    }
-                )
-                return record, diagnostics
-        except Exception:
-            _logger.debug("Unable to resolve project plan bootstrap project by global fallback.", exc_info=True)
-            diagnostics["candidate_counts"]["global"] = -1
-            diagnostics["reason"] = "global search failed"
-        diagnostics.update(
-            {
-                "resolved_project_id": 0,
-                "resolution_path": diagnostics.get("resolution_path") or "no_match",
-                "reason": diagnostics.get("reason") or "no project resolved",
-            }
-        )
-        return None, diagnostics
 
     def project_payload(self, project):
         def _safe_text(value):

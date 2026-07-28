@@ -69,7 +69,28 @@ class ProjectDashboardBlockFetchHandler(ProjectContextResolverMixin, BaseIntentH
                 },
             }
 
-        orchestrator = ProjectDashboardSceneOrchestrator(self.env)
+        resolution = self._resolve_project_scope(params, ctx)
+        if not resolution.available:
+            return {
+                "ok": False,
+                "error": {
+                    "code": resolution.code,
+                    "message": "项目不存在或当前账号不可访问",
+                    "suggested_action": "fix_input",
+                },
+                "data": {
+                    "lifecycle_hints": self._build_lifecycle_hints(0),
+                },
+                "meta": {
+                    "intent": self.INTENT_TYPE,
+                    "elapsed_ms": int((time.time() - ts0) * 1000),
+                    "trace_id": str((self.context or {}).get("trace_id") or ""),
+                },
+            }
+
+        project_id = int(resolution.project.id)
+        orchestrator = ProjectDashboardSceneOrchestrator(resolution.env)
+        orchestrator._service.bind_authorized_resolution(resolution)
         data = orchestrator.build_runtime_block(block_key=block_key, project_id=project_id, context=ctx)
         project, _diag = orchestrator._service.resolve_project_with_diagnostics(project_id)
         data = attach_project_context_to_runtime_payload(data, project)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -79,6 +79,19 @@ class PaymentRequestLine(models.Model):
             grouped = {int(row["res_id"]): int(row.get("__count", row.get("res_id_count", 0))) for row in data}
         for rec in self:
             rec.attachment_count = grouped.get(rec.id, 0)
+
+    @api.constrains("request_id", "settlement_id", "contract_id", "active")
+    def _check_payment_basis_relation(self):
+        execution_model = self.env["sc.payment.execution"]
+        for request in self.mapped("request_id").filtered(
+            lambda rec: rec.type == "pay"
+        ):
+            execution_model._payment_basis_contracts(request)
+            executions = execution_model.search(
+                [("payment_request_id", "=", request.id)]
+            )
+            for execution in executions:
+                execution._normalize_payment_relation_values({}, current=execution)
 
     def action_open_attachments(self):
         self.ensure_one()

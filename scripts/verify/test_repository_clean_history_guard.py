@@ -115,6 +115,21 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("TRACKED_RUNTIME_ENV_FILE", result.stderr)
 
+    def test_hex_digest_with_mobile_shaped_segment_is_not_personal_data(self) -> None:
+        digest = "a1f4-" + "13800" + "138000" + "F0c9"
+        self.write("docs/audit.json", json.dumps({"evidence_digest": digest}) + "\n")
+        self.commit("record anonymized evidence digest")
+        result = self.run_guard()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_standalone_mobile_number_is_rejected(self) -> None:
+        mobile = "13800" + "138000"
+        self.write("docs/contact.txt", f"contact={mobile}\n")
+        self.commit("record personal contact")
+        result = self.run_guard()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("PERSONAL_DATA", result.stderr)
+
     def test_current_old_repository_identity_is_rejected(self) -> None:
         self.write("scripts/checkout.sh", "git clone old-private-repository\n")
         self.commit("add stale executable repository identity")

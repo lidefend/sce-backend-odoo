@@ -1,0 +1,73 @@
+{
+  "SCHEMA_VERSION": 1,
+  "SLICE_ID": "UM-P2-S01-RECEIPT-RELATION-AGGREGATION",
+  "APPROVAL_SOURCE": "USER_DECISION_2026-07-25",
+  "BUSINESS_CLASSIFICATION": "RECEIPT_RELATION_AGGREGATION",
+  "RELATION_CARDINALITY": {
+    "RECEIPT_TO_APPLICATION": "MANY_TO_ONE_SINGLE_VALUE",
+    "APPLICATION_TO_CONTRACT": "MANY_TO_ONE_SINGLE_VALUE",
+    "CONTRACT_TO_COUNTERPARTY": "MANY_TO_ONE_REQUIRED_SINGLE_VALUE"
+  },
+  "PRIMARY_RELATION_ANCHOR": "payment.request via sc.receipt.income.payment_request_id",
+  "SECONDARY_RELATION_ANCHOR": "construction.contract via sc.receipt.income.contract_id",
+  "COUNTERPARTY_SOURCE": "construction.contract.partner_id",
+  "CONFLICT_POLICY": "REJECT_EXPLICIT_VALUES_THAT_DIFFER_FROM_UPSTREAM_RELATION",
+  "UNLINKED_RECORD_POLICY": "KEEP_UNAGGREGATED_WITHOUT_HEURISTIC_MATCHING",
+  "MODEL_FIELD_MATRIX": {
+    "sc.receipt.income": {
+      "PROJECT": "project_id|required|many2one",
+      "COMPANY": "company_id|related=project_id.company_id|stored|readonly",
+      "APPLICATION": "payment_request_id|optional|many2one=payment.request",
+      "CONTRACT": "contract_id|optional|many2one=construction.contract",
+      "COUNTERPARTY": "partner_id|optional|many2one=res.partner"
+    },
+    "payment.request": {
+      "PROJECT": "project_id|required|many2one",
+      "COMPANY": "company_id|related=project_id.company_id|stored|readonly",
+      "CONTRACT": "contract_id|optional-at-draft|single-many2one",
+      "COUNTERPARTY": "partner_id|required|single-many2one",
+      "RECEIPT_DIRECTION": "type=receive requires income contract direction type=out"
+    },
+    "construction.contract": {
+      "PROJECT": "project_id|required|many2one",
+      "COMPANY": "company_id|required|many2one",
+      "COUNTERPARTY": "partner_id|required|single-many2one",
+      "RECEIPT_DIRECTION": "type=out"
+    }
+  },
+  "IMPLEMENTATION": {
+    "MODEL_FILE": "addons/smart_construction_core/models/core/receipt_income.py",
+    "CALLER_SCOPED_LOOKUP": "_caller_visible_relation_record",
+    "NORMALIZER": "_normalize_receipt_relation_values",
+    "CREATE_BOUNDARY": "ScReceiptIncome.create before super().create",
+    "WRITE_BOUNDARY": "ScReceiptIncome.write before super().write",
+    "USES_SUDO": false,
+    "USES_BROWSE_EXISTS_PROBE": false,
+    "USES_HEURISTIC_MATCHING": false,
+    "MODIFIES_ACL_OR_RECORD_RULE": false
+  },
+  "ACCEPTANCE": {
+    "STATIC_TEST": "addons/smart_construction_core/tests/test_um_p2_receipt_relation_aggregation_boundaries.py",
+    "REAL_ORM_TEST": "addons/smart_core/tests/test_um_p2_receipt_relation_aggregation_orm.py",
+    "REAL_ORM_ENTRYPOINT": "make test.admin-vis-p3.project-record-rule-orm",
+    "REAL_ORM_RESULT": "PASS_63_TESTS_0_FAILURES_0_ERRORS",
+    "AUTHORIZED_APPLICATION_CHAIN": "PASS",
+    "CONTRACT_SECONDARY_CHAIN": "PASS",
+    "CONTRACT_CONFLICT_REJECTION": "PASS",
+    "COUNTERPARTY_CONFLICT_REJECTION": "PASS",
+    "WRITE_REVALIDATION": "PASS",
+    "UNLINKED_NO_HEURISTIC": "PASS",
+    "UNAUTHORIZED_NONEXISTENT_EQUIVALENCE": "PASS",
+    "TEMP_DATABASE": "sc_test_admin_vis_p3_20260726002723_6f9f79bf",
+    "TEMP_DATABASE_REMOVED": true,
+    "TEMP_RESOURCE_RESIDUE_COUNT": 0,
+    "EXISTING_RESOURCE_INVENTORIES_UNCHANGED": true
+  },
+  "HEURISTIC_MATCHING_USED": false,
+  "HISTORICAL_INFERENCE_USED": false,
+  "ACL_CHANGED": false,
+  "RECORD_RULE_CHANGED": false,
+  "DATA_MIGRATION_REQUIRED": false,
+  "STATUS": "IMPLEMENTED_AND_VERIFIED",
+  "NEXT_SLICE": "UM-P2-S02-PAYMENT-RELATION-AGGREGATION"
+}

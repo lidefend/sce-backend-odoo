@@ -5,10 +5,6 @@ import time
 from typing import Any, Dict
 
 from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
-from odoo.addons.smart_core.core.project_context import (
-    project_scope_denied_response,
-    selected_project_id_from_context,
-)
 from odoo.addons.smart_core.core.scene_contract_builder import attach_release_surface_scene_contract
 from odoo.addons.smart_construction_core.services.project_context_contract import (
     attach_project_context_to_scene_payload,
@@ -49,35 +45,10 @@ class ProjectExecutionEnterHandler(ProjectContextResolverMixin, BaseIntentHandle
             params = params.get("params") or {}
         ctx = ctx or {}
         project_id = self._resolve_project_id(params, ctx)
-        current_project_id = selected_project_id_from_context(params, ctx or self.context or {})
-        if current_project_id and project_id > 0 and int(project_id) != int(current_project_id):
-            return project_scope_denied_response(
-                {
-                    "enabled": True,
-                    "project_id": int(current_project_id),
-                    "applied": True,
-                    "domain": [("id", "=", int(current_project_id))],
-                    "model": "project.project",
-                }
-            )
-        orchestrator = ProjectExecutionSceneOrchestrator(self.env)
-        data = orchestrator.build_entry(project_id=project_id, context=ctx)
-        source_authority = orchestrator.source_authority_contract()
-        project, _diag = orchestrator._service.resolve_project_with_diagnostics(project_id)
-        data = attach_project_context_to_scene_payload(data, project)
-        target = resolve_project_management_entry_target(self.env)
-        data = attach_release_surface_scene_contract(
-            data,
-            product_key="fr2",
-            capability="delivery.fr2.project_flow",
-            route=str(target.get("route") or ""),
-            diagnostics_ref=self.INTENT_TYPE,
-            trace_id=str((self.context or {}).get("trace_id") or ""),
-        )
-        if int(data.get("project_id") or 0) <= 0:
-            lifecycle_hints = dict((data or {}).get("lifecycle_hints") or {})
-            if not lifecycle_hints:
-                lifecycle_hints = self._fallback_lifecycle_hints()
+        if project_id <= 0:
+            source_authority = ProjectExecutionSceneOrchestrator(
+                self.env
+            ).source_authority_contract()
             return {
                 "ok": False,
                 "error": {
@@ -86,13 +57,11 @@ class ProjectExecutionEnterHandler(ProjectContextResolverMixin, BaseIntentHandle
                     "suggested_action": "fix_input",
                 },
                 "data": {
-                    "lifecycle_hints": lifecycle_hints,
+                    "lifecycle_hints": self._fallback_lifecycle_hints(),
                     "suggested_action_payload": {
                         "intent": "project.initiation.enter",
                         "reason_code": REASON_PROJECT_NOT_FOUND,
-                        "params": {
-                            "reason_code": REASON_PROJECT_NOT_FOUND,
-                        },
+                        "params": {"reason_code": REASON_PROJECT_NOT_FOUND},
                     },
                 },
                 "meta": {
@@ -102,7 +71,46 @@ class ProjectExecutionEnterHandler(ProjectContextResolverMixin, BaseIntentHandle
                     "source_authority": source_authority,
                 },
             }
-
+        resolution = self._resolve_project_scope(params, ctx)
+        orchestrator = ProjectExecutionSceneOrchestrator(resolution.env)
+        source_authority = orchestrator.source_authority_contract()
+        if not resolution.available:
+            return {
+                "ok": False,
+                "error": {
+                    "code": "PROJECT_NOT_FOUND",
+                    "message": "项目不存在或当前账号不可访问",
+                    "suggested_action": "fix_input",
+                },
+                "data": {
+                    "lifecycle_hints": self._fallback_lifecycle_hints(),
+                    "suggested_action_payload": {
+                        "intent": "project.initiation.enter",
+                        "reason_code": REASON_PROJECT_NOT_FOUND,
+                        "params": {"reason_code": REASON_PROJECT_NOT_FOUND},
+                    },
+                },
+                "meta": {
+                    "intent": self.INTENT_TYPE,
+                    "elapsed_ms": int((time.time() - ts0) * 1000),
+                    "trace_id": str((self.context or {}).get("trace_id") or ""),
+                    "source_authority": source_authority,
+                },
+            }
+        project_id = int(resolution.project.id)
+        orchestrator._service.bind_authorized_resolution(resolution)
+        data = orchestrator.build_entry(project_id=project_id, context=ctx)
+        project, _diag = orchestrator._service.resolve_project_with_diagnostics(project_id)
+        data = attach_project_context_to_scene_payload(data, project)
+        target = resolve_project_management_entry_target(resolution.env)
+        data = attach_release_surface_scene_contract(
+            data,
+            product_key="fr2",
+            capability="delivery.fr2.project_flow",
+            route=str(target.get("route") or ""),
+            diagnostics_ref=self.INTENT_TYPE,
+            trace_id=str((self.context or {}).get("trace_id") or ""),
+        )
         return {
             "ok": True,
             "data": data,

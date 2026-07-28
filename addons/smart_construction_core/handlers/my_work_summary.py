@@ -99,14 +99,15 @@ class MyWorkSummaryHandler(BaseIntentHandler):
 
     def _get_model(self, model_name, *, sudo=False):
         try:
-            model = self.env[model_name]
-            return model.sudo() if sudo else model
+            # ``sudo`` is retained only as a compatibility keyword for the
+            # legacy call sites.  Reads always execute as the authenticated
+            # caller so ACLs, record rules, and company scope remain active.
+            return self.env[model_name]
         except Exception:
             return None
 
     def _safe_count(self, model_name, domain, required_fields=None):
-        # Aggregate counts with sudo while keeping user-scoped domain conditions.
-        Model = self._get_model(model_name, sudo=True)
+        Model = self._get_model(model_name)
         if Model is None:
             return 0
         fields_ok = all(field in Model._fields for field in (required_fields or []))
@@ -227,7 +228,7 @@ class MyWorkSummaryHandler(BaseIntentHandler):
         rid = int(record_id or 0)
         if not model or not rid:
             return ""
-        Model = self._get_model(model, sudo=True)
+        Model = self._get_model(model)
         if Model is None:
             return ""
         try:
@@ -268,7 +269,7 @@ class MyWorkSummaryHandler(BaseIntentHandler):
         rid = int(record_id or 0)
         if not model or not rid:
             return True
-        Model = self._get_model(model, sudo=True)
+        Model = self._get_model(model)
         if Model is None:
             return True
         try:
@@ -282,7 +283,7 @@ class MyWorkSummaryHandler(BaseIntentHandler):
         rid = int(record_id or 0)
         if not model or not rid:
             return fallback
-        Model = self._get_model(model, sudo=True)
+        Model = self._get_model(model)
         if Model is None:
             return fallback
         try:

@@ -1,0 +1,82 @@
+{
+  "SCHEMA_VERSION": 1,
+  "PHASE_ID": "UM-P3-BUSINESS-CLOSURE",
+  "SLICE_ID": "CORE-035-S07A-REMEDIATION-PLAN",
+  "PLAN_STATUS": "READY_BUT_NO_AUTOMATIC_CANDIDATES",
+  "RELATION_AUTHORITY": "SOURCE_PROVEN_SETTLEMENT_LINE_TO_REGISTER_LINE_MAPPING_ONLY",
+  "TARGET_FIELD": "sc.subcontract.settlement.line.register_line_id",
+  "AUTOMATIC_MIGRATION_ELIGIBILITY": [
+    "Evidence is LEVEL_1, LEVEL_2 or LEVEL_3",
+    "Source settlement line maps to exactly one source register line",
+    "Both target records exist and are uniquely source-anchored",
+    "Contract, project, counterparty and company boundaries agree",
+    "Existing register_line_id is empty or already equals the proven relation",
+    "S05 relationship authority validation passes",
+    "S06 cumulative quantity validation passes",
+    "CORE-034 cumulative amount validation passes",
+    "Repeated execution produces the same manifest and no duplicate writes"
+  ],
+  "CURRENT_AUTOMATIC_MIGRATION_CANDIDATE_COUNT": 0,
+  "CURRENT_EXCLUDED_RECORDS": {
+    "AMBIGUOUS": 76,
+    "CONFLICTING": 12,
+    "UNMATCHED": 0
+  },
+  "FORBIDDEN_MATCH_INPUTS": [
+    "project",
+    "contract",
+    "counterparty",
+    "amount",
+    "quantity",
+    "date",
+    "name",
+    "row order",
+    "RowIndex without a proven relation-key contract"
+  ],
+  "REQUIRED_NEXT_INPUT": {
+    "TYPE": "AUTHORIZED_AUDITED_LINE_LEVEL_MAPPING_OR_DOCUMENT_CONFIRMATION_SET",
+    "MINIMUM_FIELDS": [
+      "source_settlement_line_immutable_id",
+      "source_register_line_immutable_id",
+      "evidence_level",
+      "evidence_source_id",
+      "confirmed_by",
+      "confirmed_at"
+    ],
+    "CONFLICT_POLICY": "NEVER_OVERWRITE_EXISTING_CONFLICTING_RELATION",
+    "MULTI_CANDIDATE_POLICY": "EXCLUDE_FROM_AUTOMATIC_MIGRATION"
+  },
+  "S07B_EXECUTION_DESIGN": {
+    "DEFAULT_MODE": "DRY_RUN",
+    "EXPLICIT_WRITE_SWITCH_REQUIRED": true,
+    "TARGET_ALLOWLIST_REQUIRED": true,
+    "SOURCE_AND_TARGET_IDENTITY_LOCK_REQUIRED": true,
+    "PRE_WRITE_MANIFEST_SHA256_REQUIRED": true,
+    "SINGLE_TRANSACTION_BATCH_POLICY": "ROLL_BACK_ENTIRE_BATCH_ON_ANY_CONFLICT",
+    "LOCK_GRAIN": "AFFECTED_REGISTER_LINES_AND_SETTLEMENT_LINES",
+    "ORM_CONSTRAINTS_DISABLED": false,
+    "SUDO_BYPASS_ALLOWED": false,
+    "SECOND_RUN_EXPECTED_CHANGES": 0,
+    "ROLLBACK_POLICY": "RESTORE_PREVIOUS_REGISTER_LINE_ID_VALUES_FROM_SIGNED_PRE_WRITE_MANIFEST_NEVER_DELETE_BUSINESS_RECORDS"
+  },
+  "S07B_PRECONDITIONS": {
+    "SOURCE_RELATION_EVIDENCE_FOUND": false,
+    "DETERMINISTIC_MAPPING_AVAILABLE": false,
+    "AUTOMATIC_MIGRATION_CANDIDATE_COUNT_GREATER_THAN_ZERO": false,
+    "AMBIGUOUS_RECORDS_EXCLUDED": true,
+    "CROSS_BOUNDARY_CONFLICTS_EXCLUDED": true,
+    "DRY_RUN_RESULT": "PASS_ZERO_CANDIDATES",
+    "ISOLATED_MIGRATION_RESULT": "NOT_APPLICABLE_ZERO_CANDIDATES",
+    "IDEMPOTENCY_RESULT": "PASS_PROFILE_ONLY",
+    "ROLLBACK_PLAN_READY": true,
+    "TARGET_DATABASE_IDENTIFIED": true,
+    "TARGET_DATABASE_BACKUP_CONFIRMED": false,
+    "BUSINESS_WRITE_WINDOW_APPROVED": false
+  },
+  "S07B_READY_FOR_APPROVAL": false,
+  "S07B_APPROVED": false,
+  "MIGRATION_EXECUTED": false,
+  "RELATION_REMEDIATION_EXECUTED": false,
+  "RESULT": "BLOCKED_PENDING_AUTHORIZED_LINE_LEVEL_RELATION_EVIDENCE",
+  "UNIQUE_NEXT_DECISION": "PROVIDE_AN_AUTHORIZED_AUDITED_SETTLEMENT_LINE_TO_REGISTER_LINE_MAPPING_OR_DOCUMENT_CONFIRMATION_SET"
+}

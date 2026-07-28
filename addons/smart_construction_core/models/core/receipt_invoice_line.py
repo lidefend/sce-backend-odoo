@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.tools.float_utils import float_compare
 
 
@@ -84,6 +84,41 @@ class ReceiptInvoiceLine(models.Model):
         store=True,
         readonly=True,
     )
+
+    @api.model
+    def _require_receipt_application_relation(self, request_id):
+        request = self.env["payment.request"].search(
+            [
+                ("id", "=", request_id),
+                ("type", "=", "receive"),
+                ("company_id", "in", self.env.companies.ids),
+            ],
+            limit=1,
+        )
+        if not request:
+            raise AccessError("收款发票归集关系不存在或当前用户无权访问。")
+        contract = request.contract_id
+        if not contract:
+            raise UserError("收款发票明细必须由收款申请的正式合同关系归集。")
+        if contract.project_id != request.project_id:
+            raise UserError("收款申请合同必须属于申请项目。")
+        if contract.partner_id != request.partner_id:
+            raise UserError("收款申请往来单位必须与合同相对方一致。")
+        if contract.company_id != request.company_id:
+            raise UserError("收款申请合同必须属于申请公司。")
+        return request
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._require_receipt_application_relation(vals.get("request_id"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        for record in self:
+            request_id = vals.get("request_id", record.request_id.id)
+            record._require_receipt_application_relation(request_id)
+        return super().write(vals)
 
     @api.constrains("request_id", "invoice_amount", "current_receipt_amount", "active", "import_batch")
     def _check_manual_receipt_invoice_amounts(self):

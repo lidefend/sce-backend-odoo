@@ -128,6 +128,8 @@ export function applyActionViewLoadResetState(options: {
   kanbanTitleFieldHint: Ref<string>;
   advancedFields: Ref<string[]>;
 }): void {
+  const preserveContent = options.records.value.length > 0
+    && (options.columns.value.length > 0 || options.kanbanFields.value.length > 0);
   const ui = buildActionViewLoadUiResetState();
   const contract = buildActionViewLoadContractResetState();
   const data = buildActionViewLoadDataResetState();
@@ -143,31 +145,33 @@ export function applyActionViewLoadResetState(options: {
   options.lastWriteMode.value = ui.lastWriteMode;
   options.lastLatencyMs.value = ui.lastLatencyMs;
 
-  options.contractViewType.value = contract.contractViewType;
-  options.actionContract.value = contract.actionContract;
-  options.resolvedModelRef.value = contract.resolvedModelRef;
-  options.contractLimit.value = contract.contractLimit;
+  if (!preserveContent) {
+    options.contractViewType.value = contract.contractViewType;
+    options.actionContract.value = contract.actionContract;
+    options.resolvedModelRef.value = contract.resolvedModelRef;
+    options.contractLimit.value = contract.contractLimit;
 
-  options.records.value = data.records;
-  options.groupedRows.value = data.groupedRows;
-  options.groupSummaryItems.value = data.groupSummaryItems;
+    options.records.value = data.records;
+    options.groupedRows.value = data.groupedRows;
+    options.groupSummaryItems.value = data.groupSummaryItems;
 
-  options.groupWindowCount.value = group.groupWindowCount;
-  options.groupWindowTotal.value = group.groupWindowTotal;
-  options.groupWindowStart.value = group.groupWindowStart;
-  options.groupWindowEnd.value = group.groupWindowEnd;
-  options.groupWindowId.value = group.groupWindowId;
-  options.groupQueryFingerprint.value = group.groupQueryFingerprint;
-  options.groupWindowDigest.value = group.groupWindowDigest;
-  options.groupWindowIdentityKey.value = group.groupWindowIdentityKey;
-  options.groupWindowPrevOffset.value = group.groupWindowPrevOffset;
-  options.groupWindowNextOffset.value = group.groupWindowNextOffset;
+    options.groupWindowCount.value = group.groupWindowCount;
+    options.groupWindowTotal.value = group.groupWindowTotal;
+    options.groupWindowStart.value = group.groupWindowStart;
+    options.groupWindowEnd.value = group.groupWindowEnd;
+    options.groupWindowId.value = group.groupWindowId;
+    options.groupQueryFingerprint.value = group.groupQueryFingerprint;
+    options.groupWindowDigest.value = group.groupWindowDigest;
+    options.groupWindowIdentityKey.value = group.groupWindowIdentityKey;
+    options.groupWindowPrevOffset.value = group.groupWindowPrevOffset;
+    options.groupWindowNextOffset.value = group.groupWindowNextOffset;
 
-  options.columns.value = fields.columns;
-  options.kanbanFields.value = fields.kanbanFields;
-  options.kanbanPrimaryFields.value = fields.kanbanPrimaryFields;
-  options.kanbanSecondaryFields.value = fields.kanbanSecondaryFields;
-  options.kanbanStatusFields.value = fields.kanbanStatusFields;
-  options.kanbanTitleFieldHint.value = fields.kanbanTitleFieldHint;
-  options.advancedFields.value = fields.advancedFields;
+    options.columns.value = fields.columns;
+    options.kanbanFields.value = fields.kanbanFields;
+    options.kanbanPrimaryFields.value = fields.kanbanPrimaryFields;
+    options.kanbanSecondaryFields.value = fields.kanbanSecondaryFields;
+    options.kanbanStatusFields.value = fields.kanbanStatusFields;
+    options.kanbanTitleFieldHint.value = fields.kanbanTitleFieldHint;
+    options.advancedFields.value = fields.advancedFields;
+  }
 }

@@ -78,12 +78,12 @@ class ProjectExecutionItemProjectionService:
 
     def _project_ids_for_user(self, user):
         Project = self._model("project.project")
-        if Project is None:
+        if Project is None or int(user.id) != int(self.env.user.id):
             return []
         current_project_id = selected_project_id_from_context({}, self.context)
         if current_project_id:
             try:
-                if Project.sudo().search_count(
+                if Project.search_count(
                     [("id", "=", int(current_project_id))] + self._project_responsible_domain(user)
                 ):
                     return [int(current_project_id)]
@@ -91,7 +91,7 @@ class ProjectExecutionItemProjectionService:
                 return []
             return []
         try:
-            projects = Project.sudo().search(self._project_responsible_domain(user), order="id desc")
+            projects = Project.search(self._project_responsible_domain(user), order="id desc")
         except Exception:
             return []
         return [int(project.id) for project in projects]
@@ -145,7 +145,7 @@ class ProjectExecutionItemProjectionService:
         ]
         order = "write_date desc, id desc"
         try:
-            records = Model.sudo().search(domain, order=order, limit=max(0, int(limit or 0)))
+            records = Model.search(domain, order=order, limit=max(0, int(limit or 0)))
         except Exception:
             return []
         rows = []
@@ -233,6 +233,8 @@ class ProjectExecutionItemProjectionService:
         }
 
     def user_items(self, user, *, limit=8):
+        if int(user.id) != int(self.env.user.id):
+            return []
         safe_limit = max(0, int(limit or 0))
         if safe_limit <= 0:
             return []
@@ -250,7 +252,7 @@ class ProjectExecutionItemProjectionService:
                 ("state", "in", list(config.get("pending_states") or ())),
             ]
             try:
-                records = Model.sudo().search(domain, order="write_date desc, id desc", limit=per_source_limit)
+                records = Model.search(domain, order="write_date desc, id desc", limit=per_source_limit)
             except Exception:
                 continue
             for record in records:

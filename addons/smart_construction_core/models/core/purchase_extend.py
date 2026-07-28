@@ -143,6 +143,19 @@ class PurchaseOrder(models.Model):
                 else:
                     ledger_obj.create(vals)
 
+    def write(self, vals):
+        scopes = self.order_line.mapped("material_settlement_purchase_scope_ids")
+        result = super().write(vals)
+        if {"project_id", "partner_id", "company_id"} & set(vals):
+            scopes._sc_validate_relation_state()
+            scopes.mapped("settlement_id")._sc_validate_purchase_authority()
+        return result
+
+    def unlink(self):
+        if self.order_line.mapped("material_settlement_purchase_scope_ids"):
+            raise UserError(_("已有材料结算采购范围的采购订单不能删除，请保留审计关系。"))
+        return super().unlink()
+
 
 class PurchaseOrderLine(models.Model):
     _inherit = "purchase.order.line"
@@ -186,6 +199,12 @@ class PurchaseOrderLine(models.Model):
         string="成本科目",
         help="填写后可自动写入成本台账。",
     )
+    material_settlement_purchase_scope_ids = fields.One2many(
+        "sc.material.settlement.purchase.scope",
+        "purchase_order_line_id",
+        string="材料结算采购范围",
+        copy=False,
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -196,12 +215,22 @@ class PurchaseOrderLine(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        scopes = self.mapped("material_settlement_purchase_scope_ids")
         res = super().write(vals)
         if "project_id" in vals and not vals.get("project_id"):
             for line in self:
                 if line.order_id.project_id:
                     line.project_id = line.order_id.project_id
+        if {"project_id", "order_id"} & set(vals):
+            scopes |= self.mapped("material_settlement_purchase_scope_ids")
+            scopes._sc_validate_relation_state()
+            scopes.mapped("settlement_id")._sc_validate_purchase_authority()
         return res
+
+    def unlink(self):
+        if self.material_settlement_purchase_scope_ids:
+            raise UserError(_("已有材料结算采购范围的采购明细不能删除，请保留审计关系。"))
+        return super().unlink()
 
     def _prepare_cost_ledger_vals(self):
         self.ensure_one()
