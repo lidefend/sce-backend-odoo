@@ -24,8 +24,8 @@ jobs:
     timeout-minutes: 45
     env:
       GH_TOKEN: ${{ github.token }}
-      EVIDENCE_ROOT: ${{ runner.temp }}/frontend-release-evidence-input
-      BUNDLE_ROOT: ${{ runner.temp }}/frontend-release-evidence-bundle
+      EVIDENCE_ROOT: ${{ github.workspace }}/.frontend-release-evidence-input
+      BUNDLE_ROOT: ${{ github.workspace }}/.frontend-release-evidence-bundle
 
     steps:
       - name: Checkout exact main commit without persisted credentials
