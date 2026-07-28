@@ -8,30 +8,41 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
+import {
+  compareNavigation,
+  loadNavigationManifest,
+} from '../../../../scripts/verify/frontend_navigation_audit.mjs';
 
 const baseUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5175';
 const dbName = process.env.DB_NAME || 'sc_frontend_acceptance';
 const password = process.env.ROLE_SMOKE_PASSWORD || 'demo';
 const outputDir = process.env.ARTIFACTS_DIR || 'artifacts/frontend-audit';
 const inventoryPath = process.env.FRONTEND_PAGE_IDENTITY_INVENTORY_PATH || '';
-const roles = (process.env.AUDIT_ROLES || 'demo_role_finance,demo_role_project_a_member,demo_role_pm,demo_role_owner').split(',').map((v) => v.trim()).filter(Boolean);
+const defaultRoleBindings = [
+  { role: 'demo_role_finance', login: 'fixture_role_finance' },
+  { role: 'demo_role_project_a_member', login: 'fixture_role_project_a_member' },
+  { role: 'demo_role_pm', login: 'fixture_role_pm' },
+  { role: 'demo_role_owner', login: 'fixture_role_owner' },
+];
+const roleBindings = process.env.AUDIT_ROLE_BINDINGS_JSON
+  ? JSON.parse(process.env.AUDIT_ROLE_BINDINGS_JSON)
+  : defaultRoleBindings;
+if (!Array.isArray(roleBindings) || roleBindings.some((row) => !row?.role || !row?.login)) {
+  throw new Error('AUDIT_ROLE_BINDINGS_INVALID');
+}
+const roles = roleBindings.map((row) => String(row.role));
 const viewports = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }];
 const maxSurfacesPerRole = Number(process.env.AUDIT_MAX_SURFACES || 0);
 const actionXmlids = JSON.parse(process.env.FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON || '{}');
+const navigationManifestPath = process.env.FRONTEND_NAVIGATION_MANIFEST
+  || 'config/frontend/authoritative_navigation_v1.json';
+const gitSha = String(process.env.GIT_SHA || '').trim();
 const writeAction = /新建|创建|保存|提交|审批|删除|撤销|登记|确认|导入|发布|重置|编辑/i;
-const expectedLeafCountsByRole = {
-  finance: 10,
-  project_a_member: 7,
-  pm: 10,
-  owner: 4,
-};
+const navigationManifest = loadNavigationManifest(navigationManifestPath);
 
 fs.mkdirSync(outputDir, { recursive: true });
 
 function csvCell(value) { return `"${String(value ?? '').replaceAll('"', '""')}"`; }
-function roleCode(login) {
-  return String(login || '').replace(/^(?:demo|fixture)_role_/, '');
-}
 function pageType(url, mode, text) {
   if (url.includes('/login')) return 'login';
   if (mode === 'list' || /列表|搜索结果/.test(text)) return 'list';
@@ -44,10 +55,65 @@ function pageType(url, mode, text) {
 function navigationFromPayload(payload) {
   const candidates = [payload, payload?.result, payload?.data, payload?.result?.data];
   for (const value of candidates) {
+    const authority = value?.route_authority_v1
+      || value?.delivery_engine_v1?.route_authority_v1;
     for (const key of ['release_navigation_v1', 'delivery_engine_v1']) {
       const projection = value?.[key];
-      if (Array.isArray(projection?.nav)) return projection.nav;
-      if (Array.isArray(projection)) return projection;
+      const navigation = Array.isArray(projection?.nav)
+        ? projection.nav
+        : Array.isArray(projection)
+          ? projection
+          : [];
+      if (navigation.length || authority) {
+        const routeRows = [
+          ...(authority?.primary_actions || []),
+          ...(authority?.role_home_actions || []),
+          ...(authority?.contextual_actions || []),
+          ...(authority?.admin_actions || []),
+        ].map((row) => ({
+          label: row.name,
+          title: row.name,
+          route: row.route,
+          menu_id: row.menu_id,
+          action_id: row.action_id,
+          xml_id: row.menu_xmlid,
+          meta: {
+            menu_xmlid: row.menu_xmlid,
+            action_xmlid: row.action_xmlid,
+            model: row.model,
+            route_kind: row.route_kind,
+            source: row.source,
+          },
+          children: [],
+        }));
+        const flattenedNavigation = flattenNavigation(navigation)
+          .filter((row) => row.category !== 'container')
+          .map((row) => ({
+            label: row.label,
+            title: row.label,
+            route: row.route,
+            menu_id: row.menu_id,
+            action_id: row.action_id,
+            xml_id: row.menu_xmlid,
+            meta: {
+              menu_xmlid: row.menu_xmlid,
+              action_xmlid: row.action_xmlid,
+              model: row.model,
+              source: 'release_navigation_v1',
+            },
+            children: [],
+          }));
+        const byStableKey = new Map();
+        for (const row of [...flattenedNavigation, ...routeRows]) {
+          const stableKey = [
+            String(row?.meta?.menu_xmlid || ''),
+            String(row?.meta?.action_xmlid || ''),
+            String(row?.meta?.model || ''),
+          ].join('|');
+          if (stableKey !== '||') byStableKey.set(stableKey, row);
+        }
+        return [...byStableKey.values()];
+      }
     }
   }
   return null;
@@ -58,9 +124,15 @@ async function login(page, loginName) {
   page.on('response', async (response) => {
     if (!response.url().includes('/api/v1/intent')) return;
     try {
+      const requestPayload = JSON.parse(response.request().postData() || '{}');
       const payload = await response.json();
       const candidate = navigationFromPayload(payload);
-      if (candidate) navigation = candidate;
+      if (candidate) {
+        navigation = candidate;
+        if (process.env.AUDIT_DEBUG_NAVIGATION === '1') {
+          console.log(`[frontend-navigation-debug] login=${loginName} intent=${requestPayload.intent || ''} roots=${candidate.length} leaves=${flattenNavigation(candidate).filter((row) => row.category !== 'container').length}`);
+        }
+      }
     } catch {}
   });
   await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -178,14 +250,24 @@ async function inspectPage(page, role, route, screenshotPath) {
 async function main() {
   const browser = await launchChromium({ headless: true });
   const rows = [];
+  const navigationRows = [];
   const journeyRows = [];
   const responsiveRows = [];
   try {
-    for (const role of roles) {
+    for (const binding of roleBindings) {
+      const role = String(binding.role);
       const page = await browser.newPage({ viewport: viewports[0], locale: 'zh-CN' });
       page.setDefaultTimeout(8000);
-      const navigation = await login(page, role);
+      const navigation = await login(page, String(binding.login));
       const contractRows = flattenNavigation(navigation).filter((item) => item.category !== 'container');
+      navigationRows.push(...contractRows.map((row) => ({ ...row, role })));
+      if (process.env.AUDIT_DEBUG_NAVIGATION === '1') {
+        const debugRows = contractRows.map((row) => ({ ...row, role }));
+        const manifestRole = role.replace(/^(?:demo|fixture)_role_/, '');
+        const debugAudit = compareNavigation(navigationManifest, debugRows, [role]).roles[manifestRole];
+        console.log(`[frontend-navigation-audit-debug] role=${role} expected=${debugAudit.expected_count} actual=${debugAudit.actual_count} matched=${debugAudit.matched_count} missing=${debugAudit.missing_leaf_keys.length} unexpected=${debugAudit.unexpected_leaf_keys.length} duplicate=${debugAudit.duplicate_leaf_keys.length}`);
+        console.log(`[frontend-navigation-audit-debug] role=${role} missing_keys=${JSON.stringify(debugAudit.missing_leaf_keys)} unexpected_keys=${JSON.stringify(debugAudit.unexpected_leaf_keys)}`);
+      }
       const selectedRows = maxSurfacesPerRole > 0 ? contractRows.slice(0, maxSurfacesPerRole) : contractRows;
       for (const [index, link] of selectedRows.entries()) {
         const safeRoute = link.route;
@@ -220,7 +302,8 @@ async function main() {
   }
   const fields = ['surface_id', 'role', 'navigation_path', 'navigation_label', 'route', 'menu_id', 'action_id', 'menu_xmlid', 'action_xmlid', 'model', 'page_type', 'actual_component', 'title', 'document_title', 'breadcrumbs', 'identity_source', 'identity_result', 'reachable', 'load_result', 'write_capable', 'screenshot', 'load_ms', 'technical_leak', 'generic_title', 'notes'];
   const normalized = rows.map((row) => ({ actual_component: row.route.startsWith('/r/') || row.route.startsWith('/f/') ? 'ContractFormPage.vue' : row.route.startsWith('/a/') ? 'ActionViewShell.vue → ListPage.vue' : row.route.startsWith('/s/') ? 'SceneView.vue' : row.route.startsWith('/m/') ? 'MenuView.vue' : row.route === '/' ? 'HomeView.vue' : 'UNRESOLVED', reachable: row.reachable !== false, ...row }));
-  const leafCounts = Object.fromEntries(roles.map((role) => [role, normalized.filter((row) => row.role === role).length]));
+  const leafCounts = Object.fromEntries(roles.map((role) => [role, navigationRows.filter((row) => row.role === role).length]));
+  const navigationAudit = compareNavigation(navigationManifest, navigationRows, roles);
   const failed = normalized.filter((row) => row.reachable === false || row.identity_result !== 'PASS');
   const coverage = Object.fromEntries(roles.map((role) => { const all = normalized.filter((row) => row.role === role); return [role, { denominator: all.length, reachable: all.filter((row) => row.reachable).length, rate: all.length ? all.filter((row) => row.reachable).length / all.length : 0, failures: all.filter((row) => !row.reachable).map((row) => row.notes || row.title) }]; }));
   const genericBusinessActionTitle = normalized.filter((row) => row.generic_title).length;
@@ -245,20 +328,24 @@ async function main() {
     forbidden,
     unresolved,
   };
-  fs.writeFileSync(path.join(outputDir, 'full-surface-report.json'), `${JSON.stringify({ base_url: baseUrl, db: dbName, roles, viewports, leaf_counts: leafCounts, summary, coverage, rows: normalized }, null, 2)}\n`);
+  const reportMeta = {
+    schema_version: 'frontend-surface-audit/v2',
+    git_sha: gitSha,
+    generated_at: new Date().toISOString(),
+    environment: { database: dbName, base_url: baseUrl },
+  };
+  fs.writeFileSync(path.join(outputDir, 'full-surface-report.json'), `${JSON.stringify({ ...reportMeta, roles, role_bindings: roleBindings, viewports, leaf_counts: leafCounts, summary, coverage, navigation_audit: navigationAudit, rows: normalized }, null, 2)}\n`);
+  fs.writeFileSync(path.join(outputDir, 'navigation-report.json'), `${JSON.stringify({ ...reportMeta, ...navigationAudit }, null, 2)}\n`);
   fs.writeFileSync(path.join(outputDir, 'journeys.json'), `${JSON.stringify({ journeys: journeyRows }, null, 2)}\n`);
   fs.writeFileSync(path.join(outputDir, 'responsive-report.json'), `${JSON.stringify({ viewports, rows: responsiveRows }, null, 2)}\n`);
-  fs.writeFileSync(path.join(outputDir, 'accessibility-report.json'), `${JSON.stringify({ status: 'N/A', reason: '本轮脚本未引入新依赖，需按代表页面补充人工/工具证据' }, null, 2)}\n`);
-  fs.writeFileSync(path.join(outputDir, 'performance-report.json'), `${JSON.stringify({ status: 'observed', samples: normalized.map(({ role, route, load_ms }) => ({ role, route, load_ms })) }, null, 2)}\n`);
   const inventoryCsv = `${fields.join(',')}\n${normalized.map((row) => fields.map((field) => csvCell(row[field])).join(',')).join('\n')}\n`;
   fs.writeFileSync(path.join(outputDir, 'full-surface-report.csv'), inventoryCsv);
   if (inventoryPath) {
     fs.mkdirSync(path.dirname(inventoryPath), { recursive: true });
     fs.writeFileSync(inventoryPath, inventoryCsv);
   }
-  const expectedLeafCounts = Object.fromEntries(roles.map((role) => [role, expectedLeafCountsByRole[roleCode(role)]]));
-  const expectedTotal = Object.values(expectedLeafCounts).reduce((sum, count) => sum + Number(count || 0), 0);
-  const pass = roles.every((role) => Number.isInteger(expectedLeafCounts[role]) && leafCounts[role] === expectedLeafCounts[role])
+  const expectedTotal = navigationAudit.total.expected_count;
+  const pass = navigationAudit.total.result === 'PASS'
     && normalized.length === expectedTotal
     && summary.reachable === expectedTotal
     && summary.identity_pass === expectedTotal

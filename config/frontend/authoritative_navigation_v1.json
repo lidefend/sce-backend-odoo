@@ -1,0 +1,101 @@
+{
+  "schema_version": "frontend-authoritative-navigation/v1",
+  "source": {
+    "kind": "governed_runtime_surface_inventory",
+    "path": "docs/frontend_productization/frontend_surface_inventory_v1.csv",
+    "source_sha": "0ac5173be801861ea621dd0e5048c9fc18548049"
+  },
+  "identity": "menu_xmlid|action_xmlid|model",
+  "roles": {
+    "finance": {
+      "expected_count": 42,
+      "leaf_keys": [
+        "smart_construction_core.menu_payment_request_receive|smart_construction_core.action_payment_request_receive|payment.request",
+        "smart_construction_core.menu_sc_bid_deposit_pay|smart_construction_core.action_sc_bid_deposit_pay|sc.expense.claim",
+        "smart_construction_core.menu_sc_bid_deposit_return|smart_construction_core.action_sc_bid_deposit_return|sc.expense.claim",
+        "smart_construction_core.menu_sc_borrowing_request|smart_construction_core.action_sc_financing_loan_borrowing_request|sc.financing.loan",
+        "smart_construction_core.menu_sc_company_contractor_responsibility_fact|smart_construction_core.action_sc_company_contractor_responsibility_fact|sc.company.contractor.responsibility.fact",
+        "smart_construction_core.menu_sc_company_contractor_responsibility_summary|smart_construction_core.action_sc_company_contractor_responsibility_summary|sc.company.contractor.responsibility.summary",
+        "smart_construction_core.menu_sc_company_finance_expense|smart_construction_core.action_sc_payment_execution_company_finance_expense|sc.payment.execution",
+        "smart_construction_core.menu_sc_contract_deposit_register|smart_construction_core.action_sc_contract_deposit_pay|sc.expense.claim",
+        "smart_construction_core.menu_sc_contract_deposit_return|smart_construction_core.action_sc_contract_deposit_return|sc.expense.claim",
+        "smart_construction_core.menu_sc_contractor_project_borrow|smart_construction_core.action_sc_financing_loan_contractor_project_borrow|sc.financing.loan",
+        "smart_construction_core.menu_sc_contractor_project_repay|smart_construction_core.action_sc_expense_claim_contractor_project_repay|sc.expense.claim",
+        "smart_construction_core.menu_sc_deduction_bill|smart_construction_core.action_sc_expense_claim_deduction_bill|sc.expense.claim",
+        "smart_construction_core.menu_sc_deduction_paid_refund|smart_construction_core.action_sc_expense_claim_deduction_paid_refund|sc.expense.claim",
+        "smart_construction_core.menu_sc_deduction_paid|smart_construction_core.action_sc_expense_claim_deduction_paid|sc.expense.claim",
+        "smart_construction_core.menu_sc_engineering_progress_income|smart_construction_core.action_sc_receipt_income_engineering_progress|sc.receipt.income",
+        "smart_construction_core.menu_sc_expense_claim|smart_construction_core.action_sc_expense_claim_expense|sc.expense.claim",
+        "smart_construction_core.menu_sc_finance_counterparty_position_summary|smart_construction_core.action_sc_finance_counterparty_position_summary|sc.finance.counterparty.position.summary",
+        "smart_construction_core.menu_sc_finance_project_capital_position|smart_construction_core.action_sc_finance_project_capital_position|sc.finance.project.capital.position",
+        "smart_construction_core.menu_sc_finance_project_counterparty_position|smart_construction_core.action_sc_finance_project_counterparty_position|sc.finance.project.counterparty.position",
+        "smart_construction_core.menu_sc_fund_account_between_user|smart_construction_core.action_sc_fund_account_between_user|sc.fund.account.operation",
+        "smart_construction_core.menu_sc_fund_daily_user_report|smart_construction_core.action_sc_fund_daily_user_report|sc.fund.account.operation",
+        "smart_construction_core.menu_sc_invoice_application_user|smart_construction_core.action_sc_invoice_application_user|sc.invoice.registration",
+        "smart_construction_core.menu_sc_invoice_input|smart_construction_core.action_sc_invoice_input|sc.invoice.registration",
+        "smart_construction_core.menu_sc_invoice_prepaid_tax_user|smart_construction_core.action_sc_invoice_prepaid_tax_user|sc.invoice.registration",
+        "smart_construction_core.menu_sc_invoice_registration_user|smart_construction_core.action_sc_invoice_registration_user|sc.invoice.registration",
+        "smart_construction_core.menu_sc_partner_payment|smart_construction_core.action_sc_payment_execution_partner_payment|sc.payment.execution",
+        "smart_construction_core.menu_sc_payment_execution|smart_construction_core.action_sc_payment_execution_actual_outflow|sc.payment.execution",
+        "smart_construction_core.menu_sc_project_borrow_company|smart_construction_core.action_sc_financing_loan_project_borrow_company|sc.financing.loan",
+        "smart_construction_core.menu_sc_project_expense_claim|smart_construction_core.action_sc_expense_claim_project|sc.expense.claim",
+        "smart_construction_core.menu_sc_project_repay_company|smart_construction_core.action_sc_expense_claim_project_repay_company|sc.expense.claim",
+        "smart_construction_core.menu_sc_receipt_income|smart_construction_core.action_sc_receipt_income|sc.receipt.income",
+        "smart_construction_core.menu_sc_reimbursement_request|smart_construction_core.action_sc_expense_claim_reimbursement_request|sc.expense.claim",
+        "smart_construction_core.menu_sc_repayment_registration|smart_construction_core.action_sc_expense_claim_repayment_registration|sc.expense.claim",
+        "smart_construction_core.menu_sc_self_funding_advance_income|smart_construction_core.action_sc_self_funding_registration_income|sc.self.funding.registration",
+        "smart_construction_core.menu_sc_self_funding_advance_refund|smart_construction_core.action_sc_self_funding_registration_refund|sc.self.funding.registration",
+        "smart_construction_core.menu_sc_settlement_adjustment|smart_construction_core.action_sc_settlement_adjustment|sc.settlement.adjustment",
+        "smart_construction_core.menu_sc_settlement_order|smart_construction_core.action_sc_settlement_order|sc.settlement.order",
+        "smart_construction_core.menu_sc_tax_certificate_registration_user|smart_construction_core.action_sc_tax_certificate_registration_user|sc.legacy.payment.residual.fact",
+        "smart_construction_core.menu_sc_tax_deduction_registration_user|smart_construction_core.action_sc_tax_deduction_registration_user|sc.tax.deduction.registration",
+        "smart_construction_core.menu_sc_treasury_reconciliation|smart_construction_core.action_sc_treasury_reconciliation|sc.treasury.reconciliation",
+        "smart_construction_core.menu_sc_user_income|smart_construction_core.action_sc_receipt_income_user_income|sc.receipt.income",
+        "smart_construction_core.menu_sc_user_payment_apply_acceptance|smart_construction_core.action_payment_request_user_payment_apply|payment.request"
+      ]
+    },
+    "owner": {
+      "expected_count": 5,
+      "leaf_keys": [
+        "smart_construction_core.menu_sc_construction_diary|smart_construction_core.action_sc_construction_diary|sc.construction.diary",
+        "smart_construction_core.menu_sc_general_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
+        "smart_construction_core.menu_sc_plan_report|smart_construction_core.action_sc_plan_report|sc.plan.report",
+        "smart_construction_core.menu_sc_plan|smart_construction_core.action_sc_plan|sc.plan",
+        "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project"
+      ]
+    },
+    "pm": {
+      "expected_count": 14,
+      "leaf_keys": [
+        "smart_construction_core.menu_sc_construction_contract|smart_construction_core.action_construction_contract_handling|construction.contract",
+        "smart_construction_core.menu_sc_construction_diary|smart_construction_core.action_sc_construction_diary|sc.construction.diary",
+        "smart_construction_core.menu_sc_expense_contract_settlement|smart_construction_core.action_sc_settlement_order_expense|sc.settlement.order",
+        "smart_construction_core.menu_sc_expense_contract_variation|smart_construction_core.action_sc_expense_contract_variation|sc.settlement.adjustment",
+        "smart_construction_core.menu_sc_general_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
+        "smart_construction_core.menu_sc_income_contract_settlement|smart_construction_core.action_sc_settlement_order_income|sc.settlement.order",
+        "smart_construction_core.menu_sc_income_contract_variation|smart_construction_core.action_sc_income_contract_variation|sc.settlement.adjustment",
+        "smart_construction_core.menu_sc_plan_report|smart_construction_core.action_sc_plan_report|sc.plan.report",
+        "smart_construction_core.menu_sc_plan|smart_construction_core.action_sc_plan|sc.plan",
+        "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project",
+        "smart_construction_core.menu_sc_settlement_adjustment|smart_construction_core.action_sc_settlement_adjustment|sc.settlement.adjustment",
+        "smart_construction_core.menu_sc_settlement_order|smart_construction_core.action_sc_settlement_order|sc.settlement.order",
+        "smart_construction_core.menu_sc_tender_registration_fee|smart_construction_core.action_sc_tender_registration_fee|tender.doc.purchase",
+        "smart_construction_core.menu_sc_tender_registration|smart_construction_core.action_sc_tender_registration|tender.bid"
+      ]
+    },
+    "project_a_member": {
+      "expected_count": 9,
+      "leaf_keys": [
+        "smart_construction_core.menu_sc_certificate_registration|smart_construction_core.action_sc_certificate_registration|sc.document.admin.document",
+        "smart_construction_core.menu_sc_company_document_archive|smart_construction_core.action_sc_company_document_archive|sc.document.admin.document",
+        "smart_construction_core.menu_sc_construction_contract|smart_construction_core.action_construction_contract_handling|construction.contract",
+        "smart_construction_core.menu_sc_construction_diary|smart_construction_core.action_sc_construction_diary|sc.construction.diary",
+        "smart_construction_core.menu_sc_document_borrow|smart_construction_core.action_sc_document_borrow|sc.document.admin.document",
+        "smart_construction_core.menu_sc_general_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
+        "smart_construction_core.menu_sc_plan_report|smart_construction_core.action_sc_plan_report|sc.plan.report",
+        "smart_construction_core.menu_sc_plan|smart_construction_core.action_sc_plan|sc.plan",
+        "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project"
+      ]
+    }
+  }
+}
