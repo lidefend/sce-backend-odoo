@@ -22,7 +22,8 @@ daily.candidate.sentinel.test: guard.prod.forbid
 	@python3 scripts/ops/test_daily_candidate_data_sentinel.py
 
 daily.candidate.clone_rehearsal.test: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/daily_candidate_clone_upgrade_rehearsal.py scripts/ops/daily_candidate_clone_upgrade_executor.py
+	@python3 -m py_compile scripts/ops/release_candidate_eligibility.py scripts/ops/test_release_candidate_eligibility.py scripts/ops/daily_candidate_clone_upgrade_rehearsal.py scripts/ops/daily_candidate_clone_upgrade_executor.py
+	@python3 scripts/ops/test_release_candidate_eligibility.py
 	@python3 scripts/ops/test_daily_candidate_clone_upgrade_rehearsal.py
 	@python3 scripts/ops/test_daily_candidate_clone_upgrade_executor.py
 
@@ -73,6 +74,9 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/ops/daily_candidate_clone_upgrade_rehearsal.py \
 		scripts/ops/daily_candidate_clone_upgrade_contract_v1.json \
 		scripts/ops/daily_candidate_clone_upgrade_executor.py \
+		scripts/ops/release_candidate_eligibility.py \
+		config/releases/rc6_candidate.json \
+		config/releases/rc6_candidate_supersession_legacy_projection.json \
 		scripts/ops/production_acceptance_harness.py \
 		scripts/ops/production_acceptance_contract_v1.json \
 		scripts/ops/production_acceptance_package_v1.sha256 | \
@@ -121,6 +125,9 @@ daily.candidate.clone_rehearsal.remote_image_import: guard.prod.forbid
 	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
 	@[[ "$(DAILY_CANDIDATE_SSH_HOST)" =~ ^[A-Za-z0-9._-]+$$ ]] || { echo "invalid daily candidate SSH host" >&2; exit 2; }
 	@test "$${CONFIRM_RC6_OFFLINE_IMAGE_IMPORT:-}" = "IMPORT_FROZEN_RC6_IMAGE_OFFLINE" || { echo "exact RC6 offline image import confirmation is required" >&2; exit 2; }
+	@python3 scripts/ops/release_candidate_eligibility.py verify-eligibility \
+		--candidate config/releases/rc6_candidate.json \
+		--supersession config/releases/rc6_candidate_supersession_legacy_projection.json
 	@docker image inspect "$(DAILY_CLONE_RC6_IMAGE_REF)" >/dev/null
 	@set -eu; archive="$$(mktemp /tmp/rc6-candidate-image.XXXXXXXX.tar)"; \
 	  trap 'rm -f -- "$$archive"' EXIT INT TERM; \

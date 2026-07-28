@@ -1690,3 +1690,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast Radius: names and derived digests in anonymized governance evidence and
   related guard fixtures only. Product runtime, UAT data, permissions,
   financial controls and historical relation decisions are unchanged.
+
+# RELEASE-P0-01R qualification fail-closed repair — 2026-07-28
+
+- Branch / anchor: `fix/release-p0-01r-qualification-fail-closed` from
+  `e948e760c09f1f3be25f3844149932925de2e6aa`.
+- Formal Product Layer: P4 release governance and P0 platform authorization
+  verification; Layer Target: GitHub required checks, immutable release
+  candidate qualification, and generic chatter timeline authorization tests;
+  Modules: `.github/workflows`, `scripts/ops`, and `addons/smart_core/tests`.
+- Reason: the merged `main` SHA must receive its own required-check evidence,
+  superseded candidates must fail before any database rehearsal, and timeline
+  content/existence boundaries require real ORM negative proof.
+- Why Here / Why Not Elsewhere: release eligibility belongs to delivery
+  governance, while timeline authorization verification belongs beside the
+  platform handler. No construction-domain policy, customer data, frontend
+  behavior, or runtime permission configuration is changed.
+- Blast Radius: CI event/checkout qualification, RC6 release-tool entrypoints,
+  and isolated authorization tests only. DAILY and production databases,
+  candidate images, business models, ACLs, record rules, and frontend
+  experience remain untouched.

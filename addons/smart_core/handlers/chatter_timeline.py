@@ -73,28 +73,32 @@ class ChatterTimelineHandler(BaseIntentHandler):
             return self._failure(REASON_USER_ERROR, "res_id 无效", 400, trace_id)
 
         try:
-            record = self.env[model].browse(res_id).exists()
+            Model = self.env[model]
+            Model.check_access_rights("read")
+            record = Model.search([("id", "=", res_id)], limit=1)
+            if record:
+                record.check_access_rule("read")
         except AccessError:
-            return self._failure(REASON_PERMISSION_DENIED, "无权限读取协作时间线", 403, trace_id)
+            return self._failure(REASON_NOT_FOUND, "记录不存在", 404, trace_id)
         except UserError as exc:
             return self._failure(REASON_USER_ERROR, str(exc) or "业务规则不允许", 400, trace_id)
         except Exception:
             return self._failure(REASON_SYSTEM_ERROR, "读取协作时间线失败", 500, trace_id)
         if not record:
             return self._failure(REASON_NOT_FOUND, "记录不存在", 404, trace_id)
-        in_scope, scope_meta = record_in_business_scope(
-            self.env[model],
-            int(record.id),
-            params,
-            self.context if isinstance(self.context, dict) else {},
-        )
+        try:
+            in_scope, scope_meta = record_in_business_scope(
+                Model,
+                int(record.id),
+                params,
+                self.context if isinstance(self.context, dict) else {},
+            )
+        except AccessError:
+            return self._failure(REASON_NOT_FOUND, "记录不存在", 404, trace_id)
         if not in_scope:
-            return record_scope_denied_response(scope_meta)
+            return self._failure(REASON_NOT_FOUND, "记录不存在", 404, trace_id)
 
         try:
-            self.env[model].check_access_rights("read")
-            record.check_access_rule("read")
-
             messages = self._load_messages(model, record.id, limit)
             attachments = self._load_attachments(model, record.id, limit)
             activity_items = self._load_activities(model, record.id, limit)
@@ -257,7 +261,7 @@ class ChatterTimelineHandler(BaseIntentHandler):
 
     def _load_audit_items(self, model: str, res_id: int, limit: int) -> List[Dict[str, Any]]:
         Audit = self.env.get("sc.audit.log")
-        if not Audit:
+        if Audit is None:
             return []
         rows = Audit.sudo().search(
             [("model", "=", model), ("res_id", "=", res_id)],

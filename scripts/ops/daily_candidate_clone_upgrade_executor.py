@@ -27,6 +27,7 @@ import daily_candidate_clone_upgrade_rehearsal as admission
 import daily_candidate_data_continuity as continuity
 import daily_candidate_data_sentinel as sentinel
 import production_acceptance_harness as acceptance
+import release_candidate_eligibility as eligibility
 
 
 CANDIDATE_SHA = "fb1f2b5a6e93fb4d7865023e6cda2961848c3cb8"
@@ -71,6 +72,11 @@ MODULES = (
 )
 CUSTOM_MODULE = "smart_construction_custom"
 SAFE_RESOURCE = re.compile(r"^sc-rc6-rehearsal-[a-z0-9-]+$")
+ROOT = Path(__file__).resolve().parents[2]
+CANDIDATE_DECLARATION = ROOT / "config/releases/rc6_candidate.json"
+SUPERSESSION_DECLARATION = (
+    ROOT / "config/releases/rc6_candidate_supersession_legacy_projection.json"
+)
 
 
 class ExecutionError(RuntimeError):
@@ -1181,6 +1187,10 @@ def main() -> None:
     )
     parser.add_argument("--archive", type=Path)
     args = parser.parse_args()
+    eligibility.assert_candidate_eligible(
+        CANDIDATE_DECLARATION,
+        SUPERSESSION_DECLARATION,
+    )
     if args.action == "verify-offline-archive":
         if args.archive is None:
             raise ExecutionError("--archive is required")
@@ -1201,5 +1211,8 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
+    except eligibility.CandidateEligibilityError as exc:
+        print(eligibility.blocked_lines(exc))
+        raise SystemExit(42) from exc
     except (ExecutionError, continuity.ContinuityError, sentinel.SentinelError) as exc:
         raise SystemExit(f"RC6_DAILY_CLONE_EXECUTOR_ERROR={exc}") from exc

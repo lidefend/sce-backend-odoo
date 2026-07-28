@@ -92,6 +92,25 @@ class IdentityTests(unittest.TestCase):
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_supersession_precedes_every_executor_action(self):
+        blocked = executor.eligibility.CandidateEligibilityError(
+            "SUPERSEDED_CANDIDATE",
+            "blocked",
+            "RC6",
+        )
+        with (
+            mock.patch.object(
+                executor.eligibility,
+                "assert_candidate_eligible",
+                side_effect=blocked,
+            ),
+            mock.patch.object(executor, "validate_offline_archive") as archive,
+            mock.patch.object(sys, "argv", ["executor", "verify-offline-archive"]),
+        ):
+            with self.assertRaises(executor.eligibility.CandidateEligibilityError):
+                executor.main()
+        archive.assert_not_called()
+
     def test_confirmation_precedes_daily_preflight(self):
         with (
             mock.patch.dict("os.environ", {}, clear=True),
