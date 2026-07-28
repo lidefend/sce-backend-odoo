@@ -1,0 +1,157 @@
+name: frontend_release_gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-release-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend_release_gate:
+    name: frontend_release_gate
+    if: >-
+      github.repository == 'lidefend/sce-backend-odoo' &&
+      ((github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'push' &&
+      github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner))
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+      CI_PROJECT_NAME: sc-fe-release-${{ github.run_id }}
+
+    steps:
+      - name: Checkout the authoritative code object
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CHECKOUT_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove checkout identity
+        id: identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${CHECKOUT_SHA}"
+          {
+            printf 'sha=%s\n' "$(git rev-parse HEAD)"
+            printf 'tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Install locked frontend toolchain
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@9.12.3 --activate
+          pnpm -C frontend install --frozen-lockfile
+          pnpm -C frontend/apps/web exec playwright install --with-deps chromium
+
+      - name: Generate isolated acceptance environment
+        run: |
+          set -euo pipefail
+          db_password="$(openssl rand -hex 32)"
+          admin_password="$(openssl rand -hex 32)"
+          jwt_secret="$(openssl rand -hex 32)"
+          bootstrap_secret="$(openssl rand -hex 32)"
+          for secret in "${db_password}" "${admin_password}" "${jwt_secret}" "${bootstrap_secret}"; do
+            echo "::add-mask::${secret}"
+          done
+          ci_env="${RUNNER_TEMP}/sce-ci-${GITHUB_RUN_ID}-frontend-release.env"
+          umask 077
+          {
+            printf 'ENV=test\n'
+            printf 'ENV_FILE=%s\n' "${ci_env}"
+            printf 'COMPOSE_PROJECT_NAME=%s\n' "${CI_PROJECT_NAME}"
+            printf 'DB_USER=odoo\n'
+            printf 'DB_PASSWORD=%s\n' "${db_password}"
+            printf 'DB_NAME=sc_frontend_acceptance\n'
+            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
+            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
+            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
+            printf 'SC_BOOTSTRAP_LOGIN=frontend_release_ci\n'
+            printf 'SCENE_CHANNEL=stable\n'
+            printf 'SCENE_USE_PINNED=0\n'
+            printf 'SCENE_ROLLBACK=0\n'
+            printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
+            printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
+            printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
+            printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"
+            printf 'SC_ENVIRONMENT=acceptance\n'
+            printf 'SC_ALLOW_DEMO_DATA=1\n'
+          } > "${ci_env}"
+          {
+            printf 'ENV=test\n'
+            printf 'ENV_FILE=%s\n' "${ci_env}"
+            printf 'DB_USER=odoo\n'
+            printf 'DB_PASSWORD=%s\n' "${db_password}"
+            printf 'DB_NAME=sc_frontend_acceptance\n'
+            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
+            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
+            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
+            printf 'SC_BOOTSTRAP_LOGIN=frontend_release_ci\n'
+            printf 'SCENE_CHANNEL=stable\n'
+            printf 'SCENE_USE_PINNED=0\n'
+            printf 'SCENE_ROLLBACK=0\n'
+            printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
+            printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
+            printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
+            printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"
+            printf 'SC_ENVIRONMENT=acceptance\n'
+            printf 'SC_ALLOW_DEMO_DATA=1\n'
+          } >> "${GITHUB_ENV}"
+
+      - name: Run the single authoritative frontend release command
+        id: release
+        env:
+          FRONTEND_RELEASE_PR_HEAD_SHA: ${{ env.PR_HEAD_SHA }}
+        run: |
+          set -euo pipefail
+          cd frontend/apps/web
+          pnpm test:release
+
+      - name: Fail closed on command or evidence identity
+        if: always()
+        env:
+          RELEASE_COMMAND_OUTCOME: ${{ steps.release.outcome }}
+        run: |
+          set -euo pipefail
+          python3 scripts/verify/frontend_release_gate.py \
+            --report artifacts/frontend-release-audit/report.json \
+            --sha '${{ steps.identity.outputs.sha }}' \
+            --tree '${{ steps.identity.outputs.tree }}' \
+            --command-outcome "${RELEASE_COMMAND_OUTCOME}" \
+            --event "${GITHUB_EVENT_NAME}" \
+            --run-id "${GITHUB_RUN_ID}" \
+            --run-attempt "${GITHUB_RUN_ATTEMPT}"
+
+      - name: Upload current-run non-sensitive release evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: frontend-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CHECKOUT_SHA }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            artifacts/frontend-release-audit/*.json
+            artifacts/frontend-page-identity/navigation-report.json
+            artifacts/frontend-delivery-hardening/report.json
+            artifacts/frontend-delivery-hardening/accessibility.json
+            artifacts/frontend-delivery-hardening/performance.json
+            artifacts/frontend-delivery-hardening/responsive.json
+            artifacts/frontend-delivery-hardening/error-recovery.json
+
+      - name: Clean isolated runner state
+        if: always()
+        run: bash scripts/ci/self_hosted_runner_cleanup.sh

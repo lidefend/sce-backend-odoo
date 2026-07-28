@@ -1759,6 +1759,7 @@ mod.upgrade: guard.codex.fast.upgrade guard.prod.danger check-compose-project ch
 FRONTEND_ACCEPTANCE_DB := $(if $(filter command line,$(origin DB_NAME)),$(DB_NAME),sc_frontend_acceptance)
 
 db.frontend.acceptance.ensure: guard.prod.forbid check-compose-project check-compose-env
+	@$(RUN_ENV) $(COMPOSE_BASE) up -d --wait db redis odoo
 	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/test/frontend_acceptance_db_ensure.sh
 
 acceptance.frontend.fixture: guard.prod.forbid check-compose-project check-compose-env
@@ -1951,16 +1952,34 @@ verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-comp
 
 verify.frontend.release.unit:
 	@node scripts/verify/frontend_navigation_audit.test.mjs
+	@node scripts/verify/frontend_performance_budget.test.mjs
 	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_audit.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_gate.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_ci_guard.py
+	@python3 scripts/verify/frontend_release_ci_guard.py
 
 verify.frontend.release.audit:
 	@set +e; \
 	status=0; \
 	$(MAKE) --no-print-directory verify.frontend.release.unit || status=$$?; \
-	python3 scripts/verify/frontend_static_release_audit.py || status=$$?; \
-	$(MAKE) --no-print-directory verify.frontend.page_identity.browser || status=$$?; \
-	$(MAKE) --no-print-directory verify.frontend.delivery_hardening.release.browser || status=$$?; \
+	VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB) VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance python3 scripts/verify/frontend_static_release_audit.py || status=$$?; \
+	frontend_build_sha="$$(cat frontend/apps/web/dist/.build-sha256 2>/dev/null || true)"; \
+	if [ -z "$$frontend_build_sha" ]; then \
+		echo "[verify.frontend.release.audit] missing current frontend build fingerprint" >&2; \
+		status=2; \
+	fi; \
+	if [ "$$status" -eq 0 ]; then \
+		export FRONTEND_BUILD_SHA256="$$frontend_build_sha"; \
+		export VITE_ODOO_DB="$(FRONTEND_ACCEPTANCE_DB)"; \
+		export VITE_ODOO_DB_LOCKED=1; \
+		export VITE_APP_ENV=acceptance; \
+		$(MAKE) --no-print-directory db.frontend.acceptance.ensure || status=$$?; \
+	fi; \
+	if [ "$$status" -eq 0 ]; then \
+		$(MAKE) --no-print-directory verify.frontend.page_identity.browser || status=$$?; \
+		$(MAKE) --no-print-directory verify.frontend.delivery_hardening.release.browser || status=$$?; \
+	fi; \
 	python3 scripts/verify/frontend_release_audit.py || status=$$?; \
 	exit $$status
 

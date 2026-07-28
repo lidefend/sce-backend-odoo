@@ -6,6 +6,7 @@ import os from 'node:os';
 import { createRequire } from 'node:module';
 import { launchChromium } from './playwright_runtime.mjs';
 import { applyReleasedNavigationTarget, captureReleasedNavigation } from './released_navigation_target.mjs';
+import { evaluateRelativePerformanceBudget } from './frontend_performance_budget.mjs';
 
 const require = createRequire(import.meta.url);
 const axeModule = require(require.resolve('@axe-core/playwright', { paths: [path.resolve('frontend/apps/web/node_modules')] }));
@@ -571,28 +572,16 @@ async function main() {
     performanceReport.absolute_budget_pass = Object.values(absoluteScenarioPass).every(Boolean);
     if (PERF_BASELINE_PATH) {
       const baseline = JSON.parse(fs.readFileSync(PERF_BASELINE_PATH, 'utf8'));
-      const metricRegressions = Object.fromEntries(Object.entries(performanceReport.scenarios).map(([key, current]) => {
-        const previous = baseline.scenarios?.[key];
-        return [key, Object.fromEntries(['median_ms', 'slowest_ms'].map((metric) => [
-          metric,
-          previous?.[metric] > 0 ? ((current[metric] - previous[metric]) / previous[metric]) * 100 : null,
-        ]))];
-      }));
-      const regressions = Object.values(metricRegressions).flatMap((row) => Object.values(row)).filter((value) => typeof value === 'number');
-      performanceReport.metric_regression_percent = metricRegressions;
-      performanceReport.relative_regression_percent = Math.max(...regressions, 0);
+      const relative = evaluateRelativePerformanceBudget({
+        scenarios: performanceReport.scenarios,
+        budgets: performanceReport.budgets,
+        baseline,
+        maximumRegressionPercent: performanceBudgets.maximum_relative_regression_percent,
+      });
+      performanceReport.metric_regression_percent = relative.metric_regression_percent;
+      performanceReport.relative_regression_percent = relative.relative_regression_percent;
       performanceReport.relative_baseline_path = PERF_BASELINE_PATH;
-      performanceReport.relative_budget_pass = Object.entries(performanceReport.budgets).every(([key, budgets]) => (
-        Object.entries(budgets).every(([metric, budget]) => (
-          metric === 'description'
-          || performanceReport.scenarios[key][metric] <= budget
-          || (
-            typeof metricRegressions[key]?.[metric] === 'number'
-            && metricRegressions[key][metric]
-              <= Number(performanceBudgets.maximum_relative_regression_percent)
-          )
-        ))
-      ));
+      performanceReport.relative_budget_pass = relative.relative_budget_pass;
     } else {
       performanceReport.relative_budget_pass = false;
     }
@@ -633,6 +622,13 @@ async function main() {
       const pages = context.pages();
       if (pages[0]) await pages[0].screenshot({ path: path.join(SCREENSHOTS, 'failure.png'), fullPage: true }).catch(() => {});
     }
+    accessibility.violations = accessibility.scans.reduce((sum, row) => sum + row.violations.length, 0);
+    accessibility.critical = accessibility.scans.reduce((sum, row) => sum + row.violations.filter((item) => item.impact === 'critical').length, 0);
+    accessibility.serious = accessibility.scans.reduce((sum, row) => sum + row.violations.filter((item) => item.impact === 'serious').length, 0);
+    accessibility.result = accessibility.scans.length > 0 && accessibility.blocking === 0 ? 'PASS' : 'NOT_RUN';
+    performanceReport.result = 'FAIL';
+    fs.writeFileSync(path.join(OUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
+    fs.writeFileSync(path.join(OUT, 'performance.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
     fs.writeFileSync(path.join(OUT, 'accessibility.json'), `${JSON.stringify(accessibility, null, 2)}\n`);
     fs.writeFileSync(path.join(OUT, 'responsive.json'), `${JSON.stringify(responsive, null, 2)}\n`);
     fs.writeFileSync(path.join(OUT, 'error-recovery.json'), `${JSON.stringify(errorRecovery, null, 2)}\n`);

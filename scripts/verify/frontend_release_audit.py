@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import subprocess
 import sys
 import time
@@ -29,6 +31,14 @@ def read_json(path: Path) -> dict[str, Any]:
 def require_sha(report: dict[str, Any], expected_sha: str, name: str) -> None:
     if str(report.get("git_sha") or "") != expected_sha:
         raise EvidenceError(f"EVIDENCE_SHA_MISMATCH:{name}")
+
+
+def git_value(*args: str) -> str:
+    return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def validate_navigation(report: dict[str, Any], expected_sha: str) -> dict[str, Any]:
@@ -170,6 +180,7 @@ def aggregate(evidence_root: Path, expected_sha: str) -> dict[str, Any]:
         "error_recovery": validate_error_recovery,
     }
     sections: dict[str, Any] = {}
+    evidence: dict[str, Any] = {}
     failures: list[str] = []
     missing_evidence: list[str] = []
     for name, validator in validators.items():
@@ -177,6 +188,11 @@ def aggregate(evidence_root: Path, expected_sha: str) -> dict[str, Any]:
         try:
             report = read_json(paths[name])
             sections[name] = validator(report, expected_sha)
+            evidence[name] = {
+                "path": str(paths[name].relative_to(ROOT)),
+                "git_sha": report.get("git_sha"),
+                "sha256": sha256(paths[name]),
+            }
         except EvidenceError as exc:
             sections[name] = {"result": "FAIL", "reason": str(exc)}
             if name == "navigation" and report is not None:
@@ -192,13 +208,25 @@ def aggregate(evidence_root: Path, expected_sha: str) -> dict[str, Any]:
                 missing_evidence.append(str(exc))
             failures.append(str(exc))
     return {
-        "schema_version": "frontend-release-audit/v1",
+        "schema_version": "frontend-release-audit/v2",
         "git_sha": expected_sha,
+        "git_tree": git_value("rev-parse", "HEAD^{tree}"),
+        "workflow": {
+            "name": os.environ.get("GITHUB_WORKFLOW", "local"),
+            "run_id": os.environ.get("GITHUB_RUN_ID", "local"),
+            "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", "1"),
+            "event": os.environ.get("GITHUB_EVENT_NAME", "local"),
+            "github_sha": os.environ.get("GITHUB_SHA", expected_sha),
+            "checkout_sha": expected_sha,
+            "pr_head_sha": os.environ.get("FRONTEND_RELEASE_PR_HEAD_SHA", ""),
+        },
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "result": "FAIL" if failures else "PASS",
+        "summary_exit_code": 2 if failures else 0,
         "blocking_failures": failures,
         "missing_evidence": missing_evidence,
-        "evidence_paths": {name: str(path.relative_to(ROOT)) for name, path in paths.items()},
+        "required_sections": sorted(validators),
+        "evidence": evidence,
         "sections": sections,
     }
 
@@ -214,8 +242,9 @@ def main() -> int:
         report = aggregate(ROOT / args.evidence_root, expected_sha)
     except EvidenceError as exc:
         report = {
-            "schema_version": "frontend-release-audit/v1",
+            "schema_version": "frontend-release-audit/v2",
             "git_sha": expected_sha,
+            "git_tree": git_value("rev-parse", "HEAD^{tree}"),
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "result": "FAIL",
             "blocking_failures": [str(exc)],

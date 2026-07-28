@@ -36,7 +36,8 @@ gitee.github.mirror.run: guard.prod.forbid
 	@GITEE_MIRROR_RUN_CONFIRM="$(GITEE_MIRROR_RUN_CONFIRM)" bash scripts/ops/run_gitee_to_github_mirror.sh
 
 github.mirror.ruleset.configure: guard.prod.forbid
-	@GITHUB_MIRROR_RULESET_CONFIRM="$(GITHUB_MIRROR_RULESET_CONFIRM)" \
+	@GITHUB_AUTHORITY_RULESET_CONFIRM="$(GITHUB_AUTHORITY_RULESET_CONFIRM)" \
+	 GITHUB_AUTHORITY_RULESET_EXPECTED_SHA="$(GITHUB_AUTHORITY_RULESET_EXPECTED_SHA)" \
 	 GITHUB_MIRROR_PUBLIC_KEY_FILE="$(GITHUB_MIRROR_PUBLIC_KEY_FILE)" \
 	 bash scripts/ops/configure_github_mirror_ruleset.sh
 
