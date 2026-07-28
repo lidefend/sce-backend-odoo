@@ -2,6 +2,7 @@
   "schema_version": "frontend-release-performance-budgets/v1",
   "minimum_sample_count": 5,
   "percentile_rule": "nearest-rank-p95",
+  "company_switch_warmup_runs": 8,
   "relative_baseline_path": "docs/frontend_productization/frontend_delivery_performance_baseline_v1.json",
   "maximum_relative_regression_percent": 10,
   "scenarios": {
