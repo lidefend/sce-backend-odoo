@@ -299,6 +299,12 @@ router.beforeEach(async (to) => {
       return true;
     }
   }
+  if (!isLoginRoute && to.name !== 'access-denied') {
+    const normalizedEmbeddedQuery = normalizeEmbeddedSceneQuery(to.query);
+    if (normalizedEmbeddedQuery.changed) {
+      return { path: to.path, query: normalizedEmbeddedQuery.query };
+    }
+  }
   if (!isLoginRoute && to.name !== 'access-denied' && session.isReady) {
     const actionId = positiveInteger(to.params.actionId || to.query.action_id);
     const menuId = positiveInteger(to.params.menuId || to.query.menu_id);
@@ -359,10 +365,6 @@ router.beforeEach(async (to) => {
         query: menuId ? { menu_id: String(menuId) } : {},
       };
     }
-  }
-  const normalizedEmbeddedQuery = normalizeEmbeddedSceneQuery(to.query);
-  if (normalizedEmbeddedQuery.changed) {
-    return { path: to.path, query: normalizedEmbeddedQuery.query };
   }
   const normalizedWorkbenchPath = normalizeLegacyWorkbenchPath(to.fullPath);
   if (normalizedWorkbenchPath !== to.fullPath && normalizedWorkbenchPath !== to.path) {

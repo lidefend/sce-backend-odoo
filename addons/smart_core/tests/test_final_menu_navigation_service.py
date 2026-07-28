@@ -52,6 +52,7 @@ def _load_module():
     _install_module("odoo.addons.smart_core.security")
     _install_module(
         "odoo.addons.smart_core.security.platform_admin",
+        can_discover_platform_capabilities=lambda user: False,
         user_is_platform_admin=lambda user: False,
     )
     _install_module("odoo.addons.smart_core.utils")
@@ -121,6 +122,50 @@ class TestFinalMenuNavigationService(unittest.TestCase):
 
         self.assertEqual([row["menu_id"] for row in flat], [293, 361, 389])
         self.assertEqual(flat[0]["child_ids"], [361, 389])
+
+    def test_runtime_navigation_preserves_declared_role_surface_restrictions(self):
+        service = object.__new__(self.module.FinalMenuNavigationService)
+        service._is_platform_admin_user = lambda: False
+        service._can_discover_platform_capabilities = lambda: True
+        service._is_business_config_user = lambda: False
+        declared = {
+            "role_code": "executive",
+            "discover_installed_capabilities": True,
+            "system_configuration_visible": False,
+            "menu_blocklist_xmlids": ["example.menu_configuration"],
+            "model_blocklist": ["example.configuration"],
+        }
+
+        surface = service._runtime_role_surface({"role_surface": declared})
+
+        self.assertEqual(surface["role_code"], "executive")
+        self.assertTrue(surface["discover_installed_capabilities"])
+        self.assertFalse(surface["system_configuration_visible"])
+        self.assertEqual(
+            surface["menu_blocklist_xmlids"],
+            ["example.menu_configuration"],
+        )
+        self.assertEqual(surface["model_blocklist"], ["example.configuration"])
+        self.assertFalse(surface["is_platform_admin"])
+        self.assertFalse(surface["is_business_config_admin"])
+
+    def test_system_init_reapplies_role_surface_after_delivery_overlays(self):
+        source = (
+            SMART_CORE_DIR / "handlers" / "system_init.py"
+        ).read_text(encoding="utf-8")
+        delivery_assignment = (
+            'delivery_nav = delivery_payload.get("nav") '
+            'if isinstance(delivery_payload.get("nav"), list) else []'
+        )
+        role_filter = (
+            "delivery_nav = MenuService._filter_role_surface_nodes("
+        )
+        self.assertIn(delivery_assignment, source)
+        self.assertIn(role_filter, source)
+        self.assertLess(source.index(delivery_assignment), source.index(role_filter))
+        filtered_snapshot = "_delivery_authoritative_nav = list(delivery_nav)"
+        self.assertIn(filtered_snapshot, source)
+        self.assertLess(source.index(role_filter), source.index(filtered_snapshot))
 
 
 if __name__ == "__main__":

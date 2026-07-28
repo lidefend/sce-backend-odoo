@@ -949,29 +949,41 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                     node['fieldInfo'] = meta
                 return node
 
-            def group_node(g):
+            def native_children(container):
                 children = []
-                for n in list(g or []):
-                    if getattr(n, 'tag', None) == 'field' and n.get('name'):
-                        children.append(field_node(n))
-                return {'type': 'group', 'children': children, 'label': g.get('string') if g is not None else None}
+                for child in list(container or []):
+                    tag = getattr(child, 'tag', None)
+                    if tag == 'field' and child.get('name'):
+                        children.append(field_node(child))
+                    elif tag == 'group':
+                        children.append(group_node(child))
+                    elif tag == 'notebook':
+                        children.append({
+                            'type': 'notebook',
+                            'children': [page_node(page) for page in child.findall('./page')],
+                        })
+                    elif tag == 'page':
+                        children.append(page_node(child))
+                return children
+
+            def group_node(g):
+                return {
+                    'type': 'group',
+                    'children': native_children(g),
+                    'label': g.get('string') if g is not None else None,
+                }
 
             def page_node(p):
-                groups = [group_node(g) for g in (p.findall('.//group') if p is not None else [])]
-                return {'type': 'page', 'string': p.get('string') if p is not None else '', 'children': groups}
+                return {
+                    'type': 'page',
+                    'string': p.get('string') if p is not None else '',
+                    'children': native_children(p),
+                }
 
             def sheet_node(s):
                 if s is None:
                     return {'type': 'sheet', 'children': []}
-                notebook = s.find('.//notebook')
-                if notebook is not None:
-                    pages = [page_node(pg) for pg in notebook.findall('./page')]
-                    return {'type': 'sheet', 'children': [{'type': 'notebook', 'children': pages}]}
-                groups = [group_node(g) for g in s.findall('.//group')]
-                if groups:
-                    return {'type': 'sheet', 'children': groups}
-                f = s.find('.//field[@name]') if s is not None else None
-                return {'type': 'sheet', 'children': [{'type': 'group', 'children': [field_node(f)]}] if f is not None else []}
+                return {'type': 'sheet', 'children': native_children(s)}
 
             form = root if (root is not None and root.tag == 'form') else (root.find('.//form') if root is not None else None)
             if form is None:

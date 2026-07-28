@@ -20,9 +20,15 @@ from odoo.addons.smart_core.delivery.native_config_menu_projection import (
 )
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 try:
-    from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+    from odoo.addons.smart_core.security.platform_admin import (
+        can_discover_platform_capabilities,
+        user_is_platform_admin,
+    )
 except Exception:
     def user_is_platform_admin(user):
+        return False
+
+    def can_discover_platform_capabilities(user):
         return False
 
 
@@ -222,6 +228,11 @@ def _scene_accessible_for_user(env, scene: dict[str, Any]) -> bool:
     app_id = _scene_app_id(key, env=env)
     if app_id == "workspace":
         return True
+    # Capability discovery is metadata visibility, not record access.  The
+    # target handler/model remains responsible for ACL, record-rule and scope
+    # enforcement when the user opens the entry.
+    if _can_discover_platform_capabilities(env):
+        return True
     target = scene.get("target") if isinstance(scene.get("target"), dict) else {}
     xmlids = [
         _text(target.get("menu_xmlid")),
@@ -248,15 +259,22 @@ def _is_platform_admin_user(env) -> bool:
         return False
 
 
+def _can_discover_platform_capabilities(env) -> bool:
+    try:
+        return bool(can_discover_platform_capabilities(env.user))
+    except Exception:
+        return False
+
+
 def _is_scene_app_visible_for_user(env, app_id: str) -> bool:
     token = _text(app_id)
     if token in PLATFORM_ADMIN_SCENE_APP_IDS:
-        return _is_platform_admin_user(env)
+        return _can_discover_platform_capabilities(env)
     return True
 
 
 def _admin_app_rows(env) -> list[dict[str, Any]]:
-    if not _is_platform_admin_user(env):
+    if not _can_discover_platform_capabilities(env):
         return []
     rows: list[dict[str, Any]] = []
     for app_id, spec in ADMIN_APP_DEFS.items():
@@ -503,7 +521,7 @@ class AppNavHandler(_SceneDeliveryAppShellMixin, BaseIntentHandler):
             return self._err(400, "max_depth 无效", ts0=ts0)
         raw_app_id = _text(payload.get("app") or "workspace")
         app_id = _app_aliases(env).get(raw_app_id, raw_app_id)
-        if app_id in ADMIN_APP_DEFS and _is_platform_admin_user(env):
+        if app_id in ADMIN_APP_DEFS and _can_discover_platform_capabilities(env):
             target = _admin_app_target(env, app_id)
             if target:
                 return {
@@ -610,7 +628,7 @@ class AppOpenHandler(_SceneDeliveryAppShellMixin, BaseIntentHandler):
         if not scene_key:
             raw_app_id = _text(payload.get("app") or "workspace")
             app_id = _app_aliases(self.env).get(raw_app_id, raw_app_id)
-            if app_id in ADMIN_APP_DEFS and _is_platform_admin_user(self.env):
+            if app_id in ADMIN_APP_DEFS and _can_discover_platform_capabilities(self.env):
                 target = _admin_app_target(self.env, app_id)
                 if target:
                     return {

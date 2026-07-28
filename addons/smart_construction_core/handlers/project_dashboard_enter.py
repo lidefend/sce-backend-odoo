@@ -19,8 +19,6 @@ from odoo.addons.smart_construction_core.handlers.project_context_resolver impor
 from odoo.addons.smart_construction_scene.services.project_management_entry_target import (
     resolve_project_management_entry_target,
 )
-from odoo.exceptions import AccessError
-
 
 class ProjectDashboardEnterHandler(ProjectContextResolverMixin, BaseIntentHandler):
     INTENT_TYPE = "project.dashboard.enter"
@@ -46,60 +44,13 @@ class ProjectDashboardEnterHandler(ProjectContextResolverMixin, BaseIntentHandle
             params = params.get("params") or {}
         ctx = ctx or {}
 
-        project_id = self._resolve_project_id(params, ctx)
-        try:
-            orchestrator = ProjectDashboardSceneOrchestrator(self.env)
-            data = orchestrator.build_entry(project_id=project_id, context=ctx)
-            project, _diag = orchestrator._service.resolve_project_with_diagnostics(project_id)
-            project_for_payload = project
-            if project:
-                try:
-                    project_for_payload = project.sudo()
-                except Exception:
-                    project_for_payload = project
-            project_payload = orchestrator._service.project_payload(project_for_payload)
-            data = attach_project_context_to_scene_payload(data, project_for_payload)
-            data["state_explain"] = orchestrator._service.build_state_explain(project_for_payload)
-            data["metrics_explain"] = orchestrator._service.build_metrics_explain(project_for_payload)
-            data["flow_map"] = orchestrator._service.build_flow_map(project_for_payload)
-            data["completion"] = orchestrator._service.build_completion(project_for_payload)
-            data["summary_rows"] = orchestrator._service.build_summary_rows(project_for_payload)
-            data["evidence_refs"] = list((project_payload.get("evidence_refs") or []))
-            data["facts"] = dict(project_payload.get("facts") or {})
-            data["fact_metrics"] = list((project_payload.get("fact_metrics") or []))
-            target = resolve_project_management_entry_target(self.env)
-            data = attach_release_surface_scene_contract(
-                data,
-                product_key="fr2",
-                capability="delivery.fr2.project_flow",
-                route=str(target.get("route") or ""),
-                diagnostics_ref=self.INTENT_TYPE,
-                trace_id=str((self.context or {}).get("trace_id") or ""),
-            )
-        except AccessError as exc:
-            message = str(exc or "")
-            if "project.project" not in message or "stage_id" not in message:
-                raise
-            orchestrator = ProjectDashboardSceneOrchestrator(self.env.sudo())
-            data = orchestrator.build_entry(project_id=project_id, context=ctx)
-            target = resolve_project_management_entry_target(self.env.sudo())
-            data = attach_release_surface_scene_contract(
-                data,
-                product_key="fr2",
-                capability="delivery.fr2.project_flow",
-                route=str(target.get("route") or ""),
-                diagnostics_ref=self.INTENT_TYPE,
-                trace_id=str((self.context or {}).get("trace_id") or ""),
-            )
-            data["degraded_reason"] = "project_stage_access_fallback"
-        if int(data.get("project_id") or 0) <= 0:
-            lifecycle_hints = dict((data or {}).get("lifecycle_hints") or {})
-            if not lifecycle_hints:
-                lifecycle_hints = self._fallback_lifecycle_hints()
+        resolution = self._resolve_project_scope(params, ctx)
+        if not resolution.available:
+            lifecycle_hints = self._fallback_lifecycle_hints()
             return {
                 "ok": False,
                 "error": {
-                    "code": "PROJECT_NOT_FOUND",
+                    "code": resolution.code,
                     "message": "项目不存在或当前账号不可访问",
                     "suggested_action": "fix_input",
                 },
@@ -117,9 +68,33 @@ class ProjectDashboardEnterHandler(ProjectContextResolverMixin, BaseIntentHandle
                     "intent": self.INTENT_TYPE,
                     "elapsed_ms": int((time.time() - ts0) * 1000),
                     "trace_id": str((self.context or {}).get("trace_id") or ""),
-                    "source_authority": orchestrator._service.source_authority_contract(),
                 },
             }
+
+        project_id = int(resolution.project.id)
+        orchestrator = ProjectDashboardSceneOrchestrator(resolution.env)
+        orchestrator._service.bind_authorized_resolution(resolution)
+        data = orchestrator.build_entry(project_id=project_id, context=ctx)
+        project, _diag = orchestrator._service.resolve_project_with_diagnostics(project_id)
+        project_payload = orchestrator._service.project_payload(project)
+        data = attach_project_context_to_scene_payload(data, project)
+        data["state_explain"] = orchestrator._service.build_state_explain(project)
+        data["metrics_explain"] = orchestrator._service.build_metrics_explain(project)
+        data["flow_map"] = orchestrator._service.build_flow_map(project)
+        data["completion"] = orchestrator._service.build_completion(project)
+        data["summary_rows"] = orchestrator._service.build_summary_rows(project)
+        data["evidence_refs"] = list((project_payload.get("evidence_refs") or []))
+        data["facts"] = dict(project_payload.get("facts") or {})
+        data["fact_metrics"] = list((project_payload.get("fact_metrics") or []))
+        target = resolve_project_management_entry_target(resolution.env)
+        data = attach_release_surface_scene_contract(
+            data,
+            product_key="fr2",
+            capability="delivery.fr2.project_flow",
+            route=str(target.get("route") or ""),
+            diagnostics_ref=self.INTENT_TYPE,
+            trace_id=str((self.context or {}).get("trace_id") or ""),
+        )
 
         return {
             "ok": True,

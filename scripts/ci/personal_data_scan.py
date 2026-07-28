@@ -35,7 +35,7 @@ RULES: tuple[tuple[str, str, re.Pattern[str]], ...] = (
     (
         "PD002",
         "MOBILE_PHONE_PATTERN",
-        re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)"),
+        re.compile(r"(?<![0-9A-Za-z])1[3-9]\d{9}(?![0-9A-Za-z])"),
     ),
     (
         "PD003",

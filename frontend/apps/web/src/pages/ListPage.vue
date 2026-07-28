@@ -4,12 +4,16 @@
     data-product-page-mode="list"
   >
     <ScPageHeader
-      v-if="status !== 'ok' && status !== 'empty'"
+      v-if="status === 'error'"
       :title="title"
       :subtitle="subtitle"
     />
 
-    <StatusPanel v-if="loading" :title="uiLabel('loading_list', '正在加载列表...')" variant="info" />
+    <ProductLoadingSkeleton
+      v-if="loading && !hasRetainedContent"
+      :title="title"
+      :loading-label="uiLabel('loading_list', '正在载入数据')"
+    />
     <StatusPanel
       v-else-if="status === 'error'"
       :title="errorCopy.title"
@@ -104,11 +108,14 @@
 
       <section
         class="table sc-product-main-surface"
+        :class="{ 'is-refreshing': loading }"
         data-workspace-primary-content
         role="region"
         aria-label="业务列表，可横向滚动"
+        :aria-busy="loading || undefined"
         tabindex="0"
       >
+        <span v-if="loading" class="refresh-status">{{ uiLabel('refreshing_list', '正在刷新数据') }}</span>
 	        <section v-if="showGroupedRows" class="grouped-table">
         <header class="grouped-toolbar">
           <div class="grouped-toolbar-title">
@@ -720,6 +727,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ProductListHeader from '../components/product-list/ProductListHeader.vue';
+import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
@@ -894,6 +902,7 @@ const emptyStateMessage = computed(() =>
     : uiLabel('empty_readonly_message', emptyCopy.value.message),
 );
 const showPlainSearch = computed(() => props.showPlainSearch !== false);
+const hasRetainedContent = computed(() => props.records.length > 0 && props.columns.length > 0);
 const groupedRows = computed(() =>
   Array.isArray(props.groupedRows) ? props.groupedRows : [],
 );
@@ -1446,7 +1455,11 @@ const totalPages = computed(() => {
   return Math.max(1, Math.ceil(total / listLimit.value));
 });
 const currentPage = computed(() => Math.min(totalPages.value, Math.floor(listOffset.value / listLimit.value) + 1));
-const showPagination = computed(() => listTotal.value !== null && props.status === 'ok' && !showGroupedRows.value);
+const showPagination = computed(() =>
+  listTotal.value !== null
+  && props.status !== 'empty'
+  && !showGroupedRows.value,
+);
 const groupedRecordTotal = computed(() => {
   if (!showGroupedRows.value) return null;
   const total = sortedGroupedRows.value.reduce((sum, group) => {

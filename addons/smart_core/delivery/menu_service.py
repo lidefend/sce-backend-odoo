@@ -79,11 +79,19 @@ class MenuService:
         }
         return exposed - denied
 
+    @staticmethod
+    def _discovers_installed_capabilities(role_surface: dict | None) -> bool:
+        surface = role_surface if isinstance(role_surface, dict) else {}
+        return bool(surface.get("discover_installed_capabilities"))
+
     @classmethod
     def _filter_primary_native_nodes(cls, nodes: list[dict], role_surface: dict | None) -> list[dict]:
         """Intersect native ACL-visible facts with an explicit P1 exposure policy."""
         exposed = cls._exposed_menu_xmlids(role_surface)
-        if not exposed or (isinstance(role_surface, dict) and role_surface.get("deny_all_navigation")):
+        discovers_capabilities = cls._discovers_installed_capabilities(role_surface)
+        if (not exposed and not discovers_capabilities) or (
+            isinstance(role_surface, dict) and role_surface.get("deny_all_navigation")
+        ):
             return []
 
         def walk(node: dict):
@@ -95,7 +103,7 @@ class MenuService:
             if not xmlid:
                 return None
             children = [kept for child in node.get("children") or [] if (kept := walk(child))]
-            if xmlid not in exposed and not children:
+            if not discovers_capabilities and xmlid not in exposed and not children:
                 return None
             candidate = dict(node)
             candidate["children"] = children
@@ -107,7 +115,8 @@ class MenuService:
     def _filter_primary_delivery_nodes(cls, nodes: list[dict], role_surface: dict | None) -> list[dict]:
         """Keep only declared leaves while allowing synthetic grouping ancestors."""
         exposed = cls._exposed_menu_xmlids(role_surface)
-        if not exposed:
+        discovers_capabilities = cls._discovers_installed_capabilities(role_surface)
+        if not exposed and not discovers_capabilities:
             return []
 
         def walk(node: dict):
@@ -115,7 +124,7 @@ class MenuService:
                 return None
             children = [kept for child in node.get("children") or [] if (kept := walk(child))]
             xmlid = cls._node_menu_xmlid(node)
-            if not children and xmlid not in exposed:
+            if not children and not discovers_capabilities and xmlid not in exposed:
                 return None
             candidate = dict(node)
             candidate["children"] = children
@@ -167,7 +176,11 @@ class MenuService:
 
     def _authorization_native_nav(self, role_surface: dict | None, native_nav: list[dict]) -> list[dict]:
         surface = role_surface if isinstance(role_surface, dict) else {}
-        if not surface.get("exposure_policy_declared") or self.env is None:
+        if (
+            not surface.get("exposure_policy_declared")
+            or self.env is None
+            or self._discovers_installed_capabilities(surface)
+        ):
             return native_nav
         # The role policy must intersect the actual request user's Odoo menu
         # visibility. app.menu.config is a delivery/config projection and can
@@ -345,7 +358,70 @@ class MenuService:
             "source": "role_surface.denied_menu_xmlids",
         }
 
-    def build_route_authority(self, role_surface: dict | None) -> dict:
+    @staticmethod
+    def _walk_nav_action_refs(nodes: list[dict]):
+        for node in nodes or []:
+            if not isinstance(node, dict):
+                continue
+            meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+            try:
+                menu_id = int(node.get("menu_id") or meta.get("menu_id") or 0)
+                action_id = int(node.get("action_id") or meta.get("action_id") or 0)
+            except (TypeError, ValueError):
+                menu_id = action_id = 0
+            if menu_id > 0 and action_id > 0:
+                yield menu_id, action_id
+            yield from MenuService._walk_nav_action_refs(node.get("children") or [])
+
+    @staticmethod
+    def filter_nav_by_route_authority(nav: list[dict], route_authority: dict | None) -> list[dict]:
+        """Keep compatibility routes only when the same payload authorizes them."""
+        authority = route_authority if isinstance(route_authority, dict) else {}
+        allowed_pairs = {
+            (int(row.get("menu_id") or 0), int(row.get("action_id") or 0))
+            for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
+            for row in authority.get(bucket) or []
+            if isinstance(row, dict)
+        }
+
+        def walk(node: dict):
+            if not isinstance(node, dict):
+                return None
+            meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+            entry_target = (
+                node.get("entry_target")
+                if isinstance(node.get("entry_target"), dict)
+                else meta.get("entry_target")
+                if isinstance(meta.get("entry_target"), dict)
+                else {}
+            )
+            scene_key = str(
+                node.get("scene_key")
+                or meta.get("scene_key")
+                or entry_target.get("scene_key")
+                or ""
+            ).strip()
+            try:
+                menu_id = int(node.get("menu_id") or meta.get("menu_id") or 0)
+                action_id = int(node.get("action_id") or meta.get("action_id") or 0)
+            except (TypeError, ValueError):
+                menu_id = action_id = 0
+            is_compatibility_action = action_id > 0 and not scene_key
+            if is_compatibility_action and (menu_id, action_id) not in allowed_pairs:
+                return None
+            children = [kept for child in node.get("children") or [] if (kept := walk(child))]
+            candidate = dict(node)
+            candidate["children"] = children
+            has_route = bool(
+                str(node.get("route") or meta.get("route") or entry_target.get("route") or "").strip()
+            )
+            if not has_route and not children and action_id <= 0:
+                return None
+            return candidate
+
+        return [kept for node in nav or [] if (kept := walk(node))]
+
+    def build_route_authority(self, role_surface: dict | None, *, nav: list[dict] | None = None) -> dict:
         surface = role_surface if isinstance(role_surface, dict) else {}
         buckets = {
             "primary_actions": [],
@@ -423,6 +499,37 @@ class MenuService:
             entry = self._denied_route_entry(menu_xmlid)
             if entry:
                 buckets["denied_actions"].append(entry)
+
+        if self._discovers_installed_capabilities(surface) and isinstance(nav, list):
+            visible_by_pair = {
+                (int(row.get("menu_id") or 0), int(row.get("action_id") or 0)): row
+                for row in facts.flat
+                if isinstance(row, dict)
+            }
+            reserved_action_ids = {
+                int(item.get("action_id") or 0)
+                for bucket_name in ("contextual_actions", "admin_actions", "denied_actions")
+                for item in buckets[bucket_name]
+                if isinstance(item, dict)
+            }
+            existing_pairs = {
+                (int(item.get("menu_id") or 0), int(item.get("action_id") or 0))
+                for bucket_name in ("primary_actions", "role_home_actions")
+                for item in buckets[bucket_name]
+                if isinstance(item, dict)
+            }
+            for menu_id, action_id in self._walk_nav_action_refs(nav):
+                pair = (menu_id, action_id)
+                if pair in existing_pairs or action_id in reserved_action_ids:
+                    continue
+                entry = self._route_entry_from_menu(
+                    visible_by_pair.get(pair),
+                    route_kind="DISCOVERED_PRIMARY_NAV",
+                    source="delivery_engine_v1.nav",
+                )
+                if entry:
+                    buckets["primary_actions"].append(entry)
+                    existing_pairs.add(pair)
 
         for bucket_name, bucket in buckets.items():
             deduped = {
@@ -1455,6 +1562,9 @@ class MenuService:
 
     def build_nav(self, *, policy: dict, role_surface: dict | None = None, native_nav: list[dict] | None = None) -> list[dict]:
         role_code = str((role_surface or {}).get("role_code") or "").strip().lower()
+        discovers_capabilities = self._discovers_installed_capabilities(role_surface)
+        # Installed-capability discovery broadens the business catalogue only.
+        # It must not implicitly grant the platform-admin configuration surface.
         is_admin = bool((role_surface or {}).get("is_platform_admin"))
         is_business_config_admin = bool((role_surface or {}).get("is_business_config_admin")) or self._is_business_config_role(role_code)
         policy_has_menu_surface = self._policy_has_menu_surface(policy)
@@ -1467,7 +1577,10 @@ class MenuService:
         authorized_policy_rows = [
             menu
             for menu in self._flatten_policy_menus(policy)
-            if str(menu.get("menu_xmlid") or "").strip().lower() in exposed_xmlids
+            if (
+                discovers_capabilities
+                or str(menu.get("menu_xmlid") or "").strip().lower() in exposed_xmlids
+            )
             and self._policy_menu_user_authorized(
                 menu,
                 native_index,

@@ -32,7 +32,7 @@ class ProjectExecutionConsistencyGuard:
         activity_model = self.env["mail.activity"] if "mail.activity" in self.env else None
         if activity_model is None or not project:
             return self.env["mail.activity"].browse([])
-        return activity_model.sudo().search(
+        return activity_model.search(
             [
                 ("res_model", "=", "project.project"),
                 ("res_id", "=", int(project.id)),

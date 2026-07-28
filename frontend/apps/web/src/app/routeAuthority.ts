@@ -1,6 +1,6 @@
 import type { ProjectContextContract, ProjectContextOption } from '@sc/schema';
 
-export type RouteAuthorityKind = 'PRIMARY_NAV' | 'ROLE_HOME_ACTION' | 'CONTEXTUAL_ROUTE' | 'ADMIN_ROUTE' | 'DENIED';
+export type RouteAuthorityKind = 'PRIMARY_NAV' | 'DISCOVERED_PRIMARY_NAV' | 'ROLE_HOME_ACTION' | 'CONTEXTUAL_ROUTE' | 'ADMIN_ROUTE' | 'DENIED';
 
 export interface RouteAuthorityProjectContextSnapshot {
   selected: ProjectContextOption | null;
@@ -55,13 +55,15 @@ function normalizeEntry(value: unknown, expectedKind: RouteAuthorityKind, allowC
   const actionId = positiveInteger(row.action_id);
   const actionXmlid = String(row.action_xmlid || '').trim();
   const menuId = positiveInteger(row.menu_id);
-  if ((!actionId || !actionXmlid) && !(allowContainer && menuId > 0)) return null;
+  const menuXmlid = String(row.menu_xmlid || '').trim();
+  const menuBoundAction = actionId > 0 && menuId > 0 && Boolean(menuXmlid);
+  if ((!actionId || (!actionXmlid && !menuBoundAction)) && !(allowContainer && menuId > 0)) return null;
   if (String(row.route_kind || '') !== expectedKind) return null;
   return {
     action_xmlid: actionXmlid,
     route_kind: expectedKind,
     menu_id: menuId,
-    menu_xmlid: String(row.menu_xmlid || '').trim(),
+    menu_xmlid: menuXmlid,
     action_id: actionId,
     name: String(row.name || '').trim(),
     model: String(row.model || '').trim(),
@@ -92,7 +94,15 @@ export function normalizeRouteAuthorityContract(value: unknown): RouteAuthorityC
       company_id: positiveInteger(scope.company_id),
       role_code: String(scope.role_code || '').trim(),
     },
-    primary_actions: normalizeBucket('primary_actions', 'PRIMARY_NAV'),
+    primary_actions: Array.isArray(row.primary_actions)
+      ? row.primary_actions
+        .map((item) => {
+          const kind = String(record(item).route_kind || '');
+          if (!['PRIMARY_NAV', 'DISCOVERED_PRIMARY_NAV'].includes(kind)) return null;
+          return normalizeEntry(item, kind as RouteAuthorityKind);
+        })
+        .filter(Boolean) as RouteAuthorityEntry[]
+      : [],
     role_home_actions: normalizeBucket('role_home_actions', 'ROLE_HOME_ACTION'),
     contextual_actions: normalizeBucket('contextual_actions', 'CONTEXTUAL_ROUTE'),
     admin_actions: normalizeBucket('admin_actions', 'ADMIN_ROUTE'),
@@ -101,7 +111,7 @@ export function normalizeRouteAuthorityContract(value: unknown): RouteAuthorityC
       ? row.menu_containers
         .map((item) => {
           const kind = String(record(item).route_kind || '');
-          if (!['PRIMARY_NAV', 'ROLE_HOME_ACTION', 'CONTEXTUAL_ROUTE', 'ADMIN_ROUTE'].includes(kind)) return null;
+          if (!['PRIMARY_NAV', 'DISCOVERED_PRIMARY_NAV', 'ROLE_HOME_ACTION', 'CONTEXTUAL_ROUTE', 'ADMIN_ROUTE'].includes(kind)) return null;
           return normalizeEntry(item, kind as RouteAuthorityKind, true);
         })
         .filter(Boolean) as RouteAuthorityEntry[]

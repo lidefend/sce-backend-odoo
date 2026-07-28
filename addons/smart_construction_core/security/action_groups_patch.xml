@@ -134,14 +134,17 @@
     <record id="menu_sc_workflow_def" model="ir.ui.menu">
         <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]" />
     </record>
+    <record id="menu_sc_workflow_runtime_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_role_business_admin')])]" />
+    </record>
     <record id="menu_sc_workflow_instance" model="ir.ui.menu">
-        <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]" />
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_role_business_admin')])]" />
     </record>
     <record id="menu_sc_workflow_workitem" model="ir.ui.menu">
-        <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]" />
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_role_business_admin')])]" />
     </record>
     <record id="menu_sc_workflow_log" model="ir.ui.menu">
-        <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]" />
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_role_business_admin')])]" />
     </record>
     <record id="menu_sc_project_cost_code" model="ir.ui.menu">
         <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]" />
@@ -187,13 +190,13 @@
         <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin'), ref('smart_construction_core.group_sc_super_admin')])]" />
     </record>
     <record id="action_sc_workflow_instance" model="ir.actions.act_window">
-        <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]" />
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_role_business_admin')])]" />
     </record>
     <record id="action_sc_workflow_workitem" model="ir.actions.act_window">
-        <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]" />
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_role_business_admin')])]" />
     </record>
     <record id="action_sc_workflow_log" model="ir.actions.act_window">
-        <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]" />
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_role_business_admin')])]" />
     </record>
     <record id="action_sc_operating_metrics_project" model="ir.actions.act_window">
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_user'))]" />

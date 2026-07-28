@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.tools.float_utils import float_compare
 
 
@@ -250,17 +250,147 @@ class ScInvoiceRegistration(models.Model):
             res["project_id"] = project_id
         return res
 
+    @api.model
+    def _require_visible_company_project(self, project_id):
+        project = self.env["project.project"].search(
+            [
+                ("id", "=", project_id),
+                ("company_id", "in", self.env.companies.ids),
+            ],
+            limit=1,
+        )
+        if not project:
+            raise AccessError(_("项目不可用或无权访问。"))
+        return project
+
+    @api.model
+    def _caller_visible_invoice_relation(self, model_name, record_id, domain=None):
+        if not record_id:
+            return self.env[model_name]
+        relation_domain = [("id", "=", record_id)]
+        if domain:
+            relation_domain.extend(domain)
+        record = self.env[model_name].search(relation_domain, limit=1)
+        if not record:
+            raise AccessError(_("发票归集关系不存在或当前用户无权访问。"))
+        return record
+
+    @api.model
+    def _invoice_relation_policy(self, source_kind, direction):
+        if source_kind == "input_invoice_tax":
+            return "input", "in"
+        if source_kind == "output_invoice_tax":
+            return "output", "out"
+        if source_kind == "prepaid_tax":
+            return "prepaid", False
+        if direction == "output":
+            return "output", "out"
+        if direction == "prepaid":
+            return "prepaid", False
+        return "input", "in"
+
+    @api.model
+    def _normalize_invoice_relation_values(self, vals, current=None):
+        values = dict(vals)
+
+        def relation_id(field_name):
+            if field_name in values:
+                return values[field_name] or False
+            if current:
+                return current[field_name].id
+            return False
+
+        source_kind = values.get("source_kind") or (
+            current.source_kind if current else self.env.context.get("default_source_kind")
+        ) or "invoice_registration"
+        direction = values.get("direction") or (
+            current.direction if current else self.env.context.get("default_direction")
+        ) or "input"
+        expected_direction, expected_contract_type = self._invoice_relation_policy(
+            source_kind, direction
+        )
+        if source_kind != "invoice_registration":
+            if "direction" in values and values["direction"] != expected_direction:
+                raise UserError(_("发票方向必须与业务类型一致。"))
+            if current and "source_kind" in values and direction != expected_direction:
+                raise UserError(_("切换发票业务类型时必须同步清理不一致的方向。"))
+            values.setdefault("direction", expected_direction)
+
+        project_id = relation_id("project_id")
+        project = self._caller_visible_invoice_relation(
+            "project.project",
+            project_id,
+            [("company_id", "in", self.env.companies.ids)],
+        )
+        if not project:
+            raise AccessError(_("发票归集关系不存在或当前用户无权访问。"))
+
+        settlement = self._caller_visible_invoice_relation(
+            "sc.settlement.order",
+            relation_id("settlement_id"),
+            [("company_id", "in", self.env.companies.ids)],
+        )
+        contract = self._caller_visible_invoice_relation(
+            "construction.contract",
+            relation_id("contract_id"),
+            [("company_id", "in", self.env.companies.ids)],
+        )
+        partner = self._caller_visible_invoice_relation(
+            "res.partner",
+            relation_id("partner_id"),
+            ["|", ("company_id", "=", False), ("company_id", "in", self.env.companies.ids)],
+        )
+
+        basis_contract = settlement.contract_id if settlement else contract
+        settlement_partner = (
+            (settlement.settlement_unit_id or settlement.partner_id)
+            if settlement
+            else self.env["res.partner"]
+        )
+        basis_partner = (
+            basis_contract.partner_id
+            if basis_contract and basis_contract.partner_id
+            else settlement_partner
+        )
+
+        if settlement:
+            if settlement.project_id != project:
+                raise UserError(_("发票结算依据必须属于当前项目。"))
+            if contract and settlement.contract_id and contract != settlement.contract_id:
+                raise UserError(_("显式合同与发票结算依据合同不一致。"))
+            if settlement.contract_id:
+                values.setdefault("contract_id", settlement.contract_id.id)
+                contract = settlement.contract_id
+        if contract:
+            if contract.project_id != project or contract.company_id != project.company_id:
+                raise UserError(_("发票合同必须属于当前项目和公司。"))
+            if expected_contract_type and contract.type != expected_contract_type:
+                raise UserError(_("发票合同类型必须与发票业务类型一致。"))
+        if settlement_partner and basis_contract and basis_contract.partner_id:
+            if settlement_partner != basis_contract.partner_id:
+                raise UserError(_("结算依据往来单位与合同相对方不一致。"))
+        if partner and basis_partner and partner != basis_partner:
+            raise UserError(_("显式往来单位与发票权威关系不一致。"))
+        if basis_partner:
+            values.setdefault("partner_id", basis_partner.id)
+        return values
+
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
-        for vals in vals_list:
+        normalized_values = []
+        for original_vals in vals_list:
+            vals = dict(original_vals)
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
+            self._require_visible_company_project(vals.get("project_id"))
+            vals = self._normalize_invoice_relation_values(vals)
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.invoice.registration") or _("Invoice Registration")
-        return super().create(vals_list)
+            normalized_values.append(vals)
+        return super().create(normalized_values)
 
     def _resolve_business_category_id(self, vals):
         Category = self.env["sc.business.category"].sudo()
@@ -386,7 +516,11 @@ class ScInvoiceRegistration(models.Model):
             } | self._history_surface_allowed_write_fields()
             if set(vals) - allowed:
                 raise UserError(_("历史迁移发票登记已确认，只允许补充业务锚点和备注。"))
-        return super().write(vals)
+        for rec in self:
+            rec._require_visible_company_project(vals.get("project_id", rec.project_id.id))
+            normalized_values = rec._normalize_invoice_relation_values(vals, current=rec)
+            super(ScInvoiceRegistration, rec).write(normalized_values)
+        return True
 
     def init(self):
         self.env.cr.execute(

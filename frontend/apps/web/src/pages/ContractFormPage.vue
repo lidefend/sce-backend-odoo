@@ -16,10 +16,11 @@
     :data-v2-shadow-error="v2ContractDecodeError || '-'"
   >
     <ContractFormProductHeader
+      v-if="!initialFormLoading"
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isProjectIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
-      :busy="busy" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
+      :busy="busy || status === 'loading'" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :submit-label="submitButtonLabel"
       :direct-actions="headerBusinessDirectActions" :overflow-actions="headerBusinessOverflowActions" :config-actions="headerConfigActionsVisible"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
@@ -27,12 +28,13 @@
       @run-primary="runPrimaryFormAction" @run-action="runAction" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     />
 
-    <StatusPanel v-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
-    <StatusPanel v-else-if="status === 'loading'" :title="pageDisplayTitle" variant="info" busy />
+    <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
+    <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="recordMissing" :title="pageDisplayTitle" message="该记录不存在，可能已被删除或当前链接已经失效。" :error-code="404" variant="error" retry-label="返回安全页面" :on-retry="() => router.push('/')" />
 
-    <section v-else :class="['card', 'sc-panel', 'sc-product-main-surface', { 'card--flow': isProjectIntakeCreateMode }]" data-workspace-primary-content>
+    <section v-else :class="['card', 'sc-panel', 'sc-product-main-surface', { 'card--flow': isProjectIntakeCreateMode, 'is-refreshing': status === 'loading' }]"
+      :aria-busy="status === 'loading' || undefined" data-workspace-primary-content>
       <p v-if="financialWorkspace && submissionFeedback" class="submission-feedback" :class="`submission-feedback--${submissionFeedback.kind}`" role="status">
         {{ submissionFeedback.message }}
       </p>
@@ -150,7 +152,7 @@
           :field-schemas-for-nodes="nativeFieldSchemasForNodes"
           :field-selection-mode="isContractFieldOrderEditable"
           :is-node-visible="isNativeLayoutNodeVisible"
-          :layout-nodes="nativeFormLayoutNodes"
+          :layout-nodes="nativeCanvasFormLayoutNodes"
           :layout-visibility-revision="nativeLayoutVisibilityRevision"
           :native-action-handler="runNativeLayoutAction"
           :native-action-state-resolver="resolveNativeActionState"
@@ -247,6 +249,7 @@ import ProductFormErrorSummary from '../components/product-record/ProductFormErr
 import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import LayoutShell from '../components/template/LayoutShell.vue';
+import ProductFormLoadingSkeleton from '../components/product-record/ProductFormLoadingSkeleton.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
 import { type NativeFormLayoutNode } from '../components/template/NativeFormTreeRenderer.vue';
 import SceneBlocksRenderer from '../components/scene/SceneBlocksRenderer.vue';
@@ -691,6 +694,7 @@ const formSettingsActiveTab = ref<'structure' | 'fields' | 'details' | 'actions'
 const contractModeFeedback = ref('');
 const contract = ref<ActionContract | null>(null);
 const contractMeta = ref<Record<string, unknown> | null>(null);
+const initialFormLoading = computed(() => status.value === 'loading' && !contract.value);
 type PageStatusEvent = Extract<FormRuntimeStateEvent, { kind: 'status' }>;
 function applyPageStatusEvent(event: PageStatusEvent) {
   applyFormRuntimeStatusEvent({ status, errorMessage }, event);
@@ -951,7 +955,7 @@ const {
   recordId,
   reload: () => reload(),
   routeMenuId: () => route.query.menu_id,
-  saveRecord: (refreshPolicy) => saveRecord(refreshPolicy),
+  saveRecord: (refreshPolicy, options) => saveRecord(refreshPolicy, options),
   status,
   submissionFeedback,
   validationErrors,
@@ -1262,9 +1266,27 @@ const groupedHeaderActions = computed(() => groupContractHeaderActions({
   configurationMode: showCurrentFormFieldConfigScope.value, productRecord: Boolean(financialWorkspace.value),
   isSubmitAction: isUnifiedSubmitAction,
 }));
-const headerBusinessDirectActions = computed(() => groupedHeaderActions.value.direct);
-const headerBusinessOverflowActions = computed(() => groupedHeaderActions.value.overflow);
+function isPrimaryCreateFooterAction(action: ContractAction) {
+  const primary = primaryCreateFooterAction.value;
+  if (!primary || recordId.value) return false;
+  return action.key === primary.key
+    || Boolean(action.methodName && primary.methodName && action.methodName === primary.methodName);
+}
+const headerBusinessDirectActions = computed(() => groupedHeaderActions.value.direct.filter((action) => !isPrimaryCreateFooterAction(action)));
+const headerBusinessOverflowActions = computed(() => groupedHeaderActions.value.overflow.filter((action) => !isPrimaryCreateFooterAction(action)));
 const headerConfigActionsVisible = computed(() => groupedHeaderActions.value.configuration);
+const nativeCanvasFormLayoutNodes = computed<NativeFormLayoutNode[]>(() => {
+  const primaryMethod = !recordId.value ? String(primaryCreateFooterAction.value?.methodName || '').trim() : '';
+  if (!primaryMethod) return nativeFormLayoutNodes.value;
+  const filterNodes = (nodes: NativeFormLayoutNode[]): NativeFormLayoutNode[] => nodes.flatMap((node) => {
+    const actionMethod = String(node.name || node.action?.name || '').trim();
+    if (node.type === 'button' && actionMethod === primaryMethod) return [];
+    const children = Array.isArray(node.children) ? filterNodes(node.children) : node.children;
+    if (node.type === 'header' && Array.isArray(children) && !children.length) return [];
+    return [{ ...node, ...(Array.isArray(children) ? { children } : {}) }];
+  });
+  return filterNodes(nativeFormLayoutNodes.value);
+});
 
 const contractV2ActionRules = computed(() => resolveContractActionRules(contract.value));
 

@@ -74,6 +74,10 @@ class TestProjectMemberRoleSurface(TransactionCase):
             resolver.resolve_role_code({"smart_core.group_smart_core_admin"}),
             "system_admin",
         )
+        self.assertEqual(
+            resolver.resolve_role_code({"base.group_system"}),
+            "restricted",
+        )
 
     def test_formal_role_surface_uses_authoritative_product_label_and_home(self):
         resolver = self._resolver()
@@ -108,7 +112,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
                 self.assertFalse(exposed & denied)
                 self.assertTrue(all(xmlid.startswith("smart_construction_core.menu_") for xmlid in exposed | denied))
 
-    def test_system_admin_navigation_exposes_only_approved_admin_entry(self):
+    def test_system_admin_navigation_discovers_installed_capabilities_and_configuration(self):
         resolver = self._resolver()
         surface = resolver.build_role_surface(
             {"smart_core.group_smart_core_admin"},
@@ -119,12 +123,12 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertEqual(surface["role_code"], "system_admin")
         self.assertTrue(surface["exposure_policy_declared"])
         self.assertFalse(surface["deny_all_navigation"])
+        self.assertTrue(surface["discover_installed_capabilities"])
+        self.assertTrue(surface["system_configuration_visible"])
         self.assertEqual(set(surface["admin_menu_xmlids"]), self.SYSTEM_ADMIN_MENU_XMLIDS)
-        self.assertFalse(surface["primary_menu_xmlids"])
-        self.assertFalse(surface["role_home_menu_xmlids"])
 
         approved_xmlid = next(iter(self.SYSTEM_ADMIN_MENU_XMLIDS))
-        unapproved_xmlid = "smart_construction_core.menu_sc_project_project"
+        capability_xmlid = "smart_construction_core.menu_sc_project_project"
         native = [{
             "xmlid": "smart_construction_core.menu_sc_root",
             "label": "智能施工 2.0",
@@ -163,14 +167,14 @@ class TestProjectMemberRoleSurface(TransactionCase):
                         "label": "二级包装",
                         "menu_id": 13,
                         "children": [{
-                            "xmlid": unapproved_xmlid,
+                            "xmlid": capability_xmlid,
                             "label": "项目列表",
                             "menu_id": 14,
                             "action_id": 22,
                             "model": "project.project",
                             "route": "/a/22?menu_id=14",
                             "meta": {
-                                "menu_xmlid": unapproved_xmlid,
+                                "menu_xmlid": capability_xmlid,
                                 "action_id": 22,
                                 "model": "project.project",
                                 "route": "/a/22?menu_id=14",
@@ -199,7 +203,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
                     "label": "项目列表",
                     "menu_id": 12,
                     "action_id": 22,
-                    "menu_xmlid": unapproved_xmlid,
+                    "menu_xmlid": capability_xmlid,
                     "model": "project.project",
                     "route": "/a/22?menu_id=12",
                     "release_state": "released",
@@ -217,28 +221,16 @@ class TestProjectMemberRoleSurface(TransactionCase):
         pre_filter_leaves = list(self._iter_renderable_leaves(native))
         self.assertEqual(
             {self._leaf_xmlid(node) for node in pre_filter_leaves},
-            {approved_xmlid, unapproved_xmlid},
+            {approved_xmlid, capability_xmlid},
         )
         self.assertEqual(len(nav), 1)
-        self.assertEqual(len(nav[0].get("children") or []), 1)
         visible_leaves = list(self._iter_renderable_leaves(nav))
         self.assertEqual(
             {self._leaf_xmlid(child) for child in visible_leaves},
-            self.SYSTEM_ADMIN_MENU_XMLIDS,
+            {approved_xmlid, capability_xmlid},
         )
-        self.assertEqual(len(visible_leaves), 1)
-        self.assertEqual(visible_leaves[0]["route"], "/a/21?menu_id=16")
-        self.assertNotIn(
-            unapproved_xmlid,
-            {self._leaf_xmlid(child) for child in visible_leaves},
-        )
-        self.assertEqual(
-            MenuService._filter_primary_delivery_nodes(
-                nav[0].get("children") or [],
-                {"exposure_policy_declared": True},
-            ),
-            [],
-        )
+        self.assertEqual(len(visible_leaves), 2)
+        self.assertIn("/a/21?menu_id=16", {node["route"] for node in visible_leaves})
 
     def test_system_admin_formal_menu_fact_chain_enforces_group_action_and_model_acl(self):
         Users = self.env["res.users"].with_context(no_reset_password=True)
@@ -343,12 +335,14 @@ class TestProjectMemberRoleSurface(TransactionCase):
             native_nav=[],
         )
         visible_leaves = list(self._iter_renderable_leaves(nav))
-        self.assertEqual(
-            {self._leaf_xmlid(node) for node in visible_leaves},
-            self.SYSTEM_ADMIN_MENU_XMLIDS,
+        visible_xmlids = {self._leaf_xmlid(node) for node in visible_leaves}
+        self.assertTrue(self.SYSTEM_ADMIN_MENU_XMLIDS <= visible_xmlids)
+        self.assertTrue(
+            all(
+                str(node.get("route") or "").startswith("/a/")
+                for node in visible_leaves
+            )
         )
-        self.assertEqual(len(visible_leaves), 1)
-        self.assertTrue(str(visible_leaves[0].get("route") or "").startswith("/a/"))
         self.assertNotIn(denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
         self.assertNotIn(acl_denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
         self.assertNotIn(missing_action_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
@@ -487,6 +481,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         )
 
         self.assertEqual(surface["role_code"], "executive")
+        self.assertEqual(surface["role_label"], "管理层")
         self.assertFalse(surface["exposure_policy_declared"])
         contract = MenuService(self.env(user=executive_user)).build_route_authority(surface)
         self.assertEqual(contract["principal_scope"], {

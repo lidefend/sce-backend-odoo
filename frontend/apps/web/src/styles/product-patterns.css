@@ -39,7 +39,12 @@
 .router-host {
   min-width: 0;
   width: 100%;
+  min-height: 100%;
   overflow-x: visible;
+}
+
+.router-host > :is(.sc-page-frame, .sc-product-page-frame) {
+  min-height: 100%;
 }
 
 .sc-page-frame,

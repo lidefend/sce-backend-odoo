@@ -17,7 +17,10 @@ export function usePrimaryFormActionRuntime(params: {
   recordId: Ref<number>;
   reload: () => Promise<void>;
   routeMenuId: () => unknown;
-  saveRecord: (refreshPolicy?: ContractAction['refreshPolicy']) => Promise<boolean | number>;
+  saveRecord: (
+    refreshPolicy?: ContractAction['refreshPolicy'],
+    options?: { navigateAfterCreate?: boolean },
+  ) => Promise<boolean | number>;
   status: Ref<UiStatus>;
   submissionFeedback: Ref<SubmissionFeedback>;
   validationErrors: Ref<string[]>;
@@ -60,7 +63,10 @@ export function usePrimaryFormActionRuntime(params: {
   async function runPrimaryFormAction() {
     const footerAction = params.primaryCreateFooterAction();
     if (footerAction) {
-      const saved = await params.saveRecord(footerAction.refreshPolicy);
+      const saved = await params.saveRecord(
+        footerAction.refreshPolicy,
+        { navigateAfterCreate: false },
+      );
       if (!saved) return;
       await nextTick();
       const submittedRecordId = typeof saved === 'number' ? saved : params.recordId.value;

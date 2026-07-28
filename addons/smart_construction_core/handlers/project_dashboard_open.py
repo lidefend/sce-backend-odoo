@@ -30,9 +30,8 @@ class ProjectDashboardOpenHandler(ProjectContextResolverMixin, BaseIntentHandler
         if isinstance(params, dict) and isinstance(params.get("params"), dict):
             params = params.get("params") or {}
         ctx = ctx or {}
-        project_id = self._resolve_project_id(params, ctx)
-        delegate = ProjectDashboardEnterHandler(self.env, payload={"project_id": project_id}, context=self.context)
-        delegated = delegate.handle(payload={"project_id": project_id}, ctx=ctx)
+        delegate = ProjectDashboardEnterHandler(self.env, payload=params, context=self.context)
+        delegated = delegate.handle(payload=params, ctx=ctx)
         meta = delegated.get("meta") if isinstance(delegated.get("meta"), dict) else {}
         meta.update(
             {

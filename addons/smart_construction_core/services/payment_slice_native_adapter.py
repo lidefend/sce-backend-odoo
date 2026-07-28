@@ -37,7 +37,6 @@ class PaymentSliceNativeAdapter:
         PaymentRequest = self._model("payment.request")
         if PaymentRequest is None or not project:
             return []
-        PaymentRequest = PaymentRequest.sudo()
         try:
             rows = PaymentRequest.search(self.request_domain(project), order="date_request desc,id desc", limit=max(int(limit or 0), 0))
         except Exception:
@@ -75,7 +74,6 @@ class PaymentSliceNativeAdapter:
         if PaymentRequest is None or not project:
             summary["recent_requests"] = requests
             return summary
-        PaymentRequest = PaymentRequest.sudo()
         try:
             all_requests = PaymentRequest.search(self.request_domain(project), order="date_request desc,id desc")
         except Exception:
@@ -121,7 +119,6 @@ class PaymentSliceNativeAdapter:
             }
         )
         if PaymentLedger is not None and project:
-            PaymentLedger = PaymentLedger.sudo()
             try:
                 ledgers = PaymentLedger.search(self.ledger_domain(project), order="paid_at desc,id desc")
             except Exception:

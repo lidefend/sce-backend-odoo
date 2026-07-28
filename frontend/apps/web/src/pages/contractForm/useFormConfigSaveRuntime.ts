@@ -18,6 +18,15 @@ import { saveStandaloneFormConfig } from './saveStandaloneFormConfig';
 
 type LowCodeColumns = 1 | 2 | 3;
 
+function responsePrecheckWarnings(result: unknown): string[] {
+  if (!result || typeof result !== 'object' || !('precheck' in result)) return [];
+  const precheck = result.precheck;
+  if (!precheck || typeof precheck !== 'object' || !('warnings' in precheck)) return [];
+  return Array.isArray(precheck.warnings)
+    ? precheck.warnings.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+}
+
 export function useFormConfigSaveRuntime(params: {
   appendOperation: (action: string, summary: string, status?: 'pending' | 'saved' | 'reverted' | 'done') => void;
   buildLowCodeViewOrchestration: () => unknown;
@@ -128,8 +137,7 @@ export function useFormConfigSaveRuntime(params: {
           diff_summary: { summary: saveOperationSummary },
         })
         : await saveStandaloneFormConfig({ baseParams, name: contractName, model: modelName, contractPayload });
-      const warnings = Array.isArray(saveResult?.precheck?.warnings) ? saveResult.precheck?.warnings || [] : [];
-      params.lowCodePrecheckWarnings.value = warnings.map((item) => String(item || '').trim()).filter(Boolean);
+      params.lowCodePrecheckWarnings.value = responsePrecheckWarnings(saveResult);
       if (Object.keys(changedVisibility).length) {
         params.fieldVisibilityBase.value = {
           ...params.fieldVisibilityBase.value,

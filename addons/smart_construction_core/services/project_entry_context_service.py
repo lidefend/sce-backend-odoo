@@ -7,6 +7,9 @@ from odoo.addons.smart_construction_core.services.project_context_contract impor
 from odoo.addons.smart_construction_core.services.project_dashboard_service import (
     ProjectDashboardService,
 )
+from odoo.addons.smart_construction_core.services.project_authorization_service import (
+    ProjectAuthorizationService,
+)
 
 
 class ProjectEntryContextService:
@@ -20,6 +23,7 @@ class ProjectEntryContextService:
     def __init__(self, env):
         self.env = env
         self._dashboard_service = ProjectDashboardService(env)
+        self._authorization_service = ProjectAuthorizationService(env)
 
     def _company_options(self, active_company_id=0):
         allowed = self.env.user.company_ids
@@ -69,14 +73,10 @@ class ProjectEntryContextService:
     @staticmethod
     def _source_from_reason(resolution_path):
         normalized = str(resolution_path or "").strip().lower()
-        if normalized == "explicit_project_id":
+        if normalized == "explicit_project":
             return "current", "high"
-        if normalized == "creator_domain":
-            return "recent", "high"
-        if normalized == "user_domain":
+        if normalized == "default_visible_project":
             return "current", "medium"
-        if normalized in {"global_search", "active_search_read"}:
-            return "fallback", "low"
         return "fallback", "low"
 
     @staticmethod
@@ -113,15 +113,16 @@ class ProjectEntryContextService:
         }
 
     def resolve(self, project_id=0, company_id=0, operation_strategy=""):
-        project, diagnostics = self._dashboard_service.resolve_project_with_diagnostics(project_id)
-        allowed_company_id = self._allowed_company_id(company_id)
-        if project and allowed_company_id and project.company_id.id != allowed_company_id:
-            project = self.env["project.project"].browse([])
-            diagnostics = {**(diagnostics or {}), "resolution_path": "company_scope_denied"}
+        resolution = self._authorization_service.resolve(project_id=project_id, company_id=company_id)
+        self.env = resolution.env
+        self._dashboard_service = ProjectDashboardService(resolution.env)
+        project = resolution.project
+        diagnostics = dict(resolution.diagnostics)
+        allowed_company_id = int((resolution.env.context.get("allowed_company_ids") or [0])[0] or 0)
         operation_strategy = str(operation_strategy or "").strip()
         if project and operation_strategy in {"direct", "joint"} and project.operation_strategy != operation_strategy:
-            project = self.env["project.project"].browse([])
-            diagnostics = {**(diagnostics or {}), "resolution_path": "operation_scope_denied"}
+            project = resolution.env["project.project"].browse([])
+            diagnostics = {"status": "unavailable", "resolution_path": "project_unavailable"}
         project_context = build_project_context(project)
         source, confidence = self._source_from_reason((diagnostics or {}).get("resolution_path"))
         available = int(project_context.get("project_id") or 0) > 0
@@ -131,13 +132,24 @@ class ProjectEntryContextService:
             available=available,
             option_count=0,
         )
+        company_options = (
+            self._company_options(
+                active_company_id=(
+                    allowed_company_id
+                    or project_context.get("company_id")
+                    or 0
+                )
+            )
+            if available
+            else []
+        )
         return {
             "available": available,
             "project_context": project_context,
             "source": source if available else "none",
             "confidence": confidence if available else "low",
             "route": self.ENTRY_ROUTE if available else "/my-work",
-            "company_options": self._company_options(active_company_id=allowed_company_id or project_context.get("company_id") or 0),
+            "company_options": company_options,
             "operation_options": self._operation_options(project_context, operation_strategy),
             "suggested_action": dict(guidance.get("suggested_action") or {}),
             "lifecycle_hints": dict(guidance.get("lifecycle_hints") or {}),

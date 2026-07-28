@@ -1,0 +1,118 @@
+{
+  "SCHEMA_VERSION": 1,
+  "PHASE_ID": "UM-P3-BUSINESS-CLOSURE",
+  "SLICE_ID": "CORE-035-S07A-SOURCE-PROFILING",
+  "TASK": "PREPARE_AND_RESUME_UM_P3_CORE_035_S07A_ON_AUTHORIZED_SERVER",
+  "AUTHORIZATION": {
+    "EVIDENCE_ID": "OWNER_APPROVAL_CORE035_S07A_SERVER_DISCOVERY_20260726",
+    "AUTHORIZED_BY": "PROJECT_OWNER",
+    "AUTHORIZED_AT": "2026-07-26",
+    "PURPOSE": "Read-only discovery and profiling of LEGACY_SOURCE_A and LEGACY_SOURCE_B historical subcontract relations with a dedicated disposable analysis target"
+  },
+  "SOURCE_BASELINE": {
+    "REPOSITORY": "r11f0-governance-gate-repair",
+    "BRANCH": "feature/user-module-personal-data-visibility",
+    "HEAD": "e752b3667631e35a9195191f6d8f2a62b5d4c723",
+    "TREE": "73cee896dfebafdb9cb5cd92604c02b232919393"
+  },
+  "SOURCE_ACCESS": {
+    "MODE": "CONTENT_ADDRESSED_READ_ONLY_CAPTURE",
+    "SERVER_ALIAS": "sc-root",
+    "SERVER_ID": "hcss-ecs-0d01",
+    "SERVER_REPOSITORY": "/opt/projects/repos/sce-backend-odoo",
+    "SERVER_REPOSITORY_HEAD": "6095e2013d64c06a5ea936addd35858959d2a28f",
+    "CAPTURE_ROOT": "artifacts/migration/live_old_system_strict_parity_gate/20260601T130457Z",
+    "CAPTURE_TIME": "2026-06-01T13:04:57Z",
+    "SOURCE_SNAPSHOT_TIME_COMPATIBLE": true,
+    "SOURCE_FILES_GIT_TRACKED": true,
+    "SOURCE_TREE_CLEAN": true,
+    "SOURCE_MUTATION_ALLOWED": false,
+    "SOURCE_MUTATION_EXECUTED": false,
+    "CREDENTIALS_EXPOSED": false,
+    "CREDENTIALS_PERSISTED": false
+  },
+  "LEGACY_SOURCE_A": {
+    "SOURCE_ID": "LEGACY_SOURCE_A_STRICT_PARITY_CAPTURE_20260601T130457Z",
+    "SOURCE_TYPE": "IMMUTABLE_CAPTURE_MANIFEST_AND_CONTENT_HASHES",
+    "MANIFEST_PATH": "artifacts/migration/live_old_system_strict_parity_gate/20260601T130457Z/legacy_tenant_fixture_old_live_rows/legacy_tenant_fixture_old_live_full_rows_manifest.json",
+    "MANIFEST_SHA256": "f2281fc0e30f1ac305a6cae8ec763b16c5ee6ea070bdbc17ff727c520a6fc11a",
+    "IDENTITY_PROVEN": true,
+    "REQUIRED_ANCHORS_PRESENT": false,
+    "REQUIRED_ANCHOR_RESULT": "NOT_APPLICABLE_WITH_SOURCE_EVIDENCE_LEGACY_SOURCE_A_CAPTURE_HAS_NO_SUBCONTRACT_REGISTER_OR_SETTLEMENT_SURFACE",
+    "SURFACE_COUNT": 42
+  },
+  "LEGACY_SOURCE_B": {
+    "SOURCE_ID": "LEGACY_SOURCE_B_DIRECT_PROJECT_STRICT_PARITY_CAPTURE_20260601T130457Z",
+    "SOURCE_TYPE": "IMMUTABLE_CONTENT_ADDRESSED_JSON_CAPTURE",
+    "IDENTITY_LOCK_PATH": "artifacts/migration/legacy_source_b_direct_project_old_identity_lock_v1.json",
+    "IDENTITY_LOCK_STATUS": "PASS",
+    "IDENTITY_PROVEN": true,
+    "REQUIRED_ANCHORS_PRESENT": true,
+    "FILES": [
+      {
+        "LABEL": "SUBCONTRACT_CONTRACT",
+        "PATH": "artifacts/migration/live_old_system_strict_parity_gate/20260601T130457Z/legacy_source_b_direct_project_old_rows/分包合同__96fc3448ba5844af9e862a42f0ebfa57.json",
+        "SHA256": "134f1bd4694ae8a6649b3ee3d264388dd65e19592312dd61f1cd744650642bda",
+        "SIZE_BYTES": 192847,
+        "ROW_COUNT": 86,
+        "IDENTITY_FIELD": "DJBH",
+        "IDENTITY_UNIQUE": true
+      },
+      {
+        "LABEL": "SUBCONTRACT_REGISTER_LINE",
+        "PATH": "artifacts/migration/live_old_system_strict_parity_gate/20260601T130457Z/legacy_source_b_direct_project_old_rows/分包方单__f6fc81dedcfe4ff9a554c2be4a1bafd8.json",
+        "SHA256": "f2309baab8fff14a02e3e559f3e575a44f969a4e02878816461ed42adb75a510",
+        "SIZE_BYTES": 2161408,
+        "ROW_COUNT": 721,
+        "IDENTITY_FIELD": "RowIndex",
+        "IDENTITY_UNIQUE": true,
+        "IDENTITY_POLICY": "SOURCE_CAPTURE_ROW_IDENTITY_ONLY_NOT_A_RELATION_KEY"
+      },
+      {
+        "LABEL": "SUBCONTRACT_SETTLEMENT",
+        "PATH": "artifacts/migration/live_old_system_strict_parity_gate/20260601T130457Z/legacy_source_b_direct_project_old_rows/分包结算单__789fc7514b5a4341988ae78dcc6e72fc.json",
+        "SHA256": "c4f28d77388ed8ea7f0df4f5a38ca206ce4728a9f134508fcd1846a4e83a15ff",
+        "SIZE_BYTES": 103524,
+        "ROW_COUNT": 88,
+        "IDENTITY_FIELD": "DJBH",
+        "IDENTITY_UNIQUE": true
+      }
+    ]
+  },
+  "ISOLATED_TARGET": {
+    "DATABASE": "sc_migration_core035_s07a_20260727035410_acab0f53",
+    "COMPOSE_PROJECT": "sc-core035-s07a-20260727035410-acab0f53",
+    "CREATED_AT": "2026-07-27T03:54:10Z",
+    "NEW_AND_DEDICATED": true,
+    "WRITABLE": true,
+    "DISPOSABLE": true,
+    "EXISTING_DATABASE_COLLISION": false,
+    "DATABASE_VERSION": "PostgreSQL 15.18",
+    "ENCODING": "UTF8",
+    "TIMEZONE": "Etc/UTC",
+    "CURRENT_REPOSITORY_MODULES_INSTALLED": true,
+    "TARGET_MODELS_PRESENT": [
+      "sc.subcontract.register",
+      "sc.subcontract.register.line",
+      "sc.subcontract.settlement",
+      "sc.subcontract.settlement.line"
+    ],
+    "REGISTER_LINE_RELATION_FIELD_PRESENT": true,
+    "S05_TARGET_CONSTRAINTS_PRESENT": true,
+    "S06_TARGET_CONSTRAINTS_PRESENT": true,
+    "REAL_ORM_REGRESSION_RESULT": "PASS_259_TESTS_0_FAILURES_0_ERRORS",
+    "INITIAL_BUSINESS_ROW_COUNT": 0,
+    "ANALYSIS_SCHEMA_ONLY": "core035_analysis",
+    "ANALYSIS_PROFILE_SHA256": "f1ae9b712155f247d7971ee53a36c23da76d6ae248d4c3e7fe9fb16ae6727500",
+    "CLEANUP_OWNER": "PROJECT_OWNER_OR_AUTHORIZED_ENVIRONMENT_OPERATOR",
+    "EXPIRY_AT": "2026-08-03T03:54:10Z",
+    "DESTROY_COMMAND_POLICY": "docker compose down --volumes for the exact recorded compose project only"
+  },
+  "EXISTING_BUSINESS_RESOURCES_CHANGED": false,
+  "S07A_READY_TO_RESUME": true,
+  "S07A_STATUS": "SOURCE_PROFILING_COMPLETED",
+  "S07B_APPROVED": false,
+  "MIGRATION_EXECUTED": false,
+  "RELATION_REMEDIATION_EXECUTED": false,
+  "RESULT": "PASS_CORE_035_S07A_ENVIRONMENT_READY_AND_PROFILED"
+}

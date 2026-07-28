@@ -38,6 +38,14 @@ def _load_handler():
     _install_module("odoo.addons.smart_core.core.base_handler", BaseIntentHandler=_BaseIntentHandler)
     _install_module(
         "odoo.addons.smart_core.security.platform_admin",
+        can_discover_platform_capabilities=lambda user: bool(
+            getattr(user, "is_platform_admin", False)
+            or getattr(user, "is_system_admin", False)
+        ),
+        can_manage_system_configuration=lambda user: bool(
+            getattr(user, "is_platform_admin", False)
+            or getattr(user, "is_system_admin", False)
+        ),
         user_is_platform_admin=lambda user: bool(getattr(user, "is_platform_admin", False)),
     )
     _install_module(
@@ -125,8 +133,11 @@ class _FakeAction:
 class _FakeEnv:
     uid = 9
 
-    def __init__(self, *, is_platform_admin=False, has_action=True):
-        self.user = types.SimpleNamespace(is_platform_admin=is_platform_admin)
+    def __init__(self, *, is_platform_admin=False, is_system_admin=False, has_action=True):
+        self.user = types.SimpleNamespace(
+            is_platform_admin=is_platform_admin,
+            is_system_admin=is_system_admin,
+        )
         self.has_action = has_action
 
     def ref(self, xmlid, raise_if_not_found=False):
@@ -226,7 +237,7 @@ class TestAppShellBoundaries(unittest.TestCase):
         self.assertNotIn("delivery", normal_app_ids)
         self.assertIn("delivery", admin_app_ids)
 
-    def test_catalog_hides_business_apps_from_platform_admin_without_business_groups(self):
+    def test_catalog_exposes_installed_business_apps_without_granting_business_groups(self):
         handler = self.module.AppCatalogHandler(env=_FakeEnv(is_platform_admin=True))
 
         result = handler.handle(payload={})
@@ -234,16 +245,34 @@ class TestAppShellBoundaries(unittest.TestCase):
         app_ids = [row["meta"]["app_id"] for row in result["data"]["apps"]]
         self.assertIn("workspace", app_ids)
         self.assertIn("release_management", app_ids)
-        self.assertNotIn("projects", app_ids)
-        self.assertNotIn("contracts", app_ids)
+        self.assertIn("projects", app_ids)
+        self.assertIn("contracts", app_ids)
 
-    def test_nav_hides_business_scene_from_platform_admin_without_business_groups(self):
+    def test_nav_exposes_business_scene_from_platform_admin_without_business_groups(self):
         handler = self.module.AppNavHandler(env=_FakeEnv(is_platform_admin=True))
 
         result = handler.handle(payload={"params": {"app": "projects"}})
 
         self.assertTrue(result["ok"])
-        self.assertEqual(result["data"]["sections"], [])
+        self.assertTrue(result["data"]["sections"])
+        self.assertIn(
+            "projects.list",
+            {
+                child["key"]
+                for section in result["data"]["sections"]
+                for child in section["children"]
+            },
+        )
+
+    def test_base_system_admin_discovers_business_and_configuration_apps(self):
+        handler = self.module.AppCatalogHandler(env=_FakeEnv(is_system_admin=True))
+
+        result = handler.handle(payload={})
+
+        app_ids = {row["meta"]["app_id"] for row in result["data"]["apps"]}
+        self.assertIn("projects", app_ids)
+        self.assertIn("contracts", app_ids)
+        self.assertIn("release_management", app_ids)
 
     def test_open_alias_app_uses_stable_primary_scene(self):
         handler = self.module.AppOpenHandler(env=types.SimpleNamespace(uid=9))

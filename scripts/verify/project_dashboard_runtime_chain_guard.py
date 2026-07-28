@@ -32,7 +32,8 @@ def _check_handler() -> None:
     required = [
         'INTENT_TYPE = "project.dashboard"',
         'DESCRIPTION = "Project management dashboard contract"',
-        "service = ProjectDashboardService(self.env)",
+        "resolution = self._resolve_project_scope(params, ctx)",
+        "service = ProjectDashboardService(resolution.env)",
         "data = service.build(project_id=project_id, context=ctx)",
         '"intent": self.INTENT_TYPE',
         '"contract_version": "v1"',
@@ -50,9 +51,18 @@ def _check_service() -> None:
         '"page": "project.management.dashboard"',
         '"route_context": self._route_context(project)',
         '"zones": zones',
+        "EvidenceChainService(self.env).build_project_chain(",
     ]
     for frag in required:
         _must(frag in text, f"service missing fragment: {frag}")
+    forbidden = [
+        "project = project.sudo()",
+        "Project.browse(int(project_id)).exists()",
+        "_evidence_chain_service",
+        "EvidenceChainService(self.env.sudo())",
+    ]
+    for frag in forbidden:
+        _must(frag not in text, f"service retains unsafe project authorization fragment: {frag}")
 
 
 def main() -> None:

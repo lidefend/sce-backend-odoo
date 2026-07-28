@@ -280,7 +280,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     });
   }
 
-  async function saveRecord(refreshPolicy?: ContractAction['refreshPolicy']): Promise<boolean | number> {
+  async function saveRecord(
+    refreshPolicy?: ContractAction['refreshPolicy'],
+    options: { navigateAfterCreate?: boolean } = {},
+  ): Promise<boolean | number> {
     if (!canSave.value || !model.value) return false;
     submissionFeedback.value = null;
     validationErrors.value = [];
@@ -363,6 +366,9 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         const title = String(contract.value?.head?.title || '').trim();
         submissionFeedback.value = { kind: 'success', message: `${title || '记录'}已创建` };
         clearIntakeAutosave();
+        if (options.navigateAfterCreate === false) {
+          return Number(created.id);
+        }
         return await navigateCreatedRecord({
           createdId: created.id,
           nextSceneKey: String(sceneReadyFormSurface.value.nextSceneKey || '').trim(),

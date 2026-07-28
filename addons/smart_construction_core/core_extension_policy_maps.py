@@ -104,6 +104,9 @@ ROLE_SURFACE_OVERRIDES = {
     "system_admin": {
         "label": "系统管理员",
         "landing_scene_candidates": ["workspace.home"],
+        "discover_installed_capabilities": True,
+        "system_configuration_visible": True,
+        "deny_all_navigation": False,
         "menu_xmlids": [],
         "primary_menu_xmlids": [],
         "role_home_menu_xmlids": [],
@@ -319,6 +322,7 @@ ROLE_SURFACE_OVERRIDES = {
         ],
     },
     "executive": {
+        "label": "管理层",
         "landing_scene_candidates": ["portal.dashboard", "project.management", "projects.list", "projects.ledger", "projects.intake"],
         "menu_xmlids": [
             "smart_construction_core.menu_sc_root",

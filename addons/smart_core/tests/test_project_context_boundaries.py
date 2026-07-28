@@ -97,6 +97,54 @@ def _register_construction_project_scope(core):
     core.register_operation_strategy("joint")
 
 
+def _tracked_project_env(
+    core,
+    *,
+    operation_strategy="joint",
+    project_visible=True,
+    model_read_allowed=True,
+    record_read_allowed=True,
+):
+    events = []
+
+    class ProjectRecord:
+        def __bool__(self):
+            return project_visible
+
+        def check_access_rule(self, mode):
+            events.append(("check_access_rule", mode))
+            if not record_read_allowed:
+                raise core.AccessError("record denied")
+
+        @property
+        def operation_strategy(self):
+            events.append(("read", "operation_strategy"))
+            return operation_strategy
+
+    class ProjectModel:
+        def check_access_rights(self, mode):
+            events.append(("check_access_rights", mode))
+            if not model_read_allowed:
+                raise core.AccessError("model denied")
+
+        def search(self, domain, limit=None):
+            events.append(("search", list(domain), limit))
+            return ProjectRecord()
+
+        def sudo(self):
+            raise AssertionError("business scope project lookup must not use sudo")
+
+        def browse(self, _record_id):
+            raise AssertionError("business scope project lookup must authorize with caller-scoped search")
+
+    class Env:
+        def __getitem__(self, model_name):
+            events.append(("model", model_name))
+            return ProjectModel()
+
+    return Env(), events
+
+
 class TestProjectContextBoundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
@@ -173,6 +221,8 @@ class TestProjectContextBoundaries(unittest.TestCase):
                 "project_id": Field("project.project"),
                 "operation_strategy": Field(),
             }
+
+        Model.env, _events = _tracked_project_env(core, operation_strategy="joint")
 
         domain, meta = core.apply_business_scope_domain(
             Model,
@@ -282,6 +332,8 @@ class TestProjectContextBoundaries(unittest.TestCase):
                 "project_ids": Field("project.project"),
                 "company_id": Field("res.company"),
             }
+
+        Model.env, _events = _tracked_project_env(core, operation_strategy="direct")
 
         domain, meta = core.apply_business_scope_domain(
             Model,
@@ -432,6 +484,141 @@ class TestProjectContextBoundaries(unittest.TestCase):
         self.assertEqual(config["source"], "extension_hook")
         self.assertEqual(config["label"], "当前项目")
         self.assertEqual(config["placeholder"], "搜索项目名称")
+
+    def test_business_scope_meta_rejects_unauthorized_project_before_strategy_read(self):
+        core = _load_project_context_core()
+        _register_construction_project_scope(core)
+        env, events = _tracked_project_env(core, project_visible=False)
+        model = types.SimpleNamespace(_name="payment.request", env=env)
+
+        with self.assertRaisesRegex(core.AccessError, "当前项目不存在或无权访问"):
+            core.business_scope_meta(
+                model,
+                {"project_id": 91, "operation_strategy": "joint"},
+                applied_domain=[("project_id", "=", 91)],
+            )
+
+        self.assertEqual(
+            events,
+            [
+                ("model", "project.project"),
+                ("check_access_rights", "read"),
+                ("search", [("id", "=", 91)], 1),
+            ],
+        )
+        self.assertNotIn(("read", "operation_strategy"), events)
+
+    def test_business_scope_meta_preserves_authorized_project_metadata(self):
+        core = _load_project_context_core()
+        _register_construction_project_scope(core)
+        env, events = _tracked_project_env(core, operation_strategy="joint")
+        model = types.SimpleNamespace(_name="payment.request", env=env)
+
+        meta = core.business_scope_meta(
+            model,
+            {
+                "company_id": 3,
+                "project_id": 9,
+                "operation_strategy": "joint",
+            },
+            applied_domain=[("project_id", "=", 9)],
+        )
+
+        self.assertEqual(meta["company_id"], 3)
+        self.assertEqual(meta["project_id"], 9)
+        self.assertEqual(meta["record_context_id"], 9)
+        self.assertEqual(meta["operation_strategy"], "joint")
+        self.assertEqual(meta["project_operation_strategy"], "joint")
+        self.assertFalse(meta["project_operation_strategy_mismatch"])
+        self.assertEqual(
+            events,
+            [
+                ("model", "project.project"),
+                ("check_access_rights", "read"),
+                ("search", [("id", "=", 9)], 1),
+                ("check_access_rule", "read"),
+                ("read", "operation_strategy"),
+            ],
+        )
+
+    def test_business_scope_meta_preserves_authorized_strategy_mismatch(self):
+        core = _load_project_context_core()
+        _register_construction_project_scope(core)
+        env, _events = _tracked_project_env(core, operation_strategy="direct")
+        model = types.SimpleNamespace(_name="payment.request", env=env)
+
+        meta = core.business_scope_meta(
+            model,
+            {"project_id": 9, "operation_strategy": "joint"},
+            applied_domain=[("project_id", "=", 9)],
+        )
+
+        self.assertEqual(meta["project_operation_strategy"], "direct")
+        self.assertTrue(meta["project_operation_strategy_mismatch"])
+
+    def test_business_scope_meta_hides_nonexistent_and_unauthorized_project_equally(self):
+        core = _load_project_context_core()
+        _register_construction_project_scope(core)
+
+        failures = []
+        event_sets = []
+        for access in (
+            {"project_visible": False},
+            {"project_visible": True, "record_read_allowed": False},
+        ):
+            env, events = _tracked_project_env(core, **access)
+            model = types.SimpleNamespace(_name="payment.request", env=env)
+            try:
+                core.business_scope_meta(
+                    model,
+                    {"project_id": 404, "operation_strategy": "joint"},
+                    applied_domain=[("project_id", "=", 404)],
+                )
+            except core.AccessError as exc:
+                failures.append(str(exc))
+            event_sets.append(events)
+
+        self.assertEqual(failures, ["当前项目不存在或无权访问", "当前项目不存在或无权访问"])
+        for events in event_sets:
+            self.assertNotIn(("read", "operation_strategy"), events)
+
+    def test_business_scope_meta_authorized_project_without_strategy_preserves_empty_metadata(self):
+        core = _load_project_context_core()
+        _register_construction_project_scope(core)
+        env, events = _tracked_project_env(core, operation_strategy="joint")
+        model = types.SimpleNamespace(_name="payment.request", env=env)
+
+        meta = core.business_scope_meta(
+            model,
+            {"project_id": 9},
+            applied_domain=[("project_id", "=", 9)],
+        )
+
+        self.assertEqual(meta["project_id"], 9)
+        self.assertEqual(meta["project_operation_strategy"], "")
+        self.assertFalse(meta["project_operation_strategy_mismatch"])
+        self.assertNotIn(("read", "operation_strategy"), events)
+
+    def test_business_scope_meta_without_project_keeps_fallback_and_skips_project_lookup(self):
+        core = _load_project_context_core()
+        _register_construction_project_scope(core)
+
+        class NoProjectLookupEnv:
+            def __getitem__(self, _model_name):
+                raise AssertionError("no-project scope must not query a project")
+
+        model = types.SimpleNamespace(_name="payment.request", env=NoProjectLookupEnv())
+        meta = core.business_scope_meta(
+            model,
+            {"company_id": 3, "operation_strategy": "joint"},
+            applied_domain=[("company_id", "=", 3)],
+        )
+
+        self.assertEqual(meta["company_id"], 3)
+        self.assertIsNone(meta["project_id"])
+        self.assertEqual(meta["operation_strategy"], "joint")
+        self.assertEqual(meta["project_operation_strategy"], "")
+        self.assertFalse(meta["project_operation_strategy_mismatch"])
 
 
 if __name__ == "__main__":

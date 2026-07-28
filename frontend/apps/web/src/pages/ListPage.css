@@ -134,6 +134,7 @@
 }
 
 .table {
+  position: relative;
   display: block;
   min-width: 0;
   width: 100%;
@@ -147,6 +148,60 @@
   box-shadow: 0 20px 40px var(--sc-app-shadow);
   overscroll-behavior: contain;
   touch-action: pan-x pan-y;
+}
+
+.table > .sc-table-shell {
+  border-inline: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.table.is-refreshing {
+  pointer-events: none;
+}
+
+.table.is-refreshing::before {
+  position: absolute;
+  z-index: 36;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--sc-semantic-surface-interactive) 45%,
+    transparent 100%
+  );
+  background-size: 45% 100%;
+  content: '';
+  animation: list-refresh-progress 1.15s ease-in-out infinite;
+}
+
+.refresh-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes list-refresh-progress {
+  from {
+    background-position: -80% 0;
+  }
+  to {
+    background-position: 180% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table.is-refreshing::before {
+    animation: none;
+    background: var(--sc-semantic-surface-interactive);
+  }
 }
 
 .table:focus-visible {

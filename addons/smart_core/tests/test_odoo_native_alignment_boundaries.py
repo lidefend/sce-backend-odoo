@@ -726,6 +726,39 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(transient.projection_scope, scope)
         self.assertEqual(transient.version, 0)
 
+    def test_view_config_form_fallback_preserves_sheet_groups_and_direct_page_fields(self):
+        parsed = self.env["app.view.config"]._fallback_parse(
+            "res.partner",
+            "form",
+            {
+                "arch": """
+                    <form>
+                      <sheet>
+                        <group><field name="name"/></group>
+                        <notebook>
+                          <page string="Details">
+                            <field name="phone"/>
+                            <group><field name="email"/></group>
+                          </page>
+                        </notebook>
+                      </sheet>
+                    </form>
+                """,
+                "fields": {
+                    "name": {"type": "char", "string": "Name"},
+                    "phone": {"type": "char", "string": "Phone"},
+                    "email": {"type": "char", "string": "Email"},
+                },
+            },
+        )
+
+        sheet = parsed["layout"][0]
+        self.assertEqual([row["type"] for row in sheet["children"]], ["group", "notebook"])
+        self.assertEqual(sheet["children"][0]["children"][0]["name"], "name")
+        page = sheet["children"][1]["children"][0]
+        self.assertEqual(page["children"][0]["name"], "phone")
+        self.assertEqual(page["children"][1]["children"][0]["name"], "email")
+
     def test_view_config_projection_identity_accepts_explicit_view_id(self):
         view = self.env.ref("base.view_partner_form")
         ViewConfig = self.env["app.view.config"].sudo()
@@ -1071,6 +1104,54 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             and row.get("intent") == "ui.form_field_policy.set"
             for row in action_rows
         ))
+
+    def test_transient_create_form_preserves_native_header_apply_action(self):
+        assembler = PageAssembler(self.env, self.env["ir.model"].sudo().env)
+        data = {
+            "model": "ui.form.custom.field.wizard",
+            "buttons": [
+                {
+                    "kind": "object",
+                    "name": "unrelated_model_action",
+                    "level": "header",
+                }
+            ],
+            "toolbar": {"header": [], "sidebar": [], "footer": []},
+            "views": {
+                "form": {
+                    "header_buttons": [
+                        {
+                            "name": "action_create_field",
+                            "string": "创建字段",
+                            "type": "object",
+                        }
+                    ],
+                    "button_box": [],
+                    "stat_buttons": [],
+                    "business_actions": [],
+                    "layout": [],
+                }
+            },
+            "render_profile": "create",
+        }
+
+        assembler._apply_render_profile_action_visibility(
+            data,
+            render_profile="create",
+            record_id=None,
+        )
+
+        self.assertEqual(data["buttons"], [])
+        self.assertEqual(
+            data["views"]["form"]["header_buttons"],
+            [
+                {
+                    "name": "action_create_field",
+                    "string": "创建字段",
+                    "type": "object",
+                }
+            ],
+        )
 
     def test_custom_field_wizard_action_first_flow_autogenerates_field_name(self):
         action = self.env["ir.actions.act_window"].sudo().create({

@@ -183,15 +183,33 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
         }
 
     action_type = _text(payload.get("type"))
-    model = _text(payload.get("res_model") or source_model)
-    action_id = _to_int(payload.get("id") or payload.get("action_id")) or _resolve_action_id_for_model(env, model)
+    action_model = _text(payload.get("res_model"))
+    model = action_model or _text(source_model)
+    action_target = _text(payload.get("target")).lower()
+    view_id = _explicit_form_view_id(payload)
+    explicit_action_id = _to_int(payload.get("id") or payload.get("action_id"))
+    action_id = explicit_action_id or (
+        0
+        if action_type == "ir.actions.act_window" and action_target == "new" and view_id
+        else _resolve_action_id_for_model(env, model)
+    )
     if action_id:
         payload.setdefault("id", action_id)
         payload.setdefault("action_id", action_id)
-    record_id = _to_int(payload.get("res_id") or source_record_id)
+    explicit_record_id = _to_int(payload.get("res_id"))
+    source_record_matches_target = not action_model or action_model == _text(source_model)
+    record_id = explicit_record_id or (
+        _to_int(source_record_id)
+        if action_target != "new" and source_record_matches_target
+        else 0
+    )
     view_modes = payload.get("view_mode") or payload.get("view_modes")
     url = _text(payload.get("url")) if action_type == "ir.actions.act_url" else ""
-    route = url if url else ""
+    route = url if url else (
+        f"/f/{model}/new"
+        if action_type == "ir.actions.act_window" and action_target == "new" and model
+        else ""
+    )
     entry_target = nested_entry_target or normalize_entry_target(
         env=env,
         menu_id=menu_id,
@@ -205,8 +223,27 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
         delivery_mode="external_url" if url else "odoo_action_result",
     )
     if entry_target:
+        if view_id:
+            compatibility_refs = entry_target.setdefault("compatibility_refs", {})
+            if isinstance(compatibility_refs, dict):
+                compatibility_refs["view_id"] = view_id
         payload["entry_target"] = entry_target
     return payload
+
+
+def _explicit_form_view_id(payload: dict) -> int:
+    direct_view_id = _to_int(payload.get("view_id"))
+    if direct_view_id:
+        return direct_view_id
+    views = payload.get("views")
+    if not isinstance(views, (list, tuple)):
+        return 0
+    for row in views:
+        if not isinstance(row, (list, tuple)) or len(row) < 2:
+            continue
+        if _normalize_view_mode(row[1]) == "form":
+            return _to_int(row[0])
+    return 0
 
 
 def resolve_scene_key(env, *, menu_id=None, action_id=None, model: str = "", view_modes=None) -> str:

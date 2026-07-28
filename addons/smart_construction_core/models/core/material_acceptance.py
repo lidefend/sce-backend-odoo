@@ -2,7 +2,7 @@
 import json
 
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 
 
@@ -2428,6 +2428,12 @@ class ScMaterialSettlement(models.Model):
     )
     supplier_id = fields.Many2one("res.partner", string="供应商", required=True, index=True, tracking=True)
     purchase_order_id = fields.Many2one("purchase.order", string="采购订单", index=True)
+    purchase_scope_ids = fields.One2many(
+        "sc.material.settlement.purchase.scope",
+        "settlement_id",
+        string="采购范围",
+        copy=False,
+    )
     settlement_date = fields.Date(string="结算日期", default=fields.Date.context_today, index=True)
     owner_id = fields.Many2one("res.users", string="经办人", default=lambda self: self.env.user, index=True)
     currency_id = fields.Many2one("res.currency", string="币种", required=True, default=lambda self: self.env.company.currency_id.id)
@@ -2528,7 +2534,95 @@ class ScMaterialSettlement(models.Model):
             )
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.material.settlement") or _("材料结算")
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        for record, vals in zip(records, vals_list):
+            record._sc_validate_purchase_authority(
+                explicit_fields={
+                    name
+                    for name in ("project_id", "supplier_id", "purchase_order_id")
+                    if name in vals
+                }
+            )
+        return records
+
+    def write(self, vals):
+        if self.env.context.get("sc_skip_material_purchase_authority"):
+            return super().write(vals)
+        explicit_fields = {
+            name
+            for name in ("project_id", "supplier_id", "purchase_order_id")
+            if name in vals
+        }
+        batched = self.with_context(sc_material_purchase_authority_batch=True)
+        result = super(ScMaterialSettlement, batched).write(vals)
+        self._sc_validate_purchase_authority(explicit_fields=explicit_fields)
+        return result
+
+    def unlink(self):
+        if self.purchase_scope_ids:
+            raise UserError(_("已有正式采购范围的材料结算不能删除，请先保留或解除审计关系。"))
+        return super().unlink()
+
+    def _sc_validate_purchase_authority(self, explicit_fields=None):
+        explicit_fields = set(explicit_fields or ())
+        for settlement in self:
+            scopes = settlement.purchase_scope_ids
+            if not scopes:
+                if (
+                    "purchase_order_id" in explicit_fields
+                    and settlement.purchase_order_id
+                ):
+                    raise ValidationError(
+                        _("材料结算头部采购订单只能投影自正式采购范围。")
+                    )
+                if settlement.purchase_order_id and "purchase_order_id" not in explicit_fields:
+                    settlement.with_context(
+                        sc_skip_material_purchase_authority=True
+                    ).write({"purchase_order_id": False})
+                continue
+            scopes._sc_validate_relation_state()
+            purchase_lines = scopes.mapped("purchase_order_line_id")
+            purchase_orders = purchase_lines.mapped("order_id")
+            projects = purchase_lines.mapped("project_id")
+            projects |= purchase_lines.filtered(
+                lambda line: not line.project_id
+            ).mapped("order_id.project_id")
+            suppliers = purchase_orders.mapped("partner_id")
+            companies = purchase_orders.mapped("company_id")
+            if len(projects) != 1:
+                raise ValidationError(_("材料结算的完整采购范围必须属于唯一项目。"))
+            if len(suppliers) != 1:
+                raise ValidationError(_("材料结算的完整采购范围必须属于唯一供应商。"))
+            if len(companies) != 1:
+                raise ValidationError(_("材料结算的完整采购范围必须属于唯一公司。"))
+            project = projects[0]
+            supplier = suppliers[0]
+            company = companies[0]
+            if project.company_id != company:
+                raise ValidationError(_("采购范围的项目与采购订单必须属于同一公司。"))
+            target_purchase_order = purchase_orders if len(purchase_orders) == 1 else False
+            if "project_id" in explicit_fields and settlement.project_id != project:
+                raise ValidationError(_("材料结算显式项目与完整采购范围冲突。"))
+            if "supplier_id" in explicit_fields and settlement.supplier_id != supplier:
+                raise ValidationError(_("材料结算显式供应商与完整采购范围冲突。"))
+            if (
+                "purchase_order_id" in explicit_fields
+                and settlement.purchase_order_id != target_purchase_order
+            ):
+                raise ValidationError(_("材料结算显式采购订单与完整采购范围冲突。"))
+            updates = {}
+            if settlement.project_id != project:
+                updates["project_id"] = project.id
+            if settlement.supplier_id != supplier:
+                updates["supplier_id"] = supplier.id
+            if settlement.purchase_order_id != target_purchase_order:
+                updates["purchase_order_id"] = (
+                    target_purchase_order.id if target_purchase_order else False
+                )
+            if updates:
+                settlement.with_context(
+                    sc_skip_material_purchase_authority=True
+                ).write(updates)
 
     def init(self):
         self.env.cr.execute(
@@ -2787,12 +2881,23 @@ class ScMaterialSettlementLine(models.Model):
     tax_amount = fields.Monetary(string="税额", currency_field="currency_id", compute="_compute_amounts", store=True)
     amount_total = fields.Monetary(string="含税金额", currency_field="currency_id", compute="_compute_amounts", store=True)
     note = fields.Char(string="备注")
+    purchase_scope_ids = fields.One2many(
+        "sc.material.settlement.purchase.scope",
+        "settlement_line_id",
+        string="采购明细范围",
+        copy=False,
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             self._sc_apply_line_defaults(vals, require_unit_price=True)
         return super().create(vals_list)
+
+    def unlink(self):
+        if self.purchase_scope_ids:
+            raise UserError(_("已有正式采购范围的材料结算明细不能删除，请保留审计关系。"))
+        return super().unlink()
 
     @api.depends("qty", "unit_price", "tax_rate")
     def _compute_amounts(self):
@@ -2828,3 +2933,155 @@ class ScMaterialSettlementLine(models.Model):
                 raise ValidationError(_("结算单价不能为负数。"))
             if record.tax_rate < 0:
                 raise ValidationError(_("税率不能为负数。"))
+
+
+class ScMaterialSettlementPurchaseScope(models.Model):
+    _name = "sc.material.settlement.purchase.scope"
+    _description = "Material Settlement Purchase Scope"
+    _order = "settlement_id, settlement_line_id, id"
+
+    settlement_id = fields.Many2one(
+        "sc.material.settlement",
+        string="材料结算",
+        required=True,
+        index=True,
+        ondelete="restrict",
+    )
+    settlement_line_id = fields.Many2one(
+        "sc.material.settlement.line",
+        string="材料结算明细",
+        required=True,
+        index=True,
+        ondelete="restrict",
+    )
+    purchase_order_line_id = fields.Many2one(
+        "purchase.order.line",
+        string="采购订单明细",
+        required=True,
+        index=True,
+        ondelete="restrict",
+    )
+    purchase_order_id = fields.Many2one(
+        "purchase.order",
+        string="采购订单",
+        related="purchase_order_line_id.order_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    project_id = fields.Many2one(
+        "project.project",
+        string="项目",
+        related="settlement_id.project_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    supplier_id = fields.Many2one(
+        "res.partner",
+        string="供应商",
+        related="purchase_order_line_id.order_id.partner_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    company_id = fields.Many2one(
+        "res.company",
+        string="公司",
+        related="settlement_id.project_id.company_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+
+    _sql_constraints = [
+        (
+            "settlement_purchase_line_unique",
+            "unique(settlement_id, settlement_line_id, purchase_order_line_id)",
+            "同一材料结算明细不能重复关联同一采购明细。",
+        ),
+    ]
+
+    @api.model
+    def _sc_caller_visible_relation(self, model_name, record_id):
+        try:
+            relation_id = int(record_id)
+        except (TypeError, ValueError):
+            relation_id = 0
+        record = self.env[model_name].search([("id", "=", relation_id)], limit=1)
+        if not record:
+            raise AccessError(_("采购范围记录不存在或当前用户无权访问。"))
+        return record
+
+    @api.model
+    def _sc_resolve_relations(self, vals, current=None):
+        settlement = self._sc_caller_visible_relation(
+            "sc.material.settlement",
+            vals.get(
+                "settlement_id",
+                current.settlement_id.id if current else False,
+            ),
+        )
+        settlement_line = self._sc_caller_visible_relation(
+            "sc.material.settlement.line",
+            vals.get(
+                "settlement_line_id",
+                current.settlement_line_id.id if current else False,
+            ),
+        )
+        purchase_line = self._sc_caller_visible_relation(
+            "purchase.order.line",
+            vals.get(
+                "purchase_order_line_id",
+                current.purchase_order_line_id.id if current else False,
+            ),
+        )
+        return settlement, settlement_line, purchase_line
+
+    @api.model
+    def _sc_validate_pair(self, settlement, settlement_line, purchase_line):
+        if settlement_line.settlement_id != settlement:
+            raise ValidationError(_("采购范围的结算明细必须属于同一材料结算。"))
+        purchase_project = purchase_line.project_id or purchase_line.order_id.project_id
+        if not purchase_project:
+            raise ValidationError(_("采购明细必须具有正式项目后才能关联材料结算。"))
+        if purchase_project.company_id != purchase_line.order_id.company_id:
+            raise ValidationError(_("采购明细项目与采购订单必须属于同一公司。"))
+
+    def _sc_validate_relation_state(self):
+        for scope in self:
+            self._sc_validate_pair(
+                scope.settlement_id,
+                scope.settlement_line_id,
+                scope.purchase_order_line_id,
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            relations = self._sc_resolve_relations(vals)
+            self._sc_validate_pair(*relations)
+        records = super().create(vals_list)
+        records._sc_validate_relation_state()
+        if not self.env.context.get("sc_material_purchase_authority_batch"):
+            records.mapped("settlement_id")._sc_validate_purchase_authority()
+        return records
+
+    def write(self, vals):
+        settlements = self.mapped("settlement_id")
+        for scope in self:
+            relations = self._sc_resolve_relations(vals, current=scope)
+            self._sc_validate_pair(*relations)
+        result = super().write(vals)
+        self._sc_validate_relation_state()
+        settlements |= self.mapped("settlement_id")
+        if not self.env.context.get("sc_material_purchase_authority_batch"):
+            settlements._sc_validate_purchase_authority()
+        return result
+
+    def unlink(self):
+        settlements = self.mapped("settlement_id")
+        result = super().unlink()
+        if not self.env.context.get("sc_material_purchase_authority_batch"):
+            settlements._sc_validate_purchase_authority()
+        return result

@@ -57,6 +57,7 @@ export interface StageBusinessConfigChangeSetItemParams {
   change_set_token: string;
   config_type: BusinessConfigChangeSetItem['config_type'];
   target_key: string;
+  contract_name?: string;
   model: string;
   view_type?: string;
   action_id?: number;

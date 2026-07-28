@@ -2,7 +2,7 @@
 import re
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 from ..support import operating_metrics as opm
 from ..support.state_guard import raise_guard
@@ -816,6 +816,92 @@ class ScSettlementOrder(models.Model):
             return False
         return True
 
+    @api.model
+    def _caller_visible_settlement_relation(self, model_name, record_id, domain=None):
+        if not record_id:
+            return self.env[model_name]
+        multiple = isinstance(record_id, (list, tuple, set))
+        relation_domain = [
+            ("id", "in" if multiple else "=", list(record_id) if multiple else record_id)
+        ]
+        if domain:
+            relation_domain.extend(domain)
+        record = self.env[model_name].search(
+            relation_domain, limit=None if multiple else 1
+        )
+        if not record:
+            raise AccessError(_("结算归集关系不存在或当前用户无权访问。"))
+        return record
+
+    def _synchronize_detail_contract_projection(self, *, explicit_header_contract=False):
+        """Project the complete detail contract set without making the header authoritative."""
+        for order in self:
+            order.invalidate_recordset(
+                ["line_ids", "contract_id", "partner_id", "settlement_unit_id"]
+            )
+            lines = order.line_ids
+            lines.invalidate_recordset(["contract_id"])
+            if not lines:
+                continue
+            missing_lines = lines.filtered(lambda line: not line.contract_id)
+            if missing_lines and not order.legacy_fact_model:
+                raise UserError(_("新办理结算的每条业务明细都必须绑定合同。"))
+
+            contract_ids = set(lines.filtered("contract_id").mapped("contract_id").ids)
+            if not contract_ids:
+                continue
+            contracts = order._caller_visible_settlement_relation(
+                "construction.contract",
+                list(contract_ids),
+                [("company_id", "in", order.env.companies.ids)],
+            )
+            if set(contracts.ids) != contract_ids:
+                raise AccessError(_("结算归集关系不存在或当前用户无权访问。"))
+
+            expected_type = order._contract_type_for_settlement_type(
+                order.settlement_type
+            )
+            for contract in contracts:
+                if (
+                    contract.project_id != order.project_id
+                    or contract.company_id != order.company_id
+                ):
+                    raise UserError(_("结算明细合同必须属于结算单项目和公司。"))
+                if expected_type and contract.type != expected_type:
+                    raise UserError(_("结算明细合同类型必须与结算收支类型一致。"))
+
+            counterparties = contracts.mapped("partner_id")
+            if len(counterparties) > 1:
+                raise UserError(_("结算明细合同必须具有一致的交易相对方。"))
+            counterparty = counterparties[:1]
+            if order.partner_id and counterparty and order.partner_id != counterparty:
+                raise UserError(_("结算单往来单位与明细合同相对方不一致。"))
+            if (
+                order.settlement_unit_id
+                and counterparty
+                and order.settlement_unit_id != counterparty
+            ):
+                raise UserError(_("结算单位与明细合同相对方不一致。"))
+
+            unique_contract = contracts if len(contracts) == 1 else contracts[:0]
+            if explicit_header_contract and order.contract_id:
+                if not unique_contract or order.contract_id != unique_contract:
+                    raise UserError(_("显式头部合同与完整结算明细合同集合冲突。"))
+
+            updates = {}
+            projected_contract = unique_contract.id if unique_contract else False
+            if order.contract_id.id != projected_contract:
+                updates["contract_id"] = projected_contract
+            if counterparty and not order.partner_id:
+                updates["partner_id"] = counterparty.id
+            if counterparty and not order.settlement_unit_id:
+                updates["settlement_unit_id"] = counterparty.id
+            if updates:
+                super(
+                    ScSettlementOrder,
+                    order.with_context(skip_settlement_contract_projection=True),
+                ).write(updates)
+
     @api.onchange("project_id", "settlement_type")
     def _onchange_project_or_settlement_type_contract_domain(self):
         for rec in self:
@@ -969,7 +1055,20 @@ class ScSettlementOrder(models.Model):
                 vals["name"] = seq or _("Settlement")
             self._normalize_settlement_stage_defaults(vals, apply_default=True)
             self._normalize_feedback_defaults(vals)
-        records = super().create(vals_list)
+        explicit_header_contracts = [
+            bool(vals.get("contract_id")) for vals in vals_list
+        ]
+        created_records = super(
+            ScSettlementOrder,
+            self.with_context(skip_settlement_contract_projection=True),
+        ).create(vals_list)
+        records = self.browse(created_records.ids)
+        for record, explicit_header_contract in zip(
+            records, explicit_header_contracts
+        ):
+            record._synchronize_detail_contract_projection(
+                explicit_header_contract=explicit_header_contract
+            )
         records._apply_contract_defaults_if_needed()
         return records
 
@@ -994,11 +1093,21 @@ class ScSettlementOrder(models.Model):
         return
 
     def write(self, vals):
+        explicit_header_contract = "contract_id" in vals and bool(vals["contract_id"])
         self._normalize_settlement_stage_defaults(vals)
         self._normalize_feedback_defaults(vals)
         if vals.get("state") == "cancel":
             self._check_payments_before_cancel()
-        res = super().write(vals)
+        res = super(
+            ScSettlementOrder,
+            self.with_context(skip_settlement_contract_projection=True),
+        ).write(vals)
+        if not self.env.context.get("skip_settlement_contract_projection") and (
+            "line_ids" in vals or "contract_id" in vals
+        ):
+            self._synchronize_detail_contract_projection(
+                explicit_header_contract=explicit_header_contract
+            )
         if {"contract_id", "partner_id", "date_settlement", "document_date", "final_approved_date", "approved_date"} & set(vals):
             self._apply_contract_defaults_if_needed()
         return res
@@ -1023,7 +1132,13 @@ class ScSettlementOrder(models.Model):
             c = rec.contract_id
             if not c:
                 if rec.partner_id and not rec.settlement_unit_id:
-                    rec.with_context(skip_onchange=True).sudo().write({"settlement_unit_id": rec.partner_id.id})
+                    super(
+                        ScSettlementOrder,
+                        rec.with_context(
+                            skip_onchange=True,
+                            skip_settlement_contract_projection=True,
+                        ),
+                    ).write({"settlement_unit_id": rec.partner_id.id})
                 continue
             updates = {}
             if not rec.project_id and getattr(c, "project_id", False):
@@ -1051,7 +1166,13 @@ class ScSettlementOrder(models.Model):
             if rec.approved_date and not rec.final_approved_date:
                 updates["final_approved_date"] = rec.approved_date
             if updates:
-                rec.with_context(skip_onchange=True).sudo().write(updates)
+                super(
+                    ScSettlementOrder,
+                    rec.with_context(
+                        skip_onchange=True,
+                        skip_settlement_contract_projection=True,
+                    ),
+                ).write(updates)
 
     def _check_line_contracts_or_raise(self):
         for rec in self:
@@ -1134,7 +1255,15 @@ class ScSettlementOrderLine(models.Model):
     def _ensure_contract_match(self, contract_id, project_id):
         if not contract_id or not project_id:
             return
-        contract = self.env["construction.contract"].browse(contract_id)
+        contract = self.env["construction.contract"].search(
+            [
+                ("id", "=", contract_id),
+                ("company_id", "in", self.env.companies.ids),
+            ],
+            limit=1,
+        )
+        if not contract:
+            raise AccessError(_("结算归集关系不存在或当前用户无权访问。"))
         if contract.project_id and contract.project_id.id != project_id:
             raise_guard(
                 "SETTLEMENT_CONTRACT_MISMATCH",
@@ -1162,18 +1291,30 @@ class ScSettlementOrderLine(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if not vals.get("contract_id") and vals.get("settlement_id"):
-                settlement = self.env["sc.settlement.order"].browse(vals.get("settlement_id"))
-                if settlement.contract_id:
-                    vals["contract_id"] = settlement.contract_id.id
+            settlement = self.env["sc.settlement.order"]
+            if vals.get("settlement_id"):
+                settlement = self.env["sc.settlement.order"].search(
+                    [("id", "=", vals["settlement_id"])],
+                    limit=1,
+                )
+                if not settlement:
+                    raise AccessError(_("结算归集关系不存在或当前用户无权访问。"))
+            # Preserve the repository's existing reliable default only while the
+            # header carries one contract. The complete detail set remains the
+            # authority and will clear the projection as soon as it becomes plural.
+            if not vals.get("contract_id") and settlement.contract_id:
+                vals["contract_id"] = settlement.contract_id.id
             if not self.env.context.get("legacy_migration_allow_missing_contract"):
                 self._ensure_contract_required(vals.get("contract_id"))
-            if vals.get("settlement_id"):
-                settlement = self.env["sc.settlement.order"].browse(vals.get("settlement_id"))
+            if settlement:
                 self._ensure_contract_match(vals.get("contract_id"), settlement.project_id.id)
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        if not self.env.context.get("skip_settlement_contract_projection"):
+            records.mapped("settlement_id")._synchronize_detail_contract_projection()
+        return records
 
     def write(self, vals):
+        original_settlements = self.mapped("settlement_id")
         if "contract_id" in vals and not self.env.context.get("allow_contract_change"):
             raise_guard(
                 "SETTLEMENT_CONTRACT_REQUIRED",
@@ -1192,7 +1333,16 @@ class ScSettlementOrderLine(models.Model):
                     rec._ensure_contract_match(rec.contract_id.id, rec.project_id.id)
                 elif not self.env.context.get("allow_contract_change"):
                     rec._ensure_contract_required(False)
+        if not self.env.context.get("skip_settlement_contract_projection"):
+            (original_settlements | self.mapped("settlement_id"))._synchronize_detail_contract_projection()
         return res
+
+    def unlink(self):
+        settlements = self.mapped("settlement_id")
+        result = super().unlink()
+        if not self.env.context.get("skip_settlement_contract_projection"):
+            settlements._synchronize_detail_contract_projection()
+        return result
 
     def action_bind_contract(self, contract_id, reason=None):
         self.ensure_one()

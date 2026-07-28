@@ -4,10 +4,6 @@ from __future__ import annotations
 import time
 
 from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
-from odoo.addons.smart_core.core.project_context import (
-    project_scope_denied_response,
-    selected_project_id_from_context,
-)
 from odoo.addons.smart_construction_core.services.project_context_contract import (
     attach_project_context_to_runtime_payload,
 )
@@ -35,17 +31,6 @@ class SettlementSliceBlockFetchHandler(ProjectContextResolverMixin, BaseIntentHa
         ctx = ctx or {}
 
         project_id = self._resolve_project_id(params, ctx)
-        current_project_id = selected_project_id_from_context(params, ctx or self.context or {})
-        if current_project_id and project_id > 0 and int(project_id) != int(current_project_id):
-            return project_scope_denied_response(
-                {
-                    "enabled": True,
-                    "project_id": int(current_project_id),
-                    "applied": True,
-                    "domain": [("id", "=", int(current_project_id))],
-                    "model": "project.project",
-                }
-            )
         block_key = str(params.get("block_key") or "").strip().lower()
         orchestrator = SettlementSliceContractOrchestrator(self.env)
         source_authority = orchestrator.source_authority_contract()
@@ -65,6 +50,26 @@ class SettlementSliceBlockFetchHandler(ProjectContextResolverMixin, BaseIntentHa
                 },
             }
 
+        resolution = self._resolve_project_scope(params, ctx)
+        orchestrator = SettlementSliceContractOrchestrator(resolution.env)
+        source_authority = orchestrator.source_authority_contract()
+        if not resolution.available:
+            return {
+                "ok": False,
+                "error": {
+                    "code": "PROJECT_NOT_FOUND",
+                    "message": "项目不存在或当前账号不可访问",
+                    "suggested_action": "fix_input",
+                },
+                "meta": {
+                    "intent": self.INTENT_TYPE,
+                    "elapsed_ms": int((time.time() - ts0) * 1000),
+                    "trace_id": str((self.context or {}).get("trace_id") or ""),
+                    "source_authority": source_authority,
+                },
+            }
+        project_id = int(resolution.project.id)
+        orchestrator._service.bind_authorized_resolution(resolution)
         data = orchestrator.build_runtime_block(block_key=block_key, project_id=project_id, context=ctx)
         project, _diag = orchestrator._service.resolve_project_with_diagnostics(project_id)
         data = attach_project_context_to_runtime_payload(data, project)

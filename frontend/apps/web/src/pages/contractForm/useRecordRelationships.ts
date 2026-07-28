@@ -62,7 +62,13 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     return dynamicRelationDomainFromDescriptor({
       descriptor,
       resolveDependencyValue: resolveDynamicDomainDependencyValue,
-      normalizeDependencyValue: normalizeFieldValue,
+      normalizeDependencyValue: (fieldName, value) => {
+        const dependency = effectiveFieldDescriptor(fieldName);
+        if (['many2many', 'one2many'].includes(fieldType(dependency))) {
+          return normalizeRelationIds(value);
+        }
+        return normalizeFieldValue(fieldName, value);
+      },
       currentFieldValue: (fieldName) => formData[fieldName],
     });
   }

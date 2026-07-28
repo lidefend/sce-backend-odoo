@@ -171,6 +171,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(result.code, 400)
         self.assertEqual(result.error["message"], "max_widgets 无效")
 
+    def test_route_context_projects_create_defaults_without_overriding_security_context(self):
+        merged = self.module._merge_route_default_context(
+            {"allowed_company_ids": [1], "company_id": 1},
+            "{'default_settlement_fact_id': 27312, 'allowed_company_ids': [2]}",
+        )
+
+        self.assertEqual(merged["default_settlement_fact_id"], 27312)
+        self.assertEqual(merged["allowed_company_ids"], [1])
+        self.assertEqual(merged["company_id"], 1)
+
     def test_rejects_zero_max_actions(self):
         handler = self.module.UiContractV2Handler(env=object())
 

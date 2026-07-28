@@ -1,0 +1,1739 @@
+{
+  "SCHEMA_VERSION": 1,
+  "TASK": "VERIFY_ADMIN_VIS_P3_GENERIC_BUSINESS_SCOPE_PATCH_AND_RECONCILE_BOUNDARIES",
+  "BASELINE": {
+    "BRANCH": "feature/user-module-personal-data-visibility",
+    "HEAD": "0ecb8bc6eae5483fe42e08f81056ca53637a828c",
+    "TREE": "5fccc21940a5608db12429bd914ef68adf3ca9e8",
+    "PARENT": "a39eea13b9709103836e3e06a9a0db2813987490",
+    "COMMIT_SUBJECT": "audit: classify proven route conflict security impact",
+    "REQUIRED_ANCESTORS": [
+      "a39eea13b9709103836e3e06a9a0db2813987490",
+      "0b24eb6e03f1d7dc655c53fd3b0fe464b2fbf6b5"
+    ]
+  },
+  "INHERITED_CLOSED_BOUNDARIES": {
+    "TRUE_RUNTIME_CONFLICT_COUNT": 2,
+    "BOUNDARY_IDS": [
+      "ADMIN_VIS_P3_ROUTE_6B53AD5D034C",
+      "ADMIN_VIS_P3_ROUTE_5BDC6725CF81"
+    ],
+    "CLASSIFICATION": "NOT_PROJECT_SCOPED",
+    "PRODUCT_PATCH_REQUIRED": false,
+    "WINNERS_RESOLVED": true,
+    "UNRESOLVED_WINNER_COUNT": 0,
+    "FALSE_CONFLICT_COUNT": 12,
+    "FALSE_CONFLICTS_REOPENED": 0,
+    "SUDO_MENU_METADATA_OBSERVATION_REOPENED": false
+  },
+  "EVIDENCE": {
+    "REGISTRY_EXPORT": "/tmp/sc-admin-vis-p3-registry-audit/sc-admin-vis-p3-registry-audit-86423492581c/registry-export.json",
+    "REGISTRY_EXPORT_GIT_HEAD": "0b24eb6e03f1d7dc655c53fd3b0fe464b2fbf6b5",
+    "GENERIC_POLICY_SCHEMA_VERSION": 2,
+    "ROUTE_POLICY_SCHEMA_VERSION": 4,
+    "GENERIC_POLICY_RECORD_COUNT": 7,
+    "GENERIC_DYNAMIC_UNRESOLVED_ITEM_COUNT": 7,
+    "INTENT_ROUTE": "POST /api/v1/intent",
+    "INTENT_ROUTE_REGISTRATION_EVIDENCE": "ROUTE-POLICY-0041 loaded odoo.http.Controller subclass",
+    "EVIDENCE_MODE": "STATIC_ONLY"
+  },
+  "PROJECT_SCOPE_SETS": {
+    "ALL_EXPORTED_PROJECT_SCOPED_MODELS": {
+      "SOURCE": "registry-export.json.project_models plus project.project",
+      "COUNT": 168
+    },
+    "API_DATA_WRITE_ALLOWLIST_PROJECT_SCOPED_MODELS": {
+      "COUNT": 4,
+      "MODELS": [
+        "project.project",
+        "project.task",
+        "purchase.order.line",
+        "res.partner"
+      ]
+    },
+    "API_DATA_UNLINK_PROJECT_SCOPED_MODELS": {
+      "SOURCE": "intersection of generic_api_policies.dynamic_unresolved_items[api.data.unlink].affected_models with project_models, plus project.project",
+      "COUNT": 60
+    }
+  },
+  "COMMON_STATIC_FINDING": {
+    "PACKAGE_ID": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+    "COMMON_ROOT_CAUSE": "addons/smart_core/core/project_context.py:business_scope_meta",
+    "DANGEROUS_DATA_FLOW": [
+      "An external POST /api/v1/intent payload can supply current_project_id/project_id and operation_strategy.",
+      "All seven registered generic handlers reach apply_business_scope_domain() or record_in_business_scope().",
+      "Both helpers reach business_scope_meta().",
+      "When project_id and operation_strategy are present, business_scope_meta() executes env[project.project].sudo().browse(project_id).exists() and reads operation_strategy.",
+      "The lookup occurs without proving that the authenticated caller may access the supplied project.",
+      "The derived value is returned in project_scope/record_scope metadata and changes project_operation_strategy_mismatch decisions."
+    ],
+    "SECURITY_BOUNDARY": "Caller-authorized project visibility must be established before any project ORM lookup, including metadata lookup used only for normalization or mismatch decisions.",
+    "WHY_STATIC_PROOF_IS_SUFFICIENT": "The unauthorized sudo project lookup and downstream metadata/decision use are unconditional source-level data flow once both external inputs are present; no generic predicate result is needed to prove it.",
+    "RECOMMENDED_PACKAGE": "smart_core",
+    "MINIMUM_PRODUCT_FILES": [
+      "addons/smart_core/core/project_context.py"
+    ],
+    "REQUIRED_TESTS": [
+      "addons/smart_core/tests/test_project_context_boundaries.py: prove an unauthorized project id is not sudo-read during business scope metadata construction",
+      "focused generic-intent boundary regression: authorized projects preserve operation-strategy mismatch behavior while unauthorized projects fail closed without project metadata disclosure"
+    ],
+    "RUNTIME_ACCEPTANCE_REQUIRED": true
+  },
+  "BOUNDARY_RECORDS": [
+    {
+      "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA",
+      "BOUNDARY_KIND": "GENERIC_DYNAMIC_POLICY",
+      "ENTRYPOINT": "POST /api/v1/intent intent=api.data",
+      "SOURCE_SYMBOL": "odoo.addons.smart_core.handlers.api_data.ApiDataHandler",
+      "REGISTRY_KEY": "api.data",
+      "PROVIDER_SOURCE": [
+        "addons/smart_construction_core/core_extension_policy_accessors.py:get_api_data_create_execution_policy_contribution",
+        "addons/smart_construction_core/core_extension_policy_maps.py:API_DATA_MUTATION_POLICIES",
+        "addons/smart_core/handlers/api_data.py"
+      ],
+      "GENERATOR_SYMBOL": "addons/smart_construction_core/core_extension_policy_accessors.py:get_api_data_create_execution_policy_contribution",
+      "PROJECT_ID_INPUT_SOURCES": [
+        "params.current_project_id",
+        "params.project_id",
+        "params.context.current_project_id",
+        "params.context.default_project_id",
+        "request.context.current_project_id",
+        "request.context.default_project_id"
+      ],
+      "PROJECT_CONTEXT_NORMALIZERS": [
+        "ApiDataHandler._request_context",
+        "selected_project_id_from_context",
+        "selected_business_scope_from_context",
+        "apply_business_scope_domain",
+        "business_scope_meta"
+      ],
+      "FALLBACK_PROVIDERS": [
+        "selected_project_id_from_context prefers params then nested/context current_project_id",
+        "ApiDataHandler._request_context sets default_project_id from current_project_id",
+        "default_get/context.default_*/field.default remain dynamic default sources"
+      ],
+      "PREAUTH_PROJECT_ORM_ACCESS": {
+        "PRESENT": true,
+        "SOURCE": "business_scope_meta -> env[project.project].sudo().browse(project_id).exists() -> operation_strategy",
+        "AUTHORIZATION_MISSING": "caller access to the supplied project_id"
+      },
+      "AUTHORIZATION_BOUNDARIES": [
+        "IntentDispatcher.check_intent_permission before dispatch",
+        "base.group_user handler requirement",
+        "model ACL and record rules for the selected target model/records",
+        "apply_business_scope_domain for company/project/operation-strategy domain"
+      ],
+      "PROJECT_ID_WRITERS": [
+        "api.data create injects project_id from normalized context when the target model is scoped",
+        "api.data write rejects a requested project_id move outside normalized scope"
+      ],
+      "BUSINESS_CONSUMERS": [
+        "api.data list/read/count/export/default_get/create/write target-model operations"
+      ],
+      "EXTERNAL_REACHABILITY": "CONFIRMED_REGISTERED_INTENT_VIA_POST_/api/v1/intent",
+      "DYNAMIC_INPUTS": [
+        "ACL",
+        "context",
+        "model",
+        "params",
+        "record_rules",
+        "vals"
+      ],
+      "AFFECTED_MODELS": {
+        "SET_REF": "PROJECT_SCOPE_SETS.ALL_EXPORTED_PROJECT_SCOPED_MODELS",
+        "COUNT": 168
+      },
+      "AFFECTED_FIELDS": "requested/registered readable or writable fields intersected with runtime ORM fields; project_id when present",
+      "AFFECTED_OPERATIONS": [
+        "create",
+        "default_get",
+        "export_csv",
+        "read",
+        "search",
+        "search_count",
+        "search_read",
+        "write"
+      ],
+      "AFFECTED_METHODS": [],
+      "KNOWN_STATIC_DECISION": "DEFAULT_ALLOW models; read/search operations apply record scope; mutation remains subject to composed policy, ACL and record rules; arbitrary methods are denied",
+      "UNRESOLVED_COMPONENT": "The account.tax quick-create execution-policy result and runtime ACL/record-rule outcomes depend on request and business-record inputs.",
+      "WHY_EXECUTION_IS_UNSAFE": "Resolving the component would invoke a policy predicate and ORM authorization against runtime records, both forbidden in this audit.",
+      "PROJECT_VISIBILITY_IMPACT": "CONFIRMED: supplied project identity can trigger a sudo project metadata read before caller-project authorization; dynamic target-model decisions remain separately unresolved.",
+      "POSITIVE_EVIDENCE": [
+        "schema v2 records project scope inputs, normalized context and record-scope domain application",
+        "static call chain reaches the common preauthorization sudo lookup",
+        "scope metadata is included in api.data responses and denial decisions"
+      ],
+      "UNRESOLVED_COMPONENTS": [
+        "account.tax quick-create predicate outcome",
+        "request-specific ACL and record-rule outcome"
+      ],
+      "CLASSIFICATION": "VULNERABLE_CONFIRMED",
+      "COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+      "DEPENDENCIES": [
+        "caller-scoped project record rules",
+        "business_scope_meta consumers"
+      ],
+      "PRODUCT_PATCH_REQUIRED": true,
+      "RECOMMENDED_PACKAGE": "smart_core",
+      "MINIMUM_PRODUCT_FILES": [
+        "addons/smart_core/core/project_context.py"
+      ],
+      "REQUIRED_TESTS": [
+        "project-context preauthorization ORM regression",
+        "api.data scope-metadata non-disclosure regression"
+      ],
+      "RUNTIME_ACCEPTANCE_REQUIRED": true,
+      "MINIMUM_FOLLOWUP_TASK": "EXTEND_ADMIN_VIS_P3_STATIC_EVIDENCE_FOR_API_DATA_COMPOSED_POLICY_DECISION"
+    },
+    {
+      "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_BATCH",
+      "BOUNDARY_KIND": "GENERIC_DYNAMIC_POLICY",
+      "ENTRYPOINT": "POST /api/v1/intent intent=api.data.batch",
+      "SOURCE_SYMBOL": "odoo.addons.smart_core.handlers.api_data_batch.ApiDataBatchHandler",
+      "REGISTRY_KEY": "api.data.batch",
+      "PROVIDER_SOURCE": [
+        "addons/smart_core/handlers/api_data_batch.py"
+      ],
+      "GENERATOR_SYMBOL": "",
+      "PROJECT_ID_INPUT_SOURCES": [
+        "params.current_project_id",
+        "params.project_id",
+        "params.context.current_project_id",
+        "params.context.default_project_id",
+        "request.context.current_project_id",
+        "request.context.default_project_id"
+      ],
+      "PROJECT_CONTEXT_NORMALIZERS": [
+        "ApiDataBatchHandler context normalization",
+        "selected_business_scope_from_context",
+        "apply_business_scope_domain",
+        "business_scope_meta"
+      ],
+      "FALLBACK_PROVIDERS": [
+        "current_project_id falls back to project_id",
+        "default_project_id is derived from normalized current_project_id"
+      ],
+      "PREAUTH_PROJECT_ORM_ACCESS": {
+        "PRESENT": true,
+        "SOURCE": "business_scope_meta common root before scoped target-record search",
+        "AUTHORIZATION_MISSING": "caller access to the supplied project_id"
+      },
+      "AUTHORIZATION_BOUNDARIES": [
+        "IntentDispatcher.check_intent_permission before dispatch",
+        "smart_core.group_smart_core_data_operator",
+        "write model ACL",
+        "scoped-domain target-record count",
+        "per-record write record rule"
+      ],
+      "PROJECT_ID_WRITERS": [
+        "batch safe_vals may include a target project field subject to runtime field and record rules"
+      ],
+      "BUSINESS_CONSUMERS": [
+        "batch write target records"
+      ],
+      "EXTERNAL_REACHABILITY": "CONFIRMED_REGISTERED_INTENT_VIA_POST_/api/v1/intent",
+      "DYNAMIC_INPUTS": [
+        "ACL",
+        "record_rules"
+      ],
+      "AFFECTED_MODELS": {
+        "SET_REF": "PROJECT_SCOPE_SETS.ALL_EXPORTED_PROJECT_SCOPED_MODELS",
+        "COUNT": 168
+      },
+      "AFFECTED_FIELDS": "requested safe write fields filtered by runtime ORM",
+      "AFFECTED_OPERATIONS": [
+        "write"
+      ],
+      "AFFECTED_METHODS": [],
+      "KNOWN_STATIC_DECISION": "DEFAULT_ALLOW models; write uses scoped-domain membership plus model ACL and per-record rules",
+      "UNRESOLVED_COMPONENT": "The request-specific model ACL and record-rule results are not statically decidable.",
+      "WHY_EXECUTION_IS_UNSAFE": "Resolution requires runtime ACL/record-rule execution against business records.",
+      "PROJECT_VISIBILITY_IMPACT": "CONFIRMED common-root project metadata disclosure before caller-project authorization.",
+      "POSITIVE_EVIDENCE": [
+        "static handler applies business scope before batch record mutation",
+        "business scope construction reaches the common sudo project lookup"
+      ],
+      "UNRESOLVED_COMPONENTS": [
+        "request-specific ACL and record-rule outcome"
+      ],
+      "CLASSIFICATION": "VULNERABLE_CONFIRMED",
+      "COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+      "DEPENDENCIES": [
+        "caller-scoped project record rules",
+        "batch scope-domain enforcement"
+      ],
+      "PRODUCT_PATCH_REQUIRED": true,
+      "RECOMMENDED_PACKAGE": "smart_core",
+      "MINIMUM_PRODUCT_FILES": [
+        "addons/smart_core/core/project_context.py"
+      ],
+      "REQUIRED_TESTS": [
+        "project-context preauthorization ORM regression",
+        "api.data.batch scope-metadata non-disclosure regression"
+      ],
+      "RUNTIME_ACCEPTANCE_REQUIRED": true,
+      "MINIMUM_FOLLOWUP_TASK": "EXTEND_ADMIN_VIS_P3_STATIC_EVIDENCE_FOR_API_DATA_BATCH_ACL_RULE_ORDER"
+    },
+    {
+      "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_CREATE",
+      "BOUNDARY_KIND": "GENERIC_DYNAMIC_POLICY",
+      "ENTRYPOINT": "POST /api/v1/intent intent=api.data.create",
+      "SOURCE_SYMBOL": "odoo.addons.smart_core.handlers.api_data_write.ApiDataWriteHandler",
+      "REGISTRY_KEY": "api.data.create",
+      "PROVIDER_SOURCE": [
+        "addons/smart_construction_core/core_extension_policy_maps.py:API_DATA_WRITE_ALLOWLIST",
+        "addons/smart_core/handlers/api_data_write.py:ApiDataWriteHandler.ALLOWED_MODELS"
+      ],
+      "GENERATOR_SYMBOL": "addons/smart_core/handlers/api_data_write.py:ApiDataWriteHandler._merge_business_config_custom_fields",
+      "PROJECT_ID_INPUT_SOURCES": [
+        "params.current_project_id",
+        "params.project_id",
+        "params.context.current_project_id",
+        "params.context.default_project_id",
+        "request.context.current_project_id",
+        "request.context.default_project_id"
+      ],
+      "PROJECT_CONTEXT_NORMALIZERS": [
+        "ApiDataWriteHandler._get_context",
+        "ApiDataWriteHandler._current_project_id",
+        "selected_business_scope_from_context",
+        "apply_business_scope_domain",
+        "business_scope_meta"
+      ],
+      "FALLBACK_PROVIDERS": [
+        "current_project_id falls back to project_id",
+        "default_project_id is derived from normalized current_project_id",
+        "active visible company-scoped manual x_ fields extend the static field allowlist"
+      ],
+      "PREAUTH_PROJECT_ORM_ACCESS": {
+        "PRESENT": true,
+        "SOURCE": "business_scope_meta common root before create ACL and create",
+        "AUTHORIZATION_MISSING": "caller access to the supplied project_id"
+      },
+      "AUTHORIZATION_BOUNDARIES": [
+        "IntentDispatcher.check_intent_permission before dispatch",
+        "smart_core.group_smart_core_data_operator",
+        "explicit model/field allowlist",
+        "business scope normalization",
+        "create ACL and ORM rules"
+      ],
+      "PROJECT_ID_WRITERS": [
+        "create injects current_project_id into project_id when scope applies and project_id is an allowed field"
+      ],
+      "BUSINESS_CONSUMERS": [
+        "create on project.project, project.task, purchase.order.line or res.partner"
+      ],
+      "EXTERNAL_REACHABILITY": "CONFIRMED_REGISTERED_INTENT_VIA_POST_/api/v1/intent",
+      "DYNAMIC_INPUTS": [
+        "ir.model.fields manual x_ fields",
+        "ui.form.field.policy company-scoped rows"
+      ],
+      "AFFECTED_MODELS": {
+        "SET_REF": "PROJECT_SCOPE_SETS.API_DATA_WRITE_ALLOWLIST_PROJECT_SCOPED_MODELS",
+        "COUNT": 4
+      },
+      "AFFECTED_FIELDS": {
+        "STATIC": {
+          "project.project": [
+            "date_start",
+            "description",
+            "name"
+          ],
+          "project.task": [
+            "date_deadline",
+            "description",
+            "name",
+            "project_id"
+          ],
+          "purchase.order.line": [
+            "name",
+            "order_id"
+          ],
+          "res.partner": [
+            "email",
+            "name",
+            "phone",
+            "sc_supplier_type",
+            "sc_supplier_type_ids"
+          ]
+        },
+        "DYNAMIC": "active visible company-scoped manual x_ fields"
+      },
+      "AFFECTED_OPERATIONS": [
+        "create"
+      ],
+      "AFFECTED_METHODS": [],
+      "KNOWN_STATIC_DECISION": "EXPLICIT_ALLOWLIST models and fields; create is subject to business scope, create ACL and ORM rules",
+      "UNRESOLVED_COMPONENT": "The active visible company-scoped manual x_ field set cannot be known without business configuration rows.",
+      "WHY_EXECUTION_IS_UNSAFE": "Resolution requires reading business configuration tables, forbidden in this audit.",
+      "PROJECT_VISIBILITY_IMPACT": "CONFIRMED common-root project metadata disclosure before caller-project authorization; the dynamic manual-field set may additionally affect project field writes.",
+      "POSITIVE_EVIDENCE": [
+        "static create branch reaches apply_business_scope_domain before create ACL",
+        "static branch may inject normalized current_project_id into project_id"
+      ],
+      "UNRESOLVED_COMPONENTS": [
+        "company-scoped active manual x_ field set"
+      ],
+      "CLASSIFICATION": "VULNERABLE_CONFIRMED",
+      "COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+      "DEPENDENCIES": [
+        "caller-scoped project record rules",
+        "api.data.write explicit allowlist"
+      ],
+      "PRODUCT_PATCH_REQUIRED": true,
+      "RECOMMENDED_PACKAGE": "smart_core",
+      "MINIMUM_PRODUCT_FILES": [
+        "addons/smart_core/core/project_context.py"
+      ],
+      "REQUIRED_TESTS": [
+        "project-context preauthorization ORM regression",
+        "api.data.create project-id injection regression"
+      ],
+      "RUNTIME_ACCEPTANCE_REQUIRED": true,
+      "MINIMUM_FOLLOWUP_TASK": "RECORD_ADMIN_VIS_P3_API_DATA_CREATE_DYNAMIC_MANUAL_FIELD_SET_FROM_APPROVED_EPHEMERAL_CONFIGURATION"
+    },
+    {
+      "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_UNLINK",
+      "BOUNDARY_KIND": "GENERIC_DYNAMIC_POLICY",
+      "ENTRYPOINT": "POST /api/v1/intent intent=api.data.unlink",
+      "SOURCE_SYMBOL": "odoo.addons.smart_core.handlers.api_data_unlink.ApiDataUnlinkHandler",
+      "REGISTRY_KEY": "api.data.unlink",
+      "PROVIDER_SOURCE": [
+        "addons/smart_construction_core/core_extension_policy_maps.py:API_DATA_UNLINK_POLICIES",
+        "addons/smart_core/handlers/api_data_unlink.py"
+      ],
+      "GENERATOR_SYMBOL": "",
+      "PROJECT_ID_INPUT_SOURCES": [
+        "params.current_project_id",
+        "params.project_id",
+        "params.context.current_project_id",
+        "params.context.default_project_id",
+        "request.context.current_project_id",
+        "request.context.default_project_id"
+      ],
+      "PROJECT_CONTEXT_NORMALIZERS": [
+        "ApiDataUnlinkHandler context normalization",
+        "selected_business_scope_from_context",
+        "apply_business_scope_domain",
+        "business_scope_meta"
+      ],
+      "FALLBACK_PROVIDERS": [
+        "current_project_id falls back to project_id",
+        "default_project_id is derived from normalized current_project_id",
+        "model delete policy may depend on record state"
+      ],
+      "PREAUTH_PROJECT_ORM_ACCESS": {
+        "PRESENT": true,
+        "SOURCE": "business_scope_meta common root before scoped target-record search",
+        "AUTHORIZATION_MISSING": "caller access to the supplied project_id"
+      },
+      "AUTHORIZATION_BOUNDARIES": [
+        "IntentDispatcher.check_intent_permission before dispatch",
+        "smart_core.group_smart_core_data_operator",
+        "explicit unlink model policy",
+        "scoped target-record count",
+        "unlink ACL and record rules"
+      ],
+      "PROJECT_ID_WRITERS": [],
+      "BUSINESS_CONSUMERS": [
+        "record-state delete policy",
+        "unlink on scoped records"
+      ],
+      "EXTERNAL_REACHABILITY": "CONFIRMED_REGISTERED_INTENT_VIA_POST_/api/v1/intent",
+      "DYNAMIC_INPUTS": [
+        "ACL",
+        "record state",
+        "record_rules"
+      ],
+      "AFFECTED_MODELS": {
+        "SET_REF": "PROJECT_SCOPE_SETS.API_DATA_UNLINK_PROJECT_SCOPED_MODELS",
+        "COUNT": 60
+      },
+      "AFFECTED_FIELDS": [
+        "issue_state",
+        "state"
+      ],
+      "AFFECTED_OPERATIONS": [
+        "unlink"
+      ],
+      "AFFECTED_METHODS": [],
+      "KNOWN_STATIC_DECISION": "EXPLICIT_ALLOWLIST models; scoped-domain membership precedes delete policy and unlink ACL/record rules",
+      "UNRESOLVED_COMPONENT": "Record state plus request-specific ACL and record-rule results remain dynamic.",
+      "WHY_EXECUTION_IS_UNSAFE": "Resolution requires reading and attempting authorization against business records.",
+      "PROJECT_VISIBILITY_IMPACT": "CONFIRMED common-root project metadata disclosure before caller-project authorization.",
+      "POSITIVE_EVIDENCE": [
+        "static unlink branch reaches common business scope construction",
+        "target record mutation is separately guarded by scoped count, delete policy, ACL and record rules"
+      ],
+      "UNRESOLVED_COMPONENTS": [
+        "record-specific delete-policy result",
+        "request-specific ACL and record-rule outcome"
+      ],
+      "CLASSIFICATION": "VULNERABLE_CONFIRMED",
+      "COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+      "DEPENDENCIES": [
+        "caller-scoped project record rules",
+        "unlink policy map"
+      ],
+      "PRODUCT_PATCH_REQUIRED": true,
+      "RECOMMENDED_PACKAGE": "smart_core",
+      "MINIMUM_PRODUCT_FILES": [
+        "addons/smart_core/core/project_context.py"
+      ],
+      "REQUIRED_TESTS": [
+        "project-context preauthorization ORM regression",
+        "api.data.unlink denial non-disclosure regression"
+      ],
+      "RUNTIME_ACCEPTANCE_REQUIRED": true,
+      "MINIMUM_FOLLOWUP_TASK": "EXTEND_ADMIN_VIS_P3_STATIC_EVIDENCE_FOR_API_DATA_UNLINK_STATE_POLICY"
+    },
+    {
+      "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_WRITE",
+      "BOUNDARY_KIND": "GENERIC_DYNAMIC_POLICY",
+      "ENTRYPOINT": "POST /api/v1/intent intent=api.data.write",
+      "SOURCE_SYMBOL": "odoo.addons.smart_core.handlers.api_data_write.ApiDataWriteHandler",
+      "REGISTRY_KEY": "api.data.write",
+      "PROVIDER_SOURCE": [
+        "addons/smart_construction_core/core_extension_policy_maps.py:API_DATA_WRITE_ALLOWLIST",
+        "addons/smart_core/handlers/api_data_write.py:ApiDataWriteHandler.ALLOWED_MODELS"
+      ],
+      "GENERATOR_SYMBOL": "addons/smart_core/handlers/api_data_write.py:ApiDataWriteHandler._merge_business_config_custom_fields",
+      "PROJECT_ID_INPUT_SOURCES": [
+        "params.current_project_id",
+        "params.project_id",
+        "params.context.current_project_id",
+        "params.context.default_project_id",
+        "request.context.current_project_id",
+        "request.context.default_project_id"
+      ],
+      "PROJECT_CONTEXT_NORMALIZERS": [
+        "ApiDataWriteHandler._get_context",
+        "ApiDataWriteHandler._current_project_id",
+        "record_in_business_scope",
+        "apply_business_scope_domain",
+        "business_scope_meta"
+      ],
+      "FALLBACK_PROVIDERS": [
+        "current_project_id falls back to project_id",
+        "default_project_id is derived from normalized current_project_id",
+        "active visible company-scoped manual x_ fields extend the static field allowlist"
+      ],
+      "PREAUTH_PROJECT_ORM_ACCESS": {
+        "PRESENT": true,
+        "SOURCE": "record_in_business_scope -> business_scope_meta common root before project scope has been authorized",
+        "AUTHORIZATION_MISSING": "caller access to the supplied project_id"
+      },
+      "AUTHORIZATION_BOUNDARIES": [
+        "IntentDispatcher.check_intent_permission before dispatch",
+        "smart_core.group_smart_core_data_operator",
+        "explicit model/field allowlist",
+        "record_in_business_scope",
+        "write ACL and record rules"
+      ],
+      "PROJECT_ID_WRITERS": [
+        "write validates a requested project_id against current_project_id before mutation"
+      ],
+      "BUSINESS_CONSUMERS": [
+        "write on project.project, project.task, purchase.order.line or res.partner"
+      ],
+      "EXTERNAL_REACHABILITY": "CONFIRMED_REGISTERED_INTENT_VIA_POST_/api/v1/intent",
+      "DYNAMIC_INPUTS": [
+        "ir.model.fields manual x_ fields",
+        "ui.form.field.policy company-scoped rows"
+      ],
+      "AFFECTED_MODELS": {
+        "SET_REF": "PROJECT_SCOPE_SETS.API_DATA_WRITE_ALLOWLIST_PROJECT_SCOPED_MODELS",
+        "COUNT": 4
+      },
+      "AFFECTED_FIELDS": {
+        "STATIC": {
+          "project.project": [
+            "date_start",
+            "description",
+            "name"
+          ],
+          "project.task": [
+            "date_deadline",
+            "description",
+            "name",
+            "project_id"
+          ],
+          "purchase.order.line": [
+            "name",
+            "order_id"
+          ],
+          "res.partner": [
+            "email",
+            "name",
+            "phone",
+            "sc_supplier_type",
+            "sc_supplier_type_ids"
+          ]
+        },
+        "DYNAMIC": "active visible company-scoped manual x_ fields"
+      },
+      "AFFECTED_OPERATIONS": [
+        "write"
+      ],
+      "AFFECTED_METHODS": [],
+      "KNOWN_STATIC_DECISION": "EXPLICIT_ALLOWLIST models and fields; record scope precedes write ACL/rules and mutation",
+      "UNRESOLVED_COMPONENT": "The active visible company-scoped manual x_ field set cannot be known without business configuration rows.",
+      "WHY_EXECUTION_IS_UNSAFE": "Resolution requires reading business configuration tables, forbidden in this audit.",
+      "PROJECT_VISIBILITY_IMPACT": "CONFIRMED common-root project metadata disclosure before caller-project authorization; the dynamic manual-field set may additionally affect project field writes.",
+      "POSITIVE_EVIDENCE": [
+        "static write branch calls record_in_business_scope",
+        "record_in_business_scope reaches business_scope_meta before returning its authorization decision"
+      ],
+      "UNRESOLVED_COMPONENTS": [
+        "company-scoped active manual x_ field set"
+      ],
+      "CLASSIFICATION": "VULNERABLE_CONFIRMED",
+      "COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+      "DEPENDENCIES": [
+        "caller-scoped project record rules",
+        "api.data.write explicit allowlist"
+      ],
+      "PRODUCT_PATCH_REQUIRED": true,
+      "RECOMMENDED_PACKAGE": "smart_core",
+      "MINIMUM_PRODUCT_FILES": [
+        "addons/smart_core/core/project_context.py"
+      ],
+      "REQUIRED_TESTS": [
+        "project-context preauthorization ORM regression",
+        "api.data.write project-move denial regression"
+      ],
+      "RUNTIME_ACCEPTANCE_REQUIRED": true,
+      "MINIMUM_FOLLOWUP_TASK": "RECORD_ADMIN_VIS_P3_API_DATA_WRITE_DYNAMIC_MANUAL_FIELD_SET_FROM_APPROVED_EPHEMERAL_CONFIGURATION"
+    },
+    {
+      "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_ONCHANGE",
+      "BOUNDARY_KIND": "GENERIC_DYNAMIC_POLICY",
+      "ENTRYPOINT": "POST /api/v1/intent intent=api.onchange",
+      "SOURCE_SYMBOL": "odoo.addons.smart_core.handlers.api_onchange.ApiOnchangeHandler",
+      "REGISTRY_KEY": "api.onchange",
+      "PROVIDER_SOURCE": [
+        "addons/smart_core/handlers/api_onchange.py"
+      ],
+      "GENERATOR_SYMBOL": "Odoo model _onchange_methods metadata",
+      "PROJECT_ID_INPUT_SOURCES": [
+        "params.current_project_id",
+        "params.project_id",
+        "params.context.current_project_id",
+        "params.context.default_project_id",
+        "request.context.current_project_id",
+        "request.context.default_project_id"
+      ],
+      "PROJECT_CONTEXT_NORMALIZERS": [
+        "ApiOnchangeHandler._request_context",
+        "record_in_business_scope",
+        "apply_business_scope_domain",
+        "business_scope_meta"
+      ],
+      "FALLBACK_PROVIDERS": [
+        "current_project_id falls back to project_id",
+        "default_project_id is derived from normalized current_project_id",
+        "default_get/context.default_*/field.default can affect transient onchange values"
+      ],
+      "PREAUTH_PROJECT_ORM_ACCESS": {
+        "PRESENT": true,
+        "SOURCE": "record_in_business_scope -> business_scope_meta common root before project scope has been authorized",
+        "AUTHORIZATION_MISSING": "caller access to the supplied project_id"
+      },
+      "AUTHORIZATION_BOUNDARIES": [
+        "IntentDispatcher.check_intent_permission before dispatch",
+        "smart_core.group_smart_core_data_operator",
+        "record_in_business_scope when record_id is present",
+        "model read ACL before onchange execution"
+      ],
+      "PROJECT_ID_WRITERS": [
+        "onchange output may propose project_id or project-derived field changes according to the runtime onchange graph"
+      ],
+      "BUSINESS_CONSUMERS": [
+        "Odoo onchange graph and manual declared onchange methods"
+      ],
+      "EXTERNAL_REACHABILITY": "CONFIRMED_REGISTERED_INTENT_VIA_POST_/api/v1/intent",
+      "DYNAMIC_INPUTS": [
+        "changed_fields",
+        "onchange method graph",
+        "values"
+      ],
+      "AFFECTED_MODELS": {
+        "SET_REF": "PROJECT_SCOPE_SETS.ALL_EXPORTED_PROJECT_SCOPED_MODELS",
+        "COUNT": 168
+      },
+      "AFFECTED_FIELDS": "registered input/output fields selected by changed_fields and the runtime onchange graph",
+      "AFFECTED_OPERATIONS": [
+        "onchange"
+      ],
+      "AFFECTED_METHODS": [
+        "declared onchange methods"
+      ],
+      "KNOWN_STATIC_DECISION": "DEFAULT_ALLOW registered models; read ACL is checked; record scope is checked only when a record_id is present; method selection is predicate-driven",
+      "UNRESOLVED_COMPONENT": "The selected onchange method graph and its project-derived outputs depend on model metadata, changed fields and values.",
+      "WHY_EXECUTION_IS_UNSAFE": "Resolution would invoke onchange/model business methods and may read business records.",
+      "PROJECT_VISIBILITY_IMPACT": "CONFIRMED common-root project metadata disclosure for record-bound onchange; additional project-derived outputs remain dynamic.",
+      "POSITIVE_EVIDENCE": [
+        "record-bound onchange calls record_in_business_scope before model onchange",
+        "record_in_business_scope reaches the common sudo project lookup"
+      ],
+      "UNRESOLVED_COMPONENTS": [
+        "request-selected onchange method graph and outputs"
+      ],
+      "CLASSIFICATION": "VULNERABLE_CONFIRMED",
+      "COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+      "DEPENDENCIES": [
+        "caller-scoped project record rules",
+        "Odoo onchange metadata"
+      ],
+      "PRODUCT_PATCH_REQUIRED": true,
+      "RECOMMENDED_PACKAGE": "smart_core",
+      "MINIMUM_PRODUCT_FILES": [
+        "addons/smart_core/core/project_context.py"
+      ],
+      "REQUIRED_TESTS": [
+        "project-context preauthorization ORM regression",
+        "record-bound api.onchange scope-metadata non-disclosure regression"
+      ],
+      "RUNTIME_ACCEPTANCE_REQUIRED": true,
+      "MINIMUM_FOLLOWUP_TASK": "EXTEND_ADMIN_VIS_P3_STATIC_EVIDENCE_FOR_API_ONCHANGE_PROJECT_OUTPUT_GRAPH"
+    },
+    {
+      "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_EXECUTE_BUTTON",
+      "BOUNDARY_KIND": "GENERIC_DYNAMIC_POLICY",
+      "ENTRYPOINT": "POST /api/v1/intent intent=execute_button",
+      "SOURCE_SYMBOL": "odoo.addons.smart_core.handlers.execute_button.ExecuteButtonHandler",
+      "REGISTRY_KEY": "execute_button",
+      "PROVIDER_SOURCE": [
+        "addons/smart_construction_core/core_extension.py:smart_core_build_portal_execute_button_contract",
+        "addons/smart_core/handlers/execute_button.py"
+      ],
+      "GENERATOR_SYMBOL": "addons/smart_construction_core/core_extension.py:smart_core_build_portal_execute_button_contract",
+      "PROJECT_ID_INPUT_SOURCES": [
+        "params.current_project_id",
+        "params.project_id",
+        "params.context.current_project_id",
+        "params.context.default_project_id",
+        "request.context.current_project_id",
+        "request.context.default_project_id"
+      ],
+      "PROJECT_CONTEXT_NORMALIZERS": [
+        "record_in_business_scope",
+        "apply_business_scope_domain",
+        "business_scope_meta"
+      ],
+      "FALLBACK_PROVIDERS": [
+        "selected_project_id_from_context prefers params then nested/context current_project_id",
+        "a non-callable object method can fall back to a declared server action"
+      ],
+      "PREAUTH_PROJECT_ORM_ACCESS": {
+        "PRESENT": true,
+        "SOURCE": "record_in_business_scope -> business_scope_meta common root before project scope has been authorized",
+        "AUTHORIZATION_MISSING": "caller access to the supplied project_id"
+      },
+      "AUTHORIZATION_BOUNDARIES": [
+        "IntentDispatcher.check_intent_permission before dispatch",
+        "smart_core.group_smart_core_data_operator",
+        "model access rights",
+        "record_in_business_scope for each target record",
+        "record rules before method invocation"
+      ],
+      "PROJECT_ID_WRITERS": [
+        "the dynamically selected object method or server action may write project identity or project-scoped business state"
+      ],
+      "BUSINESS_CONSUMERS": [
+        "dynamically selected public callable object method",
+        "declared server action fallback"
+      ],
+      "EXTERNAL_REACHABILITY": "CONFIRMED_REGISTERED_INTENT_VIA_POST_/api/v1/intent",
+      "DYNAMIC_INPUTS": [
+        "ACL",
+        "button type",
+        "method name",
+        "model",
+        "record ids",
+        "record_rules"
+      ],
+      "AFFECTED_MODELS": {
+        "SET_REF": "PROJECT_SCOPE_SETS.ALL_EXPORTED_PROJECT_SCOPED_MODELS",
+        "COUNT": 168
+      },
+      "AFFECTED_FIELDS": [
+        "id",
+        "project_id when present"
+      ],
+      "AFFECTED_OPERATIONS": [
+        "method_call"
+      ],
+      "AFFECTED_METHODS": "public callable candidates subject to runtime access and button metadata",
+      "KNOWN_STATIC_DECISION": "DEFAULT_ALLOW models; method decision is predicate-driven; model rights, per-record scope and record rules precede method invocation",
+      "UNRESOLVED_COMPONENT": "Exact method callability and effects depend on request button metadata, target records and the selected model method.",
+      "WHY_EXECUTION_IS_UNSAFE": "Resolution would invoke a controller-selected model business method or server action and read business records.",
+      "PROJECT_VISIBILITY_IMPACT": "CONFIRMED common-root project metadata disclosure before caller-project authorization; invoked method effects remain dynamic.",
+      "POSITIVE_EVIDENCE": [
+        "static handler checks each target via record_in_business_scope",
+        "record_in_business_scope reaches the common sudo project lookup before returning its decision"
+      ],
+      "UNRESOLVED_COMPONENTS": [
+        "request-selected method/server-action behavior"
+      ],
+      "CLASSIFICATION": "VULNERABLE_CONFIRMED",
+      "COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+      "DEPENDENCIES": [
+        "caller-scoped project record rules",
+        "button contract metadata"
+      ],
+      "PRODUCT_PATCH_REQUIRED": true,
+      "RECOMMENDED_PACKAGE": "smart_core",
+      "MINIMUM_PRODUCT_FILES": [
+        "addons/smart_core/core/project_context.py"
+      ],
+      "REQUIRED_TESTS": [
+        "project-context preauthorization ORM regression",
+        "execute_button scope-metadata non-disclosure regression"
+      ],
+      "RUNTIME_ACCEPTANCE_REQUIRED": true,
+      "MINIMUM_FOLLOWUP_TASK": "EXTEND_ADMIN_VIS_P3_STATIC_EVIDENCE_FOR_EXECUTE_BUTTON_PROJECT_METHOD_EFFECTS"
+    }
+  ],
+  "RECONCILIATION_SUMMARY": {
+    "EXISTING_BOUNDARY_RECORD_COUNT": 9,
+    "REMAINING_CANDIDATE_COUNT": 7,
+    "PROJECT_SCOPED_BOUNDARY_COUNT": 7,
+    "NOT_PROJECT_SCOPED_COUNT": 2,
+    "FRAMEWORK_ONLY_COUNT": 0,
+    "SAFE_CONFIRMED_COUNT": 0,
+    "UNREACHABLE_CONFIRMED_COUNT": 0,
+    "VULNERABLE_CONFIRMED_COUNT": 7,
+    "VULNERABLE_CONDITIONAL_COUNT": 0,
+    "UNRESOLVED_DYNAMIC_COUNT": 0,
+    "GENERIC_DYNAMIC_RECORD_COUNT": 7,
+    "ALL_GENERIC_DYNAMIC_ITEMS_INDIVIDUALLY_RECORDED": true,
+    "GENERIC_DYNAMIC_PREDICATES_EXECUTED": false,
+    "ALL_REMAINING_BOUNDARY_IDS_UNIQUE": true,
+    "ALL_PROJECT_INPUTS_TRACED": true,
+    "ALL_PROJECT_NORMALIZERS_TRACED": true,
+    "ALL_PROJECT_FALLBACKS_TRACED": true,
+    "ALL_PREAUTH_PROJECT_ORM_ACCESS_TRACED": true,
+    "ALL_PROJECT_ID_WRITES_TRACED": true,
+    "ALL_BUSINESS_CONSUMERS_TRACED": true
+  },
+  "NEXT_PATCH_PLAN": {
+    "BOUNDARY_IDS": [
+      "ADMIN_VIS_P3_GENERIC_API_DATA",
+      "ADMIN_VIS_P3_GENERIC_API_DATA_BATCH",
+      "ADMIN_VIS_P3_GENERIC_API_DATA_CREATE",
+      "ADMIN_VIS_P3_GENERIC_API_DATA_UNLINK",
+      "ADMIN_VIS_P3_GENERIC_API_DATA_WRITE",
+      "ADMIN_VIS_P3_GENERIC_API_ONCHANGE",
+      "ADMIN_VIS_P3_GENERIC_EXECUTE_BUTTON"
+    ],
+    "COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+    "DEPENDENCIES": [
+      "caller-scoped project ACL and record-rule behavior",
+      "existing business scope domain semantics",
+      "operation-strategy mismatch behavior for authorized projects"
+    ],
+    "PRODUCT_FILES": [
+      "addons/smart_core/core/project_context.py"
+    ],
+    "TESTS": [
+      "addons/smart_core/tests/test_project_context_boundaries.py",
+      "focused generic-intent boundary regressions for authorized/unauthorized project scope metadata"
+    ],
+    "RUNTIME_ACCEPTANCE_REQUIRED": true,
+    "APPROVED": true,
+    "IMPLEMENTED": true,
+    "STATUS": "IMPLEMENTED_STATICALLY_VERIFIED_RUNTIME_CLOSURE_PENDING"
+  },
+  "PATCH_IMPLEMENTATION": {
+    "TASK": "IMPLEMENT_ADMIN_VIS_P3_GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP_MINIMAL_SECURITY_PATCH",
+    "BASELINE_HEAD": "c0312418ac8f1147b6722da8e6e8d35a3adb4625",
+    "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+    "PRODUCT_FILES_CHANGED": [
+      "addons/smart_core/core/project_context.py"
+    ],
+    "TEST_FILES_CHANGED": [
+      "addons/smart_core/tests/test_project_context_boundaries.py"
+    ],
+    "SECURITY_SEMANTICS": [
+      "The project model read ACL is checked in the current caller environment.",
+      "A caller-scoped search by project id applies the active project record rules.",
+      "The returned record is checked for caller read access before operation_strategy is read.",
+      "The vulnerable sudo browse/exists lookup is removed.",
+      "Missing and caller-invisible projects produce the same AccessError before strategy read.",
+      "Authorized metadata, authorized mismatch, no-strategy metadata, and no-project fallback semantics are preserved."
+    ],
+    "TEST_RESULTS": {
+      "PROJECT_CONTEXT_BOUNDARY_TESTS": "PASS_20_TESTS",
+      "API_DATA_WRITE_ID_BOUNDARIES": "PASS_9_TESTS",
+      "API_ONCHANGE_RECORD_ID_BOUNDARIES": "PASS_5_TESTS",
+      "EXECUTE_BUTTON_SERVER_ACTION_BOUNDARIES": "PASS_5_TESTS",
+      "API_DATA_UNLINK_ID_BOUNDARIES": "PASS_6_TESTS",
+      "PYTHON_COMPILE": "PASS",
+      "DIFF_CHECK": "PASS",
+      "SMART_CORE_BOUNDARY_GUARD": "BASELINE_FAILURE_UNCHANGED_OUTSIDE_PATCH_SCOPE"
+    },
+    "RUNTIME_ACCEPTANCE_REQUIRED": true,
+    "RUNTIME_ACCEPTANCE_EXECUTED": true,
+    "RUNTIME_ACCEPTANCE_RESULT": "PASS_HELPER_LEVEL_CALL_ORDER_WITH_CONTROLLED_ORM_TEST_DOUBLES",
+    "STATUS": "IMPLEMENTED_PENDING_INDEPENDENT_VERIFICATION"
+  },
+  "PATCH_VERIFICATION": {
+    "TASK": "VERIFY_ADMIN_VIS_P3_GENERIC_BUSINESS_SCOPE_PATCH_AND_RECONCILE_BOUNDARIES",
+    "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+    "PATCH_COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+    "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+    "STATIC_PATCH_VERIFIED": true,
+    "SOURCE_CONTROL_FLOW_EVIDENCE": [
+      "addons/smart_core/core/project_context.py:501-503 normalizes company, project and operation-strategy scope inputs.",
+      "addons/smart_core/core/project_context.py:487-492 uses the caller environment for project-model read ACL, search and record-rule checks.",
+      "addons/smart_core/core/project_context.py:507 resolves the caller-visible project before line 510 reads operation_strategy.",
+      "The patch removes the former sudo().browse(project_id).exists() pre-probe and broad exception fallback.",
+      "No ACL, record rule or generic entrypoint file is changed by the patch."
+    ],
+    "AUTHORIZATION_EVIDENCE": {
+      "CALLER_SCOPED_PROJECT_SEARCH_CONFIRMED": true,
+      "PROJECT_ACL_STATICALLY_APPLIES": true,
+      "PROJECT_RECORD_RULE_STATICALLY_APPLIES": true,
+      "AUTHORIZATION_BEFORE_OPERATION_STRATEGY_READ": true,
+      "PREAUTH_SUDO_PROJECT_LOOKUP_ABSENT": true,
+      "PREAUTH_BROWSE_EXISTS_LOOKUP_ABSENT": true,
+      "ACCESS_ERROR_SUDO_FALLBACK_ABSENT": true,
+      "REAL_ORM_AUTHORIZATION_VERIFIED": false
+    },
+    "BOUNDARY_ASSESSMENTS": [
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataHandler._request_context normalizes current_project_id/project_id into request context",
+        "PROJECT_CONTEXT_NORMALIZER": "ApiDataHandler._apply_record_scope -> apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data.py:997 -> addons/smart_core/core/project_context.py:540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "NOT_EXECUTED_ISOLATED_ENTRYPOINT_UNAVAILABLE",
+        "CLASSIFICATION": "UNRESOLVED_RUNTIME_AUTHORIZATION",
+        "POSITIVE_EVIDENCE": [
+          "List/read/count/export/default_get/create/write scope metadata uses _apply_record_scope.",
+          "The handler contains no direct project.project lookup or operation_strategy attribute read."
+        ],
+        "UNRESOLVED_COMPONENTS": [
+          "Real Odoo project ACL and record-rule behavior for business_scope_meta has not been exercised in an isolated disposable database."
+        ],
+        "CLOSED": false
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_BATCH",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data.batch",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataBatchHandler._request_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data_batch.py:367 -> addons/smart_core/core/project_context.py:540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "NOT_EXECUTED_ISOLATED_ENTRYPOINT_UNAVAILABLE",
+        "CLASSIFICATION": "UNRESOLVED_RUNTIME_AUTHORIZATION",
+        "POSITIVE_EVIDENCE": [
+          "The scoped domain and metadata are constructed before batch target-record processing.",
+          "The handler contains no direct project.project lookup or operation_strategy attribute read."
+        ],
+        "UNRESOLVED_COMPONENTS": [
+          "Real Odoo project ACL and record-rule behavior for business_scope_meta has not been exercised in an isolated disposable database."
+        ],
+        "CLOSED": false
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_CREATE",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data.create",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataWriteHandler._get_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data_write.py:495 -> addons/smart_core/core/project_context.py:540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "NOT_EXECUTED_ISOLATED_ENTRYPOINT_UNAVAILABLE",
+        "CLASSIFICATION": "UNRESOLVED_RUNTIME_AUTHORIZATION",
+        "POSITIVE_EVIDENCE": [
+          "Scope metadata is built at line 495 before strategy mismatch and metadata-derived write decisions.",
+          "The handler reads operation_strategy only from returned scope metadata or target-model field declarations, not from project.project."
+        ],
+        "UNRESOLVED_COMPONENTS": [
+          "Real Odoo project ACL and record-rule behavior for business_scope_meta has not been exercised in an isolated disposable database."
+        ],
+        "CLOSED": false
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_UNLINK",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data.unlink",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataUnlinkHandler._request_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data_unlink.py:278 -> addons/smart_core/core/project_context.py:540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "NOT_EXECUTED_ISOLATED_ENTRYPOINT_UNAVAILABLE",
+        "CLASSIFICATION": "UNRESOLVED_RUNTIME_AUTHORIZATION",
+        "POSITIVE_EVIDENCE": [
+          "The scoped domain and metadata are built at line 278 before target-record browse at line 342.",
+          "The handler contains no direct project.project lookup or operation_strategy attribute read."
+        ],
+        "UNRESOLVED_COMPONENTS": [
+          "Real Odoo project ACL and record-rule behavior for business_scope_meta has not been exercised in an isolated disposable database."
+        ],
+        "CLOSED": false
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_WRITE",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data.write",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataWriteHandler._get_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "record_in_business_scope -> apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data_write.py:370 -> addons/smart_core/core/project_context.py:565,540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "NOT_EXECUTED_ISOLATED_ENTRYPOINT_UNAVAILABLE",
+        "CLASSIFICATION": "UNRESOLVED_RUNTIME_AUTHORIZATION",
+        "POSITIVE_EVIDENCE": [
+          "The write scope decision reaches record_in_business_scope at line 370.",
+          "The earlier browse/exists concerns the target business record and does not read project.project or operation_strategy."
+        ],
+        "UNRESOLVED_COMPONENTS": [
+          "Real Odoo project ACL and record-rule behavior for business_scope_meta has not been exercised in an isolated disposable database."
+        ],
+        "CLOSED": false
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_ONCHANGE",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.onchange",
+        "PROJECT_ID_INPUT_SOURCE": "ApiOnchangeHandler._request_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "record_in_business_scope -> apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_onchange.py:438 -> addons/smart_core/core/project_context.py:565,540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "NOT_EXECUTED_ISOLATED_ENTRYPOINT_UNAVAILABLE",
+        "CLASSIFICATION": "UNRESOLVED_RUNTIME_AUTHORIZATION",
+        "POSITIVE_EVIDENCE": [
+          "Record-bound onchange reaches record_in_business_scope at line 438 before the onchange graph.",
+          "The recordless path does not generate business-scope metadata and contains no direct project.project or operation_strategy read."
+        ],
+        "UNRESOLVED_COMPONENTS": [
+          "Real Odoo project ACL and record-rule behavior for business_scope_meta has not been exercised in an isolated disposable database.",
+          "The request-selected recordless onchange graph remains a separately recorded dynamic component and was not executed."
+        ],
+        "CLOSED": false
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_EXECUTE_BUTTON",
+        "ENTRYPOINT": "POST /api/v1/intent intent=execute_button",
+        "PROJECT_ID_INPUT_SOURCE": "handler params/context current_project_id and project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "record_in_business_scope -> apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/execute_button.py:132 -> addons/smart_core/core/project_context.py:565,540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "NOT_EXECUTED_ISOLATED_ENTRYPOINT_UNAVAILABLE",
+        "CLASSIFICATION": "UNRESOLVED_RUNTIME_AUTHORIZATION",
+        "POSITIVE_EVIDENCE": [
+          "Each target record reaches record_in_business_scope at line 132 before method or server-action execution.",
+          "Server-action and activity metadata sudo operations do not query project.project or read operation_strategy."
+        ],
+        "UNRESOLVED_COMPONENTS": [
+          "Real Odoo project ACL and record-rule behavior for business_scope_meta has not been exercised in an isolated disposable database."
+        ],
+        "CLOSED": false
+      }
+    ],
+    "COMMON_HELPER_COVERAGE_COUNT": 7,
+    "REMAINING_BYPASS_COUNT": 0,
+    "UNRESOLVED_CALL_CHAIN_COUNT": 0,
+    "UNRESOLVED_RUNTIME_AUTHORIZATION_COUNT": 7,
+    "CONTROLLED_ORM_DOUBLE_TEST_RESULT": "PASS_20_TESTS",
+    "REAL_ORM_ACCEPTANCE_EXECUTED": false,
+    "REAL_ORM_ACCEPTANCE_RESULT": "UNAVAILABLE_NO_EXISTING_ENTRYPOINT_COMBINES_FOCUSED_REAL_ORM_TEST_WITH_EXACT_DATABASE_AND_RESOURCE_CLEANUP",
+    "REAL_ORM_ACCEPTANCE_BLOCKER_EVIDENCE": [
+      "addons/smart_core/tests/test_project_context_boundaries.py uses controlled ORM doubles rather than Odoo TransactionCase.",
+      "scripts/test/test_safe.sh and scripts/ci/install_gate.sh require a caller-supplied existing database and do not create and remove a unique database.",
+      "scripts/ci/run_ci.sh creates or resets a named database but does not remove it at completion and has no focused real-ORM business_scope_meta test tag."
+    ],
+    "QUALITY_GATE_COMPARISON": {
+      "COMMAND": "python3 scripts/verify/smart_core_boundary_guard.py",
+      "PARENT_EXIT_CODE": 2,
+      "PATCH_EXIT_CODE": 2,
+      "OUTPUT_IDENTICAL": true,
+      "DELTA": "PREEXISTING_UNCHANGED",
+      "NEW_OR_WORSENED_FAILURES": [],
+      "PREEXISTING_UNCHANGED_FAILURES": [
+        "addons/smart_core/security/platform_admin.py directly references smart_construction_core.group_sc_cap_config_admin",
+        "addons/smart_core/delivery/native_config_menu_projection.py and addons/smart_core/security/platform_admin.py contain preexisting forbidden industry/default tokens"
+      ]
+    },
+    "TEST_RESULTS": {
+      "PROJECT_CONTEXT_BOUNDARY_TESTS": "PASS_20_TESTS",
+      "API_DATA_WRITE_ID_BOUNDARIES": "PASS_9_TESTS",
+      "API_ONCHANGE_RECORD_ID_BOUNDARIES": "PASS_5_TESTS",
+      "EXECUTE_BUTTON_SERVER_ACTION_BOUNDARIES": "PASS_5_TESTS",
+      "API_DATA_UNLINK_ID_BOUNDARIES": "PASS_6_TESTS",
+      "STATIC_CALL_CHAIN_AST": "PASS_7_BOUNDARIES",
+      "AUTHORIZATION_ORDER_AST": "PASS",
+      "PYTHON_COMPILE": "PASS",
+      "JSON_VALIDATION": "PASS",
+      "DIFF_CHECK": "PASS"
+    },
+    "BOUNDARIES_SAFE_CONFIRMED_PATCHED_COUNT": 0,
+    "BOUNDARIES_UNRESOLVED_RUNTIME_COUNT": 7,
+    "BOUNDARIES_VULNERABLE_REMAINING_COUNT": 0,
+    "ALL_SEVEN_BOUNDARIES_CLOSED": false,
+    "PRODUCT_PATCH_IMPLEMENTED": true,
+    "RUNTIME_CLOSURE_PENDING": true,
+    "TEMP_DATABASE_CREATED": false,
+    "TEMP_DATABASE_REMOVED": false,
+    "TEMP_RESOURCES_CLEANED": true,
+    "EXISTING_RESOURCES_UNCHANGED": true
+  },
+  "ORM_TEST_ENTRYPOINT_BUILD": {
+    "TASK": "PROVIDE_ADMIN_VIS_P3_ISOLATED_PROJECT_RECORD_RULE_TEST_ENTRYPOINT",
+    "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+    "PATCH_COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+    "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+    "ORM_ENTRYPOINT_AVAILABLE": true,
+    "ORM_ENTRYPOINT": "make test.admin-vis-p3.project-record-rule-orm",
+    "ORM_ENTRYPOINT_COMMIT": "THIS_COMMIT",
+    "ORM_TEST_FRAMEWORK": "Odoo TransactionCase with post_install focused test tag",
+    "REAL_ORM_INFRASTRUCTURE_VALIDATED": true,
+    "ISOLATED_DATABASE_POLICY_VALIDATED": true,
+    "EXACT_CLEANUP_VALIDATED": true,
+    "REPEAT_RUN_VALIDATED": true,
+    "PRODUCT_PATCH_RETEST_PENDING": true,
+    "DATABASE_POLICY": {
+      "PREFIX": "sc_test_admin_vis_p3_",
+      "CALLER_DATABASE_OVERRIDE_ACCEPTED": false,
+      "KNOWN_DATABASE_DENYLIST_VALIDATED": true,
+      "EXACT_DB_FILTER_REQUIRED": true,
+      "EXACT_CURRENT_RUN_DROP_ONLY": true
+    },
+    "REAL_ORM_EVIDENCE": {
+      "REAL_ODOO_REGISTRY_USED": true,
+      "REAL_ORM_USED": true,
+      "REAL_PROJECT_ACL_USED": true,
+      "REAL_PROJECT_RECORD_RULE_USED": true,
+      "ORDINARY_USER_USED": true,
+      "SUDO_USED_FOR_TEST_SETUP_ONLY": true,
+      "CONTROLLED_ORM_DOUBLES_USED": false,
+      "AUTHORIZED_PROJECT_TEST": "PASS",
+      "UNAUTHORIZED_EXISTING_PROJECT_TEST": "PASS",
+      "UNAUTHORIZED_STRATEGY_VARIATION_TEST": "PASS",
+      "NONEXISTENT_PROJECT_TEST": "PASS",
+      "AUTHORIZED_STRATEGY_MISMATCH_TEST": "PASS",
+      "NO_PROJECT_FALLBACK_TEST": "PASS",
+      "UNAUTHORIZED_AND_NONEXISTENT_OBSERVABLE_EQUIVALENCE": "PASS",
+      "AUTHORIZED_METADATA_CONTRACT_PRESERVED": "PASS"
+    },
+    "VALID_RUNS": [
+      {
+        "DATABASE": "sc_test_admin_vis_p3_20260725192044_9e3a010f",
+        "TEST_RESULT": "PASS_4_TEST_METHODS_ODOO_STATS_6_TESTS",
+        "DATABASE_REMOVED": true,
+        "RESOURCES_REMOVED": true,
+        "DATABASE_BASELINE_SHA256": "6a77202e3c51415a53e36f9eebd4875e8821de8d8290a6128ba43369ec624ee4",
+        "CONTAINER_BASELINE_SHA256": "54954db6760ef554468cbe46016a5c27b5baf61e886253a2f8c864c6a0bb3870",
+        "NETWORK_BASELINE_SHA256": "5992793d7bddca2365455ffcfde6e2e48d3f84a8fe9a77b73c0f0a75a30c70f9",
+        "VOLUME_BASELINE_SHA256": "d472b72ae977ec6c6ae428a3fe2dac1d5af256801f4dfc94c8b2ca52fb62aa52"
+      },
+      {
+        "DATABASE": "sc_test_admin_vis_p3_20260725192256_ce34faee",
+        "TEST_RESULT": "PASS_4_TEST_METHODS_ODOO_STATS_6_TESTS",
+        "DATABASE_REMOVED": true,
+        "RESOURCES_REMOVED": true,
+        "DATABASE_BASELINE_SHA256": "6a77202e3c51415a53e36f9eebd4875e8821de8d8290a6128ba43369ec624ee4",
+        "CONTAINER_BASELINE_SHA256": "54954db6760ef554468cbe46016a5c27b5baf61e886253a2f8c864c6a0bb3870",
+        "NETWORK_BASELINE_SHA256": "5992793d7bddca2365455ffcfde6e2e48d3f84a8fe9a77b73c0f0a75a30c70f9",
+        "VOLUME_BASELINE_SHA256": "d472b72ae977ec6c6ae428a3fe2dac1d5af256801f4dfc94c8b2ca52fb62aa52"
+      }
+    ],
+    "RESOURCE_RESTORATION": {
+      "EXISTING_DATABASES_UNCHANGED": true,
+      "CONTAINERS_UNCHANGED": true,
+      "NETWORKS_UNCHANGED": true,
+      "VOLUMES_UNCHANGED": true,
+      "TEMP_DATABASE_RESIDUE_COUNT": 0,
+      "TEMP_RESOURCES_CLEANED": true
+    },
+    "DEVELOPMENT_ATTEMPTS": {
+      "REJECTED_ZERO_TEST_ATTEMPT_COUNT": 1,
+      "REJECTED_ATTEMPT_DATABASE_REMOVED": true,
+      "REJECTED_ATTEMPT_RESOURCES_REMOVED": true,
+      "REJECTED_ATTEMPT_AUTOMATIC_HEALTHCHECK_HTTP_REQUEST_OCCURRED": true,
+      "VALID_RUN_HTTP_REQUEST_EXECUTED": false,
+      "HEALTHCHECK_DISABLED_IN_FINAL_ENTRYPOINT": true
+    },
+    "QUALITY_GATE": {
+      "PROJECT_CONTEXT_BOUNDARY_TESTS": "PASS_20_TESTS",
+      "API_DATA_WRITE_ID_BOUNDARIES": "PASS_9_TESTS",
+      "API_ONCHANGE_RECORD_ID_BOUNDARIES": "PASS_5_TESTS",
+      "EXECUTE_BUTTON_SERVER_ACTION_BOUNDARIES": "PASS_5_TESTS",
+      "API_DATA_UNLINK_ID_BOUNDARIES": "PASS_6_TESTS",
+      "PYTHON_COMPILE": "PASS",
+      "SHELL_SYNTAX": "PASS",
+      "JSON_VALIDATION": "PASS",
+      "DIFF_CHECK": "PASS",
+      "SMART_CORE_BOUNDARY_GUARD": "PREEXISTING_UNCHANGED",
+      "NEW_OR_WORSENED_FAILURES": []
+    },
+    "BOUNDARY_CLASSIFICATION_AFTER_ENTRYPOINT_BUILD": "UNRESOLVED_RUNTIME_AUTHORIZATION",
+    "BOUNDARIES_CLOSED_THIS_ROUND": 0,
+    "ALL_SEVEN_BOUNDARIES_CLOSED": false,
+    "STATUS": "ENTRYPOINT_VALIDATED_PRODUCT_PATCH_RETEST_PENDING"
+  },
+  "REAL_ORM_CLOSURE_VERIFICATION": {
+    "TASK": "VERIFY_ADMIN_VIS_P3_GENERIC_BUSINESS_SCOPE_PATCH_WITH_REAL_ORM_AND_CLOSE_BOUNDARIES",
+    "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+    "ORM_ENTRYPOINT_COMMIT": "0696fed3736adc00b2c1d3ac2ab027c480bffdff",
+    "PATCH_COMMON_ROOT_CAUSE": "GENERIC_BUSINESS_SCOPE_PREAUTH_PROJECT_LOOKUP",
+    "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+    "ORM_ENTRYPOINT": "make test.admin-vis-p3.project-record-rule-orm",
+    "STATIC_PATCH_VERIFIED": true,
+    "SOURCE_CONTROL_FLOW_EVIDENCE": [
+      "addons/smart_core/core/project_context.py:501-503 normalizes company_id, project_id and operation_strategy before project resolution.",
+      "addons/smart_core/core/project_context.py:487-492 checks read ACL, performs caller-environment search and checks the read record rule.",
+      "addons/smart_core/core/project_context.py:507 resolves the caller-visible project before line 510 reads operation_strategy.",
+      "The helper contains no sudo(), browse(), exists(), broad exception fallback or AccessError-to-sudo continuation.",
+      "The no-project branch skips _caller_visible_project and preserves the existing empty/default metadata contract."
+    ],
+    "EFFECTIVE_ENVIRONMENT_QUALIFICATION": {
+      "ORDINARY_CALLER_PATH_AUTHORIZATION_ORDER_VALID": true,
+      "ALL_CALLERS_GUARANTEED_NON_SUDO": false,
+      "EXCEPTION": "addons/smart_core/handlers/api_data.py:1915-1920 and 1933-1939 may elevate account.tax quick-create env_model before _apply_record_scope; business_scope_meta then resolves project.project through the elevated env_model.env.",
+      "POLICY_SOURCE": "addons/smart_construction_core/core_extension_policy_accessors.py:106-117"
+    },
+    "BOUNDARY_ASSESSMENTS": [
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataHandler._request_context normalizes current_project_id/project_id into request context",
+        "PROJECT_CONTEXT_NORMALIZER": "ApiDataHandler._apply_record_scope -> apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data.py:997 -> addons/smart_core/core/project_context.py:540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "POST_HELPER_EXTERNAL_ID_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [
+          "api.data account.tax create quick-policy may set sudo at addons/smart_core/handlers/api_data.py:1915-1920 or 1933-1934 before _apply_record_scope at line 1939",
+          "get_api_data_create_execution_policy_contribution returns sudo=true for the contract-tax quick-create branch at addons/smart_construction_core/core_extension_policy_accessors.py:106-117",
+          "_caller_visible_project derives project_model from env_model.env, so a sudo env_model makes the nominal caller-scoped project search elevated"
+        ],
+        "COMMON_HELPER_COVERAGE": true,
+        "STATIC_CLASSIFICATION": "VULNERABLE_REMAINING_BYPASS",
+        "REAL_ORM_EVIDENCE": "PASS_ORDINARY_CALLER_PATH_NOT_COVERING_ELEVATED_CREATE_POLICY_BRANCH",
+        "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+        "ORM_ENTRYPOINT_COMMIT": "0696fed3736adc00b2c1d3ac2ab027c480bffdff",
+        "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+        "STATIC_PATCH_VERIFIED": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": false,
+        "UNIT_REGRESSION_RESULT": "PASS_ORDINARY_CALLER_PATH",
+        "REAL_ORM_ACCEPTANCE_RESULT": "PASS_ORDINARY_CALLER_PATH",
+        "RESOURCE_CLEANUP_RESULT": "PASS_EXACT_BASELINE_RESTORATION",
+        "FINAL_CLASSIFICATION": "VULNERABLE_REMAINING_BYPASS",
+        "CLASSIFICATION": "VULNERABLE_REMAINING_BYPASS",
+        "POSITIVE_EVIDENCE": [
+          "All normal api.data operations ignore client-requested sudo through resolve_api_data_sudo returning false.",
+          "The internal account.tax create execution policy is a distinct reachable branch that elevates env_model before scope metadata is built.",
+          "An external project_id plus operation_strategy can therefore make project strategy participate in metadata under an elevated project search."
+        ],
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": false
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_BATCH",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data.batch",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataBatchHandler._request_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data_batch.py:367 -> addons/smart_core/core/project_context.py:540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "POST_HELPER_EXTERNAL_ID_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "STATIC_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "REAL_ORM_EVIDENCE": "PASS_REAL_PROJECT_ACL_AND_RECORD_RULE",
+        "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+        "ORM_ENTRYPOINT_COMMIT": "0696fed3736adc00b2c1d3ac2ab027c480bffdff",
+        "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+        "STATIC_PATCH_VERIFIED": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "PASS",
+        "RESOURCE_CLEANUP_RESULT": "PASS_EXACT_BASELINE_RESTORATION",
+        "FINAL_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "POSITIVE_EVIDENCE": [
+          "The batch handler constructs a caller-environment env_model at line 366 and invokes the common scope helper at line 367.",
+          "No direct project.project lookup, operation_strategy attribute read, sudo elevation or post-helper external-project lookup exists in the handler."
+        ],
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_CREATE",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data.create",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataWriteHandler._get_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data_write.py:495 -> addons/smart_core/core/project_context.py:540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "POST_HELPER_EXTERNAL_ID_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "STATIC_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "REAL_ORM_EVIDENCE": "PASS_REAL_PROJECT_ACL_AND_RECORD_RULE",
+        "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+        "ORM_ENTRYPOINT_COMMIT": "0696fed3736adc00b2c1d3ac2ab027c480bffdff",
+        "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+        "STATIC_PATCH_VERIFIED": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "PASS",
+        "RESOURCE_CLEANUP_RESULT": "PASS_EXACT_BASELINE_RESTORATION",
+        "FINAL_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "POSITIVE_EVIDENCE": [
+          "The dedicated api.data.create handler uses the caller env_model and builds scope metadata at line 495 before metadata-derived write decisions.",
+          "This handler contains no sudo elevation, direct project lookup or post-helper external-project lookup."
+        ],
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_UNLINK",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data.unlink",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataUnlinkHandler._request_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data_unlink.py:278 -> addons/smart_core/core/project_context.py:540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "POST_HELPER_EXTERNAL_ID_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "STATIC_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "REAL_ORM_EVIDENCE": "PASS_REAL_PROJECT_ACL_AND_RECORD_RULE",
+        "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+        "ORM_ENTRYPOINT_COMMIT": "0696fed3736adc00b2c1d3ac2ab027c480bffdff",
+        "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+        "STATIC_PATCH_VERIFIED": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "PASS",
+        "RESOURCE_CLEANUP_RESULT": "PASS_EXACT_BASELINE_RESTORATION",
+        "FINAL_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "POSITIVE_EVIDENCE": [
+          "The unlink handler invokes the common helper at line 278 before target-record browse at line 342.",
+          "No sudo elevation, project.project lookup, direct strategy read or post-helper external-project lookup exists."
+        ],
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_WRITE",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.data.write",
+        "PROJECT_ID_INPUT_SOURCE": "ApiDataWriteHandler._get_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "record_in_business_scope -> apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_data_write.py:370 -> addons/smart_core/core/project_context.py:565,540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "POST_HELPER_EXTERNAL_ID_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "STATIC_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "REAL_ORM_EVIDENCE": "PASS_REAL_PROJECT_ACL_AND_RECORD_RULE",
+        "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+        "ORM_ENTRYPOINT_COMMIT": "0696fed3736adc00b2c1d3ac2ab027c480bffdff",
+        "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+        "STATIC_PATCH_VERIFIED": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "PASS",
+        "RESOURCE_CLEANUP_RESULT": "PASS_EXACT_BASELINE_RESTORATION",
+        "FINAL_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "POSITIVE_EVIDENCE": [
+          "The dedicated write handler invokes record_in_business_scope at line 370 in the caller environment.",
+          "Its target-record browse does not query project.project or read operation_strategy, and no scope-related sudo branch follows."
+        ],
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_ONCHANGE",
+        "ENTRYPOINT": "POST /api/v1/intent intent=api.onchange",
+        "PROJECT_ID_INPUT_SOURCE": "ApiOnchangeHandler._request_context normalizes current_project_id/project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "record_in_business_scope -> apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/api_onchange.py:438 -> addons/smart_core/core/project_context.py:565,540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "POST_HELPER_EXTERNAL_ID_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "STATIC_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "REAL_ORM_EVIDENCE": "PASS_REAL_PROJECT_ACL_AND_RECORD_RULE",
+        "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+        "ORM_ENTRYPOINT_COMMIT": "0696fed3736adc00b2c1d3ac2ab027c480bffdff",
+        "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+        "STATIC_PATCH_VERIFIED": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "PASS",
+        "RESOURCE_CLEANUP_RESULT": "PASS_EXACT_BASELINE_RESTORATION",
+        "FINAL_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "POSITIVE_EVIDENCE": [
+          "Record-bound onchange invokes record_in_business_scope at line 438 before constructing the onchange graph.",
+          "The recordless branch does not generate project scope metadata or read project operation_strategy and is not a bypass of this common-root lookup."
+        ],
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_EXECUTE_BUTTON",
+        "ENTRYPOINT": "POST /api/v1/intent intent=execute_button",
+        "PROJECT_ID_INPUT_SOURCE": "handler params/context current_project_id and project_id",
+        "PROJECT_CONTEXT_NORMALIZER": "record_in_business_scope -> apply_business_scope_domain -> selected_business_scope_from_context",
+        "BUSINESS_SCOPE_META_CALLSITE": "addons/smart_core/handlers/execute_button.py:132 -> addons/smart_core/core/project_context.py:565,540",
+        "DIRECT_OPERATION_STRATEGY_READS": [],
+        "ALTERNATE_PROJECT_LOOKUPS": [],
+        "POST_HELPER_EXTERNAL_ID_LOOKUPS": [],
+        "AUTHORIZATION_BYPASSES": [],
+        "COMMON_HELPER_COVERAGE": true,
+        "STATIC_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "REAL_ORM_EVIDENCE": "PASS_REAL_PROJECT_ACL_AND_RECORD_RULE",
+        "PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+        "ORM_ENTRYPOINT_COMMIT": "0696fed3736adc00b2c1d3ac2ab027c480bffdff",
+        "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+        "STATIC_PATCH_VERIFIED": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "UNIT_REGRESSION_RESULT": "PASS",
+        "REAL_ORM_ACCEPTANCE_RESULT": "PASS",
+        "RESOURCE_CLEANUP_RESULT": "PASS_EXACT_BASELINE_RESTORATION",
+        "FINAL_CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "POSITIVE_EVIDENCE": [
+          "Each target record invokes record_in_business_scope at lines 131-137 before method or server-action execution.",
+          "Later server-action and activity sudo operations do not use the external project id, query project.project or read operation_strategy."
+        ],
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      }
+    ],
+    "COMMON_HELPER_COVERAGE_COUNT": 7,
+    "REMAINING_BYPASS_COUNT": 1,
+    "REMAINING_BYPASS_BOUNDARY_IDS": [
+      "ADMIN_VIS_P3_GENERIC_API_DATA"
+    ],
+    "UNRESOLVED_CALL_CHAIN_COUNT": 0,
+    "UNRESOLVED_RUNTIME_AUTHORIZATION_COUNT": 0,
+    "REAL_ORM_ACCEPTANCE": {
+      "EXECUTED": true,
+      "RESULT": "PASS_ORDINARY_CALLER_HELPER_PATH",
+      "TEMP_DATABASE": "sc_test_admin_vis_p3_20260725193431_48b2a023",
+      "AUTHORIZED_PROJECT_TEST": "PASS",
+      "UNAUTHORIZED_EXISTING_PROJECT_TEST": "PASS",
+      "UNAUTHORIZED_STRATEGY_VARIATION_TEST": "PASS",
+      "NONEXISTENT_PROJECT_TEST": "PASS",
+      "AUTHORIZED_STRATEGY_MISMATCH_TEST": "PASS",
+      "NO_PROJECT_FALLBACK_TEST": "PASS",
+      "UNAUTHORIZED_AND_NONEXISTENT_OBSERVABLE_EQUIVALENCE": "PASS",
+      "AUTHORIZED_METADATA_CONTRACT_PRESERVED": "PASS"
+    },
+    "RESOURCE_CLEANUP": {
+      "TEMP_DATABASE_REMOVED": true,
+      "TEMP_DATABASE_RESIDUE_COUNT": 0,
+      "TEMP_RESOURCES_CLEANED": true,
+      "EXISTING_DATABASES_UNCHANGED": true,
+      "CONTAINERS_UNCHANGED": true,
+      "NETWORKS_UNCHANGED": true,
+      "VOLUMES_UNCHANGED": true,
+      "DATABASE_BASELINE_SHA256": "6a77202e3c51415a53e36f9eebd4875e8821de8d8290a6128ba43369ec624ee4",
+      "CONTAINER_BASELINE_SHA256": "54954db6760ef554468cbe46016a5c27b5baf61e886253a2f8c864c6a0bb3870",
+      "NETWORK_BASELINE_SHA256": "5992793d7bddca2365455ffcfde6e2e48d3f84a8fe9a77b73c0f0a75a30c70f9",
+      "VOLUME_BASELINE_SHA256": "d472b72ae977ec6c6ae428a3fe2dac1d5af256801f4dfc94c8b2ca52fb62aa52"
+    },
+    "QUALITY_GATE_COMPARISON": {
+      "COMMAND": "python3 scripts/verify/smart_core_boundary_guard.py",
+      "BASELINE_9322F50_EXIT_CODE": 2,
+      "ENTRYPOINT_0696FED_EXIT_CODE": 2,
+      "CURRENT_EXIT_CODE": 2,
+      "OUTPUT_SHA256": "443cdee1d059d7abf40bd0dbea40dceb8da30e621044639af3434bb8b1ec13c1",
+      "OUTPUTS_IDENTICAL": true,
+      "DELTA": "PREEXISTING_UNCHANGED",
+      "NEW_OR_WORSENED_FAILURES": [],
+      "RESOLVED_FAILURES": [],
+      "PREEXISTING_UNCHANGED_FAILURES": [
+        "addons/smart_core/security/platform_admin.py directly references smart_construction_core.group_sc_cap_config_admin",
+        "addons/smart_core/delivery/native_config_menu_projection.py and addons/smart_core/security/platform_admin.py contain preexisting forbidden industry/default tokens"
+      ]
+    },
+    "BOUNDARIES_SAFE_CONFIRMED_PATCHED_COUNT": 6,
+    "BOUNDARIES_UNRESOLVED_RUNTIME_COUNT": 0,
+    "BOUNDARIES_VULNERABLE_REMAINING_COUNT": 1,
+    "ALL_SEVEN_BOUNDARIES_CLOSED": false,
+    "PRODUCT_PATCH_RETEST_PENDING": true,
+    "STATUS": "SIX_BOUNDARIES_CLOSED_ONE_CONFIRMED_SUDO_ENVIRONMENT_BYPASS"
+  },
+  "API_DATA_SUDO_SCOPE_BYPASS_PATCH": {
+    "TASK": "IMPLEMENT_ADMIN_VIS_P3_GENERIC_API_DATA_SUDO_SCOPE_BYPASS_MINIMAL_SECURITY_PATCH",
+    "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA",
+    "ROOT_CAUSE": "API_DATA_ACCOUNT_TAX_CREATE_POLICY_ELEVATES_ENV_BEFORE_BUSINESS_SCOPE_AUTHORIZATION",
+    "PREVIOUS_PATCH_COMMIT": "9debf351b9da40d5927178a400a60c50964bf15f",
+    "ORM_ENTRYPOINT_COMMIT": "0696fed3736adc00b2c1d3ac2ab027c480bffdff",
+    "PATCH_COMMIT": "THIS_COMMIT",
+    "COMMON_HELPER": "addons/smart_core/core/project_context.py:business_scope_meta",
+    "AFFECTED_ENTRYPOINT": "POST /api/v1/intent intent=api.data op=create model=account.tax",
+    "HISTORICAL_BYPASS_EVIDENCE": [
+      "Before this patch, addons/smart_core/handlers/api_data.py:1915-1920 and 1933-1939 could elevate env_model before _apply_record_scope.",
+      "The account.tax contract-tax quick-create contribution at addons/smart_construction_core/core_extension_policy_accessors.py:106-117 returns sudo=true.",
+      "business_scope_meta derived project.project from the supplied env_model.env, so the elevated operation model propagated sudo to project scope authorization."
+    ],
+    "PATCH_CONTROL_FLOW_EVIDENCE": {
+      "CALLER_ENV_CAPTURE_LOCATION": "addons/smart_core/handlers/api_data.py:1899-1902",
+      "SCOPE_AUTHORIZATION_LOCATION": "addons/smart_core/handlers/api_data.py:1901 and 1915-1921",
+      "ACCOUNT_TAX_POLICY_LOCATION": "addons/smart_core/handlers/api_data.py:1923-1931",
+      "POST_AUTH_OPERATION_SUDO_LOCATION": "addons/smart_core/handlers/api_data.py:1933-1935",
+      "PREAUTHORIZED_METADATA_REUSE_LOCATION": "addons/smart_core/handlers/api_data.py:1953-1959",
+      "BUSINESS_CREATE_LOCATION": "addons/smart_core/handlers/api_data.py:_op_create final env_model.create call",
+      "CALLER_ENV_SOURCE": "self.env['account.tax'].with_context(ctx)",
+      "OPERATION_ENV_SOURCE": "caller_env_model.sudo() only after account-tax scope authorization and create-policy approval"
+    },
+    "SECURITY_INVARIANTS": {
+      "AUTHORIZATION_USES_CALLER_ENV": true,
+      "AUTHORIZATION_BEFORE_OPERATION_SUDO": true,
+      "SUDO_ENV_PROPAGATION_TO_HELPER_ABSENT": true,
+      "PREAUTH_PROJECT_SUDO_SEARCH_ABSENT": true,
+      "PREAUTH_PROJECT_BROWSE_EXISTS_ABSENT": true,
+      "ACCESS_ERROR_SUDO_FALLBACK_ABSENT": true,
+      "OPERATION_STRATEGY_READ_AFTER_AUTHORIZATION": true,
+      "UNAUTHORIZED_PROJECT_EXISTENCE_DISCLOSURE_ABSENT": true,
+      "COMMON_HELPER_UNCHANGED": true,
+      "ACL_UNCHANGED": true,
+      "RECORD_RULE_UNCHANGED": true,
+      "OTHER_GENERIC_ENTRYPOINTS_UNCHANGED": true
+    },
+    "FOCUSED_TEST_EVIDENCE": {
+      "STATIC_ORDER_TEST": "PASS_4_TESTS",
+      "API_DATA_EXECUTION_POLICY_TEST": "PASS_2_TESTS",
+      "AUTHORIZED_ACCOUNT_TAX_PROJECT_TEST": "PASS_REAL_ORM",
+      "UNAUTHORIZED_ACCOUNT_TAX_PROJECT_TEST": "PASS_REAL_ORM",
+      "UNAUTHORIZED_STRATEGY_VARIATION_TEST": "PASS_REAL_ORM",
+      "NONEXISTENT_PROJECT_TEST": "PASS_REAL_ORM",
+      "AUTHORIZED_STRATEGY_MISMATCH_TEST": "PASS_REAL_ORM",
+      "NO_PROJECT_FALLBACK_TEST": "PASS_REAL_ORM",
+      "UNAUTHORIZED_AND_NONEXISTENT_OBSERVABLE_EQUIVALENCE": "PASS_REAL_ORM",
+      "AUTHORIZED_METADATA_CONTRACT_PRESERVED": "PASS_REAL_ORM",
+      "ACCOUNT_TAX_LEGITIMATE_CREATE_POLICY_PRESERVED": "PASS_POLICY_RETURNS_ALLOWED_TRUE_SUDO_TRUE_AFTER_AUTHORIZATION",
+      "GENERIC_BUSINESS_OPERATION_EXECUTED": false
+    },
+    "REAL_ORM_ACCEPTANCE": {
+      "EXECUTED": true,
+      "RESULT": "PASS_6_TEST_METHODS_ODOO_STATS_8_TESTS",
+      "TEMP_DATABASE": "sc_test_admin_vis_p3_20260725204144_a8620040",
+      "REAL_ODOO_REGISTRY_USED": true,
+      "REAL_ORM_USED": true,
+      "REAL_PROJECT_ACL_USED": true,
+      "REAL_PROJECT_RECORD_RULE_USED": true,
+      "ORDINARY_USER_USED": true,
+      "SUDO_USED_FOR_TEST_SETUP_ONLY": false,
+      "SUDO_USE_SCOPE": "Synthetic data setup plus authorized post-scope account.tax operation-environment construction; no create operation executed.",
+      "PRODUCT_POST_AUTH_SUDO_USED": true,
+      "CONTROLLED_ORM_DOUBLES_USED": false,
+      "REJECTED_TEST_CONTRACT_ATTEMPT": {
+        "DATABASE": "sc_test_admin_vis_p3_20260725203924_4ecb8a08",
+        "CAUSE": "The test called the internal authorization method without first applying ApiDataHandler._request_context normalization.",
+        "PRODUCT_DEFECT": false,
+        "DATABASE_REMOVED": true,
+        "TEMP_RESOURCES_CLEANED": true,
+        "BASELINES_RESTORED": true
+      }
+    },
+    "RESOURCE_CLEANUP": {
+      "TEMP_DATABASE_REMOVED": true,
+      "TEMP_DATABASE_RESIDUE_COUNT": 0,
+      "TEMP_RESOURCES_CLEANED": true,
+      "EXISTING_DATABASES_UNCHANGED": true,
+      "CONTAINERS_UNCHANGED": true,
+      "NETWORKS_UNCHANGED": true,
+      "VOLUMES_UNCHANGED": true,
+      "DATABASE_BASELINE_SHA256": "6a77202e3c51415a53e36f9eebd4875e8821de8d8290a6128ba43369ec624ee4",
+      "CONTAINER_BASELINE_SHA256": "54954db6760ef554468cbe46016a5c27b5baf61e886253a2f8c864c6a0bb3870",
+      "NETWORK_BASELINE_SHA256": "5992793d7bddca2365455ffcfde6e2e48d3f84a8fe9a77b73c0f0a75a30c70f9",
+      "VOLUME_BASELINE_SHA256": "d472b72ae977ec6c6ae428a3fe2dac1d5af256801f4dfc94c8b2ca52fb62aa52"
+    },
+    "BOUNDARY_ASSESSMENTS": [
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA",
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "CALLER_OPERATION_ENV_ISOLATION": true,
+        "REAL_ORM_RESULT": "PASS",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_BATCH",
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "REGRESSION_RESULT": "PASS_UNCHANGED_CALL_CHAIN",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_CREATE",
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "REGRESSION_RESULT": "PASS_UNCHANGED_CALL_CHAIN",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_UNLINK",
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "REGRESSION_RESULT": "PASS_UNCHANGED_CALL_CHAIN",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_DATA_WRITE",
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "REGRESSION_RESULT": "PASS_UNCHANGED_CALL_CHAIN",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_API_ONCHANGE",
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "REGRESSION_RESULT": "PASS_UNCHANGED_CALL_CHAIN",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      },
+      {
+        "BOUNDARY_ID": "ADMIN_VIS_P3_GENERIC_EXECUTE_BUTTON",
+        "COMMON_HELPER_COVERAGE": true,
+        "ALTERNATE_LOOKUP_ABSENT": true,
+        "PREAUTH_STRATEGY_READ_ABSENT": true,
+        "REGRESSION_RESULT": "PASS_UNCHANGED_CALL_CHAIN",
+        "CLASSIFICATION": "SAFE_CONFIRMED_PATCHED",
+        "UNRESOLVED_COMPONENTS": [],
+        "CLOSED": true
+      }
+    ],
+    "COMMON_HELPER_COVERAGE_COUNT": 7,
+    "REMAINING_BYPASS_COUNT": 0,
+    "REMAINING_BYPASS_BOUNDARY_IDS": [],
+    "BOUNDARIES_SAFE_CONFIRMED_PATCHED_COUNT": 7,
+    "BOUNDARIES_UNRESOLVED_RUNTIME_COUNT": 0,
+    "BOUNDARIES_VULNERABLE_REMAINING_COUNT": 0,
+    "ALL_SEVEN_BOUNDARIES_CLOSED": true,
+    "PRODUCT_PATCH_RETEST_PENDING": false,
+    "QUALITY_GATE_COMPARISON": {
+      "COMMAND": "python3 scripts/verify/smart_core_boundary_guard.py",
+      "BASELINE_EXIT_CODE": 2,
+      "PATCH_EXIT_CODE": 2,
+      "OUTPUT_SHA256": "443cdee1d059d7abf40bd0dbea40dceb8da30e621044639af3434bb8b1ec13c1",
+      "OUTPUT_IDENTICAL": true,
+      "DELTA": "PREEXISTING_UNCHANGED",
+      "NEW_OR_WORSENED_FAILURES": [],
+      "RESOLVED_FAILURES": [],
+      "PREEXISTING_UNCHANGED_FAILURES": [
+        "addons/smart_core/security/platform_admin.py directly references smart_construction_core.group_sc_cap_config_admin",
+        "addons/smart_core/delivery/native_config_menu_projection.py and addons/smart_core/security/platform_admin.py contain preexisting forbidden industry/default tokens"
+      ]
+    },
+    "STATUS": "PATCHED_REAL_ORM_VERIFIED_ALL_SEVEN_BOUNDARIES_CLOSED"
+  },
+  "RECONCILIATION_NON_EXECUTION_ATTESTATION": {
+    "PRODUCT_SECURITY_FILES_CHANGED": 0,
+    "BUSINESS_LOGIC_CHANGED": false,
+    "EXISTING_DATABASE_ACCESSED": false,
+    "HTTP_REQUEST_EXECUTED": false,
+    "RPC_REQUEST_EXECUTED": false,
+    "ROUTE_MATCHER_EXECUTED": false,
+    "ROUTE_HANDLER_EXECUTED": false,
+    "BUSINESS_METHOD_EXECUTED": false,
+    "POLICY_PREDICATE_EXECUTED": false,
+    "BUSINESS_DATA_READ": false,
+    "BUSINESS_DATA_MODIFIED": false,
+    "PATCH_C_STARTED": false,
+    "PATCH_D_STARTED": false,
+    "UM_P1_STARTED": false
+  },
+  "PATCH_EXECUTION_ATTESTATION": {
+    "EXISTING_DATABASE_ACCESSED": false,
+    "HTTP_REQUEST_EXECUTED": false,
+    "RPC_REQUEST_EXECUTED": false,
+    "ROUTE_MATCHER_EXECUTED": false,
+    "ROUTE_HANDLER_EXECUTED": false,
+    "BUSINESS_METHOD_EXECUTED": false,
+    "POLICY_PREDICATE_EXECUTED": false,
+    "BUSINESS_DATA_READ": false,
+    "BUSINESS_DATA_MODIFIED": false,
+    "ACL_CHANGED": false,
+    "RECORD_RULE_CHANGED": false,
+    "GENERIC_ENTRYPOINTS_CHANGED": false,
+    "PATCH_C_STARTED": true,
+    "PATCH_C_COMPLETED": true,
+    "PATCH_D_STARTED": false,
+    "UM_P1_STARTED": false
+  },
+  "DECISION": {
+    "RESULT": "PASS_ADMIN_VIS_P3_API_DATA_SUDO_SCOPE_BYPASS_PATCHED_ALL_BOUNDARIES_CLOSED",
+    "NEXT_TASK": "SELECT_ADMIN_VIS_P3_NEXT_APPROVED_SECURITY_PACKAGE_OR_START_UM_P1"
+  }
+}

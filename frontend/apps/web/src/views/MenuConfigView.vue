@@ -1149,6 +1149,10 @@ async function saveChanges() {
   message.value = '';
   setSaveNotice('');
   try {
+    const companyId = Number(company.value?.id || 0);
+    if (!companyId) {
+      throw new Error('菜单配置缺少权威公司上下文，已阻止保存。');
+    }
     const roleKey = String(route.query[BUSINESS_CONFIG_ROUTE_FLAGS.returnRoleKey] || '').trim();
     const routeToken = String(route.query.change_set_token || '').trim();
     const changeSet = routeToken
@@ -1157,8 +1161,8 @@ async function saveChanges() {
     await stageBusinessConfigChangeSetItem({
       change_set_token: changeSet.token,
       config_type: 'menu',
-      target_key: `menu.config.company.${company.value?.id || session.companyId || 0}`,
-      contract_name: `menu.config.company.${company.value?.id || session.companyId || 0}`,
+      target_key: `menu.config.company.${companyId}`,
+      contract_name: `menu.config.company.${companyId}`,
       model: 'ir.ui.menu',
       role_key: roleKey || undefined,
       draft_payload: { rows },

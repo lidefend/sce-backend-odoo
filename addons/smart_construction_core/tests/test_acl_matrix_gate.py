@@ -92,8 +92,8 @@ ACL_EXPECTATIONS = [
     {"role": "platform_admin", "model": "construction.contract", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
     {"role": "platform_admin", "model": "payment.request", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
     {"role": "platform_admin", "model": "sc.settlement.order", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
-    {"role": "system_admin", "model": "sc.settlement.order", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
-    {"role": "system_admin", "model": "sc.settlement.order.line", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
+    {"role": "system_admin", "model": "sc.settlement.order", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
+    {"role": "system_admin", "model": "sc.settlement.order.line", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
 ]
 
 

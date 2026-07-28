@@ -8,4 +8,4 @@
 ## Rule
 
 - Forbid direct `base.group_system` ACL on `model_sc_*` business models.
-- Use SC capability groups as ACL bindings, then map system role via implied groups.
+- Bind business ACLs only to explicit SC business roles; never bridge `base.group_system` through implied groups.

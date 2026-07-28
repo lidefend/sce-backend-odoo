@@ -533,20 +533,28 @@ class UiContractV2Handler(BaseIntentHandler):
             if isinstance(nested_data.get("record"), dict)
             else {}
         )
+        request_context_raw = (
+            params.get("context_raw")
+            or params.get("contextRaw")
+            or ui_params.get("context_raw")
+            or ui_params.get("contextRaw")
+        )
+        source_context = (
+            ui_data.get("context")
+            or ((ui_data.get("head") or {}).get("context") if isinstance(ui_data.get("head"), dict) else {})
+            or ui_params.get("context")
+            or params.get("context")
+            or {}
+        )
+        source_context = _merge_route_default_context(source_context, request_context_raw)
         source_contract.update({
             "model": model,
             "view_type": view_type,
             "record_id": params.get("record_id") or params.get("recordId") or ui_params.get("record_id") or ui_params.get("recordId"),
             "render_profile": params.get("render_profile") or params.get("renderProfile") or ui_params.get("render_profile") or ui_params.get("renderProfile"),
             "domain_raw": params.get("domain_raw") or params.get("domainRaw") or ui_params.get("domain_raw") or ui_params.get("domainRaw"),
-            "context_raw": params.get("context_raw") or params.get("contextRaw") or ui_params.get("context_raw") or ui_params.get("contextRaw"),
-            "context": (
-                ui_data.get("context")
-                or ((ui_data.get("head") or {}).get("context") if isinstance(ui_data.get("head"), dict) else {})
-                or ui_params.get("context")
-                or params.get("context")
-                or {}
-            ),
+            "context_raw": request_context_raw,
+            "context": source_context,
             "record": source_record,
             "source_meta": ui_meta,
         })
@@ -3432,6 +3440,19 @@ class UiContractV2Handler(BaseIntentHandler):
 
 def _safe_eval_action_value(value: Any, default: Any) -> Any:
     return _adapters.safe_eval_action_value(value, default)
+
+
+def _merge_route_default_context(context: Any, context_raw: Any) -> dict[str, Any]:
+    """Project only create defaults from a route literal into trusted context."""
+    merged = dict(context) if isinstance(context, dict) else {}
+    parsed = _safe_eval_action_value(context_raw, {})
+    if not isinstance(parsed, dict):
+        return merged
+    for key, value in parsed.items():
+        normalized_key = str(key or "").strip()
+        if normalized_key.startswith("default_"):
+            merged[normalized_key] = value
+    return merged
 
 
 def _allowed_models_from_hook(env, hook_name: str) -> set[str]:
