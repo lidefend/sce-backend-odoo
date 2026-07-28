@@ -55,65 +55,10 @@ function pageType(url, mode, text) {
 function navigationFromPayload(payload) {
   const candidates = [payload, payload?.result, payload?.data, payload?.result?.data];
   for (const value of candidates) {
-    const authority = value?.route_authority_v1
-      || value?.delivery_engine_v1?.route_authority_v1;
     for (const key of ['release_navigation_v1', 'delivery_engine_v1']) {
       const projection = value?.[key];
-      const navigation = Array.isArray(projection?.nav)
-        ? projection.nav
-        : Array.isArray(projection)
-          ? projection
-          : [];
-      if (navigation.length || authority) {
-        const routeRows = [
-          ...(authority?.primary_actions || []),
-          ...(authority?.role_home_actions || []),
-          ...(authority?.contextual_actions || []),
-          ...(authority?.admin_actions || []),
-        ].map((row) => ({
-          label: row.name,
-          title: row.name,
-          route: row.route,
-          menu_id: row.menu_id,
-          action_id: row.action_id,
-          xml_id: row.menu_xmlid,
-          meta: {
-            menu_xmlid: row.menu_xmlid,
-            action_xmlid: row.action_xmlid,
-            model: row.model,
-            route_kind: row.route_kind,
-            source: row.source,
-          },
-          children: [],
-        }));
-        const flattenedNavigation = flattenNavigation(navigation)
-          .filter((row) => row.category !== 'container')
-          .map((row) => ({
-            label: row.label,
-            title: row.label,
-            route: row.route,
-            menu_id: row.menu_id,
-            action_id: row.action_id,
-            xml_id: row.menu_xmlid,
-            meta: {
-              menu_xmlid: row.menu_xmlid,
-              action_xmlid: row.action_xmlid,
-              model: row.model,
-              source: 'release_navigation_v1',
-            },
-            children: [],
-          }));
-        const byStableKey = new Map();
-        for (const row of [...flattenedNavigation, ...routeRows]) {
-          const stableKey = [
-            String(row?.meta?.menu_xmlid || ''),
-            String(row?.meta?.action_xmlid || ''),
-            String(row?.meta?.model || ''),
-          ].join('|');
-          if (stableKey !== '||') byStableKey.set(stableKey, row);
-        }
-        return [...byStableKey.values()];
-      }
+      if (Array.isArray(projection?.nav)) return projection.nav;
+      if (Array.isArray(projection)) return projection;
     }
   }
   return null;
