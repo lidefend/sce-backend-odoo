@@ -101,6 +101,25 @@ if "redirect=${encodeURIComponent" in client:
     raise SystemExit("[frontend_delivery_hardening_guard] FAIL 401 may restore a sensitive route")
 forbid("frontend/apps/web/src/stores/session.ts", "token_prefix", "token.slice(")
 require("frontend/apps/web/package.json", '"@axe-core/playwright": "4.10.2"')
+require(
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "DELIVERY_HARDENING_PERF_ONLY",
+    "DELIVERY_HARDENING_SKIP_PERF",
+    "isolated performance evidence SHA mismatch",
+    "fs.writeFileSync(path.join(OUT, 'performance.json')",
+)
+require(
+    "make/runtime_ops.mk",
+    "DELIVERY_HARDENING_PERF_ONLY=1",
+    "DELIVERY_HARDENING_SKIP_PERF=1",
+)
+require(
+    "frontend/apps/web/src/api/contract.ts",
+    "CREATE_CONTRACT_CACHE_TTL_MS",
+    "currentContextEpoch()",
+    "options?.renderProfile === 'create'",
+    "!Number(options?.recordId || 0)",
+)
 
 diff = subprocess.run(
     ["git", "diff", "--unified=0", "origin/main", "--", "frontend/apps/web/src"],

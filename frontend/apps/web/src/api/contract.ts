@@ -5,6 +5,8 @@ import type { UnifiedPageContractLite } from '../app/contracts/unifiedPageContra
 import { LITE_PREVIEW_LEGACY_FALLBACK_MODE } from '../app/contracts/unifiedPageContractLiteCompat';
 import type { UnifiedPageContractV2 } from '../app/contracts/unifiedPageContractV2';
 import { adaptUnifiedPageContractV2Raw } from '../app/runtime/unifiedPageContractV2CompatProjection';
+import { currentContextEpoch } from '../app/contextEpoch';
+import { useSessionStore } from '../stores/session';
 
 type LoadActionContractOptions = {
   viewId?: number | null;
@@ -26,9 +28,39 @@ type LoadModelContractOptions = LoadActionContractOptions & {
 };
 
 type Dict = Record<string, unknown>;
+type RawContractResponse = Awaited<ReturnType<typeof requestUnifiedPageContractV2Raw>>;
+
+const CREATE_CONTRACT_CACHE_TTL_MS = 30_000;
+const CREATE_CONTRACT_CACHE_MAX_ENTRIES = 16;
+const createContractCache = new Map<string, { expiresAt: number; response: RawContractResponse }>();
 
 function asDict(value: unknown): Dict {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Dict : {};
+}
+
+function cloneRawContractResponse(response: RawContractResponse): RawContractResponse {
+  return JSON.parse(JSON.stringify(response)) as RawContractResponse;
+}
+
+function createContractCacheKey(params: Record<string, unknown>): string {
+  const session = useSessionStore();
+  return [
+    session.sessionDb,
+    session.token || '',
+    currentContextEpoch(),
+    JSON.stringify(params),
+  ].join('|');
+}
+
+function pruneCreateContractCache(now: number) {
+  for (const [key, entry] of createContractCache) {
+    if (entry.expiresAt <= now) createContractCache.delete(key);
+  }
+  while (createContractCache.size >= CREATE_CONTRACT_CACHE_MAX_ENTRIES) {
+    const oldestKey = createContractCache.keys().next().value;
+    if (typeof oldestKey !== 'string') break;
+    createContractCache.delete(oldestKey);
+  }
 }
 
 async function requestUnifiedPageContractV2Raw(params: Record<string, unknown>) {
@@ -205,8 +237,32 @@ function buildModelContractParams(model: string, options?: LoadModelContractOpti
 }
 
 export async function loadModelContractRaw(model: string, options?: LoadModelContractOptions) {
+  const params = buildModelContractParams(model, options);
+  const cacheable = options?.renderProfile === 'create'
+    && !Number(options?.recordId || 0)
+    && !String(options?.previewToken || '').trim();
+  if (cacheable) {
+    const now = Date.now();
+    pruneCreateContractCache(now);
+    const key = createContractCacheKey(params);
+    const cached = createContractCache.get(key);
+    if (cached && cached.expiresAt > now) {
+      return cloneRawContractResponse(cached.response);
+    }
+    try {
+      const response = await requestUnifiedPageContractV2Raw(params);
+      createContractCache.set(key, {
+        expiresAt: now + CREATE_CONTRACT_CACHE_TTL_MS,
+        response: cloneRawContractResponse(response),
+      });
+      return cloneRawContractResponse(response);
+    } catch (err) {
+      createContractCache.delete(key);
+      rethrowContractError(err, { op: 'model', model });
+    }
+  }
   try {
-    return await requestUnifiedPageContractV2Raw(buildModelContractParams(model, options));
+    return await requestUnifiedPageContractV2Raw(params);
   } catch (err) {
     rethrowContractError(err, { op: 'model', model });
   }
