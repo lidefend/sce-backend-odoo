@@ -45,6 +45,7 @@ defineProps<{
   border: 1px solid var(--sc-app-border-strong);
   box-shadow: var(--sc-semantic-shadow-modal);
   z-index: 10;
+  pointer-events: none;
 }
 
 .hud h3 {
@@ -65,6 +66,7 @@ defineProps<{
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 8px;
+  pointer-events: auto;
 }
 
 .action-btn {
