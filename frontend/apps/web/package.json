@@ -10,7 +10,11 @@
     "lint:src": "eslint src --ext .ts,.vue",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:strict": "vue-tsc --noEmit -p tsconfig.strict.json",
-    "gate:quick": "pnpm run typecheck:strict && pnpm run build"
+    "gate:quick": "pnpm run typecheck:strict && pnpm run build",
+    "test": "make -C ../../.. --no-print-directory verify.frontend.release.unit",
+    "test:e2e": "make -C ../../.. --no-print-directory verify.frontend.page_identity.browser",
+    "test:a11y": "make -C ../../.. --no-print-directory verify.frontend.delivery_hardening.release.browser",
+    "test:release": "make -C ../../.. --no-print-directory verify.frontend.release.audit"
   },
   "dependencies": {
     "pinia": "^2.1.7",

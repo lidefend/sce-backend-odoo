@@ -69,12 +69,16 @@ verify.frontend.my_work_approval.guard: guard.prod.forbid
 verify.frontend.style_system.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_style_system_guard.py
 
-.PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory
+.PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory verify.frontend.release_navigation_policy.guard
 verify.frontend.delivery_hardening.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_delivery_hardening_guard.py
 
 verify.frontend.delivery_hardening.inventory: guard.prod.forbid
 	@python3 scripts/verify/frontend_delivery_ui_inventory.py
+
+verify.frontend.release_navigation_policy.guard: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_frontend_release_navigation_policy_guard.py
+	@python3 scripts/verify/frontend_release_navigation_policy_guard.py
 
 verify.frontend.relation_entry.contract_guard: guard.prod.forbid
 	@python3 scripts/verify/relation_entry_contract_guard.py

@@ -1755,14 +1755,20 @@ mod.upgrade: guard.codex.fast.upgrade guard.prod.danger check-compose-project ch
 # ======================================================
 # ==================== Policy Ops ======================
 # ======================================================
-.PHONY: db.frontend.acceptance.ensure acceptance.frontend.fixture demo.frontend.fixture verify.frontend.fixture verify.frontend.fixture.guard verify.frontend.fixture.browser verify.frontend.navigation.access verify.frontend.page_identity.browser verify.frontend.page_identity.deep.browser verify.frontend.financial_workspace.guard verify.frontend.financial_workspace.runtime verify.frontend.financial_workspace.action verify.frontend.financial_workspace.v2_contract verify.frontend.financial_workspace.browser verify.frontend.core_record_form.audit verify.frontend.core_record_form.journeys verify.frontend.product_design_system.audit verify.frontend.page_width_contract.audit verify.frontend.workspace_content_alignment.audit verify.frontend.form_canvas_wide_grid.audit verify.frontend.my_work_approval.runtime verify.frontend.my_work_approval.browser verify.frontend.delivery_hardening.browser verify.frontend.shell_usability.browser policy.apply.business_full policy.apply.role_matrix policy.ensure.role_surface_demo smoke.business_full smoke.role_matrix verify.portal.role_surface_preflight.container verify.portal.role_surface_smoke.container p2.smoke p3.smoke p3.audit codex.preflight codex.merge codex.rollback codex.pr.body codex.release.note db.policy stage.preflight stage.run ops.auth.dev.apply ops.auth.dev.rollback ops.auth.dev.verify
+.PHONY: db.frontend.acceptance.ensure acceptance.frontend.fixture acceptance.frontend.release_snapshot frontend.acceptance.release.build demo.frontend.fixture verify.frontend.fixture verify.frontend.fixture.guard verify.frontend.fixture.browser verify.frontend.navigation.access verify.frontend.page_identity.browser verify.frontend.page_identity.deep.browser verify.frontend.financial_workspace.guard verify.frontend.financial_workspace.runtime verify.frontend.financial_workspace.action verify.frontend.financial_workspace.v2_contract verify.frontend.financial_workspace.browser verify.frontend.core_record_form.audit verify.frontend.core_record_form.journeys verify.frontend.product_design_system.audit verify.frontend.page_width_contract.audit verify.frontend.workspace_content_alignment.audit verify.frontend.form_canvas_wide_grid.audit verify.frontend.my_work_approval.runtime verify.frontend.my_work_approval.browser verify.frontend.delivery_hardening.browser verify.frontend.delivery_hardening.release.browser verify.frontend.release.unit verify.frontend.release.audit verify.frontend.shell_usability.browser policy.apply.business_full policy.apply.role_matrix policy.ensure.role_surface_demo smoke.business_full smoke.role_matrix verify.portal.role_surface_preflight.container verify.portal.role_surface_smoke.container p2.smoke p3.smoke p3.audit codex.preflight codex.merge codex.rollback codex.pr.body codex.release.note db.policy stage.preflight stage.run ops.auth.dev.apply ops.auth.dev.rollback ops.auth.dev.verify
 FRONTEND_ACCEPTANCE_DB := $(if $(filter command line,$(origin DB_NAME)),$(DB_NAME),sc_frontend_acceptance)
 
 db.frontend.acceptance.ensure: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/test/frontend_acceptance_db_ensure.sh
 
 acceptance.frontend.fixture: guard.prod.forbid check-compose-project check-compose-env
-	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" bash scripts/test/frontend_productization_fixture.sh
+	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" bash scripts/test/frontend_productization_fixture.sh
+
+acceptance.frontend.release_snapshot: guard.prod.forbid check-compose-project check-compose-env
+	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 bash scripts/ops/odoo_shell_exec.sh < scripts/test/frontend_acceptance_release_snapshot.py
+
+frontend.acceptance.release.build:
+	@VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB) VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance scripts/dev/pnpm_exec.sh -C frontend/apps/web exec vite build --outDir dist-release
 
 demo.frontend.fixture:
 	@echo "[deprecated] use make acceptance.frontend.fixture" >&2
@@ -1803,13 +1809,17 @@ verify.frontend.navigation.access: guard.prod.forbid check-compose-project check
 
 verify.frontend.page_identity.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	runtime_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_page_identity_runtime_metadata.py 2>&1 )"; \
 	action_xmlids_line="$$(echo "$$runtime_output" | grep '^FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON=' | tail -1)"; \
 	test -n "$$action_xmlids_line"; export "$$action_xmlids_line"; \
 	$(MAKE) --no-print-directory backend.acceptance.up; \
-	$(MAKE) --no-print-directory frontend.acceptance.up; \
+	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
 	trap '$(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
-	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} ARTIFACTS_DIR=artifacts/frontend-page-identity FRONTEND_PAGE_IDENTITY_INVENTORY_PATH=docs/frontend_productization/frontend_surface_inventory_v1.csv FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON="$${FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON}" node frontend/apps/web/scripts/frontend_product_maturity_audit.mjs
+	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} ROLE_SMOKE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-page-identity FRONTEND_NAVIGATION_MANIFEST=config/frontend/authoritative_navigation_v1.json FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON="$${FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON}" node frontend/apps/web/scripts/frontend_product_maturity_audit.mjs
 
 verify.frontend.page_identity.deep.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
@@ -1925,6 +1935,34 @@ verify.frontend.delivery_hardening.browser: guard.prod.forbid check-compose-proj
 	$(MAKE) --no-print-directory backend.acceptance.up; $(MAKE) --no-print-directory frontend.acceptance.up; \
 	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs
+
+verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-compose-project check-compose-env
+	@set -e; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_delivery_hardening_runtime_ids.py 2>&1 )"; \
+	targets_line="$$(echo "$$target_output" | grep '^FRONTEND_DELIVERY_HARDENING_TARGETS_JSON=' | tail -1)"; test -n "$$targets_line"; export "$$targets_line"; \
+	test -n "$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}"; \
+	$(MAKE) --no-print-directory backend.acceptance.up; FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
+	trap '$(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
+	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs
+
+verify.frontend.release.unit:
+	@node scripts/verify/frontend_navigation_audit.test.mjs
+	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_audit.py
+
+verify.frontend.release.audit:
+	@set +e; \
+	status=0; \
+	$(MAKE) --no-print-directory verify.frontend.release.unit || status=$$?; \
+	python3 scripts/verify/frontend_static_release_audit.py || status=$$?; \
+	$(MAKE) --no-print-directory verify.frontend.page_identity.browser || status=$$?; \
+	$(MAKE) --no-print-directory verify.frontend.delivery_hardening.release.browser || status=$$?; \
+	python3 scripts/verify/frontend_release_audit.py || status=$$?; \
+	exit $$status
 
 verify.frontend.shell_usability.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \

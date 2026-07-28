@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { createRequire } from 'node:module';
 import { launchChromium } from './playwright_runtime.mjs';
 import { applyReleasedNavigationTarget, captureReleasedNavigation } from './released_navigation_target.mjs';
@@ -18,7 +19,11 @@ const SCREENSHOTS = path.join(OUT, 'screenshots');
 const TRACES = path.join(OUT, 'traces');
 const PERF_ONLY = process.env.DELIVERY_HARDENING_PERF_ONLY === '1';
 const PERF_BASELINE_CAPTURE = process.env.DELIVERY_HARDENING_BASELINE_CAPTURE === '1';
+const PERF_BUDGET_PATH = process.env.DELIVERY_HARDENING_BUDGET_JSON
+  || 'config/frontend/release_performance_budgets_v1.json';
+const performanceBudgets = JSON.parse(fs.readFileSync(PERF_BUDGET_PATH, 'utf8'));
 const PERF_BASELINE_PATH = process.env.DELIVERY_HARDENING_BASELINE_JSON
+  || performanceBudgets.relative_baseline_path
   || 'docs/frontend_productization/frontend_delivery_performance_baseline_v1.json';
 const PERF_RUNS = Number(process.env.DELIVERY_HARDENING_PERF_RUNS || 5);
 fs.mkdirSync(SCREENSHOTS, { recursive: true });
@@ -28,7 +33,20 @@ function check(value, message) { if (!value) throw new Error(message); }
 function recordRoute(target) { return `/r/${target.model}/${target.record_id}?action_id=${target.action_id}&menu_id=${target.menu_id}`; }
 function listRoute(target) { return `/a/${target.action_id}?menu_id=${target.menu_id}`; }
 function median(values) { const rows = [...values].sort((a, b) => a - b); return rows[Math.floor(rows.length / 2)] || 0; }
-function stats(values) { return { samples_ms: values, median_ms: median(values), slowest_ms: Math.max(...values, 0) }; }
+function percentile95(values) {
+  const rows = [...values].sort((a, b) => a - b);
+  return rows[Math.max(0, Math.ceil(rows.length * 0.95) - 1)] || 0;
+}
+function stats(values) {
+  return {
+    samples_ms: values,
+    sample_count: values.length,
+    median_ms: median(values),
+    p95_ms: percentile95(values),
+    max_ms: Math.max(...values, 0),
+    slowest_ms: Math.max(...values, 0),
+  };
+}
 async function time(run) { const start = performance.now(); await run(); return Math.round(performance.now() - start); }
 function capture(page) {
   const state = {
@@ -182,14 +200,74 @@ async function interceptNextBusiness(page, handler, expectedTarget) {
 
 async function main() {
   for (const key of ['project', 'contract', 'settlement', 'payment_request', 'payment_execution', 'journey_request', 'work_settlement']) check(TARGETS[key]?.record_id > 0, `missing ${key}`);
+  check(PERF_RUNS >= 5, `performance sample count must be >=5, got ${PERF_RUNS}`);
   const journeyName = String(TARGETS.journey_request.display_name || '').trim();
   check(journeyName.length > 0, 'missing journey_request display_name');
   const browser = await launchChromium({ headless: true });
-  const report = { git_sha: process.env.GIT_SHA || '', database: DB_NAME, base_url: BASE_URL, pass: false, journeys: {}, runtime: {} };
-  const errorRecovery = {};
-  const accessibility = { engine: '@axe-core/playwright@4.10.2', scans: [], blocking: 0 };
-  const responsive = { viewports: [], pages: [], horizontal_overflow: 0 };
-  const performanceReport = { runs_per_scenario: PERF_RUNS, scenarios: {}, budgets: {}, relative_regression_percent: null };
+  const browserVersion = browser.version();
+  const generatedAt = new Date().toISOString();
+  const environment = {
+    browser: browserVersion,
+    viewport: { width: 1440, height: 900 },
+    platform: `${os.platform()}-${os.arch()}`,
+    cpu_count: os.cpus().length,
+    memory_mb: Math.round(os.totalmem() / 1024 / 1024),
+    database: DB_NAME,
+    base_url: BASE_URL,
+  };
+  const report = {
+    schema_version: 'frontend-delivery-hardening/v2',
+    git_sha: process.env.GIT_SHA || '',
+    generated_at: generatedAt,
+    environment,
+    database: DB_NAME,
+    base_url: BASE_URL,
+    pass: false,
+    journeys: {},
+    runtime: {},
+  };
+  const errorRecovery = {
+    schema_version: 'frontend-error-recovery/v2',
+    git_sha: process.env.GIT_SHA || '',
+    generated_at: generatedAt,
+    environment,
+  };
+  const accessibility = {
+    schema_version: 'frontend-accessibility/v2',
+    git_sha: process.env.GIT_SHA || '',
+    generated_at: generatedAt,
+    environment,
+    engine: '@axe-core/playwright@4.10.2',
+    ruleset: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+    scans: [],
+    violations: 0,
+    critical: 0,
+    serious: 0,
+    blocking: 0,
+    result: 'NOT_RUN',
+  };
+  const responsive = {
+    schema_version: 'frontend-responsive/v2',
+    git_sha: process.env.GIT_SHA || '',
+    generated_at: generatedAt,
+    environment,
+    viewports: [],
+    pages: [],
+    horizontal_overflow: 0,
+  };
+  const performanceReport = {
+    schema_version: 'frontend-performance/v2',
+    git_sha: process.env.GIT_SHA || '',
+    generated_at: generatedAt,
+    environment,
+    warmup_runs_per_scenario: 1,
+    runs_per_scenario: PERF_RUNS,
+    scenarios: {},
+    budgets: performanceBudgets.scenarios || {},
+    budget_source: PERF_BUDGET_PATH,
+    relative_regression_percent: null,
+    result: 'NOT_RUN',
+  };
   let context;
   try {
     context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
@@ -215,6 +293,10 @@ async function main() {
       accessibility.scans.push(await axe(page, 'network-error'));
       await removeProbe();
       accessibility.blocking = accessibility.scans.reduce((sum, row) => sum + row.blocking, 0);
+      accessibility.violations = accessibility.scans.reduce((sum, row) => sum + row.violations.length, 0);
+      accessibility.critical = accessibility.scans.reduce((sum, row) => sum + row.violations.filter((item) => item.impact === 'critical').length, 0);
+      accessibility.serious = accessibility.scans.reduce((sum, row) => sum + row.violations.filter((item) => item.impact === 'serious').length, 0);
+      accessibility.result = accessibility.blocking === 0 ? 'PASS' : 'FAIL';
       fs.writeFileSync(path.join(OUT, 'accessibility-probe.json'), `${JSON.stringify(accessibility, null, 2)}\n`);
       console.log(`[verify.frontend.delivery_hardening.a11y_probe] findings=${accessibility.blocking}`);
       return;
@@ -413,6 +495,8 @@ async function main() {
     await page.setViewportSize({ width: 1440, height: 900 });
     await logout(page).catch(() => {});
     await login(page, 'fixture_role_finance');
+    await logout(page);
+    await login(page, 'fixture_role_finance');
     const loginSamples = [];
     for (let i = 0; i < PERF_RUNS; i += 1) {
       await logout(page);
@@ -427,6 +511,13 @@ async function main() {
     ]) {
       const samples = [];
       const requestSamples = [];
+      if (name === 'my_work') {
+        await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+        await page.waitForTimeout(2000);
+      } else {
+        await navigateSpa(page, '/my-work', '.product-work');
+      }
+      await navigateSpa(page, route, readySelector);
       for (let i = 0; i < PERF_RUNS; i += 1) {
         if (name === 'my_work') {
           await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -441,6 +532,10 @@ async function main() {
       performanceReport.scenarios[name] = { ...stats(samples), request_samples: requestSamples };
     }
     const formSamples = [];
+    await navigateSpa(page, recordRoute(TARGETS.work_settlement), '.financial-workspace[data-workspace-kind="settlement"]');
+    await page.locator('.financial-workspace[data-workspace-kind="settlement"]').getByRole('button', { name: '新建付款申请', exact: true }).click();
+    await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
+    await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
     for (let i = 0; i < PERF_RUNS; i += 1) {
       await navigateSpa(page, recordRoute(TARGETS.work_settlement), '.financial-workspace[data-workspace-kind="settlement"]');
       formSamples.push(await time(async () => {
@@ -457,23 +552,21 @@ async function main() {
       return;
     }
     const switchSamples = [];
+    await selectCompany(page, 'FE Company B');
     for (let i = 0; i < PERF_RUNS; i += 1) {
       switchSamples.push(await time(() => selectCompany(page, i % 2 ? 'FE Company A' : 'FE Company B')));
     }
     performanceReport.scenarios.company_switch = stats(switchSamples);
-    performanceReport.budgets = { login_median_ms: 3000, login_slowest_ms: 5000, initialized_navigation_median_ms: 1200, initialized_navigation_slowest_ms: 2500, company_switch_median_ms: 2000, company_switch_slowest_ms: 4000 };
-
-    const loginBudget = performanceReport.scenarios.login_to_interactive;
-    const companyBudget = performanceReport.scenarios.company_switch;
-    const absoluteScenarioPass = {
-      login_to_interactive: loginBudget.median_ms <= 3000 && loginBudget.slowest_ms <= 5000,
-      my_work: performanceReport.scenarios.my_work.median_ms <= 1200 && performanceReport.scenarios.my_work.slowest_ms <= 2500,
-      payment_detail: performanceReport.scenarios.payment_detail.median_ms <= 1200 && performanceReport.scenarios.payment_detail.slowest_ms <= 2500,
-      settlement_detail: performanceReport.scenarios.settlement_detail.median_ms <= 1200 && performanceReport.scenarios.settlement_detail.slowest_ms <= 2500,
-      execution_detail: performanceReport.scenarios.execution_detail.median_ms <= 1200 && performanceReport.scenarios.execution_detail.slowest_ms <= 2500,
-      form_open: performanceReport.scenarios.form_open.median_ms <= 1200 && performanceReport.scenarios.form_open.slowest_ms <= 2500,
-      company_switch: companyBudget.median_ms <= 2000 && companyBudget.slowest_ms <= 4000,
-    };
+    const absoluteScenarioPass = Object.fromEntries(Object.entries(performanceReport.scenarios).map(([name, metrics]) => {
+      const budget = performanceReport.budgets[name];
+      check(budget, `performance budget missing: ${name}`);
+      return [name, (
+        metrics.sample_count >= Number(performanceBudgets.minimum_sample_count || 5)
+        && metrics.median_ms <= Number(budget.median_ms)
+        && metrics.p95_ms <= Number(budget.p95_ms)
+        && metrics.max_ms <= Number(budget.max_ms)
+      )];
+    }));
     performanceReport.absolute_scenario_pass = absoluteScenarioPass;
     performanceReport.absolute_budget_pass = Object.values(absoluteScenarioPass).every(Boolean);
     if (PERF_BASELINE_PATH) {
@@ -489,25 +582,22 @@ async function main() {
       performanceReport.metric_regression_percent = metricRegressions;
       performanceReport.relative_regression_percent = Math.max(...regressions, 0);
       performanceReport.relative_baseline_path = PERF_BASELINE_PATH;
-      const absoluteMetricBudgets = {
-        login_to_interactive: { median_ms: 3000, slowest_ms: 5000 },
-        my_work: { median_ms: 1200, slowest_ms: 2500 },
-        payment_detail: { median_ms: 1200, slowest_ms: 2500 },
-        settlement_detail: { median_ms: 1200, slowest_ms: 2500 },
-        execution_detail: { median_ms: 1200, slowest_ms: 2500 },
-        form_open: { median_ms: 1200, slowest_ms: 2500 },
-        company_switch: { median_ms: 2000, slowest_ms: 4000 },
-      };
-      performanceReport.relative_budget_pass = Object.entries(absoluteMetricBudgets).every(([key, budgets]) => (
+      performanceReport.relative_budget_pass = Object.entries(performanceReport.budgets).every(([key, budgets]) => (
         Object.entries(budgets).every(([metric, budget]) => (
-          performanceReport.scenarios[key][metric] <= budget
-          || (typeof metricRegressions[key]?.[metric] === 'number' && metricRegressions[key][metric] <= 10)
+          metric === 'description'
+          || performanceReport.scenarios[key][metric] <= budget
+          || (
+            typeof metricRegressions[key]?.[metric] === 'number'
+            && metricRegressions[key][metric]
+              <= Number(performanceBudgets.maximum_relative_regression_percent)
+          )
         ))
       ));
     } else {
       performanceReport.relative_budget_pass = false;
     }
     check(performanceReport.absolute_budget_pass || performanceReport.relative_budget_pass, `performance budget exceeded: ${JSON.stringify(performanceReport.scenarios)}`);
+    performanceReport.result = 'PASS';
     if (PERF_ONLY) {
       fs.writeFileSync(path.join(OUT, 'performance-probe.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
       console.log('[verify.frontend.delivery_hardening.performance_probe] PASS');
@@ -515,6 +605,10 @@ async function main() {
     }
 
     assertRuntimeClean(runtime, 'final delivery hardening runtime');
+    accessibility.violations = accessibility.scans.reduce((sum, row) => sum + row.violations.length, 0);
+    accessibility.critical = accessibility.scans.reduce((sum, row) => sum + row.violations.filter((item) => item.impact === 'critical').length, 0);
+    accessibility.serious = accessibility.scans.reduce((sum, row) => sum + row.violations.filter((item) => item.impact === 'serious').length, 0);
+    accessibility.result = accessibility.blocking === 0 ? 'PASS' : 'FAIL';
     errorRecovery.expected_denied_browser_errors = {
       console: runtime.expectedConsole.length,
       http: runtime.expectedHttp.length,

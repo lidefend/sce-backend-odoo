@@ -19,5 +19,19 @@ while IFS='=' read -r env_name _; do
   esac
 done < <(env)
 
-# shellcheck disable=SC2086
-compose ${COMPOSE_FILES} exec -T "${ENV_FORWARD_ARGS[@]}" odoo odoo shell -d "$DB_NAME" -c /var/lib/odoo/odoo.conf
+if [[ "${ODOO_SHELL_RUN_ISOLATED:-0}" == "1" ]]; then
+  # The acceptance fixture must not depend on the lifecycle or stale mounts of
+  # the daily Odoo service. Compose run creates a disposable shell carrier with
+  # the currently declared volumes and removes it after the transaction.
+  # shellcheck disable=SC2086
+  compose ${COMPOSE_FILES} run --rm --no-deps -T --entrypoint odoo "${ENV_FORWARD_ARGS[@]}" \
+    -e ODOO_DB="$DB_NAME" -e DB_NAME="$DB_NAME" \
+    -e ODOO_DBFILTER="^${DB_NAME//./\\.}\$" \
+    -e DB_HOST="${DB_HOST:-db}" -e DB_PORT="${DB_PORT:-5432}" \
+    -e DB_USER="$DB_USER" -e DB_PASSWORD="$DB_PASSWORD" \
+    -e ADMIN_PASSWD="$ADMIN_PASSWD" -e JWT_SECRET="$JWT_SECRET" \
+    odoo shell -d "$DB_NAME" -c /var/lib/odoo/odoo.conf
+else
+  # shellcheck disable=SC2086
+  compose ${COMPOSE_FILES} exec -T "${ENV_FORWARD_ARGS[@]}" odoo odoo shell -d "$DB_NAME" -c /var/lib/odoo/odoo.conf
+fi

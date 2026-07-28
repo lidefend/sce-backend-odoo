@@ -25,7 +25,7 @@
         <field name="parent_id" ref="smart_construction_core.menu_sc_root" />
         <field name="sequence">30</field>
         <field name="action" ref="smart_construction_core.action_construction_contract_handling" />
-        <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_contract_user'),             ref('smart_construction_core.group_sc_cap_contract_manager'),             ref('smart_construction_core.group_sc_cap_purchase_manager')         ])]" />
+        <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_contract_read'),             ref('smart_construction_core.group_sc_cap_contract_user'),             ref('smart_construction_core.group_sc_cap_contract_manager'),             ref('smart_construction_core.group_sc_cap_purchase_manager')         ])]" />
     </record>
     <record id="menu_sc_material_center" model="ir.ui.menu">
         <field name="name">物资与分包</field>

@@ -73,8 +73,28 @@ require(
     "skip-link",
     'id="main-content"',
     'aria-label="主导航"',
-    ':aria-expanded="!sidebarHidden"',
 )
+app_shell = require(
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    'id="primary-sidebar"',
+    'v-if="sidebarVisible"',
+    'aria-controls="primary-sidebar"',
+    ':aria-expanded="sidebarVisible"',
+    "mobileViewport.value ? mobileSidebarOpen.value : !sidebarHidden.value",
+    "event.key !== 'Escape'",
+    "sidebarToggleButton.value?.focus()",
+)
+toggle_match = re.search(
+    r"<button\b(?=[^>]*\baria-controls=\"primary-sidebar\")"
+    r"(?=[^>]*:aria-expanded=\"sidebarVisible\")[^>]*>",
+    app_shell,
+    re.DOTALL,
+)
+if not toggle_match:
+    raise SystemExit(
+        "[frontend_delivery_hardening_guard] FAIL AppShell sidebar toggle must control "
+        "primary-sidebar with the unified sidebarVisible state"
+    )
 client = require("frontend/apps/web/src/api/client.ts", "reason=session_expired")
 require("frontend/apps/web/src/api/client.ts", "currentContextSignal()")
 if "redirect=${encodeURIComponent" in client:
