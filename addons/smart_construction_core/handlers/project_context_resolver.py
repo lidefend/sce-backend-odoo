@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-
 def coerce_positive_id(raw: Any) -> int:
     try:
         value = int(raw or 0)
@@ -55,6 +54,28 @@ def resolve_company_id(params: Dict[str, Any] | None, ctx: Dict[str, Any] | None
     return 0
 
 
+def resolve_company_scope_input(
+    params: Dict[str, Any] | None,
+    ctx: Dict[str, Any] | None,
+):
+    """Preserve whether the client omitted or explicitly supplied company_id."""
+
+    from odoo.addons.smart_construction_core.services.project_authorization_service import (
+        COMPANY_SCOPE_NOT_PROVIDED,
+    )
+
+    params = params or {}
+    ctx = ctx or {}
+    for source, key in (
+        (params, "company_id"),
+        (params, "current_company_id"),
+        (ctx, "company_id"),
+    ):
+        if key in source:
+            return source.get(key)
+    return COMPANY_SCOPE_NOT_PROVIDED
+
+
 def resolve_operation_strategy(params: Dict[str, Any] | None, ctx: Dict[str, Any] | None) -> str:
     for source in (params or {}, ctx or {}):
         value = str(source.get("operation_strategy") or source.get("operationStrategy") or "").strip()
@@ -88,6 +109,21 @@ class ProjectContextResolverMixin:
 
     def _resolve_company_id(self, params: Dict[str, Any], ctx: Dict[str, Any]) -> int:
         return resolve_company_id(params, ctx)
+
+    def _resolve_company_scope_input(self, params: Dict[str, Any], ctx: Dict[str, Any]):
+        return resolve_company_scope_input(params, ctx)
+
+    def _resolve_project_scope(self, params: Dict[str, Any], ctx: Dict[str, Any]):
+        """Resolve under server-owned company scope before any payload work."""
+
+        from odoo.addons.smart_construction_core.services.project_authorization_service import (
+            ProjectAuthorizationService,
+        )
+
+        return ProjectAuthorizationService(self.env).resolve(
+            project_id=self._resolve_project_id(params, ctx),
+            company_id=self._resolve_company_scope_input(params, ctx),
+        )
 
     @staticmethod
     def _resolve_operation_strategy(params: Dict[str, Any], ctx: Dict[str, Any]) -> str:

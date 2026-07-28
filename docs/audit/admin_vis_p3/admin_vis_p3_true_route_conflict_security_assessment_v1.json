@@ -1,0 +1,220 @@
+{
+  "SCHEMA_VERSION": 1,
+  "TASK": "ASSESS_ADMIN_VIS_P3_TWO_TRUE_ROUTE_CONFLICTS_AND_SELECT_NEXT_MINIMAL_PATCH",
+  "BASELINE": {
+    "BRANCH": "feature/user-module-personal-data-visibility",
+    "HEAD": "a39eea13b9709103836e3e06a9a0db2813987490",
+    "TREE": "4679219a8f9974d12acf5aeed926cf7a1d3d4e71",
+    "COMMIT_SUBJECT": "ops: gate route winner proof by final map overlap"
+  },
+  "EVIDENCE": {
+    "REGISTRY_EXPORT": "/tmp/sc-admin-vis-p3-registry-audit/sc-admin-vis-p3-registry-audit-86423492581c/registry-export.json",
+    "REGISTRY_ROUTE_SCHEMA_VERSION": 4,
+    "PRODUCT_SOURCE_FILES": [
+      "addons/smart_construction_core/controllers/frontend_api.py",
+      "addons/smart_core/controllers/platform_menu_api.py",
+      "addons/smart_core/delivery/final_menu_navigation_service.py",
+      "addons/smart_core/delivery/menu_fact_service.py",
+      "addons/smart_core/delivery/menu_delivery_convergence_service.py",
+      "addons/smart_core/delivery/menu_target_interpreter_service.py"
+    ],
+    "EVIDENCE_MODE": "STATIC_ONLY"
+  },
+  "SCOPE": {
+    "TRUE_RUNTIME_CONFLICT_COUNT": 2,
+    "TRUE_RUNTIME_CONFLICT_IDS": [
+      "ADMIN_VIS_P3_ROUTE_6B53AD5D034C",
+      "ADMIN_VIS_P3_ROUTE_5BDC6725CF81"
+    ],
+    "FALSE_CONFLICTS_REASSESSED": 0,
+    "ALL_ROUTES_REASSESSED": false,
+    "PUBLIC_RPC_CLASSIFICATION_STARTED": false,
+    "GENERIC_POLICY_PREDICATE_EXECUTED": false
+  },
+  "BOUNDARY_RECORDS": [
+    {
+      "BOUNDARY_ID": "ADMIN_VIS_P3_ROUTE_6B53AD5D034C",
+      "BOUNDARY_KIND": "ROUTE_RUNTIME_CONFLICT",
+      "ENTRYPOINT": "POST /api/menu/tree",
+      "ROUTE_CONFLICT_ID": "ADMIN_VIS_P3_ROUTE_6B53AD5D034C",
+      "ROUTE_PATH": "/api/menu/tree",
+      "HTTP_METHOD": "POST",
+      "ROUTE_SURFACE": "CUSTOM_FRONTEND_BACKEND_API",
+      "CONTRIBUTIONS": [
+        {
+          "IMPLEMENTATION": "odoo.addons.smart_construction_core.controllers.frontend_api.FrontendAPI.api_menu_tree",
+          "SOURCE_FILE": "addons/smart_construction_core/controllers/frontend_api.py",
+          "ROUTE_TYPE": "json",
+          "AUTH_MODE": "user",
+          "CSRF_POLICY": false,
+          "CORS_POLICY": "*"
+        },
+        {
+          "IMPLEMENTATION": "odoo.addons.smart_core.controllers.platform_menu_api.PlatformMenuAPI.api_menu_tree",
+          "SOURCE_FILE": "addons/smart_core/controllers/platform_menu_api.py",
+          "ROUTE_TYPE": "http",
+          "AUTH_MODE": "public",
+          "CSRF_POLICY": false,
+          "CORS_POLICY": "*"
+        }
+      ],
+      "EFFECTIVE_IMPLEMENTATION": "odoo.addons.smart_construction_core.controllers.frontend_api.FrontendAPI.api_menu_tree",
+      "REPLACED_IMPLEMENTATIONS": [
+        "odoo.addons.smart_core.controllers.platform_menu_api.PlatformMenuAPI.api_menu_tree"
+      ],
+      "WINNER_DECISION_RULE": "first_applicable_rule_in_current_framework_sorted_rule_sequence",
+      "WINNER_EVIDENCE": [
+        "schema v4 proves both rules are in ROUTING-MAP-1F3724C6E0F33742",
+        "schema v4 proves complete match overlap with no blockers or unresolved inputs",
+        "current-container framework evidence proves the effective routing_map_order is 116",
+        "schema v4 records winner_analysis_status=RESOLVED_NONINVASIVE"
+      ],
+      "EXTERNAL_REACHABILITY": "ROUTING_MAP_REGISTERED",
+      "AUTH_MODE": "user",
+      "ROUTE_TYPE": "json",
+      "CSRF_POLICY": false,
+      "CORS_POLICY": "*",
+      "PROJECT_SCOPED": false,
+      "PROJECT_ID_INPUT_SOURCES": [],
+      "PROJECT_CONTEXT_NORMALIZATION": "NOT_APPLICABLE_NO_PROJECT_INPUT",
+      "PREAUTH_PROJECT_ORM_ACCESS": false,
+      "AUTHORIZATION_BOUNDARIES": [
+        "The effective Rule requires Odoo auth=user before controller dispatch.",
+        "The effective implementation reads only the configured ir.ui.menu root and its menu metadata.",
+        "No project authorization boundary is applicable because the entrypoint accepts no project identity and reads no project-scoped business records."
+      ],
+      "PROJECT_ID_WRITES": [],
+      "FALLBACKS": [],
+      "GENERIC_API_BRIDGE": false,
+      "SECURITY_RELEVANT_DIFFERENCES": [
+        "The effective implementation uses Odoo session authentication (auth=user); the replaced implementation uses auth=public followed by explicit token identity resolution.",
+        "The effective implementation is a json route; the replaced implementation is an http route.",
+        "The effective implementation serializes an ir.ui.menu subtree with sudo; the replaced implementation builds a user-visible menu projection and declares NO_BUSINESS_FACT_AUTHORITY=True.",
+        "Neither implementation accepts a project identifier, normalizes project context, reads project-scoped business records, or writes project identity."
+      ],
+      "SECURITY_CLASSIFICATION": "NOT_PROJECT_SCOPED",
+      "POSITIVE_EVIDENCE": [
+        "The effective method signature consumes no project input and contains no project model, project field, project context, or generic bridge access.",
+        "The only ORM authority in the effective method is ir.ui.menu via the external-id root and recursive menu metadata serialization.",
+        "The replaced call chain declares its source authorities as ir.ui.menu, ir.actions, res.groups, menu configuration, and extension role resolution, with NO_BUSINESS_FACT_AUTHORITY=True.",
+        "Static inspection found no project_id/current_project/project.project reference in the replaced menu delivery call chain."
+      ],
+      "UNRESOLVED_COMPONENTS": [],
+      "PRODUCT_PATCH_REQUIRED": false,
+      "RECOMMENDED_PACKAGE": "NONE",
+      "MINIMUM_PATCH_SCOPE": [],
+      "REQUIRED_TESTS": [],
+      "RUNTIME_ACCEPTANCE_REQUIRED": false
+    },
+    {
+      "BOUNDARY_ID": "ADMIN_VIS_P3_ROUTE_5BDC6725CF81",
+      "BOUNDARY_KIND": "ROUTE_RUNTIME_CONFLICT",
+      "ENTRYPOINT": "POST /api/user_menus",
+      "ROUTE_CONFLICT_ID": "ADMIN_VIS_P3_ROUTE_5BDC6725CF81",
+      "ROUTE_PATH": "/api/user_menus",
+      "HTTP_METHOD": "POST",
+      "ROUTE_SURFACE": "CUSTOM_FRONTEND_BACKEND_API",
+      "CONTRIBUTIONS": [
+        {
+          "IMPLEMENTATION": "odoo.addons.smart_construction_core.controllers.frontend_api.FrontendAPI.api_user_menus",
+          "SOURCE_FILE": "addons/smart_construction_core/controllers/frontend_api.py",
+          "ROUTE_TYPE": "json",
+          "AUTH_MODE": "user",
+          "CSRF_POLICY": false,
+          "CORS_POLICY": "*"
+        },
+        {
+          "IMPLEMENTATION": "odoo.addons.smart_core.controllers.platform_menu_api.PlatformMenuAPI.api_user_menus",
+          "SOURCE_FILE": "addons/smart_core/controllers/platform_menu_api.py",
+          "ROUTE_TYPE": "http",
+          "AUTH_MODE": "public",
+          "CSRF_POLICY": false,
+          "CORS_POLICY": "*"
+        }
+      ],
+      "EFFECTIVE_IMPLEMENTATION": "odoo.addons.smart_construction_core.controllers.frontend_api.FrontendAPI.api_user_menus",
+      "REPLACED_IMPLEMENTATIONS": [
+        "odoo.addons.smart_core.controllers.platform_menu_api.PlatformMenuAPI.api_user_menus"
+      ],
+      "WINNER_DECISION_RULE": "first_applicable_rule_in_current_framework_sorted_rule_sequence",
+      "WINNER_EVIDENCE": [
+        "schema v4 proves both rules are in ROUTING-MAP-1F3724C6E0F33742",
+        "schema v4 proves complete match overlap with no blockers or unresolved inputs",
+        "current-container framework evidence proves the effective routing_map_order is 172",
+        "schema v4 records winner_analysis_status=RESOLVED_NONINVASIVE"
+      ],
+      "EXTERNAL_REACHABILITY": "ROUTING_MAP_REGISTERED",
+      "AUTH_MODE": "user",
+      "ROUTE_TYPE": "json",
+      "CSRF_POLICY": false,
+      "CORS_POLICY": "*",
+      "PROJECT_SCOPED": false,
+      "PROJECT_ID_INPUT_SOURCES": [],
+      "PROJECT_CONTEXT_NORMALIZATION": "NOT_APPLICABLE_NO_PROJECT_INPUT",
+      "PREAUTH_PROJECT_ORM_ACCESS": false,
+      "AUTHORIZATION_BOUNDARIES": [
+        "The effective Rule requires Odoo auth=user before controller dispatch.",
+        "The effective implementation delegates directly to the effective /api/menu/tree implementation.",
+        "No project authorization boundary is applicable because the entrypoint accepts no project identity and reads no project-scoped business records."
+      ],
+      "PROJECT_ID_WRITES": [],
+      "FALLBACKS": [],
+      "GENERIC_API_BRIDGE": false,
+      "SECURITY_RELEVANT_DIFFERENCES": [
+        "The effective implementation uses Odoo session authentication (auth=user); the replaced implementation uses auth=public followed by explicit token identity resolution.",
+        "The effective implementation is a json route; the replaced implementation is an http route.",
+        "Both aliases delegate to their respective /api/menu/tree implementations.",
+        "Neither implementation accepts a project identifier, normalizes project context, reads project-scoped business records, or writes project identity."
+      ],
+      "SECURITY_CLASSIFICATION": "NOT_PROJECT_SCOPED",
+      "POSITIVE_EVIDENCE": [
+        "The effective alias consumes no project input and delegates without adding arguments to the statically assessed effective menu-tree method.",
+        "The replaced alias delegates to the statically assessed replaced menu-tree method.",
+        "Neither alias introduces project context, project ORM access, project writes, fallback behavior, or a generic API bridge."
+      ],
+      "UNRESOLVED_COMPONENTS": [],
+      "PRODUCT_PATCH_REQUIRED": false,
+      "RECOMMENDED_PACKAGE": "NONE",
+      "MINIMUM_PATCH_SCOPE": [],
+      "REQUIRED_TESTS": [],
+      "RUNTIME_ACCEPTANCE_REQUIRED": false
+    }
+  ],
+  "CLASSIFICATION_COUNTS": {
+    "SAFE_OVERRIDE_EQUIVALENT": 0,
+    "SAFE_OVERRIDE_STRONGER": 0,
+    "VULNERABLE_EFFECTIVE_WINNER": 0,
+    "VULNERABLE_REPLACED_SECURITY_IMPLEMENTATION": 0,
+    "NOT_PROJECT_SCOPED": 2,
+    "UNRESOLVED_STATIC_SECURITY_DIFFERENCE": 0
+  },
+  "OUT_OF_SCOPE_OBSERVATIONS": [
+    "The effective /api/menu/tree implementation uses sudo while serializing ir.ui.menu metadata. This assessment does not classify general menu-metadata visibility because the assigned boundary is project visibility and the route handles no project-scoped data."
+  ],
+  "DECISION": {
+    "ALL_WINNERS_RESOLVED": true,
+    "UNRESOLVED_WINNER_COUNT": 0,
+    "PRODUCT_PATCH_REQUIRED": false,
+    "RECOMMENDED_PATCH_BOUNDARY_IDS": [],
+    "RECOMMENDED_PACKAGE": "NONE",
+    "MINIMUM_PRODUCT_FILES": [],
+    "REQUIRED_TESTS": [],
+    "RUNTIME_ACCEPTANCE_REQUIRED": false,
+    "RESULT": "PASS_ADMIN_VIS_P3_TRUE_ROUTE_CONFLICTS_NO_PRODUCT_PATCH_REQUIRED",
+    "NEXT_TASK": "RECONCILE_ADMIN_VIS_P3_REMAINING_BOUNDARIES_WITHOUT_ROUTE_PATCH"
+  },
+  "NON_EXECUTION_ATTESTATION": {
+    "PRODUCT_SECURITY_FILES_CHANGED": 0,
+    "BUSINESS_LOGIC_CHANGED": false,
+    "EXISTING_DATABASE_ACCESSED": false,
+    "HTTP_REQUEST_EXECUTED": false,
+    "RPC_REQUEST_EXECUTED": false,
+    "ROUTE_MATCHER_EXECUTED": false,
+    "ROUTE_HANDLER_EXECUTED": false,
+    "BUSINESS_METHOD_EXECUTED": false,
+    "POLICY_PREDICATE_EXECUTED": false,
+    "PATCH_C_STARTED": false,
+    "PATCH_D_STARTED": false,
+    "UM_P1_STARTED": false
+  }
+}

@@ -45,9 +45,10 @@ class ProjectPlanBootstrapEnterHandler(ProjectContextResolverMixin, BaseIntentHa
             params = params.get("params") or {}
         ctx = ctx or {}
         project_id = self._resolve_project_id(params, ctx)
-        orchestrator = ProjectPlanBootstrapSceneOrchestrator(self.env)
-        source_authority = orchestrator.source_authority_contract()
         if project_id <= 0:
+            source_authority = ProjectPlanBootstrapSceneOrchestrator(
+                self.env
+            ).source_authority_contract()
             return {
                 "ok": False,
                 "error": {
@@ -72,21 +73,10 @@ class ProjectPlanBootstrapEnterHandler(ProjectContextResolverMixin, BaseIntentHa
                     "source_authority": source_authority,
                 },
             }
-
-        data = orchestrator.build_entry(project_id=project_id, context=ctx)
-        target = resolve_project_management_entry_target(self.env)
-        data = attach_release_surface_scene_contract(
-            data,
-            product_key="fr2",
-            capability="delivery.fr2.project_flow",
-            route=str(target.get("route") or ""),
-            diagnostics_ref=self.INTENT_TYPE,
-            trace_id=str((self.context or {}).get("trace_id") or ""),
-        )
-        if int(data.get("project_id") or 0) <= 0:
-            lifecycle_hints = dict((data or {}).get("lifecycle_hints") or {})
-            if not lifecycle_hints:
-                lifecycle_hints = self._missing_project_lifecycle_hints()
+        resolution = self._resolve_project_scope(params, ctx)
+        orchestrator = ProjectPlanBootstrapSceneOrchestrator(resolution.env)
+        source_authority = orchestrator.source_authority_contract()
+        if not resolution.available:
             return {
                 "ok": False,
                 "error": {
@@ -95,7 +85,7 @@ class ProjectPlanBootstrapEnterHandler(ProjectContextResolverMixin, BaseIntentHa
                     "suggested_action": "fix_input",
                 },
                 "data": {
-                    "lifecycle_hints": lifecycle_hints,
+                    "lifecycle_hints": self._missing_project_lifecycle_hints(),
                     "suggested_action_payload": {
                         "intent": "project.initiation.enter",
                         "reason_code": REASON_PROJECT_NOT_FOUND,
@@ -112,6 +102,18 @@ class ProjectPlanBootstrapEnterHandler(ProjectContextResolverMixin, BaseIntentHa
                 },
             }
 
+        project_id = int(resolution.project.id)
+        orchestrator._service.bind_authorized_resolution(resolution)
+        data = orchestrator.build_entry(project_id=project_id, context=ctx)
+        target = resolve_project_management_entry_target(resolution.env)
+        data = attach_release_surface_scene_contract(
+            data,
+            product_key="fr2",
+            capability="delivery.fr2.project_flow",
+            route=str(target.get("route") or ""),
+            diagnostics_ref=self.INTENT_TYPE,
+            trace_id=str((self.context or {}).get("trace_id") or ""),
+        )
         return {
             "ok": True,
             "data": data,

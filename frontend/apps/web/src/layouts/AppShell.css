@@ -24,6 +24,7 @@
 }
 
 .sidebar {
+  box-sizing: border-box;
   padding: 16px 14px 12px;
   display: flex;
   flex-direction: column;
@@ -89,10 +90,10 @@
 }
 
 .nav-shell {
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  padding: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 8px 0;
   flex: 1 1 auto;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -476,6 +477,7 @@
   min-width: 0;
   height: 100vh;
   overflow: auto;
+  scrollbar-gutter: stable;
   overscroll-behavior: contain;
   background: var(--sc-app-bg);
 }
@@ -490,6 +492,8 @@
 }
 
 .topbar {
+  box-sizing: border-box;
+  min-height: var(--sc-product-toolbar-height);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -637,12 +641,104 @@
   overflow: visible;
 }
 
+.shell:not(.shell--configuration) .router-host {
+  /*
+   * Business pages own their inline breathing room. Pull the routed surface
+   * across AppShell's toolbar gutter so the sidebar border remains the single
+   * workspace divider instead of producing a second, empty visual channel.
+   */
+  width: calc(100% + 28px);
+  margin-inline: -14px;
+}
+
+.shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
+  padding-inline: 20px;
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.topbar-account {
+  position: relative;
+}
+
+.topbar-context-trigger {
+  cursor: pointer;
+  background: var(--sc-app-panel);
+  font: inherit;
+}
+
+.topbar-context-trigger:hover {
+  border-color: var(--sc-app-border-strong);
+  color: var(--sc-app-text-primary);
+}
+
+.topbar-context-kicker {
+  color: var(--sc-app-text-muted);
+}
+
+.topbar-context-trigger strong {
+  color: var(--sc-app-text-primary);
+  font-weight: 600;
+}
+
+.topbar-context-caret {
+  color: var(--sc-app-text-muted);
+  transition: transform 120ms ease;
+}
+
+.topbar-context-trigger[aria-expanded='true'] .topbar-context-caret {
+  transform: rotate(180deg);
+}
+
+.topbar-account-panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(280px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-product-radius-panel);
+  background: var(--sc-app-panel);
+  box-shadow: var(--sc-semantic-shadow-popover);
+}
+
+.topbar-account-name {
+  margin: 0 0 10px;
+  color: var(--sc-app-text-primary);
+  font-weight: 600;
+}
+
+.topbar-account-panel dl {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.topbar-account-panel dl > div {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.topbar-account-panel dt,
+.topbar-account-panel dd {
+  margin: 0;
+}
+
+.topbar-account-panel dt {
+  color: var(--sc-app-text-muted);
+}
+
+.topbar-account-panel dd {
+  color: var(--sc-app-text-primary);
+  overflow-wrap: anywhere;
 }
 
 .activity-tabs {
@@ -772,6 +868,13 @@
     height: 100dvh;
     overflow: auto;
     padding: 8px 12px 16px;
+  }
+  .shell:not(.shell--configuration) .router-host {
+    width: calc(100% + 24px);
+    margin-inline: -12px;
+  }
+  .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
+    padding-inline: var(--sc-page-padding-mobile);
   }
   .topbar {
     position: relative;

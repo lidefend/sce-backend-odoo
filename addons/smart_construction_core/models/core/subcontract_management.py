@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+from psycopg2 import OperationalError
+
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.tools.float_utils import float_compare
 
 
 class ScSubcontractPlan(models.Model):
@@ -439,10 +442,217 @@ class ScSubcontractRegister(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
+        explicit_fields_by_vals = []
         for vals in vals_list:
+            explicit_fields = {
+                name
+                for name in (
+                    "project_id",
+                    "contract_id",
+                    "subcontractor_id",
+                    "currency_id",
+                )
+                if vals.get(name)
+            }
+            explicit_fields_by_vals.append(explicit_fields)
+            if vals.get("contract_id"):
+                contract = self._sc_caller_visible_relation(
+                    "construction.contract", vals["contract_id"]
+                )
+                vals.setdefault("project_id", contract.project_id.id)
+                vals.setdefault("subcontractor_id", contract.partner_id.id)
+                vals.setdefault("currency_id", contract.currency_id.id)
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.subcontract.register") or _("分包登记")
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        for record, explicit_fields in zip(records, explicit_fields_by_vals):
+            record._sc_validate_subcontract_contract_authority(
+                explicit_fields=explicit_fields
+            )
+        records._sc_validate_cumulative_registered_amounts(
+            records.mapped("contract_id").ids
+        )
+        return records
+
+    def write(self, vals):
+        if self.env.context.get("sc_skip_subcontract_contract_authority"):
+            return super().write(vals)
+        explicit_fields = {
+            name
+            for name in (
+                "project_id",
+                "contract_id",
+                "subcontractor_id",
+                "currency_id",
+            )
+            if vals.get(name)
+        }
+        previous_contract_ids = set(self.mapped("contract_id").ids)
+        if vals.get("contract_id"):
+            self._sc_caller_visible_relation(
+                "construction.contract", vals["contract_id"]
+            )
+        authority_changed = bool(
+            {"project_id", "contract_id", "subcontractor_id", "currency_id"}
+            & set(vals)
+        )
+        settlements = (
+            self.line_ids.mapped("settlement_line_ids.settlement_id")
+            if authority_changed
+            else self.env["sc.subcontract.settlement"]
+        )
+        result = super().write(vals)
+        self._sc_validate_subcontract_contract_authority(
+            explicit_fields=explicit_fields
+        )
+        if authority_changed:
+            settlements |= self.line_ids.mapped(
+                "settlement_line_ids.settlement_id"
+            )
+        if settlements:
+            settlements._sc_validate_register_settlement_authority()
+        self._sc_validate_cumulative_registered_amounts(
+            previous_contract_ids | set(self.mapped("contract_id").ids)
+        )
+        return result
+
+    def unlink(self):
+        if self.line_ids.mapped("settlement_line_ids"):
+            raise UserError(_("已有分包结算引用的分包登记不能删除，请保留审计关系。"))
+        return super().unlink()
+
+    @api.model
+    def _sc_caller_visible_relation(self, model_name, record_id):
+        try:
+            relation_id = int(record_id)
+        except (TypeError, ValueError):
+            relation_id = 0
+        record = self.env[model_name].search([("id", "=", relation_id)], limit=1)
+        if not record:
+            raise AccessError(_("分包关系记录不存在或当前用户无权访问。"))
+        return record
+
+    def _sc_validate_subcontract_contract_authority(self, explicit_fields=None):
+        explicit_fields = set(explicit_fields or ())
+        for register in self:
+            contract = register.contract_id
+            if not contract:
+                continue
+            if contract.project_id.company_id != contract.company_id:
+                raise ValidationError(_("分包合同项目与合同公司必须一致。"))
+            targets = {
+                "project_id": contract.project_id,
+                "subcontractor_id": contract.partner_id,
+                "currency_id": contract.currency_id,
+            }
+            for field_name, target in targets.items():
+                if (
+                    field_name in explicit_fields
+                    and register[field_name]
+                    and register[field_name] != target
+                ):
+                    raise ValidationError(
+                        _("分包登记显式字段与权威分包合同范围冲突。")
+                    )
+            updates = {
+                field_name: target.id
+                for field_name, target in targets.items()
+                if register[field_name] != target
+            }
+            if updates:
+                register.with_context(
+                    sc_skip_subcontract_contract_authority=True
+                ).write(updates)
+
+    @api.model
+    def _sc_lock_cumulative_amount_contracts(self, contract_ids):
+        contract_ids = tuple(
+            sorted({int(contract_id) for contract_id in contract_ids if contract_id})
+        )
+        if not contract_ids:
+            return self.env["construction.contract"]
+        contract_model = self.env["construction.contract"]
+        contract_model.flush_model(["amount_total", "currency_id"])
+        try:
+            with self.env.cr.savepoint(flush=False):
+                self.env.cr.execute(
+                    f"""
+                        SELECT id
+                          FROM {contract_model._table}
+                         WHERE id IN %s
+                         ORDER BY id
+                           FOR UPDATE
+                    """,
+                    [contract_ids],
+                )
+                locked_ids = {row[0] for row in self.env.cr.fetchall()}
+                if locked_ids == set(contract_ids):
+                    self.env.cr.execute(
+                        f"""
+                            UPDATE {contract_model._table}
+                               SET id = id
+                             WHERE id IN %s
+                        """,
+                        [contract_ids],
+                    )
+        except OperationalError as error:
+            if error.pgcode == "40001":
+                raise ValidationError(
+                    _(
+                        "同一分包合同正在形成其他有效金额事实，"
+                        "请刷新后按最新合同余额重试。"
+                    )
+                ) from error
+            raise
+        contracts = contract_model.search([("id", "in", contract_ids)])
+        if (
+            locked_ids != set(contract_ids)
+            or set(contracts.ids) != locked_ids
+        ):
+            raise AccessError(_("分包合同不存在或当前用户无权访问。"))
+        return contracts
+
+    @api.model
+    def _sc_validate_cumulative_registered_amounts(self, contract_ids):
+        contracts = self._sc_lock_cumulative_amount_contracts(contract_ids)
+        if not contracts:
+            return
+        self.flush_model(
+            ["contract_id", "currency_id", "registered_amount", "state"]
+        )
+        self.env.cr.execute(
+            f"""
+                SELECT contract_id,
+                       currency_id,
+                       COALESCE(SUM(registered_amount), 0.0)
+                  FROM {self._table}
+                 WHERE contract_id IN %s
+                   AND state IN %s
+                 GROUP BY contract_id, currency_id
+            """,
+            [tuple(contracts.ids), ("active", "closed")],
+        )
+        amounts_by_contract = {}
+        for contract_id, currency_id, amount in self.env.cr.fetchall():
+            amounts_by_contract.setdefault(contract_id, []).append(
+                (currency_id, amount)
+            )
+        for contract in contracts:
+            total = 0.0
+            for currency_id, amount in amounts_by_contract.get(
+                contract.id, ()
+            ):
+                if currency_id != contract.currency_id.id:
+                    raise ValidationError(
+                        _("有效分包登记币种必须与分包合同币种一致。")
+                    )
+                total += amount
+            if contract.currency_id.compare_amounts(
+                total, contract.amount_total
+            ) > 0:
+                raise ValidationError(
+                    _("有效分包登记累计含税金额不能超过分包合同含税金额。")
+                )
 
     def action_register(self):
         for record in self:
@@ -516,11 +726,66 @@ class ScSubcontractRegisterLine(models.Model):
     project_id = fields.Many2one("project.project", string="项目", related="register_id.project_id", store=True, index=True)
     work_scope = fields.Char(string="登记分包工作范围", required=True)
     work_content = fields.Char(string="工作内容")
-    contract_qty = fields.Float(string="合同数量", default=1)
+    contract_qty = fields.Float(
+        string="合同数量",
+        default=1,
+        digits="Product Unit of Measure",
+    )
     unit_name = fields.Char(string="单位")
     currency_id = fields.Many2one("res.currency", string="币种", related="register_id.currency_id", store=True)
     registered_amount = fields.Monetary(string="登记金额", currency_field="currency_id")
+    settlement_line_ids = fields.One2many(
+        "sc.subcontract.settlement.line",
+        "register_line_id",
+        string="分包结算明细",
+        copy=False,
+    )
     note = fields.Char(string="备注")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        registers = records.mapped("register_id")
+        registers._sc_validate_cumulative_registered_amounts(
+            registers.mapped("contract_id").ids
+        )
+        return records
+
+    def write(self, vals):
+        if vals.get("register_id"):
+            self.env["sc.subcontract.register"]._sc_caller_visible_relation(
+                "sc.subcontract.register", vals["register_id"]
+            )
+        registers = self.mapped("register_id")
+        previous_contract_ids = set(registers.mapped("contract_id").ids)
+        settlements = self.mapped("settlement_line_ids.settlement_id")
+        result = super().write(vals)
+        self.mapped("register_id")._sc_validate_subcontract_contract_authority()
+        settlements |= self.mapped("settlement_line_ids.settlement_id")
+        if settlements:
+            settlements._sc_validate_register_settlement_authority()
+        if {"contract_qty", "unit_name"} & set(vals):
+            self.env[
+                "sc.subcontract.settlement"
+            ]._sc_validate_cumulative_registered_quantities(self.ids)
+        registers |= self.mapped("register_id")
+        registers._sc_validate_cumulative_registered_amounts(
+            previous_contract_ids | set(registers.mapped("contract_id").ids)
+        )
+        settlements._sc_validate_cumulative_settlement_amounts(
+            settlements.mapped("contract_id").ids,
+            self.ids,
+        )
+        return result
+
+    def unlink(self):
+        if self.settlement_line_ids:
+            raise UserError(_("已有分包结算引用的登记明细不能删除，请保留审计关系。"))
+        registers = self.mapped("register_id")
+        contract_ids = registers.mapped("contract_id").ids
+        result = super().unlink()
+        registers._sc_validate_cumulative_registered_amounts(contract_ids)
+        return result
 
     @api.constrains("contract_qty", "registered_amount")
     def _check_values(self):
@@ -609,13 +874,392 @@ class ScSubcontractSettlement(models.Model):
             record.payment_requested_amount = 0.0
             record.payment_unrequested_amount = amount
 
+    @api.model
+    def _sc_validate_cumulative_registered_quantities(
+        self, register_line_ids
+    ):
+        register_line_ids = tuple(
+            sorted({int(line_id) for line_id in register_line_ids if line_id})
+        )
+        if not register_line_ids:
+            return
+
+        register_model = self.env["sc.subcontract.register.line"]
+        settlement_line_model = self.env["sc.subcontract.settlement.line"]
+        register_model.flush_model(["contract_qty", "unit_name"])
+        self.flush_model(["state"])
+        settlement_line_model.flush_model(
+            ["settlement_id", "register_line_id", "qty", "unit_name"]
+        )
+        try:
+            with self.env.cr.savepoint(flush=False):
+                self.env.cr.execute(
+                    f"""
+                        SELECT id
+                          FROM {register_model._table}
+                         WHERE id IN %s
+                         ORDER BY id
+                           FOR UPDATE
+                    """,
+                    [register_line_ids],
+                )
+                locked_ids = {
+                    row[0] for row in self.env.cr.fetchall()
+                }
+                if locked_ids == set(register_line_ids):
+                    self.env.cr.execute(
+                        f"""
+                            UPDATE {register_model._table}
+                               SET id = id
+                             WHERE id IN %s
+                        """,
+                        [register_line_ids],
+                    )
+        except OperationalError as error:
+            if error.pgcode == "40001":
+                raise ValidationError(
+                    _(
+                        "同一分包登记正在形成其他有效结算，"
+                        "请刷新后按最新剩余数量重试。"
+                    )
+                ) from error
+            raise
+        register_lines = register_model.search(
+            [("id", "in", register_line_ids)]
+        )
+        if (
+            locked_ids != set(register_line_ids)
+            or set(register_lines.ids) != locked_ids
+        ):
+            raise AccessError(
+                _("分包关系记录不存在或当前用户无权访问。")
+            )
+
+        self.env.cr.execute(
+            f"""
+                SELECT line.register_line_id,
+                       line.unit_name,
+                       COALESCE(SUM(line.qty), 0.0)
+                  FROM {settlement_line_model._table} AS line
+                  JOIN {self._table} AS settlement
+                    ON settlement.id = line.settlement_id
+                 WHERE line.register_line_id IN %s
+                   AND settlement.state = %s
+                 GROUP BY line.register_line_id, line.unit_name
+            """,
+            [register_line_ids, "confirmed"],
+        )
+        quantities_by_register = {}
+        for register_line_id, unit_name, quantity in self.env.cr.fetchall():
+            quantities_by_register.setdefault(register_line_id, []).append(
+                (unit_name, quantity)
+            )
+
+        precision_digits = self.env[
+            "decimal.precision"
+        ].precision_get("Product Unit of Measure")
+        for register_line in register_lines:
+            groups = quantities_by_register.get(register_line.id, ())
+            if not groups:
+                continue
+            if not register_line.unit_name:
+                raise ValidationError(
+                    _("有效分包结算要求登记明细具有明确且可比的数量单位。")
+                )
+            total_quantity = 0.0
+            for settlement_unit, quantity in groups:
+                if (
+                    not settlement_unit
+                    or settlement_unit != register_line.unit_name
+                ):
+                    raise ValidationError(
+                        _(
+                            "登记与结算数量单位缺失或不一致，"
+                            "当前模型没有正式单位换算关系。"
+                        )
+                    )
+                total_quantity += quantity
+            if (
+                float_compare(
+                    total_quantity,
+                    register_line.contract_qty,
+                    precision_digits=precision_digits,
+                )
+                > 0
+            ):
+                raise ValidationError(
+                    _("分包登记明细的有效累计结算数量不能超过登记数量。")
+                )
+
+    def _sc_validate_cumulative_settlement_quantities(self):
+        register_line_ids = self.filtered(
+            lambda settlement: settlement.state == "confirmed"
+        ).line_ids.mapped("register_line_id").ids
+        self._sc_validate_cumulative_registered_quantities(
+            register_line_ids
+        )
+
+    @api.model
+    def _sc_validate_cumulative_settlement_amounts(
+        self, contract_ids, register_line_ids=()
+    ):
+        register_model = self.env["sc.subcontract.register"]
+        contracts = register_model._sc_lock_cumulative_amount_contracts(
+            contract_ids
+        )
+        if not contracts:
+            return
+        register_model._sc_validate_cumulative_registered_amounts(
+            contracts.ids
+        )
+        self.flush_model(
+            ["contract_id", "currency_id", "amount_total", "state"]
+        )
+        self.env.cr.execute(
+            f"""
+                SELECT contract_id,
+                       currency_id,
+                       COALESCE(SUM(amount_total), 0.0)
+                  FROM {self._table}
+                 WHERE contract_id IN %s
+                   AND state = %s
+                 GROUP BY contract_id, currency_id
+            """,
+            [tuple(contracts.ids), "confirmed"],
+        )
+        amounts_by_contract = {}
+        for contract_id, currency_id, amount in self.env.cr.fetchall():
+            amounts_by_contract.setdefault(contract_id, []).append(
+                (currency_id, amount)
+            )
+        for contract in contracts:
+            total = 0.0
+            for currency_id, amount in amounts_by_contract.get(
+                contract.id, ()
+            ):
+                if currency_id != contract.currency_id.id:
+                    raise ValidationError(
+                        _("有效分包结算币种必须与分包合同币种一致。")
+                    )
+                total += amount
+            if contract.currency_id.compare_amounts(
+                total, contract.amount_total
+            ) > 0:
+                raise ValidationError(
+                    _("有效分包结算累计含税金额不能超过分包合同含税金额。")
+                )
+
+        register_line_ids = tuple(
+            sorted({int(line_id) for line_id in register_line_ids if line_id})
+        )
+        if not register_line_ids:
+            return
+        register_line_model = self.env["sc.subcontract.register.line"]
+        settlement_line_model = self.env["sc.subcontract.settlement.line"]
+        register_line_model.flush_model(
+            ["registered_amount", "currency_id", "register_id"]
+        )
+        settlement_line_model.flush_model(
+            ["register_line_id", "settlement_id", "amount_total", "currency_id"]
+        )
+        register_lines = register_line_model.search(
+            [("id", "in", register_line_ids)]
+        )
+        if set(register_lines.ids) != set(register_line_ids):
+            raise AccessError(
+                _("分包关系记录不存在或当前用户无权访问。")
+            )
+        self.env.cr.execute(
+            f"""
+                SELECT line.register_line_id,
+                       line.currency_id,
+                       COALESCE(SUM(line.amount_total), 0.0)
+                  FROM {settlement_line_model._table} AS line
+                  JOIN {self._table} AS settlement
+                    ON settlement.id = line.settlement_id
+                 WHERE line.register_line_id IN %s
+                   AND settlement.state = %s
+                 GROUP BY line.register_line_id, line.currency_id
+            """,
+            [register_line_ids, "confirmed"],
+        )
+        amounts_by_register_line = {}
+        for line_id, currency_id, amount in self.env.cr.fetchall():
+            amounts_by_register_line.setdefault(line_id, []).append(
+                (currency_id, amount)
+            )
+        for register_line in register_lines:
+            contract = register_line.register_id.contract_id
+            if not contract:
+                continue
+            total = 0.0
+            for currency_id, amount in amounts_by_register_line.get(
+                register_line.id, ()
+            ):
+                if currency_id != contract.currency_id.id:
+                    raise ValidationError(
+                        _("有效分包结算币种必须与来源登记合同币种一致。")
+                    )
+                total += amount
+            if contract.currency_id.compare_amounts(
+                total, register_line.registered_amount
+            ) > 0:
+                raise ValidationError(
+                    _("有效分包结算累计含税金额不能超过来源登记明细金额。")
+                )
+
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
+        explicit_fields_by_vals = []
         for vals in vals_list:
+            explicit_fields_by_vals.append(
+                {
+                    name
+                    for name in (
+                        "project_id",
+                        "register_id",
+                        "contract_id",
+                        "subcontractor_id",
+                        "currency_id",
+                    )
+                    if vals.get(name)
+                }
+            )
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.subcontract.settlement") or _("分包结算")
-        return super().create(vals_list)
+        batched_records = super(
+            ScSubcontractSettlement,
+            self.with_context(sc_subcontract_register_authority_batch=True),
+        ).create(vals_list)
+        records = batched_records.with_env(self.env)
+        for record, explicit_fields in zip(records, explicit_fields_by_vals):
+            record._sc_validate_register_settlement_authority(
+                explicit_fields=explicit_fields,
+                relation_changed=True,
+            )
+        records._sc_validate_cumulative_settlement_quantities()
+        records._sc_validate_cumulative_settlement_amounts(
+            records.mapped("contract_id").ids,
+            records.line_ids.mapped("register_line_id").ids,
+        )
+        return records
+
+    def write(self, vals):
+        if self.env.context.get("sc_skip_subcontract_register_authority"):
+            return super().write(vals)
+        affected_register_line_ids = set(
+            self.line_ids.mapped("register_line_id").ids
+        )
+        explicit_fields = {
+            name
+            for name in (
+                "project_id",
+                "register_id",
+                "contract_id",
+                "subcontractor_id",
+                "currency_id",
+            )
+            if vals.get(name)
+        }
+        batched = self.with_context(
+            sc_subcontract_register_authority_batch=True
+        )
+        result = super(ScSubcontractSettlement, batched).write(vals)
+        self._sc_validate_register_settlement_authority(
+            explicit_fields=explicit_fields,
+            relation_changed="line_ids" in vals,
+        )
+        affected_register_line_ids.update(
+            self.line_ids.mapped("register_line_id").ids
+        )
+        self._sc_validate_cumulative_registered_quantities(
+            affected_register_line_ids
+        )
+        self._sc_validate_cumulative_settlement_amounts(
+            self.mapped("contract_id").ids,
+            affected_register_line_ids,
+        )
+        return result
+
+    def unlink(self):
+        if self.line_ids.mapped("register_line_id"):
+            raise UserError(_("已有正式登记范围的分包结算不能删除，请保留审计关系。"))
+        return super().unlink()
+
+    def _sc_validate_register_settlement_authority(
+        self, explicit_fields=None, relation_changed=False
+    ):
+        explicit_fields = set(explicit_fields or ())
+        for settlement in self:
+            lines = settlement.line_ids
+            scoped_lines = lines.filtered("register_line_id")
+            if not scoped_lines:
+                if "register_id" in explicit_fields and settlement.register_id:
+                    raise ValidationError(
+                        _("分包结算头部登记只能投影自正式登记明细关系。")
+                    )
+                if relation_changed and (
+                    settlement.register_id or settlement.contract_id
+                ):
+                    settlement.with_context(
+                        sc_skip_subcontract_register_authority=True
+                    ).write(
+                        {
+                            "register_id": False,
+                            "contract_id": False,
+                        }
+                    )
+                continue
+            if len(scoped_lines) != len(lines):
+                raise ValidationError(
+                    _("关联分包登记时，每条结算明细都必须显式引用登记明细。")
+                )
+            scoped_lines._sc_validate_register_relation_state()
+            register_lines = scoped_lines.mapped("register_line_id")
+            registers = register_lines.mapped("register_id")
+            contracts = registers.mapped("contract_id")
+            if (
+                len(contracts) != 1
+                or registers.filtered(lambda register: not register.contract_id)
+            ):
+                raise ValidationError(
+                    _("分包结算完整登记集合必须收敛到唯一分包合同。")
+                )
+            contract = contracts[0]
+            if contract.project_id.company_id != contract.company_id:
+                raise ValidationError(_("分包合同项目与合同公司必须一致。"))
+            for register in registers:
+                if register.project_id != contract.project_id:
+                    raise ValidationError(_("分包登记项目与权威合同项目冲突。"))
+                if register.subcontractor_id != contract.partner_id:
+                    raise ValidationError(_("分包登记单位与权威合同相对方冲突。"))
+                if register.currency_id != contract.currency_id:
+                    raise ValidationError(_("分包登记币种与权威合同币种冲突。"))
+            targets = {
+                "project_id": contract.project_id,
+                "contract_id": contract,
+                "subcontractor_id": contract.partner_id,
+                "currency_id": contract.currency_id,
+                "register_id": registers if len(registers) == 1 else False,
+            }
+            for field_name, target in targets.items():
+                if (
+                    field_name in explicit_fields
+                    and settlement[field_name]
+                    and settlement[field_name] != target
+                ):
+                    raise ValidationError(
+                        _("分包结算显式头部字段与完整登记合同范围冲突。")
+                    )
+            updates = {}
+            for field_name, target in targets.items():
+                if settlement[field_name] != target:
+                    updates[field_name] = target.id if target else False
+            if updates:
+                settlement.with_context(
+                    sc_skip_subcontract_register_authority=True
+                ).write(updates)
 
     def action_submit(self):
         for record in self:
@@ -653,6 +1297,14 @@ class ScSubcontractSettlement(models.Model):
 
     def _check_business_anchor(self):
         for record in self:
+            record._sc_validate_register_settlement_authority()
+            scoped_registers = record.line_ids.mapped(
+                "register_line_id.register_id"
+            )
+            if scoped_registers.filtered(
+                lambda register: register.state not in ("active", "closed")
+            ):
+                raise UserError(_("分包结算只能引用已登记或已关闭的分包登记。"))
             if record.register_id:
                 if record.register_id.project_id != record.project_id:
                     raise UserError(_("分包结算来源登记必须属于当前项目。"))
@@ -676,9 +1328,21 @@ class ScSubcontractSettlementLine(models.Model):
     sequence = fields.Integer(default=10)
     project_id = fields.Many2one("project.project", string="项目", related="settlement_id.project_id", store=True, index=True)
     register_id = fields.Many2one("sc.subcontract.register", string="分包登记", related="settlement_id.register_id", store=True, index=True)
+    register_line_id = fields.Many2one(
+        "sc.subcontract.register.line",
+        string="来源登记明细",
+        index=True,
+        ondelete="restrict",
+        copy=False,
+    )
     work_scope = fields.Char(string="结算分包工作范围", required=True)
     work_content = fields.Char(string="工作内容")
-    qty = fields.Float(string="结算数量", required=True, default=1)
+    qty = fields.Float(
+        string="结算数量",
+        required=True,
+        default=1,
+        digits="Product Unit of Measure",
+    )
     unit_name = fields.Char(string="单位")
     currency_id = fields.Many2one("res.currency", string="币种", related="settlement_id.currency_id", store=True)
     unit_price = fields.Monetary(string="结算单价", currency_field="currency_id", required=True)
@@ -687,6 +1351,121 @@ class ScSubcontractSettlementLine(models.Model):
     tax_amount = fields.Monetary(string="税额", currency_field="currency_id", compute="_compute_amounts", store=True)
     amount_total = fields.Monetary(string="含税金额", currency_field="currency_id", compute="_compute_amounts", store=True)
     note = fields.Char(string="备注")
+
+    @api.model
+    def _sc_resolve_register_relations(self, vals, current=None):
+        resolver = self.env[
+            "sc.subcontract.register"
+        ]._sc_caller_visible_relation
+        settlement = resolver(
+            "sc.subcontract.settlement",
+            vals.get(
+                "settlement_id",
+                current.settlement_id.id if current else False,
+            ),
+        )
+        register_line_id = vals.get(
+            "register_line_id",
+            current.register_line_id.id if current else False,
+        )
+        register_line = (
+            resolver("sc.subcontract.register.line", register_line_id)
+            if register_line_id
+            else self.env["sc.subcontract.register.line"]
+        )
+        if register_line:
+            resolver("sc.subcontract.register", register_line.register_id.id)
+            if register_line.register_id.contract_id:
+                resolver(
+                    "construction.contract",
+                    register_line.register_id.contract_id.id,
+                )
+        return settlement, register_line
+
+    @api.model
+    def _sc_validate_register_pair(self, settlement, register_line):
+        if not register_line:
+            return
+        register = register_line.register_id
+        if not register.contract_id:
+            raise ValidationError(
+                _("登记明细必须具有正式分包合同后才能进入结算关系。")
+            )
+        register._sc_validate_subcontract_contract_authority()
+
+    def _sc_validate_register_relation_state(self):
+        for line in self:
+            self._sc_validate_register_pair(
+                line.settlement_id,
+                line.register_line_id,
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._sc_validate_register_pair(
+                *self._sc_resolve_register_relations(vals)
+            )
+        records = super().create(vals_list)
+        records._sc_validate_register_relation_state()
+        if not self.env.context.get(
+            "sc_subcontract_register_authority_batch"
+        ):
+            settlements = records.mapped("settlement_id")
+            settlements._sc_validate_register_settlement_authority(
+                relation_changed=True
+            )
+            settlements._sc_validate_cumulative_registered_quantities(
+                records.mapped("register_line_id").ids
+            )
+            settlements._sc_validate_cumulative_settlement_amounts(
+                settlements.mapped("contract_id").ids,
+                records.mapped("register_line_id").ids,
+            )
+        return records
+
+    def write(self, vals):
+        settlements = self.mapped("settlement_id")
+        affected_register_line_ids = set(
+            self.mapped("register_line_id").ids
+        )
+        for line in self:
+            self._sc_validate_register_pair(
+                *self._sc_resolve_register_relations(vals, current=line)
+            )
+        result = super().write(vals)
+        self._sc_validate_register_relation_state()
+        settlements |= self.mapped("settlement_id")
+        if not self.env.context.get(
+            "sc_subcontract_register_authority_batch"
+        ):
+            settlements._sc_validate_register_settlement_authority(
+                relation_changed="register_line_id" in vals
+            )
+            affected_register_line_ids.update(
+                self.mapped("register_line_id").ids
+            )
+            settlements._sc_validate_cumulative_registered_quantities(
+                affected_register_line_ids
+            )
+            settlements._sc_validate_cumulative_settlement_amounts(
+                settlements.mapped("contract_id").ids,
+                affected_register_line_ids,
+            )
+        return result
+
+    def unlink(self):
+        if self.mapped("register_line_id"):
+            raise UserError(_("已有正式登记来源的分包结算明细不能删除，请先保留或解除关系。"))
+        settlements = self.mapped("settlement_id")
+        result = super().unlink()
+        if not self.env.context.get(
+            "sc_subcontract_register_authority_batch"
+        ):
+            settlements._sc_validate_register_settlement_authority(
+                relation_changed=True
+            )
+        return result
 
     @api.depends("qty", "unit_price", "tax_rate")
     def _compute_amounts(self):
@@ -706,6 +1485,101 @@ class ScSubcontractSettlementLine(models.Model):
                 raise ValidationError(_("结算单价不能为负数。"))
             if record.tax_rate < 0:
                 raise ValidationError(_("税率不能为负数。"))
+
+
+class ConstructionContractSubcontractAuthority(models.Model):
+    _inherit = "construction.contract"
+
+    subcontract_register_ids = fields.One2many(
+        "sc.subcontract.register",
+        "contract_id",
+        string="分包履约登记",
+        copy=False,
+    )
+
+    def write(self, vals):
+        authority_changed = bool(
+            {
+                "project_id",
+                "partner_id",
+                "company_id",
+                "currency_id",
+                "amount_total",
+            }
+            & set(vals)
+        )
+        registers = (
+            self.mapped("subcontract_register_ids")
+            if authority_changed
+            else self.env["sc.subcontract.register"]
+        )
+        settlements = registers.line_ids.mapped(
+            "settlement_line_ids.settlement_id"
+        )
+        result = super().write(vals)
+        if authority_changed:
+            registers |= self.mapped("subcontract_register_ids")
+            registers._sc_validate_subcontract_contract_authority()
+            settlements |= registers.line_ids.mapped(
+                "settlement_line_ids.settlement_id"
+            )
+            settlements._sc_validate_register_settlement_authority()
+            registers._sc_validate_cumulative_registered_amounts(self.ids)
+            self.env[
+                "sc.subcontract.settlement"
+            ]._sc_validate_cumulative_settlement_amounts(
+                self.ids,
+                registers.line_ids.ids,
+            )
+        return result
+
+
+class ConstructionContractLineSubcontractAmountAuthority(models.Model):
+    _inherit = "construction.contract.line"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        contracts = lines.mapped("contract_id")
+        contracts.flush_recordset(["amount_total"])
+        registers = contracts.mapped("subcontract_register_ids")
+        registers._sc_validate_cumulative_registered_amounts(contracts.ids)
+        self.env[
+            "sc.subcontract.settlement"
+        ]._sc_validate_cumulative_settlement_amounts(
+            contracts.ids,
+            registers.line_ids.ids,
+        )
+        return lines
+
+    def write(self, vals):
+        contracts = self.mapped("contract_id")
+        result = super().write(vals)
+        contracts |= self.mapped("contract_id")
+        contracts.flush_recordset(["amount_total"])
+        registers = contracts.mapped("subcontract_register_ids")
+        registers._sc_validate_cumulative_registered_amounts(contracts.ids)
+        self.env[
+            "sc.subcontract.settlement"
+        ]._sc_validate_cumulative_settlement_amounts(
+            contracts.ids,
+            registers.line_ids.ids,
+        )
+        return result
+
+    def unlink(self):
+        contracts = self.mapped("contract_id")
+        result = super().unlink()
+        contracts.flush_recordset(["amount_total"])
+        registers = contracts.mapped("subcontract_register_ids")
+        registers._sc_validate_cumulative_registered_amounts(contracts.ids)
+        self.env[
+            "sc.subcontract.settlement"
+        ]._sc_validate_cumulative_settlement_amounts(
+            contracts.ids,
+            registers.line_ids.ids,
+        )
+        return result
 
 
 class ScSubcontractPrice(models.Model):

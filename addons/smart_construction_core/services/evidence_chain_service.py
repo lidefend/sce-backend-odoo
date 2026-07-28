@@ -3,8 +3,21 @@ from __future__ import annotations
 
 import json
 
+from odoo.addons.smart_construction_core.services.project_authorization_service import (
+    ProjectAuthorizationService,
+)
+
 
 class EvidenceChainService:
+    ALLOWED_CARRIER_MODELS = (
+        "project.project",
+        "construction.contract",
+        "project.cost.ledger",
+        "payment.request",
+        "payment.ledger",
+        "sc.settlement.order",
+    )
+
     """Build traceable evidence chains for project-level business facts."""
 
     ORDER = ("payment", "cost", "settlement", "progress")
@@ -66,27 +79,26 @@ class EvidenceChainService:
         }
 
     def build_chain(self, business_model, business_id, *, limit=100):
+        carrier = self.resolve_visible_carrier(business_model, business_id)
+        if carrier is None:
+            return self.empty_chain()
+
         Evidence = self._model("sc.business.evidence")
         if Evidence is None:
-            return {
-                "business_model": str(business_model or ""),
-                "business_id": self._safe_int(business_id),
-                "groups": {key: [] for key in self.ORDER},
-                "summary": {
-                    "evidence_count": 0,
-                    "payment_total": 0.0,
-                    "cost_total": 0.0,
-                    "settlement_total": 0.0,
-                    "progress_quantity": 0.0,
-                },
-                "evidence_refs": [],
-            }
+            return self.empty_chain()
 
         domain = [
             ("business_model", "=", str(business_model or "")),
             ("business_id", "=", self._safe_int(business_id)),
         ]
-        evidences = Evidence.sudo().search(domain, order="operate_time desc,id desc", limit=max(self._safe_int(limit), 0) or 100)
+        try:
+            evidences = Evidence.search(
+                domain,
+                order="operate_time desc,id desc",
+                limit=max(self._safe_int(limit), 0) or 100,
+            )
+        except Exception:
+            return self.empty_chain()
         groups = {key: [] for key in self.ORDER}
         refs = []
         for evidence in evidences:
@@ -117,6 +129,43 @@ class EvidenceChainService:
             "summary": summary,
             "evidence_refs": refs[:10],
         }
+
+    def empty_chain(self):
+        return {
+            "business_model": "",
+            "business_id": 0,
+            "groups": {key: [] for key in self.ORDER},
+            "summary": {
+                "evidence_count": 0,
+                "payment_total": 0.0,
+                "cost_total": 0.0,
+                "settlement_total": 0.0,
+                "progress_quantity": 0.0,
+                "payment_count": 0,
+                "cost_count": 0,
+                "settlement_count": 0,
+                "progress_count": 0,
+            },
+            "evidence_refs": [],
+        }
+
+    def resolve_visible_carrier(self, business_model, business_id):
+        model_name = str(business_model or "").strip()
+        record_id = self._safe_int(business_id)
+        if model_name not in self.ALLOWED_CARRIER_MODELS or record_id <= 0:
+            return None
+        if model_name == "project.project":
+            resolution = ProjectAuthorizationService(self.env).resolve(
+                project_id=record_id
+            )
+            return resolution.project if resolution.available else None
+        Carrier = self._model(model_name)
+        if Carrier is None or not Carrier.check_access_rights("read", raise_exception=False):
+            return None
+        try:
+            return Carrier.search([("id", "=", record_id)], limit=1) or None
+        except Exception:
+            return None
 
     def build_project_chain(self, project_id, *, limit=100):
         return self.build_chain("project.project", project_id, limit=limit)

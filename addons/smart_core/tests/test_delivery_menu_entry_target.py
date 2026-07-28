@@ -66,6 +66,93 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         }
         return row
 
+    def test_admin_capability_discovery_keeps_installed_business_and_config_entries(self):
+        project_xmlid = "smart_construction_core.menu_sc_project_project"
+        config_xmlid = "smart_construction_core.menu_ui_menu_config_policy_business_config"
+        native = [{
+            "label": "智能施工",
+            "xmlid": "smart_construction_core.menu_sc_root",
+            "children": [
+                self._native_leaf(
+                    label="项目台账",
+                    menu_xmlid=project_xmlid,
+                    menu_id=379,
+                    action_id=506,
+                    model="project.project",
+                ),
+                self._native_leaf(
+                    label="菜单配置",
+                    menu_xmlid=config_xmlid,
+                    menu_id=598,
+                    action_id=786,
+                    model="ui.menu.config.policy",
+                ),
+            ],
+        }]
+        role_surface = {
+            "role_code": "system_admin",
+            "exposure_policy_declared": True,
+            "discover_installed_capabilities": True,
+            "admin_menu_xmlids": [config_xmlid],
+            "primary_menu_xmlids": [],
+            "role_home_menu_xmlids": [],
+            "denied_menu_xmlids": [],
+        }
+
+        projected = menu_service.MenuService._filter_primary_native_nodes(
+            native,
+            role_surface,
+        )
+
+        leaves = projected[0]["children"]
+        self.assertEqual(
+            {menu_service.MenuService._node_menu_xmlid(node) for node in leaves},
+            {project_xmlid, config_xmlid},
+        )
+
+    def test_installed_capability_discovery_does_not_imply_platform_admin(self):
+        source = (SMART_CORE_DIR / "delivery" / "menu_service.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            'is_admin = bool((role_surface or {}).get("is_platform_admin"))',
+            source,
+        )
+        self.assertNotIn(
+            'is_admin = bool((role_surface or {}).get("is_platform_admin")) '
+            "or discovers_capabilities",
+            source,
+        )
+
+    def test_navigation_prunes_compatibility_action_without_matching_route_authority(self):
+        nav = [{
+            "label": "业务菜单",
+            "children": [
+                self._native_leaf(label="已授权", menu_id=10, action_id=20),
+                self._native_leaf(label="未授权", menu_id=11, action_id=21),
+                self._native_leaf(
+                    label="场景入口",
+                    menu_id=12,
+                    action_id=22,
+                    route="/s/projects.list",
+                    scene_key="projects.list",
+                ),
+            ],
+        }]
+        authority = {
+            "primary_actions": [{"menu_id": 10, "action_id": 20}],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "admin_actions": [],
+        }
+
+        projected = menu_service.MenuService.filter_nav_by_route_authority(nav, authority)
+
+        self.assertEqual(
+            [row["label"] for row in projected[0]["children"]],
+            ["已授权", "场景入口"],
+        )
+
     def test_scene_menu_child_exposes_formal_entry_target_with_native_refs(self):
         node = delivery_menu_defaults.build_delivery_menu_child(
             {

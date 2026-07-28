@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.tools.float_utils import float_compare
 
 from ..support.state_guard import raise_guard
@@ -199,6 +199,19 @@ class ScTaxDeductionRegistration(models.Model):
             res["partner_id"] = partner_id
         return res
 
+    @api.model
+    def _require_visible_company_project(self, project_id):
+        project = self.env["project.project"].search(
+            [
+                ("id", "=", project_id),
+                ("company_id", "in", self.env.companies.ids),
+            ],
+            limit=1,
+        )
+        if not project:
+            raise AccessError(_("项目不可用或无权访问。"))
+        return project
+
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
@@ -206,6 +219,8 @@ class ScTaxDeductionRegistration(models.Model):
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
+            if vals.get("project_id"):
+                self._require_visible_company_project(vals["project_id"])
             partner_id = self._context_partner_id()
             if partner_id:
                 vals.setdefault("partner_id", partner_id)
@@ -369,6 +384,8 @@ class ScTaxDeductionRegistration(models.Model):
         return set()
 
     def write(self, vals):
+        if vals.get("project_id"):
+            self._require_visible_company_project(vals["project_id"])
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {
                 "partner_id",

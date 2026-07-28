@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
+from odoo.addons.smart_core.security.platform_admin import can_manage_system_configuration
 from odoo.addons.smart_core.utils.backend_contract_boundaries import MENU_CONFIG_POLICY_MODEL
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
@@ -84,7 +85,25 @@ def native_config_root(env):
 
 def native_config_available(env) -> bool:
     root = native_config_root(env)
-    return bool(root and int(root.id or 0) in _visible_menu_ids(env))
+    if not root:
+        return False
+    if can_manage_system_configuration(env.user):
+        return True
+    return int(root.id or 0) in _visible_menu_ids(env)
+
+
+def _subtree_menu_ids(root) -> set[int]:
+    ids: set[int] = set()
+
+    def visit(menu) -> None:
+        menu_id = int(getattr(menu, "id", 0) or 0)
+        if menu_id:
+            ids.add(menu_id)
+        for child in getattr(menu, "child_id", []) or []:
+            visit(child)
+
+    visit(root)
+    return ids
 
 
 def _action_payload(menu: Any) -> dict[str, Any]:
@@ -168,6 +187,8 @@ def native_config_app_children(env) -> list[dict[str, Any]]:
     if not root:
         return []
     visible_ids = _visible_menu_ids(env)
+    if can_manage_system_configuration(env.user):
+        visible_ids.update(_subtree_menu_ids(root))
     rows = []
     for child in root.child_id.sorted(lambda row: (row.sequence or 10, row.name or "")):
         node = _build_config_node(child, visible_ids)

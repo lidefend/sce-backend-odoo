@@ -16,6 +16,7 @@ FILES = {
     "layout": WEB / "components/template/LayoutShell.vue",
     "patterns": WEB / "styles/product-patterns.css",
     "tokens": WEB / "styles/design-system.css",
+    "shell_css": WEB / "layouts/AppShell.css",
     "list": WEB / "pages/ListPage.vue",
     "list_css": WEB / "pages/ListPage.css",
     "action": WEB / "views/ActionView.vue",
@@ -45,6 +46,7 @@ sources = {key: read(key) for key in FILES}
 contract = sources["contract"]
 patterns = sources["patterns"]
 tokens = sources["tokens"]
+shell_css = sources["shell_css"]
 list_vue = sources["list"]
 list_css = sources["list_css"]
 
@@ -71,10 +73,23 @@ for source_key in ("page", "layout"):
         fail(f"{source_key} owns a second max-width")
 
 require(tokens, "--sc-workspace-frame-max: 1920px", "workspace token")
+require(tokens, "min-height: 100%", "document viewport height reset")
+require(tokens, "margin: 0", "document margin reset")
 if "--sc-content-focused-form-max" in tokens:
     fail("focused-form must not cap the business form canvas")
 require(patterns, "max-width: min(100%, var(--sc-workspace-frame-max))", "single workspace CSS authority")
 require(patterns, ".sc-content-layout--focused-form", "internal focused layout")
+require(patterns, ".router-host > :is(.sc-page-frame, .sc-product-page-frame)", "routed page height authority")
+require(patterns, "min-height: 100%", "stable routed page minimum height")
+require(shell_css, "scrollbar-gutter: stable", "stable content scrollbar gutter")
+if not re.search(r"\.sidebar\s*\{[^}]*box-sizing\s*:\s*border-box", shell_css, re.DOTALL):
+    fail("desktop sidebar must include padding and border inside its viewport height")
+if not re.search(
+    r"\.topbar\s*\{[^}]*min-height\s*:\s*var\(--sc-product-toolbar-height\)",
+    shell_css,
+    re.DOTALL,
+):
+    fail("topbar variants must reserve the shared toolbar height")
 if re.search(r"\.sc-page-frame--(?:data|standard|focused|fluid)", patterns):
     fail("outer frame mode selectors remain")
 if re.search(r"\.router-host\s*\{[^}]*overflow-x\s*:\s*(?:hidden|clip)", patterns, re.DOTALL):

@@ -5,6 +5,11 @@ from odoo.addons.smart_core.security.platform_admin import user_is_platform_admi
 
 LEGACY_WORKFLOW_RUNTIME_PARAM = "sc.workflow.legacy_runtime_enabled"
 LEGACY_WORKFLOW_RUNTIME_CONTEXT = "allow_legacy_workflow_runtime"
+TENANT_BUSINESS_ADMIN_GROUP = "smart_construction_core.group_sc_role_business_admin"
+
+
+def _user_is_tenant_business_admin(user):
+    return bool(user and user.has_group(TENANT_BUSINESS_ADMIN_GROUP))
 
 
 class ScWorkflowDef(models.Model):
@@ -46,9 +51,14 @@ class ScWorkflowDef(models.Model):
     instance_count = fields.Integer(compute="_compute_instance_count")
 
     def _compute_instance_count(self):
-        Inst = self.env["sc.workflow.instance"].sudo()
+        Inst = self.env["sc.workflow.instance"]
+        can_read_runtime = Inst.check_access_rights("read", raise_exception=False)
         for rec in self:
-            rec.instance_count = Inst.search_count([("workflow_def_id", "=", rec.id)])
+            rec.instance_count = (
+                Inst.search_count([("workflow_def_id", "=", rec.id)])
+                if can_read_runtime
+                else 0
+            )
 
     # ==== 权限 / 校验 ====
     def _require_admin(self):
@@ -181,8 +191,8 @@ class ScWorkflowInstance(models.Model):
                 rec.name = ""
 
     # ==== 权限 / 校验 ====
-    def _require_admin(self):
-        if not user_is_platform_admin(self.env.user):
+    def _require_runtime_admin(self):
+        if not _user_is_tenant_business_admin(self.env.user):
             raise UserError(_("You do not have permission to manage workflow instances."))
 
     def _legacy_runtime_enabled(self):
@@ -204,8 +214,8 @@ class ScWorkflowInstance(models.Model):
     def _require_group(self, group_xmlid):
         if group_xmlid and not self.env.user.has_group(group_xmlid):
             raise UserError(_("You are not allowed to perform this action."))
-        if not group_xmlid and not user_is_platform_admin(self.env.user):
-            raise UserError(_("No approval group configured and you are not config admin."))
+        if not group_xmlid and not _user_is_tenant_business_admin(self.env.user):
+            raise UserError(_("No approval group configured and you are not a tenant business admin."))
 
     @staticmethod
     def _group_xmlid(group):
@@ -249,7 +259,7 @@ class ScWorkflowInstance(models.Model):
     # ==== 运行时动作 ====
     @api.model
     def create_instance(self, workflow_def, model_name, res_id, note=None):
-        self._require_admin()
+        self._require_runtime_admin()
         self._require_legacy_runtime_enabled()
         if isinstance(workflow_def, int):
             workflow_def = self.env["sc.workflow.def"].browse(workflow_def)
@@ -274,7 +284,7 @@ class ScWorkflowInstance(models.Model):
         return inst
 
     def action_submit(self):
-        self._require_admin()
+        self._require_runtime_admin()
         for rec in self:
             if rec.state != "draft":
                 raise UserError(_("Only draft workflow can be submitted."))
@@ -297,8 +307,8 @@ class ScWorkflowInstance(models.Model):
             if not workitem:
                 raise UserError(_("No pending workitem."))
             node = workitem.node_id
-            # 权限校验：节点审批组或配置管理员
-            if not user_is_platform_admin(self.env.user):
+            # 权限校验：节点审批组或租户业务管理员
+            if not _user_is_tenant_business_admin(self.env.user):
                 rec._require_group(self._group_xmlid(node.approve_group_id))
 
             workitem.write({"status": "done", "done_by": self.env.user.id, "done_at": fields.Datetime.now()})
@@ -327,7 +337,7 @@ class ScWorkflowInstance(models.Model):
             if not workitem:
                 raise UserError(_("No pending workitem."))
             node = workitem.node_id
-            if not user_is_platform_admin(self.env.user):
+            if not _user_is_tenant_business_admin(self.env.user):
                 rec._require_group(self._group_xmlid(node.approve_group_id))
 
             workitem.write({"status": "cancelled", "done_by": self.env.user.id, "done_at": fields.Datetime.now(), "note": note})
@@ -341,7 +351,7 @@ class ScWorkflowInstance(models.Model):
         return True
 
     def action_cancel(self, note=None):
-        self._require_admin()
+        self._require_runtime_admin()
         for rec in self:
             if rec.state in ("done", "cancelled"):
                 continue

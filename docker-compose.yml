@@ -88,6 +88,7 @@ services:
 
     volumes:
       - odoo_data:/var/lib/odoo
+      - odoo_data:/opt/sce-runtime
       # Development source mount. Immutable production candidates do not use
       # this path; they contain only /mnt/product-addons and may mount one
       # private customer artifact through docker-compose.customer-addons.yml.

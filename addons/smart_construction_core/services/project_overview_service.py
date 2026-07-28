@@ -5,6 +5,10 @@ import time
 
 from odoo import api, models
 
+from odoo.addons.smart_construction_core.services.project_authorization_service import (
+    ProjectAuthorizationService,
+)
+
 _logger = logging.getLogger(__name__)
 
 
@@ -19,7 +23,24 @@ class ProjectOverviewService(models.AbstractModel):
 
     @api.model
     def get_overview(self, project_ids):
-        ids = [pid for pid in (project_ids or []) if pid]
+        normalized_ids = []
+        for raw_id in project_ids or []:
+            if isinstance(raw_id, bool):
+                continue
+            try:
+                project_id = int(raw_id)
+            except (TypeError, ValueError):
+                continue
+            if project_id > 0 and project_id not in normalized_ids:
+                normalized_ids.append(project_id)
+        if not normalized_ids:
+            return {}
+        authorization = ProjectAuthorizationService(self.env)
+        ids = []
+        for project_id in normalized_ids:
+            resolution = authorization.resolve(project_id=project_id)
+            if resolution.available:
+                ids.append(int(resolution.project.id))
         data = {pid: {
             "contract": {"count": 0},
             "cost": {"count": 0},

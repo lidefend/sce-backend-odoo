@@ -646,7 +646,18 @@ class PageAssembler:
         data["toolbar"] = toolbar if isinstance(toolbar, dict) else {"header": [], "sidebar": [], "footer": []}
         views = data.get("views") if isinstance(data.get("views"), dict) else {}
         form = views.get("form") if isinstance(views.get("form"), dict) else {}
+        model_name = str(
+            data.get("model")
+            or ((data.get("head") or {}).get("model") if isinstance(data.get("head"), dict) else "")
+            or ""
+        ).strip()
+        try:
+            preserve_transient_header = bool(model_name and getattr(self.env[model_name], "_transient", False))
+        except Exception:
+            preserve_transient_header = False
         for key in ("header_buttons", "button_box", "stat_buttons", "business_actions"):
+            if key == "header_buttons" and preserve_transient_header:
+                continue
             form[key] = self._filter_render_profile_actions(form.get(key), profile=profile, record_id=record_id)
         form["layout"] = self._filter_render_profile_layout_nodes(form.get("layout"), profile=profile, record_id=record_id)
         views["form"] = form

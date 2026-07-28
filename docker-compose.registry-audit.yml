@@ -1,0 +1,95 @@
+services:
+  db:
+    container_name: ${REGISTRY_AUDIT_POSTGRES_CONTAINER}
+    image: ${REGISTRY_AUDIT_POSTGRES_IMAGE:-postgres:15}
+    pull_policy: never
+    restart: "no"
+    ports: []
+    environment:
+      POSTGRES_DB: ${REGISTRY_AUDIT_DATABASE_NAME}
+      POSTGRES_USER: ${REGISTRY_AUDIT_DATABASE_USER}
+      POSTGRES_PASSWORD: ${REGISTRY_AUDIT_DATABASE_PASSWORD}
+    volumes:
+      - registry_audit_pgdata:/var/lib/postgresql/data
+    networks:
+      - registry_audit_internal
+    labels:
+      com.smartconstruction.audit.managed: "true"
+      com.smartconstruction.audit.kind: "admin-vis-p3-registry"
+      com.smartconstruction.audit.run-id: ${REGISTRY_AUDIT_RUN_ID}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  registry-export:
+    container_name: ${REGISTRY_AUDIT_ODOO_CONTAINER}
+    image: ${REGISTRY_AUDIT_ODOO_IMAGE:-odoo17-odoo:latest}
+    pull_policy: never
+    restart: "no"
+    ports: []
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint:
+      - /bin/bash
+      - /mnt/registry-audit/run_registry_export.sh
+    environment:
+      HOME: /tmp/odoo-home
+      REGISTRY_AUDIT_RUN_ID: ${REGISTRY_AUDIT_RUN_ID}
+      REGISTRY_AUDIT_DATABASE_NAME: ${REGISTRY_AUDIT_DATABASE_NAME}
+      REGISTRY_AUDIT_DATABASE_USER: ${REGISTRY_AUDIT_DATABASE_USER}
+      REGISTRY_AUDIT_DATABASE_PASSWORD: ${REGISTRY_AUDIT_DATABASE_PASSWORD}
+      REGISTRY_AUDIT_MODULES: ${REGISTRY_AUDIT_MODULES}
+      REGISTRY_AUDIT_GIT_HEAD: ${REGISTRY_AUDIT_GIT_HEAD}
+      REGISTRY_AUDIT_GIT_TREE: ${REGISTRY_AUDIT_GIT_TREE}
+      REGISTRY_AUDIT_OUTPUT_FILE: /mnt/registry-audit-output/registry-export.json
+      PYTHONUNBUFFERED: "1"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    volumes:
+      - registry_audit_odoodata:/var/lib/odoo
+      - registry_audit_extraaddons:/mnt/extra-addons
+      - ./addons:/mnt/source-addons:ro
+      - ./addons_external:/mnt/addons_external:ro
+      - ./scripts/ops/registry_audit:/mnt/registry-audit:ro
+      - ${REGISTRY_AUDIT_OUTPUT_DIRECTORY}:/mnt/registry-audit-output:rw
+    networks:
+      - registry_audit_internal
+    labels:
+      com.smartconstruction.audit.managed: "true"
+      com.smartconstruction.audit.kind: "admin-vis-p3-registry"
+      com.smartconstruction.audit.run-id: ${REGISTRY_AUDIT_RUN_ID}
+
+networks:
+  registry_audit_internal:
+    name: ${REGISTRY_AUDIT_NETWORK_NAME}
+    internal: true
+    labels:
+      com.smartconstruction.audit.managed: "true"
+      com.smartconstruction.audit.kind: "admin-vis-p3-registry"
+      com.smartconstruction.audit.run-id: ${REGISTRY_AUDIT_RUN_ID}
+
+volumes:
+  registry_audit_pgdata:
+    name: ${REGISTRY_AUDIT_PGDATA_VOLUME}
+    labels:
+      com.smartconstruction.audit.managed: "true"
+      com.smartconstruction.audit.kind: "admin-vis-p3-registry"
+      com.smartconstruction.audit.run-id: ${REGISTRY_AUDIT_RUN_ID}
+  registry_audit_odoodata:
+    name: ${REGISTRY_AUDIT_ODOODATA_VOLUME}
+    labels:
+      com.smartconstruction.audit.managed: "true"
+      com.smartconstruction.audit.kind: "admin-vis-p3-registry"
+      com.smartconstruction.audit.run-id: ${REGISTRY_AUDIT_RUN_ID}
+  registry_audit_extraaddons:
+    name: ${REGISTRY_AUDIT_EXTRAADDONS_VOLUME}
+    labels:
+      com.smartconstruction.audit.managed: "true"
+      com.smartconstruction.audit.kind: "admin-vis-p3-registry"
+      com.smartconstruction.audit.run-id: ${REGISTRY_AUDIT_RUN_ID}

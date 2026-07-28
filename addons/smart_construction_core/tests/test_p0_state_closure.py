@@ -2185,6 +2185,7 @@ class TestP0StateClosure(TransactionCase):
                         0,
                         {
                             "work_scope": "P0 concrete structure",
+                            "register_line_id": register.line_ids[0].id,
                             "qty": 1.0,
                             "unit_name": "项",
                             "unit_price": 1000.0,
@@ -2282,6 +2283,7 @@ class TestP0StateClosure(TransactionCase):
             {
                 "project_id": project.id,
                 "request_id": request.id,
+                "contract_id": contract.id,
                 "subcontract_scope": "P0 masonry draft",
                 "subcontractor_id": subcontractor.id,
                 "line_ids": [
@@ -2315,6 +2317,7 @@ class TestP0StateClosure(TransactionCase):
                         0,
                         {
                             "work_scope": "P0 masonry draft",
+                            "register_line_id": register.line_ids[0].id,
                             "qty": 1.0,
                             "unit_price": 1000.0,
                         },

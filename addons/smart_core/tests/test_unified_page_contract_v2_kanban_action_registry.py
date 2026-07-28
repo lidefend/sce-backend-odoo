@@ -95,6 +95,37 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertEqual(actions[0]["sourceWidgetId"], "page.row")
         self.assertEqual(actions[0]["triggerType"], "row_click")
 
+    def test_native_form_header_button_is_projected_as_root_business_action(self):
+        contract = self.assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.relation.wizard",
+                "view_type": "form",
+                "fields": {"note": {"name": "note", "type": "text"}},
+                "views": {
+                    "form": {
+                        "layout": [],
+                        "header_buttons": [
+                            {
+                                "name": "action_apply",
+                                "string": "保存修正",
+                                "type": "object",
+                            }
+                        ],
+                    }
+                },
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.form.native.header.action",
+        )
+
+        actions = (contract.get("actionContract") or {}).get("actionRuleList") or []
+        action = next(row for row in actions if row.get("actionKey") == "action_apply")
+        self.assertEqual(action["label"], "保存修正")
+        self.assertEqual(action["button"], {"name": "action_apply", "type": "object"})
+        self.assertEqual(action["sourceWidgetId"], "page.root")
+        self.assertEqual(action["targetScope"], "header")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
 <template>
   <section class="page sc-page sc-product-workspace-stack" data-product-page-mode="list">
     <PageHeader
-      v-if="status !== 'ok'"
+      v-if="status === 'error'"
       :title="title"
       :subtitle="subtitle"
       :status="status"
@@ -12,7 +12,12 @@
       :record-count="records.length"
     />
 
-    <StatusPanel v-if="loading" title="Loading cards..." variant="info" />
+    <ProductLoadingSkeleton
+      v-if="loading && !hasRetainedContent"
+      :title="title"
+      mode="kanban"
+      loading-label="正在载入数据"
+    />
     <StatusPanel
       v-else-if="status === 'error'"
       :title="errorCopy.title"
@@ -82,7 +87,8 @@
 
       <slot name="toolbar"></slot>
 
-      <section class="grid sc-product-main-surface">
+      <section class="grid sc-product-main-surface" :class="{ 'is-refreshing': loading }" :aria-busy="loading || undefined">
+        <span v-if="loading" class="refresh-status">正在刷新数据</span>
         <article
           v-for="(row, index) in records"
           :key="String(row.id ?? index)"
@@ -161,6 +167,7 @@
 import { computed, ref, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import PageHeader from '../components/page/PageHeader.vue';
+import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { pageModeLabel } from '../app/pageMode';
 import { semanticStatus, semanticValueByField } from '../utils/semantic';
@@ -199,6 +206,7 @@ const errorCopy = computed(() =>
   ),
 );
 const emptyCopy = computed(() => resolveEmptyCopy('card'));
+const hasRetainedContent = computed(() => props.records.length > 0 && props.fields.length > 0);
 
 const fallbackMetaFields = computed(() => props.fields.filter((field) => field !== props.titleField));
 const statusMetaFields = computed(() => {
@@ -250,7 +258,7 @@ const totalPages = computed(() => {
   return Math.max(1, Math.ceil(total / listLimit.value));
 });
 const currentPage = computed(() => Math.min(totalPages.value, Math.floor(listOffset.value / listLimit.value) + 1));
-const showPagination = computed(() => listTotal.value !== null && props.status === 'ok');
+const showPagination = computed(() => listTotal.value !== null && props.status !== 'empty');
 const canPagePrev = computed(() => listOffset.value > 0);
 const canPageNext = computed(() => {
   const total = listTotal.value || 0;
@@ -367,9 +375,49 @@ function formatValue(value: unknown) {
 
 
 .grid {
+  position: relative;
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.grid.is-refreshing {
+  pointer-events: none;
+}
+
+.grid.is-refreshing::before {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, var(--sc-semantic-surface-interactive) 45%, transparent 100%);
+  background-size: 45% 100%;
+  content: '';
+  animation: kanban-refresh-progress 1.15s ease-in-out infinite;
+}
+
+.refresh-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes kanban-refresh-progress {
+  from { background-position: -80% 0; }
+  to { background-position: 180% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grid.is-refreshing::before {
+    animation: none;
+    background: var(--sc-semantic-surface-interactive);
+  }
 }
 
 .kanban-toolbar {

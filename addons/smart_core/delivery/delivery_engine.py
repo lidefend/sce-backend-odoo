@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
+from odoo.addons.smart_core.security.platform_admin import can_discover_platform_capabilities
 
 from .capability_service import CapabilityService
 from .menu_service import MenuService
@@ -44,6 +45,10 @@ class DeliveryEngine:
         resolved = dict(role_surface)
         if "is_platform_admin" not in resolved:
             resolved["is_platform_admin"] = self._has_group("smart_core.group_smart_core_admin")
+        if "discover_installed_capabilities" not in resolved:
+            resolved["discover_installed_capabilities"] = can_discover_platform_capabilities(
+                self.env.user
+            )
         if "is_business_config_admin" not in resolved:
             resolved["is_business_config_admin"] = self._has_group("smart_core.group_smart_core_business_config_admin")
         return resolved
@@ -212,7 +217,14 @@ class DeliveryEngine:
         )
         nav = self._normalize_delivery_nav_refs(nav)
         contextual_routes = self.menu_service.build_contextual_routes(role_surface)
-        route_authority = self.menu_service.build_route_authority(role_surface)
+        route_authority = self.menu_service.build_route_authority(role_surface, nav=nav)
+        principal_scope = (
+            route_authority.get("principal_scope")
+            if isinstance(route_authority.get("principal_scope"), dict)
+            else {}
+        )
+        if int(principal_scope.get("user_id") or 0) > 0:
+            nav = self.menu_service.filter_nav_by_route_authority(nav, route_authority)
         scenes = self.scene_service.build_entries(policy=policy, scenes=runtime.get("scenes") or [])
         capabilities = self.capability_service.build_entries(policy=policy, capabilities=runtime.get("capabilities") or [])
         nav_meta = self.menu_service.describe_nav(nav)

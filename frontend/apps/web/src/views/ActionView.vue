@@ -1271,9 +1271,9 @@ const activeGroupByField = ref('');
 const {
   activeContractFilterKey,
   activeSavedFilterKey,
-  contractLimit,
-  preferredViewMode,
+  contractLimit, preferredViewMode,
 } = useActionViewFilterUiStateRuntime();
+preferredViewMode.value = normalizeActionViewMode(route.query.view_mode) || '';
 const {
   showMoreContractActions,
   showMoreContractFilters,

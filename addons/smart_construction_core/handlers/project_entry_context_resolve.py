@@ -37,9 +37,13 @@ class ProjectEntryContextResolveHandler(ProjectContextResolverMixin, BaseIntentH
         service = ProjectEntryContextService(self.env)
         data = service.resolve(
             project_id=project_id,
-            company_id=self._resolve_company_id(params, ctx),
+            company_id=self._resolve_company_scope_input(params, ctx),
             operation_strategy=self._resolve_operation_strategy(params, ctx),
         )
+        if not bool(data.get("available")):
+            # An unavailable project/company scope must not disclose company
+            # names through selector metadata.
+            data["company_options"] = []
         return {
             "ok": True,
             "data": data,

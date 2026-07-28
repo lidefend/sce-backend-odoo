@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 
 from ..support.state_guard import raise_guard
@@ -201,17 +201,83 @@ class ScReceiptIncome(models.Model):
             if rec.contract_id and rec.contract_id.project_id != rec.project_id:
                 rec.contract_id = False
 
+    @api.model
+    def _caller_visible_relation_record(self, model_name, record_id, domain=None):
+        if not record_id:
+            return self.env[model_name]
+        relation_domain = [("id", "=", record_id)]
+        if domain:
+            relation_domain.extend(domain)
+        record = self.env[model_name].search(relation_domain, limit=1)
+        if not record:
+            raise ValidationError(_("收款归集关系不存在或当前用户无权访问。"))
+        return record
+
+    @api.model
+    def _normalize_receipt_relation_values(self, vals, current=None):
+        values = dict(vals)
+
+        def relation_id(field_name):
+            if field_name in values:
+                return values.get(field_name) or False
+            return current[field_name].id if current and current[field_name] else False
+
+        request_id = relation_id("payment_request_id")
+        contract_id = relation_id("contract_id")
+        partner_id = relation_id("partner_id")
+        project_id = relation_id("project_id")
+
+        request = self.env["payment.request"]
+        if request_id:
+            request = self._caller_visible_relation_record(
+                "payment.request",
+                request_id,
+                [("type", "=", "receive")],
+            )
+            if not request.contract_id:
+                raise ValidationError(_("收款申请未唯一关联合同，不能作为收款归集依据。"))
+            if request.project_id != request.contract_id.project_id:
+                raise ValidationError(_("收款申请项目与其合同项目不一致。"))
+            if request.partner_id != request.contract_id.partner_id:
+                raise ValidationError(_("收款申请往来单位与其合同相对方不一致。"))
+            contract_id = contract_id or request.contract_id.id
+
+        contract = self.env["construction.contract"]
+        if contract_id:
+            contract = self._caller_visible_relation_record(
+                "construction.contract",
+                contract_id,
+                [("type", "=", "out")],
+            )
+            if request and contract != request.contract_id:
+                raise ValidationError(_("收款登记合同必须与收款申请合同一致。"))
+            authoritative_partner = contract.partner_id
+            self._caller_visible_relation_record("res.partner", authoritative_partner.id)
+            if partner_id and partner_id != authoritative_partner.id:
+                raise ValidationError(_("收款登记往来单位必须与合同收款相对方一致。"))
+            if project_id and project_id != contract.project_id.id:
+                raise ValidationError(_("收款登记项目必须与合同项目一致。"))
+            values.setdefault("contract_id", contract.id)
+            values.setdefault("partner_id", authoritative_partner.id)
+            values.setdefault("project_id", contract.project_id.id)
+
+        return values
+
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
-        for vals in vals_list:
+        normalized_vals_list = []
+        for incoming_vals in vals_list:
+            vals = dict(incoming_vals)
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
+            vals = self._normalize_receipt_relation_values(vals)
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.receipt.income") or _("Receipt Income")
-        return super().create(vals_list)
+            normalized_vals_list.append(vals)
+        return super().create(normalized_vals_list)
 
     @api.model
     def _resolve_business_category_code(self, vals):
@@ -290,6 +356,13 @@ class ScReceiptIncome(models.Model):
             } | self._history_surface_allowed_write_fields()
             if set(vals) - allowed:
                 raise UserError(_("历史迁移收款/收入单据已确认，只允许补充业务锚点和备注。"))
+        relation_fields = {"payment_request_id", "contract_id", "partner_id", "project_id"}
+        if relation_fields.intersection(vals):
+            result = True
+            for rec in self:
+                normalized_vals = rec._normalize_receipt_relation_values(vals, current=rec)
+                result = super(ScReceiptIncome, rec).write(normalized_vals) and result
+            return result
         return super().write(vals)
 
     def action_confirm(self):

@@ -68,6 +68,36 @@ class PaymentLedger(models.Model):
     )
     ref = fields.Char(string="外部参考")
     note = fields.Text(string="备注")
+    fund_plan_allocation_ids = fields.One2many(
+        "project.funding.actual.event.allocation",
+        "actual_event_id",
+        string="资金计划分配",
+    )
+    fund_plan_allocated_amount = fields.Monetary(
+        string="计划已分配金额",
+        currency_field="currency_id",
+        compute="_compute_fund_plan_allocation_amounts",
+        store=True,
+        readonly=True,
+    )
+    fund_plan_unallocated_amount = fields.Monetary(
+        string="计划未分配金额",
+        currency_field="currency_id",
+        compute="_compute_fund_plan_allocation_amounts",
+        store=True,
+        readonly=True,
+    )
+
+    @api.depends("amount", "fund_plan_allocation_ids.allocated_amount")
+    def _compute_fund_plan_allocation_amounts(self):
+        for record in self:
+            allocated = sum(
+                record.fund_plan_allocation_ids.mapped("allocated_amount")
+            )
+            record.fund_plan_allocated_amount = allocated
+            record.fund_plan_unallocated_amount = (
+                (record.amount or 0.0) - allocated
+            )
 
     def _check_request_state(self, request):
         if self.env.context.get("allow_payment_reversal"):
@@ -144,6 +174,7 @@ class PaymentLedger(models.Model):
         return records
 
     def write(self, vals):
+        allocations = self.fund_plan_allocation_ids
         for rec in self:
             request_id = vals.get("payment_request_id", rec.payment_request_id.id)
             request = self.env["payment.request"].browse(request_id)
@@ -151,9 +182,14 @@ class PaymentLedger(models.Model):
         res = super().write(vals)
         self._check_amount()
         self._check_overpay(exclude_ids=self.ids)
+        allocations._validate_relation_state()
         return res
 
     def unlink(self):
+        if self.fund_plan_allocation_ids:
+            raise UserError(
+                _("已有资金计划分配的付款台账不能删除，请先保留或调整审计关系。")
+            )
         for rec in self:
             self._check_request_state(rec.payment_request_id)
         return super().unlink()

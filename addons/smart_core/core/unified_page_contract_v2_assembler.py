@@ -2300,6 +2300,14 @@ def _append_ui_contract_actions(
     main_data: dict[str, Any] | None = None,
 ) -> None:
     rows: list[dict[str, Any]] = []
+    form_view = _dict(_dict(ui.get("views")).get("form"))
+    for row in _list(form_view.get("header_buttons")):
+        if isinstance(row, dict):
+            rows.append({
+                **row,
+                "level": _text(row.get("level"), "header"),
+                "target_scope": _text(row.get("target_scope"), "header"),
+            })
     for key in ("buttons", "business_actions"):
         for row in _list(ui.get(key)):
             if isinstance(row, dict):

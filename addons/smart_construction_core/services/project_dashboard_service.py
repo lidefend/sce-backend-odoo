@@ -6,15 +6,21 @@ from pathlib import Path
 
 from odoo import fields
 
-from odoo.addons.smart_construction_core.services.evidence_chain_service import EvidenceChainService
 from odoo.addons.smart_construction_core.services.project_decision_engine_service import ProjectDecisionEngineService
 from odoo.addons.smart_construction_core.services.project_metrics_explain_service import ProjectMetricsExplainService
+from odoo.addons.smart_construction_core.services.project_authorization_service import (
+    ProjectAuthorizationService,
+    ProjectResolution,
+)
 from odoo.addons.smart_construction_core.services.project_state_explain_service import (
     ProjectStateExplainService,
     lifecycle_state_label,
 )
 from odoo.addons.smart_construction_core.services.project_task_state_support import (
     ProjectTaskStateSupport,
+)
+from odoo.addons.smart_construction_core.services.evidence_chain_service import (
+    EvidenceChainService,
 )
 
 from .project_dashboard_builders import BUILDERS
@@ -64,8 +70,15 @@ class ProjectDashboardService:
     }
 
     def __init__(self, env):
+        self._authorized_resolution = None
+        self._bind_env(env)
+
+    def _bind_env(self, env):
+        """Bind every derived query service to the same caller-scoped env."""
+
+        self._authorized_resolution = None
         self.env = env
-        self._evidence_chain_service = EvidenceChainService(env)
+        self._authorization_service = ProjectAuthorizationService(env)
         evidence_summary_service = self._model("sc.evidence.summary.service")
         self._evidence_summary_service = evidence_summary_service or _NullEvidenceSummaryService()
         self._decision_engine = ProjectDecisionEngineService(env)
@@ -73,6 +86,40 @@ class ProjectDashboardService:
         self._metrics_explain_service = ProjectMetricsExplainService(env)
         self._builders = [builder_cls(env) for builder_cls in BUILDERS]
         self._builder_map = {builder.block_key: builder for builder in self._builders}
+
+    def bind_authorized_resolution(self, resolution):
+        """Consume one caller-scoped authorization result for this request.
+
+        Dashboard orchestration calls the project resolver more than once.
+        Binding the original result prevents those internal calls from
+        reinterpreting a verified single-company selection as an omitted
+        selector and rebuilding the broader user company scope.
+        """
+
+        if not isinstance(resolution, ProjectResolution):
+            raise ValueError("invalid project authorization result")
+        project = resolution.project
+        if (
+            not resolution.available
+            or not project
+            or bool(getattr(resolution.env, "su", False))
+            or int(resolution.env.uid) != int(self.env.uid)
+            or int(project.env.uid) != int(resolution.env.uid)
+        ):
+            raise ValueError("unavailable project authorization result")
+        allowed_company_ids = tuple(
+            int(company_id)
+            for company_id in (
+                resolution.env.context.get("allowed_company_ids") or []
+            )
+        )
+        project_company_id = int(getattr(project.company_id, "id", 0) or 0)
+        if not allowed_company_ids or project_company_id not in allowed_company_ids:
+            raise ValueError("project outside authorized company scope")
+
+        self._bind_env(resolution.env)
+        self._authorized_resolution = resolution
+        return self
 
     def source_authority_contract(self):
         provider_path = self._registry_provider_path()
@@ -223,145 +270,30 @@ class ProjectDashboardService:
         return project
 
     def resolve_project_with_diagnostics(self, project_id):
-        model_in_env = False
-        model_error = ""
-        try:
-            model_in_env = "project.project" in self.env
-        except Exception as exc:
-            model_error = str(exc)
-        Project = None
-        try:
-            Project = self.env["project.project"]
-        except Exception as exc:
-            model_error = str(exc)
-        if Project is None:
-            return None, {
-                "requested_project_id": int(project_id or 0),
-                "resolved_project_id": 0,
-                "resolution_path": "model_missing",
-                "reason": "project.project model not available",
-                "model_in_env": model_in_env,
-                "model_error": model_error,
-            }
-        requested_project_id = 0
-        try:
-            requested_project_id = int(project_id or 0)
-        except Exception:
-            requested_project_id = 0
-        diagnostics = {
-            "requested_project_id": requested_project_id,
-            "resolved_project_id": 0,
-            "resolution_path": "",
-            "reason": "",
-            "candidate_counts": {},
-        }
-        if project_id:
+        if self._authorized_resolution is not None:
+            resolution = self._authorized_resolution
             try:
-                record = Project.browse(int(project_id)).exists()
-                if record:
-                    diagnostics.update(
-                        {
-                            "resolved_project_id": int(record.id),
-                            "resolution_path": "explicit_project_id",
-                            "reason": "matched explicit project_id",
-                        }
-                    )
-                    return record, diagnostics
-                diagnostics["reason"] = "explicit project_id not found or inaccessible"
-            except Exception:
-                diagnostics["reason"] = "explicit project_id browse failed"
-        try:
-            if "create_uid" in getattr(Project, "_fields", {}):
-                creator_domain = [("create_uid", "=", int(self.env.user.id))]
-                diagnostics["candidate_counts"]["creator_domain"] = int(Project.search_count(creator_domain))
-                record = Project.search(creator_domain, order="create_date desc,id desc", limit=1)
-                if record:
-                    diagnostics.update(
-                        {
-                            "resolved_project_id": int(record.id),
-                            "resolution_path": "creator_domain",
-                            "reason": "matched latest project created by current user",
-                        }
-                    )
-                    return record, diagnostics
-            else:
-                diagnostics["candidate_counts"]["creator_domain"] = 0
-        except Exception:
-            diagnostics["candidate_counts"]["creator_domain"] = -1
-            diagnostics["reason"] = "creator_domain search failed"
-        domain = self._project_domain_for_user()
-        diagnostics["user_domain"] = domain
-        try:
-            if domain:
-                diagnostics["candidate_counts"]["user_domain"] = int(Project.search_count(domain))
-            else:
-                diagnostics["candidate_counts"]["user_domain"] = 0
-            record = Project.search(domain, order="write_date desc,id desc", limit=1)
-            if record:
-                diagnostics.update(
-                    {
-                        "resolved_project_id": int(record.id),
-                        "resolution_path": "user_domain",
-                        "reason": "matched project by user ownership/member domain",
-                    }
-                )
-                return record, diagnostics
-        except Exception:
-            diagnostics["candidate_counts"]["user_domain"] = -1
-            diagnostics["reason"] = "user_domain search failed"
-        try:
-            diagnostics["candidate_counts"]["global"] = int(Project.search_count([]))
-            record = Project.search([], order="write_date desc,id desc", limit=1)
-            if record:
-                diagnostics.update(
-                    {
-                        "resolved_project_id": int(record.id),
-                        "resolution_path": "global_search",
-                        "reason": "matched latest project in global search",
-                    }
-                )
-                return record, diagnostics
-        except Exception:
-            diagnostics["candidate_counts"]["global"] = -1
-            diagnostics["reason"] = "global search failed"
-        try:
-            rows = Project.search_read(
-                [("active", "=", True)],
-                fields=["id", "name", "write_date"],
-                limit=1,
-                order="write_date desc,id desc",
+                requested_id = int(project_id or 0)
+            except (TypeError, ValueError):
+                requested_id = 0
+            if requested_id == int(resolution.project.id):
+                return resolution.project, dict(resolution.diagnostics)
+            return (
+                resolution.env["project.project"].browse([]),
+                {
+                    "status": "unavailable",
+                    "resolution_path": "project_unavailable",
+                },
             )
-            diagnostics["candidate_counts"]["active_search_read"] = int(len(rows or []))
-            if rows and rows[0].get("id"):
-                record = Project.browse(int(rows[0]["id"])).exists()
-                if record:
-                    diagnostics.update(
-                        {
-                            "resolved_project_id": int(record.id),
-                            "resolution_path": "active_search_read",
-                            "reason": "matched latest active project by search_read fallback",
-                        }
-                    )
-                    return record, diagnostics
-        except Exception:
-            diagnostics["candidate_counts"]["active_search_read"] = -1
-            diagnostics["reason"] = "active search_read fallback failed"
-        diagnostics.update(
-            {
-                "resolved_project_id": 0,
-                "resolution_path": diagnostics.get("resolution_path") or "no_match",
-                "reason": diagnostics.get("reason") or "no project resolved",
-            }
-        )
-        return None, diagnostics
+
+        resolution = self._authorization_service.resolve(project_id=project_id)
+        # All payload, builder, aggregate, and related-model reads that follow
+        # must inherit exactly the resolver's caller identity/company scope.
+        if resolution.env is not self.env:
+            self._bind_env(resolution.env)
+        return resolution.project, dict(resolution.diagnostics)
 
     def project_payload(self, project):
-        if project:
-            try:
-                project = project.sudo()
-            except Exception:
-                _logger.debug("Unable to sudo project dashboard project payload record.", exc_info=True)
-
         def _safe_text(value):
             try:
                 return str(value or "")
@@ -413,7 +345,9 @@ class ProjectDashboardService:
         except Exception:
             progress_percent = 0.0
         evidence_summary = self._evidence_summary_service.summary_for_project(project)
-        evidence_chain = self._evidence_chain_service.build_project_chain(int(project.id), limit=20)
+        evidence_chain = EvidenceChainService(self.env).build_project_chain(
+            int(project.id)
+        )
         risk_analysis = self._decision_engine.analyze(project)
         risk_count = int(risk_analysis.get("risk_count") or 0)
         exception_model = self._model("sc.evidence.exception")

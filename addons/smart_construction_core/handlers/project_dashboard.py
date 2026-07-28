@@ -39,9 +39,28 @@ class ProjectDashboardHandler(ProjectContextResolverMixin, BaseIntentHandler):
 
     def handle(self, payload=None, ctx=None):
         params = payload or self.params or {}
+        if isinstance(params, dict) and isinstance(params.get("params"), dict):
+            params = params.get("params") or {}
         ctx = ctx or {}
-        project_id = self._resolve_project_id(params, ctx)
-        service = ProjectDashboardService(self.env)
+        resolution = self._resolve_project_scope(params, ctx)
+        if not resolution.available:
+            return {
+                "ok": False,
+                "error": {
+                    "code": resolution.code,
+                    "message": "项目不存在或当前账号不可访问",
+                    "suggested_action": "fix_input",
+                },
+                "data": {},
+                "meta": {
+                    "intent": self.INTENT_TYPE,
+                    "trace_id": str((ctx or {}).get("trace_id") or (params or {}).get("trace_id") or ""),
+                    "contract_version": "v1",
+                },
+            }
+        project_id = int(resolution.project.id)
+        service = ProjectDashboardService(resolution.env)
+        service.bind_authorized_resolution(resolution)
         data = service.build(project_id=project_id, context=ctx)
         trace_id = str((ctx or {}).get("trace_id") or (params or {}).get("trace_id") or "")
         return {

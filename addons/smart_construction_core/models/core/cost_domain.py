@@ -6,7 +6,7 @@
 避免 cost_domain.py 里同时承担“领域服务 + 历史模型门面”的职责。
 """
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 from ..support.state_guard import raise_guard
 
@@ -448,6 +448,30 @@ class ProjectCostLedger(models.Model):
         date_obj = fields.Date.to_date(date_value)
         return date_obj.strftime("%Y-%m") if date_obj else False
 
+    def _require_visible_project_scope(self, project_ids):
+        normalized_ids = {
+            int(project_id)
+            for project_id in project_ids
+            if project_id
+        }
+        if not normalized_ids:
+            return
+        Project = self.env["project.project"]
+        if self.env.su:
+            visible_projects = Project.search([("id", "in", list(normalized_ids))])
+        else:
+            visible_projects = Project.search(
+                [
+                    ("id", "in", list(normalized_ids)),
+                    ("company_id", "in", self.env.companies.ids),
+                    "|",
+                    ("user_id", "=", self.env.uid),
+                    ("message_is_follower", "=", True),
+                ]
+            )
+        if set(visible_projects.ids) != normalized_ids:
+            raise AccessError(_("项目不存在或当前用户无权访问。"))
+
     def _get_or_create_period(self, project_id, period_value):
         Period = self.env["project.cost.period"].sudo()
         period = Period.search(
@@ -477,6 +501,9 @@ class ProjectCostLedger(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        self._require_visible_project_scope(
+            vals.get("project_id") for vals in vals_list
+        )
         for vals in vals_list:
             if not vals.get("date"):
                 vals["date"] = fields.Date.context_today(self)
@@ -508,6 +535,8 @@ class ProjectCostLedger(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        if vals.get("project_id"):
+            self._require_visible_project_scope([vals["project_id"]])
         Period = self.env["project.cost.period"]
         for rec in self:
             self._ensure_period_unlocked(rec.period_id, "Write")

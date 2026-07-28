@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="view_project_funding_actual_event_allocation_search" model="ir.ui.view">
+            <field name="name">project.funding.actual.event.allocation.search</field>
+            <field name="model">project.funding.actual.event.allocation</field>
+            <field name="arch" type="xml">
+                <search string="资金计划实际付款分配">
+                    <field name="plan_line_id"/>
+                    <field name="actual_event_id"/>
+                    <field name="project_id"/>
+                    <field name="company_id"/>
+                    <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
+                    <filter string="按计划明细" name="group_plan_line" context="{'group_by': 'plan_line_id'}"/>
+                    <filter string="按实际付款" name="group_actual_event" context="{'group_by': 'actual_event_id'}"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="view_project_funding_actual_event_allocation_tree" model="ir.ui.view">
+            <field name="name">project.funding.actual.event.allocation.tree</field>
+            <field name="model">project.funding.actual.event.allocation</field>
+            <field name="arch" type="xml">
+                <tree string="资金计划实际付款分配">
+                    <field name="plan_line_id"/>
+                    <field name="actual_event_id"/>
+                    <field name="project_id"/>
+                    <field name="company_id"/>
+                    <field name="allocated_amount" sum="分配金额合计"/>
+                    <field name="currency_id" column_invisible="1"/>
+                    <field name="create_uid"/>
+                    <field name="create_date"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_project_funding_actual_event_allocation_form" model="ir.ui.view">
+            <field name="name">project.funding.actual.event.allocation.form</field>
+            <field name="model">project.funding.actual.event.allocation</field>
+            <field name="arch" type="xml">
+                <form string="资金计划实际付款分配">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="plan_line_id"/>
+                                <field name="actual_event_id"/>
+                                <field name="allocated_amount"/>
+                            </group>
+                            <group>
+                                <field name="project_id" readonly="1"/>
+                                <field name="company_id" readonly="1"/>
+                                <field name="currency_id" readonly="1"/>
+                                <field name="create_uid" readonly="1"/>
+                                <field name="create_date" readonly="1"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_project_funding_actual_event_allocation" model="ir.actions.act_window">
+            <field name="name">资金计划实际付款分配</field>
+            <field name="res_model">project.funding.actual.event.allocation</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_project_funding_actual_event_allocation_search"/>
+            <field name="groups_id" eval="[(6, 0, [
+                ref('smart_construction_core.group_sc_cap_finance_read'),
+                ref('smart_construction_core.group_sc_cap_finance_user'),
+                ref('smart_construction_core.group_sc_cap_finance_manager'),
+            ])]"/>
+        </record>
+
+        <menuitem id="menu_project_funding_actual_event_allocation"
+                  name="资金计划实际付款分配"
+                  parent="smart_construction_core.menu_sc_finance_center"
+                  action="action_project_funding_actual_event_allocation"
+                  sequence="32"
+                  groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
+    </data>
+</odoo>

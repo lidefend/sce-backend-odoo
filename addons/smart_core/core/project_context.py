@@ -481,6 +481,20 @@ def business_scope_domain(env_model, scope: dict | None = None, *, company_id: i
     return domain
 
 
+def _caller_visible_project(env_model, project_scope_model: str, project_id: int):
+    denial_message = "当前项目不存在或无权访问"
+    try:
+        project_model = env_model.env[project_scope_model]
+        project_model.check_access_rights("read")
+        project = project_model.search([("id", "=", project_id)], limit=1)
+        if not project:
+            raise AccessError(denial_message)
+        project.check_access_rule("read")
+        return project
+    except AccessError:
+        raise AccessError(denial_message) from None
+
+
 def business_scope_meta(env_model, scope: dict | None = None, *, applied_domain: list | None = None) -> dict:
     scope = scope if isinstance(scope, dict) else {}
     domain = list(applied_domain or [])
@@ -489,12 +503,13 @@ def business_scope_meta(env_model, scope: dict | None = None, *, applied_domain:
     operation_strategy = _as_operation_strategy(scope.get("operation_strategy"))
     project_operation_strategy = ""
     project_scope_model = _primary_legacy_project_scope_model()
-    if project_id and operation_strategy and project_scope_model:
-        try:
-            project = env_model.env[project_scope_model].sudo().browse(project_id).exists()
-            project_operation_strategy = _as_operation_strategy(getattr(project, "operation_strategy", ""))
-        except Exception:
-            project_operation_strategy = ""
+    if project_id and project_scope_model:
+        project = _caller_visible_project(env_model, project_scope_model, project_id)
+        if operation_strategy:
+            try:
+                project_operation_strategy = _as_operation_strategy(getattr(project, "operation_strategy", ""))
+            except AccessError:
+                raise AccessError("当前项目不存在或无权访问") from None
     return {
         "enabled": bool(company_id or project_id or operation_strategy),
         "company_id": company_id or None,

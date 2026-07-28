@@ -32,6 +32,7 @@ type EntryTargetRouteOptions = {
 };
 
 const SCENE_QUERY_KEYS = ['scene', 'scene_key', 'sceneKey'] as const;
+const LEGACY_EMBEDDED_QUERY_KEYS = ['menu_id', 'action_id', 'view_id'] as const;
 const WORKBENCH_PATH = '/workbench';
 
 export function firstQueryValue(raw: unknown): string {
@@ -64,6 +65,27 @@ export function normalizeEmbeddedSceneQuery(query: QueryLike): { query: QueryLik
       nextQuery[key] = normalizedScene;
       changed = true;
     }
+    if (!nestedQuery) continue;
+    const params = new URLSearchParams(nestedQuery);
+    params.forEach((value, nestedKey) => {
+      const existing = firstQueryValue(nextQuery[nestedKey]);
+      if (!existing && value) {
+        nextQuery[nestedKey] = value;
+        changed = true;
+      }
+    });
+  }
+  for (const key of LEGACY_EMBEDDED_QUERY_KEYS) {
+    const raw = firstQueryValue(nextQuery[key]);
+    const expanded = raw.replace(/%26/gi, '&');
+    if (!expanded || !expanded.includes('&')) continue;
+    const [primaryValue, ...nestedParts] = expanded.split('&');
+    const normalizedPrimary = String(primaryValue || '').trim();
+    if (normalizedPrimary && normalizedPrimary !== raw) {
+      nextQuery[key] = normalizedPrimary;
+      changed = true;
+    }
+    const nestedQuery = nestedParts.join('&');
     if (!nestedQuery) continue;
     const params = new URLSearchParams(nestedQuery);
     params.forEach((value, nestedKey) => {
@@ -212,6 +234,7 @@ export function buildEntryTargetRouteTarget(
   const refs = entryTargetRefs(entryTarget);
   const menuId = positiveInteger(options.menuId) ?? positiveInteger(refs.menu_id);
   const actionId = positiveInteger(options.actionId) ?? entryTargetActionId(entryTarget);
+  const viewId = positiveInteger(refs.view_id);
   const domainRaw = firstQueryValue(normalizedQuery.domain_raw) || firstQueryValue(refs.domain_raw);
   const contextRaw = firstQueryValue(normalizedQuery.context_raw) || firstQueryValue(refs.context_raw);
   if (type === 'scene') {
@@ -227,10 +250,26 @@ export function buildEntryTargetRouteTarget(
     ...normalizedQuery,
     menu_id: menuId,
     action_id: actionId,
+    view_id: viewId,
     domain_raw: domainRaw || undefined,
     context_raw: contextRaw || undefined,
   });
   const route = String(entryTarget?.route || '').trim();
+  const recordEntry = entryTargetRecordEntry(entryTarget);
+  const recordModel = String(recordEntry.model || '').trim();
+  const recordId = positiveInteger(recordEntry.record_id);
+  if (type === 'compatibility' && recordModel && recordId) {
+    return {
+      path: `/r/${encodeURIComponent(recordModel)}/${recordId}`,
+      query,
+    };
+  }
+  if (
+    type === 'compatibility'
+    && (route.startsWith('/f/') || route.startsWith('/r/'))
+  ) {
+    return { path: route, query };
+  }
   if (type === 'compatibility' && route && !actionId) {
     return { path: route, query };
   }

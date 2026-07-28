@@ -12,7 +12,10 @@ import os
 from typing import Dict, Any, List, Optional, Union, Iterable, Tuple
 from collections.abc import Mapping
 from odoo.exceptions import AccessError, MissingError
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import (
+    can_discover_platform_capabilities,
+    user_is_platform_admin,
+)
 from ..resolvers.action_resolver import ActionResolver
 
 _logger = logging.getLogger(__name__)
@@ -109,7 +112,7 @@ class NavDispatcher:
             )
             tree_raw = contract.get("nav") or []
             if not tree_raw and root_exists and (root_xmlid or root_menu_id):
-                if user_is_platform_admin(self.env.user):
+                if can_discover_platform_capabilities(self.env.user):
                     _logger.warning(
                         "NAV_DEBUG: empty nav after relax filters with root, disable runtime filter for admin"
                     )
@@ -160,7 +163,7 @@ class NavDispatcher:
                 except Exception as e:
                     _logger.warning("NavDispatcher: lang retry failed: %s", e)
                 if not root_found and root_exists and (root_xmlid or root_menu_id):
-                    if user_is_platform_admin(self.env.user):
+                    if can_discover_platform_capabilities(self.env.user):
                         _logger.warning(
                             "NavDispatcher: root filtered, retry with filter_runtime=False for admin root_xmlid=%s",
                             root_xmlid,
@@ -199,7 +202,7 @@ class NavDispatcher:
         # 权限过滤导致 root 被清空时：非管理员不兜底，管理员可兜底
         if not filtered and tree:
             if resolved_root_id and root_found:
-                if user_is_platform_admin(self.env.user):
+                if can_discover_platform_capabilities(self.env.user):
                     _logger.debug("NAV_DEBUG: filtered empty for admin -> fallback to unfiltered")
                     filtered = self._mark_all_visible(self._inherit_scene(tree, parent_scene="web"))
                 else:
@@ -550,7 +553,7 @@ class NavDispatcher:
         user = self.env.user
 
         # 管理员短路（直接 scene 继承 + 标记可见）
-        if user_is_platform_admin(user):
+        if can_discover_platform_capabilities(user):
             _logger.debug("NAV_DEBUG: admin bypass filtering (uid=%s)", user.id)
             return self._mark_all_visible(self._inherit_scene(tree, parent_scene="web"))
 

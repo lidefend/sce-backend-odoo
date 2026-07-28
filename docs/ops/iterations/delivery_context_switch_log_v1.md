@@ -703,3 +703,990 @@ customer delivery evidence belongs in private customer or payload repositories.
   sentinel checks, two identical upgrade entries, real-HTTP role checks,
   independent old-version rollback proof, exact labeled cleanup, targeted
   regressions and full CI prove containment. Production access is forbidden.
+
+# Customer-tenant database architecture freeze — 2026-07-24
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `790e8bc`
+- Formal Product Layer: P0 platform kernel product governance
+- Layer Target / Module / Reason: `docs/governance/database_architecture_policy.md`;
+  freeze the platform control plane, versioned construction-industry capability
+  layer, database-per-customer-tenant data plane, and supporting ops/analytics
+  store boundaries before UM-P1 ownership work begins.
+- Standard vs User-Specific: platform-wide tenancy and data-governance baseline;
+  no customer-specific business semantics or customer data.
+- Why Here / Why Not Elsewhere: tenant/database boundaries govern P1 product
+  ownership and P2 installation rehearsal, so they belong in the single
+  authoritative governance policy and root agent entry; they must not be
+  inferred from Odoo multi-company rules, frontend behavior, runtime low-code
+  configuration, or an individual customer module.
+- Blast Radius / Validation: documentation and execution policy only; exact
+  frozen-key scan, ownership-matrix review, policy-reference check,
+  `git diff --check`, and changed-path review prove containment. No database,
+  filestore, container, service, remote branch, product source file, or
+  customer data is modified. The earlier P0 artifact's quarantined-draft
+  identity is not reasserted here because those draft paths were already absent
+  or different from the recorded hashes at this audit's starting state.
+
+## Quarantined draft disposition
+
+After the read-only provenance and scope audit, the user authorized acceptance
+of the current HEAD state. This disposition does not establish who changed the
+drafts, how they were changed, or that their proposed product behavior is
+complete.
+
+```text
+QUARANTINED_DRAFT_COUNT=5
+QUARANTINED_DRAFT_DISPOSITION=AUTHORIZED_REMOVAL_AND_ACCEPT_CURRENT_HEAD_STATE
+TRACKED_DRAFT_FILES_ACCEPTED_AT_HEAD=2
+UNTRACKED_DRAFT_FILES_AUTHORIZED_ABSENT=3
+DRAFT_CONTENT_RESTORED=false
+DRAFT_CONTENT_MIGRATED=false
+DRAFT_CONTENT_USED_FOR_P1=false
+P1_MUST_START_FROM_COMMITTED_GOVERNANCE_BASELINE=true
+DRAFT_DRIFT_ACTOR=UNKNOWN
+DRAFT_DRIFT_EXACT_OPERATION=INSUFFICIENT_EVIDENCE
+USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
+```
+
+# Administrator visibility/data-access decoupling — 2026-07-24
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `bd8d460`
+- Formal Product Layer: P0 platform identity and navigation security mechanism,
+  with the P1 construction-industry role projection as its policy consumer.
+- Layer Target / Module / Reason: `smart_core` now distinguishes installed
+  capability and configuration discovery from strict platform-operator
+  privilege; `smart_construction_core` projects both `base.group_system` and
+  `smart_core.group_smart_core_admin` through the system-admin discovery
+  surface instead of an empty business-function menu.
+- Standard vs User-Specific: product-wide administrator semantics. No customer
+  role, project membership, company scope, business record, fixture or
+  customer-specific navigation is introduced.
+- Why Here / Why Not Elsewhere: capability discovery belongs to identity and
+  navigation metadata projection. Customer business access remains owned by
+  model ACLs, record rules, company scope and explicit business membership;
+  dangerous platform actions retain their strict backend authorization.
+- Blast Radius / Validation: identity predicates, navigation/config metadata
+  projection, construction role policy and direct regression tests only. No
+  ACL, record rule, business model, migration, database, filestore, runtime
+  environment or customer data is changed.
+
+# Ephemeral registry audit environment — 2026-07-25
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `d2038e92`
+- Formal Product Layer: P4 operations and audit-delivery tooling.
+- Layer Target / Module / Reason: repository-governed Make, Compose, exporter,
+  exact-cleanup tooling and infrastructure tests provide a disposable registry
+  metadata export without reusing an existing database or runtime.
+- Standard vs User-Specific: generic security-audit infrastructure; no customer
+  business semantics, fixture, demo data or customer data is introduced.
+- Why Here / Why Not Elsewhere: registry discovery and resource lifecycle
+  controls are operational governance concerns. They do not belong in product
+  handlers, services, models, ACLs, record rules or project-ID authorization.
+- Blast Radius / Validation: a random Compose project uses dedicated labeled
+  containers, an internal network and three explicit volumes, publishes no
+  ports, runs Odoo as the image's non-root user, exports deterministic metadata
+  to a run-specific temporary directory, and deletes only exact manifest
+  resources after label verification. Unit, real-container, failure-cleanup,
+  foreign-label refusal and second-cleanup tests prove containment.
+- Resource isolation hardening: image-declared volume paths are reconciled
+  against the rendered Compose configuration before initialization. A
+  two-phase manifest predeclares names, then records exact Docker IDs; cleanup
+  verifies names, IDs and labels. The one anonymous volume created by the
+  pre-hardening `/mnt/extra-addons` gap was attributed from preserved pre/post
+  snapshots and removed once by its full ID under explicit user authorization.
+
+# Effective generic API policy registry export — 2026-07-25
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `0197ae2`
+- Formal Product Layer: P4 operations and audit-delivery tooling.
+- Layer Target / Module / Reason: the dedicated registry exporter reconstructs
+  effective generic API model, operation, field, method, domain, context and
+  project-scope policy metadata without invoking policy predicates, handlers
+  or business model methods.
+- Standard vs User-Specific: generic audit evidence only. No product policy,
+  customer setting, business record or authorization behavior is changed.
+- Why Here / Why Not Elsewhere: policy inspection belongs to the governed
+  exporter. Product handlers and construction extension policy providers
+  remain authoritative and unmodified.
+- Blast Radius / Validation: exporter metadata projection, strict schema
+  validation, dedicated unit tests and this brief documentation entry only.
+  Full ephemeral registry initialization, secret scanning, exact cleanup and
+  pre/post Docker resource-set equality prove containment.
+
+# Effective route policy registry export — 2026-07-25
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `cf9b399`
+- Formal Product Layer: P4 operations and audit-delivery tooling.
+- Layer Target / Module / Reason: the dedicated registry exporter projects
+  loaded controller decorator policy, inheritance and collision metadata
+  without executing controller methods or issuing requests.
+- Standard vs User-Specific: generic audit metadata only; route behavior and
+  product controllers remain unchanged.
+- Why Here / Why Not Elsewhere: runtime route inventory is audit evidence, not
+  product routing policy. The exporter observes existing controller metadata
+  and does not become a competing route registry.
+- Blast Radius / Validation: one pure metadata helper, exporter/schema
+  integration, dedicated tests and documentation. The governed ephemeral run
+  and exact cleanup remain the system-bound proof.
+
+# Route-surface conflict gate and effective winner proof — 2026-07-25
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `0b24eb6`
+- Formal Product Layer: P4 operations and audit-delivery tooling.
+- Layer Target / Module / Reason: route-surface taxonomy, final routing-map
+  identity, complete Rule/dispatch/security dimensions, false-conflict gate
+  and current-framework-only order proof under `scripts/ops/registry_audit`;
+  path plus method alone overstates controller inheritance as runtime conflict.
+- Standard vs User-Specific: generic audit evidence only. No controller,
+  product route, customer policy, business data or runtime configuration is
+  modified.
+- Why Here / Why Not Elsewhere: final route registration and framework source
+  inspection belong to the governed exporter. Product controllers, frontend
+  code and public RPC classification are outside this iteration.
+- Blast Radius / Validation: schema v4 marks inheritance-collapsed candidates
+  `FALSE_CONFLICT`, admits only same-map overlapping Rules to winner analysis,
+  hashes the source actually installed in the isolated container, and records
+  compiled patterns plus ordering keys. Unit tests, schema checks, the
+  governed ephemeral lifecycle and exact cleanup prove that no `match()`, HTTP
+  request, endpoint or business method executed.
+
+# Isolated project record-rule ORM acceptance entrypoint — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `9322f50`
+- Formal Product Layer: P4 operations and test-delivery tooling.
+- Layer Target / Module / Reason: one focused Odoo `TransactionCase`, a
+  single-purpose test launcher, a healthcheck-disabled Compose overlay and a
+  Make wrapper exercise `business_scope_meta()` with the installed project ACL
+  and record rules in a unique disposable database.
+- Standard vs User-Specific: generic security acceptance with synthetic users
+  and projects only. No customer data, product authorization logic, ACL,
+  record rule or generic entrypoint is changed.
+- Why Here / Why Not Elsewhere: database lifecycle and repeatable acceptance
+  belong to repository test operations; the already-patched product helper
+  remains unchanged.
+- Blast Radius / Validation: the launcher rejects database overrides, enforces
+  a fixed random database prefix and denylist, drops only the database created
+  by the current run, and removes only its uniquely named Compose resources.
+  Two valid executions passed the focused real-ORM assertions and restored the
+  pre-run database, container, network and volume inventories exactly. Seven
+  ADMIN_VIS_P3 boundaries remain open pending the independent patch re-test.
+
+# Generic business-scope real-ORM closure review — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `0696fed`
+- Formal Product Layer: P4 audit and security-verification records.
+- Layer Target / Module / Reason: the verified disposable ORM entrypoint was
+  rerun and bound to each of the seven fixed ADMIN_VIS_P3 call chains. Six
+  caller-environment chains are closed with real ACL and record-rule evidence.
+- Remaining boundary: `ADMIN_VIS_P3_GENERIC_API_DATA` stays open because its
+  internal `account.tax` quick-create policy can elevate `env_model` before
+  scope metadata is built; the helper then derives the project model from that
+  elevated environment.
+- Blast Radius / Validation: no product, ACL, record-rule, generic entrypoint,
+  ORM test or infrastructure file changed. The focused ORM run passed and
+  restored all resource inventories; unit, AST, compile, JSON and three-point
+  quality-gate comparisons also passed without new or worsened failures.
+
+# API data caller-scope isolation before account-tax sudo — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `ff45aab`
+- Formal Product Layer: P2 generic API authorization boundary.
+- Layer Target / Module / Reason: `ApiDataHandler._op_create` now captures the
+  original caller-scoped `account.tax` model and authorizes project scope
+  before the existing quick-create policy can select an elevated operation
+  model.
+- Standard vs User-Specific: platform-generic authorization sequencing; no
+  customer policy, project domain, ACL, record rule or account-tax business
+  rule is introduced.
+- Why Here / Why Not Elsewhere: the environment propagation defect originates
+  in the single `api.data` create branch. The shared scope helper and the six
+  already-safe generic entrypoints remain unchanged.
+- Blast Radius / Validation: one handler, one focused AST boundary test, the
+  existing real-ORM acceptance test and audit records. Real ACL/record-rule
+  tests prove unauthorized and nonexistent projects stop before policy sudo,
+  while authorized contract-tax policy still returns its original
+  `allowed=true, sudo=true` decision. All temporary resources were removed and
+  the seven ADMIN_VIS_P3 boundaries are closed.
+
+# UM-P1 S01 ownership and visibility contract baseline — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at `01820d7`
+- Formal Product Layer: P1 construction-industry standard product governance
+  and verification.
+- Layer Target / Module / Reason: the six document-ordered business entries
+  are recorded in one machine-readable ownership and visibility contract,
+  backed by the committed `smart_construction_core` model fields, ACLs, record
+  rules and a real-registry acceptance test.
+- Standard vs User-Specific: construction-product authorization evidence only.
+  Full user-management productization remains deferred, and no customer
+  preference or customer data is introduced.
+- Why Here / Why Not Elsewhere: P1 owns the standard business models and their
+  authorization boundaries. P0 mechanisms, P2 customer modules, P3 runtime
+  configuration, frontend filtering and P4 repair scripts cannot invent the
+  missing personal-visibility policy.
+- Current contract result: payment request/execution and contract settlement
+  have committed allowed-company plus project-responsible/follower rules.
+  Project receipt, invoice/deduction and cost ledger have ACLs but no model
+  record rules; interfund transfer has a company rule but no common personal
+  ownership rule. Missing behavior is preserved as a product gap, not reported
+  as a passing personal-visibility contract.
+- Next document-order entry: `UM-P1-S02-PROJECT-RECEIPT`. Its product
+  implementation can reuse the existing `project_id` relationship and the
+  committed project responsible-user/follower semantics. The minimal product
+  gap is the absence of the corresponding project/company record rules on
+  `sc.receipt.income`; no new field or migration is required.
+- Blast Radius / Validation: one JSON contract, one static guard and test, one
+  real-registry test import, and this iteration record. Product models,
+  handlers, ACLs, record rules, generic entrypoints and business data remain
+  unchanged.
+
+# UM-P1 S02 project receipt visibility — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` after
+  `e26dde3`.
+- Formal Product Layer: P1 construction-industry standard product.
+- Layer Target / Module / Reason: the first document-order business entry,
+  `sc.receipt.income`, now applies the S01 allowed-company plus project
+  responsible-user/follower visibility contract to business initiator,
+  finance-read and finance-user roles. Finance managers retain full CRUD
+  within allowed companies.
+- Standard vs User-Specific: one standard server-side record-rule boundary;
+  no customer-specific policy, frontend filter or user-management
+  productization is introduced.
+- Why Here / Why Not Elsewhere: the product gap was the absence of rules on
+  the receipt model itself. The existing `project_id` relation supplies the
+  approved ownership anchor, so no new field, ACL, handler, migration or
+  generic API change is required.
+- Blast Radius / Validation: four receipt rules, one static topology test, an
+  extension of the existing isolated real-ORM contract test, and current
+  contract evidence. Ordinary users are limited to allowed-company projects
+  they own or follow; finance managers remain company-scoped. Unauthorized,
+  cross-company and nonexistent searches are indistinguishable at the ORM
+  boundary, and no-scope searches retain the rule domain.
+- Next document-order entry:
+  `UM-P1-S03-PAYMENT-REQUEST-EXECUTION`.
+
+# UM-P1 S03 payment visibility verification — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at
+  `429db7c`.
+- Formal Product Layer: P1 construction-industry standard product
+  verification.
+- Layer Target / Module / Reason: the second document-order entry already has
+  committed project-member plus allowed-company rules for `payment.request`
+  and `sc.payment.execution`; S03 closes the remaining identifier
+  nondisclosure evidence gap without changing product behavior.
+- Existing contract confirmed: ordinary business and finance roles see only
+  projects they own or follow in allowed companies. Finance managers and
+  executives remain company-scoped; the payment-request business-config
+  administrator retains its explicit all-record contract.
+- Real-ORM evidence: caller-scoped searches and direct reads were exercised for
+  authorized, cross-user, cross-company and nonexistent IDs on both models.
+  Unauthorized and nonexistent searches return the same empty observation;
+  direct unauthorized reads raise `AccessError`; no-scope searches retain the
+  rules.
+- Resource safety: an initial synthetic-fixture error was corrected after its
+  unique database and resources were fully removed. The final 20-test run
+  passed with zero failures/errors and restored database, container, network
+  and volume inventories exactly.
+- Product blast radius: none. Only focused tests, current contract evidence,
+  validators and this iteration record change.
+- Next document-order entry: `UM-P1-S04-INVOICE-DEDUCTION`. The S01 matrix
+  records `OWNERSHIP_ANCHOR_MISSING`, so implementation requires an explicit
+  ownership-contract decision before product rules can be changed.
+
+# UM-P1 S04 company-finance invoice visibility — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at
+  `0712242`.
+- Formal Product Layer: P1 construction-industry standard product.
+- Layer Target / Module / Reason: `sc.invoice.registration` and
+  `sc.tax.deduction.registration` are company finance shared ledgers. Their
+  server-side rules now intersect every ACL holder with allowed companies,
+  admit the existing finance capabilities within that boundary, and prevent
+  business-initiation capability alone from opening the ledgers.
+- Approved ownership contract: no personal ownership field is required.
+  `applicant_name`, `source_created_by` and `creator_name` remain audit text,
+  and project responsibility/followership is not used as ledger visibility
+  authority. No ACL, field or migration is added.
+- Create/write boundary: both models resolve a supplied project through a
+  caller-scoped `project.project.search` constrained to allowed companies
+  before business-category lookup or persistence. Unauthorized and nonexistent
+  projects therefore share the same `AccessError` path; no sudo, browse or
+  exists probe is used.
+- Real-ORM evidence: the final 29-test isolated run proves company-shared
+  finance search/read, caller-visible project create/write, cross-company
+  denial, business-initiator denial, manager delete scope, superuser framework
+  behavior, nonexistent equivalence and no-scope company intersection for both
+  models. The initial test-baseline adaptation run and final passing run both
+  removed their unique databases and restored database, container, network and
+  volume inventories exactly.
+- Blast Radius: two model authorization guards, one record-rule file, focused
+  static/ORM tests, the existing S01 contract validator and this iteration
+  record. Business calculations, ACLs, generic APIs, frontend and existing
+  business data are unchanged.
+- Next document-order entry: `UM-P1-S05-INTERFUND-TRANSFER`.
+
+# UM-P1 S05 company-finance interfund visibility — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at
+  `eb6fb5a`.
+- Formal Product Layer: P1 construction-industry standard product.
+- Approved contract: `sc.fund.account.operation` and `sc.financing.loan` are
+  company-finance shared ledgers. `company_id` is their common security
+  anchor; project links are business attribution and never personal ownership.
+- Product boundary: both models now have a mandatory global allowed-company
+  intersection and exact finance-capability rules. Business-initiation ACL
+  alone cannot open either ledger. No ACL, group, ownership field or migration
+  was added.
+- Mutation boundary: fund operations accept an omitted project while retaining
+  their required caller company, and validate any supplied project against the
+  same company. Financing loans validate their required project in the caller
+  environment before create or project reassignment. No sudo, browse or exists
+  pre-probe participates in either check.
+- Real-ORM evidence: the final isolated run passed 38 post tests with zero
+  failures/errors, including nine S05 tests over both models. It covers
+  company-shared finance read/search, caller-scoped create/write, optional
+  project handling, cross-company and non-finance denial, manager delete,
+  direct read denial, nonexistent equivalence, no-scope behavior and superuser
+  framework behavior.
+- Resource safety: the initial test-expectation adaptation and final passing
+  run each removed their unique databases and exactly restored database,
+  container, network and volume inventories.
+- Next document-order entry: `UM-P1-S06-CONTRACT-SETTLEMENT`.
+
+# UM-P1 S06 contract-settlement visibility verification — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at
+  `5a5e9e8`.
+- Formal Product Layer: P1 construction-industry standard product.
+- Existing contract verified: settlement read/user roles are limited to
+  allowed companies and projects for which the caller is responsible or a
+  follower. Settlement/finance managers share within allowed companies, while
+  the business-config administrator retains its explicit all-record rule.
+- Audit-field boundary: `entry_user_id` remains metadata only. A synthetic
+  record naming the ordinary user as entry user but belonging to an unrelated
+  project stayed invisible.
+- Real-ORM evidence: the final isolated run passed 46 post tests with zero
+  failures/errors, including eight S06 tests for owner/follower access,
+  cross-user and cross-company denial, manager/config-admin behavior, direct
+  read denial, nonexistent equivalence and no-scope behavior.
+- Resource safety: the initial fixture-adaptation run and final passing run
+  each removed their unique database and exactly restored database, container,
+  network and volume inventories.
+- Product changes: none. Existing ACLs, record rules, groups, model behavior
+  and entrypoints were not modified.
+- Next document-order entry: `UM-P1-S07-COST-LEDGER`; its ownership contract
+  remains an explicit decision gate because no committed ownership authority
+  or model record rule exists.
+
+# UM-P1 S07 cost-ledger project visibility — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `8666bbe`.
+- Approved contract: cost-model ACL capability AND allowed company AND project
+  responsibility/followership. The canonical responsibility field is
+  `project.project.user_id`; explicit followership uses
+  `message_is_follower`, backed by `mail.followers` and the formal
+  `sc.project.member.assignment` contract.
+- Excluded authority: `project.project.manager_id` remains a frontend filter
+  input only for this slice and does not independently grant backend access.
+- Product implementation: added a global allowed-company rule, matching
+  project responsible/follower rules for the three cost capabilities, and a
+  caller-scoped project guard before period helper sudo work on create/write.
+- Real-ORM evidence: final isolated run
+  `sc_test_admin_vis_p3_20260726001330_f59483df` passed 56 post tests with zero
+  failures/errors, including ten cost-ledger tests for responsible/follower
+  visibility, unrelated and cross-company denial, ACL non-expansion,
+  create/write/unlink, direct-read denial, identifier equivalence,
+  manager-field exclusion and no-scope behavior.
+- Resource safety: all adaptation and final runs removed their unique
+  databases and restored database, container, network and volume inventories
+  exactly.
+- Document-order status: all six approved P1 business-entry families are now
+  implemented or verified; there is no additional P1 entry after S07 in the
+  approved source order.
+
+# UM-P2 S01 receipt relation aggregation — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `f4dbbdc`.
+- Approved authority chain: `sc.receipt.income.payment_request_id` is the
+  primary anchor, its single income contract is authoritative, and
+  `construction.contract.partner_id` is the required receipt counterparty.
+  An explicit contract or partner may confirm this chain but cannot override
+  it.
+- Product implementation: receipt create/write now resolve every supplied
+  application, contract and authoritative partner in the caller environment
+  before persistence. Missing consistency fields are derived from the strong
+  relation; conflicting values are rejected. A contract without an
+  application remains a valid secondary anchor, while records with neither
+  anchor remain unaggregated.
+- Excluded behavior: no name, amount, date, note or first-result matching; no
+  historical inference or migration; no ACL, record-rule or public API
+  change; no sudo/browse/exists pre-probe.
+- Real-ORM evidence: isolated database
+  `sc_test_admin_vis_p3_20260726002723_6f9f79bf` passed 63 post tests with zero
+  failures/errors. The seven S01 tests cover primary/secondary derivation,
+  contract and counterparty conflicts, write revalidation, unlinked records,
+  and unauthorized/nonexistent equivalence.
+- Resource safety: the temporary database and all test resources were removed;
+  database, container, network and volume inventories exactly match their
+  pre-run digests.
+- Next formal P2 order entry:
+  `UM-P2-S02-PAYMENT-RELATION-AGGREGATION`.
+
+# UM-P2 S02 payment relation aggregation — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `8fafca0`.
+- Approved authority chain: `payment.request` is the execution anchor. Its
+  maintained detail set is authoritative; otherwise exactly one standard or
+  material settlement header is the source. Contracts are aggregated from the
+  complete valid source set and copied to the execution scalar only when that
+  set contains one contract.
+- Multi-contract behavior: existing `payment.request.line` relations preserve
+  every settlement. Different source contracts leave the execution
+  `contract_id` empty; no first, latest or amount-based source is selected.
+- Payee boundary: the application partner remains the business counterparty,
+  while the execution partner is the actual funds recipient. Equal and
+  different payees are both valid and neither path rewrites the application,
+  settlement or contract basis.
+- Product implementation: caller-scoped source resolution and create/write
+  normalization were added to payment execution, with request and detail
+  mutation constraints that revalidate linked executions. No sudo,
+  browse/exists pre-probe, ACL, record-rule, migration or heuristic matching
+  was added.
+- Real-ORM evidence and exact resource cleanup are recorded in
+  `docs/audit/um_p2/um_p2_s02_payment_relation_aggregation_v1.json`.
+- Next formal P2 order entry:
+  `UM-P2-S03-INTERFUND-RELATION-AGGREGATION`.
+
+# UM-P2 S03 interfund relation aggregation — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `f65243d`.
+- Formal relation contract: source and target fund accounts are the two
+  transfer authorities. Each endpoint project derives only from its account;
+  the operation's optional `project_id` remains business attribution and does
+  not override either endpoint.
+- Counterparty projection: for a project perspective, the opposite endpoint
+  is another project, the company, or the same project's internal account.
+  Account transfers do not invent a partner relation and do not match names,
+  account numbers, amounts or notes.
+- Product implementation: transfer account IDs are resolved with caller
+  permissions and constrained to the operation company; an account whose
+  project belongs to another company is rejected. Create and endpoint-changing
+  writes revalidate the same relation without sudo or browse/exists probing.
+- Real-ORM evidence: isolated database
+  `sc_test_admin_vis_p3_20260726005614_bda64e74` passed 77 post tests with zero
+  failures/errors. Five S03 tests cover project/project, project/company and
+  internal endpoints, cross-company/nonexistent equivalence, project/company
+  mismatch and write revalidation.
+- Resource safety: the temporary database and all test resources were removed;
+  database, container, network and volume inventories exactly match their
+  pre-run digests.
+- Next formal P2 order entry:
+  `UM-P2-S04-INVOICE-RELATION-AGGREGATION`.
+
+# UM-P2 S04 invoice relation aggregation — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `b647855`.
+- Formal relation contract: `sc.invoice.registration` dispatches its relation
+  policy by the repository's exact `source_kind` values. Input and output
+  invoice contracts derive only from caller-visible formal settlement or
+  contract relations; prepaid tax keeps project/counterparty authority and
+  permits an empty contract.
+- Receipt invoice lines follow the strong receive-application -> contract ->
+  counterparty chain. Explicit project, contract and counterparty values are
+  consistency checks and cannot override that chain.
+- Tax deduction remains outside contract aggregation. No relationship field
+  was added, and its textual invoice number is never used to match an invoice
+  registration or contract.
+- Product implementation performs caller-scoped relation searches and
+  revalidates create and write operations without sudo, browse/exists probing,
+  heuristic matching or historical inference.
+- Real-ORM evidence: isolated database
+  `sc_test_admin_vis_p3_20260726011941_c8c8996b` passed 85 post tests with zero
+  failures/errors. The temporary database was removed and database, container,
+  network and volume inventories exactly match their pre-run digests.
+- Next formal P2 order entry:
+  `UM-P2-S05-SETTLEMENT-RELATION-AGGREGATION`.
+- S05 decision boundary: `sc.settlement.order.contract_id` is optional while
+  new settlement lines require a contract, and current server validation only
+  requires every line contract to belong to the header project. It does not
+  require line contracts to be identical to each other or to the optional
+  header contract. Choosing header authority versus a multi-contract
+  line-authority contract therefore requires one explicit cardinality decision.
+
+# UM-P2 S05 settlement relation aggregation — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `5ea03fa`.
+- Formal authority contract: the complete valid
+  `sc.settlement.order.line.contract_id` set is authoritative. The optional
+  `sc.settlement.order.contract_id` is projected only when that set contains
+  one unique contract; distinct contracts remain on their lines and force the
+  scalar header projection empty.
+- Mutation coverage: header create/write, nested One2many commands, and direct
+  line create/write/unlink all re-evaluate the final detail state. An explicit
+  conflicting header contract is rejected and never rewrites line contracts.
+- Relation boundary: caller-visible contracts must match the settlement
+  project, company, direction and counterparty. No sudo, browse/exists probe,
+  heuristic matching, historical inference, ACL or record-rule change was
+  added.
+- Material settlement remains purchase-order/supplier based and has no
+  contract-bearing header or detail field, so S05 does not add or infer one.
+- Real-ORM evidence: isolated database
+  `sc_test_admin_vis_p3_20260726014607_95c5133e` passed 93 post tests with zero
+  failures/errors. The temporary database was removed and database, container,
+  network and volume inventories exactly match their pre-run digests.
+- Formal P2 sequence status: the five relationship entries in
+  `user_business_data_portrait_productization_plan_2026-06-10.md` are now
+  implemented and verified. The next documented phase is P3 business closure;
+  its first slice authority and acceptance contract is not yet formally
+  approved, so no P3 behavior is inferred here.
+
+# UM-P3 S01 core-domain authority baseline — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from the
+  accepted S05 commit `3af4f0e`.
+- Formal Product Layer: P4 audit and machine-verifiable governance evidence;
+  this P3 phase slice does not change P1 industry business models.
+- Authority baseline: 31 relations across 22 project, contract, procurement,
+  subcontract, settlement, receipt/payment, fund, invoice, counterparty and
+  company models. The matrix freezes all five P2 authorities without
+  redesigning them.
+- Closure result: six chains are closed, three are partial, one is blocked by
+  schema and authority, and tax-deduction relation modeling remains formally
+  out of scope. No heuristic matching, historical inference, ACL, record
+  rule, migration or business behavior was added.
+- Highest-priority gap: `FUND_PLAN_TO_ACTUAL_FUND_EVENT` is critical but not
+  safe to implement. The repository has no formal relation carrier identifying
+  which historical `project.funding.baseline` version authorizes a request or
+  actual fund event, and neither its authority side nor cardinality has been
+  approved.
+- Next formal task:
+  `FORMALLY_DECIDE_FUNDING_BASELINE_EVENT_AUTHORITY_CARDINALITY_AND_SCHEMA`.
+
+# UM-P3 S02 fund-plan actual-event allocation — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from the
+  accepted P3-S01 commit `f7a1201`.
+- Formal authority: `project.funding.baseline` is an approved budget baseline,
+  each `project.funding.baseline.line` is one planned budget bucket, and
+  `payment.ledger` is the occurred payment fact in this slice. A request
+  remains workflow intent and is not an allocation authority.
+- Relation carrier:
+  `project.funding.actual.event.allocation` records the explicit positive
+  amount between a plan line and an actual payment event. The carrier preserves
+  many-to-many facts; unallocated events remain valid.
+- Boundary: allocation endpoints must share project, company and currency;
+  event allocations cannot exceed the event amount. Plan capacity is exposed
+  as a non-blocking projection because no stricter budget policy exists.
+- No current-active-plan, shared-project or request relation creates an
+  allocation. No historical relation was inferred or backfilled.
+- Real-ORM evidence: isolated database
+  `sc_test_admin_vis_p3_20260726082509_9f8c7ab6` passed 107 post tests with
+  zero failures/errors. The temporary database was removed and database,
+  container, network and volume inventories exactly match their pre-run
+  digests.
+- Matrix result: 32 relations and seven closed chains. The next uniquely safe
+  gap is `PROJECT_TO_FUND_PLAN` caller-visible project and company validation:
+  `IMPLEMENT_UM_P3_S03_FUNDING_BASELINE_PROJECT_VISIBILITY`.
+
+# UM-P3 S03 funding-baseline project visibility — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` after the
+  P3-S02 audit commit `9a60edd`.
+- Formal relation remains `project.funding.baseline.project_id`; S03 adds no
+  field or new authority. Create and write resolve the target project through
+  caller-visible search without sudo, browse/exists probing, or inference.
+- Funding baseline headers now reuse the same project-responsible/follower and
+  allowed-company boundary as their lines and allocations. Finance managers
+  share records only inside allowed companies.
+- Real-ORM evidence: isolated database
+  `sc_test_admin_vis_p3_20260726083348_97ef6eec` passed 112 post tests with
+  zero failures/errors. The temporary database and all resources were removed,
+  and database/container/network/volume inventory hashes were restored.
+- Matrix result: eight chains are closed. The next highest-priority gap is
+  blocked on the authority precedence among material settlement
+  `purchase_order_id`, explicit project and explicit supplier:
+  `FORMALLY_DECIDE_MATERIAL_SETTLEMENT_PURCHASE_AUTHORITY`.
+
+# UM-P3 S05 subcontract register-settlement authority — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from the
+  accepted P3-S04 commit `43466d78`.
+- Formal authority: `construction.contract` owns project and counterparty
+  scope, `sc.subcontract.register.line` owns occurred performance facts, and
+  `sc.subcontract.settlement.line` owns settled quantity and amount facts.
+- Relation carrier: `sc.subcontract.settlement.line.register_line_id` is the
+  explicit strong relation. One settlement may preserve multiple registers
+  within one contract, and one register line may be split across settlements.
+  The settlement header is projection only.
+- Boundary: complete relation sets converge on one contract, project,
+  counterparty and company; caller-visible resolution uses no sudo or
+  heuristic matching. Direct line CRUD, nested commands and contract/register
+  mutations revalidate the final relation state.
+- Real-ORM evidence: isolated database
+  `sc_test_admin_vis_p3_20260726094713_09b5ce98` passed 134 post tests with
+  zero failures/errors. The temporary database and resources were removed,
+  and all database/container/network/volume inventory hashes were restored.
+- The repository has no unique cumulative policy connecting register-line
+  `contract_qty` or `registered_amount` to settlement-line `qty` or
+  tax-inclusive `amount_total`, nor a formal included-state or
+  cancellation/reversal rule. The explicit relation gap is closed, while
+  `CORE-033-SUBCONTRACT-REGISTER-CUMULATIVE-SETTLEMENT-POLICY` remains the
+  next blocked decision:
+  `FORMALLY_DECIDE_SUBCONTRACT_CUMULATIVE_SETTLEMENT_POLICY`.
+
+# UM-P3 S06 subcontract cumulative settlement quantity policy — 2026-07-26
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from the
+  accepted P3-S05 commit `5536de19`.
+- Formal policy: register-line `contract_qty` is the hard quantity/workload
+  cap for all explicitly related settlement-line `qty` values whose parent
+  settlement is `confirmed`. Draft, submitted and cancelled documents do not
+  consume the cap.
+- Unit and precision boundary: both models expose free-text `unit_name` rather
+  than a formal UoM relation. Effective settlement therefore requires identical
+  nonempty unit values and uses the repository `Product Unit of Measure`
+  precision; no conversion is inferred.
+- Transaction boundary: cumulative validation locks the affected register
+  lines, forces row-version conflict detection under repeatable-read isolation,
+  and converts concurrent serialization conflicts into a clear validation
+  error. Direct CRUD/import, nested commands, state transitions, relation
+  changes, quantity changes and register-cap changes all revalidate final
+  database facts.
+- Amount boundary:
+  `AMOUNT_CUMULATIVE_CONTROL=DEFERRED_PENDING_COMMON_VALUATION_BASIS`.
+  Register `registered_amount` and tax-inclusive settlement `amount_total` are
+  not treated as a hard-limit pair, and no false remaining-amount field exists.
+- Real-ORM evidence: isolated database
+  `sc_test_admin_vis_p3_20260726101100_ed88bff4` passed 167 tests with zero
+  failures/errors, including a real two-transaction over-settlement race. The
+  temporary database and resources were removed, and all
+  database/container/network/volume inventory hashes were restored.
+- Matrix result: CORE-033 is closed within comparable quantity scope.
+  Source-proven historical relation remediation remains explicit and is not
+  inferred during upgrade. The next highest-priority gap is
+  `CORE-035-SUBCONTRACT-HISTORICAL-REGISTER-RELATION-REMEDIATION`, blocked on
+  migration approval:
+  `FORMALLY_APPROVE_SOURCE_PROVEN_SUBCONTRACT_REGISTER_RELATION_MIGRATION`.
+
+# UM-P3 post-S07A external-blocker execution rerank — 2026-07-27
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` at the
+  accepted S06 commit `0aeb3e4b`.
+- S07A disposition: the accepted read-only discovery stop remains local to
+  CORE-035. Its policy stays open and its high priority is unchanged, while
+  execution waits for authorized LEGACY_SOURCE_A/LEGACY_SOURCE_B sources and an isolated
+  S05/S06-ready target:
+  `CORE_035_EXECUTION_STATE=BLOCKED_WAITING_FOR_ENVIRONMENT_OPERATOR`.
+  S07B is not approved and no migration ran.
+- Execution rerank: after excluding only the external blocker, CORE-020
+  (`payment.ledger.payment_request_id`) is the highest remaining relation.
+  Its authority, one-request-to-zero-or-one-ledger cardinality, approved-state
+  requirement, uniqueness, positive-amount and overpayment rules are already
+  explicit.
+- Permission evidence: the finance-manager `payment.request` rule is limited
+  to `company_id in company_ids`, while the finance-manager
+  `payment.ledger` rule is unconditional `[(1, '=', 1)]`. Dedicated
+  caller-visibility proof cannot close until that model-specific record rule
+  is aligned with the authoritative request company boundary.
+- Current execution result: zero candidates satisfy every safe-selection
+  gate. No product, ACL, record-rule, schema, migration or business-data
+  change was made. The unique next decision is
+  `FORMALLY_APPROVE_PAYMENT_LEDGER_ALLOWED_COMPANY_RECORD_RULE_CHANGE`.
+- CORE-034 remains lower priority and blocked on a common tax, currency,
+  valuation and adjustment basis; its amount hard limit remains deferred.
+
+# UM-P3 CORE-020 payment-ledger request-company permission closure — 2026-07-27
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `f8e567485bc1cfe30da15fd8bcf23d6e36dc5da6`.
+- Formal approval:
+  `UM_P3_CORE_020_PAYMENT_LEDGER_ALLOWED_COMPANY_RECORD_RULE`, limited to the
+  finance-manager-specific `payment.ledger` record rule.
+- Authority: required, SQL-unique `payment.ledger.payment_request_id`; the
+  ledger rule now follows `payment_request_id.company_id in company_ids`.
+  The previous unconditional `[(1, '=', 1)]` domain was removed.
+- Permission proof: isolated database
+  `sc_test_admin_vis_p3_20260727022903_52bb15f2` passed 211 tests with zero
+  failures/errors, covering A-only, B-only, A+B, search, search_count,
+  direct-ID access, mixed batches, context switching and create/write/unlink.
+  The temporary database was removed and database/container/network/volume
+  inventory hashes were unchanged.
+- Scope: no ACL, user group, other record rule, public permission framework,
+  schema, migration, payment logic or business data changed.
+- CORE-035 remains
+  `CORE_035_EXECUTION_STATE=BLOCKED_WAITING_FOR_ENVIRONMENT_OPERATOR`, open
+  and priority-preserved; S07B remains unapproved.
+- Matrix rerank: zero further safe candidates. CORE-034 remains
+  `AMOUNT_CUMULATIVE_CONTROL=DEFERRED_PENDING_COMMON_VALUATION_BASIS`; the
+  unique next decision is
+  `FORMALLY_DECIDE_SUBCONTRACT_CUMULATIVE_AMOUNT_VALUATION_BASIS`.
+# UM-P3 CORE-034 subcontract cumulative amount policy — 2026-07-27
+
+- Baseline: `b52a17cef1f8fae329872d6307859e4eca1e2c8f`.
+- Formal authority:
+  `UM_P3_CORE_034_SUBCONTRACT_CUMULATIVE_AMOUNT_VALUATION_BASIS`.
+- Existing anchors proved: `construction.contract.amount_total/currency_id`,
+  `sc.subcontract.register.registered_amount/currency_id/state`,
+  `sc.subcontract.settlement.amount_total/currency_id/state`, and explicit
+  `sc.subcontract.settlement.line.register_line_id`.
+- Effective register tax-included totals (`active`, `closed`) and confirmed
+  settlement tax-included totals are bounded by contract `amount_total` in exact
+  contract currency. Explicit settlement-line totals are additionally bounded
+  by the related register-line `registered_amount`.
+- No implicit FX, tax inference, absolute-value normalization, schema change,
+  migration, ACL, or record-rule change was introduced. Currency comparison
+  reuses authoritative currency rounding.
+- Ordered contract-row database locks serialize competing effective writes;
+  final-state ORM aggregation is repeated after create/write/state transition
+  and contract-line amount mutations.
+- Isolated real ORM acceptance:
+  `sc_test_admin_vis_p3_20260727030941_8bc331bc`, 259 tests, 0 failures,
+  0 errors. The temporary database was removed, residue is zero, and database,
+  container, network, and volume inventories are unchanged.
+- CORE-035 remains
+  `BLOCKED_WAITING_FOR_ENVIRONMENT_OPERATOR`; no source scan or historical
+  inference was performed. After excluding that external blocker, no further
+  safe candidate exists. The unique next input is
+  `PROVIDE_AUTHORIZED_LEGACY_SOURCE_A_LEGACY_SOURCE_B_SOURCE_AND_ISOLATED_TARGET`.
+
+# UM-P3 CORE-035 S07A source profiling — 2026-07-27
+
+- Authorization:
+  `OWNER_APPROVAL_CORE035_S07A_SERVER_DISCOVERY_20260726`.
+- The source was found in the `sc-root` user-module custody artifacts, not on
+  `sc-prod`: the LEGACY_SOURCE_A and LEGACY_SOURCE_B strict parity captures share the
+  `20260601T130457Z` evidence point and are Git-tracked with recorded SHA-256.
+- LEGACY_SOURCE_A has no subcontract-register or subcontract-settlement surface.
+  LEGACY_SOURCE_B contains 86 contract rows, 721 register-line capture rows, and 88
+  settlement rows.
+- Source classification is 0 exact authoritative keys, 0 immutable composite
+  keys, 76 ambiguous attribute-only candidates, and 12 conflicting false
+  `pid`/`RowIndex` matches. Every false match crosses project; 11 also cross
+  counterparty.
+- Dedicated target
+  `sc_migration_core035_s07a_20260727035410_acab0f53` contains current S05/S06
+  models and zero initial subcontract business rows. Only a sanitized aggregate
+  profile was stored in `core035_analysis`; the second identical run changed
+  zero rows.
+- No source, existing database, product code, ACL, record rule, schema, or
+  historical relation was modified. S07B remains unapproved.
+- CORE-035 remains open and priority-preserved, now with
+  `CORE_035_EXECUTION_STATE=BLOCKED_SOURCE_PROVEN_RELATION_EVIDENCE_REQUIRED`.
+  The unique next input is
+  `PROVIDE_AUTHORIZED_AUDITED_SETTLEMENT_LINE_TO_REGISTER_LINE_MAPPING_OR_DOCUMENT_CONFIRMATION_SET`.
+
+# UM-P3 CORE-035 S07A-C manual confirmation set — 2026-07-27
+
+- Baseline: `da25c8afc903b0358b8a3e5ef59b77c4646848ad`.
+- Prepared 88 stable, content-derived review items from the verified LEGACY_SOURCE_B
+  capture: 76 attribute-only candidates remain `PENDING`; 12 false-link
+  conflicts remain `ESCALATED/REQUIRE_SOURCE_DOCUMENT`.
+- The package preserves all finite candidates as hashed references and records
+  consistency outcomes only. It does not rank, recommend, pre-confirm, or emit
+  a migration mapping.
+- `pid -> RowIndex` remains explicitly prohibited. All 12 superficial matches
+  cross project and 11 also cross counterparty.
+- The authorization template is unsigned. Authorized-final count is zero;
+  S07B remains unapproved and no migration or relation remediation ran.
+- The retained S07A target was restored after ORM verification and now contains
+  zero subcontract business rows, zero `register_line_id` relations, and one
+  sanitized aggregate profile. The independent regression run passed 259 tests
+  with zero failures and zero errors.
+- Current state:
+  `CORE_035_EXECUTION_STATE=S07AC_CONFIRMATION_SET_READY`.
+- Unique next decision:
+  `ASSIGN_AUTHORIZED_BUSINESS_OWNER_DATA_STEWARD_AND_SECOND_REVIEWER`.
+
+# CORE-035 UAT role context and shell stability — 2026-07-28
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `ad99156a40e46a84c93d5a6ed3f049f9bc901227`.
+- Formal Product Layer: P1 construction-industry role contract plus the
+  generic frontend shell renderer. No customer data or permission semantics
+  moved into the shared frontend.
+- The standard `executive` role now publishes the customer-facing label
+  `管理层`. `AppShell` consumes that contract and exposes an operative account
+  context panel with the current role, user, company and existing logout
+  action; the shell does not contain a role-code translation dictionary.
+- The UAT shell now removes the browser's default document margin, includes
+  sidebar padding inside the viewport height, reserves the shared 52px toolbar
+  height, keeps a stable scrollbar gutter and reserves the full routed-page
+  height during async loading.
+- Public UAT browser proof covered both CORE-035 accounts and all 94 business
+  routes. No raw `executive` label, denied page, horizontal overflow or browser
+  error remained. Before/after geometry reduced maximum routed-page loading
+  expansion from `728.19px` to `71px`; shell, sidebar, content, topbar and
+  router-host geometry stayed identical across all 94 routes.
+- The same viewport contract passed at `1280x800`, `1440x1000` and
+  `1920x1080`. UAT business data, permissions, historical relations and
+  financial guards were not modified.
+
+# Shared list and kanban loading continuity — 2026-07-28
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `7c2481e2e80e5c6dc3702a4095ae8c2b9db68577`.
+- Formal Product Layer: P0 generic frontend runtime; Layer Target:
+  `frontend renderer`; Module: `frontend/apps/web`.
+- Reason / Why Here: the shared list and kanban renderers owned a generic
+  loading lifecycle that cleared the resolved native-view structure and
+  records before every request. The fix contains no construction-industry,
+  role, customer or record semantics.
+- Why Not Elsewhere: backend contracts already provide the authoritative view
+  and data. A customer module, low-code configuration or runtime data repair
+  cannot provide consistent first-load and refresh feedback across actions.
+- First load now renders a stable, structure-matched list or kanban skeleton
+  instead of stretching a small status alert over the workspace. Subsequent
+  pagination, filter and refresh requests retain the previously rendered
+  records and expose a non-layout-shifting progress indicator.
+- Delayed-request geometry is identical before and after resolution:
+  list `toolbar=42px/main=790px/page=952px`; kanban
+  `toolbar=47px/main=939px/page=1175px`. Route-selected kanban mode is applied
+  before the first request so the page never flashes a list-shaped placeholder.
+- Blast Radius: shared action list and kanban surfaces only. Delayed-request
+  browser proof covers initial loading and retained-content refresh; typecheck,
+  production build, route regression and `git diff --check` verify containment.
+- UAT data, permissions, historical relations and financial guards remain
+  unchanged.
+
+# Business workspace inline-gutter consolidation — 2026-07-28
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `66df2695dbd8cb1959ec933b03fdc151c2117a8f`.
+- Formal Product Layer: P0 generic frontend shell; Layer Target:
+  `frontend renderer/AppShell`; Module: `frontend/apps/web`.
+- Reason / Why Here: the desktop routed workspace accumulated AppShell's
+  14px inline inset and the shared page frame's 32px inset. This generic
+  double gutter placed the first business surface 46px from the sidebar
+  divider. Neither customer configuration nor backend data owns that visual
+  geometry.
+- The business router now extends to the sidebar divider and the routed page
+  owns one 20px desktop inline gutter. Configuration routes keep their
+  existing shell geometry; mobile business routes retain a 16px safe gutter.
+- Public UAT browser measurements at 1440px changed
+  `divider -> page frame` from 14px to 0 and
+  `divider -> business surface` from 46px to 20px. The sampled table width
+  increased from 1097px to 1149px without horizontal overflow.
+- The same 20px contract passed at 1280px and 1920px. The 900px responsive
+  shell passed with a 16px content gutter. Sequential route regression
+  passed 50/50 and 44/44 routes with no access denial, loading residue,
+  browser error or horizontal overflow.
+- Blast Radius: shared non-configuration business workspace geometry only.
+  UAT data, permissions, historical relations and financial guards remain
+  unchanged.
+
+# Business configuration frontend type-contract closure — 2026-07-28
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `dd77b3383db1dc388d008b3ed2d8309d07e3ce89`.
+- Formal Product Layer: P0 generic frontend business-configuration contract;
+  Layer Target: `frontend API/runtime consumer`; Module: `frontend/apps/web`.
+- The staged change-set request type now includes the backend-supported
+  optional `contract_name` lookup key. No new transport or backend field was
+  introduced.
+- Form configuration reads precheck warnings only from responses that
+  actually carry a precheck object. Staged change-set responses remain typed
+  as change sets instead of being falsely widened with a standalone-save
+  response field.
+- Menu configuration now derives its target key from the company returned by
+  the authoritative configuration panel. Missing company context blocks the
+  save explicitly rather than relying on the nonexistent `session.companyId`
+  property or emitting a `menu.config.company.0` target.
+- Standard typecheck, strict typecheck, affected-source ESLint and production
+  build all pass. The change does not alter UAT data, permissions, published
+  configuration, historical relations or financial guards.
+
+# Single-divider business workspace boundary — 2026-07-28
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `306a598aa486beb3f96e214aa01b2dd91ea99b58`.
+- Formal Product Layer: P0 generic frontend shell and list renderer; Layer
+  Target: `frontend presentation`; Module: `frontend/apps/web`.
+- Browser inspection proved that the previous seam contained three vertical
+  strokes: the nested navigation card at x=221, the formal sidebar boundary
+  at x=236, and the primary table shell at x=256.
+- The navigation region is now a flat, transparent surface without an outer
+  card border. The primary list table retains horizontal structure and row
+  separators but removes inline borders and panel shadow. The 20px business
+  content gutter remains unchanged.
+- Initial list loading uses the same flat boundary contract as the resolved
+  table: both inline borders and shadow compute to none. Loading and resolved
+  geometry remain identical at `toolbar=42px`, `main=790px`,
+  `page=952px`.
+- Public UAT proof leaves exactly one shell separator: the sidebar's 1px
+  inline-end border. Sequential navigation regression passed 50/50 and 44/44
+  routes with no denied page, residual loading state, browser error or
+  horizontal overflow.
+- Blast Radius: generic sidebar navigation presentation and primary list
+  surfaces only. Form panels, dialogs, cards, UAT data, permissions,
+  historical relations and financial guards remain unchanged.
+
+# List-to-form loading continuity — 2026-07-28
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `24c7f57c1891a1ad5c9b0f53e9abca223c0924b7`.
+- Formal Product Layer: P0 generic record-form renderer; Layer Target:
+  `frontend presentation/runtime continuity`; Module: `frontend/apps/web`.
+- Delayed-request browser inspection proved that the old transition rendered
+  an incomplete real form header at `323.6px` high and a second `449px`
+  status card. The resolved header was only `38px`, so the route visibly
+  changed structure while loading.
+- Initial record loading now renders one structure-matched form skeleton.
+  Its header and body use the resolved form's exact horizontal frame, with a
+  `38px` header and the body starting at `y=193px`. The generic status card
+  is no longer part of a successful form load.
+- A refresh after the form contract is available retains the existing form,
+  disables transient interaction and shows a reduced-motion-aware progress
+  edge instead of replacing the page.
+- A 2.2-second delayed public-UAT click from customer list to record form
+  passed with `statusPanel=false`, loading and resolved width `1149px`,
+  identical header geometry, identical body start, and zero browser or
+  console errors.
+- Blast Radius: shared record-form initial loading and refresh feedback only.
+  UAT data, permissions, historical relations and financial guards remain
+  unchanged.
+
+# Personal-data hash-boundary scan correction — 2026-07-28
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `78168407a105de5ba800fadc1ac49a4e23fb765b`.
+- Formal Product Layer: P4 delivery security tooling; Layer Target:
+  `repository personal-data gate`; Module: `scripts/ci`.
+- Pre-merge scanning identified an 11-digit sequence embedded inside a
+  40-character anonymized candidate reference. The sequence was not an
+  independently delimited phone number and no matched value was printed.
+- The mobile-phone rule now requires an alphanumeric boundary on both sides,
+  preserving rejection of standalone mobile numbers while avoiding false
+  classification of hash-internal digit runs. A focused regression locks both
+  behaviors.
+- Blast Radius: repository personal-data scanning only. No audit record,
+  business data, product runtime, UAT permission or financial behavior changed.
+
+# Tenant-neutral P3 governance projection — 2026-07-28
+
+- Branch / anchor: `feature/user-module-personal-data-visibility` from
+  `771510bc4ae8b7526177b75f4f302878fa88c565`.
+- Formal Product Layer: P0/P1 product governance with P4 delivery evidence;
+  Layer Target: `tenant-neutral product repository boundary`; Modules:
+  `docs/audit/um_p3`, `scripts/verify`, `scripts/ops`, and frontend guard tests.
+- Pre-merge product-boundary validation found legacy tenant source names in
+  otherwise anonymized governance references. Those names are delivery
+  identities, not platform or construction-standard semantics.
+- The product-tree projection now uses `LEGACY_SOURCE_A` and
+  `LEGACY_SOURCE_B`. The 88 review-item identifiers remain content-derived and
+  stable, while their evidence digests, package hash and authorization-template
+  hashes were rebuilt deterministically.
+- Validation preserves all governance counts and prohibitions:
+  `88=76+12`, zero authorized mappings, no migration, and no S07B approval.
+  The tenant payload boundary reports zero fixed customer identifiers and zero
+  customer payload files.
+- Blast Radius: names and derived digests in anonymized governance evidence and
+  related guard fixtures only. Product runtime, UAT data, permissions,
+  financial controls and historical relation decisions are unchanged.

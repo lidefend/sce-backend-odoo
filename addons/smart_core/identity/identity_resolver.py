@@ -199,6 +199,12 @@ class IdentityResolver:
             merged["label"] = label.strip()
         if isinstance(role_override.get("deny_all_navigation"), bool):
             merged["deny_all_navigation"] = role_override["deny_all_navigation"]
+        for field in (
+            "discover_installed_capabilities",
+            "system_configuration_visible",
+        ):
+            if isinstance(role_override.get(field), bool):
+                merged[field] = role_override[field]
         return merged
 
     def _walk_nav_nodes(self, nodes):
@@ -352,6 +358,8 @@ class IdentityResolver:
             "model_prefix_blocklist": model_prefix_blocklist,
             "group_key_blocklist": group_key_blocklist,
             "deny_all_navigation": bool(role_meta.get("deny_all_navigation")),
+            "discover_installed_capabilities": bool(role_meta.get("discover_installed_capabilities")),
+            "system_configuration_visible": bool(role_meta.get("system_configuration_visible")),
         }
         landing_entry_target = build_scene_entry_target(
             scene_key=landing_scene_key,
@@ -378,6 +386,8 @@ class IdentityResolver:
                 "contextual_action_authorities": list(role_meta.get("contextual_action_authorities") or []),
                 "admin_action_authorities": list(role_meta.get("admin_action_authorities") or []),
                 "denied_action_authorities": list(role_meta.get("denied_action_authorities") or []),
+                "discover_installed_capabilities": bool(role_meta.get("discover_installed_capabilities")),
+                "system_configuration_visible": bool(role_meta.get("system_configuration_visible")),
                 "exposure_policy_declared": any(
                     field in role_meta
                     for field in (

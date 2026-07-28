@@ -347,6 +347,7 @@ export function actionResponseNavQuery(
     : {};
   return pickContractNavQuery(currentQuery, {
     action_id: payload.action_id || rawAction.id || rawAction.action_id || refs.action_id,
+    view_id: payload.view_id || rawAction.view_id || refs.view_id,
     domain_raw: payload.domain_raw || rawAction.domain_raw || refs.domain_raw,
     context_raw: payload.context_raw || rawAction.context_raw || refs.context_raw,
     ...(extra || {}),

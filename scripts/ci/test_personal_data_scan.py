@@ -28,6 +28,16 @@ class PersonalDataScanTests(unittest.TestCase):
         text = "id=DEMO-ID-001 phone=DEMO-PHONE-001 bank_account=DEMO-ACCOUNT-001"
         self.assertEqual(personal_data_scan.scan_text(text, "fixture.txt", "b" * 40), [])
 
+    def test_hash_embedded_phone_shaped_digits_pass(self) -> None:
+        text = (
+            "candidate_ref=abcdef01234a"
+            + "139"
+            + "1234"
+            + "5678"
+            + "babcdef012345"
+        )
+        self.assertEqual(personal_data_scan.scan_text(text, "fixture.txt", "d" * 40), [])
+
     def test_main_never_prints_match_values(self) -> None:
         sensitive = "139" + "1234" + "5678"
         finding = personal_data_scan.scan_text(sensitive, "fixture.txt", "c" * 40)[0]

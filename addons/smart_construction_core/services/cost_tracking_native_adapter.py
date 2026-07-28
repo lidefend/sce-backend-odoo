@@ -42,7 +42,6 @@ class CostTrackingNativeAdapter:
         Move = self._model("account.move")
         if Move is None or not project:
             return []
-        Move = Move.sudo()
         try:
             rows = Move.search(self.move_domain(project), order="date desc,id desc", limit=max(int(limit or 0), 0))
         except Exception:
@@ -77,7 +76,6 @@ class CostTrackingNativeAdapter:
             return summary
 
         if Ledger is not None:
-            Ledger = Ledger.sudo()
             try:
                 ledger_rows = Ledger.search(self.ledger_domain(project), order="date desc,id desc")
             except Exception:
@@ -109,8 +107,6 @@ class CostTrackingNativeAdapter:
         if Move is None:
             summary["recent_moves"] = moves
             return summary
-        Move = Move.sudo()
-
         try:
             all_moves = Move.search(self.move_domain(project), order="date desc,id desc")
         except Exception:

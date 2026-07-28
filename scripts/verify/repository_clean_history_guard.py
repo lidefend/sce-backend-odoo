@@ -44,8 +44,8 @@ SECRET_PATTERNS = (
     re.compile(rb"-----BEGIN (?:RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----"),
 )
 PERSONAL_DATA_PATTERNS = (
-    re.compile(rb"(?<!\d)[1-9]\d{5}(?:18|19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[0-9Xx](?!\d)"),
-    re.compile(rb"(?<!\d)1[3-9]\d{9}(?!\d)"),
+    re.compile(rb"(?<![0-9A-Za-z])[1-9]\d{5}(?:18|19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[0-9Xx](?![0-9A-Za-z])"),
+    re.compile(rb"(?<![0-9A-Za-z])1[3-9]\d{9}(?![0-9A-Za-z])"),
 )
 
 

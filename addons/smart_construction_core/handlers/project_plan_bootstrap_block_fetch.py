@@ -59,7 +59,7 @@ class ProjectPlanBootstrapBlockFetchHandler(ProjectContextResolverMixin, BaseInt
                     "suggested_action": "fix_input",
                 },
                 "data": {
-                    "lifecycle_hints": self._build_lifecycle_hints(project_id),
+                    "lifecycle_hints": self._build_lifecycle_hints(0),
                 },
                 "meta": {
                     "intent": self.INTENT_TYPE,
@@ -69,6 +69,30 @@ class ProjectPlanBootstrapBlockFetchHandler(ProjectContextResolverMixin, BaseInt
                 },
             }
 
+        resolution = self._resolve_project_scope(params, ctx)
+        orchestrator = ProjectPlanBootstrapSceneOrchestrator(resolution.env)
+        source_authority = orchestrator.source_authority_contract()
+        if not resolution.available:
+            return {
+                "ok": False,
+                "error": {
+                    "code": "PROJECT_NOT_FOUND",
+                    "message": "项目不存在或当前账号不可访问",
+                    "suggested_action": "fix_input",
+                },
+                "data": {
+                    "lifecycle_hints": self._build_lifecycle_hints(0),
+                },
+                "meta": {
+                    "intent": self.INTENT_TYPE,
+                    "elapsed_ms": int((time.time() - ts0) * 1000),
+                    "trace_id": str((self.context or {}).get("trace_id") or ""),
+                    "source_authority": source_authority,
+                },
+            }
+
+        project_id = int(resolution.project.id)
+        orchestrator._service.bind_authorized_resolution(resolution)
         data = orchestrator.build_runtime_block(block_key=block_key, project_id=project_id, context=ctx)
         return {
             "ok": True,

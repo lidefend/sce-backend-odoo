@@ -77,6 +77,7 @@ from odoo.addons.smart_core.core.scene_nav_contract_builder import build_scene_n
 from odoo.addons.smart_core.core.scene_ready_contract_builder import build_scene_ready_contract_v1
 from odoo.addons.smart_core.core.ui_base_contract_asset_repository import bind_scene_assets
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
+from odoo.addons.smart_core.delivery.menu_service import MenuService
 from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
 from odoo.addons.smart_core.delivery.release_audit_trail_service import ReleaseAuditTrailService
 from odoo.addons.smart_core.delivery.product_identity import LEGACY_DEFAULT_BASE_PRODUCT_KEY
@@ -2125,6 +2126,13 @@ class SystemInitHandler(BaseIntentHandler):
         }
         delivery_nav = delivery_payload.get("nav") if isinstance(delivery_payload.get("nav"), list) else []
         if delivery_nav and not platform_minimum_surface_mode:
+            # Delivery and user-menu overlays must remain inside the resolved
+            # role projection. Re-apply the authoritative role surface after
+            # those stages so blocked configuration routes cannot be reintroduced.
+            delivery_nav = MenuService._filter_role_surface_nodes(
+                delivery_nav,
+                role_surface if isinstance(role_surface, dict) else {},
+            )
             delivery_nav, user_data_acceptance_meta = _filter_nav_for_user_data_acceptance_only(env, delivery_nav)
             if not user_data_acceptance_meta.get("applied"):
                 user_data_acceptance_meta = {
@@ -2174,6 +2182,9 @@ class SystemInitHandler(BaseIntentHandler):
                 }
             data["nav_role_surface"] = data.get("nav") if isinstance(data.get("nav"), list) else []
             data["nav"] = delivery_nav
+            # Any later startup-surface restoration must use this fully
+            # filtered projection, never the pre-role/pre-overlay snapshot.
+            _delivery_authoritative_nav = list(delivery_nav)
             nav_meta = data.get("nav_meta") if isinstance(data.get("nav_meta"), dict) else {}
             nav_meta["nav_source"] = "delivery_engine_v1"
             nav_meta["primary_nav_promoted_from"] = "release_navigation_v1"
@@ -2289,6 +2300,19 @@ class SystemInitHandler(BaseIntentHandler):
             pass
         data = _normalize_access_suggested_action(data)
         data["project_context"] = build_record_context_contract(env, params)
+        # Bind route authority to the final navigation projection. Customer
+        # acceptance overlays and late delivery normalization can add or
+        # re-key legitimate menu/action pairs after DeliveryEngine.build().
+        # A visible route and its authority must be emitted from the same
+        # finalized tree or the SPA will expose a menu that it then denies.
+        _final_navigation = data.get("nav") if isinstance(data.get("nav"), list) else []
+        _final_route_authority = delivery_engine.menu_service.build_route_authority(
+            role_surface,
+            nav=_final_navigation,
+        )
+        data["route_authority_v1"] = _final_route_authority
+        data["delivery_engine_v1"] = dict(data.get("delivery_engine_v1") or {})
+        data["delivery_engine_v1"]["route_authority_v1"] = _final_route_authority
         _route_company_id = int((data.get("project_context") or {}).get("company_id") or env.company.id)
         for _route_contract in (
             data.get("route_authority_v1"),
