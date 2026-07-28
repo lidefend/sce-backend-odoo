@@ -1,0 +1,94 @@
+{
+  "schema_version": "frontend-release-gate-policy/v1",
+  "authoritative_command": "cd frontend/apps/web && pnpm test:release",
+  "workflow": ".github/workflows/frontend_release_gate.yml",
+  "job_id": "frontend_release_gate",
+  "check_name": "frontend_release_gate",
+  "events": [
+    "pull_request",
+    "push:main",
+    "workflow_dispatch"
+  ],
+  "required_sections": [
+    "accessibility",
+    "delivery_hardening",
+    "error_recovery",
+    "navigation",
+    "performance",
+    "responsive",
+    "static"
+  ],
+  "artifact": {
+    "name_prefix": "frontend-release-evidence",
+    "retention_days": 14,
+    "source_scope": "same_job_same_run_same_checkout",
+    "downloaded_historical_artifacts_allowed": false
+  },
+  "required_checks_before": [
+    "public_guard",
+    "professional_authorization",
+    "professional_quality_gate"
+  ],
+  "required_checks_after": [
+    "public_guard",
+    "professional_authorization",
+    "professional_quality_gate",
+    "frontend_release_gate"
+  ],
+  "release_entrypoint_inventory": [
+    {
+      "workflow": ".github/workflows/frontend_release_gate.yml",
+      "job_id": "frontend_release_gate",
+      "check_name": "frontend_release_gate",
+      "command": "cd frontend/apps/web && pnpm test:release",
+      "final_release_authority": true,
+      "sha_bound": true,
+      "failure_closed": true
+    },
+    {
+      "workflow": ".github/workflows/professional_quality_gate.yml",
+      "job_id": "professional_quality_gate",
+      "check_name": "professional_quality_gate",
+      "command": "make ci",
+      "final_release_authority": false,
+      "sha_bound": true,
+      "failure_closed": true
+    },
+    {
+      "workflow": ".github/workflows/public_guard.yml",
+      "job_id": "public_guard",
+      "check_name": "public_guard",
+      "command": "repository and workflow security guards",
+      "final_release_authority": false,
+      "sha_bound": true,
+      "failure_closed": true
+    },
+    {
+      "workflow": ".github/workflows/demo-ci.yml",
+      "job_id": "demo_ci",
+      "check_name": "demo_ci",
+      "command": "make demo.ci",
+      "final_release_authority": false,
+      "sha_bound": true,
+      "failure_closed": true
+    },
+    {
+      "workflow": ".github/workflows/infra-stage-gate.yml",
+      "job_id": "infra_stage_gate",
+      "check_name": "infra_stage_gate",
+      "command": "staging diagnostics",
+      "final_release_authority": false,
+      "sha_bound": true,
+      "failure_closed": true
+    },
+    {
+      "workflow": ".github/workflows/sc_smoke.yml",
+      "job_id": "smoke",
+      "check_name": "smoke",
+      "command": "smoke and validator diagnostics",
+      "final_release_authority": false,
+      "sha_bound": true,
+      "failure_closed": false
+    }
+  ]
+}

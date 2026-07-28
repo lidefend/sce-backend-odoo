@@ -116,10 +116,11 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     const contextRaw = String(route.query.context_raw || '').trim();
     const requestedViewId = toPositiveInt(route.query.view_id) || toPositiveInt(route.query.viewId) || 0;
     let response: Awaited<ReturnType<typeof loadActionContractRaw>> | null = null;
-    if (actionId.value) {
+    if (actionId.value && recordId.value) {
       try {
         response = await loadActionContractRaw(actionId.value, {
           menuId: menuId.value || undefined,
+          viewType: 'form',
           viewId: requestedViewId || undefined,
           recordId: recordId.value,
           renderProfile: profile,
@@ -141,6 +142,8 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     }
     if (!response && currentModel) {
       response = await loadModelContractRaw(currentModel, {
+        actionId: actionId.value || undefined,
+        menuId: menuId.value || undefined,
         viewType: 'form',
         viewId: requestedViewId || undefined,
         recordId: recordId.value,

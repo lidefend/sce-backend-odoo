@@ -21,6 +21,11 @@ COMMANDS = {
     "lint": ["pnpm", "--dir", "frontend/apps/web", "run", "lint"],
     "strict_typecheck": ["pnpm", "--dir", "frontend/apps/web", "run", "typecheck:strict"],
     "production_build": ["pnpm", "--dir", "frontend/apps/web", "run", "build"],
+    "production_build_fingerprint": [
+        "bash",
+        "scripts/verify/frontend_build_fingerprint.sh",
+        "frontend/apps/web/dist",
+    ],
 }
 
 

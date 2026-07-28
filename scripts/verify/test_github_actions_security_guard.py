@@ -156,6 +156,28 @@ jobs:
             )
         )
 
+    def test_frontend_release_workflow_contract_is_required(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "frontend_release_gate.yml",
+                f"""name: frontend_release_gate
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  frontend_release_gate:
+    name: frontend_release_gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@{PIN}
+""",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("FRONTEND_RELEASE_TRUST_BOUNDARY_INCOMPLETE", classes)
+
 
 if __name__ == "__main__":
     unittest.main()

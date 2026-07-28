@@ -49,6 +49,24 @@ def main() -> int:
         errors,
     )
     _assert(
+        "viewType: 'form'," in record_page_lifecycle,
+        "record page lifecycle action contract request must select the form view directly",
+        errors,
+    )
+    _assert(
+        "if (actionId.value && recordId.value)" in record_page_lifecycle
+        and "actionId: actionId.value || undefined" in record_page_lifecycle
+        and "menuId: menuId.value || undefined" in record_page_lifecycle,
+        "create form must use one model contract request while preserving action/menu authority",
+        errors,
+    )
+    _assert(
+        "params.action_id = actionId;" in contract_api
+        and "params.menu_id = menuId;" in contract_api,
+        "model contract request must preserve action/menu scope",
+        errors,
+    )
+    _assert(
         'params.get("view_id")' in ui_contract_v2 and 'params.get("viewId")' in ui_contract_v2,
         "ui.contract.v2 must preserve explicit view_id/viewId",
         errors,

@@ -21,6 +21,7 @@ type LoadActionContractOptions = {
 };
 
 type LoadModelContractOptions = LoadActionContractOptions & {
+  actionId?: number | null;
   viewType?: 'form' | 'tree' | 'kanban';
 };
 
@@ -157,6 +158,14 @@ function buildModelContractParams(model: string, options?: LoadModelContractOpti
     model: String(model || '').trim(),
     view_type: options?.viewType || 'form',
   };
+  const actionId = Number(options?.actionId || 0);
+  if (Number.isFinite(actionId) && actionId > 0) {
+    params.action_id = actionId;
+  }
+  const menuId = Number(options?.menuId || 0);
+  if (Number.isFinite(menuId) && menuId > 0) {
+    params.menu_id = menuId;
+  }
   const viewId = Number(options?.viewId || 0);
   if (Number.isFinite(viewId) && viewId > 0) {
     params.view_id = viewId;

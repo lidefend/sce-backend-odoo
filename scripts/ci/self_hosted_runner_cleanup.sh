@@ -6,7 +6,7 @@ workspace="${GITHUB_WORKSPACE:-}"
 runner_temp="${RUNNER_TEMP:-}"
 run_id="${GITHUB_RUN_ID:-}"
 
-if [[ ! "${project}" =~ ^sc-prof-[0-9]+$ ]]; then
+if [[ ! "${project}" =~ ^sc-(prof|fe-release)-[0-9]+$ ]]; then
   echo "[self_hosted_cleanup] invalid project scope" >&2
   exit 2
 fi

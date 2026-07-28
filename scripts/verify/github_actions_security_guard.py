@@ -108,6 +108,26 @@ def scan(root: Path) -> list[Finding]:
             )
             if any(item not in text for item in required):
                 findings.add(Finding("GA012", relative, "PROFESSIONAL_TRUST_BOUNDARY_INCOMPLETE"))
+        if path.name == "frontend_release_gate.yml":
+            required = (
+                "push:\n    branches: [main]",
+                "frontend_release_gate:",
+                "name: frontend_release_gate",
+                "github.event.pull_request.head.repo.full_name == github.repository",
+                "github.event_name == 'push'",
+                "github.ref == 'refs/heads/main'",
+                "github.actor == github.repository_owner",
+                "cd frontend/apps/web",
+                "pnpm test:release",
+                "steps.release.outcome",
+                "frontend_release_gate.py",
+                "github.run_id",
+                "github.run_attempt",
+                "retention-days: 14",
+                "scripts/ci/self_hosted_runner_cleanup.sh",
+            )
+            if any(item not in text for item in required):
+                findings.add(Finding("GA013", relative, "FRONTEND_RELEASE_TRUST_BOUNDARY_INCOMPLETE"))
     return sorted(findings)
 
 
