@@ -2,7 +2,10 @@
   <section v-if="showDefaultSectionTitle || mode !== 'readonly'" class="native-default-section-head">
     <div>
       <h3>{{ mode === 'create' ? '填写业务信息' : mode === 'edit' ? '编辑业务信息' : '基本信息' }}</h3>
-      <p v-if="mode !== 'readonly'">{{ mode === 'create' ? '按业务顺序填写，带必填标识的项目需要完成后才能保存。' : '修改会保留在当前页面，保存成功后才会更新业务记录。' }}</p>
+      <p v-if="mode !== 'readonly'">
+        {{ mode === 'create' ? '按业务顺序填写；带必填标识的项目需要完成后才能保存。' : '修改会保留在当前页面，保存成功后才会更新业务记录。' }}
+        只读信息不可修改，自动计算结果以保存后的记录为准。
+      </p>
     </div>
     <span v-if="mode !== 'readonly'" class="native-form-mode-note">{{ dirty ? '有未保存修改' : '尚未修改' }}</span>
   </section>

@@ -5,32 +5,34 @@
       <p v-if="showHud && contractMetaLine" class="meta">{{ contractMetaLine }}</p>
     </template>
     <template #status>
-      <div class="record-header-context" aria-label="页面模式">
-        <strong>{{ modeLabel }}</strong>
-        <span v-if="dirty">{{ changedFieldCount > 0 ? `已修改 ${changedFieldCount} 项` : '有未保存修改' }}</span>
-        <span v-else-if="mode !== 'readonly'">尚未修改</span>
+      <div class="record-header-status">
+        <div class="record-header-context" aria-label="页面模式">
+          <strong>{{ modeLabel }}</strong>
+          <span v-if="dirty">{{ changedFieldCount > 0 ? `已修改 ${changedFieldCount} 项` : '有未保存修改' }}</span>
+          <span v-else-if="mode !== 'readonly'">尚未修改</span>
+        </div>
+        <div v-if="intakeMode" class="record-header-intake">
+          <p class="header-status-item">当前进度：{{ intakeRequiredSummary }}</p>
+          <p class="header-status-item" :class="{ 'header-status-item--danger': intakeMissingSummary !== '无' }">缺少：{{ intakeMissingSummary }}</p>
+        </div>
+        <section v-else-if="statusbar.visible" class="native-statusbar native-statusbar--header" aria-label="业务状态">
+          <button
+            v-for="item in statusbar.states"
+            :key="String(item.value)"
+            type="button"
+            class="native-statusbar-step"
+            :class="{ 'native-statusbar-step--active': statusbar.current === String(item.value), 'native-statusbar-step--done': statusbar.reachedValues.includes(String(item.value)) }"
+            :disabled="busy || statusbar.readonly"
+            @click="$emit('set-status', String(item.value))"
+          >{{ item.label }}</button>
+        </section>
       </div>
-      <template v-if="intakeMode">
-        <p class="header-status-item">当前进度：{{ intakeRequiredSummary }}</p>
-        <p class="header-status-item" :class="{ 'header-status-item--danger': intakeMissingSummary !== '无' }">缺少：{{ intakeMissingSummary }}</p>
-      </template>
-      <section v-else-if="statusbar.visible" class="native-statusbar native-statusbar--header" aria-label="业务状态">
-        <button
-          v-for="item in statusbar.states"
-          :key="String(item.value)"
-          type="button"
-          class="native-statusbar-step"
-          :class="{ 'native-statusbar-step--active': statusbar.current === String(item.value), 'native-statusbar-step--done': statusbar.reachedValues.includes(String(item.value)) }"
-          :disabled="busy || statusbar.readonly"
-          @click="$emit('set-status', String(item.value))"
-        >{{ item.label }}</button>
-      </section>
     </template>
     <template #actions>
       <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('back')">返回列表</button>
       <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" @click="$emit('return-workbench')">返回工作台</button>
       <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
-      <button v-if="showPrimaryFormAction" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" @click="$emit('run-primary')">{{ submitLabel }}</button>
+      <button v-if="showPrimaryFormAction" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" @click="$emit('run-primary')">{{ submitLabel }}</button>
       <button v-for="action in directActions" :key="`hdr-${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" @click="$emit('run-action', action)">{{ action.label }}</button>
       <details v-if="overflowActions.length" class="contract-header-more-actions">
         <summary class="sc-btn sc-btn-ghost sc-btn-sm">更多操作</summary>
@@ -56,7 +58,7 @@ defineProps<{
   intakeMissingSummary: string; statusbar: NativeStatusbarVm; busy: boolean; showReturn: boolean;
   mode: 'create' | 'edit' | 'readonly'; modeLabel: string; dirty: boolean; changedFieldCount: number;
   showDraftSave: boolean; draftSaveDisabled: boolean; draftSaveLabel: string; showPrimaryFormAction: boolean;
-  primaryFormActionDisabled: boolean; submitLabel: string; directActions: ContractAction[]; overflowActions: ContractAction[];
+  primaryFormActionDisabled: boolean; primaryFormActionHint: string; submitLabel: string; directActions: ContractAction[]; overflowActions: ContractAction[];
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
   discardLabel: string; reloadLabel: string;
 }>();
@@ -72,9 +74,11 @@ function buttonClass(action: ContractAction) {
 </script>
 
 <style scoped>
+.record-header-status { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; }
 .record-header-context { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px; color: var(--sc-app-text-secondary); font-size: 12px; white-space: nowrap; }
 .record-header-context strong { padding: 4px 8px; border: 1px solid var(--sc-app-border); border-radius: 999px; background: var(--sc-app-panel-muted); color: var(--sc-app-text-primary); font-size: 12px; }
 .record-header-context span { font-weight: 600; }
+.record-header-intake { display: grid; gap: 2px; }
 .contract-header-action-separator { align-self: center; width: 1px; height: 16px; background: var(--sc-app-border); }
 .contract-header-more-actions { position: relative; }
 .contract-header-more-actions > summary { list-style: none; cursor: pointer; }
@@ -83,6 +87,7 @@ function buttonClass(action: ContractAction) {
 .contract-header-config-action { color: var(--sc-semantic-text-muted); }
 .native-statusbar--header .native-statusbar-step { min-width: 68px; min-height: 30px; padding: 0 10px; }
 @media (max-width: 860px) {
+  .record-header-status { align-items: flex-start; flex-direction: column; }
   .record-header-context { justify-content: flex-start; }
 }
 </style>

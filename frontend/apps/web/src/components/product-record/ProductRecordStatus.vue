@@ -6,7 +6,7 @@
     data-product-record-status
     aria-label="当前业务状态"
   >
-    <div>
+    <div class="product-record-status__identity">
       <span class="product-record-status__label">当前状态</span>
       <ScStatusBadge :value="state.value" :label="state.label || '未标注'" :semantic="statusSemantic" />
     </div>
@@ -26,8 +26,8 @@ const statusSemantic = computed(() => ['info', 'success', 'warning', 'danger'].i
 </script>
 
 <style scoped>
-.product-record-status { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-product-space-2); padding: var(--sc-product-space-2); border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-subtle-bg); }
-.product-record-status > div { display: grid; gap: 2px; }
+.product-record-status { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-product-space-2); min-height: 38px; padding: 6px 10px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-subtle-bg); box-sizing: border-box; }
+.product-record-status__identity { display: flex; align-items: center; gap: var(--sc-product-space-2); }
 .product-record-status__label { color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .product-record-status p { max-width: 560px; margin: 0; color: var(--sc-app-text-secondary); }
 .product-record-status[data-semantic="success"] { border-color: var(--sc-app-success-border); background: var(--sc-app-success-bg); }

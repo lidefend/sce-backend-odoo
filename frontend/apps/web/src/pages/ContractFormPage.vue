@@ -22,13 +22,12 @@
       :intake-mode="isProjectIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :busy="busy || status === 'loading'" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
-      :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :submit-label="submitButtonLabel"
+      :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel"
       :direct-actions="headerBusinessDirectActions" :overflow-actions="headerBusinessOverflowActions" :config-actions="headerConfigActionsVisible"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     />
-
     <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
     <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" variant="error" :on-retry="reload" />
@@ -1261,7 +1260,7 @@ const showDraftSaveAction = computed(() => {
 });
 const draftSaveButtonLabel = computed(() => {
   if (busy.value && busyKind.value === 'save') return formUiLabel('saving');
-  return recordId.value ? formUiLabel('save') : '保存草稿';
+  return recordId.value ? '保存修改' : '保存草稿';
 });
 const showDiscardAction = computed(() => !isProjectIntakeCreateMode.value && Boolean(recordId.value) && hasChanges.value);
 const groupedHeaderActions = computed(() => groupContractHeaderActions({
@@ -1393,9 +1392,10 @@ const primaryFormActionDisabled = computed(() => {
   if (busy.value) return true;
   if (!canSave.value) return true;
   if (primaryCreateFooterAction.value) return false;
-  if (primarySubmitAction.value) return false;
+  if (primarySubmitAction.value) return Boolean(recordId.value) && hasChanges.value;
   return isQuickSubmitDisabled.value;
 });
+const primaryFormActionHint = computed(() => primarySubmitAction.value && recordId.value && hasChanges.value ? '请先保存修改，再提交审批' : '');
 const draftSaveDisabled = computed(() => {
   if (busy.value) return true;
   if (!canSave.value) return true;
