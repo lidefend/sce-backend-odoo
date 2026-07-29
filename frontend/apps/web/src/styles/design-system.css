@@ -24,6 +24,8 @@
   --sc-page-padding-mobile: 16px;
   --sc-page-padding: var(--sc-page-padding-wide);
   --sc-product-page-gutter: var(--sc-page-padding);
+  --sc-table-header-height: 40px;
+  --sc-table-row-height: 44px;
   --sc-product-text-sm: 12px;
   --sc-product-text-body: 14px;
   --sc-product-text-section: 16px;

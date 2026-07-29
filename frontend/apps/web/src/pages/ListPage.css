@@ -1,6 +1,8 @@
-.page {
+.page.sc-product-workspace-stack {
   display: grid;
-  gap: var(--sc-product-workspace-stack-gap);
+  isolation: isolate;
+  gap: 0;
+  row-gap: 0;
   align-content: start;
   min-width: 0;
   width: 100%;
@@ -136,19 +138,19 @@
 
 .table {
   position: relative;
+  isolation: isolate;
+  z-index: 0;
   display: block;
   min-width: 0;
   width: 100%;
   max-width: 100%;
-  max-height: max(420px, calc(100vh - 210px));
-  overflow-x: auto;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+  overflow: hidden;
   background: var(--sc-app-panel);
   border: 1px solid var(--sc-app-border);
   border-radius: 10px;
   box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 45%, transparent);
-  overscroll-behavior: contain;
+  margin-bottom: 10px;
+  overscroll-behavior-x: contain;
   touch-action: pan-x pan-y;
 }
 
@@ -156,6 +158,8 @@
   border-inline: 0;
   border-radius: 0;
   box-shadow: none;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .table.is-refreshing {
@@ -507,17 +511,26 @@
 
 .pagination-footer {
   display: flex;
+  box-sizing: border-box;
+  align-items: center;
   justify-content: flex-end;
-  position: sticky;
-  bottom: 0;
-  z-index: 24;
+  position: static;
+  width: 100%;
+  min-height: var(--sc-table-row-height, 44px);
   border-top: 1px solid var(--sc-app-border);
   background: var(--sc-app-panel);
-  padding: 10px 12px;
+  padding: 6px 12px;
 }
 
-.pagination-footer--count-only {
-  position: static;
+.summary-strip,
+.batch-bar,
+.list-empty-state {
+  margin-top: var(--sc-product-workspace-stack-gap);
+}
+
+.summary-strip + .table,
+.batch-bar + .table {
+  margin-top: var(--sc-product-workspace-stack-gap);
 }
 
 .pagination-actions--bottom {
@@ -751,7 +764,7 @@ table {
 }
 
 .col-select {
-  width: 44px;
+  width: 40px;
 }
 
 .col-column-picker {
@@ -775,20 +788,28 @@ tbody td {
 }
 
 .cell-select {
-  width: 44px;
-  min-width: 44px;
-  padding-right: 4px;
+  box-sizing: border-box;
+  width: 40px;
+  min-width: 40px;
+  padding-inline: 6px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.cell-select input[type='checkbox'] {
+  display: block;
+  margin: 0 auto;
 }
 
 .cell-row-number {
   box-sizing: border-box;
   width: 52px;
   min-width: 52px;
-  padding-right: 4px;
-  padding-left: 4px;
-  color: var(--sc-app-text-primary);
+  padding-inline: 4px;
+  color: var(--sc-app-text-secondary);
   font-variant-numeric: tabular-nums;
   text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
@@ -822,21 +843,55 @@ tbody td {
   font-weight: 650;
 }
 
+.cell-primary-link {
+  max-width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--sc-app-text-primary);
+  padding: 0;
+  font: inherit;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cell-primary-link:hover {
+  color: var(--sc-app-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cell-primary-link:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid var(--sc-app-focus-ring);
+  outline-offset: 2px;
+}
+
 .column-numeric {
   min-width: 92px;
   text-align: right;
 }
 
 .column-layout-identity {
-  min-width: 220px;
+  min-width: 260px;
   width: auto;
   max-width: 420px;
 }
 
 .column-layout-description {
-  min-width: 180px;
+  min-width: 220px;
   width: auto;
   max-width: 420px;
+}
+
+.column-layout-relation {
+  min-width: 180px;
+  width: auto;
+  max-width: 260px;
+}
+
+.column-layout-text {
+  min-width: 140px;
 }
 
 .column-layout-status {
@@ -852,6 +907,7 @@ tbody td {
 }
 
 .column-layout-money { text-align: right; }
+.column-layout-date { color: var(--sc-app-text-secondary); }
 
 .column-layout-actions {
   width: 1%;
@@ -859,17 +915,88 @@ tbody td {
   white-space: nowrap;
 }
 
-thead {
-  position: sticky;
-  top: 0;
+.table thead th {
+  box-sizing: border-box;
+  position: relative;
   z-index: 20;
+  height: var(--sc-table-header-height, 40px);
+  padding: 0 12px;
+  background: var(--sc-app-muted-bg);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  vertical-align: middle;
+  white-space: nowrap;
+  transform: translateY(var(--sc-list-header-y-offset, 0px));
 }
 
-thead th {
-  position: sticky;
-  top: 0;
-  background: var(--sc-app-muted-bg);
-  z-index: 20;
+.table thead .cell-select {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding-inline: 6px;
+}
+
+.table thead .cell-row-number {
+  width: 52px;
+  min-width: 52px;
+  max-width: 52px;
+  padding-inline: 4px;
+}
+
+.table tbody tr {
+  height: var(--sc-table-row-height, 44px);
+}
+
+.table tbody td {
+  padding: 8px 12px;
+  line-height: 20px;
+  vertical-align: middle;
+}
+
+.table tbody .cell-select {
+  padding-inline: 6px;
+}
+
+.table tbody .cell-row-number {
+  padding-inline: 4px;
+}
+
+.table thead .column-sort-btn {
+  min-height: var(--sc-table-header-height, 40px);
+  padding-block: 0;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.table thead .column-sort-btn > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table thead .sort-indicator:empty {
+  display: none;
+}
+
+.table tbody .column-layout-identity .primary,
+.table tbody .column-layout-relation > div {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.table tbody .column-layout-text > div,
+.table tbody .column-layout-date > div,
+.table tbody .column-layout-money > div,
+.table tbody .column-layout-status > div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 tfoot th,
@@ -889,13 +1016,15 @@ tfoot tr:nth-child(2) td {
 
 .footer-row-label {
   color: var(--sc-app-text-primary);
-  font-size: 11px;
-  line-height: 1.15;
-  min-width: 52px;
-  width: 52px;
-  max-width: 52px;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  padding-inline: 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.is-empty-value {
+  color: var(--sc-app-text-muted);
 }
 
 .footer-number {
@@ -1185,7 +1314,7 @@ tbody tr {
 
 .flat-table.has-selection-column .cell-row-number,
 .group-table.has-selection-column .cell-row-number {
-  left: 44px;
+  left: 40px;
 }
 
 .flat-table thead .cell-select,
@@ -1196,6 +1325,24 @@ tbody tr {
 .flat-table thead .cell-row-number,
 .group-table thead .cell-row-number {
   z-index: 25;
+}
+
+.flat-table thead .column-layout-identity,
+.group-table thead .column-layout-identity {
+  position: sticky;
+  left: 92px;
+  z-index: 24;
+  background: var(--sc-app-muted-bg);
+  box-shadow: 8px 0 10px -10px var(--sc-app-shadow);
+}
+
+.flat-table tbody .column-layout-identity,
+.group-table tbody .column-layout-identity {
+  position: sticky;
+  left: 92px;
+  z-index: 12;
+  background: var(--sc-app-panel);
+  box-shadow: 8px 0 10px -10px var(--sc-app-shadow);
 }
 
 .flat-table tfoot .cell-select,

@@ -31,14 +31,11 @@
     />
     <template v-else-if="status === 'empty'">
       <ProductListHeader
-        :title="title"
-        :subtitle="toolbarSubtitle"
         :loading="loading"
         :show-search="showPlainSearch"
         :search-value="plainSearchDraft"
         :search-label="uiLabel('search_submit', '搜索')"
         :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
-        :result-summary="listRecordCountText"
         @search-input="onPlainSearchInput"
         @search-submit="submitPlainSearch"
         @search-clear="clearPlainSearch"
@@ -74,31 +71,25 @@
         </div>
       </section>
     </template>
-
     <template v-else>
       <ProductListHeader
-        :title="title"
-        :subtitle="toolbarSubtitle"
         :loading="loading"
         :show-search="showPlainSearch"
         :search-value="plainSearchDraft"
         :search-label="uiLabel('search_submit', '搜索')"
         :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
-        :result-summary="listRecordCountText"
         @search-input="onPlainSearchInput"
         @search-submit="submitPlainSearch"
         @search-clear="clearPlainSearch"
         @composition-start="plainSearchComposing = true"
         @composition-end="onPlainSearchCompositionEnd"
       ><slot name="toolbar"></slot></ProductListHeader>
-
       <section v-if="enableSummaryStrip && summaryItems.length" class="summary-strip sc-product-summary-strip">
         <article v-for="item in summaryItems" :key="item.key" class="summary-card" :class="`tone-${item.tone || 'neutral'}`">
           <p class="summary-label">{{ item.label }}</p>
           <p class="summary-value">{{ item.value }}</p>
         </article>
       </section>
-
       <section v-if="showBatchBar" class="batch-bar sc-product-feedback-layer">
         <span>{{ uiLabel('selected_count', '已选 {count} 条', { count: selectedCount }) }}</span>
         <button
@@ -332,7 +323,8 @@
                   v-for="col in displayedColumns"
                   :key="`group-cell-${group.key}-${String(row.id ?? index)}-${col}`"
                   :style="columnWidthStyle(col)"
-                  :class="columnDensityClass(col)"
+                  :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, row[col]).text === '--' }]"
+                  :title="semanticCell(col, row[col]).text"
                 >
                   <button
                     v-if="isFavoriteColumn(col)"
@@ -353,6 +345,14 @@
                   >
                     {{ semanticCell(col, row[col]).text }}
                   </span>
+                  <button
+                    v-else-if="isPrimaryTextColumn(col)"
+                    type="button"
+                    class="cell-primary-link"
+                    @click.stop="handleRow(row)"
+                  >
+                    {{ semanticCell(col, row[col]).text }}
+                  </button>
                   <span v-else-if="attachmentLinks(row[col]).length" class="attachment-links">
                     <a
                       v-for="link in attachmentLinks(row[col])"
@@ -377,12 +377,11 @@
                 </td>
               </tr>
             </tbody>
-            <tfoot>
+            <tfoot v-if="showAggregateFooter">
               <tr>
-                <td v-if="showSelectionColumn" class="cell-select"></td>
-                <th v-if="showRowNumberColumn" class="cell-row-number footer-row-label">{{ footerRowLabel('page', group.sampleRows.length) }}</th>
+                <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('page', group.sampleRows.length) }}</th>
                 <td
-                  v-for="col in displayedColumns"
+                  v-for="col in footerValueColumns"
                   :key="`group-footer-page-${group.key}-${col}`"
                   :style="columnWidthStyle(col)"
                   :class="[columnDensityClass(col), { 'footer-number': isNumericColumn(col) }]"
@@ -392,10 +391,9 @@
                 </td>
               </tr>
               <tr>
-                <td v-if="showSelectionColumn" class="cell-select"></td>
-                <th v-if="showRowNumberColumn" class="cell-row-number footer-row-label">{{ footerRowLabel('total', group.count) }}</th>
+                <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('total', group.count) }}</th>
                 <td
-                  v-for="col in displayedColumns"
+                  v-for="col in footerValueColumns"
                   :key="`group-footer-total-${group.key}-${col}`"
                   :style="columnWidthStyle(col)"
                   :class="[columnDensityClass(col), { 'footer-number': isNumericColumn(col) }]"
@@ -551,7 +549,9 @@
               />
             </td>
             <td v-if="showRowNumberColumn" class="cell-row-number">{{ flatRowNumber(index) }}</td>
-            <td v-for="col in displayedColumns" :key="col" :style="columnWidthStyle(col)" :class="columnDensityClass(col)">
+            <td v-for="col in displayedColumns" :key="col" :style="columnWidthStyle(col)"
+              :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, row[col]).text === '--' }]"
+              :title="semanticCell(col, row[col]).text">
               <button
                 v-if="isFavoriteColumn(col)"
                 type="button"
@@ -570,7 +570,9 @@
                 </span>
               </div>
               <div v-else-if="isPrimaryTextColumn(col)" class="cell-primary">
-                <div class="primary">{{ semanticCell(col, row[col]).text }}</div>
+                <button type="button" class="primary cell-primary-link" @click.stop="handleRow(row)">
+                  {{ semanticCell(col, row[col]).text }}
+                </button>
                 <div v-if="shouldRenderRowSecondary(col, row)" class="secondary">{{ semanticCell(rowSecondary, row[rowSecondary]).text }}</div>
               </div>
               <div v-else-if="attachmentLinks(row[col]).length" class="attachment-links">
@@ -600,12 +602,11 @@
             <td v-if="columnChoices.length" class="cell-column-picker"></td>
           </tr>
         </tbody>
-        <tfoot>
+        <tfoot v-if="showAggregateFooter">
           <tr>
-            <td v-if="showSelectionColumn" class="cell-select"></td>
-            <th v-if="showRowNumberColumn" class="cell-row-number footer-row-label">{{ footerRowLabel('page', pageVisibleRows.length) }}</th>
+            <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('page', pageVisibleRows.length) }}</th>
             <td
-              v-for="col in displayedColumns"
+              v-for="col in footerValueColumns"
               :key="`footer-page-${col}`"
               :style="columnWidthStyle(col)"
               :class="[columnDensityClass(col), { 'footer-number': isNumericColumn(col) }]"
@@ -616,10 +617,9 @@
             <td v-if="columnChoices.length" class="cell-column-picker"></td>
           </tr>
           <tr>
-            <td v-if="showSelectionColumn" class="cell-select"></td>
-            <th v-if="showRowNumberColumn" class="cell-row-number footer-row-label">{{ footerRowLabel('total', listTotal || pageVisibleRows.length) }}</th>
+            <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('total', listTotal || pageVisibleRows.length) }}</th>
             <td
-              v-for="col in displayedColumns"
+              v-for="col in footerValueColumns"
               :key="`footer-total-${col}`"
               :style="columnWidthStyle(col)"
               :class="[columnDensityClass(col), { 'footer-number': isNumericColumn(col) }]"
@@ -631,7 +631,6 @@
           </tr>
         </tfoot>
       </ScDataTable>
-    </section>
 
       <section v-if="showGroupedWindowPagination" class="pagination-footer">
         <div class="pagination-actions pagination-actions--bottom">
@@ -726,12 +725,12 @@
           <span class="pagination-total">{{ listRecordCountText }}</span>
         </div>
       </section>
+    </section>
 
     </template>
     <AttachmentViewer ref="attachmentViewerRef" />
   </section>
 </template>
-
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
@@ -749,6 +748,8 @@ import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composa
 import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
+import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
+import { deriveListColumnWidth, type ListColumnLayoutRole } from './listPage/listColumnWidth';
 
 type SelectionAction = {
   key: string;
@@ -1044,7 +1045,6 @@ function normalizeCellRawValue(value: unknown) {
   }
   return value;
 }
-
 function scalarTexts(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value
@@ -1055,7 +1055,6 @@ function scalarTexts(value: unknown): string[] {
   const text = String(value ?? '').trim();
   return text ? [text] : [];
 }
-
 function rowNumericCellValue(value: unknown): number | null {
   const raw = Array.isArray(value) ? (value.length > 1 ? value[1] : value[0]) : value;
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
@@ -1065,52 +1064,39 @@ function rowNumericCellValue(value: unknown): number | null {
   const numeric = Number(cleaned);
   return Number.isFinite(numeric) ? numeric : null;
 }
-
 function selectionLabel(option: ColumnOption | null, value: unknown) {
   const raw = normalizeCellRawValue(value);
   const key = String(raw ?? '').trim();
   if (!key || !Array.isArray(option?.selection)) return '';
   return option.selection.find((item) => item.value === key)?.label || '';
 }
-
 function semanticCell(field: string, value: unknown) {
   const option = columnOption(field);
   const raw = normalizeCellRawValue(value);
-  const selectionText = selectionLabel(option, value);
-  const numericText = formatNumericCellValue(field, raw);
-  const fieldType = String(option?.type || '').trim().toLowerCase();
   const rawText = typeof raw === 'string' ? raw : '';
-  const rawTrimmedText = rawText.trim();
   const attachmentText = rawText && /\|\s*(?:legacy-file-id|legacy-file|https?|file):\/\//i.test(rawText)
     ? formatAttachmentReferenceValue(rawText)
     : '';
-  const text = selectionText
-    || (raw === null || raw === undefined || raw === ''
-      ? (isNumericDisplayColumn(field) ? '0' : '--')
-      : (raw === false && isNumericDisplayColumn(field)
-        ? '0'
-      : (rawTrimmedText === '--' && isNumericDisplayColumn(field)
-        ? '0'
-      : (typeof raw === 'boolean'
-        ? (fieldType === 'boolean' ? uiLabel(raw ? 'boolean_true' : 'boolean_false', raw ? '是' : '否') : '--')
-        : attachmentText || numericText || String(raw)))));
-  const toneKey = String(raw ?? '').trim();
-  const tone = option?.cellRole === 'status'
-    ? (option.toneByValue?.[toneKey] || 'neutral')
-    : 'neutral';
-  return { text, tone };
+  return presentListCell({
+    raw,
+    column: columnSemanticInput(field),
+    selectionText: selectionLabel(option, value),
+    numericText: formatNumericCellValue(field, raw),
+    attachmentText,
+    trueText: uiLabel('boolean_true', '是'),
+    falseText: uiLabel('boolean_false', '否'),
+    numeric: isNumericDisplayColumn(field),
+    toneByValue: option?.toneByValue,
+  });
 }
-
 function statusSemantic(tone: string): 'default' | 'info' | 'success' | 'warning' | 'danger' {
   return ['info', 'success', 'warning', 'danger'].includes(tone)
     ? tone as 'info' | 'success' | 'warning' | 'danger'
     : 'default';
 }
-
 function attachmentLinks(value: unknown) {
   return parseAttachmentReferenceLinks(value);
 }
-
 async function previewAttachmentLink(link: { name: string; url: string }, row: Record<string, unknown>) {
   try {
     const context = {
@@ -1127,13 +1113,11 @@ async function previewAttachmentLink(link: { name: string; url: string }, row: R
     window.alert(err instanceof Error ? err.message : '附件打开失败');
   }
 }
-
 function isAttachmentCountCell(field: string, value: unknown) {
   const label = columnLabel(field).trim();
   const text = String(normalizeCellRawValue(value) ?? '').trim();
   return label === '附件' && /^附件\([1-9]\d*\)$/.test(text);
 }
-
 async function previewRecordAttachmentCount(row: Record<string, unknown>, value: unknown) {
   const text = String(normalizeCellRawValue(value) ?? '').trim() || '附件';
   try {
@@ -1147,9 +1131,8 @@ async function previewRecordAttachmentCount(row: Record<string, unknown>, value:
 }
 
 function isStatusColumn(field: string) {
-  const option = columnOption(field);
   const normalized = String(field || '').trim();
-  return option?.cellRole === 'status'
+  return isListStatusColumn(columnSemanticInput(field))
     || props.listProfile?.status_field === normalized
     || ['document_status', 'state', 'status', 'lifecycle_state'].includes(normalized);
 }
@@ -1159,7 +1142,9 @@ function isStatusLikeColumn(field: string) {
 }
 
 function isPrimaryTextColumn(field: string) {
-  return field === rowPrimary.value && !isStatusLikeColumn(field);
+  if (isStatusLikeColumn(field)) return false;
+  if (field === rowPrimary.value) return true;
+  return !rowPrimary.value && isListBusinessIdentifierColumn(columnSemanticInput(field));
 }
 
 function shouldRenderRowSecondary(field: string, row: Record<string, unknown>) {
@@ -1502,7 +1487,6 @@ const listRecordTotal = computed(() =>
 const listRecordCountText = computed(() =>
   uiLabel('footer_record_count', '共 {count} 条', { count: listRecordTotal.value }),
 );
-const toolbarSubtitle = computed(() => props.subtitle || '');
 const canPagePrev = computed(() => listOffset.value > 0);
 const canPageNext = computed(() => {
   const total = listTotal.value || 0;
@@ -1514,7 +1498,6 @@ const paginationPageText = computed(() =>
     total: totalPages.value,
   }),
 );
-
 function isSelected(row: Record<string, unknown>) {
   const id = rowId(row);
   if (!id) return false;
@@ -1749,6 +1732,13 @@ const displayedColumns = computed(() => {
   });
   return filtered.length ? filtered : source.slice(0, 1);
 });
+const footerLabelFieldCount = computed(() => displayedColumns.value.length
+  ? Math.max(1, displayedColumns.value.indexOf(rowPrimary.value) + 1)
+  : 0);
+const footerValueColumns = computed(() => displayedColumns.value.slice(footerLabelFieldCount.value));
+const footerLabelColspan = computed(() => (showSelectionColumn.value ? 1 : 0)
+  + (showRowNumberColumn.value ? 1 : 0) + footerLabelFieldCount.value);
+const showAggregateFooter = computed(() => displayedColumns.value.some((field) => isNumericColumn(field)));
 const mobileIdentityField = computed(() => {
   const preferred = String(rowPrimary.value || '').trim();
   if (preferred && displayedColumns.value.includes(preferred) && !isStatusLikeColumn(preferred)) return preferred;
@@ -1767,27 +1757,27 @@ const mobileFactColumns = computed(() => {
   const date = candidates.filter((field) => ['date', 'datetime'].includes(String(columnOption(field)?.type || '')));
   return [...new Set([...relation.slice(0, 2), ...amount.slice(0, 1), ...date.slice(0, 1), ...candidates])].slice(0, 4);
 });
+const defaultColumnWidths = computed<Record<string, number>>(() => displayedColumns.value.reduce<Record<string, number>>((widths, field) => {
+  const option = columnOption(field);
+  widths[field] = deriveListColumnWidth({
+    label: columnLabel(field), type: option?.type, role: columnLayoutRole(field),
+    values: props.records.map((row) => row[field]),
+    selectionLabels: option?.selection?.map((item) => item.label),
+  });
+  return widths;
+}, {}));
 const tableMinWidthPx = computed(() => {
-  const fixedWidth = (showSelectionColumn.value ? 44 : 0)
-    + (showRowNumberColumn.value ? 64 : 0)
+  const fixedWidth = (showSelectionColumn.value ? 40 : 0)
+    + (showRowNumberColumn.value ? 52 : 0)
     + (columnChoices.value.length ? 72 : 0);
   const dynamicWidth = displayedColumns.value.reduce((total, field) => {
-    const explicit = effectiveColumnWidth(field);
-    if (explicit) return total + explicit;
-    const layoutKind = columnLayoutRole(field);
-    if (layoutKind === 'identity') return total + 220;
-    if (layoutKind === 'description') return total + 180;
-    if (layoutKind === 'status') return total + 110;
-    if (layoutKind === 'money' || layoutKind === 'date') return total + 120;
-    if (layoutKind === 'actions') return total + 96;
-    return total + 128;
+    return total + resolvedColumnWidth(field);
   }, 0);
   return Math.max(0, fixedWidth + dynamicWidth);
 });
 const tableWidthStyle = computed(() => ({
   minWidth: `max(100%, ${tableMinWidthPx.value}px)`,
 }));
-
 function firstSortClause(value: string) {
   return String(value || '').split(',')[0]?.trim() || '';
 }
@@ -1888,17 +1878,19 @@ watch(
   },
   { immediate: true },
 );
-
 function effectiveColumnWidth(field: string) {
   return normalizeColumnWidth(draftColumnWidths.value[field] || props.columnWidths?.[field]);
 }
-
+function defaultColumnWidth(field: string) {
+  return defaultColumnWidths.value[field] || 128;
+}
+function resolvedColumnWidth(field: string) {
+  return effectiveColumnWidth(field) || defaultColumnWidth(field);
+}
 function columnWidthStyle(field: string) {
-  const width = effectiveColumnWidth(field);
-  if (!width) return {};
+  const width = resolvedColumnWidth(field);
   return { width: `${width}px`, minWidth: `${width}px`, maxWidth: `${width}px` };
 }
-
 function isLongTextColumn(field: string) {
   const layoutKind = columnLayoutRole(field);
   return layoutKind === 'identity' || layoutKind === 'description';
@@ -1908,16 +1900,17 @@ function isNameLikeColumn(field: string) {
   return columnLayoutRole(field) === 'identity';
 }
 
-function columnLayoutRole(field: string) {
+function columnLayoutRole(field: string): ListColumnLayoutRole {
   const option = columnOption(field);
   const cellRole = String(option?.cellRole || '').trim().toLowerCase();
   const type = String(option?.type || '').trim().toLowerCase();
-  if (field === rowPrimary.value || cellRole === 'identity') return 'identity';
-  if (cellRole === 'status') return 'status';
+  if (isPrimaryTextColumn(field) || cellRole === 'identity') return 'identity';
+  if (isStatusLikeColumn(field)) return 'status';
   if (['money', 'monetary', 'metric'].includes(cellRole) || ['integer', 'float', 'monetary'].includes(type)) return 'money';
-  if (['date', 'datetime'].includes(cellRole) || ['date', 'datetime'].includes(type)) return 'date';
+  if (isListTemporalColumn(columnSemanticInput(field))) return 'date';
   if (['actions', 'action', 'favorite'].includes(cellRole)) return 'actions';
   if (['description', 'long-text', 'reading'].includes(cellRole) || ['text', 'html'].includes(type)) return 'description';
+  if (['many2one', 'many2many', 'one2many', 'reference'].includes(type)) return 'relation';
   return 'text';
 }
 
@@ -1970,6 +1963,11 @@ function columnOption(field: string) {
   return columnChoices.value.find((column) => column.name === field) || null;
 }
 
+function columnSemanticInput(field: string) {
+  const option = columnOption(field);
+  return { field, label: columnLabel(field), type: option?.type, cellRole: option?.cellRole };
+}
+
 function isColumnSortable(field: string) {
   return columnOption(field)?.sortable !== false;
 }
@@ -1999,6 +1997,8 @@ function onColumnVisibilityChange(name: string, event: Event) {
 
 function resetColumnVisibility() {
   emit('column-visibility-change', { visibility: {} });
+  emit('column-order-change', { columnOrder: [] });
+  emit('column-widths-change', { columnWidths: {} });
 }
 
 const pageVisibleRows = computed(() => {

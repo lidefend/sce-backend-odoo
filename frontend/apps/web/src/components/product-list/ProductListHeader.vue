@@ -1,48 +1,38 @@
 <template>
-  <header class="product-list-header sc-product-page-toolbar" data-workspace-page-header>
-    <div class="product-list-header__identity">
-      <p class="product-list-header__eyebrow">业务列表</p>
-      <div class="product-list-header__title-row">
-        <h2>{{ title }}</h2>
-        <span v-if="resultSummary" class="product-list-header__result">{{ resultSummary }}</span>
-      </div>
-      <p v-if="subtitle">{{ subtitle }}</p>
-    </div>
+  <section ref="queryBar" class="product-list-query-bar sc-product-page-toolbar" data-list-query-action-bar aria-label="列表查询与操作">
     <ScActionBar class="product-list-header__tools" label="列表操作">
       <slot />
     </ScActionBar>
     <form v-if="showSearch" class="product-list-header__search" role="search" @submit.prevent="$emit('search-submit')">
-      <label>
-        <span class="sc-visually-hidden">{{ searchLabel }}</span>
-        <input
-          type="search"
-          :value="searchValue"
-          :disabled="loading"
-          :placeholder="searchPlaceholder"
-          @compositionstart="$emit('composition-start')"
-          @compositionend="$emit('composition-end', $event)"
-          @input="$emit('search-input', $event)"
-        />
-      </label>
-      <ScButton type="submit" :disabled="loading">{{ searchLabel }}</ScButton>
-      <ScButton v-if="searchValue" variant="ghost" :disabled="loading" @click="$emit('search-clear')">清除</ScButton>
-    </form>
-  </header>
+        <label>
+          <span class="sc-visually-hidden">{{ searchLabel }}</span>
+          <input
+            type="search"
+            :value="searchValue"
+            :disabled="loading"
+            :placeholder="searchPlaceholder"
+            @compositionstart="$emit('composition-start')"
+            @compositionend="$emit('composition-end', $event)"
+            @input="$emit('search-input', $event)"
+          />
+        </label>
+        <ScButton type="submit" :disabled="loading">{{ searchLabel }}</ScButton>
+        <ScButton v-if="searchValue" variant="ghost" :disabled="loading" @click="$emit('search-clear')">清除</ScButton>
+      </form>
+  </section>
 </template>
 
 <script setup lang="ts">
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
 
 defineProps<{
-  title: string;
-  subtitle?: string;
   loading: boolean;
   showSearch: boolean;
   searchValue: string;
   searchLabel: string;
   searchPlaceholder: string;
-  resultSummary?: string;
 }>();
 
 defineEmits<{
@@ -52,51 +42,97 @@ defineEmits<{
   'composition-start': [];
   'composition-end': [event: CompositionEvent];
 }>();
+
+const queryBar = ref<HTMLElement | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let listPage: HTMLElement | null = null;
+let scrollHost: HTMLElement | null = null;
+let tableSurface: HTMLElement | null = null;
+let layoutFrame = 0;
+
+function syncListLayout() {
+  layoutFrame = 0;
+  const element = queryBar.value;
+  if (!element) return;
+  listPage = element.closest<HTMLElement>('[data-product-page-mode="list"]');
+  const queryRect = element.getBoundingClientRect();
+  listPage?.style.setProperty('--sc-list-query-bar-height', `${Math.ceil(queryRect.height)}px`);
+
+  tableSurface = listPage?.querySelector<HTMLElement>('.table') || null;
+  const tableHeader = tableSurface?.querySelector<HTMLElement>('thead') || null;
+  if (!tableSurface || !tableHeader) {
+    listPage?.style.setProperty('--sc-list-header-y-offset', '0px');
+    return;
+  }
+
+  const tableRect = tableSurface.getBoundingClientRect();
+  const headerHeight = tableHeader.getBoundingClientRect().height;
+  const paginationHeight =
+    tableSurface.querySelector<HTMLElement>('.pagination-footer')?.getBoundingClientRect().height || 0;
+  const borderTop = Number.parseFloat(window.getComputedStyle(tableSurface).borderTopWidth) || 0;
+  const headerNaturalTop = tableRect.top + borderTop;
+  const maximumOffset = Math.max(0, tableRect.height - headerHeight - paginationHeight - borderTop);
+  const headerOffset = Math.min(
+    Math.max(queryRect.bottom - headerNaturalTop, 0),
+    maximumOffset,
+  );
+  listPage?.style.setProperty('--sc-list-header-y-offset', `${Math.floor(headerOffset)}px`);
+}
+
+function scheduleListLayoutSync() {
+  if (layoutFrame) return;
+  layoutFrame = window.requestAnimationFrame(syncListLayout);
+}
+
+onMounted(async () => {
+  await nextTick();
+  scrollHost = queryBar.value?.closest<HTMLElement>('.router-host') || null;
+  syncListLayout();
+  scrollHost?.addEventListener('scroll', scheduleListLayoutSync, { passive: true });
+  window.addEventListener('resize', scheduleListLayoutSync, { passive: true });
+  resizeObserver = new ResizeObserver(scheduleListLayoutSync);
+  if (queryBar.value) resizeObserver.observe(queryBar.value);
+  if (tableSurface) resizeObserver.observe(tableSurface);
+});
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  scrollHost?.removeEventListener('scroll', scheduleListLayoutSync);
+  window.removeEventListener('resize', scheduleListLayoutSync);
+  if (layoutFrame) window.cancelAnimationFrame(layoutFrame);
+  listPage?.style.removeProperty('--sc-list-query-bar-height');
+  listPage?.style.removeProperty('--sc-list-header-y-offset');
+});
 </script>
 
 <style scoped>
-.product-list-header {
+.product-list-query-bar {
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 4;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  align-items: start;
-  padding: 2px 0 0;
+  width: 100cqw;
+  padding-block: 6px 0;
+  background: var(--sc-app-bg);
 }
-.product-list-header__identity h2,
-.product-list-header__identity p { margin: 0; }
-.product-list-header__identity > p:not(.product-list-header__eyebrow) {
-  margin-top: 5px;
-  max-width: 76ch;
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
-  line-height: 1.45;
-}
-.product-list-header__eyebrow {
-  margin-bottom: 5px !important;
-  color: var(--sc-app-text-secondary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-.product-list-header__title-row {
+.product-list-header__tools {
   display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px 12px;
+  min-width: 0;
+  width: 100%;
 }
-.product-list-header__title-row h2 {
-  color: var(--sc-app-text-primary);
-  font-size: clamp(22px, 2vw, 28px);
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+.product-list-header__tools :deep(.action-toolbar) {
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  width: 100%;
 }
-.product-list-header__result {
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
+.product-list-header__tools :deep(.native-search) {
+  justify-self: stretch;
+  width: 100%;
+  max-width: none;
 }
-.product-list-header__tools { min-width: 0; }
+.product-list-header__tools :deep(.toolbar-actions) { width: auto; }
 .product-list-header__search { display: flex; gap: var(--sc-product-space-1); align-items: center; }
 .product-list-header__search label { min-width: 0; flex: 1; }
 .product-list-header__search input {

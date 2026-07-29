@@ -554,7 +554,9 @@ const compactRouteKeepsHeadline = computed(() => [
   'access-denied',
   'not-found',
 ].includes(String(route.name || '')));
-const showTopbarHeadline = computed(() => !useMinimalTopbar.value || compactRouteKeepsHeadline.value);
+const showTopbarHeadline = computed(
+  () => !businessRouteUsesCompactTopbar.value && (!useMinimalTopbar.value || compactRouteKeepsHeadline.value),
+);
 const sidebarClass = computed(() =>
   activeLayout.value.sidebar === 'scroll' ? 'sidebar--scroll' : 'sidebar--fixed'
 );
@@ -1184,7 +1186,20 @@ function findMenuIdBySceneKey(nodes: NavNode[], sceneKey?: string): number | und
   return walk(nodes);
 }
 
-const displayBreadcrumb = computed(() => pageIdentity.breadcrumbs.value);
+const displayBreadcrumb = computed(() => {
+  const appName = String(config.appBrand.name || '').trim();
+  const seen = new Set<string>();
+  const breadcrumbs = pageIdentity.breadcrumbs.value.filter((item) => {
+    const label = String(item.label || '').trim();
+    if (!label || label === appName || seen.has(label)) return false;
+    seen.add(label);
+    return true;
+  });
+  if (useMinimalTopbar.value && breadcrumbs.length > 1 && !breadcrumbs[0]?.to) {
+    return breadcrumbs.slice(1);
+  }
+  return breadcrumbs;
+});
 
 const showRefresh = computed(
   () => !isDeliveryMode.value && (import.meta.env.DEV || localStorage.getItem('DEBUG_INTENT') === '1'),
