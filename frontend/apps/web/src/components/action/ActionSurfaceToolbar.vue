@@ -244,6 +244,10 @@
         {{ createLabel }}
       </button>
     </div>
+    <div v-if="activeConditionCount > 0" class="active-conditions-summary" role="status">
+      <span>已应用 {{ activeConditionCount }} 项查询条件</span>
+      <button type="button" :disabled="loading" @click="$emit('clear-all')">清除全部</button>
+    </div>
   </section>
 </template>
 
@@ -300,6 +304,7 @@ const props = defineProps<{
   activeGroupKey: string;
   canCreateRecord: boolean;
   createLabel: string;
+  activeConditionCount?: number;
   uiLabels?: Record<string, string>;
 }>();
 
@@ -320,6 +325,7 @@ const emit = defineEmits<{
   'custom-group': [payload: { key: string; label: string }];
   'custom-filter': [payload: { field: string; label: string; operator: string; value: unknown; domain: unknown[] }];
   'clear-custom-filter': [];
+  'clear-all': [];
   'save-favorite': [payload: { name: string; isDefault: boolean; isShared: boolean }];
   create: [];
 }>();
@@ -493,9 +499,10 @@ onBeforeUnmount(() => {
   min-width: 0;
   max-width: 100%;
   border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--sc-app-panel);
-  padding: 4px 6px;
+  padding: 8px;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 55%, transparent);
 }
 
 .toolbar-section,
@@ -547,18 +554,18 @@ onBeforeUnmount(() => {
   flex-wrap: nowrap;
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 26px;
+  min-height: 36px;
   gap: 4px;
   border: 1px solid var(--sc-app-border-strong);
   border-radius: 8px;
-  background: var(--sc-app-muted-bg);
-  padding: 2px 3px 2px 6px;
+  background: var(--sc-app-panel);
+  padding: 3px 3px 3px 8px;
 }
 
 .native-searchbox input {
   flex: 1 1 110px;
   min-width: 72px;
-  height: 22px;
+  height: 28px;
   border: 0;
   background: transparent;
   color: var(--sc-app-text-primary);
@@ -798,6 +805,31 @@ onBeforeUnmount(() => {
   min-width: 0;
   justify-self: end;
   width: 100%;
+}
+
+.active-conditions-summary {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
+
+.active-conditions-summary button {
+  border: 0;
+  background: transparent;
+  color: var(--sc-app-accent);
+  padding: 2px 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.active-conditions-summary button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .contract-label {
