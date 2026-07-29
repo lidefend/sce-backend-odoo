@@ -38,6 +38,7 @@
         :search-value="plainSearchDraft"
         :search-label="uiLabel('search_submit', '搜索')"
         :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
+        :result-summary="listRecordCountText"
         @search-input="onPlainSearchInput"
         @search-submit="submitPlainSearch"
         @search-clear="clearPlainSearch"
@@ -47,7 +48,15 @@
       <ScEmptyState :title="emptyStateTitle" :description="emptyStateMessage">
         <template #actions>
           <ScButton
-            v-if="canCreateRecord"
+            v-if="hasActiveConditions"
+            variant="primary"
+            :disabled="loading"
+            @click="clearActiveConditions"
+          >
+            清除查询条件
+          </ScButton>
+          <ScButton
+            v-else-if="canCreateRecord"
             variant="primary"
             :disabled="loading"
             @click="onCreate"
@@ -75,6 +84,7 @@
         :search-value="plainSearchDraft"
         :search-label="uiLabel('search_submit', '搜索')"
         :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
+        :result-summary="listRecordCountText"
         @search-input="onPlainSearchInput"
         @search-submit="submitPlainSearch"
         @search-clear="clearPlainSearch"
@@ -762,6 +772,13 @@ type ColumnOption = {
 };
 type GroupSortDirection = 'asc' | 'desc';
 
+const standardAuditColumnLabels: Record<string, string> = {
+  create_uid: '创建人',
+  create_date: '创建时间',
+  write_uid: '最后修改人',
+  write_date: '最后修改时间',
+};
+
 const props = defineProps<{
   title: string;
   model: string;
@@ -867,6 +884,8 @@ const props = defineProps<{
   createLabel?: string;
   onCreate?: () => void;
   showPlainSearch?: boolean;
+  hasActiveConditions?: boolean;
+  onClearConditions?: () => void;
 }>();
 const emit = defineEmits<{
   'column-visibility-change': [payload: { visibility: Record<string, boolean> }];
@@ -891,13 +910,22 @@ const errorCopy = computed(() =>
 );
 const emptyCopy = computed(() => resolveEmptyCopy('list'));
 const createLabelText = computed(() => props.createLabel || uiLabel('create', '新建'));
+const hasActiveConditions = computed(() =>
+  props.hasActiveConditions === true
+  || Boolean(String(props.searchTerm || '').trim())
+  || Boolean(props.filterValue && props.filterValue !== 'all'),
+);
 const emptyStateTitle = computed(() =>
-  props.canCreateRecord
+  hasActiveConditions.value
+    ? uiLabel('empty_filtered_title', '没有符合当前条件的记录')
+    : props.canCreateRecord
     ? uiLabel('empty_create_title', '当前还没有数据')
     : uiLabel('empty_readonly_title', emptyCopy.value.title),
 );
 const emptyStateMessage = computed(() =>
-  props.canCreateRecord
+  hasActiveConditions.value
+    ? uiLabel('empty_filtered_message', '可以调整或清除查询条件，查看其他业务记录。')
+    : props.canCreateRecord
     ? uiLabel('empty_create_message', '可以先新建一条业务记录，开始录入和办理。')
     : uiLabel('empty_readonly_message', emptyCopy.value.message),
 );
@@ -1599,6 +1627,16 @@ function clearPlainSearch() {
   props.onSearch('');
 }
 
+function clearActiveConditions() {
+  if (props.onClearConditions) {
+    props.onClearConditions();
+    return;
+  }
+  plainSearchDraft.value = '';
+  props.onSearch('');
+  props.onFilter('all');
+}
+
 watch(
   currentPage,
   (page) => {
@@ -1919,6 +1957,7 @@ function stopColumnResize() {
 }
 
 function columnLabel(col: string) {
+  if (standardAuditColumnLabels[col]) return standardAuditColumnLabels[col];
   const option = columnOption(col);
   return option?.label || columnLabels.value[col] || contractColumnLabels.value[col] || col;
 }

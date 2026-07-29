@@ -385,6 +385,8 @@
       :list-profile="listProfile"
       :ui-labels="toolbarUiLabels"
       :show-plain-search="!showTopActionToolbar"
+      :has-active-conditions="toolbarActiveConditionCount > 0"
+      :on-clear-conditions="clearAllListConditions"
       :grouped-rows="currentPageGroupedRows"
       :group-window-offset="groupWindowOffset"
       :group-window-count="groupWindowCount"
@@ -463,6 +465,7 @@
           :active-group-key="toolbarActiveGroupKey"
           :can-create-record="canCreateRecord"
           :create-label="toolbarUiLabel('create', '新建')"
+          :active-condition-count="toolbarActiveConditionCount"
           :ui-labels="toolbarUiLabels"
           @switch-view="switchViewMode"
           @search-composition-start="onToolbarSearchCompositionStart"
@@ -480,6 +483,7 @@
           @clear-group="clearGroupBy"
           @custom-filter="applyCustomFilter"
           @clear-custom-filter="clearCustomFilter"
+          @clear-all="clearAllListConditions"
           @save-favorite="handleSaveFavorite"
           @create="openCreateRecord"
         />
@@ -560,6 +564,7 @@
 </template>
 <script setup lang="ts">
 import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorCaptured, onMounted, ref, watch, type Ref } from 'vue';
+import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
 import { useRoute, useRouter } from 'vue-router';
 import type { ActionContract } from '@sc/schema';
 import { ApiError } from '../api/client';
@@ -1347,6 +1352,7 @@ const groupViewVisible = computed(() =>
 const showToolbarFilter = computed(() => canRenderActionSurfaceToolbar.value && quickFiltersVisible.value);
 const showToolbarSavedFilter = computed(() => canRenderActionSurfaceToolbar.value && savedFiltersVisible.value);
 const showToolbarGroup = computed(() => canRenderActionSurfaceToolbar.value && groupViewVisible.value);
+const toolbarActiveConditionCount = computed(() => countBusinessListConditions([searchTerm.value, filterValue.value !== 'all' ? filterValue.value : '', activeContractFilterKey.value, activeSavedFilterKey.value, activeCustomFilter.value?.label, activeGroupByField.value]));
 const listGroupedRowsEnabled = computed(() =>
   Boolean(activeGroupByField.value && groupViewVisible.value),
 );
@@ -2165,30 +2171,23 @@ function applyGroupBy(field: string) {
 }
 
 function applyCustomGroupBy(payload: { key: string; label: string }) {
-  const key = String(payload.key || '').trim();
-  if (!key) return;
-  activeGroupByDisplayLabel.value = String(payload.label || key);
-  applyGroupByRuntime(key);
+  applyBusinessListGroup(payload, activeGroupByDisplayLabel, applyGroupByRuntime);
 }
 
 function clearGroupBy() {
-  activeGroupByDisplayLabel.value = '';
-  clearGroupByRuntime();
+  clearBusinessListGroup(activeGroupByDisplayLabel, clearGroupByRuntime);
 }
 
 function applyCustomFilter(payload: { label: string; domain: unknown[] }) {
-  activeCustomFilter.value = {
-    label: String(payload.label || '自定义筛选'),
-    domain: Array.isArray(payload.domain) ? payload.domain : [],
-  };
-  clearSelection();
-  void requestLoadPage();
+  applyBusinessListCustomFilter(payload, activeCustomFilter, () => { clearSelection(); void requestLoadPage(); });
 }
 
 function clearCustomFilter() {
-  activeCustomFilter.value = null;
-  clearSelection();
-  void requestLoadPage();
+  clearBusinessListCustomFilter(activeCustomFilter, () => { clearSelection(); void requestLoadPage(); });
+}
+
+function clearAllListConditions() {
+  clearBusinessListQueryState({ composing: toolbarSearchComposing, searchDraft: toolbarSearchDraft, searchTerm, filterValue, contractFilterKey: activeContractFilterKey, showMoreContractFilters, savedFilterKey: activeSavedFilterKey, showMoreSavedFilters, customFilter: activeCustomFilter, groupByField: activeGroupByField, groupByLabel: activeGroupByDisplayLabel, listOffset, groupWindowOffset, clearSelection, syncRoute: () => syncRouteListState({ preset_filter: undefined }), reload: () => void requestLoadPage() });
 }
 
 async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; isShared?: boolean }) {

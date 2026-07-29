@@ -1,6 +1,7 @@
 .page {
   display: grid;
   gap: var(--sc-product-workspace-stack-gap);
+  align-content: start;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
@@ -144,8 +145,9 @@
   overflow-y: auto;
   scrollbar-gutter: stable;
   background: var(--sc-app-panel);
-  border-radius: 8px;
-  box-shadow: 0 20px 40px var(--sc-app-shadow);
+  border: 1px solid var(--sc-app-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 45%, transparent);
   overscroll-behavior: contain;
   touch-action: pan-x pan-y;
 }
@@ -295,7 +297,7 @@
 }
 
 .grouped-toolbar-title .group-window-info {
-  color: var(--sc-semantic-text-muted);
+  color: var(--sc-app-text-secondary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -509,8 +511,9 @@
   position: sticky;
   bottom: 0;
   z-index: 24;
-  background: var(--sc-app-bg);
-  padding-top: 6px;
+  border-top: 1px solid var(--sc-app-border);
+  background: var(--sc-app-panel);
+  padding: 10px 12px;
 }
 
 .pagination-footer--count-only {
@@ -757,7 +760,7 @@ table {
 
 th,
 td {
-  padding: 8px 10px;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--sc-app-border);
   text-align: left;
   font-size: 13px;
@@ -783,7 +786,7 @@ tbody td {
   min-width: 52px;
   padding-right: 4px;
   padding-left: 4px;
-  color: var(--sc-semantic-text-muted);
+  color: var(--sc-app-text-primary);
   font-variant-numeric: tabular-nums;
   text-align: center;
   white-space: nowrap;
@@ -812,6 +815,11 @@ tbody td {
   overflow: hidden;
   text-overflow: ellipsis;
   overflow-wrap: normal;
+}
+
+.cell-primary .primary {
+  color: var(--sc-app-text-primary);
+  font-weight: 650;
 }
 
 .column-numeric {
@@ -860,7 +868,7 @@ thead {
 thead th {
   position: sticky;
   top: 0;
-  background: var(--sc-app-panel);
+  background: var(--sc-app-muted-bg);
   z-index: 20;
 }
 
@@ -1058,13 +1066,19 @@ tr:hover {
   cursor: pointer;
 }
 
+tbody tr {
+  transition: background-color 120ms ease;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
   border-radius: 999px;
-  padding: 2px 8px;
+  min-height: 24px;
+  padding: 2px 9px;
   font-size: 12px;
+  font-weight: 650;
   border: 1px solid var(--sc-app-border);
   white-space: normal;
   overflow-wrap: anywhere;
