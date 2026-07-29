@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Guard the shared detail/form product baseline without encoding business-specific fields."""
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+WEB = ROOT / "frontend/apps/web/src"
+
+
+def read(relative: str) -> str:
+    return (WEB / relative).read_text(encoding="utf-8")
+
+
+def require(source: str, token: str, label: str) -> None:
+    if token not in source:
+        raise SystemExit(f"[frontend_detail_form_productization_guard] FAIL {label}: missing {token}")
+
+
+page = read("pages/ContractFormPage.vue")
+header = read("pages/contractForm/ContractFormProductHeader.vue")
+canvas = read("pages/contractForm/ContractFormNativeCanvas.vue")
+fields = read("components/template/FormSection.vue")
+debug = read("config/debug.ts")
+identity = read("app/pageIdentityAdapters.ts")
+relations = read("pages/contractForm/useRecordFormFieldSchemas.ts")
+actions = read("pages/contractForm/headerActionPresentation.ts")
+
+require(page, "financialWorkspace && renderProfile === 'readonly'", "edit-first rendering")
+require(page, "if (route.name === 'record') return 'readonly';", "explicit detail route semantics")
+require(page, ":mode=\"renderProfile\"", "form mode projection")
+require(page, ":dirty=\"hasChanges\"", "dirty-state projection")
+require(page, "node.type === 'header' && !showCurrentFormFieldConfigScope.value", "duplicate native header suppression")
+require(header, "aria-label=\"页面模式\"", "mode semantics")
+require(header, "已修改 ${changedFieldCount} 项", "dirty feedback")
+require(canvas, "填写业务信息", "create guidance")
+require(canvas, "编辑业务信息", "edit guidance")
+require(fields, "field-state--required", "required-state label")
+require(fields, "v-else-if=\"field.readonly\"", "readonly-state label")
+require(identity, "normalizedFieldName === 'display_name'", "concise contract identity preference")
+require(relations, "value:[Math.trunc(id),label]", "authorized relation label projection")
+require(actions, ".filter((action) => !action.destructive).slice(0, 1)", "single direct action hierarchy")
+
+if "import.meta.env.DEV ||" in debug:
+    raise SystemExit("[frontend_detail_form_productization_guard] FAIL development mode still exposes HUD")
+if '<FinancialRelationshipWorkspace v-if="financialWorkspace"' in page:
+    raise SystemExit("[frontend_detail_form_productization_guard] FAIL edit route still renders readonly workspace first")
+
+print("[frontend_detail_form_productization_guard] PASS")
