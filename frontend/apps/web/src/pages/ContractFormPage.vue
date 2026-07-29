@@ -951,7 +951,7 @@ const {
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
   busyKind,
   confirmActionSafety: (action) => confirmActionSafety(action),
-  errorMessage,
+  errorMessage, hasChanges: () => hasChanges.value,
   modelName: () => model.value,
   navigateActionResponseResult: (result) => navigateActionResponseResult(result),
   primaryCreateFooterAction: () => primaryCreateFooterAction.value,

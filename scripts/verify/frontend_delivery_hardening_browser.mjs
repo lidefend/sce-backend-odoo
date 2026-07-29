@@ -357,7 +357,9 @@ async function main() {
     await detailHeading.getByText(journeyIdentity, { exact: true }).waitFor({ timeout: 45000 });
     check((await detailHeading.textContent() || '').trim() === journeyIdentity, 'detail heading did not use the concise stable record identity');
     await open(page, recordRoute(TARGETS.journey_request));
-    const submit = page.locator('.template-page-header-actions button').filter({ hasText: /^提交$/ }).first();
+    const moreActions = page.locator('.contract-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first();
+    await moreActions.focus(); await moreActions.press('Enter');
+    const submit = page.locator('.template-page-header-actions button:visible').filter({ hasText: /^提交$/ }).first();
     await submit.focus(); await submit.press('Enter');
     const dialog = page.getByRole('dialog');
     await dialog.waitFor({ timeout: 15000 });

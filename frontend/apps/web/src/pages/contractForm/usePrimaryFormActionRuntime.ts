@@ -10,6 +10,7 @@ export function usePrimaryFormActionRuntime(params: {
   busyKind: Ref<BusyKind>;
   confirmActionSafety: (action: ContractAction) => Promise<boolean>;
   errorMessage: Ref<string>;
+  hasChanges: () => boolean;
   modelName: () => string;
   navigateActionResponseResult: (result: unknown) => Promise<boolean>;
   primaryCreateFooterAction: () => ContractAction | null;
@@ -91,10 +92,13 @@ export function usePrimaryFormActionRuntime(params: {
       await params.saveRecord();
       return;
     }
-    const saved = await params.saveRecord(submitAction.refreshPolicy);
-    if (!saved) return;
-    await nextTick();
-    const submittedRecordId = typeof saved === 'number' ? saved : params.recordId.value;
+    let submittedRecordId = params.recordId.value;
+    if (params.hasChanges()) {
+      const saved = await params.saveRecord(submitAction.refreshPolicy);
+      if (!saved) return;
+      await nextTick();
+      submittedRecordId = typeof saved === 'number' ? saved : params.recordId.value;
+    }
     if (!submittedRecordId) {
       applyFormRuntimeStatusEvent(params, {
         kind: 'status',
