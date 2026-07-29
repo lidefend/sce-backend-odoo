@@ -205,6 +205,8 @@ async function main() {
   check(PERF_RUNS >= 5, `performance sample count must be >=5, got ${PERF_RUNS}`);
   const journeyName = String(TARGETS.journey_request.display_name || '').trim();
   check(journeyName.length > 0, 'missing journey_request display_name');
+  const journeyIdentity = String(TARGETS.journey_request.record_identity || '').trim();
+  check(journeyIdentity.length > 0, 'missing journey_request record_identity');
   const browser = await launchChromium({ headless: true });
   const browserVersion = browser.version();
   const generatedAt = new Date().toISOString();
@@ -351,7 +353,9 @@ async function main() {
     await cardButton.focus(); await cardButton.press('Enter');
     await page.waitForFunction((previous) => window.location.href !== previous, workUrl, { timeout: 45000 });
     check(new URL(page.url()).pathname.startsWith('/r/payment.request/'), `J10 My Work target route invalid: ${page.url()}`);
-    await page.locator('h1').filter({ hasText: journeyName }).waitFor({ timeout: 45000 });
+    const detailHeading = page.locator('h1').first();
+    await detailHeading.getByText(journeyIdentity, { exact: true }).waitFor({ timeout: 45000 });
+    check((await detailHeading.textContent() || '').trim() === journeyIdentity, 'detail heading did not use the concise stable record identity');
     await open(page, recordRoute(TARGETS.journey_request));
     const submit = page.locator('.template-page-header-actions button').filter({ hasText: /^提交$/ }).first();
     await submit.focus(); await submit.press('Enter');
