@@ -20,15 +20,19 @@
 import { computed } from 'vue';
 
 const props = withDefaults(defineProps<{
-  name: 'arrow-right' | 'chevron-right' | 'close' | 'menu' | 'star' | 'star-outline';
+  name: 'apps' | 'arrow-right' | 'building' | 'chevron-right' | 'close' | 'folder' | 'menu' | 'settings' | 'star' | 'star-outline';
   size?: 14 | 16 | 18 | 20 | 24;
 }>(), { size: 20 });
 
 const paths = {
+  apps: 'M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z',
   'arrow-right': 'M5 12h14m-6-6 6 6-6 6',
+  building: 'M4 21V5l8-3 8 3v16M8 7h1m3 0h1m3 0h1M8 11h1m3 0h1m3 0h1M8 15h1m3 0h1m3 0h1M10 21v-3h4v3',
   'chevron-right': 'm9 18 6-6-6-6',
   close: 'M6 6l12 12M18 6 6 18',
+  folder: 'M3 6h7l2 2h9v11H3V6Z',
   menu: 'M4 7h16M4 12h16M4 17h16',
+  settings: 'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.56V20h-3v-.08a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 14.7a1.7 1.7 0 0 0-1.56-1H5v-3h.08a1.7 1.7 0 0 0 1.56-1A1.7 1.7 0 0 0 6.3 7.82l-.06-.06 2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.56V4h3v.08a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1H20v3h-.08a1.7 1.7 0 0 0-1.56 1Z',
   star: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z',
   'star-outline': 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z',
 } as const;

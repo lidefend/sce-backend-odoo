@@ -9,7 +9,7 @@
   height: 100vh;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
+  grid-template-columns: 276px minmax(0, 1fr);
   background: var(--sc-app-bg);
   color: var(--ink);
   font-family: "Inter", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
@@ -25,12 +25,12 @@
 
 .sidebar {
   box-sizing: border-box;
-  padding: 16px 14px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 0;
   border-right: 1px solid var(--sc-app-border);
-  background: transparent;
+  background: var(--sc-app-panel);
   height: 100vh;
   overflow: hidden;
   position: sticky;
@@ -39,7 +39,187 @@
 }
 
 .sidebar--scroll {
-  overflow: auto;
+  overflow: hidden;
+}
+
+.workspace-activity-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 6px;
+  border-right: 1px solid var(--layout-divider);
+  background: var(--sc-app-subtle-bg);
+}
+
+.workspace-activity-brand {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--sc-semantic-surface-interactive);
+  color: var(--sc-semantic-text-on-interactive);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.workspace-activity-rail button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--sc-app-text-secondary);
+  cursor: pointer;
+}
+
+.workspace-activity-rail button:hover {
+  background: var(--sc-app-hover-bg);
+  color: var(--sc-app-text-primary);
+}
+
+.workspace-activity-rail button.active {
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
+  box-shadow: inset 3px 0 0 var(--sc-app-accent);
+}
+
+.workspace-activity-rail button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.workspace-activity-settings {
+  margin-top: auto;
+}
+
+.workspace-sidebar-panel {
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.workspace-scope-panel {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-scope-panel > header {
+  min-height: 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.workspace-scope-panel > header > div {
+  min-width: 0;
+}
+
+.workspace-scope-panel h2,
+.workspace-scope-panel header small {
+  margin: 0;
+}
+
+.workspace-scope-panel h2 {
+  color: var(--sc-app-text-primary);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.workspace-scope-panel header small,
+.workspace-scope-panel > header > span {
+  color: var(--sc-app-text-muted);
+  font-size: 11px;
+}
+
+.workspace-scope-panel header small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-scope-search {
+  box-sizing: border-box;
+  width: 100%;
+  height: 34px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 7px;
+  padding: 0 9px;
+  background: var(--sc-app-input-bg);
+  color: var(--sc-app-text-primary);
+  font-size: 12px;
+}
+
+.workspace-scope-options {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  overflow-y: auto;
+}
+
+.workspace-scope-options > button {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+  background: transparent;
+  color: var(--sc-app-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.workspace-scope-options > button:hover,
+.workspace-scope-options > button.active {
+  border-color: var(--sc-app-info-border);
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
+}
+
+.workspace-scope-options > button span,
+.workspace-scope-options > button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-scope-options > button span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.workspace-scope-options > button small {
+  color: var(--sc-app-text-muted);
+  font-size: 11px;
+}
+
+.workspace-scope-clear {
+  border: 0;
+  background: transparent;
+  color: var(--sc-app-accent);
+  padding: 2px 0;
+  font-size: 11px;
+  cursor: pointer;
 }
 
 .brand {
@@ -711,6 +891,35 @@
   justify-content: flex-end;
 }
 
+.topbar-scope {
+  min-width: 0;
+  max-width: 300px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--sc-app-text-muted);
+  font-size: 12px;
+}
+
+.topbar-scope button {
+  min-width: 0;
+  max-width: 140px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sc-app-text-secondary);
+  font: inherit;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.topbar-scope button:hover {
+  color: var(--sc-app-accent);
+}
+
 .topbar--minimal .topbar-actions :is(.sc-btn, .topbar-context) {
   box-sizing: border-box;
   min-height: 32px;
@@ -907,7 +1116,7 @@
     position: fixed;
     z-index: 90;
     inset: 0 auto 0 0;
-    width: min(320px, calc(100vw - 44px));
+    width: min(340px, calc(100vw - 44px));
     height: 100dvh;
     box-sizing: border-box;
     border-right: 1px solid var(--sc-app-border);

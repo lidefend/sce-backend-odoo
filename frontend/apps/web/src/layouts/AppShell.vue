@@ -15,51 +15,59 @@
   >
     <a class="skip-link" href="#main-content">跳至主要内容</a>
     <aside v-if="sidebarVisible" id="primary-sidebar" class="sidebar sidebar-nav" :class="sidebarClass" data-component="SidebarNav" aria-label="主导航">
-      <ProductIdentity
-        :logo-text="shellLogoText"
-        :title="rootTitle"
-        :subtitle="sidebarSubtitle"
-        :show-close="mobileViewport"
-        @close="closeMobileSidebar"
-      />
+      <nav class="workspace-activity-rail" aria-label="工作空间切换">
+        <span class="workspace-activity-brand" aria-hidden="true">{{ shellLogoText }}</span>
+        <button type="button" :class="{ active: workspacePanelMode === 'navigation' }" title="业务导航" aria-label="业务导航" @click="openWorkspacePanel('navigation')">
+          <ScIcon name="apps" :size="20" />
+        </button>
+        <button type="button" :class="{ active: workspacePanelMode === 'company' }" title="切换公司" aria-label="公司空间：切换公司" @click="openWorkspacePanel('company')">
+          <ScIcon name="building" :size="20" />
+        </button>
+        <button type="button" :class="{ active: workspacePanelMode === 'project' }" :title="switchRecordContextLabel" :aria-label="`${recordContextSpaceLabel}：${switchRecordContextLabel}`" :disabled="!showRecordContext" @click="openWorkspacePanel('project')">
+          <ScIcon name="folder" :size="20" />
+        </button>
+        <button v-if="isPlatformAdmin" class="workspace-activity-settings" type="button" title="系统设置" aria-label="系统设置" @click="router.push('/admin/business-config')">
+          <ScIcon name="settings" :size="20" />
+        </button>
+      </nav>
 
-      <div v-if="showRecordContext" class="project-context" :class="{ 'project-context--disabled': !projectContextEnabled }">
-        <div class="project-trigger-row">
-          <button
-            class="project-trigger"
-            type="button"
-            :disabled="!projectContextEnabled"
-            :aria-expanded="projectMenuOpen"
-            aria-controls="project-context-menu"
-            @click.stop="toggleProjectMenu"
-          >
-            <span>{{ recordContextLabel }}：</span>
-            <strong>{{ currentProjectLabel }}</strong>
-          </button>
-          <button
-            v-if="selectedProject"
-            class="project-clear-inline"
-            type="button"
-            :title="clearRecordContextTitle"
-            :aria-label="clearRecordContextTitle"
-            @click.stop="clearProjectSelection"
-          >
-            <ScIcon name="close" :size="16" />
-          </button>
-        </div>
-        <div v-if="companyOptions.length || operationOptions.length" class="business-scope-controls">
-          <label v-if="companyOptions.length" class="business-scope-field">
-            <span>公司</span>
-            <select aria-label="当前公司" :value="selectedCompanyId || ''" :disabled="companyOptions.length <= 1" @change="changeCompanyScope">
-              <option
-                v-for="company in companyOptions"
-                :key="`company-${company.company_id}`"
-                :value="company.company_id"
-              >
-                {{ company.company_name || `公司 ${company.company_id}` }}
-              </option>
-            </select>
-          </label>
+      <div class="workspace-sidebar-panel">
+        <ProductIdentity
+          :logo-text="shellLogoText"
+          :title="rootTitle"
+          :subtitle="sidebarSubtitle"
+          :show-logo="false"
+          :show-close="mobileViewport"
+          @close="closeMobileSidebar"
+        />
+
+        <section v-if="workspacePanelMode === 'company'" class="workspace-scope-panel" aria-labelledby="company-space-title">
+          <header>
+            <div><small>数据范围</small><h2 id="company-space-title">公司空间</h2></div>
+            <span>{{ filteredCompanyOptions.length }}</span>
+          </header>
+          <input v-model="companySearch" class="workspace-scope-search sc-search" type="search" placeholder="搜索公司" aria-label="搜索公司" />
+          <div class="workspace-scope-options">
+            <button
+              v-for="company in filteredCompanyOptions"
+              :key="`company-space-${company.company_id}`"
+              type="button"
+              :class="{ active: company.company_id === selectedCompanyId }"
+              :aria-current="company.company_id === selectedCompanyId ? 'true' : undefined"
+              @click="selectCompanyScope(company.company_id)"
+            >
+              <span>{{ company.company_name || `公司 ${company.company_id}` }}</span>
+              <small v-if="company.company_id === selectedCompanyId">当前公司</small>
+            </button>
+            <p v-if="!filteredCompanyOptions.length" class="project-empty">无匹配公司</p>
+          </div>
+        </section>
+
+        <section v-else-if="workspacePanelMode === 'project'" class="workspace-scope-panel" aria-labelledby="project-space-title">
+          <header>
+            <div><small>{{ currentCompanyLabel || '全部公司' }}</small><h2 id="project-space-title">{{ recordContextSpaceLabel }}</h2></div>
+            <button v-if="selectedProject" class="workspace-scope-clear" type="button" @click="clearProjectSelection">{{ recordContextAllLabel }}</button>
+          </header>
           <div v-if="operationOptions.length" class="business-scope-segments" role="group" :aria-label="recordContextLabel">
             <button
               v-for="operation in operationOptions"
@@ -69,28 +77,24 @@
               :disabled="operation.disabled"
               :title="operation.disabled_reason || operationScopeLabel(operation)"
               @click.stop="changeOperationScope(operation.operation_strategy)"
-            >
-              {{ operationScopeLabel(operation) }}
-            </button>
+            >{{ operationScopeLabel(operation) }}</button>
           </div>
-        </div>
-        <div v-if="projectMenuOpen && projectContextEnabled" id="project-context-menu" class="project-dropdown" @click.stop>
           <input
             v-model="projectSearch"
-            class="project-search sc-search"
+            class="workspace-scope-search sc-search"
             type="search"
             :aria-label="projectSearchPlaceholder"
             :placeholder="projectSearchPlaceholder"
             @input="queueProjectSearch"
             @keydown.enter.prevent="submitProjectSearch"
           />
-          <div class="project-options">
+          <div class="workspace-scope-options">
             <button
               v-for="option in projectOptions"
-              :key="`project-${option.id}`"
-              class="project-option sc-list-item"
-              :class="{ active: option.id === selectedProject?.id }"
+              :key="`project-space-${option.id}`"
               type="button"
+              :class="{ active: option.id === selectedProject?.id }"
+              :aria-current="option.id === selectedProject?.id ? 'true' : undefined"
               @click="selectProject(option)"
             >
               <span>{{ projectOptionLabel(option) }}</span>
@@ -100,10 +104,9 @@
             <p v-else-if="projectError" class="project-empty">{{ projectError }}</p>
             <p v-else-if="!projectOptions.length" class="project-empty">{{ recordContextEmptyText }}</p>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <div v-if="showPublishedApps" class="published-apps" data-platform-app-catalog="true">
+        <div v-if="workspacePanelMode === 'navigation' && showPublishedApps" class="published-apps" data-platform-app-catalog="true">
         <div class="published-apps__header">
           <span>平台发布</span>
           <small v-if="appCatalogLoading">同步中</small>
@@ -125,7 +128,7 @@
         </div>
       </div>
 
-      <div class="nav-shell">
+        <div v-if="workspacePanelMode === 'navigation'" class="nav-shell">
         <div class="menu">
           <PrimaryNavigation
             :nodes="filteredMenu"
@@ -140,9 +143,10 @@
         </div>
       </div>
 
-      <div class="footer">
-        <button v-if="showRefresh" class="ghost sc-btn sc-btn-ghost" @click="refreshInit">刷新</button>
-        <button class="ghost sc-btn sc-btn-ghost" @click="logout">退出登录</button>
+        <div class="footer">
+          <button v-if="showRefresh" class="ghost sc-btn sc-btn-ghost" @click="refreshInit">刷新</button>
+          <button class="ghost sc-btn sc-btn-ghost" @click="logout">退出登录</button>
+        </div>
       </div>
     </aside>
     <button
@@ -182,6 +186,11 @@
           <p v-if="!useMinimalTopbar && topbarSubtitle" class="headline-subtitle">{{ topbarSubtitle }}</p>
         </div>
         <div class="topbar-actions">
+          <div v-if="showRecordContext" class="topbar-scope" :aria-label="`当前公司和${recordContextSubject}`">
+            <button type="button" title="切换公司" @click="openWorkspacePanel('company')">{{ currentCompanyLabel || '全部公司' }}</button>
+            <span aria-hidden="true">/</span>
+            <button type="button" :title="switchRecordContextLabel" @click="openWorkspacePanel('project')">{{ currentProjectLabel }}</button>
+          </div>
           <div class="topbar-account" @click.stop>
             <button
               class="topbar-context topbar-context-trigger"
@@ -341,6 +350,7 @@ type PublishedApp = {
   category: string;
   badges: Record<string, unknown>;
 };
+type WorkspacePanelMode = 'navigation' | 'company' | 'project';
 const PROJECT_CONTEXT_CHANGED_EVENT = 'sc:project-context-changed';
 const SIDEBAR_HIDDEN_STORAGE_KEY = 'sc_shell_sidebar_hidden';
 
@@ -393,7 +403,8 @@ const sidebarHidden = ref(false);
 const mobileViewport = ref(false);
 const mobileSidebarOpen = ref(false);
 const sidebarToggleButton = ref<HTMLButtonElement | null>(null);
-const projectMenuOpen = ref(false);
+const workspacePanelMode = ref<WorkspacePanelMode>('navigation');
+const companySearch = ref('');
 const roleContextOpen = ref(false);
 const projectSearch = ref('');
 const projectSearching = ref(false);
@@ -458,6 +469,13 @@ const showRecordContext = computed(() =>
 const selectedProject = computed(() => projectContext.value?.selected ?? null);
 const projectOptions = computed(() => projectContext.value?.options ?? []);
 const companyOptions = computed(() => projectContext.value?.company_options ?? []);
+const filteredCompanyOptions = computed(() => {
+  const keyword = companySearch.value.trim().toLowerCase();
+  if (!keyword) return companyOptions.value;
+  return companyOptions.value.filter((company) => (
+    String(company.company_name || company.company_id || '').toLowerCase().includes(keyword)
+  ));
+});
 const operationOptions = computed(() => projectContext.value?.operation_options ?? []);
 const selectedCompanyId = computed(() =>
   Number(projectContext.value?.company_id || selectedProject.value?.company_id || 0) || 0,
@@ -469,9 +487,10 @@ const recordContextLabel = computed(() =>
   String(projectContext.value?.selector?.label || '当前范围').trim() || '当前范围'
 );
 const recordContextSubject = computed(() => recordContextLabel.value.replace(/^当前/, '') || '记录');
+const recordContextSpaceLabel = computed(() => `${recordContextSubject.value}空间`);
+const switchRecordContextLabel = computed(() => `切换${recordContextSubject.value}`);
 const recordContextAllLabel = computed(() => String(projectContext.value?.selector?.all_label || '全部').trim() || '全部');
 const recordContextEmptyText = computed(() => `无匹配${recordContextSubject.value}`);
-const clearRecordContextTitle = computed(() => `清除${recordContextLabel.value}，显示${recordContextAllLabel.value}`);
 const currentProjectLabel = computed(() => {
   if (!projectContextEnabled.value) {
     return projectContext.value?.message || '未启用';
@@ -752,10 +771,15 @@ async function submitProjectSearch(event: KeyboardEvent) {
   await loadProjectOptions();
 }
 
-async function toggleProjectMenu() {
-  if (!projectContextEnabled.value) return;
-  projectMenuOpen.value = !projectMenuOpen.value;
-  if (projectMenuOpen.value) {
+async function openWorkspacePanel(mode: WorkspacePanelMode) {
+  workspacePanelMode.value = mode;
+  if (mobileViewport.value) mobileSidebarOpen.value = true;
+  else if (sidebarHidden.value) {
+    sidebarHidden.value = false;
+    persistSidebarHidden(false);
+  }
+  if (mode === 'company') companySearch.value = '';
+  if (mode === 'project' && projectContextEnabled.value) {
     projectSearch.value = '';
     await loadProjectOptions();
   }
@@ -764,16 +788,18 @@ async function toggleProjectMenu() {
 async function selectProject(option: ProjectContextOption) {
   const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
   const nextProjectId = Number(option?.id || 0) || 0;
-  projectMenuOpen.value = false;
   if (previousProjectId === nextProjectId) return;
   await session.selectProjectContext(option);
   emitProjectContextChanged(previousProjectId);
+  workspacePanelMode.value = 'navigation';
 }
 
-async function changeCompanyScope(event: Event) {
-  const target = event.currentTarget;
-  if (!(target instanceof HTMLSelectElement)) return;
-  const companyId = Number(target.value || 0) || null;
+async function selectCompanyScope(companyIdValue: number) {
+  const companyId = Number(companyIdValue || 0) || null;
+  if (companyId === selectedCompanyId.value) {
+    workspacePanelMode.value = 'navigation';
+    return;
+  }
   const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
   const applied = await session.selectBusinessScope({
     company_id: companyId,
@@ -781,6 +807,7 @@ async function changeCompanyScope(event: Event) {
   });
   if (applied === false) return;
   emitProjectContextChanged(previousProjectId, true);
+  workspacePanelMode.value = 'navigation';
 }
 
 async function changeOperationScope(operationStrategy: string) {
@@ -797,10 +824,10 @@ async function changeOperationScope(operationStrategy: string) {
 
 async function clearProjectSelection() {
   const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
-  projectMenuOpen.value = false;
   if (!previousProjectId) return;
   await session.selectProjectContext(null);
   emitProjectContextChanged(previousProjectId);
+  workspacePanelMode.value = 'navigation';
 }
 
 const pageIdentity = usePageIdentityRuntime();
@@ -1058,7 +1085,6 @@ function handleTraceUpdate() {
 }
 
 function closeProjectMenu() {
-  projectMenuOpen.value = false;
   roleContextOpen.value = false;
 }
 
