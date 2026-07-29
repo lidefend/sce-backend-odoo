@@ -447,7 +447,12 @@ async function main() {
             await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
           } else if (surface.mode === 'dialog') {
             await page.locator('.financial-workspace[data-workspace-kind="payment_request"]').waitFor({ timeout: 45000 });
-            await page.locator('.template-page-header-actions button.sc-btn-primary').filter({ hasText: /^提交$/ }).first().click();
+            let submitAction = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
+            if (!(await submitAction.count())) {
+              await page.locator('.contract-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first().click();
+              submitAction = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
+            }
+            await submitAction.click();
             await page.getByRole('dialog').waitFor({ timeout: 15000 });
           } else if (surface.mode === 'network') {
             await page.getByRole('heading', { name: '网络连接异常' }).waitFor({ timeout: 45000 });
