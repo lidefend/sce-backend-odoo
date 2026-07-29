@@ -1710,3 +1710,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   and isolated authorization tests only. DAILY and production databases,
   candidate images, business models, ACLs, record rules, and frontend
   experience remain untouched.
+
+# FE-R2-P1-01 business-list productization — 2026-07-29
+
+- Branch / anchor: `feat/frontend-business-list-productization` from
+  `b4c8bfd9870f558e27324066a7c3cd07420d5652`.
+- Formal Product Layer: P0 generic contract renderer; Layer Target:
+  `shared frontend business-list presentation`; Module: `frontend/apps/web`.
+- Reason: payment, contract, and project list surfaces exposed the same weak
+  title/action hierarchy, fragmented query feedback, indistinct filtered-empty
+  state, and heavy table framing. These are generic rendering concerns rather
+  than construction policy or customer data semantics.
+- The shared list header, action toolbar, list state, and table presentation now
+  provide a clear business title and result count, visible/removable active
+  conditions, distinct filtered-empty recovery, restrained table boundaries,
+  stronger primary cells, localized standard audit columns, and accessible row
+  numbering.
+- Why Here / Why Not Elsewhere: all three real pages consume the same contract
+  renderer, so the change belongs in the shared frontend surface. No backend
+  field, role, ACL, record rule, navigation identity, low-code customer
+  preference, or fixture business meaning is changed.
+- Blast Radius: generic list rendering and its isolated browser acceptance only.
+  Targeted payment, contract, and project journeys cover 1440x900, 1280x800,
+  and 960x768 with zero serious/critical axe findings and zero console,
+  pageerror, blocking HTTP, or document-overflow findings.
