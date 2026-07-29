@@ -1562,11 +1562,20 @@ class MenuService:
 
     def build_nav(self, *, policy: dict, role_surface: dict | None = None, native_nav: list[dict] | None = None) -> list[dict]:
         role_code = str((role_surface or {}).get("role_code") or "").strip().lower()
+        role_codes = [
+            str(item or "").strip().lower()
+            for item in ((role_surface or {}).get("role_codes") or [role_code])
+            if str(item or "").strip()
+        ]
         discovers_capabilities = self._discovers_installed_capabilities(role_surface)
         # Installed-capability discovery broadens the business catalogue only.
         # It must not implicitly grant the platform-admin configuration surface.
-        is_admin = bool((role_surface or {}).get("is_platform_admin"))
-        is_business_config_admin = bool((role_surface or {}).get("is_business_config_admin")) or self._is_business_config_role(role_code)
+        is_admin = bool((role_surface or {}).get("is_platform_admin")) or any(
+            self._is_admin_role(item) for item in role_codes
+        )
+        is_business_config_admin = bool((role_surface or {}).get("is_business_config_admin")) or any(
+            self._is_business_config_role(item) for item in role_codes
+        )
         policy_has_menu_surface = self._policy_has_menu_surface(policy)
         customer_acceptance_focus = self._policy_is_customer_acceptance_focus(policy)
         exposed_xmlids = self._exposed_menu_xmlids(role_surface)
@@ -1870,6 +1879,7 @@ class MenuService:
         root["meta"] = {
             "source": "delivery_engine_v1",
             "role_code": role_code,
+            "role_codes": role_codes,
             "strategy": "unified_system_menu",
             "source_authority": self.source_authority_contract(),
         }

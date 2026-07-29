@@ -1485,6 +1485,11 @@ const contractMetaLine = computed(() => {
 const showDebugActions = computed(() => renderProfile.value !== 'create');
 const showDebugActionsVisible = computed(() => showHud.value && showDebugActions.value);
 const runtimeRoleCode = computed(() => String(session.roleSurface?.role_code || '').trim().toLowerCase());
+const runtimeRoleCodes = computed(() => {
+  const configured = session.roleSurface?.role_codes || [];
+  const roles = configured.length ? configured : [runtimeRoleCode.value];
+  return roles.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean);
+});
 const runtimeCapabilities = computed(() => collectRuntimeCapabilities(session));
 const runtimeUserGroups = computed(() => collectRuntimeUserGroups(session.user as { groups_xmlids?: unknown } | null));
 const policyContext = computed(() => ({
@@ -1493,6 +1498,7 @@ const policyContext = computed(() => ({
   capabilities: runtimeCapabilities.value,
   userGroups: runtimeUserGroups.value,
   roleCode: runtimeRoleCode.value,
+  roleCodes: runtimeRoleCodes.value,
 }));
 
 const warnings = computed(() => normalizeContractWarnings(contract.value?.warnings));

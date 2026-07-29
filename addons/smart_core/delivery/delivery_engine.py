@@ -240,6 +240,11 @@ class DeliveryEngine:
             "base_product_key": str(policy.get("base_product_key") or "").strip(),
             "edition_key": str(policy.get("edition_key") or "").strip(),
             "role_code": str(role_surface.get("role_code") or "").strip(),
+            "role_codes": [
+                str(item or "").strip()
+                for item in (role_surface.get("role_codes") or [])
+                if str(item or "").strip()
+            ],
             "nav": nav,
             "contextual_routes": contextual_routes,
             "route_authority_v1": route_authority,

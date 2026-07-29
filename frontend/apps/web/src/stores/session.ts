@@ -33,7 +33,11 @@ function resolveAvailableSceneKeyRoute(sceneKey: string): string {
 
 export interface RoleSurface {
   role_code: string;
+  primary_role_code: string;
+  role_codes: string[];
   role_label: string;
+  role_labels: string[];
+  multi_role: boolean;
   landing_scene_key: string;
   landing_menu_id?: number | null;
   landing_menu_xmlid?: string;
@@ -1609,7 +1613,15 @@ export const useSessionStore = defineStore('session', {
       const roleSurfaceRaw = (result as AppInitResponse & { role_surface?: Partial<RoleSurface> }).role_surface ?? {};
       this.roleSurface = {
         role_code: String(roleSurfaceRaw.role_code || ''),
+        primary_role_code: String(roleSurfaceRaw.primary_role_code || roleSurfaceRaw.role_code || ''),
+        role_codes: Array.isArray(roleSurfaceRaw.role_codes)
+          ? roleSurfaceRaw.role_codes.map((item) => String(item || '')).filter(Boolean)
+          : [String(roleSurfaceRaw.role_code || '')].filter(Boolean),
         role_label: String(roleSurfaceRaw.role_label || roleSurfaceRaw.role_code || ''),
+        role_labels: Array.isArray(roleSurfaceRaw.role_labels)
+          ? roleSurfaceRaw.role_labels.map((item) => String(item || '')).filter(Boolean)
+          : [String(roleSurfaceRaw.role_label || roleSurfaceRaw.role_code || '')].filter(Boolean),
+        multi_role: Boolean(roleSurfaceRaw.multi_role),
         landing_scene_key: String(roleSurfaceRaw.landing_scene_key || ''),
         landing_menu_id: typeof roleSurfaceRaw.landing_menu_id === 'number' ? roleSurfaceRaw.landing_menu_id : null,
         landing_menu_xmlid: String(roleSurfaceRaw.landing_menu_xmlid || ''),

@@ -173,6 +173,11 @@ export function usePageContract(pageKey: string, options: UsePageContractOptions
     }
     return '';
   });
+  const runtimeRoleCodes = computed(() => {
+    const configured = session.roleSurface?.role_codes || [];
+    const roles = configured.length ? configured : [runtimeRoleCode.value];
+    return roles.map((item) => asText(item).trim()).filter(Boolean);
+  });
   const globalActions = computed<GlobalActionConfig[]>(() => {
     const page = contract.value?.page_orchestration_v1?.page;
     const raw = page && typeof page === 'object'
@@ -278,8 +283,8 @@ export function usePageContract(pageKey: string, options: UsePageContractOptions
     const visibilityRow = visibility as Record<string, unknown>;
     const roles = asTextList(visibilityRow.roles);
     const capabilities = asTextList(visibilityRow.capabilities);
-    const roleCode = runtimeRoleCode.value;
-    if (roles.length && roleCode && !roles.includes(roleCode)) return false;
+    const roleCodes = runtimeRoleCodes.value;
+    if (roles.length && !roles.some((role) => roleCodes.includes(role))) return false;
     if (capabilities.length) {
       const enabled = new Set((session.capabilities || []).map((item) => asText(item)).filter(Boolean));
       const hasAny = capabilities.some((keyName) => enabled.has(keyName));

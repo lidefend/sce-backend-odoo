@@ -47,6 +47,7 @@ type PolicyContext = {
   capabilities: Set<string>;
   userGroups: string[];
   roleCode: string;
+  roleCodes?: string[];
   submittedFields?: Set<string>;
 };
 
@@ -96,7 +97,20 @@ function evaluateLeafCondition(expr: RawExpr, ctx: PolicyContext): boolean {
   if (source === 'record') {
     actual = ctx.formData[field];
   } else if (source === 'context') {
-    if (field === 'role_code') actual = ctx.roleCode;
+    if (field === 'role_code') {
+      const roleCodes = (ctx.roleCodes?.length ? ctx.roleCodes : [ctx.roleCode])
+        .map((item) => String(item || '').trim().toLowerCase())
+        .filter(Boolean);
+      const expected = expr.value;
+      const normalizedOp = op.trim().toLowerCase();
+      if (normalizedOp === 'eq' || normalizedOp === 'in') {
+        return roleCodes.some((roleCode) => compareCondition(roleCode, normalizedOp, expected));
+      }
+      if (normalizedOp === 'ne' || normalizedOp === 'not_in') {
+        return roleCodes.every((roleCode) => compareCondition(roleCode, normalizedOp, expected));
+      }
+      actual = roleCodes[0] || '';
+    }
     if (field === 'profile') actual = ctx.profile;
   }
   return compareCondition(actual, op, expr.value);
@@ -196,7 +210,10 @@ export function evaluateActionPolicy(
     ? enabledWhen.required_roles.map((x) => String(x || '').trim().toLowerCase()).filter(Boolean)
     : [];
   if (requiredRoles.length) {
-    if (!requiredRoles.includes(String(ctx.roleCode || '').trim().toLowerCase())) {
+    const effectiveRoles = (ctx.roleCodes?.length ? ctx.roleCodes : [ctx.roleCode])
+      .map((item) => String(item || '').trim().toLowerCase())
+      .filter(Boolean);
+    if (!requiredRoles.some((role) => effectiveRoles.includes(role))) {
       enabled = false;
     }
   }

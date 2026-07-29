@@ -111,43 +111,57 @@ class IdentityResolver:
         return {xml for xml in ext_map.values() if xml}
 
     def resolve_role_code_with_evidence(self, user_xmlids: set) -> tuple[str, dict]:
+        role_codes, evidence = self.resolve_role_codes_with_evidence(user_xmlids)
+        return role_codes[0], evidence
+
+    def resolve_role_codes_with_evidence(self, user_xmlids: set) -> tuple[List[str], dict]:
         explicit_hits: Dict[str, List[str]] = {}
         for role in self._role_precedence:
             hits = sorted((self._role_groups_explicit.get(role) or set()) & user_xmlids)
             if hits:
                 explicit_hits[role] = hits
-        for role in self._role_precedence:
-            hits = explicit_hits.get(role) or []
-            if hits:
-                evidence = {
-                    "source": "explicit",
-                    "matched_groups": hits,
-                }
-                if len(explicit_hits) > 1:
-                    evidence["candidate_roles"] = sorted(explicit_hits.keys())
-                return role, evidence
+        if explicit_hits:
+            role_codes = [role for role in self._role_precedence if role in explicit_hits]
+            return role_codes, {
+                "source": "explicit",
+                "primary_role": role_codes[0],
+                "effective_roles": role_codes,
+                "matched_groups": explicit_hits[role_codes[0]],
+                "matched_groups_by_role": explicit_hits,
+            }
 
         project_member_hits = sorted((self._role_groups_explicit.get("project_member") or set()) & user_xmlids)
         if project_member_hits:
-            return "project_member", {"source": "capability_role", "matched_groups": project_member_hits}
+            return ["project_member"], {
+                "source": "capability_role",
+                "primary_role": "project_member",
+                "effective_roles": ["project_member"],
+                "matched_groups": project_member_hits,
+                "matched_groups_by_role": {"project_member": project_member_hits},
+            }
 
         capability_hits: Dict[str, List[str]] = {}
         for role in ("pm", "finance"):
             hits = sorted((self._role_groups_capability_fallback.get(role) or set()) & user_xmlids)
             if hits:
                 capability_hits[role] = hits
-        for role in ("pm", "finance"):
-            hits = capability_hits.get(role) or []
-            if hits:
-                evidence = {
-                    "source": "capability_fallback",
-                    "matched_groups": hits,
-                }
-                if len(capability_hits) > 1:
-                    evidence["candidate_roles"] = sorted(capability_hits.keys())
-                return role, evidence
+        if capability_hits:
+            role_codes = [role for role in ("pm", "finance") if role in capability_hits]
+            return role_codes, {
+                "source": "capability_fallback",
+                "primary_role": role_codes[0],
+                "effective_roles": role_codes,
+                "matched_groups": capability_hits[role_codes[0]],
+                "matched_groups_by_role": capability_hits,
+            }
 
-        return "restricted", {"source": "no_authoritative_role", "matched_groups": []}
+        return ["restricted"], {
+            "source": "no_authoritative_role",
+            "primary_role": "restricted",
+            "effective_roles": ["restricted"],
+            "matched_groups": [],
+            "matched_groups_by_role": {},
+        }
 
     def resolve_role_code(self, user_xmlids: set) -> str:
         role_code, _ = self.resolve_role_code_with_evidence(user_xmlids)
@@ -205,6 +219,74 @@ class IdentityResolver:
         ):
             if isinstance(role_override.get(field), bool):
                 merged[field] = role_override[field]
+        return merged
+
+    @staticmethod
+    def _ordered_union(role_metas: List[dict], field: str) -> list:
+        merged = []
+        for role_meta in role_metas:
+            for item in role_meta.get(field) or []:
+                if item not in merged:
+                    merged.append(item)
+        return merged
+
+    @staticmethod
+    def _ordered_intersection(role_metas: List[dict], field: str) -> list:
+        if not role_metas:
+            return []
+        common = list(role_metas[0].get(field) or [])
+        for role_meta in role_metas[1:]:
+            values = role_meta.get(field) or []
+            common = [item for item in common if item in values]
+        return common
+
+    def _merge_effective_role_metas(
+        self,
+        role_codes: List[str],
+        role_surface_overrides: dict | None,
+    ) -> dict:
+        role_metas = []
+        restricted_meta = self._role_surface_map.get("restricted") or {}
+        for role_code in role_codes:
+            base = self._role_surface_map.get(role_code) or restricted_meta
+            role_metas.append(self._merge_role_meta(role_code, base, role_surface_overrides))
+
+        allow_fields = (
+            "landing_scene_candidates",
+            "menu_xmlids",
+            "primary_menu_xmlids",
+            "role_home_menu_xmlids",
+            "contextual_menu_xmlids",
+            "admin_menu_xmlids",
+            "contextual_action_authorities",
+            "admin_action_authorities",
+        )
+        deny_fields = (
+            "denied_menu_xmlids",
+            "denied_action_authorities",
+            "menu_blocklist_xmlids",
+            "action_blocklist_xmlids",
+            "model_blocklist",
+            "model_prefix_blocklist",
+            "group_key_blocklist",
+        )
+        merged = {field: self._ordered_union(role_metas, field) for field in allow_fields}
+        merged.update({field: self._ordered_intersection(role_metas, field) for field in deny_fields})
+        labels = [
+            str(role_meta.get("label") or role_code).strip()
+            for role_code, role_meta in zip(role_codes, role_metas)
+        ]
+        merged["label"] = " / ".join(label for label in labels if label)
+        merged["role_labels"] = labels
+        merged["deny_all_navigation"] = bool(role_metas) and all(
+            bool(role_meta.get("deny_all_navigation")) for role_meta in role_metas
+        )
+        merged["discover_installed_capabilities"] = any(
+            bool(role_meta.get("discover_installed_capabilities")) for role_meta in role_metas
+        )
+        merged["system_configuration_visible"] = any(
+            bool(role_meta.get("system_configuration_visible")) for role_meta in role_metas
+        )
         return merged
 
     def _walk_nav_nodes(self, nodes):
@@ -287,9 +369,9 @@ class IdentityResolver:
         scene_keys: set,
         role_surface_overrides: dict | None = None,
     ) -> dict:
-        role_code, role_evidence = self.resolve_role_code_with_evidence(user_xmlids)
-        role_meta = self._role_surface_map.get(role_code) or self._role_surface_map.get("restricted") or {}
-        role_meta = self._merge_role_meta(role_code, role_meta, role_surface_overrides)
+        role_codes, role_evidence = self.resolve_role_codes_with_evidence(user_xmlids)
+        role_code = role_codes[0]
+        role_meta = self._merge_effective_role_metas(role_codes, role_surface_overrides)
         scene_candidates = self._merge_scene_candidates(
             list(role_meta.get("landing_scene_candidates") or []),
             nav_tree,
@@ -323,7 +405,11 @@ class IdentityResolver:
         landing_path = f"/s/{landing_scene_key}"
         role_surface = {
             "role_code": role_code,
+            "primary_role_code": role_code,
+            "role_codes": role_codes,
             "role_label": role_meta.get("label") or role_code,
+            "role_labels": list(role_meta.get("role_labels") or []),
+            "multi_role": len(role_codes) > 1,
             "role_evidence": role_evidence,
             "landing_scene_key": landing_scene_key,
             "landing_menu_xmlid": landing_menu_xmlid,
@@ -549,10 +635,12 @@ class IdentityResolver:
     def resolve(self, env):
         user = env.user
         groups = self.user_group_xmlids(user)
-        role_code, role_evidence = self.resolve_role_code_with_evidence(groups)
+        role_codes, role_evidence = self.resolve_role_codes_with_evidence(groups)
         return {
             "user_id": user.id,
             "groups_xmlids": sorted(groups),
-            "role_code": role_code,
+            "role_code": role_codes[0],
+            "primary_role_code": role_codes[0],
+            "role_codes": role_codes,
             "role_evidence": role_evidence,
         }

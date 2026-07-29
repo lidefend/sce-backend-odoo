@@ -40,6 +40,66 @@ construction_policy = _load_module(
 
 
 class TestIdentityResolverEntryTarget(unittest.TestCase):
+    def _construction_resolver(self):
+        resolver = target.IdentityResolver()
+        resolver._role_groups_explicit = construction_policy.ROLE_GROUPS_EXPLICIT
+        resolver._role_groups_capability_fallback = construction_policy.ROLE_GROUPS_CAPABILITY_FALLBACK
+        resolver._role_precedence = construction_policy.ROLE_PRECEDENCE
+        resolver._role_surface_map = {
+            **resolver._role_surface_map,
+            **construction_policy.ROLE_SURFACE_OVERRIDES,
+        }
+        return resolver
+
+    def test_explicit_multi_role_assignments_are_preserved_as_union(self):
+        resolver = self._construction_resolver()
+        surface = resolver.build_role_surface(
+            {
+                "smart_construction_core.group_sc_cap_business_config_admin",
+                "smart_construction_core.group_sc_role_finance_manager",
+            },
+            [],
+            {"workspace.home", "finance.payment_requests", "projects.list"},
+            construction_policy.ROLE_SURFACE_OVERRIDES,
+        )
+
+        self.assertEqual(surface["role_code"], "business_config_admin")
+        self.assertEqual(surface["primary_role_code"], "business_config_admin")
+        self.assertEqual(surface["role_codes"], ["business_config_admin", "finance"])
+        self.assertEqual(surface["role_labels"], ["业务配置管理员", "财务主管"])
+        self.assertEqual(surface["role_label"], "业务配置管理员 / 财务主管")
+        self.assertTrue(surface["multi_role"])
+        self.assertIn(
+            "smart_construction_core.menu_ui_menu_config_policy_business_config",
+            surface["admin_menu_xmlids"],
+        )
+        self.assertIn(
+            "smart_construction_core.menu_payment_request_receive",
+            surface["primary_menu_xmlids"],
+        )
+
+    def test_multi_role_denials_only_apply_when_every_effective_role_denies(self):
+        resolver = self._construction_resolver()
+        surface = resolver.build_role_surface(
+            {
+                "smart_construction_core.group_sc_role_project_manager",
+                "smart_construction_core.group_sc_role_finance_manager",
+            },
+            [],
+            {"workspace.home"},
+            construction_policy.ROLE_SURFACE_OVERRIDES,
+        )
+
+        self.assertEqual(surface["role_codes"], ["pm", "finance"])
+        self.assertNotIn(
+            "smart_construction_core.menu_sc_plan",
+            surface["menu_blocklist_xmlids"],
+        )
+        self.assertNotIn(
+            "smart_construction_core.menu_sc_project_manage",
+            surface["menu_blocklist_xmlids"],
+        )
+
     def test_only_smart_core_admin_uses_daily_capability_discovery_surface(self):
         resolver = target.IdentityResolver()
         resolver._role_groups_explicit = construction_policy.ROLE_GROUPS_EXPLICIT
