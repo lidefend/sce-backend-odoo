@@ -59,9 +59,23 @@ const expanded = computed(() => new Set(session.menuExpandedKeys));
 const activeParents = ref<Set<string>>(new Set());
 
 const sorted = computed(() => {
-  const nodes = hideDuplicateLeafBesideGroup(props.nodes);
+  const nodes = hideEmptyDirectoryLeaves(hideDuplicateLeafBesideGroup(props.nodes));
   return [...nodes];
 });
+
+function hideEmptyDirectoryLeaves(nodes: NavNode[]) {
+  return nodes.filter((node) => {
+    if (node.children?.length) return true;
+    const raw = node as NavNode & {
+      target_type?: unknown;
+      delivery_mode?: unknown;
+      is_clickable?: unknown;
+    };
+    const targetType = String(raw.target_type || node.meta?.target_type || '').trim();
+    const deliveryMode = String(raw.delivery_mode || node.meta?.delivery_mode || '').trim();
+    return !(targetType === 'directory' && deliveryMode === 'none' && raw.is_clickable === false);
+  });
+}
 
 function hideDuplicateLeafBesideGroup(nodes: NavNode[]) {
   const groupLabels = new Set(
