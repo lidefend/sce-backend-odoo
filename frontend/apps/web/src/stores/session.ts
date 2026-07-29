@@ -1355,6 +1355,13 @@ export const useSessionStore = defineStore('session', {
       const title = asText(rawTitle);
       if (!activeKey || !title) return;
       const activePage = this.activityPages.find((page) => page.key === activeKey);
+      if (
+        activePage?.title
+        && !isTransientLoadingActivityTitle(activePage.title)
+        && isTransientLoadingActivityTitle(title)
+      ) {
+        return;
+      }
       const titleBelongsToAnotherPage = this.activityPages.some((page) => page.key !== activeKey && page.title === title);
       if (
         activePage?.title
