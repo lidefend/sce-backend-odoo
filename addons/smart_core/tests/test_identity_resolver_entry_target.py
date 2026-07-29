@@ -100,6 +100,36 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
             surface["menu_blocklist_xmlids"],
         )
 
+    def test_additive_technical_surface_does_not_impersonate_business_role(self):
+        resolver = self._construction_resolver()
+        resolver._role_precedence = ("pm", "uat_helper", "finance")
+        resolver._role_groups_explicit = {
+            **resolver._role_groups_explicit,
+            "uat_helper": {"x.group_uat_helper"},
+        }
+        resolver._role_surface_map = {
+            **resolver._role_surface_map,
+            "uat_helper": {
+                "label": "Technical UAT Helper",
+                "identity_role": False,
+                "menu_xmlids": ["x.menu_uat_helper"],
+            },
+        }
+        surface = resolver.build_role_surface(
+            {
+                "smart_construction_core.group_sc_role_project_manager",
+                "x.group_uat_helper",
+            },
+            [],
+            {"workspace.home"},
+            construction_policy.ROLE_SURFACE_OVERRIDES,
+        )
+
+        self.assertEqual(surface["role_codes"], ["pm"])
+        self.assertEqual(surface["surface_role_codes"], ["pm", "uat_helper"])
+        self.assertEqual(surface["role_label"], "项目经理")
+        self.assertIn("x.menu_uat_helper", surface["menu_xmlids"])
+
     def test_only_smart_core_admin_uses_daily_capability_discovery_surface(self):
         resolver = target.IdentityResolver()
         resolver._role_groups_explicit = construction_policy.ROLE_GROUPS_EXPLICIT

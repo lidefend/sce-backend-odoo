@@ -121,11 +121,16 @@ class IdentityResolver:
             if hits:
                 explicit_hits[role] = hits
         if explicit_hits:
-            role_codes = [role for role in self._role_precedence if role in explicit_hits]
+            surface_roles = [role for role in self._role_precedence if role in explicit_hits]
+            role_codes = [
+                role for role in surface_roles
+                if (self._role_surface_map.get(role) or {}).get("identity_role", True) is not False
+            ] or surface_roles
             return role_codes, {
                 "source": "explicit",
                 "primary_role": role_codes[0],
                 "effective_roles": role_codes,
+                "surface_roles": surface_roles,
                 "matched_groups": explicit_hits[role_codes[0]],
                 "matched_groups_by_role": explicit_hits,
             }
@@ -146,11 +151,16 @@ class IdentityResolver:
             if hits:
                 capability_hits[role] = hits
         if capability_hits:
-            role_codes = [role for role in ("pm", "finance") if role in capability_hits]
+            surface_roles = [role for role in ("pm", "finance") if role in capability_hits]
+            role_codes = [
+                role for role in surface_roles
+                if (self._role_surface_map.get(role) or {}).get("identity_role", True) is not False
+            ] or surface_roles
             return role_codes, {
                 "source": "capability_fallback",
                 "primary_role": role_codes[0],
                 "effective_roles": role_codes,
+                "surface_roles": surface_roles,
                 "matched_groups": capability_hits[role_codes[0]],
                 "matched_groups_by_role": capability_hits,
             }
@@ -242,12 +252,13 @@ class IdentityResolver:
 
     def _merge_effective_role_metas(
         self,
-        role_codes: List[str],
+        surface_role_codes: List[str],
         role_surface_overrides: dict | None,
+        identity_role_codes: List[str] | None = None,
     ) -> dict:
         role_metas = []
         restricted_meta = self._role_surface_map.get("restricted") or {}
-        for role_code in role_codes:
+        for role_code in surface_role_codes:
             base = self._role_surface_map.get(role_code) or restricted_meta
             role_metas.append(self._merge_role_meta(role_code, base, role_surface_overrides))
 
@@ -272,10 +283,12 @@ class IdentityResolver:
         )
         merged = {field: self._ordered_union(role_metas, field) for field in allow_fields}
         merged.update({field: self._ordered_intersection(role_metas, field) for field in deny_fields})
-        labels = [
-            str(role_meta.get("label") or role_code).strip()
-            for role_code, role_meta in zip(role_codes, role_metas)
-        ]
+        identity_role_codes = identity_role_codes or surface_role_codes
+        labels = []
+        for role_code in identity_role_codes:
+            base = self._role_surface_map.get(role_code) or restricted_meta
+            identity_meta = self._merge_role_meta(role_code, base, role_surface_overrides)
+            labels.append(str(identity_meta.get("label") or role_code).strip())
         merged["label"] = " / ".join(label for label in labels if label)
         merged["role_labels"] = labels
         merged["deny_all_navigation"] = bool(role_metas) and all(
@@ -371,7 +384,12 @@ class IdentityResolver:
     ) -> dict:
         role_codes, role_evidence = self.resolve_role_codes_with_evidence(user_xmlids)
         role_code = role_codes[0]
-        role_meta = self._merge_effective_role_metas(role_codes, role_surface_overrides)
+        surface_role_codes = list(role_evidence.get("surface_roles") or role_codes)
+        role_meta = self._merge_effective_role_metas(
+            surface_role_codes,
+            role_surface_overrides,
+            identity_role_codes=role_codes,
+        )
         scene_candidates = self._merge_scene_candidates(
             list(role_meta.get("landing_scene_candidates") or []),
             nav_tree,
@@ -407,6 +425,7 @@ class IdentityResolver:
             "role_code": role_code,
             "primary_role_code": role_code,
             "role_codes": role_codes,
+            "surface_role_codes": surface_role_codes,
             "role_label": role_meta.get("label") or role_code,
             "role_labels": list(role_meta.get("role_labels") or []),
             "multi_role": len(role_codes) > 1,
