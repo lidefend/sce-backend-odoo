@@ -787,6 +787,10 @@ function isGenericActivityTitle(title: string): boolean {
   return /^(动作\s*\d+|业务动作|业务表单|新建业务表单|活动页面)$/.test(text);
 }
 
+function isTransientLoadingActivityTitle(title: string): boolean {
+  return /(?:^| · )加载中$/.test(asText(title));
+}
+
 export const useSessionStore = defineStore('session', {
   state: (): SessionState => ({
     token: null,
@@ -1289,7 +1293,9 @@ export const useSessionStore = defineStore('session', {
         last_active_at: now,
       };
       if (!isRetainedActivityPage(nextPage)) return;
-      const others = this.activityPages.filter((page) => page.key !== key);
+      const others = this.activityPages.filter(
+        (page) => page.key !== key && !isTransientLoadingActivityTitle(page.title),
+      );
       this.activeActivityPageKey = key;
       this.activityPages = trimActivityPages([...others, nextPage], key)
         .sort((a, b) => a.created_at - b.created_at);
