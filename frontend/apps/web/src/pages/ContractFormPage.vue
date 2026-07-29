@@ -1793,13 +1793,7 @@ useFormAuxiliaryWatchersRuntime({
   router,
 });
 
-watch(
-  () => route.query.config_mode,
-  (mode) => {
-    applyRouteConfigMode(mode);
-  },
-  { immediate: true },
-);
+watch(() => route.query.config_mode, (mode) => applyRouteConfigMode(mode), { immediate: true });
 
 </script>
 

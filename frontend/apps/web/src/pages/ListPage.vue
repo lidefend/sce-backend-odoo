@@ -1,6 +1,6 @@
 <template>
   <section
-    class="page sc-page"
+    class="page sc-page sc-product-workspace-stack"
     data-product-page-mode="list"
   >
     <ScPageHeader

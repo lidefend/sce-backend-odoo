@@ -1760,3 +1760,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   modes and three work viewports with zero serious/critical axe findings,
   runtime errors, raw relation identifiers or horizontal overflow. No customer,
   DAILY or production database was accessed.
+
+# FE-R0-CLEAN frontend product baseline reconstruction — 2026-07-29
+
+- Branch / anchor: `fix/fe-r0-clean` from
+  `8e4b7512e56a5f8db034f1f731b6702a70f04547`, followed only by the two
+  approved multi-role union commits `a1d83d154975f3161f6b20a67cefde0ab6e62da6`
+  and `a1a416699cc8a526e5658520a7a9829dd983bb62`.
+- Formal Product Layer: P0 generic frontend runtime; Layer Target:
+  `shared page renderer and route assembly guards`; Module:
+  `frontend/apps/web`.
+- Reason: establish a traceable frontend product baseline before the separate
+  FE-R1 scrolling iteration. The clean branch restores product-surface markers,
+  keeps the shared form container within its governed size limit, and teaches
+  the route guard to verify the existing `ContractFormRoute` compatibility
+  wrapper instead of requiring a direct page import.
+- Why Here / Why Not Elsewhere: the changes close generic renderer and static
+  verification gaps only. They do not introduce construction-domain semantics,
+  modify role projection, or change backend authorization.
+- Blast Radius: frontend semantic marker classes and their fail-closed static
+  guards. The excluded single-scroll and sticky-header experiments are not
+  present; no overflow, scroll-container, sticky-position, database, ACL,
+  record-rule, navigation, or business-data behavior is changed.

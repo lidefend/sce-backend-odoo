@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 <template>
-  <ScPage class="page sc-product-workspace-stack" data-product-page-mode="list" :content-layout="actionContentLayoutMode">
+  <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" :content-layout="actionContentLayoutMode">
     <!-- Page intent: 在列表场景中先判断状态，再给出下一步可执行动作。 -->
     <StatusPanel
       v-if="renderErrorMessage"

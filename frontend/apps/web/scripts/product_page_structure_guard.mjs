@@ -136,11 +136,11 @@ const regionFiles = [
     markers: [regionClass("mainSurface")],
   },
   {
-    file: "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+    file: "frontend/apps/web/src/views/businessConfigSurface/template.html",
     markers: [regionClass("pageHeader")],
   },
   {
-    file: "frontend/apps/web/src/views/MenuConfigView.vue",
+    file: "frontend/apps/web/src/views/menuConfig/template.html",
     markers: [regionClass("pageHeader"), regionClass("mainSurface")],
   },
 ];
@@ -152,8 +152,8 @@ const pageModeFiles = [
   { file: "frontend/apps/web/src/pages/ModelListPage.vue", mode: "list" },
   { file: "frontend/apps/web/src/views/PlaceholderView.vue", mode: "workspace" },
   { file: "frontend/apps/web/src/pages/ContractFormPage.vue", mode: "form" },
-  { file: "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue", mode: "admin" },
-  { file: "frontend/apps/web/src/views/MenuConfigView.vue", mode: "admin" },
+  { file: "frontend/apps/web/src/views/businessConfigSurface/template.html", mode: "admin" },
+  { file: "frontend/apps/web/src/views/menuConfig/template.html", mode: "admin" },
 ];
 
 assertContains(
@@ -415,7 +415,7 @@ assertContains(
   "business config workspace must use product workspace class",
 );
 assertContains(
-  "frontend/apps/web/src/views/MenuConfigView.vue",
+  "frontend/apps/web/src/views/menuConfig/template.html",
   /sc-product-workspace/,
   "menu config workspace must use product workspace class",
 );
