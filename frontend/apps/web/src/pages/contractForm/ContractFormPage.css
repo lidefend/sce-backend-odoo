@@ -582,8 +582,12 @@
 
 .native-default-section-head {
   grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   border-bottom: 1px solid var(--sc-app-border);
-  padding: 0 0 6px;
+  padding: 0 0 10px;
 }
 
 .native-default-section-head h3 {
@@ -591,6 +595,23 @@
   color: var(--sc-app-text-primary);
   font-size: 14px;
   font-weight: 700;
+}
+
+.native-default-section-head p {
+  margin: 4px 0 0;
+  color: var(--sc-semantic-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.native-form-mode-note {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--sc-app-panel-muted);
+  color: var(--sc-semantic-text-muted);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .contract-readonly-value {

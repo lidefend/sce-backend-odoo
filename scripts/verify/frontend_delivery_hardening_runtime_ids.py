@@ -7,6 +7,16 @@ def target(menu_xmlid, record_xmlid):
     menu = env.ref(menu_xmlid)
     action = menu.action
     record = env.ref(record_xmlid)
+    record_identity = next(
+        (
+            str(value).strip()
+            for field_name in ("name", "code", "number", "reference", "document_no", "contract_no", "project_code")
+            if field_name in record._fields
+            for value in (record[field_name],)
+            if value
+        ),
+        str(record.display_name).strip(),
+    )
     return {
         "menu_id": int(menu.id),
         "menu_xmlid": menu_xmlid,
@@ -15,6 +25,7 @@ def target(menu_xmlid, record_xmlid):
         "model": action.res_model,
         "record_id": int(record.id),
         "record_xmlid": record_xmlid,
+        "record_identity": record_identity,
         "display_name": str(record.display_name),
     }
 

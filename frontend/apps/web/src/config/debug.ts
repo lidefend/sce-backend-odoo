@@ -47,7 +47,6 @@ export function isHudEnabled(route: RouteLocationNormalizedLoaded) {
   const rawHud =
     typeof window !== 'undefined' ? extractHudFromRawSearch(window.location.search) : '';
   return (
-    import.meta.env.DEV ||
     isTruthyHudValue(directHud) ||
     isTruthyHudValue(nestedHud) ||
     isTruthyHudValue(rawHud) ||

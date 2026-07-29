@@ -28,7 +28,11 @@
           @mouseup="emitFieldOrderPointerDrop(field, $event)"
         >
           <div class="field-label-row">
-            <label v-if="!fieldConfigEditable" class="label" :for="fieldControlId(field)">{{ field.label }}<span v-if="field.required" class="required">*</span></label>
+            <label v-if="!fieldConfigEditable" class="label" :for="fieldControlId(field)">
+              {{ field.label }}
+              <span v-if="field.required && !field.readonly" class="field-state field-state--required">必填</span>
+              <span v-else-if="field.readonly" class="field-state">只读</span>
+            </label>
             <input
               v-else
               class="field-label-editor"
@@ -729,7 +733,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .template-form-section-hint {
   margin: -4px 0 10px;
   font-size: 12px;
-  color: var(--sc-semantic-text-muted);
+  color: var(--sc-app-text-primary);
 }
 
 .field-supporting-text,
@@ -919,9 +923,24 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   opacity: 0.62;
 }
 
-.required {
+.field-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 999px;
+  color: var(--sc-app-text-primary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: 1px;
+}
+
+.field-state--required {
+  border-color: var(--sc-app-danger-border);
   color: var(--sc-app-danger-text);
-  margin-left: 2px;
 }
 
 .field-inline-config {

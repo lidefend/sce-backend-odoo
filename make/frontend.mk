@@ -37,6 +37,10 @@ verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 
 .PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser
+
+.PHONY: verify.frontend.detail_form_productization.guard
+verify.frontend.detail_form_productization.guard: guard.prod.forbid
+	@python3 scripts/verify/frontend_detail_form_productization_guard.py
 verify.frontend.workspace_layout_contract.unit: guard.prod.forbid
 	@node --experimental-strip-types scripts/verify/frontend_workspace_layout_contract_compatibility_test.ts
 

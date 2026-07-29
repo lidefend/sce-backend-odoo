@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3404`
+- Scanned files: `3407`
 - Files requiring split plan: `38`
 - Files above warning threshold: `60`
 
@@ -76,9 +76,9 @@ Generated from repository source files. This report is informational during the 
 | 1226 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1223 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
+| 1209 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1205 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1190 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1135 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
@@ -177,9 +177,9 @@ Generated from repository source files. This report is informational during the 
 | 1226 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1223 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1218 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
+| 1209 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1208 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1205 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1190 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1135 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |

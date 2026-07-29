@@ -1734,3 +1734,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Targeted payment, contract, and project journeys cover 1440x900, 1280x800,
   and 960x768 with zero serious/critical axe findings and zero console,
   pageerror, blocking HTTP, or document-overflow findings.
+
+# FE-R2-P1-02 business detail/form productization — 2026-07-29
+
+- Branch / anchor: `feature/frontend-detail-form-productization` from
+  `96aa5d7368ef5f6383a1c98f57e9400b3d8c1c8f`.
+- Formal Product Layer: P0 generic contract renderer; Layer Target:
+  `shared frontend business detail/form presentation`; Module:
+  `frontend/apps/web`.
+- Reason: payment request, contract, and project routes shared four product
+  defects: composite technical-looking record headings, edit routes fronted by
+  a read-only financial workspace, duplicate native/header actions, and
+  relation identifiers shown without their authorized business labels.
+- The explicit route now owns the page mode (`/r` is detail and `/f` is
+  edit/create). Contract-declared primary fields produce concise identity,
+  edit routes enter the native form directly, the header exposes one direct
+  business action plus overflow, and required/read-only/dirty states use
+  visible text. The debug HUD is opt-in even in development.
+- Why Here / Why Not Elsewhere: all three real domains consume the same
+  contract-driven form renderer. The change preserves native view order and
+  grouping, uses only relation labels already readable by the caller, and does
+  not add frontend model-specific semantics or alter backend authorization.
+- Blast Radius: shared detail/form identity, presentation and isolated browser
+  verification only. Eighteen targeted screenshots cover three domains, two
+  modes and three work viewports with zero serious/critical axe findings,
+  runtime errors, raw relation identifiers or horizontal overflow. No customer,
+  DAILY or production database was accessed.

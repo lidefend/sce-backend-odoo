@@ -54,7 +54,22 @@ export function useRecordFormFieldSchemas(context: {
   const v2FieldValue=(name:string)=>{const key=String(name||'').trim();if(!key||!context.v2ContractStore.value?.widgetsByFieldCode.has(key))return{found:false,value:undefined};
     const source=resolveContractV2ValueSource(context.v2ContractStore.value).values;if(!Object.prototype.hasOwnProperty.call(source,key))return{found:false,value:undefined};return{found:true,value:source[key]};};
   let buildSectionFieldSchemas:(fields:any[])=>FormSectionFieldSchema[];
-  const nativeFieldSchemasForNodes=(nodes:NativeFormLayoutNode[])=>buildNativeFieldSchemas({nodes:nodes as NativeLayoutLikeNode[],mapNode:(node,index)=>nativeLayoutNodeToFieldNode(node as NativeFormLayoutNode,index),buildSchemas:buildSectionFieldSchemas,applyReadonlyValues:(schemas)=>applyReadonlyFieldValues(schemas,v2FieldValue),orderActive:context.isContractFieldOrderEditable.value&&context.fieldOrderPreviewActive.value,fieldOrder:context.fieldOrderDraft.value,favoriteActive:(name)=>Boolean(context.formData[name]),favoriteReadonly:(field)=>Boolean(field.readonly)});
+  const nativeFieldSchemasForNodes=(nodes:NativeFormLayoutNode[])=>buildNativeFieldSchemas({
+    nodes:nodes as NativeLayoutLikeNode[],
+    mapNode:(node,index)=>nativeLayoutNodeToFieldNode(node as NativeFormLayoutNode,index),
+    buildSchemas:buildSectionFieldSchemas,
+    applyReadonlyValues:(schemas)=>applyReadonlyFieldValues(schemas,v2FieldValue).map((field)=>{
+      if (!field.readonly || String(field.type||'').trim().toLowerCase()!=='many2one') return field;
+      const label=String(context.relationKeyword(field.name)||'').trim();
+      const id=Number(context.formData[field.name]||0);
+      if (!label||!Number.isFinite(id)||id<=0) return field;
+      return {...field,value:[Math.trunc(id),label]};
+    }),
+    orderActive:context.isContractFieldOrderEditable.value&&context.fieldOrderPreviewActive.value,
+    fieldOrder:context.fieldOrderDraft.value,
+    favoriteActive:(name)=>Boolean(context.formData[name]),
+    favoriteReadonly:(field)=>Boolean(field.readonly),
+  });
   const layoutNodes=computed<LayoutNode[]>(()=>buildLegacyLayoutNodes({fields:context.contract.value?.fields||{},order:context.contract.value?.views?.form?.layout||[],containerStatus:collectUnifiedPageContractV2FieldContainerStatus(context.contract.value),visibleFields:context.contractVisibleFields.value,fallbackFieldNames:[...context.coreFieldNames.value,...context.advancedFieldNames.value],isCreate:!context.recordId.value,readonly:context.recordId.value?!context.rights.value.write:!context.rights.value.create,resolveFieldLabel:context.contractFieldLabel,evaluatePolicy:(name,descriptor)=>evaluateFieldPolicy(context.contract.value,name,{required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)},context.evaluatePolicyContext.value),runtimeState:(name)=>context.runtimeFieldStates.value[name]||{invisible:false,readonly:false,required:false}}));
   buildSectionFieldSchemas=createFormSectionFieldSchemaBuilder({
     resolveFieldType:(descriptor)=>fieldType(descriptor)||'char',resolveRequired:(field)=>Boolean((field as LayoutNode).required),

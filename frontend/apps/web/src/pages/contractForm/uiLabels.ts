@@ -99,6 +99,12 @@ export function resolveSubmitButtonLabel(params: {
   return params.saveLabel;
 }
 
+export function renderProfileLabel(profile: 'create' | 'edit' | 'readonly') {
+  if (profile === 'create') return '新建';
+  if (profile === 'edit') return '编辑';
+  return '查看';
+}
+
 export function nativeChatterActionLabel(mode: string, row: Record<string, unknown>) {
   if (mode === 'message') return '记录沟通';
   if (mode === 'note') return '记录备注';

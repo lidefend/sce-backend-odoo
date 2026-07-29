@@ -15,6 +15,33 @@ function formPrimaryFields(contract: BusinessMetadata): unknown[] {
   return [profile.title_field, ...primaryFields].filter(Boolean);
 }
 
+function primaryRecordName(contract: BusinessMetadata, formData: Record<string, unknown>): string {
+  const fieldNames = [
+    ...formPrimaryFields(contract),
+    'name',
+    'code',
+    'number',
+    'reference',
+    'document_no',
+    'contract_no',
+    'project_code',
+  ];
+  for (const fieldName of Array.from(new Set(fieldNames))) {
+    const normalizedFieldName = String(fieldName || '').trim();
+    if (!normalizedFieldName || normalizedFieldName === 'display_name') continue;
+    const value = formData[normalizedFieldName];
+    if (Array.isArray(value)) {
+      const relationLabel = String(value.length > 1 ? value[1] : value[0] || '').trim();
+      if (relationLabel) return relationLabel;
+      continue;
+    }
+    if (value === null || value === undefined || typeof value === 'object') continue;
+    const label = String(value).replace(/\s+/g, ' ').trim();
+    if (label) return label;
+  }
+  return String(formData.display_name || '').replace(/\s+/g, ' ').trim();
+}
+
 export function buildContractFormPageIdentity(input: {
   action: BusinessMetadata;
   breadcrumbs?: PageBreadcrumb[];
@@ -34,7 +61,7 @@ export function buildContractFormPageIdentity(input: {
     ? input.contract.head as Record<string, unknown>
     : {};
   const businessName = input.businessCategoryLabel || head.title || actionName(input.action);
-  const recordName = String(input.formData.display_name || '').trim();
+  const recordName = primaryRecordName(input.contract, input.formData);
   return {
     kind: input.isCreate ? 'create' : input.isEdit ? 'edit' : 'detail',
     actionName: businessName,
