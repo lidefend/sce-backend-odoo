@@ -20,6 +20,7 @@
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isProjectIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
+      :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :busy="busy || status === 'loading'" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :submit-label="submitButtonLabel"
       :direct-actions="headerBusinessDirectActions" :overflow-actions="headerBusinessOverflowActions" :config-actions="headerConfigActionsVisible"
@@ -38,7 +39,7 @@
       <p v-if="financialWorkspace && submissionFeedback" class="submission-feedback" :class="`submission-feedback--${submissionFeedback.kind}`" role="status">
         {{ submissionFeedback.message }}
       </p>
-      <FinancialRelationshipWorkspace v-if="financialWorkspace" :contract="financialWorkspace" />
+      <FinancialRelationshipWorkspace v-if="financialWorkspace && renderProfile === 'readonly'" :contract="financialWorkspace" />
       <ContractFormActionBlocks
         :active-filter-key="activeFilterKey"
         :body-actions="bodyActions"
@@ -154,6 +155,8 @@
           :is-node-visible="isNativeLayoutNodeVisible"
           :layout-nodes="nativeCanvasFormLayoutNodes"
           :layout-visibility-revision="nativeLayoutVisibilityRevision"
+          :mode="renderProfile"
+          :dirty="hasChanges"
           :native-action-handler="runNativeLayoutAction"
           :native-action-state-resolver="resolveNativeActionState"
           :relation-adapter="relationFieldAdapter"
@@ -541,9 +544,11 @@ import {
 import {
   formUiLabelFromLabels,
   formUiLabelsFromFormView,
+  renderProfileLabel,
   resolveSubmitButtonLabel,
   layoutContainsType,
 } from './contractForm/uiLabels';
+import { presentContractHeaderActions } from './contractForm/headerActionPresentation';
 import { buildContractFormPageIdentity } from '../app/pageIdentityAdapters';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import { usePublishedPageIdentity } from '../app/usePublishedPageIdentity';
@@ -1024,6 +1029,7 @@ function recordVersionPolicy() {
 }
 
 const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
+  if (route.name === 'record') return 'readonly';
   const storeSourceContext = resolveContractV2SourceContext(v2ContractStore.value);
   const sourceContext = Object.keys(storeSourceContext).length
     ? storeSourceContext
@@ -1036,7 +1042,6 @@ const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
   if (!canSave.value) return 'readonly';
   return recordId.value ? 'edit' : 'create';
 });
-
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value) || resolveUnifiedPageContractV2GlobalStatus(contract.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
@@ -1230,13 +1235,12 @@ const pageIdentity = usePublishedPageIdentity(pageIdentityInput, { routeKey: () 
 const pageDisplayTitle = computed(() => pageIdentity.value.title);
 const pageDisplaySubtitle = computed(() => pageIdentity.value.subtitle || '');
 const financialWorkspace = computed(() => resolveFinancialWorkspaceContract(contract.value));
-
 const suppressPageHeaderTitle = computed(() => true);
+const currentRenderProfileLabel = computed(() => renderProfileLabel(renderProfile.value));
 const intakeCreateButtonLabel = computed(() => {
   if (!isProjectIntakeCreateMode.value) return '创建项目';
   return busy.value && busyKind.value === 'save' ? '创建中…' : '创建项目';
 });
-
 const submitButtonLabel = computed(() => resolveSubmitButtonLabel({
   busy: busy.value,
   busyKind: busyKind.value,
@@ -1260,27 +1264,24 @@ const draftSaveButtonLabel = computed(() => {
   return recordId.value ? formUiLabel('save') : '保存草稿';
 });
 const showDiscardAction = computed(() => !isProjectIntakeCreateMode.value && Boolean(recordId.value) && hasChanges.value);
-
 const groupedHeaderActions = computed(() => groupContractHeaderActions({
   actions: headerActions.value, intakeMode: isProjectIntakeCreateMode.value, nativeTree: useNativeFormTree.value,
   configurationMode: showCurrentFormFieldConfigScope.value, productRecord: Boolean(financialWorkspace.value),
   isSubmitAction: isUnifiedSubmitAction,
 }));
-function isPrimaryCreateFooterAction(action: ContractAction) {
-  const primary = primaryCreateFooterAction.value;
-  if (!primary || recordId.value) return false;
-  return action.key === primary.key
-    || Boolean(action.methodName && primary.methodName && action.methodName === primary.methodName);
-}
-const headerBusinessDirectActions = computed(() => groupedHeaderActions.value.direct.filter((action) => !isPrimaryCreateFooterAction(action)));
-const headerBusinessOverflowActions = computed(() => groupedHeaderActions.value.overflow.filter((action) => !isPrimaryCreateFooterAction(action)));
+const headerBusinessActionPresentation = computed(() => presentContractHeaderActions({
+  direct: groupedHeaderActions.value.direct, overflow: groupedHeaderActions.value.overflow,
+  excludedKeys: new Set(primaryCreateFooterAction.value ? [primaryCreateFooterAction.value.key] : []),
+}));
+const headerBusinessDirectActions = computed(() => headerBusinessActionPresentation.value.direct);
+const headerBusinessOverflowActions = computed(() => headerBusinessActionPresentation.value.overflow);
 const headerConfigActionsVisible = computed(() => groupedHeaderActions.value.configuration);
 const nativeCanvasFormLayoutNodes = computed<NativeFormLayoutNode[]>(() => {
   const primaryMethod = !recordId.value ? String(primaryCreateFooterAction.value?.methodName || '').trim() : '';
-  if (!primaryMethod) return nativeFormLayoutNodes.value;
   const filterNodes = (nodes: NativeFormLayoutNode[]): NativeFormLayoutNode[] => nodes.flatMap((node) => {
+    if (node.type === 'header' && !showCurrentFormFieldConfigScope.value) return [];
     const actionMethod = String(node.name || node.action?.name || '').trim();
-    if (node.type === 'button' && actionMethod === primaryMethod) return [];
+    if (primaryMethod && node.type === 'button' && actionMethod === primaryMethod) return [];
     const children = Array.isArray(node.children) ? filterNodes(node.children) : node.children;
     if (node.type === 'header' && Array.isArray(children) && !children.length) return [];
     return [{ ...node, ...(Array.isArray(children) ? { children } : {}) }];
@@ -1507,7 +1508,6 @@ const workflowTransitions = computed(() => buildWorkflowTransitions({
   profile: renderProfile.value,
   showHud: showHud.value,
 }));
-
 const searchFilters = computed(() => normalizeSearchFilters(contract.value?.search?.filters));
 
 const showSearchFilters = computed(() => {

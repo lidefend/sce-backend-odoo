@@ -5,6 +5,11 @@
       <p v-if="showHud && contractMetaLine" class="meta">{{ contractMetaLine }}</p>
     </template>
     <template #status>
+      <div class="record-header-context" aria-label="页面模式">
+        <strong>{{ modeLabel }}</strong>
+        <span v-if="dirty">{{ changedFieldCount > 0 ? `已修改 ${changedFieldCount} 项` : '有未保存修改' }}</span>
+        <span v-else-if="mode !== 'readonly'">尚未修改</span>
+      </div>
       <template v-if="intakeMode">
         <p class="header-status-item">当前进度：{{ intakeRequiredSummary }}</p>
         <p class="header-status-item" :class="{ 'header-status-item--danger': intakeMissingSummary !== '无' }">缺少：{{ intakeMissingSummary }}</p>
@@ -22,7 +27,6 @@
       </section>
     </template>
     <template #actions>
-      <span class="contract-header-action-label">办理操作</span>
       <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('back')">返回列表</button>
       <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" @click="$emit('return-workbench')">返回工作台</button>
       <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
@@ -50,6 +54,7 @@ defineProps<{
   title: string; subtitle: string; hideTitle: boolean; showHud: boolean; model: string; recordIdDisplay: string;
   actionId: number | null; contractMetaLine: string; intakeMode: boolean; intakeRequiredSummary: string;
   intakeMissingSummary: string; statusbar: NativeStatusbarVm; busy: boolean; showReturn: boolean;
+  mode: 'create' | 'edit' | 'readonly'; modeLabel: string; dirty: boolean; changedFieldCount: number;
   showDraftSave: boolean; draftSaveDisabled: boolean; draftSaveLabel: string; showPrimaryFormAction: boolean;
   primaryFormActionDisabled: boolean; submitLabel: string; directActions: ContractAction[]; overflowActions: ContractAction[];
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
@@ -67,7 +72,9 @@ function buttonClass(action: ContractAction) {
 </script>
 
 <style scoped>
-.contract-header-action-label { display: inline-flex; align-items: center; min-height: 28px; padding: 0 7px; color: var(--sc-app-text-secondary); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.record-header-context { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px; color: var(--sc-app-text-secondary); font-size: 12px; white-space: nowrap; }
+.record-header-context strong { padding: 4px 8px; border: 1px solid var(--sc-app-border); border-radius: 999px; background: var(--sc-app-panel-muted); color: var(--sc-app-text-primary); font-size: 12px; }
+.record-header-context span { font-weight: 600; }
 .contract-header-action-separator { align-self: center; width: 1px; height: 16px; background: var(--sc-app-border); }
 .contract-header-more-actions { position: relative; }
 .contract-header-more-actions > summary { list-style: none; cursor: pointer; }
@@ -75,4 +82,7 @@ function buttonClass(action: ContractAction) {
 .contract-header-more-actions > div { position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; display: grid; min-width: 180px; gap: 6px; padding: 8px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
 .contract-header-config-action { color: var(--sc-semantic-text-muted); }
 .native-statusbar--header .native-statusbar-step { min-width: 68px; min-height: 30px; padding: 0 10px; }
+@media (max-width: 860px) {
+  .record-header-context { justify-content: flex-start; }
+}
 </style>
