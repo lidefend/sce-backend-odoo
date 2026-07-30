@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import json
+import tempfile
+from pathlib import Path
+
 from odoo import Command
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
@@ -241,6 +245,137 @@ class TestTenantExtensionStorage(TransactionCase):
             "TPV1_PAYLOAD_REJECTED_BY_CUSTOMER_SEMANTIC_POLICY",
         ):
             _validate_adapter(adapter, manifest)
+
+    def test_payload_lifecycle_reconstruction_is_metadata_driven(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            records = root / "records"
+            records.mkdir()
+            archived = {
+                "external_key": "partner:archived",
+                "values": {"active": False},
+                "relationships": {},
+            }
+            active = {
+                "external_key": "partner:active",
+                "values": {"active": True},
+                "relationships": {},
+            }
+            matching_qualifier = {
+                "external_key": "qualifier:matching",
+                "values": {"kind": "requires_visible"},
+                "relationships": {},
+            }
+            excluded_qualifier = {
+                "external_key": "qualifier:excluded",
+                "values": {"kind": "no_visibility_requirement"},
+                "relationships": {},
+            }
+            dependency = {
+                "external_key": "dependency:one",
+                "values": {"display_name": "Synthetic dependency"},
+                "relationships": {
+                    "partner": "partners::partner:archived",
+                    "qualifier": "qualifiers::qualifier:matching",
+                },
+            }
+            excluded_dependency = {
+                "external_key": "dependency:excluded",
+                "values": {"display_name": "Excluded dependency"},
+                "relationships": {
+                    "partner": "partners::partner:archived",
+                    "qualifier": "qualifiers::qualifier:excluded",
+                },
+            }
+            (records / "partners.jsonl").write_text(
+                "\n".join(json.dumps(row) for row in (archived, active)) + "\n",
+                encoding="utf-8",
+            )
+            (records / "dependencies.jsonl").write_text(
+                "\n".join(
+                    json.dumps(row)
+                    for row in (dependency, excluded_dependency)
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (records / "qualifiers.jsonl").write_text(
+                "\n".join(
+                    json.dumps(row)
+                    for row in (matching_qualifier, excluded_qualifier)
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            service = TenantPayloadImportService.__new__(
+                TenantPayloadImportService
+            )
+            service.env = self.env
+            service.root = root
+            service.manifest = {
+                "import_order": [
+                    "records/partners.jsonl",
+                    "records/qualifiers.jsonl",
+                    "records/dependencies.jsonl",
+                ]
+            }
+            service.resources = {
+                "partners": {
+                    "model": "res.partner",
+                    "value_fields": {"active": "active"},
+                    "relationship_fields": {},
+                },
+                "qualifiers": {
+                    "model": "res.partner",
+                    "value_fields": {"kind": "name"},
+                    "relationship_fields": {},
+                },
+                "dependencies": {
+                    "model": "res.partner",
+                    "value_fields": {"display_name": "name"},
+                    "relationship_fields": {
+                        "partner": {
+                            "field": "parent_id",
+                            "resource": "partners",
+                            "many": False,
+                            "create_visibility": {
+                                "active": {
+                                    "final_value": False,
+                                    "temporary_value": True,
+                                }
+                            },
+                            "create_visibility_when": {
+                                "relationship": "qualifier",
+                                "target_values": {
+                                    "kind": "requires_visible",
+                                },
+                            },
+                        },
+                        "qualifier": {
+                            "field": "parent_id",
+                            "resource": "qualifiers",
+                            "many": False,
+                            "write": False,
+                        }
+                    },
+                },
+            }
+
+            plan = service._build_lifecycle_reconstruction_plan()
+            service.lifecycle_reconstruction = plan
+
+            self.assertEqual(plan["deferred_resources"], ["partners"])
+            self.assertEqual(plan["deferred_records"], 1)
+            self.assertEqual(plan["dependency_edges"], 1)
+            self.assertEqual(plan["dependent_records"], {"dependencies": 1})
+            self.assertEqual(
+                service._mapped_values("partners", archived),
+                {"active": True},
+            )
+            self.assertEqual(
+                service._mapped_values("partners", active),
+                {"active": True},
+            )
 
     def test_registration_deactivation_stops_discovery_and_writes(self):
         definition = self._definition(

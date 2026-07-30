@@ -4,7 +4,6 @@ from odoo.exceptions import AccessError, ValidationError
 from odoo.tools.float_utils import float_compare
 
 
-DECISION_VERSION = "BAOSHENG-HISTORICAL-PAYMENT-MIGRATION-V1"
 IMPORTER_GROUP = "smart_core.group_smart_core_tenant_payload_importer"
 
 
@@ -83,7 +82,7 @@ class ScHistoricalPaymentFact(models.Model):
         string="禁止付款执行", default=True, required=True, readonly=True
     )
     decision_version = fields.Char(
-        string="裁决规则版本", required=True, readonly=True, default=DECISION_VERSION
+        string="裁决规则版本", required=True, readonly=True
     )
     migration_batch_id = fields.Many2one(
         "sc.tenant.payload.import.batch",
@@ -129,7 +128,8 @@ class ScHistoricalPaymentFact(models.Model):
         for vals in vals_list:
             vals["has_authoritative_settlement_basis"] = False
             vals["execution_blocked"] = True
-            vals["decision_version"] = DECISION_VERSION
+            if not vals.get("decision_version"):
+                raise ValidationError(_("历史承接事实必须声明裁决规则版本。"))
         records = super().create(vals_list)
         records._validate_historical_fact()
         return records

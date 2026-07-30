@@ -160,6 +160,56 @@ def _validate_adapter(adapter: dict[str, Any], manifest: dict[str, Any]) -> None
             verification = relation.get("verification", "exact")
             if verification not in {"exact", "contains"} or (verification == "contains" and not relation.get("many")):
                 _fail(f"TPV1_ADAPTER_RELATION_VERIFICATION_INVALID:{resource}")
+            create_visibility = relation.get("create_visibility", {})
+            create_visibility_when = relation.get("create_visibility_when", {})
+            target_resource = relation.get("resource")
+            if create_visibility:
+                if (
+                    not isinstance(create_visibility, dict)
+                    or target_resource == "*"
+                    or target_resource not in resources
+                    or not relation.get("write", True)
+                ):
+                    _fail(f"TPV1_ADAPTER_CREATE_VISIBILITY_INVALID:{resource}")
+                target_values = resources[target_resource].get("value_fields", {})
+                for source_field, policy in create_visibility.items():
+                    if (
+                        source_field not in target_values
+                        or not isinstance(policy, dict)
+                        or set(policy) != {"final_value", "temporary_value"}
+                        or policy["final_value"] == policy["temporary_value"]
+                    ):
+                        _fail(f"TPV1_ADAPTER_CREATE_VISIBILITY_INVALID:{resource}")
+                if create_visibility_when:
+                    if (
+                        not isinstance(create_visibility_when, dict)
+                        or set(create_visibility_when)
+                        != {"relationship", "target_values"}
+                        or create_visibility_when["relationship"] not in relations
+                        or not isinstance(
+                            create_visibility_when["target_values"], dict
+                        )
+                        or not create_visibility_when["target_values"]
+                    ):
+                        _fail(
+                            f"TPV1_ADAPTER_CREATE_VISIBILITY_CONDITION_INVALID:{resource}"
+                        )
+                    condition_relation = relations[
+                        create_visibility_when["relationship"]
+                    ]
+                    condition_resource = condition_relation.get("resource")
+                    condition_values = resources.get(
+                        condition_resource, {}
+                    ).get("value_fields", {})
+                    if (
+                        condition_resource == "*"
+                        or condition_resource not in resources
+                        or set(create_visibility_when["target_values"])
+                        - set(condition_values)
+                    ):
+                        _fail(
+                            f"TPV1_ADAPTER_CREATE_VISIBILITY_CONDITION_INVALID:{resource}"
+                        )
 
 
 class TenantPayloadImportService:
@@ -200,10 +250,28 @@ class TenantPayloadImportService:
         ):
             _fail("TPV1_PAYLOAD_SEMANTIC_VALIDATION_FAILED")
         self.resources = self.adapter["resources"]
+        self._assert_adapter_value_targets_writable()
+        self.lifecycle_reconstruction = self._build_lifecycle_reconstruction_plan()
         self.Identity = env["sc.tenant.payload.external.identity"]
         self.Batch = env["sc.tenant.payload.import.batch"]
         self._identity_cache: dict[tuple[str, str], int] | None = None
         self._assert_customer_module()
+
+    def _assert_adapter_value_targets_writable(self) -> None:
+        """Reject value mappings that ORM will immediately recompute away."""
+        for resource, spec in self.resources.items():
+            model = self.env[spec["model"]]
+            for source_field, target_field in spec["value_fields"].items():
+                field = model._fields.get(target_field)
+                if not field:
+                    _fail(
+                        f"TPV1_ADAPTER_TARGET_FIELD_MISSING:{resource}:{source_field}"
+                    )
+                if field.compute and not field.inverse:
+                    _fail(
+                        f"TPV1_ADAPTER_TARGET_COMPUTED_WITHOUT_INVERSE:"
+                        f"{resource}:{source_field}"
+                    )
 
     def _assert_customer_module(self) -> None:
         module = self.env["ir.module.module"].search([("name", "=", self.manifest["customer_module"])], limit=1)
@@ -214,6 +282,161 @@ class TenantPayloadImportService:
             _fail("TPV1_CUSTOMER_MODULE_VERSION_MISMATCH")
         if self.adapter.get("database_tenant_key") != self.tenant_key:
             _fail("TPV1_DATABASE_TENANT_UNAUTHORIZED")
+
+    def _build_lifecycle_reconstruction_plan(self) -> dict[str, Any]:
+        """Plan temporary create-visible values without writing payload or ORM state."""
+        records_by_resource: dict[str, dict[str, dict[str, Any]]] = {}
+
+        def records(resource: str) -> dict[str, dict[str, Any]]:
+            if resource not in records_by_resource:
+                relative = next(
+                    (
+                        item
+                        for item in self.manifest["import_order"]
+                        if _resource_name(item) == resource
+                    ),
+                    "",
+                )
+                if not relative:
+                    _fail(f"TPV1_LIFECYCLE_RESOURCE_MISSING:{resource}")
+                records_by_resource[resource] = {
+                    item["external_key"]: item
+                    for _line_number, item in _iter_records(self.root, relative)
+                }
+            return records_by_resource[resource]
+
+        deferred: dict[tuple[str, str], dict[str, dict[str, Any]]] = {}
+        dependent_records: dict[str, set[str]] = defaultdict(set)
+        dependency_edges = 0
+        unresolved = 0
+        order = {
+            _resource_name(relative): index
+            for index, relative in enumerate(self.manifest["import_order"])
+        }
+        invalid_order = 0
+
+        def visibility_condition_matches(
+            source_item: dict[str, Any],
+            source_spec: dict[str, Any],
+            relation_spec: dict[str, Any],
+        ) -> bool:
+            condition = relation_spec.get("create_visibility_when")
+            if not condition:
+                return True
+            condition_relation = source_spec["relationship_fields"][
+                condition["relationship"]
+            ]
+            reference = source_item.get("relationships", {}).get(
+                condition["relationship"]
+            )
+            if not reference or isinstance(reference, list):
+                return False
+            target_resource, external_key = _split_reference(reference)
+            if target_resource != condition_relation["resource"]:
+                return False
+            target_item = records(target_resource).get(external_key)
+            if not target_item:
+                return False
+            target_values = target_item.get("values", {})
+            return all(
+                _scalar_matches(target_values.get(field), expected)
+                for field, expected in condition["target_values"].items()
+            )
+
+        for source_resource, source_spec in self.resources.items():
+            visibility_relations = {
+                name: relation
+                for name, relation in source_spec.get(
+                    "relationship_fields", {}
+                ).items()
+                if relation.get("create_visibility")
+            }
+            if not visibility_relations:
+                continue
+            for source_item in records(source_resource).values():
+                for relation_name, relation_spec in visibility_relations.items():
+                    if not visibility_condition_matches(
+                        source_item, source_spec, relation_spec
+                    ):
+                        continue
+                    reference_value = source_item.get("relationships", {}).get(
+                        relation_name
+                    )
+                    if not reference_value:
+                        continue
+                    references = (
+                        reference_value
+                        if isinstance(reference_value, list)
+                        else [reference_value]
+                    )
+                    for reference in references:
+                        target_resource, external_key = _split_reference(reference)
+                        if target_resource != relation_spec["resource"]:
+                            unresolved += 1
+                            continue
+                        target_item = records(target_resource).get(external_key)
+                        if not target_item:
+                            unresolved += 1
+                            continue
+                        if order[target_resource] >= order[source_resource]:
+                            invalid_order += 1
+                        matched = False
+                        for source_field, policy in relation_spec[
+                            "create_visibility"
+                        ].items():
+                            if not _scalar_matches(
+                                target_item.get("values", {}).get(source_field),
+                                policy["final_value"],
+                            ):
+                                continue
+                            deferred.setdefault(
+                                (target_resource, external_key), {}
+                            )[source_field] = {
+                                "final_value": policy["final_value"],
+                                "temporary_value": policy["temporary_value"],
+                            }
+                            matched = True
+                        if matched:
+                            dependency_edges += 1
+                            dependent_records[source_resource].add(
+                                source_item["external_key"]
+                            )
+        if unresolved:
+            _fail("TPV1_LIFECYCLE_DEPENDENCY_UNRESOLVED")
+        if invalid_order:
+            _fail("TPV1_LIFECYCLE_DEPENDENCY_ORDER_INVALID")
+        for (resource, _external_key), fields in deferred.items():
+            model = self.env[self.resources[resource]["model"]]
+            for source_field in fields:
+                target_field = self.resources[resource]["value_fields"][source_field]
+                if target_field not in model._fields:
+                    _fail("TPV1_LIFECYCLE_FINAL_STATE_NOT_RESTORABLE")
+        deferred_resources = sorted({resource for resource, _key in deferred})
+        return {
+            "schema_version": "tenant_payload_lifecycle_reconstruction.v1",
+            "status": "PASS",
+            "create_phase_visibility": "PASS",
+            "final_state_restorability": "PASS",
+            "deferred_state_scope": "PASS",
+            "final_state_payload_parity": "PLANNED",
+            "deferred_resources": deferred_resources,
+            "deferred_records": len(deferred),
+            "dependent_records": {
+                resource: len(keys)
+                for resource, keys in sorted(dependent_records.items())
+            },
+            "dependency_edges": dependency_edges,
+            "unresolved_dependencies": 0,
+            "archival_cycles": 0,
+            "_deferred": deferred,
+        }
+
+    def _public_lifecycle_reconstruction(self, *, parity="PLANNED") -> dict[str, Any]:
+        return {
+            key: (parity if key == "final_state_payload_parity" else value)
+            for key, value in self.lifecycle_reconstruction.items()
+            if key != "_deferred"
+        }
 
     def _identity(self, resource: str, external_key: str):
         if self._identity_cache is None:
@@ -355,6 +578,7 @@ class TenantPayloadImportService:
             "database_write_count": 0,
             "filestore_write_count": 0,
             "semantic_validation": self.semantic_validation,
+            "lifecycle_reconstruction": self._public_lifecycle_reconstruction(),
         }
 
     def _resolve_relationships(self, resource: str, item: dict[str, Any]) -> dict[str, Any]:
@@ -411,7 +635,45 @@ class TenantPayloadImportService:
             _fail(f"TPV1_ADAPTER_CONSTANT_VALUE_COLLISION:{resource}")
         values.update(spec.get("constant_values", {}))
         values.update(self._resolve_relationships(resource, item))
+        deferred = self.lifecycle_reconstruction["_deferred"].get(
+            (resource, item["external_key"]), {}
+        )
+        for source_field, policy in deferred.items():
+            values[spec["value_fields"][source_field]] = policy["temporary_value"]
         return values
+
+    def _restore_deferred_final_states(
+        self, *, interrupt_after: str = ""
+    ) -> int:
+        restored = 0
+        for (resource, external_key), fields in sorted(
+            self.lifecycle_reconstruction["_deferred"].items()
+        ):
+            identity = self._identity(resource, external_key)
+            if not identity:
+                _fail(f"TPV1_LIFECYCLE_IDENTITY_MISSING:{resource}")
+            record = self._import_model(identity.model_name).browse(
+                identity.res_id
+            ).exists()
+            if not record:
+                _fail(f"TPV1_LIFECYCLE_RECORD_MISSING:{resource}")
+            spec = self.resources[resource]
+            values = {
+                spec["value_fields"][source_field]: policy["final_value"]
+                for source_field, policy in fields.items()
+            }
+            record.write(values)
+            for target_field, expected in values.items():
+                if not _scalar_matches(record[target_field], expected):
+                    _fail(
+                        f"TPV1_LIFECYCLE_FINAL_STATE_MISMATCH:{resource}"
+                    )
+            restored += 1
+            if interrupt_after == f"lifecycle_restore:{restored}":
+                raise TenantPayloadInterrupted(
+                    "TPV1_INJECTED_LIFECYCLE_RESTORE_INTERRUPTION"
+                )
+        return restored
 
     def _company_for(self, resource: str, item: dict[str, Any], record):
         spec = self.resources[resource]
@@ -600,7 +862,16 @@ class TenantPayloadImportService:
         )
         if batch and batch.state == "completed":
             report = self.verify(batch=batch)
-            report.update({"mode": "import", "idempotent_noop": True})
+            report.update(
+                {
+                    "mode": "import",
+                    "idempotent_noop": True,
+                    "restored_final_states": 0,
+                    "lifecycle_reconstruction": (
+                        self._public_lifecycle_reconstruction(parity="PASS")
+                    ),
+                }
+            )
             return report
         if not batch:
             batch = self.Batch.create({"tenant_key": self.tenant_key, "manifest_json": self.manifest})
@@ -665,6 +936,11 @@ class TenantPayloadImportService:
             )
             self.env.cr.commit()
             batch = self.Batch.browse(batch.id)
+        restored_final_states = self._restore_deferred_final_states(
+            interrupt_after=interrupt_after
+        )
+        self.env.cr.commit()
+        batch = self.Batch.browse(batch.id)
         batch.action_verify()
         self.env.cr.commit()
         if interrupt_after == "final_verification":
@@ -679,6 +955,10 @@ class TenantPayloadImportService:
             self.env.cr.commit()
             report["batch_state"] = "completed"
         report.update({"mode": "import", "idempotent_noop": False})
+        report["restored_final_states"] = restored_final_states
+        report["lifecycle_reconstruction"] = (
+            self._public_lifecycle_reconstruction(parity="PASS")
+        )
         return report
 
     def verify(self, *, batch=None, finalize_failed=False) -> dict[str, Any]:

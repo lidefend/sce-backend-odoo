@@ -32,6 +32,7 @@ class SampleTenantPayloadAdapter(models.AbstractModel):
                     "value_fields": {
                         "display_name": "name",
                         "entity_type": "company_type",
+                        "active": "active",
                     },
                     "value_mappings": {
                         "entity_type": {"organization": "company", "person": "person"},
@@ -46,7 +47,17 @@ class SampleTenantPayloadAdapter(models.AbstractModel):
                     "value_fields": {"display_name": "name", "active": "active"},
                     "relationship_fields": {
                         "company": {"field": "company_id", "resource": "companies", "many": False},
-                        "owner": {"field": "owner_id", "resource": "partners", "many": False},
+                        "owner": {
+                            "field": "owner_id",
+                            "resource": "partners",
+                            "many": False,
+                            "create_visibility": {
+                                "active": {
+                                    "final_value": False,
+                                    "temporary_value": True,
+                                },
+                            },
+                        },
                     },
                     "company_relationship": "company",
                 },

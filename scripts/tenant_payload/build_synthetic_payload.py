@@ -50,6 +50,7 @@ def main() -> int:
     parser.add_argument("--variant", default="001")
     parser.add_argument("--stable-external-keys", action="store_true")
     parser.add_argument("--company-key", default="main")
+    parser.add_argument("--archived-owner", action="store_true")
     args = parser.parse_args()
     if os.environ.get("SC_TENANT_PAYLOAD_TEST_MODE") != "1":
         raise SystemExit("TPV1_SYNTHETIC_TEST_MODE_REQUIRED")
@@ -90,7 +91,11 @@ def main() -> int:
         "partners": [
             _record(
                 f"synthetic.organization.{key_variant}",
-                {"display_name": f"Synthetic Tenant Organization {variant}", "entity_type": "organization"},
+                {
+                    "display_name": f"Synthetic Tenant Organization {variant}",
+                    "entity_type": "organization",
+                    **({"active": False} if args.archived_owner else {}),
+                },
                 {"company": f"companies::{company_key}"},
             )
         ],

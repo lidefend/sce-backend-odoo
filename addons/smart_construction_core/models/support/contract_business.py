@@ -10,6 +10,7 @@ class ConstructionContractBusiness(models.Model):
         string="合同金额",
         currency_field="currency_id",
         compute="_compute_visible_contract_amount",
+        inverse="_inverse_visible_contract_amount",
         store=True,
         help="标准产品合同金额口径。",
     )
@@ -110,6 +111,10 @@ class ConstructionContractBusiness(models.Model):
     def _compute_visible_contract_amount(self):
         for rec in self:
             rec.visible_contract_amount = rec.amount_untaxed or 0.0
+
+    def _inverse_visible_contract_amount(self):
+        for rec in self:
+            rec.amount_untaxed = rec.visible_contract_amount
 
     @api.depends("visible_invoice_amount", "visible_received_amount")
     def _compute_visible_invoice_unreceived_amount(self):

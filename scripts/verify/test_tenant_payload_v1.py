@@ -249,6 +249,28 @@ class TenantPayloadV1Tests(unittest.TestCase):
         self.assertIn("TPV1_PAYLOAD_SEMANTIC_VALIDATION_FAILED", service)
         self.assertIn('"semantic_validation": self.semantic_validation', service)
 
+    def test_runtime_plan_enforces_two_phase_lifecycle_reconstruction(self):
+        service = (
+            ROOT
+            / "addons/smart_core/utils/tenant_payload_import_service.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("_build_lifecycle_reconstruction_plan", service)
+        self.assertIn("_restore_deferred_final_states", service)
+        self.assertIn("TPV1_LIFECYCLE_DEPENDENCY_UNRESOLVED", service)
+        self.assertIn("TPV1_LIFECYCLE_FINAL_STATE_NOT_RESTORABLE", service)
+        self.assertIn(
+            "TPV1_INJECTED_LIFECYCLE_RESTORE_INTERRUPTION", service
+        )
+        self.assertIn(
+            "TPV1_ADAPTER_TARGET_COMPUTED_WITHOUT_INVERSE", service
+        )
+        self.assertIn('"lifecycle_reconstruction":', service)
+        self.assertNotRegex(
+            service,
+            r"""tenant_key\s*==\s*["'][^"']+["']""",
+        )
+        self.assertNotIn("resource == \"payment_executions\"", service)
+
 
 if __name__ == "__main__":
     unittest.main()
