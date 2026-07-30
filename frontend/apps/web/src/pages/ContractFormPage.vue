@@ -413,7 +413,7 @@ import {
   normalizeLowCodeContractListRows,
   contractFieldSequenceFromOrder,
   readableFallbackFieldLabel,
-  routeQueryText,
+  routeQueryText as readRouteQueryText,
   resolveFormDesignFieldLabel,
   resolveSelectedFormSettingsFieldGroupTitle,
   type LowCodeLayoutDraftRow,
@@ -675,7 +675,7 @@ const {
   router,
   currentQuery: () => route.query,
 });
-const designerRouteQueryText = (key: string) => routeQueryText(route.query as Record<string, unknown>, key);
+const designerRouteQueryText = (key: string) => readRouteQueryText(route.query as Record<string, unknown>, key);
 const status = ref<UiStatus>('loading');
 const isComponentActive = ref(true);
 const instanceRouteIdentity = ref('');

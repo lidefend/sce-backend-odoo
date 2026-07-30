@@ -28,6 +28,7 @@ const PERF_BASELINE_PATH = process.env.DELIVERY_HARDENING_BASELINE_JSON
   || performanceBudgets.relative_baseline_path
   || 'docs/frontend_productization/frontend_delivery_performance_baseline_v1.json';
 const PERF_RUNS = Number(process.env.DELIVERY_HARDENING_PERF_RUNS || 5);
+const runtimeByPage = new WeakMap();
 fs.mkdirSync(SCREENSHOTS, { recursive: true });
 fs.mkdirSync(TRACES, { recursive: true });
 
@@ -53,9 +54,21 @@ async function time(run) { const start = performance.now(); await run(); return 
 function capture(page) {
   const state = {
     console: [], pageerror: [], unhandled: [], http: [], expectedHttp: [], expectedConsole: [],
-    expectForbidden: false, expectedConsoleAllowance: 0, pendingExpectedForbiddenResponses: 0,
+    network: [], expectForbidden: false, expectedConsoleAllowance: 0, pendingExpectedForbiddenResponses: 0,
   };
+  runtimeByPage.set(page, state);
   page.on('request', (request) => {
+    if (request.url().includes('/api/v1/intent')) {
+      let payload = {};
+      try { payload = JSON.parse(request.postData() || '{}'); } catch {}
+      state.network.push({
+        event: 'request',
+        intent: payload.intent || '',
+        op: payload.params?.op || '',
+        model: payload.params?.model || '',
+      });
+      state.network = state.network.slice(-30);
+    }
     if (!state.expectForbidden || !request.url().includes('/api/v1/intent')) return;
     try {
       const body = JSON.parse(request.postData() || '{}');
@@ -76,6 +89,18 @@ function capture(page) {
   });
   page.on('pageerror', (error) => state.pageerror.push(error.message));
   page.on('response', (response) => {
+    if (response.url().includes('/api/v1/intent')) {
+      let payload = {};
+      try { payload = JSON.parse(response.request().postData() || '{}'); } catch {}
+      state.network.push({
+        event: 'response',
+        status: response.status(),
+        intent: payload.intent || '',
+        op: payload.params?.op || '',
+        model: payload.params?.model || '',
+      });
+      state.network = state.network.slice(-30);
+    }
     if (response.status() < 400 || !response.url().includes('/api/v1/')) return;
     let intent = ''; try { intent = JSON.parse(response.request().postData() || '{}').intent || ''; } catch {}
     const row = { status: response.status(), url: response.url(), intent };
@@ -134,14 +159,26 @@ async function open(page, route) {
   await waitBusiness(page);
 }
 async function selectCompany(page, label) {
-  const select = page.getByLabel('当前公司');
+  await page.getByRole('button', { name: '公司空间：切换公司', exact: true }).click();
+  const companyPanel = page.locator('.workspace-scope-panel').filter({
+    has: page.getByRole('heading', { name: '公司空间', exact: true }),
+  });
+  await companyPanel.waitFor({ state: 'visible', timeout: 30000 });
+  const companyOption = companyPanel.locator('.workspace-scope-options > button').filter({ hasText: label }).first();
+  await companyOption.waitFor({ state: 'visible', timeout: 30000 });
+  if (await companyOption.getAttribute('aria-current') === 'true') {
+    await companyOption.click();
+    return false;
+  }
   const initialized = page.waitForResponse((response) => {
     if (!response.url().includes('/api/v1/intent')) return false;
     try { return JSON.parse(response.request().postData() || '{}').intent === 'system.init'; } catch { return false; }
   }, { timeout: 45000 });
-  await select.selectOption({ label });
+  await companyOption.click();
   await initialized;
+  await companyPanel.waitFor({ state: 'hidden', timeout: 45000 });
   await page.waitForFunction((expected) => document.body.innerText.includes(expected), label, { timeout: 45000 });
+  return true;
 }
 async function navigateSpa(page, route, readySelector = '.sc-product-main-surface, .financial-workspace, .product-work, .sc-state-panel') {
   await page.evaluate((target) => {
@@ -157,7 +194,25 @@ async function navigateSpa(page, route, readySelector = '.sc-product-main-surfac
   // others use a product intent or satisfy metadata from the initialized store.
   // Waiting for one guessed intent turns a valid navigation into a false timeout.
   await page.waitForTimeout(50);
-  await page.locator(readySelector).first().waitFor({ state: 'visible', timeout: 45000 });
+  try {
+    await page.locator(readySelector).first().waitFor({ state: 'visible', timeout: 45000 });
+  } catch (error) {
+    const runtime = runtimeByPage.get(page);
+    const diagnostic = await page.evaluate(() => ({
+      url: window.location.href,
+      title: document.title,
+      bodyText: document.body.innerText.slice(0, 1200),
+      statePanels: Array.from(document.querySelectorAll('.sc-state-panel')).map((node) => node.textContent?.trim().slice(0, 400) || ''),
+      workspaces: Array.from(document.querySelectorAll('[data-workspace-kind]')).map((node) => node.getAttribute('data-workspace-kind')),
+    })).catch(() => ({ url: page.url() }));
+    throw new Error(`${error instanceof Error ? error.message : String(error)} diagnostic=${JSON.stringify({
+      ...diagnostic,
+      console: runtime?.console || [],
+      pageerror: runtime?.pageerror || [],
+      http: runtime?.http || [],
+      network: runtime?.network || [],
+    })}`);
+  }
   await page.waitForTimeout(50);
 }
 async function assertNoOverflow(page, label) {
@@ -353,9 +408,9 @@ async function main() {
     await cardButton.focus(); await cardButton.press('Enter');
     await page.waitForFunction((previous) => window.location.href !== previous, workUrl, { timeout: 45000 });
     check(new URL(page.url()).pathname.startsWith('/r/payment.request/'), `J10 My Work target route invalid: ${page.url()}`);
-    const detailHeading = page.locator('h1').first();
-    await detailHeading.getByText(journeyIdentity, { exact: true }).waitFor({ timeout: 45000 });
-    check((await detailHeading.textContent() || '').trim() === journeyIdentity, 'detail heading did not use the concise stable record identity');
+    const detailIdentity = page.locator(`.layout-shell[data-page-identity-title="${journeyIdentity}"]`).first();
+    await detailIdentity.waitFor({ timeout: 45000 });
+    check((await page.title()).startsWith(`${journeyIdentity} - `), 'detail document title did not use the concise stable record identity');
     await open(page, recordRoute(TARGETS.journey_request));
     const moreActions = page.locator('.contract-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first();
     await moreActions.focus(); await moreActions.press('Enter');
@@ -383,10 +438,9 @@ async function main() {
       await route.continue();
     };
     await page.route('**/api/v1/intent**', reorder);
-    const company = page.getByLabel('当前公司');
-    await company.selectOption({ label: 'FE Company B' });
-    await company.selectOption({ label: 'FE Company A' });
-    await company.selectOption({ label: 'FE Company B' });
+    await selectCompany(page, 'FE Company B');
+    await selectCompany(page, 'FE Company A');
+    await selectCompany(page, 'FE Company B');
     await page.waitForTimeout(1800);
     await page.goto(`${BASE_URL}/my-work`, { waitUntil: 'domcontentloaded' });
     await page.locator('.product-work').waitFor({ timeout: 45000 });
@@ -592,12 +646,15 @@ async function main() {
       // both company scopes a governed bounded warm-up before measuring the
       // steady-state switch; samples still perform real alternating company
       // transitions and retain the unchanged absolute/relative budgets.
+      let selectedCompanyLabel = '';
       for (let i = 0; i < companySwitchWarmupRuns; i += 1) {
-        await selectCompany(page, i % 2 ? 'FE Company A' : 'FE Company B');
+        selectedCompanyLabel = i % 2 ? 'FE Company A' : 'FE Company B';
+        await selectCompany(page, selectedCompanyLabel);
       }
       performanceReport.warmup_runs.company_switch = companySwitchWarmupRuns;
       for (let i = 0; i < PERF_RUNS; i += 1) {
-        switchSamples.push(await time(() => selectCompany(page, i % 2 ? 'FE Company B' : 'FE Company A')));
+        selectedCompanyLabel = selectedCompanyLabel === 'FE Company A' ? 'FE Company B' : 'FE Company A';
+        switchSamples.push(await time(() => selectCompany(page, selectedCompanyLabel)));
       }
       performanceReport.scenarios.company_switch = stats(switchSamples);
       const absoluteScenarioPass = Object.fromEntries(Object.entries(performanceReport.scenarios).map(([name, metrics]) => {
