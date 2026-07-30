@@ -12,6 +12,11 @@
     "gate": "pnpm lint && pnpm typecheck:strict && pnpm build",
     "format": "prettier -w ."
   },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.18"
+    }
+  },
   "devDependencies": {
     "prettier": "^3.2.5"
   }
