@@ -203,24 +203,19 @@ export function extractListFieldSemanticsFromContract(contract: unknown): Dict[]
   const legacySchema = tree.columns_schema || tree.columnsSchema;
   if (Array.isArray(legacySchema)) schemas.push(...legacySchema as Dict[]);
 
-  const layout = (typed.layoutContract || {}) as Dict;
-  const containers = Array.isArray(layout.containerTree) ? layout.containerTree as Dict[] : [];
-  containers.forEach((container) => {
-    const widgets = Array.isArray(container.widgetList) ? container.widgetList as Dict[] : [];
-    widgets.forEach((widget) => {
-      const config = (widget.componentConfig || {}) as Dict;
-      const fieldCode = String(
-        widget.fieldCode
-        || config.display_field
-        || config.name
-        || '',
-      ).trim();
-      if (!fieldCode || String(widget.widgetType || '').trim() !== 'table') return;
-      schemas.push({
-        ...config,
-        name: fieldCode,
-        type: config.data_type || config.fieldType,
-      });
+  collectUnifiedPageContractV2FieldWidgets(typed).forEach((widget) => {
+    const config = (widget.componentConfig || {}) as Dict;
+    const fieldCode = String(
+      widget.fieldCode
+      || config.display_field
+      || config.name
+      || '',
+    ).trim();
+    if (!fieldCode) return;
+    schemas.push({
+      ...config,
+      name: fieldCode,
+      type: config.data_type || config.fieldType || widget.fieldType,
     });
   });
 
