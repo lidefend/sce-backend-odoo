@@ -3,6 +3,23 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-31 — CONTROLLED-MAIN-CUTOVER-01 governance capability
+
+- Formal Product Layer: P4 ops delivery tool
+- Layer Target: governed dual-remote main history cutover and external recovery bundle
+- Module: `make/codex.mk`, `scripts/ops`, `scripts/verify`, SCM governance documentation
+- Reason: the frozen clean-history candidate cannot replace divergent GitHub/Gitee
+  `main` safely through the existing fast-forward-only mirror target
+- Standard vs User-Specific: repository-wide SCM governance; no customer data,
+  application behavior, database, filestore, runtime configuration, or production deployment
+- Why Here / Why Not Elsewhere: P4 owns publication state, exact leases, protection
+  snapshots, paired rollback and recovery evidence; P0-P2 product modules must not
+  own or invoke repository history mutation
+- Blast Radius: one explicit Make target, one fail-closed operation script, focused
+  tests and governance documentation; default mode performs zero writes and apply
+  requires exact live SHAs, four successful checks, a private Gitee token and an
+  external immutable bundle
+
 ## 2026-07-30 — Standard product field publication cleanup
 
 - Branch: `fix/field-arch-p0-02-formal-contracts`

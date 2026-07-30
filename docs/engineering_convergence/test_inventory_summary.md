@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1025`
+- Total assets: `1026`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `122`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `678`
+- PR dedupe candidates: `679`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 404 |
 | contract | 308 |
-| unit | 161 |
+| unit | 162 |
 | odoo_integration | 65 |
 | e2e | 34 |
 | security | 26 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 897 |
+| pr_candidate | 898 |
 | integration_candidate | 87 |
 | release_candidate | 32 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 678 |
+| deduplicate_before_required | 679 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 86 |
 | keep_release_only | 32 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 899 |
+| <5m | 900 |
 | 10-30m | 88 |
 | 30-60m | 34 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 404 |
 | platform owner | 308 |
-| test owner | 162 |
+| test owner | 163 |
 | backend owner | 65 |
 | qa owner | 34 |
 | security owner | 26 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 926 |
+| scripts/verify | 927 |
 | scripts/ops | 41 |
 | frontend/apps/web/scripts | 28 |
 | scripts/ci | 10 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-169 | contract | `scripts/verify/construction_core_extension_contract_normalizers_split_guard.py` | platform owner |
 | T-ASSET-170 | governance | `scripts/verify/construction_core_extension_hook_facts_split_guard.py` | architecture owner |
 | T-ASSET-171 | contract | `scripts/verify/construction_core_extension_intent_handlers_split_guard.py` | platform owner |
-| ... | ... | 598 more | ... |
+| ... | ... | 599 more | ... |
 
 ## Dedupe Hotspots
 

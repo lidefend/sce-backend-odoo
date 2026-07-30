@@ -251,6 +251,10 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 * ❌ `git push`
   （**除非** 通过 `make pr.push` / `make branch.cleanup.feature` 执行）
 * ❌ `git push --force / -f`
+  （唯一例外：获得仓库所有者逐次明确授权后，通过
+  `make main.cutover.controlled` 执行双远端 `main` 历史切换。该入口必须使用完整
+  SHA 精确 lease、外部不可变恢复 bundle、配对完成或回退、保护规则恢复及
+  required checks 复验；禁止直接调用底层 push。）
 * ❌ `git reset --hard`
 * ❌ `git rebase`
 * ❌ `git cherry-pick`
@@ -401,6 +405,13 @@ Codex 的责任是 **定位 → 修复 → 重试**。
 * `make pr.push`
 * `make codex.sync-main`
 * `make branch.cleanup.feature`
+* `make main.cutover.controlled`
+
+  * 仅用于仓库所有者已明确授权的双远端 `main` 非快进历史治理；
+  * 默认 dry-run，`APPLY=1` 仍须精确确认字符串；
+  * 必须提供两个 live `main` 的完整旧 SHA、目标 SHA/TREE、私有权限 Gitee
+    管理 token 文件、仓库外恢复目录和证据目录；
+  * 不属于生产部署授权，不得连接数据库、filestore 或生产运行环境。
 
 > 若某 target 尚未实现，**必须先补 Makefile 封装**，
 > Codex 不得绕过直接调用底层命令。

@@ -13,9 +13,10 @@ CODEX_ALLOWED_WRITE_BRANCH_PREFIXES := feature/* fix/* refactor/* audit/* releas
 .PHONY: gitee.ci.https.install gitee.ci.https.status gitee.ci.repository.configure
 
 verify.gitee.webhook.ci: guard.prod.forbid
-	@python3 -m py_compile scripts/ci/gitee_webhook_ci.py scripts/verify/test_gitee_webhook_ci.py scripts/verify/test_gitee_to_github_mirror.py scripts/ops/configure_gitee_ci_repository.py scripts/ops/gitee_pr_bot.py
+	@python3 -m py_compile scripts/ci/gitee_webhook_ci.py scripts/verify/test_gitee_webhook_ci.py scripts/verify/test_gitee_to_github_mirror.py scripts/verify/test_controlled_main_cutover.py scripts/ops/configure_gitee_ci_repository.py scripts/ops/controlled_main_cutover.py scripts/ops/gitee_pr_bot.py
 	@python3 scripts/verify/test_gitee_webhook_ci.py
 	@python3 scripts/verify/test_gitee_to_github_mirror.py
+	@python3 scripts/verify/test_controlled_main_cutover.py
 	@bash -n scripts/ci/gitee_ci_run.sh scripts/ops/install_gitee_webhook_ci.sh scripts/ops/install_gitee_ci_https.sh scripts/ops/gitee_to_github_mirror.sh scripts/ops/install_gitee_to_github_mirror.sh scripts/ops/configure_github_mirror_ruleset.sh scripts/ops/run_gitee_pr_professional_gate.sh deploy/gitee-ci/install.sh deploy/gitee-ci/install_https.sh deploy/gitee-mirror/install.sh
 
 gitee.ci.server.install: guard.prod.forbid
@@ -352,7 +353,7 @@ workspace.worktree.cleanup: guard.prod.forbid
 	@python3 scripts/ops/safe_worktree_cleanup.py --path "$(CLEAN_WORKTREE)" $(if $(filter 1,$(APPLY)),--apply,)
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync mirror.main.gitee
+.PHONY: main.sync mirror.main.gitee main.cutover.controlled
 
 main.sync: guard.prod.forbid
 	@echo "[main.sync] checkout main + fast-forward pull"
@@ -361,3 +362,24 @@ main.sync: guard.prod.forbid
 
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh
+
+main.cutover.controlled: guard.prod.forbid
+	@test -n "$(CUTOVER_TARGET_SHA)" || (echo "CUTOVER_TARGET_SHA is required"; exit 2)
+	@test -n "$(CUTOVER_TARGET_TREE)" || (echo "CUTOVER_TARGET_TREE is required"; exit 2)
+	@test -n "$(CUTOVER_GITHUB_OLD_SHA)" || (echo "CUTOVER_GITHUB_OLD_SHA is required"; exit 2)
+	@test -n "$(CUTOVER_GITEE_OLD_SHA)" || (echo "CUTOVER_GITEE_OLD_SHA is required"; exit 2)
+	@test -n "$(CUTOVER_GITEE_TOKEN_FILE)" || (echo "CUTOVER_GITEE_TOKEN_FILE is required"; exit 2)
+	@test -n "$(CUTOVER_RECOVERY_ROOT)" || (echo "CUTOVER_RECOVERY_ROOT is required"; exit 2)
+	@test -n "$(CUTOVER_EVIDENCE_DIR)" || (echo "CUTOVER_EVIDENCE_DIR is required"; exit 2)
+	@test -n "$(CUTOVER_AUTHORIZATION_ID)" || (echo "CUTOVER_AUTHORIZATION_ID is required"; exit 2)
+	@python3 scripts/ops/controlled_main_cutover.py \
+		--target-sha "$(CUTOVER_TARGET_SHA)" \
+		--target-tree "$(CUTOVER_TARGET_TREE)" \
+		--github-old-sha "$(CUTOVER_GITHUB_OLD_SHA)" \
+		--gitee-old-sha "$(CUTOVER_GITEE_OLD_SHA)" \
+		--gitee-token-file "$(CUTOVER_GITEE_TOKEN_FILE)" \
+		--recovery-root "$(CUTOVER_RECOVERY_ROOT)" \
+		--evidence-dir "$(CUTOVER_EVIDENCE_DIR)" \
+		--authorization-id "$(CUTOVER_AUTHORIZATION_ID)" \
+		$(if $(CUTOVER_RUN_ID),--run-id "$(CUTOVER_RUN_ID)",) \
+		$(if $(filter 1,$(APPLY)),--apply --confirm CONTROLLED_MAIN_CUTOVER_APPLY,)
