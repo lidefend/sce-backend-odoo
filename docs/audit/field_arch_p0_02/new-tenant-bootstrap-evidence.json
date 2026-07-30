@@ -1,0 +1,19 @@
+{
+  "schema_version": "field-arch-p0-02.evidence.v1",
+  "git_sha": "48e4f359c22f3d6ebdca1b4704a429bd8514712c",
+  "baseline_aliases": 910,
+  "resolved_formal_sources": 747,
+  "stale_aliases": 151,
+  "unresolved_decisions": 12,
+  "unclassified_unresolved_fields": 0,
+  "residual_view_references": 789,
+  "formal_product_source_aliases": 0,
+  "standard_product_bootstrap_aliases": 0,
+  "product_install_requires_legacy_compat": false,
+  "business_record_values_modified": false,
+  "x_custom_fields_modified": false,
+  "bootstrap_mode": "STANDARD_PRODUCT_BOOTSTRAP",
+  "legacy_module_present": false,
+  "legacy_module_dependency": false,
+  "formal_routes_with_legacy_fields": 0
+}

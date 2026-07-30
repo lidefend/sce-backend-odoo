@@ -218,8 +218,6 @@ def _available_lowcode_model_fields(env, model: str) -> list[dict]:
 def _clean_lowcode_user_label(field_name: str, label: str) -> str:
     name = str(field_name or "").strip()
     text = str(label or name or "").strip()
-    if name.startswith("p1_visible_") and text.startswith("P1可见"):
-        text = text[len("P1可见"):].strip()
     return text or name
 
 

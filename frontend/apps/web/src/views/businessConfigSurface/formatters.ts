@@ -267,10 +267,7 @@ export function cleanBusinessFieldLabel(name: unknown, label: unknown) {
   const fieldName = String(name || '').trim();
   const override = BUSINESS_FIELD_LABEL_OVERRIDES[fieldName];
   if (override) return override;
-  let text = String(label || fieldName || '').trim();
-  if (fieldName.startsWith('p1_visible_') && text.startsWith('P1可见')) {
-    text = text.slice('P1可见'.length).trim();
-  }
+  const text = String(label || fieldName || '').trim();
   return text || fieldName;
 }
 

@@ -3,6 +3,19 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-07-30 — Standard product field publication cleanup
+
+- Branch: `fix/field-arch-p0-02-formal-contracts`
+- Starting product commit: `48e4f359c22f3d6ebdca1b4704a429bd8514712c`
+- Formal Product Layer: P1 construction product contracts, with P0 generic renderer cleanup
+- Layer Target: formal model fields, views, list profiles, search/export contracts, and clean product bootstrap
+- Module: `smart_construction_core`, generic `smart_core` contract handlers, Web field-label consumer, upgrade migration, and purity guard
+- Reason: the product is newly developed and has no legacy customer compatibility obligation; hashed migration aliases must not become product fields or runtime contract identities
+- Standard vs User-Specific: product modules contain only stable formal fields; historical business data and its source mapping belong to the separate private P2 user-data carrier
+- Why Here / Why Not Elsewhere: P1 owns construction field semantics and formal views; P0 only removes construction-specific alias interpretation. Customer payload modules, product UI, and runtime contracts must not register or publish each other's fields
+- Blast Radius: removes non-stored alias declarations, alias-only views, dynamic contract injection, customer backfill scripts, and stale registry metadata on product upgrade; does not delete business records, physical business columns, `x_custom_field*`, permissions, workflows, or customer data modules
+- Validation: product-source purity, formal list profiles, Odoo view/contract tests, fresh install, upgrade cleanup, frontend strict/lint/build, semantic regression, and diff checks
+
 ## 2026-07-24 — Immutable resumable RC publication contract
 
 - Branch: `fix/atomic-release-publication-contract`

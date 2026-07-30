@@ -436,11 +436,6 @@ def aggregate_target_for(path: Path, runtime: str) -> str:
         "subscription_smoke.sh",
     }:
         return "verify.e2e.subscription_smoke"
-    if name in {
-        "user_confirmed_form_capability_audit.py",
-        "user_confirmed_form_data_alignment_audit.py",
-    }:
-        return "verify.formal_business.release_gate"
     if name == "unified_page_contract_v2_harmony_h5_compile_acceptance_guard.py":
         return "verify.unified_page_contract.v2.harmony_h5_compile_acceptance.host"
     if name == "unified_page_contract_v2_regression_audit.py":

@@ -177,31 +177,19 @@ class TestActionDispatcherServerMapping(TransactionCase):
         self.assertFalse(multi_rows, f"list contract fabricated an unbound multi action: {result}")
         list_profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
         expected_product_columns = [
-            "p1_visible_06fa8c6f628f",
-            "p1_visible_8fa8662ad38f",
-            "p1_visible_3e7255522b33",
-            "p1_visible_2c346345746e",
-            "p1_visible_ccfa1326c88f",
-            "p1_visible_c00fc55a25b8",
-            "p1_visible_9469a2ad32f8",
-            "p1_visible_ae1abe750af6",
-            "p1_visible_63c5facb9f66",
-            "p1_visible_e0361480e3a5",
-            "p1_visible_1874b0ce5103",
-            "p1_visible_3759fcfc297a",
-            "p1_visible_6cf6e39bece9",
-            "p1_visible_a103d7cee046",
-            "p1_visible_48a64eb40c71",
-            "p1_visible_901384917949",
-            "p1_visible_71e47f617269",
-            "p1_visible_dfc25d77dc39",
+            "document_status_display", "name", "project_id", "date_request",
+            "partner_id", "amount", "actual_paid_amount_display",
+            "settlement_amount_payable", "cost_category_name", "note",
+            "settlement_id", "payment_account_no_display", "amount_uppercase",
+            "payee_account_name_display", "payee_bank_name_display",
+            "payee_account_no_display", "source_created_by", "source_created_at",
         ]
         actual_columns = list_profile.get("columns") or []
         self.assertEqual(actual_columns[: len(expected_product_columns)], expected_product_columns)
         self.assertIn("name", actual_columns)
         self.assertIn("document_status_display", actual_columns)
-        self.assertEqual((list_profile.get("column_labels") or {}).get("p1_visible_8fa8662ad38f"), "单据编号")
-        self.assertEqual((list_profile.get("column_labels") or {}).get("p1_visible_2c346345746e"), "申请日期")
+        self.assertEqual((list_profile.get("column_labels") or {}).get("name"), "单据编号")
+        self.assertEqual((list_profile.get("column_labels") or {}).get("date_request"), "申请日期")
 
     def test_ui_contract_action_open_material_plan_list_matches_current_product_contract(self):
         action = self.env.ref("smart_construction_core.action_project_material_plan", raise_if_not_found=False)

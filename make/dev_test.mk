@@ -1072,15 +1072,8 @@ verify.formal_action.runtime_drift.audit: guard.prod.forbid check-compose-projec
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) MIGRATION_ARTIFACT_ROOT="$(MIGRATION_ARTIFACT_ROOT)" bash scripts/ops/odoo_shell_exec.sh < scripts/verify/formal_action_runtime_drift_audit.py
 
 .PHONY: verify.user_confirmed.formal_surface.locked
-verify.user_confirmed.formal_surface.locked: guard.prod.forbid verify.formal_surface.transition_field_audit verify.formal_config.p1_candidate_runtime_audit verify.user_formal_field.module_boundary.audit verify.formal_action.runtime_drift.audit verify.engineering_progress_income.visible_contract.audit verify.formal_entry_metadata.audit
+verify.user_confirmed.formal_surface.locked: guard.prod.forbid verify.formal_product_field_purity verify.formal_surface.transition_field_audit verify.user_formal_field.module_boundary.audit verify.formal_action.runtime_drift.audit verify.engineering_progress_income.visible_contract.audit verify.formal_entry_metadata.audit
 	@echo "[OK] verify.user_confirmed.formal_surface.locked db=$(DB_NAME)"
-
-.PHONY: verify.prepaid_tax.visible_surface_alignment.audit
-verify.prepaid_tax.visible_surface_alignment.audit: guard.prod.forbid check-compose-project check-compose-env
-	@if [[ -f "$(PREPAID_TAX_VISIBLE_XLSX)" ]]; then \
-	  $(RUN_ENV) $(COMPOSE_BASE) cp "$(PREPAID_TAX_VISIBLE_XLSX)" "$(ODOO_SERVICE):/tmp/prepaid_tax_visible_alignment.xlsx"; \
-	fi
-	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/prepaid_tax_visible_surface_alignment_audit.py
 
 .PHONY: verify.input_invoice.visible_surface_alignment.audit
 verify.input_invoice.visible_surface_alignment.audit: guard.prod.forbid check-compose-project check-compose-env

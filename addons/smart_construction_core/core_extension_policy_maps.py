@@ -748,3 +748,15 @@ INDUSTRY_CREATE_FIELD_FALLBACKS = {
         }
     }
 }
+# Formal fields exposed to the generic API search surface.  This map is product
+# policy: migration aliases and customer-specific projection names are forbidden.
+API_DATA_FORMAL_SEARCH_FIELDS = {
+    "payment.request": (
+        "name", "project_id", "partner_id", "date_request", "amount",
+        "amount_uppercase", "accepted_amount_uppercase", "note",
+    ),
+    "tender.guarantee": ("name", "project_id", "company_id", "remark"),
+    "sc.settlement.order": (
+        "name", "project_id", "settlement_unit_id", "source_created_by", "note",
+    ),
+}

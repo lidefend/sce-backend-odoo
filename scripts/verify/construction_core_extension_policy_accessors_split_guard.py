@@ -38,18 +38,6 @@ def _install_policy_map_stub() -> None:
     for name in package_names:
         sys.modules.setdefault(name, types.ModuleType(name))
     sys.modules["odoo.addons.smart_construction_core.core_extension_policy_maps"] = policy_maps
-    sys.modules.setdefault("odoo.addons.smart_construction_core.models", types.ModuleType("odoo.addons.smart_construction_core.models"))
-    sys.modules.setdefault("odoo.addons.smart_construction_core.models.support", types.ModuleType("odoo.addons.smart_construction_core.models.support"))
-    alias_fields = types.ModuleType("odoo.addons.smart_construction_core.models.support.p1_daily_business_visible_alias_fields")
-    alias_fields.P1_ALIAS_LABELS = {"sample.model": ["项目名称", "合同金额"]}
-    alias_fields.P1_ALIAS_COMPAT_LABELS = {"sample.model": ["兼容字段"]}
-    alias_fields.LABEL_SOURCE_OVERRIDES = {"项目名称": ["project_id"], "合同金额": ["amount_total"], "兼容字段": ["compat_name"]}
-    alias_fields.MODEL_LABEL_SOURCE_OVERRIDES = {"sample.model": {"合同金额": ["amount_total", "amount_untaxed"]}}
-    confirmed = types.ModuleType("odoo.addons.smart_construction_core.models.support.user_confirmed_formal_visible_fields")
-    confirmed.USER_CONFIRMED_FORMAL_VISIBLE_FIELDS = {"sample.model": [{"label": "确认字段"}]}
-    alias_fields.LABEL_SOURCE_OVERRIDES["确认字段"] = ["confirmed_name"]
-    sys.modules["odoo.addons.smart_construction_core.models.support.p1_daily_business_visible_alias_fields"] = alias_fields
-    sys.modules["odoo.addons.smart_construction_core.models.support.user_confirmed_formal_visible_fields"] = confirmed
 
 
 class _FakeModelRecord:
@@ -123,7 +111,7 @@ def main() -> int:
             "def get_api_data_create_execution_policy_contribution(",
             "def get_api_data_unlink_allowed_model_contributions(",
             "def get_api_data_search_fields(",
-            "USER_CONFIRMED_FORMAL_VISIBLE_FIELDS",
+            "_policy_maps.API_DATA_FORMAL_SEARCH_FIELDS",
             "_policy_maps.API_DATA_UNLINK_POLICIES",
         ]:
             if token not in accessors_text:
@@ -163,9 +151,11 @@ def main() -> int:
         create_policy = accessors.get_api_data_create_execution_policy_contribution(env, "account.tax", quick_vals, {}, {})
         if create_policy.get("sudo") is not True:
             errors.append("policy accessors must preserve contract tax quick-create sudo policy")
+        policy_maps = sys.modules["odoo.addons.smart_construction_core.core_extension_policy_maps"]
+        policy_maps.API_DATA_FORMAL_SEARCH_FIELDS["sample.model"] = ("project_id", "amount_total", "confirmed_name")
         unfiltered_names = accessors.get_api_data_search_fields(None, "sample.model")
-        if "amount_untaxed" not in unfiltered_names or "confirmed_name" not in unfiltered_names:
-            errors.append("policy accessors must merge alias, model override, and confirmed formal search fields")
+        if unfiltered_names != ["project_id", "amount_total", "confirmed_name"]:
+            errors.append("policy accessors must expose only explicit formal search fields")
         filtered_names = accessors.get_api_data_search_fields(env, "sample.model")
         if filtered_names != ["project_id", "amount_total", "confirmed_name"]:
             errors.append("policy accessors must filter search fields against model _fields")

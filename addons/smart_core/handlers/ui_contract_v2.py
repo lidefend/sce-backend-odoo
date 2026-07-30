@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-import hashlib
 import ast
 from copy import deepcopy
 from typing import Any, Dict, Optional
@@ -261,15 +260,12 @@ class UiContractV2Handler(BaseIntentHandler):
                 has_model = False
             if has_model and (
                 field_name.startswith("legacy_visible_")
-                or field_name.startswith("p1_visible_")
             ):
                 try:
                     field = self.env[model_key]._fields.get(field_name)
                 except Exception:
                     field = None
                 field_label = str(getattr(field, "string", "") or "").strip()
-                if field_name.startswith("p1_visible_") and field_label.startswith("P1可见"):
-                    field_label = field_label[len("P1可见"):].strip()
                 if field_label and field_label != field_name and (not label or label == field_name):
                     return field_label
             return label
@@ -1504,8 +1500,6 @@ class UiContractV2Handler(BaseIntentHandler):
                 return "录入人"
             if field_name == "source_created_at":
                 return "录入时间"
-            if field_name.startswith("p1_visible_") and label.startswith("P1可见"):
-                label = label[len("P1可见"):].strip()
             label = self._legacy_visible_business_label(model, field_name, label)
             return label or field_name
 
@@ -2209,8 +2203,6 @@ class UiContractV2Handler(BaseIntentHandler):
 
         def is_history_check_field(name: str) -> bool:
             value = str(name or "").strip()
-            if value.startswith("p1_visible_"):
-                return True
             if value.startswith("legacy_") or "_legacy_" in value or value.endswith("_legacy"):
                 return is_migration_history_field(value)
             return False
@@ -2486,7 +2478,7 @@ class UiContractV2Handler(BaseIntentHandler):
             or direct_orchestration_columns
             or direct_orchestration_labels
         )
-        action_view_override = None if business_view_orchestration_applied else self._action_scoped_visible_list_columns(source_contract)
+        action_view_override = None
         action_view_columns = list(action_view_override.get("columns") or []) if action_view_override else []
         action_view_labels = dict(action_view_override.get("column_labels") or {}) if action_view_override else {}
         legacy_view_columns = []
@@ -2496,7 +2488,7 @@ class UiContractV2Handler(BaseIntentHandler):
             name = str(row.get("name") or "").strip()
             if name.startswith("legacy_visible_") and name not in legacy_view_columns:
                 legacy_view_columns.append(name)
-        legacy_override = None if direct_orchestration_columns else self._legacy_55_legacy_visible_list_override(source_contract)
+        legacy_override = None
         columns: list[str] = []
         explicit_view_columns: list[str] = []
         has_explicit_view_columns = False
@@ -2534,12 +2526,6 @@ class UiContractV2Handler(BaseIntentHandler):
             and all(name.startswith("legacy_visible_") for name in explicit_view_columns)
         ):
             columns = legacy_view_columns
-            strict_columns = True
-        if not strict_columns and columns and all(str(name or "").startswith("p1_visible_") for name in columns):
-            # LEGACY_55 legacy-visible delivery actions use action-scoped alias
-            # columns to mirror the old system. Keep that list exact: appending
-            # business-operation fallback fields reintroduces user-hidden
-            # migration columns and can truncate long old-system lists.
             strict_columns = True
         if not strict_columns:
             for name in common_fields:
@@ -2722,127 +2708,6 @@ class UiContractV2Handler(BaseIntentHandler):
             except Exception:
                 _logger.debug("ui.contract.v2 source model lookup skipped", exc_info=True)
         return ""
-
-    def _action_scoped_visible_list_columns(self, source_contract: dict[str, Any]) -> dict[str, Any] | None:
-        action_id = self._source_action_id(source_contract)
-        if action_id <= 0:
-            return None
-        try:
-            action = self.env["ir.actions.act_window"].sudo().browse(action_id).exists()
-        except Exception:
-            _logger.debug("ui.contract.v2 action-scoped visible list lookup skipped", exc_info=True)
-            return None
-        if not action:
-            return None
-
-        candidate_views = []
-        try:
-            if action.view_id and action.view_id.type in {"tree", "list"}:
-                candidate_views.append(action.view_id)
-        except Exception:
-            pass
-        try:
-            for relation in action.view_ids:
-                view = relation.view_id
-                if view and view.type in {"tree", "list"} and view not in candidate_views:
-                    candidate_views.append(view)
-        except Exception:
-            pass
-
-        model_name = str(source_contract.get("model") or (source_contract.get("head") or {}).get("model") or "").strip()
-        model_fields = {}
-        try:
-            model_fields = getattr(self.env[model_name], "_fields", {}) if model_name in self.env else {}
-        except Exception:
-            model_fields = {}
-
-        for view in candidate_views:
-            try:
-                try:
-                    arch = view.sudo().read_combined(["arch"]).get("arch") or ""
-                except Exception:
-                    arch = view.sudo().arch_db or ""
-                if not arch:
-                    continue
-                root = etree.fromstring(arch.encode("utf-8"))
-            except Exception:
-                _logger.debug("ui.contract.v2 action-scoped visible list arch parse skipped", exc_info=True)
-                continue
-            columns: list[str] = []
-            labels: dict[str, str] = {}
-            for node in root.xpath(".//field"):
-                name = str(node.get("name") or "").strip()
-                if not name:
-                    continue
-                if not (name.startswith("p1_visible_") or name.startswith("legacy_visible_")):
-                    continue
-                if model_fields and name not in model_fields:
-                    continue
-                if name in columns:
-                    continue
-                columns.append(name)
-                label = str(node.get("string") or "").strip()
-                if label:
-                    labels[name] = label
-            if columns and all(name.startswith("p1_visible_") for name in columns):
-                return {
-                    "source": "ir.actions.act_window.tree_view",
-                    "action_id": action_id,
-                    "view_id": int(view.id),
-                    "columns": columns,
-                    "column_labels": labels,
-                }
-        return None
-
-    def _legacy_55_legacy_visible_list_override(self, source_contract: dict[str, Any]) -> dict[str, Any] | None:
-        action_id = self._source_action_id(source_contract)
-        if action_id <= 0 or "sc.legacy.user.priority.menu.plan" not in self.env:
-            return None
-        try:
-            plan = self.env["sc.legacy.user.priority.menu.plan"].sudo().with_context(active_test=False).search(
-                [
-                    ("source_document", "=", LEGACY_55_SOURCE_DOCUMENT),
-                    ("target_action_id", "=", action_id),
-                    ("list_field_contract", "!=", False),
-                ],
-                limit=1,
-            )
-        except Exception:
-            _logger.debug("LEGACY_55 legacy visible list override lookup skipped", exc_info=True)
-            return None
-        if not plan:
-            return None
-        model_name = str(getattr(plan, "target_model", "") or source_contract.get("model") or "").strip()
-        model_fields = {}
-        try:
-            model_fields = getattr(self.env[model_name], "_fields", {}) if model_name in self.env else {}
-        except Exception:
-            model_fields = {}
-
-        columns: list[str] = []
-        labels: dict[str, str] = {}
-        for item in plan.list_field_contract or []:
-            if not isinstance(item, dict):
-                continue
-            label = str(item.get("legacy_label") or "").strip()
-            if not label or label == "操作":
-                continue
-            field_name = "p1_visible_" + hashlib.sha1(label.encode("utf-8")).hexdigest()[:12]
-            if field_name in columns:
-                continue
-            if model_fields and field_name not in model_fields:
-                continue
-            columns.append(field_name)
-            labels[field_name] = label
-        if not columns:
-            return None
-        return {
-            "source": "legacy_55_legacy_user_priority_menu_plan",
-            "action_id": action_id,
-            "plan_id": int(plan.id),
-            "columns": columns,
-            "column_labels": labels,
-        }
 
     def _inject_collaboration_contract(self, source_contract: dict[str, Any], *, model: str, view_type: str) -> None:
         try:

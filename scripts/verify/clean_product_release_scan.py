@@ -19,6 +19,7 @@ BOUNDARY_CHECKS = (
     "scripts/verify/tenant_product_payload_boundary_guard.py",
     "scripts/verify/tenant_module_set_matrix.py",
     "scripts/verify/tenant_product_fresh_install.py",
+    "scripts/verify/formal_product_field_purity_guard.py",
     "scripts/verify/tenant_data_responsibility_boundary.py",
     "scripts/verify/branch_governance_consistency_guard.py",
 )

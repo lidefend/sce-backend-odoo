@@ -89,18 +89,6 @@ verify.formal_business_operation_core_flow_smoke: guard.prod.forbid check-compos
 	  $(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/sce-product-artifacts/formal_business_operation_core_flow_smoke_v1.md docs/product/formal_business_operation_core_flow_smoke_v1.md >/dev/null; \
 	fi
 
-verify.user_data.product_field_coverage.matrix: guard.prod.forbid check-compose-project check-compose-env
-	@mkdir -p artifacts/backend
-	@python3 -m py_compile scripts/verify/user_data_product_field_coverage_matrix.py
-	@$(RUN_ENV) USER_DATA_PRODUCT_FIELD_COVERAGE_MATRIX_PATH=/tmp/user_data_product_field_coverage_matrix.json DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/user_data_product_field_coverage_matrix.py
-	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/user_data_product_field_coverage_matrix.json artifacts/backend/user_data_product_field_coverage_matrix.json >/dev/null
-
-verify.industry_module.handling_capability_boundary: guard.prod.forbid check-compose-project check-compose-env
-	@mkdir -p artifacts/backend
-	@python3 -m py_compile scripts/verify/industry_module_handling_capability_boundary_audit.py
-	@$(RUN_ENV) INDUSTRY_MODULE_HANDLING_CAPABILITY_BOUNDARY_AUDIT_PATH=/tmp/industry_module_handling_capability_boundary_audit.json DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/industry_module_handling_capability_boundary_audit.py
-	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/industry_module_handling_capability_boundary_audit.json artifacts/backend/industry_module_handling_capability_boundary_audit.json >/dev/null
-
 verify.user_formal_field.module_boundary.audit: guard.prod.forbid check-compose-project check-compose-env
 	@python3 -m py_compile scripts/verify/user_formal_field_module_boundary_audit.py
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/user_formal_field_module_boundary_audit.py
@@ -112,17 +100,6 @@ verify.formal_surface.transition_field_audit: guard.prod.forbid
 verify.core_history_field.physical_boundary_audit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/core_history_field_physical_boundary_audit.py
 	@python3 scripts/verify/core_history_field_physical_boundary_audit.py
-
-verify.formal_config.p1_alias_contract_audit: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/formal_config_p1_alias_contract_audit.py
-	@python3 scripts/verify/formal_config_p1_alias_contract_audit.py
-
-verify.formal_config.p1_candidate_runtime_audit: guard.prod.forbid check-compose-project check-compose-env verify.formal_config.p1_alias_contract_audit
-	@python3 -m py_compile scripts/verify/formal_config_p1_candidate_runtime_audit.py
-	@$(RUN_ENV) $(COMPOSE_BASE) cp artifacts/backend/formal_config_p1_alias_contract_audit.json $(ODOO_SERVICE):/tmp/formal_config_p1_alias_contract_audit.json >/dev/null
-	@$(RUN_ENV) $(COMPOSE_BASE) cp scripts/verify/baselines/formal_config_p1_candidate_runtime_budget_v1.json $(ODOO_SERVICE):/tmp/formal_config_p1_candidate_runtime_budget_v1.json >/dev/null
-	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/formal_config_p1_candidate_runtime_audit.py
-	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/formal_config_p1_candidate_runtime_audit.json artifacts/backend/formal_config_p1_candidate_runtime_audit.json >/dev/null
 
 verify.business_config.snapshot: guard.prod.forbid check-compose-project check-compose-env
 	@mkdir -p artifacts/backend

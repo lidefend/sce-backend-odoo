@@ -695,15 +695,15 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             ["entry_user_text", "source_created_by", "entry_time", "source_created_at"],
         )
 
-    def test_business_list_profile_prefers_config_over_legacy_visible_override(self):
+    def test_business_list_profile_prefers_direct_product_configuration(self):
         class _Config:
             contract_json = {
                 "view_orchestration": {
                     "views": {
                         "tree": {
                             "columns": [
-                                {"name": "p1_visible_a", "sequence": 10},
-                                {"name": "p1_visible_b", "sequence": 20},
+                                {"name": "document_no", "sequence": 10},
+                                {"name": "project_id", "sequence": 20},
                                 {"name": "source_created_by", "sequence": 30},
                                 {"name": "source_created_at", "sequence": 40},
                             ]
@@ -723,16 +723,12 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         handler = self.module.UiContractV2Handler(env=_Env({
             "ui.business.config.contract": _ConfigModel(),
         }))
-        handler._legacy_55_legacy_visible_list_override = lambda source_contract: {
-            "columns": ["p1_visible_a", "p1_visible_b"],
-            "column_labels": {"p1_visible_a": "单据状态", "p1_visible_b": "项目名称"},
-        }
         source_contract = {
             "action_id": 856,
             "model": "sc.demo",
             "views": {
                 "tree": {
-                    "columns": ["p1_visible_a", "p1_visible_b", "source_created_by", "source_created_at"],
+                    "columns": ["document_no", "project_id", "source_created_by", "source_created_at"],
                 }
             },
             "list_profile": {},
@@ -750,7 +746,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertEqual(
             source_contract["list_profile"]["columns"],
-            ["p1_visible_a", "p1_visible_b", "source_created_by", "source_created_at"],
+            ["document_no", "project_id", "source_created_by", "source_created_at"],
         )
         self.assertEqual(
             source_contract["list_profile"]["column_policy"]["reason"],
@@ -1134,8 +1130,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         field_types = {
             "project_id": "many2one",
             "amount": "monetary",
-            "p1_visible_8fa8662ad38f": "char",
-            "p1_visible_3e7255522b33": "char",
+            "legacy_document_no": "char",
+            "legacy_project_name": "char",
             "legacy_status": "char",
         }
 
@@ -1160,8 +1156,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 "attachment_field": "",
                 "detail_fields": [],
                 "field_labels": {
-                    "p1_visible_8fa8662ad38f": "单据编号",
-                    "p1_visible_3e7255522b33": "项目名称",
+                    "legacy_document_no": "历史单据编号",
+                    "legacy_project_name": "历史项目名称",
                     "legacy_status": "历史状态",
                 },
             },
@@ -1184,9 +1180,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertIsNotNone(history_group)
         self.assertEqual(
             history_group["fieldRefs"],
-            ["p1_visible_8fa8662ad38f", "p1_visible_3e7255522b33", "legacy_status"],
+            ["legacy_document_no", "legacy_project_name", "legacy_status"],
         )
-        self.assertNotIn("p1_visible_8fa8662ad38f", primary_refs)
+        self.assertNotIn("legacy_document_no", primary_refs)
         self.assertNotIn("legacy_status", primary_refs)
 
     def test_form_structure_contract_promotes_formalized_migration_business_fields(self):

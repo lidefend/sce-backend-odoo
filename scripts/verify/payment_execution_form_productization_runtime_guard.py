@@ -32,8 +32,6 @@ FORBIDDEN_FIELDS = {
     "company_finance_status_display",
     "company_finance_document_no",
     "company_finance_attachment_text",
-    "uc_formal_b4846969514c",
-    "uc_formal_a0f538ecc456",
 }
 
 

@@ -473,7 +473,6 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     ).lower()
     render_profile = _sc_text(source.get("render_profile") or head.get("render_profile") or (((context or {}).get("meta") or {}).get("params") or {}).get("render_profile")).lower()
     out = deepcopy(contract)
-    _sc_project_p1_list_semantics_to_v2(env, out, source, model=model, view_type=view_type)
     _sc_inject_workflow_contract(env, out, source, model=model, view_type=view_type)
     inject_financial_workspace_runtime(
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
@@ -496,154 +495,13 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     return out
 
 
-def _sc_project_p1_list_semantics_to_v2(env, contract, source_contract, *, model, view_type):
-    if view_type not in {"tree", "list"} or not model or model not in env:
-        return
-    try:
-        from odoo.addons.smart_construction_core.models.support.p1_daily_business_visible_alias_fields import (
-            p1_visible_alias_semantics,
-        )
-    except ImportError:
-        return
-
-    source = deepcopy(source_contract) if isinstance(source_contract, dict) else {}
-    _sc_inject_p1_list_field_semantics(env, source)
-    fields_map = source.get("fields") if isinstance(source.get("fields"), dict) else {}
-    views = source.get("views") if isinstance(source.get("views"), dict) else {}
-    tree = views.get("tree") or views.get("list")
-    schema_rows = []
-    if isinstance(tree, dict):
-        schema_rows = tree.get("columns_schema") or tree.get("columnsSchema") or []
-    schema_map = {
-        _sc_text(row.get("name") or row.get("field")): row
-        for row in schema_rows
-        if isinstance(row, dict) and _sc_text(row.get("name") or row.get("field"))
-    }
-    declared_sum_labels = {}
-    try:
-        import xml.etree.ElementTree as ET
-
-        for view in env["ir.ui.view"].sudo().search([
-            ("model", "=", model),
-            ("type", "in", ["tree", "list"]),
-            ("active", "=", True),
-        ]):
-            root = ET.fromstring(view.arch_db or "<tree/>")
-            for node in root.findall(".//field[@name][@sum]"):
-                name = _sc_text(node.get("name"))
-                label = _sc_text(node.get("sum"))
-                if name and label:
-                    declared_sum_labels.setdefault(name, set()).add(label)
-    except Exception:
-        declared_sum_labels = {}
-
-    model_record = env[model]
-    semantic_keys = (
-        "display_field", "value_field", "aggregation_field", "data_type",
-        "currency_field", "precision", "aggregate", "aggregate_label",
-        "sort_field", "filter_field", "export_field", "semantic_status",
-        "reason_code", "source_authority",
-    )
-
-    def visit(nodes):
-        for node in nodes if isinstance(nodes, list) else []:
-            if not isinstance(node, dict):
-                continue
-            for widget in node.get("widgetList") if isinstance(node.get("widgetList"), list) else []:
-                if not isinstance(widget, dict):
-                    continue
-                field_name = _sc_text(widget.get("fieldCode"))
-                if not field_name.startswith("p1_visible_"):
-                    continue
-                semantic = p1_visible_alias_semantics(model_record, field_name)
-                if not semantic:
-                    continue
-                source_row = schema_map.get(field_name) or (
-                    fields_map.get(field_name) if isinstance(fields_map.get(field_name), dict) else {}
-                )
-                aggregate_label = _sc_text(source_row.get("aggregate_label") or source_row.get("sum"))
-                if not aggregate_label and len(declared_sum_labels.get(field_name, set())) == 1:
-                    aggregate_label = next(iter(declared_sum_labels[field_name]))
-                source_type = _sc_text(semantic.get("data_type")).lower()
-                if aggregate_label and source_type in {"integer", "float", "monetary"}:
-                    semantic["aggregation_field"] = semantic.get("value_field")
-                    semantic["aggregate"] = "sum"
-                    semantic["aggregate_label"] = aggregate_label
-                config = dict(widget.get("componentConfig") if isinstance(widget.get("componentConfig"), dict) else {})
-                config.update({key: deepcopy(semantic.get(key)) for key in semantic_keys if key in semantic})
-                widget["componentConfig"] = config
-            for key in ("children", "pages", "tabs", "nodes", "items"):
-                visit(node.get(key))
-
-    layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
-    visit(layout.get("containerTree"))
-
-
 def smart_core_normalize_projected_contract_data(env, data, context):
     del context
     if not isinstance(data, dict):
         return None
     out = deepcopy(data)
     _sc_general_contract_tax_contract(out)
-    _sc_inject_p1_list_field_semantics(env, out)
     return out if out != data else None
-
-
-def _sc_inject_p1_list_field_semantics(env, contract):
-    """Preserve formal field semantics when a P1 Char alias is used for display."""
-    head = contract.get("head") if isinstance(contract.get("head"), dict) else {}
-    model_name = _sc_text(contract.get("model") or head.get("model"))
-    if not model_name or model_name not in env:
-        return
-    try:
-        from odoo.addons.smart_construction_core.models.support.p1_daily_business_visible_alias_fields import (
-            p1_visible_alias_semantics,
-        )
-    except ImportError:
-        return
-    model = env[model_name]
-    views = contract.get("views") if isinstance(contract.get("views"), dict) else {}
-    tree = views.get("tree") or views.get("list")
-    if not isinstance(tree, dict):
-        return
-    schema_key = "columns_schema" if isinstance(tree.get("columns_schema"), list) else "columnsSchema"
-    rows = tree.get(schema_key)
-    if not isinstance(rows, list):
-        return
-    fields_map = contract.get("fields") if isinstance(contract.get("fields"), dict) else {}
-    changed = False
-    for index, raw in enumerate(rows):
-        if not isinstance(raw, dict):
-            continue
-        field_name = _sc_text(raw.get("name") or raw.get("field"))
-        semantics = p1_visible_alias_semantics(model, field_name)
-        if not semantics:
-            continue
-        row = dict(raw)
-        aggregate_label = _sc_text(row.get("sum"))
-        source_type = _sc_text(semantics.get("data_type")).lower()
-        if aggregate_label:
-            if source_type in {"integer", "float", "monetary"}:
-                semantics["aggregation_field"] = semantics.get("value_field")
-                semantics["aggregate"] = "sum"
-                semantics["aggregate_label"] = aggregate_label
-            else:
-                semantics["semantic_status"] = "INVALID_AGGREGATION_SOURCE"
-                semantics["reason_code"] = "P1_ALIAS_AGGREGATION_SOURCE_NOT_NUMERIC"
-        row.update(semantics)
-        rows[index] = row
-        descriptor = dict(fields_map.get(field_name) if isinstance(fields_map.get(field_name), dict) else {})
-        descriptor.update(semantics)
-        fields_map[field_name] = descriptor
-        changed = True
-    if changed:
-        tree[schema_key] = rows
-        if isinstance(views.get("tree"), dict):
-            views["tree"] = tree
-        else:
-            views["list"] = tree
-        contract["views"] = views
-        contract["fields"] = fields_map
 
 
 def smart_core_normalize_unified_page_contract_v2(env, contract, context):
@@ -779,44 +637,24 @@ register_legacy_standard_list_profile({
     "profile_key": "payment.request.list",
     "model_name": "payment.request",
     "columns_order": [
-        "p1_visible_06fa8c6f628f",
-        "p1_visible_8fa8662ad38f",
-        "p1_visible_3e7255522b33",
-        "p1_visible_2c346345746e",
-        "p1_visible_ccfa1326c88f",
-        "p1_visible_c00fc55a25b8",
-        "p1_visible_9469a2ad32f8",
-        "p1_visible_ae1abe750af6",
-        "p1_visible_63c5facb9f66",
-        "p1_visible_e0361480e3a5",
-        "p1_visible_1874b0ce5103",
-        "p1_visible_3759fcfc297a",
-        "p1_visible_6cf6e39bece9",
-        "p1_visible_a103d7cee046",
-        "p1_visible_48a64eb40c71",
-        "p1_visible_901384917949",
-        "p1_visible_71e47f617269",
-        "p1_visible_dfc25d77dc39",
+        "document_status_display", "name", "project_id", "date_request",
+        "partner_id", "amount", "actual_paid_amount_display",
+        "settlement_amount_payable", "cost_category_name", "note",
+        "settlement_id", "payment_account_no_display", "amount_uppercase",
+        "payee_account_name_display", "payee_bank_name_display",
+        "payee_account_no_display", "source_created_by", "source_created_at",
     ],
     "column_labels": {
-        "p1_visible_06fa8c6f628f": "单据状态",
-        "p1_visible_8fa8662ad38f": "单据编号",
-        "p1_visible_3e7255522b33": "项目名称",
-        "p1_visible_2c346345746e": "申请日期",
-        "p1_visible_ccfa1326c88f": "收款单位",
-        "p1_visible_c00fc55a25b8": "申请付款金额",
-        "p1_visible_9469a2ad32f8": "实际付款金额",
-        "p1_visible_ae1abe750af6": "可用余额",
-        "p1_visible_63c5facb9f66": "成本分类名称",
-        "p1_visible_e0361480e3a5": "备注",
-        "p1_visible_1874b0ce5103": "是否关联单据",
-        "p1_visible_3759fcfc297a": "付款账号",
-        "p1_visible_6cf6e39bece9": "金额大写",
-        "p1_visible_a103d7cee046": "户名",
-        "p1_visible_48a64eb40c71": "开户行",
-        "p1_visible_901384917949": "账号",
-        "p1_visible_71e47f617269": "填写人",
-        "p1_visible_dfc25d77dc39": "录入时间",
+        "document_status_display": "单据状态", "name": "单据编号",
+        "project_id": "项目名称", "date_request": "申请日期",
+        "partner_id": "收款单位", "amount": "申请付款金额",
+        "actual_paid_amount_display": "实际付款金额",
+        "settlement_amount_payable": "可用余额",
+        "cost_category_name": "成本分类名称", "note": "备注",
+        "settlement_id": "关联单据", "payment_account_no_display": "付款账号",
+        "amount_uppercase": "金额大写", "payee_account_name_display": "户名",
+        "payee_bank_name_display": "开户行", "payee_account_no_display": "账号",
+        "source_created_by": "填写人", "source_created_at": "录入时间",
     },
     "row_primary": "name",
     "row_secondary": "project_id",
@@ -827,32 +665,18 @@ register_legacy_standard_list_profile({
     "profile_key": "tax_deduction_registration.list",
     "model_name": "sc.tax.deduction.registration",
     "columns_order": [
-        "p1_visible_06fa8c6f628f",
-        "p1_visible_8fa8662ad38f",
-        "p1_visible_3540b47897be",
-        "p1_visible_3e7255522b33",
-        "p1_visible_be5462bd6a62",
-        "p1_visible_ada9a85eab00",
-        "p1_visible_8acf4918f1f1",
-        "p1_visible_ee19dd75350c",
-        "p1_visible_eaa05c7105f7",
-        "p1_visible_e0361480e3a5",
-        "p1_visible_ee6a4d9e2956",
-        "p1_visible_1e62803e196c",
+        "state", "document_no", "is_transfer_out", "project_id",
+        "partner_id", "invoice_no", "deduction_tax_amount",
+        "deduction_amount", "deduction_surcharge_amount", "note",
+        "creator_name", "document_date",
     ],
     "column_labels": {
-        "p1_visible_06fa8c6f628f": "单据状态",
-        "p1_visible_8fa8662ad38f": "单据编号",
-        "p1_visible_3540b47897be": "是否转出",
-        "p1_visible_3e7255522b33": "项目名称",
-        "p1_visible_be5462bd6a62": "开票单位",
-        "p1_visible_ada9a85eab00": "发票号",
-        "p1_visible_8acf4918f1f1": "抵扣税额",
-        "p1_visible_ee19dd75350c": "抵扣总额",
-        "p1_visible_eaa05c7105f7": "抵扣附加税",
-        "p1_visible_e0361480e3a5": "备注",
-        "p1_visible_ee6a4d9e2956": "录入人",
-        "p1_visible_1e62803e196c": "单据日期",
+        "state": "单据状态", "document_no": "单据编号",
+        "is_transfer_out": "是否转出", "project_id": "项目名称",
+        "partner_id": "开票单位", "invoice_no": "发票号",
+        "deduction_tax_amount": "抵扣税额", "deduction_amount": "抵扣总额",
+        "deduction_surcharge_amount": "抵扣附加税", "note": "备注",
+        "creator_name": "录入人", "document_date": "单据日期",
     },
     "row_primary": "document_no",
     "row_secondary": "project_id",
@@ -1428,7 +1252,6 @@ def smart_core_finalize_projected_contract_data(env, data, context):
                 "must_request_columns": columns,
             },
         }
-    _sc_inject_p1_list_field_semantics(env, locked)
     return locked
 
 

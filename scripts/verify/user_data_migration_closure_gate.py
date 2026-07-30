@@ -134,11 +134,6 @@ def main() -> int:
             "HISTORY_LEGACY_USER_RECOVERY_PROBE=",
         ),
         (
-            "user_data_reconciliation_full_scope_probe",
-            ROOT / "scripts/verify/user_data_reconciliation_full_scope_probe.py",
-            "USER_DATA_RECONCILIATION_FULL_SCOPE_PROBE=",
-        ),
-        (
             "legacy_55_user_visible_business_data_final_probe",
             ROOT / "scripts/migration/legacy_55_user_visible_business_data_final_probe.py",
             "LEGACY_55_USER_VISIBLE_BUSINESS_DATA_FINAL_PROBE=",
