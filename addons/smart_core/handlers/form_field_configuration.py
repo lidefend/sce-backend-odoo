@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import logging
 import re
-import time
 import xml.etree.ElementTree as ET
 
 from odoo.exceptions import ValidationError
@@ -296,10 +295,12 @@ def _contract_reload_hint_for_record(rec) -> dict:
 
 def _custom_field_metadata_boundary() -> dict:
     return {
-        "metadata_authority": "ir.model.fields",
-        "placement_authority": "ui.business.config.contract.view_orchestration",
-        "compatibility_write": "ui.form.field.policy",
-        "rollback_boundary": "contract_rollback_does_not_delete_model_field",
+        "metadata_authority": "ui.tenant.extension.field",
+        "value_authority": "ui.tenant.extension.value",
+        "placement_authority": "tenant_extension_fields",
+        "global_ir_model_fields_registration": False,
+        "public_business_table_column_creation": False,
+        "rollback_boundary": "retire_definition_without_deleting_audited_values",
     }
 
 
@@ -1114,7 +1115,7 @@ class FormFieldPolicySetHandler(BaseIntentHandler):
 
 class FormCustomFieldCreateHandler(BaseIntentHandler):
     INTENT_TYPE = FORM_FIELD_CONFIG_INTENTS["custom_field_create"]
-    DESCRIPTION = "Create a safe custom form field from a contract action."
+    DESCRIPTION = "Create a tenant-scoped extension definition from a contract action."
     REQUIRED_GROUPS = [BUSINESS_CONFIG_ADMIN_GROUP]
     ACL_MODE = "explicit_check"
     SOURCE_KIND = "ui_form_custom_field_contract_action"
@@ -1122,10 +1123,10 @@ class FormCustomFieldCreateHandler(BaseIntentHandler):
         "ui.business.config.contract",
         "ui.business.config.contract.version",
         "ui.form.custom.field.wizard",
-        "ir.model.fields",
-        "ui.form.field.policy",
+        "ui.tenant.extension.field",
+        "ui.tenant.extension.value",
     )
-    NON_IDEMPOTENT_ALLOWED = "custom field creation changes configuration metadata"
+    NON_IDEMPOTENT_ALLOWED = "tenant extension creation changes company-scoped configuration metadata"
 
     def _err(self, code: int, message: str, reason_code: str):
         return {"ok": False, "error": {"code": reason_code, "message": message, "reason_code": reason_code}, "code": code}
@@ -1138,23 +1139,22 @@ class FormCustomFieldCreateHandler(BaseIntentHandler):
         if not ascii_slug or not re.match(r"^[a-z]", ascii_slug):
             ascii_slug = "custom_field"
         ascii_slug = re.sub(r"_+", "_", ascii_slug)[:40].strip("_") or "custom_field"
-        base = "x_%s" % ascii_slug
+        base = ascii_slug
         candidate = base
         index = 2
-        Field = self.env["ir.model.fields"].sudo()
+        Definition = self.env["ui.tenant.extension.field"]
         while (
             candidate in self.env[model]._fields
-            or Field.search_count([("model", "=", model), ("name", "=", candidate)])
+            or Definition.search_count([
+                ("company_id", "=", self.env.company.id),
+                ("model_name", "=", model),
+                ("extension_key", "=", candidate),
+            ])
         ):
             candidate = "%s_%s" % (base[:48], index)
             index += 1
             if index > 200:
-                candidate = "%s_%s" % (base[:42], int(time.time()) % 100000)
-                if (
-                    candidate not in self.env[model]._fields
-                    and not Field.search_count([("model", "=", model), ("name", "=", candidate)])
-                ):
-                    break
+                raise ValidationError("无法生成稳定且唯一的扩展字段键，请明确指定 extension_key。")
         return candidate[:56]
 
     def handle(self, payload=None, ctx=None):
@@ -1177,14 +1177,41 @@ class FormCustomFieldCreateHandler(BaseIntentHandler):
             return self._err(404, "模型不存在：%s" % model, REASON_NOT_FOUND)
         if model_rec.transient:
             return self._err(400, "临时模型不能新增业务字段：%s" % model, REASON_USER_ERROR)
-        field_name = str(params.get("field_name") or params.get("fieldName") or "").strip()
-        if not field_name or field_name in {"x_", "x_custom_field"}:
+        field_name = str(
+            params.get("extension_key")
+            or params.get("extensionKey")
+            or params.get("field_name")
+            or params.get("fieldName")
+            or ""
+        ).strip()
+        if not field_name or field_name in {"custom_field", "x_", "x_custom_field"}:
             field_name = self._suggest_field_name(model, label)
-        Field = self.env["ir.model.fields"].sudo()
-        if field_name in self.env[model]._fields or Field.search_count([("model", "=", model), ("name", "=", field_name)]):
-            return self._err(400, "字段已存在：%s.%s" % (model, field_name), REASON_USER_ERROR)
+        if (
+            not re.fullmatch(r"[a-z][a-z0-9_]{2,63}", field_name)
+            or field_name.startswith(("x_", "legacy_", "p1_", "uc_"))
+            or re.search(r"(?:^|_)[0-9a-f]{12}(?:_|$)", field_name)
+        ):
+            return self._err(
+                400,
+                "extension_key 必须是稳定的小写业务键，不能使用数据库字段或历史映射前缀。",
+                REASON_USER_ERROR,
+            )
+        Definition = self.env["ui.tenant.extension.field"]
+        if field_name in self.env[model]._fields:
+            return self._err(400, "扩展字段不能覆盖产品字段：%s.%s" % (model, field_name), REASON_USER_ERROR)
+        if Definition.search_count([
+            ("company_id", "=", self.env.company.id),
+            ("model_name", "=", model),
+            ("extension_key", "=", field_name),
+        ]):
+            return self._err(400, "扩展字段已存在：%s.%s" % (model, field_name), REASON_USER_ERROR)
         ttype = str(params.get("ttype") or "char").strip() or "char"
         group_title = str(params.get("group_title") or "业务配置字段").strip() or "业务配置字段"
+        slot_key = str(
+            params.get("slot_key")
+            or params.get("slotKey")
+            or "business_extensions"
+        ).strip()
         dry_run = params.get("dry_run") is True or params.get("dryRun") is True
         Wizard = self.env["ui.form.custom.field.wizard"]
         Wizard.check_access_rights("create")
@@ -1195,10 +1222,11 @@ class FormCustomFieldCreateHandler(BaseIntentHandler):
                     "dry_run": True,
                     "would_create": True,
                     "model": model,
-                    "field_name": field_name,
+                    "extension_key": field_name,
                     "label": label,
                     "ttype": ttype,
                     "group_title": group_title,
+                    "slot_key": slot_key,
                     "sequence": sequence if sequence > 0 else 100,
                     "action_id": action_id,
                     "view_id": view_id,
@@ -1217,6 +1245,7 @@ class FormCustomFieldCreateHandler(BaseIntentHandler):
             "action_id": action_id or False,
             "view_id": view_id or False,
             "group_title": group_title,
+            "slot_key": slot_key,
             "sequence": sequence if sequence > 0 else 100,
             "active_policy": True,
             "company_id": self.env.company.id,
@@ -1229,29 +1258,16 @@ class FormCustomFieldCreateHandler(BaseIntentHandler):
             self.env.registry.signal_changes()
         except Exception:
             pass
-        policy_id = int(result.get("res_id") or 0) if isinstance(result, dict) else 0
-        policy = self.env["ui.form.field.policy"].browse(policy_id).exists() if policy_id else self.env["ui.form.field.policy"]
-        effective_field_name = str(policy.field_name or wizard.field_name or field_name or "").strip()
-        mirrored_count = _upsert_view_orchestration_field_rows(
-            self.env,
-            model=model,
-            view_type="form",
-            action_id=action_id,
-            view_id=view_id,
-            rows=[{
-                "name": effective_field_name,
-                "label": str(policy.label or label),
-                "visible": True,
-                "sequence": int(policy.sequence or sequence or 100),
-            }],
-        )
+        definition_id = int(result.get("res_id") or 0) if isinstance(result, dict) else 0
+        definition = Definition.browse(definition_id).exists()
         return {
             "ok": True,
             "data": {
-                "policy_id": int(policy.id or 0),
-                "field_name": effective_field_name,
+                "extension_definition_id": int(definition.id or 0),
+                "extension_key": str(definition.extension_key or field_name),
                 "model": model,
-                "business_config_mirrored_count": mirrored_count,
+                "company_id": int(self.env.company.id),
+                "tenant_extension_slot": str(definition.slot_key or slot_key),
                 "field_metadata_boundary": _custom_field_metadata_boundary(),
                 "contract_reload": _contract_reload_hint(
                     model=model,

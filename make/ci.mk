@@ -712,11 +712,17 @@ verify.formal_product_field_purity: guard.prod.forbid
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_formal_product_field_purity_guard.py
 	@python3 scripts/verify/test_formal_product_alias_cleanup_migration.py
 
+.PHONY: verify.tenant_extension_storage
+verify.tenant_extension_storage: guard.prod.forbid
+	@python3 scripts/verify/tenant_extension_storage_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_tenant_extension_storage_guard.py
+	@PYTHONPATH=scripts/tenant_payload python3 scripts/tenant_payload/test_tenant_extension_migration_plan.py
+
 ci.tenant.pro03.demo.dispatch: guard.prod.forbid
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
 	gh workflow run demo-ci.yml --ref "$$branch"
 
-ci.local.quick: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity ci.generated_reports.guard architecture.complexity_baseline_lock verify.unified_page_contract.v2.web_architecture verify.menu_config_tree_editor.behavior
+ci.local.quick: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard architecture.complexity_baseline_lock verify.unified_page_contract.v2.web_architecture verify.menu_config_tree_editor.behavior
 	@python3 scripts/ci/verify_contract_form_split_evidence.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py
 	@scripts/verify/contract_form_runtime_state_behavior_guard.sh

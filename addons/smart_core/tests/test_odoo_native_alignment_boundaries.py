@@ -1169,7 +1169,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         wizard._onchange_label()
 
         self.assertEqual(wizard.model_id.model, "res.partner")
-        self.assertTrue(str(wizard.field_name or "").startswith("x_custom_field"))
+        self.assertEqual(str(wizard.field_name or ""), "custom_field")
 
     def test_ui_overlay_and_asset_models_do_not_claim_business_fact_authority(self):
         self.assertEqual(AppViewFragment.SOURCE_KIND, "ui_contract_fragment_overlay")

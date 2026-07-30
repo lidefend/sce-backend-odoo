@@ -111,12 +111,9 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
                 self.domain = domain
                 return ModelRecord()
 
-        class FieldRegistry:
+        class DefinitionRegistry:
             def __init__(self):
                 self.search_count_calls = []
-
-            def sudo(self):
-                return self
 
             def search_count(self, domain):
                 self.search_count_calls.append(domain)
@@ -136,12 +133,12 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class Env(dict):
             company = Company()
 
-        fields = FieldRegistry()
+        definitions = DefinitionRegistry()
         wizard = WizardRegistry()
         env = Env({
             "res.partner": PartnerModel(),
             "ir.model": ModelRegistry(),
-            "ir.model.fields": fields,
+            "ui.tenant.extension.field": definitions,
             "ui.form.custom.field.wizard": wizard,
         })
         handler = self.module.FormCustomFieldCreateHandler(
@@ -149,7 +146,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
             params={
                 "model": "res.partner",
                 "label": "内部备注",
-                "field_name": "x_internal_note",
+                "extension_key": "internal_note",
                 "ttype": "text",
                 "group_title": "基础信息",
                 "action_id": 11,
@@ -162,19 +159,28 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertTrue(result["data"]["dry_run"])
         self.assertTrue(result["data"]["would_create"])
-        self.assertEqual(result["data"]["field_name"], "x_internal_note")
+        self.assertEqual(result["data"]["extension_key"], "internal_note")
         self.assertEqual(result["data"]["ttype"], "text")
         self.assertEqual(result["data"]["group_title"], "基础信息")
         self.assertEqual(result["data"]["action_id"], 11)
         self.assertEqual(result["data"]["field_metadata_boundary"], {
-            "metadata_authority": "ir.model.fields",
-            "placement_authority": "ui.business.config.contract.view_orchestration",
-            "compatibility_write": "ui.form.field.policy",
-            "rollback_boundary": "contract_rollback_does_not_delete_model_field",
+            "metadata_authority": "ui.tenant.extension.field",
+            "value_authority": "ui.tenant.extension.value",
+            "placement_authority": "tenant_extension_fields",
+            "global_ir_model_fields_registration": False,
+            "public_business_table_column_creation": False,
+            "rollback_boundary": "retire_definition_without_deleting_audited_values",
         })
         self.assertEqual(wizard.created, [])
         self.assertEqual(wizard.checked, "create")
-        self.assertEqual(fields.search_count_calls, [[("model", "=", "res.partner"), ("name", "=", "x_internal_note")]])
+        self.assertEqual(
+            definitions.search_count_calls,
+            [[
+                ("company_id", "=", 7),
+                ("model_name", "=", "res.partner"),
+                ("extension_key", "=", "internal_note"),
+            ]],
+        )
 
     def test_field_order_set_rejects_invalid_field_order_payload(self):
         handler = self.module.FormFieldOrderSetHandler(
@@ -1558,7 +1564,11 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
             contract = handler_class(env={}, params={})._source_authority_contract()
             self.assertIn("ui.business.config.contract", contract["authorities"])
             self.assertIn("ui.business.config.contract.version", contract["authorities"])
-            self.assertIn("ui.form.field.policy", contract["authorities"])
+            if handler_class is self.module.FormCustomFieldCreateHandler:
+                self.assertIn("ui.tenant.extension.field", contract["authorities"])
+                self.assertNotIn("ir.model.fields", contract["authorities"])
+            else:
+                self.assertIn("ui.form.field.policy", contract["authorities"])
             self.assertEqual(contract["lowcode_boundary"], "form_config")
             self.assertEqual(contract["contract_source"], "smart_core.lowcode.form_field_policy")
 

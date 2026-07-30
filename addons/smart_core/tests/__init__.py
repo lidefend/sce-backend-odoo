@@ -34,3 +34,4 @@ from . import test_um_p3_subcontract_register_settlement_authority_orm
 from . import test_um_p3_subcontract_cumulative_settlement_orm
 from . import test_um_p3_payment_ledger_request_permission_orm
 from . import test_um_p3_subcontract_cumulative_amount_orm
+from . import test_tenant_extension_storage

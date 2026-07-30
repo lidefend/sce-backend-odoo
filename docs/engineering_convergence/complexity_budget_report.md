@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3396`
+- Scanned files: `3402`
 - Files requiring split plan: `38`
 - Files above warning threshold: `60`
 
@@ -13,8 +13,8 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 3683 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3637 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3343 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
+| 3653 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
+| 3353 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3331 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3329 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -93,12 +93,12 @@ Generated from repository source files. This report is informational during the 
 | 944 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
+| 895 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 892 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 867 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
-| 862 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 858 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
@@ -121,8 +121,8 @@ Generated from repository source files. This report is informational during the 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
 | 3683 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3637 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3343 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
+| 3653 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
+| 3353 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3331 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3329 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -197,9 +197,9 @@ Generated from repository source files. This report is informational during the 
 | 916 | warning | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 905 | within_budget | XML data/view | `addons/smart_construction_core/views/core/material_acceptance_views.xml` |
+| 895 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 892 | warning | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | warning | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
-| 879 | warning | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 
 ## Interpretation
 

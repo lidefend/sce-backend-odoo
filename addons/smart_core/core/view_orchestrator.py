@@ -15,7 +15,12 @@ from .view_orchestration_contract import source_authority_contract
 
 class ViewOrchestrator:
     SOURCE_KIND = "business_view_orchestration"
-    SOURCE_AUTHORITIES = ("ui.business.config.contract", "ui.form.field.policy", "odoo_native_view_parse_snapshot")
+    SOURCE_AUTHORITIES = (
+        "ui.business.config.contract",
+        "ui.form.field.policy",
+        "ui.tenant.extension.field",
+        "odoo_native_view_parse_snapshot",
+    )
     NO_BUSINESS_FACT_AUTHORITY = True
 
     def __init__(self, env):
@@ -81,15 +86,42 @@ class ViewOrchestrator:
             )
             legacy_policy_applied = out != before
 
+        tenant_extension_fields = []
+        if (
+            normalized_view_type in {"form", "tree"}
+            and "ui.tenant.extension.field" in self.env
+        ):
+            head = out.get("head") if isinstance(out.get("head"), dict) else {}
+            contract_version = str(
+                out.get("contract_version")
+                or head.get("contract_version")
+                or "v2"
+            )
+            tenant_extension_fields = self.env[
+                "ui.tenant.extension.field"
+            ].contract_for(
+                model_name=model_name,
+                view_type=normalized_view_type,
+                action_id=int(action_id or 0),
+                view_id=int(view_id or 0),
+                product_contract_version=contract_version,
+            )
+            if tenant_extension_fields:
+                out["tenant_extension_fields"] = tenant_extension_fields
+
         governance = out.get("governance") if isinstance(out.get("governance"), dict) else {}
         governance["view_orchestration"] = {
-            "applied": bool(applied_contracts or legacy_policy_applied),
+            "applied": bool(applied_contracts or legacy_policy_applied or tenant_extension_fields),
             "owner_layer": self.SOURCE_KIND,
             "source_authority": source_authority_contract(),
             "business_config_contracts": applied_contracts,
             "legacy_field_policy_overlay": bool(legacy_policy_applied),
             "form_layout_overlay": bool(form_layout_overlay_applied),
             "business_config_form_fields": sorted(business_config_form_fields),
+            "tenant_extension_field_count": len(tenant_extension_fields),
+            "tenant_extension_source": (
+                "ui.tenant.extension.field" if tenant_extension_fields else ""
+            ),
         }
         out["governance"] = governance
         source_trace = out.get("source_trace") if isinstance(out.get("source_trace"), dict) else {}
@@ -103,6 +135,7 @@ class ViewOrchestrator:
             "legacy_field_policy_overlay": bool(legacy_policy_applied),
             "form_layout_overlay": bool(form_layout_overlay_applied),
             "business_config_form_fields": sorted(business_config_form_fields),
+            "tenant_extension_field_count": len(tenant_extension_fields),
         }
         out["source_trace"] = source_trace
         return out

@@ -1,0 +1,18 @@
+{
+  "schema_version": "field-arch-p0-03.scale.v1",
+  "storage_model": "COMPANY_SCOPED_DEFINITION_PLUS_TYPED_VALUE_TABLE",
+  "assessments": [
+    {"tenant_count": 10, "fields_per_tenant": [0, 10, 100], "public_table_column_growth": 0, "ir_model_fields_growth": 0},
+    {"tenant_count": 100, "fields_per_tenant": [0, 10, 100], "public_table_column_growth": 0, "ir_model_fields_growth": 0},
+    {"tenant_count": 1000, "fields_per_tenant": [0, 10, 100], "public_table_column_growth": 0, "ir_model_fields_growth": 0}
+  ],
+  "extension_definition_growth": "LINEAR_PER_TENANT_FIELD",
+  "extension_value_growth": "LINEAR_PER_POPULATED_RECORD_VALUE",
+  "index_growth": "CONSTANT_SHARED_TYPED_INDEX_SET",
+  "view_record_growth": "CONSTANT_STANDARD_PRODUCT_VIEWS",
+  "startup_registry_growth": "CONSTANT_PRODUCT_MODELS",
+  "cache_key_cardinality": "BOUNDED_BY_ACTIVE_DATABASE_COMPANY_USER_MODEL_VIEW_SCHEMA_COMBINATIONS",
+  "tenant_delete_cleanup": "EXPLICIT_PLATFORM_ADMIN_RETIRE_DRY_RUN_AND_PURGE_FLOW",
+  "upgrade_complexity": "CONSTANT_PRODUCT_SCHEMA_PLUS_DATA_MIGRATION_BY_CARRIER_VERSION",
+  "multi_tenant_scale_assessment": "PASS"
+}

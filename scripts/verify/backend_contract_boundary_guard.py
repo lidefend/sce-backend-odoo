@@ -90,13 +90,6 @@ ALLOWED_LOWCODING_POLICY_RUNTIME_WRITERS = {
         "expected_source": BOUNDARY_CONSTANTS["VIEW_ORCHESTRATION_SOURCE_FIELD_POLICY"],
         "target_models": ["ui.form.field.policy"],
     },
-    "addons/smart_core/model/ui_form_custom_field_wizard.py": {
-        "layer": "L4",
-        "boundary": "form_custom_field_policy_creation",
-        "reason": "custom field wizard creates the companion form field runtime policy",
-        "expected_source": BOUNDARY_CONSTANTS["VIEW_ORCHESTRATION_SOURCE_FIELD_POLICY"],
-        "target_models": ["ui.form.field.policy"],
-    },
     "addons/smart_core/handlers/menu_configuration.py": {
         "layer": "L4",
         "boundary": "menu_config_policy_runtime_configuration",
