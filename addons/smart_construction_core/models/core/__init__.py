@@ -49,6 +49,7 @@ from . import receipt_invoice_line
 from . import output_invoice_adjustment
 from . import output_invoice_ledger
 from . import payment_ledger
+from . import historical_payment_fact
 from . import project_dashboard
 from . import contract_recon_summary
 from . import project_risk

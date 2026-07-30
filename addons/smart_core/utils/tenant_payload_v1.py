@@ -195,6 +195,28 @@ def validate_manifest(manifest: dict[str, Any], expected_tenant_key: str | None 
     if manifest.get("signature_algorithm") not in {"hmac-sha256", "ed25519"}:
         raise TenantPayloadError("TPV1_SIGNATURE_ALGORITHM_UNSUPPORTED")
     _require_string(manifest, "signature_key_id")
+    relation_semantics_version = manifest.get("relation_semantics_version")
+    if relation_semantics_version is not None:
+        _require_string(manifest, "relation_semantics_version", SNAPSHOT_RE)
+        semantics = manifest.get("relation_semantics")
+        if not isinstance(semantics, dict):
+            raise TenantPayloadError("TPV1_RELATION_SEMANTICS_INVALID")
+        required_flags = {
+            "participates_in_execution",
+            "participates_in_settlement",
+            "participates_in_formal_amount_summary",
+            "participates_in_historical_amount_summary",
+            "participates_in_permission_scope",
+        }
+        for key, declaration in semantics.items():
+            if (
+                not re.fullmatch(r"[a-z][a-z0-9_]{2,62}\.[a-z][a-z0-9_]{2,62}", str(key))
+                or not isinstance(declaration, dict)
+                or not KEY_RE.fullmatch(str(declaration.get("target_resource") or "").replace("*", "all"))
+                or not KEY_RE.fullmatch(str(declaration.get("relation_type") or ""))
+                or any(not isinstance(declaration.get(flag), bool) for flag in required_flags)
+            ):
+                raise TenantPayloadError("TPV1_RELATION_SEMANTICS_INVALID")
     reject_secret_fields(manifest, "manifest")
 
 
@@ -351,6 +373,7 @@ def validate_payload_directory(
     resource_counts: dict[str, int] = {}
     amount_totals: dict[str, Decimal] = {key: Decimal() for key in manifest["amount_summaries"]}
     relationship_totals: dict[str, int] = {}
+    relationship_targets: dict[str, set[str]] = {}
     all_external_keys: set[str] = set()
     attachment_files: set[str] = set()
     filestore_count = filestore_bytes = 0
@@ -390,6 +413,10 @@ def validate_payload_directory(
                         relationship_totals[summary_key] = relationship_totals.get(summary_key, 0) + (
                             len(reference_value) if isinstance(reference_value, list) else 1
                         )
+                        references = reference_value if isinstance(reference_value, list) else [reference_value]
+                        relationship_targets.setdefault(summary_key, set()).update(
+                            str(reference).split("::", 1)[0] for reference in references
+                        )
                     if resource == "attachments" and item.get("file"):
                         file_meta = item["file"]
                         if file_meta["path"] not in files:
@@ -420,6 +447,25 @@ def validate_payload_directory(
             raise TenantPayloadError(f"TPV1_AMOUNT_SUMMARY_MISMATCH:{key}")
     if dict(sorted(relationship_totals.items())) != dict(sorted(manifest["relationship_summaries"].items())):
         raise TenantPayloadError("TPV1_RELATIONSHIP_SUMMARY_MISMATCH")
+    if manifest.get("relation_semantics_version"):
+        semantics = manifest["relation_semantics"]
+        if set(relationship_totals) - set(semantics):
+            raise TenantPayloadError("TPV1_RELATION_SEMANTICS_UNDECLARED")
+        for key, targets in relationship_targets.items():
+            declared = semantics[key]["target_resource"]
+            if declared != "*" and targets != {declared}:
+                raise TenantPayloadError("TPV1_RELATION_SEMANTICS_TARGET_MISMATCH")
+        historical = semantics.get("historical_payment_facts.contract")
+        if historical and any(
+            historical[flag]
+            for flag in (
+                "participates_in_execution",
+                "participates_in_settlement",
+                "participates_in_formal_amount_summary",
+                "participates_in_permission_scope",
+            )
+        ):
+            raise TenantPayloadError("TPV1_HISTORICAL_RELATION_FORMAL_FLOW_FORBIDDEN")
     if filestore_count != manifest["filestore_file_count"] or filestore_bytes != manifest["filestore_bytes"]:
         raise TenantPayloadError("TPV1_FILESTORE_SUMMARY_MISMATCH")
     if attachment_files != {path for path in files if path.startswith("filestore/")}:

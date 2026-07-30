@@ -2574,6 +2574,17 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]" />
         </record>
 
+        <record id="rule_sc_historical_payment_fact_allowed_company" model="ir.rule">
+            <field name="name">Historical payment fact - allowed company</field>
+            <field name="model_id" ref="model_sc_historical_payment_fact"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
         <record id="rule_sc_workflow_instance_tenant_business_admin_company" model="ir.rule">
             <field name="name">Workflow instance: tenant business admin allowed company</field>
             <field name="model_id" ref="model_sc_workflow_instance"/>

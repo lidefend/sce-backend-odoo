@@ -447,6 +447,9 @@ class TenantPayloadImportService:
         if identity and self.approved_payload_checksum != self.manifest["payload_checksum"]:
             _fail(f"TPV1_UPDATE_NOT_APPROVED:{resource}")
         values = self._mapped_values(resource, item)
+        target_model = self._import_model(spec["model"])
+        if "migration_batch_id" in target_model._fields and "migration_batch_id" not in values:
+            values["migration_batch_id"] = batch.id
         attachment_store_name = ""
         try:
             if spec.get("kind") == "attachment":

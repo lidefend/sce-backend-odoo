@@ -58,3 +58,4 @@ from . import test_tax_certificate_registration
 from . import test_um_p3_subcontract_cumulative_settlement_boundaries
 from . import test_um_p3_payment_ledger_request_permission_boundaries
 from . import test_um_p3_subcontract_cumulative_amount_boundaries
+from . import test_historical_payment_fact_boundaries
