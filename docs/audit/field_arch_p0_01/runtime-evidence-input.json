@@ -1,0 +1,68 @@
+{
+  "schema_version": "field-architecture-runtime-evidence-input/v1",
+  "database_role": "ISOLATED_CUSTOMER_UAT_READ_ONLY",
+  "database_identity": "sc_tenant_baosheng_uat_core035_20260727044923_2dc17f",
+  "public_physical_columns": 14663,
+  "company_count": 2,
+  "company_contract_alias_count": 28,
+  "company_contract_alias_digest": "4687383a1216561cfc2132c7a94c70449f3d034eea7845598c8de7917b3ca1f4",
+  "company_contract_probe": {
+    "model": "payment.request",
+    "role": "finance_manager_rollback_probe",
+    "company_a_alias_count": 28,
+    "company_b_alias_count": 28,
+    "company_a_record_count": 34891,
+    "company_b_record_count": 0,
+    "company_b_forced_read_of_company_a": "AccessError",
+    "transaction": "ROLLED_BACK"
+  },
+  "metadata_probe": {
+    "configuration_user_alias_count": 910,
+    "ordinary_internal_users": "AccessError",
+    "ordinary_user_count_sampled": 9
+  },
+  "separate_database_alias_counts": {
+    "isolated_customer_uat": 910,
+    "sc_frontend_acceptance": 801,
+    "one_company_product_candidate": 801
+  },
+  "separate_database_physical_alias_columns": {
+    "isolated_customer_uat": 0,
+    "sc_frontend_acceptance": 0,
+    "one_company_product_candidate": 0
+  },
+  "manual_runtime_fields": 11,
+  "manual_public_physical_columns": 11,
+  "separate_database_manual_field_counts": {
+    "isolated_customer_uat": 11,
+    "sc_frontend_acceptance": 0,
+    "one_company_product_candidate": 0
+  },
+  "runtime_view_rows_with_literal_alias": 81,
+  "runtime_view_type_counts": {
+    "tree": 79,
+    "form": 2,
+    "search": 0,
+    "kanban": 0,
+    "pivot": 0,
+    "graph": 0
+  },
+  "runtime_view_alias_model_field_pairs": 789,
+  "runtime_distinct_literal_alias_names": 378,
+  "manual_field_nonempty_counts": [
+    {"model": "construction.contract.expense", "field": "x_custom_field", "nonempty_count": 0},
+    {"model": "construction.contract.income", "field": "x_custom_field", "nonempty_count": 0},
+    {"model": "construction.contract.income", "field": "x_custom_field_2", "nonempty_count": 0},
+    {"model": "construction.contract.income", "field": "x_custom_field_3", "nonempty_count": 0},
+    {"model": "construction.contract.income", "field": "x_custom_field_4", "nonempty_count": 0},
+    {"model": "construction.contract.income", "field": "x_custom_field_5", "nonempty_count": 0},
+    {"model": "project.project", "field": "x_custom_field", "nonempty_count": 0},
+    {"model": "res.partner", "field": "x_custom_field", "nonempty_count": 1},
+    {"model": "sc.general.contract", "field": "x_custom_field", "nonempty_count": 0},
+    {"model": "sc.general.contract", "field": "x_custom_field_2", "nonempty_count": 0},
+    {"model": "sc.general.contract", "field": "x_custom_field_3", "nonempty_count": 0}
+  ],
+  "database_writes_committed": false,
+  "business_values_exported": false,
+  "credentials_exported": false
+}

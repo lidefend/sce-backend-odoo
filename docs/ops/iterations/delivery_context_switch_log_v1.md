@@ -1812,3 +1812,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   runtime are excluded. Validation must reconcile page and filtered totals
   under the same authorized domain and fail closed on undeclared lossy
   projections.
+
+# FIELD-ARCH-P0-01 product field purity audit — 2026-07-30
+
+- Branch / anchor: `audit/field-arch-p0-01` from
+  `2b68039cfc5410b22c54ded596140ef2470ad5d4`.
+- Formal Product Layer: P4 ops audit; Layer Target: read-only field inventory,
+  dependency classification, and cross-company discovery evidence; Module:
+  `scripts/verify` plus `docs/audit/field_arch_p0_01`.
+- Reason: determine whether legacy compatibility aliases and runtime custom
+  fields are product-standard fields, tenant-owned extensions, isolated
+  migration metadata, or globally discoverable model/schema pollution.
+- Standard vs User-Specific: this task changes no P0/P1/P2/P3 runtime fact. It
+  audits P1 product declarations, P2/P3 extension ownership, and P4 migration
+  compatibility without deleting fields or changing records.
+- Why Here / Why Not Elsewhere: evidence generation and classification belong
+  to P4. Moving or deleting fields would require separate P1/P2/P3 migration
+  tasks with rollback plans and is explicitly excluded.
+- Blast Radius: repository source analysis, sanitized metadata snapshots, and
+  rollback-only probes in an isolated customer UAT database. No business value,
+  production database, DAILY database, 18093 deployment, ACL, record rule, or
+  product contract is modified.
