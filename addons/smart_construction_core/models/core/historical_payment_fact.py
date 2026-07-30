@@ -42,6 +42,19 @@ class ScHistoricalPaymentFact(models.Model):
         readonly=True,
         index=True,
     )
+    partner_id = fields.Many2one(
+        "res.partner",
+        string="往来单位",
+        related="contract_id.partner_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    partner_active = fields.Boolean(
+        string="往来单位启用",
+        related="partner_id.active",
+        readonly=True,
+    )
     currency_id = fields.Many2one(
         "res.currency",
         string="币种",
@@ -63,6 +76,12 @@ class ScHistoricalPaymentFact(models.Model):
     )
     historical_amount_pending_confirmation = fields.Monetary(
         string="历史金额待确认", currency_field="currency_id", readonly=True
+    )
+    historical_difference_amount = fields.Monetary(
+        string="确定性差额",
+        currency_field="currency_id",
+        compute="_compute_historical_difference_amount",
+        readonly=True,
     )
     migration_disposition = fields.Selection(
         [
@@ -113,6 +132,13 @@ class ScHistoricalPaymentFact(models.Model):
     def _compute_migration_notice(self):
         for record in self:
             record.migration_notice = _("历史承接，无新系统结算依据；只读且不可再次执行。")
+
+    @api.depends("source_application_amount", "historical_confirmed_paid_amount")
+    def _compute_historical_difference_amount(self):
+        for record in self:
+            record.historical_difference_amount = (
+                record.source_application_amount or 0.0
+            ) - (record.historical_confirmed_paid_amount or 0.0)
 
     @api.model
     def _assert_import_context(self):

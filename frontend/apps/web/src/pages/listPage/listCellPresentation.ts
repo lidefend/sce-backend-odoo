@@ -1,3 +1,5 @@
+import { resolveLocalizedDisplayValue } from '../../utils/display';
+
 export type ListStatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
 export type ColumnSemanticInput = {
@@ -85,17 +87,18 @@ export function presentListCell(input: CellPresentationInput) {
     numeric = false,
     toneByValue = {},
   } = input;
-  const temporalText = formatListTemporalValue(raw, column);
+  const displayRaw = resolveLocalizedDisplayValue(raw, { emptyText });
+  const temporalText = formatListTemporalValue(displayRaw, column);
   const fieldType = normalized(column.type).toLowerCase();
-  const rawText = typeof raw === 'string' ? raw : '';
-  const missing = raw === null || raw === undefined || raw === '';
+  const rawText = typeof displayRaw === 'string' ? displayRaw : '';
+  const missing = displayRaw === null || displayRaw === undefined || displayRaw === '';
   let text: string;
   if (selectionText) text = selectionText;
   else if (missing) text = numeric ? '0' : emptyText;
-  else if ((raw === false || rawText.trim() === '--') && numeric) text = '0';
-  else if (typeof raw === 'boolean') text = fieldType === 'boolean' ? (raw ? trueText : falseText) : emptyText;
-  else text = attachmentText || temporalText || numericText || String(raw);
-  const toneKey = normalized(raw);
+  else if ((displayRaw === false || rawText.trim() === '--') && numeric) text = '0';
+  else if (typeof displayRaw === 'boolean') text = fieldType === 'boolean' ? (displayRaw ? trueText : falseText) : emptyText;
+  else text = attachmentText || temporalText || numericText || String(displayRaw);
+  const toneKey = normalized(displayRaw);
   const tone = isListStatusColumn(column)
     ? (toneByValue[toneKey] || resolveListStatusTone(toneKey, text))
     : 'neutral';

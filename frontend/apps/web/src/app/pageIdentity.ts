@@ -1,3 +1,5 @@
+import { resolveLocalizedDisplayValue } from '../utils/display';
+
 export type PageIdentitySource = 'record' | 'action' | 'menu' | 'model' | 'product-fallback';
 
 export type PageIdentityState = 'loading' | 'empty' | 'denied' | 'not-found' | 'error' | '';
@@ -53,8 +55,9 @@ const DEFAULT_PRIMARY_FIELDS = [
 
 function text(value: unknown): string {
   if (Array.isArray(value)) return text(value.length > 1 ? value[1] : value[0]);
-  if (value === null || value === undefined || typeof value === 'object') return '';
-  return String(value).replace(/\s+/g, ' ').trim();
+  const display = resolveLocalizedDisplayValue(value, { emptyText: '' });
+  if (display === null || display === undefined || typeof display === 'object') return '';
+  return String(display).replace(/\s+/g, ' ').trim();
 }
 
 export function isTechnicalPageIdentity(value: unknown): boolean {

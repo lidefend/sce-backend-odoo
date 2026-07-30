@@ -80,7 +80,9 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_root",
             "smart_construction_core.menu_sc_business_config_center",
         ],
-        "primary_menu_xmlids": [],
+        "primary_menu_xmlids": [
+            "smart_construction_core.menu_sc_historical_payment_fact",
+        ],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [],
         "admin_menu_xmlids": [
@@ -241,6 +243,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_payment_request",
         ],
         "primary_menu_xmlids": [
+            "smart_construction_core.menu_sc_historical_payment_fact",
             "smart_construction_core.menu_payment_request_receive",
             "smart_construction_core.menu_sc_receipt_income",
             "smart_construction_core.menu_sc_user_income",
@@ -325,6 +328,9 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_root",
             "smart_construction_core.menu_sc_projection_root",
             "smart_construction_core.menu_sc_project_center",
+        ],
+        "primary_menu_xmlids": [
+            "smart_construction_core.menu_sc_historical_payment_fact",
         ],
     },
 }

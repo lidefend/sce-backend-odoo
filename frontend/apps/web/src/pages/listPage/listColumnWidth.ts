@@ -1,3 +1,5 @@
+import { resolveLocalizedDisplayValue } from '../../utils/display';
+
 export type ListColumnLayoutRole =
   | 'identity'
   | 'description'
@@ -37,8 +39,8 @@ function textWidth(value: unknown) {
 }
 
 function displayValue(value: unknown) {
-  if (Array.isArray(value)) return value.length > 1 ? value[1] : value[0];
-  return value;
+  const raw = Array.isArray(value) ? (value.length > 1 ? value[1] : value[0]) : value;
+  return resolveLocalizedDisplayValue(raw, { emptyText: '' });
 }
 
 function percentile(values: number[], ratio: number) {

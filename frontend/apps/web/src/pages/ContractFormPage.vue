@@ -1252,7 +1252,10 @@ const submitButtonLabel = computed(() => resolveSubmitButtonLabel({
   saveLabel: formUiLabel('save'),
   savingLabel: formUiLabel('saving'),
 }));
-const showPrimaryBusinessFormAction = computed(() => (!financialWorkspace.value || renderProfile.value === 'edit') && !showCurrentFormFieldConfigScope.value && !isProjectIntakeCreateMode.value);
+const showPrimaryBusinessFormAction = computed(() => canSave.value
+  && (!financialWorkspace.value || renderProfile.value === 'edit')
+  && !showCurrentFormFieldConfigScope.value
+  && !isProjectIntakeCreateMode.value);
 const showDraftSaveAction = computed(() => {
   if (!showPrimaryBusinessFormAction.value || !canSave.value || primaryCreateFooterAction.value) return false;
   if (!recordId.value) return true;

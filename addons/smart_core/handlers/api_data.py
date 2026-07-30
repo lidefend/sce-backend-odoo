@@ -37,6 +37,7 @@ except ImportError:  # pragma: no cover - compatibility for lightweight boundary
         return apply_project_scope_domain(env_model, domain, selected_record_context_id_from_context(params, context))
 from ..core.request_params import parse_non_negative_int, parse_positive_int
 from ..utils.extension_hooks import call_extension_hook_first
+from ..utils.localized_display import localized_display_value
 from ..utils.reason_codes import (
     REASON_OK,
     REASON_PROJECT_SCOPE_DENIED,
@@ -482,14 +483,20 @@ class ApiDataHandler(BaseIntentHandler):
 
     def _normalize_group_item(self, env_model, field_name: str, value):
         if isinstance(value, (list, tuple)) and len(value) >= 2:
-            return {"value": value[0], "label": str(value[1])}
+            return {
+                "value": value[0],
+                "label": str(self._localized_display_value(env_model, field_name, value)[1] or ""),
+            }
         if value in (False, None):
             return {"value": None, "label": "未设置"}
         field = env_model._fields.get(field_name)
         ftype = str(getattr(field, "type", "") or "").strip().lower() if field else ""
         if ftype == "selection":
             return {"value": value, "label": self._selection_label(env_model, field_name, value)}
-        return {"value": value, "label": str(value)}
+        return {
+            "value": value,
+            "label": str(self._localized_display_value(env_model, field_name, value) or ""),
+        }
 
     def _build_group_summary(self, env_model, domain, group_by, limit: int = 20):
         return self._build_group_summary_with_offset(env_model, domain, group_by, limit=limit, offset=0)
@@ -1051,6 +1058,8 @@ class ApiDataHandler(BaseIntentHandler):
                 return False
             if field_name == "id":
                 continue
+            if bool(getattr(field, "translate", False)):
+                return True
             if not bool(getattr(field, "store", False)) or not bool(getattr(field, "column_type", None)):
                 return True
         return False
@@ -1116,6 +1125,30 @@ class ApiDataHandler(BaseIntentHandler):
         )
         return values + blanks
 
+    def _localized_display_value(self, env_model, field_name: str, value):
+        field = env_model._fields.get(field_name)
+        field_type = str(getattr(field, "type", "") or "").strip().lower() if field else ""
+        lang = env_model.env.context.get("lang") or env_model.env.lang
+        if field_type == "many2one" and isinstance(value, (list, tuple)) and len(value) >= 2:
+            return [value[0], localized_display_value(value[1], lang=lang, empty="")]
+        if field_type in {"char", "text", "html"}:
+            return localized_display_value(value, lang=lang, empty="")
+        return value
+
+    def _normalize_display_rows(self, env_model, rows: List[Dict[str, Any]]):
+        for row in rows or []:
+            if not isinstance(row, dict):
+                continue
+            for field_name in list(row):
+                if field_name == "id":
+                    continue
+                row[field_name] = self._localized_display_value(
+                    env_model,
+                    field_name,
+                    row.get(field_name),
+                )
+        return rows
+
     def _search_read_with_order(
         self,
         env_model,
@@ -1130,11 +1163,12 @@ class ApiDataHandler(BaseIntentHandler):
             return [], order_error, False
         if not clauses or not self._requires_python_order(env_model, clauses):
             recs = env_model.search(domain or [], order=order or None, limit=limit or None, offset=offset or 0)
-            return recs.read(fields_safe or ["id", "name"]), None, False
+            rows = recs.read(fields_safe or ["id", "name"])
+            return self._normalize_display_rows(env_model, rows), None, False
 
         row_fields = list(dict.fromkeys(list(fields_safe or ["id", "name"]) + [field for field, _direction in clauses]))
         recs = env_model.search(domain or [], order="id asc")
-        rows = recs.read(row_fields)
+        rows = self._normalize_display_rows(env_model, recs.read(row_fields))
         for field_name, direction in reversed(clauses):
             rows = self._sort_rows_by_python_clause(rows, field_name, direction)
         start = max(0, int(offset or 0))
@@ -1995,6 +2029,7 @@ class ApiDataHandler(BaseIntentHandler):
         except AccessError as ae:
             _logger.warning("read() AccessError on %s(read), fallback. err=%s", model, ae)
             rows = recs.read(["id", "name", "display_name"] if "display_name" in env_model._fields else ["id", "name"])
+        rows = self._normalize_display_rows(env_model, rows)
 
         data = {"records": rows}
         _, project_scope_meta = self._apply_record_scope(env_model, [], p, ctx)
@@ -2359,6 +2394,7 @@ class ApiDataHandler(BaseIntentHandler):
             safe_min = ["id", "name"] if "name" in env_model._fields else ["id"]
             fields_safe = self._filter_readable_fields(env_model, safe_min)
             rows = recs.read(fields_safe)
+        rows = self._normalize_display_rows(env_model, rows)
 
         buf = io.StringIO()
         writer = csv.writer(buf)

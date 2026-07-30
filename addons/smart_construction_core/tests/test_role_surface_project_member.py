@@ -112,6 +112,19 @@ class TestProjectMemberRoleSurface(TransactionCase):
                 self.assertFalse(exposed & denied)
                 self.assertTrue(all(xmlid.startswith("smart_construction_core.menu_") for xmlid in exposed | denied))
 
+    def test_historical_payment_is_explicit_for_authorized_uat_roles(self):
+        history_xmlid = "smart_construction_core.menu_sc_historical_payment_fact"
+        for role in ("finance", "executive", "business_config_admin"):
+            with self.subTest(role=role):
+                self.assertIn(
+                    history_xmlid,
+                    ROLE_SURFACE_OVERRIDES[role]["primary_menu_xmlids"],
+                )
+        self.assertNotIn(
+            history_xmlid,
+            ROLE_SURFACE_OVERRIDES["project_member"]["primary_menu_xmlids"],
+        )
+
     def test_system_admin_navigation_discovers_installed_capabilities_and_configuration(self):
         resolver = self._resolver()
         surface = resolver.build_role_surface(
@@ -464,7 +477,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertFalse(missing_context_result.ok)
         self.assertEqual(missing_context_result.code, 403)
 
-    def test_shell_only_role_keeps_scoped_empty_route_authority(self):
+    def test_executive_role_exposes_only_declared_primary_route_authority(self):
         Users = self.env["res.users"].with_context(no_reset_password=True)
         base_group = self.env.ref("base.group_user")
         executive_group = self.env.ref("smart_construction_core.group_sc_role_executive")
@@ -482,22 +495,22 @@ class TestProjectMemberRoleSurface(TransactionCase):
 
         self.assertEqual(surface["role_code"], "executive")
         self.assertEqual(surface["role_label"], "管理层")
-        self.assertFalse(surface["exposure_policy_declared"])
+        self.assertTrue(surface["exposure_policy_declared"])
+        self.assertEqual(
+            surface["primary_menu_xmlids"],
+            ["smart_construction_core.menu_sc_historical_payment_fact"],
+        )
         contract = MenuService(self.env(user=executive_user)).build_route_authority(surface)
         self.assertEqual(contract["principal_scope"], {
             "user_id": executive_user.id,
             "company_id": executive_user.company_id.id,
             "role_code": "executive",
         })
-        for bucket in (
-            "primary_actions",
-            "role_home_actions",
-            "contextual_actions",
-            "admin_actions",
-            "denied_actions",
-            "menu_containers",
-        ):
-            self.assertFalse(contract[bucket], bucket)
+        self.assertEqual(len(contract["primary_actions"]), 1)
+        self.assertEqual(
+            contract["primary_actions"][0]["menu_xmlid"],
+            "smart_construction_core.menu_sc_historical_payment_fact",
+        )
 
     def test_delivery_projection_keeps_synthetic_ancestors_without_granting_them(self):
         nodes = [{

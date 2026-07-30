@@ -203,6 +203,7 @@
         'views/menu_business_taxonomy.xml',
         'views/menu_legacy_direct_project_acceptance.xml',
         'views/core/expense_business_fact_taxonomy_views.xml',
+        'views/core/historical_payment_fact_views.xml',
         'views/menu_user_acceptance_cleanup.xml',
         'views/menu_contract_product_release.xml',
         'views/support/audit_list_fields_views.xml',

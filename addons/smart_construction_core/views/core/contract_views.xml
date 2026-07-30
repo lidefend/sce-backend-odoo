@@ -207,7 +207,7 @@
                         <page string="备注">
                             <field name="note" />
                         </page>
-                        <page string="历史付款承接">
+                        <page string="历史付款承接" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager">
                             <div class="alert alert-info" role="alert">
                                 历史承接，无新系统结算依据；以下记录只读且不可作为付款执行来源。
                             </div>
@@ -431,7 +431,7 @@
                             <field name="approval_info" />
                             <field name="attachment_text" string="平台附件文本" />
                         </page>
-                        <page string="历史付款承接">
+                        <page string="历史付款承接" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager">
                             <div class="alert alert-info" role="alert">
                                 历史承接，无新系统结算依据；以下记录只读且不可作为付款执行来源。
                             </div>

@@ -38,3 +38,21 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         self.assertGreater(row.get("menu_id"), 0)
         self.assertEqual(self._artifact_state()["formal_action"], 1)
         self.assertEqual(self._artifact_state()["legacy_model"], 0)
+
+    def test_historical_payment_readonly_entry_is_in_locked_products(self):
+        menu_xmlid = "smart_construction_core.menu_sc_historical_payment_fact"
+        for product_key in ("construction.standard", "construction.preview"):
+            self.env["sc.product.policy"].synchronize_locked_formal_menu_policy(product_key)
+            policy = self.env["sc.product.policy"].search(
+                [("product_key", "=", product_key)], limit=1
+            )
+            rows = [
+                menu
+                for group in policy.menu_groups
+                for menu in group.get("menus", [])
+                if menu.get("menu_xmlid") == menu_xmlid
+            ]
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0].get("res_model"), "sc.historical.payment.fact")
+            self.assertEqual(rows[0].get("entry_intent"), "inquiry")
+            self.assertGreater(rows[0].get("menu_id"), 0)

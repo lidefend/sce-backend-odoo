@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_sc_historical_payment_fact_search" model="ir.ui.view">
+            <field name="name">sc.historical.payment.fact.search</field>
+            <field name="model">sc.historical.payment.fact</field>
+            <field name="arch" type="xml">
+                <search string="历史付款">
+                    <field name="source_external_id"/>
+                    <field name="source_contract_external_id"/>
+                    <field name="contract_id"/>
+                    <field name="partner_id"/>
+                    <field name="project_id"/>
+                    <field name="source_system"/>
+                    <filter name="completed" string="历史完成" domain="[('migration_disposition', '=', 'historical_completed_payment_fact')]"/>
+                    <filter name="pending_review" string="待复核" domain="[('migration_disposition', '=', 'historical_pending_review')]"/>
+                    <filter name="draft_reference" string="草稿参考" domain="[('migration_disposition', '=', 'historical_draft_reference')]"/>
+                    <group expand="0" string="分组">
+                        <filter name="group_disposition" string="历史状态" context="{'group_by': 'migration_disposition'}"/>
+                        <filter name="group_contract" string="合同" context="{'group_by': 'contract_id'}"/>
+                        <filter name="group_partner" string="往来单位" context="{'group_by': 'partner_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="view_sc_historical_payment_fact_tree" model="ir.ui.view">
+            <field name="name">sc.historical.payment.fact.tree</field>
+            <field name="model">sc.historical.payment.fact</field>
+            <field name="arch" type="xml">
+                <tree string="历史付款" create="0" edit="0" delete="0">
+                    <field name="source_external_id" string="历史付款标识"/>
+                    <field name="migration_disposition"/>
+                    <field name="contract_id"/>
+                    <field name="partner_id"/>
+                    <field name="partner_active" optional="show"/>
+                    <field name="project_id" optional="show"/>
+                    <field name="source_status" optional="show"/>
+                    <field name="source_application_amount" sum="申请金额合计"/>
+                    <field name="historical_confirmed_paid_amount" sum="历史确认已付合计"/>
+                    <field name="historical_difference_amount" sum="差额合计"/>
+                    <field name="source_paid_at" optional="show"/>
+                    <field name="source_system" optional="hide"/>
+                    <field name="source_execution_count" optional="hide"/>
+                    <field name="execution_blocked" optional="show"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_sc_historical_payment_fact_form" model="ir.ui.view">
+            <field name="name">sc.historical.payment.fact.form</field>
+            <field name="model">sc.historical.payment.fact</field>
+            <field name="arch" type="xml">
+                <form string="历史付款" create="0" edit="0" delete="0">
+                    <sheet>
+                        <div class="alert alert-warning" role="alert">
+                            历史数据，只读且不可再次执行；无新系统结算依据。
+                        </div>
+                        <group>
+                            <group string="历史付款身份">
+                                <field name="source_external_id" string="历史付款标识"/>
+                                <field name="migration_disposition"/>
+                                <field name="source_status"/>
+                                <field name="execution_blocked"/>
+                            </group>
+                            <group string="业务追溯">
+                                <field name="contract_id"/>
+                                <field name="source_contract_external_id"/>
+                                <field name="project_id"/>
+                                <field name="partner_id"/>
+                                <field name="partner_active"/>
+                            </group>
+                        </group>
+                        <group string="历史金额">
+                            <field name="currency_id"/>
+                            <field name="source_application_amount"/>
+                            <field name="historical_confirmed_paid_amount"/>
+                            <field name="historical_amount_pending_confirmation"/>
+                            <field name="historical_difference_amount"/>
+                        </group>
+                        <group string="来源与审计">
+                            <group>
+                                <field name="source_system"/>
+                                <field name="source_snapshot_identity"/>
+                                <field name="source_paid_at"/>
+                                <field name="source_execution_count"/>
+                            </group>
+                            <group>
+                                <field name="source_ledger_external_id"/>
+                                <field name="decision_version"/>
+                                <field name="migration_batch_id"/>
+                                <field name="migration_notice"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_sc_historical_payment_fact" model="ir.actions.act_window">
+            <field name="name">历史付款</field>
+            <field name="res_model">sc.historical.payment.fact</field>
+            <field name="view_mode">tree,form</field>
+            <field name="views" eval="[(ref('smart_construction_core.view_sc_historical_payment_fact_tree'), 'tree'), (ref('smart_construction_core.view_sc_historical_payment_fact_form'), 'form')]"/>
+            <field name="search_view_id" ref="smart_construction_core.view_sc_historical_payment_fact_search"/>
+            <field name="groups_id" eval="[(6, 0, [
+                ref('smart_construction_core.group_sc_cap_finance_read'),
+                ref('smart_construction_core.group_sc_cap_finance_user'),
+                ref('smart_construction_core.group_sc_cap_finance_manager')
+            ])]"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">暂无历史付款数据</p>
+                <p>历史付款仅用于追溯，不进入新系统付款执行或审批流程。</p>
+            </field>
+        </record>
+
+        <menuitem
+            id="menu_sc_historical_payment_fact"
+            name="历史付款"
+            parent="smart_construction_core.menu_sc_finance_center"
+            action="smart_construction_core.action_sc_historical_payment_fact"
+            sequence="45"
+            groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"
+        />
+    </data>
+</odoo>
