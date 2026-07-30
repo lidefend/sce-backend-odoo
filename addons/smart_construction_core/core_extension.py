@@ -467,6 +467,7 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     view_type = _sc_text(source.get("view_type") or head.get("view_type") or (context or {}).get("view_type")).lower()
     render_profile = _sc_text(source.get("render_profile") or head.get("render_profile") or (((context or {}).get("meta") or {}).get("params") or {}).get("render_profile")).lower()
     out = deepcopy(contract)
+    _sc_project_p1_list_semantics_to_v2(env, out, source, model=model, view_type=view_type)
     _sc_inject_workflow_contract(env, out, source, model=model, view_type=view_type)
     inject_financial_workspace_runtime(
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
@@ -487,6 +488,70 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
         out["statusContract"] = status
     _sc_append_project_responsibility_group(out, include_collaborators=render_profile != "create")
     return out
+
+
+def _sc_project_p1_list_semantics_to_v2(env, contract, source_contract, *, model, view_type):
+    if view_type not in {"tree", "list"} or not model or model not in env:
+        return
+    try:
+        from odoo.addons.smart_construction_core.models.support.p1_daily_business_visible_alias_fields import (
+            p1_visible_alias_semantics,
+        )
+    except ImportError:
+        return
+
+    source = deepcopy(source_contract) if isinstance(source_contract, dict) else {}
+    _sc_inject_p1_list_field_semantics(env, source)
+    fields_map = source.get("fields") if isinstance(source.get("fields"), dict) else {}
+    views = source.get("views") if isinstance(source.get("views"), dict) else {}
+    tree = views.get("tree") or views.get("list")
+    schema_rows = []
+    if isinstance(tree, dict):
+        schema_rows = tree.get("columns_schema") or tree.get("columnsSchema") or []
+    schema_map = {
+        _sc_text(row.get("name") or row.get("field")): row
+        for row in schema_rows
+        if isinstance(row, dict) and _sc_text(row.get("name") or row.get("field"))
+    }
+
+    model_record = env[model]
+    semantic_keys = (
+        "display_field", "value_field", "aggregation_field", "data_type",
+        "currency_field", "precision", "aggregate", "aggregate_label",
+        "sort_field", "filter_field", "export_field", "semantic_status",
+        "reason_code", "source_authority",
+    )
+
+    def visit(nodes):
+        for node in nodes if isinstance(nodes, list) else []:
+            if not isinstance(node, dict):
+                continue
+            for widget in node.get("widgetList") if isinstance(node.get("widgetList"), list) else []:
+                if not isinstance(widget, dict):
+                    continue
+                field_name = _sc_text(widget.get("fieldCode"))
+                if not field_name.startswith("p1_visible_"):
+                    continue
+                semantic = p1_visible_alias_semantics(model_record, field_name)
+                if not semantic:
+                    continue
+                source_row = schema_map.get(field_name) or (
+                    fields_map.get(field_name) if isinstance(fields_map.get(field_name), dict) else {}
+                )
+                aggregate_label = _sc_text(source_row.get("aggregate_label") or source_row.get("sum"))
+                source_type = _sc_text(semantic.get("data_type")).lower()
+                if aggregate_label and source_type in {"integer", "float", "monetary"}:
+                    semantic["aggregation_field"] = semantic.get("value_field")
+                    semantic["aggregate"] = "sum"
+                    semantic["aggregate_label"] = aggregate_label
+                config = dict(widget.get("componentConfig") if isinstance(widget.get("componentConfig"), dict) else {})
+                config.update({key: deepcopy(semantic.get(key)) for key in semantic_keys if key in semantic})
+                widget["componentConfig"] = config
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                visit(node.get(key))
+
+    layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
+    visit(layout.get("containerTree"))
 
 
 def smart_core_normalize_projected_contract_data(env, data, context):

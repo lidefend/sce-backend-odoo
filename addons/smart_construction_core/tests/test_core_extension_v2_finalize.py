@@ -168,6 +168,50 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(semantic["aggregate"], "sum")
         self.assertEqual(semantic["semantic_status"], "DECLARED")
 
+    def test_p1_visible_amount_semantics_reach_v2_widget_config(self):
+        alias = "p1_visible_34943c40c9af"
+        source = {
+            "model": "tender.doc.purchase",
+            "view_type": "tree",
+            "fields": {alias: {"type": "char", "string": "金额"}},
+            "views": {
+                "tree": {
+                    "columns": [alias],
+                    "columns_schema": [
+                        {"name": alias, "label": "金额", "type": "char", "sum": "报名费合计"},
+                    ],
+                },
+            },
+        }
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "main.table",
+                    "widgetList": [{
+                        "widgetId": f"field.{alias}",
+                        "widgetType": "table",
+                        "fieldCode": alias,
+                        "componentConfig": {"fieldType": "char"},
+                    }],
+                }],
+            },
+        }
+
+        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+            self.env,
+            contract,
+            {"source_contract": source, "view_type": "tree"},
+        )
+        semantic = projected["layoutContract"]["containerTree"][0]["widgetList"][0]["componentConfig"]
+
+        self.assertEqual(semantic["display_field"], alias)
+        self.assertEqual(semantic["value_field"], "amount")
+        self.assertEqual(semantic["aggregation_field"], "amount")
+        self.assertEqual(semantic["data_type"], "monetary")
+        self.assertEqual(semantic["currency_field"], "currency_id")
+        self.assertEqual(semantic["aggregate"], "sum")
+        self.assertEqual(semantic["aggregate_label"], "报名费合计")
+
     def test_all_runtime_p1_aliases_have_an_explicit_semantic_classification(self):
         unresolved = []
         inspected = 0
