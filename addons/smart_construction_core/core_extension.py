@@ -463,8 +463,14 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     context = context if isinstance(context, dict) else {}
     source = context.get("source_contract") if isinstance(context.get("source_contract"), dict) else {}
     head = source.get("head") if isinstance(source.get("head"), dict) else {}
-    model = _sc_text(source.get("model") or head.get("model"))
-    view_type = _sc_text(source.get("view_type") or head.get("view_type") or (context or {}).get("view_type")).lower()
+    page_info = contract.get("pageInfo") if isinstance(contract.get("pageInfo"), dict) else {}
+    model = _sc_text(source.get("model") or head.get("model") or page_info.get("model"))
+    view_type = _sc_text(
+        source.get("view_type")
+        or head.get("view_type")
+        or (context or {}).get("view_type")
+        or page_info.get("viewType")
+    ).lower()
     render_profile = _sc_text(source.get("render_profile") or head.get("render_profile") or (((context or {}).get("meta") or {}).get("params") or {}).get("render_profile")).lower()
     out = deepcopy(contract)
     _sc_project_p1_list_semantics_to_v2(env, out, source, model=model, view_type=view_type)
@@ -513,6 +519,23 @@ def _sc_project_p1_list_semantics_to_v2(env, contract, source_contract, *, model
         for row in schema_rows
         if isinstance(row, dict) and _sc_text(row.get("name") or row.get("field"))
     }
+    declared_sum_labels = {}
+    try:
+        import xml.etree.ElementTree as ET
+
+        for view in env["ir.ui.view"].sudo().search([
+            ("model", "=", model),
+            ("type", "in", ["tree", "list"]),
+            ("active", "=", True),
+        ]):
+            root = ET.fromstring(view.arch_db or "<tree/>")
+            for node in root.findall(".//field[@name][@sum]"):
+                name = _sc_text(node.get("name"))
+                label = _sc_text(node.get("sum"))
+                if name and label:
+                    declared_sum_labels.setdefault(name, set()).add(label)
+    except Exception:
+        declared_sum_labels = {}
 
     model_record = env[model]
     semantic_keys = (
@@ -539,6 +562,8 @@ def _sc_project_p1_list_semantics_to_v2(env, contract, source_contract, *, model
                     fields_map.get(field_name) if isinstance(fields_map.get(field_name), dict) else {}
                 )
                 aggregate_label = _sc_text(source_row.get("aggregate_label") or source_row.get("sum"))
+                if not aggregate_label and len(declared_sum_labels.get(field_name, set())) == 1:
+                    aggregate_label = next(iter(declared_sum_labels[field_name]))
                 source_type = _sc_text(semantic.get("data_type")).lower()
                 if aggregate_label and source_type in {"integer", "float", "monetary"}:
                     semantic["aggregation_field"] = semantic.get("value_field")
