@@ -490,12 +490,70 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
 
 
 def smart_core_normalize_projected_contract_data(env, data, context):
-    del env, context
+    del context
     if not isinstance(data, dict):
         return None
     out = deepcopy(data)
     _sc_general_contract_tax_contract(out)
+    _sc_inject_p1_list_field_semantics(env, out)
     return out if out != data else None
+
+
+def _sc_inject_p1_list_field_semantics(env, contract):
+    """Preserve formal field semantics when a P1 Char alias is used for display."""
+    head = contract.get("head") if isinstance(contract.get("head"), dict) else {}
+    model_name = _sc_text(contract.get("model") or head.get("model"))
+    if not model_name or model_name not in env:
+        return
+    try:
+        from odoo.addons.smart_construction_core.models.support.p1_daily_business_visible_alias_fields import (
+            p1_visible_alias_semantics,
+        )
+    except ImportError:
+        return
+    model = env[model_name]
+    views = contract.get("views") if isinstance(contract.get("views"), dict) else {}
+    tree = views.get("tree") or views.get("list")
+    if not isinstance(tree, dict):
+        return
+    schema_key = "columns_schema" if isinstance(tree.get("columns_schema"), list) else "columnsSchema"
+    rows = tree.get(schema_key)
+    if not isinstance(rows, list):
+        return
+    fields_map = contract.get("fields") if isinstance(contract.get("fields"), dict) else {}
+    changed = False
+    for index, raw in enumerate(rows):
+        if not isinstance(raw, dict):
+            continue
+        field_name = _sc_text(raw.get("name") or raw.get("field"))
+        semantics = p1_visible_alias_semantics(model, field_name)
+        if not semantics:
+            continue
+        row = dict(raw)
+        aggregate_label = _sc_text(row.get("sum"))
+        source_type = _sc_text(semantics.get("data_type")).lower()
+        if aggregate_label:
+            if source_type in {"integer", "float", "monetary"}:
+                semantics["aggregation_field"] = semantics.get("value_field")
+                semantics["aggregate"] = "sum"
+                semantics["aggregate_label"] = aggregate_label
+            else:
+                semantics["semantic_status"] = "INVALID_AGGREGATION_SOURCE"
+                semantics["reason_code"] = "P1_ALIAS_AGGREGATION_SOURCE_NOT_NUMERIC"
+        row.update(semantics)
+        rows[index] = row
+        descriptor = dict(fields_map.get(field_name) if isinstance(fields_map.get(field_name), dict) else {})
+        descriptor.update(semantics)
+        fields_map[field_name] = descriptor
+        changed = True
+    if changed:
+        tree[schema_key] = rows
+        if isinstance(views.get("tree"), dict):
+            views["tree"] = tree
+        else:
+            views["list"] = tree
+        contract["views"] = views
+        contract["fields"] = fields_map
 
 
 def smart_core_normalize_unified_page_contract_v2(env, contract, context):
@@ -1218,6 +1276,7 @@ def smart_core_finalize_projected_contract_data(env, data, context):
                     "type": meta.get("type") or "char",
                     "widget": node.get("widget") or "",
                     "optional": node.get("optional") or "",
+                    "sum": node.get("sum") or "",
                 })
     except Exception:
         _logger.exception("Failed to parse locked tree view for action_id=%s", action_id)
@@ -1279,6 +1338,7 @@ def smart_core_finalize_projected_contract_data(env, data, context):
                 "must_request_columns": columns,
             },
         }
+    _sc_inject_p1_list_field_semantics(env, locked)
     return locked
 
 

@@ -29,6 +29,139 @@ def _alias_field_string(label):
     return "P1可见%s" % label
 
 
+_P1_SEMANTIC_SOURCE_OVERRIDES = {
+    "construction.contract": {
+        "工程类别": ("engineering_category_text",),
+        "工程地址": ("engineering_address",),
+        "原件是否归档": ("archived",),
+        "合同订立日期": ("date_contract",),
+        "挂靠人": ("affiliated_person",),
+        "未收款": ("visible_unreceived_amount",),
+        "累计开票": ("visible_invoice_amount",),
+        "未收款比例": ("visible_unreceived_rate",),
+        "累计收款": ("visible_received_amount",),
+        "发包人": ("partner_id",),
+    },
+    "sc.document.admin.document": {
+        "资料说明": ("document_admin_description_display",),
+        "借阅日期": ("borrow_date",),
+        "资料类型": ("document_admin_type_display",),
+    },
+    "sc.financing.loan": {
+        "付款单位": ("payer_unit",),
+        "收款账户": ("receipt_account",),
+        "往来单位账户": ("counterparty_account",),
+        "公司名称": ("company_name",),
+        "往来单位名称": ("counterparty_name",),
+    },
+    "sc.office.admin.document": {
+        "请假类型": ("leave_type",),
+        "申请人姓名": ("office_admin_applicant_name",),
+        "请假时间": ("office_admin_leave_time",),
+        "销假时间": ("office_admin_cancel_time",),
+        "所在部门": ("office_admin_department_name",),
+        "请假时长": ("office_admin_leave_duration",),
+        "请假天数": ("office_admin_leave_days",),
+    },
+    "sc.receipt.invoice.line": {
+        "往来单位": ("partner_id",),
+        "经营方式": ("operation_strategy",),
+    },
+    "tender.guarantee": {
+        "收款账户名称": ("deposit_receipt_account_name",),
+        "收款开户行": ("deposit_receipt_bank_name",),
+        "收款账户": ("receipt_bank_account_id",),
+        "退还开户行": ("deposit_refund_bank_name",),
+        "汇款方式": ("deposit_remittance_method",),
+        "单位": ("deposit_unit_name",),
+        "退回日期": ("deposit_return_date",),
+        "转款单位": ("deposit_transfer_unit",),
+        "退回账户": ("deposit_return_account",),
+        "退还账号": ("deposit_refund_account_no",),
+        "已退保证金金额": ("deposit_received_amount_display",),
+    },
+}
+
+
+def p1_visible_alias_label(field_name):
+    """Return the governed business label for a stable P1 display alias."""
+    name = str(field_name or "").strip()
+    if not name.startswith("p1_visible_"):
+        return ""
+    for labels in _ALIAS_MODEL_FIELD_LABELS.values():
+        for label in labels:
+            if _alias_field_name(label) == name:
+                return label
+    return ""
+
+
+def p1_visible_alias_semantics(model, field_name):
+    """Resolve a display alias to its formal typed source without label guessing."""
+    label = p1_visible_alias_label(field_name)
+    if not label:
+        return {}
+    candidates = []
+    for candidate in (
+        list(_P1_SEMANTIC_SOURCE_OVERRIDES.get(model._name, {}).get(label) or ())
+        +
+        list(MODEL_LABEL_SOURCE_OVERRIDES.get(model._name, {}).get(label) or ())
+        + list(LABEL_SOURCE_OVERRIDES.get(label, ()))
+    ):
+        name = str(candidate or "").strip()
+        if (
+            name
+            and name not in candidates
+            and not name.startswith(("legacy_", "p1_visible_"))
+            and name in model._fields
+        ):
+            candidates.append(name)
+    if not candidates:
+        return {
+            "display_field": field_name,
+            "semantic_status": "UNRESOLVED_FORMAL_SOURCE",
+            "reason_code": "P1_ALIAS_FORMAL_SOURCE_MISSING",
+        }
+    typed_priority = {
+        "monetary": 0,
+        "float": 1,
+        "integer": 2,
+        "date": 3,
+        "datetime": 4,
+        "many2one": 5,
+        "selection": 6,
+        "boolean": 7,
+        "char": 20,
+        "text": 21,
+        "html": 22,
+    }
+    source_name = min(
+        candidates,
+        key=lambda name: (
+            typed_priority.get(str(getattr(model._fields[name], "type", "") or ""), 10),
+            candidates.index(name),
+        ),
+    )
+    source = model._fields[source_name]
+    source_type = str(getattr(source, "type", "") or "").strip().lower()
+    result = {
+        "display_field": field_name,
+        "value_field": source_name,
+        "sort_field": source_name,
+        "filter_field": source_name,
+        "export_field": source_name,
+        "data_type": source_type,
+        "semantic_status": "DECLARED",
+        "source_authority": "p1_explicit_alias_source_mapping",
+    }
+    if source_type == "monetary":
+        result["currency_field"] = str(getattr(source, "currency_field", "") or "").strip()
+    if source_type == "float":
+        digits = getattr(source, "digits", None)
+        if isinstance(digits, (list, tuple)) and len(digits) >= 2:
+            result["precision"] = int(digits[1])
+    return result
+
+
 def _tokenized_search_domain(field_name, operator, value):
     text = str(value or "").strip()
     if operator not in ("ilike", "like", "=ilike", "=like") or not text:
@@ -49,7 +182,10 @@ def _is_searchable_alias_source_field(model, field_name):
     if str(field_name or "").startswith("p1_visible_"):
         return False
     field_type = str(getattr(field, "type", "") or "")
-    if field_type not in ("char", "text", "html", "many2one", "selection"):
+    if field_type not in (
+        "char", "text", "html", "many2one", "selection",
+        "integer", "float", "monetary", "date", "datetime", "boolean",
+    ):
         return False
     return bool(getattr(field, "store", False)) or bool(getattr(field, "search", None))
 
@@ -116,7 +252,15 @@ def _p1_visible_alias_search(label):
         if acceptance_ids:
             domains.append([("id", "in", acceptance_ids)])
         for field_name in _p1_alias_search_source_fields(self, label):
-            domains.append(_tokenized_search_domain(field_name, op, value))
+            field_type = str(getattr(self._fields.get(field_name), "type", "") or "")
+            if op in ("<", "<=", ">", ">=") and field_type not in (
+                "integer", "float", "monetary", "date", "datetime",
+            ):
+                continue
+            if field_type in ("integer", "float", "monetary", "date", "datetime", "boolean"):
+                domains.append([(field_name, op, value)])
+            else:
+                domains.append(_tokenized_search_domain(field_name, op, value))
         if not domains:
             return [("id", "=", 0)]
         if len(domains) == 1:

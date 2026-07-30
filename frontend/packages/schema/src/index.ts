@@ -406,6 +406,7 @@ export interface ApiDataListRequest {
   domain_raw?: string;
   need_total?: boolean;
   need_aggregates?: boolean;
+  field_semantics?: Array<Record<string, unknown>>;
   group_by?: string | string[];
   group_offset?: number;
   need_group_total?: boolean;

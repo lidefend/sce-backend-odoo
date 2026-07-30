@@ -29,6 +29,7 @@ export async function listRecords(params: {
   order?: string;
   search_term?: string;
   context?: Record<string, unknown>;
+  fieldSemantics?: Array<Record<string, unknown>>;
   context_raw?: string;
   silentErrors?: boolean;
 }) {
@@ -40,6 +41,7 @@ export async function listRecords(params: {
     domain_raw: params.domain_raw ?? '',
     need_total: params.need_total,
     need_aggregates: params.need_aggregates,
+    field_semantics: params.fieldSemantics ?? [],
     group_by: params.group_by,
     group_offset: params.group_offset,
     need_group_total: params.need_group_total,
@@ -67,6 +69,7 @@ export async function listRecordsRaw(params: {
   domain_raw?: string;
   need_total?: boolean;
   need_aggregates?: boolean;
+  field_semantics?: Array<Record<string, unknown>>;
   group_by?: string | string[];
   group_offset?: number;
   need_group_total?: boolean;
@@ -88,6 +91,7 @@ export async function listRecordsRaw(params: {
     domain_raw: params.domain_raw ?? '',
     need_total: params.need_total,
     need_aggregates: params.need_aggregates,
+    field_semantics: params.field_semantics ?? [],
     group_by: params.group_by,
     group_offset: params.group_offset,
     need_group_total: params.need_group_total,
@@ -331,6 +335,7 @@ export async function exportRecordsCsv(params: {
   order?: string;
   limit?: number;
   context?: Record<string, unknown>;
+  fieldSemantics?: Array<Record<string, unknown>>;
 }) {
   return intentRequest<ApiDataExportCsvResult>({
     intent: 'api.data',
@@ -343,6 +348,7 @@ export async function exportRecordsCsv(params: {
       order: params.order ?? '',
       limit: params.limit ?? 2000,
       context: params.context ?? {},
+      field_semantics: params.fieldSemantics ?? [],
     },
   });
 }

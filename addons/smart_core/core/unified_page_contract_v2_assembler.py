@@ -919,7 +919,13 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     if widget_type == "select":
         capabilities.append("searchable")
     component_config = {}
-    for key in ("optional", "invisible", "column_invisible", "readonly", "required"):
+    for key in (
+        "optional", "invisible", "column_invisible", "readonly", "required",
+        "display_field", "value_field", "aggregation_field", "data_type",
+        "currency_field", "precision", "sum", "aggregate", "aggregate_label",
+        "sort_field", "filter_field", "export_field", "semantic_status",
+        "reason_code", "source_authority",
+    ):
         if key in field:
             component_config[key] = deepcopy(field.get(key))
     field_type = _text(field.get("ttype") or field.get("type")).lower()
@@ -999,7 +1005,13 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
     for key in ("readonly", "required", "invisible", "column_invisible"):
         if key in field_modifiers and key not in field_source:
             field_source[key] = deepcopy(field_modifiers.get(key))
-    for key in ("readonly", "required", "invisible", "column_invisible"):
+    for key in (
+        "readonly", "required", "invisible", "column_invisible", "sum",
+        "display_field", "value_field", "aggregation_field", "data_type",
+        "currency_field", "precision", "aggregate", "aggregate_label",
+        "sort_field", "filter_field", "export_field", "semantic_status",
+        "reason_code", "source_authority",
+    ):
         if key in node:
             field_source[key] = deepcopy(node.get(key))
     field_source["name"] = field_name

@@ -733,6 +733,7 @@ ci.local.quick: guard.prod.forbid security.legacy_credential_guard verify.reposi
 	@python3 scripts/verify/contract_governance_surface_mapping_split_guard.py
 	@python3 scripts/verify/contract_governance_create_profile_split_guard.py
 	@python3 scripts/verify/contract_governance_field_semantics_split_guard.py
+	@python3 scripts/verify/list_field_semantic_integrity_guard.py
 	@python3 scripts/verify/contract_governance_form_layout_split_guard.py
 	@python3 scripts/verify/contract_governance_form_actions_split_guard.py
 	@python3 scripts/verify/contract_governance_form_render_split_guard.py

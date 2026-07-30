@@ -539,6 +539,7 @@ class ApiDataHandler(BaseIntentHandler):
 
     def _build_numeric_aggregates(self, env_model, domain, fields_safe: List[str]) -> Dict[str, Dict[str, Any]]:
         numeric_types = {"integer", "float", "monetary"}
+        is_number = lambda value: isinstance(value, (int, float)) and not isinstance(value, bool)
         aggregate_fields = []
         for field_name in fields_safe or []:
             field = env_model._fields.get(field_name)
@@ -567,9 +568,9 @@ class ApiDataHandler(BaseIntentHandler):
                 out: Dict[str, Dict[str, Any]] = {}
                 for field_name in aggregate_fields:
                     value = row.get(f"{field_name}_sum")
-                    if not isinstance(value, (int, float)):
+                    if not is_number(value):
                         value = row.get(field_name)
-                    if isinstance(value, (int, float)):
+                    if is_number(value):
                         out[field_name] = {"sum": value}
                 if out:
                     return out
@@ -589,7 +590,7 @@ class ApiDataHandler(BaseIntentHandler):
                         has_value = False
                         for row in rows or []:
                             value = row.get(field_name)
-                            if isinstance(value, (int, float)):
+                            if is_number(value):
                                 total_value += value
                                 has_value = True
                         if has_value:
@@ -604,10 +605,146 @@ class ApiDataHandler(BaseIntentHandler):
                 continue
             row = (rows or [{}])[0] or {}
             value = row.get(f"{field_name}_sum")
-            if not isinstance(value, (int, float)):
+            if not is_number(value):
                 value = row.get(field_name)
-            if isinstance(value, (int, float)):
+            if is_number(value):
                 out[field_name] = {"sum": value}
+        return out
+
+    def _normalize_list_field_semantics(self, env_model, value, display_fields: List[str]) -> Dict[str, Dict[str, Any]]:
+        rows = value if isinstance(value, list) else []
+        display_set = set(display_fields or [])
+        normalized: Dict[str, Dict[str, Any]] = {}
+        for raw in rows:
+            if not isinstance(raw, dict):
+                continue
+            display_field = str(raw.get("display_field") or "").strip()
+            value_field = str(raw.get("value_field") or "").strip()
+            if (
+                not display_field
+                or display_field not in display_set
+                or not value_field
+                or value_field not in env_model._fields
+            ):
+                continue
+            if value_field not in self._filter_readable_fields(env_model, [value_field]):
+                continue
+            source = env_model._fields[value_field]
+            source_type = str(getattr(source, "type", "") or "").strip().lower()
+            aggregate = str(raw.get("aggregate") or "none").strip().lower()
+            aggregation_field = str(raw.get("aggregation_field") or "").strip()
+            if aggregate != "sum" or source_type not in {"integer", "float", "monetary"}:
+                aggregate = "none"
+                aggregation_field = ""
+            elif aggregation_field != value_field:
+                aggregate = "none"
+                aggregation_field = ""
+            normalized[display_field] = {
+                "display_field": display_field,
+                "value_field": value_field,
+                "aggregation_field": aggregation_field,
+                "sort_field": value_field if str(raw.get("sort_field") or "").strip() == value_field else "",
+                "filter_field": value_field if str(raw.get("filter_field") or "").strip() == value_field else "",
+                "export_field": value_field if str(raw.get("export_field") or "").strip() == value_field else "",
+                "data_type": source_type,
+                "currency_field": str(raw.get("currency_field") or "").strip(),
+                "precision": raw.get("precision"),
+                "aggregate": aggregate,
+            }
+        return normalized
+
+    def _translate_semantic_order(self, order: str, semantics: Dict[str, Dict[str, Any]]) -> str:
+        translated = []
+        for clause in str(order or "").split(","):
+            parts = clause.strip().split()
+            if not parts:
+                continue
+            field_name = parts[0]
+            semantic = semantics.get(field_name) or {}
+            source = str(semantic.get("sort_field") or "").strip()
+            if source:
+                parts[0] = source
+            translated.append(" ".join(parts))
+        return ", ".join(translated)
+
+    def _build_semantic_aggregates(self, env_model, domain, page_rows, semantics) -> Dict[str, Dict[str, Any]]:
+        out: Dict[str, Dict[str, Any]] = {}
+        page_ids = [int(row.get("id")) for row in (page_rows or []) if isinstance(row, dict) and row.get("id")]
+        for display_field, semantic in (semantics or {}).items():
+            if semantic.get("aggregate") != "sum":
+                continue
+            source_field = str(semantic.get("aggregation_field") or "").strip()
+            if not source_field:
+                continue
+            currency_field = str(semantic.get("currency_field") or "").strip()
+            currency_ids = set()
+            if semantic.get("data_type") == "monetary" and currency_field:
+                if currency_field not in env_model._fields:
+                    out[display_field] = {
+                        "aggregate": "none",
+                        "data_type": "monetary",
+                        "reason_code": "CURRENCY_FIELD_MISSING",
+                    }
+                    continue
+                if currency_field not in self._filter_readable_fields(env_model, [currency_field]):
+                    out[display_field] = {
+                        "aggregate": "none",
+                        "data_type": "monetary",
+                        "currency_field": currency_field,
+                        "reason_code": "CURRENCY_FIELD_NOT_READABLE",
+                    }
+                    continue
+                try:
+                    currency_groups = env_model.read_group(
+                        domain or [],
+                        [currency_field],
+                        [currency_field],
+                        lazy=False,
+                    )
+                except Exception:
+                    out[display_field] = {
+                        "aggregate": "none",
+                        "data_type": "monetary",
+                        "currency_field": currency_field,
+                        "reason_code": "CURRENCY_SCOPE_UNVERIFIED",
+                    }
+                    continue
+                currency_ids = {
+                    int(value[0])
+                    for row in currency_groups or []
+                    for value in [row.get(currency_field)]
+                    if isinstance(value, (list, tuple)) and value and value[0]
+                }
+                if len(currency_ids) > 1:
+                    out[display_field] = {
+                        "aggregate": "none",
+                        "data_type": "monetary",
+                        "currency_field": currency_field,
+                        "reason_code": "MULTI_CURRENCY_AGGREGATION_PROHIBITED",
+                    }
+                    continue
+            total_rows = self._build_numeric_aggregates(env_model, domain, [source_field])
+            total_value = (total_rows.get(source_field) or {}).get("sum")
+            page_value = None
+            if page_ids:
+                page_domain = list(domain or []) + [("id", "in", page_ids)]
+                page_rows_aggregated = self._build_numeric_aggregates(env_model, page_domain, [source_field])
+                page_value = (page_rows_aggregated.get(source_field) or {}).get("sum")
+            result = {
+                "aggregate": "sum",
+                "data_type": semantic.get("data_type"),
+                "value_field": semantic.get("value_field"),
+                "aggregation_field": source_field,
+                "page_sum": page_value,
+                "sum": total_value,
+            }
+            if currency_field:
+                result["currency_field"] = currency_field
+                if currency_ids:
+                    result["currency_id"] = next(iter(currency_ids))
+            if semantic.get("precision") is not None:
+                result["precision"] = semantic.get("precision")
+            out[display_field] = result
         return out
 
     def _build_group_query_fingerprint(self, model: str, domain, group_by, order: str, search_term: str, ctx: Dict[str, Any]) -> str:
@@ -678,6 +815,8 @@ class ApiDataHandler(BaseIntentHandler):
         group_page_offsets: Optional[Dict[str, int]] = None,
         group_summary: Optional[List[Dict[str, Any]]] = None,
         order: str = "",
+        field_semantics: Optional[Dict[str, Dict[str, Any]]] = None,
+        need_aggregates: bool = False,
     ):
         summary = group_summary if isinstance(group_summary, list) else self._build_group_summary(env_model, domain, group_by, limit=limit)
         if not summary:
@@ -718,6 +857,20 @@ class ApiDataHandler(BaseIntentHandler):
                 _logger.exception("group sample query failed model=%s group=%s", env_model._name, item.get("label"))
                 sample_rows = []
             sample_count = len(sample_rows)
+            group_aggregates = (
+                self._build_numeric_aggregates(env_model, group_domain, row_fields)
+                if need_aggregates
+                else {}
+            )
+            if need_aggregates and field_semantics:
+                group_aggregates.update(
+                    self._build_semantic_aggregates(
+                        env_model,
+                        group_domain,
+                        sample_rows,
+                        field_semantics,
+                    )
+                )
             out.append(
                 {
                     "group_key": group_key,
@@ -749,6 +902,7 @@ class ApiDataHandler(BaseIntentHandler):
                     },
                     "page_has_prev": page_offset > 0,
                     "page_has_next": (page_offset + page_limit) < count,
+                    "aggregates": group_aggregates,
                 }
             )
         return out
@@ -1636,6 +1790,12 @@ class ApiDataHandler(BaseIntentHandler):
 
         # 先按 groups 过滤一遍，避免 AccessError
         fields_safe = self._filter_readable_fields(env_model, fields or ["id", "name"])
+        field_semantics = self._normalize_list_field_semantics(
+            env_model,
+            self._dig(p, "field_semantics", []),
+            fields_safe,
+        )
+        order = self._translate_semantic_order(order, field_semantics)
         domain, search_term = self._apply_search_term_domain(env_model, domain, p, fields_safe)
         domain, project_scope_meta = self._apply_record_scope(env_model, domain, p, ctx)
 
@@ -1669,6 +1829,8 @@ class ApiDataHandler(BaseIntentHandler):
         total = env_model.search_count(domain or []) if need_total else None
         need_aggregates = self._get_bool(p, "need_aggregates", False)
         aggregates = self._build_numeric_aggregates(env_model, domain, fields_safe) if need_aggregates else {}
+        if need_aggregates and field_semantics:
+            aggregates.update(self._build_semantic_aggregates(env_model, domain, rows, field_semantics))
         group_summary_probe = self._build_group_summary_with_offset(
             env_model,
             domain,
@@ -1739,6 +1901,8 @@ class ApiDataHandler(BaseIntentHandler):
             group_page_offsets=group_page_offsets,
             group_summary=group_summary,
             order=order,
+            field_semantics=field_semantics,
+            need_aggregates=need_aggregates,
         )
 
         data = {
@@ -2146,6 +2310,19 @@ class ApiDataHandler(BaseIntentHandler):
             fallback = ["id", "name"] if "name" in env_model._fields else ["id"]
             fields = fallback
         fields_safe = self._filter_readable_fields(env_model, fields)
+        field_semantics = self._normalize_list_field_semantics(
+            env_model,
+            self._dig(p, "field_semantics", []),
+            fields_safe,
+        )
+        export_fields = [
+            str((field_semantics.get(field_name) or {}).get("export_field") or field_name)
+            for field_name in fields_safe
+        ]
+        export_fields = self._filter_readable_fields(env_model, list(dict.fromkeys(export_fields)))
+        if export_fields:
+            fields_safe = export_fields
+        order = self._translate_semantic_order(order, field_semantics)
 
         if ids:
             scoped_error = self._ensure_records_in_record_scope(env_model, ids, p, ctx)

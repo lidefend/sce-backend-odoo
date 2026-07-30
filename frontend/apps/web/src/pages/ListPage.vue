@@ -384,9 +384,9 @@
                   v-for="col in footerValueColumns"
                   :key="`group-footer-page-${group.key}-${col}`"
                   :style="columnWidthStyle(col)"
-                  :class="[columnDensityClass(col), { 'footer-number': isNumericColumn(col) }]"
+                  :class="[columnDensityClass(col), { 'footer-number': isAggregateColumn(col) }]"
                 >
-                  <span v-if="isNumericColumn(col)" class="footer-number-value">{{ groupFooterCellText(col, group, 'page') }}</span>
+                  <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ groupFooterCellText(col, group, 'page') }}</span>
                   <template v-else>{{ groupFooterCellText(col, group, 'page') }}</template>
                 </td>
               </tr>
@@ -396,9 +396,9 @@
                   v-for="col in footerValueColumns"
                   :key="`group-footer-total-${group.key}-${col}`"
                   :style="columnWidthStyle(col)"
-                  :class="[columnDensityClass(col), { 'footer-number': isNumericColumn(col) }]"
+                  :class="[columnDensityClass(col), { 'footer-number': isAggregateColumn(col) }]"
                 >
-                  <span v-if="isNumericColumn(col)" class="footer-number-value">{{ groupFooterCellText(col, group, 'total') }}</span>
+                  <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ groupFooterCellText(col, group, 'total') }}</span>
                   <template v-else>{{ groupFooterCellText(col, group, 'total') }}</template>
                 </td>
               </tr>
@@ -609,9 +609,9 @@
               v-for="col in footerValueColumns"
               :key="`footer-page-${col}`"
               :style="columnWidthStyle(col)"
-              :class="[columnDensityClass(col), { 'footer-number': isNumericColumn(col) }]"
+              :class="[columnDensityClass(col), { 'footer-number': isAggregateColumn(col) }]"
             >
-              <span v-if="isNumericColumn(col)" class="footer-number-value">{{ footerCellText(col, 'page', pageVisibleRows.length) }}</span>
+              <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ footerCellText(col, 'page', pageVisibleRows.length) }}</span>
               <template v-else>{{ footerCellText(col, 'page', pageVisibleRows.length) }}</template>
             </td>
             <td v-if="columnChoices.length" class="cell-column-picker"></td>
@@ -622,9 +622,9 @@
               v-for="col in footerValueColumns"
               :key="`footer-total-${col}`"
               :style="columnWidthStyle(col)"
-              :class="[columnDensityClass(col), { 'footer-number': isNumericColumn(col) }]"
+              :class="[columnDensityClass(col), { 'footer-number': isAggregateColumn(col) }]"
             >
-              <span v-if="isNumericColumn(col)" class="footer-number-value">{{ footerCellText(col, 'total', listTotal || pageVisibleRows.length) }}</span>
+              <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ footerCellText(col, 'total', listTotal || pageVisibleRows.length) }}</span>
               <template v-else>{{ footerCellText(col, 'total', listTotal || pageVisibleRows.length) }}</template>
             </td>
             <td v-if="columnChoices.length" class="cell-column-picker"></td>
@@ -768,6 +768,15 @@ type ColumnOption = {
   widget?: string;
   cellRole?: string;
   mutation?: Record<string, unknown>;
+  displayField?: string;
+  valueField?: string;
+  aggregationField?: string;
+  dataType?: string;
+  currencyField?: string;
+  aggregate?: string;
+  sortField?: string;
+  filterField?: string;
+  exportField?: string;
   selection?: Array<{ value: string; label: string }>;
   toneByValue?: Record<string, string>;
 };
@@ -1738,7 +1747,7 @@ const footerLabelFieldCount = computed(() => displayedColumns.value.length
 const footerValueColumns = computed(() => displayedColumns.value.slice(footerLabelFieldCount.value));
 const footerLabelColspan = computed(() => (showSelectionColumn.value ? 1 : 0)
   + (showRowNumberColumn.value ? 1 : 0) + footerLabelFieldCount.value);
-const showAggregateFooter = computed(() => displayedColumns.value.some((field) => isNumericColumn(field)));
+const showAggregateFooter = computed(() => displayedColumns.value.some((field) => isAggregateColumn(field)));
 const mobileIdentityField = computed(() => {
   const preferred = String(rowPrimary.value || '').trim();
   if (preferred && displayedColumns.value.includes(preferred) && !isStatusLikeColumn(preferred)) return preferred;
@@ -1792,7 +1801,8 @@ function sortDirection(value: string) {
 }
 
 function isSortedColumn(col: string) {
-  return sortField(props.sortValue || '') === col;
+  const option = columnOption(col);
+  return sortField(props.sortValue || '') === String(option?.sortField || col);
 }
 
 function columnSortIndicator(col: string) {
@@ -1821,7 +1831,8 @@ function toggleColumnSort(col: string) {
   if (!isColumnSortable(col)) return;
   const currentDirection = isSortedColumn(col) ? sortDirection(props.sortValue || '') : '';
   const nextDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-  props.onSort(`${col} ${nextDirection}`);
+  const field = String(columnOption(col)?.sortField || col).trim();
+  props.onSort(`${field} ${nextDirection}`);
 }
 
 function onColumnDragStart(col: string, event: DragEvent) {
@@ -2010,8 +2021,17 @@ const pageVisibleRows = computed(() => {
 });
 
 function isNumericColumn(field: string) {
-  const type = String(columnOption(field)?.type || '').trim();
+  const option = columnOption(field);
+  const type = String(option?.dataType || option?.type || '').trim();
   return type === 'integer' || type === 'float' || type === 'monetary';
+}
+
+function isAggregateColumn(field: string) {
+  return isNumericColumn(field) && String(columnOption(field)?.aggregate || '').trim() === 'sum';
+}
+
+function hasServerSemanticAggregate(field: string) {
+  return Boolean(String(columnOption(field)?.aggregationField || '').trim());
 }
 
 function isNumericDisplayColumn(field: string) {
@@ -2032,7 +2052,8 @@ function formatNumericCellValue(field: string, value: unknown) {
   if (!isNumericColumn(field)) return '';
   const numeric = numericCellValue(value);
   if (numeric === null) return '';
-  const type = String(columnOption(field)?.type || '').trim();
+  const option = columnOption(field);
+  const type = String(option?.dataType || option?.type || '').trim();
   return numeric.toLocaleString('zh-CN', {
     maximumFractionDigits: type === 'integer' ? 0 : 2,
     minimumFractionDigits: type === 'integer' ? 0 : 2,
@@ -2040,7 +2061,8 @@ function formatNumericCellValue(field: string, value: unknown) {
 }
 
 function formatFooterNumber(value: number, field: string) {
-  const type = String(columnOption(field)?.type || '').trim();
+  const option = columnOption(field);
+  const type = String(option?.dataType || option?.type || '').trim();
   return value.toLocaleString('zh-CN', {
     maximumFractionDigits: type === 'integer' ? 0 : 2,
     minimumFractionDigits: type === 'integer' ? 0 : 2,
@@ -2049,8 +2071,18 @@ function formatFooterNumber(value: number, field: string) {
 
 const pageFooterStats = computed(() =>
   displayedColumns.value
-    .filter((field) => isNumericColumn(field))
+    .filter((field) => isAggregateColumn(field))
     .map((field) => {
+      const semanticAggregate = String(columnOption(field)?.aggregationField || '').trim();
+      if (semanticAggregate) {
+        const authoritative = pageAggregateValue(field);
+        return {
+          name: field,
+          label: uiLabel('page_footer_summary', '{column} 汇总', { column: columnLabel(field) }),
+          count: authoritative === null ? 0 : pageVisibleRows.value.length,
+          sumText: authoritative === null ? '--' : formatFooterNumber(authoritative, field),
+        };
+      }
       const values = pageVisibleRows.value
         .map((row) => numericCellValue(row[field]))
         .filter((value): value is number => typeof value === 'number');
@@ -2077,9 +2109,15 @@ function totalAggregateValue(field: string) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function pageAggregateValue(field: string) {
+  const aggregate = props.listAggregates?.[field] || {};
+  const value = aggregate.page_sum;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
 function footerCellText(field: string, scope: 'page' | 'total', rowCount: number) {
   void rowCount;
-  if (!isNumericColumn(field)) return '';
+  if (!isAggregateColumn(field)) return '';
   if (scope === 'page') {
     return pageFooterStatsMap.value[field]?.sumText || '--';
   }
@@ -2101,14 +2139,22 @@ function groupAggregateValue(group: { aggregates?: Record<string, Record<string,
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function groupPageAggregateValue(group: { aggregates?: Record<string, Record<string, unknown>> }, field: string) {
+  const aggregate = group.aggregates?.[field] || {};
+  const value = aggregate.page_sum;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
 function groupFooterCellText(
   field: string,
   group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
   scope: 'page' | 'total',
 ) {
-  if (!isNumericColumn(field)) return '';
+  if (!isAggregateColumn(field)) return '';
   if (scope === 'page') {
-    const value = rowsNumericSum(group.sampleRows || [], field);
+    const value = hasServerSemanticAggregate(field)
+      ? groupPageAggregateValue(group, field)
+      : rowsNumericSum(group.sampleRows || [], field);
     return value === null ? '--' : formatFooterNumber(value, field);
   }
   const value = groupAggregateValue(group, field);

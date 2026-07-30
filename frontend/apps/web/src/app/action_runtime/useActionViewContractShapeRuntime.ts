@@ -42,6 +42,15 @@ type ListColumnOption = {
   mutation?: Record<string, unknown>;
   selection?: Array<{ value: string; label: string }>;
   toneByValue?: Record<string, string>;
+  displayField?: string;
+  valueField?: string;
+  aggregationField?: string;
+  dataType?: string;
+  currencyField?: string;
+  aggregate?: string;
+  sortField?: string;
+  filterField?: string;
+  exportField?: string;
 };
 
 function normalizeFieldNames(rows: unknown): string[] {
@@ -186,6 +195,34 @@ export function extractViewFieldLabelsFromContract(contract: unknown, mode: stri
   return labels;
 }
 
+export function extractListFieldSemanticsFromContract(contract: unknown): Dict[] {
+  const typed = (contract || {}) as Dict;
+  const views = (typed.views || {}) as Dict;
+  const tree = (views.tree || views.list || {}) as Dict;
+  const schema = tree.columns_schema || tree.columnsSchema;
+  if (!Array.isArray(schema)) return [];
+  return (schema as Dict[])
+    .map((row) => {
+      const displayField = String(row.display_field || row.name || '').trim();
+      const valueField = String(row.value_field || row.name || '').trim();
+      if (!displayField || !valueField) return null;
+      const aggregate = String(row.aggregate || (row.sum ? 'sum' : 'none')).trim();
+      return {
+        display_field: displayField,
+        value_field: valueField,
+        aggregation_field: String(row.aggregation_field || (aggregate === 'sum' ? valueField : '')).trim(),
+        data_type: String(row.data_type || row.type || '').trim(),
+        currency_field: String(row.currency_field || '').trim(),
+        precision: row.precision,
+        aggregate,
+        sort_field: String(row.sort_field || valueField).trim(),
+        filter_field: String(row.filter_field || valueField).trim(),
+        export_field: String(row.export_field || valueField).trim(),
+      };
+    })
+    .filter(Boolean) as Dict[];
+}
+
 export function useActionViewContractShapeRuntime(options: UseActionViewContractShapeRuntimeOptions) {
   const contractColumnLabels = computed<Record<string, string>>(() => {
     const contract = options.actionContract.value || {};
@@ -307,6 +344,8 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           : field.sortable;
         const type = String(schema.type || field.type || '').trim();
         const widget = String(schema.widget || field.widget || field.type || '').trim();
+        const valueField = String(schema.value_field || name).trim() || name;
+        const aggregate = String(schema.aggregate || (schema.sum ? 'sum' : '')).trim();
         const rawSelection = Array.isArray(schema.selection) ? schema.selection : field.selection;
         return {
           name,
@@ -342,6 +381,15 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
                 return acc;
               }, {})
             : undefined,
+          displayField: String(schema.display_field || name).trim() || name,
+          valueField,
+          aggregationField: String(schema.aggregation_field || (aggregate === 'sum' ? valueField : '')).trim() || undefined,
+          dataType: String(schema.data_type || type || '').trim() || undefined,
+          currencyField: String(schema.currency_field || '').trim() || undefined,
+          aggregate: aggregate || 'none',
+          sortField: String(schema.sort_field || valueField).trim() || undefined,
+          filterField: String(schema.filter_field || valueField).trim() || undefined,
+          exportField: String(schema.export_field || valueField).trim() || undefined,
         };
       });
   }

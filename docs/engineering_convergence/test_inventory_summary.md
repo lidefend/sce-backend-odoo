@@ -4,20 +4,20 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1029`
+- Total assets: `1031`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `124`
 - Manual gate review: `4`
 - Aggregate-covered assets: `227`
-- PR dedupe candidates: `678`
+- PR dedupe candidates: `680`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 403 |
-| contract | 313 |
+| governance | 404 |
+| contract | 314 |
 | unit | 159 |
 | odoo_integration | 67 |
 | e2e | 34 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 899 |
+| pr_candidate | 901 |
 | integration_candidate | 89 |
 | release_candidate | 32 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 678 |
+| deduplicate_before_required | 680 |
 | covered_by_aggregate | 222 |
 | keep_integration_or_release_only | 88 |
 | keep_release_only | 32 |
@@ -143,7 +143,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 901 |
+| <5m | 903 |
 | 10-30m | 90 |
 | 30-60m | 34 |
 | unknown | 3 |
@@ -153,8 +153,8 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 403 |
-| platform owner | 313 |
+| architecture owner | 404 |
+| platform owner | 314 |
 | test owner | 160 |
 | backend owner | 67 |
 | qa owner | 34 |
@@ -166,7 +166,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 924 |
+| scripts/verify | 926 |
 | scripts/ops | 47 |
 | frontend/apps/web/scripts | 28 |
 | scripts/ci | 10 |
@@ -277,7 +277,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-170 | governance | `scripts/verify/complexity_guard.py` | architecture owner |
 | T-ASSET-171 | contract | `scripts/verify/construction_contract_history_value_gap_probe.py` | platform owner |
 | T-ASSET-172 | security | `scripts/verify/construction_core_extension_actor_roles_split_guard.py` | security owner |
-| ... | ... | 598 more | ... |
+| ... | ... | 600 more | ... |
 
 ## Dedupe Hotspots
 

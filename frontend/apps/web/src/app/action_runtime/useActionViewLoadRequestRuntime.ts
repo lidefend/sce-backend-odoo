@@ -1,4 +1,5 @@
 import { resolveUnifiedPageContractV2PrimaryDataSource } from '../contracts/unifiedPageContractV2';
+import { extractListFieldSemanticsFromContract } from './useActionViewContractShapeRuntime';
 
 type Dict = Record<string, unknown>;
 type StatusInput = { error: string; recordsLength: number };
@@ -157,6 +158,8 @@ export function useActionViewLoadRequestRuntime() {
       resolveRequestedFieldsFn: options.resolveRequestedFields,
     });
     const requestedFields = requestedFieldState.requestedFields;
+    const fieldSemantics = extractListFieldSemanticsFromContract(options.contract)
+      .filter((row) => requestedFields.includes(String(row.display_field || '').trim()));
 
     const missingColumnsState = options.resolveLoadMissingTreeColumnsErrorState({
       viewMode: options.viewMode,
@@ -212,6 +215,7 @@ export function useActionViewLoadRequestRuntime() {
         || requestContextRaw,
       searchTerm: options.searchTerm,
       order: options.sortLabel,
+      fieldSemantics,
     });
     const v2PrimarySource = resolveUnifiedPageContractV2PrimaryDataSource(options.contract);
     const v2PrimaryParams = (v2PrimarySource.params && typeof v2PrimarySource.params === 'object' && !Array.isArray(v2PrimarySource.params))

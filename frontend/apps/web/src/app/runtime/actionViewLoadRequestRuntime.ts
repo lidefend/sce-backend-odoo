@@ -52,6 +52,7 @@ export function buildActionViewListRequest(options: {
   contextRaw: unknown;
   searchTerm: string;
   order: string;
+  fieldSemantics?: Dict[];
 }): Dict {
   const grouped = Boolean(options.activeGroupByField);
   return {
@@ -61,6 +62,7 @@ export function buildActionViewListRequest(options: {
     domain_raw: options.domainRaw,
     need_total: true,
     need_aggregates: true,
+    field_semantics: Array.isArray(options.fieldSemantics) ? options.fieldSemantics : [],
     group_by: grouped ? options.activeGroupByField : undefined,
     group_offset: grouped ? Math.max(0, Math.trunc(options.groupWindowOffset || 0)) : 0,
     need_group_total: grouped,

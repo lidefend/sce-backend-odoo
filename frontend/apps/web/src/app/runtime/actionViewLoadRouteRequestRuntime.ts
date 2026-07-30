@@ -54,6 +54,7 @@ export function resolveLoadListRequestPayload(options: {
   contextRaw: string;
   searchTerm: string;
   order: string;
+  fieldSemantics?: Dict[];
 }): Dict {
   return buildActionViewListRequest({
     model: options.model,
@@ -70,6 +71,7 @@ export function resolveLoadListRequestPayload(options: {
     contextRaw: options.contextRaw,
     searchTerm: options.searchTerm,
     order: options.order,
+    fieldSemantics: options.fieldSemantics,
   });
 }
 

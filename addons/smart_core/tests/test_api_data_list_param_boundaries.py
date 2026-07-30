@@ -95,6 +95,144 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         self.assertEqual(result["error"]["code"], 400)
         self.assertEqual(result["error"]["message"], "limit 无效")
 
+    def test_list_field_semantics_validate_formal_source_and_translate_order(self):
+        field = lambda field_type: types.SimpleNamespace(type=field_type)
+
+        class _Model:
+            _fields = {
+                "visible_amount": field("char"),
+                "amount": field("monetary"),
+            }
+
+        model = _Model()
+        self.handler._filter_readable_fields = lambda _model, names: list(names)
+        semantics = self.handler._normalize_list_field_semantics(
+            model,
+            [{
+                "display_field": "visible_amount",
+                "value_field": "amount",
+                "aggregation_field": "amount",
+                "sort_field": "amount",
+                "filter_field": "amount",
+                "export_field": "amount",
+                "data_type": "monetary",
+                "aggregate": "sum",
+            }],
+            ["visible_amount"],
+        )
+
+        self.assertEqual(semantics["visible_amount"]["aggregation_field"], "amount")
+        self.assertEqual(
+            self.handler._translate_semantic_order("visible_amount desc, id asc", semantics),
+            "amount desc, id asc",
+        )
+
+    def test_list_field_semantics_reject_unrequested_or_non_numeric_sum(self):
+        field = lambda field_type: types.SimpleNamespace(type=field_type)
+
+        class _Model:
+            _fields = {
+                "visible_name": field("char"),
+                "name": field("char"),
+                "amount": field("monetary"),
+            }
+
+        model = _Model()
+        self.handler._filter_readable_fields = lambda _model, names: list(names)
+        semantics = self.handler._normalize_list_field_semantics(
+            model,
+            [
+                {
+                    "display_field": "missing_display",
+                    "value_field": "amount",
+                    "aggregation_field": "amount",
+                    "aggregate": "sum",
+                },
+                {
+                    "display_field": "visible_name",
+                    "value_field": "name",
+                    "aggregation_field": "name",
+                    "aggregate": "sum",
+                },
+            ],
+            ["visible_name"],
+        )
+
+        self.assertNotIn("missing_display", semantics)
+        self.assertEqual(semantics["visible_name"]["aggregate"], "none")
+        self.assertEqual(semantics["visible_name"]["aggregation_field"], "")
+
+    def test_semantic_aggregates_return_authoritative_page_and_filtered_sums(self):
+        class _Model:
+            _fields = {"currency_id": object()}
+
+            def read_group(self, domain, fields, group_by, lazy=False):
+                self.last_currency_domain = domain
+                return [{"currency_id": [1, "CNY"], "currency_id_count": 240}]
+
+        model = _Model()
+        calls = []
+        self.handler._filter_readable_fields = lambda _model, names: list(names)
+
+        def numeric(_model, domain, fields):
+            calls.append((domain, fields))
+            return {"amount": {"sum": 4790.0 if ("id", "in", [1, 2]) in domain else 83272.5}}
+
+        self.handler._build_numeric_aggregates = numeric
+        self.handler._filter_readable_fields = lambda _model, names: list(names)
+        result = self.handler._build_semantic_aggregates(
+            model,
+            [("company_id", "=", 1)],
+            [{"id": 1}, {"id": 2}],
+            {
+                "visible_amount": {
+                    "value_field": "amount",
+                    "aggregation_field": "amount",
+                    "data_type": "monetary",
+                    "currency_field": "currency_id",
+                    "aggregate": "sum",
+                },
+            },
+        )
+
+        self.assertEqual(result["visible_amount"]["page_sum"], 4790.0)
+        self.assertEqual(result["visible_amount"]["sum"], 83272.5)
+        self.assertEqual(result["visible_amount"]["currency_id"], 1)
+        self.assertEqual(calls[0][0], [("company_id", "=", 1)])
+        self.assertIn(("id", "in", [1, 2]), calls[1][0])
+
+    def test_semantic_aggregates_fail_closed_for_multiple_currencies(self):
+        class _Model:
+            _fields = {"currency_id": object()}
+
+            def read_group(self, domain, fields, group_by, lazy=False):
+                return [
+                    {"currency_id": [1, "CNY"]},
+                    {"currency_id": [2, "USD"]},
+                ]
+
+        self.handler._filter_readable_fields = lambda _model, names: list(names)
+        result = self.handler._build_semantic_aggregates(
+            _Model(),
+            [],
+            [{"id": 1}],
+            {
+                "visible_amount": {
+                    "value_field": "amount",
+                    "aggregation_field": "amount",
+                    "data_type": "monetary",
+                    "currency_field": "currency_id",
+                    "aggregate": "sum",
+                },
+            },
+        )
+
+        self.assertEqual(result["visible_amount"]["aggregate"], "none")
+        self.assertEqual(
+            result["visible_amount"]["reason_code"],
+            "MULTI_CURRENCY_AGGREGATION_PROHIBITED",
+        )
+
     def test_negative_offset_returns_bad_request(self):
         result = self.handler._op_list("x.model", {"offset": -1}, {}, False)
 

@@ -1782,3 +1782,33 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   guards. The excluded single-scroll and sticky-header experiments are not
   present; no overflow, scroll-container, sticky-position, database, ACL,
   record-rule, navigation, or business-data behavior is changed.
+
+# Full-list field semantic integrity convergence — 2026-07-30
+
+- Branch / anchor: `fix/fe-r1-single-vertical-scroll` from
+  `779db55b3c119c0c45cd9618fcad2408326e22d3`.
+- Formal Product Layer: P0 platform contract mechanism plus P1 construction
+  industry field semantics; Layer Target: native list semantic normalization,
+  authoritative aggregation, and generic frontend contract consumption;
+  Modules: `addons/smart_core`, `addons/smart_construction_core`,
+  `frontend/apps/web`, and `scripts/verify`.
+- Reason: historical compatibility projection fields preserve visible values
+  but can erase monetary, numeric, date, selection, and relation semantics
+  between the native model and the list contract. The first confirmed symptom
+  is a missing page/filtered total for `tender.doc.purchase`.
+- Standard vs User-Specific: the contract protocol, aggregation execution, and
+  frontend rendering rules are platform mechanisms. Construction models own
+  their explicit projection-to-formal-field mapping. No customer identifier,
+  tenant data, or page-specific frontend dictionary is allowed.
+- Why Here / Why Not Elsewhere: `smart_core` must transport and enforce generic
+  semantic declarations without knowing construction fields;
+  `smart_construction_core` must declare its formal value and aggregation
+  sources. The frontend only renders the declared result and must not infer
+  numeric meaning from Chinese labels or formatted strings. P2 customer data,
+  P3 runtime preferences, and P4 repair scripts are not semantic authorities.
+- Blast Radius: all published native list contracts and their sort, filter,
+  aggregate, and export field identities. List visual structure, scrolling,
+  ACLs, record rules, company/project scopes, business data, and production
+  runtime are excluded. Validation must reconcile page and filtered totals
+  under the same authorized domain and fail closed on undeclared lossy
+  projections.

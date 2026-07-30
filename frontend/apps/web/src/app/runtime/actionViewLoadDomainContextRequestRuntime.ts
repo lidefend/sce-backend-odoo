@@ -57,6 +57,7 @@ export function resolveLoadRequestPayloadState(options: {
   requestContextRaw: string;
   searchTerm: string;
   order: string;
+  fieldSemantics?: Dict[];
 }): Dict {
   return resolveLoadListRequestPayload({
     model: options.model,
@@ -73,5 +74,6 @@ export function resolveLoadRequestPayloadState(options: {
     contextRaw: options.requestContextRaw,
     searchTerm: options.searchTerm,
     order: options.order,
+    fieldSemantics: options.fieldSemantics,
   });
 }
