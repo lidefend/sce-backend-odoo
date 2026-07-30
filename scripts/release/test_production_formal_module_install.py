@@ -55,8 +55,10 @@ def valid_state(*, installed_targets: tuple[str, ...] = ()) -> dict:
             "depends": list(tool.EXPECTED_DEPENDENCIES[name]),
             "data": list(tool.EXPECTED_DATA_FILES[name]),
             "demo": [],
+            "post_init_hook": "",
             "xml_operations": [],
         }
+    manifests["smart_construction_seed"]["post_init_hook"] = "post_init_hook"
     manifests["smart_construction_seed"]["xml_operations"] = [
         {
             "file": "data/sc_seed_dictionary_contract.xml",
@@ -65,13 +67,6 @@ def valid_state(*, installed_targets: tuple[str, ...] = ()) -> dict:
             "name": "",
         }
         for _index in range(5)
-    ] + [
-        {
-            "file": "data/sc_seed_tax.xml",
-            "kind": "function",
-            "model": "construction.contract",
-            "name": "_sc_ensure_contract_tax_seeds",
-        }
     ]
     return {
         "database": "sc_production",

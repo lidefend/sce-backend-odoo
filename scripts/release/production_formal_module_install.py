@@ -59,7 +59,6 @@ EXPECTED_DATA_FILES = {
     ),
     "smart_construction_seed": (
         "data/sc_seed_dictionary_contract.xml",
-        "data/sc_seed_tax.xml",
     ),
     "sc_norm_engine": (
         "security/ir.model.access.csv",
@@ -288,14 +287,8 @@ def validate_source_boundary(state: Mapping[str, Any]) -> tuple[str, ...]:
         len(seed_records) != 5
         or {item.get("model") for item in seed_records} != {"sc.dictionary"}
         or seed_functions
-        != [
-            {
-                "file": "data/sc_seed_tax.xml",
-                "kind": "function",
-                "model": "construction.contract",
-                "name": "_sc_ensure_contract_tax_seeds",
-            }
-        ]
+        or manifests["smart_construction_seed"].get("post_init_hook")
+        != "post_init_hook"
     ):
         raise FormalModuleInstallError(
             "smart_construction_seed data boundary differs from the approved baseline"

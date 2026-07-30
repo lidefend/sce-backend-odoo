@@ -62,6 +62,7 @@ def _manifest_state(module_name: str) -> dict:
         "depends": list(manifest.get("depends", [])),
         "data": list(manifest.get("data", [])),
         "demo": list(manifest.get("demo", [])),
+        "post_init_hook": str(manifest.get("post_init_hook") or ""),
         "xml_operations": xml_operations,
     }
 

@@ -330,18 +330,6 @@ class ConstructionContract(models.Model):
         return f"{float(amount):g}%"
 
     @api.model
-    def _sc_bind_xmlid(self, xmlid, record):
-        module, name = str(xmlid or "").split(".", 1)
-        Imd = self.env["ir.model.data"].sudo()
-        row = Imd.search([("module", "=", module), ("name", "=", name)], limit=1)
-        vals = {"model": record._name, "res_id": record.id, "noupdate": True}
-        if row:
-            row.write(vals)
-        else:
-            vals.update({"module": module, "name": name})
-            Imd.create(vals)
-
-    @api.model
     def _sc_contract_tax_group(self, company):
         Group = self.env["account.tax.group"].sudo().with_context(active_test=False)
         group = Group.search([("company_id", "=", company.id), ("name", "=", "合同税率")], limit=1)
@@ -357,12 +345,14 @@ class ConstructionContract(models.Model):
 
     @api.model
     def _sc_ensure_contract_tax_seeds(self):
-        """Create missing references without normalizing operator-owned values."""
+        """Create defaults only for explicitly registered business companies."""
         Tax = self.env["account.tax"].sudo().with_context(active_test=False)
-        Company = self.env["res.company"].sudo()
-        main_company = self.env.ref("base.main_company", raise_if_not_found=False)
-        ICP = self.env["ir.config_parameter"].sudo()
-        for company in Company.search([]):
+        registrations = self.env["sc.tenant.company.registration"].sudo().search(
+            [("active", "=", True)]
+        )
+        for company in registrations.mapped("company_id").filtered(
+            lambda candidate: not candidate.is_platform_bootstrap_company
+        ):
             country = company.account_fiscal_country_id or company.partner_id.country_id
             if not country:
                 country = self.env.ref("base.cn", raise_if_not_found=False)
@@ -376,18 +366,8 @@ class ConstructionContract(models.Model):
                     ("price_include", "=", False),
                 ]
                 candidates = Tax.search(domain, order="active desc, id asc")
-                owned = Tax.browse()
-                if main_company and company.id == main_company.id:
-                    owned = self.env.ref(
-                        f"smart_construction_seed.tax_{amount:g}",
-                        raise_if_not_found=False,
-                    )
-                if owned:
-                    # Product-owned values become operator-owned after install.
-                    # Never restore names, rates, groups, company, or active state.
-                    continue
                 if candidates:
-                    # Never adopt or rewrite a record lacking our XML-ID.
+                    # Never adopt or rewrite an operator-owned record.
                     continue
                 group = self._sc_contract_tax_group(company)
                 vals = {
@@ -402,15 +382,7 @@ class ConstructionContract(models.Model):
                 }
                 if country:
                     vals["country_id"] = country.id
-                tax = Tax.create(vals)
-                if main_company and company.id == main_company.id:
-                    self._sc_bind_xmlid(f"smart_construction_seed.tax_{amount:g}", tax)
-                    ICP.set_param(f"sc.seed.tax.none.{amount}", str(tax.id))
-                    if float(amount) == 9.0:
-                        self._sc_bind_xmlid("smart_construction_seed.tax_sale_9", tax)
-                    if float(amount) == 13.0:
-                        self._sc_bind_xmlid("smart_construction_seed.tax_purchase_13", tax)
-        ICP.set_param("sc.seed.tax_seeded", "1")
+                Tax.create(vals)
         return True
 
     @api.model
