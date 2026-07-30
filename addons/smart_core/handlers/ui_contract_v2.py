@@ -647,6 +647,16 @@ class UiContractV2Handler(BaseIntentHandler):
         self._apply_field_policies_to_v2_status(contract_v2, source_contract)
         self._ensure_native_layout_widget_status_visible(contract_v2)
         self._apply_legacy_visible_list_layout(contract_v2, source_contract)
+        self._project_v2_source_policies(contract_v2, source_contract)
+        contract_v2 = self._apply_extension_unified_page_contract_normalizers(
+            contract_v2,
+            source_contract=source_contract,
+            view_type=str(view_type or "").strip().lower(),
+            client_type=client_type,
+            delivery_profile=delivery_profile,
+        )
+        self._apply_business_config_form_groups_to_v2(contract_v2, source_contract=source_contract)
+        self._enforce_business_list_config_projection(contract_v2, source_contract)
         hook_payload = call_extension_hook_first(
             self.env,
             "smart_core_finalize_unified_page_contract_v2",
@@ -667,16 +677,6 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         if isinstance(hook_payload, dict):
             contract_v2 = dict(hook_payload)
-        self._project_v2_source_policies(contract_v2, source_contract)
-        contract_v2 = self._apply_extension_unified_page_contract_normalizers(
-            contract_v2,
-            source_contract=source_contract,
-            view_type=str(view_type or "").strip().lower(),
-            client_type=client_type,
-            delivery_profile=delivery_profile,
-        )
-        self._apply_business_config_form_groups_to_v2(contract_v2, source_contract=source_contract)
-        self._enforce_business_list_config_projection(contract_v2, source_contract)
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
