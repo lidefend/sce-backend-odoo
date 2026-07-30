@@ -75,7 +75,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 2
-    print("[frontend_release_navigation_policy_guard] PASS roles=4 released_leaf_identities=70")
+    print("[frontend_release_navigation_policy_guard] PASS roles=4 released_leaf_identities=71")
     return 0
 
 

@@ -33,7 +33,7 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
     def test_navigation_missing_unexpected_duplicate_is_rejected(self):
         base = {
             "git_sha": SHA,
-            "total": {"result": "PASS", "expected_count": 70},
+            "total": {"result": "PASS", "expected_count": 71},
             "roles": {
                 role: {
                     "expected_count": count,
@@ -43,7 +43,7 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
                     "unexpected_leaf_keys": [],
                     "duplicate_leaf_keys": [],
                 }
-                for role, count in {"finance": 42, "project_a_member": 9, "pm": 14, "owner": 5}.items()
+                for role, count in {"finance": 43, "project_a_member": 9, "pm": 14, "owner": 5}.items()
             },
         }
         validate_navigation(base, SHA)

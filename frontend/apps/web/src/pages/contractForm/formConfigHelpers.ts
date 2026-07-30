@@ -7,6 +7,11 @@ import {
 } from './fieldUtils';
 import { nativeLayoutNodeType, nativeNodeFieldInfo, type NativeLayoutLikeNode } from './nativeLayoutUtils';
 
+export function routeQueryText(query: Record<string, unknown>, key: string) {
+  const value = query[key];
+  return String(Array.isArray(value) ? value[0] || '' : value || '').trim();
+}
+
 export function normalizeFormConfigOperationLogEntries(raw: unknown, operator = '当前用户') {
   if (!Array.isArray(raw)) return [];
   const allowedStatus = new Set<FormConfigOperationLogEntry['status']>(['pending', 'saved', 'reverted', 'done']);

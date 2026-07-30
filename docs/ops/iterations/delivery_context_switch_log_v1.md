@@ -1846,3 +1846,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   rollback-only probes in an isolated customer UAT database. No business value,
   production database, DAILY database, 18093 deployment, ACL, record rule, or
   product contract is modified.
+## 2026-07-31 — CANDIDATE-GATE-CLOSURE-01
+
+- Branch: `fix/candidate-gate-closure-01`
+- Starting product commit: `733b61647495e0c0264204fdf65dbbcdc1b4b3ae`
+- Formal Product Layer: P1 construction industry product navigation plus generic frontend runtime organization
+- Layer Target: finance release navigation projection and frontend complexity locks
+- Module: `smart_construction_core` finance surface, contract form route shell, and session store
+- Reason: publish the already-authorized historical payment read-only entry to finance and restore the candidate line-count gates without changing behavior
+- Standard vs User-Specific: generic product behavior; no customer identifier, payload, or customer-specific branch
+- Why Here / Why Not Elsewhere: the role projection belongs to the industry product policy; type and pure query helpers belong beside their generic frontend domains rather than customer modules or release exceptions
+- Blast Radius: finance navigation adds one existing read-only menu identity; contract form and session changes only move pure helpers/types; no ACL, workflow, payload, database, `main`, protection, or production mutation
+- Validation: finance projection unit guard, role/authorization regression, frontend lint/strict/build/unit gates, complexity locks, four required checks on the new SHA, and dual-remote candidate parity

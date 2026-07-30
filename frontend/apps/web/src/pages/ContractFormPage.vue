@@ -413,6 +413,7 @@ import {
   normalizeLowCodeContractListRows,
   contractFieldSequenceFromOrder,
   readableFallbackFieldLabel,
+  routeQueryText,
   resolveFormDesignFieldLabel,
   resolveSelectedFormSettingsFieldGroupTitle,
   type LowCodeLayoutDraftRow,
@@ -674,11 +675,7 @@ const {
   router,
   currentQuery: () => route.query,
 });
-function resolveWorkspaceContextQuery() { return readWorkspaceContext(route.query as Record<string, unknown>); }
-function designerRouteQueryText(key: string) {
-  const value = route.query[key];
-  return String(Array.isArray(value) ? value[0] || '' : value || '').trim();
-}
+const designerRouteQueryText = (key: string) => routeQueryText(route.query as Record<string, unknown>, key);
 const status = ref<UiStatus>('loading');
 const isComponentActive = ref(true);
 const instanceRouteIdentity = ref('');
@@ -718,7 +715,7 @@ const {
   isActive: () => isComponentActive.value,
   modelName: () => model.value,
   recordId: () => recordId.value,
-  resolveWorkspaceContextQuery: () => resolveWorkspaceContextQuery(),
+  resolveWorkspaceContextQuery: () => readWorkspaceContext(route.query as Record<string, unknown>),
   router,
   selectedProjectId: () => Number(session.projectContext?.selected?.id || 0) || 0,
 });
@@ -996,7 +993,7 @@ const {
   isProjectQuickIntakeMode: () => isProjectQuickIntakeMode.value,
   isProjectStandardIntakeMode: () => isProjectStandardIntakeMode.value,
   modelName: () => model.value,
-  resolveWorkspaceContextQuery: () => resolveWorkspaceContextQuery(),
+  resolveWorkspaceContextQuery: () => readWorkspaceContext(route.query as Record<string, unknown>),
   returnToProjectIntakeList: (createdId) => returnToProjectIntakeList(createdId),
   router,
 });
@@ -1009,7 +1006,7 @@ const {
   currentQuery: () => route.query as Record<string, unknown>,
   isProjectIntakeCreateMode: () => isProjectIntakeCreateMode.value,
   resolveLandingPath: (fallback) => session.resolveLandingPath(fallback),
-  resolveWorkspaceContextQuery: () => resolveWorkspaceContextQuery(),
+  resolveWorkspaceContextQuery: () => readWorkspaceContext(route.query as Record<string, unknown>),
   router,
   searchFilters: () => searchFilters.value,
   setActiveFilterKey: (key) => {

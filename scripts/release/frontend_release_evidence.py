@@ -291,15 +291,15 @@ def validate_frontend_reports(files: dict[str, Path], sha: str, tree: str) -> di
     total = navigation.get("total") or {}
     if (
         total.get("result") != "PASS"
-        or int(total.get("expected_count", -1)) != 70
-        or int(total.get("actual_count", -1)) != 70
-        or int(total.get("matched_count", -1)) != 70
+        or int(total.get("expected_count", -1)) != 71
+        or int(total.get("actual_count", -1)) != 71
+        or int(total.get("matched_count", -1)) != 71
         or total.get("missing_leaf_keys")
         or total.get("unexpected_leaf_keys")
         or total.get("duplicate_leaf_keys")
         or total.get("invalid_leaf_keys")
     ):
-        fail("NAVIGATION_IDENTITY_NOT_70_OF_70")
+        fail("NAVIGATION_IDENTITY_NOT_71_OF_71")
     accessibility = payloads["frontend/accessibility.json"]
     if (
         accessibility.get("result") != "PASS"

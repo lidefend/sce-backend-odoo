@@ -45,9 +45,9 @@ def validate_navigation(report: dict[str, Any], expected_sha: str) -> dict[str, 
     require_sha(report, expected_sha, "navigation")
     total = report.get("total") or {}
     roles = report.get("roles") or {}
-    if total.get("result") != "PASS" or int(total.get("expected_count") or 0) != 70:
-        raise EvidenceError("NAVIGATION_NOT_70_OF_70")
-    for role, count in {"finance": 42, "project_a_member": 9, "pm": 14, "owner": 5}.items():
+    if total.get("result") != "PASS" or int(total.get("expected_count") or 0) != 71:
+        raise EvidenceError("NAVIGATION_NOT_71_OF_71")
+    for role, count in {"finance": 43, "project_a_member": 9, "pm": 14, "owner": 5}.items():
         row = roles.get(role) or {}
         if (
             int(row.get("expected_count") or 0) != count

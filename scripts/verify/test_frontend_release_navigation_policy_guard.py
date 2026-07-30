@@ -30,6 +30,19 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         policies["finance"]["primary_menu_xmlids"] = []
         self.assertTrue(any("finance: release projection differs" in row for row in validate(manifest, policies)))
 
+    def test_finance_historical_payment_entry_is_released_exactly_once(self):
+        manifest, policies = _fixture()
+        historical_menu = "smart_construction_core.menu_sc_historical_payment_fact"
+        manifest["roles"]["finance"] = {
+            "expected_count": 2,
+            "leaf_keys": [
+                "x.menu_finance|x.action_finance|x.model",
+                f"{historical_menu}|smart_construction_core.action_sc_historical_payment_fact|sc.historical.payment.fact",
+            ],
+        }
+        policies["finance"]["primary_menu_xmlids"].append(historical_menu)
+        self.assertEqual(validate(manifest, policies), [])
+
     def test_contextual_or_denied_overlap_fails_closed(self):
         manifest, policies = _fixture()
         policies["owner"]["contextual_menu_xmlids"] = ["x.menu_owner"]

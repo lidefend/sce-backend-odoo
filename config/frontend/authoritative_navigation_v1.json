@@ -8,7 +8,7 @@
   "identity": "menu_xmlid|action_xmlid|model",
   "roles": {
     "finance": {
-      "expected_count": 42,
+      "expected_count": 43,
       "leaf_keys": [
         "smart_construction_core.menu_payment_request_receive|smart_construction_core.action_payment_request_receive|payment.request",
         "smart_construction_core.menu_sc_bid_deposit_pay|smart_construction_core.action_sc_bid_deposit_pay|sc.expense.claim",
@@ -31,6 +31,7 @@
         "smart_construction_core.menu_sc_finance_project_counterparty_position|smart_construction_core.action_sc_finance_project_counterparty_position|sc.finance.project.counterparty.position",
         "smart_construction_core.menu_sc_fund_account_between_user|smart_construction_core.action_sc_fund_account_between_user|sc.fund.account.operation",
         "smart_construction_core.menu_sc_fund_daily_user_report|smart_construction_core.action_sc_fund_daily_user_report|sc.fund.account.operation",
+        "smart_construction_core.menu_sc_historical_payment_fact|smart_construction_core.action_sc_historical_payment_fact|sc.historical.payment.fact",
         "smart_construction_core.menu_sc_invoice_application_user|smart_construction_core.action_sc_invoice_application_user|sc.invoice.registration",
         "smart_construction_core.menu_sc_invoice_input|smart_construction_core.action_sc_invoice_input|sc.invoice.registration",
         "smart_construction_core.menu_sc_invoice_prepaid_tax_user|smart_construction_core.action_sc_invoice_prepaid_tax_user|sc.invoice.registration",

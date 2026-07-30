@@ -197,9 +197,9 @@ class FrontendReleaseEvidenceBundleTests(unittest.TestCase):
                 **common,
                 "total": {
                     "result": "PASS",
-                    "expected_count": 70,
-                    "actual_count": 70,
-                    "matched_count": 70,
+                    "expected_count": 71,
+                    "actual_count": 71,
+                    "matched_count": 71,
                     "missing_leaf_keys": [],
                     "unexpected_leaf_keys": [],
                     "duplicate_leaf_keys": [],
