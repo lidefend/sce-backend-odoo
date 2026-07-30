@@ -417,6 +417,11 @@ Codex 的责任是 **定位 → 修复 → 重试**。
   * 仅为当前合规候选分支的精确远端 SHA 派发既有 required-check 工作流；
   * 工作区、当前 HEAD 或远端分支任一漂移时零派发退出；
   * 不修改 `main`、保护规则、产品数据或生产环境。
+* `make candidate.mirror.gitee CANDIDATE_EXPECTED_SHA=<full-sha>`
+
+  * 仅把 GitHub 已存在且与本地 HEAD 完全一致的合规候选分支普通快进到
+    Gitee 同名候选分支；
+  * 禁止非快进、禁止写 `main`、禁止从 Gitee 反向覆盖 GitHub。
 
 > 若某 target 尚未实现，**必须先补 Makefile 封装**，
 > Codex 不得绕过直接调用底层命令。

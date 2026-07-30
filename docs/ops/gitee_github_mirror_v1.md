@@ -10,6 +10,9 @@
   GitHub。唯一例外是仓库所有者逐次明确授权的历史治理切换，且只能通过
   `make main.cutover.controlled` 使用完整 SHA 精确 lease、仓库外恢复 bundle、
   双远端配对回退和保护规则恢复执行；该例外不授权生产部署。
+- 发布裁决前可通过 `make candidate.mirror.gitee` 将 GitHub 已存在的合规候选
+  普通快进到 Gitee 同名候选分支，用于双远端 SHA 取证；它不能写入 `main`，
+  也不能形成第二开发入口。
 
 ## 凭据隔离
 

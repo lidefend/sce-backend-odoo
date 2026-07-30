@@ -353,7 +353,7 @@ workspace.worktree.cleanup: guard.prod.forbid
 	@python3 scripts/ops/safe_worktree_cleanup.py --path "$(CLEAN_WORKTREE)" $(if $(filter 1,$(APPLY)),--apply,)
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch
+.PHONY: main.sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee
 
 main.sync: guard.prod.forbid
 	@echo "[main.sync] checkout main + fast-forward pull"
@@ -378,6 +378,26 @@ candidate.required_checks.dispatch: guard.prod.forbid
 	  gh workflow run "$$workflow" --ref "$$branch"; \
 	done; \
 	echo "[candidate.required_checks.dispatch] PASS branch=$$branch sha=$$expected workflows=3"; \
+	'
+
+candidate.mirror.gitee: guard.prod.forbid
+	@bash -c '\
+	set -euo pipefail; \
+	branch="$$(git branch --show-current)"; \
+	echo "$$branch" | grep -Eq "$(CODEX_ALLOWED_WRITE_BRANCH_REGEX)" || { echo "[candidate.mirror.gitee] BLOCKED invalid_branch"; exit 2; }; \
+	expected="$(CANDIDATE_EXPECTED_SHA)"; \
+	[[ "$$expected" =~ ^[0-9a-f]{40}$$ ]] || { echo "[candidate.mirror.gitee] BLOCKED full_expected_sha_required"; exit 2; }; \
+	[ -z "$$(git status --porcelain)" ] || { echo "[candidate.mirror.gitee] BLOCKED worktree_not_clean"; exit 2; }; \
+	[ "$$(git rev-parse HEAD)" = "$$expected" ] || { echo "[candidate.mirror.gitee] BLOCKED local_sha_mismatch"; exit 2; }; \
+	github_sha="$$(git ls-remote origin "refs/heads/$$branch" | awk "{print \$$1}")"; \
+	[ "$$github_sha" = "$$expected" ] || { echo "[candidate.mirror.gitee] BLOCKED github_candidate_mismatch"; exit 2; }; \
+	gitee_sha="$$(git ls-remote gitee-mirror "refs/heads/$$branch" | awk "{print \$$1}")"; \
+	if [ -n "$$gitee_sha" ]; then \
+	  git merge-base --is-ancestor "$$gitee_sha" "$$expected" || { echo "[candidate.mirror.gitee] BLOCKED non_fast_forward"; exit 2; }; \
+	fi; \
+	git push gitee-mirror "$$expected:refs/heads/$$branch"; \
+	[ "$$(git ls-remote gitee-mirror "refs/heads/$$branch" | awk "{print \$$1}")" = "$$expected" ] || { echo "[candidate.mirror.gitee] BLOCKED post_push_mismatch"; exit 2; }; \
+	echo "[candidate.mirror.gitee] PASS branch=$$branch sha=$$expected mode=fast_forward_only"; \
 	'
 
 main.cutover.controlled: guard.prod.forbid
