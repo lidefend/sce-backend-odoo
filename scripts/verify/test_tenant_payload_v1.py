@@ -226,6 +226,16 @@ class TenantPayloadV1Tests(unittest.TestCase):
             with self.assertRaisesRegex(payload_v1.TenantPayloadError, "RELATIONSHIP_SUMMARY_MISMATCH"):
                 self._validate(root)
 
+    def test_odoo_action_uses_session_exclusive_lock_across_chunk_commits(self):
+        source = (ROOT / "scripts/tenant_payload/odoo_action.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("pg_try_advisory_lock", source)
+        self.assertIn("TPV1_EXCLUSIVE_IMPORT_LOCK_UNAVAILABLE", source)
+        self.assertIn("pg_advisory_unlock", source)
+        self.assertIn("TPV1_EXCLUSIVE_IMPORT_LOCK_RELEASE_FAILED", source)
+        self.assertNotIn("pg_try_advisory_xact_lock", source)
+
 
 if __name__ == "__main__":
     unittest.main()

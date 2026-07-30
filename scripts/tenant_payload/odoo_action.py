@@ -28,6 +28,14 @@ allowed_databases = {item.strip() for item in _required("SC_TENANT_PAYLOAD_DB_AL
 if env.cr.dbname not in allowed_databases:
     raise UserError("TPV1_DATABASE_NOT_ALLOWLISTED")
 
+lock_namespace = f"tenant_payload_v1:{env.cr.dbname}"
+env.cr.execute(
+    "SELECT pg_try_advisory_lock(hashtext(%s), hashtext(%s))",
+    (lock_namespace, tenant_key),
+)
+if not bool(env.cr.fetchone()[0]):
+    raise UserError("TPV1_EXCLUSIVE_IMPORT_LOCK_UNAVAILABLE")
+
 bound_tenant = str(env["ir.config_parameter"].get_param("sc.tenant.bound_tenant_key", "") or "").strip()
 if bound_tenant != tenant_key:
     raise UserError("TPV1_DATABASE_TENANT_UNAUTHORIZED")
@@ -92,4 +100,12 @@ except (TenantPayloadImportError, AccessError, UserError) as exc:
     print(json.dumps({"schema_version": "tenant_payload_v1", "status": "BLOCKER", "rule": str(exc)}, sort_keys=True))
     raise
 
+env.cr.execute(
+    "SELECT pg_advisory_unlock(hashtext(%s), hashtext(%s))",
+    (lock_namespace, tenant_key),
+)
+if not bool(env.cr.fetchone()[0]):
+    raise UserError("TPV1_EXCLUSIVE_IMPORT_LOCK_RELEASE_FAILED")
+report["exclusive_import_lock"] = True
+report["import_lock_released"] = True
 print(json.dumps(report, ensure_ascii=True, sort_keys=True))

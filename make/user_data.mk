@@ -31,7 +31,7 @@ demo.ownership_cleanup.report: guard.prod.forbid check-compose-project check-com
 
 demo.ownership_cleanup.apply: guard.prod.forbid check-compose-project check-compose-env
 	@DEMO_OWNERSHIP_ACTION=apply $(MAKE) --no-print-directory odoo.shell.exec < scripts/ops/demo_ownership_cleanup.py
-.PHONY: tenant.payload.validate tenant.payload.operator.grant tenant.payload.plan tenant.payload.import tenant.payload.verify tenant.payload.filestore.reconcile tenant.payload.recovery.backup tenant.payload.recovery.restore verify.tenant.payload.permission audit.tenant.boundary.legacy_carriers audit.tenant.boundary.history_counts
+.PHONY: tenant.payload.validate tenant.payload.operator.grant tenant.payload.plan tenant.payload.import tenant.payload.verify tenant.payload.filestore.reconcile tenant.payload.recovery.backup tenant.payload.recovery.restore tenant.payload.rehearsal.up tenant.payload.rehearsal.install tenant.payload.rehearsal.shell tenant.payload.rehearsal.sql tenant.payload.rehearsal.down verify.tenant.payload.permission audit.tenant.boundary.legacy_carriers audit.tenant.boundary.history_counts
 
 audit.tenant.boundary.legacy_carriers: guard.prod.forbid
 	@test -n "$(SC_CUSTOMER_REPOSITORY_ROOT)" || { echo "SC_CUSTOMER_REPOSITORY_ROOT is required for the final carrier inventory" >&2; exit 2; }
@@ -76,6 +76,48 @@ tenant.payload.recovery.backup: guard.prod.forbid check-compose-project check-co
 
 tenant.payload.recovery.restore: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/tenant_payload/paired_recovery.sh restore
+
+tenant.payload.rehearsal.up: guard.prod.forbid
+	@[[ "$(COMPOSE_PROJECT_NAME)" =~ ^sc-locked-p002r-[a-z0-9-]+$$ ]] || { echo "TPV1_REHEARSAL_PROJECT_INVALID" >&2; exit 2; }
+	@[[ "$(DB_NAME)" =~ ^sc_p002r_[a-z0-9_]+$$ ]] || { echo "TPV1_REHEARSAL_DATABASE_INVALID" >&2; exit 2; }
+	@test -d "$(SC_CUSTOMER_ADDONS_ROOT)" || { echo "SC_CUSTOMER_ADDONS_ROOT is invalid" >&2; exit 2; }
+	@DB_CI="$(DB_NAME)" SC_CUSTOMER_ADDONS_ROOT="$(SC_CUSTOMER_ADDONS_ROOT)" \
+		$(COMPOSE_BIN) -p "$(COMPOSE_PROJECT_NAME)" -f docker-compose.ci.yml \
+		-f docker-compose.tenant-payload-rehearsal.yml up -d --wait db redis odoo
+
+tenant.payload.rehearsal.install: guard.prod.forbid
+	@[[ "$(COMPOSE_PROJECT_NAME)" =~ ^sc-locked-p002r-[a-z0-9-]+$$ ]] || { echo "TPV1_REHEARSAL_PROJECT_INVALID" >&2; exit 2; }
+	@[[ "$(DB_NAME)" =~ ^sc_p002r_[a-z0-9_]+$$ ]] || { echo "TPV1_REHEARSAL_DATABASE_INVALID" >&2; exit 2; }
+	@test -n "$(TENANT_REHEARSAL_MODULES)" || { echo "TENANT_REHEARSAL_MODULES is required" >&2; exit 2; }
+	@DB_CI="$(DB_NAME)" SC_CUSTOMER_ADDONS_ROOT="$(SC_CUSTOMER_ADDONS_ROOT)" \
+		$(COMPOSE_BIN) -p "$(COMPOSE_PROJECT_NAME)" -f docker-compose.ci.yml \
+		-f docker-compose.tenant-payload-rehearsal.yml run --rm --no-deps -T \
+		--entrypoint odoo odoo -c /var/lib/odoo/odoo.conf -d "$(DB_NAME)" \
+		-i "$(TENANT_REHEARSAL_MODULES)" --without-demo=all --workers=0 \
+		--max-cron-threads=0 --no-http --stop-after-init
+
+tenant.payload.rehearsal.shell: guard.prod.forbid
+	@[[ "$(COMPOSE_PROJECT_NAME)" =~ ^sc-locked-p002r-[a-z0-9-]+$$ ]] || { echo "TPV1_REHEARSAL_PROJECT_INVALID" >&2; exit 2; }
+	@[[ "$(DB_NAME)" =~ ^sc_p002r_[a-z0-9_]+$$ ]] || { echo "TPV1_REHEARSAL_DATABASE_INVALID" >&2; exit 2; }
+	@DB_CI="$(DB_NAME)" SC_CUSTOMER_ADDONS_ROOT="$(SC_CUSTOMER_ADDONS_ROOT)" \
+		$(COMPOSE_BIN) -p "$(COMPOSE_PROJECT_NAME)" -f docker-compose.ci.yml \
+		-f docker-compose.tenant-payload-rehearsal.yml exec -T odoo \
+		odoo shell -c /var/lib/odoo/odoo.conf -d "$(DB_NAME)" --no-http
+
+tenant.payload.rehearsal.sql: guard.prod.forbid
+	@[[ "$(COMPOSE_PROJECT_NAME)" =~ ^sc-locked-p002r-[a-z0-9-]+$$ ]] || { echo "TPV1_REHEARSAL_PROJECT_INVALID" >&2; exit 2; }
+	@[[ "$(DB_NAME)" =~ ^sc_p002r_[a-z0-9_]+$$ ]] || { echo "TPV1_REHEARSAL_DATABASE_INVALID" >&2; exit 2; }
+	@DB_CI="$(DB_NAME)" SC_CUSTOMER_ADDONS_ROOT="$(SC_CUSTOMER_ADDONS_ROOT)" \
+		$(COMPOSE_BIN) -p "$(COMPOSE_PROJECT_NAME)" -f docker-compose.ci.yml \
+		-f docker-compose.tenant-payload-rehearsal.yml exec -T db \
+		psql -X -v ON_ERROR_STOP=1 -U "$(DB_USER)" -d "$(DB_NAME)"
+
+tenant.payload.rehearsal.down: guard.prod.forbid
+	@[[ "$(COMPOSE_PROJECT_NAME)" =~ ^sc-locked-p002r-[a-z0-9-]+$$ ]] || { echo "TPV1_REHEARSAL_PROJECT_INVALID" >&2; exit 2; }
+	@DB_CI="$(DB_NAME)" SC_CUSTOMER_ADDONS_ROOT="$(SC_CUSTOMER_ADDONS_ROOT)" \
+		$(COMPOSE_BIN) -p "$(COMPOSE_PROJECT_NAME)" -f docker-compose.ci.yml \
+		-f docker-compose.tenant-payload-rehearsal.yml down \
+		$(if $(filter 1,$(REMOVE_TENANT_REHEARSAL_VOLUMES)),-v,)
 
 verify.tenant.payload.permission: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/tenant_payload/run_permission_probe.sh

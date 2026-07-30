@@ -1,0 +1,6 @@
+services:
+  odoo:
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./config/odoo.ci.conf:/var/lib/odoo/odoo.conf:ro
+      - ${SC_CUSTOMER_ADDONS_ROOT:?SC_CUSTOMER_ADDONS_ROOT is required}:/mnt/customer-addons:ro
