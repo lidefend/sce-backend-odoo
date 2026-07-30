@@ -199,9 +199,32 @@ export function extractListFieldSemanticsFromContract(contract: unknown): Dict[]
   const typed = (contract || {}) as Dict;
   const views = (typed.views || {}) as Dict;
   const tree = (views.tree || views.list || {}) as Dict;
-  const schema = tree.columns_schema || tree.columnsSchema;
-  if (!Array.isArray(schema)) return [];
-  return (schema as Dict[])
+  const schemas: Dict[] = [];
+  const legacySchema = tree.columns_schema || tree.columnsSchema;
+  if (Array.isArray(legacySchema)) schemas.push(...legacySchema as Dict[]);
+
+  const layout = (typed.layoutContract || {}) as Dict;
+  const containers = Array.isArray(layout.containerTree) ? layout.containerTree as Dict[] : [];
+  containers.forEach((container) => {
+    const widgets = Array.isArray(container.widgetList) ? container.widgetList as Dict[] : [];
+    widgets.forEach((widget) => {
+      const config = (widget.componentConfig || {}) as Dict;
+      const fieldCode = String(
+        widget.fieldCode
+        || config.display_field
+        || config.name
+        || '',
+      ).trim();
+      if (!fieldCode || String(widget.widgetType || '').trim() !== 'table') return;
+      schemas.push({
+        ...config,
+        name: fieldCode,
+        type: config.data_type || config.fieldType,
+      });
+    });
+  });
+
+  const normalized = schemas
     .map((row) => {
       const displayField = String(row.display_field || row.name || '').trim();
       const valueField = String(row.value_field || row.name || '').trim();
@@ -221,6 +244,12 @@ export function extractListFieldSemanticsFromContract(contract: unknown): Dict[]
       };
     })
     .filter(Boolean) as Dict[];
+  return Array.from(
+    normalized.reduce<Map<string, Dict>>((rows, row) => {
+      rows.set(String(row.display_field || ''), row);
+      return rows;
+    }, new Map()).values(),
+  );
 }
 
 export function useActionViewContractShapeRuntime(options: UseActionViewContractShapeRuntimeOptions) {
