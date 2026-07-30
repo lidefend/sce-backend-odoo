@@ -11,10 +11,11 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import secrets
 from decimal import Decimal, InvalidOperation
 
 from odoo import api, fields, models, tools
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 EXTENSION_TYPES = (
@@ -46,12 +47,17 @@ class UITenantExtensionField(models.Model):
 
     name = fields.Char(compute="_compute_name", store=True)
     database_scope = fields.Char(required=True, readonly=True, index=True)
-    company_id = fields.Many2one(
-        "res.company",
+    tenant_registration_id = fields.Many2one(
+        "sc.tenant.company.registration",
         required=True,
         index=True,
         ondelete="cascade",
-        default=lambda self: self.env.company,
+    )
+    company_id = fields.Many2one(
+        related="tenant_registration_id.company_id",
+        store=True,
+        index=True,
+        readonly=True,
     )
     model_id = fields.Many2one(
         "ir.model",
@@ -220,6 +226,7 @@ class UITenantExtensionField(models.Model):
 
     @api.constrains(
         "database_scope",
+        "tenant_registration_id",
         "company_id",
         "model_id",
         "extension_key",
@@ -241,6 +248,11 @@ class UITenantExtensionField(models.Model):
         for record in self:
             if record.database_scope != _database_scope(record.env):
                 raise ValidationError("Extension definition belongs to another database scope.")
+            if (
+                not record.tenant_registration_id.active
+                or record.company_id.is_platform_bootstrap_company
+            ):
+                raise ValidationError("Extension definitions require an active registered business company.")
             key = str(record.extension_key or "")
             if (
                 not EXTENSION_KEY_RE.fullmatch(key)
@@ -325,6 +337,12 @@ class UITenantExtensionField(models.Model):
         company = self.env.company
         if company not in self.env.user.company_ids:
             raise AccessError("Current company is not allowed for this user.")
+        try:
+            registration = self.env[
+                "sc.tenant.company.registration"
+            ].resolve_registered_company(company.id, require_active=True)
+        except UserError:
+            return []
         group_ids = tuple(sorted(self.env.user.groups_id.ids))
         group_fingerprint = hashlib.sha256(
             ",".join(str(value) for value in group_ids).encode("utf-8")
@@ -332,6 +350,7 @@ class UITenantExtensionField(models.Model):
         domain = [
             ("database_scope", "=", _database_scope(self.env)),
             ("company_id", "=", company.id),
+            ("tenant_registration_id", "=", registration.id),
             ("model_name", "=", str(model_name or "").strip()),
             ("active", "=", True),
             ("lifecycle_state", "=", "active"),
@@ -340,6 +359,7 @@ class UITenantExtensionField(models.Model):
         return self._cached_contract(
             _database_scope(self.env),
             company.id,
+            registration.id,
             self.env.uid,
             group_fingerprint,
             str(model_name or "").strip(),
@@ -354,6 +374,7 @@ class UITenantExtensionField(models.Model):
     @tools.ormcache(
         "database_scope",
         "company_id",
+        "registration_id",
         "user_id",
         "group_fingerprint",
         "model_name",
@@ -367,6 +388,7 @@ class UITenantExtensionField(models.Model):
         self,
         database_scope,
         company_id,
+        registration_id,
         user_id,
         group_fingerprint,
         model_name,
@@ -386,6 +408,7 @@ class UITenantExtensionField(models.Model):
             [
                 ("database_scope", "=", database_scope),
                 ("company_id", "=", company_id),
+                ("tenant_registration_id", "=", registration_id),
                 ("model_name", "=", model_name),
                 ("active", "=", True),
                 ("lifecycle_state", "=", "active"),
@@ -552,6 +575,11 @@ class UITenantExtensionValue(models.Model):
             raise AccessError("Extension definition is outside the active company context.")
         if definition.company_id not in self.env.user.company_ids:
             raise AccessError("Extension definition belongs to another company.")
+        registration = self.env[
+            "sc.tenant.company.registration"
+        ].resolve_registered_company(definition.company_id.id, require_active=True)
+        if registration != definition.tenant_registration_id:
+            raise AccessError("Extension definition registration is no longer authoritative.")
         model = self.env[definition.model_name]
         model.check_access_rights(operation)
         target = model.browse(record_id).exists()
@@ -769,3 +797,154 @@ class UITenantExtensionMigrationService(models.AbstractModel):
             "old_columns_deleted": 0,
             "formal_fields_modified": 0,
         }
+
+
+class UIUnresolvedExtensionAuditValue(models.Model):
+    """Restricted carrier for an extension value whose owner is unresolved.
+
+    This model is intentionally absent from product page contracts and tenant
+    extension discovery.  It preserves bytes and provenance without assigning
+    a company or inventing a business meaning.
+    """
+
+    _name = "ui.unresolved.extension.audit.value"
+    _description = "Unresolved Extension Audit Value"
+    _order = "id"
+
+    database_scope = fields.Char(required=True, readonly=True, index=True)
+    source_model = fields.Char(required=True, readonly=True)
+    source_table = fields.Char(required=True, readonly=True)
+    source_column = fields.Char(required=True, readonly=True)
+    record_locator_hash = fields.Char(required=True, readonly=True, index=True)
+    value_type = fields.Selection(
+        (
+            ("char", "Character"),
+            ("text", "Text"),
+            ("boolean", "Boolean"),
+            ("integer", "Integer"),
+            ("float", "Float"),
+            ("date", "Date"),
+            ("datetime", "Datetime"),
+            ("binary", "Binary"),
+        ),
+        required=True,
+        readonly=True,
+    )
+    payload = fields.Binary(required=True, readonly=True, attachment=False)
+    checksum_salt = fields.Char(required=True, readonly=True)
+    payload_checksum = fields.Char(required=True, readonly=True, index=True)
+    source_state = fields.Selection(
+        (
+            ("unresolved", "Unresolved"),
+            ("owner_confirmed", "Owner confirmed"),
+            ("migrated", "Migrated"),
+        ),
+        default="unresolved",
+        required=True,
+        readonly=True,
+    )
+    unresolved_reason = fields.Char(required=True, readonly=True)
+    archive_schema_version = fields.Integer(default=1, required=True, readonly=True)
+    archived_at = fields.Datetime(default=fields.Datetime.now, required=True, readonly=True)
+    archived_by = fields.Many2one(
+        "res.users",
+        default=lambda self: self.env.user,
+        required=True,
+        readonly=True,
+        ondelete="restrict",
+    )
+
+    _sql_constraints = [
+        (
+            "unresolved_archive_identity_uniq",
+            "unique(database_scope, source_model, source_table, source_column, record_locator_hash)",
+            "This unresolved source value is already archived.",
+        ),
+    ]
+
+    @api.model
+    def archive_unresolved(
+        self,
+        *,
+        source_model,
+        source_table,
+        source_column,
+        source_record_locator,
+        value_type,
+        raw_value,
+        unresolved_reason,
+    ):
+        if not self.env.user.has_group("base.group_system"):
+            raise AccessError("Only platform administrators can archive unresolved extension values.")
+        if not self.env.context.get("unresolved_extension_audit_archive"):
+            raise AccessError("Unresolved archive writes require an explicit governance context.")
+        if value_type not in dict(self._fields["value_type"].selection):
+            raise ValidationError("Unsupported unresolved archive value type.")
+        payload = self._payload_bytes(raw_value)
+        salt = secrets.token_hex(16)
+        checksum = hashlib.sha256(salt.encode("ascii") + b":" + payload).hexdigest()
+        locator_secret = (
+            self.env["ir.config_parameter"].sudo().get_param("database.secret")
+            or _database_scope(self.env)
+        )
+        locator = hashlib.sha256(
+            (
+                str(locator_secret)
+                + "\x00"
+                + str(source_model)
+                + "\x00"
+                + str(source_table)
+                + "\x00"
+                + str(source_column)
+                + "\x00"
+                + str(source_record_locator)
+            ).encode("utf-8")
+        ).hexdigest()
+        return self.sudo().create(
+            {
+                "database_scope": _database_scope(self.env),
+                "source_model": str(source_model),
+                "source_table": str(source_table),
+                "source_column": str(source_column),
+                "record_locator_hash": locator,
+                "value_type": value_type,
+                "payload": payload,
+                "checksum_salt": salt,
+                "payload_checksum": checksum,
+                "unresolved_reason": str(unresolved_reason),
+            }
+        )
+
+    def verify_integrity(self):
+        self.ensure_one()
+        payload = bytes(self.payload or b"")
+        checksum = hashlib.sha256(
+            str(self.checksum_salt).encode("ascii") + b":" + payload
+        ).hexdigest()
+        return secrets.compare_digest(checksum, str(self.payload_checksum or ""))
+
+    @api.model
+    def _payload_bytes(self, raw_value):
+        if isinstance(raw_value, bytes):
+            return raw_value
+        if isinstance(raw_value, str):
+            return raw_value.encode("utf-8")
+        return json.dumps(
+            raw_value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.context.get("unresolved_extension_audit_archive"):
+            raise AccessError("Unresolved audit values can only be created by the archive service.")
+        return super().create(vals_list)
+
+    def write(self, vals):
+        raise AccessError("Unresolved audit values are immutable.")
+
+    def unlink(self):
+        raise AccessError("Unresolved audit values cannot be deleted through the product runtime.")

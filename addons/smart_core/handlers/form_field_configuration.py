@@ -7,7 +7,7 @@ import logging
 import re
 import xml.etree.ElementTree as ET
 
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 from ..core.base_handler import BaseIntentHandler
 from ..core.request_params import parse_non_negative_int
@@ -1177,6 +1177,16 @@ class FormCustomFieldCreateHandler(BaseIntentHandler):
             return self._err(404, "模型不存在：%s" % model, REASON_NOT_FOUND)
         if model_rec.transient:
             return self._err(400, "临时模型不能新增业务字段：%s" % model, REASON_USER_ERROR)
+        try:
+            registration = self.env[
+                "sc.tenant.company.registration"
+            ].resolve_registered_company(self.env.company.id, require_active=True)
+        except (AccessError, UserError):
+            return self._err(
+                400,
+                "当前公司尚未由用户数据模块注册，不能创建租户扩展字段。",
+                REASON_USER_ERROR,
+            )
         field_name = str(
             params.get("extension_key")
             or params.get("extensionKey")
@@ -1230,6 +1240,7 @@ class FormCustomFieldCreateHandler(BaseIntentHandler):
                     "sequence": sequence if sequence > 0 else 100,
                     "action_id": action_id,
                     "view_id": view_id,
+                    "tenant_registration_id": int(registration.id),
                     "field_metadata_boundary": _custom_field_metadata_boundary(),
                 },
                 "meta": {"intent": self.INTENT_TYPE, "reason_code": REASON_OK, "source_authority": self._source_authority_contract()},

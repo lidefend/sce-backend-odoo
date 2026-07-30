@@ -1,0 +1,2 @@
+model,column,confirmation_required,reason,resolution
+res.partner,x_custom_field,false,USER_CONFIRMED_NO_HISTORICAL_CUSTOMER_COMPATIBILITY_REQUIRED,RESTRICTED_ARCHIVE_THEN_CONTROLLED_DROP

@@ -64,6 +64,9 @@ def scan(root: Path) -> dict[str, object]:
     model_path = root / "addons/smart_core/model/ui_tenant_extension_field.py"
     orchestrator_path = root / "addons/smart_core/core/view_orchestrator.py"
     migration_path = root / "scripts/tenant_payload/tenant_extension_migration_plan.py"
+    registration_path = root / "addons/smart_core/models/tenant_payload_import_batch.py"
+    bootstrap_xml_path = root / "addons/smart_core/data/platform_bootstrap_company.xml"
+    wizard_path = root / "addons/smart_core/model/ui_form_custom_field_wizard.py"
     model_text = model_path.read_text(encoding="utf-8") if model_path.exists() else ""
     orchestrator_text = (
         orchestrator_path.read_text(encoding="utf-8") if orchestrator_path.exists() else ""
@@ -71,6 +74,17 @@ def scan(root: Path) -> dict[str, object]:
     migration_text = (
         migration_path.read_text(encoding="utf-8") if migration_path.exists() else ""
     )
+    registration_text = (
+        registration_path.read_text(encoding="utf-8")
+        if registration_path.exists()
+        else ""
+    )
+    bootstrap_xml_text = (
+        bootstrap_xml_path.read_text(encoding="utf-8")
+        if bootstrap_xml_path.exists()
+        else ""
+    )
+    wizard_text = wizard_path.read_text(encoding="utf-8") if wizard_path.exists() else ""
     required = {
         "definition_model": '_name = "ui.tenant.extension.field"' in model_text,
         "value_model": '_name = "ui.tenant.extension.value"' in model_text,
@@ -90,6 +104,25 @@ def scan(root: Path) -> dict[str, object]:
         "cache_key_user": '"user_id"' in model_text,
         "cache_key_schema": '"schema_version"' in model_text,
         "migration_default_dry_run": 'default="dry-run"' in migration_text,
+        "bootstrap_company_marker": (
+            "is_platform_bootstrap_company" in registration_text
+            and 'id="base.main_company"' in bootstrap_xml_text
+        ),
+        "positive_company_registration": (
+            '_name = "sc.tenant.company.registration"' in registration_text
+            and "resolve_registered_company" in registration_text
+            and "tenant_registration_id" in model_text
+        ),
+        "bootstrap_registration_rejected": (
+            "TPV1_PLATFORM_BOOTSTRAP_COMPANY_CANNOT_REGISTER" in registration_text
+        ),
+        "unregistered_company_rejected": (
+            "TPV1_REGISTERED_BUSINESS_COMPANY_REQUIRED" in registration_text
+        ),
+        "no_env_company_implicit_extension_default": (
+            "default=lambda self: self.env.company" not in model_text
+            and "default=lambda self: self.env.company" not in wizard_text
+        ),
     }
     for key, passed in required.items():
         if not passed:
@@ -114,6 +147,18 @@ def scan(root: Path) -> dict[str, object]:
         else 1,
         "customer_specific_mapping_in_product_repo": 0,
         "migration_default_dry_run": required["migration_default_dry_run"],
+        "bootstrap_company_tenant_registration": 0
+        if required["bootstrap_registration_rejected"]
+        else 1,
+        "bootstrap_company_extension_definitions": 0
+        if required["positive_company_registration"]
+        else 1,
+        "unregistered_company_extension_definitions": 0
+        if required["unregistered_company_rejected"]
+        else 1,
+        "env_company_implicit_tenant_fallback": 0
+        if required["no_env_company_implicit_extension_default"]
+        else 1,
         "required_contract": required,
         "declarations": declarations,
         "violations": violations,

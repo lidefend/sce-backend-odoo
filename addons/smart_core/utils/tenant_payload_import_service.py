@@ -195,6 +195,33 @@ class TenantPayloadImportService:
             self._identity_cache[(identity.resource, identity.external_key)] = identity.id
         return identity
 
+    def _register_business_company(self, *, resource, external_key, record, batch):
+        spec = self.resources[resource]
+        if not spec.get("company_identity") or record._name != "res.company":
+            return
+        Registration = self.env["sc.tenant.company.registration"].with_context(
+            sc_tenant_payload_import=True
+        )
+        registration = Registration.search([("company_id", "=", record.id)], limit=1)
+        expected = {
+            "tenant_key": self.tenant_key,
+            "company_id": record.id,
+            "source_module": batch.customer_module,
+            "source_external_key": external_key,
+        }
+        if registration:
+            if (
+                registration.tenant_key != expected["tenant_key"]
+                or registration.company_id.id != expected["company_id"]
+                or registration.source_module != expected["source_module"]
+                or registration.source_external_key != expected["source_external_key"]
+            ):
+                _fail("TPV1_COMPANY_REGISTRATION_IDENTITY_CONFLICT")
+            if not registration.active:
+                registration.write({"active": True})
+            return
+        Registration.create(expected)
+
     def _payload_external_keys(self) -> dict[str, set[str]]:
         keys: dict[str, set[str]] = defaultdict(set)
         for relative in self.manifest["import_order"]:
@@ -362,6 +389,12 @@ class TenantPayloadImportService:
                     record = self._apply_system_user(values, record=record)
                 else:
                     record.write(values)
+                self._register_business_company(
+                    resource=resource,
+                    external_key=item["external_key"],
+                    record=record,
+                    batch=batch,
+                )
                 attachment_store_name = str(getattr(record, "store_fname", "") or "") if spec.get("kind") == "attachment" else ""
                 identity.write({"content_checksum": item["content_checksum"], "batch_id": batch.id})
                 return "update"
@@ -390,6 +423,12 @@ class TenantPayloadImportService:
                     "company_id": company.id,
                     "batch_id": batch.id,
                 }
+            )
+            self._register_business_company(
+                resource=resource,
+                external_key=item["external_key"],
+                record=record,
+                batch=batch,
             )
             return decision
         except TenantPayloadImportError:

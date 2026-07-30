@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import Command
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
@@ -12,8 +12,38 @@ class TestTenantExtensionStorage(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.env.user.write(
+            {
+                "groups_id": [
+                    Command.link(
+                        cls.env.ref(
+                            "smart_core.group_smart_core_tenant_payload_importer"
+                        ).id
+                    )
+                ]
+            }
+        )
         cls.company_a = cls.env["res.company"].create({"name": "Extension fixture A"})
         cls.company_b = cls.env["res.company"].create({"name": "Extension fixture B"})
+        Registration = cls.env["sc.tenant.company.registration"].with_context(
+            sc_tenant_payload_import=True
+        )
+        cls.registration_a = Registration.create(
+            {
+                "tenant_key": "fixture-a",
+                "company_id": cls.company_a.id,
+                "source_module": "tenant_fixture_module",
+                "source_external_key": "company-a",
+            }
+        )
+        cls.registration_b = Registration.create(
+            {
+                "tenant_key": "fixture-b",
+                "company_id": cls.company_b.id,
+                "source_module": "tenant_fixture_module",
+                "source_external_key": "company-b",
+            }
+        )
         base_user = cls.env.ref("base.group_user")
         partner_manager = cls.env.ref("base.group_partner_manager")
         cls.user = cls.env["res.users"].with_context(no_reset_password=True).create(
@@ -54,8 +84,12 @@ class TestTenantExtensionStorage(TransactionCase):
         )
 
     def _definition(self, company, action, key, data_type="char", **extra):
+        registration = self.env["sc.tenant.company.registration"].search(
+            [("company_id", "=", company.id)],
+            limit=1,
+        )
         values = {
-            "company_id": company.id,
+            "tenant_registration_id": registration.id,
             "model_id": self.partner_model.id,
             "extension_key": key,
             "display_name": key.replace("_", " ").title(),
@@ -69,6 +103,66 @@ class TestTenantExtensionStorage(TransactionCase):
         }
         values.update(extra)
         return self.env["ui.tenant.extension.field"].create(values)
+
+    def test_bootstrap_and_unregistered_companies_cannot_own_extensions(self):
+        bootstrap = self.env.ref("base.main_company")
+        self.assertTrue(bootstrap.is_platform_bootstrap_company)
+        Registration = self.env["sc.tenant.company.registration"].with_context(
+            sc_tenant_payload_import=True
+        )
+        with self.assertRaises(UserError):
+            Registration.create(
+                {
+                    "tenant_key": "bootstrap",
+                    "company_id": bootstrap.id,
+                    "source_module": "tenant_fixture_module",
+                    "source_external_key": "bootstrap",
+                }
+            )
+        unregistered = self.env["res.company"].create(
+            {"name": "Unregistered extension fixture"}
+        )
+        with self.assertRaises(UserError):
+            self.env["sc.tenant.company.registration"].resolve_registered_company(
+                unregistered.id
+            )
+        self.assertEqual(
+            self.env["ui.tenant.extension.field"].with_company(bootstrap).contract_for(
+                model_name="res.partner",
+                view_type="form",
+                action_id=self.action_a.id,
+            ),
+            [],
+        )
+
+    def test_registration_deactivation_stops_discovery_and_writes(self):
+        definition = self._definition(
+            self.company_a, self.action_a, "registration_lifecycle"
+        )
+        contract = self.env["ui.tenant.extension.field"].with_company(
+            self.company_a
+        ).contract_for(
+            model_name="res.partner",
+            view_type="form",
+            action_id=self.action_a.id,
+        )
+        self.assertIn(definition.id, [row["extension_id"] for row in contract])
+        self.registration_a.write({"active": False})
+        self.assertEqual(
+            self.env["ui.tenant.extension.field"].with_company(
+                self.company_a
+            ).contract_for(
+                model_name="res.partner",
+                view_type="form",
+                action_id=self.action_a.id,
+            ),
+            [],
+        )
+        with self.assertRaises(UserError):
+            self.env["ui.tenant.extension.value"].with_company(
+                self.company_a
+            ).set_typed_value(definition, self.partner_a.id, "blocked")
+        self.registration_a.write({"active": True})
 
     def _column_count(self, table):
         self.env.cr.execute(
@@ -324,8 +418,52 @@ class TestTenantExtensionStorage(TransactionCase):
             1,
         )
 
+    def test_unresolved_archive_has_no_company_or_product_discovery(self):
+        Archive = self.env["ui.unresolved.extension.audit.value"].with_context(
+            unresolved_extension_audit_archive=True
+        )
+        raw = "synthetic unresolved fixture value"
+        archived = Archive.archive_unresolved(
+            source_model="res.partner",
+            source_table="res_partner",
+            source_column="synthetic_legacy_column",
+            source_record_locator="fixture-record-1",
+            value_type="char",
+            raw_value=raw,
+            unresolved_reason="OWNER_AND_SEMANTICS_UNCONFIRMED",
+        )
+        self.assertTrue(archived.verify_integrity())
+        self.assertNotIn("company_id", archived._fields)
+        self.assertNotIn("fixture-record-1", archived.record_locator_hash)
+        with self.assertRaises(AccessError):
+            self.env["ui.unresolved.extension.audit.value"].with_user(
+                self.user
+            ).search([])
+        runtime = ViewOrchestrator(
+            self.env["res.partner"].with_user(self.user).with_company(
+                self.company_a
+            ).env
+        ).compose(
+            {"contract_version": "v2", "fields": {"name": {"type": "char"}}},
+            model_name="res.partner",
+            view_type="form",
+            action_id=self.action_a.id,
+        )
+        self.assertNotIn("unresolved_extension_audit_values", runtime)
+        self.assertNotIn(raw, str(runtime))
+
     def test_company_extension_cleanup_requires_retire_and_explicit_purge(self):
         company = self.env["res.company"].create({"name": "Extension cleanup fixture"})
+        self.env["sc.tenant.company.registration"].with_context(
+            sc_tenant_payload_import=True
+        ).create(
+            {
+                "tenant_key": "cleanup-fixture",
+                "company_id": company.id,
+                "source_module": "tenant_fixture_module",
+                "source_external_key": "cleanup-company",
+            }
+        )
         action = self.env["ir.actions.act_window"].create(
             {"name": "Cleanup fixture", "res_model": "res.partner", "view_mode": "form"}
         )

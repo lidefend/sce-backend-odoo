@@ -1,0 +1,98 @@
+{
+  "blocked_columns": 0,
+  "columns": [
+    {
+      "column_name": "x_custom_field",
+      "database_table": "construction_contract_expense",
+      "immutable_nonempty_count": 0,
+      "model": "construction.contract.expense",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    },
+    {
+      "column_name": "x_custom_field",
+      "database_table": "construction_contract_income",
+      "immutable_nonempty_count": 0,
+      "model": "construction.contract.income",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    },
+    {
+      "column_name": "x_custom_field_2",
+      "database_table": "construction_contract_income",
+      "immutable_nonempty_count": 0,
+      "model": "construction.contract.income",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    },
+    {
+      "column_name": "x_custom_field_3",
+      "database_table": "construction_contract_income",
+      "immutable_nonempty_count": 0,
+      "model": "construction.contract.income",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    },
+    {
+      "column_name": "x_custom_field_4",
+      "database_table": "construction_contract_income",
+      "immutable_nonempty_count": 0,
+      "model": "construction.contract.income",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    },
+    {
+      "column_name": "x_custom_field_5",
+      "database_table": "construction_contract_income",
+      "immutable_nonempty_count": 0,
+      "model": "construction.contract.income",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    },
+    {
+      "column_name": "x_custom_field",
+      "database_table": "project_project",
+      "immutable_nonempty_count": 0,
+      "model": "project.project",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    },
+    {
+      "column_name": "x_custom_field",
+      "database_table": "res_partner",
+      "immutable_nonempty_count": 1,
+      "model": "res.partner",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP_AFTER_ARCHIVE"
+    },
+    {
+      "column_name": "x_custom_field",
+      "database_table": "sc_general_contract",
+      "immutable_nonempty_count": 0,
+      "model": "sc.general.contract",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    },
+    {
+      "column_name": "x_custom_field_2",
+      "database_table": "sc_general_contract",
+      "immutable_nonempty_count": 0,
+      "model": "sc.general.contract",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    },
+    {
+      "column_name": "x_custom_field_3",
+      "database_table": "sc_general_contract",
+      "immutable_nonempty_count": 0,
+      "model": "sc.general.contract",
+      "reason_codes": [],
+      "status": "READY_FOR_CONTROLLED_DROP"
+    }
+  ],
+  "custom_columns_total": 11,
+  "destructive_database_changes": 0,
+  "mode": "dry-run",
+  "ready_columns": 11,
+  "schema_version": "field-arch-p0-03r.retirement.v1"
+}

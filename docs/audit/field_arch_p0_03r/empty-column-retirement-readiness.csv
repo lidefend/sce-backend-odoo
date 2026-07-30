@@ -1,0 +1,11 @@
+database_table,column_name,effective_value_count,runtime_reference_count,module_recreation_source_count,isolated_drop_rehearsal,registry_after_drop,upgrade_after_drop,rollback_ddl_verification,status
+construction_contract_expense,x_custom_field,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP
+construction_contract_income,x_custom_field,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP
+construction_contract_income,x_custom_field_2,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP
+construction_contract_income,x_custom_field_3,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP
+construction_contract_income,x_custom_field_4,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP
+construction_contract_income,x_custom_field_5,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP
+project_project,x_custom_field,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP
+sc_general_contract,x_custom_field,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP
+sc_general_contract,x_custom_field_2,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP
+sc_general_contract,x_custom_field_3,0,0,0,PASS,PASS,PASS,PASS,READY_FOR_CONTROLLED_DROP

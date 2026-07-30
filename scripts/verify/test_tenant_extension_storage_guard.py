@@ -12,13 +12,15 @@ class TestTenantExtensionStorageGuard(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name)
         (root / "addons/smart_core/model").mkdir(parents=True)
+        (root / "addons/smart_core/models").mkdir(parents=True)
         (root / "addons/smart_core/core").mkdir(parents=True)
+        (root / "addons/smart_core/data").mkdir(parents=True)
         (root / "scripts/tenant_payload").mkdir(parents=True)
         (root / "addons/smart_core/model/ui_tenant_extension_field.py").write_text(
             """
 _name = "ui.tenant.extension.field"
 _name = "ui.tenant.extension.value"
-company_id database_scope boolean_is_set integer_value monetary_value date_value relation_record_id
+tenant_registration_id company_id database_scope boolean_is_set integer_value monetary_value date_value relation_record_id
 @tools.ormcache("company_id", "user_id", "schema_version")
 """,
             encoding="utf-8",
@@ -29,6 +31,24 @@ company_id database_scope boolean_is_set integer_value monetary_value date_value
         )
         (root / "scripts/tenant_payload/tenant_extension_migration_plan.py").write_text(
             'parser.add_argument("--mode", default="dry-run")\n',
+            encoding="utf-8",
+        )
+        (root / "addons/smart_core/models/tenant_payload_import_batch.py").write_text(
+            """
+_name = "sc.tenant.company.registration"
+is_platform_bootstrap_company = fields.Boolean()
+def resolve_registered_company(company_id, require_active=True): pass
+raise UserError("TPV1_PLATFORM_BOOTSTRAP_COMPANY_CANNOT_REGISTER")
+raise UserError("TPV1_REGISTERED_BUSINESS_COMPANY_REQUIRED")
+""",
+            encoding="utf-8",
+        )
+        (root / "addons/smart_core/data/platform_bootstrap_company.xml").write_text(
+            '<record id="base.main_company"><field name="is_platform_bootstrap_company">True</field></record>',
+            encoding="utf-8",
+        )
+        (root / "addons/smart_core/model/ui_form_custom_field_wizard.py").write_text(
+            "tenant_registration_id = registration.id\n",
             encoding="utf-8",
         )
         return temp, root

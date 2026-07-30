@@ -12,6 +12,110 @@ from odoo.addons.smart_core.utils.tenant_payload_v1 import (
 IMPORTER_GROUP = "smart_core.group_smart_core_tenant_payload_importer"
 
 
+class ResCompany(models.Model):
+    _inherit = "res.company"
+
+    is_platform_bootstrap_company = fields.Boolean(
+        string="Platform bootstrap company",
+        default=False,
+        readonly=True,
+        help="Technical carrier for Odoo startup; it never represents a business tenant.",
+    )
+
+
+class ScTenantCompanyRegistration(models.Model):
+    """Explicit binding between a tenant payload and a business company.
+
+    Odoo's ``base.main_company`` remains a neutral bootstrap carrier. A
+    user-data module must create and register a distinct business company
+    through this boundary. Product and industry modules never manufacture a
+    concrete tenant identity.
+    """
+
+    _name = "sc.tenant.company.registration"
+    _description = "Tenant Company Registration"
+    _order = "tenant_key, company_id"
+
+    tenant_key = fields.Char(required=True, index=True, readonly=True)
+    company_id = fields.Many2one(
+        "res.company",
+        required=True,
+        index=True,
+        readonly=True,
+        ondelete="cascade",
+    )
+    source_module = fields.Char(required=True, readonly=True)
+    source_external_key = fields.Char(required=True, readonly=True)
+    active = fields.Boolean(default=True, required=True, readonly=True)
+
+    _sql_constraints = [
+        (
+            "tenant_company_registration_company_uniq",
+            "unique(company_id)",
+            "A business company may only have one tenant registration.",
+        ),
+        (
+            "tenant_company_registration_identity_uniq",
+            "unique(tenant_key, source_external_key)",
+            "A tenant company identity must be unique.",
+        ),
+    ]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.user.has_group(IMPORTER_GROUP):
+            raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+        if not self.env.context.get("sc_tenant_payload_import"):
+            raise UserError("TPV1_COMPANY_REGISTRATION_REQUIRES_USER_DATA_IMPORT")
+        if any(
+            str(values.get("source_module") or "").strip()
+            in {"smart_core", "smart_construction_core"}
+            for values in vals_list
+        ):
+            raise UserError("TPV1_PRODUCT_MODULE_CANNOT_REGISTER_BUSINESS_COMPANY")
+        companies = self.env["res.company"].browse(
+            [int(values.get("company_id") or 0) for values in vals_list]
+        ).exists()
+        if len(companies) != len(vals_list) or any(
+            company.is_platform_bootstrap_company for company in companies
+        ):
+            raise UserError("TPV1_PLATFORM_BOOTSTRAP_COMPANY_CANNOT_REGISTER")
+        registrations = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return registrations
+
+    @api.model
+    def resolve_registered_company(self, company_id, *, require_active=True):
+        company = self.env["res.company"].browse(int(company_id or 0)).exists()
+        if (
+            not company
+            or company not in self.env.user.company_ids
+            or company.is_platform_bootstrap_company
+        ):
+            raise UserError("TPV1_REGISTERED_BUSINESS_COMPANY_REQUIRED")
+        domain = [("company_id", "=", company.id)]
+        if require_active:
+            domain.append(("active", "=", True))
+        registration = self.sudo().search(domain, limit=1)
+        if not registration:
+            raise UserError("TPV1_REGISTERED_BUSINESS_COMPANY_REQUIRED")
+        return registration
+
+    def write(self, vals):
+        if set(vals) - {"active"}:
+            raise UserError("TPV1_COMPANY_REGISTRATION_IDENTITY_IMMUTABLE")
+        if not self.env.user.has_group(IMPORTER_GROUP):
+            raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        if not self.env.context.get("allow_audited_tenant_destroy"):
+            raise UserError("TPV1_COMPANY_REGISTRATION_IMMUTABLE")
+        return super().unlink()
+
+
 class ScTenantPayloadAdapter(models.AbstractModel):
     _name = "sc.tenant.payload.adapter"
     _description = "Product-neutral tenant payload adapter protocol"

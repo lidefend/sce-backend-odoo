@@ -37,7 +37,7 @@ class UIFormCustomFieldWizard(models.TransientModel):
     required = fields.Boolean(string="必填")
     index = fields.Boolean(string="建立索引")
     active_policy = fields.Boolean(string="创建后立即显示", default=True)
-    company_id = fields.Many2one("res.company", string="公司", default=lambda self: self.env.company)
+    company_id = fields.Many2one("res.company", string="已注册业务公司", required=True)
     action_id = fields.Many2one("ir.actions.act_window", string="业务页面", ondelete="cascade")
     view_id = fields.Many2one("ir.ui.view", string="表单视图", ondelete="cascade")
     group_title = fields.Char(string="显示分组", default="业务配置字段")
@@ -81,13 +81,16 @@ class UIFormCustomFieldWizard(models.TransientModel):
             self.field_name = self._suggest_field_name()
         self._validate_custom_field_spec()
         model_rec = self._business_model()
+        registration = self.env[
+            "sc.tenant.company.registration"
+        ].resolve_registered_company(self.company_id.id, require_active=True)
         definition = self.env["ui.tenant.extension.field"].create({
             "active": bool(self.active_policy),
             "model_id": model_rec.id,
             "extension_key": self.field_name,
             "display_name": self.label,
             "data_type": self.ttype,
-            "company_id": self.company_id.id or False,
+            "tenant_registration_id": registration.id,
             "action_id": self.action_id.id or False,
             "view_id": self.view_id.id or False,
             "slot_key": str(self.slot_key or "business_extensions").strip(),
@@ -112,6 +115,12 @@ class UIFormCustomFieldWizard(models.TransientModel):
         field_name = str(self.field_name or "").strip()
         if not model or not model_name:
             raise ValidationError("请先选择要配置的业务页面。")
+        if not self.company_id:
+            raise ValidationError("请先选择由用户数据模块注册的业务公司。")
+        self.env["sc.tenant.company.registration"].resolve_registered_company(
+            self.company_id.id,
+            require_active=True,
+        )
         if model.transient:
             raise ValidationError("临时向导模型不能新增业务字段：%s" % model_name)
         if model_name not in self.env:

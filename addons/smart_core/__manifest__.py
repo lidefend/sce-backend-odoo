@@ -23,6 +23,7 @@
         "security/smart_core_security.xml",
         "security/groups.xml",
         "security/ir.model.access.csv",
+        "data/platform_bootstrap_company.xml",
         "data/sc_subscription_default.xml",
         "data/ui_base_contract_asset_cron.xml",
         "views/platform_company_access_views.xml",

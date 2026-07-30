@@ -1,0 +1,12 @@
+sequence,database_table,column_name,precondition,pre_drop_action,drop_allowed,rollback_source,status
+1,construction_contract_expense,x_custom_field,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+2,construction_contract_income,x_custom_field,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+3,construction_contract_income,x_custom_field_2,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+4,construction_contract_income,x_custom_field_3,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+5,construction_contract_income,x_custom_field_4,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+6,construction_contract_income,x_custom_field_5,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+7,project_project,x_custom_field,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+8,sc_general_contract,x_custom_field,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+9,sc_general_contract,x_custom_field_2,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+10,sc_general_contract,x_custom_field_3,ZERO_VALUES_AND_ZERO_DEPENDENCIES,NONE,true,rollback-ddl.sql,READY
+11,res_partner,x_custom_field,ARCHIVE_INTEGRITY_AND_ZERO_PUBLICATION,ARCHIVE_AS_UNRESOLVED_AUDIT_VALUE,true,rollback-ddl.sql,READY_AFTER_ARCHIVE
