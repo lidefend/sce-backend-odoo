@@ -189,6 +189,16 @@ class TenantPayloadImportService:
         adapter_model.assert_import_operator()
         self.adapter = adapter_model.get_adapter(tenant_key)
         _validate_adapter(self.adapter, self.manifest)
+        self.semantic_validation = adapter_model.validate_payload_semantics(
+            tenant_key,
+            str(self.root),
+            self.manifest,
+        )
+        if (
+            not isinstance(self.semantic_validation, dict)
+            or self.semantic_validation.get("status") != "PASS"
+        ):
+            _fail("TPV1_PAYLOAD_SEMANTIC_VALIDATION_FAILED")
         self.resources = self.adapter["resources"]
         self.Identity = env["sc.tenant.payload.external.identity"]
         self.Batch = env["sc.tenant.payload.import.batch"]
@@ -344,6 +354,7 @@ class TenantPayloadImportService:
             "totals": totals,
             "database_write_count": 0,
             "filestore_write_count": 0,
+            "semantic_validation": self.semantic_validation,
         }
 
     def _resolve_relationships(self, resource: str, item: dict[str, Any]) -> dict[str, Any]:

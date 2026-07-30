@@ -140,6 +140,16 @@ class ScTenantPayloadAdapter(models.AbstractModel):
         self.assert_import_operator()
         raise UserError("TPV1_CUSTOMER_ADAPTER_NOT_FOUND")
 
+    @api.model
+    def validate_payload_semantics(self, tenant_key, payload_root, manifest):
+        """Customer modules may fail closed on cross-record business semantics."""
+        self.assert_import_operator()
+        return {
+            "schema_version": "tenant_payload_semantic_validation.v1",
+            "status": "PASS",
+            "tenant_key": tenant_key,
+        }
+
 
 class ScTenantPayloadExternalIdentity(models.Model):
     _name = "sc.tenant.payload.external.identity"

@@ -236,6 +236,19 @@ class TenantPayloadV1Tests(unittest.TestCase):
         self.assertIn("TPV1_EXCLUSIVE_IMPORT_LOCK_RELEASE_FAILED", source)
         self.assertNotIn("pg_try_advisory_xact_lock", source)
 
+    def test_runtime_plan_invokes_customer_semantic_validation(self):
+        service = (
+            ROOT
+            / "addons/smart_core/utils/tenant_payload_import_service.py"
+        ).read_text(encoding="utf-8")
+        protocol = (
+            ROOT / "addons/smart_core/models/tenant_payload_import_batch.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("validate_payload_semantics", protocol)
+        self.assertIn("adapter_model.validate_payload_semantics", service)
+        self.assertIn("TPV1_PAYLOAD_SEMANTIC_VALIDATION_FAILED", service)
+        self.assertIn('"semantic_validation": self.semantic_validation', service)
+
 
 if __name__ == "__main__":
     unittest.main()
