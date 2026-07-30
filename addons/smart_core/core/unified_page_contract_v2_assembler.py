@@ -473,9 +473,13 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
         if not isinstance(row, dict):
             continue
         name = _text(row.get("name"))
-        if not name or name in fields_by_name:
+        if not name:
             continue
-        fields_by_name[name] = deepcopy(row)
+        fields_by_name[name] = {
+            **fields_by_name.get(name, {}),
+            **deepcopy(row),
+        }
+        fields_by_name[name].setdefault("name", name)
     widgets = []
     component_keys = set()
     form_layout = _dict(_dict(ui.get("views")).get("form"))

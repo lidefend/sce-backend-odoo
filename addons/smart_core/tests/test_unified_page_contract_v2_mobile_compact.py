@@ -400,6 +400,58 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(status[by_field["create_uid"]["widgetId"]]["visible"])
         self.assertTrue(status[by_field["create_date"]["widgetId"]]["visible"])
 
+    def test_ui_contract_v2_preserves_tree_column_value_semantics(self):
+        source = {
+            "model": "tender.doc.purchase",
+            "view_type": "tree",
+            "fields": {
+                "visible_amount": {
+                    "name": "visible_amount",
+                    "type": "char",
+                    "string": "金额",
+                },
+            },
+            "views": {
+                "tree": {
+                    "columns": ["visible_amount"],
+                    "columns_schema": [{
+                        "name": "visible_amount",
+                        "string": "金额",
+                        "type": "char",
+                        "display_field": "visible_amount",
+                        "value_field": "amount",
+                        "aggregation_field": "amount",
+                        "data_type": "monetary",
+                        "currency_field": "currency_id",
+                        "aggregate": "sum",
+                        "aggregate_label": "报名费合计",
+                        "sort_field": "amount",
+                        "filter_field": "amount",
+                        "export_field": "amount",
+                    }],
+                },
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.tree.value.semantics",
+        )
+
+        widget = full["layoutContract"]["containerTree"][0]["widgetList"][0]
+        config = widget["componentConfig"]
+        self.assertEqual(config["display_field"], "visible_amount")
+        self.assertEqual(config["value_field"], "amount")
+        self.assertEqual(config["aggregation_field"], "amount")
+        self.assertEqual(config["data_type"], "monetary")
+        self.assertEqual(config["currency_field"], "currency_id")
+        self.assertEqual(config["aggregate"], "sum")
+        self.assertEqual(config["sort_field"], "amount")
+        self.assertEqual(config["filter_field"], "amount")
+        self.assertEqual(config["export_field"], "amount")
+
     def test_ui_contract_v2_preserves_tree_selection_options(self):
         source = {
             "model": "project.project",
