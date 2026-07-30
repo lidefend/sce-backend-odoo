@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import traceback
 from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
@@ -219,8 +220,39 @@ class TenantPayloadImportService:
                 _fail("TPV1_COMPANY_REGISTRATION_IDENTITY_CONFLICT")
             if not registration.active:
                 registration.write({"active": True})
-            return
-        Registration.create(expected)
+        else:
+            Registration.create(expected)
+
+    def _activate_import_company_scope(self, company) -> None:
+        """Authorize the technical importer for the newly registered company.
+
+        Payload business records must never fall back to the platform company.
+        The adapter's explicit ``company_identity`` declaration authorizes this
+        bootstrap step. Add only that company to the technical operator before
+        creating its scoped external identity and registration; the surrounding
+        transaction rolls this back if either operation fails. No ordinary
+        payload user is changed here.
+        """
+        if company.is_platform_bootstrap_company:
+            _fail("TPV1_PLATFORM_BOOTSTRAP_COMPANY_CANNOT_REGISTER")
+        if company not in self.env.user.company_ids:
+            self.env.user.sudo().write({"company_ids": [(4, company.id)]})
+        allowed_company_ids = list(
+            dict.fromkeys(
+                [
+                    company.id,
+                    *(item for item in self.env.companies.ids if item != company.id),
+                ]
+            )
+        )
+        self.env = self.env(
+            context={
+                **self.env.context,
+                "allowed_company_ids": allowed_company_ids,
+            }
+        )
+        self.Identity = self.env["sc.tenant.payload.external.identity"]
+        self.Batch = self.env["sc.tenant.payload.import.batch"]
 
     def _payload_external_keys(self) -> dict[str, set[str]]:
         keys: dict[str, set[str]] = defaultdict(set)
@@ -303,7 +335,9 @@ class TenantPayloadImportService:
                 identity = self._identity(target_resource, external_key)
                 if not identity:
                     _fail(f"TPV1_RELATION_NOT_IMPORTED:{resource}")
-                target = self.env[identity.model_name].browse(identity.res_id).exists()
+                target = self._import_model(identity.model_name).browse(
+                    identity.res_id
+                ).exists()
                 if not target:
                     _fail(f"TPV1_EXTERNAL_IDENTITY_ORPHANED:{resource}")
                 ids.append(target.id)
@@ -313,6 +347,14 @@ class TenantPayloadImportService:
                     _fail(f"TPV1_RELATION_CARDINALITY_MISMATCH:{resource}")
                 values[relation_spec["model_field"]] = self._identity(*_split_reference(references[0])).model_name
         return values
+
+    def _import_model(self, model_name: str):
+        """Return the narrow privileged ORM boundary for a validated import."""
+        self.env["sc.tenant.payload.adapter"].assert_import_operator()
+        return self.env[model_name].with_context(
+            sc_tenant_payload_import=True,
+            sc_tenant_payload_checksum=self.manifest["payload_checksum"],
+        ).sudo()
 
     def _mapped_values(self, resource: str, item: dict[str, Any]) -> dict[str, Any]:
         spec = self.resources[resource]
@@ -341,6 +383,18 @@ class TenantPayloadImportService:
             company = self.env.company
         elif spec.get("company_identity"):
             company = record
+            # A company-identity resource is the explicit tenant bootstrap
+            # boundary.  The imported company cannot already belong to
+            # ``env.companies`` because its registration and operator scope are
+            # established only after this record receives its stable payload
+            # identity.  Do not weaken the check for any other resource.
+            if (
+                not company
+                or company._name != "res.company"
+                or company.is_platform_bootstrap_company
+            ):
+                _fail(f"TPV1_COMPANY_SCOPE_UNAUTHORIZED:{resource}")
+            return company
         elif spec.get("company_via_relationship"):
             relation_name = spec["company_via_relationship"]
             reference = item.get("relationships", {}).get(relation_name)
@@ -362,10 +416,6 @@ class TenantPayloadImportService:
 
     def _apply_record(self, batch, resource: str, item: dict[str, Any]) -> str:
         spec = self.resources[resource]
-        import_context = {
-            "sc_tenant_payload_import": True,
-            "sc_tenant_payload_checksum": self.manifest["payload_checksum"],
-        }
         identity = self._identity(resource, item["external_key"])
         if identity and identity.content_checksum == item["content_checksum"]:
             return "skip"
@@ -382,7 +432,9 @@ class TenantPayloadImportService:
                     _fail("TPV1_ATTACHMENT_INTEGRITY_MISMATCH")
                 values["raw"] = raw
             if identity:
-                record = self.env[identity.model_name].with_context(**import_context).browse(identity.res_id).exists()
+                record = self._import_model(identity.model_name).browse(
+                    identity.res_id
+                ).exists()
                 if not record:
                     _fail(f"TPV1_EXTERNAL_IDENTITY_ORPHANED:{resource}")
                 if spec.get("system_managed") == "res_users_v1":
@@ -408,10 +460,12 @@ class TenantPayloadImportService:
                 if spec.get("system_managed") == "res_users_v1":
                     record = self._apply_system_user(values)
                 else:
-                    record = self.env[spec["model"]].with_context(**import_context).create(values)
+                    record = self._import_model(spec["model"]).create(values)
                 attachment_store_name = str(getattr(record, "store_fname", "") or "")
                 decision = "create"
             company = self._company_for(resource, item, record)
+            if spec.get("company_identity"):
+                self._activate_import_company_scope(company)
             self._create_identity(
                 {
                     "tenant_key": self.tenant_key,
@@ -443,10 +497,34 @@ class TenantPayloadImportService:
                 exception_type = "UnknownError"
             safe_code = ""
             message = str(exc)
+            mapped_type = values.get("type")
+            if mapped_type in {"pay", "receive"}:
+                safe_code = f":MAPPED_TYPE_{mapped_type.upper()}"
             for code, pattern in spec.get("error_classifiers", {}).items():
                 if pattern in message:
-                    safe_code = f":{code}"
+                    safe_code += f":{code}"
                     break
+            if not any(f":{code}" in safe_code for code in spec.get("error_classifiers", {})):
+                product_frames = [
+                    frame
+                    for frame in traceback.extract_tb(exc.__traceback__)
+                    if "/smart_" in frame.filename
+                ]
+                constraint_frames = [
+                    frame
+                    for frame in product_frames
+                    if frame.name.startswith(("_check_", "_constrain"))
+                ]
+                for frame in reversed(constraint_frames or product_frames):
+                    function_name = re.sub(
+                        r"[^A-Za-z0-9_]",
+                        "_",
+                        frame.name,
+                    ).upper().lstrip("_")
+                    if re.fullmatch(r"[A-Z][A-Z0-9_]{1,63}", function_name):
+                        safe_code += f":SOURCE_{function_name}"
+                        break
+            safe_code += f":MESSAGE_{hashlib.sha256(message.encode('utf-8')).hexdigest()[:12].upper()}"
             raise TenantPayloadImportError(f"TPV1_RECORD_APPLY_FAILED:{resource}:{exception_type}{safe_code}") from None
 
     def _apply_system_user(self, values: dict[str, Any], *, record=None):
@@ -584,7 +662,9 @@ class TenantPayloadImportService:
                 identity = self._identity(resource, item["external_key"])
                 if not identity or identity.content_checksum != item["content_checksum"]:
                     _fail(f"TPV1_VERIFY_IDENTITY_MISMATCH:{resource}")
-                record = self.env[identity.model_name].browse(identity.res_id).exists()
+                record = self._import_model(identity.model_name).browse(
+                    identity.res_id
+                ).exists()
                 if not record or record._name != spec["model"]:
                     _fail(f"TPV1_VERIFY_RECORD_MISSING:{resource}")
                 if identity.company_id not in self.env.companies:

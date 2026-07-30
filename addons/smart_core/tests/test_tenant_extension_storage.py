@@ -5,6 +5,10 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
+from odoo.addons.smart_core.utils.tenant_payload_import_service import (
+    TenantPayloadImportError,
+    TenantPayloadImportService,
+)
 
 
 @tagged("post_install", "-at_install", "smart_core", "tenant_extension")
@@ -134,6 +138,68 @@ class TestTenantExtensionStorage(TransactionCase):
             ),
             [],
         )
+
+    def test_payload_company_identity_allows_explicit_registration_bootstrap(self):
+        bootstrap = self.env.ref("base.main_company")
+        restricted_user = self.env["res.users"].with_context(
+            no_reset_password=True
+        ).create(
+            {
+                "name": "Payload company bootstrap operator",
+                "login": "payload-company-bootstrap-operator",
+                "company_id": bootstrap.id,
+                "company_ids": [Command.set([bootstrap.id])],
+                "groups_id": [
+                    Command.set(
+                        [
+                            self.env.ref("base.group_system").id,
+                            self.env.ref(
+                                "smart_core.group_smart_core_tenant_payload_importer"
+                            ).id,
+                        ]
+                    )
+                ],
+            }
+        )
+        company = self.env["res.company"].create(
+            {"name": "Payload company identity fixture"}
+        )
+        restricted_env = self.env(
+            user=restricted_user,
+            context={**self.env.context, "allowed_company_ids": [bootstrap.id]},
+        )
+        service = TenantPayloadImportService.__new__(TenantPayloadImportService)
+        service.env = restricted_env
+        service.Identity = restricted_env["sc.tenant.payload.external.identity"]
+        service.Batch = restricted_env["sc.tenant.payload.import.batch"]
+        service.resources = {"companies": {"company_identity": True}}
+
+        self.assertNotIn(company, restricted_env.companies)
+        self.assertEqual(
+            service._company_for("companies", {}, company),
+            company,
+        )
+        service._activate_import_company_scope(company)
+        self.assertIn(company, service.env.companies)
+        self.assertIn(company, restricted_user.company_ids)
+        self.assertEqual(service.env.company, company)
+        registration = service.env[
+            "sc.tenant.company.registration"
+        ].with_context(sc_tenant_payload_import=True).create(
+            {
+                "tenant_key": "payload-company-fixture",
+                "company_id": company.id,
+                "source_module": "tenant_fixture_module",
+                "source_external_key": "payload-company",
+            }
+        )
+        self.assertEqual(registration.company_id, company)
+
+        with self.assertRaisesRegex(
+            TenantPayloadImportError,
+            "TPV1_COMPANY_SCOPE_UNAUTHORIZED:companies",
+        ):
+            service._company_for("companies", {}, bootstrap)
 
     def test_registration_deactivation_stops_discovery_and_writes(self):
         definition = self._definition(

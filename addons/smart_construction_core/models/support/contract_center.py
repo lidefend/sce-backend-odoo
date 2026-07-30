@@ -22,6 +22,15 @@ SUPPLEMENT_CONTRACT_EXPECTED_TYPES = {
 }
 
 
+class ScTenantCompanyRegistration(models.Model):
+    _inherit = "sc.tenant.company.registration"
+
+    def _after_tenant_company_registration(self):
+        result = super()._after_tenant_company_registration()
+        self.env["construction.contract"].sudo()._sc_ensure_contract_tax_seeds()
+        return result
+
+
 class ConstructionContract(models.Model):
     """
     Core contract master: covers both revenue and cost contracts with versioned

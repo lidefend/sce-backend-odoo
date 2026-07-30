@@ -43,8 +43,6 @@ class TestSeedTaxDefaults(TransactionCase):
             }
         )
 
-        self.env["construction.contract"].sudo()._sc_ensure_contract_tax_seeds()
-
         taxes = self.env["account.tax"].sudo().search(
             [
                 ("company_id", "=", company.id),

@@ -73,7 +73,11 @@ class ScTenantCompanyRegistration(models.Model):
             for values in vals_list
         ):
             raise UserError("TPV1_PRODUCT_MODULE_CANNOT_REGISTER_BUSINESS_COMPANY")
-        companies = self.env["res.company"].browse(
+        # A newly provisioned business company is intentionally not yet in the
+        # import operator's company scope.  The importer group plus the
+        # explicit payload-import context authorize this one registration
+        # boundary; use sudo only to verify the immutable bootstrap marker.
+        companies = self.env["res.company"].sudo().browse(
             [int(values.get("company_id") or 0) for values in vals_list]
         ).exists()
         if len(companies) != len(vals_list) or any(
@@ -81,8 +85,13 @@ class ScTenantCompanyRegistration(models.Model):
         ):
             raise UserError("TPV1_PLATFORM_BOOTSTRAP_COMPANY_CANNOT_REGISTER")
         registrations = super().create(vals_list)
+        registrations._after_tenant_company_registration()
         self.env.registry.clear_cache()
         return registrations
+
+    def _after_tenant_company_registration(self):
+        """Extension point for product modules' neutral company defaults."""
+        return True
 
     @api.model
     def resolve_registered_company(self, company_id, *, require_active=True):
