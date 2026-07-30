@@ -105,6 +105,25 @@ def validate_customer_module_manifest(payload: dict[str, Any]) -> None:
         values = payload.get(key)
         if not isinstance(values, list) or not values or len(values) != len(set(values)):
             raise TenantDeliveryManifestError(f"customer {key} must be a non-empty unique list")
+    rejected_payloads = payload.get("rejected_payloads", [])
+    if not isinstance(rejected_payloads, list):
+        raise TenantDeliveryManifestError("rejected_payloads must be a list")
+    rejected_identities: set[tuple[str, str]] = set()
+    for rejected in rejected_payloads:
+        if (
+            not isinstance(rejected, dict)
+            or not PAYLOAD_ID_RE.fullmatch(str(rejected.get("payload_id") or ""))
+            or not SHA256_RE.fullmatch(str(rejected.get("payload_checksum") or ""))
+            or not re.fullmatch(
+                r"[A-Z][A-Z0-9_]{2,127}",
+                str(rejected.get("reason_code") or ""),
+            )
+        ):
+            raise TenantDeliveryManifestError("rejected payload declaration is invalid")
+        identity = (rejected["payload_id"], rejected["payload_checksum"])
+        if identity in rejected_identities:
+            raise TenantDeliveryManifestError("rejected payload declaration is duplicated")
+        rejected_identities.add(identity)
     if payload.get("uninstall_policy") != "fail_closed":
         raise TenantDeliveryManifestError("customer module uninstall must fail closed")
     _verify_product_range(payload.get("product_version_range"), None)

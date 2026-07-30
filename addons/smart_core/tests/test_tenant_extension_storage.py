@@ -8,6 +8,7 @@ from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
 from odoo.addons.smart_core.utils.tenant_payload_import_service import (
     TenantPayloadImportError,
     TenantPayloadImportService,
+    _validate_adapter,
 )
 
 
@@ -200,6 +201,46 @@ class TestTenantExtensionStorage(TransactionCase):
             "TPV1_COMPANY_SCOPE_UNAUTHORIZED:companies",
         ):
             service._company_for("companies", {}, bootstrap)
+
+    def test_payload_rejected_by_customer_semantic_policy(self):
+        checksum = "a" * 64
+        manifest = {
+            "tenant_key": "fixture",
+            "customer_module": "sce_customer_fixture",
+            "customer_module_version": "17.0.1.0.0",
+            "source_version": "fixture-v1",
+            "payload_id": "fixture-rejected-v1",
+            "payload_checksum": checksum,
+            "import_order": ["records/companies.jsonl"],
+        }
+        adapter = {
+            "tenant_key": "fixture",
+            "customer_module": "sce_customer_fixture",
+            "customer_module_version": "17.0.1.0.0",
+            "payload_schema_version": "tenant_payload_v1",
+            "product_interface_version": "1",
+            "supported_source_versions": ["fixture-v1"],
+            "model_import_order": ["companies"],
+            "resources": {
+                "companies": {
+                    "model": "res.company",
+                    "value_fields": {"display_name": "name"},
+                    "relationship_fields": {},
+                }
+            },
+            "rejected_payloads": [
+                {
+                    "payload_id": "fixture-rejected-v1",
+                    "payload_checksum": checksum,
+                    "reason_code": "FIXTURE_SEMANTIC_REJECTION",
+                }
+            ],
+        }
+        with self.assertRaisesRegex(
+            TenantPayloadImportError,
+            "TPV1_PAYLOAD_REJECTED_BY_CUSTOMER_SEMANTIC_POLICY",
+        ):
+            _validate_adapter(adapter, manifest)
 
     def test_registration_deactivation_stops_discovery_and_writes(self):
         definition = self._definition(

@@ -92,6 +92,31 @@ def _validate_adapter(adapter: dict[str, Any], manifest: dict[str, Any]) -> None
     supported = adapter.get("supported_source_versions")
     if not isinstance(supported, list) or manifest["source_version"] not in supported:
         _fail("TPV1_SOURCE_VERSION_UNSUPPORTED")
+    rejected_payloads = adapter.get("rejected_payloads", [])
+    if not isinstance(rejected_payloads, list):
+        _fail("TPV1_REJECTED_PAYLOAD_POLICY_INVALID")
+    for rejected in rejected_payloads:
+        if (
+            not isinstance(rejected, dict)
+            or not re.fullmatch(
+                r"[A-Za-z0-9][A-Za-z0-9._-]{2,127}",
+                str(rejected.get("payload_id") or ""),
+            )
+            or not re.fullmatch(
+                r"[0-9a-f]{64}",
+                str(rejected.get("payload_checksum") or ""),
+            )
+            or not re.fullmatch(
+                r"[A-Z][A-Z0-9_]{2,127}",
+                str(rejected.get("reason_code") or ""),
+            )
+        ):
+            _fail("TPV1_REJECTED_PAYLOAD_POLICY_INVALID")
+        if (
+            rejected["payload_id"] == manifest.get("payload_id")
+            and rejected["payload_checksum"] == manifest.get("payload_checksum")
+        ):
+            _fail("TPV1_PAYLOAD_REJECTED_BY_CUSTOMER_SEMANTIC_POLICY")
     resources = adapter.get("resources")
     order = adapter.get("model_import_order")
     if not isinstance(resources, dict) or not isinstance(order, list) or set(order) != set(resources) or len(order) != len(set(order)):
