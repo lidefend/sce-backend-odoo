@@ -353,7 +353,7 @@ workspace.worktree.cleanup: guard.prod.forbid
 	@python3 scripts/ops/safe_worktree_cleanup.py --path "$(CLEAN_WORKTREE)" $(if $(filter 1,$(APPLY)),--apply,)
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync mirror.main.gitee main.cutover.controlled
+.PHONY: main.sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch
 
 main.sync: guard.prod.forbid
 	@echo "[main.sync] checkout main + fast-forward pull"
@@ -362,6 +362,23 @@ main.sync: guard.prod.forbid
 
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh
+
+candidate.required_checks.dispatch: guard.prod.forbid
+	@bash -c '\
+	set -euo pipefail; \
+	branch="$$(git branch --show-current)"; \
+	echo "$$branch" | grep -Eq "$(CODEX_ALLOWED_WRITE_BRANCH_REGEX)" || { echo "[candidate.required_checks.dispatch] BLOCKED invalid_branch"; exit 2; }; \
+	expected="$(CANDIDATE_EXPECTED_SHA)"; \
+	[[ "$$expected" =~ ^[0-9a-f]{40}$$ ]] || { echo "[candidate.required_checks.dispatch] BLOCKED full_expected_sha_required"; exit 2; }; \
+	[ -z "$$(git status --porcelain)" ] || { echo "[candidate.required_checks.dispatch] BLOCKED worktree_not_clean"; exit 2; }; \
+	[ "$$(git rev-parse HEAD)" = "$$expected" ] || { echo "[candidate.required_checks.dispatch] BLOCKED local_sha_mismatch"; exit 2; }; \
+	remote_sha="$$(git ls-remote origin "refs/heads/$$branch" | awk "{print \$$1}")"; \
+	[ "$$remote_sha" = "$$expected" ] || { echo "[candidate.required_checks.dispatch] BLOCKED remote_sha_mismatch"; exit 2; }; \
+	for workflow in public_guard.yml professional_quality_gate.yml frontend_release_gate.yml; do \
+	  gh workflow run "$$workflow" --ref "$$branch"; \
+	done; \
+	echo "[candidate.required_checks.dispatch] PASS branch=$$branch sha=$$expected workflows=3"; \
+	'
 
 main.cutover.controlled: guard.prod.forbid
 	@test -n "$(CUTOVER_TARGET_SHA)" || (echo "CUTOVER_TARGET_SHA is required"; exit 2)

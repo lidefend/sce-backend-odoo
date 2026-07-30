@@ -412,6 +412,11 @@ Codex 的责任是 **定位 → 修复 → 重试**。
   * 必须提供两个 live `main` 的完整旧 SHA、目标 SHA/TREE、私有权限 Gitee
     管理 token 文件、仓库外恢复目录和证据目录；
   * 不属于生产部署授权，不得连接数据库、filestore 或生产运行环境。
+* `make candidate.required_checks.dispatch CANDIDATE_EXPECTED_SHA=<full-sha>`
+
+  * 仅为当前合规候选分支的精确远端 SHA 派发既有 required-check 工作流；
+  * 工作区、当前 HEAD 或远端分支任一漂移时零派发退出；
+  * 不修改 `main`、保护规则、产品数据或生产环境。
 
 > 若某 target 尚未实现，**必须先补 Makefile 封装**，
 > Codex 不得绕过直接调用底层命令。
