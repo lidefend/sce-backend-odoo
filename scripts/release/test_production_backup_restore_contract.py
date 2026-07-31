@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import stat
 import sys
 import tempfile
 import unittest
@@ -343,6 +344,7 @@ class RestoreIsolationTests(unittest.TestCase):
             root.chmod(0o700)
             backup = self.backup_fixture(root)
             calls = []
+            health_config_modes = []
 
             def runner(args, *, input_bytes=None):
                 calls.append(args)
@@ -350,6 +352,9 @@ class RestoreIsolationTests(unittest.TestCase):
                     return b"ready"
                 if args[:3] == ["docker", "run", "--rm"] and "sha256sum" in " ".join(args):
                     return ("f" * 64 + "  -\n").encode()
+                if "--entrypoint" in args and "odoo" in args:
+                    mount = next(value for value in args if value.endswith(":/etc/odoo/odoo.conf:ro"))
+                    health_config_modes.append(stat.S_IMODE(Path(mount.split(":", 1)[0]).stat().st_mode))
                 return b"ok"
 
             with (
@@ -382,6 +387,8 @@ class RestoreIsolationTests(unittest.TestCase):
                 if "--entrypoint" in call and "odoo" in call
             )
             self.assertNotIn("--user", health)
+            self.assertEqual(health[health.index("--group-add") + 1], "0")
+            self.assertEqual(health_config_modes, [0o640])
             self.assertEqual(report["external_write_side_effects"], 0)
             self.assertTrue(report["cron_disabled"])
             self.assertEqual(report["odoo_healthcheck"], "stop_after_init_passed")
