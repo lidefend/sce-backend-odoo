@@ -20,6 +20,7 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 from release_candidate_report import atomic_write_json, atomic_write_text
+from final_image_real_plan_gate import load_and_validate as validate_real_plan
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -277,6 +278,18 @@ def candidate_identity(
     ):
         raise PublicationError("candidate report/image manifest identity differs")
 
+    real_plan_path = attempt / "final-image-real-plan.json"
+    try:
+        validate_real_plan(
+            real_plan_path,
+            expected_source_sha=expected_source_sha,
+            expected_source_tree=source_tree,
+            expected_version=version,
+            expected_image_content_id=local_image_id,
+        )
+    except ValueError as exc:
+        raise PublicationError("final image real plan gate failed") from exc
+
     immutable_evidence: dict[str, str] = {}
     for directory, names, files in os.walk(attempt, topdown=True):
         current = Path(directory)
@@ -319,6 +332,7 @@ def candidate_identity(
         "manifest_sha256": verified_hashes["image-manifest.json"],
         "archive_sha256": verified_hashes["candidate-image.tar"],
         "sbom_sha256": verified_hashes["sbom.cyclonedx.json"],
+        "final_image_real_plan_sha256": sha256_file(real_plan_path),
         "local_image_id": local_image_id,
         "image_tags": expected_tags,
         "required_checks": source.get("required_checks") or {},
