@@ -108,6 +108,6 @@ form { display: grid; gap: 10px; }
 input { min-height: 42px; padding: 8px 10px; }
 button { min-height: 42px; margin-top: 8px; }
 .hint { color: var(--sc-app-text-secondary); }
-.message { color: var(--sc-semantic-text-danger, #b91c1c); }
+.message { color: var(--sc-semantic-state-danger-text); }
 .back-link { justify-self: start; }
 </style>

@@ -305,7 +305,7 @@ async function executeHeaderAction(actionKey: string) {
 .auth-entry-link {
   border: 0;
   background: transparent;
-  color: var(--sc-semantic-text-link, #2563eb);
+  color: var(--sc-semantic-state-info-text);
   cursor: pointer;
   padding: 6px 0;
   text-decoration: underline;
