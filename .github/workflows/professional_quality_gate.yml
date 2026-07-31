@@ -19,6 +19,12 @@ jobs:
     name: professional_authorization
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+    outputs:
+      lane: ${{ steps.risk.outputs.lane }}
+      professional_mode: ${{ steps.risk.outputs.professional_mode }}
     steps:
       - name: Deny forks and non-owner actors
         env:
@@ -47,10 +53,23 @@ jobs:
       - name: Checkout authorized commit without persisted credentials
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.CHECKOUT_SHA }}
+          fetch-depth: 0
           persist-credentials: false
 
+      - name: Classify change risk
+        id: risk
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/ci_risk_classifier.py \
+            --base "${BASE_SHA}" \
+            --head "${CHECKOUT_SHA}" \
+            --event "${GITHUB_EVENT_NAME}" \
+            --ref "${GITHUB_REF}" \
+            --github-output "${GITHUB_OUTPUT}"
+
       - name: Prove chatter timeline authorization with real ORM
+        if: steps.risk.outputs.professional_mode == 'full'
         run: make test.chatter-timeline.authorization.orm
 
   python310_runtime_compatibility:
@@ -58,6 +77,7 @@ jobs:
     needs: professional_authorization
     if: >-
       github.repository == 'lidefend/sce-backend-odoo' &&
+      needs.professional_authorization.outputs.professional_mode == 'full' &&
       ((github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'push' &&
@@ -93,6 +113,10 @@ jobs:
     name: professional_quality_gate
     needs: [professional_authorization, python310_runtime_compatibility]
     if: >-
+      always() &&
+      needs.professional_authorization.result == 'success' &&
+      (needs.python310_runtime_compatibility.result == 'success' ||
+      needs.python310_runtime_compatibility.result == 'skipped') &&
       github.repository == 'lidefend/sce-backend-odoo' &&
       ((github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository) ||
@@ -105,7 +129,9 @@ jobs:
     env:
       CI_REMOTE_URL: https://github.com/lidefend/sce-backend-odoo.git
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
       CI_PROJECT_NAME: sc-prof-${{ github.run_id }}
+      PROFESSIONAL_MODE: ${{ needs.professional_authorization.outputs.professional_mode }}
 
     defaults:
       run:
@@ -120,7 +146,8 @@ jobs:
           git init "${GITHUB_WORKSPACE}"
           git remote add origin "${CI_REMOTE_URL}"
           for attempt in 1 2 3 4 5; do
-            if timeout 90 git fetch --no-tags origin "${HEAD_SHA}" &&
+            if timeout 90 git fetch --no-tags origin "${BASE_SHA}" &&
+              timeout 90 git fetch --no-tags origin "${HEAD_SHA}" &&
               test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"; then
               git checkout --detach FETCH_HEAD
               test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
@@ -131,19 +158,63 @@ jobs:
           echo "authoritative GitHub checkout failed for authorized commit" >&2
           exit 1
 
+      - name: Re-prove checkout identity after base fetch
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
+          git cat-file -e "${BASE_SHA}^{commit}"
+
+      - name: Restore content-addressed pnpm store
+        if: env.PROFESSIONAL_MODE == 'full'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-node20-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-node20-
+
       - name: Verify runner tools
+        if: env.PROFESSIONAL_MODE == 'full'
         run: |
           python3 --version
           node --version
           corepack enable
           corepack prepare pnpm@9 --activate
+          pnpm config set store-dir "${HOME}/.local/share/pnpm/store"
           pnpm --version
 
       - name: Install frontend dependencies
-        run: pnpm --dir frontend/apps/web install --frozen-lockfile=false
+        if: env.PROFESSIONAL_MODE == 'full'
+        run: pnpm -C frontend install --frozen-lockfile
 
-      - name: Run professional quality gate
+      - name: Run full professional quality gate
+        if: env.PROFESSIONAL_MODE == 'full'
         run: make ci
+
+      - name: Run standard backend quality gate
+        if: env.PROFESSIONAL_MODE == 'standard_backend'
+        run: |
+          set -euo pipefail
+          make test.unit test.contract test.e2e.preflight
+          make verify.tenant.data_responsibility_boundary \
+            verify.tenant.module_set_matrix \
+            verify.tenant.payload_boundary \
+            verify.tenant.product_legacy_boundary \
+            verify.tenant.legacy_xmlid_boundary
+          make ci.generated_reports.guard architecture.complexity_baseline_lock
+          git diff --check
+
+      - name: Run lightweight fixed-check contract
+        if: env.PROFESSIONAL_MODE == 'fast' || env.PROFESSIONAL_MODE == 'standard_frontend'
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/test_ci_risk_classifier.py
+          python3 scripts/verify/test_github_actions_security_guard.py
+          python3 scripts/verify/github_actions_security_guard.py
+          if [ "${PROFESSIONAL_MODE}" = "standard_frontend" ]; then
+            make ci.generated_reports.guard architecture.complexity_baseline_lock
+          fi
+          git diff --check
 
       - name: Clean isolated runner state
         if: always()
