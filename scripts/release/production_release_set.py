@@ -16,6 +16,17 @@ CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
 LEGACY_PATH = Path("/data/odoo/legacy_attachments")
 TENANT = re.compile(r"^[a-z][a-z0-9_]{2,62}$")
 MODULE = re.compile(r"^[a-z][a-z0-9_]{1,62}$")
+XMLID = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$")
+OPERATOR_FIELDS = {
+    "identity_type",
+    "identity_key",
+    "tenant_key",
+    "target_group_xmlid",
+    "expected_membership_before",
+    "expected_membership_after",
+    "expected_company_scope",
+    "grant_scope_version",
+}
 
 
 class ReleaseSetError(ValueError):
@@ -41,10 +52,15 @@ def load_lock(path: Path) -> dict:
         "customer_modules", "payload_root", "payload_version", "payload_digest",
         "payload_schema_version", "target_database", "filestore_scope",
         "legacy_attachments_path", "allowed_entry_contract",
+        "operator_contract",
     }
-    if not isinstance(payload, dict) or set(payload) != required:
+    if not isinstance(payload, dict):
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_SCHEMA_INVALID")
-    if payload["schema_version"] != "sce.production_release_set.v1":
+    if "operator_contract" not in payload:
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_OPERATOR_SCHEMA_INVALID")
+    if set(payload) != required:
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_SCHEMA_INVALID")
+    if payload["schema_version"] != "sce.production_release_set.v2":
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_SCHEMA_INVALID")
     expected_version = (Path(__file__).resolve().parents[2] / "VERSION").read_text().strip()
     if payload["release_version"] != expected_version:
@@ -72,8 +88,22 @@ def load_lock(path: Path) -> dict:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_DATABASE_FILESTORE_MISMATCH")
     if Path(payload["legacy_attachments_path"]) != LEGACY_PATH:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_LEGACY_PATH_MISMATCH")
-    if payload["allowed_entry_contract"] != "production_tenant_delivery.v1":
+    if payload["allowed_entry_contract"] != "production_tenant_delivery.v2":
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_ENTRY_CONTRACT_MISMATCH")
+    operator = payload["operator_contract"]
+    if not isinstance(operator, dict) or set(operator) != OPERATOR_FIELDS:
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_OPERATOR_SCHEMA_INVALID")
+    if (
+        operator["identity_type"] != "external_xmlid"
+        or not XMLID.fullmatch(str(operator["identity_key"]))
+        or not XMLID.fullmatch(str(operator["target_group_xmlid"]))
+        or operator["tenant_key"] != payload["tenant_key"]
+        or operator["expected_membership_before"] != 0
+        or operator["expected_membership_after"] != 1
+        or operator["expected_company_scope"] != 1
+        or operator["grant_scope_version"] != 1
+    ):
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_OPERATOR_CONTRACT_INVALID")
     return payload
 
 
@@ -121,9 +151,13 @@ def validate_environment(payload: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("validate", "print", "tenant", "module"))
+    parser.add_argument(
+        "action",
+        choices=("validate", "print", "tenant", "modules", "module", "operator-field"),
+    )
     parser.add_argument("--lock", required=True, type=Path)
     parser.add_argument("--module")
+    parser.add_argument("--field", choices=sorted(OPERATOR_FIELDS))
     args = parser.parse_args()
     try:
         payload = load_lock(args.lock.resolve())
@@ -133,10 +167,19 @@ def main() -> int:
         raise SystemExit(f"[production.release-set] BLOCKED: {exc}") from exc
     if args.action == "tenant":
         print(payload["tenant_key"])
+    elif args.action == "modules":
+        print(",".join(payload["customer_modules"]))
     elif args.action == "module":
         if args.module not in payload["customer_modules"]:
             raise SystemExit("[production.release-set] BLOCKED: module is outside the signed allowlist")
         print(args.module)
+    elif args.action == "operator-field":
+        if not args.field:
+            raise SystemExit("[production.release-set] BLOCKED: --field is required")
+        value = payload["operator_contract"][args.field]
+        if isinstance(value, bool):
+            value = int(value)
+        print(value)
     elif args.action == "print":
         print(json.dumps({
             "status": "PASS",

@@ -43,6 +43,11 @@ COPY scripts/release/production_odoo_entrypoint.sh /usr/local/bin/odoo-entrypoin
 COPY scripts/release/production_db_contract.py /usr/local/bin/production_db_contract.py
 COPY scripts/release/production_db_init.py /usr/local/bin/production_db_init.py
 COPY scripts/release/production_db_manage.sh /usr/local/bin/production-db-manage
+COPY scripts/release/production_maintenance.sh /usr/local/bin/production-maintenance
+COPY scripts/release/production_maintenance_config.py /usr/local/bin/production_maintenance_config.py
+COPY scripts/release/production_maintenance_probe.py /usr/local/share/sce/production_maintenance_probe.py
+COPY scripts/tenant_payload/provision_operator.py /usr/local/share/sce/provision_tenant_payload_operator.py
+COPY scripts/tenant_payload/odoo_action.py /usr/local/share/sce/tenant_payload_odoo_action.py
 COPY scripts/release/configure_colocated_platform_core.py /usr/local/share/sce/configure_colocated_platform_core.py
 COPY scripts/release/initialize_colocated_platform_snapshot.py /usr/local/share/sce/initialize_colocated_platform_snapshot.py
 COPY scripts/verify/baselines/formal_business_product_menu_policy_v1.json /opt/sce-product/contracts/formal_business_product_menu_policy_v1.json
@@ -53,6 +58,7 @@ COPY release/product-release.yaml /opt/sce-product/product-release.yaml
 
 RUN chmod 0755 /usr/local/bin/odoo-entrypoint.sh /usr/local/bin/render_odoo_conf.py /usr/local/bin/render_nginx_conf.sh \
         /usr/local/bin/production_db_contract.py /usr/local/bin/production_db_init.py /usr/local/bin/production-db-manage \
+        /usr/local/bin/production-maintenance /usr/local/bin/production_maintenance_config.py \
     && rm -f /etc/nginx/sites-enabled/default \
     && find /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external -type d -exec chmod 0755 {} + \
     && find /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external -type f -exec chmod 0644 {} + \
