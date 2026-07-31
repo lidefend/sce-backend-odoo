@@ -372,6 +372,16 @@ class RestoreIsolationTests(unittest.TestCase):
             self.assertIn("--publish 127.0.0.1::8069", flattened)
             self.assertNotIn("sce-sc_production", flattened)
             self.assertNotIn("sc-backend-odoo-prod", flattened)
+            extraction = next(
+                call for call in calls if "tar -C /restore -xzf -" in " ".join(call)
+            )
+            self.assertEqual(extraction[extraction.index("--user") + 1], "0:0")
+            health = next(
+                call
+                for call in calls
+                if "--entrypoint" in call and "odoo" in call
+            )
+            self.assertNotIn("--user", health)
             self.assertEqual(report["external_write_side_effects"], 0)
             self.assertTrue(report["cron_disabled"])
             self.assertEqual(report["odoo_healthcheck"], "stop_after_init_passed")

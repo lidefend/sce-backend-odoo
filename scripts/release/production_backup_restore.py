@@ -882,6 +882,14 @@ def restore_rehearsal(
                     "--network",
                     "none",
                     "-i",
+                    # The image runs as the unprivileged ``odoo`` user, while a
+                    # newly-created Docker volume is rooted at uid 0.  Use root
+                    # only in this network-isolated extraction container so tar
+                    # can create the database directory and preserve the
+                    # archive's ownership.  The Odoo health container below
+                    # continues to run as the image's unprivileged default.
+                    "--user",
+                    "0:0",
                     "-v",
                     f"{names['filestore_volume']}:/restore",
                     "--entrypoint",

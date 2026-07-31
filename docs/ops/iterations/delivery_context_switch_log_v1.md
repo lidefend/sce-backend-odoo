@@ -3,6 +3,27 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-01 — Isolated restore filestore permission repair
+
+- Branch: `fix/restore-rehearsal-volume-permissions`
+- Starting product commit: `3fb17948feacb34c2574668eaba7ddb2ad4bef26`
+- Formal Product Layer: P4 ops delivery tool
+- Layer Target: governed production backup restore rehearsal
+- Module: `scripts/release/production_backup_restore.py` and its contract tests
+- Reason: immutable RC images run as the unprivileged `odoo` user, which cannot
+  initialize the root-owned filesystem of a newly created rehearsal volume
+- Standard vs User-Specific: repository-wide recovery safety; no customer data,
+  application behavior, database semantics, or production runtime policy
+- Why Here / Why Not Elsewhere: P4 owns isolated recovery resource preparation;
+  application images must retain their non-root runtime identity and product
+  modules must not compensate for host volume ownership
+- Blast Radius: only the network-disabled filestore extraction container runs as
+  uid/gid 0; the Odoo health container remains on the image's unprivileged user,
+  and production database, network, volumes, backup artifacts, and cleanup
+  authorization remain unchanged
+- Validation: 42 backup/restore contract tests, extraction-user assertion,
+  unprivileged Odoo health-container assertion, Python compilation, and diff checks
+
 ## 2026-07-31 — CONTROLLED-MAIN-CUTOVER-01 governance capability
 
 - Formal Product Layer: P4 ops delivery tool
