@@ -1950,3 +1950,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific / Why Here: generic production rehearsal lifecycle control belongs to P4 and carries no customer or product semantics.
 - Why Not Elsewhere / Blast Radius: no runtime application, P0-P3, systemd, production container, volume, database, or service behavior; SIGTERM is limited to one exact report/restore-ID process tree and cleanup remains separately authorized.
 - Validation: report-root and identity guards, exact process-argument matching, SIGTERM-only static contract, focused backup/restore suite, and required PR checks.
+
+## 2026-08-01 — RESTORE-HEALTH-CONFIG-PERMISSION-01
+
+- Branch / anchor: `fix/restore-health-config-permission` from `7db6264a636c1cd79b68ed95b3dc87e4e424fbe9`.
+- Formal Product Layer / Target / Module: P4 ops delivery tool; isolated restore health container in `scripts/release/production_backup_restore.py`.
+- Reason: the root-owned `0600` temporary Odoo config bind mount is unreadable by the RC12 image's default unprivileged `odoo` user.
+- Standard vs User-Specific / Why Here: generic restore rehearsal execution compatibility belongs to P4 and contains no customer or product semantics.
+- Why Not Elsewhere / Blast Radius: no image, P0-P3, frontend, production service, production database, systemd, or runtime-compose change; only the network-isolated health container receives supplemental group `0`, and the temporary config remains non-world-readable and is unlinked in `finally`.
+- Validation: health-container command contract, observed temporary mode `0640`, continued absence of `--user`, focused backup/restore tests, and required PR checks.

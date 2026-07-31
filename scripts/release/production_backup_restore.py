@@ -919,7 +919,10 @@ def restore_rehearsal(
             with tempfile.NamedTemporaryFile(prefix="restore-odoo-", delete=False) as stream:
                 stream.write(config_payload)
                 config_path = Path(stream.name)
-            config_path.chmod(0o600)
+            # Keep the isolated database password unavailable to ordinary host
+            # users while allowing the container's unprivileged ``odoo`` user
+            # to read the root-owned bind mount through one supplemental group.
+            config_path.chmod(0o640)
             try:
                 runner(
                     [
@@ -931,6 +934,8 @@ def restore_rehearsal(
                         names["network"],
                         "--publish",
                         "127.0.0.1::8069",
+                        "--group-add",
+                        "0",
                         "-v",
                         f"{names['filestore_volume']}:/var/lib/odoo/filestore",
                         "-v",
