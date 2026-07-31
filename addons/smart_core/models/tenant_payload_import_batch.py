@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import os
 
 from odoo import api, fields, models
@@ -9,6 +8,9 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.addons.smart_core.utils.tenant_payload_v1 import (
     TenantPayloadError,
     validate_manifest,
+)
+from odoo.addons.smart_core.utils.tenant_payload_capability import (
+    maintenance_capability_matches,
 )
 
 
@@ -28,7 +30,7 @@ def _assert_signed_import_boundary(env):
     actual = str(
         env.context.get("sc_tenant_payload_maintenance_capability", "") or ""
     )
-    if len(expected) != 64 or not hashlib.compare_digest(actual, expected):
+    if not maintenance_capability_matches(actual, expected):
         raise UserError("TPV1_SIGNED_MAINTENANCE_CAPABILITY_REQUIRED")
 
 

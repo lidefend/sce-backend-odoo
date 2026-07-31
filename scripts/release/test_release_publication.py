@@ -137,6 +137,39 @@ def write_fixture(root: Path, *, ready: bool = True) -> Path:
     (attempt / "release-report.json").write_text(
         json.dumps(report), encoding="utf-8"
     )
+    (attempt / "final-image-real-plan.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "final_image_real_plan.v2",
+                "status": "PASS",
+                "source_sha": SOURCE,
+                "source_tree": TREE,
+                "release_version": VERSION,
+                "image_content_id": IMAGE_ID,
+                "image_revision": SOURCE,
+                "command_contract": "release.production.tenant_payload.plan",
+                "production_command_parity": True,
+                "database_role": "isolated_customer_tenant_rehearsal",
+                "environment_id": "sc_release_rc11_rehearsal_fixture",
+                "runtime_isolation": True,
+                "production_resource_overlap": False,
+                "target_database": "sc_production",
+                "tenant_key": "sample_tenant",
+                "payload_digest": "3" * 64,
+                "plan_computation_completed": True,
+                "planned_records": 10,
+                "planned_relationships": 20,
+                "database_write_count": 0,
+                "payload_batches_before": 0,
+                "payload_batches_after": 0,
+                "historical_facts_before": 0,
+                "historical_facts_after": 0,
+                "business_state_digest_before": "4" * 64,
+                "business_state_digest_after": "4" * 64,
+            }
+        ),
+        encoding="utf-8",
+    )
     return attempt
 
 
@@ -470,6 +503,22 @@ class PublicationContractTests(unittest.TestCase):
                     }
                     & set(backend.events)
                 )
+
+    def test_final_image_real_plan_evidence_is_required_before_publication(self):
+        (self.candidate / "final-image-real-plan.json").unlink()
+        with self.assertRaisesRegex(
+            publication.PublicationError, "final image real plan gate failed"
+        ):
+            self.pipeline().execute()
+        self.assertFalse(
+            {
+                "registry_validation",
+                "registry_push",
+                "tag_create",
+                "release_create",
+            }
+            & set(self.backend.events)
+        )
 
     def test_live_main_drift_after_preflight_blocks_before_first_write(self):
         self.backend.move_main_before_first_write = True

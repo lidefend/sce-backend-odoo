@@ -145,8 +145,9 @@ verify.production.release_contract:
 	@$(MAKE) --no-print-directory daily.candidate.sentinel.test
 	@$(MAKE) --no-print-directory daily.candidate.clone_rehearsal.test
 	@bash -n scripts/release/immutable_candidate_build.sh scripts/release/immutable_candidate_publish.sh scripts/release/immutable_candidate_scan.sh scripts/release/production_odoo_entrypoint.sh scripts/release/production_db_manage.sh scripts/release/production_maintenance.sh scripts/release/run_production_operator_grant.sh scripts/release/production_contract_image_acceptance.sh
-	@python3 -m py_compile scripts/release/production_release_set.py scripts/release/build_production_release_set.py scripts/release/production_customer_package.py scripts/release/production_maintenance_config.py scripts/release/production_maintenance_probe.py scripts/release/test_production_release_set.py scripts/release/test_production_maintenance_contract.py scripts/release/test_narrow_importer_group.py scripts/verify/narrow_importer_group_guard.py
+	@python3 -m py_compile scripts/release/production_release_set.py scripts/release/build_production_release_set.py scripts/release/production_customer_package.py scripts/release/production_maintenance_config.py scripts/release/production_maintenance_probe.py scripts/release/final_image_real_plan_gate.py scripts/release/test_final_image_real_plan_gate.py scripts/release/test_production_release_set.py scripts/release/test_production_maintenance_contract.py scripts/release/test_narrow_importer_group.py scripts/verify/narrow_importer_group_guard.py
 	@python3 scripts/release/test_production_release_set.py
+	@PYTHONPATH=scripts/release python3 scripts/release/test_final_image_real_plan_gate.py
 	@python3 scripts/release/test_production_maintenance_contract.py
 	@python3 scripts/release/test_narrow_importer_group.py
 	@python3 scripts/verify/narrow_importer_group_guard.py

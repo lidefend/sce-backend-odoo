@@ -1875,3 +1875,16 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Here / Why Not Elsewhere: the role projection belongs to the industry product policy; type and pure query helpers belong beside their generic frontend domains rather than customer modules or release exceptions
 - Blast Radius: finance navigation adds one existing read-only menu identity; contract form and session changes only move pure helpers/types; no ACL, workflow, payload, database, `main`, protection, or production mutation
 - Validation: finance projection unit guard, role/authorization regression, frontend lint/strict/build/unit gates, complexity locks, four required checks on the new SHA, and dual-remote candidate parity
+
+## 2026-07-31 — RELEASE-TOOLING-P0-RC11-RUNTIME-FIX-05
+
+- Branch: `fix/rc11-runtime-plan`
+- Starting product commit: `0750d928ca7049eb7cc368d3988f158f6ad17f67`
+- Formal Product Layer: P0 platform kernel plus P4 release delivery tooling
+- Layer Target: signed tenant-payload maintenance capability comparison and immutable candidate publication gate
+- Module: `smart_core` tenant payload boundary and `scripts/release` publication evidence
+- Reason: replace the invalid runtime comparison call and require the final candidate image to complete the real payload plan path against an isolated equivalent database before publication
+- Standard vs User-Specific: generic signed-import and release safety mechanism; no customer semantics or payload contents are encoded
+- Why Here / Why Not Elsewhere: capability authorization belongs to the platform import boundary, while pre-publication execution evidence belongs to release tooling; neither belongs in customer modules, frontend code, or production data
+- Blast Radius: maintenance capability matching, focused release tests, candidate publication preflight, and version identity only; production data, ACL design, customer package, v4 payload, and runtime services remain unchanged
+- Validation: behavioral equality/mismatch tests, repository API audit, publication negative tests, HIGH_RISK required checks, and final rc.11 image execution of the production-equivalent v4 plan with zero database writes

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -15,6 +16,14 @@ guard = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader
 SPEC.loader.exec_module(guard)
 
+CAPABILITY_SPEC = importlib.util.spec_from_file_location(
+    "tenant_payload_capability",
+    ROOT / "addons/smart_core/utils/tenant_payload_capability.py",
+)
+capability = importlib.util.module_from_spec(CAPABILITY_SPEC)
+assert CAPABILITY_SPEC.loader
+CAPABILITY_SPEC.loader.exec_module(capability)
+
 
 class NarrowImporterGroupTest(unittest.TestCase):
     def test_importer_has_empty_implied_closure(self):
@@ -25,13 +34,48 @@ class NarrowImporterGroupTest(unittest.TestCase):
     def test_importer_acl_set_is_exact(self):
         self.assertEqual(guard.importer_acls(), guard.ALLOWED_ACLS)
 
-    def test_signed_entry_requires_maintenance_capability(self):
+    def test_signed_entry_compares_maintenance_capability_behavior(self):
+        expected = "a" * 64
+        self.assertTrue(
+            capability.maintenance_capability_matches(expected, expected)
+        )
+        self.assertFalse(
+            capability.maintenance_capability_matches("b" + expected[1:], expected)
+        )
+        self.assertFalse(
+            capability.maintenance_capability_matches("a" * 63, "a" * 63)
+        )
+
+    def test_obsolete_hashlib_compare_digest_is_absent(self):
         source = (
             ROOT / "addons/smart_core/models/tenant_payload_import_batch.py"
         ).read_text(encoding="utf-8")
         self.assertIn("TPV1_SIGNED_IMPORT_CONTEXT_REQUIRED", source)
         self.assertIn("TPV1_SIGNED_MAINTENANCE_CAPABILITY_REQUIRED", source)
-        self.assertIn("hashlib.compare_digest", source)
+        tracked = subprocess.run(
+            [
+                "git",
+                "ls-files",
+                "-z",
+                "--cached",
+                "--others",
+                "--exclude-standard",
+                "--",
+                "*.py",
+            ],
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.PIPE,
+        ).stdout.decode("utf-8").split("\0")
+        forbidden = "hashlib" + ".compare_digest"
+        offenders = []
+        for relative in filter(None, tracked):
+            path = ROOT / relative
+            if forbidden in path.read_text(
+                encoding="utf-8", errors="ignore"
+            ):
+                offenders.append(relative)
+        self.assertEqual(offenders, [])
 
     def test_operator_contract_is_scope_v3_and_rejects_data_operator(self):
         source = (
