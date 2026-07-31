@@ -176,6 +176,38 @@ class ProductReleaseTests(unittest.TestCase):
         self.assertEqual(payload["product_version"], release.read_version())
         self.assertEqual(payload["version_source"], "VERSION")
 
+    def test_explicit_target_version_uses_semver_not_string_order(self):
+        contracts = ["tenant_payload_v1", "route_authority.v1"]
+        for target in ("1.0.0-rc.6", "1.0.0-rc.10", "1.10.0", "2.0.0-rc.1"):
+            with self.subTest(target=target):
+                release.verify_customer_compatibility(
+                    "1.0.0-rc.6",
+                    "2.0.0",
+                    contracts,
+                    target_version=target,
+                )
+        for target in ("1.0.0-rc.5", "2.0.0", "2.0.1"):
+            with self.subTest(target=target), self.assertRaisesRegex(
+                ValueError, "PRODUCT_VERSION_INCOMPATIBLE"
+            ):
+                release.verify_customer_compatibility(
+                    "1.0.0-rc.6",
+                    "2.0.0",
+                    contracts,
+                    target_version=target,
+                )
+
+    def test_prerelease_identifier_precedence_is_semver_compliant(self):
+        self.assertLess(
+            release.compare_versions("1.0.0-rc.9", "1.0.0-rc.10"), 0
+        )
+        self.assertLess(
+            release.compare_versions("1.0.0-rc.10", "1.0.0"), 0
+        )
+        self.assertGreater(
+            release.compare_versions("1.10.0", "1.2.0"), 0
+        )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

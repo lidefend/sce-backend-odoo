@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 import shutil
@@ -15,6 +16,28 @@ import customer_package_preflight as admission
 import production_release_set as release_set
 
 CONFIRMATION = "YES_PREPARE_SIGNED_CUSTOMER_PACKAGE"
+
+
+def validate_package_target_contract(
+    lock: dict, manifest: dict, manifest_path: Path, release_config: dict
+) -> None:
+    if (
+        manifest_path.resolve() != Path(lock["customer_package_manifest"]).resolve()
+        or admission.sha256_file(manifest_path.resolve())
+        != lock["customer_package_manifest_digest"]
+        or manifest["schema_version"] != lock["customer_package_schema_version"]
+        or manifest["product_sha"] != lock["customer_package_build_product_sha"]
+        or manifest["customer_sha"] != lock["customer_sha"]
+        or manifest["minimum_product_version"]
+        != lock["customer_package_minimum_product_version"]
+        or manifest["maximum_product_version_exclusive"]
+        != lock["customer_package_maximum_product_version_exclusive"]
+        or (manifest.get("signature") or {}).get("key_id")
+        != lock["customer_package_signature_key_id"]
+    ):
+        raise ValueError("CUSTOMER_PACKAGE_BUILD_PROVENANCE_MISMATCH")
+    if release_config["product"] != lock["customer_package_product_key"]:
+        raise ValueError("CUSTOMER_PACKAGE_TARGET_PRODUCT_IDENTITY_MISMATCH")
 
 
 def validate_destination(destination: Path) -> Path:
@@ -61,6 +84,42 @@ def inspect_archive(archive: Path, expected_files: list[dict]) -> None:
             raise ValueError("CUSTOMER_PACKAGE_FILE_MANIFEST_MISMATCH")
 
 
+def inspect_runtime_contract(
+    archive: Path, modules: list[str], tenant_key: str
+) -> dict[str, dict]:
+    validator = admission.load_module(
+        "sce_production_customer_module_contract",
+        "addons/smart_core/utils/tenant_delivery_manifest.py",
+    )
+    contracts: dict[str, dict] = {}
+    with tarfile.open(archive, "r:gz") as handle:
+        regular = {member.name: member for member in handle.getmembers() if member.isfile()}
+        for module in modules:
+            suffix = f"/addons/{module}/customer_module_manifest.json"
+            matches = [name for name in regular if name.endswith(suffix)]
+            manifest_suffix = f"/addons/{module}/__manifest__.py"
+            module_manifests = [name for name in regular if name.endswith(manifest_suffix)]
+            if len(matches) != 1 or len(module_manifests) != 1:
+                raise ValueError("CUSTOMER_PACKAGE_RUNTIME_CONTRACT_MISSING")
+            contract_file = handle.extractfile(regular[matches[0]])
+            module_file = handle.extractfile(regular[module_manifests[0]])
+            if contract_file is None or module_file is None:
+                raise ValueError("CUSTOMER_PACKAGE_RUNTIME_CONTRACT_MISSING")
+            contract = json.loads(contract_file.read().decode("utf-8"))
+            module_manifest = ast.literal_eval(module_file.read().decode("utf-8"))
+            validator.validate_customer_module_manifest(contract)
+            if (
+                contract.get("tenant_key") != tenant_key
+                or contract.get("module_name") != module
+                or contract.get("module_version")
+                != str(module_manifest.get("version") or "")
+                or contract.get("product_bundle") != "smart_construction_bundle"
+            ):
+                raise ValueError("CUSTOMER_PACKAGE_RUNTIME_CONTRACT_MISMATCH")
+            contracts[module] = contract
+    return contracts
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=("plan", "apply"))
@@ -82,15 +141,34 @@ def main() -> int:
         raise SystemExit("CUSTOMER_PACKAGE_RELEASE_SET_MISMATCH")
     if manifest["schema_version"] != admission.PACKAGE_SCHEMA_VERSION_V2:
         raise SystemExit("CUSTOMER_PACKAGE_V2_REQUIRED")
-    if manifest["product_sha"] != lock["product_sha"] or manifest["customer_sha"] != lock["customer_sha"]:
-        raise SystemExit("CUSTOMER_PACKAGE_SOURCE_IDENTITY_MISMATCH")
+    manifest_path = args.manifest.resolve()
+    release_config = admission.load_module(
+        "production_target_release_contract", "scripts/release/product_release.py"
+    ).load_release_config()
+    try:
+        validate_package_target_contract(lock, manifest, manifest_path, release_config)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     inspect_archive(archive, manifest["files"])
+    runtime_contracts = inspect_runtime_contract(
+        archive, manifest["modules"], manifest["tenant_id"]
+    )
     destination = validate_destination(args.destination)
     report = {
         "schema_version": "production_customer_package_plan.v1",
         "status": "PASS",
         "action": args.action,
         "archive_sha256": actual,
+        "manifest_sha256": admission.sha256_file(manifest_path),
+        "package_build_product_sha": manifest["product_sha"],
+        "target_product_sha": lock["product_sha"],
+        "target_product_key": lock["customer_package_product_key"],
+        "target_product_version": lock["release_version"],
+        "target_version_in_compatibility_range": True,
+        "runtime_contract_compatible": True,
+        "product_bundles": sorted(
+            {row["product_bundle"] for row in runtime_contracts.values()}
+        ),
         "modules": manifest["modules"],
         "legacy_module_included": False,
         "destination": str(destination),

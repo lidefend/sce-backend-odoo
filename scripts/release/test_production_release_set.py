@@ -16,10 +16,15 @@ import build_production_release_set as builder
 import production_customer_package as customer_package
 
 
+ROOT = Path(__file__).resolve().parents[2]
+SAMPLE_CUSTOMER_MODULE = ROOT / "customer_addons" / "sce_customer_sample"
+
+
 class ReleaseSetTest(unittest.TestCase):
     def fixture(self, root: Path) -> tuple[Path, dict]:
         package = root / "customer.tar.gz"
         package.write_bytes(b"customer")
+        package_manifest = root / "customer-package.json"
         payload_root = root / "payload"
         payload_root.mkdir()
         (payload_root / "checksums.sha256").write_bytes(b"checksums")
@@ -30,7 +35,7 @@ class ReleaseSetTest(unittest.TestCase):
             "tenant_key": "sample_tenant",
         }))
         data = {
-            "schema_version": "sce.production_release_set.v3",
+            "schema_version": "sce.production_release_set.v4",
             "release_version": (Path(__file__).resolve().parents[2] / "VERSION").read_text().strip(),
             "product_sha": "a" * 40,
             "product_tree": "b" * 40,
@@ -41,6 +46,13 @@ class ReleaseSetTest(unittest.TestCase):
             "tenant_key": "sample_tenant",
             "customer_package": str(package),
             "customer_package_digest": hashlib.sha256(package.read_bytes()).hexdigest(),
+            "customer_package_manifest": str(package_manifest),
+            "customer_package_manifest_digest": "",
+            "customer_package_schema_version": "sce.tenant_customer_addon_package.v2",
+            "customer_package_build_product_sha": "f" * 40,
+            "customer_package_minimum_product_version": "1.0.0-rc.6",
+            "customer_package_maximum_product_version_exclusive": "2.0.0",
+            "customer_package_product_key": "sce-product",
             "customer_package_signature_key_id": "release-key",
             "customer_modules": ["sce_customer_sample"],
             "payload_root": str(payload_root),
@@ -50,7 +62,7 @@ class ReleaseSetTest(unittest.TestCase):
             "target_database": "sc_production",
             "filestore_scope": "sc_production",
             "legacy_attachments_path": "/data/odoo/legacy_attachments",
-            "allowed_entry_contract": "production_tenant_delivery.v3",
+            "allowed_entry_contract": "production_tenant_delivery.v4",
             "operator_contract": {
                 "identity_type": "external_xmlid",
                 "identity_key": "base.user_admin",
@@ -65,6 +77,20 @@ class ReleaseSetTest(unittest.TestCase):
                 "grant_scope_version": 3,
             },
         }
+        package_manifest.write_text(json.dumps({
+            "schema_version": data["customer_package_schema_version"],
+            "product_sha": data["customer_package_build_product_sha"],
+            "customer_sha": data["customer_sha"],
+            "minimum_product_version": data["customer_package_minimum_product_version"],
+            "maximum_product_version_exclusive": data["customer_package_maximum_product_version_exclusive"],
+            "archive_sha256": data["customer_package_digest"],
+            "tenant_id": data["tenant_key"],
+            "modules": data["customer_modules"],
+            "signature": {"algorithm": "ed25519", "key_id": data["customer_package_signature_key_id"], "value": "signed"},
+        }))
+        data["customer_package_manifest_digest"] = hashlib.sha256(
+            package_manifest.read_bytes()
+        ).hexdigest()
         lock = root / "lock.json"
         lock.write_text(json.dumps(data))
         return lock, data
@@ -121,6 +147,8 @@ class ReleaseSetTest(unittest.TestCase):
                 "customer_tree": data["customer_tree"],
                 "tenant_key": data["tenant_key"],
                 "customer_package": Path(data["customer_package"]),
+                "customer_package_manifest": Path(data["customer_package_manifest"]),
+                "customer_package_product_key": data["customer_package_product_key"],
                 "customer_package_signature_key_id": data["customer_package_signature_key_id"],
                 "customer_module": data["customer_modules"],
                 "payload_root": Path(data["payload_root"]),
@@ -166,6 +194,81 @@ class ReleaseSetTest(unittest.TestCase):
                 handle.addfile(info, io.BytesIO(content))
             with self.assertRaises(ValueError):
                 customer_package.inspect_archive(archive, expected)
+
+    def test_signed_archive_runtime_contract_targets_product_bundle(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "customer.tar.gz"
+            with tarfile.open(archive, "w:gz") as handle:
+                handle.add(
+                    SAMPLE_CUSTOMER_MODULE,
+                    arcname="package/addons/sce_customer_sample",
+                )
+            contracts = customer_package.inspect_runtime_contract(
+                archive, ["sce_customer_sample"], "sample"
+            )
+            self.assertEqual(
+                "smart_construction_bundle",
+                contracts["sce_customer_sample"]["product_bundle"],
+            )
+            with self.assertRaisesRegex(ValueError, "RUNTIME_CONTRACT_MISMATCH"):
+                customer_package.inspect_runtime_contract(
+                    archive, ["sce_customer_sample"], "wrong_tenant"
+                )
+
+    def test_package_build_sha_is_provenance_not_target_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock_path, data = self.fixture(Path(temporary))
+            lock = target.load_lock(lock_path)
+            manifest_path = Path(data["customer_package_manifest"])
+            manifest = json.loads(manifest_path.read_text())
+            self.assertNotEqual(manifest["product_sha"], lock["product_sha"])
+            customer_package.validate_package_target_contract(
+                lock,
+                manifest,
+                manifest_path,
+                {"product": "sce-product"},
+            )
+
+    def test_manifest_digest_and_target_product_mismatch_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock_path, data = self.fixture(Path(temporary))
+            lock = target.load_lock(lock_path)
+            manifest_path = Path(data["customer_package_manifest"])
+            manifest = json.loads(manifest_path.read_text())
+            with self.assertRaisesRegex(ValueError, "TARGET_PRODUCT_IDENTITY"):
+                customer_package.validate_package_target_contract(
+                    lock, manifest, manifest_path, {"product": "different-product"}
+                )
+            manifest["minimum_product_version"] = "1.0.0-rc.7"
+            with self.assertRaisesRegex(ValueError, "BUILD_PROVENANCE"):
+                customer_package.validate_package_target_contract(
+                    lock, manifest, manifest_path, {"product": "sce-product"}
+                )
+
+    def test_manifest_file_tamper_is_rejected_by_release_set(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock_path, data = self.fixture(Path(temporary))
+            manifest_path = Path(data["customer_package_manifest"])
+            manifest = json.loads(manifest_path.read_text())
+            manifest["maximum_product_version_exclusive"] = "3.0.0"
+            manifest_path.write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(
+                target.ReleaseSetError, "CUSTOMER_MANIFEST_DIGEST_MISMATCH"
+            ):
+                target.verify_bound_files(target.load_lock(lock_path))
+
+    def test_out_of_range_target_version_and_old_lock_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock_path, data = self.fixture(Path(temporary))
+            data["customer_package_minimum_product_version"] = "2.0.0"
+            data["customer_package_maximum_product_version_exclusive"] = "3.0.0"
+            lock_path.write_text(json.dumps(data))
+            with self.assertRaisesRegex(target.ReleaseSetError, "TARGET_INCOMPATIBLE"):
+                target.load_lock(lock_path)
+            data["schema_version"] = "sce.production_release_set.v3"
+            lock_path.write_text(json.dumps(data))
+            with self.assertRaisesRegex(target.ReleaseSetError, "SCHEMA_INVALID"):
+                target.load_lock(lock_path)
 
     def test_operator_contract_is_required_and_exact(self):
         with tempfile.TemporaryDirectory() as temporary:
