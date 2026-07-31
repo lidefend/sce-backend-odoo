@@ -1959,3 +1959,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific / Why Here: generic restore rehearsal execution compatibility belongs to P4 and contains no customer or product semantics.
 - Why Not Elsewhere / Blast Radius: no image, P0-P3, frontend, production service, production database, systemd, or runtime-compose change; only the network-isolated health container receives supplemental group `0`, and the temporary config remains non-world-readable and is unlinked in `finally`.
 - Validation: health-container command contract, observed temporary mode `0640`, continued absence of `--user`, focused backup/restore tests, and required PR checks.
+
+## 2026-08-01 — GOVERNED-CANDIDATE-MANIFEST-SYNC-01
+
+- Branch / anchor: `fix/governed-candidate-manifest-sync` from `03cb579f24e53a3b9a669745388f2f7e06274855`.
+- Formal Product Layer / Target / Module: P4 ops delivery tool; immutable production candidate manifest synchronization in `scripts/ops` and `make/release.mk`.
+- Reason: RC11 and RC12 production orchestration files are byte-identical, so production needs only the RC12 formal identity files rather than another source bundle.
+- Standard vs User-Specific / Why Here: generic release identity delivery belongs to P4 and carries no customer or business semantics.
+- Why Not Elsewhere / Blast Radius: no source, image, container, volume, service, systemd, database, P0-P3, or frontend mutation; the only remote write is a new atomic `/opt/sce/candidates/v1.0.0-rc.12` directory.
+- Validation: secure-root containment, exact source/version/GHCR digest identity, release checksum, three-file inventory, immutable-existing-target fail-closed behavior, focused contract tests, and required PR checks.

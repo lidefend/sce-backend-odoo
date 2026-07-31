@@ -20,7 +20,7 @@ RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RE
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
 .PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.formal_modules.install_missing
-.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore verify.production.backup_restore_contract
+.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore verify.production.backup_restore_contract
 .PHONY: verify.production.acceptance.harness acceptance.package.verify verify.production.promotion.config.preflight release.daily_dev.production_acceptance.harness release.production.acceptance.harness release.daily_dev.promotion.config.preflight release.production.promotion.config.preflight
 
 verify.release.guard: verify.repository.release_hygiene
@@ -175,6 +175,10 @@ CANDIDATE_IMAGE_ARCHIVE ?=
 CANDIDATE_IMAGE_ARCHIVE_SHA256 ?=
 CANDIDATE_IMAGE_REF ?=
 CANDIDATE_IMAGE_CONTENT_ID ?=
+PRODUCTION_CANDIDATE_MANIFEST_SYNC_SHA ?=
+CANDIDATE_MANIFEST_DIR ?=
+PRODUCTION_MANIFEST_SOURCE_SHA ?=
+CANDIDATE_VERSION ?=
 
 production.backup.install.preflight:
 	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)
@@ -236,6 +240,19 @@ production.candidate.image.sync: guard.prod.danger
 			--image-ref "$(CANDIDATE_IMAGE_REF)" \
 			--content-id "$(CANDIDATE_IMAGE_CONTENT_ID)"
 
+production.candidate.manifest.sync: guard.prod.danger
+	@test "$(CONFIRM_PRODUCTION_CANDIDATE_MANIFEST_SYNC)" = "YES_SYNC_VERIFIED_CANDIDATE_MANIFESTS" || (echo "exact candidate manifest synchronization acknowledgement is required"; exit 2)
+	@test -n "$(PRODUCTION_CANDIDATE_MANIFEST_SYNC_SHA)" -a -n "$(CANDIDATE_MANIFEST_DIR)" -a -n "$(PRODUCTION_MANIFEST_SOURCE_SHA)" || (echo "main SHA, manifest directory and candidate source SHA are required"; exit 2)
+	@test -n "$(EXPECTED_IMAGE_DIGEST)" -a -n "$(CANDIDATE_VERSION)" || (echo "candidate image digest and version are required"; exit 2)
+	@ENV="$(ENV)" PROD_DANGER="$${PROD_DANGER:-}" \
+		CONFIRM_PRODUCTION_CANDIDATE_MANIFEST_SYNC="$(CONFIRM_PRODUCTION_CANDIDATE_MANIFEST_SYNC)" \
+		python3 scripts/ops/production_candidate_manifest_sync.py \
+			--expected-live-main-sha "$(PRODUCTION_CANDIDATE_MANIFEST_SYNC_SHA)" \
+			--manifest-directory "$(CANDIDATE_MANIFEST_DIR)" \
+			--source-sha "$(PRODUCTION_MANIFEST_SOURCE_SHA)" \
+			--image-digest "$(EXPECTED_IMAGE_DIGEST)" \
+			--version "$(CANDIDATE_VERSION)"
+
 production.restore.rehearsal: guard.prod.danger
 	@test "$(CONFIRM_RESTORE_REHEARSAL)" = "YES_RUN_ISOLATED_RESTORE_REHEARSAL" || (echo "exact restore rehearsal acknowledgement is required"; exit 2)
 	@test -n "$(BACKUP_DIR)" -a -n "$(RESTORE_ID)" -a -n "$(RESTORE_REPORT)" || (echo "BACKUP_DIR, RESTORE_ID and RESTORE_REPORT are required"; exit 2)
@@ -272,10 +289,11 @@ production.backup.timer.restore: guard.prod.danger
 			--restore-report "$(RESTORE_REPORT)"
 
 verify.production.backup_restore_contract:
-	@python3 -m py_compile scripts/release/production_backup_restore.py scripts/ops/production_backup_install.py scripts/ops/production_restore_tool_sync.py scripts/ops/test_production_restore_tool_sync.py scripts/ops/production_candidate_image_sync.py scripts/ops/test_production_candidate_image_sync.py scripts/ops/production_restore_cancel.py scripts/ops/test_production_restore_cancel.py scripts/release/test_production_backup_restore_contract.py
+	@python3 -m py_compile scripts/release/production_backup_restore.py scripts/ops/production_backup_install.py scripts/ops/production_restore_tool_sync.py scripts/ops/test_production_restore_tool_sync.py scripts/ops/production_candidate_image_sync.py scripts/ops/test_production_candidate_image_sync.py scripts/ops/production_candidate_manifest_sync.py scripts/ops/test_production_candidate_manifest_sync.py scripts/ops/production_restore_cancel.py scripts/ops/test_production_restore_cancel.py scripts/release/test_production_backup_restore_contract.py
 	@python3 scripts/release/test_production_backup_restore_contract.py
 	@python3 scripts/ops/test_production_restore_tool_sync.py
 	@python3 scripts/ops/test_production_candidate_image_sync.py
+	@python3 scripts/ops/test_production_candidate_manifest_sync.py
 	@python3 scripts/ops/test_production_restore_cancel.py
 
 PRODUCTION_CONTRACT_COMPOSE = $(COMPOSE_BIN) -f docker-compose.production-candidate.yml
