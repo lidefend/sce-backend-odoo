@@ -45,14 +45,35 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertEqual(self.lane("migrations/18.0.1/post.py"), "HIGH_RISK")
 
     def test_workflow_is_high_risk(self) -> None:
-        self.assertEqual(
-            self.lane(".github/workflows/professional_quality_gate.yml"),
-            "HIGH_RISK",
+        result = classify(
+            [".github/workflows/professional_quality_gate.yml"],
+            event_name="pull_request",
         )
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertEqual(result.frontend_mode, "skip")
+
+    def test_frontend_gate_workflow_requires_full_frontend_release(self) -> None:
+        result = classify(
+            [".github/workflows/frontend_release_gate.yml"],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertEqual(result.frontend_mode, "full")
 
     def test_docker_and_release_are_high_risk_on_pr(self) -> None:
         self.assertEqual(self.lane("Dockerfile"), "HIGH_RISK")
-        self.assertEqual(self.lane("scripts/release/publish.py"), "HIGH_RISK")
+        result = classify(["scripts/release/publish.py"], event_name="pull_request")
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertEqual(result.frontend_mode, "skip")
+        self.assertEqual(result.professional_mode, "full")
+
+    def test_frontend_release_image_is_full(self) -> None:
+        result = classify(
+            ["Dockerfile.production-frontend-builder"],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertEqual(result.frontend_mode, "full")
 
     def test_mixed_change_uses_highest_risk(self) -> None:
         self.assertEqual(
@@ -74,7 +95,20 @@ class CIRiskClassifierTests(unittest.TestCase):
         )
 
     def test_lockfiles_are_high_risk(self) -> None:
-        self.assertEqual(self.lane("frontend/pnpm-lock.yaml"), "HIGH_RISK")
+        result = classify(["frontend/pnpm-lock.yaml"], event_name="pull_request")
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertEqual(result.frontend_mode, "full")
+
+    def test_mixed_backend_risk_and_frontend_source_is_standard_frontend(self) -> None:
+        result = classify(
+            [
+                "addons/smart_core/security/ir.model.access.csv",
+                "frontend/apps/web/src/App.vue",
+            ],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertEqual(result.frontend_mode, "standard")
 
     def test_path_escape_fails_closed(self) -> None:
         self.assertEqual(self.lane("../security.xml"), "HIGH_RISK")

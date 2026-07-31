@@ -15,6 +15,25 @@
   "standard_frontend_paths": [
     "frontend/**"
   ],
+  "frontend_full_paths": [
+    ".github/workflows/frontend_release_gate.yml",
+    "config/ci/risk_tiering_v1.json",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/verify/frontend_release_*",
+    "frontend/pnpm-lock.yaml",
+    "frontend/pnpm-workspace.yaml",
+    "frontend/**/package.json",
+    "frontend/**/playwright.config.*",
+    "frontend/**/vite.config.*",
+    "Dockerfile.production-candidate",
+    "Dockerfile.production-frontend-builder",
+    "docker-compose.production-candidate.yml",
+    "docker-compose.prod-sim.yml",
+    "make/ci.mk",
+    "make/frontend.mk"
+  ],
   "standard_backend_paths": [
     "addons/**",
     "scripts/verify/**",
