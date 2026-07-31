@@ -10,7 +10,7 @@
 | 审批人 | `用户（会话明确授权）` |
 | 生产主机 | `sc-prod` |
 | 生产工具目录 | `/opt/sce/deployment-tools/915067ba5d282bfcc03d276d49cd61c5f169a0fd` |
-| 生产数据库 | `sc_production`（tenant `baosheng`，dbfilter `^sc_production$`） |
+| 生产数据库 | `sc_production`（tenant 身份由生产运行配置解析且不落产品仓库，dbfilter `^sc_production$`） |
 | 发布类型 | `incremental package`（不可变镜像升级） |
 | 发布包 | `ghcr.io/lidefend/sce-product@sha256:cecdeb03ea68a1d2ddead0cf3f3ffb7a391948ba7de92e3919b752b7635d3a1d` |
 | 发布包 sha256 | `5611365c5a69e79575f3a433a2438eb2832ef0e1c8118f5a01a0650e1e37a422` |
@@ -61,7 +61,7 @@ source=2b965443... (RC11)
 registry digest=sha256:150098...af14
 running image id=sha256:3e1e...2d64
 database=sc_production
-tenant=baosheng
+tenant=resolved from governed production runtime config; cleartext not recorded
 dbfilter=^sc_production$
 ```
 
