@@ -1986,3 +1986,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific / Why Here: release evidence is generic P4 operational governance; tenant identity is recorded as deployment context only and no customer behavior is encoded.
 - Why Not Elsewhere / Blast Radius: no P0-P3, frontend, application source, image, runtime configuration, container, service, volume, or database change; only documentation and audit evidence are added.
 - Validation: production deployment record guard, production release flow guard, diff integrity, required PR checks, and dual-remote main parity after merge.
+
+## 2026-08-01 — PRODUCTION-USER-ACTIVATION-READINESS-01
+
+- Branch / anchor: `feature/production-user-activation-readiness` from `3de566fdbfc2b699155ce91800cc1601124e12b9`.
+- Formal Product Layer / Target / Module: P4 ops delivery tool reading the P0 `smart_core` enterprise activation model.
+- Reason: begin the real-user usage closure with a governed production readiness probe before any activation administrator grant, pilot selection, credential issuance, or password change.
+- Standard vs User-Specific / Why Here: aggregate activation readiness is generic release operations evidence; it contains no customer identity, preference, roster, or business semantics.
+- Why Not Elsewhere / Blast Radius: no frontend, P1-P3, runtime configuration, user, permission, credential, service, volume, or database mutation; the only output is a root-only aggregate evidence file.
+- Validation: strict production/database/read-only controls, PostgreSQL read-only transaction before ORM access, privacy-negative tests, production release contract tests, and required PR checks.
