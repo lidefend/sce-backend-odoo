@@ -80,6 +80,16 @@ Makefile guards and script-level guards.
   source SHA, version, GHCR digest refs, and checksum, then atomically creates
   one new immutable `/opt/sce/candidates/v<version>` directory on `sc-prod`;
   an existing differing target fails closed and no runtime resource changes)
+- `make production.deployment.tool.sync` (requires
+  `CONFIRM_PRODUCTION_DEPLOYMENT_TOOL_SYNC=YES_SYNC_IMMUTABLE_DEPLOYMENT_TOOLING`;
+  streams the exact clean dual-remote-approved main Git archive into one new
+  atomic `/opt/sce/deployment-tools/<sha>` directory without runtime changes)
+- `make production.release.config.promote` (requires
+  `CONFIRM_PRODUCTION_RELEASE_CONFIG_PROMOTE=YES_PROMOTE_VERIFIED_PRODUCTION_RELEASE_CONFIG`;
+  verifies the current running image, current runtime identity, next cached
+  image ID, and next manifests, then atomically advances only the allowlisted
+  runtime/promotion identity keys with paired rollback copies; it does not
+  replace containers, start services, or connect to a database)
 - `make production.restore.rehearsal` (requires
   `CONFIRM_RESTORE_REHEARSAL=YES_RUN_ISOLATED_RESTORE_REHEARSAL`; restores only
   into an internal-network rehearsal namespace)

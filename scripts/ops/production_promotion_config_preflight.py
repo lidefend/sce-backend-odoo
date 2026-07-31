@@ -133,7 +133,7 @@ def validate_static_contract(
         != contract["acceptance_package_digest"]
     ):
         failed.append("ACCEPTANCE_PACKAGE_DIGEST")
-    if values["DEPLOYMENT_IMAGE_REF"] != contract["fixed_deployment_image_id"]:
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", values["DEPLOYMENT_IMAGE_REF"]):
         failed.append("DEPLOYMENT_IMAGE_REF")
     try:
         timeout = int(values["ACCEPTANCE_HTTP_TIMEOUT"])

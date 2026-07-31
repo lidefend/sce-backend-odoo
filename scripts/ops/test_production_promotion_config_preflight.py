@@ -30,7 +30,7 @@ class ProductionPromotionConfigPreflightTest(unittest.TestCase):
             "ACCEPTANCE_TLS_VERIFY": "false",
             "ACCEPTANCE_PRODUCT_KEY": "sce-product",
             "ACCEPTANCE_EXPECTED_ROLE_CODE": "business_config_admin",
-            "DEPLOYMENT_IMAGE_REF": self.contract["fixed_deployment_image_id"],
+            "DEPLOYMENT_IMAGE_REF": "sha256:" + "a" * 64,
         }
         self.secrets = {"FORMAL_ACCEPTANCE_PASSWORD": "not-serialized"}
         self.http_pass = {
@@ -106,6 +106,14 @@ class ProductionPromotionConfigPreflightTest(unittest.TestCase):
                 report = self.evaluate(config, self.secrets)
                 self.assertIn(field, report["invalid_config_fields"])
                 self.assertFalse(report["safe_to_replace_production_container"])
+
+    def test_deployment_image_requires_exact_content_id(self) -> None:
+        for value in ("latest", "sha256:bad", "sha256:" + "A" * 64):
+            with self.subTest(value=value):
+                config = copy.deepcopy(self.config)
+                config["DEPLOYMENT_IMAGE_REF"] = value
+                report = self.evaluate(config, self.secrets)
+                self.assertIn("DEPLOYMENT_IMAGE_REF", report["invalid_config_fields"])
 
     def test_complete_configuration_and_http_acceptance_pass(self) -> None:
         report = self.evaluate(self.config, self.secrets)
