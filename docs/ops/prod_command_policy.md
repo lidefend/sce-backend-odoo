@@ -24,6 +24,12 @@ Makefile guards and script-level guards.
   credential supplied at execution time; performs only real-HTTP login,
   authenticated reads, and negative authorization checks, without Odoo shell
   or `auth.logout`)
+- `make release.production.user_activation.readiness` (requires
+  `PROD_READONLY_VERIFY=1`, exact `sc_production` identity, and a new root-only
+  evidence path; enables PostgreSQL transaction read-only before querying and
+  records only aggregate activation readiness counts and irreversible tenant
+  fingerprint evidence, with no login, person, contact, password, token, or
+  challenge values)
 - `make release.production.promotion.config.preflight` (requires
   `PROD_READONLY_VERIFY=1`, separate governed configuration and secret files,
   and a new `0600` evidence path; validates every promotion field, the fixed

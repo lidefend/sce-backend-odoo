@@ -167,6 +167,9 @@ class StaticContractTests(unittest.TestCase):
         cls.admin_identity_baseline = (
             ROOT / "scripts/release/production_admin_identity_baseline.py"
         ).read_text()
+        cls.user_activation_readiness = (
+            ROOT / "scripts/release/production_user_activation_readiness.py"
+        ).read_text()
         cls.formal_module_install = (
             ROOT / "scripts/release/production_formal_module_install.py"
         ).read_text()
@@ -453,6 +456,32 @@ class StaticContractTests(unittest.TestCase):
             "python scripts/release/test_production_admin_identity_baseline.py",
             "ENV=prod is required",
             "needs: [professional_authorization, python310_runtime_compatibility]",
+        ):
+            self.assertIn(contract, self.professional_quality_workflow)
+
+    def test_user_activation_readiness_is_readonly_redacted_and_make_wrapped(self):
+        target = self.release_make.split(
+            "release.production.user_activation.readiness:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("guard.prod.readonly", target.splitlines()[0])
+        self.assertIn("release.production.compose.preflight", target.splitlines()[0])
+        self.assertIn("PROD_READONLY_VERIFY=1", target)
+        self.assertNotIn("PROD_DANGER", target)
+        self.assertIn(
+            "release.production.user_activation.readiness",
+            self.production_command_policy,
+        )
+        self.assertIn(
+            'odoo_env.cr.execute("SET TRANSACTION READ ONLY")',
+            self.user_activation_readiness,
+        )
+        self.assertIn('"identity_values_recorded": False', self.user_activation_readiness)
+        self.assertIn('"database_write_statement_count": 0', self.user_activation_readiness)
+        for forbidden in (".sudo().create(", ".sudo().write(", "odoo_env.cr.commit("):
+            self.assertNotIn(forbidden, self.user_activation_readiness)
+        for contract in (
+            "python -m py_compile scripts/release/production_user_activation_readiness.py",
+            "python scripts/release/test_production_user_activation_readiness.py",
         ):
             self.assertIn(contract, self.professional_quality_workflow)
 
