@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
+import io
+import json
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -19,9 +23,19 @@ class CandidateImageSyncTests(unittest.TestCase):
     def test_archive_must_be_inside_candidate_root_and_match_digest(self):
         with tempfile.TemporaryDirectory(dir=sync.CANDIDATE_ROOT) as temporary:
             archive = Path(temporary) / "candidate-image.tar"
-            archive.write_bytes(b"verified archive")
-            digest = sync.hashlib.sha256(archive.read_bytes()).hexdigest()
-            self.assertEqual(sync.validate_archive(archive, digest), archive.resolve())
+            config = b'{"architecture":"amd64"}'
+            config_digest = hashlib.sha256(config).hexdigest()
+            manifest = json.dumps([{"Config": f"blobs/sha256/{config_digest}", "RepoTags": ["verified"]}]).encode()
+            with tarfile.open(archive, "w") as output:
+                for name, payload in (("manifest.json", manifest), (f"blobs/sha256/{config_digest}", config)):
+                    member = tarfile.TarInfo(name)
+                    member.size = len(payload)
+                    output.addfile(member, io.BytesIO(payload))
+            digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+            self.assertEqual(
+                sync.validate_archive(archive, digest),
+                (archive.resolve(), "sha256:" + config_digest),
+            )
             with self.assertRaises(sync.SyncError):
                 sync.validate_archive(archive, "0" * 64)
 
@@ -50,6 +64,23 @@ class CandidateImageSyncTests(unittest.TestCase):
         self.assertNotIn("scp", source)
         self.assertNotIn("systemctl", source)
         self.assertNotIn("docker compose", source)
+
+    def test_matching_remote_archive_config_id_skips_retransfer(self):
+        archive_config = "sha256:" + "b" * 64
+        with (
+            mock.patch.object(sync, "preflight"),
+            mock.patch.object(sync, "validate_archive", return_value=(Path("candidate.tar"), archive_config)),
+            mock.patch.object(sync, "validate_image_identity"),
+            mock.patch.object(sync, "remote_image_id", return_value=archive_config),
+            mock.patch.object(sync, "stream_load") as loader,
+            mock.patch.dict(
+                sync.os.environ,
+                {"ENV": "prod", "PROD_DANGER": "1", "CONFIRM_PRODUCTION_IMAGE_SYNC": sync.CONFIRMATION},
+                clear=True,
+            ),
+        ):
+            sync.synchronize("a" * 40, Path("candidate.tar"), "c" * 64, "ghcr.io/lidefend/sce-product:1.0.0-rc.12", "sha256:" + "d" * 64)
+        loader.assert_not_called()
 
 
 if __name__ == "__main__":
