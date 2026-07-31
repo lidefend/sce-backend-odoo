@@ -4,9 +4,6 @@ from odoo.exceptions import AccessError, ValidationError
 from odoo.tools.float_utils import float_compare
 
 
-IMPORTER_GROUP = "smart_core.group_smart_core_tenant_payload_importer"
-
-
 class ScHistoricalPaymentFact(models.Model):
     """Read-only migration fact; deliberately outside the live payment workflow."""
 
@@ -142,11 +139,9 @@ class ScHistoricalPaymentFact(models.Model):
 
     @api.model
     def _assert_import_context(self):
-        if not (
-            self.env.context.get("sc_tenant_payload_import")
-            and self.env.user.has_group(IMPORTER_GROUP)
-        ):
+        if not self.env.context.get("sc_tenant_payload_import"):
             raise AccessError(_("历史付款事实只能由已审计的租户数据导入器创建。"))
+        self.env["sc.tenant.payload.adapter"].assert_import_operator()
 
     @api.model_create_multi
     def create(self, vals_list):

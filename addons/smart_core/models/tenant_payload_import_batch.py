@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import os
+
 from odoo import api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
@@ -10,6 +13,23 @@ from odoo.addons.smart_core.utils.tenant_payload_v1 import (
 
 
 IMPORTER_GROUP = "smart_core.group_smart_core_tenant_payload_importer"
+
+
+def _assert_signed_import_boundary(env):
+    if not env.user.has_group(IMPORTER_GROUP):
+        raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+    if not env.context.get("sc_tenant_payload_import"):
+        raise UserError("TPV1_SIGNED_IMPORT_CONTEXT_REQUIRED")
+    if env.registry.in_test_mode():
+        return
+    expected = str(
+        os.environ.get("SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY", "") or ""
+    )
+    actual = str(
+        env.context.get("sc_tenant_payload_maintenance_capability", "") or ""
+    )
+    if len(expected) != 64 or not hashlib.compare_digest(actual, expected):
+        raise UserError("TPV1_SIGNED_MAINTENANCE_CAPABILITY_REQUIRED")
 
 
 class ResCompany(models.Model):
@@ -63,10 +83,7 @@ class ScTenantCompanyRegistration(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self.env.user.has_group(IMPORTER_GROUP):
-            raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
-        if not self.env.context.get("sc_tenant_payload_import"):
-            raise UserError("TPV1_COMPANY_REGISTRATION_REQUIRES_USER_DATA_IMPORT")
+        _assert_signed_import_boundary(self.env)
         if any(
             str(values.get("source_module") or "").strip()
             in {"smart_core", "smart_construction_core"}
@@ -113,8 +130,7 @@ class ScTenantCompanyRegistration(models.Model):
     def write(self, vals):
         if set(vals) - {"active"}:
             raise UserError("TPV1_COMPANY_REGISTRATION_IDENTITY_IMMUTABLE")
-        if not self.env.user.has_group(IMPORTER_GROUP):
-            raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+        _assert_signed_import_boundary(self.env)
         result = super().write(vals)
         self.env.registry.clear_cache()
         return result
@@ -131,8 +147,7 @@ class ScTenantPayloadAdapter(models.AbstractModel):
 
     @api.model
     def assert_import_operator(self):
-        if not self.env.user.has_group(IMPORTER_GROUP):
-            raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+        _assert_signed_import_boundary(self.env)
 
     @api.model
     def get_adapter(self, tenant_key):
@@ -180,16 +195,14 @@ class ScTenantPayloadExternalIdentity(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self.env.user.has_group(IMPORTER_GROUP):
-            raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+        _assert_signed_import_boundary(self.env)
         return super().create(vals_list)
 
     def write(self, vals):
         allowed = {"content_checksum", "batch_id"}
         if set(vals) - allowed:
             raise UserError("TPV1_EXTERNAL_IDENTITY_IMMUTABLE")
-        if not self.env.user.has_group(IMPORTER_GROUP):
-            raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+        _assert_signed_import_boundary(self.env)
         return super().write(vals)
 
     def unlink(self):
@@ -262,8 +275,7 @@ class ScTenantPayloadImportBatch(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self.env.user.has_group(IMPORTER_GROUP):
-            raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+        _assert_signed_import_boundary(self.env)
         normalized = []
         for vals in vals_list:
             item = dict(vals)
@@ -311,8 +323,7 @@ class ScTenantPayloadImportBatch(models.Model):
         return super().create(normalized)
 
     def _assert_operator(self):
-        if not self.env.user.has_group(IMPORTER_GROUP):
-            raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+        _assert_signed_import_boundary(self.env)
 
     def action_plan(self, report):
         self._assert_operator()
