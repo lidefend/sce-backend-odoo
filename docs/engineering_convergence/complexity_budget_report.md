@@ -83,7 +83,7 @@ Generated from repository source files. This report is informational during the 
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1135 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
-| 1116 | Python source | `scripts/release/production_backup_restore.py` |
+| 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1110 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 1097 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1093 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
@@ -187,7 +187,7 @@ Generated from repository source files. This report is informational during the 
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1135 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
-| 1116 | warning | Python source | `scripts/release/production_backup_restore.py` |
+| 1121 | warning | Python source | `scripts/release/production_backup_restore.py` |
 | 1110 | warning | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 1107 | within_budget | XML data/view | `addons/smart_construction_core/views/menu_business_taxonomy.xml` |
 | 1097 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
