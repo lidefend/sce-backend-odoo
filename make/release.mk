@@ -145,6 +145,9 @@ verify.production.release_contract:
 	@$(MAKE) --no-print-directory daily.candidate.sentinel.test
 	@$(MAKE) --no-print-directory daily.candidate.clone_rehearsal.test
 	@bash -n scripts/release/immutable_candidate_build.sh scripts/release/immutable_candidate_publish.sh scripts/release/immutable_candidate_scan.sh scripts/release/production_odoo_entrypoint.sh scripts/release/production_db_manage.sh scripts/release/production_contract_image_acceptance.sh
+	@python3 -m py_compile scripts/release/production_release_set.py scripts/release/build_production_release_set.py scripts/release/production_customer_package.py scripts/release/test_production_release_set.py
+	@python3 scripts/release/test_production_release_set.py
+	@bash -n scripts/release/run_production_tenant_payload.sh
 
 BACKUP_INSTALL_ROOT ?= /opt/ops
 BACKUP_ROOT ?= /data/backups/sc_production
@@ -233,6 +236,62 @@ verify.production.backup_restore_contract:
 
 PRODUCTION_CONTRACT_COMPOSE = $(COMPOSE_BIN) -f docker-compose.production-candidate.yml
 PRODUCTION_DB_MANAGER = $(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo
+PRODUCTION_RELEASE_SET_LOCK ?=
+PRODUCTION_CUSTOMER_PACKAGE_MANIFEST ?=
+PRODUCTION_CUSTOMER_ARCHIVE_ROOT ?=
+PRODUCTION_CUSTOMER_PREPARED_ROOT ?=
+PRODUCTION_CUSTOMER_PACKAGE_REPORT ?=
+
+release.production.release_set.preflight:
+	@test -n "$(PRODUCTION_RELEASE_SET_LOCK)" || (echo "PRODUCTION_RELEASE_SET_LOCK is required"; exit 2)
+	@python3 scripts/release/production_release_set.py print --lock "$(PRODUCTION_RELEASE_SET_LOCK)"
+
+release.production.customer_package.preflight: release.production.release_set.preflight
+	@python3 scripts/release/production_customer_package.py plan \
+		--lock "$(PRODUCTION_RELEASE_SET_LOCK)" \
+		--manifest "$(PRODUCTION_CUSTOMER_PACKAGE_MANIFEST)" \
+		--archive-root "$(PRODUCTION_CUSTOMER_ARCHIVE_ROOT)" \
+		--destination "$(PRODUCTION_CUSTOMER_PREPARED_ROOT)" \
+		--report "$(PRODUCTION_CUSTOMER_PACKAGE_REPORT)"
+
+release.production.customer_package.prepare: guard.prod.danger release.production.release_set.preflight
+	@test "$(CONFIRM_PRODUCTION_CUSTOMER_PACKAGE)" = "YES_PREPARE_SIGNED_CUSTOMER_PACKAGE" || (echo "exact customer package confirmation is required"; exit 2)
+	@python3 scripts/release/production_customer_package.py apply \
+		--lock "$(PRODUCTION_RELEASE_SET_LOCK)" \
+		--manifest "$(PRODUCTION_CUSTOMER_PACKAGE_MANIFEST)" \
+		--archive-root "$(PRODUCTION_CUSTOMER_ARCHIVE_ROOT)" \
+		--destination "$(PRODUCTION_CUSTOMER_PREPARED_ROOT)" \
+		--report "$(PRODUCTION_CUSTOMER_PACKAGE_REPORT)"
+
+release.production.customer_module.install: guard.prod.danger release.production.compose.preflight release.production.release_set.preflight
+	@test "$(CONFIRM_PRODUCTION_CUSTOMER_MODULE_INSTALL)" = "YES_INSTALL_SIGNED_CUSTOMER_MODULE" || (echo "exact customer module install confirmation is required"; exit 2)
+	@python3 scripts/release/production_release_set.py module --lock "$(PRODUCTION_RELEASE_SET_LOCK)" --module "$(TARGET_MODULE)" >/dev/null
+	@test -d "$(SC_CUSTOMER_ADDONS_ROOT)/$(TARGET_MODULE)" || (echo "prepared customer module missing"; exit 2)
+	@$(COMPOSE_BIN) -p "$(PRODUCTION_COMPOSE_PROJECT)" -f docker-compose.production-candidate.yml -f docker-compose.production-customer.yml \
+		run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo install
+
+release.production.tenant_payload.operator.grant: guard.prod.danger release.production.compose.preflight release.production.release_set.preflight
+	@test "$(CONFIRM_PRODUCTION_IMPORT_OPERATOR_GRANT)" = "YES_GRANT_LOCKED_PAYLOAD_IMPORT_OPERATOR" || (echo "exact import operator confirmation is required"; exit 2)
+	@test "$(TENANT_PAYLOAD_DB_ALLOWLIST)" = "sc_production" || (echo "TENANT_PAYLOAD_DB_ALLOWLIST must be sc_production"; exit 2)
+	@test -n "$(TENANT_PAYLOAD_OPERATOR_LOGIN)" -a -n "$(APPROVED_BY)" || (echo "operator login and approver are required"; exit 2)
+	@$(COMPOSE_BIN) -p "$(PRODUCTION_COMPOSE_PROJECT)" -f docker-compose.production-candidate.yml -f docker-compose.production-customer.yml \
+		run --rm --no-deps -T --user odoo \
+		-e "SC_TENANT_PAYLOAD_OPERATOR_LOGIN=$(TENANT_PAYLOAD_OPERATOR_LOGIN)" \
+		-e SC_TENANT_PAYLOAD_DB_ALLOWLIST=sc_production \
+		-e "SC_TENANT_PAYLOAD_APPROVED_BY=$(APPROVED_BY)" \
+		-e SC_TENANT_PAYLOAD_CREATE_OPERATOR=0 \
+		--entrypoint odoo odoo shell -d sc_production -c /var/lib/odoo/odoo.conf \
+		< scripts/tenant_payload/provision_operator.py
+
+release.production.tenant_payload.plan: release.production.release_set.preflight
+	@SC_TENANT_PAYLOAD_ACTION=plan bash scripts/release/run_production_tenant_payload.sh
+
+release.production.tenant_payload.import: guard.prod.danger release.production.release_set.preflight
+	@test "$(CONFIRM_PRODUCTION_TENANT_PAYLOAD_IMPORT)" = "YES_IMPORT_LOCKED_V4_INTO_SC_PRODUCTION" || (echo "exact payload import confirmation is required"; exit 2)
+	@SC_TENANT_PAYLOAD_ACTION=import bash scripts/release/run_production_tenant_payload.sh
+
+release.production.tenant_payload.verify: release.production.release_set.preflight
+	@SC_TENANT_PAYLOAD_ACTION=verify bash scripts/release/run_production_tenant_payload.sh
 
 release.production.identity.preflight:
 	@test -n "$(CANDIDATE_IMAGE)" || (echo "CANDIDATE_IMAGE is required"; exit 2)

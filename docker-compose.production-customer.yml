@@ -1,0 +1,4 @@
+services:
+  odoo:
+    volumes:
+      - ${SC_CUSTOMER_ADDONS_ROOT:?SC_CUSTOMER_ADDONS_ROOT is required}:/mnt/customer-addons:ro

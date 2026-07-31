@@ -24,6 +24,7 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 MODULE_RE = re.compile(r"^[a-z][a-z0-9_]{1,62}$")
 TENANT_RE = re.compile(r"^[a-z][a-z0-9_]{2,62}$")
 PACKAGE_SCHEMA_VERSION = "sce.tenant_customer_addon_package.v1"
+PACKAGE_SCHEMA_VERSION_V2 = "sce.tenant_customer_addon_package.v2"
 PACKAGE_KIND = "tenant_customer_addon"
 
 
@@ -137,12 +138,17 @@ def load_package_manifest(path: Path, expected_archive_sha: str) -> dict:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError("CUSTOMER_PACKAGE_MANIFEST_INVALID") from exc
-    required = {
+    required_v1 = {
         "schema_version", "package_kind", "tenant_id", "modules",
         "minimum_product_version", "maximum_product_version_exclusive", "required_contracts",
         "archive_sha256", "signature",
     }
-    if set(payload) != required or payload.get("schema_version") != PACKAGE_SCHEMA_VERSION:
+    required_v2 = required_v1 | {
+        "customer_repository", "customer_sha", "customer_tree", "product_sha", "files",
+    }
+    schema_version = payload.get("schema_version")
+    expected_fields = required_v2 if schema_version == PACKAGE_SCHEMA_VERSION_V2 else required_v1
+    if set(payload) != expected_fields or schema_version not in {PACKAGE_SCHEMA_VERSION, PACKAGE_SCHEMA_VERSION_V2}:
         raise ValueError("CUSTOMER_PACKAGE_MANIFEST_SCHEMA_INVALID")
     if payload.get("package_kind") != PACKAGE_KIND:
         raise ValueError("CUSTOMER_PACKAGE_KIND_INVALID")
@@ -158,6 +164,29 @@ def load_package_manifest(path: Path, expected_archive_sha: str) -> dict:
         raise ValueError("CUSTOMER_PACKAGE_MODULES_INVALID")
     if payload.get("archive_sha256") != expected_archive_sha:
         raise ValueError("CUSTOMER_PACKAGE_ARCHIVE_DECLARATION_MISMATCH")
+    if schema_version == PACKAGE_SCHEMA_VERSION_V2:
+        if not re.fullmatch(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", str(payload.get("customer_repository") or "")):
+            raise ValueError("CUSTOMER_PACKAGE_REPOSITORY_INVALID")
+        for name in ("customer_sha", "customer_tree", "product_sha"):
+            if not re.fullmatch(r"^[0-9a-f]{40}$", str(payload.get(name) or "")):
+                raise ValueError("CUSTOMER_PACKAGE_SOURCE_IDENTITY_INVALID")
+        files = payload.get("files")
+        if (
+            not isinstance(files, list)
+            or not files
+            or any(
+                not isinstance(row, dict)
+                or set(row) != {"path", "sha256", "size"}
+                or not isinstance(row["path"], str)
+                or row["path"].startswith("/")
+                or ".." in PurePosixPath(row["path"]).parts
+                or not SHA256_RE.fullmatch(str(row["sha256"]))
+                or not isinstance(row["size"], int)
+                or row["size"] < 0
+                for row in files
+            )
+        ):
+            raise ValueError("CUSTOMER_PACKAGE_FILE_MANIFEST_INVALID")
     verify_package_signature(payload)
     release = load_module("sce_product_release", "scripts/release/product_release.py")
     release.verify_customer_compatibility(
