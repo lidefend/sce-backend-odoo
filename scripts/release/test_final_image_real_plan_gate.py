@@ -16,7 +16,7 @@ class FinalImageRealPlanGateTest(unittest.TestCase):
 
     def evidence(self) -> dict:
         return {
-            "schema_version": "final_image_real_plan.v1",
+            "schema_version": "final_image_real_plan.v2",
             "status": "PASS",
             "source_sha": self.source_sha,
             "source_tree": self.source_tree,
@@ -26,7 +26,10 @@ class FinalImageRealPlanGateTest(unittest.TestCase):
             "command_contract": "release.production.tenant_payload.plan",
             "production_command_parity": True,
             "database_role": "isolated_customer_tenant_rehearsal",
-            "target_database": "sc_release_rc11_rehearsal_01",
+            "environment_id": "sc_release_rc11_rehearsal_01",
+            "runtime_isolation": True,
+            "production_resource_overlap": False,
+            "target_database": "sc_production",
             "tenant_key": "sample_tenant",
             "payload_digest": "d" * 64,
             "plan_computation_completed": True,
@@ -67,15 +70,26 @@ class FinalImageRealPlanGateTest(unittest.TestCase):
             with self.assertRaises(target.RealPlanEvidenceError):
                 self.validate(payload)
 
-    def test_production_database_and_state_drift_fail(self):
+    def test_non_production_command_database_and_state_drift_fail(self):
         payload = self.evidence()
-        payload["target_database"] = "sc_production"
+        payload["target_database"] = "sc_release_rc11_rehearsal_01"
         with self.assertRaises(target.RealPlanEvidenceError):
             self.validate(payload)
         payload = self.evidence()
         payload["historical_facts_after"] = 1
         with self.assertRaises(target.RealPlanEvidenceError):
             self.validate(payload)
+
+    def test_environment_must_be_isolated_from_production(self):
+        for field, value in (
+            ("environment_id", "sc_production"),
+            ("runtime_isolation", False),
+            ("production_resource_overlap", True),
+        ):
+            payload = self.evidence()
+            payload[field] = value
+            with self.assertRaises(target.RealPlanEvidenceError):
+                self.validate(payload)
 
 
 if __name__ == "__main__":

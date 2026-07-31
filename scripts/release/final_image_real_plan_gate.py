@@ -11,8 +11,10 @@ from pathlib import Path
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 IMAGE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
-SAFE_REHEARSAL_DB = re.compile(r"^sc_(?:release|rc)[a-z0-9_]*rehearsal[a-z0-9_]*$")
-CONTRACT_VERSION = "final_image_real_plan.v1"
+SAFE_REHEARSAL_ENVIRONMENT = re.compile(
+    r"^(?:sc_)?(?:release|rc)[a-z0-9_]*rehearsal[a-z0-9_]*$"
+)
+CONTRACT_VERSION = "final_image_real_plan.v2"
 COMMAND_CONTRACT = "release.production.tenant_payload.plan"
 
 
@@ -45,6 +47,9 @@ def load_and_validate(
         "command_contract",
         "production_command_parity",
         "database_role",
+        "environment_id",
+        "runtime_isolation",
+        "production_resource_overlap",
         "target_database",
         "tenant_key",
         "payload_digest",
@@ -72,8 +77,13 @@ def load_and_validate(
         or payload["command_contract"] != COMMAND_CONTRACT
         or payload["production_command_parity"] is not True
         or payload["database_role"] != "isolated_customer_tenant_rehearsal"
-        or not SAFE_REHEARSAL_DB.fullmatch(str(payload["target_database"]))
-        or payload["target_database"] == "sc_production"
+        or not SAFE_REHEARSAL_ENVIRONMENT.fullmatch(str(payload["environment_id"]))
+        or payload["runtime_isolation"] is not True
+        or payload["production_resource_overlap"] is not False
+        # Preserve exact production command/config parity inside an isolated
+        # runtime namespace. Isolation is an environment property, not a
+        # reason to silently exercise a different logical database identity.
+        or payload["target_database"] != "sc_production"
         or not re.fullmatch(r"[a-z][a-z0-9_]{2,62}", str(payload["tenant_key"]))
         or not CHECKSUM.fullmatch(str(payload["payload_digest"]))
         or payload["plan_computation_completed"] is not True

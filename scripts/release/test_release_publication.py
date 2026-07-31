@@ -140,7 +140,7 @@ def write_fixture(root: Path, *, ready: bool = True) -> Path:
     (attempt / "final-image-real-plan.json").write_text(
         json.dumps(
             {
-                "schema_version": "final_image_real_plan.v1",
+                "schema_version": "final_image_real_plan.v2",
                 "status": "PASS",
                 "source_sha": SOURCE,
                 "source_tree": TREE,
@@ -150,7 +150,10 @@ def write_fixture(root: Path, *, ready: bool = True) -> Path:
                 "command_contract": "release.production.tenant_payload.plan",
                 "production_command_parity": True,
                 "database_role": "isolated_customer_tenant_rehearsal",
-                "target_database": "sc_release_rc11_rehearsal_fixture",
+                "environment_id": "sc_release_rc11_rehearsal_fixture",
+                "runtime_isolation": True,
+                "production_resource_overlap": False,
+                "target_database": "sc_production",
                 "tenant_key": "sample_tenant",
                 "payload_digest": "3" * 64,
                 "plan_computation_completed": True,
