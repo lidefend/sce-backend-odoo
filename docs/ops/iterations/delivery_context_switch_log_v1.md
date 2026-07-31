@@ -1977,3 +1977,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific / Why Here: generic production release lifecycle control belongs to P4 and carries no business or customer semantics.
 - Why Not Elsewhere / Blast Radius: no P0-P3, frontend, image build, container replacement, service, systemd, volume, or database mutation; remote writes are a new immutable tool directory and two fixed configuration files with paired rollback copies.
 - Validation: SHA-only deployment image IDs, exact Docker inspect equality, current-running/next-manifest identity checks, root-owned mode guards, paired rollback, clean dual-remote main, focused tests, and required PR checks.
+
+## 2026-08-01 — RC12-PRODUCTION-DEPLOYMENT-RECORD-01
+
+- Branch / anchor: `release/rc12-production-deployment-record` from `915067ba5d282bfcc03d276d49cd61c5f169a0fd`.
+- Formal Product Layer / Target / Module: P4 ops delivery; production deployment evidence in `docs/ops/releases/current`.
+- Reason: close the completed RC12 immutable-image upgrade with a repository-governed, reviewable deployment record.
+- Standard vs User-Specific / Why Here: release evidence is generic P4 operational governance; tenant identity is recorded as deployment context only and no customer behavior is encoded.
+- Why Not Elsewhere / Blast Radius: no P0-P3, frontend, application source, image, runtime configuration, container, service, volume, or database change; only documentation and audit evidence are added.
+- Validation: production deployment record guard, production release flow guard, diff integrity, required PR checks, and dual-remote main parity after merge.
