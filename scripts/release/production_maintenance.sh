@@ -24,14 +24,26 @@ case "$ACTION" in
     SCRIPT=/usr/local/share/sce/provision_tenant_payload_operator.py
     ;;
   payload-plan)
+    SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY="$(
+      python3 -c 'import secrets; print(secrets.token_hex(32))'
+    )"
+    export SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY
     export SC_TENANT_PAYLOAD_ACTION=plan
     SCRIPT=/usr/local/share/sce/tenant_payload_odoo_action.py
     ;;
   payload-import)
+    SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY="$(
+      python3 -c 'import secrets; print(secrets.token_hex(32))'
+    )"
+    export SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY
     export SC_TENANT_PAYLOAD_ACTION=import
     SCRIPT=/usr/local/share/sce/tenant_payload_odoo_action.py
     ;;
   payload-verify)
+    SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY="$(
+      python3 -c 'import secrets; print(secrets.token_hex(32))'
+    )"
+    export SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY
     export SC_TENANT_PAYLOAD_ACTION=verify
     SCRIPT=/usr/local/share/sce/tenant_payload_odoo_action.py
     ;;

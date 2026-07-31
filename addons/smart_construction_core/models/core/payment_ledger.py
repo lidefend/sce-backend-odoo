@@ -148,9 +148,11 @@ class PaymentLedger(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        audited_history_import = self.env.context.get("sc_tenant_payload_import") and self.env.user.has_group(
-            "smart_core.group_smart_core_tenant_payload_importer"
+        audited_history_import = bool(
+            self.env.context.get("sc_tenant_payload_import")
         )
+        if audited_history_import:
+            self.env["sc.tenant.payload.adapter"].assert_import_operator()
         if not audited_history_import and not self.env.context.get("allow_payment_ledger_create"):
             raise UserError("请通过付款申请登记付款记录。")
         request_ids = []

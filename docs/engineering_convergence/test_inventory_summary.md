@@ -4,19 +4,19 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1028`
+- Total assets: `1029`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `122`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `681`
+- PR dedupe candidates: `682`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 404 |
+| governance | 405 |
 | contract | 309 |
 | unit | 163 |
 | odoo_integration | 65 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 900 |
+| pr_candidate | 901 |
 | integration_candidate | 87 |
 | release_candidate | 32 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 681 |
+| deduplicate_before_required | 682 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 86 |
 | keep_release_only | 32 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 902 |
+| <5m | 903 |
 | 10-30m | 88 |
 | 30-60m | 34 |
 | unknown | 3 |
@@ -152,7 +152,7 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 404 |
+| architecture owner | 405 |
 | platform owner | 309 |
 | test owner | 164 |
 | backend owner | 65 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 927 |
+| scripts/verify | 928 |
 | scripts/ops | 41 |
 | frontend/apps/web/scripts | 28 |
 | scripts/ci | 12 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-169 | governance | `scripts/verify/construction_core_extension_capability_rows_split_guard.py` | architecture owner |
 | T-ASSET-170 | contract | `scripts/verify/construction_core_extension_contract_helpers_split_guard.py` | platform owner |
 | T-ASSET-171 | contract | `scripts/verify/construction_core_extension_contract_normalizers_split_guard.py` | platform owner |
-| ... | ... | 601 more | ... |
+| ... | ... | 602 more | ... |
 
 ## Dedupe Hotspots
 

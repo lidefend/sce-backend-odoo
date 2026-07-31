@@ -21,12 +21,18 @@ OPERATOR_FIELDS = {
     "identity_type",
     "identity_key",
     "tenant_key",
-    "target_group_xmlid",
-    "expected_membership_before",
-    "expected_membership_after",
+    "direct_grant_targets",
+    "importer_transitive_implied_closure",
+    "required_existing_operator_groups",
+    "expected_direct_grant_additions",
+    "expected_effective_group_additions",
+    "expected_undeclared_group_additions",
     "expected_company_scope",
     "grant_scope_version",
 }
+IMPORTER_GROUP = "smart_core.group_smart_core_tenant_payload_importer"
+DATA_OPERATOR_GROUP = "smart_core.group_smart_core_data_operator"
+INTERNAL_USER_GROUP = "base.group_user"
 
 
 class ReleaseSetError(ValueError):
@@ -60,7 +66,7 @@ def load_lock(path: Path) -> dict:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_OPERATOR_SCHEMA_INVALID")
     if set(payload) != required:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_SCHEMA_INVALID")
-    if payload["schema_version"] != "sce.production_release_set.v2":
+    if payload["schema_version"] != "sce.production_release_set.v3":
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_SCHEMA_INVALID")
     expected_version = (Path(__file__).resolve().parents[2] / "VERSION").read_text().strip()
     if payload["release_version"] != expected_version:
@@ -88,20 +94,40 @@ def load_lock(path: Path) -> dict:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_DATABASE_FILESTORE_MISMATCH")
     if Path(payload["legacy_attachments_path"]) != LEGACY_PATH:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_LEGACY_PATH_MISMATCH")
-    if payload["allowed_entry_contract"] != "production_tenant_delivery.v2":
+    if payload["allowed_entry_contract"] != "production_tenant_delivery.v3":
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_ENTRY_CONTRACT_MISMATCH")
     operator = payload["operator_contract"]
     if not isinstance(operator, dict) or set(operator) != OPERATOR_FIELDS:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_OPERATOR_SCHEMA_INVALID")
+    list_fields = (
+        "direct_grant_targets",
+        "importer_transitive_implied_closure",
+        "required_existing_operator_groups",
+        "expected_direct_grant_additions",
+        "expected_effective_group_additions",
+        "expected_undeclared_group_additions",
+    )
+    if any(
+        not isinstance(operator[field], list)
+        or len(operator[field]) != len(set(operator[field]))
+        or any(not XMLID.fullmatch(str(item)) for item in operator[field])
+        for field in list_fields
+    ):
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_OPERATOR_GROUP_SET_INVALID")
     if (
         operator["identity_type"] != "external_xmlid"
         or not XMLID.fullmatch(str(operator["identity_key"]))
-        or not XMLID.fullmatch(str(operator["target_group_xmlid"]))
         or operator["tenant_key"] != payload["tenant_key"]
-        or operator["expected_membership_before"] != 0
-        or operator["expected_membership_after"] != 1
+        or operator["direct_grant_targets"] != [IMPORTER_GROUP]
+        or operator["importer_transitive_implied_closure"] != []
+        or operator["required_existing_operator_groups"] != [INTERNAL_USER_GROUP]
+        or operator["expected_direct_grant_additions"] != [IMPORTER_GROUP]
+        or operator["expected_effective_group_additions"] != [IMPORTER_GROUP]
+        or operator["expected_undeclared_group_additions"] != []
+        or DATA_OPERATOR_GROUP
+        in {item for field in list_fields for item in operator[field]}
         or operator["expected_company_scope"] != 1
-        or operator["grant_scope_version"] != 1
+        or operator["grant_scope_version"] != 3
     ):
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_OPERATOR_CONTRACT_INVALID")
     return payload
@@ -179,7 +205,11 @@ def main() -> int:
         value = payload["operator_contract"][args.field]
         if isinstance(value, bool):
             value = int(value)
-        print(value)
+        print(
+            json.dumps(value, separators=(",", ":"))
+            if isinstance(value, list)
+            else value
+        )
     elif args.action == "print":
         print(json.dumps({
             "status": "PASS",

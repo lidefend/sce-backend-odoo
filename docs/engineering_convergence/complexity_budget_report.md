@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3427`
+- Scanned files: `3430`
 - Files requiring split plan: `38`
 - Files above warning threshold: `63`
 
@@ -31,7 +31,7 @@ Generated from repository source files. This report is informational during the 
 | 2051 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2028 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
-| 1981 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
+| 1983 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 1944 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1931 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 1927 | Python source | `addons/smart_core/delivery/menu_service.py` |
@@ -142,7 +142,7 @@ Generated from repository source files. This report is informational during the 
 | 2051 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2028 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
-| 1981 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
+| 1983 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 1944 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1931 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 1927 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
