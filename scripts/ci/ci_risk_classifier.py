@@ -25,12 +25,13 @@ class Classification:
     reasons: tuple[str, ...]
     frontend_changed: bool
     backend_changed: bool
+    frontend_full_required: bool
 
     @property
     def frontend_mode(self) -> str:
-        if self.lane in {"HIGH_RISK", "RELEASE"}:
+        if self.lane == "RELEASE" or self.frontend_full_required:
             return "full"
-        if self.lane == "STANDARD" and self.frontend_changed:
+        if self.frontend_changed:
             return "standard"
         return "skip"
 
@@ -51,6 +52,7 @@ class Classification:
             "professional_mode": self.professional_mode,
             "frontend_changed": str(self.frontend_changed).lower(),
             "backend_changed": str(self.backend_changed).lower(),
+            "frontend_full_required": str(self.frontend_full_required).lower(),
             "changed_path_count": str(len(self.paths)),
             "changed_paths_json": json.dumps(self.paths, separators=(",", ":")),
             "reasons_json": json.dumps(self.reasons, separators=(",", ":")),
@@ -92,14 +94,15 @@ def classify(
     policy = policy or load_policy()
     changed = _normalize_paths(paths)
     if event_name == "workflow_dispatch" or _matches(ref, policy["release_refs"]):
-        return Classification("RELEASE", changed, ("release_event",), True, True)
+        return Classification("RELEASE", changed, ("release_event",), True, True, True)
     if not changed:
-        return Classification("HIGH_RISK", changed, ("empty_change_set_fail_closed",), True, True)
+        return Classification("HIGH_RISK", changed, ("empty_change_set_fail_closed",), True, True, True)
 
     high = tuple(path for path in changed if _matches(path, policy["high_risk_paths"]))
     invalid = tuple(path for path in changed if path.startswith("__INVALID_PATH__/"))
     frontend = tuple(path for path in changed if _matches(path, policy["standard_frontend_paths"]))
     backend = tuple(path for path in changed if _matches(path, policy["standard_backend_paths"]))
+    frontend_full = tuple(path for path in changed if _matches(path, policy["frontend_full_paths"]))
     fast = tuple(path for path in changed if _matches(path, policy["fast_paths"]))
     known = set(high) | set(frontend) | set(backend) | set(fast)
     unknown = tuple(path for path in changed if path not in known)
@@ -112,7 +115,14 @@ def classify(
             reasons.append("invalid_path")
         if unknown:
             reasons.append("unknown_path_fail_closed")
-        return Classification("HIGH_RISK", changed, tuple(reasons), bool(frontend), bool(backend))
+        return Classification(
+            "HIGH_RISK",
+            changed,
+            tuple(reasons),
+            bool(frontend),
+            bool(backend),
+            bool(frontend_full),
+        )
     if frontend or backend:
         return Classification(
             "STANDARD",
@@ -120,8 +130,9 @@ def classify(
             ("standard_runtime_change",),
             bool(frontend),
             bool(backend),
+            bool(frontend_full),
         )
-    return Classification("FAST", changed, ("non_runtime_change",), False, False)
+    return Classification("FAST", changed, ("non_runtime_change",), False, False, False)
 
 
 def changed_paths(base: str, head: str) -> tuple[str, ...]:
