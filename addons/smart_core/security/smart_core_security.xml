@@ -37,6 +37,11 @@
     <field name="category_id" ref="base.module_category_hidden"/>
   </record>
 
+  <record id="group_smart_core_user_activation_admin" model="res.groups">
+    <field name="name">User Activation Administrator</field>
+    <field name="category_id" ref="base.module_category_hidden"/>
+  </record>
+
   <record id="rule_sc_tenant_payload_import_batch_company" model="ir.rule">
     <field name="name">Tenant payload import batch: operator owned</field>
     <field name="model_id" ref="model_sc_tenant_payload_import_batch"/>

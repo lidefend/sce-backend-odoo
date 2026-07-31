@@ -230,6 +230,8 @@ def _ensure_signup_defaults(env):
         ICP.set_param("sc.signup.ratelimit.max_per_email", "2")
     if ICP.get_param("sc.signup.ratelimit.gc_days") in (None, False, ""):
         ICP.set_param("sc.signup.ratelimit.gc_days", "7")
+    if ICP.get_param("sc.password_recovery.self_service_enabled") in (None, False, ""):
+        ICP.set_param("sc.password_recovery.self_service_enabled", "false")
 
 
 _TASK_SC_STATE_BACKFILL_KEY = "sc.task_sc_state.backfill.v0_1"

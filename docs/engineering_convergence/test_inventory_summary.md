@@ -4,20 +4,20 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1029`
+- Total assets: `1030`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `122`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `682`
+- PR dedupe candidates: `683`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
 | governance | 405 |
-| contract | 309 |
+| contract | 310 |
 | unit | 163 |
 | odoo_integration | 65 |
 | e2e | 34 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 901 |
+| pr_candidate | 902 |
 | integration_candidate | 87 |
 | release_candidate | 32 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 682 |
+| deduplicate_before_required | 683 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 86 |
 | keep_release_only | 32 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 903 |
+| <5m | 904 |
 | 10-30m | 88 |
 | 30-60m | 34 |
 | unknown | 3 |
@@ -153,7 +153,7 @@ Generated from `test_inventory.csv`.
 | Owner | Count |
 | --- | ---: |
 | architecture owner | 405 |
-| platform owner | 309 |
+| platform owner | 310 |
 | test owner | 164 |
 | backend owner | 65 |
 | qa owner | 34 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 928 |
+| scripts/verify | 929 |
 | scripts/ops | 41 |
 | frontend/apps/web/scripts | 28 |
 | scripts/ci | 12 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-169 | governance | `scripts/verify/construction_core_extension_capability_rows_split_guard.py` | architecture owner |
 | T-ASSET-170 | contract | `scripts/verify/construction_core_extension_contract_helpers_split_guard.py` | platform owner |
 | T-ASSET-171 | contract | `scripts/verify/construction_core_extension_contract_normalizers_split_guard.py` | platform owner |
-| ... | ... | 602 more | ... |
+| ... | ... | 603 more | ... |
 
 ## Dedupe Hotspots
 

@@ -594,6 +594,8 @@ def apply_system_init_profile_overrides(data: dict) -> dict:
             "value_line_2": "让合同可控",
             "value_line_3": "让资金协同",
             "value_line_4": "让风险可预警",
+            "action_account_activation": "激活账号",
+            "action_password_recovery": "忘记密码",
         }
     )
     home_texts = dict(page_texts.get("home") if isinstance(page_texts.get("home"), dict) else {})
