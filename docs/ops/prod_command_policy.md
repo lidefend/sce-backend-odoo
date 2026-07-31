@@ -77,6 +77,12 @@ Makefile guards and script-level guards.
 - `make production.restore.rehearsal` (requires
   `CONFIRM_RESTORE_REHEARSAL=YES_RUN_ISOLATED_RESTORE_REHEARSAL`; restores only
   into an internal-network rehearsal namespace)
+- `make production.restore.cancel` (requires
+  `CONFIRM_PRODUCTION_RESTORE_CANCEL=YES_CANCEL_SCOPED_RESTORE_REHEARSAL`;
+  from a clean dual-remote-approved `main`, terminates only the single active
+  restore process and descendants whose exact restore ID and retained PLANNED
+  report match, using SIGTERM only; it does not remove resources or touch
+  production services or databases)
 - `make production.restore.cleanup` (requires
   `CONFIRM_RESTORE_CLEANUP=YES_CLEANUP_SCOPED_RESTORE_RESOURCES`; removes only
   resources recorded in one retained rehearsal report)
