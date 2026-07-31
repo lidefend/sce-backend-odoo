@@ -27,7 +27,7 @@ def build_payload(args: argparse.Namespace) -> dict:
     if args.output.exists() or args.output.is_symlink():
         raise production_release_set.ReleaseSetError("PRODUCTION_RELEASE_SET_OUTPUT_EXISTS")
     return {
-        "schema_version": "sce.production_release_set.v1",
+        "schema_version": "sce.production_release_set.v2",
         "release_version": args.release_version,
         "product_sha": args.product_sha,
         "product_tree": args.product_tree,
@@ -47,7 +47,17 @@ def build_payload(args: argparse.Namespace) -> dict:
         "target_database": args.target_database,
         "filestore_scope": args.filestore_scope,
         "legacy_attachments_path": str(production_release_set.LEGACY_PATH),
-        "allowed_entry_contract": "production_tenant_delivery.v1",
+        "allowed_entry_contract": "production_tenant_delivery.v2",
+        "operator_contract": {
+            "identity_type": args.operator_identity_type,
+            "identity_key": args.operator_identity_key,
+            "tenant_key": args.tenant_key,
+            "target_group_xmlid": args.operator_target_group_xmlid,
+            "expected_membership_before": args.operator_expected_membership_before,
+            "expected_membership_after": args.operator_expected_membership_after,
+            "expected_company_scope": args.operator_expected_company_scope,
+            "grant_scope_version": args.operator_grant_scope_version,
+        },
     }
 
 
@@ -86,6 +96,13 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--payload-schema-version", required=True)
     result.add_argument("--target-database", default="sc_production")
     result.add_argument("--filestore-scope", default="sc_production")
+    result.add_argument("--operator-identity-type", required=True, choices=("external_xmlid",))
+    result.add_argument("--operator-identity-key", required=True)
+    result.add_argument("--operator-target-group-xmlid", required=True)
+    result.add_argument("--operator-expected-membership-before", type=int, default=0)
+    result.add_argument("--operator-expected-membership-after", type=int, default=1)
+    result.add_argument("--operator-expected-company-scope", type=int, default=1)
+    result.add_argument("--operator-grant-scope-version", type=int, default=1)
     return result
 
 

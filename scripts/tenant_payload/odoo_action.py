@@ -23,7 +23,9 @@ def _required(name: str) -> str:
 
 action = _required("SC_TENANT_PAYLOAD_ACTION")
 tenant_key = _required("SC_TENANT_PAYLOAD_TENANT_KEY")
-operator_login = _required("SC_TENANT_PAYLOAD_OPERATOR_LOGIN")
+operator_identity_type = _required("SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_TYPE")
+operator_identity_key = _required("SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY")
+target_group_xmlid = _required("SC_TENANT_PAYLOAD_TARGET_GROUP_XMLID")
 allowed_databases = {item.strip() for item in _required("SC_TENANT_PAYLOAD_DB_ALLOWLIST").split(",") if item.strip()}
 if env.cr.dbname not in allowed_databases:
     raise UserError("TPV1_DATABASE_NOT_ALLOWLISTED")
@@ -40,12 +42,14 @@ bound_tenant = str(env["ir.config_parameter"].get_param("sc.tenant.bound_tenant_
 if bound_tenant != tenant_key:
     raise UserError("TPV1_DATABASE_TENANT_UNAUTHORIZED")
 
-operator = env["res.users"].with_context(active_test=False).search(
-    [("login", "=", operator_login), ("active", "=", True)],
-    limit=1,
-)
-if not operator:
-    raise UserError("TPV1_IMPORT_OPERATOR_NOT_FOUND")
+if operator_identity_type != "external_xmlid":
+    raise UserError("TPV1_IMPORT_OPERATOR_IDENTITY_CONTRACT_INVALID")
+operator = env.ref(operator_identity_key, raise_if_not_found=False)
+group = env.ref(target_group_xmlid, raise_if_not_found=False)
+if not operator or operator._name != "res.users" or not operator.active:
+    raise UserError("TPV1_IMPORT_OPERATOR_IDENTITY_NOT_UNIQUE")
+if not group or group._name != "res.groups" or group not in operator.groups_id:
+    raise UserError("TPV1_IMPORT_OPERATOR_AUTHORIZATION_MISSING")
 
 operator_env = api.Environment(
     env.cr,

@@ -23,6 +23,14 @@ case "$payload_root:$customer_root" in
   *"/data/odoo/legacy_attachments"*) echo "PRODUCTION_TPV1_LEGACY_ATTACHMENTS_FORBIDDEN" >&2; exit 2;;
 esac
 locked_tenant="$(python3 scripts/release/production_release_set.py tenant --lock "$PRODUCTION_RELEASE_SET_LOCK")"
+locked_modules="$(python3 scripts/release/production_release_set.py modules --lock "$PRODUCTION_RELEASE_SET_LOCK")"
+operator_field() {
+  python3 scripts/release/production_release_set.py operator-field \
+    --lock "$PRODUCTION_RELEASE_SET_LOCK" --field "$1"
+}
+operator_identity_type="$(operator_field identity_type)"
+operator_identity_key="$(operator_field identity_key)"
+operator_target_group="$(operator_field target_group_xmlid)"
 [[ "${TENANT_KEY:-}" == "$locked_tenant" ]] || { echo "PRODUCTION_TPV1_TENANT_INVALID" >&2; exit 2; }
 [[ "${TENANT_PAYLOAD_DB_ALLOWLIST:-}" == "sc_production" ]] || { echo "PRODUCTION_TPV1_ALLOWLIST_INVALID" >&2; exit 2; }
 if [[ "$action" == "import" ]]; then
@@ -41,10 +49,13 @@ docker compose -p sc_production "${compose_files[@]}" run --rm --no-deps -T \
   --volume "$public_key:/mnt/tenant-payload-public-key:ro" \
   -e "SC_TENANT_PAYLOAD_ACTION=$action" \
   -e "SC_TENANT_PAYLOAD_TENANT_KEY=$locked_tenant" \
-  -e "SC_TENANT_PAYLOAD_OPERATOR_LOGIN=${TENANT_PAYLOAD_OPERATOR_LOGIN:?operator login required}" \
+  -e "SC_PRODUCTION_CUSTOMER_MODULES=$locked_modules" \
+  -e SC_MAINTENANCE_HTTP_DISABLED=1 \
+  -e "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_TYPE=$operator_identity_type" \
+  -e "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY=$operator_identity_key" \
+  -e "SC_TENANT_PAYLOAD_TARGET_GROUP_XMLID=$operator_target_group" \
   -e SC_TENANT_PAYLOAD_DB_ALLOWLIST=sc_production \
   -e "SC_TENANT_PAYLOAD_APPROVED_CHECKSUM=${APPROVE_PAYLOAD_CHECKSUM:?approved checksum required}" \
   -e "SC_TENANT_PAYLOAD_CHUNK_SIZE=${TENANT_PAYLOAD_CHUNK_SIZE:-100}" \
   -e SC_TENANT_PAYLOAD_PUBLIC_KEY=/mnt/tenant-payload-public-key \
-  --entrypoint odoo odoo shell -d sc_production -c /var/lib/odoo/odoo.conf --log-level=error \
-  < scripts/tenant_payload/odoo_action.py
+  --entrypoint /usr/local/bin/production-maintenance odoo "payload-$action"
