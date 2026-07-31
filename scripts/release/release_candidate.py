@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -485,9 +486,11 @@ def prepare_source_repository(
         staging = artifacts / f".source-repository-{os.getpid()}"
         if staging.exists():
             raise CandidatePipelineError("source repository staging path already exists")
-        run_logged(
-            "source_repository_prepare",
-            [
+        with tempfile.TemporaryDirectory(
+            prefix=".source-fetch-", dir=artifacts
+        ) as temporary:
+            fetched = Path(temporary) / "repository"
+            clone_options = [
                 "git",
                 "clone",
                 "--no-local",
@@ -495,12 +498,31 @@ def prepare_source_repository(
                 "--single-branch",
                 "--branch",
                 "main",
-                APPROVED_ORIGIN,
-                str(staging),
-            ],
-            artifacts / "logs" / "source_repository_prepare.log",
-            env=env,
-        )
+            ]
+            log = artifacts / "logs" / "source_repository_prepare.log"
+            run_logged(
+                "source_repository_prepare",
+                [*clone_options, APPROVED_ORIGIN, str(fetched)],
+                log,
+                env=env,
+            )
+            # A hosting provider may include unadvertised annotated-tag objects
+            # in its pack even when --no-tags is requested. Clone the fetched
+            # main-only repository once more so only objects reachable from its
+            # advertised main ref enter the immutable source repository.
+            run_logged(
+                "source_repository_prepare",
+                [*clone_options, str(fetched), str(staging)],
+                log,
+                env=env,
+            )
+            run_logged(
+                "source_repository_prepare",
+                ["git", "remote", "set-url", "origin", APPROVED_ORIGIN],
+                log,
+                env=env,
+                cwd=staging,
+            )
         os.replace(staging, source)
     actual_sha, actual_tree = source_repository_identity(source)
     if (actual_sha, actual_tree) != (source_sha, source_tree):

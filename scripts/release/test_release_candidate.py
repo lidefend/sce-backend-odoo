@@ -622,14 +622,22 @@ class ReleaseCandidateReportTests(unittest.TestCase):
             artifacts = Path(temporary) / VERSION
             artifacts.mkdir()
 
+            clones = []
+
             def fake_logged(stage, command, log_path, *, env, cwd=pipeline.ROOT):
                 self.assertEqual(stage, "source_repository_prepare")
-                self.assertIn("--no-local", command)
-                self.assertIn("--single-branch", command)
-                self.assertIn("--no-tags", command)
-                self.assertEqual(command[-2], pipeline.APPROVED_ORIGIN)
-                destination = Path(command[-1])
-                (destination / ".git" / "objects" / "info").mkdir(parents=True)
+                if command[:2] == ["git", "clone"]:
+                    self.assertIn("--no-local", command)
+                    self.assertIn("--single-branch", command)
+                    self.assertIn("--no-tags", command)
+                    clones.append(command)
+                    destination = Path(command[-1])
+                    (destination / ".git" / "objects" / "info").mkdir(parents=True)
+                else:
+                    self.assertEqual(
+                        command,
+                        ["git", "remote", "set-url", "origin", pipeline.APPROVED_ORIGIN],
+                    )
 
             with (
                 mock.patch.object(pipeline, "run_logged", side_effect=fake_logged),
@@ -641,6 +649,9 @@ class ReleaseCandidateReportTests(unittest.TestCase):
                     artifacts, SHA, TREE, SHA, env={}
                 )
             self.assertEqual(source, artifacts / "source-repository")
+            self.assertEqual(len(clones), 2)
+            self.assertEqual(clones[0][-2], pipeline.APPROVED_ORIGIN)
+            self.assertNotEqual(clones[1][-2], pipeline.APPROVED_ORIGIN)
             self.assertFalse((source / ".git" / "objects" / "info" / "alternates").exists())
 
     def test_clean_source_rejects_sha_tree_and_main_drift(self):
