@@ -155,6 +155,7 @@ class FakeBackend:
         self.checks = {name: "success" for name in publication.REQUIRED_CHECKS}
         self.fail_registry_once = False
         self.fail_registry_partial_once = False
+        self.fail_registry_validation_once = False
         self.fail_tag_once = False
         self.fail_release_once = False
         self.credentials_ready = True
@@ -211,6 +212,21 @@ class FakeBackend:
                 "injected registry failure", stage="registry_push"
             )
         return REMOTE_DIGEST
+
+    def validate_registry_candidate(self, reference, expected_local_image_id):
+        if reference not in self.registry:
+            self.events.append("registry_validation")
+            self.registry[reference] = REMOTE_DIGEST
+        if self.fail_registry_validation_once:
+            self.fail_registry_validation_once = False
+            raise publication.PublicationError(
+                "injected temporary validation failure", stage="registry_push"
+            )
+        if expected_local_image_id != IMAGE_ID:
+            raise publication.PublicationError(
+                "temporary registry candidate differs", stage="registry_push"
+            )
+        return self.registry[reference]
 
     def verify_registry_content(self, repository, digest, expected_local_image_id):
         return digest == REMOTE_DIGEST and expected_local_image_id == IMAGE_ID
@@ -350,7 +366,13 @@ class PublicationContractTests(unittest.TestCase):
         self.assertEqual(before, self.candidate_snapshot())
         self.assertEqual(
             self.backend.events,
-            ["preflight_checks", "registry_push", "tag_create", "release_create"],
+            [
+                "preflight_checks",
+                "registry_validation",
+                "registry_push",
+                "tag_create",
+                "release_create",
+            ],
         )
         latest, report, report_path = self.latest_report()
         self.assertEqual(latest["state"], "PUBLICATION_COMPLETE")
@@ -440,7 +462,12 @@ class PublicationContractTests(unittest.TestCase):
                 with self.assertRaises(publication.PublicationError):
                     pipe.execute()
                 self.assertFalse(
-                    {"registry_push", "tag_create", "release_create"}
+                    {
+                        "registry_validation",
+                        "registry_push",
+                        "tag_create",
+                        "release_create",
+                    }
                     & set(backend.events)
                 )
 
@@ -526,7 +553,12 @@ class PublicationContractTests(unittest.TestCase):
                     with self.assertRaises(publication.PublicationError):
                         pipe.execute()
                     self.assertFalse(
-                        {"registry_push", "tag_create", "release_create"}
+                        {
+                            "registry_validation",
+                            "registry_push",
+                            "tag_create",
+                            "release_create",
+                        }
                         & set(backend.events)
                     )
                     self.assertTrue(attempt.exists())
@@ -576,13 +608,26 @@ class PublicationContractTests(unittest.TestCase):
         pipe = self.pipeline()
         with self.assertRaises(publication.PublicationError):
             pipe.execute()
-        self.assertEqual(len(self.backend.registry), 1)
+        self.assertEqual(len(self.backend.registry), 2)
         result = self.pipeline(
             requested_publication_attempt_id=pipe.attempt_dir.name
         ).execute()
         self.assertEqual(result["state"], "PUBLICATION_COMPLETE")
-        self.assertEqual(len(self.backend.registry), 2)
+        self.assertEqual(len(self.backend.registry), 3)
         self.assertEqual(set(self.backend.registry.values()), {REMOTE_DIGEST})
+
+    def test_temporary_validation_failure_does_not_publish_formal_tags(self):
+        self.backend.fail_registry_validation_once = True
+        pipe = self.pipeline()
+        with self.assertRaises(publication.PublicationError):
+            pipe.execute()
+        formal_tags = publication.REGISTRY_REPOSITORY
+        self.assertNotIn(f"{formal_tags}:{VERSION}", self.backend.registry)
+        self.assertNotIn(
+            f"{formal_tags}:sha-{SOURCE[:12]}",
+            self.backend.registry,
+        )
+        self.assertEqual(self.backend.events, ["preflight_checks", "registry_validation"])
 
     def test_tag_failure_resumes_and_verifies_partial_tag(self):
         self.backend.fail_tag_once = True

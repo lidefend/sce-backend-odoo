@@ -486,6 +486,23 @@ class ExternalBackend:
             )
         return str(next(iter(digests)))
 
+    def validate_registry_candidate(
+        self, reference: str, expected_local_image_id: str
+    ) -> str:
+        digest = self.registry_digest(reference)
+        if digest is None:
+            digest = self.push_registry([reference])
+        if not self.verify_registry_content(
+            REGISTRY_REPOSITORY,
+            digest,
+            expected_local_image_id,
+        ):
+            raise PublicationError(
+                "temporary registry candidate does not match local image",
+                stage="registry_push",
+            )
+        return digest
+
     def verify_registry_content(
         self, repository: str, digest: str, expected_local_image_id: str
     ) -> bool:
@@ -1215,6 +1232,13 @@ class Publication:
             }:
                 self.verify_publication_context(plan, stage="registry_push")
                 self.transition("REGISTRY_PUSH_IN_PROGRESS")
+                validation_reference = (
+                    f"{REGISTRY_REPOSITORY}:candidate-{self.attempt_dir.name}"
+                )
+                validation_digest = self.backend.validate_registry_candidate(
+                    validation_reference,
+                    self.identity["local_image_id"],
+                )
                 existing = [
                     self.backend.registry_digest(ref)
                     for ref in self.identity["image_tags"]
@@ -1245,6 +1269,11 @@ class Publication:
                 if not DIGEST.fullmatch(digest):
                     raise PublicationError(
                         "registry digest is invalid", stage="registry_push"
+                    )
+                if digest != validation_digest:
+                    raise PublicationError(
+                        "formal registry tags differ from validated candidate",
+                        stage="registry_push",
                     )
                 for reference in self.identity["image_tags"]:
                     if self.backend.registry_digest(reference) != digest:

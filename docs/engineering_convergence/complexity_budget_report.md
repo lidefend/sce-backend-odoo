@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `3419`
 - Files requiring split plan: `38`
-- Files above warning threshold: `62`
+- Files above warning threshold: `63`
 
 ## Split Plan Required
 
@@ -58,9 +58,9 @@ Generated from repository source files. This report is informational during the 
 | 1711 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1442 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
+| 1438 | Python source | `scripts/release/release_publication.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1417 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1409 | Python source | `scripts/release/release_publication.py` |
 | 1400 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1392 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1388 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
@@ -109,6 +109,7 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 825 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 821 | Python source | `addons/smart_construction_core/models/support/tender.py` |
+| 821 | Python source | `scripts/release/test_release_publication.py` |
 | 814 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
@@ -161,9 +162,9 @@ Generated from repository source files. This report is informational during the 
 | 1523 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1442 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
+| 1438 | warning | Python source | `scripts/release/release_publication.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1417 | warning | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1409 | warning | Python source | `scripts/release/release_publication.py` |
 | 1400 | warning | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1392 | warning | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1388 | warning | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
