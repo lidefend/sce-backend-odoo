@@ -1,6 +1,11 @@
 {
   "schema_version": "frontend-release-gate-policy/v1",
   "authoritative_command": "cd frontend/apps/web && pnpm test:release",
+  "authoritative_command_lanes": [
+    "HIGH_RISK",
+    "RELEASE"
+  ],
+  "standard_frontend_command": "lint:src + typecheck:strict + release unit + build",
   "workflow": ".github/workflows/frontend_release_gate.yml",
   "job_id": "frontend_release_gate",
   "check_name": "frontend_release_gate",

@@ -29,6 +29,7 @@ jobs:
     timeout-minutes: 120
     env:
       CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
       CI_PROJECT_NAME: sc-fe-release-${{ github.run_id }}
 
@@ -50,15 +51,52 @@ jobs:
             printf 'tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
           } >> "${GITHUB_OUTPUT}"
 
+      - name: Classify change risk
+        id: risk
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/ci_risk_classifier.py \
+            --base "${BASE_SHA}" \
+            --head "${CHECKOUT_SHA}" \
+            --event "${GITHUB_EVENT_NAME}" \
+            --ref "${GITHUB_REF}" \
+            --github-output "${GITHUB_OUTPUT}"
+
+      - name: Restore content-addressed pnpm store
+        if: steps.risk.outputs.frontend_mode != 'skip'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-node20-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-node20-
+
+      - name: Restore content-addressed Playwright browser
+        id: playwright-cache
+        if: steps.risk.outputs.frontend_mode == 'full'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+
       - name: Install locked frontend toolchain
+        if: steps.risk.outputs.frontend_mode != 'skip'
         run: |
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@9.12.3 --activate
+          pnpm config set store-dir "${HOME}/.local/share/pnpm/store"
           pnpm -C frontend install --frozen-lockfile
-          pnpm -C frontend/apps/web exec playwright install --with-deps chromium
+          if [ '${{ steps.risk.outputs.frontend_mode }}' = 'full' ]; then
+            if [ '${{ steps.playwright-cache.outputs.cache-hit }}' = 'true' ]; then
+              pnpm -C frontend/apps/web exec playwright install-deps chromium
+            else
+              pnpm -C frontend/apps/web exec playwright install --with-deps chromium
+            fi
+          fi
 
       - name: Generate isolated acceptance environment
+        if: steps.risk.outputs.frontend_mode == 'full'
         run: |
           set -euo pipefail
           db_password="$(openssl rand -hex 32)"
@@ -114,6 +152,7 @@ jobs:
 
       - name: Run the single authoritative frontend release command
         id: release
+        if: steps.risk.outputs.frontend_mode == 'full'
         env:
           FRONTEND_RELEASE_PR_HEAD_SHA: ${{ env.PR_HEAD_SHA }}
         run: |
@@ -121,8 +160,36 @@ jobs:
           cd frontend/apps/web
           pnpm test:release
 
+      - name: Run standard frontend checks in parallel
+        id: standard
+        if: steps.risk.outputs.frontend_mode == 'standard'
+        run: |
+          set -euo pipefail
+          (
+            pnpm -C frontend/apps/web lint:src
+          ) &
+          lint_pid=$!
+          (
+            pnpm -C frontend/apps/web typecheck:strict
+          ) &
+          typecheck_pid=$!
+          (
+            pnpm -C frontend/apps/web test
+          ) &
+          unit_pid=$!
+          lint_status=0
+          typecheck_status=0
+          unit_status=0
+          wait "${lint_pid}" || lint_status=$?
+          wait "${typecheck_pid}" || typecheck_status=$?
+          wait "${unit_pid}" || unit_status=$?
+          test "${lint_status}" -eq 0
+          test "${typecheck_status}" -eq 0
+          test "${unit_status}" -eq 0
+          pnpm -C frontend/apps/web build
+
       - name: Fail closed on command or evidence identity
-        if: always()
+        if: always() && steps.risk.outputs.frontend_mode == 'full'
         env:
           RELEASE_COMMAND_OUTCOME: ${{ steps.release.outcome }}
         run: |
@@ -136,8 +203,37 @@ jobs:
             --run-id "${GITHUB_RUN_ID}" \
             --run-attempt "${GITHUB_RUN_ATTEMPT}"
 
+      - name: Record explicit non-release lane result
+        if: always() && steps.risk.outputs.frontend_mode != 'full'
+        env:
+          FRONTEND_MODE: ${{ steps.risk.outputs.frontend_mode }}
+          STANDARD_OUTCOME: ${{ steps.standard.outcome }}
+          RISK_LANE: ${{ steps.risk.outputs.lane }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/ci-risk-tiering
+          if [ "${FRONTEND_MODE}" = "standard" ]; then
+            test "${STANDARD_OUTCOME}" = "success"
+          else
+            test "${FRONTEND_MODE}" = "skip"
+          fi
+          python3 - "${RISK_LANE}" "${FRONTEND_MODE}" "${CHECKOUT_SHA}" \
+            > artifacts/ci-risk-tiering/frontend-release-gate.json <<'PY'
+          import json
+          import sys
+
+          print(json.dumps({
+              "schema_version": "ci-risk-lane-result/v1",
+              "check": "frontend_release_gate",
+              "lane": sys.argv[1],
+              "mode": sys.argv[2],
+              "sha": sys.argv[3],
+              "result": "PASS",
+          }, indent=2, sort_keys=True))
+          PY
+
       - name: Upload current-run non-sensitive release evidence
-        if: always()
+        if: always() && steps.risk.outputs.frontend_mode == 'full'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: frontend-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CHECKOUT_SHA }}
@@ -151,6 +247,15 @@ jobs:
             artifacts/frontend-delivery-hardening/performance.json
             artifacts/frontend-delivery-hardening/responsive.json
             artifacts/frontend-delivery-hardening/error-recovery.json
+
+      - name: Upload current-run risk-lane evidence
+        if: always() && steps.risk.outputs.frontend_mode != 'full'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: frontend-risk-lane-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CHECKOUT_SHA }}
+          retention-days: 30
+          if-no-files-found: error
+          path: artifacts/ci-risk-tiering/frontend-release-gate.json
 
       - name: Clean isolated runner state
         if: always()

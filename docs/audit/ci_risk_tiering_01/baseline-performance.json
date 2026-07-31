@@ -1,0 +1,68 @@
+{
+  "schema_version": "ci-risk-tiering-baseline/v1",
+  "repository": "lidefend/sce-backend-odoo",
+  "captured_at": "2026-07-31T15:59:23+08:00",
+  "sample_scope": "10 most recent successful pull-request heads with all four required check contexts",
+  "sample_count": 10,
+  "required_check_wall_seconds": {
+    "median": 983.5,
+    "p90": 1030.5,
+    "minimum": 861.0,
+    "maximum": 1035.0
+  },
+  "longest_jobs": [
+    {
+      "check": "frontend_release_gate",
+      "observed_range_seconds": [
+        861,
+        1035
+      ],
+      "dominant_step": "pnpm test:release"
+    },
+    {
+      "check": "professional_authorization",
+      "representative_seconds": 224,
+      "dominant_step": "real ORM chatter authorization"
+    },
+    {
+      "check": "professional_quality_gate",
+      "representative_seconds": 103,
+      "dominant_step": "make ci"
+    },
+    {
+      "check": "public_guard",
+      "representative_seconds": 111,
+      "dominant_step": "reachable product history scan"
+    }
+  ],
+  "representative_run_ids": [
+    30607756424,
+    30607756455,
+    30607756406,
+    30605788690,
+    30605788641,
+    30605788662
+  ],
+  "duplicated_work": [
+    "frontend dependency installation in professional_quality_gate and frontend_release_gate",
+    "full frontend release acceptance for changes outside frontend/runtime/release surfaces",
+    "real ORM authorization initialization for changes outside authorization/security surfaces",
+    "three heavyweight workflows rerun after every main merge regardless of changed paths"
+  ],
+  "cache_baseline": {
+    "pnpm_content_addressed_cache_configured": false,
+    "playwright_browser_cache_configured": false,
+    "observed_hit_rate": 0
+  },
+  "stale_run_cancellation_baseline": {
+    "configured": true,
+    "observed_cancelled_run_ids": [
+      30597819183,
+      30595247437
+    ]
+  },
+  "github_gitee_role": {
+    "github": "authoritative required-check execution",
+    "gitee": "source mirror; no duplicate automatic heavyweight workflow found"
+  }
+}

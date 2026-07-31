@@ -1,0 +1,58 @@
+{
+  "schema_version": "ci-risk-tiering/v1",
+  "lane_order": [
+    "FAST",
+    "STANDARD",
+    "HIGH_RISK",
+    "RELEASE"
+  ],
+  "default_lane": "HIGH_RISK",
+  "fast_paths": [
+    "*.md",
+    "docs/**",
+    ".github/ISSUE_TEMPLATE/**"
+  ],
+  "standard_frontend_paths": [
+    "frontend/**"
+  ],
+  "standard_backend_paths": [
+    "addons/**",
+    "scripts/verify/**",
+    "scripts/e2e/**",
+    "tests/**"
+  ],
+  "high_risk_paths": [
+    ".github/workflows/**",
+    "config/ci/**",
+    "scripts/ci/**",
+    "scripts/release/**",
+    "scripts/ops/**",
+    "deployment/**",
+    "release/**",
+    "migrations/**",
+    "Dockerfile*",
+    "**/Dockerfile*",
+    "docker-compose*",
+    "**/docker-compose*",
+    "Makefile",
+    "make/**",
+    "**/security/**",
+    "**/security*.xml",
+    "**/ir.model.access.csv",
+    "**/*tenant*payload*",
+    "**/*importer*",
+    "**/*identity*lock*",
+    "**/*signature*",
+    "**/*odoo*conf*",
+    "**/requirements*.txt",
+    "**/requirements*.lock",
+    "**/poetry.lock",
+    "**/Pipfile.lock",
+    "**/package-lock.json",
+    "**/pnpm-lock.yaml",
+    "**/yarn.lock"
+  ],
+  "release_refs": [
+    "refs/tags/**"
+  ]
+}

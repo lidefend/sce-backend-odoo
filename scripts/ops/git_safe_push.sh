@@ -67,7 +67,9 @@ fi
 
 if [[ "${GIT_SAFE_PUSH_FAKE_MAKE:-0}" == "1" && "$(basename "$0")" == "make" ]]; then
   printf 'make %s\n' "$*" >>"${FAKE_GIT_LOG:?}"
-  [[ "${FAKE_GENERATED_REPORTS_STALE:-0}" != "1" ]]
+  if [[ "$*" == *"ci.generated_reports.guard"* ]]; then
+    [[ "${FAKE_GENERATED_REPORTS_STALE:-0}" != "1" ]]
+  fi
   exit $?
 fi
 
@@ -126,6 +128,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   assert_nonzero 'stale generated reports'
   assert_output 'stale generated reports' "generated reports are stale"
   assert_push_count 'stale generated reports' 0
+  grep -q '^make --no-print-directory refresh.generated_reports$' "$log_file" || fail 'stale generated reports: automatic refresh missing'
   grep -q '^make --no-print-directory ci.generated_reports.guard$' "$log_file" || fail 'stale generated reports: local guard missing'
 
   FAKE_EXISTING_REMOTES=origin run_push
@@ -189,6 +192,13 @@ fi
 
 if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
   echo "❌ working tree dirty; commit or stash before push" >&2
+  exit 2
+fi
+
+echo "[pr.push] refreshing tracked generated reports before remote access"
+make --no-print-directory refresh.generated_reports
+if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
+  echo "❌ generated reports were refreshed; review and commit the deterministic changes before pushing" >&2
   exit 2
 fi
 
