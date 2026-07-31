@@ -46,6 +46,19 @@ set 原子包含 `sc_production` 数据库、对应 filestore 和脱敏部署元
 
 ## 隔离恢复演练
 
+若已安装恢复工具缺少当前批准 `main` 中的安全修复，可从双远端一致、工作树干净的
+`main` 使用固定范围的原子同步入口；禁止直接 `scp` 或覆盖目标文件：
+
+```bash
+ENV=prod PROD_DANGER=1 \
+PRODUCTION_RESTORE_TOOL_SYNC_SHA=<approved-main-sha> \
+CONFIRM_PRODUCTION_RESTORE_TOOL_SYNC=YES_SYNC_GOVERNED_RESTORE_TOOL \
+make production.restore.tool.sync
+```
+
+该入口只更新 `/opt/ops/production_backup_restore.py`，保留 root-only 回滚副本和摘要，
+不修改 systemd、应用容器、数据库或生产 volume。
+
 恢复入口自行建立固定范围的内部网络、数据库 volume、filestore volume 和
 容器命名空间；它不加入生产 network，不挂载生产 volume，不连接生产
 PostgreSQL，并通过无外网、零 cron 的 Odoo `--stop-after-init` 验证启动：
