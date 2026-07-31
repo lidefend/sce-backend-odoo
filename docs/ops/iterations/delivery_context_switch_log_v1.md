@@ -1909,3 +1909,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Here / Why Not Elsewhere: capability authorization belongs to the platform import boundary, while pre-publication execution evidence belongs to release tooling; neither belongs in customer modules, frontend code, or production data
 - Blast Radius: maintenance capability matching, focused release tests, candidate publication preflight, and version identity only; production data, ACL design, customer package, v4 payload, and runtime services remain unchanged
 - Validation: behavioral equality/mismatch tests, repository API audit, publication negative tests, HIGH_RISK required checks, and final rc.11 image execution of the production-equivalent v4 plan with zero database writes
+
+## 2026-08-01 — CI-SURFACE-AWARE-ORCHESTRATION-01
+
+- Branch: `fix/ci-surface-aware-orchestration`
+- Starting product commit: `3fb17948feacb34c2574668eaba7ddb2ad4bef26`
+- Formal Product Layer: P4 delivery and CI orchestration
+- Layer Target: risk-tier routing and required-check execution ownership
+- Module: `config/ci`, `scripts/ci`, GitHub Actions workflows, and `make/ci.mk`
+- Reason: high-risk release or operations changes currently trigger the complete frontend release suite even when no frontend surface changed, while the professional gate independently reinstalls and rebuilds the frontend. Route validation by affected surface and retain one authoritative frontend executor.
+- Standard vs User-Specific: generic repository delivery policy; no customer, tenant, role, navigation, or business semantics are encoded.
+- Why Here / Why Not Elsewhere: CI classification owns lane selection, the frontend workflow owns frontend validation, and the professional workflow owns backend/static validation. Product modules and production runtime are outside this change.
+- Blast Radius: required-check orchestration and CI duration only. Check names, fail-closed risk classification, release-event full validation, frontend dependency/config full validation, application code, databases, and production services remain unchanged.

@@ -672,11 +672,17 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 # v1.1 Engineering Convergence quality entries
 # ----------------------------------------------------------------------
-.PHONY: ci ci.local.quick ci.generated_reports.guard refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch
+.PHONY: ci ci.professional.backend ci.local.quick ci.generated_reports.guard refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch
 
 ci: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.unified_page_contract.v2.web_architecture test.unit test.frontend test.contract test.e2e.preflight
 	@git diff --check
 	@echo "[OK] v1.1 PR quality gate passed"
+
+# Backend/static half of the professional gate. The required frontend workflow is
+# the single authority for frontend install, lint, typecheck, build and browsers.
+ci.professional.backend: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.unified_page_contract.v2.web_architecture test.unit test.contract test.e2e.preflight
+	@git diff --check
+	@echo "[OK] professional backend/static quality gate passed"
 
 ci.generated_reports.guard: guard.prod.forbid
 	@python3 scripts/ci/generate_test_inventory.py
