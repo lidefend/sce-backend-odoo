@@ -1,6 +1,6 @@
 # User Identity Activation and SaaS Boundary v1
 
-Status: frozen architecture boundary  
+Status: frozen architecture boundary
 Scope: authentication bridge, enterprise activation, password recovery, future SaaS registration
 
 ## Authority and non-goals
