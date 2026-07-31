@@ -1875,3 +1875,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Here / Why Not Elsewhere: the role projection belongs to the industry product policy; type and pure query helpers belong beside their generic frontend domains rather than customer modules or release exceptions
 - Blast Radius: finance navigation adds one existing read-only menu identity; contract form and session changes only move pure helpers/types; no ACL, workflow, payload, database, `main`, protection, or production mutation
 - Validation: finance projection unit guard, role/authorization regression, frontend lint/strict/build/unit gates, complexity locks, four required checks on the new SHA, and dual-remote candidate parity
+
+## 2026-07-31 — FIRST-DEPLOYMENT-CLEANUP-GUARD-01
+
+- Branch / anchor: `fix/candidate-gate-closure-01` from
+  `55660b2723a0c71629942a03d03dbd043d019ab2`.
+- Formal Product Layer: P4 operations delivery tooling; Layer Target: exact,
+  fail-closed cleanup of one failed `sc_production` deployment attempt;
+  Module: `scripts/release` and `make/release.mk`.
+- Reason: the original first-fresh cleanup target intentionally rejects an
+  already-created `sc_production` Compose project, while the first official
+  deployment requires removing a verified failed attempt before rebuilding.
+- Standard vs User-Specific: generic production lifecycle governance. No
+  customer record, mapping, payload, or construction business rule is encoded.
+- Why Here / Why Not Elsewhere: container, volume, mount, and cleanup-plan
+  custody belongs to P4. P0/P1 models, P2 customer modules, P3 configuration,
+  and frontend code are not authorized to manage host runtime resources.
+- Blast Radius: exactly four `sc_production` containers, their one Compose
+  network, six fixed named volumes, and four plan-enumerated anonymous volumes.
+  `/data/odoo/legacy_attachments`, TLS, Nginx, and production configuration are
+  hard-preserved using canonical-path, device, inode, file-count, and byte
+  fingerprints. Validation covers dry-run digest locking, foreign ownership,
+  path overlap, unexpected resources, oversized filestore, and missing
+  confirmation.

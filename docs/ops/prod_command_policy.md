@@ -59,6 +59,12 @@ Makefile guards and script-level guards.
 - `make production.backup.run` (requires
   `CONFIRM_PRODUCTION_BACKUP=YES_CREATE_SC_PRODUCTION_TRIPLE_BACKUP`; creates
   one immutable database/filestore/sanitized-metadata backup set)
+- `make release.production.failed_deployment.cleanup` (requires the exact
+  `CONFIRM_FAILED_DEPLOYMENT_CLEANUP=YES_REMOVE_VERIFIED_FAILED_SC_PRODUCTION_ATTEMPT`
+  contract and a SHA-256 locked dry-run plan; removes only the precisely
+  inventoried failed `sc_production` containers, network, and volumes while
+  proving `/data/odoo/legacy_attachments`, TLS, Nginx, and production
+  configuration identities are unchanged)
 - `make production.restore.rehearsal` (requires
   `CONFIRM_RESTORE_REHEARSAL=YES_RUN_ISOLATED_RESTORE_REHEARSAL`; restores only
   into an internal-network rehearsal namespace)

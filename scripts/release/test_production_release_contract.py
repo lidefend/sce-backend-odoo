@@ -161,6 +161,9 @@ class StaticContractTests(unittest.TestCase):
         cls.first_fresh_cleanup = (
             ROOT / "scripts/release/production_first_fresh_cleanup.py"
         ).read_text()
+        cls.failed_deployment_cleanup = (
+            ROOT / "scripts/release/production_failed_deployment_cleanup.py"
+        ).read_text()
         cls.admin_harden = (
             ROOT / "scripts/release/production_admin_harden.py"
         ).read_text()
@@ -330,6 +333,29 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("OLD_VOLUMES = {", self.first_fresh_cleanup)
         self.assertNotIn("system prune", self.first_fresh_cleanup)
         self.assertNotIn("volume prune", self.first_fresh_cleanup)
+
+    def test_failed_deployment_cleanup_is_digest_locked_and_preserves_service_files(self):
+        target = self.release_make.split(
+            "release.production.failed_deployment.cleanup:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("guard.prod.danger", target.splitlines()[0])
+        self.assertIn(
+            "YES_REMOVE_VERIFIED_FAILED_SC_PRODUCTION_ATTEMPT",
+            self.release_make,
+        )
+        for token in (
+            "/data/odoo/legacy_attachments",
+            "EXPECTED_CLEANUP_PLAN_SHA256",
+            "MAX_FAILED_FILESTORE_BYTES",
+            "preserved_fingerprint",
+        ):
+            self.assertIn(token, self.failed_deployment_cleanup)
+        self.assertNotIn("system prune", self.failed_deployment_cleanup)
+        self.assertNotIn("volume prune", self.failed_deployment_cleanup)
+        self.assertIn(
+            "release.production.failed_deployment.cleanup",
+            self.production_command_policy,
+        )
 
     def test_admin_harden_is_exact_scope_and_confirmation_guarded(self):
         target = self.release_make.split(
