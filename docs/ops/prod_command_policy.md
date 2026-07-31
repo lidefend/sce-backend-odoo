@@ -69,8 +69,9 @@ Makefile guards and script-level guards.
 - `make production.candidate.image.sync` (requires
   `CONFIRM_PRODUCTION_IMAGE_SYNC=YES_SYNC_VERIFIED_CANDIDATE_IMAGE`; from a
   clean dual-remote-approved `main`, verifies the governed candidate archive
-  SHA-256 and local immutable image content ID, streams it through SSH stdin
-  to the fixed `sc-prod` Docker cache, and verifies the same remote content ID;
+  SHA-256, local OCI manifest ID, and archive config digest; it streams through
+  SSH stdin to the fixed `sc-prod` Docker cache only when the verified archive
+  config ID is absent, then verifies that exact backend-portable remote ID;
   it creates no remote staging file and does not change services, containers,
   volumes, systemd, or databases)
 - `make production.restore.rehearsal` (requires

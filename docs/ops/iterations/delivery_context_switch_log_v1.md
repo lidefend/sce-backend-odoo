@@ -1932,3 +1932,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Here / Why Not Elsewhere: verified artifact transfer belongs to P4 release operations, not platform, industry, customer, low-code, frontend, or database layers.
 - Blast Radius: the fixed `sc-prod` Docker image cache only. The target creates no remote staging file and does not modify services, containers, volumes, systemd, databases, or application source.
 - Validation: clean dual-remote-approved main, archive path and SHA-256, restricted image ref, local and remote image content ID equality, fixed SSH target, and focused unit/contract tests.
+
+## 2026-08-01 — GOVERNED-PRODUCTION-IMAGE-SYNC-IDENTITY-02
+
+- Branch / anchor: `fix/governed-production-image-sync-id` from `7519cee5ca62a84c69922fad887366d0f5e2f760`.
+- Formal Product Layer / Target: P4 ops delivery tool; Docker-backend-portable immutable image identity verification.
+- Module / Reason: `scripts/ops/production_candidate_image_sync.py`; distinguish the OCI manifest ID reported by a containerd image store from the archive config ID reported by classic Docker while proving both belong to the same SHA-verified archive.
+- Standard vs User-Specific / Why Here: generic artifact transport compatibility belongs to P4 release operations and carries no product or customer semantics.
+- Why Not Elsewhere / Blast Radius: no P0-P3, frontend, runtime configuration, container, volume, database, service, or systemd behavior changes; only verification and cached-image transfer skipping are affected.
+- Validation: synthetic archive manifest/config digest tests, remote cached-ID skip test, focused backup/restore contract, and required PR checks.
