@@ -3,7 +3,6 @@
   "acceptance_package_digest": "c0274b881052c463c9d3183843781a81cc42a08789b029de6374b69131298a5c",
   "expected_product_key": "sce-product",
   "expected_role_code": "business_config_admin",
-  "fixed_deployment_image_id": "sha256:f016afdee271ae33d68840591eff88f3fc706269447de33f51ba9b03fe2c3702",
   "forbidden_login_values": [
     "admin",
     "bootstrap",

@@ -1968,3 +1968,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific / Why Here: generic release identity delivery belongs to P4 and carries no customer or business semantics.
 - Why Not Elsewhere / Blast Radius: no source, image, container, volume, service, systemd, database, P0-P3, or frontend mutation; the only remote write is a new atomic `/opt/sce/candidates/v1.0.0-rc.12` directory.
 - Validation: secure-root containment, exact source/version/GHCR digest identity, release checksum, three-file inventory, immutable-existing-target fail-closed behavior, focused contract tests, and required PR checks.
+
+## 2026-08-01 — PRODUCTION-PROMOTION-CONFIG-FLOW-01
+
+- Branch / anchor: `fix/production-promotion-config-flow` from `407dea2efa964ff4e2dcab36f0f46d34dc7ebe94`.
+- Formal Product Layer / Target / Module: P4 ops delivery; production deployment tooling sync, runtime identity promotion, and pre-replacement readiness configuration.
+- Reason: the readiness contract hard-coded an obsolete image ID while production config carried a stale product key/image ID; immutable RC12 deployment needs dynamic exact-ID validation plus durable atomic identity promotion.
+- Standard vs User-Specific / Why Here: generic production release lifecycle control belongs to P4 and carries no business or customer semantics.
+- Why Not Elsewhere / Blast Radius: no P0-P3, frontend, image build, container replacement, service, systemd, volume, or database mutation; remote writes are a new immutable tool directory and two fixed configuration files with paired rollback copies.
+- Validation: SHA-only deployment image IDs, exact Docker inspect equality, current-running/next-manifest identity checks, root-owned mode guards, paired rollback, clean dual-remote main, focused tests, and required PR checks.
