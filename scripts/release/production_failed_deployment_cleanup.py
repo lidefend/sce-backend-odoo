@@ -7,6 +7,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -60,6 +61,7 @@ PRESERVED_PATHS = (
 LEGACY_ATTACHMENTS = Path("/data/odoo/legacy_attachments")
 MAX_FAILED_FILESTORE_BYTES = 8 * 1024 * 1024
 LOCK_PATH = Path("/run/lock/sc-production-failed-cleanup.lock")
+ANONYMOUS_VOLUME = re.compile(r"^[0-9a-f]{64}$")
 
 
 class CleanupError(RuntimeError):
@@ -152,6 +154,8 @@ def _directory_bytes(path: Path) -> int:
 
 def collect_snapshot(runner: Runner = subprocess.run) -> dict[str, Any]:
     containers = _inspect(runner, *sorted(CONTAINERS))
+    all_ids = _run(runner, "docker", "ps", "-aq").stdout.split()
+    all_containers = _inspect(runner, *all_ids) if all_ids else []
     rows = _run(
         runner,
         "docker",
@@ -173,6 +177,7 @@ def collect_snapshot(runner: Runner = subprocess.run) -> dict[str, Any]:
     )
     return {
         "containers": containers,
+        "all_containers": all_containers,
         "project_container_rows": all_containers,
         "network": _network_inspect(runner),
         "volumes": _volume_inspect(runner, mounted_volumes),
@@ -244,10 +249,34 @@ def validate_snapshot(
         _real_path_without_symlink(Path(value)) for value in PRESERVED_PATHS
     ]
     volume_paths: dict[str, str] = {}
+    volume_users: dict[str, list[tuple[str, str]]] = {
+        name: [] for name in inspected
+    }
+    for item in snapshot["all_containers"]:
+        user = item["Name"].lstrip("/")
+        for mount in item.get("Mounts") or []:
+            if mount.get("Type") == "volume" and mount.get("Name") in volume_users:
+                volume_users[mount["Name"]].append(
+                    (user, str(mount.get("Destination") or ""))
+                )
     for volume, item in inspected.items():
         labels = item.get("Labels") or {}
-        if labels.get("com.docker.compose.project") != TARGET_PROJECT:
-            raise CleanupError(f"volume lacks exact project ownership: {volume}")
+        if volume in NAMED_VOLUMES:
+            if labels.get("com.docker.compose.project") != TARGET_PROJECT:
+                raise CleanupError(f"named volume lacks exact ownership: {volume}")
+        elif (
+            not ANONYMOUS_VOLUME.fullmatch(volume)
+            or labels.get("com.docker.compose.project") not in {None, TARGET_PROJECT}
+        ):
+            raise CleanupError(f"anonymous volume identity is unsafe: {volume}")
+        users = volume_users[volume]
+        if not users or any(user not in CONTAINERS for user, _ in users):
+            raise CleanupError(f"volume has an external or missing user: {volume}")
+        expected_users = sorted(
+            pair for pair, mounted in mount_pairs.items() if mounted == volume
+        )
+        if sorted(users) != expected_users:
+            raise CleanupError(f"volume user topology mismatch: {volume}")
         mountpoint = _real_path_without_symlink(Path(item["Mountpoint"]))
         if any(_overlaps(mountpoint, path) for path in preserve_reals):
             raise CleanupError(f"cleanup volume overlaps a preserved path: {volume}")

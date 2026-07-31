@@ -24,7 +24,14 @@ TOOL_SHA = "b" * 40
 
 def snapshot(root: Path):
     containers = []
-    anonymous = iter(("anon-odoo-data", "anon-odoo-addons", "anon-nginx-data", "anon-nginx-addons"))
+    anonymous = iter(
+        (
+            "1" * 64,
+            "2" * 64,
+            "3" * 64,
+            "4" * 64,
+        )
+    )
     destinations = {
         "sc_production-db-1": [("/var/lib/postgresql/data", "sce-sc_production-postgres")],
         "sc_production-redis-1": [("/data", "sce-sc_production-redis")],
@@ -77,6 +84,7 @@ def snapshot(root: Path):
         )
     return {
         "containers": containers,
+        "all_containers": list(containers),
         "project_container_rows": [{"Names": name} for name in cleanup.CONTAINERS],
         "network": {
             "Name": cleanup.NETWORK,
@@ -124,7 +132,32 @@ class FailedDeploymentCleanupTests(unittest.TestCase):
 
     def test_foreign_project_volume_is_rejected(self):
         value = snapshot(self.root)
-        value["volumes"][0]["Labels"]["com.docker.compose.project"] = "other"
+        named = next(
+            item for item in value["volumes"] if item["Name"] in cleanup.NAMED_VOLUMES
+        )
+        named["Labels"]["com.docker.compose.project"] = "other"
+        with self.assertRaises(cleanup.CleanupError):
+            cleanup.validate_snapshot(
+                value, expected_image_id=IMAGE_ID, expected_tool_sha=TOOL_SHA
+            )
+
+    def test_anonymous_volume_external_user_is_rejected(self):
+        value = snapshot(self.root)
+        anonymous = next(
+            item for item in value["volumes"] if item["Name"] not in cleanup.NAMED_VOLUMES
+        )
+        value["all_containers"].append(
+            {
+                "Name": "/foreign",
+                "Mounts": [
+                    {
+                        "Type": "volume",
+                        "Name": anonymous["Name"],
+                        "Destination": "/data",
+                    }
+                ],
+            }
+        )
         with self.assertRaises(cleanup.CleanupError):
             cleanup.validate_snapshot(
                 value, expected_image_id=IMAGE_ID, expected_tool_sha=TOOL_SHA
