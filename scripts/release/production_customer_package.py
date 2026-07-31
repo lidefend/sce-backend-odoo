@@ -143,7 +143,7 @@ def main() -> int:
         raise SystemExit("CUSTOMER_PACKAGE_V2_REQUIRED")
     manifest_path = args.manifest.resolve()
     release_config = admission.load_module(
-        "sce_customer_target_release", "scripts/release/product_release.py"
+        "production_target_release_contract", "scripts/release/product_release.py"
     ).load_release_config()
     try:
         validate_package_target_contract(lock, manifest, manifest_path, release_config)
