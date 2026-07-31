@@ -98,6 +98,18 @@
             </p>
             <button class="submit sc-btn sc-btn-primary" type="submit" :disabled="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</button>
           </form>
+          <nav v-if="authEntryActions.length" class="auth-entry-links" aria-label="账号帮助">
+            <button
+              v-for="action in authEntryActions"
+              :key="`login-auth-${action.key}`"
+              class="auth-entry-link"
+              type="button"
+              :disabled="loading"
+              @click="executeHeaderAction(action.key)"
+            >
+              {{ action.label || action.key }}
+            </button>
+          </nav>
         </section>
       </section>
     </section>
@@ -138,7 +150,9 @@ const dbName = ref(
 );
 const loading = ref(false);
 const error = ref('');
-const headerActions = computed(() => pageGlobalActions.value);
+const authActionKeys = new Set(['open_account_activation', 'open_password_recovery']);
+const authEntryActions = computed(() => pageGlobalActions.value.filter((action) => authActionKeys.has(action.key)));
+const headerActions = computed(() => pageGlobalActions.value.filter((action) => !authActionKeys.has(action.key)));
 const dbInputDisabled = computed(() => loading.value || isConfiguredDbPinned());
 const loginTitleFallback = computed(() => isPlatformAdminEntryRuntime() ? '平台管理员登录' : '登录');
 const capabilityItems = computed(() => [
@@ -212,6 +226,14 @@ async function executeHeaderAction(actionKey: string) {
       password.value = '';
     },
     onFallback: async (key) => {
+      if (key === 'open_account_activation') {
+        await router.push('/activate-account');
+        return true;
+      }
+      if (key === 'open_password_recovery') {
+        await router.push('/password-recovery');
+        return true;
+      }
       if (key === 'open_landing' || key === 'open_workbench') {
         await router.push('/');
         return true;
@@ -271,6 +293,28 @@ async function executeHeaderAction(actionKey: string) {
   gap: 10px;
   justify-content: flex-end;
   margin-bottom: 8px;
+}
+
+.auth-entry-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.auth-entry-link {
+  border: 0;
+  background: transparent;
+  color: var(--sc-semantic-text-link, #2563eb);
+  cursor: pointer;
+  padding: 6px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-entry-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .ghost {

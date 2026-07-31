@@ -37,3 +37,4 @@ from . import test_um_p3_subcontract_cumulative_amount_orm
 from . import test_tenant_extension_storage
 from . import test_narrow_tenant_payload_importer
 from . import test_localized_display
+from . import test_user_activation

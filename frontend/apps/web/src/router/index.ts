@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router';
 import { useSessionStore } from '../stores/session';
 import LoginView from '../views/LoginView.vue';
+import AccountActivationView from '../views/AccountActivationView.vue';
+import PasswordRecoveryView from '../views/PasswordRecoveryView.vue';
 import { ApiError } from '../api/client';
 import { buildCanonicalSceneRouteTarget, normalizeEmbeddedSceneQuery, normalizeLegacyWorkbenchPath, parseSceneKeyFromQuery } from '../app/routeQuery';
 import { getSceneByKey } from '../app/resolvers/sceneRegistry';
@@ -16,6 +18,8 @@ function routeTitle(routeName: string | symbol | null | undefined): string {
   const name = typeof routeName === 'string' ? routeName : '';
   const map: Record<string, string> = {
     login: '登录',
+    'account-activation': '激活账号',
+    'password-recovery': '忘记密码',
     home: '角色首页',
     'scene-home': '角色首页',
     'my-work': '我的工作',
@@ -255,6 +259,8 @@ const router = createRouter({
   routes: [
     { path: '/login', name: 'login', component: LoginView },
     { path: '/platform-admin/login', name: 'platform-admin-login', component: LoginView },
+    { path: '/activate-account', name: 'account-activation', component: AccountActivationView },
+    { path: '/password-recovery', name: 'password-recovery', component: PasswordRecoveryView },
     { path: '/', name: 'home', component: () => import('../views/HomeView.vue'), meta: { layout: 'shell', sceneKey: 'workspace.home' } },
     { path: '/s/workspace.home', name: 'scene-home', component: () => import('../views/HomeView.vue'), meta: { layout: 'shell', sceneKey: 'workspace.home' } },
     { path: '/my-work', name: 'my-work', component: () => import('../views/MyWorkView.vue'), meta: { layout: 'shell' } },
@@ -282,7 +288,8 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const session = useSessionStore();
-  const isLoginRoute = to.name === 'login' || to.name === 'platform-admin-login';
+  const publicAuthRoutes = new Set(['login', 'platform-admin-login', 'account-activation', 'password-recovery']);
+  const isLoginRoute = publicAuthRoutes.has(String(to.name || ''));
   const wantsPlatformAdminEntry = to.path.startsWith('/platform-admin') || String(to.query.platform_admin || '') === '1';
   if (!isLoginRoute && !session.token) {
     return wantsPlatformAdminEntry

@@ -15,6 +15,13 @@ _logger = logging.getLogger(__name__)
 
 
 class ScAuthSignup(AuthSignupHome):
+    def _password_recovery_self_service_enabled(self):
+        value = request.env["ir.config_parameter"].sudo().get_param(
+            "sc.password_recovery.self_service_enabled",
+            "false",
+        )
+        return str(value or "").strip().lower() in {"1", "true", "yes"}
+
     def _get_signup_mode(self):
         icp = request.env["ir.config_parameter"].sudo()
         mode = (icp.get_param("sc.signup.mode") or "").strip().lower()
@@ -206,9 +213,21 @@ class ScAuthSignup(AuthSignupHome):
         if not token_param and self._get_signup_mode() == "open":
             qcontext.pop("token", None)
             qcontext.pop("invalid_token", None)
-        token = qcontext.get("token")
-        self._assert_open_allowed(token=token)
+        # Do not apply the public-signup policy here.  Odoo shares this helper
+        # with /web/reset_password, so enforcing invite-only signup at this
+        # layer also disables password recovery for existing users.
         return qcontext
+
+    @http.route("/web/reset_password", type="http", auth="public", website=True, sitemap=False)
+    def web_auth_reset_password(self, *args, **kw):
+        # Password recovery and enterprise activation are separate policies.
+        # Until a verified recovery channel is configured, route requests
+        # without an already-issued native token to the non-enumerating SPA
+        # guidance page.  Token-based Odoo recovery remains compatible.
+        token = request.params.get("token") or kw.get("token")
+        if not token and not self._password_recovery_self_service_enabled():
+            return request.redirect("/password-recovery", code=303)
+        return super().web_auth_reset_password(*args, **kw)
 
     def do_signup(self, qcontext):
         token = qcontext.get("token")
@@ -219,6 +238,15 @@ class ScAuthSignup(AuthSignupHome):
         self._assert_password_strength(password)
         self._assert_email_allowed(login)
 
+        existing_user_before = False
+        if token:
+            partner = request.env["res.partner"].sudo()._signup_retrieve_partner(
+                token,
+                check_validity=True,
+                raise_exception=True,
+            )
+            existing_user_before = bool(partner.with_context(active_test=False).user_ids)
+
         require_verify = (not token) and self._require_email_verify()
         if require_verify:
             values = self._prepare_signup_values(qcontext)
@@ -228,7 +256,10 @@ class ScAuthSignup(AuthSignupHome):
             super().do_signup(qcontext)
 
         user = request.env["res.users"].sudo().search([("login", "=", login)], order="id desc", limit=1)
-        self._apply_user_defaults(user)
+        # Defaults belong to user creation only.  An existing user's password
+        # reset must never mutate roles, company scope or profile fields.
+        if not existing_user_before:
+            self._apply_user_defaults(user)
 
         if require_verify:
             user.sudo().write({"active": False})

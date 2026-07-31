@@ -574,6 +574,11 @@ def _default_page_actions(page_key: str, profile_overrides: Dict[str, Any] | Non
             if isinstance(payload, list):
                 return payload
     key = str(page_key or "").strip().lower()
+    if key == "login":
+        return [
+            {"key": "open_account_activation", "label": "激活账号", "intent": "ui.contract"},
+            {"key": "open_password_recovery", "label": "忘记密码", "intent": "ui.contract"},
+        ]
     if key == "home":
         return [
             {"key": "open_my_work", "label": "我的工作", "intent": "ui.contract"},
