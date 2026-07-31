@@ -1921,3 +1921,14 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific: generic repository delivery policy; no customer, tenant, role, navigation, or business semantics are encoded.
 - Why Here / Why Not Elsewhere: CI classification owns lane selection, the frontend workflow owns frontend validation, and the professional workflow owns backend/static validation. Product modules and production runtime are outside this change.
 - Blast Radius: required-check orchestration and CI duration only. Check names, fail-closed risk classification, release-event full validation, frontend dependency/config full validation, application code, databases, and production services remain unchanged.
+
+## 2026-08-01 — GOVERNED-PRODUCTION-IMAGE-SYNC-01
+
+- Branch / anchor: `fix/governed-production-image-sync` from `a0c706ba8709c8ccf2c00e76647d6c340d7b93a4`.
+- Formal Product Layer: P4 ops delivery tool.
+- Layer Target / Module: governed immutable candidate transfer in `scripts/ops` and `make/release.mk`.
+- Reason: preload an already-published candidate image when the production registry path is too slow, without weakening release identity checks or touching runtime state.
+- Standard vs User-Specific: generic release delivery mechanism; no tenant, customer, role, navigation, or business semantics.
+- Why Here / Why Not Elsewhere: verified artifact transfer belongs to P4 release operations, not platform, industry, customer, low-code, frontend, or database layers.
+- Blast Radius: the fixed `sc-prod` Docker image cache only. The target creates no remote staging file and does not modify services, containers, volumes, systemd, databases, or application source.
+- Validation: clean dual-remote-approved main, archive path and SHA-256, restricted image ref, local and remote image content ID equality, fixed SSH target, and focused unit/contract tests.
