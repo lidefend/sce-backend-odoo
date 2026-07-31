@@ -1,6 +1,6 @@
 # CI-RISK-TIERING-01
 
-Status: implementation validation in progress.
+Status: remote warm-cache and lane timing validation in progress.
 
 ## Scope
 
@@ -41,5 +41,18 @@ production data, or production services.
 - Generated-report automatic pre-push refresh self-test: PASS.
 - `git diff --check`: PASS.
 
-Remote cold/warm cache timings and lane reduction measurements will be taken
-from SHA-bound GitHub Actions runs before final acceptance.
+## Remote cold-cache validation
+
+SHA `bd0e8b20a76d00e3a62ee6e0c2a7eded596bb52a` changed CI workflows and was
+therefore correctly classified as `HIGH_RISK`.
+
+- `public_guard`: PASS, 115 seconds workflow wall time.
+- `professional_authorization`: PASS, 3 minutes 34 seconds.
+- `professional_quality_gate`: PASS, 2 minutes 13 seconds job time.
+- `frontend_release_gate`: PASS, 17 minutes 45 seconds.
+- pnpm cache: cold miss, then saved by the first completing workflow.
+- Playwright cache: cold miss, then saved successfully.
+- Required checks with no conclusion: 0.
+
+The next SHA-bound run validates warm-cache restoration without changing the
+CI implementation.
