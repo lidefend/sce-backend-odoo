@@ -166,7 +166,7 @@ def collect_snapshot(runner: Runner = subprocess.run) -> dict[str, Any]:
         "--format",
         "{{json .}}",
     ).stdout.splitlines()
-    all_containers = [json.loads(row) for row in rows if row.strip()]
+    project_rows = [json.loads(row) for row in rows if row.strip()]
     mounted_volumes = sorted(
         {
             mount["Name"]
@@ -178,7 +178,7 @@ def collect_snapshot(runner: Runner = subprocess.run) -> dict[str, Any]:
     return {
         "containers": containers,
         "all_containers": all_containers,
-        "project_container_rows": all_containers,
+        "project_container_rows": project_rows,
         "network": _network_inspect(runner),
         "volumes": _volume_inspect(runner, mounted_volumes),
     }
