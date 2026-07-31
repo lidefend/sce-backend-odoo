@@ -99,8 +99,8 @@ Generated from repository source files. This report is informational during the 
 | 892 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
+| 870 | Python source | `scripts/release/test_release_publication.py` |
 | 867 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
-| 867 | Python source | `scripts/release/test_release_publication.py` |
 | 862 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 861 | Python source | `scripts/release/release_candidate.py` |
 | 858 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
