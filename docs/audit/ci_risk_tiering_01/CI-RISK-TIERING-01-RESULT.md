@@ -1,6 +1,6 @@
 # CI-RISK-TIERING-01
 
-Status: remote warm-cache and lane timing validation in progress.
+Status: FAST and STANDARD lane timing validation in progress.
 
 ## Scope
 
@@ -54,5 +54,29 @@ therefore correctly classified as `HIGH_RISK`.
 - Playwright cache: cold miss, then saved successfully.
 - Required checks with no conclusion: 0.
 
-The next SHA-bound run validates warm-cache restoration without changing the
-CI implementation.
+## Remote warm-cache validation
+
+SHA `73cd5f1a3bae1a2a4a1f44255e5b36968d719404` retained the same high-risk
+implementation and validated the warm-cache path.
+
+- pnpm primary cache key: HIT and restored successfully.
+- Playwright primary cache key: HIT and restored successfully.
+- `public_guard`: PASS, 114 seconds workflow wall time.
+- `professional_authorization`: PASS, 3 minutes 34 seconds.
+- `professional_quality_gate`: PASS, 2 minutes 10 seconds job time.
+- `frontend_release_gate`: PASS, 27 minutes 10 seconds.
+- Required checks with no conclusion: 0.
+
+The warm-cache run confirms correctness but also proves that dependency
+downloads are not the dominant full-release bottleneck: environment/image
+construction and browser acceptance dominate and remain intentionally present
+for `HIGH_RISK` and `RELEASE`.
+
+## Merge
+
+- CI implementation PR: `#62`.
+- Optimized main SHA: `80d857a8a367e2807007b5c69946a364d856a016`.
+- Optimized main tree: `2a94e7370cbcc063f1b653b3458ba03bc2bb30fb`.
+
+This documentation-only validation branch must classify as `FAST`; a separate
+non-runtime frontend validation branch will measure `STANDARD`.
