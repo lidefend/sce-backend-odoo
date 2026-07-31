@@ -74,6 +74,12 @@ Makefile guards and script-level guards.
   config ID is absent, then verifies that exact backend-portable remote ID;
   it creates no remote staging file and does not change services, containers,
   volumes, systemd, or databases)
+- `make production.candidate.manifest.sync` (requires
+  `CONFIRM_PRODUCTION_CANDIDATE_MANIFEST_SYNC=YES_SYNC_VERIFIED_CANDIDATE_MANIFESTS`;
+  from a clean dual-remote-approved `main`, validates the secure manifest set's
+  source SHA, version, GHCR digest refs, and checksum, then atomically creates
+  one new immutable `/opt/sce/candidates/v<version>` directory on `sc-prod`;
+  an existing differing target fails closed and no runtime resource changes)
 - `make production.restore.rehearsal` (requires
   `CONFIRM_RESTORE_REHEARSAL=YES_RUN_ISOLATED_RESTORE_REHEARSAL`; restores only
   into an internal-network rehearsal namespace)
