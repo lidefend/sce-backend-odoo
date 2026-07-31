@@ -251,6 +251,40 @@ class FakeBackend:
 
 
 class PublicationContractTests(unittest.TestCase):
+    def test_registry_digest_reads_oci_index_identity(self):
+        digest = "sha256:" + "d" * 64
+        completed = mock.Mock(
+            returncode=0,
+            stdout=json.dumps(
+                {
+                    "mediaType": "application/vnd.oci.image.index.v1+json",
+                    "digest": digest,
+                    "manifests": [],
+                }
+            ),
+            stderr="",
+        )
+        with mock.patch.object(publication.subprocess, "run", return_value=completed):
+            self.assertEqual(
+                publication.ExternalBackend().registry_digest(
+                    "ghcr.io/lidefend/sce-product:1.0.0-rc.6"
+                ),
+                digest,
+            )
+
+    def test_registry_digest_returns_none_for_missing_tag(self):
+        completed = mock.Mock(
+            returncode=1,
+            stdout="",
+            stderr="manifest unknown",
+        )
+        with mock.patch.object(publication.subprocess, "run", return_value=completed):
+            self.assertIsNone(
+                publication.ExternalBackend().registry_digest(
+                    "ghcr.io/lidefend/sce-product:missing"
+                )
+            )
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)

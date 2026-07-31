@@ -441,7 +441,15 @@ class ExternalBackend:
 
     def registry_digest(self, reference: str) -> str | None:
         completed = subprocess.run(
-            ["docker", "manifest", "inspect", "--verbose", reference],
+            [
+                "docker",
+                "buildx",
+                "imagetools",
+                "inspect",
+                reference,
+                "--format",
+                "{{json .Manifest}}",
+            ],
             cwd=ROOT,
             text=True,
             stdout=subprocess.PIPE,
@@ -462,8 +470,7 @@ class ExternalBackend:
                 return None
             raise PublicationError("registry availability/identity preflight failed")
         payload = json.loads(completed.stdout)
-        descriptor = payload.get("Descriptor") if isinstance(payload, dict) else None
-        digest = str((descriptor or {}).get("digest") or "")
+        digest = str(payload.get("digest") or "") if isinstance(payload, dict) else ""
         if not DIGEST.fullmatch(digest):
             raise PublicationError("registry digest is unavailable")
         return digest

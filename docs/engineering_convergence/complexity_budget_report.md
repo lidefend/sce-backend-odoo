@@ -60,7 +60,7 @@ Generated from repository source files. This report is informational during the 
 | 1442 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1417 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1402 | Python source | `scripts/release/release_publication.py` |
+| 1409 | Python source | `scripts/release/release_publication.py` |
 | 1400 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1392 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1388 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
@@ -163,7 +163,7 @@ Generated from repository source files. This report is informational during the 
 | 1442 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1417 | warning | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1402 | warning | Python source | `scripts/release/release_publication.py` |
+| 1409 | warning | Python source | `scripts/release/release_publication.py` |
 | 1400 | warning | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1392 | warning | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1388 | warning | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
