@@ -32,7 +32,12 @@
 
   <record id="group_smart_core_tenant_payload_importer" model="res.groups">
     <field name="name">Tenant Payload Import Service</field>
-    <field name="implied_ids" eval="[(4, ref('group_smart_core_data_operator'))]"/>
+    <!--
+      Deliberately narrow: a signed tenant-payload import is not a general
+      business-data operator.  The production grant contract separately
+      requires an existing internal user and never grants data_operator.
+    -->
+    <field name="implied_ids" eval="[(5, 0, 0)]"/>
     <field name="category_id" ref="base.module_category_hidden"/>
   </record>
 

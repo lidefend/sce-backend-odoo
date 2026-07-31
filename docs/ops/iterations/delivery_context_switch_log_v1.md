@@ -1875,3 +1875,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Here / Why Not Elsewhere: the role projection belongs to the industry product policy; type and pure query helpers belong beside their generic frontend domains rather than customer modules or release exceptions
 - Blast Radius: finance navigation adds one existing read-only menu identity; contract form and session changes only move pure helpers/types; no ACL, workflow, payload, database, `main`, protection, or production mutation
 - Validation: finance projection unit guard, role/authorization regression, frontend lint/strict/build/unit gates, complexity locks, four required checks on the new SHA, and dual-remote candidate parity
+
+## 2026-07-31 — RELEASE-TOOLING-P0-NARROW-IMPORTER-GROUP-03
+
+- Branch / anchor: `fix/narrow-importer-grant-v3` from
+  `36f3d9031c0eff5e1055cb243cb83a060148b592`.
+- Formal Product Layer: P4 operations delivery tooling with a P0 security
+  group boundary correction; Layer Target: signed production release-set
+  contract, maintenance-only payload execution, and the tenant payload
+  importer group; Modules: `scripts/release`, `scripts/tenant_payload`, and
+  `addons/smart_core` security/import boundary.
+- Reason: the importer inherited the general-purpose data operator, which
+  grants unrelated create/write/unlink, upload, button, chatter, risk, and
+  work-completion capabilities. A signed one-time payload import must not
+  expand ordinary business mutation authority.
+- Standard vs User-Specific: the narrow importer and grant-set verification
+  are product-neutral mechanisms. The signed external identity, tenant, and
+  artifact values remain external release inputs; no customer identifier is
+  encoded in product code.
+- Why Here / Why Not Elsewhere: `smart_core` owns the group and ORM boundary;
+  P4 release tooling owns signed admission and operator provisioning. The
+  customer module, frontend, runtime low-code configuration, and business
+  models are not permission authorities for the import mechanism.
+- Blast Radius: importer implied groups, five existing import-control ACLs,
+  maintenance context authentication, release-lock schema v3, and operator
+  grant verification. General role groups, business handlers, company scope,
+  customer payload bytes, production data, attachments, and running services
+  are excluded.

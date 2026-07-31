@@ -30,7 +30,7 @@ class ReleaseSetTest(unittest.TestCase):
             "tenant_key": "sample_tenant",
         }))
         data = {
-            "schema_version": "sce.production_release_set.v2",
+            "schema_version": "sce.production_release_set.v3",
             "release_version": (Path(__file__).resolve().parents[2] / "VERSION").read_text().strip(),
             "product_sha": "a" * 40,
             "product_tree": "b" * 40,
@@ -50,16 +50,19 @@ class ReleaseSetTest(unittest.TestCase):
             "target_database": "sc_production",
             "filestore_scope": "sc_production",
             "legacy_attachments_path": "/data/odoo/legacy_attachments",
-            "allowed_entry_contract": "production_tenant_delivery.v2",
+            "allowed_entry_contract": "production_tenant_delivery.v3",
             "operator_contract": {
                 "identity_type": "external_xmlid",
                 "identity_key": "base.user_admin",
                 "tenant_key": "sample_tenant",
-                "target_group_xmlid": "smart_core.group_smart_core_tenant_payload_importer",
-                "expected_membership_before": 0,
-                "expected_membership_after": 1,
+                "direct_grant_targets": ["smart_core.group_smart_core_tenant_payload_importer"],
+                "importer_transitive_implied_closure": [],
+                "required_existing_operator_groups": ["base.group_user"],
+                "expected_direct_grant_additions": ["smart_core.group_smart_core_tenant_payload_importer"],
+                "expected_effective_group_additions": ["smart_core.group_smart_core_tenant_payload_importer"],
+                "expected_undeclared_group_additions": [],
                 "expected_company_scope": 1,
-                "grant_scope_version": 1,
+                "grant_scope_version": 3,
             },
         }
         lock = root / "lock.json"
@@ -127,11 +130,13 @@ class ReleaseSetTest(unittest.TestCase):
                 "filestore_scope": data["filestore_scope"],
                 "operator_identity_type": data["operator_contract"]["identity_type"],
                 "operator_identity_key": data["operator_contract"]["identity_key"],
-                "operator_target_group_xmlid": data["operator_contract"]["target_group_xmlid"],
-                "operator_expected_membership_before": 0,
-                "operator_expected_membership_after": 1,
+                "operator_direct_grant_target": data["operator_contract"]["direct_grant_targets"],
+                "operator_transitive_implied_group": data["operator_contract"]["importer_transitive_implied_closure"],
+                "operator_required_existing_group": data["operator_contract"]["required_existing_operator_groups"],
+                "operator_expected_direct_addition": data["operator_contract"]["expected_direct_grant_additions"],
+                "operator_expected_effective_addition": data["operator_contract"]["expected_effective_group_additions"],
                 "operator_expected_company_scope": 1,
-                "operator_grant_scope_version": 1,
+                "operator_grant_scope_version": 3,
             })()
             payload = builder.build_payload(args)
             builder.atomic_write(lock, payload)
@@ -178,7 +183,36 @@ class ReleaseSetTest(unittest.TestCase):
             with self.assertRaisesRegex(target.ReleaseSetError, "OPERATOR_CONTRACT"):
                 target.load_lock(lock)
             data["operator_contract"]["identity_key"] = "base.user_admin"
-            data["operator_contract"]["expected_membership_after"] = 2
+            data["operator_contract"]["expected_effective_group_additions"] = [
+                "smart_core.group_smart_core_tenant_payload_importer",
+                "smart_core.group_smart_core_data_operator",
+            ]
+            lock.write_text(json.dumps(data))
+            with self.assertRaisesRegex(target.ReleaseSetError, "OPERATOR_CONTRACT"):
+                target.load_lock(lock)
+
+    def test_old_operator_scope_contracts_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, data = self.fixture(Path(temporary))
+            for old_scope in (1, 2):
+                data["operator_contract"]["grant_scope_version"] = old_scope
+                lock.write_text(json.dumps(data))
+                with self.assertRaisesRegex(target.ReleaseSetError, "OPERATOR_CONTRACT"):
+                    target.load_lock(lock)
+
+    def test_data_operator_and_undeclared_groups_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, data = self.fixture(Path(temporary))
+            data["operator_contract"]["importer_transitive_implied_closure"] = [
+                "smart_core.group_smart_core_data_operator"
+            ]
+            lock.write_text(json.dumps(data))
+            with self.assertRaisesRegex(target.ReleaseSetError, "OPERATOR_CONTRACT"):
+                target.load_lock(lock)
+            data["operator_contract"]["importer_transitive_implied_closure"] = []
+            data["operator_contract"]["expected_undeclared_group_additions"] = [
+                "base.group_portal"
+            ]
             lock.write_text(json.dumps(data))
             with self.assertRaisesRegex(target.ReleaseSetError, "OPERATOR_CONTRACT"):
                 target.load_lock(lock)

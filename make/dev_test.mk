@@ -2060,6 +2060,7 @@ verify.tenant_delivery.protocol: guard.prod.forbid
 		scripts/tenant_payload/cli.py \
 		scripts/tenant_payload/odoo_action.py \
 		scripts/tenant_payload/provision_operator.py \
+		scripts/verify/narrow_importer_group_guard.py \
 		scripts/verify/tenant_delivery_protocol_guard.py \
 		scripts/verify/product_image_tenant_neutral_guard.py \
 		scripts/verify/product_to_customer_dependency_guard.py \
@@ -2068,6 +2069,7 @@ verify.tenant_delivery.protocol: guard.prod.forbid
 	@python3 scripts/verify/test_tenant_delivery_manifest.py
 	@python3 scripts/verify/test_tenant_payload_v1.py
 	@python3 scripts/verify/tenant_delivery_protocol_guard.py
+	@python3 scripts/verify/narrow_importer_group_guard.py
 
 verify.tenant.payload_boundary: guard.prod.forbid verify.tenant_delivery.protocol
 	@python3 scripts/verify/tenant_p04_p0_debt_guard.py

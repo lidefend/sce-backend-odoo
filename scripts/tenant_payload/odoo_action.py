@@ -25,7 +25,12 @@ action = _required("SC_TENANT_PAYLOAD_ACTION")
 tenant_key = _required("SC_TENANT_PAYLOAD_TENANT_KEY")
 operator_identity_type = _required("SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_TYPE")
 operator_identity_key = _required("SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY")
-target_group_xmlid = _required("SC_TENANT_PAYLOAD_TARGET_GROUP_XMLID")
+direct_grant_targets = json.loads(
+    _required("SC_TENANT_PAYLOAD_DIRECT_GRANT_TARGETS")
+)
+maintenance_capability = _required(
+    "SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY"
+)
 allowed_databases = {item.strip() for item in _required("SC_TENANT_PAYLOAD_DB_ALLOWLIST").split(",") if item.strip()}
 if env.cr.dbname not in allowed_databases:
     raise UserError("TPV1_DATABASE_NOT_ALLOWLISTED")
@@ -45,7 +50,11 @@ if bound_tenant != tenant_key:
 if operator_identity_type != "external_xmlid":
     raise UserError("TPV1_IMPORT_OPERATOR_IDENTITY_CONTRACT_INVALID")
 operator = env.ref(operator_identity_key, raise_if_not_found=False)
-group = env.ref(target_group_xmlid, raise_if_not_found=False)
+if direct_grant_targets != [
+    "smart_core.group_smart_core_tenant_payload_importer"
+]:
+    raise UserError("TPV1_NARROW_IMPORT_OPERATOR_CONTRACT_INVALID")
+group = env.ref(direct_grant_targets[0], raise_if_not_found=False)
 if not operator or operator._name != "res.users" or not operator.active:
     raise UserError("TPV1_IMPORT_OPERATOR_IDENTITY_NOT_UNIQUE")
 if not group or group._name != "res.groups" or group not in operator.groups_id:
@@ -54,7 +63,11 @@ if not group or group._name != "res.groups" or group not in operator.groups_id:
 operator_env = api.Environment(
     env.cr,
     operator.id,
-    {"allowed_company_ids": operator.company_ids.ids},
+    {
+        "allowed_company_ids": operator.company_ids.ids,
+        "sc_tenant_payload_import": True,
+        "sc_tenant_payload_maintenance_capability": maintenance_capability,
+    },
 )
 service = TenantPayloadImportService(
     operator_env,
@@ -91,7 +104,11 @@ except (TenantPayloadImportError, AccessError, UserError) as exc:
     recovery_env = api.Environment(
         env.cr,
         operator.id,
-        {"allowed_company_ids": operator.company_ids.ids},
+        {
+            "allowed_company_ids": operator.company_ids.ids,
+            "sc_tenant_payload_import": True,
+            "sc_tenant_payload_maintenance_capability": maintenance_capability,
+        },
     )
     batch = recovery_env["sc.tenant.payload.import.batch"].search(
         [("tenant_key", "=", tenant_key), ("state", "in", ["importing", "verifying"])],

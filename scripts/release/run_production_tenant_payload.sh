@@ -30,7 +30,7 @@ operator_field() {
 }
 operator_identity_type="$(operator_field identity_type)"
 operator_identity_key="$(operator_field identity_key)"
-operator_target_group="$(operator_field target_group_xmlid)"
+operator_direct_grant_targets="$(operator_field direct_grant_targets)"
 [[ "${TENANT_KEY:-}" == "$locked_tenant" ]] || { echo "PRODUCTION_TPV1_TENANT_INVALID" >&2; exit 2; }
 [[ "${TENANT_PAYLOAD_DB_ALLOWLIST:-}" == "sc_production" ]] || { echo "PRODUCTION_TPV1_ALLOWLIST_INVALID" >&2; exit 2; }
 if [[ "$action" == "import" ]]; then
@@ -53,7 +53,7 @@ docker compose -p sc_production "${compose_files[@]}" run --rm --no-deps -T \
   -e SC_MAINTENANCE_HTTP_DISABLED=1 \
   -e "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_TYPE=$operator_identity_type" \
   -e "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY=$operator_identity_key" \
-  -e "SC_TENANT_PAYLOAD_TARGET_GROUP_XMLID=$operator_target_group" \
+  -e "SC_TENANT_PAYLOAD_DIRECT_GRANT_TARGETS=$operator_direct_grant_targets" \
   -e SC_TENANT_PAYLOAD_DB_ALLOWLIST=sc_production \
   -e "SC_TENANT_PAYLOAD_APPROVED_CHECKSUM=${APPROVE_PAYLOAD_CHECKSUM:?approved checksum required}" \
   -e "SC_TENANT_PAYLOAD_CHUNK_SIZE=${TENANT_PAYLOAD_CHUNK_SIZE:-100}" \
