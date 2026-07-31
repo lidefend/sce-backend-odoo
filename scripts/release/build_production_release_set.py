@@ -23,11 +23,18 @@ def sha256_file(path: Path) -> str:
 
 def build_payload(args: argparse.Namespace) -> dict:
     package = args.customer_package.resolve(strict=True)
+    package_manifest_path = args.customer_package_manifest.resolve(strict=True)
+    try:
+        package_manifest = json.loads(package_manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise production_release_set.ReleaseSetError(
+            "PRODUCTION_RELEASE_SET_CUSTOMER_MANIFEST_INVALID"
+        ) from exc
     payload_root = args.payload_root.resolve(strict=True)
     if args.output.exists() or args.output.is_symlink():
         raise production_release_set.ReleaseSetError("PRODUCTION_RELEASE_SET_OUTPUT_EXISTS")
     return {
-        "schema_version": "sce.production_release_set.v3",
+        "schema_version": "sce.production_release_set.v4",
         "release_version": args.release_version,
         "product_sha": args.product_sha,
         "product_tree": args.product_tree,
@@ -38,6 +45,17 @@ def build_payload(args: argparse.Namespace) -> dict:
         "tenant_key": args.tenant_key,
         "customer_package": str(package),
         "customer_package_digest": sha256_file(package),
+        "customer_package_manifest": str(package_manifest_path),
+        "customer_package_manifest_digest": sha256_file(package_manifest_path),
+        "customer_package_schema_version": package_manifest.get("schema_version"),
+        "customer_package_build_product_sha": package_manifest.get("product_sha"),
+        "customer_package_minimum_product_version": package_manifest.get(
+            "minimum_product_version"
+        ),
+        "customer_package_maximum_product_version_exclusive": package_manifest.get(
+            "maximum_product_version_exclusive"
+        ),
+        "customer_package_product_key": args.customer_package_product_key,
         "customer_package_signature_key_id": args.customer_package_signature_key_id,
         "customer_modules": args.customer_module,
         "payload_root": str(payload_root),
@@ -47,7 +65,7 @@ def build_payload(args: argparse.Namespace) -> dict:
         "target_database": args.target_database,
         "filestore_scope": args.filestore_scope,
         "legacy_attachments_path": str(production_release_set.LEGACY_PATH),
-        "allowed_entry_contract": "production_tenant_delivery.v3",
+        "allowed_entry_contract": "production_tenant_delivery.v4",
         "operator_contract": {
             "identity_type": args.operator_identity_type,
             "identity_key": args.operator_identity_key,
@@ -92,6 +110,10 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--customer-tree", required=True)
     result.add_argument("--tenant-key", required=True)
     result.add_argument("--customer-package", required=True, type=Path)
+    result.add_argument("--customer-package-manifest", required=True, type=Path)
+    result.add_argument(
+        "--customer-package-product-key", default="sce-product", choices=("sce-product",)
+    )
     result.add_argument("--customer-package-signature-key-id", required=True)
     result.add_argument("--customer-module", required=True, action="append")
     result.add_argument("--payload-root", required=True, type=Path)

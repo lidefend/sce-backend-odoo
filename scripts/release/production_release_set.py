@@ -10,6 +10,8 @@ import os
 import re
 from pathlib import Path
 
+import product_release
+
 SHA = re.compile(r"^[0-9a-f]{40}$")
 DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
@@ -55,6 +57,11 @@ def load_lock(path: Path) -> dict:
         "schema_version", "release_version", "product_sha", "product_tree",
         "product_image", "product_image_digest", "customer_sha", "customer_tree",
         "tenant_key", "customer_package", "customer_package_digest", "customer_package_signature_key_id",
+        "customer_package_manifest", "customer_package_manifest_digest",
+        "customer_package_schema_version", "customer_package_build_product_sha",
+        "customer_package_minimum_product_version",
+        "customer_package_maximum_product_version_exclusive",
+        "customer_package_product_key",
         "customer_modules", "payload_root", "payload_version", "payload_digest",
         "payload_schema_version", "target_database", "filestore_scope",
         "legacy_attachments_path", "allowed_entry_contract",
@@ -66,7 +73,7 @@ def load_lock(path: Path) -> dict:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_OPERATOR_SCHEMA_INVALID")
     if set(payload) != required:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_SCHEMA_INVALID")
-    if payload["schema_version"] != "sce.production_release_set.v3":
+    if payload["schema_version"] != "sce.production_release_set.v4":
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_SCHEMA_INVALID")
     expected_version = (Path(__file__).resolve().parents[2] / "VERSION").read_text().strip()
     if payload["release_version"] != expected_version:
@@ -81,6 +88,28 @@ def load_lock(path: Path) -> dict:
     for name in ("customer_package_digest", "payload_digest"):
         if not CHECKSUM.fullmatch(str(payload[name])):
             raise ReleaseSetError(f"PRODUCTION_RELEASE_SET_{name.upper()}_INVALID")
+    if not CHECKSUM.fullmatch(str(payload["customer_package_manifest_digest"])):
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_CUSTOMER_MANIFEST_DIGEST_INVALID")
+    if (
+        payload["customer_package_schema_version"]
+        != "sce.tenant_customer_addon_package.v2"
+        or not SHA.fullmatch(str(payload["customer_package_build_product_sha"]))
+        or payload["customer_package_product_key"] != "sce-product"
+        or not str(payload["customer_package_minimum_product_version"] or "")
+        or not str(payload["customer_package_maximum_product_version_exclusive"] or "")
+    ):
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_CUSTOMER_PROVENANCE_INVALID")
+    try:
+        product_release.verify_customer_compatibility(
+            payload["customer_package_minimum_product_version"],
+            payload["customer_package_maximum_product_version_exclusive"],
+            ["tenant_payload_v1", "route_authority.v1"],
+            target_version=payload["release_version"],
+        )
+    except ValueError as exc:
+        raise ReleaseSetError(
+            "PRODUCTION_RELEASE_SET_CUSTOMER_TARGET_INCOMPATIBLE"
+        ) from exc
     modules = payload["customer_modules"]
     if (
         not TENANT.fullmatch(str(payload["tenant_key"]))
@@ -94,7 +123,7 @@ def load_lock(path: Path) -> dict:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_DATABASE_FILESTORE_MISMATCH")
     if Path(payload["legacy_attachments_path"]) != LEGACY_PATH:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_LEGACY_PATH_MISMATCH")
-    if payload["allowed_entry_contract"] != "production_tenant_delivery.v3":
+    if payload["allowed_entry_contract"] != "production_tenant_delivery.v4":
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_ENTRY_CONTRACT_MISMATCH")
     operator = payload["operator_contract"]
     if not isinstance(operator, dict) or set(operator) != OPERATOR_FIELDS:
@@ -135,15 +164,40 @@ def load_lock(path: Path) -> dict:
 
 def verify_bound_files(payload: dict) -> None:
     package = Path(payload["customer_package"]).resolve()
+    package_manifest = Path(payload["customer_package_manifest"]).resolve()
     payload_root = Path(payload["payload_root"]).resolve()
     legacy = LEGACY_PATH.resolve(strict=False)
-    for target in (package, payload_root):
+    for target in (package, package_manifest, payload_root):
         if target == legacy or legacy in target.parents or target in legacy.parents:
             raise ReleaseSetError("PRODUCTION_RELEASE_SET_LEGACY_PATH_OVERLAP")
     if not package.is_file() or package.is_symlink():
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_CUSTOMER_PACKAGE_MISSING")
     if sha256_file(package) != payload["customer_package_digest"]:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_CUSTOMER_PACKAGE_DIGEST_MISMATCH")
+    if not package_manifest.is_file() or package_manifest.is_symlink():
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_CUSTOMER_MANIFEST_MISSING")
+    if sha256_file(package_manifest) != payload["customer_package_manifest_digest"]:
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_CUSTOMER_MANIFEST_DIGEST_MISMATCH")
+    try:
+        manifest_payload = json.loads(package_manifest.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_CUSTOMER_MANIFEST_INVALID") from exc
+    if (
+        manifest_payload.get("schema_version") != payload["customer_package_schema_version"]
+        or manifest_payload.get("product_sha")
+        != payload["customer_package_build_product_sha"]
+        or manifest_payload.get("minimum_product_version")
+        != payload["customer_package_minimum_product_version"]
+        or manifest_payload.get("maximum_product_version_exclusive")
+        != payload["customer_package_maximum_product_version_exclusive"]
+        or manifest_payload.get("archive_sha256") != payload["customer_package_digest"]
+        or manifest_payload.get("customer_sha") != payload["customer_sha"]
+        or manifest_payload.get("tenant_id") != payload["tenant_key"]
+        or manifest_payload.get("modules") != payload["customer_modules"]
+        or (manifest_payload.get("signature") or {}).get("key_id")
+        != payload["customer_package_signature_key_id"]
+    ):
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_CUSTOMER_PROVENANCE_MISMATCH")
     checksum = payload_root / "checksums.sha256"
     manifest = payload_root / "manifest.json"
     if not payload_root.is_dir() or payload_root.is_symlink() or not checksum.is_file() or not manifest.is_file():
@@ -217,6 +271,15 @@ def main() -> int:
             "product_sha": payload["product_sha"],
             "product_image_digest": payload["product_image_digest"],
             "customer_package_digest": payload["customer_package_digest"],
+            "customer_package_manifest_digest": payload[
+                "customer_package_manifest_digest"
+            ],
+            "customer_package_build_product_sha": payload[
+                "customer_package_build_product_sha"
+            ],
+            "customer_package_product_key": payload[
+                "customer_package_product_key"
+            ],
             "payload_digest": payload["payload_digest"],
             "tenant_key": payload["tenant_key"],
             "customer_modules": payload["customer_modules"],

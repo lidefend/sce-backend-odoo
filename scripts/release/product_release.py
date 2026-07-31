@@ -126,8 +126,11 @@ def verify_customer_compatibility(
     minimum: Any,
     maximum_exclusive: Any,
     required_contracts: Any,
+    *,
+    target_version: str | None = None,
 ) -> None:
-    current = read_version()
+    current = target_version or read_version()
+    parse_version(current)
     minimum_text = str(minimum or "").strip()
     maximum_text = str(maximum_exclusive or "").strip()
     parse_version(minimum_text)
