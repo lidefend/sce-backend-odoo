@@ -59,6 +59,13 @@ Makefile guards and script-level guards.
 - `make production.backup.run` (requires
   `CONFIRM_PRODUCTION_BACKUP=YES_CREATE_SC_PRODUCTION_TRIPLE_BACKUP`; creates
   one immutable database/filestore/sanitized-metadata backup set)
+- `make production.restore.tool.sync` (requires
+  `CONFIRM_PRODUCTION_RESTORE_TOOL_SYNC=YES_SYNC_GOVERNED_RESTORE_TOOL`; from
+  a clean dual-remote-approved `main`, synchronizes only
+  `/opt/ops/production_backup_restore.py` to `sc-prod` under a nonblocking
+  lock, preserves a root-only rollback copy, atomically replaces the file,
+  and verifies the installed SHA-256 without changing application services,
+  systemd, containers, volumes, or databases)
 - `make production.restore.rehearsal` (requires
   `CONFIRM_RESTORE_REHEARSAL=YES_RUN_ISOLATED_RESTORE_REHEARSAL`; restores only
   into an internal-network rehearsal namespace)
