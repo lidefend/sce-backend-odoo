@@ -1941,3 +1941,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific / Why Here: generic artifact transport compatibility belongs to P4 release operations and carries no product or customer semantics.
 - Why Not Elsewhere / Blast Radius: no P0-P3, frontend, runtime configuration, container, volume, database, service, or systemd behavior changes; only verification and cached-image transfer skipping are affected.
 - Validation: synthetic archive manifest/config digest tests, remote cached-ID skip test, focused backup/restore contract, and required PR checks.
+
+## 2026-08-01 — GOVERNED-RESTORE-CANCEL-01
+
+- Branch / anchor: `fix/governed-restore-cancel` from `866177db69135738ae266d7bf8b9b64ebbc1ee36`.
+- Formal Product Layer / Target / Module: P4 ops delivery tool; scoped isolated-restore cancellation in `scripts/ops` and `make/release.mk`.
+- Reason: a disconnected SSH client can leave an isolated restore waiting on a registry pull; cancellation needs an auditable fail-closed Make entry before cleanup.
+- Standard vs User-Specific / Why Here: generic production rehearsal lifecycle control belongs to P4 and carries no customer or product semantics.
+- Why Not Elsewhere / Blast Radius: no runtime application, P0-P3, systemd, production container, volume, database, or service behavior; SIGTERM is limited to one exact report/restore-ID process tree and cleanup remains separately authorized.
+- Validation: report-root and identity guards, exact process-argument matching, SIGTERM-only static contract, focused backup/restore suite, and required PR checks.
