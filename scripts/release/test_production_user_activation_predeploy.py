@@ -145,6 +145,23 @@ class ProductionUserActivationPredeployTests(unittest.TestCase):
         for forbidden in ("login", "password", "token_digest", "tenant_key"):
             self.assertNotIn(forbidden, diagnostic)
 
+    def test_roster_drift_diagnostics_report_only_aggregate_counts(self):
+        source = HELPER_PATH.read_text(encoding="utf-8")
+        diagnostic = source.split('"62/76 approved-roster assertion differs "', 1)[1].split(
+            '"identity_values_recorded": False', 1
+        )[0]
+        for key in (
+            "APPROVED_FORMAL_USERS_EXPECTED",
+            "APPROVED_FORMAL_USERS_OBSERVED",
+            "TECHNICALLY_ELIGIBLE_USERS_TOTAL_EXPECTED",
+            "TECHNICALLY_ELIGIBLE_USERS_TOTAL_OBSERVED",
+            "ADDITIONAL_ELIGIBLE_USERS_EXPECTED",
+            "ADDITIONAL_ELIGIBLE_USERS_OBSERVED",
+        ):
+            self.assertIn(key, diagnostic)
+        for forbidden in ("name", "login", "password", "token", "tenant_key"):
+            self.assertNotIn(forbidden, diagnostic.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

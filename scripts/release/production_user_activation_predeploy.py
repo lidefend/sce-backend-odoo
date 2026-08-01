@@ -293,7 +293,22 @@ def _user_roster(odoo_env: Any, tenant_key: str, eligible: Any) -> dict[str, Any
         or len(approved_ids) != APPROVED_FORMAL_USERS
         or len(additional) != ADDITIONAL_ELIGIBLE_USERS
     ):
-        raise ActivationPredeployError("62/76 approved-roster assertion differs")
+        raise ActivationPredeployError(
+            "62/76 approved-roster assertion differs "
+            + json.dumps(
+                {
+                    "APPROVED_FORMAL_USERS_EXPECTED": APPROVED_FORMAL_USERS,
+                    "APPROVED_FORMAL_USERS_OBSERVED": len(approved_ids),
+                    "TECHNICALLY_ELIGIBLE_USERS_TOTAL_EXPECTED": TECHNICALLY_ELIGIBLE_USERS_TOTAL,
+                    "TECHNICALLY_ELIGIBLE_USERS_TOTAL_OBSERVED": len(eligible),
+                    "ADDITIONAL_ELIGIBLE_USERS_EXPECTED": ADDITIONAL_ELIGIBLE_USERS,
+                    "ADDITIONAL_ELIGIBLE_USERS_OBSERVED": len(additional),
+                    "ADDITIONAL_14_USERS_APPROVED": False,
+                    "identity_values_recorded": False,
+                },
+                sort_keys=True,
+            )
+        )
     Employee = odoo_env.get("hr.employee") if hasattr(odoo_env, "get") else None
     if Employee is None and "hr.employee" in getattr(odoo_env.registry, "models", {}):
         Employee = odoo_env["hr.employee"]
