@@ -47,6 +47,11 @@ Makefile guards and script-level guards.
   `make release.production.public_signup.close.verify` (require read-only mode,
   the frozen RC12 and immutable tool identities, and root-only evidence; they
   verify the singleton native signup parameter and create no database writes)
+- `make release.production.single_user_activation.plan` and
+  `make release.production.single_user_activation.verify` (require read-only
+  mode, the frozen RC12 and immutable tool identities, exact `wutao` and
+  `baosheng` bindings, and root-only evidence; they expose no person contact,
+  password, activation token, or challenge value)
 - `make release.production.promotion.config.preflight` (requires
   `PROD_READONLY_VERIFY=1`, separate governed configuration and secret files,
   and a new `0600` evidence path; validates every promotion field, the fixed
@@ -74,6 +79,15 @@ Makefile guards and script-level guards.
   `smart_core.group_smart_core_user_activation_admin` relation for the unique
   active internal `admin`; it issues no credential and cannot write ordinary
   user login, password, roles, company scope, or business data)
+
+- `make release.production.single_user_activation.apply` (requires
+  `CONFIRM_SINGLE_USER_ACTIVATION=YES_ACTIVATE_ONLY_WUTAO_IN_PRODUCTION`, a
+  reviewed root-only plan and exact digest, the frozen RC12 and immutable tool
+  identities; it may set only the two activation runtime bindings, append the
+  activation group to the sole internal `admin`, activate only the sole
+  internal `wutao` when necessary, create one activation batch and one
+  digest-only 24-hour credential, and deliver the plaintext once through the
+  registered TLS email channel without recording it in stdout or evidence)
 
 - `make mod.install`
 - `make mod.upgrade`
