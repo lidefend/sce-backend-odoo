@@ -30,7 +30,7 @@ class ProductionSingleUserActivationTests(unittest.TestCase):
             "TARGET_COMMIT": helper.TARGET_COMMIT,
             "REGISTRY_DIGEST": helper.TARGET_DIGEST,
             "DEPLOYMENT_ID": helper.DEPLOYMENT_ID,
-            "TENANT_KEY": "baosheng",
+            "TENANT_KEY": "tenantalpha",
             "SINGLE_USER_ACTIVATION_LOGIN": helper.TARGET_LOGIN,
             "ACTIVATION_ADMIN_LOGIN": helper.TARGET_ADMIN_LOGIN,
             "ACTIVATION_PUBLIC_URL": "https://example.invalid/activate-account",

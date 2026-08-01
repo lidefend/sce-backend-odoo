@@ -50,7 +50,7 @@ Makefile guards and script-level guards.
 - `make release.production.single_user_activation.plan` and
   `make release.production.single_user_activation.verify` (require read-only
   mode, the frozen RC12 and immutable tool identities, exact `wutao` and
-  `baosheng` bindings, and root-only evidence; they expose no person contact,
+  root-owned runtime tenant bindings, and root-only evidence; they expose no person contact,
   password, activation token, or challenge value)
 - `make release.production.promotion.config.preflight` (requires
   `PROD_READONLY_VERIFY=1`, separate governed configuration and secret files,
