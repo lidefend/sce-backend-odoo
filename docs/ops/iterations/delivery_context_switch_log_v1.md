@@ -1995,3 +1995,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific / Why Here: aggregate activation readiness is generic release operations evidence; it contains no customer identity, preference, roster, or business semantics.
 - Why Not Elsewhere / Blast Radius: no frontend, P1-P3, runtime configuration, user, permission, credential, service, volume, or database mutation; the only output is a root-only aggregate evidence file.
 - Validation: strict production/database/read-only controls, PostgreSQL read-only transaction before ORM access, privacy-negative tests, production release contract tests, and required PR checks.
+
+## 2026-08-01 — PRODUCTION-USER-ACTIVATION-03-PREDEPLOY
+
+- Branch / anchor: `release/production-user-activation-03-predeploy` from `966082fe8258cdf38e8fe3899b69fa5f48e2729c`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool in `scripts/release` and `make/release.mk`, invoking the installed P0 `smart_core` activation mechanism.
+- Reason: establish the production activation runtime baseline after the completed RC12 immutable-image release without redeploying RC12 or issuing any user credential.
+- Standard vs User-Specific: generic governed production activation setup; the tenant key and approved user population remain runtime evidence and are not encoded as product semantics.
+- Why Here / Why Not Elsewhere: plan/apply/verify orchestration and evidence belong to P4; token, binding, and permission behavior remain in P0; no P1 industry, P2 customer module, P3 low-code, frontend, or product-image change is needed.
+- Blast Radius: at most two `ir.config_parameter` rows and one activation-administrator group relation for the unique active internal `admin`. Ordinary users, logins, passwords, roles, companies, credentials, business data, modules, images, services, and public registration remain unchanged.
+- Validation: frozen RC12 and immutable tool identity, database-enforced read-only plan/verify, exact 62/76/14 roster assertion, isolated minimal-permission TransactionCase, plan-digest drift guard, exact write counters, and write-after read-only verification.
