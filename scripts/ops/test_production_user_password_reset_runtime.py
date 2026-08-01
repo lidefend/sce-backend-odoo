@@ -42,6 +42,10 @@ class RuntimeContextTests(unittest.TestCase):
             "SC_ENVIRONMENT": "production",
             "EXPECTED_IMAGE_DIGEST": "sha256:" + "a" * 64,
             "EXPECTED_RELEASE_SHA": "b" * 40,
+            "DB_USER": "runtime-user",
+            "DB_PASSWORD": "runtime-db-secret",
+            "JWT_SECRET": "runtime-jwt-secret",
+            "ADMIN_PASSWD": "runtime-admin-secret",
         }
         self.containers = {
             "odoo": container(
@@ -62,7 +66,12 @@ class RuntimeContextTests(unittest.TestCase):
             "db": container("db", "postgres@sha256:" + "c" * 64, {}, [{"Destination": "/var/lib/postgresql/data", "Name": "database"}]),
             "redis": container("redis", "redis@sha256:" + "d" * 64, {}, [{"Destination": "/data", "Name": "redis"}]),
         }
-        self.active_env = {"DB_PASSWORD": "secret", "JWT_SECRET": "secret", "ADMIN_PASSWD": "secret"}
+        self.active_env = {
+            "DB_USER": "stale-user",
+            "DB_PASSWORD": "stale-db-secret",
+            "JWT_SECRET": "stale-jwt-secret",
+            "ADMIN_PASSWD": "stale-admin-secret",
+        }
 
     def test_resolves_only_current_runtime_identity_and_mounts(self):
         result = helper.resolve_compose_environment(self.containers, self.active_env)
@@ -70,19 +79,28 @@ class RuntimeContextTests(unittest.TestCase):
         self.assertEqual(result["TARGET_DB"], "sc_production")
         self.assertEqual(result["SC_DATABASE_VOLUME"], "database")
         self.assertEqual(result["SC_CUSTOMER_ADDONS_ROOT"], "/customer/addons")
+        self.assertEqual(result["DB_USER"], "runtime-user")
+        self.assertEqual(result["DB_PASSWORD"], "runtime-db-secret")
 
     def test_runtime_or_secret_drift_fails_closed(self):
+        original = list(self.containers["odoo"]["Config"]["Env"])
         self.containers["odoo"]["Config"]["Env"] = ["TARGET_DB=sc_demo"]
         with self.assertRaises(helper.RuntimeContextError):
             helper.resolve_compose_environment(self.containers, self.active_env)
+        self.containers["odoo"]["Config"]["Env"] = [
+            item
+            for item in original
+            if not item.startswith("DB_PASSWORD=")
+        ]
         with self.assertRaises(helper.RuntimeContextError):
-            helper.resolve_compose_environment(self.containers, {})
+            helper.resolve_compose_environment(self.containers, self.active_env)
 
     def test_source_contains_no_secret_output_or_password_transport(self):
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertNotIn("--password", source)
         self.assertNotIn("stdin=", source)
         self.assertNotIn("DB_PASSWORD=", source)
+        self.assertIn("resolved[name] = runtime[name]", source)
         self.assertIn("os.execvpe", source)
         self.assertIn('"docker",\n        "compose"', source)
 

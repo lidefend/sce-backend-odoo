@@ -19,7 +19,7 @@ DATABASE = "sc_production"
 DIGEST_IMAGE = re.compile(r"^.+@sha256:[0-9a-f]{64}$")
 LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9_.@+-]{1,128}$")
 BASE_URL_PATTERN = re.compile(r"^https?://[A-Za-z0-9._:-]+/?$")
-REQUIRED_SECRET_NAMES = ("DB_PASSWORD", "JWT_SECRET", "ADMIN_PASSWD")
+RUNTIME_SECRET_NAMES = ("DB_USER", "DB_PASSWORD", "JWT_SECRET", "ADMIN_PASSWD")
 
 
 class RuntimeContextError(RuntimeError):
@@ -93,9 +93,6 @@ def _mount(container: Mapping[str, Any], destination: str, *, volume: bool) -> s
 def resolve_compose_environment(
     containers: Mapping[str, Mapping[str, Any]], active_env: Mapping[str, str]
 ) -> dict[str, str]:
-    for name in REQUIRED_SECRET_NAMES:
-        if not active_env.get(name):
-            raise RuntimeContextError(f"required production secret {name} is unavailable")
     odoo_container = containers["odoo"]
     nginx_container = containers["nginx"]
     runtime = _environment(odoo_container)
@@ -119,6 +116,9 @@ def resolve_compose_environment(
     source_sha = runtime.get("EXPECTED_RELEASE_SHA", "")
     if not re.fullmatch(r"[0-9a-f]{40}", source_sha):
         raise RuntimeContextError("production release source identity is invalid")
+    for name in RUNTIME_SECRET_NAMES:
+        if not runtime.get(name):
+            raise RuntimeContextError(f"running production secret {name} is unavailable")
 
     resolved = dict(active_env)
     resolved.update(
@@ -157,6 +157,8 @@ def resolve_compose_environment(
             "SC_LOG_VOLUME": _mount(odoo_container, "/opt/sce-runtime/logs", volume=True),
         }
     )
+    for name in RUNTIME_SECRET_NAMES:
+        resolved[name] = runtime[name]
     return resolved
 
 
