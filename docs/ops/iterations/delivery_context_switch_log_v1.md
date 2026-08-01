@@ -2005,3 +2005,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Here / Why Not Elsewhere: plan/apply/verify orchestration and evidence belong to P4; token, binding, and permission behavior remain in P0; no P1 industry, P2 customer module, P3 low-code, frontend, or product-image change is needed.
 - Blast Radius: at most two `ir.config_parameter` rows and one activation-administrator group relation for the unique active internal `admin`. Ordinary users, logins, passwords, roles, companies, credentials, business data, modules, images, services, and public registration remain unchanged.
 - Validation: frozen RC12 and immutable tool identity, database-enforced read-only plan/verify, exact 62/76/14 roster assertion, isolated minimal-permission TransactionCase, plan-digest drift guard, exact write counters, and write-after read-only verification.
+
+## 2026-08-01 — PRODUCTION-DEPLOYMENT-TOOL-DIRECTORY-PERMISSION-01
+
+- Branch / anchor: `fix/production-tool-directory-permission` from `0bae81fc1d420db4febda68acd52d0edf05fe7b4`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool in `scripts/ops/production_deployment_tool_sync.py`.
+- Reason: `mkdtemp` left a synchronized immutable tool root at `0700`, so the production image's unprivileged `odoo` user could not read the mounted tool marker before a read-only activation plan.
+- Standard vs User-Specific / Why Here: generic immutable tool transport permissions belong to P4; no tenant, customer, activation, product, or business semantics change.
+- Why Not Elsewhere / Blast Radius: no P0-P3, frontend, image, module, service, container, database, volume, or existing immutable target mutation. New tool roots are explicitly `0755`; file modes and root ownership remain preserved.
+- Validation: exact directory-mode assertion, existing-target mode guard, idempotent archive drain, remote-error precedence over local SIGPIPE, focused sync tests, and production release contract tests.
