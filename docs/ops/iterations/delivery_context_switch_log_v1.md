@@ -2023,3 +2023,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific / Why Here: non-secret fail-closed diagnostics belong to the P4 verifier; no product or tenant behavior is changed.
 - Why Not Elsewhere / Blast Radius: no P0-P3, frontend, image, module, service, user, group, parameter, credential, business data, or database mutation. Only the blocked terminal message gains the required boolean/TTL/XMLID/parameter-name diagnostics.
 - Validation: complete diagnostic-key contract, secret/identity-negative assertion, focused predeploy tests, and production release contract tests.
+## 2026-08-01 — wutao single-user production activation governance
+
+- Branch: `release/wutao-single-user-activation-01r`
+- Start SHA: `ee9a098`
+- Formal Product Layer: P4 ops delivery tool
+- Layer Target: governed production activation plan/apply/verify
+- Module: `scripts/release`, `make/release.mk`
+- Standard vs User-Specific: one-off explicitly approved production operation
+- Why Here: production writes require an allowlisted Make target with immutable
+  tool identity, reviewed plan digest, exact write ceilings, and redacted evidence.
+- Why Not Elsewhere: the existing P0 activation model already owns credential
+  semantics; no product image, frontend, role policy, or customer data baseline
+  change is needed.
+- Blast Radius: two runtime parameters, one `admin` activation-group relation,
+  optional `wutao.active`, one activation batch/credential and non-secret audit;
+  all other user, role, company, login, and business records are fingerprinted.
