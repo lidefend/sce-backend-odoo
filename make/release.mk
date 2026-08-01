@@ -498,7 +498,7 @@ ops.user.password-reset: guard.prod.danger
 	@test -t 0 -a -t 1 || (echo "a real interactive terminal is required"; exit 2)
 	@test -f "$(ROOT_DIR)/DEPLOYMENT_TOOL_SHA" || (echo "run from an immutable production deployment-tool directory"; exit 2)
 	@test "$$(cat "$(ROOT_DIR)/DEPLOYMENT_TOOL_SHA")" = "$$(basename "$(ROOT_DIR)")" || (echo "immutable deployment-tool identity differs"; exit 2)
-	@$(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps \
+	@TARGET_DB="$(DB_NAME)" DB_NAME="$(DB_NAME)" $(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps \
 		-e ENV=prod \
 		-e PROD_DANGER=1 \
 		-v "$(ROOT_DIR):$(ROOT_DIR):ro" \

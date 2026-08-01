@@ -2049,3 +2049,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Not Elsewhere: password maintenance is an operational delivery action, not P0 authentication product behavior, P1 industry semantics, P2 customer configuration, P3 low-code data, or frontend behavior.
 - Blast Radius: one Odoo ORM `res.users.password` write for the unique active internal target. Login, role, job, company and menu scope, other users, business data, RC12 image, modules, services, and runtime configuration remain unchanged.
 - Validation: immutable synchronized-tool identity, production/database/danger guards, real TTY enforcement, `/dev/tty` `getpass` double entry, password transport negative assertions, ORM-only static contract, before/after scope fingerprints, other-user fingerprint, real HTTP login, `system.init`, and authorized-menu contract access.
+
+### Production terminal preflight correction
+
+- Follow-up branch / anchor: `fix/password-reset-target-db-binding` from `1355bd47c1bb82978983f8d7bfa6370d88dbefaa`.
+- The first no-password terminal preflight stopped before container creation because Compose requires explicit `TARGET_DB` even when the public entry receives the equivalent `DB` alias.
+- The P4 Make recipe now binds both `TARGET_DB` and `DB_NAME` to the already validated `sc_production` value before Compose interpolation. No database, container, service, image, user, or password write occurred during the blocked preflight.
