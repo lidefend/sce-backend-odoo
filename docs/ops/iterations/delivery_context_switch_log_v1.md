@@ -2055,3 +2055,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Follow-up branch / anchor: `fix/password-reset-target-db-binding` from `1355bd47c1bb82978983f8d7bfa6370d88dbefaa`.
 - The first no-password terminal preflight stopped before container creation because Compose requires explicit `TARGET_DB` even when the public entry receives the equivalent `DB` alias.
 - The P4 Make recipe now binds both `TARGET_DB` and `DB_NAME` to the already validated `sc_production` value before Compose interpolation. No database, container, service, image, user, or password write occurred during the blocked preflight.
+
+### Current-runtime Compose context reconstruction
+
+- Follow-up branch / anchor: `fix/password-reset-runtime-context` from `d90836c4761d2b3cf87ea880fbb6036608114eee`.
+- The second no-password terminal preflight showed that `.env.prod` intentionally lacks the complete immutable-release Compose identity. The launcher now reads only the four running `sc_production` service identities, digest image refs, exact database/environment/source values, and named mounts, then reconstructs the one-off context without printing or copying secret values.
+- The customer-addons overlay and current manifest mounts are preserved for registry compatibility. Both blocked preflights ended before container creation and produced zero database writes.
