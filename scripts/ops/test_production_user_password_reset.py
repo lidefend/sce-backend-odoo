@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import io
 import unittest
 from pathlib import Path
 
@@ -40,28 +39,26 @@ class ProductionUserPasswordResetTests(unittest.TestCase):
         supplied = iter(("safe-password-42", "safe-password-42"))
         calls = []
 
-        def fake_prompt(label, *, stream):
-            calls.append((label, stream))
+        def fake_prompt(label):
+            calls.append(label)
             return next(supplied)
 
-        tty = io.StringIO()
-        value = helper.prompt_password("wutao", tty=tty, prompt=fake_prompt)
+        value = helper.prompt_password("wutao", prompt=fake_prompt)
         self.assertEqual(value, "safe-password-42")
         self.assertEqual(len(calls), 2)
-        self.assertTrue(all(stream is tty for _label, stream in calls))
 
     def test_prompt_rejects_mismatch(self):
         supplied = iter(("safe-password-42", "safe-password-43"))
         with self.assertRaises(helper.PasswordResetError):
             helper.prompt_password(
                 "wutao",
-                tty=io.StringIO(),
-                prompt=lambda _label, *, stream: next(supplied),
+                prompt=lambda _label: next(supplied),
             )
 
     def test_script_has_no_password_transport_or_direct_sql(self):
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn('open("/dev/tty", "r+"', source)
+        self.assertIn("prompt: Callable[..., str] = getpass.getpass", source)
+        self.assertNotIn("stream=", source)
         self.assertIn('target.write({"password": password})', source)
         self.assertNotIn("os.environ.get(\"PASSWORD", source)
         self.assertNotIn("add_argument(\"--password", source)
@@ -72,7 +69,6 @@ class ProductionUserPasswordResetTests(unittest.TestCase):
         source = SCRIPT.read_text(encoding="utf-8")
         for stage in (
             "odoo_bootstrap",
-            "tty_open",
             "target_preflight",
             "password_prompt",
             "orm_password_reset",
