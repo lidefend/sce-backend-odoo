@@ -16,7 +16,7 @@ import re
 import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any, TextIO
+from typing import Any
 
 
 TARGET_DATABASE = "sc_production"
@@ -74,11 +74,10 @@ def validate_password(password: str, login: str) -> None:
 def prompt_password(
     login: str,
     *,
-    tty: TextIO,
     prompt: Callable[..., str] = getpass.getpass,
 ) -> str:
-    first = prompt(f"New password for {login}: ", stream=tty)
-    second = prompt("Repeat new password: ", stream=tty)
+    first = prompt(f"New password for {login}: ")
+    second = prompt("Repeat new password: ")
     if first != second:
         raise PasswordResetError("password entries do not match")
     validate_password(first, login)
@@ -325,42 +324,40 @@ def execute(database: str, login: str, config_path: str, base_url: str, tool_roo
     stage = "odoo_bootstrap"
     try:
         odoo, registry = _odoo_environment(config_path, database)
-        stage = "tty_open"
-        with open("/dev/tty", "r+", encoding="utf-8", buffering=1) as tty:
-            stage = "target_preflight"
-            with registry.cursor() as cursor:
-                context_env = odoo.api.Environment(cursor, odoo.SUPERUSER_ID, {})
-                context = context_env["res.users"].context_get()
-                odoo_env = odoo.api.Environment(cursor, odoo.SUPERUSER_ID, context)
-                target, _immutable_id = _resolve_target(odoo_env, login)
-                before = _scope_snapshot(odoo_env, target)
-                print(
-                    "[ops.user.password-reset] PREFLIGHT PASS "
-                    + json.dumps(
-                        {
-                            "database": database,
-                            "login": login,
-                            "user_id": target.id,
-                            "active": before["active"],
-                            "share": before["share"],
-                            "role_scope_sha256": _digest(before["groups"]),
-                            "company_scope_sha256": _digest(
-                                [before["primary_company"], before["allowed_companies"]]
-                            ),
-                            "menu_scope_sha256": _digest(before["visible_menu_ids"]),
-                            "tool_source_sha": source_sha,
-                        },
-                        sort_keys=True,
-                    ),
-                    flush=True,
-                )
-                stage = "password_prompt"
-                password = prompt_password(login, tty=tty)
-                stage = "orm_password_reset"
-                result = reset_password(odoo_env, login, password)
-                cursor.commit()
-            stage = "http_verification"
-            result.update(verify_http_access(tool_root, base_url, database, login, password))
+        stage = "target_preflight"
+        with registry.cursor() as cursor:
+            context_env = odoo.api.Environment(cursor, odoo.SUPERUSER_ID, {})
+            context = context_env["res.users"].context_get()
+            odoo_env = odoo.api.Environment(cursor, odoo.SUPERUSER_ID, context)
+            target, _immutable_id = _resolve_target(odoo_env, login)
+            before = _scope_snapshot(odoo_env, target)
+            print(
+                "[ops.user.password-reset] PREFLIGHT PASS "
+                + json.dumps(
+                    {
+                        "database": database,
+                        "login": login,
+                        "user_id": target.id,
+                        "active": before["active"],
+                        "share": before["share"],
+                        "role_scope_sha256": _digest(before["groups"]),
+                        "company_scope_sha256": _digest(
+                            [before["primary_company"], before["allowed_companies"]]
+                        ),
+                        "menu_scope_sha256": _digest(before["visible_menu_ids"]),
+                        "tool_source_sha": source_sha,
+                    },
+                    sort_keys=True,
+                ),
+                flush=True,
+            )
+            stage = "password_prompt"
+            password = prompt_password(login)
+            stage = "orm_password_reset"
+            result = reset_password(odoo_env, login, password)
+            cursor.commit()
+        stage = "http_verification"
+        result.update(verify_http_access(tool_root, base_url, database, login, password))
     except PasswordResetError:
         raise
     except Exception as exc:

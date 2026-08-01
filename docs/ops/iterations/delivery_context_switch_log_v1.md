@@ -2073,3 +2073,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Follow-up branch / anchor: `fix/password-reset-live-secret-context` from `8af2cbf89aa5f4ccd4f02977d81bb09c7344c81c`.
 - Redacted stage diagnostics localized the fourth no-password preflight to Odoo bootstrap. A digest-only equality check proved that disk `.env.prod` retained stale database, JWT, and Odoo master secrets while the current production container held the active values.
 - The launcher now inherits `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, and `ADMIN_PASSWD` in memory from the already verified running Odoo container. Values are never printed, persisted, copied into evidence, or used as the target user's password; the failed preflight performed zero database writes.
+
+### Native getpass TTY handling
+
+- Follow-up branch / anchor: `fix/password-reset-getpass-tty` from `a41673b8e5b181caed95273eafd3d342ec927d3b`.
+- The fifth no-password preflight passed database contract, configuration rendering, Odoo bootstrap, and live secret inheritance, then proved that Python text `r+` wrapping is unsupported for this container's TTY device.
+- The tool now lets standard-library `getpass` open and control `/dev/tty` natively while retaining the outer real-TTY guard. No stream override, stdin pipe, environment value, argument, or file can carry the new user password; the failed preflight performed zero database writes.
