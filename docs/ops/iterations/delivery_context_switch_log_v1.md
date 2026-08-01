@@ -2014,3 +2014,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific / Why Here: generic immutable tool transport permissions belong to P4; no tenant, customer, activation, product, or business semantics change.
 - Why Not Elsewhere / Blast Radius: no P0-P3, frontend, image, module, service, container, database, volume, or existing immutable target mutation. New tool roots are explicitly `0755`; file modes and root ownership remain preserved.
 - Validation: exact directory-mode assertion, existing-target mode guard, idempotent archive drain, remote-error precedence over local SIGPIPE, focused sync tests, and production release contract tests.
+
+## 2026-08-01 — PRODUCTION-ACTIVATION-CAPABILITY-DIAGNOSTICS-01
+
+- Branch / anchor: `fix/activation-predeploy-capability-diagnostics` from `884a36cd7e9c09951e31f25643e1af83b966f54a`.
+- Formal Product Layer / Layer Target / Module: P4 activation predeploy diagnostics in `scripts/release`.
+- Reason: the first database-enforced read-only production plan correctly blocked a capability/policy mismatch but collapsed all checks into one code, preventing the required per-check decision record.
+- Standard vs User-Specific / Why Here: non-secret fail-closed diagnostics belong to the P4 verifier; no product or tenant behavior is changed.
+- Why Not Elsewhere / Blast Radius: no P0-P3, frontend, image, module, service, user, group, parameter, credential, business data, or database mutation. Only the blocked terminal message gains the required boolean/TTL/XMLID/parameter-name diagnostics.
+- Validation: complete diagnostic-key contract, secret/identity-negative assertion, focused predeploy tests, and production release contract tests.

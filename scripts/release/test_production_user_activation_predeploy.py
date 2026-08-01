@@ -122,6 +122,29 @@ class ProductionUserActivationPredeployTests(unittest.TestCase):
             source.index("_plan(odoo_env, tenant_key, transaction)"),
         )
 
+    def test_capability_failure_diagnostics_are_complete_and_non_secret(self):
+        source = HELPER_PATH.read_text(encoding="utf-8")
+        for key in (
+            "ACTIVATION_CREDENTIAL_MODEL_PRESENT",
+            "ENTERPRISE_ACTIVATION_PURPOSE_PRESENT",
+            "DIGEST_ONLY_TOKEN_STORAGE_PRESENT",
+            "TOKEN_SINGLE_USE_ENFORCED",
+            "TOKEN_TTL_HOURS",
+            "TENANT_BINDING_SUPPORTED",
+            "ENVIRONMENT_BINDING_SUPPORTED",
+            "ACTIVATION_ADMIN_GROUP_XMLID",
+            "ACTIVATION_RUNTIME_PARAMETER_NAMES",
+            "SIGNUP_RESET_POLICY_ISOLATION_PRESENT",
+            "PUBLIC_SIGNUP_ENABLED",
+            "PRODUCTION_DATABASE_PUBLIC_REGISTRATION",
+        ):
+            self.assertIn(f'"{key}"', source)
+        diagnostic = source.split("public_checks =", 1)[1].split(
+            "raise ActivationPredeployError", 1
+        )[0].lower()
+        for forbidden in ("login", "password", "token_digest", "tenant_key"):
+            self.assertNotIn(forbidden, diagnostic)
+
 
 if __name__ == "__main__":
     unittest.main()

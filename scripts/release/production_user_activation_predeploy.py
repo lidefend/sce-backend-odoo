@@ -237,7 +237,27 @@ def _installed_capabilities(odoo_env: Any) -> dict[str, Any]:
         or checks["PUBLIC_SIGNUP_ENABLED"]
         or checks["PRODUCTION_DATABASE_PUBLIC_REGISTRATION"]
     ):
-        raise ActivationPredeployError("BLOCKED_RC12_CAPABILITY_MISSING")
+        public_checks = {
+            key: checks[key]
+            for key in (
+                "ACTIVATION_CREDENTIAL_MODEL_PRESENT",
+                "ENTERPRISE_ACTIVATION_PURPOSE_PRESENT",
+                "DIGEST_ONLY_TOKEN_STORAGE_PRESENT",
+                "TOKEN_SINGLE_USE_ENFORCED",
+                "TOKEN_TTL_HOURS",
+                "TENANT_BINDING_SUPPORTED",
+                "ENVIRONMENT_BINDING_SUPPORTED",
+                "ACTIVATION_ADMIN_GROUP_XMLID",
+                "ACTIVATION_RUNTIME_PARAMETER_NAMES",
+                "SIGNUP_RESET_POLICY_ISOLATION_PRESENT",
+                "PUBLIC_SIGNUP_ENABLED",
+                "PRODUCTION_DATABASE_PUBLIC_REGISTRATION",
+            )
+        }
+        raise ActivationPredeployError(
+            "BLOCKED_RC12_CAPABILITY_MISSING "
+            + json.dumps(public_checks, ensure_ascii=True, sort_keys=True)
+        )
     return checks
 
 
