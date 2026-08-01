@@ -2085,3 +2085,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Follow-up branch / anchor: `fix/password-reset-identity-resolution` from `4d8ee50fc221dd3a6f70b472eed056e525cfc562`.
 - The sixth no-password preflight passed database contract, Odoo bootstrap, live secret inheritance, and TTY handling, then exposed an invalid dependency on the unset activation tenant parameter.
 - Direct password maintenance now resolves exactly one external identity by the already unique `res.users` target record. It does not read or require activation runtime parameters, activation administrators, delivery channels, or the 62/76 roster; the failed preflight performed zero database writes.
+
+### Activation-independent target-record binding
+
+- Follow-up branch / anchor: `fix/password-reset-target-record-identity` from `993bc1f658c60d5683fb5803da6728e0408a9e11`.
+- The seventh no-password preflight proved that the production registry does not expose the optional activation external-identity model. Direct password maintenance now binds the already unique active internal `res.users` target to a non-secret database/model/record digest and has no activation-model dependency.
+- This matches the authorized stop conditions: missing, duplicate, inactive, or non-internal target users still fail closed; activation parameters, activation administrators, delivery channels, and 62/76 roster artifacts cannot block a direct ORM password reset. The failed preflight performed zero database writes.

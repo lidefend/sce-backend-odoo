@@ -75,8 +75,9 @@ Makefile guards and script-level guards.
   identity fields and mounts of the four running `sc_production` services;
   required infrastructure secrets are inherited in memory from that running
   container rather than stale disk configuration and are never printed;
-  target immutable identity is resolved directly and uniquely by the selected
-  `res.users` record without depending on activation runtime parameters;
+  the unique selected `res.users` target is bound to a non-secret
+  database/model/record digest without depending on an activation external
+  identity model or activation runtime parameters;
   role, job, company, menu scope, all other users, login, and business data are
   fingerprinted or statically constrained to remain unchanged)
 
