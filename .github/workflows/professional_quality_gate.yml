@@ -107,6 +107,8 @@ jobs:
           python scripts/release/test_production_user_activation_readiness.py
           python -m py_compile scripts/release/production_user_activation_predeploy.py
           python scripts/release/test_production_user_activation_predeploy.py
+          python -m py_compile scripts/release/production_public_signup_close.py
+          python scripts/release/test_production_public_signup_close.py
           set +e
           output="$(env -i PATH="${PATH}" python \
             scripts/release/production_admin_identity_baseline.py 2>&1)"

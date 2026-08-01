@@ -43,6 +43,10 @@ Makefile guards and script-level guards.
   transaction read-only before confirming the two runtime bindings, singleton
   activation administrator, zero credentials, and unchanged ordinary-user
   fingerprint)
+- `make release.production.public_signup.close.plan` and
+  `make release.production.public_signup.close.verify` (require read-only mode,
+  the frozen RC12 and immutable tool identities, and root-only evidence; they
+  verify the singleton native signup parameter and create no database writes)
 - `make release.production.promotion.config.preflight` (requires
   `PROD_READONLY_VERIFY=1`, separate governed configuration and secret files,
   and a new `0600` evidence path; validates every promotion field, the fixed
@@ -54,6 +58,13 @@ Makefile guards and script-level guards.
 - `make verify.p0.flow` (requires PROD_DANGER=1)
 
 ## Allowed with PROD_DANGER=1 (danger)
+
+- `make release.production.public_signup.close.apply` (requires the reviewed
+  root-only plan and exact confirmation; compare-and-set changes only the
+  singleton `auth_signup.invitation_scope` row from `b2c` to `b2b`, verifies
+  invitation-only policy and unchanged user/activation populations, and may
+  not change users, credentials, groups, companies, business data, code,
+  images, modules, or services)
 
 - `make release.production.user_activation.predeploy.apply` (requires
   `CONFIRM_USER_ACTIVATION_PREDEPLOY=YES_APPLY_PRODUCTION_USER_ACTIVATION_PREDEPLOY_BASELINE`,
