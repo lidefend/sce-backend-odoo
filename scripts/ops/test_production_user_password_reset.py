@@ -64,6 +64,9 @@ class ProductionUserPasswordResetTests(unittest.TestCase):
         self.assertNotIn("add_argument(\"--password", source)
         self.assertNotIn(".execute(", source)
         self.assertNotIn("UPDATE res_users", source)
+        self.assertNotIn("sc.runtime.tenant_key", source)
+        self.assertIn('("model_name", "=", "res.users")', source)
+        self.assertIn('(\"res_id\", \"=\", target.id)', source)
 
     def test_unexpected_failures_are_reported_by_non_secret_stage(self):
         source = SCRIPT.read_text(encoding="utf-8")
