@@ -531,6 +531,33 @@ class StaticContractTests(unittest.TestCase):
         ):
             self.assertIn(contract, self.professional_quality_workflow)
 
+    def test_public_signup_close_is_single_parameter_cas_and_make_guarded(self):
+        helper = (ROOT / "scripts/release/production_public_signup_close.py").read_text()
+        for mode, guard in (("plan", "guard.prod.readonly"), ("apply", "guard.prod.danger"), ("verify", "guard.prod.readonly")):
+            target = self.release_make.split(
+                f"release.production.public_signup.close.{mode}:", 1
+            )[1].split("\n\n", 1)[0]
+            self.assertIn(guard, target.splitlines()[0])
+            self.assertIn(f"release.production.public_signup.close.{mode}", self.production_command_policy)
+        for contract in (
+            'PARAMETER = "auth_signup.invitation_scope"',
+            'CURRENT_VALUE = "b2c"',
+            'TARGET_VALUE = "b2b"',
+            'CONFIRMATION = "YES_CLOSE_PRODUCTION_PUBLIC_SIGNUP_ONCE"',
+            "params.set_param(PARAMETER, TARGET_VALUE)",
+            'method="GET"',
+            "status not in {403, 404}",
+        ):
+            self.assertIn(contract, helper)
+        self.assertEqual(helper.count("params.set_param("), 1)
+        for forbidden in ('write({"login"', 'write({"password"', 'cr.execute("UPDATE', 'cr.execute("INSERT', 'cr.execute("DELETE'):
+            self.assertNotIn(forbidden, helper)
+        for contract in (
+            "scripts/release/production_public_signup_close.py",
+            "scripts/release/test_production_public_signup_close.py",
+        ):
+            self.assertIn(contract, self.professional_quality_workflow)
+
     def test_formal_module_closure_has_a_dedicated_production_contract(self):
         target = self.release_make.split(
             "release.production.formal_modules.install_missing:", 1
