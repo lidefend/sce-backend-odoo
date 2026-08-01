@@ -2079,3 +2079,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Follow-up branch / anchor: `fix/password-reset-getpass-tty` from `a41673b8e5b181caed95273eafd3d342ec927d3b`.
 - The fifth no-password preflight passed database contract, configuration rendering, Odoo bootstrap, and live secret inheritance, then proved that Python text `r+` wrapping is unsupported for this container's TTY device.
 - The tool now lets standard-library `getpass` open and control `/dev/tty` natively while retaining the outer real-TTY guard. No stream override, stdin pipe, environment value, argument, or file can carry the new user password; the failed preflight performed zero database writes.
+
+### Activation-independent immutable identity resolution
+
+- Follow-up branch / anchor: `fix/password-reset-identity-resolution` from `4d8ee50fc221dd3a6f70b472eed056e525cfc562`.
+- The sixth no-password preflight passed database contract, Odoo bootstrap, live secret inheritance, and TTY handling, then exposed an invalid dependency on the unset activation tenant parameter.
+- Direct password maintenance now resolves exactly one external identity by the already unique `res.users` target record. It does not read or require activation runtime parameters, activation administrators, delivery channels, or the 62/76 roster; the failed preflight performed zero database writes.

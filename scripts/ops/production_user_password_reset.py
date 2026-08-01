@@ -144,18 +144,14 @@ def _resolve_target(odoo_env: Any, login: str) -> tuple[Any, str]:
     if portal_group and portal_group in target.groups_id:
         raise PasswordResetError("target user must not belong to the portal group")
 
-    tenant_key = str(
-        odoo_env["ir.config_parameter"].sudo().get_param("sc.runtime.tenant_key", "") or ""
-    ).strip()
     try:
         identity_model = odoo_env["sc.tenant.payload.external.identity"]
     except KeyError:
         identity_model = None
-    if not tenant_key or not identity_model:
-        raise PasswordResetError("production tenant identity is unresolved")
+    if not identity_model:
+        raise PasswordResetError("immutable user identity model is unavailable")
     identities = identity_model.sudo().search(
         [
-            ("tenant_key", "=", tenant_key),
             ("model_name", "=", "res.users"),
             ("res_id", "=", target.id),
         ]
