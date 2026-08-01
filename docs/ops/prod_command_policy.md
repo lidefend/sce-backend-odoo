@@ -73,6 +73,8 @@ Makefile guards and script-level guards.
   HTTP login, `system.init`, and one authorized-menu contract verification;
   the launcher reconstructs the one-off Compose context only from allowlisted
   identity fields and mounts of the four running `sc_production` services;
+  required infrastructure secrets are inherited in memory from that running
+  container rather than stale disk configuration and are never printed;
   role, job, company, menu scope, all other users, login, and business data are
   fingerprinted or statically constrained to remain unchanged)
 

@@ -2067,3 +2067,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Follow-up branch / anchor: `fix/password-reset-stage-diagnostics` from `e54a2f42a04cb6f00f16fb4f2ce6b1ba19e93f85`.
 - The third no-password terminal preflight passed production database-contract and config rendering, created and removed only the governed one-off container, then stopped before the password prompt with a redacted `OperationalError`.
 - The tool now reports only a fixed non-secret execution stage and exception class for unexpected failures. Exception text, connection strings, credentials, passwords, hashes, and payloads remain excluded; the failed preflight performed zero database writes.
+
+### Live infrastructure-secret context
+
+- Follow-up branch / anchor: `fix/password-reset-live-secret-context` from `8af2cbf89aa5f4ccd4f02977d81bb09c7344c81c`.
+- Redacted stage diagnostics localized the fourth no-password preflight to Odoo bootstrap. A digest-only equality check proved that disk `.env.prod` retained stale database, JWT, and Odoo master secrets while the current production container held the active values.
+- The launcher now inherits `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, and `ADMIN_PASSWD` in memory from the already verified running Odoo container. Values are never printed, persisted, copied into evidence, or used as the target user's password; the failed preflight performed zero database writes.
