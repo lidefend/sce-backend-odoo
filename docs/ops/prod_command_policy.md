@@ -81,6 +81,12 @@ Makefile guards and script-level guards.
   role, job, company, menu scope, all other users, login, and business data are
   fingerprinted or statically constrained to remain unchanged)
 
+- `make ops.user.password-verify DB=sc_production LOGIN=<exact-login>` (requires
+  a real interactive TTY and the immutable synchronized deployment-tool
+  directory; reads the already assigned password once with `getpass`, performs
+  only real HTTP login, `system.init`, and one authorized-menu contract read,
+  and writes no password, user, role, company, or business record)
+
 - `make release.production.public_signup.close.apply` (requires the reviewed
   root-only plan and exact confirmation; compare-and-set changes only the
   singleton `auth_signup.invitation_scope` row from `b2c` to `b2b`, verifies
