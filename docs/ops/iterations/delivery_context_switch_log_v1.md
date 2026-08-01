@@ -2061,3 +2061,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Follow-up branch / anchor: `fix/password-reset-runtime-context` from `d90836c4761d2b3cf87ea880fbb6036608114eee`.
 - The second no-password terminal preflight showed that `.env.prod` intentionally lacks the complete immutable-release Compose identity. The launcher now reads only the four running `sc_production` service identities, digest image refs, exact database/environment/source values, and named mounts, then reconstructs the one-off context without printing or copying secret values.
 - The customer-addons overlay and current manifest mounts are preserved for registry compatibility. Both blocked preflights ended before container creation and produced zero database writes.
+
+### Redacted execution-stage diagnostics
+
+- Follow-up branch / anchor: `fix/password-reset-stage-diagnostics` from `e54a2f42a04cb6f00f16fb4f2ce6b1ba19e93f85`.
+- The third no-password terminal preflight passed production database-contract and config rendering, created and removed only the governed one-off container, then stopped before the password prompt with a redacted `OperationalError`.
+- The tool now reports only a fixed non-secret execution stage and exception class for unexpected failures. Exception text, connection strings, credentials, passwords, hashes, and payloads remain excluded; the failed preflight performed zero database writes.

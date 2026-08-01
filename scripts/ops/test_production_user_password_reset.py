@@ -68,6 +68,19 @@ class ProductionUserPasswordResetTests(unittest.TestCase):
         self.assertNotIn(".execute(", source)
         self.assertNotIn("UPDATE res_users", source)
 
+    def test_unexpected_failures_are_reported_by_non_secret_stage(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+        for stage in (
+            "odoo_bootstrap",
+            "tty_open",
+            "target_preflight",
+            "password_prompt",
+            "orm_password_reset",
+            "http_verification",
+        ):
+            self.assertIn(stage, source)
+        self.assertIn('f"{stage} failed ({type(exc).__name__})"', source)
+
 
 if __name__ == "__main__":
     unittest.main()
