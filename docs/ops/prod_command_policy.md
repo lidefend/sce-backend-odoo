@@ -71,6 +71,8 @@ Makefile guards and script-level guards.
   stdin, or files, and uses Odoo ORM to change only the unique active internal
   target user's password; the same in-memory password is used once for real
   HTTP login, `system.init`, and one authorized-menu contract verification;
+  the launcher reconstructs the one-off Compose context only from allowlisted
+  identity fields and mounts of the four running `sc_production` services;
   role, job, company, menu scope, all other users, login, and business data are
   fingerprinted or statically constrained to remain unchanged)
 

@@ -167,6 +167,9 @@ class StaticContractTests(unittest.TestCase):
         cls.user_password_reset = (
             ROOT / "scripts/ops/production_user_password_reset.py"
         ).read_text()
+        cls.user_password_reset_runtime = (
+            ROOT / "scripts/ops/production_user_password_reset_runtime.py"
+        ).read_text()
         cls.admin_identity_baseline = (
             ROOT / "scripts/release/production_admin_identity_baseline.py"
         ).read_text()
@@ -364,13 +367,15 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("guard.prod.danger", target.splitlines()[0])
         self.assertIn('DB=sc_production is required', target)
         self.assertIn('test -t 0 -a -t 1', target)
-        self.assertIn('TARGET_DB="$(DB_NAME)" DB_NAME="$(DB_NAME)"', target)
-        self.assertNotIn("-T", target)
+        self.assertIn("production_user_password_reset_runtime.py", target)
+        self.assertNotIn("$(PRODUCTION_CONTRACT_COMPOSE)", target)
         self.assertNotIn("PASSWORD=", target)
         self.assertIn('open("/dev/tty", "r+"', self.user_password_reset)
         self.assertIn('target.write({"password": password})', self.user_password_reset)
         self.assertNotIn(".execute(", self.user_password_reset)
         self.assertNotIn('add_argument("--password', self.user_password_reset)
+        self.assertIn("os.execvpe", self.user_password_reset_runtime)
+        self.assertNotIn('add_argument("--password', self.user_password_reset_runtime)
         self.assertIn("ops.user.password-reset", self.production_command_policy)
 
     def test_admin_identity_baseline_is_canonical_and_confirmation_guarded(self):
