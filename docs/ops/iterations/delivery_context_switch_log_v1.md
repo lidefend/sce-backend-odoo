@@ -2039,3 +2039,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast Radius: two runtime parameters, one `admin` activation-group relation,
   optional `wutao.active`, one activation batch/credential and non-secret audit;
   all other user, role, company, login, and business records are fingerprinted.
+
+## 2026-08-01 — PRODUCTION-GOVERNED-PASSWORD-RESET-01
+
+- Branch / anchor: `codex/governed-user-password-reset` from `6bee5e63821db2838db729b35b7459f20c3195e2`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool in `scripts/ops` and `make/release.mk`.
+- Reason: provide a reusable, governed single-user production password-reset entry that does not depend on activation credentials, email delivery, or a batch user roster.
+- Standard vs User-Specific / Why Here: the mechanism is generic and accepts one exact login; the separately approved `wutao` execution remains runtime scope and is not encoded in the tool.
+- Why Not Elsewhere: password maintenance is an operational delivery action, not P0 authentication product behavior, P1 industry semantics, P2 customer configuration, P3 low-code data, or frontend behavior.
+- Blast Radius: one Odoo ORM `res.users.password` write for the unique active internal target. Login, role, job, company and menu scope, other users, business data, RC12 image, modules, services, and runtime configuration remain unchanged.
+- Validation: immutable synchronized-tool identity, production/database/danger guards, real TTY enforcement, `/dev/tty` `getpass` double entry, password transport negative assertions, ORM-only static contract, before/after scope fingerprints, other-user fingerprint, real HTTP login, `system.init`, and authorized-menu contract access.

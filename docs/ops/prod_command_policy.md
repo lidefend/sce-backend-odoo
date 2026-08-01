@@ -64,6 +64,16 @@ Makefile guards and script-level guards.
 
 ## Allowed with PROD_DANGER=1 (danger)
 
+- `make ops.user.password-reset DB=sc_production LOGIN=<exact-login>` (requires
+  a real interactive TTY and execution from an immutable synchronized
+  deployment-tool directory; reads the new password twice with `getpass`
+  directly from `/dev/tty`, accepts no password through argv, environment,
+  stdin, or files, and uses Odoo ORM to change only the unique active internal
+  target user's password; the same in-memory password is used once for real
+  HTTP login, `system.init`, and one authorized-menu contract verification;
+  role, job, company, menu scope, all other users, login, and business data are
+  fingerprinted or statically constrained to remain unchanged)
+
 - `make release.production.public_signup.close.apply` (requires the reviewed
   root-only plan and exact confirmation; compare-and-set changes only the
   singleton `auth_signup.invitation_scope` row from `b2c` to `b2b`, verifies
