@@ -8,6 +8,7 @@ ADMIN_IDENTITY_BASELINE_MODE ?= dry-run
 ADMIN_IDENTITY_LOGIN ?= admin
 ADMIN_IDENTITY_EXPECTED_USER_COUNT ?= 1
 ADMIN_IDENTITY_EXPECTED_CURRENT_ROLE ?= restricted
+USER_ACTIVATION_TENANT_KEY ?= $(or $(TENANT_KEY),$(SC_TENANT_PAYLOAD_TENANT_KEY))
 PRODUCTION_ACCEPTANCE_PACKAGE_LOCK := scripts/ops/production_acceptance_package_v1.sha256
 PRODUCTION_ACCEPTANCE_PACKAGE_DIGEST := $(strip $(shell cat $(PRODUCTION_ACCEPTANCE_PACKAGE_LOCK) 2>/dev/null))
 ACCEPTANCE_HARNESS_OUTPUT ?= artifacts/backend/production_acceptance_harness.json
@@ -19,7 +20,7 @@ RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RE
 
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
-.PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.user_activation.readiness release.production.formal_modules.install_missing
+.PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.user_activation.readiness release.production.user_activation.predeploy.plan release.production.user_activation.predeploy.apply release.production.user_activation.predeploy.verify release.production.formal_modules.install_missing
 .PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore verify.production.backup_restore_contract
 .PHONY: verify.production.acceptance.harness acceptance.package.verify verify.production.promotion.config.preflight release.daily_dev.production_acceptance.harness release.production.acceptance.harness release.daily_dev.promotion.config.preflight release.production.promotion.config.preflight
 
@@ -116,7 +117,7 @@ release.production.promotion.config.preflight: guard.prod.readonly acceptance.pa
 	  --expected-environment production
 
 verify.production.release_contract:
-	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/release_candidate.py scripts/release/release_candidate_report.py scripts/release/release_publication.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_user_activation_readiness.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/production_backup_restore.py scripts/ops/production_backup_install.py scripts/ops/production_acceptance_harness.py scripts/ops/test_production_acceptance_harness.py scripts/ops/production_promotion_config_preflight.py scripts/ops/test_production_promotion_config_preflight.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py scripts/ops/release_candidate_eligibility.py scripts/ops/test_release_candidate_eligibility.py scripts/ops/rc6_candidate_identity_freeze.py scripts/ops/test_rc6_candidate_identity_freeze.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_release_candidate.py scripts/release/test_release_publication.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_user_activation_readiness.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_production_backup_restore_contract.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
+	@python3 -m py_compile addons/smart_core/core/platform_database_contract.py addons/smart_core/tests/test_platform_database_contract.py addons/smart_construction_core/services/locked_menu_policy_contract.py scripts/release/candidate_scan_contract.py scripts/release/release_candidate.py scripts/release/release_candidate_report.py scripts/release/release_publication.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/production_compose_contract.py scripts/release/production_db_contract.py scripts/release/production_db_init.py scripts/release/production_admin_harden.py scripts/release/production_admin_identity_baseline.py scripts/release/production_user_activation_readiness.py scripts/release/production_user_activation_predeploy.py scripts/release/production_formal_module_install.py scripts/release/production_formal_module_state.py scripts/release/production_first_fresh_cleanup.py scripts/release/configure_colocated_platform_core.py scripts/release/initialize_colocated_platform_snapshot.py scripts/release/production_colocated_backup.py scripts/release/production_backup_restore.py scripts/ops/production_backup_install.py scripts/ops/production_acceptance_harness.py scripts/ops/test_production_acceptance_harness.py scripts/ops/production_promotion_config_preflight.py scripts/ops/test_production_promotion_config_preflight.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py scripts/ops/release_candidate_eligibility.py scripts/ops/test_release_candidate_eligibility.py scripts/ops/rc6_candidate_identity_freeze.py scripts/ops/test_rc6_candidate_identity_freeze.py scripts/release/verify_colocated_platform_matrix.py scripts/release/test_candidate_scan_contract.py scripts/release/test_release_candidate.py scripts/release/test_release_publication.py scripts/release/test_product_release.py scripts/release/test_release_source_identity.py scripts/release/test_production_compose_contract.py scripts/release/test_production_db_init.py scripts/release/test_production_admin_harden.py scripts/release/test_production_admin_identity_baseline.py scripts/release/test_production_user_activation_readiness.py scripts/release/test_production_user_activation_predeploy.py scripts/release/test_production_formal_module_install.py scripts/release/test_production_first_fresh_cleanup.py scripts/release/test_production_release_contract.py scripts/release/test_production_colocated_release.py scripts/release/test_production_backup_restore_contract.py scripts/release/test_locked_menu_policy_contract.py scripts/verify/production_git_authority_guard.py scripts/verify/test_production_git_authority_guard.py
 	@python3 addons/smart_core/tests/test_platform_database_contract.py
 	@python3 scripts/release/test_candidate_scan_contract.py
 	@python3 scripts/release/test_release_candidate.py
@@ -128,6 +129,7 @@ verify.production.release_contract:
 	@python3 scripts/release/test_production_admin_harden.py
 	@python3 scripts/release/test_production_admin_identity_baseline.py
 	@python3 scripts/release/test_production_user_activation_readiness.py
+	@python3 scripts/release/test_production_user_activation_predeploy.py
 	@python3 scripts/release/test_production_formal_module_install.py
 	@python3 scripts/release/test_production_first_fresh_cleanup.py
 	@python3 scripts/release/test_production_release_contract.py
@@ -553,6 +555,52 @@ release.production.user_activation.readiness: guard.prod.readonly release.produc
 			python3 /usr/local/bin/render_odoo_conf.py /etc/odoo/odoo.conf.template "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}"; \
 			exec odoo shell -c "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}" -d "$${TARGET_DB}"' \
 		< scripts/release/production_user_activation_readiness.py
+
+define run_production_user_activation_predeploy
+	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)
+	@test "$(TARGET_DB)" = "sc_production" || (echo "TARGET_DB must be sc_production"; exit 2)
+	@test "$(TARGET_TAG)" = "v1.0.0-rc.12" || (echo "TARGET_TAG must be v1.0.0-rc.12"; exit 2)
+	@test "$(TARGET_COMMIT)" = "3fb17948feacb34c2574668eaba7ddb2ad4bef26" || (echo "TARGET_COMMIT differs"; exit 2)
+	@test "$(REGISTRY_DIGEST)" = "sha256:cecdeb03ea68a1d2ddead0cf3f3ffb7a391948ba7de92e3919b752b7635d3a1d" || (echo "REGISTRY_DIGEST differs"; exit 2)
+	@test "$(DEPLOYMENT_ID)" = "rc12_upgrade_20260801" || (echo "DEPLOYMENT_ID differs"; exit 2)
+	@test "$(ACTIVATION_ADMIN_LOGIN)" = "admin" || (echo "ACTIVATION_ADMIN_LOGIN must be admin"; exit 2)
+	@test -n "$(USER_ACTIVATION_TENANT_KEY)" -a -n "$(USER_ACTIVATION_PREDEPLOY_RUN_ID)" -a -n "$(USER_ACTIVATION_PREDEPLOY_OUTPUT)" || (echo "tenant, run ID, and evidence output are required"; exit 2)
+	@test -n "$(USER_ACTIVATION_PREDEPLOY_TOOL_SOURCE_SHA)" -a -n "$(USER_ACTIVATION_PREDEPLOY_DEPLOYED_PATH)" -a -n "$(USER_ACTIVATION_PREDEPLOY_SCRIPT_SHA256)" || (echo "immutable deployment-tool identity is required"; exit 2)
+	@ENV="$(ENV)" TARGET_DB="$(TARGET_DB)" PROD_DANGER="$${PROD_DANGER:-}" PROD_READONLY_VERIFY="$${PROD_READONLY_VERIFY:-}" \
+		TARGET_TAG="$(TARGET_TAG)" TARGET_COMMIT="$(TARGET_COMMIT)" REGISTRY_DIGEST="$(REGISTRY_DIGEST)" DEPLOYMENT_ID="$(DEPLOYMENT_ID)" \
+		TENANT_KEY="$(USER_ACTIVATION_TENANT_KEY)" ACTIVATION_ADMIN_LOGIN="$(ACTIVATION_ADMIN_LOGIN)" USER_ACTIVATION_PREDEPLOY_MODE="$(1)" \
+		USER_ACTIVATION_PREDEPLOY_RUN_ID="$(USER_ACTIVATION_PREDEPLOY_RUN_ID)" USER_ACTIVATION_PREDEPLOY_OUTPUT="$(USER_ACTIVATION_PREDEPLOY_OUTPUT)" \
+		USER_ACTIVATION_PREDEPLOY_TOOL_SOURCE_SHA="$(USER_ACTIVATION_PREDEPLOY_TOOL_SOURCE_SHA)" USER_ACTIVATION_PREDEPLOY_DEPLOYED_PATH="$(USER_ACTIVATION_PREDEPLOY_DEPLOYED_PATH)" \
+		USER_ACTIVATION_PREDEPLOY_SCRIPT_SHA256="$(USER_ACTIVATION_PREDEPLOY_SCRIPT_SHA256)" USER_ACTIVATION_PREDEPLOY_PLAN_PATH="$(USER_ACTIVATION_PREDEPLOY_PLAN_PATH)" \
+		USER_ACTIVATION_PREDEPLOY_PLAN_SHA256="$(USER_ACTIVATION_PREDEPLOY_PLAN_SHA256)" CONFIRM_USER_ACTIVATION_PREDEPLOY="$(CONFIRM_USER_ACTIVATION_PREDEPLOY)" \
+		python3 scripts/release/production_user_activation_predeploy.py
+	@$(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps -T \
+		-e ENV=prod -e TARGET_DB="$(TARGET_DB)" -e PROD_DANGER="$${PROD_DANGER:-}" -e PROD_READONLY_VERIFY="$${PROD_READONLY_VERIFY:-}" \
+		-e TARGET_TAG="$(TARGET_TAG)" -e TARGET_COMMIT="$(TARGET_COMMIT)" -e REGISTRY_DIGEST="$(REGISTRY_DIGEST)" -e DEPLOYMENT_ID="$(DEPLOYMENT_ID)" \
+		-e TENANT_KEY="$(USER_ACTIVATION_TENANT_KEY)" -e ACTIVATION_ADMIN_LOGIN="$(ACTIVATION_ADMIN_LOGIN)" -e USER_ACTIVATION_PREDEPLOY_MODE="$(1)" \
+		-e USER_ACTIVATION_PREDEPLOY_RUN_ID="$(USER_ACTIVATION_PREDEPLOY_RUN_ID)" -e USER_ACTIVATION_PREDEPLOY_OUTPUT="$(USER_ACTIVATION_PREDEPLOY_OUTPUT)" \
+		-e USER_ACTIVATION_PREDEPLOY_TOOL_SOURCE_SHA="$(USER_ACTIVATION_PREDEPLOY_TOOL_SOURCE_SHA)" -e USER_ACTIVATION_PREDEPLOY_DEPLOYED_PATH="$(USER_ACTIVATION_PREDEPLOY_DEPLOYED_PATH)" \
+		-e USER_ACTIVATION_PREDEPLOY_SCRIPT_SHA256="$(USER_ACTIVATION_PREDEPLOY_SCRIPT_SHA256)" -e USER_ACTIVATION_PREDEPLOY_PLAN_PATH="$(USER_ACTIVATION_PREDEPLOY_PLAN_PATH)" \
+		-e USER_ACTIVATION_PREDEPLOY_PLAN_SHA256="$(USER_ACTIVATION_PREDEPLOY_PLAN_SHA256)" -e CONFIRM_USER_ACTIVATION_PREDEPLOY="$(CONFIRM_USER_ACTIVATION_PREDEPLOY)" \
+		-v "$(USER_ACTIVATION_PREDEPLOY_DEPLOYED_PATH):$(USER_ACTIVATION_PREDEPLOY_DEPLOYED_PATH):ro" \
+		--entrypoint /bin/sh odoo -eu -c '\
+			python3 /usr/local/bin/production_db_contract.py health; \
+			python3 /usr/local/bin/render_odoo_conf.py /etc/odoo/odoo.conf.template "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}"; \
+			exec odoo shell -c "$${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}" -d "$${TARGET_DB}"' \
+		< scripts/release/production_user_activation_predeploy.py
+endef
+
+release.production.user_activation.predeploy.plan: guard.prod.readonly release.production.compose.preflight
+	$(call run_production_user_activation_predeploy,plan)
+
+release.production.user_activation.predeploy.apply: guard.prod.danger release.production.compose.preflight
+	@test "$(CONFIRM_USER_ACTIVATION_PREDEPLOY)" = "YES_APPLY_PRODUCTION_USER_ACTIVATION_PREDEPLOY_BASELINE" || (echo "exact predeploy apply confirmation is required"; exit 2)
+	@test -n "$(USER_ACTIVATION_PREDEPLOY_PLAN_PATH)" -a -n "$(USER_ACTIVATION_PREDEPLOY_PLAN_SHA256)" || (echo "reviewed plan path and digest are required"; exit 2)
+	$(call run_production_user_activation_predeploy,apply)
+
+release.production.user_activation.predeploy.verify: guard.prod.readonly release.production.compose.preflight
+	@test -n "$(USER_ACTIVATION_PREDEPLOY_PLAN_PATH)" -a -n "$(USER_ACTIVATION_PREDEPLOY_PLAN_SHA256)" || (echo "reviewed plan path and digest are required"; exit 2)
+	$(call run_production_user_activation_predeploy,verify)
 
 release.production.formal_modules.install_missing: guard.prod.danger release.production.compose.preflight
 	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)

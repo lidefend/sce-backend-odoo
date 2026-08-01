@@ -30,6 +30,19 @@ Makefile guards and script-level guards.
   records only aggregate activation readiness counts and irreversible tenant
   fingerprint evidence, with no login, person, contact, password, token, or
   challenge values)
+- `make release.production.user_activation.predeploy.plan` (requires
+  `PROD_READONLY_VERIFY=1`, the frozen RC12 deployment identity, immutable
+  deployment-tool identity, exact tenant identity, and a new root-only `0600`
+  evidence path; establishes PostgreSQL transaction read-only before checking
+  installed activation capabilities, public-registration isolation, the
+  immutable approved 62-user mapping, the 76-user technical population, the
+  14-user approval delta, the two current parameter values, and the singleton
+  administrator relation; writes nothing)
+- `make release.production.user_activation.predeploy.verify` (requires the
+  reviewed root-only plan and exact plan digest; establishes PostgreSQL
+  transaction read-only before confirming the two runtime bindings, singleton
+  activation administrator, zero credentials, and unchanged ordinary-user
+  fingerprint)
 - `make release.production.promotion.config.preflight` (requires
   `PROD_READONLY_VERIFY=1`, separate governed configuration and secret files,
   and a new `0600` evidence path; validates every promotion field, the fixed
@@ -41,6 +54,15 @@ Makefile guards and script-level guards.
 - `make verify.p0.flow` (requires PROD_DANGER=1)
 
 ## Allowed with PROD_DANGER=1 (danger)
+
+- `make release.production.user_activation.predeploy.apply` (requires
+  `CONFIRM_USER_ACTIVATION_PREDEPLOY=YES_APPLY_PRODUCTION_USER_ACTIVATION_PREDEPLOY_BASELINE`,
+  the reviewed root-only plan and exact plan digest, the frozen RC12 deployment
+  and immutable deployment-tool identities; atomically changes at most
+  `sc.runtime.tenant_key`, `sc.runtime.environment_type`, and one
+  `smart_core.group_smart_core_user_activation_admin` relation for the unique
+  active internal `admin`; it issues no credential and cannot write ordinary
+  user login, password, roles, company scope, or business data)
 
 - `make mod.install`
 - `make mod.upgrade`

@@ -3,7 +3,7 @@ import json
 from datetime import timedelta
 
 from odoo import Command, fields
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import HttpCase, TransactionCase, tagged
 
 from odoo.addons.smart_core.models.user_activation import (
@@ -180,6 +180,36 @@ class TestUserActivation(TransactionCase):
         )
         self.assertEqual(audit.token_fingerprint, issued["token_fingerprint"])
         self.assertNotIn(issued["activation_token"], str(audit.read()[0]))
+
+    def test_activation_admin_is_minimal_and_isolated(self):
+        forbidden_groups = (
+            "base.group_system",
+            "smart_core.group_smart_core_admin",
+            "smart_core.group_smart_core_tenant_payload_importer",
+            "smart_core.group_smart_core_data_operator",
+        )
+        for xmlid in forbidden_groups:
+            self.assertFalse(self.admin.has_group(xmlid), xmlid)
+        self.assertEqual(self.admin.company_ids, self.env.company)
+        self.assertFalse(self.activation_admin.implied_ids)
+
+        _batch, issued, credential = self._issue("minimal-isolation")
+        status = credential.with_user(self.admin).read(
+            ["credential_id", "state", "token_fingerprint"]
+        )[0]
+        self.assertEqual(status["state"], "pending")
+        self.assertNotIn("activation_token", credential._fields)
+        self.assertNotIn("raw_token", credential._fields)
+        self.assertNotIn(issued["activation_token"], str(status))
+        credential.with_user(self.admin)._revoke()
+        self.assertEqual(credential.state, "revoked")
+
+        with self.assertRaises(AccessError):
+            self.user.with_user(self.admin).write(
+                {"groups_id": [Command.link(self.activation_admin.id)]}
+            )
+        with self.assertRaises(AccessError):
+            self.user.with_user(self.admin).write({"company_id": self.env.company.id})
 
     def test_unsupported_public_saas_purpose_is_disabled(self):
         with self.assertRaisesRegex(UserError, "ACTIVATION_PURPOSE_NOT_ENABLED"):

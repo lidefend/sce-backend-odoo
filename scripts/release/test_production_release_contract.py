@@ -170,6 +170,9 @@ class StaticContractTests(unittest.TestCase):
         cls.user_activation_readiness = (
             ROOT / "scripts/release/production_user_activation_readiness.py"
         ).read_text()
+        cls.user_activation_predeploy = (
+            ROOT / "scripts/release/production_user_activation_predeploy.py"
+        ).read_text()
         cls.formal_module_install = (
             ROOT / "scripts/release/production_formal_module_install.py"
         ).read_text()
@@ -482,6 +485,49 @@ class StaticContractTests(unittest.TestCase):
         for contract in (
             "python -m py_compile scripts/release/production_user_activation_readiness.py",
             "python scripts/release/test_production_user_activation_readiness.py",
+        ):
+            self.assertIn(contract, self.professional_quality_workflow)
+
+    def test_user_activation_predeploy_has_separate_plan_apply_verify_guards(self):
+        for mode, guard in (
+            ("plan", "guard.prod.readonly"),
+            ("apply", "guard.prod.danger"),
+            ("verify", "guard.prod.readonly"),
+        ):
+            target = self.release_make.split(
+                f"release.production.user_activation.predeploy.{mode}:", 1
+            )[1].split("\n\n", 1)[0]
+            self.assertIn(guard, target.splitlines()[0])
+        for target in (
+            "release.production.user_activation.predeploy.plan",
+            "release.production.user_activation.predeploy.apply",
+            "release.production.user_activation.predeploy.verify",
+        ):
+            self.assertIn(target, self.production_command_policy)
+        for contract in (
+            'CONFIRMATION = "YES_APPLY_PRODUCTION_USER_ACTIVATION_PREDEPLOY_BASELINE"',
+            'TARGET_DATABASE = "sc_production"',
+            'APPROVED_FORMAL_USERS = 62',
+            'TECHNICALLY_ELIGIBLE_USERS_TOTAL = 76',
+            'TENANT_PARAMETER = "sc.runtime.tenant_key"',
+            'ENVIRONMENT_PARAMETER = "sc.runtime.environment_type"',
+            'odoo_env.cr.execute("SET TRANSACTION READ ONLY")',
+            'config.set_param(TENANT_PARAMETER, tenant_key)',
+            'config.set_param(ENVIRONMENT_PARAMETER, TARGET_ENVIRONMENT)',
+            'target.write({"groups_id": [(4, group.id)]})',
+        ):
+            self.assertIn(contract, self.user_activation_predeploy)
+        for forbidden in (
+            'write({"login"',
+            'write({"password"',
+            'cr.execute("UPDATE',
+            'cr.execute("INSERT',
+            'cr.execute("DELETE',
+        ):
+            self.assertNotIn(forbidden, self.user_activation_predeploy)
+        for contract in (
+            "python -m py_compile scripts/release/production_user_activation_predeploy.py",
+            "python scripts/release/test_production_user_activation_predeploy.py",
         ):
             self.assertIn(contract, self.professional_quality_workflow)
 

@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import importlib.util
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+
+ROOT = Path(__file__).resolve().parents[2]
+HELPER_PATH = ROOT / "scripts/release/production_user_activation_predeploy.py"
+SPEC = importlib.util.spec_from_file_location(
+    "production_user_activation_predeploy", HELPER_PATH
+)
+assert SPEC and SPEC.loader
+helper = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(helper)
+
+
+class ProductionUserActivationPredeployTests(unittest.TestCase):
+    def valid_env(self, root: Path, mode: str = "plan") -> dict[str, str]:
+        deployed = root / ("a" * 40)
+        script = deployed / "scripts/release/production_user_activation_predeploy.py"
+        script.parent.mkdir(parents=True, exist_ok=True)
+        script.write_bytes(HELPER_PATH.read_bytes())
+        (deployed / "DEPLOYMENT_TOOL_SHA").write_text("a" * 40 + "\n")
+        active = {
+            "ENV": "prod",
+            "TARGET_DB": helper.TARGET_DATABASE,
+            "TARGET_TAG": helper.TARGET_TAG,
+            "TARGET_COMMIT": helper.TARGET_COMMIT,
+            "REGISTRY_DIGEST": helper.TARGET_DIGEST,
+            "DEPLOYMENT_ID": helper.DEPLOYMENT_ID,
+            "ACTIVATION_ADMIN_LOGIN": helper.TARGET_ADMIN_LOGIN,
+            "TENANT_KEY": "tenant_prod",
+            "USER_ACTIVATION_PREDEPLOY_MODE": mode,
+            "USER_ACTIVATION_PREDEPLOY_RUN_ID": "20260801T010203Z-a1b2c3",
+            "USER_ACTIVATION_PREDEPLOY_OUTPUT": str(
+                root / f"user-activation-predeploy-20260801T010203Z-a1b2c3-{mode}.json"
+            ),
+            "USER_ACTIVATION_PREDEPLOY_TOOL_SOURCE_SHA": "a" * 40,
+            "USER_ACTIVATION_PREDEPLOY_DEPLOYED_PATH": str(deployed),
+            "USER_ACTIVATION_PREDEPLOY_SCRIPT_SHA256": helper.hashlib.sha256(
+                script.read_bytes()
+            ).hexdigest(),
+            "PROD_READONLY_VERIFY": "1",
+        }
+        if mode == "apply":
+            active.update(
+                {
+                    "PROD_DANGER": "1",
+                    "CONFIRM_USER_ACTIVATION_PREDEPLOY": helper.CONFIRMATION,
+                }
+            )
+        return active
+
+    def test_control_plane_binds_exact_release_database_and_tool(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with mock.patch.object(helper, "EVIDENCE_ROOT", root), mock.patch.object(
+                helper, "DEPLOYMENT_ROOT", root
+            ):
+                mode, output, binding = helper.validate_control_plane(
+                    self.valid_env(root)
+                )
+                self.assertEqual(mode, "plan")
+                self.assertEqual(output.parent, root)
+                self.assertEqual(binding["source_sha"], "a" * 40)
+
+    def test_every_frozen_identity_and_apply_confirmation_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with mock.patch.object(helper, "EVIDENCE_ROOT", root), mock.patch.object(
+                helper, "DEPLOYMENT_ROOT", root
+            ):
+                active = self.valid_env(root, "apply")
+                for key in (
+                    "ENV",
+                    "TARGET_DB",
+                    "TARGET_TAG",
+                    "TARGET_COMMIT",
+                    "REGISTRY_DIGEST",
+                    "DEPLOYMENT_ID",
+                    "ACTIVATION_ADMIN_LOGIN",
+                    "CONFIRM_USER_ACTIVATION_PREDEPLOY",
+                ):
+                    invalid = {**active, key: "wrong"}
+                    with self.assertRaises(helper.ActivationPredeployError, msg=key):
+                        helper.validate_control_plane(invalid)
+
+    def test_plan_digest_excludes_transaction_mode_but_not_target_state(self):
+        plan = {
+            "transaction": {"verification": "PASS"},
+            "parameters": [{"name": helper.TENANT_PARAMETER, "target": "tenant_prod"}],
+        }
+        first = helper._plan_digest(plan)
+        plan["transaction"] = {"verification": "APPLY_AUTHORIZED"}
+        self.assertEqual(helper._plan_digest(plan), first)
+        plan["parameters"][0]["target"] = "other"
+        self.assertNotEqual(helper._plan_digest(plan), first)
+
+    def test_source_contains_only_three_allowlisted_mutation_calls(self):
+        source = HELPER_PATH.read_text(encoding="utf-8")
+        self.assertEqual(source.count("config.set_param("), 2)
+        self.assertEqual(source.count('target.write({"groups_id"'), 1)
+        for forbidden in (
+            ".create(",
+            ".sudo().unlink(",
+            'write({"login"',
+            'write({"password"',
+            "odoo_env.cr.execute(\"UPDATE",
+            "odoo_env.cr.execute(\"INSERT",
+            "odoo_env.cr.execute(\"DELETE",
+        ):
+            self.assertNotIn(forbidden, source)
+
+    def test_readonly_is_established_before_any_orm_query(self):
+        source = HELPER_PATH.read_text(encoding="utf-8")
+        self.assertLess(
+            source.index("_enable_read_only(odoo_env)"),
+            source.index("_plan(odoo_env, tenant_key, transaction)"),
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
