@@ -39,8 +39,10 @@ with lock_path.open("a+b") as lock:
         raise SystemExit("[production.deployment.tool.sync] BLOCKED concurrent sync")
     marker = target / "DEPLOYMENT_TOOL_SHA"
     if target.exists() or target.is_symlink():
-        if target.is_symlink() or not target.is_dir() or not marker.is_file() or marker.read_text() != source_sha + "\n":
+        if target.is_symlink() or not target.is_dir() or stat.S_IMODE(target.stat().st_mode) != 0o755 or not marker.is_file() or marker.read_text() != source_sha + "\n":
             raise SystemExit("[production.deployment.tool.sync] BLOCKED immutable target differs")
+        while sys.stdin.buffer.read(1024 * 1024):
+            pass
         print(json.dumps({"status":"PASS","changed":False,"target":str(target),"source_sha":source_sha}))
         raise SystemExit(0)
     staging = Path(tempfile.mkdtemp(prefix=".incomplete-" + source_sha[:12] + "-", dir=root))
@@ -65,6 +67,7 @@ with lock_path.open("a+b") as lock:
         marker = staging / "DEPLOYMENT_TOOL_SHA"
         marker.write_text(source_sha + "\n")
         marker.chmod(0o444)
+        staging.chmod(0o755)
         os.replace(staging, target)
     finally:
         if staging.exists():
@@ -113,10 +116,10 @@ def synchronize(expected_sha: str) -> dict:
     archive.stdout.close()
     archive_error = archive.stderr.read().decode(errors="replace") if archive.stderr else ""
     archive_code = archive.wait()
-    if archive_code:
-        raise SyncError(f"git archive failed: {archive_error.strip()[:600]}")
     if ssh.returncode:
         raise SyncError(f"remote tool sync failed: {ssh.stderr.decode(errors='replace').strip()[:600]}")
+    if archive_code:
+        raise SyncError(f"git archive failed: {archive_error.strip()[:600]}")
     try:
         result = json.loads(ssh.stdout.decode().splitlines()[-1])
     except (IndexError, json.JSONDecodeError) as exc:
