@@ -84,6 +84,17 @@ def prompt_password(
     return first
 
 
+def prompt_existing_password(
+    login: str,
+    *,
+    prompt: Callable[..., str] = getpass.getpass,
+) -> str:
+    password = prompt(f"Current password for {login}: ")
+    if not password:
+        raise PasswordResetError("current password must not be empty")
+    return password
+
+
 def _record_xmlids(records: Any) -> list[str]:
     if not records:
         return []
@@ -277,9 +288,8 @@ def verify_http_access(tool_root: Path, base_url: str, database: str, login: str
             "intent": "ui.contract",
             "params": {
                 "db": database,
-                "op": "get",
-                "subject": "menu",
-                "id": menu_id,
+                "op": "menu",
+                "menu_id": menu_id,
                 "with_data": True,
                 "limit": 1,
             },
@@ -305,12 +315,22 @@ def _odoo_environment(config_path: str, database: str) -> Any:
     return odoo, registry
 
 
-def execute(database: str, login: str, config_path: str, base_url: str, tool_root: Path) -> dict[str, Any]:
+def execute(
+    database: str,
+    login: str,
+    config_path: str,
+    base_url: str,
+    tool_root: Path,
+    mode: str,
+) -> dict[str, Any]:
     validate_request(database, login, os.environ)
+    if mode not in {"reset", "verify"}:
+        raise PasswordResetError("mode must be reset or verify")
     source_sha = validate_tool_root(tool_root)
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         raise PasswordResetError("a real interactive terminal is required")
     stage = "odoo_bootstrap"
+    password_committed = False
     try:
         odoo, registry = _odoo_environment(config_path, database)
         stage = "target_preflight"
@@ -341,13 +361,38 @@ def execute(database: str, login: str, config_path: str, base_url: str, tool_roo
                 flush=True,
             )
             stage = "password_prompt"
-            password = prompt_password(login)
-            stage = "orm_password_reset"
-            result = reset_password(odoo_env, login, password)
-            cursor.commit()
+            if mode == "reset":
+                password = prompt_password(login)
+                stage = "orm_password_reset"
+                result = reset_password(odoo_env, login, password)
+                cursor.commit()
+                password_committed = True
+            else:
+                password = prompt_existing_password(login)
+                result = {
+                    "LOGIN": login,
+                    "UNIQUE_USER_MATCH": True,
+                    "INTERNAL_USER": True,
+                    "USER_ACTIVE": True,
+                    "TARGET_USER_RECORD_SHA256": _target_record_digest,
+                    "PASSWORD_RESET": "PREVIOUSLY_COMMITTED",
+                    "ROLE_SCOPE_PRESERVED": True,
+                    "COMPANY_SCOPE_PRESERVED": True,
+                    "MENU_SCOPE_PRESERVED": True,
+                    "OTHER_USER_WRITES": 0,
+                    "LOGIN_WRITES": 0,
+                    "ROLE_WRITES": 0,
+                    "COMPANY_SCOPE_WRITES": 0,
+                    "BUSINESS_DATA_WRITES": 0,
+                    "TARGET_PASSWORD_WRITES": 0,
+                }
         stage = "http_verification"
         result.update(verify_http_access(tool_root, base_url, database, login, password))
-    except PasswordResetError:
+    except PasswordResetError as exc:
+        if password_committed:
+            raise PasswordResetError(
+                f"password reset committed; post-write verification failed ({exc})"
+            ) from None
         raise
     except Exception as exc:
         raise PasswordResetError(f"{stage} failed ({type(exc).__name__})") from None
@@ -369,6 +414,7 @@ def main() -> int:
     parser.add_argument("--config", required=True)
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--tool-root", required=True)
+    parser.add_argument("--mode", choices=("reset", "verify"), default="reset")
     args = parser.parse_args()
     try:
         result = execute(
@@ -377,6 +423,7 @@ def main() -> int:
             args.config,
             args.base_url,
             Path(args.tool_root),
+            args.mode,
         )
     except PasswordResetError as exc:
         raise SystemExit(f"[ops.user.password-reset] BLOCKED: {exc}") from exc

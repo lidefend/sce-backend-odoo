@@ -20,7 +20,7 @@ RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RE
 
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
-.PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.public_signup.close.plan release.production.public_signup.close.apply release.production.public_signup.close.verify release.production.user_activation.readiness release.production.user_activation.predeploy.plan release.production.user_activation.predeploy.apply release.production.user_activation.predeploy.verify release.production.single_user_activation.plan release.production.single_user_activation.apply release.production.single_user_activation.verify release.production.formal_modules.install_missing ops.user.password-reset
+.PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.public_signup.close.plan release.production.public_signup.close.apply release.production.public_signup.close.verify release.production.user_activation.readiness release.production.user_activation.predeploy.plan release.production.user_activation.predeploy.apply release.production.user_activation.predeploy.verify release.production.single_user_activation.plan release.production.single_user_activation.apply release.production.single_user_activation.verify release.production.formal_modules.install_missing ops.user.password-reset ops.user.password-verify
 .PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore verify.production.backup_restore_contract
 .PHONY: verify.production.acceptance.harness acceptance.package.verify verify.production.promotion.config.preflight release.daily_dev.production_acceptance.harness release.production.acceptance.harness release.daily_dev.promotion.config.preflight release.production.promotion.config.preflight
 
@@ -500,7 +500,19 @@ ops.user.password-reset: guard.prod.danger
 	@test "$$(cat "$(ROOT_DIR)/DEPLOYMENT_TOOL_SHA")" = "$$(basename "$(ROOT_DIR)")" || (echo "immutable deployment-tool identity differs"; exit 2)
 	@ENV=prod PROD_DANGER=1 python3 "$(ROOT_DIR)/scripts/ops/production_user_password_reset_runtime.py" \
 		--database "$(DB_NAME)" --login "$(LOGIN)" \
-		--base-url "$(PASSWORD_RESET_BASE_URL)" --tool-root "$(ROOT_DIR)"
+		--base-url "$(PASSWORD_RESET_BASE_URL)" --tool-root "$(ROOT_DIR)" --mode reset
+
+ops.user.password-verify: guard.prod.danger
+	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)
+	@test "$(DB_NAME)" = "sc_production" || (echo "DB=sc_production is required"; exit 2)
+	@test -n "$(LOGIN)" || (echo "LOGIN is required"; exit 2)
+	@[[ "$(LOGIN)" =~ ^[A-Za-z0-9_.@+-]{1,128}$$ ]] || (echo "LOGIN format is invalid"; exit 2)
+	@test -t 0 -a -t 1 || (echo "a real interactive terminal is required"; exit 2)
+	@test -f "$(ROOT_DIR)/DEPLOYMENT_TOOL_SHA" || (echo "run from an immutable production deployment-tool directory"; exit 2)
+	@test "$$(cat "$(ROOT_DIR)/DEPLOYMENT_TOOL_SHA")" = "$$(basename "$(ROOT_DIR)")" || (echo "immutable deployment-tool identity differs"; exit 2)
+	@ENV=prod PROD_DANGER=1 python3 "$(ROOT_DIR)/scripts/ops/production_user_password_reset_runtime.py" \
+		--database "$(DB_NAME)" --login "$(LOGIN)" \
+		--base-url "$(PASSWORD_RESET_BASE_URL)" --tool-root "$(ROOT_DIR)" --mode verify
 
 release.production.admin_identity.baseline: guard.prod.danger release.production.compose.preflight
 	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)

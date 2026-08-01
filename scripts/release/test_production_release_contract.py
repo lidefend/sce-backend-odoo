@@ -379,6 +379,17 @@ class StaticContractTests(unittest.TestCase):
         self.assertNotIn('add_argument("--password', self.user_password_reset_runtime)
         self.assertIn("ops.user.password-reset", self.production_command_policy)
 
+        verify_target = self.release_make.split(
+            "ops.user.password-verify:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("guard.prod.danger", verify_target.splitlines()[0])
+        self.assertIn('DB=sc_production is required', verify_target)
+        self.assertIn('test -t 0 -a -t 1', verify_target)
+        self.assertIn("--mode verify", verify_target)
+        self.assertNotIn("target.write", verify_target)
+        self.assertNotIn("PASSWORD=", verify_target)
+        self.assertIn("ops.user.password-verify", self.production_command_policy)
+
     def test_admin_identity_baseline_is_canonical_and_confirmation_guarded(self):
         target = self.release_make.split(
             "release.production.admin_identity.baseline:", 1

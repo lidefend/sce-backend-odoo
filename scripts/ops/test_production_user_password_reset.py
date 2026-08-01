@@ -55,6 +55,23 @@ class ProductionUserPasswordResetTests(unittest.TestCase):
                 prompt=lambda _label: next(supplied),
             )
 
+    def test_existing_password_prompt_is_single_and_hidden_by_getpass_contract(self):
+        calls = []
+
+        def fake_prompt(label):
+            calls.append(label)
+            return "existing-password-42"
+
+        value = helper.prompt_existing_password("wutao", prompt=fake_prompt)
+        self.assertEqual(value, "existing-password-42")
+        self.assertEqual(calls, ["Current password for wutao: "])
+
+    def test_menu_verification_uses_supported_ui_contract_operation(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('"op": "menu"', source)
+        self.assertIn('"menu_id": menu_id', source)
+        self.assertNotIn('"op": "get"', source)
+
     def test_script_has_no_password_transport_or_direct_sql(self):
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertIn("prompt: Callable[..., str] = getpass.getpass", source)
@@ -69,6 +86,7 @@ class ProductionUserPasswordResetTests(unittest.TestCase):
         self.assertIn('"model": "res.users"', source)
         self.assertIn('"record_id": target.id', source)
         self.assertIn('"TARGET_USER_RECORD_SHA256"', source)
+        self.assertIn("password reset committed; post-write verification failed", source)
 
     def test_unexpected_failures_are_reported_by_non_secret_stage(self):
         source = SCRIPT.read_text(encoding="utf-8")

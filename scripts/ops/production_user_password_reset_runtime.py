@@ -162,7 +162,7 @@ def resolve_compose_environment(
     return resolved
 
 
-def command(tool_root: Path, login: str, base_url: str) -> list[str]:
+def command(tool_root: Path, login: str, base_url: str, mode: str) -> list[str]:
     candidate = tool_root / "docker-compose.production-candidate.yml"
     customer = tool_root / "docker-compose.production-customer.yml"
     reset_script = tool_root / "scripts/ops/production_user_password_reset.py"
@@ -174,7 +174,7 @@ def command(tool_root: Path, login: str, base_url: str) -> list[str]:
         'python3 /usr/local/bin/render_odoo_conf.py /etc/odoo/odoo.conf.template "${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}"; '
         f'exec python3 "{reset_script}" --database "{DATABASE}" --login "{login}" '
         '--config "${ODOO_CONF_OUT:-/opt/sce-runtime/config/odoo.conf}" '
-        f'--base-url "{base_url}" --tool-root "{tool_root}"'
+        f'--base-url "{base_url}" --tool-root "{tool_root}" --mode "{mode}"'
     )
     return [
         "docker",
@@ -209,6 +209,7 @@ def main() -> int:
     parser.add_argument("--login", required=True)
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--tool-root", required=True)
+    parser.add_argument("--mode", choices=("reset", "verify"), default="reset")
     args = parser.parse_args()
     try:
         if args.database != DATABASE:
@@ -229,7 +230,7 @@ def main() -> int:
         ):
             raise RuntimeContextError("immutable deployment-tool identity differs")
         compose_env = resolve_compose_environment(_containers(), os.environ)
-        argv = command(tool_root, args.login, args.base_url)
+        argv = command(tool_root, args.login, args.base_url, args.mode)
     except RuntimeContextError as exc:
         raise SystemExit(f"[ops.user.password-reset.runtime] BLOCKED: {exc}") from None
     except Exception as exc:

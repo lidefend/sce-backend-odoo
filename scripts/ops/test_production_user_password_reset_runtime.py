@@ -104,6 +104,12 @@ class RuntimeContextTests(unittest.TestCase):
         self.assertIn("os.execvpe", source)
         self.assertIn('"docker",\n        "compose"', source)
 
+    def test_verification_mode_is_forwarded_without_password_transport(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('parser.add_argument("--mode", choices=("reset", "verify")', source)
+        self.assertIn('--mode "{mode}"', source)
+        self.assertNotIn("--password", source)
+
 
 if __name__ == "__main__":
     unittest.main()

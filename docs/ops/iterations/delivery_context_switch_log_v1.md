@@ -2091,3 +2091,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Follow-up branch / anchor: `fix/password-reset-target-record-identity` from `993bc1f658c60d5683fb5803da6728e0408a9e11`.
 - The seventh no-password preflight proved that the production registry does not expose the optional activation external-identity model. Direct password maintenance now binds the already unique active internal `res.users` target to a non-secret database/model/record digest and has no activation-model dependency.
 - This matches the authorized stop conditions: missing, duplicate, inactive, or non-internal target users still fail closed; activation parameters, activation administrators, delivery channels, and 62/76 roster artifacts cannot block a direct ORM password reset. The failed preflight performed zero database writes.
+
+### Post-write HTTP verification correction
+
+- Branch / anchor: `fix/password-reset-http-verification` from `3f71c47f83012af5b50f2b76184b63477ecace8c`.
+- The first operator-entered password reset committed the single authorized ORM password write, then the post-write menu probe incorrectly sent `op=get`; production `ui.contract` requires `op=menu` with `menu_id`. The resulting failure did not roll back the already committed password.
+- The probe now uses the supported operation, post-commit failures explicitly report that the password write committed, and a governed `ops.user.password-verify` recovery entry accepts the already assigned password once through `getpass` and performs HTTP reads only. It does not repeat the password reset or write any production record.
