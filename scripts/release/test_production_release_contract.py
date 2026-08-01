@@ -364,6 +364,7 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("guard.prod.danger", target.splitlines()[0])
         self.assertIn('DB=sc_production is required', target)
         self.assertIn('test -t 0 -a -t 1', target)
+        self.assertIn('TARGET_DB="$(DB_NAME)" DB_NAME="$(DB_NAME)"', target)
         self.assertNotIn("-T", target)
         self.assertNotIn("PASSWORD=", target)
         self.assertIn('open("/dev/tty", "r+"', self.user_password_reset)
