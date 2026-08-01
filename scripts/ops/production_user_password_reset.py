@@ -144,25 +144,18 @@ def _resolve_target(odoo_env: Any, login: str) -> tuple[Any, str]:
     if portal_group and portal_group in target.groups_id:
         raise PasswordResetError("target user must not belong to the portal group")
 
-    try:
-        identity_model = odoo_env["sc.tenant.payload.external.identity"]
-    except KeyError:
-        identity_model = None
-    if not identity_model:
-        raise PasswordResetError("immutable user identity model is unavailable")
-    identities = identity_model.sudo().search(
-        [
-            ("model_name", "=", "res.users"),
-            ("res_id", "=", target.id),
-        ]
+    target_record_digest = _digest(
+        {
+            "database": TARGET_DATABASE,
+            "model": "res.users",
+            "record_id": target.id,
+        }
     )
-    if len(identities) != 1 or not identities.external_key:
-        raise PasswordResetError("target immutable user identity must resolve uniquely")
-    return target, _digest(str(identities.external_key))
+    return target, target_record_digest
 
 
 def reset_password(odoo_env: Any, login: str, password: str) -> dict[str, Any]:
-    target, immutable_id_digest = _resolve_target(odoo_env, login)
+    target, target_record_digest = _resolve_target(odoo_env, login)
     before = _scope_snapshot(odoo_env, target)
     other_users_before = _other_users_fingerprint(odoo_env, target.id)
 
@@ -195,7 +188,7 @@ def reset_password(odoo_env: Any, login: str, password: str) -> dict[str, Any]:
         "UNIQUE_USER_MATCH": True,
         "INTERNAL_USER": True,
         "USER_ACTIVE": True,
-        "IMMUTABLE_USER_ID_SHA256": immutable_id_digest,
+        "TARGET_USER_RECORD_SHA256": target_record_digest,
         "NAME_SHA256": _digest(str(target.name or "")),
         "PASSWORD_RESET": "PASS",
         "ROLE_SCOPE_PRESERVED": True,
@@ -325,7 +318,7 @@ def execute(database: str, login: str, config_path: str, base_url: str, tool_roo
             context_env = odoo.api.Environment(cursor, odoo.SUPERUSER_ID, {})
             context = context_env["res.users"].context_get()
             odoo_env = odoo.api.Environment(cursor, odoo.SUPERUSER_ID, context)
-            target, _immutable_id = _resolve_target(odoo_env, login)
+            target, _target_record_digest = _resolve_target(odoo_env, login)
             before = _scope_snapshot(odoo_env, target)
             print(
                 "[ops.user.password-reset] PREFLIGHT PASS "
