@@ -60,18 +60,6 @@ function positiveInteger(value: unknown): number {
   return Math.trunc(parsed);
 }
 
-function resolveExplicitSceneKeyFromMenuContext(menuId: number, session: ReturnType<typeof useSessionStore>): string {
-  const menuNode = menuId > 0 ? findMenuNode(session.menuTree, menuId) : null;
-  const entryTarget = (menuNode?.meta?.entry_target && typeof menuNode.meta.entry_target === 'object')
-    ? menuNode.meta.entry_target as Record<string, unknown>
-    : {};
-  const entrySceneKey = String(entryTarget.scene_key || '').trim();
-  if (entrySceneKey) return entrySceneKey;
-  const menuSceneKey = String(menuNode?.meta?.scene_key || '').trim();
-  if (menuSceneKey) return menuSceneKey;
-  return '';
-}
-
 function routeQueryText(value: unknown): string {
   if (Array.isArray(value)) return String(value[0] || '').trim();
   return String(value || '').trim();
@@ -303,8 +291,9 @@ router.beforeEach(async (to) => {
       if (err instanceof ApiError && err.status === 401) {
         return { name: 'login', query: { redirect: to.fullPath } };
       }
-      return true;
+      return false;
     }
+    if (!session.isReady || !session.routeAuthority) return false;
   }
   if (!isLoginRoute && to.name !== 'access-denied') {
     const normalizedEmbeddedQuery = normalizeEmbeddedSceneQuery(to.query);
@@ -393,7 +382,7 @@ router.beforeEach(async (to) => {
   if (to.name === 'action') {
     const actionId = positiveInteger(to.params.actionId || to.query.action_id);
     const menuId = positiveInteger(to.query.menu_id);
-    const sceneKey = querySceneKey || resolveExplicitSceneKeyFromMenuContext(menuId, session);
+    const sceneKey = querySceneKey;
     if (!sceneKey) return true;
     return buildCanonicalSceneRouteTarget(sceneKey, {
       scene: getSceneByKey(sceneKey),

@@ -33,6 +33,7 @@ export type {
 } from './sessionWorkspaceTypes';
 
 let appInitInFlight: Promise<void> | null = null;
+let appInitEpoch = -1;
 
 function resolveAvailableSceneRoute(rawPath: string): string {
   const normalized = normalizeLegacyWorkbenchPath(String(rawPath || '').trim());
@@ -325,33 +326,6 @@ export interface SessionState {
 
 const TOKEN_STORAGE_KEY_LEGACY = 'sc_auth_token';
 const MAX_ACTIVITY_PAGES = 6;
-const TRANSIENT_ACTIVITY_ROUTE_QUERY_KEYS = new Set([
-  't',
-  'search',
-  'q',
-  'order',
-  'sort',
-  'filter',
-  'active_filter',
-  'saved_filter',
-  'group_by',
-  'group_value',
-  'group_sample_limit',
-  'group_sort',
-  'group_collapsed',
-  'group_page',
-  'group_offset',
-  'group_fp',
-  'group_window_id',
-  'group_window_digest',
-  'group_window_identity_key',
-  'group_wid',
-  'group_wdg',
-  'group_wik',
-  'offset',
-  'limit',
-]);
-
 const ACTIVITY_RUNTIME_QUERY_KEYS = new Set([
   'search',
   'q',
@@ -524,18 +498,6 @@ function projectContextStorageSnapshot(raw: ProjectContextContract | null): Proj
   };
 }
 
-function normalizeActivityProjectContext(raw: unknown): ActivityProjectContextSnapshot | null {
-  const row = asRecord(raw);
-  if (!Object.keys(row).length) return null;
-  return {
-    selected: normalizeProjectOption(row.selected),
-    company_id: Number(row.company_id || 0) || null,
-    company_name: asText(row.company_name),
-    operation_strategy: asText(row.operation_strategy),
-    operation_strategy_label: asText(row.operation_strategy_label),
-  };
-}
-
 function normalizeActivityRuntimeQuery(raw: unknown): ActivityRuntimeQuery | undefined {
   const source = asRecord(raw);
   const next: ActivityRuntimeQuery = {};
@@ -550,18 +512,6 @@ function normalizeActivityRuntimeQuery(raw: unknown): ActivityRuntimeQuery | und
     if (text) next[key] = text;
   });
   return Object.keys(next).length ? next : undefined;
-}
-
-function stripTransientActivityRouteQuery(rawRoute: unknown): string {
-  const source = asText(rawRoute);
-  if (!source || !source.includes('?')) return source;
-  const [pathWithMaybeHash, queryWithMaybeHash = ''] = source.split('?', 2);
-  const [queryText, hashText = ''] = queryWithMaybeHash.split('#', 2);
-  const params = new URLSearchParams(queryText);
-  TRANSIENT_ACTIVITY_ROUTE_QUERY_KEYS.forEach((key) => params.delete(key));
-  const nextQuery = params.toString();
-  const hash = hashText ? `#${hashText}` : '';
-  return `${pathWithMaybeHash}${nextQuery ? `?${nextQuery}` : ''}${hash}`;
 }
 
 function isDeprecatedMergedExpenseDepositActivity(row: ActivityPage): boolean {
@@ -612,36 +562,6 @@ function isDeprecatedMergedContractSettlementActivity(row: ActivityPage): boolea
   }
 }
 
-function normalizeActivityPage(raw: unknown): ActivityPage | null {
-  const row = asRecord(raw);
-  const key = asText(row.key);
-  const route = stripTransientActivityRouteQuery(row.route);
-  if (!key || !route) return null;
-  const kindText = asText(row.kind);
-  const kind = ['menu_action', 'record_form', 'scene', 'workspace', 'custom'].includes(kindText)
-    ? kindText as ActivityPage['kind']
-    : 'custom';
-  const createdAt = Number(row.created_at || row.createdAt || 0) || Date.now();
-  const lastActiveAt = Number(row.last_active_at || row.lastActiveAt || 0) || createdAt;
-  return {
-    key,
-    route,
-    kind,
-    title: asText(row.title) || '活动页面',
-    model: asText(row.model) || undefined,
-    action_id: Number(row.action_id || row.actionId || 0) || undefined,
-    menu_id: Number(row.menu_id || row.menuId || 0) || undefined,
-    record_id: asText(row.record_id || row.recordId) || undefined,
-    scene_key: asText(row.scene_key || row.sceneKey) || undefined,
-    project_scope_policy: asText(row.project_scope_policy || row.projectScopePolicy) || undefined,
-    project_context: normalizeActivityProjectContext(row.project_context || row.projectContext),
-    runtime_query: normalizeActivityRuntimeQuery(row.runtime_query || row.runtimeQuery),
-    dirty: Boolean(row.dirty),
-    created_at: createdAt,
-    last_active_at: lastActiveAt,
-  };
-}
-
 function trimActivityPages(pages: ActivityPage[], activeKey: string): ActivityPage[] {
   if (pages.length <= MAX_ACTIVITY_PAGES) return pages;
   const keep = [...pages];
@@ -679,20 +599,6 @@ function activityPageCacheRouteKey(key: string): string {
   if (parts[0] === 'action' && parts.length >= 4) return parts.slice(0, 4).join(':');
   if (parts[0] === 'scene' && parts.length >= 2) return parts.slice(0, 2).join(':');
   return normalized;
-}
-
-function invalidateRestoredActivityPageCaches(
-  pages: ActivityPage[],
-  currentEpochs: Record<string, number> | undefined,
-): Record<string, number> {
-  const next = { ...(currentEpochs || {}) };
-  pages.forEach((page) => {
-    const keys = [asText(page.key), activityPageCacheRouteKey(page.key)].filter(Boolean);
-    keys.forEach((key) => {
-      next[key] = Number(next[key] || 0) + 1;
-    });
-  });
-  return next;
 }
 
 function isGenericActivityTitle(title: string): boolean {
@@ -984,44 +890,32 @@ export const useSessionStore = defineStore('session', {
           // manual cache clear.
           this.menuTree = [];
           this.menuExpandedKeys = parsed.menuExpandedKeys ?? [];
-          this.currentAction = parsed.currentAction ?? null;
+          this.currentAction = null;
           this.capabilities = parsed.capabilities ?? [];
-          this.scenes = parsed.scenes ?? [];
-          this.sceneVersion = parsed.sceneVersion ?? null;
-          this.roleSurface = parsed.roleSurface ?? null;
-          this.roleSurfaceMap = parsed.roleSurfaceMap ?? {};
+          this.scenes = [];
+          this.sceneVersion = null;
+          this.roleSurface = null;
+          this.roleSurfaceMap = {};
           this.projectContext = projectContextStorageSnapshot(normalizeProjectContext(parsed.projectContext));
-          this.activityPages = Array.isArray(parsed.activityPages)
-            ? parsed.activityPages.map((item) => normalizeActivityPage(item)).filter(isRetainedActivityPage)
-            : [];
-          const restoredActiveKey = asText(parsed.activeActivityPageKey);
-          this.activeActivityPageKey = this.activityPages.some((page) => page.key === restoredActiveKey)
-            ? restoredActiveKey
-            : '';
-          this.activityPageCacheEpochs = invalidateRestoredActivityPageCaches(
-            this.activityPages,
-            parsed.activityPageCacheEpochs,
-          );
+          this.activityPages = [];
+          this.activeActivityPageKey = '';
+          this.activityPageCacheEpochs = {};
           this.capabilityCatalog = parsed.capabilityCatalog ?? {};
-          this.sceneActionHints = parsed.sceneActionHints ?? {};
+          this.sceneActionHints = {};
           this.capabilityGroups = parsed.capabilityGroups ?? [];
           this.productFacts = parsed.productFacts ?? { license: null, bundle: null };
-          this.workspaceHome = parsed.workspaceHome ?? null;
-          this.workspaceHomeRef = parsed.workspaceHomeRef ?? null;
+          this.workspaceHome = null;
+          this.workspaceHomeRef = null;
           this.pageContracts = {};
-          this.sceneReadyContractV1 = parsed.sceneReadyContractV1 ?? null;
-          this.sceneGovernanceV1 = parsed.sceneGovernanceV1 ?? null;
-          if (this.sceneReadyContractV1?.scenes?.length) {
-            setSceneRegistryFromSceneReadyContract(this.sceneReadyContractV1);
-          } else if (this.scenes.length) {
-            setSceneRegistry(this.scenes);
-          }
+          this.sceneReadyContractV1 = null;
+          this.sceneGovernanceV1 = null;
+          setSceneRegistry([]);
           this.lastTraceId = parsed.lastTraceId ?? '';
           this.lastIntent = parsed.lastIntent ?? '';
           this.lastLatencyMs = parsed.lastLatencyMs ?? null;
           this.lastWriteMode = parsed.lastWriteMode ?? '';
           this.initMeta = parsed.initMeta ?? null;
-          this.defaultRoute = parsed.defaultRoute ?? null;
+          this.defaultRoute = null;
           this.bootstrapNextIntent = String(parsed.bootstrapNextIntent || 'system.init').trim() || 'system.init';
         } catch {
           // ignore corrupted cache
@@ -1036,6 +930,8 @@ export const useSessionStore = defineStore('session', {
     },
     clearSession() {
       invalidateContextRequests();
+      appInitInFlight = null;
+      appInitEpoch = -1;
       this.token = null;
       this.sessionDb = '';
       this.user = null;
@@ -1355,10 +1251,10 @@ export const useSessionStore = defineStore('session', {
     async loadAppInit(options: { force?: boolean; contextEpoch?: number } = {}) {
       const requestEpoch = options.contextEpoch ?? currentContextEpoch();
       if (!isCurrentContextEpoch(requestEpoch)) return;
-      if (appInitInFlight && !options.force) {
+      if (appInitInFlight && appInitEpoch === requestEpoch && !options.force) {
         return appInitInFlight;
       }
-      if (appInitInFlight && options.force) {
+      if (appInitInFlight && appInitEpoch === requestEpoch && options.force) {
         try {
           await appInitInFlight;
         } catch {
@@ -1369,7 +1265,25 @@ export const useSessionStore = defineStore('session', {
       const run = (async () => {
       // Every authoritative bootstrap starts fail-closed. This covers login,
       // company/project/role transitions and policy publish/rollback refreshes.
+      this.isReady = false;
       this.routeAuthority = null;
+      this.menuTree = [];
+      this.currentAction = null;
+      this.scenes = [];
+      this.sceneVersion = null;
+      this.sceneActionHints = {};
+      this.roleSurface = null;
+      this.roleSurfaceMap = {};
+      this.workspaceHome = null;
+      this.workspaceHomeRef = null;
+      this.pageContracts = {};
+      this.sceneReadyContractV1 = null;
+      this.sceneGovernanceV1 = null;
+      this.defaultRoute = null;
+      this.activityPages = [];
+      this.activeActivityPageKey = '';
+      this.activityPageCacheEpochs = {};
+      setSceneRegistry([]);
       this.initStatus = 'loading';
       this.initError = null;
       this.initTraceId = null;
@@ -1429,6 +1343,11 @@ export const useSessionStore = defineStore('session', {
           this.initError = err instanceof Error ? err.message : 'init failed';
         }
         this.initStatus = 'error';
+        this.isReady = false;
+        this.routeAuthority = null;
+        this.menuTree = [];
+        this.currentAction = null;
+        setSceneRegistry([]);
         throw err;
       }
       if (!isCurrentContextEpoch(requestEpoch)) return;
@@ -1736,11 +1655,13 @@ export const useSessionStore = defineStore('session', {
       this.persist();
       })();
       appInitInFlight = run;
+      appInitEpoch = requestEpoch;
       try {
         await run;
       } finally {
         if (appInitInFlight === run) {
           appInitInFlight = null;
+          appInitEpoch = -1;
         }
       }
     },

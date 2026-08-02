@@ -1929,7 +1929,7 @@ verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-comp
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_PERF_ONLY=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_SKIP_PERF=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs
 
-verify.frontend.release.unit: verify.frontend.localized_display.unit
+verify.frontend.release.unit: verify.frontend.localized_display.unit verify.frontend.navigation_initialization_race.unit
 	@node scripts/verify/frontend_navigation_audit.test.mjs
 	@node scripts/verify/frontend_performance_budget.test.mjs
 	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py
@@ -1937,6 +1937,14 @@ verify.frontend.release.unit: verify.frontend.localized_display.unit
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_gate.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_ci_guard.py
 	@python3 scripts/verify/frontend_release_ci_guard.py
+
+.PHONY: verify.frontend.navigation_initialization_race.unit
+verify.frontend.navigation_initialization_race.unit: guard.prod.forbid
+	@node scripts/verify/frontend_navigation_initialization_race.test.mjs
+
+.PHONY: verify.frontend.navigation_initialization_race.browser
+verify.frontend.navigation_initialization_race.browser: guard.prod.forbid
+	@BASE_URL="$${BASE_URL:-http://127.0.0.1:5175}" DB_NAME="$${DB_NAME:-sc_demo}" E2E_LOGIN="$${E2E_LOGIN:-wutao}" E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" E2E_SECOND_LOGIN="$${E2E_SECOND_LOGIN:-fixture_role_pm}" E2E_SECOND_PASSWORD="$${E2E_SECOND_PASSWORD:-$${E2E_PASSWORD}}" node scripts/verify/frontend_navigation_initialization_race_browser.mjs
 
 verify.frontend.release.audit:
 	@set +e; \

@@ -2137,3 +2137,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   business data, and frontend rendering remain unchanged. Validation proves a
   selected construction provider, formal-policy intersection, and no technical
   or historical acceptance exposure.
+
+## 2026-08-02 — FE-NAVIGATION-INITIALIZATION-RACE-01
+
+- Branch / anchor: `fix/navigation-initialization-race` from `f191c34`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel; frontend
+  session/navigation state machine, product shell, and generic router guard.
+- Reason: a menu click during `system.init` could combine menu, action, scene,
+  and authority values from different navigation snapshots. The backend
+  authority gate rejected the resulting route, but the frontend had already
+  attempted an unrelated business navigation.
+- Standard vs User-Specific: generic session and navigation consistency. No
+  construction role, login, tenant, customer preference, database value, or
+  business menu is encoded in the fix.
+- Why Here / Why Not Elsewhere: P0 owns authentication-adjacent bootstrap,
+  route authority, session invalidation, and atomic navigation publication.
+  P1 navigation manifests and business permissions remain authoritative and
+  unchanged; P2, P3, P4, database migrations, and backend ACLs are unaffected.
+- Blast Radius: frontend-only fail-closed initialization and navigation. An
+  authoritative bootstrap clears the prior menu/action/scene/activity snapshot;
+  navigation becomes interactive only after `route_authority_v1` is ready; one
+  click freezes and validates one immutable menu/action/scene/route/authority
+  tuple. No user, role, company, password, module, schema, or business-data
+  write is introduced.
+- Validation: unit contract, release unit gate, ESLint, strict TypeScript, Vite
+  development build, and browser fault injection covering delayed init, refresh,
+  reload, failed init/retry, and role switching against `sc_demo`.
