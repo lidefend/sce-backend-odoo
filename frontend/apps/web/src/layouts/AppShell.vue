@@ -128,9 +128,19 @@
         </div>
       </div>
 
-        <div v-if="workspacePanelMode === 'navigation'" class="nav-shell">
+        <div
+          v-if="workspacePanelMode === 'navigation'"
+          class="nav-shell"
+          :aria-busy="initStatus === 'loading'"
+          :data-navigation-state="navigationReady ? 'ready' : initStatus === 'error' ? 'error' : 'loading'"
+        >
+        <div v-if="!navigationReady" class="navigation-loading" role="status">
+          <strong>{{ initStatus === 'error' ? '导航加载失败' : '正在加载导航...' }}</strong>
+          <span>{{ initStatus === 'error' ? '请重试初始化，业务入口仍保持关闭。' : '业务入口将在权限与导航完成校验后开放。' }}</span>
+        </div>
         <div class="menu">
           <PrimaryNavigation
+            v-if="navigationReady"
             :nodes="filteredMenu"
             :active-menu-id="activeMenuId"
             :capabilities="capabilities"
@@ -320,15 +330,16 @@ import ScIcon from '../components/design-system/ScIcon.vue';
 import { useSessionStore, type ActivityPage } from '../stores/session';
 import { intentRequest } from '../api/intents';
 import { getSceneByKey, getSceneRegistryDiagnostics, resolveSceneLayout } from '../app/resolvers/sceneRegistry';
-import { resolveMenuAction } from '../app/resolvers/menuResolver';
 import { isDeliveryModeEnabled, isHudEnabled } from '../config/debug';
 import { buildCanonicalSceneRouteTarget, buildEntryTargetRouteTarget, parseSceneKeyFromQuery } from '../app/routeQuery';
 import { buildRuntimeNavigationRegistry } from '../app/navigationRegistry';
+import { buildBusinessEntryNavQuery } from '../app/navigationContext';
 import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRuntime';
 import { applyTheme, nextTheme, persistTheme, type ScTheme } from '../styles/theme';
 import { config } from '../config';
 import { openAction } from '../services/action_service';
-import { routeAuthorityEntries } from '../app/routeAuthority';
+import { findRouteAuthority, routeAuthorityEntries } from '../app/routeAuthority';
+import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore.js';
 import type { BusinessScopeOperationOption, NavNode, ProjectContextOption } from '@sc/schema';
 import {
   exportSuggestedActionTraces,
@@ -524,6 +535,11 @@ const hudMessage = ref('');
 const showExtractionStats = ref(false);
 
 const initStatus = computed(() => session.initStatus);
+const navigationReady = computed(() => (
+  session.isReady
+  && session.initStatus === 'ready'
+  && Boolean(session.routeAuthority)
+));
 const initError = computed(() => session.initError);
 const initTraceId = computed(() => session.initTraceId);
 const showSceneErrors = computed(() => import.meta.env.DEV && sceneRegistryErrors.length > 0);
@@ -687,7 +703,7 @@ function appBadge(app: PublishedApp) {
 }
 
 function pushRoute(path: string) {
-  if (!path) return;
+  if (!path || !navigationReady.value) return;
   router.push(path).catch(() => {});
 }
 
@@ -1286,47 +1302,49 @@ function buildMenuSelectionQuery(): LocationQueryRaw {
 }
 
 function handleSelect(node: NavNode) {
+  if (!navigationReady.value) return;
   closeMobileSidebar();
-  if (!node.menu_id && node.id) {
-    node.menu_id = node.id as number;
+  const selection = createNavigationSelectionSnapshot(node, session.routeAuthority);
+  if (!selection) return;
+  const menuQuery = {
+    ...buildMenuSelectionQuery(),
+    ...buildBusinessEntryNavQuery(selection.meta),
+  };
+  const authority = findRouteAuthority(session.routeAuthority, {
+    actionId: selection.actionId,
+    menuId: selection.menuId,
+    query: menuQuery as Record<string, unknown>,
+    companyId: Number(session.projectContext?.company_id || session.projectContext?.selected?.company_id || 0) || null,
+    projectId: Number(session.projectContext?.selected?.id || 0) || null,
+  });
+  if (!authority || selection.authorityKey !== [
+    String(authority.route_kind || '').trim(),
+    String(authority.menu_xmlid || authority.menu_id || '').trim(),
+    String(authority.action_xmlid || authority.action_id || '').trim(),
+  ].join(':')) return;
+  if (selection.targetKind === 'entry_target' && selection.entryTarget) {
+    router.push(buildEntryTargetRouteTarget(selection.entryTarget, {
+      query: menuQuery,
+      menuId: selection.menuId,
+      actionId: selection.actionId,
+    })).catch(() => {});
+    return;
   }
-  const targetMenuId = Number(node.menu_id || node.id || 0);
-  const menuQuery = buildMenuSelectionQuery();
-  if (targetMenuId <= 0) return;
-  const resolved = resolveMenuAction(menuTree.value, targetMenuId);
-  if (resolved.kind === 'redirect') {
-    const entryTarget = asDict(resolved.target?.entry_target);
-    if (entryTarget) {
-      router.push(buildEntryTargetRouteTarget(entryTarget, {
-        query: menuQuery,
-        menuId: targetMenuId,
-        actionId: resolved.target?.action_id,
-      })).catch(() => {});
-      return;
-    }
-  }
-  if (resolved.kind === 'redirect' && resolved.target?.scene_key) {
-    const sceneKey = String(resolved.target.scene_key || '').trim();
+  if (selection.targetKind === 'scene' && selection.sceneKey) {
+    const sceneKey = selection.sceneKey;
     const scene = sceneKey ? getSceneByKey(sceneKey) : null;
     if (sceneKey && scene) {
       router.push(buildCanonicalSceneRouteTarget(sceneKey, {
         scene,
         query: menuQuery,
-        menuId: targetMenuId,
-        actionId: resolved.target.action_id || scene.target?.action_id,
+        menuId: selection.menuId,
+        actionId: selection.actionId,
       })).catch(() => {});
       return;
     }
-  }
-  if (resolved.kind === 'redirect' && resolved.target?.meta?.action_id) {
-    openAction(router, resolved.target.meta as never, targetMenuId);
     return;
   }
-  if (resolved.kind === 'leaf' && resolved.meta?.action_id) {
-    openAction(router, resolved.meta as never, targetMenuId);
-    return;
-  }
-  router.push(`/m/${targetMenuId}`).catch(() => {});
+  openAction(router, selection.meta as never, selection.menuId, { setCurrentAction: false });
 }
 
 function returnToBusinessSurface() {

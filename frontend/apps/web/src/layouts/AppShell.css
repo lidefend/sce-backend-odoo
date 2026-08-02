@@ -1206,3 +1206,16 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
 }
+.navigation-loading {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-radius-md, 8px);
+  background: var(--sc-app-panel);
+  color: var(--sc-app-text-secondary);
+}
+
+.navigation-loading strong {
+  color: var(--sc-app-text-primary);
+}

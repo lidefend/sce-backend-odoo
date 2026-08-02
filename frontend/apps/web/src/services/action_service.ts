@@ -74,7 +74,12 @@ export function isBusinessConfigurationAction(action: NavMeta | null | undefined
     || (model === BUSINESS_CONFIG_MODELS.contract && /业务配置工作台|低代码配置|配置工作台/.test(name));
 }
 
-export function openAction(router: Router, action: NavMeta, menuId?: number) {
+export function openAction(
+  router: Router,
+  action: NavMeta,
+  menuId?: number,
+  options: { setCurrentAction?: boolean } = {},
+) {
   const model = action.model ?? '';
   const viewMode = Array.isArray(action.view_modes) && action.view_modes.length
     ? String(action.view_modes[0] || '')
@@ -88,7 +93,9 @@ export function openAction(router: Router, action: NavMeta, menuId?: number) {
   }
 
   const session = useSessionStore();
-  session.setActionMeta(action);
+  if (options.setCurrentAction !== false) {
+    session.setActionMeta(action);
+  }
 
   if (isMenuConfigurationAction(action)) {
     router.push({ path: '/admin/menu-config', query });
