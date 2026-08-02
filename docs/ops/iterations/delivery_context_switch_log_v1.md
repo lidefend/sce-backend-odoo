@@ -17,8 +17,10 @@ customer delivery evidence belongs in private customer or payload repositories.
   runtime addon search path. Product modules, frontend code, ACLs, and database
   records cannot repair a missing container filesystem root.
 - Blast Radius: only unavailable addon roots are omitted for explicit dev,
-  daily, test, or UAT environments. Production rendering remains byte-for-byte
-  unchanged and fails neither open nor over to source mounts.
+  daily, test, or UAT environments, and the repository `VERSION` authority is
+  mounted read-only at the immutable image's standard path. Production
+  rendering remains byte-for-byte unchanged and fails neither open nor over to
+  source mounts.
 
 ## 2026-08-01 — Isolated restore filestore permission repair
 

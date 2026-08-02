@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 SCRIPT = Path(__file__).with_name("render_odoo_conf.py")
+ROOT = SCRIPT.parents[1]
 SPEC = importlib.util.spec_from_file_location("render_odoo_conf", SCRIPT)
 assert SPEC and SPEC.loader
 TARGET = importlib.util.module_from_spec(SPEC)
@@ -12,6 +13,11 @@ SPEC.loader.exec_module(TARGET)
 
 
 class RenderOdooConfTests(unittest.TestCase):
+    def test_source_mounted_runtime_exposes_product_version_authority(self):
+        compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+
+        self.assertIn("./VERSION:/opt/sce-product/VERSION:ro", compose)
+
     def test_dev_omits_only_unavailable_addons_roots(self):
         rendered = (
             "[options]\n"

@@ -99,6 +99,9 @@ services:
       - ./artifacts:/mnt/artifacts
       - ./scripts:/mnt/scripts:ro
       - ./docs:/mnt/docs:ro
+      # Daily/source-mounted runtimes do not carry the immutable image copy at
+      # /opt/sce-product/VERSION, so expose the same repository authority there.
+      - ./VERSION:/opt/sce-product/VERSION:ro
       - ./config/odoo.conf.template:/etc/odoo/odoo.conf.template:ro
       - ./scripts/render_odoo_conf.py:/usr/local/bin/render_odoo_conf.py:ro
       - ./scripts/odoo-entrypoint.sh:/usr/local/bin/odoo-entrypoint.sh:ro
