@@ -6,7 +6,14 @@ function positiveInteger(value) {
 }
 
 function cloneJson(value) {
-  if (typeof structuredClone === 'function') return structuredClone(value);
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(value);
+    } catch {
+      // Vue navigation nodes are reactive proxies in the rendered menu. Their
+      // JSON data is safe to snapshot, but proxies are not structured-cloneable.
+    }
+  }
   return JSON.parse(JSON.stringify(value));
 }
 

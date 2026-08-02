@@ -43,6 +43,12 @@ assert.equal(snapshot.authorityKey, 'ADMIN_ROUTE:smart_construction_core.menu_sc
 assert.equal(Object.isFrozen(snapshot), true);
 assert.equal(Object.isFrozen(snapshot.meta), true);
 
+const reactiveNode = new Proxy(node, {});
+const reactiveSnapshot = createNavigationSelectionSnapshot(reactiveNode, authority);
+assert.ok(reactiveSnapshot, 'rendered reactive menu nodes must be snapshot-compatible');
+assert.equal(reactiveSnapshot.menuId, 438);
+assert.equal(reactiveSnapshot.actionId, 723);
+
 node.meta.action_id = 506;
 assert.equal(snapshot.actionId, 723, 'selection must not follow later menu mutation');
 assert.equal(snapshot.meta.action_id, 723, 'selection metadata must remain immutable');
