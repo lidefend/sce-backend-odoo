@@ -3,6 +3,23 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-02 — DAILY-DEV-MISSING-ADDONS-PATH-RUNTIME-01
+
+- Branch / anchor: `fix/dev-missing-addons-path-runtime` from `968b942`.
+- Formal Product Layer: P4 runtime configuration rendering; Layer Target:
+  non-production Odoo addon-path admission; Module: `render_odoo_conf.py`.
+- Reason: the daily source-mounted container declared three immutable-image
+  addon roots that were absent in its older development image, causing Odoo to
+  raise `FileNotFoundError` before every intent request, including login.
+- Standard vs User-Specific: generic non-production runtime compatibility; no
+  login, password, user identity, tenant data, or navigation policy is encoded.
+- Why Here / Why Not Elsewhere: configuration rendering owns the effective
+  runtime addon search path. Product modules, frontend code, ACLs, and database
+  records cannot repair a missing container filesystem root.
+- Blast Radius: only unavailable addon roots are omitted for explicit dev,
+  daily, test, or UAT environments. Production rendering remains byte-for-byte
+  unchanged and fails neither open nor over to source mounts.
+
 ## 2026-08-01 — Isolated restore filestore permission repair
 
 - Branch: `fix/restore-rehearsal-volume-permissions`

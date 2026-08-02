@@ -795,6 +795,7 @@ test.frontend: guard.prod.forbid verify.menu_config_tree_editor.behavior
 
 test.unit: guard.prod.forbid
 	@python3 scripts/ci/python_syntax_check.py addons/smart_core addons/smart_construction_core scripts/ci scripts/audit scripts/common scripts/e2e
+	@python3 scripts/test_render_odoo_conf.py
 
 test.odoo.integration: guard.prod.forbid
 	@$(MAKE) --no-print-directory ci.smoke
