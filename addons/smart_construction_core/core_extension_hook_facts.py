@@ -3,6 +3,19 @@ from __future__ import annotations
 
 from typing import Any
 
+
+def role_surface_override_provider(role_surface_overrides: dict[str, Any]):
+    """Publish the construction-owned role policy through the P0 provider slot."""
+    return {
+        "key": "smart_construction_core",
+        "enabled": True,
+        "priority": 100,
+        "domain_key": "construction",
+        "root_xmlids": ["smart_construction_core.menu_sc_root"],
+        "role_surface_overrides": role_surface_overrides,
+    }
+
+
 def business_config_admin_group_xmlids():
     return [
         "smart_construction_core.group_sc_cap_business_config_admin",

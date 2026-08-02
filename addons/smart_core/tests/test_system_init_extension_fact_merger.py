@@ -78,6 +78,30 @@ class TestSystemInitExtensionFactMerger(unittest.TestCase):
         self.assertEqual(data.get("payment_requests"), [{"id": 3}])
         self.assertEqual(data.get("project_actions"), [{"id": 4}])
 
+    def test_extension_role_surface_provider_is_promoted_for_selection(self):
+        module = _load_module()
+        provider = {
+            "key": "smart_construction_core",
+            "priority": 100,
+            "domain_key": "construction",
+            "role_surface_overrides": {"business_config_admin": {"label": "业务配置管理员"}},
+        }
+        data = {
+            "ext_facts": {
+                "smart_construction_core": {
+                    "role_surface_override_provider": provider,
+                }
+            }
+        }
+
+        module.merge_extension_facts(data)
+
+        promoted = data["role_surface_override_providers"]["smart_construction_core"]
+        self.assertNotIn("key", promoted)
+        self.assertEqual(promoted["priority"], 100)
+        self.assertEqual(promoted["domain_key"], "construction")
+        self.assertIn("business_config_admin", promoted["role_surface_overrides"])
+
 
 if __name__ == "__main__":
     unittest.main()

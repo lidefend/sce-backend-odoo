@@ -55,6 +55,7 @@ def main() -> int:
 
     if facts_text:
         for token in [
+            "def role_surface_override_provider(",
             "def business_config_admin_group_xmlids(",
             "def lowcode_system_config_menu_xmlids(",
             "def business_nav_group_display_order(",
@@ -80,6 +81,13 @@ def main() -> int:
 
     if not errors:
         facts = _load(FACTS, "construction_core_extension_hook_facts_under_guard")
+        provider = facts.role_surface_override_provider({"business_config_admin": {}})
+        if provider.get("key") != "smart_construction_core":
+            errors.append("hook facts must publish the construction role-surface provider key")
+        if provider.get("domain_key") != "construction":
+            errors.append("hook facts must bind the role-surface provider to construction")
+        if provider.get("root_xmlids") != ["smart_construction_core.menu_sc_root"]:
+            errors.append("hook facts must bind the role-surface provider to the formal construction root")
         if "smart_construction_core.group_sc_cap_business_config_admin" not in facts.business_config_admin_group_xmlids():
             errors.append("hook facts must preserve business config admin group")
         if facts.native_config_root_menu_xmlid() != "smart_construction_core.menu_sc_business_config_center":
