@@ -338,7 +338,7 @@ import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRu
 import { applyTheme, nextTheme, persistTheme, type ScTheme } from '../styles/theme';
 import { config } from '../config';
 import { openAction } from '../services/action_service';
-import { findRouteAuthority, routeAuthorityEntries } from '../app/routeAuthority';
+import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
 import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore.js';
 import type { BusinessScopeOperationOption, NavNode, ProjectContextOption } from '@sc/schema';
 import {
@@ -1310,18 +1310,11 @@ function handleSelect(node: NavNode) {
     ...buildMenuSelectionQuery(),
     ...buildBusinessEntryNavQuery(selection.meta),
   };
-  const authority = findRouteAuthority(session.routeAuthority, {
-    actionId: selection.actionId,
-    menuId: selection.menuId,
-    query: menuQuery as Record<string, unknown>,
+  const scope = {
     companyId: Number(session.projectContext?.company_id || session.projectContext?.selected?.company_id || 0) || null,
     projectId: Number(session.projectContext?.selected?.id || 0) || null,
-  });
-  if (!authority || selection.authorityKey !== [
-    String(authority.route_kind || '').trim(),
-    String(authority.menu_xmlid || authority.menu_id || '').trim(),
-    String(authority.action_xmlid || authority.action_id || '').trim(),
-  ].join(':')) return;
+  };
+  if (!routeAuthorityContextAllowed(selection.authority, menuQuery as Record<string, unknown>, scope)) return;
   if (selection.targetKind === 'entry_target' && selection.entryTarget) {
     router.push(buildEntryTargetRouteTarget(selection.entryTarget, {
       query: menuQuery,

@@ -21,14 +21,24 @@ const authority = {
 const node = {
   menu_id: 438,
   label: '公司内部人员维护',
-  meta: { action_id: 723, model: 'res.users', view_modes: ['tree', 'form'] },
+  meta: {
+    action_id: 723,
+    model: 'res.users',
+    view_modes: ['tree', 'form'],
+    entry_target: {
+      type: 'compatibility',
+      route: '/a/723?menu_id=438',
+      compatibility_refs: { menu_id: 438, action_id: 723, model: 'res.users' },
+    },
+  },
 };
 
 const snapshot = createNavigationSelectionSnapshot(node, authority);
 assert.ok(snapshot);
 assert.equal(snapshot.menuId, 438);
 assert.equal(snapshot.actionId, 723);
-assert.equal(snapshot.targetKind, 'action');
+assert.equal(snapshot.targetKind, 'entry_target');
+assert.equal(snapshot.entryTarget.route, '/a/723?menu_id=438');
 assert.equal(snapshot.authorityKey, 'ADMIN_ROUTE:smart_construction_core.menu_sc_runtime_user_management:smart_construction_core.action_sc_runtime_user_management');
 assert.equal(Object.isFrozen(snapshot), true);
 assert.equal(Object.isFrozen(snapshot.meta), true);
@@ -45,6 +55,8 @@ assert.match(appShell, /:data-navigation-state="navigationReady \? 'ready' : ini
 assert.match(appShell, /<PrimaryNavigation[\s\S]*v-if="navigationReady"/);
 assert.match(appShell, /if \(!navigationReady\.value\) return;/);
 assert.match(appShell, /createNavigationSelectionSnapshot\(node, session\.routeAuthority\)/);
+assert.match(appShell, /routeAuthorityContextAllowed\(selection\.authority,/);
+assert.doesNotMatch(appShell, /findRouteAuthority\(session\.routeAuthority/, 'menu click must not re-read mutable route authority');
 assert.doesNotMatch(appShell, /node\.menu_id\s*=(?!=)/, 'menu click must not mutate the selected node');
 
 const session = fs.readFileSync('frontend/apps/web/src/stores/session.ts', 'utf8');

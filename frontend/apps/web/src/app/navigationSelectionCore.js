@@ -60,8 +60,9 @@ export function createNavigationSelectionSnapshot(node, routeAuthority) {
   ));
   if (!authority) return null;
 
-  const entryTarget = target?.entry_target && typeof target.entry_target === 'object'
-    ? cloneJson(target.entry_target)
+  const rawEntryTarget = target?.entry_target || target?.meta?.entry_target;
+  const entryTarget = rawEntryTarget && typeof rawEntryTarget === 'object'
+    ? cloneJson(rawEntryTarget)
     : null;
   const sceneKey = String(target?.scene_key || entryTarget?.scene_key || '').trim();
   const meta = cloneJson(target?.meta || {});
@@ -80,4 +81,3 @@ export function createNavigationSelectionSnapshot(node, routeAuthority) {
     targetKind: entryTarget ? 'entry_target' : sceneKey ? 'scene' : 'action',
   });
 }
-
