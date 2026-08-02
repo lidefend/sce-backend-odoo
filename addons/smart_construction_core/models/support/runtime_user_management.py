@@ -32,6 +32,11 @@ class ResUsers(models.Model):
         index=True,
         copy=False,
     )
+    sc_runtime_company_maintainable = fields.Boolean(
+        string="公司内部人员可维护",
+        compute="_compute_sc_runtime_company_maintainable",
+        search="_search_sc_runtime_company_maintainable",
+    )
 
     sc_user_role_group_ids = fields.Many2many(
         "res.groups",
@@ -89,6 +94,52 @@ class ResUsers(models.Model):
         real_user_ids = self._sc_runtime_company_real_user_ids()
         positive = operator in ("=", "==") and bool(value) or operator in ("!=", "<>") and not bool(value)
         return [("id", "in" if positive else "not in", real_user_ids)]
+
+    @api.model
+    def _sc_runtime_privileged_groups(self):
+        xmlids = (
+            "base.group_system",
+            "smart_construction_core.group_sc_cap_config_admin",
+            "smart_core.group_smart_core_admin",
+        )
+        return self.env["res.groups"].sudo().browse([
+            group.id
+            for xmlid in xmlids
+            if (group := self.env.ref(xmlid, raise_if_not_found=False))
+        ])
+
+    @api.model
+    def _sc_runtime_company_maintainable_user_ids(self):
+        internal_group = self.env.ref("base.group_user", raise_if_not_found=False)
+        if not internal_group:
+            return []
+        domain = [
+            ("share", "=", False),
+            ("login", "!=", False),
+            ("company_id", "in", self.env.user.company_ids.ids),
+            ("groups_id", "in", [internal_group.id]),
+        ]
+        privileged = self._sc_runtime_privileged_groups()
+        if privileged:
+            domain.append(("groups_id", "not in", privileged.ids))
+        return self.sudo().with_context(active_test=False).search(domain).ids
+
+    @api.depends_context("uid", "allowed_company_ids")
+    def _compute_sc_runtime_company_maintainable(self):
+        maintainable_ids = set(self._sc_runtime_company_maintainable_user_ids())
+        for user in self:
+            user.sc_runtime_company_maintainable = user.id in maintainable_ids
+
+    @api.model
+    def _search_sc_runtime_company_maintainable(self, operator, value):
+        maintainable_ids = self._sc_runtime_company_maintainable_user_ids()
+        positive = operator in ("=", "==") and bool(value) or operator in ("!=", "<>") and not bool(value)
+        return [("id", "in" if positive else "not in", maintainable_ids)]
+
+    def _sc_check_runtime_user_management_targets(self):
+        maintainable_ids = set(self._sc_runtime_company_maintainable_user_ids())
+        if any(user.id not in maintainable_ids for user in self):
+            raise ValidationError(_("只能维护当前公司范围内的非特权内部用户。"))
 
     @api.depends("groups_id")
     def _compute_sc_user_role_group_ids(self):
@@ -260,6 +311,7 @@ class ResUsers(models.Model):
 
     def write(self, vals):
         if self._sc_runtime_user_management_allowed() and not self.env.context.get("sc_runtime_user_management_sudo"):
+            self._sc_check_runtime_user_management_targets()
             for user in self:
                 safe_vals = self._sc_runtime_user_safe_vals(dict(vals or {}), existing_user=user)
                 user.sudo().with_context(

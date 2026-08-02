@@ -36,7 +36,7 @@ Generated from repository source files. This report is informational during the 
 | 1931 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 1927 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 1861 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1800 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1815 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1746 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1741 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1656 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
@@ -147,7 +147,7 @@ Generated from repository source files. This report is informational during the 
 | 1931 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 1927 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 1861 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1800 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1815 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1746 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1741 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1711 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |

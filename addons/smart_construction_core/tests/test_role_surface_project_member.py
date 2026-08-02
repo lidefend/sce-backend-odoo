@@ -561,7 +561,15 @@ class TestProjectMemberRoleSurface(TransactionCase):
             if row["action_xmlid"] == "smart_construction_core.action_sc_runtime_user_management"
         )
         self.assertEqual(user_management["route_kind"], "ADMIN_ROUTE")
-        self.assertFalse(config_contract["primary_actions"])
+        self.assertEqual(user_management["allowed_operation"], "write")
+        self.assertEqual(
+            user_management["menu_xmlid"],
+            "smart_construction_core.menu_sc_runtime_user_management",
+        )
+        self.assertIn(
+            "smart_construction_core.action_sc_historical_payment_fact",
+            {row["action_xmlid"] for row in config_contract["primary_actions"]},
+        )
         self.assertFalse(config_contract["role_home_actions"])
 
         admin_result = RouteAuthorityValidateHandler(self.env(user=config_user)).handle({

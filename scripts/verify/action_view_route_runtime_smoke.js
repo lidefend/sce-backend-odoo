@@ -150,6 +150,20 @@ function main() {
     throw new Error('activity route key must be empty without an action id');
   }
 
+  assertDeepEqual(
+    runtime.buildModelFormRouteTarget({
+      model: 'res.users',
+      id: '16',
+      query: { action_id: '723', menu_id: '900' },
+    }),
+    {
+      name: 'model-form',
+      params: { model: 'res.users', id: '16' },
+      query: { action_id: '723', menu_id: '900' },
+    },
+    'continue processing keeps action authority context on the editable route',
+  );
+
   console.log('[action_view_route_runtime_smoke] PASS');
 }
 

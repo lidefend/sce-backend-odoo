@@ -92,6 +92,7 @@ ROLE_SURFACE_OVERRIDES = {
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [],
         "admin_menu_xmlids": [
+            "smart_construction_core.menu_sc_runtime_user_management",
             "smart_construction_core.menu_sc_business_config_workbench",
             "smart_construction_core.menu_ui_menu_config_policy_business_config",
             "smart_construction_core.menu_ui_form_field_policy_business_config",
@@ -102,7 +103,8 @@ ROLE_SURFACE_OVERRIDES = {
         "admin_action_authorities": [
             {
                 "action_xmlid": "smart_construction_core.action_sc_runtime_user_management",
-                "allowed_operation": "read",
+                "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
+                "allowed_operation": "write",
                 "required_capability": "business_config_admin",
                 "context_requirements": {},
                 "source": "nav_policy_01.business_config_admin",
