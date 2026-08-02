@@ -7,6 +7,18 @@ from pathlib import Path
 
 VAR_PATTERN = re.compile(r"\$\{?([A-Z0-9_]+)\}?")
 LEFTOVER_PATTERN = re.compile(r"\$\{[^}]+\}")
+ADDONS_PATH_PATTERN = re.compile(
+    r"^(?P<prefix>\s*addons_path\s*=\s*)(?P<value>[^\r\n]*)(?P<newline>\r?\n?)$"
+)
+
+NON_PRODUCTION_ENVIRONMENTS = {
+    "dev",
+    "daily",
+    "development",
+    "test",
+    "testing",
+    "uat",
+}
 
 REQUIRED_KEYS = {
     "db_host",
@@ -42,6 +54,46 @@ def parse_kv(rendered: str) -> dict:
     return kv
 
 
+def normalize_non_production_addons_path(
+    rendered: str,
+    *,
+    environment: str | None = None,
+    is_directory=None,
+) -> tuple[str, tuple[str, ...]]:
+    """Drop unavailable optional addon roots from non-production configs.
+
+    The immutable production image creates every declared addon root. Daily
+    development can deliberately mount only ``/mnt/source-addons``; Odoo 17
+    otherwise raises ``FileNotFoundError`` before dispatching any HTTP route
+    when one configured root is absent.
+    """
+
+    environment = (environment if environment is not None else os.environ.get("ENV", ""))
+    if environment.strip().lower() not in NON_PRODUCTION_ENVIRONMENTS:
+        return rendered, ()
+
+    directory_check = is_directory or (lambda value: Path(value).is_dir())
+    output: list[str] = []
+    removed: list[str] = []
+    found = False
+    for line in rendered.splitlines(keepends=True):
+        match = ADDONS_PATH_PATTERN.match(line)
+        if not match:
+            output.append(line)
+            continue
+        found = True
+        configured = [item.strip() for item in match.group("value").split(",") if item.strip()]
+        available = [item for item in configured if directory_check(item)]
+        removed.extend(item for item in configured if item not in available)
+        if not available:
+            raise SystemExit("[render_odoo_conf] No available addons_path entries")
+        output.append(match.group("prefix") + ",".join(available) + match.group("newline"))
+
+    if not found:
+        return rendered, ()
+    return "".join(output), tuple(removed)
+
+
 def atomic_write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix=".odoo_conf_", dir=str(path.parent))
@@ -74,6 +126,7 @@ def main() -> None:
     if LEFTOVER_PATTERN.search(rendered):
         leftovers = sorted(set(LEFTOVER_PATTERN.findall(rendered)))
         raise SystemExit(f"[render_odoo_conf] Unresolved placeholders remain: {leftovers}")
+    rendered, removed_addons_paths = normalize_non_production_addons_path(rendered)
     kv = parse_kv(rendered)
 
     missing = REQUIRED_KEYS - kv.keys()
@@ -98,6 +151,11 @@ def main() -> None:
     dbfilter = kv.get("dbfilter")
     if dbfilter:
         print(f"[render_odoo_conf] dbfilter={dbfilter}")
+    if removed_addons_paths:
+        print(
+            "[render_odoo_conf] omitted unavailable non-production addons paths: "
+            + ",".join(removed_addons_paths)
+        )
 
 
 if __name__ == "__main__":
