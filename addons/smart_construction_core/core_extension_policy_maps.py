@@ -76,6 +76,12 @@ ROLE_SURFACE_OVERRIDES = {
     "business_config_admin": {
         "label": "业务配置管理员",
         "landing_scene_candidates": ["projects.list", "projects.ledger", "projects.intake"],
+        # The primary role owns the landing surface, while the released
+        # construction catalogue is still intersected with the user's native
+        # Odoo ACL-visible menu facts.  This composes existing business
+        # capabilities without granting platform administration or exposing
+        # raw native menus outside the formal product policy.
+        "discover_installed_capabilities": True,
         "menu_xmlids": [
             "smart_construction_core.menu_sc_root",
             "smart_construction_core.menu_sc_business_config_center",

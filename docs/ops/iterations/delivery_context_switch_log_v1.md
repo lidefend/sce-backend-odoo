@@ -1898,3 +1898,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   fingerprints. Validation covers dry-run digest locking, foreign ownership,
   path overlap, unexpected resources, oversized filestore, and missing
   confirmation.
+
+## 2026-08-02 — WUTAO-ROLE-NAVIGATION-COMPOSITION-01
+
+- Branch / anchor: `fix/candidate-gate-closure-01` from `25580be`.
+- Formal Product Layer: P1 construction industry standard product; Layer
+  Target: construction role-surface provider registration and formal capability
+  composition; Module: `smart_construction_core`.
+- Reason: the P0 provider selector received no construction provider, and the
+  business configuration administrator surface did not compose the user's
+  existing ACL-visible business capabilities into the frozen product policy.
+- Standard vs User-Specific: construction-standard navigation behavior. No
+  user ID, login, tenant data, customer preference, or production data is
+  encoded.
+- Why Here / Why Not Elsewhere: P1 owns the construction provider and role
+  policy; existing P0 code already owns generic provider selection, product
+  whitelist intersection, ACL enforcement, and route-authority projection.
+  Frontend, P2, P3, and P4 are not navigation authority.
+- Blast Radius: `business_config_admin` navigation projection only. User groups,
+  roles, company scope, system-admin status, native menus, historical tables,
+  business data, and frontend rendering remain unchanged. Validation proves a
+  selected construction provider, formal-policy intersection, and no technical
+  or historical acceptance exposure.

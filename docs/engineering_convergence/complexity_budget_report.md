@@ -45,7 +45,7 @@ Generated from repository source files. This report is informational during the 
 | 1628 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1591 | Python source | `addons/smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py` |
-| 1566 | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1570 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1546 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1523 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -156,7 +156,7 @@ Generated from repository source files. This report is informational during the 
 | 1628 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1591 | split_plan_required | Python source | `addons/smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py` |
-| 1566 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1570 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1546 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1523 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |

@@ -2,6 +2,8 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.smart_construction_core.core_extension_actor_roles import resolve_release_actor_role_codes
+from odoo.addons.smart_construction_core.core_extension import get_system_init_fact_contributions
+from odoo.addons.smart_construction_core.core_extension_hook_facts import lowcode_system_config_menu_xmlids
 from odoo.addons.smart_construction_core.core_extension_policy_maps import (
     ROLE_GROUPS_CAPABILITY_FALLBACK,
     ROLE_GROUPS_EXPLICIT,
@@ -10,6 +12,9 @@ from odoo.addons.smart_construction_core.core_extension_policy_maps import (
 )
 from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
 from odoo.addons.smart_core.delivery.menu_service import MenuService
+from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
+from odoo.addons.smart_core.core.system_init_extension_fact_merger import merge_extension_facts
+from odoo.addons.smart_core.core.system_init_surface_builder import _pick_role_surface_provider
 from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
 from odoo.addons.smart_core.handlers.route_authority_validate import RouteAuthorityValidateHandler
 
@@ -124,6 +129,103 @@ class TestProjectMemberRoleSurface(TransactionCase):
             history_xmlid,
             ROLE_SURFACE_OVERRIDES["project_member"]["primary_menu_xmlids"],
         )
+
+    def test_business_config_admin_composes_acl_visible_formal_capabilities(self):
+        resolver = self._resolver()
+        surface = resolver.build_role_surface(
+            {"smart_construction_core.group_sc_cap_business_config_admin"},
+            [],
+            {"projects.list"},
+            ROLE_SURFACE_OVERRIDES,
+        )
+
+        self.assertEqual(surface["role_code"], "business_config_admin")
+        self.assertTrue(surface["discover_installed_capabilities"])
+        self.assertFalse(surface["system_configuration_visible"])
+        self.assertNotIn("system_admin", surface["role_codes"])
+
+    def test_construction_role_surface_provider_is_selected_by_formal_root(self):
+        contribution = get_system_init_fact_contributions(self.env, self.env.user)
+        self.assertIsInstance(contribution, dict)
+        data = {
+            "ext_facts": {
+                contribution["module"]: contribution["facts"],
+            },
+            "nav_meta": {"root_xmlid": "smart_construction_core.menu_sc_root"},
+        }
+
+        merge_extension_facts(data)
+        overrides, meta = _pick_role_surface_provider(data, {"projects.list"})
+
+        self.assertGreaterEqual(meta["provider_count"], 1)
+        self.assertEqual(meta["selected_provider"], "smart_construction_core")
+        self.assertEqual(meta["match_mode"], "matched")
+        self.assertFalse(meta["ambiguous"])
+        self.assertIn("business_config_admin", overrides)
+
+    def test_business_config_capabilities_publish_only_formal_product_navigation(self):
+        model_data = self.env["ir.model.data"].sudo().search([
+            ("module", "=", "smart_construction_core"),
+            ("model", "=", "res.groups"),
+            ("name", "like", "group_sc_cap_%"),
+        ])
+        business_groups = self.env["res.groups"].browse(model_data.mapped("res_id")).exists()
+        base_group = self.env.ref("base.group_user")
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Formal Navigation Composition",
+            "login": "formal.navigation.composition",
+            "groups_id": [(6, 0, [base_group.id, *business_groups.ids])],
+        })
+        user_env = self.env(user=user)
+        resolver = self._resolver()
+        group_xmlids = resolver.user_group_xmlids(user)
+        native = MenuFactService(user_env).export_visible_menu_facts()
+        surface = resolver.build_role_surface(
+            group_xmlids,
+            native.tree,
+            {"projects.list"},
+            ROLE_SURFACE_OVERRIDES,
+        )
+        self.env["sc.product.policy"].sync_construction_menu_product_policies()
+        delivery = DeliveryEngine(user_env).build(
+            data={"role_surface": surface, "scenes": [], "capabilities": []},
+            product_key="construction.standard",
+            edition_key="standard",
+            base_product_key="construction",
+            native_nav=native.tree,
+        )
+        policy = DeliveryEngine(user_env).product_policy_service.get_policy(
+            product_key="construction.standard",
+            edition_key="standard",
+            base_product_key="construction",
+            role_code="business_config_admin",
+            enforce_release=True,
+            enforce_access=True,
+        )
+        formal_xmlids = {
+            str(menu.get("menu_xmlid") or "").strip()
+            for group in policy.get("menu_groups") or []
+            if isinstance(group, dict)
+            for menu in group.get("menus") or []
+            if isinstance(menu, dict) and str(menu.get("menu_xmlid") or "").strip()
+        }
+        formal_xmlids.update(lowcode_system_config_menu_xmlids())
+        leaves = list(self._iter_renderable_leaves(delivery.get("nav") or []))
+        released_xmlids = {self._leaf_xmlid(node) for node in leaves if self._leaf_xmlid(node)}
+        labels = {
+            str(node.get("label") or node.get("title") or "").strip()
+            for node in resolver._walk_nav_nodes(delivery.get("nav") or [])
+        }
+
+        self.assertGreater(len(leaves), 19)
+        self.assertTrue(
+            released_xmlids.issubset(formal_xmlids),
+            "released outside formal policy: %s" % sorted(released_xmlids - formal_xmlids),
+        )
+        self.assertFalse(labels & {"用户核对菜单", "用户数据验收", "用户验收", "直营项目系统菜单"})
+        self.assertFalse(surface["system_configuration_visible"])
+        self.assertNotIn("system_admin", surface["role_codes"])
+        self.assertFalse((delivery.get("route_authority_v1") or {}).get("denied_actions"))
 
     def test_system_admin_navigation_discovers_installed_capabilities_and_configuration(self):
         resolver = self._resolver()

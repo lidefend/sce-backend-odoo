@@ -962,7 +962,11 @@ def get_system_init_fact_contributions(env, user, context=None):
     """Return construction system.init facts contribution payload."""
     del context
     try:
-        module_facts = {}
+        module_facts = {
+            "role_surface_override_provider": _hook_facts.role_surface_override_provider(
+                ROLE_SURFACE_OVERRIDES
+            ),
+        }
 
         task_rows = _build_task_action_rows(env, user)
         payment_rows = _build_payment_action_rows(env)
