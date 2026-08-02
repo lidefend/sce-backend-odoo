@@ -30,6 +30,7 @@
     </template>
     <template #actions>
       <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('back')">返回列表</button>
+      <button v-if="showContinueProcessing" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('continue-processing')">继续办理</button>
       <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
       <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
       <button v-if="showPrimaryFormAction" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
@@ -57,6 +58,7 @@ defineProps<{
   actionId: number | null; contractMetaLine: string; intakeMode: boolean; intakeRequiredSummary: string;
   intakeMissingSummary: string; statusbar: NativeStatusbarVm; busy: boolean; showReturn: boolean;
   mode: 'create' | 'edit' | 'readonly'; modeLabel: string; dirty: boolean; changedFieldCount: number;
+  showContinueProcessing: boolean;
   showDraftSave: boolean; draftSaveDisabled: boolean; draftSaveLabel: string; showPrimaryFormAction: boolean;
   primaryFormActionDisabled: boolean; primaryFormActionHint: string; submitLabel: string; directActions: ContractAction[]; overflowActions: ContractAction[];
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
@@ -64,7 +66,7 @@ defineProps<{
 }>();
 
 defineEmits<{
-  back: []; 'set-status': [value: string]; 'return-workbench': []; 'save-draft': []; 'run-primary': [];
+  back: []; 'continue-processing': []; 'set-status': [value: string]; 'return-workbench': []; 'save-draft': []; 'run-primary': [];
   'run-action': [action: ContractAction]; discard: []; copy: []; export: []; reload: [];
 }>();
 

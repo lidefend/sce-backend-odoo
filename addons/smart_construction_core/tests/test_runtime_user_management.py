@@ -29,6 +29,28 @@ class TestRuntimeUserManagement(TransactionCase):
 
         self.assertNotIn(user, users)
 
+    def test_unmanaged_internal_user_is_available_to_company_maintainer(self):
+        user = self._create_runtime_user("runtime_legacy_internal", "历史内部用户")
+
+        users = self.env["res.users"].search([("sc_runtime_company_maintainable", "=", True)])
+
+        self.assertIn(user, users)
+
+    def test_privileged_user_is_not_available_to_company_maintainer(self):
+        user = self._create_runtime_user("runtime_privileged", "特权用户")
+        user.write({"groups_id": [(4, self.env.ref("base.group_system").id)]})
+
+        users = self.env["res.users"].search([("sc_runtime_company_maintainable", "=", True)])
+
+        self.assertNotIn(user, users)
+
+    def test_runtime_management_rejects_privileged_target_write(self):
+        user = self._create_runtime_user("runtime_privileged_write", "特权用户")
+        user.write({"groups_id": [(4, self.env.ref("base.group_system").id)]})
+
+        with self.assertRaises(ValidationError):
+            user.with_context(sc_runtime_user_management=True)._sc_check_runtime_user_management_targets()
+
     def test_runtime_source_login_uses_canonical_login(self):
         user = self._create_runtime_user("runtime_display_scope", "正式用户", managed=True)
 

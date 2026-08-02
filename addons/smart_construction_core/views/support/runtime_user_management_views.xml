@@ -104,8 +104,14 @@
         <field name="view_mode">tree,form</field>
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('view_sc_runtime_user_tree')}),             (0, 0, {'view_mode': 'form', 'view_id': ref('view_sc_runtime_user_form')})]" />
         <field name="search_view_id" ref="view_sc_runtime_user_search" />
-        <field name="domain" eval="[             ('sc_runtime_company_real_user', '=', True),             ('share', '=', False),             ('groups_id', 'not in', [                 ref('base.group_system'),                 ref('smart_construction_core.group_sc_cap_config_admin'),                 ref('smart_core.group_smart_core_admin'),             ]),         ]" />
+        <field name="domain">[('sc_runtime_company_maintainable', '=', True)]</field>
         <field name="context">{'active_test': False, 'sc_runtime_user_management': True}</field>
         <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_business_config_admin'),             ref('smart_core.group_smart_core_admin'),         ])]" />
     </record>
+    <menuitem id="menu_sc_runtime_user_management"
+              name="公司内部人员维护"
+              parent="smart_construction_core.menu_sc_business_base_config_group"
+              action="action_sc_runtime_user_management"
+              sequence="5"
+              groups="smart_construction_core.group_sc_cap_business_config_admin" />
 </odoo>

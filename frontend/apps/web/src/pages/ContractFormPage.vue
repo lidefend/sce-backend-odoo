@@ -21,11 +21,12 @@
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isProjectIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
+      :show-continue-processing="showContinueProcessing"
       :busy="busy || status === 'loading'" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel"
       :direct-actions="headerBusinessDirectActions" :overflow-actions="headerBusinessOverflowActions" :config-actions="headerConfigActionsVisible"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
-      @back="returnToPreviousPage" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
+      @back="returnToPreviousPage" @continue-processing="continueProcessing" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     />
     <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
@@ -298,6 +299,7 @@ import { validateContractFormData } from '../app/contractValidation';
 import { resolveActionIdFromContext } from '../app/actionContext';
 import { findActionMeta, findActionMetaByMenu, findMenuNode } from '../app/menu';
 import { pickContractNavQuery } from '../app/navigationContext';
+import { buildModelFormRouteTarget } from '../app/runtime/actionViewRouteRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
 import { resolveFinancialWorkspaceContract } from '../app/financialWorkspaceContract';
 import { collectPolicyValidationErrors, evaluateActionPolicy, evaluateFieldPolicy } from '../app/contractPolicies';
@@ -1253,6 +1255,19 @@ const showPrimaryBusinessFormAction = computed(() => canSave.value
   && (!financialWorkspace.value || renderProfile.value === 'edit')
   && !showCurrentFormFieldConfigScope.value
   && !isProjectIntakeCreateMode.value);
+const showContinueProcessing = computed(() => (
+  route.name === 'record'
+  && Boolean(recordId.value)
+  && rights.value.write
+));
+function continueProcessing() {
+  if (!showContinueProcessing.value || !recordId.value) return;
+  void router.push(buildModelFormRouteTarget({
+    model: model.value,
+    id: String(recordId.value),
+    query: { ...route.query },
+  }));
+}
 const showDraftSaveAction = computed(() => {
   if (!showPrimaryBusinessFormAction.value || !canSave.value || primaryCreateFooterAction.value) return false;
   if (!recordId.value) return true;
