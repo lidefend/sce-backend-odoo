@@ -2097,3 +2097,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Branch / anchor: `fix/password-reset-http-verification` from `3f71c47f83012af5b50f2b76184b63477ecace8c`.
 - The first operator-entered password reset committed the single authorized ORM password write, then the post-write menu probe incorrectly sent `op=get`; production `ui.contract` requires `op=menu` with `menu_id`. The resulting failure did not roll back the already committed password.
 - The probe now uses the supported operation, post-commit failures explicitly report that the password write committed, and a governed `ops.user.password-verify` recovery entry accepts the already assigned password once through `getpass` and performs HTTP reads only. It does not repeat the password reset or write any production record.
+## 2026-08-02 — WUTAO-ROLE-NAVIGATION-COMPOSITION-01
+
+- Branch / anchor: `fix/wutao-role-navigation-composition` from `57e456c`.
+- Formal Product Layer: P1 construction industry standard product; Layer
+  Target: construction role-surface provider registration and formal capability
+  composition; Module: `smart_construction_core`.
+- Reason: the P0 provider selector received no construction provider, and the
+  business configuration administrator surface did not compose the user's
+  existing ACL-visible business capabilities into the frozen product policy.
+- Standard vs User-Specific: construction-standard navigation behavior. No
+  user ID, login, tenant data, customer preference, or production data is
+  encoded.
+- Why Here / Why Not Elsewhere: P1 owns the construction provider and role
+  policy; existing P0 code already owns generic provider selection, product
+  whitelist intersection, ACL enforcement, and route-authority projection.
+  Frontend, P2, P3, and P4 are not navigation authority.
+- Blast Radius: `business_config_admin` navigation projection only. User groups,
+  roles, company scope, system-admin status, native menus, historical tables,
+  business data, and frontend rendering remain unchanged. Validation proves a
+  selected construction provider, formal-policy intersection, and no technical
+  or historical acceptance exposure.

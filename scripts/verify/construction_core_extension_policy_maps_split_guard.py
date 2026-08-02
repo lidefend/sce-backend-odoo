@@ -81,6 +81,8 @@ def main() -> int:
         policy_maps = _load(POLICY_MAPS, "construction_core_extension_policy_maps_under_guard")
         if policy_maps.ROLE_PRECEDENCE != ("system_admin", "business_config_admin", "executive", "owner", "pm", "finance"):
             errors.append("policy maps must preserve role precedence")
+        if not policy_maps.ROLE_SURFACE_OVERRIDES.get("business_config_admin", {}).get("discover_installed_capabilities"):
+            errors.append("business config admin must compose ACL-visible formal product capabilities")
         if policy_maps.NAV_MENU_SCENE_MAP.get("smart_construction_core.menu_payment_request") != "finance.payment_requests":
             errors.append("policy maps must preserve payment menu scene mapping")
         if "project.project" not in policy_maps.FILE_UPLOAD_ALLOWED_MODELS:
