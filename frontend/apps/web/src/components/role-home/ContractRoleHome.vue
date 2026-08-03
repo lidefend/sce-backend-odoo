@@ -115,7 +115,6 @@ const {
 
 .contract-role-home__header {
   padding: 14px 16px;
-  border-top: 3px solid var(--sc-semantic-surface-interactive);
 }
 
 .contract-role-home__header h1,

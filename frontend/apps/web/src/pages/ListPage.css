@@ -170,7 +170,6 @@
 
 .page[data-product-page-mode='list'] .list-toolbar {
   border-bottom: 0;
-  border-top: 3px solid var(--sc-app-accent);
 }
 
 .page[data-product-page-mode='list'] .table {

@@ -115,12 +115,11 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   width: 100cqw;
-  padding: 10px 12px;
-  border: 1px solid var(--sc-app-border);
+  padding: 8px 12px;
+  border: 0;
   border-radius: 0;
   background: var(--sc-app-panel);
   box-shadow: none;
-  border-top: 3px solid var(--sc-semantic-surface-interactive);
 }
 .product-list-header__tools {
   display: flex;
@@ -130,6 +129,9 @@ onBeforeUnmount(() => {
 .product-list-header__tools :deep(.action-toolbar) {
   grid-template-columns: max-content minmax(0, 1fr) max-content;
   width: 100%;
+}
+.product-list-header__tools :deep(.action-toolbar.action-toolbar--without-view) {
+  grid-template-columns: minmax(0, 1fr) max-content;
 }
 .product-list-header__tools :deep(.native-search) {
   justify-self: stretch;

@@ -1,6 +1,10 @@
 <template>
-  <section ref="toolbarRoot" class="action-toolbar">
-    <div v-if="showViewSwitch" class="toolbar-section view-switch">
+  <section
+    ref="toolbarRoot"
+    class="action-toolbar"
+    :class="{ 'action-toolbar--without-view': !showViewSwitch || viewModes.length <= 1 }"
+  >
+    <div v-if="showViewSwitch && viewModes.length > 1" class="toolbar-section view-switch">
       <p class="contract-label">{{ viewLabel }}</p>
       <div class="contract-chips">
         <button
@@ -503,6 +507,10 @@ onBeforeUnmount(() => {
   background: var(--sc-app-panel);
   padding: 8px;
   box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 55%, transparent);
+}
+
+.action-toolbar--without-view {
+  grid-template-columns: minmax(320px, 560px) minmax(max-content, 1fr);
 }
 
 .toolbar-section,

@@ -2290,3 +2290,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   browser errors or horizontal overflow. Mobile keeps navigation closed by
   default. ESLint, strict TypeScript, release units, style-system guard and Vite
   production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-SURFACE-RHYTHM
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `2da04b7`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared
+  business surfaces and action-toolbar presentation; `frontend/apps/web`.
+- Outcome: removed the legacy three-pixel accent bands from list, form and role
+  home surfaces so activity navigation and page content no longer compete for
+  emphasis. List query controls now use one toolbar surface instead of nested
+  borders; a single available view no longer renders a redundant view switch.
+  Sidebar footer actions were reduced to the same neutral row language as the
+  navigation.
+- Boundary: generic presentation and conditional rendering only. Search,
+  multi-view switching, route authority, permissions and business behavior are
+  unchanged; multi-view pages retain their switcher.
+- Validation: real home, contract list and contract detail journeys pass at
+  1440x900, 768x1024 and 390x844. Query surfaces have no decorative top border,
+  the single-list view has no redundant switch, and all sizes have zero browser
+  errors or document overflow. ESLint, strict TypeScript, release units,
+  style-system guard and Vite production build pass.
