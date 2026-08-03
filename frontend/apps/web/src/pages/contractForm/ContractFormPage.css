@@ -550,10 +550,10 @@
   flex: 0 0 auto;
   gap: 6px;
   align-items: center;
-  padding: 3px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-subtle-bg);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .contract-form-native-shell :deep(.template-page-header-actions .sc-btn) {
@@ -570,6 +570,16 @@
 .contract-form-native-shell :deep(.template-page-header-actions .contract-header-config-action) {
   font-weight: 500;
   opacity: 0.78;
+}
+
+@media (min-width: 861px) {
+  .contract-form-native-shell :deep(.template-page-header-actions) {
+    order: 1;
+  }
+
+  .contract-form-native-shell :deep(.template-page-header-status) {
+    order: 2;
+  }
 }
 
 @media (max-width: 860px) {

@@ -2431,3 +2431,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Desktop and mobile screenshots show zero repeated readonly pills while the
   grouped record structure remains intact. Strict TypeScript, release units,
   style-system guard, workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-FORM-ACTION-STATUS-SPLIT
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `98e1ae7`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; record
+  action toolbar and workflow-status presentation;
+  `frontend/apps/web/src/pages/contractForm`.
+- Outcome: separated page navigation from workflow state in the record header.
+  Desktop now anchors the back action on the left and keeps mode plus workflow
+  status on the right, eliminating the former empty-left/right-only composition.
+  Mobile intentionally keeps the horizontally scrollable status row first and
+  places the back action beneath it. The action wrapper is now a neutral toolbar
+  rather than a nested bordered capsule.
+- Boundary: header order and presentation only. Back navigation, workflow
+  state transitions, action availability and permissions are unchanged.
+- Validation: real desktop geometry places the back action at x=251 and the
+  status row at x=967; mobile places the back action below the status row. Both
+  viewports report zero document overflow and zero browser errors. Strict
+  TypeScript, release units, style-system guard, workspace alignment and Vite
+  production build pass.
