@@ -102,6 +102,94 @@
   box-sizing: border-box;
 }
 
+/* BOSS-aligned form canvas: restrained sections and denser information rhythm. */
+.page[data-product-page-mode='form'] {
+  gap: 10px;
+}
+
+.page[data-product-page-mode='form'] .header--flow {
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 4px;
+  background: var(--sc-app-panel);
+}
+
+.page[data-product-page-mode='form'] .header-main h1 {
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.page[data-product-page-mode='form'] .card {
+  border-radius: 4px;
+  padding: 14px 16px 16px;
+  box-shadow: none;
+}
+
+.page[data-product-page-mode='form'] .form-grid {
+  gap: 12px;
+}
+
+.page[data-product-page-mode='form'] .chip,
+.page[data-product-page-mode='form'] .chip-btn {
+  border-radius: 4px;
+}
+
+/* Record workspace: separate command surface from the readable business document. */
+.page[data-product-page-mode='form'] {
+  gap: 16px;
+}
+
+.page[data-product-page-mode='form'] .header--flow {
+  min-height: 56px;
+  margin-bottom: 4px;
+  padding: 12px 16px;
+  align-items: center;
+  border-color: var(--sc-app-border);
+  border-radius: 12px;
+  background: var(--sc-app-panel);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--sc-app-shadow) 14%, transparent);
+}
+
+.page[data-product-page-mode='form'] .card {
+  padding: 0 20px 24px;
+  border-color: var(--sc-app-border);
+  border-radius: 12px;
+  background: var(--sc-app-panel);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--sc-app-shadow) 16%, transparent);
+}
+
+.page[data-product-page-mode='form'] .card--flow {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.page[data-product-page-mode='form'] .form-grid {
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .page[data-product-page-mode='form'] {
+    gap: 10px;
+  }
+
+  .page[data-product-page-mode='form'] .header--flow,
+  .page[data-product-page-mode='form'] .card {
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .page[data-product-page-mode='form'] .card:not(.card--flow) {
+    padding: 0 0 18px;
+  }
+
+  .page[data-product-page-mode='form'] .card--flow {
+    padding: 0;
+  }
+}
+
 .card.is-refreshing {
   pointer-events: none;
 }
@@ -349,13 +437,22 @@
 
 .form-grid {
   display: grid;
-  gap: 16px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .contract-form-canvas-shell {
   width: 100%;
   max-width: none;
   min-width: 0;
+}
+
+.form-grid > :deep(.native-default-section-head),
+.form-grid > :deep(.contract-form-canvas-shell) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .form-grid > :deep([data-form-error-summary]) {
@@ -473,6 +570,9 @@
 }
 
 .contract-form-native-shell :deep(.template-page-header) {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
@@ -480,7 +580,7 @@
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-product-panel-radius);
   background: var(--sc-app-panel);
-  box-shadow: var(--sc-app-shadow);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 36%, transparent);
 }
 
 .contract-form-native-shell :deep(.template-page-header--title-hidden:not(:has(.template-page-header-status > *))) {
@@ -517,10 +617,10 @@
   flex: 0 0 auto;
   gap: 6px;
   align-items: center;
-  padding: 3px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel-muted);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .contract-form-native-shell :deep(.template-page-header-actions .sc-btn) {
@@ -534,9 +634,19 @@
   box-shadow: var(--sc-app-shadow-popover);
 }
 
-.contract-form-native-shell :deep(.template-page-header-actions .contract-header-config-action) {
+.contract-form-native-shell :deep(.template-page-header-actions .form-header-config-action) {
   font-weight: 500;
   opacity: 0.78;
+}
+
+@media (min-width: 861px) {
+  .contract-form-native-shell :deep(.template-page-header-actions) {
+    order: 1;
+  }
+
+  .contract-form-native-shell :deep(.template-page-header-status) {
+    order: 2;
+  }
 }
 
 @media (max-width: 860px) {
@@ -544,6 +654,9 @@
     align-items: stretch;
     flex-direction: column;
     flex-wrap: nowrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 9px 10px;
   }
 
   .contract-form-native-shell :deep(.template-page-header--title-hidden:not(:has(.template-page-header-status > *))) {
@@ -564,8 +677,44 @@
 
   .contract-form-native-shell :deep(.template-page-header-actions) {
     flex: 0 0 auto;
+    align-self: flex-start;
     justify-content: flex-start;
-    width: auto;
+    width: 100%;
+  }
+
+  .contract-form-native-shell :deep(.template-page-header-actions .form-header-primary-actions) {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .contract-form-native-shell :deep(.template-page-header) {
+    position: sticky;
+    top: 0;
+    border-radius: 8px;
+  }
+
+  .contract-form-native-shell :deep(.template-page-header-actions) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .contract-form-native-shell :deep(.template-page-header-actions .form-header-navigation-actions),
+  .contract-form-native-shell :deep(.template-page-header-actions .form-header-primary-actions) {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .contract-form-native-shell :deep(.template-page-header-actions .form-header-primary-actions) {
+    justify-self: end;
+    margin-left: 0;
+  }
+
+  .contract-form-native-shell :deep(.template-page-header-actions .sc-btn) {
+    min-height: 32px;
+    padding: 5px 9px;
   }
 }
 
@@ -585,9 +734,9 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
   border-bottom: 1px solid var(--sc-app-border);
-  padding: 0 0 10px;
+  padding: 8px 0 9px;
 }
 
 .native-default-section-head h3 {
@@ -598,10 +747,12 @@
 }
 
 .native-default-section-head p {
-  margin: 4px 0 0;
+  max-width: 78ch;
+  margin: 2px 0 0;
   color: var(--sc-semantic-text-muted);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .native-form-mode-note {
@@ -614,7 +765,7 @@
   font-weight: 600;
 }
 
-.contract-readonly-value {
+.form-readonly-value {
   display: inline-flex;
   align-items: center;
   width: 100%;
@@ -631,52 +782,84 @@
   box-sizing: border-box;
 }
 
+.form-readonly-value--empty {
+  min-height: 24px;
+  padding-block: 3px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--sc-app-text-muted);
+  font-weight: 400;
+}
+
 .contract-form-native-shell :deep(.native-form-tree) {
-  gap: 12px;
+  gap: 0;
 }
 
 .contract-form-native-shell :deep(.native-container--sheet) {
-  gap: 12px;
+  gap: 0;
 }
 
 .contract-form-native-shell :deep(.native-container--group) {
   gap: 10px;
-  padding: 12px 14px 14px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--sc-app-panel) 86%, var(--sc-app-muted-bg));
+  padding: 15px 16px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--sc-app-border);
+  border-radius: 0;
+  background: var(--sc-app-panel);
+  box-shadow: none;
 }
 
 .contract-form-native-shell :deep(.native-container--group > .native-container-head) {
-  min-height: 28px;
-  margin: -2px 0 0;
-  padding-left: 10px;
-  border-left: 3px solid var(--sc-semantic-surface-interactive);
+  min-height: 34px;
+  margin: -15px -16px 0;
+  padding: 0 16px;
+  border-left: 2px solid var(--sc-app-accent);
+  border-bottom: 1px solid var(--sc-app-border);
+  background: color-mix(in srgb, var(--sc-app-info-bg) 24%, var(--sc-app-panel));
 }
 
 .contract-form-native-shell :deep(.native-container--group > .native-container-head h3) {
+  color: var(--sc-app-info-text);
   font-size: 14px;
   font-weight: 700;
 }
 
+.contract-form-native-shell :deep(.native-container--group > .template-form-section) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.contract-form-native-shell :deep(.native-container--group > .template-form-section > .template-form-section-head) {
+  margin: -15px -16px 12px;
+  border-radius: 0;
+}
+
 .contract-form-native-shell :deep(.native-tabs) {
-  border-radius: 8px;
-  padding: 5px;
-  border: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel-muted);
+  gap: 18px;
+  border: 0;
+  border-bottom: 1px solid var(--sc-app-border);
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .contract-form-native-shell :deep(.native-tab) {
-  min-height: 30px;
-  padding: 6px 10px;
-  border: 1px solid transparent;
-  border-radius: 6px;
+  min-height: 38px;
+  padding: 8px 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
 }
 
 .contract-form-native-shell :deep(.native-tab--active) {
-  border-color: var(--sc-app-border);
-  background: var(--sc-app-panel);
-  box-shadow: 0 1px 2px var(--sc-app-shadow);
+  border-bottom-color: var(--sc-app-accent);
+  background: transparent;
+  box-shadow: none;
+  color: var(--sc-app-text-primary);
+  font-weight: 600;
 }
 
 .contract-mode-actions {
@@ -711,7 +894,7 @@
   box-shadow: inset 0 0 0 1px var(--sc-semantic-border-subtle);
 }
 
-.form-grid--designer-workspace .contract-form-designer-canvas {
+.form-grid--designer-workspace > :deep(.contract-form-designer-canvas) {
   grid-column: 2;
   grid-row: 4 / span 2;
   min-width: 0;
@@ -839,7 +1022,7 @@
     row-gap: var(--sc-product-workspace-stack-gap);
   }
 
-  .form-grid--designer-workspace .contract-form-designer-canvas {
+  .form-grid--designer-workspace > :deep(.contract-form-designer-canvas) {
     grid-column: 1;
     grid-row: auto;
     position: static;
@@ -866,8 +1049,17 @@
   }
 
   .contract-form-native-shell :deep(.native-container--group) {
-    gap: 9px;
-    padding: 11px 12px 12px;
+    gap: 10px;
+    padding: 14px 12px 17px;
+  }
+
+  .contract-form-native-shell :deep(.native-container--group > .native-container-head) {
+    margin: -14px -12px 0;
+    padding: 0 12px;
+  }
+
+  .contract-form-native-shell :deep(.native-container--group > .template-form-section > .template-form-section-head) {
+    margin: -14px -12px 10px;
   }
 
   .header-status {
@@ -879,6 +1071,12 @@
     grid-template-columns: 1fr;
   }
 
+}
+
+@media (min-width: 1180px) {
+  .contract-form-native-shell :deep(.template-form-section-grid--columns-3) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .ghost,

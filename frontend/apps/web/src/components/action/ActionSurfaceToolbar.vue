@@ -1,6 +1,10 @@
 <template>
-  <section ref="toolbarRoot" class="action-toolbar">
-    <div v-if="showViewSwitch" class="toolbar-section view-switch">
+  <section
+    ref="toolbarRoot"
+    class="action-toolbar"
+    :class="{ 'action-toolbar--without-view': !showViewSwitch || viewModes.length <= 1 }"
+  >
+    <div v-if="showViewSwitch && viewModes.length > 1" class="toolbar-section view-switch">
       <p class="contract-label">{{ viewLabel }}</p>
       <div class="contract-chips">
         <button
@@ -75,6 +79,7 @@
           :disabled="loading"
           @click="$emit('search-submit')"
         >
+          <ScIcon name="search" :size="16" />
           {{ uiLabel('search_submit', '搜索') }}
         </button>
         <button
@@ -94,7 +99,7 @@
           :aria-label="uiLabel('search_menu_toggle', '展开搜索菜单')"
           @click="searchMenuOpen = !searchMenuOpen"
         >
-          <span class="search-menu-caret">{{ searchMenuOpen ? '▴' : '▾' }}</span>
+          <ScIcon name="chevron-right" :size="14" class="search-menu-caret" :class="{ 'is-open': searchMenuOpen }" />
         </button>
       </div>
       <div v-if="searchMenuOpen && hasSearchMenu" class="search-dropdown">
@@ -241,6 +246,7 @@
 
     <div v-if="canCreateRecord" class="toolbar-actions">
       <button class="contract-chip primary" type="button" :disabled="loading" @click="$emit('create')">
+        <ScIcon name="plus" :size="16" />
         {{ createLabel }}
       </button>
     </div>
@@ -253,6 +259,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import ScIcon from '../design-system/ScIcon.vue';
 
 type SearchChip = { key: string; label: string };
 type CustomOperator = { value: string; label: string; needs_value?: boolean };
@@ -499,10 +506,14 @@ onBeforeUnmount(() => {
   min-width: 0;
   max-width: 100%;
   border: 1px solid var(--sc-app-border);
-  border-radius: 10px;
+  border-radius: 6px;
   background: var(--sc-app-panel);
-  padding: 8px;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 55%, transparent);
+  padding: 6px;
+  box-shadow: none;
+}
+
+.action-toolbar--without-view {
+  grid-template-columns: minmax(320px, 560px) minmax(max-content, 1fr);
 }
 
 .toolbar-section,
@@ -591,6 +602,9 @@ onBeforeUnmount(() => {
 }
 
 .toolbar-search-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   border-color: var(--sc-semantic-surface-interactive);
   background: var(--sc-semantic-surface-interactive);
   color: var(--sc-semantic-text-on-interactive);
@@ -643,6 +657,11 @@ onBeforeUnmount(() => {
 .search-menu-caret {
   display: inline-block;
   line-height: 1;
+  transition: transform var(--sc-motion-fast, 120ms) ease;
+}
+
+.search-menu-caret.is-open {
+  transform: rotate(90deg);
 }
 
 .search-dropdown {
@@ -880,6 +899,9 @@ onBeforeUnmount(() => {
 }
 
 .contract-chip.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border-color: var(--sc-semantic-surface-interactive);
   background: var(--sc-semantic-surface-interactive);
   color: var(--sc-semantic-text-on-interactive);

@@ -3,6 +3,75 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-04 — FRONTEND-ACCESSIBLE-INTERACTIVE-TOKEN-07
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `b18b71c31b2bac895ef63c65752e6fb6e3ac2f11`.
+- Formal Product Layer: P0 platform product; Layer Target: shared light-theme semantic design-token accessibility.
+- Reason: the experience branch mapped interactive surfaces and white button text to `cyan_500`, producing 2.3:1 contrast, while cyan link text on subtle backgrounds produced 4.07–4.29:1; the authoritative WCAG AA browser scan therefore found five serious blocking groups.
+- Standard vs User-Specific: generic accessible presentation semantics only; no customer identity, business data, workflow, route, permission, interface, or runtime configuration changes.
+- Why Here / Why Not Elsewhere: semantic tokens own cross-component foreground/background contrast. Component-specific overrides would duplicate color policy across login, buttons, navigation, forms, dialogs, and error states.
+- Blast Radius: light-theme interactive, hover, link, and information semantic mappings reuse existing `blue_500/600` base tokens; spacing, typography, layout, dark theme, APIs, backend modules, and performance policy remain unchanged.
+- Validation: token build/verify/tests, no-hardcoded-color guard, strict typecheck, production frontend build, WCAG browser scan with zero blocking findings, visual audits, and full-product browser coverage.
+
+## 2026-08-04 — FRONTEND-PR-MAIN-SYNC-AUDIT-SELECTOR-06
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `acfdf29154db0eda0ac51214300ca83b6fb5be1d` after synchronizing `origin/main`.
+- Formal Product Layer: P4 verification governance; Layer Target: frontend release browser audit selector alignment.
+- Reason: the enterprise form upgrade renamed the generic header overflow-action class from the model-prefixed `contract-header-more-actions` to `form-header-more-actions`, while two release-audit locators still referenced the retired selector and falsely reported that the visible “更多操作” control was missing.
+- Standard vs User-Specific: generic verification wiring only; no customer data, product behavior, route, permission, interface, visual style, performance threshold, or business workflow changes.
+- Why Here / Why Not Elsewhere: the browser audit owns DOM interaction selectors and must follow the already accepted generic component class; changing the product component or restoring a model-specific compatibility class would regress the shared semantic boundary.
+- Blast Radius: two Playwright locators in the delivery-hardening audit and this audit record; no backend, database, runtime configuration, deployment, or production mutation.
+- Validation: static selector search, strict typecheck, frontend release units/build, delivery-hardening production browser gate, full-product browser audit, generated-report guard, and exact-SHA GitHub checks.
+
+## 2026-08-04 — FRONTEND-PR-RELEASE-GATE-CONVERGENCE-05
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `0087d7b3e36c8dc7d7bed3ebdd25335473d33849`.
+- Formal Product Layer: P0 platform product; Layer Target: shared frontend semantic boundaries and release-safe presentation selectors.
+- Reason: the authoritative frontend release workflow detected industry literals in shared list/home rendering and model-prefixed CSS introduced by the experience-upgrade branch.
+- Standard vs User-Specific: generic presentation semantics only. Runtime titles remain contract-provided, list priority uses field metadata, and renamed selectors express UI roles rather than a customer or construction model.
+- Why Here / Why Not Elsewhere: shared renderers own generic field ranking and presentation classes; P1/P2 modules, runtime configuration, backend contracts, permissions, routes, and business data do not require changes.
+- Blast Radius: one role-home label binding, generic list default-column ranking, and mechanical CSS selector renames across the existing form/home components; no visual behavior, API, workflow, database, deployment, or production mutation.
+- Validation: shared-surface semantic boundary and delivery-hardening guards, strict TypeScript, release units, workspace alignment, production build, browser audits, and exact-SHA GitHub release checks.
+
+## 2026-08-04 — FRONTEND-FULL-PRODUCT-AUDIT-04
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `b7678cb0000944afd069017da618f79fa60adc76`.
+- Formal Product Layer: P4 ops delivery tool; Layer Target: read-only full-product browser coverage and acceptance evidence.
+- Reason: extend the contract-specific evidence with authoritative-navigation discovery, all-leaf desktop/mobile smoke coverage, and five-viewport representative business coverage before final PR review.
+- Standard vs User-Specific: generic product verification only; no customer data, permission, route, interface, visual component, or business rule is changed.
+- Why Here / Why Not Elsewhere: browser verification belongs in `scripts/verify`; it must observe P0/P1 runtime output without adding audit semantics to the frontend renderer, platform kernel, industry module, or runtime configuration.
+- Blast Radius: one read-only browser auditor and local acceptance reports; no database write, external PUMA access, deployment, production mutation, or main-branch merge.
+- Validation: 100% authorized menu-route coverage at 1440/390, 100% template coverage, 100% representative-module coverage at five viewports, zero P0/P1 issues, full frontend gates, production build, and browser report review.
+
+## 2026-08-04 — FORM-BOSS-REFERENCE-CORRECTION-03
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `cf4d412563e9b152ccdee3745bedf42201d506dd`.
+- Formal Product Layer: P0 verification evidence; Layer Target: target-system provenance, privacy-safe screenshots, dimension mapping, and separated maturity conclusions.
+- Reason: correct the prior audit's inaccurate classification of Weaver Jincenda as the BOSS target, then compare the accepted form system against the authenticated PUMA/BOSS361 contract workflow.
+- Standard vs User-Specific: audit metadata and local acceptance evidence only; no customer-specific identity, record value, credential, cookie, route behavior, permission, or business rule is committed.
+- Why Here / Why Not Elsewhere: the form-system audit owns reference provenance and comparison claims. The actual PUMA sample showed no regression requiring product code changes, so frontend components remain untouched.
+- Blast Radius: one audit generator and acceptance artifacts; no application code change, database write, deployment, production mutation, or main-branch merge.
+- Validation: authenticated target-system source hosts, BOSS/Weaver hash separation, eight complete comparison dimensions, privacy masking, UTF-8 delivery, full frontend gates, production build, and all browser audits.
+
+## 2026-08-04 — FORM-SYSTEM-VISUAL-CONVERGENCE-02
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `53507132fc7fe2eec95af8b91c3e9f1f499041df`.
+- Formal Product Layer: P0 shared frontend renderer; Layer Target: mobile visibility, workflow/section discoverability, compact relationship selection, x2many action reachability, and trustworthy browser evidence.
+- Reason: close independent visual-review findings that document-width checks missed, especially ancestor-clipped helper text, off-screen workflow stages, overlapping mobile section navigation, oversized relation results, and UTF-8 audit delivery.
+- Standard vs User-Specific: generic responsive presentation and audit semantics only; no field values, permissions, routes, interfaces, or workflow rules change.
+- Why Here / Why Not Elsewhere: shared form components own layout, focus, scroll discovery, and responsive degradation; the acceptance script owns element-level clipping, reachability, external-reference provenance, and UTF-8 round-trip evidence.
+- Blast Radius: frontend presentation, local acceptance serving, and browser audit artifacts; no backend mutation, database migration, production deployment, or main-branch merge.
+- Validation: five viewports, 95 real-browser assertions, explicit text-clipping and sticky-anchor checks, official external enterprise contract-product references, UTF-8 HTTP headers, all existing frontend gates, production build, and legacy visual audits.
+
+## 2026-08-03 — FORM-SYSTEM-PROFESSIONALIZATION-01
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `e5f0e03021b179e07c31c9e6a0e96f8dd9ad0309`.
+- Formal Product Layer: P0 shared frontend renderer; Layer Target: generic record-form presentation, interaction states, and browser audit; Modules: `ContractFormPage`, native form canvas, reusable form fields, relation dialog, x2many renderer, and the form-system Playwright audit.
+- Reason: extend the accepted readonly detail treatment into a complete, verifiable enterprise form lifecycle covering create, edit, validation, saving, failure, relationships, detail rows, collaboration, long-form navigation, and form design.
+- Standard vs User-Specific: contract-driven generic presentation only; no construction/customer field names, permissions, route identities, record data, or model-specific workflow semantics are introduced.
+- Why Here / Why Not Elsewhere: P0 owns rendering, responsive degradation, focus behavior, and reusable interaction feedback. P1 business modules, backend APIs, ACLs, and runtime configuration remain unchanged because the contract already exposes the required semantics.
+- Blast Radius: frontend presentation and a read-only/mocked-write acceptance probe; no production deployment, database mutation, API change, route change, permission change, business workflow change, or main-branch merge.
+- Validation: strict typecheck, style-token guard, release unit tests, workspace/content alignment guards, production frontend build, legacy visual/form audits, and a five-viewport form matrix with 70 assertions and zero errors.
 ## 2026-08-04 — FRONTEND-COMPANY-SWITCH-BASELINE-GOVERNANCE-01
 
 - Branch / anchor: `fix/frontend-company-switch-performance-baseline` from `2eb4dfaf108d2b2c8ea181a86043dbd48cebcb6c` (`origin/main`).
@@ -2174,6 +2243,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   development build, and browser fault injection covering delayed init, refresh,
   reload, failed init/retry, and role switching against `sc_demo`.
 
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-01
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `084e60d`.
+- Formal Product Layer: P0 platform kernel product.
+- Layer Target: generic frontend design system, application shell, list and
+  record presentation.
+- Module: `frontend/packages/design-tokens`, `frontend/apps/web`.
+- Standard vs User-Specific: platform-wide visual and interaction mechanism;
+  no construction-industry or tenant-specific semantics are introduced.
+- Why Here / Why Not Elsewhere: the frontend renderer owns reusable visual
+  density, navigation presentation, list scanning and form hierarchy. Backend
+  contracts, P1 business defaults, P2 customer preferences, P3 runtime
+  configuration and P4 delivery tooling remain authoritative and unchanged.
+- Blast Radius: semantic tokens, application chrome and reusable list/form
+  presentation only. Menu authority, routes, permissions, API payloads,
+  business workflows and database records are outside scope.
+- Validation: design-token generation, token verification and unit tests;
+  frontend release unit suite; strict TypeScript; source ESLint; workspace
+  alignment, list-scroll and form-canvas guards; and Vite development build
+  to an isolated temporary output directory all pass. The aggregate style
+  guard remains blocked by the pre-existing 1815-line `ContractFormPage.vue`
+  limit violation, and the aggregate quick gate reaches a pre-existing Node
+  24 CommonJS harness incompatibility in `frontend_page_identity_smoke.js`.
+
 ## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-ROUND-09
 
 - Branch / anchor: `feature/frontend-experience-upgrade` from `2e61ade`.
@@ -2194,3 +2287,369 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   the corresponding static guard. All business routes continue through the
   existing immutable menu/action/authority snapshot; backend contracts and
   business data are unchanged.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-STAGE-01
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `5b47663`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; generic
+  navigation shell and governed list/form presentation; `frontend/apps/web`.
+- Stage outcome: delivered a visually distinct dark enterprise navigation
+  frame and a dense, continuous contract ledger surface with integrated query
+  tools, table and pagination. The isolated acceptance fixture now includes
+  deterministic `sc.general.contract` rows so the released menu, list and
+  record-detail routes can be verified end to end without production data.
+- Boundary: presentation tokens and acceptance-only synthetic fixture data;
+  no customer policy, route authority, permission or production database
+  semantics changed.
+- Validation: acceptance login, released contract menu, populated list and
+  record-detail journey pass at 1440x900; Python compilation and Vite build
+  pass. Strict TypeScript remains blocked by pre-existing query typing errors
+  in unmodified `AppShell.vue` and `ContractFormPage.vue`.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-BOSS-ALIGNMENT
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `a87aea7`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; generic
+  shell, list and form presentation; `frontend/apps/web`.
+- Outcome: removed the unsupported dark-navigation direction and aligned the
+  shell to the sampled BOSS visual system: one light 220px navigation column,
+  light-gray workspace, white continuous business surfaces, blue local active
+  states, compact query actions, dense ledger rows and low-decoration form
+  sections.
+- Boundary: generic presentation only. Published navigation, route authority,
+  permissions and business semantics remain unchanged.
+- Validation: isolated acceptance login, populated contract list, record
+  detail journey and Vite build pass at 1440x900.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-GLOBAL-STAGE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `1070936`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; global
+  application shell, role home, governed lists and contract forms.
+- Outcome: completed the BOSS-aligned stage across the shared frontend system:
+  single light navigation, compact role home, continuous dense ledgers,
+  restrained form sections and responsive business-card presentation.
+- Boundary: generic renderer and acceptance-only synthetic data. No customer
+  policy, permission, route authority or production data was changed.
+- Validation: real acceptance login/list/detail journeys pass at 1440x900,
+  1280x800, 768x1024 and 390x844 with zero browser errors and zero document
+  overflow. Strict TypeScript, ESLint, release units, style-system guard,
+  standard-list scroll guard, workspace alignment, wide-form guard and Vite
+  build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-ACTIVITY-TABS
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `c98aa84`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; global
+  application-shell activity navigation; `frontend/apps/web`.
+- Outcome: replaced browser-like bordered activity cards with a flat business
+  tab bar. Inactive pages are neutral, the current page uses one blue bottom
+  rule, and close actions appear only for hover, focus, or the active page.
+- Boundary: generic navigation presentation only. Page lifecycle, route
+  authority, permissions and business semantics remain unchanged.
+- Validation: real acceptance login/list/detail journeys pass at 1440x900,
+  768x1024 and 390x844 with zero browser errors and zero document overflow;
+  mobile activity tabs remain hidden. ESLint, strict TypeScript, release units,
+  style-system guard and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-MENU-STATE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `4fef3df`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; global
+  navigation state and menu-tree presentation; `frontend/apps/web`.
+- Outcome: aligned navigation with the BOSS-style business hierarchy. Route
+  selection now expands every active ancestor and presents one visible active
+  leaf; ancestors retain hierarchy without competing backgrounds. Menu-count
+  badges were removed, indentation and arrows were tightened, shortcut entries
+  became neutral rows, and the search label is visually hidden but accessible.
+- Boundary: generic navigation rendering and state only. Backend menu authority,
+  permissions, route contracts and business semantics remain unchanged.
+- Validation: the real acceptance contract route resolves one visible active
+  `一般合同（公司）` leaf beneath `合同中心 / 合同管理`, with zero count badges,
+  browser errors or horizontal overflow. Mobile keeps navigation closed by
+  default. ESLint, strict TypeScript, release units, style-system guard and Vite
+  production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-SURFACE-RHYTHM
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `2da04b7`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared
+  business surfaces and action-toolbar presentation; `frontend/apps/web`.
+- Outcome: removed the legacy three-pixel accent bands from list, form and role
+  home surfaces so activity navigation and page content no longer compete for
+  emphasis. List query controls now use one toolbar surface instead of nested
+  borders; a single available view no longer renders a redundant view switch.
+  Sidebar footer actions were reduced to the same neutral row language as the
+  navigation.
+- Boundary: generic presentation and conditional rendering only. Search,
+  multi-view switching, route authority, permissions and business behavior are
+  unchanged; multi-view pages retain their switcher.
+- Validation: real home, contract list and contract detail journeys pass at
+  1440x900, 768x1024 and 390x844. Query surfaces have no decorative top border,
+  the single-list view has no redundant switch, and all sizes have zero browser
+  errors or document overflow. ESLint, strict TypeScript, release units,
+  style-system guard and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-BRANCH-ACCEPTANCE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `8ee7f78`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; completed
+  frontend experience system across shell, navigation, list, record and role
+  home surfaces; `frontend/apps/web`.
+- Outcome: completed the branch-level BOSS-style alignment. The mobile contract
+  workflow status is now one horizontally scrollable business-state row instead
+  of wrapped button fragments, while desktop and tablet show the complete row.
+  Mobile header actions stay compact and no longer stretch across the canvas.
+- Boundary: generic responsive rendering only. Workflow states, action
+  availability, permissions, menu authority and backend business behavior are
+  unchanged.
+- Validation: real login, role home, contract menu, populated list, internal
+  table horizontal navigation, record detail, activity-tab switching and tab
+  closing pass at 1440x900, 1280x800, 768x1024 and 390x844. The matrix reports
+  zero browser errors and zero document overflow. ESLint, strict TypeScript,
+  release units, style-system guard, standard-list scroll contract, workspace
+  alignment, wide-form grid guard and Vite production build all pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-VISUAL-IDENTITY
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `43fc97d`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared
+  visual identity across shell, role home, navigation, list and contract form;
+  `frontend/apps/web`.
+- Outcome: responded to visual acceptance feedback with a deliberately visible
+  identity pass rather than another structural refinement. The shell now has a
+  236px branded navigation column and a distinct white application header;
+  current navigation, table headers, role-home KPIs and contract section bands
+  share one governed blue hierarchy. Query controls are tighter and flatter.
+- Boundary: generic presentation only. Navigation authority, workflow states,
+  permissions, data contracts and backend business behavior are unchanged.
+- Validation: real home, list and detail journeys pass at 1440x900, 1280x800,
+  768x1024 and 390x844 with zero browser errors and zero document overflow.
+  ESLint, strict TypeScript, release units, style-system guard, standard-list
+  scroll contract, workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-LIST-FIRST-SCREEN-BUDGET
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `2e6b2b8`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; standard
+  business ledger first-screen density; `frontend/apps/web`.
+- Outcome: replaced the unbounded default ledger projection with a governed
+  12-column first-screen budget. Identity, state, date, numeric and relational
+  fields are prioritised before remaining model-order fields. All 33 available
+  fields remain accessible through column configuration and saved user choices
+  continue to override the default. The column configuration cell now uses the
+  same sticky-edge treatment as governed table navigation.
+- Boundary: default presentation only. Model fields, export data, filters,
+  sorting, permissions, backend contracts and explicit user column preferences
+  are unchanged.
+- Validation: the populated contract ledger now renders 12 business columns by
+  default instead of 33, reducing the measured table width from 5414px to
+  2113px while retaining 33 configuration choices. Real home, list and detail
+  journeys pass at 1440x900, 1280x800, 768x1024 and 390x844 with zero browser
+  errors. Strict TypeScript, release units, style-system guard, standard-list
+  scroll contract, workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-BOSS-CYAN-IDENTITY
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `dbe6eae`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared
+  visual identity, role home, application header and responsive surfaces;
+  `frontend/packages/design-tokens` and `frontend/apps/web`.
+- Outcome: corrected the remaining visual-identity mismatch by replacing the
+  prior conventional blue accent with the BOSS-aligned cyan identity family
+  anchored at `#00b6fe`. Interactive, hover, focus, link, navigation-active and
+  informational states now derive from one governed cyan scale in both light
+  and dark themes. The role home now has a visibly branded cyan identity band,
+  governed KPI cards and stronger section rhythm; the application header uses
+  the same cyan anchor line across home, list and record journeys.
+- Boundary: design tokens and presentation only. Navigation authority,
+  workflows, data contracts, permissions and backend behavior are unchanged.
+- Validation: real role-home, populated contract ledger and contract detail
+  journeys pass at 1440x900, 1280x800, 768x1024 and 390x844 with zero browser
+  errors and zero document overflow. Design-token build/verification, strict
+  TypeScript, release units, style-system guard, standard-list scroll contract,
+  workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-LEDGER-COLUMN-DISCOVERY
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `5b842aa`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; standard
+  ledger first-screen controls and responsive column discovery;
+  `frontend/apps/web/src/pages/ListPage.vue`.
+- Outcome: moved column management out of the horizontally scrolled table edge
+  into a permanent first-screen utility row. Users now see `12 / 33` column
+  context and a visible column-settings action before scrolling; the settings
+  menu retains all 33 fields while the governed 12-column default remains.
+  Desktop table width falls from 2113px to 2033px by removing the obsolete
+  trailing management cell. The same control remains discoverable above mobile
+  record cards.
+- Boundary: list presentation and column-discovery placement only. Field
+  availability, saved preferences, sorting, filtering, export and backend
+  contracts are unchanged.
+- Validation: populated desktop and mobile ledgers show the settings entry on
+  first render; the settings menu opens with 33 visible choices, 12 selected,
+  zero document overflow and zero browser errors. Strict TypeScript, release
+  units, style-system guard, standard-list scroll contract, workspace alignment
+  and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-READONLY-FORM-HIERARCHY
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `932834b`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared form
+  information hierarchy and responsive record presentation;
+  `frontend/apps/web/src/components/template/FormSection.vue`.
+- Outcome: removed repeated per-field readonly pills when an entire form group
+  is readonly, allowing section titles, field labels and values to carry the
+  hierarchy without status noise. Readonly values now use a denser 28px rhythm,
+  stronger primary text and reduced row gaps. Mixed edit groups still retain
+  readonly markers on individually locked fields.
+- Boundary: form presentation only. Field mutability, validation, permissions,
+  workflow state and persistence behavior are unchanged.
+- Validation: populated contract detail journeys pass at 1440x900, 1280x800,
+  768x1024 and 390x844 with zero browser errors and zero document overflow.
+  Desktop and mobile screenshots show zero repeated readonly pills while the
+  grouped record structure remains intact. Strict TypeScript, release units,
+  style-system guard, workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-FORM-ACTION-STATUS-SPLIT
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `98e1ae7`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; record
+  action toolbar and workflow-status presentation;
+  `frontend/apps/web/src/pages/contractForm`.
+- Outcome: separated page navigation from workflow state in the record header.
+  Desktop now anchors the back action on the left and keeps mode plus workflow
+  status on the right, eliminating the former empty-left/right-only composition.
+  Mobile intentionally keeps the horizontally scrollable status row first and
+  places the back action beneath it. The action wrapper is now a neutral toolbar
+  rather than a nested bordered capsule.
+- Boundary: header order and presentation only. Back navigation, workflow
+  state transitions, action availability and permissions are unchanged.
+- Validation: real desktop geometry places the back action at x=251 and the
+  status row at x=967; mobile places the back action below the status row. Both
+  viewports report zero document overflow and zero browser errors. Strict
+  TypeScript, release units, style-system guard, workspace alignment and Vite
+  production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-NAVIGATION-BRAND-CONTEXT
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `13af40e`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; navigation
+  product identity and business-context presentation;
+  `frontend/apps/web/src/layouts/AppShell.vue`.
+- Outcome: removed raw account and fixture names from the permanent product
+  brand area. The sidebar subtitle now presents governed business context as
+  `company · role`, producing `FE Company A · 项目成员` in the acceptance
+  journey. The actual account name remains available inside the account/role
+  panel for traceability without visually contaminating product identity.
+- Boundary: shell identity presentation only. Session identity, company scope,
+  role authority, audit context and permissions are unchanged.
+- Validation: real home, ledger and record screenshots show business context in
+  the sidebar with no fixture account label. All four viewport journeys report
+  zero browser errors and zero document overflow. Strict TypeScript, release
+  units, style-system guard, workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-LAYERED-WORKSPACE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `c14aa65`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shell,
+  navigation, ledger and record workspace visual hierarchy;
+  `frontend/apps/web/src/layouts`, `components/product-list`,
+  `components/template`, `pages/ListPage` and `pages/contractForm`.
+- Outcome: replaced the edge-to-edge flat canvas with a visibly layered light
+  workspace. Restored the left activity rail, retained a light navigation
+  panel, introduced separated query/data/record surfaces, stronger active-tab
+  identity and governed semantic shadows. Removed the redundant search wrapper
+  border, tightened content-sampled column widths by business field role, and
+  surfaced the shared icon system on column configuration.
+- Responsive outcome: desktop uses activity rail plus navigation panel;
+  tablet and mobile retain the drawer model and compact record cards. Record
+  sections become single-column business cards without document overflow.
+- Boundary: presentation and default width derivation only. User-resized width
+  persistence, column visibility, search semantics, workflow state, permission
+  checks and record data are unchanged.
+- Validation: real desktop, compact, tablet and mobile home/list/detail journeys
+  report zero browser errors and zero document overflow. Strict TypeScript,
+  style-system guard, release units, workspace alignment and Vite production
+  build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-ICON-SEMANTICS
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `91c1d1b`.
+- Outcome: expanded the governed `ScIcon` vocabulary and applied it to home,
+  work, menu search, menu disclosure, ledger search, record creation and column
+  configuration. Text labels remain present, while icon size, spacing and state
+  rotation are normalized for faster recognition and accessibility.
+- Boundary: visual semantics only. Navigation routes, search behavior, create
+  authorization and menu expansion persistence are unchanged.
+- Validation: real four-viewport browser journeys report zero errors and zero
+  document overflow. Strict TypeScript and style-system guards pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-MOBILE-WORKFLOW-GRID
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `ba25e2d`.
+- Outcome: replaced the clipped horizontal mobile workflow strip with a complete
+  three-column, two-row status grid. All six workflow states remain visible,
+  with active and completed semantics preserved and the back action positioned
+  beneath the grid.
+- Boundary: layout only. Workflow ordering, transition availability and record
+  state are unchanged.
+- Validation: mobile geometry reports a 313px grid with three approximately
+  100px columns and all six states contained within x=31..344; document overflow
+  and browser errors remain zero.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-ENTERPRISE-RESPONSIVE-POLISH
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `5e05545`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared
+  shell, role-home, list and record presentation;
+  `frontend/apps/web/src/components`, `layouts` and `pages`.
+- Outcome: aligned the light shell, role home, navigation utilities, responsive
+  ledger and record canvas into one restrained enterprise hierarchy. The ledger
+  now ranks primary business fields and packs them using the container's actual
+  pixel budget, distributes readable widths without right-edge clipping, and
+  switches narrow tablet and mobile surfaces to complete record cards. Mobile
+  cards omit desktop column-count language while retaining column settings and
+  present registration number, contract number and name, state, date, amount
+  and related project. The record view removes the intermediate tinted sheet,
+  keeps one continuous document surface and uses separated section headings.
+  Header, role, notification, panel and theme tools use the governed `ScIcon`
+  vocabulary; the light navigation rail and leftmost application shortcut are
+  retained.
+- Boundary: responsive presentation, visual hierarchy, default first-screen
+  field selection and icon semantics only. User data, backend contracts,
+  permissions, workflow transitions, search, sorting and persisted column
+  configuration remain unchanged.
+- Validation: real 1440px desktop, 768px tablet and 390px mobile home/list/detail
+  journeys report zero browser errors and zero document overflow. Desktop table
+  headings, amounts and rightmost related-project values remain fully visible;
+  tablet cards form a two-column ledger and mobile cards form a single-column
+  ledger. Strict TypeScript, release units, style-system guard, workspace
+  alignment, production build and both browser audits pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-MATURITY-CONVERGENCE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `8e5f880`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; responsive
+  shell density, list query/pagination presentation, role-home balance and
+  record document continuity; `frontend/apps/web/src/components`, `layouts`
+  and `pages/contractForm`.
+- Outcome: compressed the mobile shell from three visual rows to at most two,
+  replacing message, work and navigation text controls with accessible
+  `ScIcon` tools. Removed the standalone mobile query-card treatment and joined
+  search and list controls into a lighter continuous workspace. Narrow tablet
+  pagination now forms a compact control cluster instead of distributing every
+  item across the full row. Record sections no longer render nested cards;
+  headings, dividers and spacing carry hierarchy inside one document canvas.
+  The role home uses a shorter, less saturated banner, content-height empty
+  tasks and two lightweight status metrics, eliminating the previous visual
+  imbalance.
+- Boundary: presentation and responsive density only. Business data, API
+  contracts, workflow, permissions, navigation targets, list field selection
+  and column-width behavior are unchanged.
+- Validation: Playwright journeys at 1440px, 768px and 390px show the mobile
+  business surface entering roughly 50px earlier, complete list actions, a
+  single record canvas and compact tablet pagination. Strict TypeScript,
+  release units, style-system guard with zero hardcoded colors, workspace
+  alignment, production build and both browser audits pass with zero errors
+  and zero document overflow.

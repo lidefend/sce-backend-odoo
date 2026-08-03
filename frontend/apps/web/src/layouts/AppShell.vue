@@ -217,9 +217,10 @@
               aria-controls="role-context-panel"
               @click="roleContextOpen = !roleContextOpen"
             >
+              <ScIcon name="user" :size="16" />
               <span class="topbar-context-kicker">当前岗位</span>
               <strong>{{ roleLabel }}</strong>
-              <span class="topbar-context-caret" aria-hidden="true">▾</span>
+              <ScIcon name="chevron-right" :size="14" class="topbar-context-caret" />
             </button>
             <section
               v-if="roleContextOpen"
@@ -249,19 +250,25 @@
             v-if="showMobileWorkShortcut"
             class="mobile-work-shortcut sc-btn sc-btn-sm"
             type="button"
+            title="我的工作"
+            aria-label="我的工作"
             @click="router.push('/my-work')"
           >
-            我的工作
+            <ScIcon name="briefcase" :size="16" />
+            <span class="topbar-tool-label">我的工作</span>
           </button>
           <button
             ref="sidebarToggleButton"
             class="sidebar-toggle sc-btn sc-btn-sm"
             type="button"
+            :title="mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏')"
+            :aria-label="mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏')"
             aria-controls="primary-sidebar"
             :aria-expanded="sidebarVisible"
             @click="toggleSidebar"
           >
-            {{ mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏') }}
+            <ScIcon name="panel-left" :size="16" />
+            <span class="topbar-tool-label">{{ mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏') }}</span>
           </button>
           <button
             v-if="isConfigurationRoute"
@@ -271,7 +278,10 @@
           >
             返回业务办理
           </button>
-          <button class="theme-switch sc-btn sc-btn-sm" type="button" @click="toggleTheme">主题：{{ themeLabel }}</button>
+          <button class="theme-switch sc-btn sc-btn-sm" type="button" :title="`切换主题，当前${themeLabel}`" :aria-label="`切换主题，当前${themeLabel}`" @click="toggleTheme">
+            <ScIcon name="sun" :size="16" />
+            <span class="topbar-tool-label">主题：{{ themeLabel }}</span>
+          </button>
         </div>
       </header>
 
@@ -401,18 +411,6 @@ function asInteger(value: unknown): number | undefined {
   return undefined;
 }
 
-function stripRoleFromIdentity(identity: string, role: string): string {
-  const source = String(identity || '').trim();
-  const roleText = String(role || '').trim();
-  if (!source || !roleText) return source;
-  const escapedRole = roleText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const removedRole = source
-    .replace(new RegExp(`[-_· ]*${escapedRole}$`, 'i'), '')
-    .replace(new RegExp(`^${escapedRole}[-_· ]*`, 'i'), '')
-    .trim();
-  return removedRole;
-}
-
 function resolveSceneKeyFromNode(node: NavNode): string | undefined {
   const sceneNode = node as SceneAwareNavNode;
   return asText(sceneNode.scene_key) || asText(sceneNode.sceneKey) || asText(node.meta?.scene_key);
@@ -484,12 +482,10 @@ const rootTitle = computed(() => {
 });
 const userName = computed(() => session.user?.name ?? '访客');
 const sidebarSubtitle = computed(() => {
-  if (!isDeliveryMode.value) return userName.value;
-  const raw = String(userName.value || '').trim();
-  if (!raw) return roleLabel.value;
-  const stripped = stripRoleFromIdentity(raw, roleLabel.value);
-  if (!stripped) return 'Demo账号';
-  return normalizeDeliveryText(stripped);
+  const context = [currentCompanyLabel.value, roleLabel.value]
+    .map((item) => normalizeDeliveryText(String(item || '').trim()))
+    .filter(Boolean);
+  return context.join(' · ') || normalizeDeliveryText(String(config.appBrand.tagline || '').trim()) || '企业业务工作台';
 });
 const roleLabel = computed(() => {
   const label = String(roleSurface.value?.role_label || '').trim();
@@ -1343,9 +1339,9 @@ function handleSelect(node: NavNode) {
   closeMobileSidebar();
   const selection = createNavigationSelectionSnapshot(node, session.routeAuthority);
   if (!selection) return;
-  const menuQuery = {
+  const menuQuery: LocationQueryRaw = {
     ...buildMenuSelectionQuery(),
-    ...buildBusinessEntryNavQuery(selection.meta),
+    ...(buildBusinessEntryNavQuery(selection.meta) as LocationQueryRaw),
   };
   const scope = {
     companyId: Number(session.projectContext?.company_id || session.projectContext?.selected?.company_id || 0) || null,

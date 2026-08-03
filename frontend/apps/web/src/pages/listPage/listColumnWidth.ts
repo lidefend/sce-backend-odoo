@@ -18,16 +18,50 @@ type ColumnWidthInput = {
   selectionLabels?: string[];
 };
 
-const limits: Record<ListColumnLayoutRole, [number, number]> = {
-  identity: [220, 320],
-  description: [200, 320],
-  relation: [160, 260],
-  text: [112, 220],
-  status: [88, 144],
-  money: [112, 160],
-  date: [112, 160],
-  actions: [88, 120],
+type ColumnPriorityInput = {
+  field: string;
+  label: string;
+  type?: string;
+  role: ListColumnLayoutRole;
+  primary?: boolean;
 };
+
+const limits: Record<ListColumnLayoutRole, [number, number]> = {
+  identity: [136, 260],
+  description: [176, 300],
+  relation: [132, 232],
+  text: [96, 192],
+  status: [80, 120],
+  money: [104, 148],
+  date: [108, 140],
+  actions: [80, 112],
+};
+
+export function listColumnAdaptiveFloor(role: ListColumnLayoutRole) {
+  const floors: Record<ListColumnLayoutRole, number> = {
+    identity: 136, description: 156, relation: 120, text: 96,
+    status: 80, money: 104, date: 108, actions: 80,
+  };
+  return floors[role];
+}
+
+export function rankListBusinessColumn(input: ColumnPriorityInput) {
+  const name = String(input.field || '').toLowerCase();
+  const label = String(input.label || '');
+  const type = String(input.type || '').toLowerCase();
+  if (input.primary || /登记单号|登记编号/.test(label)) return 0;
+  if (/contract.*(_no|number|code)/i.test(name) || /合同编号/.test(label)) return 1;
+  if (/contract.*(name|title)/i.test(name) || /合同名称/.test(label)) return 2;
+  if (input.role === 'status' || /^(status|state)$/i.test(name)) return 3;
+  if (/合同日期/.test(label) || /contract.*date/i.test(name)) return 4;
+  if (/合同金额/.test(label) || /^(amount_total|contract_amount)$/i.test(name)) return 5;
+  if (/关联项目|项目/.test(label) || /project/i.test(name)) return 6;
+  if (type === 'date' || type === 'datetime') return 10;
+  if (input.role === 'money' || ['integer', 'float', 'monetary'].includes(type)) return 11;
+  if (input.role === 'relation' || ['many2one', 'reference'].includes(type)) return 12;
+  if (/((^|_)(name|title|subject)($|_))|名称|主题/i.test(`${name} ${label}`)) return 13;
+  return 20;
+}
 
 function textWidth(value: unknown) {
   return Array.from(String(value ?? '').trim()).reduce((width, character) => {
@@ -52,11 +86,11 @@ function percentile(values: number[], ratio: number) {
 export function deriveListColumnWidth(input: ColumnWidthInput) {
   const type = String(input.type || '').trim().toLowerCase();
   const [minimum, maximum] = limits[input.role];
-  const headerWidth = textWidth(input.label) + 68;
+  const headerWidth = textWidth(input.label) + 52;
   if (input.role === 'date') {
-    return Math.min(maximum, Math.max(minimum, type === 'datetime' ? 152 : 120, headerWidth));
+    return Math.min(maximum, Math.max(minimum, type === 'datetime' ? 140 : 112, headerWidth));
   }
-  if (input.role === 'money') return Math.min(maximum, Math.max(minimum, 132, headerWidth));
+  if (input.role === 'money') return Math.min(maximum, Math.max(minimum, 120, headerWidth));
   if (input.role === 'actions') return Math.min(maximum, Math.max(minimum, headerWidth));
 
   const candidates = [...(input.values || []).slice(0, 30), ...(input.selectionLabels || [])]
@@ -65,7 +99,7 @@ export function deriveListColumnWidth(input: ColumnWidthInput) {
     .map((value) => textWidth(value) + 24);
   const sampledWidth = percentile(candidates, 0.8);
   const contentWidth = ['identity', 'description', 'relation'].includes(input.role)
-    ? Math.ceil(sampledWidth * 0.78)
+    ? Math.ceil(sampledWidth * 0.88)
     : sampledWidth;
   return Math.min(maximum, Math.max(minimum, headerWidth, contentWidth));
 }

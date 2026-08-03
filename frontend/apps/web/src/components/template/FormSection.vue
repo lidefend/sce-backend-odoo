@@ -1,5 +1,5 @@
 <template>
-  <section :class="['template-form-section', toneClass]" data-component="FormSection">
+  <section :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly }]" data-component="FormSection">
     <div v-if="showHead" class="template-form-section-head">
       <h3 v-if="title" class="template-form-section-title">{{ title }}</h3>
       <slot name="action" />
@@ -13,6 +13,8 @@
           :class="fieldClass(field)"
           :data-field-name="field.name"
           :data-field-key="field.key"
+          :data-field-type="field.type"
+          :data-field-state="fieldState(field)"
           :tabindex="fieldSelectionMode ? 0 : undefined"
           :role="fieldSelectionMode ? 'button' : undefined"
           :aria-pressed="fieldSelectionMode ? selectedFieldKey === fieldIdentity(field) : undefined"
@@ -30,8 +32,8 @@
           <div class="field-label-row">
             <label v-if="!fieldConfigEditable" class="label" :for="fieldControlId(field)">
               {{ field.label }}
-              <span v-if="field.required && !field.readonly" class="field-state field-state--required">必填</span>
-              <span v-else-if="field.readonly" class="field-state">只读</span>
+              <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
+              <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
             </label>
             <input
               v-else
@@ -395,6 +397,7 @@ function fieldDescribedBy(field: FormSectionFieldSchema) {
 const slots = useSlots();
 const toneClass = computed(() => (props.tone === 'advanced' ? 'template-form-section--advanced' : 'template-form-section--core'));
 const showHead = computed(() => Boolean(props.title || slots.action));
+const allFieldsReadonly = computed(() => props.fields.length > 0 && props.fields.every((field) => field.readonly));
 function isBaseFieldType(type: TemplateFieldType) {
   return [
     'char',
@@ -468,8 +471,24 @@ function fieldClass(field: FormSectionFieldSchema) {
       'field--selectable': props.fieldSelectionMode,
       'field--selected': props.fieldSelectionMode && props.selectedFieldKey === fieldKey,
       'field--config-hidden': props.fieldSelectionMode && isFieldMarkedHidden(field),
+      'field--empty': fieldHasEmptyValue(field),
     },
   ];
+}
+
+function fieldHasEmptyValue(field: FormSectionFieldSchema) {
+  const value = field.inputValue ?? field.value;
+  if (Array.isArray(value)) return value.length === 0;
+  if (field.type === 'boolean') return value === null || value === undefined;
+  return value === null || value === undefined || value === false || String(value).trim() === '';
+}
+
+function fieldState(field: FormSectionFieldSchema) {
+  if (field.invalid) return 'invalid';
+  if (field.readonly) return 'readonly';
+  if (field.required) return 'required';
+  if (fieldHasEmptyValue(field)) return 'empty';
+  return 'ready';
 }
 
 function isRadioWidget(field: FormSectionFieldSchema) {
@@ -758,9 +777,13 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .template-form-section-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  row-gap: 16px;
-  column-gap: 24px;
+  row-gap: 12px;
+  column-gap: 20px;
   min-width: 0;
+}
+
+.template-form-section--readonly .template-form-section-grid {
+  row-gap: 10px;
 }
 
 .field {
@@ -868,7 +891,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .label {
@@ -939,8 +962,24 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-state--required {
-  border-color: var(--sc-app-danger-border);
+  min-height: auto;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
   color: var(--sc-app-danger-text);
+  font-size: 14px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .field-inline-config {
@@ -997,19 +1036,110 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .readonly-value {
   font-size: 13px;
   color: var(--sc-app-text-secondary);
-  min-height: 40px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
+.template-form-section--readonly .readonly-value {
+  min-height: 28px;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
+}
+
+.template-form-section--readonly :deep(.contract-readonly-value) {
+  min-height: 28px;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
+}
+
+/* Business document sections: visible grouping without a dark navigation treatment. */
+.template-form-section {
+  padding: 18px 20px 20px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 10px;
+  background: var(--sc-app-panel);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--sc-app-shadow) 8%, transparent);
+}
+
+.template-form-section--core,
+.template-form-section--advanced {
+  padding-top: 18px;
+  border-top: 1px solid var(--sc-app-border);
+  margin-top: 0;
+}
+
+.template-form-section-head {
+  position: relative;
+  min-height: 28px;
+  margin: -18px -20px 14px;
+  padding: 12px 16px 10px 20px;
+  border-bottom: 1px solid var(--sc-app-border);
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(90deg, var(--sc-app-info-bg) 0%, color-mix(in srgb, var(--sc-app-info-bg) 48%, var(--sc-app-panel)) 62%, var(--sc-app-panel) 100%);
+}
+
+.template-form-section-head::before {
+  position: absolute;
+  top: 11px;
+  bottom: 9px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: var(--sc-semantic-surface-interactive);
+  content: '';
+}
+
+.template-form-section-title {
+  color: var(--sc-app-info-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.template-form-section--readonly .template-form-section-grid {
+  row-gap: 12px;
+  column-gap: 26px;
+}
+
+.template-form-section--readonly .label {
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.template-form-section--readonly .readonly-value,
+.template-form-section--readonly :deep(.contract-readonly-value) {
+  min-height: 24px;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+@media (max-width: 760px) {
+  .template-form-section {
+    padding: 14px 14px 16px;
+    border-radius: 9px;
+  }
+
+  .template-form-section-head {
+    margin: -14px -14px 12px;
+    padding: 10px 12px 9px 16px;
+    border-radius: 9px 9px 0 0;
+  }
+
+  .template-form-section--readonly .template-form-section-grid {
+    row-gap: 12px;
+  }
+}
+
 .input {
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-component-input-radius);
-  padding: 8px 12px;
-  height: 40px;
-  min-height: 40px;
+  padding: 7px 10px;
+  height: 36px;
+  min-height: 36px;
   width: 100%;
   min-width: 0;
   font-size: 14px;
@@ -1028,6 +1158,34 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   outline: none;
   border-color: var(--sc-semantic-surface-interactive);
   box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
+}
+
+.input:hover:not(:disabled):not(:focus) {
+  border-color: var(--sc-app-border-strong);
+}
+
+.input:disabled,
+.input[readonly] {
+  background: var(--sc-app-muted-bg);
+  color: var(--sc-app-text-secondary);
+  cursor: not-allowed;
+}
+
+.field[data-field-type='integer'] .input,
+.field[data-field-type='float'] .input,
+.field[data-field-type='monetary'] .input,
+.field[data-field-type='integer'] :deep(.contract-readonly-value),
+.field[data-field-type='float'] :deep(.contract-readonly-value),
+.field[data-field-type='monetary'] :deep(.contract-readonly-value) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.field[data-field-type='date'] .input,
+.field[data-field-type='datetime'] .input,
+.field[data-field-type='date'] :deep(.contract-readonly-value),
+.field[data-field-type='datetime'] :deep(.contract-readonly-value) {
+  font-variant-numeric: tabular-nums;
 }
 
 textarea.input {

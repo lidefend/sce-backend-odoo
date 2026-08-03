@@ -22,7 +22,7 @@
   background: var(--sc-app-panel);
   padding: 8px 10px;
   min-height: 52px;
-  box-shadow: 0 8px 18px var(--sc-app-shadow);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 38%, transparent);
 }
 
 .list-title {
@@ -148,11 +148,126 @@
   overflow: hidden;
   background: var(--sc-app-panel);
   border: 1px solid var(--sc-app-border);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 45%, transparent);
+  border-radius: var(--sc-product-radius-panel);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 36%, transparent);
   margin-bottom: 10px;
   overscroll-behavior-x: contain;
   touch-action: pan-x pan-y;
+}
+
+/* Dense ledger surface: toolbar, rows and pagination read as one business canvas. */
+.page[data-product-page-mode='list'],
+.page.sc-product-workspace-stack {
+  --sc-table-header-height: 42px;
+  --sc-table-row-height: 46px;
+}
+
+.page[data-product-page-mode='list'] .list-toolbar,
+.page[data-product-page-mode='list'] .table,
+.page[data-product-page-mode='list'] .pagination-bar {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.page[data-product-page-mode='list'] .list-toolbar {
+  border-bottom: 0;
+}
+
+.page[data-product-page-mode='list'] .table {
+  margin: 0;
+  border-color: var(--sc-app-border);
+}
+
+.page[data-product-page-mode='list'] .table thead th {
+  border-bottom: 1px solid var(--sc-app-border-strong);
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.page[data-product-page-mode='list'] .table tbody td {
+  border-bottom-color: var(--sc-table-divider);
+  color: var(--sc-app-text-primary);
+}
+
+.page[data-product-page-mode='list'] .table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--sc-app-panel) 96%, var(--sc-app-muted-bg));
+}
+
+.page[data-product-page-mode='list'] .table tbody tr:hover td {
+  background: var(--sc-app-hover-bg);
+}
+
+.page[data-product-page-mode='list'] .pagination-footer,
+.page[data-product-page-mode='list'] .pagination-bar {
+  border-top: 1px solid var(--sc-app-border);
+  background: var(--sc-app-subtle-bg);
+}
+
+/* Layered business ledger: query, dataset and pagination form one clear hierarchy. */
+@media (min-width: 761px) {
+  .page[data-product-page-mode='list'] {
+    gap: 14px;
+  }
+
+  .page[data-product-page-mode='list'] .table {
+    border-color: var(--sc-app-border);
+    border-radius: 12px;
+    background: var(--sc-app-panel);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--sc-app-shadow) 16%, transparent);
+  }
+
+  .page[data-product-page-mode='list'] .table-utility-bar {
+    min-height: 46px;
+    padding: 0 16px;
+    border-bottom-color: var(--sc-app-border);
+    background: var(--sc-app-panel);
+  }
+
+  .page[data-product-page-mode='list'] .table-column-count {
+    color: var(--sc-app-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .page[data-product-page-mode='list'] .table thead th {
+    height: 44px;
+    border-bottom-color: var(--sc-app-info-border);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--sc-app-info-bg) 76%, var(--sc-app-panel)) 0%, var(--sc-app-info-bg) 100%);
+    color: var(--sc-app-info-text);
+  }
+
+  .page[data-product-page-mode='list'] .table tbody td {
+    height: 50px;
+    background: var(--sc-app-panel);
+  }
+
+  .page[data-product-page-mode='list'] .table tbody tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--sc-app-panel) 96%, var(--sc-app-muted-bg));
+  }
+
+  .page[data-product-page-mode='list'] .table tbody tr:hover td {
+    background: var(--sc-app-hover-bg);
+  }
+
+  .page[data-product-page-mode='list'] .pagination-footer {
+    min-height: 50px;
+    padding-inline: 16px;
+    border-top-color: var(--sc-app-border);
+    background: var(--sc-app-subtle-bg);
+  }
+}
+
+@media (max-width: 760px) {
+  .page[data-product-page-mode='list'] {
+    gap: 10px;
+  }
+
+  .page[data-product-page-mode='list'] .table {
+    border-radius: 10px;
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--sc-app-shadow) 15%, transparent);
+  }
 }
 
 .table > .sc-table-shell {
@@ -560,21 +675,45 @@
   font-size: 12px;
 }
 
-.cell-column-picker {
+.table-utility-bar {
   position: relative;
-  width: 1%;
-  min-width: 56px;
-  text-align: right;
-  white-space: nowrap;
-  vertical-align: top;
+  z-index: 32;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--sc-app-border);
+  background: var(--sc-app-panel);
+}
+
+.table-column-count {
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
+
+.table-column-count--mobile {
+  display: none;
+}
+
+.table-column-manager {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .column-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--sc-app-info-border);
   border-radius: 6px;
   background: var(--sc-app-input-bg);
   color: var(--sc-app-info-text);
-  padding: 3px 8px;
+  min-height: 28px;
+  padding: 3px 10px;
   font-size: 12px;
   line-height: 18px;
   cursor: pointer;
@@ -614,13 +753,13 @@
 
 .column-picker-menu {
   position: absolute;
-  z-index: 20;
+  z-index: 40;
   right: 0;
   top: calc(100% + 6px);
   display: grid;
   gap: 4px;
   min-width: 190px;
-  max-height: 320px;
+  max-height: 240px;
   overflow: auto;
   border: 1px solid var(--sc-app-info-border);
   border-radius: 8px;
@@ -774,6 +913,7 @@ table {
 
 th,
 td {
+  box-sizing: border-box;
   padding: 9px 12px;
   border-bottom: 1px solid var(--sc-app-border);
   text-align: left;
@@ -916,13 +1056,22 @@ tbody td {
   white-space: nowrap;
 }
 
+@media (min-width: 761px) {
+  .desktop-record-table table {
+    width: 100%;
+    table-layout: fixed;
+  }
+}
+
 .table thead th {
   box-sizing: border-box;
   position: relative;
   z-index: 20;
   height: var(--sc-table-header-height, 40px);
   padding: 0 12px;
-  background: var(--sc-app-muted-bg);
+  border-color: var(--sc-table-divider);
+  background: var(--sc-table-header-bg);
+  color: var(--sc-app-text-primary);
   font-size: 13px;
   font-weight: 600;
   line-height: 18px;
@@ -947,12 +1096,25 @@ tbody td {
 
 .table tbody tr {
   height: var(--sc-table-row-height, 44px);
+  transition: background-color var(--sc-motion-fast, 120ms) ease;
+}
+
+.table tbody tr:hover {
+  background: var(--sc-app-hover-bg);
 }
 
 .table tbody td {
   padding: 8px 12px;
+  border-color: var(--sc-table-divider);
+  color: var(--sc-app-text-secondary);
+  font-size: 13px;
   line-height: 20px;
   vertical-align: middle;
+}
+
+.table :is(.cell-primary-link, .attachment-links a, .attachment-count-link) {
+  color: var(--sc-text-link);
+  font-weight: 500;
 }
 
 .table tbody .cell-select {
@@ -1127,14 +1289,14 @@ tfoot tr:nth-child(2) td {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
   min-height: 36px;
-  max-width: calc(100% - 12px);
+  max-width: 100%;
   border: 0;
   background: transparent;
   color: var(--sc-app-text-primary);
-  padding: 8px 8px 8px 28px;
+  padding: 8px 12px 8px 18px;
   font: inherit;
   font-weight: 700;
   text-align: left;
@@ -1148,7 +1310,7 @@ tfoot tr:nth-child(2) td {
   top: 0;
   right: 0;
   z-index: 5;
-  width: 12px;
+  width: 8px;
   height: 100%;
   border: 0;
   background: transparent;

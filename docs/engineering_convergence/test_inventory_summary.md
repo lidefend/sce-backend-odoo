@@ -4,21 +4,21 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1040`
+- Total assets: `1043`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `130`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `685`
+- PR dedupe candidates: `688`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 405 |
+| governance | 407 |
 | contract | 310 |
-| unit | 164 |
+| unit | 165 |
 | odoo_integration | 73 |
 | e2e | 34 |
 | security | 26 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 904 |
+| pr_candidate | 907 |
 | integration_candidate | 95 |
 | release_candidate | 32 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 685 |
+| deduplicate_before_required | 688 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 94 |
 | keep_release_only | 32 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 906 |
+| <5m | 909 |
 | 10-30m | 96 |
 | 30-60m | 34 |
 | unknown | 3 |
@@ -152,9 +152,9 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 405 |
+| architecture owner | 407 |
 | platform owner | 310 |
-| test owner | 165 |
+| test owner | 166 |
 | backend owner | 73 |
 | qa owner | 34 |
 | security owner | 26 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 930 |
+| scripts/verify | 933 |
 | scripts/ops | 49 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 12 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-177 | security | `scripts/verify/construction_core_extension_actor_roles_split_guard.py` | security owner |
 | T-ASSET-178 | governance | `scripts/verify/construction_core_extension_capability_rows_split_guard.py` | architecture owner |
 | T-ASSET-179 | contract | `scripts/verify/construction_core_extension_contract_helpers_split_guard.py` | platform owner |
-| ... | ... | 605 more | ... |
+| ... | ... | 608 more | ... |
 
 ## Dedupe Hotspots
 

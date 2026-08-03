@@ -22,7 +22,7 @@
       :intake-mode="isProjectIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
-      :busy="busy || status === 'loading'" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
+      :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel"
       :direct-actions="headerBusinessDirectActions" :overflow-actions="headerBusinessOverflowActions" :config-actions="headerConfigActionsVisible"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
@@ -33,7 +33,6 @@
     <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="recordMissing" :title="pageDisplayTitle" message="该记录不存在，可能已被删除或当前链接已经失效。" :error-code="404" variant="error" retry-label="返回安全页面" :on-retry="() => router.push('/')" />
-
     <section v-else :class="['card', 'sc-panel', 'sc-product-main-surface', { 'card--flow': isProjectIntakeCreateMode, 'is-refreshing': status === 'loading' }]"
       :aria-busy="status === 'loading' || undefined" data-workspace-primary-content>
       <p v-if="financialWorkspace && submissionFeedback" class="submission-feedback" :class="`submission-feedback--${submissionFeedback.kind}`" role="status">
@@ -57,7 +56,6 @@
         @open-filter="openFilter"
         @run-action="runAction"
       />
-
       <section v-if="!financialWorkspace || renderProfile === 'edit'" class="form-grid" :class="{ 'form-grid--designer-workspace': showCurrentFormFieldConfigScope }">
         <StatusPanel
           v-if="sceneValidationPanel"
@@ -244,7 +242,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onErrorCaptured, reactive, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import FinancialRelationshipWorkspace from '../components/business/FinancialRelationshipWorkspace.vue';
@@ -903,7 +901,6 @@ const {
   },
 });
 const nativeChatterAutoLoadKey = ref('');
-
 const model = computed(() => String(route.params.model || contract.value?.head?.model || contract.value?.model || ''));
 const menuId = computed(() => Number(route.query.menu_id || 0) || 0);
 const actionId = computed(() => {
@@ -1025,7 +1022,6 @@ function recordVersionPolicy() {
   if (!tokenField || requestParam !== 'if_match') return null;
   return { tokenField };
 }
-
 const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
   if (route.name === 'record') return 'readonly';
   const storeSourceContext = resolveContractV2SourceContext(v2ContractStore.value);
@@ -1062,7 +1058,6 @@ const rights = computed(() => {
     unlink: pageAuth === 'read' ? false : resolve('unlink'),
   };
 });
-
 const canSave = computed(() => (recordId.value ? rights.value.write : rights.value.create));
 const relationRecordCountLabel = computed(() => {
   const template = relationSearchDialog.labels.record_count || '%s 条记录';
@@ -1100,7 +1095,6 @@ const standardCreateReady = computed(() => {
   const managerId = Number(formData.manager_id || 0);
   return Boolean(projectName) && Number.isFinite(managerId) && managerId > 0;
 });
-
 function hasPendingInlineRelationChange() {
   return layoutNodes.value.some((node) => {
     if (node.kind !== 'field' || node.readonly) return false;
@@ -1113,7 +1107,6 @@ function hasPendingInlineRelationChange() {
     return Boolean(relationKeyword(node.name).trim());
   });
 }
-
 function hasPendingMany2manyTagCreate() {
   return Object.entries(relationKeywords).some(([name, keyword]) => {
     if (!String(keyword || '').trim()) return false;
@@ -1125,7 +1118,6 @@ function hasPendingMany2manyTagCreate() {
     return Boolean(relationModel(name));
   });
 }
-
 function hasOne2manyDraftChanges() {
   return layoutNodes.value.some((node) => {
     if (node.kind !== 'field' || node.readonly) return false;
@@ -1134,7 +1126,6 @@ function hasOne2manyDraftChanges() {
     return one2manyFieldRows(node.name).some((row) => row.isNew || row.dirty || row.removed);
   });
 }
-
 const hasChanges = computed(() => {
   if (hasPendingInlineRelationChange()) return true;
   if (hasPendingMany2manyTagCreate()) return true;
@@ -1160,14 +1151,12 @@ const changedFieldCount = computed(() =>
   Object.keys(formData).filter((key) => isFieldWritable(key) && comparableFieldValue(key, formData[key]) !== comparableFieldValue(key, originalValues.value[key])).length
     + (hasOne2manyDraftChanges() ? 1 : 0),
 );
-
 const intakeRequiredFields = computed(() => {
   if (!isProjectIntakeCreateMode.value) return [];
   return layoutNodes.value
     .filter((node) => node.kind === 'field' && node.required && isFieldVisible(node.name))
     .map((node) => ({ name: node.name, label: node.label || node.name }));
 });
-
 const intakeRequiredReadyCount = computed(() => {
   if (!isProjectIntakeCreateMode.value) return 0;
   return intakeRequiredFields.value.filter((field) => {
@@ -1180,7 +1169,6 @@ const intakeRequiredReadyCount = computed(() => {
     return Boolean(value);
   }).length;
 });
-
 const intakeMissingRequiredLabels = computed(() => {
   if (!isProjectIntakeCreateMode.value) return [];
   return intakeRequiredFields.value
@@ -1195,7 +1183,6 @@ const intakeMissingRequiredLabels = computed(() => {
     .map((field) => String(field.label || '').trim())
     .slice(0, 5);
 });
-
 const intakeRequiredSummary = computed(() => {
   if (!isProjectIntakeCreateMode.value) return '';
   const total = intakeRequiredFields.value.length;
@@ -1203,15 +1190,12 @@ const intakeRequiredSummary = computed(() => {
   if (total <= 0) return '当前页面未提供必填字段约束。';
   return `${done}/${total}`;
 });
-
 const intakeMissingSummary = computed(() => {
   if (!isProjectIntakeCreateMode.value) return '';
   if (!intakeMissingRequiredLabels.value.length) return '无';
   return intakeMissingRequiredLabels.value.join('、');
 });
-
 const one2manyValidation = computed(() => collectOne2manyDraftValidation());
-
 const currentActionMeta = computed(() => findActionMetaByMenu(session.menuTree, menuId.value, actionId.value || undefined));
 const currentBusinessCategoryContext = computed(() => resolveBusinessCategoryContext({
   contractRecord: contract.value,
@@ -1265,7 +1249,7 @@ function continueProcessing() {
   void router.push(buildModelFormRouteTarget({
     model: model.value,
     id: String(recordId.value),
-    query: { ...route.query },
+    query: { ...route.query } as LocationQueryRaw,
   }));
 }
 const showDraftSaveAction = computed(() => {

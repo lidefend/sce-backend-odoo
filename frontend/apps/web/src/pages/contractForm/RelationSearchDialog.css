@@ -8,8 +8,9 @@
   background: var(--sc-semantic-backdrop);
 }
 
-.relation-dialog {
+:deep(.relation-dialog) {
   width: min(920px, 100%);
+  box-sizing: border-box;
   max-height: min(760px, calc(100vh - 48px));
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr) auto;
@@ -19,6 +20,14 @@
   border: 1px solid var(--sc-app-border);
   box-shadow: 0 18px 50px var(--sc-app-shadow);
   overflow: hidden;
+}
+
+:deep(.relation-dialog > header) {
+  min-height: 50px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--sc-app-border);
+  background: var(--sc-app-panel);
+  box-sizing: border-box;
 }
 
 .relation-dialog-head,
@@ -78,6 +87,10 @@
   min-height: 160px;
   border: 0;
   border-radius: 0;
+}
+
+.relation-dialog-mobile-results {
+  display: none;
 }
 
 .relation-dialog-table {
@@ -191,6 +204,100 @@
   .relation-dialog-search,
   .relation-dialog-footer {
     align-items: stretch;
-    flex-direction: column;
   }
+
+  :deep(.relation-dialog) {
+    width: calc(100% - 2 * var(--sc-product-page-gutter));
+    max-height: calc(100vh - 2 * var(--sc-product-page-gutter));
+  }
+}
+
+@media (max-width: 620px) {
+  .relation-dialog-table-wrap {
+    display: none;
+  }
+
+  .relation-dialog-mobile-results {
+    display: grid;
+    gap: 8px;
+    max-height: min(42vh, 340px);
+    padding: 10px 12px;
+    overflow-y: auto;
+  }
+
+  .relation-dialog-result-card {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    padding: 11px;
+    border: 1px solid var(--sc-app-border);
+    border-radius: 7px;
+    background: var(--sc-app-panel);
+    cursor: pointer;
+  }
+
+  .relation-dialog-result-card--active {
+    border-color: var(--sc-semantic-surface-interactive);
+    background: var(--sc-navigation-active-bg);
+  }
+
+  .relation-dialog-result-card > input {
+    margin: 3px 0 0;
+  }
+
+  .relation-dialog-result-content,
+  .relation-dialog-result-head,
+  .relation-dialog-result-facts,
+  .relation-dialog-result-facts > span {
+    display: grid;
+    min-width: 0;
+  }
+
+  .relation-dialog-result-content {
+    gap: 8px;
+  }
+
+  .relation-dialog-result-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+
+  .relation-dialog-result-head strong {
+    color: var(--sc-app-text-primary);
+    font-size: 14px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .relation-dialog-result-head > span {
+    color: var(--sc-app-info-text);
+    font-size: 11px;
+  }
+
+  .relation-dialog-result-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 12px;
+  }
+
+  .relation-dialog-result-facts > span {
+    gap: 2px;
+  }
+
+  .relation-dialog-result-facts small {
+    color: var(--sc-app-text-muted);
+    font-size: 10px;
+  }
+
+  .relation-dialog-result-facts em {
+    color: var(--sc-app-text-secondary);
+    font-size: 12px;
+    font-style: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .relation-dialog-footer { flex-direction: row; flex-wrap: wrap; }
+  .relation-dialog-footer-spacer { display: none; }
+  .relation-dialog-count { flex: 1 0 100%; }
 }
