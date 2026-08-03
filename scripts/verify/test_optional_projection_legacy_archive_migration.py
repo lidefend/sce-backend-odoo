@@ -23,19 +23,27 @@ def load_migration():
 
 
 class RecordingCursor:
-    def __init__(self, relations):
+    def __init__(self, relations, constraints=None, indexes=None):
         self.relations = dict(relations)
+        self.constraints = constraints or {}
+        self.indexes = indexes or {}
         self.calls = []
         self._result = None
 
     def execute(self, query, params=None):
         normalized = " ".join(query.split())
         self.calls.append((normalized, params))
-        if "to_regclass(%s)" in normalized:
+        if "FROM pg_constraint" in normalized:
+            relation = str(params[0]).removeprefix("public.")
+            self._result = [(name,) for name in self.constraints.get(relation, ())]
+        elif "FROM pg_index" in normalized:
+            relation = str(params[0]).removeprefix("public.")
+            self._result = [(name,) for name in self.indexes.get(relation, ())]
+        elif "to_regclass(%s)" in normalized:
             relation = str(params[0]).removeprefix("public.")
             kind = self.relations.get(relation)
             self._result = (kind,) if kind else None
-        elif normalized.startswith("ALTER TABLE"):
+        elif normalized.startswith("ALTER TABLE") and " RENAME TO " in normalized:
             source, archive = [part for part in normalized.split('"') if part.startswith("sc_")]
             self.relations[archive] = self.relations.pop(source)
             self._result = None
@@ -43,6 +51,9 @@ class RecordingCursor:
             self._result = None
 
     def fetchone(self):
+        return self._result
+
+    def fetchall(self):
         return self._result
 
 
@@ -53,18 +64,39 @@ class OptionalProjectionLegacyArchiveMigrationTest(unittest.TestCase):
             {
                 "sc_ar_ap_project_summary": "r",
                 "sc_comprehensive_cost_summary": "r",
-            }
+            },
+            constraints={
+                "sc_ar_ap_project_summary": ("sc_ar_ap_project_summary_pkey",),
+                "sc_comprehensive_cost_summary": (
+                    "sc_comprehensive_cost_summary_pkey",
+                ),
+            },
+            indexes={
+                "sc_ar_ap_project_summary": (
+                    "sc_ar_ap_project_summary_project_id_idx",
+                ),
+                "sc_comprehensive_cost_summary": (
+                    "sc_comprehensive_cost_summary_project_id_idx",
+                ),
+            },
         )
 
         module.migrate(cursor, "17.0.0.76")
 
         statements = "\n".join(query for query, _params in cursor.calls)
-        self.assertEqual(statements.count("ALTER TABLE"), 2)
+        self.assertEqual(statements.count(" RENAME TO "), 4)
+        self.assertEqual(statements.count("RENAME CONSTRAINT"), 2)
+        self.assertEqual(statements.count("ALTER INDEX"), 2)
         self.assertEqual(statements.count("COMMENT ON TABLE"), 2)
         self.assertNotIn("DROP TABLE", statements)
         self.assertNotIn("DELETE FROM", statements)
         for archive in module.LEGACY_PROJECTION_ARCHIVES.values():
             self.assertEqual(cursor.relations[archive], "r")
+        self.assertIn("sc_ar_ap_project_summary_legacy_17_0_0_77_pkey", statements)
+        self.assertIn(
+            "sc_comprehensive_cost_summary_legacy_17_0_0_77_project_id_idx",
+            statements,
+        )
 
     def test_existing_views_are_left_in_place(self):
         module = load_migration()
