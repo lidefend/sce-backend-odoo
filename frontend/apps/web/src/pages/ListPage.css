@@ -137,6 +137,7 @@
 }
 
 .table {
+  box-sizing: border-box;
   position: relative;
   isolation: isolate;
   z-index: 0;

@@ -52,6 +52,15 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here / Why Not Elsewhere: P0 owns rendering, responsive degradation, focus behavior, and reusable interaction feedback. P1 business modules, backend APIs, ACLs, and runtime configuration remain unchanged because the contract already exposes the required semantics.
 - Blast Radius: frontend presentation and a read-only/mocked-write acceptance probe; no production deployment, database mutation, API change, route change, permission change, business workflow change, or main-branch merge.
 - Validation: strict typecheck, style-token guard, release unit tests, workspace/content alignment guards, production frontend build, legacy visual/form audits, and a five-viewport form matrix with 70 assertions and zero errors.
+## 2026-08-04 — FRONTEND-COMPANY-SWITCH-BASELINE-GOVERNANCE-01
+
+- Branch / anchor: `fix/frontend-company-switch-performance-baseline` from `2eb4dfaf108d2b2c8ea181a86043dbd48cebcb6c` (`origin/main`).
+- Formal Product Layer: P4 verification governance; Layer Target: frontend release performance capture and the governed mainline baseline asset.
+- Reason: the baseline capture path returned before measuring `company_switch`, leaving the configured scenario absent and forcing otherwise valid relative performance evaluation to fail closed.
+- Standard vs User-Specific: generic release evidence only; no customer data, product behavior, interface, route, permission, threshold, or regression tolerance changes.
+- Why Here / Why Not Elsewhere: the browser performance harness owns sampling order and the release guard owns baseline completeness; frontend rendering and backend business modules do not own benchmark governance.
+- Blast Radius: isolated `sc_frontend_acceptance` fixture, one capture-order correction, one baseline-integrity guard, and one full mainline baseline refresh; no UAT, production, customer tenant, external system, or PR #110 candidate measurement.
+- Validation: five samples for every configured scenario, eight company-switch warm-ups, exact measured source SHA, captured environment metadata, release-unit/static guards, and the authoritative frontend release audit.
 
 ## 2026-08-02 — DAILY-DEV-MISSING-ADDONS-PATH-RUNTIME-01
 

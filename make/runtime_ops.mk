@@ -118,7 +118,7 @@ verify.business_config.low_code_acceptance: guard.prod.forbid
 	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node scripts/low_code_business_config_acceptance.mjs
 
 verify.business_config.config_workbench_operation_acceptance: guard.prod.forbid
-	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node scripts/config_workbench_operation_acceptance.mjs
+	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN="$${E2E_LOGIN:?E2E_LOGIN is required}" E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" node scripts/config_workbench_operation_acceptance.mjs
 
 .PHONY: verify.business_config.safe_open_acceptance verify.business_config.workbench_product_acceptance verify.business_config.workbench_fault_acceptance
 .PHONY: verify.business_config.change_set_acceptance
@@ -425,15 +425,15 @@ verify.system_user_experience.quick: guard.prod.forbid verify.productization.sys
 	@git diff --check
 
 verify.system_user_experience.shell_acceptance: guard.prod.forbid
-	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node scripts/system_user_experience_shell_acceptance.mjs
+	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN="$${E2E_LOGIN:?E2E_LOGIN is required}" E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" node scripts/system_user_experience_shell_acceptance.mjs
 	@cd frontend/apps/web && node scripts/system_user_experience_shell_summary_guard.mjs
 
 verify.system_user_experience.business_form_user_perspective: guard.prod.forbid
-	@BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs
+	@BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN="$${E2E_LOGIN:?E2E_LOGIN is required}" E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" node frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs
 	@cd frontend/apps/web && node scripts/business_form_user_perspective_summary_guard.mjs
 
 verify.system_user_experience.visible_surface_visual_coverage: guard.prod.forbid
-	@BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB=$(DB_NAME) LOGIN=$${E2E_LOGIN:-wutao} PASSWORD=$${E2E_PASSWORD:-123456} SKIP_FORMS=1 node frontend/apps/web/scripts/user_page_visual_coverage.cjs
+	@BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN="$${E2E_LOGIN:?E2E_LOGIN is required}" E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" SKIP_FORMS=1 node frontend/apps/web/scripts/user_page_visual_coverage.cjs
 	@cd frontend/apps/web && node scripts/user_visible_surface_visual_coverage_summary_guard.mjs
 
 verify.system_user_experience.full_browser: guard.prod.forbid verify.system_user_experience.coverage_guard verify.product.page_structure verify.business_config.config_workbench_operation_acceptance verify.business_config.config_workbench_operation_summary_guard verify.system_user_experience.shell_acceptance verify.system_user_experience.visible_surface_visual_coverage verify.system_user_experience.business_form_user_perspective

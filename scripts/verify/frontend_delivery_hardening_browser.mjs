@@ -630,12 +630,6 @@ async function main() {
         }));
       }
       performanceReport.scenarios.form_open = stats(formSamples);
-      if (PERF_BASELINE_CAPTURE) {
-        performanceReport.baseline_scope = 'login_and_initialized_navigation';
-        fs.writeFileSync(path.join(OUT, 'performance-baseline.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
-        console.log('[verify.frontend.delivery_hardening.performance_baseline] CAPTURED');
-        return;
-      }
       const switchSamples = [];
       const companySwitchWarmupRuns = Number(performanceBudgets.company_switch_warmup_runs);
       check(
@@ -657,6 +651,13 @@ async function main() {
         switchSamples.push(await time(() => selectCompany(page, selectedCompanyLabel)));
       }
       performanceReport.scenarios.company_switch = stats(switchSamples);
+      if (PERF_BASELINE_CAPTURE) {
+        performanceReport.baseline_scope = 'login_initialized_navigation_and_governed_company_switch';
+        performanceReport.result = 'CAPTURED';
+        fs.writeFileSync(path.join(OUT, 'performance-baseline.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
+        console.log('[verify.frontend.delivery_hardening.performance_baseline] CAPTURED');
+        return;
+      }
       const absoluteScenarioPass = Object.fromEntries(Object.entries(performanceReport.scenarios).map(([name, metrics]) => {
         const budget = performanceReport.budgets[name];
         check(budget, `performance budget missing: ${name}`);

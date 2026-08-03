@@ -4,37 +4,23 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(SCRIPT_DIR, "..", "..", "..", "..");
-
-const CONFIG_SUMMARY_PATH = path.join(ROOT_DIR, "artifacts", "playwright", "config-workbench-operation", "summary.json");
-const CONFIG_REPORT_PATH = path.join(ROOT_DIR, "artifacts", "playwright", "config-workbench-operation", "report.json");
-const SHELL_REPORT_PATH = path.join(ROOT_DIR, "artifacts", "playwright", "system-user-experience-shell", "report.json");
-const BUSINESS_FORM_REPORT_PATH = path.join(ROOT_DIR, "artifacts", "playwright", "business-form-user-perspective", "report.json");
-const OUTPUT_PATH = path.join(ROOT_DIR, "artifacts", "playwright", "system-user-experience-full-browser", "summary.json");
-
-function fail(message, details = {}) {
-  const error = new Error(message);
-  error.details = details;
-  throw error;
-}
+const artifact = (...parts) => path.join(ROOT_DIR, "artifacts", "playwright", ...parts);
+const OUTPUT_PATH = artifact("system-user-experience-full-browser", "summary.json");
+const VISUAL_REPORT_PATH = process.env.USER_VISIBLE_SURFACE_REPORT || "/tmp/user_page_visual_coverage.json";
 
 async function readJson(filePath) {
-  try {
-    return JSON.parse(await fs.readFile(filePath, "utf8"));
-  } catch (err) {
-    fail(`cannot read JSON artifact: ${filePath}`, { error: err instanceof Error ? err.message : String(err) });
-  }
+  return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
-function countArray(value) {
-  return Array.isArray(value) ? value.length : 0;
-}
+const count = (value) => Array.isArray(value) ? value.length : 0;
 
 async function main() {
-  const [configSummary, configReport, shellReport, businessFormReport] = await Promise.all([
-    readJson(CONFIG_SUMMARY_PATH),
-    readJson(CONFIG_REPORT_PATH),
-    readJson(SHELL_REPORT_PATH),
-    readJson(BUSINESS_FORM_REPORT_PATH),
+  const [configSummary, configReport, shellReport, visualReport, formReport] = await Promise.all([
+    readJson(artifact("config-workbench-operation", "summary.json")),
+    readJson(artifact("config-workbench-operation", "report.json")),
+    readJson(artifact("system-user-experience-shell", "report.json")),
+    readJson(VISUAL_REPORT_PATH),
+    readJson(artifact("business-form-user-perspective", "report.json")),
   ]);
 
   const configOk = configSummary.ok === true
@@ -47,56 +33,44 @@ async function main() {
     && configSummary.consoleErrors === 0
     && configSummary.requestFailed === 0
     && configReport.ok === true;
-  const shellFailures = countArray(shellReport.failures);
   const shellOk = shellReport.ok === true
     && shellReport.caseCount >= 5
-    && shellFailures === 0
-    && countArray(shellReport.consoleErrors) === 0
-    && countArray(shellReport.requestFailed) === 0;
-  const businessFormResults = Array.isArray(businessFormReport.results) ? businessFormReport.results : [];
-  const businessFormFailures = businessFormResults.filter((row) => row?.ok !== true);
-  const businessFormOk = businessFormReport.ok === true
-    && businessFormResults.length >= 20
-    && businessFormFailures.length === 0
-    && countArray(businessFormReport.errors) === 0
-    && countArray(businessFormReport.consoleErrors) === 0;
+    && count(shellReport.failures) === 0
+    && count(shellReport.consoleErrors) === 0
+    && count(shellReport.requestFailed) === 0;
+  const visualSummary = visualReport.summary || {};
+  const visualOk = Number(visualSummary.totalDiscovered || 0) > 0
+    && visualSummary.totalScanned === visualSummary.totalDiscovered
+    && visualSummary.actionOk === visualSummary.totalDiscovered
+    && Number(visualSummary.actionFailed || 0) === 0
+    && Number(visualSummary.consoleErrorCount || 0) === 0
+    && count(visualReport.actionResults) === visualSummary.totalDiscovered
+    && count(visualReport.actionFailures) === 0
+    && count(visualReport.consoleErrors) === 0;
+  const formResults = Array.isArray(formReport.results) ? formReport.results : [];
+  const formOk = formReport.ok === true
+    && formResults.length >= 20
+    && formResults.every((row) => row?.ok === true)
+    && count(formReport.errors) === 0
+    && count(formReport.consoleErrors) === 0;
 
-  const payload = {
-    ok: configOk && shellOk && businessFormOk,
-    reportPath: OUTPUT_PATH,
-    gates: {
-      config_workbench: {
-        ok: configOk,
-        assertions: configSummary.assertion,
-        journeys: configSummary.journeys,
-        actions: configSummary.actions,
-        screenshots: configSummary.screenshots,
-        delivery: configSummary.delivery,
-        professional: configSummary.professional,
-        consoleErrors: configSummary.consoleErrors,
-        requestFailed: configSummary.requestFailed,
-      },
-      shell: {
-        ok: shellOk,
-        caseCount: shellReport.caseCount,
-        failures: shellFailures,
-        consoleErrors: countArray(shellReport.consoleErrors),
-        requestFailed: countArray(shellReport.requestFailed),
-      },
-      business_form_user_perspective: {
-        ok: businessFormOk,
-        caseCount: businessFormResults.length,
-        failures: businessFormFailures.length,
-        errors: countArray(businessFormReport.errors),
-        consoleErrors: countArray(businessFormReport.consoleErrors),
-      },
+  const gates = {
+    config_workbench: { ok: configOk },
+    shell: { ok: shellOk, caseCount: shellReport.caseCount },
+    visible_surface: {
+      ok: visualOk,
+      discovered: visualSummary.totalDiscovered,
+      scanned: visualSummary.totalScanned,
+      failures: visualSummary.actionFailed,
+      consoleErrors: visualSummary.consoleErrorCount,
     },
+    business_form_user_perspective: { ok: formOk, caseCount: formResults.length },
   };
+  const payload = { ok: Object.values(gates).every((gate) => gate.ok), reportPath: OUTPUT_PATH, gates };
 
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
   await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-
-  if (!payload.ok) fail("system user experience full browser summary is not ok", payload.gates);
+  if (!payload.ok) throw Object.assign(new Error("system user experience full browser summary is not ok"), { details: gates });
   console.log(JSON.stringify(payload, null, 2));
 }
 

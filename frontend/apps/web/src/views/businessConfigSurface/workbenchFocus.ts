@@ -8,7 +8,7 @@ export async function focusActiveEditorPanel() {
   const panel = document.querySelector<HTMLElement>('.config-editor-panel');
   if (!panel) return;
   await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
-  const scrollContainer = panel.closest<HTMLElement>('.content');
+  const scrollContainer = panel.closest<HTMLElement>('.router-host');
   const rect = panel.getBoundingClientRect();
   if (scrollContainer) {
     const containerRect = scrollContainer.getBoundingClientRect();

@@ -354,6 +354,7 @@ import { buildBusinessEntryNavQuery } from '../app/navigationContext';
 import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRuntime';
 import { applyTheme, nextTheme, persistTheme, type ScTheme } from '../styles/theme';
 import { config } from '../config';
+import { BUSINESS_CONFIG_MODES } from '../app/businessConfigBoundaries';
 import {
   isBusinessConfigurationAction,
   openAction,
@@ -616,8 +617,13 @@ const compactRouteKeepsHeadline = computed(() => [
   'access-denied',
   'not-found',
 ].includes(String(route.name || '')));
+const formDesignerKeepsHeadline = computed(() => (
+  String(route.name || '') === 'model-form'
+  && String(route.query.config_mode || '').trim() === BUSINESS_CONFIG_MODES.lowCode
+));
 const showTopbarHeadline = computed(
-  () => !businessRouteUsesCompactTopbar.value && (!useMinimalTopbar.value || compactRouteKeepsHeadline.value),
+  () => formDesignerKeepsHeadline.value
+    || (!businessRouteUsesCompactTopbar.value && (!useMinimalTopbar.value || compactRouteKeepsHeadline.value)),
 );
 const sidebarClass = computed(() =>
   activeLayout.value.sidebar === 'scroll' ? 'sidebar--scroll' : 'sidebar--fixed'

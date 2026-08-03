@@ -27,6 +27,11 @@ BUSINESS_CONFIG_ADMIN_GROUP = "smart_core.group_smart_core_business_config_admin
 _logger = logging.getLogger(__name__)
 _FORM_FIELD_LABEL_OVERRIDES: dict[tuple[str, str], str] = {}
 STANDARD_LOWCODE_COLUMN_LABELS = {
+    "legacy_contract_amount": "历史合同金额",
+    "legacy_contract_amount_delta": "合同金额差额",
+    "legacy_contract_no": "历史合同编号",
+    "legacy_document_no": "历史单据编号",
+    "legacy_external_contract_no": "外部合同编号",
     "source_created_by": "录入人",
     "source_created_at": "录入时间",
 }
@@ -2195,15 +2200,18 @@ class BusinessConfigListSearchAuditHandler(BaseIntentHandler):
             model_field_labels = self._model_field_labels(model, list_columns)
             def resolve_list_label(name: str) -> str:
                 configured_label = str(list_column_labels.get(name) or "").strip()
-                if configured_label == name:
+                if configured_label.casefold() == name.casefold():
                     configured_label = ""
                 override_label = _form_field_label_override(model, name)
                 if override_label:
                     return override_label
                 cleaned_configured_label = _clean_lowcode_user_label(name, configured_label) if configured_label else ""
+                action_view_label = str(action_view_column_labels.get(name) or "").strip()
+                if action_view_label.casefold() == name.casefold():
+                    action_view_label = ""
                 resolved_label = (
                     cleaned_configured_label
-                    or action_view_column_labels.get(name)
+                    or action_view_label
                     or _clean_lowcode_user_label(name, model_field_labels.get(name) or name)
                 )
                 return _legacy_visible_business_label(self.env, model, name, resolved_label) or resolved_label

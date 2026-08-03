@@ -13,8 +13,8 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 3683 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3664 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3364 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
+| 3672 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
+| 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3331 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3329 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -35,7 +35,7 @@ Generated from repository source files. This report is informational during the 
 | 1931 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 1927 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 1865 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1861 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
+| 1863 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1799 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1746 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1741 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
@@ -59,8 +59,8 @@ Generated from repository source files. This report is informational during the 
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1452 | Python source | `scripts/release/release_publication.py` |
 | 1442 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
+| 1432 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
-| 1426 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1417 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1400 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1392 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
@@ -125,8 +125,8 @@ Generated from repository source files. This report is informational during the 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
 | 3683 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3664 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3364 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
+| 3672 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
+| 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3331 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3329 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -147,7 +147,7 @@ Generated from repository source files. This report is informational during the 
 | 1931 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 1927 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 1865 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1861 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
+| 1863 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1799 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1746 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1741 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
@@ -164,8 +164,8 @@ Generated from repository source files. This report is informational during the 
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1452 | warning | Python source | `scripts/release/release_publication.py` |
 | 1442 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
+| 1432 | warning | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
-| 1426 | warning | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1417 | warning | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1400 | warning | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1392 | warning | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
