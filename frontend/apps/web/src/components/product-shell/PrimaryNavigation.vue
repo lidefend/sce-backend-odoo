@@ -64,17 +64,15 @@ function emitSearch(event: Event) {
   min-height: 36px;
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-product-radius-control);
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  color: #d9e2f1;
+  background: var(--sc-navigation-bg);
+  color: var(--sc-app-text-primary);
   cursor: pointer;
   transition: background-color var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
 }
 
 .primary-navigation__shortcuts button[aria-current='page'] {
-  border-color: #4ea1ff;
-  background: #2f80ed;
-  color: #fff;
+  border-color: var(--sc-semantic-surface-interactive);
+  background: var(--sc-navigation-active-bg);
   font-weight: 700;
 }
 
@@ -82,15 +80,10 @@ function emitSearch(event: Event) {
   width: 100%;
   min-height: var(--sc-product-control-height);
   padding: 0 var(--sc-space-3, 12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-radius-md, 8px);
-  background: rgba(255, 255, 255, 0.06);
-  color: #f8fafc;
-}
-
-.primary-navigation__search input:focus {
-  border-color: #4ea1ff;
-  outline: 2px solid rgba(78, 161, 255, 0.22);
+  background: var(--sc-app-input-bg);
+  color: var(--sc-app-text-primary);
 }
 
 .primary-navigation__tree {

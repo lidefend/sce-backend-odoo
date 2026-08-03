@@ -9,7 +9,7 @@
   height: 100vh;
   overflow: hidden;
   display: grid;
-  grid-template-columns: var(--sc-shell-sidebar-width) minmax(0, 1fr);
+  grid-template-columns: 220px minmax(0, 1fr);
   background: var(--sc-app-bg);
   color: var(--ink);
   font-family: "Inter", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
@@ -27,7 +27,7 @@
   box-sizing: border-box;
   padding: 0;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   border-right: 1px solid var(--sc-app-border);
   background: var(--sc-navigation-bg);
@@ -38,76 +38,13 @@
   align-self: start;
 }
 
-/* FE experience upgrade: establish a recognisable enterprise navigation frame. */
-.sidebar {
-  border-right: 0;
-  background: #17233d;
-  box-shadow: 4px 0 18px rgb(15 23 42 / 10%);
-}
-
+/* BOSS-aligned shell: a single quiet navigation column keeps attention on data. */
 .workspace-activity-rail {
-  border-right-color: rgb(255 255 255 / 8%);
-  background: #101a30;
-}
-
-.workspace-activity-brand {
-  border-radius: 6px;
-  background: #2f80ed;
-  box-shadow: 0 6px 14px rgb(47 128 237 / 30%);
-}
-
-.workspace-activity-rail button {
-  color: #91a0b8;
-}
-
-.workspace-activity-rail button:hover,
-.workspace-activity-rail button.active {
-  background: rgb(255 255 255 / 10%);
-  color: #fff;
-}
-
-.workspace-activity-rail button.active {
-  box-shadow: inset 3px 0 0 #4ea1ff;
+  display: none !important;
 }
 
 .workspace-sidebar-panel {
-  padding: 14px 12px 12px;
-  color: #d9e2f1;
-}
-
-.sidebar .brand,
-.sidebar .brand * {
-  color: #f8fafc !important;
-}
-
-.sidebar .brand .subtitle {
-  color: #91a0b8 !important;
-}
-
-.sidebar .title,
-.brand .title,
-.workspace-sidebar-panel .enterprise-line,
-.workspace-sidebar-panel .role-surface,
-.workspace-sidebar-panel .role-surface strong {
-  color: #f8fafc !important;
-}
-
-.sidebar .subtitle,
-.brand .subtitle,
-.workspace-sidebar-panel .role-surface small {
-  color: #91a0b8 !important;
-}
-
-.nav-shell,
-.workspace-sidebar-panel .search input,
-.workspace-sidebar-panel .primary-navigation__search input {
-  border-color: rgb(255 255 255 / 12%);
-  background: rgb(255 255 255 / 6%);
-  color: #f8fafc;
-}
-
-.workspace-sidebar-panel input::placeholder {
-  color: #91a0b8;
+  padding: 12px 14px;
 }
 
 .sidebar--scroll {

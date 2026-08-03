@@ -2226,3 +2226,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   record-detail journey pass at 1440x900; Python compilation and Vite build
   pass. Strict TypeScript remains blocked by pre-existing query typing errors
   in unmodified `AppShell.vue` and `ContractFormPage.vue`.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-BOSS-ALIGNMENT
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `a87aea7`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; generic
+  shell, list and form presentation; `frontend/apps/web`.
+- Outcome: removed the unsupported dark-navigation direction and aligned the
+  shell to the sampled BOSS visual system: one light 220px navigation column,
+  light-gray workspace, white continuous business surfaces, blue local active
+  states, compact query actions, dense ledger rows and low-decoration form
+  sections.
+- Boundary: generic presentation only. Published navigation, route authority,
+  permissions and business semantics remain unchanged.
+- Validation: isolated acceptance login, populated contract list, record
+  detail journey and Vite build pass at 1440x900.
