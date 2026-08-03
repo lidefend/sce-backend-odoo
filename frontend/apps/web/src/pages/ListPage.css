@@ -609,29 +609,29 @@
   font-size: 12px;
 }
 
-.cell-column-picker {
-  position: sticky;
-  right: 0;
-  z-index: 15;
-  width: 1%;
-  min-width: 56px;
+.table-utility-bar {
+  position: relative;
+  z-index: 32;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--sc-app-border);
   background: var(--sc-app-panel);
-  box-shadow: -8px 0 10px -10px var(--sc-app-shadow);
-  text-align: right;
-  white-space: nowrap;
-  vertical-align: top;
 }
 
-.flat-table thead .cell-column-picker,
-.group-table thead .cell-column-picker {
-  z-index: 28;
-  background: var(--sc-app-info-bg);
+.table-column-count {
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
 }
 
-.flat-table tfoot .cell-column-picker,
-.group-table tfoot .cell-column-picker {
-  z-index: 16;
-  background: var(--sc-app-muted-bg);
+.table-column-manager {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .column-picker-btn {
@@ -639,7 +639,8 @@
   border-radius: 6px;
   background: var(--sc-app-input-bg);
   color: var(--sc-app-info-text);
-  padding: 3px 8px;
+  min-height: 28px;
+  padding: 3px 10px;
   font-size: 12px;
   line-height: 18px;
   cursor: pointer;
@@ -679,13 +680,13 @@
 
 .column-picker-menu {
   position: absolute;
-  z-index: 20;
+  z-index: 40;
   right: 0;
   top: calc(100% + 6px);
   display: grid;
   gap: 4px;
   min-width: 190px;
-  max-height: 320px;
+  max-height: 240px;
   overflow: auto;
   border: 1px solid var(--sc-app-info-border);
   border-radius: 8px;

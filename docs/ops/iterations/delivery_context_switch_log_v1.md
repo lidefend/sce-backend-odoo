@@ -2390,3 +2390,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   errors and zero document overflow. Design-token build/verification, strict
   TypeScript, release units, style-system guard, standard-list scroll contract,
   workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-LEDGER-COLUMN-DISCOVERY
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `5b842aa`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; standard
+  ledger first-screen controls and responsive column discovery;
+  `frontend/apps/web/src/pages/ListPage.vue`.
+- Outcome: moved column management out of the horizontally scrolled table edge
+  into a permanent first-screen utility row. Users now see `12 / 33` column
+  context and a visible column-settings action before scrolling; the settings
+  menu retains all 33 fields while the governed 12-column default remains.
+  Desktop table width falls from 2113px to 2033px by removing the obsolete
+  trailing management cell. The same control remains discoverable above mobile
+  record cards.
+- Boundary: list presentation and column-discovery placement only. Field
+  availability, saved preferences, sorting, filtering, export and backend
+  contracts are unchanged.
+- Validation: populated desktop and mobile ledgers show the settings entry on
+  first render; the settings menu opens with 33 visible choices, 12 selected,
+  zero document overflow and zero browser errors. Strict TypeScript, release
+  units, style-system guard, standard-list scroll contract, workspace alignment
+  and Vite production build pass.

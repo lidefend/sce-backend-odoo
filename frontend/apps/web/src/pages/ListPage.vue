@@ -117,6 +117,23 @@
         tabindex="0"
       >
         <span v-if="loading" class="refresh-status">{{ uiLabel('refreshing_list', '正在刷新数据') }}</span>
+        <div v-if="columnChoices.length" ref="columnPickerRoot" class="table-utility-bar">
+          <span class="table-column-count">当前显示 {{ displayedColumns.length }} / {{ columnChoices.length }} 列</span>
+          <div class="table-column-manager">
+            <button type="button" class="column-picker-btn" :aria-expanded="columnPickerOpen" :disabled="loading" @click.stop="columnPickerOpen = !columnPickerOpen">
+              列设置
+            </button>
+            <span v-if="columnSaveStatusText" class="column-save-badge" :class="`is-${columnSaveStatus}`">{{ columnSaveStatusText }}</span>
+            <div v-if="columnPickerOpen" class="column-picker-menu">
+              <label v-for="column in columnChoices" :key="`column-choice-${column.name}`" class="column-choice">
+                <input type="checkbox" :checked="isColumnVisible(column.name)" :disabled="loading || isLastVisibleColumn(column.name)" @change="onColumnVisibilityChange(column.name, $event)" />
+                <span>{{ columnChoiceLabel(column) }}</span>
+              </label>
+              <button type="button" class="column-reset" :disabled="loading" @click="resetColumnVisibility">恢复默认</button>
+              <p v-if="columnSaveStatusText" class="column-save-message" :class="`is-${columnSaveStatus}`">{{ columnSaveStatusText }}</p>
+            </div>
+          </div>
+        </div>
 	        <section v-if="showGroupedRows" class="grouped-table">
         <header class="grouped-toolbar">
           <div class="grouped-toolbar-title">
@@ -444,7 +461,6 @@
             <col v-if="showSelectionColumn" class="col-select" />
           <col v-if="showRowNumberColumn" class="col-row-number" />
             <col v-for="col in displayedColumns" :key="`col-width-${col}`" :style="columnWidthStyle(col)" :class="columnDensityClass(col)" />
-            <col v-if="columnChoices.length" class="col-column-picker" />
           </colgroup>
         <thead>
           <tr>
@@ -506,29 +522,6 @@
                 @dragstart.stop.prevent
                 @mousedown.stop.prevent="startColumnResize(col, $event)"
               ></button>
-            </th>
-            <th v-if="columnChoices.length" ref="columnPickerRoot" class="cell-column-picker">
-              <button type="button" class="column-picker-btn" :disabled="loading" @click.stop="columnPickerOpen = !columnPickerOpen">
-                {{ uiLabel('column_picker', '列') }}
-              </button>
-              <span v-if="columnSaveStatusText" class="column-save-badge" :class="`is-${columnSaveStatus}`">
-                {{ columnSaveStatusText }}
-              </span>
-              <div v-if="columnPickerOpen" class="column-picker-menu">
-                <label v-for="column in columnChoices" :key="`column-choice-${column.name}`" class="column-choice">
-                  <input
-                    type="checkbox"
-                    :checked="isColumnVisible(column.name)"
-                    :disabled="loading || isLastVisibleColumn(column.name)"
-                    @change="onColumnVisibilityChange(column.name, $event)"
-                  />
-                  <span>{{ columnChoiceLabel(column) }}</span>
-                </label>
-                <button type="button" class="column-reset" :disabled="loading" @click="resetColumnVisibility">{{ uiLabel('column_reset', '恢复默认') }}</button>
-                <p v-if="columnSaveStatusText" class="column-save-message" :class="`is-${columnSaveStatus}`">
-                  {{ columnSaveStatusText }}
-                </p>
-              </div>
             </th>
           </tr>
         </thead>
@@ -599,7 +592,6 @@
                 {{ semanticCell(col, row[col]).text }}
               </div>
             </td>
-            <td v-if="columnChoices.length" class="cell-column-picker"></td>
           </tr>
         </tbody>
         <tfoot v-if="showAggregateFooter">
@@ -614,7 +606,6 @@
               <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ footerCellText(col, 'page', pageVisibleRows.length) }}</span>
               <template v-else>{{ footerCellText(col, 'page', pageVisibleRows.length) }}</template>
             </td>
-            <td v-if="columnChoices.length" class="cell-column-picker"></td>
           </tr>
           <tr>
             <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('total', listTotal || pageVisibleRows.length) }}</th>
@@ -627,7 +618,6 @@
               <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ footerCellText(col, 'total', listTotal || pageVisibleRows.length) }}</span>
               <template v-else>{{ footerCellText(col, 'total', listTotal || pageVisibleRows.length) }}</template>
             </td>
-            <td v-if="columnChoices.length" class="cell-column-picker"></td>
           </tr>
         </tfoot>
       </ScDataTable>
