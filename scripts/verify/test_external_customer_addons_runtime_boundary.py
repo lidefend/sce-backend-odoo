@@ -17,11 +17,12 @@ class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
         self.assertLess(text.index(condition), text.index(override))
 
     def test_module_operations_do_not_require_customer_mount_for_product(self):
-        base_path = "/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/extra-addons,$ADDONS_EXTERNAL_MOUNT"
+        base_path = "/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,$ADDONS_EXTERNAL_MOUNT"
         for relative in ("scripts/mod/install.sh", "scripts/mod/upgrade.sh"):
             with self.subTest(script=relative):
                 text = (ROOT / relative).read_text(encoding="utf-8")
                 self.assertIn(f'ODOO_ADDONS_PATH="{base_path}"', text)
+                self.assertNotIn("/mnt/extra-addons", text)
                 self.assertIn('if [[ -n "${SC_CUSTOMER_ADDONS_ROOT:-}" ]]; then', text)
                 self.assertIn('ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH},/mnt/customer-addons"', text)
                 self.assertIn('--addons-path="$ODOO_ADDONS_PATH"', text)

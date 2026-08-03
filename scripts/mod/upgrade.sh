@@ -19,7 +19,7 @@ guard_demo_module_db
 
 printf '[mod.upgrade] module=%s db=%s\n' "$MODULE" "$DB_NAME"
 
-ODOO_ADDONS_PATH="/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/extra-addons,$ADDONS_EXTERNAL_MOUNT"
+ODOO_ADDONS_PATH="/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,$ADDONS_EXTERNAL_MOUNT"
 if [[ -n "${SC_CUSTOMER_ADDONS_ROOT:-}" ]]; then
   ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH},/mnt/customer-addons"
 fi
