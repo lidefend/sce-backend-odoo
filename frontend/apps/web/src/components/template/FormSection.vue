@@ -1,5 +1,5 @@
 <template>
-  <section :class="['template-form-section', toneClass]" data-component="FormSection">
+  <section :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly }]" data-component="FormSection">
     <div v-if="showHead" class="template-form-section-head">
       <h3 v-if="title" class="template-form-section-title">{{ title }}</h3>
       <slot name="action" />
@@ -31,7 +31,7 @@
             <label v-if="!fieldConfigEditable" class="label" :for="fieldControlId(field)">
               {{ field.label }}
               <span v-if="field.required && !field.readonly" class="field-state field-state--required">必填</span>
-              <span v-else-if="field.readonly" class="field-state">只读</span>
+              <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
             </label>
             <input
               v-else
@@ -395,6 +395,7 @@ function fieldDescribedBy(field: FormSectionFieldSchema) {
 const slots = useSlots();
 const toneClass = computed(() => (props.tone === 'advanced' ? 'template-form-section--advanced' : 'template-form-section--core'));
 const showHead = computed(() => Boolean(props.title || slots.action));
+const allFieldsReadonly = computed(() => props.fields.length > 0 && props.fields.every((field) => field.readonly));
 function isBaseFieldType(type: TemplateFieldType) {
   return [
     'char',
@@ -763,6 +764,10 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   min-width: 0;
 }
 
+.template-form-section--readonly .template-form-section-grid {
+  row-gap: 12px;
+}
+
 .field {
   display: grid;
   gap: 0;
@@ -1002,6 +1007,18 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   align-items: center;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.template-form-section--readonly .readonly-value {
+  min-height: 28px;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
+}
+
+.template-form-section--readonly :deep(.contract-readonly-value) {
+  min-height: 28px;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
 }
 
 .input {

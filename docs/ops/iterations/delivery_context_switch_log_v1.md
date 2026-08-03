@@ -2412,3 +2412,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   zero document overflow and zero browser errors. Strict TypeScript, release
   units, style-system guard, standard-list scroll contract, workspace alignment
   and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-READONLY-FORM-HIERARCHY
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `932834b`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared form
+  information hierarchy and responsive record presentation;
+  `frontend/apps/web/src/components/template/FormSection.vue`.
+- Outcome: removed repeated per-field readonly pills when an entire form group
+  is readonly, allowing section titles, field labels and values to carry the
+  hierarchy without status noise. Readonly values now use a denser 28px rhythm,
+  stronger primary text and reduced row gaps. Mixed edit groups still retain
+  readonly markers on individually locked fields.
+- Boundary: form presentation only. Field mutability, validation, permissions,
+  workflow state and persistence behavior are unchanged.
+- Validation: populated contract detail journeys pass at 1440x900, 1280x800,
+  768x1024 and 390x844 with zero browser errors and zero document overflow.
+  Desktop and mobile screenshots show zero repeated readonly pills while the
+  grouped record structure remains intact. Strict TypeScript, release units,
+  style-system guard, workspace alignment and Vite production build pass.
