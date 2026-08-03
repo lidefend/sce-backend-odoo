@@ -1,11 +1,12 @@
 <template>
   <div class="primary-navigation">
     <nav class="primary-navigation__shortcuts" aria-label="工作入口">
-      <button type="button" :aria-current="homeActive ? 'page' : undefined" @click="emit('navigate', '/')">首页</button>
-      <button type="button" :aria-current="workActive ? 'page' : undefined" @click="emit('navigate', '/my-work')">我的工作</button>
+      <button type="button" :aria-current="homeActive ? 'page' : undefined" @click="emit('navigate', '/')"><ScIcon name="home" :size="16" /><span>首页</span></button>
+      <button type="button" :aria-current="workActive ? 'page' : undefined" @click="emit('navigate', '/my-work')"><ScIcon name="briefcase" :size="16" /><span>我的工作</span></button>
     </nav>
     <label class="primary-navigation__search">
       <span class="sr-only">搜索菜单</span>
+      <ScIcon name="search" :size="16" />
       <input :value="search" type="search" placeholder="搜索菜单..." @input="emitSearch" />
     </label>
     <div class="primary-navigation__tree">
@@ -24,6 +25,7 @@
 import { computed } from 'vue';
 import type { NavNode } from '@sc/schema';
 import MenuTree from '../MenuTree.vue';
+import ScIcon from '../design-system/ScIcon.vue';
 
 const props = defineProps<{
   nodes: NavNode[];
@@ -93,6 +95,24 @@ function emitSearch(event: Event) {
   color: var(--sc-app-text-primary);
 }
 
+.primary-navigation__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.primary-navigation__search > .sc-icon {
+  position: absolute;
+  z-index: 1;
+  left: 11px;
+  color: var(--sc-app-text-muted);
+  pointer-events: none;
+}
+
+.primary-navigation__search input {
+  padding-left: 34px;
+}
+
 .primary-navigation__tree {
   min-height: 0;
 }
@@ -123,6 +143,9 @@ function emitSearch(event: Event) {
     padding: 7px 12px;
     border-radius: 8px;
     font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
   }
 
   .primary-navigation__shortcuts button[aria-current='page'] {

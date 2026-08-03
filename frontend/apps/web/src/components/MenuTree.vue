@@ -10,7 +10,7 @@
         }"
       >
         <button v-if="node.children?.length" class="toggle" @click="toggle(nodeKey(node))">
-          {{ expanded.has(nodeKey(node)) ? '▾' : '▸' }}
+          <ScIcon name="chevron-right" :size="14" :class="{ 'is-expanded': expanded.has(nodeKey(node)) }" />
         </button>
         <span v-else class="toggle-spacer" aria-hidden="true"></span>
         <button
@@ -44,6 +44,7 @@ import { computed, ref, onMounted, watchEffect } from 'vue';
 import type { NavNode } from '@sc/schema';
 import { capabilityTooltip, evaluateCapabilityPolicy } from '../app/capabilityPolicy';
 import { useSessionStore } from '../stores/session';
+import ScIcon from './design-system/ScIcon.vue';
 
 const props = withDefaults(defineProps<{ nodes: NavNode[]; activeMenuId?: number; capabilities?: string[]; level?: number; searchActive?: boolean }>(), {
   activeMenuId: undefined,
@@ -336,6 +337,16 @@ onMounted(() => {
   color: var(--sc-semantic-text-muted);
   font-size: 12px;
   line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.toggle .sc-icon {
+  transition: transform var(--sc-motion-fast, 120ms) ease;
+}
+
+.toggle .sc-icon.is-expanded {
+  transform: rotate(90deg);
 }
 
 .toggle:hover {

@@ -2493,3 +2493,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   report zero browser errors and zero document overflow. Strict TypeScript,
   style-system guard, release units, workspace alignment and Vite production
   build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-ICON-SEMANTICS
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `91c1d1b`.
+- Outcome: expanded the governed `ScIcon` vocabulary and applied it to home,
+  work, menu search, menu disclosure, ledger search, record creation and column
+  configuration. Text labels remain present, while icon size, spacing and state
+  rotation are normalized for faster recognition and accessibility.
+- Boundary: visual semantics only. Navigation routes, search behavior, create
+  authorization and menu expansion persistence are unchanged.
+- Validation: real four-viewport browser journeys report zero errors and zero
+  document overflow. Strict TypeScript and style-system guards pass.
