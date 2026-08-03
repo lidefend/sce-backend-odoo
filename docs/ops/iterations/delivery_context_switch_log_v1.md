@@ -3,6 +3,16 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-04 — FORM-SYSTEM-VISUAL-CONVERGENCE-02
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `53507132fc7fe2eec95af8b91c3e9f1f499041df`.
+- Formal Product Layer: P0 shared frontend renderer; Layer Target: mobile visibility, workflow/section discoverability, compact relationship selection, x2many action reachability, and trustworthy browser evidence.
+- Reason: close independent visual-review findings that document-width checks missed, especially ancestor-clipped helper text, off-screen workflow stages, overlapping mobile section navigation, oversized relation results, and UTF-8 audit delivery.
+- Standard vs User-Specific: generic responsive presentation and audit semantics only; no field values, permissions, routes, interfaces, or workflow rules change.
+- Why Here / Why Not Elsewhere: shared form components own layout, focus, scroll discovery, and responsive degradation; the acceptance script owns element-level clipping, reachability, external-reference provenance, and UTF-8 round-trip evidence.
+- Blast Radius: frontend presentation, local acceptance serving, and browser audit artifacts; no backend mutation, database migration, production deployment, or main-branch merge.
+- Validation: five viewports, 95 real-browser assertions, explicit text-clipping and sticky-anchor checks, official external enterprise contract-product references, UTF-8 HTTP headers, all existing frontend gates, production build, and legacy visual audits.
+
 ## 2026-08-03 — FORM-SYSTEM-PROFESSIONALIZATION-01
 
 - Branch / anchor: `feature/frontend-experience-upgrade` from `e5f0e03021b179e07c31c9e6a0e96f8dd9ad0309`.

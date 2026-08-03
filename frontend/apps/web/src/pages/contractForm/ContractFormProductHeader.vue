@@ -21,8 +21,15 @@
           <p class="native-statusbar-mobile-summary">
             <span>当前状态</span><strong>{{ currentStatusLabel }}</strong>
             <span v-if="nextStatusLabel">下一步 {{ nextStatusLabel }}</span>
+            <span class="native-statusbar-progress">{{ currentStatusPosition }}/{{ statusbar.states.length }} · 左右滑动查看全部</span>
           </p>
-          <ol class="native-statusbar-track">
+          <ol
+            ref="statusTrackRef"
+            class="native-statusbar-track"
+            :data-has-more-before="workflowHasMoreBefore || undefined"
+            :data-has-more-after="workflowHasMoreAfter || undefined"
+            @scroll="updateWorkflowOverflow"
+          >
             <li v-for="(item, index) in statusbar.states" :key="String(item.value)">
               <button
                 type="button"
@@ -30,8 +37,9 @@
                 :class="{ 'native-statusbar-step--active': statusbar.current === String(item.value), 'native-statusbar-step--done': statusbar.reachedValues.includes(String(item.value)) && statusbar.current !== String(item.value) }"
                 :aria-current="statusbar.current === String(item.value) ? 'step' : undefined"
                 :aria-label="`第 ${index + 1} 步，共 ${statusbar.states.length} 步：${item.label}`"
-                :disabled="busy || statusbar.readonly"
-                @click="$emit('set-status', String(item.value))"
+                :aria-disabled="busy || statusbar.readonly"
+                :disabled="busy"
+                @click="activateStatus(String(item.value))"
               ><span class="native-statusbar-step-index" aria-hidden="true">{{ index + 1 }}</span><span>{{ item.label }}</span></button>
             </li>
           </ol>
@@ -64,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
@@ -82,13 +90,45 @@ const props = defineProps<{
 }>();
 
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
+const currentStatusPosition = computed(() => Math.max(1, currentStatusIndex.value + 1));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');
 const nextStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value + 1]?.label || '');
+const statusTrackRef = ref<HTMLOListElement | null>(null);
+const workflowHasMoreBefore = ref(false);
+const workflowHasMoreAfter = ref(false);
 
-defineEmits<{
+const emit = defineEmits<{
   back: []; 'continue-processing': []; 'set-status': [value: string]; 'return-workbench': []; 'save-draft': []; 'run-primary': [];
   'run-action': [action: ContractAction]; discard: []; copy: []; export: []; reload: [];
 }>();
+
+function updateWorkflowOverflow() {
+  const track = statusTrackRef.value;
+  if (!track) return;
+  workflowHasMoreBefore.value = track.scrollLeft > 2;
+  workflowHasMoreAfter.value = track.scrollLeft + track.clientWidth < track.scrollWidth - 2;
+}
+
+function revealCurrentStatus(smooth = false) {
+  const track = statusTrackRef.value;
+  const active = track?.querySelector<HTMLElement>('[aria-current="step"]');
+  if (!track || !active) return;
+  const left = Math.max(0, active.offsetLeft - (track.clientWidth - active.offsetWidth) / 2);
+  track.scrollTo({ left, behavior: smooth ? 'smooth' : 'auto' });
+  window.setTimeout(updateWorkflowOverflow, smooth ? 220 : 0);
+}
+
+function activateStatus(value: string) {
+  if (props.busy || props.statusbar.readonly) return;
+  emit('set-status', value);
+}
+
+onMounted(() => {
+  void nextTick(() => revealCurrentStatus(false));
+  window.addEventListener('resize', updateWorkflowOverflow);
+});
+watch(() => [props.statusbar.current, props.statusbar.states.length], () => void nextTick(() => revealCurrentStatus(true)));
+onBeforeUnmount(() => window.removeEventListener('resize', updateWorkflowOverflow));
 
 function buttonClass(action: ContractAction) {
   return ['sc-btn', 'sc-btn-sm', action.destructive ? 'sc-btn-danger' : action.presentationTier === 'primary' || action.semantic === 'primary_action' ? 'sc-btn-primary' : 'sc-btn-ghost'];
@@ -110,6 +150,7 @@ function buttonClass(action: ContractAction) {
 .contract-header-navigation-actions,
 .contract-header-primary-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .native-statusbar--header {
+  position: relative;
   max-width: 100%;
   min-width: 0;
 }
@@ -180,16 +221,23 @@ function buttonClass(action: ContractAction) {
   .native-statusbar-mobile-summary {
     display: flex;
     align-items: baseline;
+    flex-wrap: wrap;
     gap: 6px;
     margin: 0 0 6px;
     color: var(--sc-app-text-secondary);
     font-size: 11px;
   }
   .native-statusbar-mobile-summary strong { color: var(--sc-app-info-text); font-size: 13px; }
-  .native-statusbar-mobile-summary span:last-child { margin-left: auto; }
+  .native-statusbar-mobile-summary > span:nth-child(3) { margin-left: auto; }
+  .native-statusbar-progress {
+    flex: 1 0 100%;
+    color: var(--sc-app-text-muted);
+    font-size: 10px;
+    text-align: right;
+  }
   .native-statusbar-track {
     gap: 0;
-    padding-bottom: 3px;
+    padding: 0 38px 3px 0;
   }
   .native-statusbar--header .native-statusbar-step,
   .native-statusbar--header .native-statusbar-step:first-child,

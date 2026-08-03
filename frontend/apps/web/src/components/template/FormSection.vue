@@ -777,13 +777,13 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .template-form-section-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  row-gap: 16px;
-  column-gap: 24px;
+  row-gap: 12px;
+  column-gap: 20px;
   min-width: 0;
 }
 
 .template-form-section--readonly .template-form-section-grid {
-  row-gap: 12px;
+  row-gap: 10px;
 }
 
 .field {
@@ -891,7 +891,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .label {
@@ -1036,7 +1036,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .readonly-value {
   font-size: 13px;
   color: var(--sc-app-text-secondary);
-  min-height: 40px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   min-width: 0;
@@ -1099,8 +1099,8 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .template-form-section--readonly .template-form-section-grid {
-  row-gap: 16px;
-  column-gap: 32px;
+  row-gap: 12px;
+  column-gap: 26px;
 }
 
 .template-form-section--readonly .label {
@@ -1130,16 +1130,16 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   }
 
   .template-form-section--readonly .template-form-section-grid {
-    row-gap: 14px;
+    row-gap: 12px;
   }
 }
 
 .input {
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-component-input-radius);
-  padding: 8px 12px;
-  height: 40px;
-  min-height: 40px;
+  padding: 7px 10px;
+  height: 36px;
+  min-height: 36px;
   width: 100%;
   min-width: 0;
   font-size: 14px;

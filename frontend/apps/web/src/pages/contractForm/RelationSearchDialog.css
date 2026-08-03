@@ -89,6 +89,10 @@
   border-radius: 0;
 }
 
+.relation-dialog-mobile-results {
+  display: none;
+}
+
 .relation-dialog-table {
   width: max(100%, 720px);
   min-width: 720px;
@@ -209,22 +213,90 @@
 }
 
 @media (max-width: 620px) {
-  .relation-dialog-table-wrap { padding: 8px 12px; }
-  .relation-dialog-table { display: block; width: 100%; min-width: 0; }
-  .relation-dialog-table thead { display: none; }
-  .relation-dialog-table tbody { display: grid; gap: 8px; }
-  .relation-dialog-table tr {
+  .relation-dialog-table-wrap {
+    display: none;
+  }
+
+  .relation-dialog-mobile-results {
     display: grid;
-    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 8px;
+    max-height: min(42vh, 340px);
+    padding: 10px 12px;
+    overflow-y: auto;
+  }
+
+  .relation-dialog-result-card {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    padding: 11px;
     border: 1px solid var(--sc-app-border);
     border-radius: 7px;
     background: var(--sc-app-panel);
-    overflow: hidden;
+    cursor: pointer;
   }
-  .relation-dialog-table td { display: grid; grid-template-columns: minmax(88px, 34%) minmax(0, 1fr); gap: 8px; padding: 7px 10px; }
-  .relation-dialog-table td::before { content: attr(data-label); color: var(--sc-app-text-secondary); font-size: 11px; font-weight: 600; }
-  .relation-dialog-table .relation-dialog-select-col { grid-row: 1 / span 20; width: auto; padding: 10px 6px; display: block; }
-  .relation-dialog-table .relation-dialog-select-col::before { content: none; }
+
+  .relation-dialog-result-card--active {
+    border-color: var(--sc-semantic-surface-interactive);
+    background: var(--sc-navigation-active-bg);
+  }
+
+  .relation-dialog-result-card > input {
+    margin: 3px 0 0;
+  }
+
+  .relation-dialog-result-content,
+  .relation-dialog-result-head,
+  .relation-dialog-result-facts,
+  .relation-dialog-result-facts > span {
+    display: grid;
+    min-width: 0;
+  }
+
+  .relation-dialog-result-content {
+    gap: 8px;
+  }
+
+  .relation-dialog-result-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+
+  .relation-dialog-result-head strong {
+    color: var(--sc-app-text-primary);
+    font-size: 14px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .relation-dialog-result-head > span {
+    color: var(--sc-app-info-text);
+    font-size: 11px;
+  }
+
+  .relation-dialog-result-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 12px;
+  }
+
+  .relation-dialog-result-facts > span {
+    gap: 2px;
+  }
+
+  .relation-dialog-result-facts small {
+    color: var(--sc-app-text-muted);
+    font-size: 10px;
+  }
+
+  .relation-dialog-result-facts em {
+    color: var(--sc-app-text-secondary);
+    font-size: 12px;
+    font-style: normal;
+    overflow-wrap: anywhere;
+  }
+
   .relation-dialog-footer { flex-direction: row; flex-wrap: wrap; }
   .relation-dialog-footer-spacer { display: none; }
   .relation-dialog-count { flex: 1 0 100%; }

@@ -55,6 +55,35 @@
         </ScDataTable>
         <ScEmptyState v-if="!dialog.loading && !dialog.rows.length" :title="dialog.labels.empty || '未找到匹配记录'" />
       </div>
+      <div class="relation-dialog-mobile-results" aria-label="关系搜索结果">
+        <label
+          v-for="row in dialog.rows"
+          :key="`rel-card-${row.id}`"
+          class="relation-dialog-result-card"
+          :class="{ 'relation-dialog-result-card--active': dialog.selectedId === row.id }"
+          @dblclick="$emit('confirm', row)"
+        >
+          <input
+            type="radio"
+            name="relation-search-select-mobile"
+            :checked="dialog.selectedId === row.id"
+            @change="$emit('select-row', row)"
+          />
+          <span class="relation-dialog-result-content">
+            <span class="relation-dialog-result-head">
+              <strong>{{ relationSearchPrimaryText(row) }}</strong>
+              <span v-if="dialog.selectedId === row.id">已选择</span>
+            </span>
+            <span v-if="dialog.columns.length > 1" class="relation-dialog-result-facts">
+              <span v-for="column in dialog.columns.slice(1)" :key="`${row.id}-card-${column.name}`">
+                <small>{{ column.label }}</small>
+                <em>{{ relationSearchCell(row, column.name) || '未填写' }}</em>
+              </span>
+            </span>
+          </span>
+        </label>
+        <ScEmptyState v-if="!dialog.loading && !dialog.rows.length" :title="dialog.labels.empty || '未找到匹配记录'" />
+      </div>
       <footer class="relation-dialog-footer">
         <span class="relation-dialog-count">{{ recordCountLabel }}</span>
         <span class="relation-dialog-footer-spacer"></span>
@@ -153,6 +182,11 @@ function relationSearchCell(row: RelationSearchRow, columnName: string) {
   }
   if (typeof value === 'boolean') return value ? '是' : '否';
   return String(value);
+}
+
+function relationSearchPrimaryText(row: RelationSearchRow) {
+  const primaryColumn = props.dialog.columns[0];
+  return primaryColumn ? relationSearchCell(row, primaryColumn.name) || `记录 ${row.id}` : `记录 ${row.id}`;
 }
 </script>
 

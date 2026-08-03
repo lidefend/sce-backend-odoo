@@ -147,7 +147,13 @@
             />
           </label>
         </div>
-        <button class="ghost" type="button" :disabled="adapter.busy" @click="adapter.removeOne2manyRow(field.name, row.key)">移除</button>
+        <button
+          class="ghost o2m-row-remove"
+          type="button"
+          :aria-label="`移除${adapter.one2manyRowLabel(field.name, row)}`"
+          :disabled="adapter.busy"
+          @click="adapter.removeOne2manyRow(field.name, row.key)"
+        >移除本条</button>
         <p v-if="adapter.showOne2manyErrors && adapter.one2manyRowErrors(field.name, row.key).length" class="o2m-row-error">
           {{ adapter.one2manyRowErrors(field.name, row.key).join('；') }}
         </p>
@@ -598,6 +604,11 @@ select.input {
     padding-bottom: 7px;
     border-bottom: 1px solid var(--sc-app-border);
     font-weight: 600;
+  }
+
+  .o2m-row-remove {
+    align-self: start;
+    white-space: nowrap;
   }
 
   .o2m-fields {

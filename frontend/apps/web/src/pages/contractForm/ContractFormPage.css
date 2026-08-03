@@ -167,7 +167,7 @@
 }
 
 .page[data-product-page-mode='form'] .form-grid {
-  gap: 16px;
+  gap: 12px;
 }
 
 @media (max-width: 760px) {
@@ -437,13 +437,22 @@
 
 .form-grid {
   display: grid;
-  gap: 16px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .contract-form-canvas-shell {
   width: 100%;
   max-width: none;
   min-width: 0;
+}
+
+.form-grid > :deep(.native-default-section-head),
+.form-grid > :deep(.contract-form-canvas-shell) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .form-grid > :deep([data-form-error-summary]) {
@@ -725,9 +734,9 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
   border-bottom: 1px solid var(--sc-app-border);
-  padding: 0 0 10px;
+  padding: 8px 0 9px;
 }
 
 .native-default-section-head h3 {
@@ -738,10 +747,12 @@
 }
 
 .native-default-section-head p {
-  margin: 4px 0 0;
+  max-width: 78ch;
+  margin: 2px 0 0;
   color: var(--sc-semantic-text-muted);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .native-form-mode-note {
@@ -789,8 +800,8 @@
 }
 
 .contract-form-native-shell :deep(.native-container--group) {
-  gap: 14px;
-  padding: 20px 16px 24px;
+  gap: 10px;
+  padding: 15px 16px 18px;
   border: 0;
   border-bottom: 1px solid var(--sc-app-border);
   border-radius: 0;
@@ -799,12 +810,12 @@
 }
 
 .contract-form-native-shell :deep(.native-container--group > .native-container-head) {
-  min-height: 38px;
-  margin: -20px -16px 0;
+  min-height: 34px;
+  margin: -15px -16px 0;
   padding: 0 16px;
-  border-left: 3px solid var(--sc-app-accent);
-  border-bottom: 1px solid var(--sc-app-info-border);
-  background: color-mix(in srgb, var(--sc-app-info-bg) 52%, var(--sc-app-panel));
+  border-left: 2px solid var(--sc-app-accent);
+  border-bottom: 1px solid var(--sc-app-border);
+  background: color-mix(in srgb, var(--sc-app-info-bg) 24%, var(--sc-app-panel));
 }
 
 .contract-form-native-shell :deep(.native-container--group > .native-container-head h3) {
@@ -822,7 +833,7 @@
 }
 
 .contract-form-native-shell :deep(.native-container--group > .template-form-section > .template-form-section-head) {
-  margin: -20px -16px 16px;
+  margin: -15px -16px 12px;
   border-radius: 0;
 }
 
@@ -1038,17 +1049,17 @@
   }
 
   .contract-form-native-shell :deep(.native-container--group) {
-    gap: 12px;
-    padding: 18px 14px 22px;
+    gap: 10px;
+    padding: 14px 12px 17px;
   }
 
   .contract-form-native-shell :deep(.native-container--group > .native-container-head) {
-    margin: -18px -14px 0;
-    padding: 0 14px;
+    margin: -14px -12px 0;
+    padding: 0 12px;
   }
 
   .contract-form-native-shell :deep(.native-container--group > .template-form-section > .template-form-section-head) {
-    margin: -18px -14px 14px;
+    margin: -14px -12px 10px;
   }
 
   .header-status {

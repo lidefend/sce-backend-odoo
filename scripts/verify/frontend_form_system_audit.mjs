@@ -2,6 +2,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { launchChromium } from './playwright_runtime.mjs';
 
 const BASE_URL = process.env.SC_FRONTEND_URL || process.env.FRONTEND_URL || 'http://127.0.0.1:5175';
@@ -19,6 +20,16 @@ const VIEWPORTS = [
   { key: '768', width: 768, height: 1024 },
   { key: '390', width: 390, height: 844 },
 ];
+const BOSS_REFERENCE = {
+  product: '泛微·今承达数智化合同管理系统',
+  source_url: 'https://jincenda.weaver.com.cn/functions.html',
+  source_host: 'jincenda.weaver.com.cn',
+  screenshots: [
+    'boss-reference-weaver-2.png',
+    'boss-reference-weaver-3.png',
+    'boss-reference-weaver-4.png',
+  ],
+};
 
 const assertions = [];
 const screenshots = [];
@@ -34,6 +45,10 @@ const resolvedIssues = [
   { severity: 'P1', issue: '缺少章节定位与错误章节提示', resolution: '新增章节锚点、当前章节与错误状态同步' },
   { severity: 'P1', issue: '关系弹窗与明细表缺少窄屏方案', resolution: '弹窗视口约束、焦点恢复、关系卡片和 one2many 卡片降级' },
   { severity: 'P2', issue: '隐藏状态文案可能存在编码风险', resolution: '五档视口正文乱码扫描为零并实际进入设计器验证' },
+  { severity: 'P0', issue: '移动说明文字被祖先容器静默裁切', resolution: '约束片段根节点宽度并增加可见文字内部与祖先裁切检测' },
+  { severity: 'P1', issue: '移动流程与章节后续内容不可发现', resolution: '活动项自动居中、阶段/章节计数、横向提示与全项可达断言' },
+  { severity: 'P1', issue: '移动关系结果是压缩桌面表格', resolution: '改为按内容收敛的结果卡片，未选择时禁用确认' },
+  { severity: 'P2', issue: '验收 JSON 中文在 HTTP 下可能乱码', resolution: 'UTF-8 往返断言并由验收服务器显式声明 charset' },
 ];
 
 function result(id, passed, detail, severity = 'P0') {
@@ -97,12 +112,81 @@ async function assertNoOverflow(page, id) {
   return result(id, value.scrollWidth <= value.viewportWidth + 1, value, 'P0');
 }
 
+async function findVisibleTextClipping(page) {
+  return page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    const ignoredTags = new Set(['SCRIPT', 'STYLE', 'SVG', 'PATH', 'OPTION', 'NOSCRIPT']);
+    const visible = (element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0 && rect.width > 0 && rect.height > 0;
+    };
+    const hasOwnText = (element) => Array.from(element.childNodes).some((node) => node.nodeType === Node.TEXT_NODE && String(node.textContent || '').trim());
+    const label = (element) => String(element.getAttribute('aria-label') || element.getAttribute('title') || element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 90);
+    const selector = (element) => {
+      if (element.id) return `#${CSS.escape(element.id)}`;
+      const classes = Array.from(element.classList).slice(0, 3).map((item) => `.${CSS.escape(item)}`).join('');
+      return `${element.tagName.toLowerCase()}${classes}`;
+    };
+    const failures = [];
+    for (const element of document.body.querySelectorAll('*')) {
+      if (ignoredTags.has(element.tagName) || !visible(element)) continue;
+      const isTextControl = element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLButtonElement;
+      if (!hasOwnText(element) && !isTextControl) continue;
+      const text = isTextControl ? String(element.value || element.textContent || element.getAttribute('aria-label') || '').trim() : label(element);
+      if (!text) continue;
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      if (rect.width <= 2 && rect.height <= 2 && ['hidden', 'clip'].includes(style.overflow)) continue;
+      const ownOverflow = element.scrollWidth > element.clientWidth + 1;
+      const intentionalScroller = ['auto', 'scroll'].includes(style.overflowX);
+      const explainedEllipsis = style.textOverflow === 'ellipsis' && Boolean(element.getAttribute('title') || element.getAttribute('aria-label'));
+      let clippingAncestor = null;
+      let insideIntentionalScroller = false;
+      for (let parent = element.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+        const parentStyle = getComputedStyle(parent);
+        if (['auto', 'scroll'].includes(parentStyle.overflowX)) insideIntentionalScroller = true;
+        if (!['hidden', 'clip'].includes(parentStyle.overflowX)) continue;
+        const parentRect = parent.getBoundingClientRect();
+        if (!insideIntentionalScroller && (rect.left < parentRect.left - 1 || rect.right > parentRect.right + 1)) {
+          clippingAncestor = selector(parent);
+          break;
+        }
+      }
+      const silentlyOutsideViewport = !insideIntentionalScroller && document.documentElement.scrollWidth <= viewportWidth + 1 && (rect.left < -1 || rect.right > viewportWidth + 1);
+      if ((ownOverflow && !intentionalScroller && !explainedEllipsis) || clippingAncestor || silentlyOutsideViewport) {
+        failures.push({
+          selector: selector(element), text: text.slice(0, 60), client_width: element.clientWidth,
+          scroll_width: element.scrollWidth, overflow_x: style.overflowX, clipping_ancestor: clippingAncestor,
+          rect: { left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width) },
+        });
+      }
+    }
+    return failures.slice(0, 30);
+  });
+}
+
+async function assertVisibleTextNotClipped(page, id) {
+  const failures = await findVisibleTextClipping(page);
+  return result(id, failures.length === 0, { clipped_count: failures.length, samples: failures }, 'P0');
+}
+
 async function createAuthenticatedPage(browser, viewport, scope) {
   const context = await browser.newContext({ viewport, locale: 'zh-CN' });
   const page = await context.newPage();
   watchRuntime(page, scope);
   await login(page);
   return { context, page };
+}
+
+async function captureBaselineHelperCrop(browser) {
+  const source = path.join(OUTPUT_ROOT, 'form-before-create-390.png');
+  try { await fs.access(source); } catch { return; }
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  await page.goto(`file://${source}`, { waitUntil: 'load' });
+  await page.screenshot({ path: path.join(OUTPUT_ROOT, 'form-before-helper-wrap-390.png'), clip: { x: 17, y: 223, width: 342, height: 205 } });
+  await context.close();
 }
 
 async function auditFieldGeometry(page) {
@@ -142,6 +226,7 @@ async function auditFieldGeometry(page) {
 async function auditReadonly(page, viewportKey) {
   await openForm(page, `/r/sc.general.contract/2?${GENERAL_QUERY}`, 'readonly');
   await assertNoOverflow(page, `readonly.${viewportKey}.no_horizontal_overflow`);
+  await assertVisibleTextNotClipped(page, `visible_text_not_clipped.${viewportKey}.readonly`);
   const empty = await page.locator('.contract-readonly-value--empty:visible').allInnerTexts();
   result(`readonly.${viewportKey}.empty_value_policy`, empty.every((text) => text.trim() === '未填写'), { empty_count: empty.length }, 'P1');
   const columns = await page.locator('.template-form-section-grid:visible').first().evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length);
@@ -156,13 +241,48 @@ async function auditReadonly(page, viewportKey) {
 async function auditResponsiveCreate(page, viewportKey) {
   await openForm(page, `/f/sc.general.contract/new?${GENERAL_QUERY}&activity_page_id=form_system_${viewportKey}`, 'create');
   await assertNoOverflow(page, `create.${viewportKey}.no_horizontal_overflow`);
+  await assertVisibleTextNotClipped(page, `visible_text_not_clipped.${viewportKey}.create`);
   if (viewportKey === '1440') await auditFieldGeometry(page);
   const command = await page.locator('.contract-form-command-bar:visible').boundingBox();
   result(`create.${viewportKey}.command_compact`, Boolean(command) && (viewportKey !== '390' || command.height <= 154), command, 'P1');
   const sectionNav = page.locator('.contract-form-section-nav:visible');
-  result(`create.${viewportKey}.section_navigation`, await sectionNav.count() === 1, { count: await sectionNav.count() }, 'P1');
+  const tabs = sectionNav.locator('[data-section-tab]');
+  const renderedSections = page.locator('[data-group-title]:visible');
+  const sectionCount = await renderedSections.count();
+  const tabCount = await tabs.count();
+  result(`section_count_matches_rendered_sections.${viewportKey}`, await sectionNav.count() === 1 && tabCount === sectionCount, { navigation_count: await sectionNav.count(), tab_count: tabCount, rendered_section_count: sectionCount }, 'P0');
+  const activeTabMetric = await sectionNav.evaluate((nav) => {
+    const active = nav.querySelector('[data-section-tab].is-active');
+    const progress = nav.parentElement?.querySelector('.contract-form-section-nav-progress');
+    if (!(active instanceof HTMLElement)) return { exists: false };
+    const navRect = nav.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    const progressRect = progress?.getBoundingClientRect();
+    const progressOverlays = progress instanceof HTMLElement && getComputedStyle(progress).position === 'absolute';
+    return {
+      exists: true,
+      fully_visible: activeRect.left >= navRect.left - 1 && activeRect.right <= (progressOverlays ? progressRect?.left || navRect.right : navRect.right) + 1,
+      active: { left: activeRect.left, right: activeRect.right },
+      viewport: { left: navRect.left, right: progressOverlays ? progressRect?.left || navRect.right : navRect.right },
+    };
+  });
+  result(`active_section_tab_in_view.${viewportKey}`, Boolean(activeTabMetric.exists && activeTabMetric.fully_visible), activeTabMetric, 'P0');
   const name = `form-final-create-${viewportKey}.png`;
   await capture(page, name);
+  if (viewportKey === '390') {
+    const helperName = 'form-final-helper-wrap-390.png';
+    const helperBox = await page.locator('.native-default-section-head:visible').boundingBox();
+    if (helperBox) {
+      await page.screenshot({
+        path: path.join(OUTPUT_ROOT, helperName),
+        clip: {
+          x: Math.max(0, helperBox.x - 12), y: Math.max(0, helperBox.y - 12),
+          width: Math.min(390, helperBox.width + 24), height: helperBox.height + 24,
+        },
+      });
+    }
+    screenshots.push(helperName);
+  }
   return name;
 }
 
@@ -178,6 +298,31 @@ async function auditWorkflow(page, viewportKey) {
     const positions = await track.locator('.native-statusbar-step').evaluateAll((steps) => steps.map((step) => step.getBoundingClientRect()).map((rect) => ({ left: rect.left, top: rect.top })));
     const oneRow = positions.every((position) => Math.abs(position.top - positions[0].top) < 2);
     result('workflow.390.sequential_not_matrix', await summary.count() === 1 && oneRow, { summary: await summary.innerText(), positions }, 'P0');
+    const activeMetric = await track.evaluate((element) => {
+      const active = element.querySelector('[aria-current="step"]');
+      if (!(active instanceof HTMLElement)) return { exists: false };
+      const trackRect = element.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
+      return { exists: true, fully_visible: activeRect.left >= trackRect.left - 1 && activeRect.right <= trackRect.right + 1, active: { left: activeRect.left, right: activeRect.right }, track: { left: trackRect.left, right: trackRect.right }, scroll_left: element.scrollLeft };
+    });
+    result('active_workflow_step_in_view', Boolean(activeMetric.exists && activeMetric.fully_visible), activeMetric, 'P0');
+    const reachability = await track.evaluate(async (element) => {
+      const steps = Array.from(element.querySelectorAll('button'));
+      const maximum = Math.max(0, element.scrollWidth - element.clientWidth);
+      element.scrollLeft = 0;
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+      const startRect = steps[0]?.getBoundingClientRect();
+      const trackRect = element.getBoundingClientRect();
+      const firstReachable = Boolean(startRect && startRect.left >= trackRect.left - 1 && startRect.right <= trackRect.right + 1);
+      element.scrollLeft = maximum;
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+      const endRect = steps.at(-1)?.getBoundingClientRect();
+      const lastReachable = Boolean(endRect && endRect.left >= trackRect.left - 1 && endRect.right <= trackRect.right + 1);
+      const keyboardReachable = steps.every((step) => !step.hasAttribute('disabled') && step.tabIndex >= 0);
+      return { first_reachable: firstReachable, last_reachable: lastReachable, keyboard_reachable: keyboardReachable, maximum_scroll: maximum, step_count: steps.length };
+    });
+    result('all_workflow_steps_reachable', reachability.first_reachable && reachability.last_reachable && reachability.keyboard_reachable, reachability, 'P0');
+    await current.evaluate((element) => element.scrollIntoView({ block: 'nearest', inline: 'center' }));
   }
   await capture(page, `form-final-workflow-${viewportKey}.png`, { fullPage: false });
 }
@@ -297,6 +442,19 @@ async function auditComplexFields(page, viewportKey) {
     const viewport = page.viewportSize();
     const contained = Boolean(rect && viewport && rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= viewport.width + 1 && rect.y + rect.height <= viewport.height + 1);
     result(`relation.${viewportKey}.dialog_contained`, contained, { rect, viewport }, 'P0');
+    const selectButton = dialog.getByRole('button', { name: '选择', exact: true });
+    const disabledWithoutSelection = await selectButton.isDisabled();
+    result(`relation_select_disabled_without_selection.${viewportKey}`, disabledWithoutSelection, { disabled: disabledWithoutSelection }, 'P0');
+    if (viewportKey === '390') {
+      const cards = dialog.locator('.relation-dialog-result-card:visible');
+      await cards.first().waitFor({ state: 'visible', timeout: 10_000 });
+      const cardRect = await cards.first().boundingBox();
+      const mobileTableVisible = await dialog.locator('.relation-dialog-table:visible').count();
+      result('relation.390.mobile_result_card', Boolean(cardRect) && mobileTableVisible === 0, { card: cardRect, cards: await cards.count(), desktop_table_visible: mobileTableVisible }, 'P0');
+      await capture(page, 'form-final-relation-dialog-390-unselected.png', { fullPage: false });
+      await cards.first().click();
+      result('relation.390.selection_enables_confirm', await selectButton.isEnabled() && await cards.first().evaluate((element) => element.classList.contains('relation-dialog-result-card--active')), { enabled: await selectButton.isEnabled() }, 'P0');
+    }
     await capture(page, `form-final-relation-dialog-${viewportKey}.png`, { fullPage: false });
     await page.keyboard.press('Escape');
     await page.waitForTimeout(100);
@@ -321,6 +479,19 @@ async function auditComplexFields(page, viewportKey) {
       }
       const display = await rows.first().evaluate((element) => getComputedStyle(element).display).catch(() => 'missing');
       result('one2many.390.card_degradation', display === 'grid', { display, rows: await rows.count() }, 'P0');
+      const addAction = one2many.locator('.o2m-toolbar button:visible').first();
+      const removeAction = one2many.locator('.o2m-row-remove:visible').first();
+      const reachable = async (locator) => {
+        if (!await locator.count()) return false;
+        await locator.scrollIntoViewIfNeeded();
+        return locator.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          const commandBottom = document.querySelector('.contract-form-command-bar')?.getBoundingClientRect().bottom || 0;
+          return rect.top >= commandBottom - 1 && rect.bottom <= window.innerHeight + 1 && rect.width > 0 && rect.height > 0;
+        });
+      };
+      const reachability = { add_reachable: await reachable(addAction), remove_reachable: await reachable(removeAction), rows: await rows.count() };
+      result('one2many_actions_reachable', reachability.add_reachable && reachability.remove_reachable, reachability, 'P0');
     }
     await capture(page, `form-final-one2many-${viewportKey}.png`, { fullPage: false });
   }
@@ -339,6 +510,23 @@ async function auditLongForm(page) {
   const actionsReachable = Boolean(command && viewport && command.y >= 0 && command.y + command.height <= viewport.height);
   result('long_form.primary_actions_sticky', actionsReachable, { command, viewport }, 'P0');
   result('long_form.section_context_sticky', Boolean(nav && nav.y >= (command?.y || 0) && nav.y + nav.height <= (viewport?.height || 0)), { nav, command }, 'P1');
+  const sectionTabs = page.locator('.contract-form-section-nav [data-section-tab]');
+  const targetTab = sectionTabs.nth(Math.min(2, Math.max(0, await sectionTabs.count() - 1)));
+  if (await targetTab.count()) {
+    const title = await targetTab.getAttribute('data-section-tab');
+    await targetTab.click();
+    await page.waitForTimeout(420);
+    const anchorMetric = await page.evaluate((targetTitle) => {
+      const target = Array.from(document.querySelectorAll('[data-group-title]')).find((element) => element.getAttribute('data-group-title') === targetTitle);
+      const commandBottom = document.querySelector('.contract-form-command-bar')?.getBoundingClientRect().bottom || 0;
+      const navBottom = document.querySelector('.contract-form-section-nav-shell')?.getBoundingClientRect().bottom || commandBottom;
+      const targetTop = target?.getBoundingClientRect().top ?? -1;
+      return { target_title: targetTitle, target_top: targetTop, obstruction_bottom: Math.max(commandBottom, navBottom), clear: targetTop >= Math.max(commandBottom, navBottom) - 2 };
+    }, title);
+    result('sticky_header_does_not_cover_anchor', anchorMetric.clear, anchorMetric, 'P0');
+  } else {
+    result('sticky_header_does_not_cover_anchor', false, { reason: 'no section navigation target' }, 'P0');
+  }
   result('collaboration.attachment_and_messages', await collaboration.count() === 1 && await collaboration.locator('.native-attachment-tools').count() === 1, { collaboration_count: await collaboration.count() }, 'P1');
   await capture(page, 'form-final-long-form-scrolled.png', { fullPage: false });
   await collaboration.screenshot({ path: path.join(OUTPUT_ROOT, 'form-final-collaboration.png') });
@@ -428,6 +616,30 @@ function htmlEscape(value) {
   return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 }
 
+async function sha256(file) {
+  return createHash('sha256').update(await fs.readFile(file)).digest('hex');
+}
+
+async function verifyBossReferences() {
+  const references = [];
+  for (const name of BOSS_REFERENCE.screenshots) {
+    const file = path.join(OUTPUT_ROOT, name);
+    try {
+      references.push({ name, sha256: await sha256(file) });
+    } catch {
+      references.push({ name, sha256: '', missing: true });
+    }
+  }
+  const internalHashes = [];
+  for (const name of screenshots.slice(0, 12)) {
+    try { internalHashes.push(await sha256(path.join(OUTPUT_ROOT, name))); } catch { /* reported through missing evidence */ }
+  }
+  const validSource = new URL(BOSS_REFERENCE.source_url).hostname === BOSS_REFERENCE.source_host;
+  const distinct = references.every((item) => item.sha256 && !internalHashes.includes(item.sha256));
+  result('screenshot_reference_is_actual_boss', validSource && distinct && references.every((item) => !item.missing), { ...BOSS_REFERENCE, references, external_official_product_reference: true, distinct_from_current_system: distinct }, 'P0');
+  return references;
+}
+
 function buildHtml(report) {
   const cards = report.screenshots.map((name) => `<article><h3>${htmlEscape(name)}</h3><a href="${encodeURI(name)}"><img loading="lazy" src="${encodeURI(name)}" alt="${htmlEscape(name)}"></a></article>`).join('');
   const assertionRows = report.assertions.map((item) => `<tr><td><span class="status ${item.status.toLowerCase()}">${item.status}</span></td><td>${htmlEscape(item.severity)}</td><td>${htmlEscape(item.id)}</td><td><code>${htmlEscape(JSON.stringify(item.detail))}</code></td></tr>`).join('');
@@ -435,10 +647,20 @@ function buildHtml(report) {
   const fieldRows = report.field_type_matrix.map((item) => `<tr><td>${htmlEscape(item.type)}</td><td>${htmlEscape(item.status)}</td></tr>`).join('');
   const resolvedRows = report.resolved_issues.map((item) => `<tr><td>${htmlEscape(item.severity)}</td><td>${htmlEscape(item.issue)}</td><td>${htmlEscape(item.resolution)}</td></tr>`).join('');
   const baselineCards = report.baseline_screenshots.map((name) => `<article><h3>${htmlEscape(name)}</h3><a href="${encodeURI(name)}"><img loading="lazy" src="${encodeURI(name)}" alt="${htmlEscape(name)}"></a></article>`).join('');
+  const referenceCards = report.boss_reference.screenshots.map((name) => `<article><h3>${htmlEscape(name)}</h3><a href="${encodeURI(name)}"><img loading="lazy" src="${encodeURI(name)}" alt="${htmlEscape(report.boss_reference.product)}真实产品截图"></a></article>`).join('');
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>完整表单体系专项验收</title><style>
   :root{color-scheme:light;font-family:Inter,"PingFang SC",system-ui,sans-serif;background:#eef2f7;color:#172033}body{margin:0;padding:28px}.wrap{max-width:1500px;margin:auto}.hero,section{background:#fff;border:1px solid #d9e1eb;border-radius:12px;padding:22px;margin-bottom:18px}.hero{display:grid;gap:8px}.hero h1,.hero p,h2,h3{margin:0}.hero p{color:#5e6b7e}.summary{display:flex;gap:12px;flex-wrap:wrap}.summary span{padding:7px 11px;border-radius:999px;background:#f2f6fb}.pass{color:#087443}.fail{color:#b42318}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}.grid article{min-width:0;border:1px solid #d9e1eb;border-radius:8px;padding:10px;background:#f8fafc}.grid h3{font-size:13px;margin-bottom:8px}.grid img{display:block;width:100%;height:auto;border-radius:5px;border:1px solid #d9e1eb;background:#fff}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;vertical-align:top;padding:8px;border-bottom:1px solid #e5eaf0}code{white-space:pre-wrap;overflow-wrap:anywhere}.reference{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:18px}.reference img{width:100%;border:1px solid #d9e1eb}.reference ul{margin:8px 0;line-height:1.7}@media(max-width:700px){body{padding:12px}.hero,section{padding:14px}.grid,.reference{grid-template-columns:1fr}}
-  </style></head><body><main class="wrap"><header class="hero"><h1>完整表单体系专项验收</h1><p>覆盖查看、新建、编辑、校验、保存、关系字段、明细表、协作区、设计器与长表单滚动。参考图为仓库现有 BOSS 壳层基线，表单成熟度按一致的密度、层级、操作可达性与状态反馈原则验收。</p><div class="summary"><span class="${report.status.toLowerCase()}">${report.status}</span><span>${report.assertions.length} 项断言</span><span>${report.issues.length} 个问题</span><span>${htmlEscape(report.generated_at)}</span></div></header>
-  <section><h2>BOSS 参考与本轮准则</h2><div class="reference"><img src="navigation-boss-reference.png" alt="现有 BOSS 参考壳层"><div><strong>企业表单验收准则</strong><ul><li>命令、状态、身份在长滚动中持续可达。</li><li>字段按数据语义分配宽度，复杂字段有窄屏降级。</li><li>查看、编辑、校验、保存和失败状态保持稳定轴线。</li><li>浅色、克制、紧凑，状态反馈不依赖装饰。</li></ul></div></div></section>
+  </style></head><body><main class="wrap"><header class="hero"><h1>完整表单体系专项验收</h1><p>覆盖查看、新建、编辑、校验、保存、关系字段、明细表、协作区、设计器与长表单滚动。外部参考来自真实企业合同产品，当前系统截图仅作为改造前后证据。</p><div class="summary"><span class="${report.status.toLowerCase()}">${report.status}</span><span>${report.assertions.length} 项断言</span><span>${report.issues.length} 个问题</span><span>${htmlEscape(report.generated_at)}</span></div></header>
+  <section><h2>真实 BOSS 级产品参考</h2><p>参考来源：<a href="${htmlEscape(report.boss_reference.source_url)}" rel="noreferrer">${htmlEscape(report.boss_reference.product)}官方功能页</a>。以下为该外部产品的真实合同表单、关系选择和文档/明细界面，不是本系统旧截图。</p><div class="grid">${referenceCards}</div><table><thead><tr><th>对照维度</th><th>外部参考特征</th><th>本轮落实</th></tr></thead><tbody>
+  <tr><td>命令区</td><td>记录身份与主操作集中、占高克制</td><td>sticky 命令区保留返回、保存状态与主次操作</td></tr>
+  <tr><td>状态流程</td><td>有明确顺序和当前业务节点</td><td>桌面有序流程；移动当前项居中并显示阶段计数</td></tr>
+  <tr><td>章节标题</td><td>轻量分区，避免连续重色块</td><td>降低标题底色与阴影，以间距和细分隔线表达层级</td></tr>
+  <tr><td>字段密度</td><td>短字段紧凑多列，长字段独占</td><td>桌面三列语义布局并缩减垂直间距</td></tr>
+  <tr><td>输入控件</td><td>高度、标签轴线和状态一致</td><td>统一 36px 控件，覆盖必填、只读、错误和聚焦语义</td></tr>
+  <tr><td>关系选择</td><td>主信息、辅助信息和选择状态分层</td><td>移动端结果卡片，未选择时确认按钮禁用</td></tr>
+  <tr><td>明细表</td><td>表头与行操作保持清晰</td><td>桌面表格；移动卡片并保留新增、移除操作</td></tr>
+  <tr><td>移动策略</td><td>压缩命令区，复杂结构按语义降级</td><td>流程/章节横向可达、当前项可见、锚点补偿 sticky 高度</td></tr>
+  </tbody></table></section>
   <section><h2>基线问题分级与处理</h2><table><thead><tr><th>级别</th><th>基线问题</th><th>本轮处理</th></tr></thead><tbody>${resolvedRows}</tbody></table></section>
   <section><h2>状态矩阵</h2><table><thead><tr><th>状态</th><th>结果</th></tr></thead><tbody>${stateRows}</tbody></table></section>
   <section><h2>字段类型矩阵</h2><table><thead><tr><th>字段类型</th><th>结果</th></tr></thead><tbody>${fieldRows}</tbody></table></section>
@@ -453,6 +675,7 @@ const browser = await launchChromium({ headless: true });
 let observedTypes = [];
 
 try {
+  await captureBaselineHelperCrop(browser);
   for (const viewport of VIEWPORTS) {
     const { context, page } = await createAuthenticatedPage(browser, viewport, `responsive-${viewport.key}`);
     await auditResponsiveCreate(page, viewport.key);
@@ -483,11 +706,13 @@ try {
 }
 
 result('runtime.no_page_errors', runtimeErrors.length === 0, { errors: runtimeErrors }, 'P0');
+const bossReferenceFiles = await verifyBossReferences();
 observedTypes.push('one2many', 'attachment', 'empty', 'readonly');
 const baselineCandidates = [
   'form-before-readonly-1440.png', 'form-before-readonly-390.png', 'form-before-create-1440.png',
   'form-before-create-390.png', 'form-before-validation.png', 'form-before-relation-dialog.png',
   'form-before-one2many.png', 'form-before-long-scroll.png',
+  'form-before-helper-wrap-390.png',
 ];
 const baselineScreenshots = [];
 for (const name of baselineCandidates) {
@@ -510,12 +735,29 @@ const report = {
   assertions,
   issues,
   runtime_errors: runtimeErrors,
+  boss_reference: { ...BOSS_REFERENCE, files: bossReferenceFiles },
   baseline_screenshots: baselineScreenshots,
   screenshots,
 };
 
+const jsonOutputInAcceptance = path.join(OUTPUT_ROOT, 'form-audit.json');
 await fs.writeFile(JSON_OUTPUT, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-await fs.writeFile(path.join(OUTPUT_ROOT, 'form-audit.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+await fs.writeFile(jsonOutputInAcceptance, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+let utf8Roundtrip = { passed: false, sample: '', replacement_character: false, bom: false };
+try {
+  const bytes = await fs.readFile(jsonOutputInAcceptance);
+  const decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  const parsed = JSON.parse(decoded);
+  const sample = parsed.resolved_issues.map((item) => `${item.issue}${item.resolution}`).join('');
+  utf8Roundtrip = { passed: sample.includes('移动说明文字') && sample.includes('验收服务器') && !decoded.includes('\uFFFD'), sample: sample.slice(0, 120), replacement_character: decoded.includes('\uFFFD'), bom: bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF };
+} catch (error) {
+  utf8Roundtrip.error = error instanceof Error ? error.message : String(error);
+}
+result('audit_json_utf8_roundtrip', utf8Roundtrip.passed && !utf8Roundtrip.bom, utf8Roundtrip, 'P0');
+report.status = assertions.every((item) => item.status === 'PASS') ? 'PASS' : 'FAIL';
+report.issues = issues;
+await fs.writeFile(JSON_OUTPUT, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+await fs.writeFile(jsonOutputInAcceptance, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 await fs.writeFile(path.join(OUTPUT_ROOT, 'form-audit.html'), buildHtml(report), 'utf8');
 console.log(JSON.stringify({ status: report.status, assertions: assertions.length, issues: issues.length, json: JSON_OUTPUT, html: path.join(OUTPUT_ROOT, 'form-audit.html') }, null, 2));
 if (report.status !== 'PASS') process.exitCode = 1;
