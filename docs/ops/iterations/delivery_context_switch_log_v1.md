@@ -2369,3 +2369,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   journeys pass at 1440x900, 1280x800, 768x1024 and 390x844 with zero browser
   errors. Strict TypeScript, release units, style-system guard, standard-list
   scroll contract, workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-BOSS-CYAN-IDENTITY
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `dbe6eae`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared
+  visual identity, role home, application header and responsive surfaces;
+  `frontend/packages/design-tokens` and `frontend/apps/web`.
+- Outcome: corrected the remaining visual-identity mismatch by replacing the
+  prior conventional blue accent with the BOSS-aligned cyan identity family
+  anchored at `#00b6fe`. Interactive, hover, focus, link, navigation-active and
+  informational states now derive from one governed cyan scale in both light
+  and dark themes. The role home now has a visibly branded cyan identity band,
+  governed KPI cards and stronger section rhythm; the application header uses
+  the same cyan anchor line across home, list and record journeys.
+- Boundary: design tokens and presentation only. Navigation authority,
+  workflows, data contracts, permissions and backend behavior are unchanged.
+- Validation: real role-home, populated contract ledger and contract detail
+  journeys pass at 1440x900, 1280x800, 768x1024 and 390x844 with zero browser
+  errors and zero document overflow. Design-token build/verification, strict
+  TypeScript, release units, style-system guard, standard-list scroll contract,
+  workspace alignment and Vite production build pass.

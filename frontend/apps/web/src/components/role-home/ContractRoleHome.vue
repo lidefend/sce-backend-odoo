@@ -116,16 +116,21 @@ const {
 .contract-role-home__header {
   position: relative;
   overflow: hidden;
-  padding: 18px 20px;
-  border-color: var(--sc-app-info-border);
-  background: linear-gradient(110deg, var(--sc-app-info-bg), var(--sc-app-panel));
+  min-height: 108px;
+  box-sizing: border-box;
+  padding: 22px 24px;
+  border-color: var(--sc-semantic-surface-interactive);
+  background: linear-gradient(118deg, var(--sc-semantic-surface-interactive), var(--sc-semantic-surface-interactive-hover));
 }
 
 .contract-role-home__header::before {
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--sc-semantic-surface-interactive);
+  top: -76px;
+  right: -36px;
+  width: 240px;
+  height: 240px;
+  border: 42px solid color-mix(in srgb, var(--sc-semantic-text-on-interactive) 13%, transparent);
+  border-radius: 50%;
   content: '';
 }
 
@@ -140,8 +145,9 @@ const {
 }
 
 .contract-role-home__header h1 {
-  color: var(--sc-app-info-text);
-  font-size: 24px;
+  position: relative;
+  color: var(--sc-semantic-text-on-interactive);
+  font-size: 26px;
   line-height: 1.35;
 }
 
@@ -153,7 +159,9 @@ const {
 }
 
 .contract-role-home__header p {
+  position: relative;
   margin-top: var(--sc-space-2, 8px);
+  color: color-mix(in srgb, var(--sc-semantic-text-on-interactive) 88%, transparent);
 }
 
 .contract-role-home__tasks,
@@ -168,6 +176,8 @@ const {
   justify-content: space-between;
   gap: var(--sc-space-3, 12px);
   margin-bottom: var(--sc-space-3, 12px);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--sc-app-border);
 }
 
 .contract-role-home__section-heading p {
@@ -229,8 +239,10 @@ const {
   padding: var(--sc-space-3, 12px);
   border: 1px solid var(--sc-app-border);
   border-radius: 4px;
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
+  border-color: var(--sc-app-border);
+  border-top: 3px solid var(--sc-semantic-surface-interactive);
+  background: var(--sc-app-panel);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--sc-app-shadow) 28%, transparent);
 }
 
 .contract-role-home__summary-list strong {
@@ -256,11 +268,13 @@ const {
   width: 100%;
   padding: var(--sc-space-3, 12px);
   text-align: left;
+  border-left: 3px solid var(--sc-app-info-border);
   transition: transform var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
 }
 
 .contract-role-home__link-list button:hover {
   transform: translateY(-1px);
+  border-left-color: var(--sc-semantic-surface-interactive);
 }
 
 .contract-role-home__state {
