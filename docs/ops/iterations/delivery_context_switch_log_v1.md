@@ -2505,3 +2505,16 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   authorization and menu expansion persistence are unchanged.
 - Validation: real four-viewport browser journeys report zero errors and zero
   document overflow. Strict TypeScript and style-system guards pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-MOBILE-WORKFLOW-GRID
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `ba25e2d`.
+- Outcome: replaced the clipped horizontal mobile workflow strip with a complete
+  three-column, two-row status grid. All six workflow states remain visible,
+  with active and completed semantics preserved and the back action positioned
+  beneath the grid.
+- Boundary: layout only. Workflow ordering, transition availability and record
+  state are unchanged.
+- Validation: mobile geometry reports a 313px grid with three approximately
+  100px columns and all six states contained within x=31..344; document overflow
+  and browser errors remain zero.

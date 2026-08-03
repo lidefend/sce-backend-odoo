@@ -134,4 +134,22 @@ function buttonClass(action: ContractAction) {
   .record-header-context { justify-content: flex-start; }
   .native-statusbar--header { width: 100%; }
 }
+@media (max-width: 520px) {
+  .native-statusbar--header {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+  }
+  .native-statusbar--header .native-statusbar-step,
+  .native-statusbar--header .native-statusbar-step:first-child,
+  .native-statusbar--header .native-statusbar-step:last-child {
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    margin: 0;
+    padding: 0 4px;
+    border-radius: var(--sc-product-radius-control);
+  }
+}
 </style>
