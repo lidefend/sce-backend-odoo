@@ -179,8 +179,8 @@
 
 .page[data-product-page-mode='list'] .table thead th {
   border-bottom: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-muted-bg);
-  color: var(--sc-app-text-primary);
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
   font-size: 12px;
   font-weight: 700;
 }

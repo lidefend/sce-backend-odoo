@@ -503,10 +503,10 @@ onBeforeUnmount(() => {
   min-width: 0;
   max-width: 100%;
   border: 1px solid var(--sc-app-border);
-  border-radius: 10px;
+  border-radius: 6px;
   background: var(--sc-app-panel);
-  padding: 8px;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 55%, transparent);
+  padding: 6px;
+  box-shadow: none;
 }
 
 .action-toolbar--without-view {

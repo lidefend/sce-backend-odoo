@@ -2330,3 +2330,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   zero browser errors and zero document overflow. ESLint, strict TypeScript,
   release units, style-system guard, standard-list scroll contract, workspace
   alignment, wide-form grid guard and Vite production build all pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-VISUAL-IDENTITY
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `43fc97d`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared
+  visual identity across shell, role home, navigation, list and contract form;
+  `frontend/apps/web`.
+- Outcome: responded to visual acceptance feedback with a deliberately visible
+  identity pass rather than another structural refinement. The shell now has a
+  236px branded navigation column and a distinct white application header;
+  current navigation, table headers, role-home KPIs and contract section bands
+  share one governed blue hierarchy. Query controls are tighter and flatter.
+- Boundary: generic presentation only. Navigation authority, workflow states,
+  permissions, data contracts and backend business behavior are unchanged.
+- Validation: real home, list and detail journeys pass at 1440x900, 1280x800,
+  768x1024 and 390x844 with zero browser errors and zero document overflow.
+  ESLint, strict TypeScript, release units, style-system guard, standard-list
+  scroll contract, workspace alignment and Vite production build pass.

@@ -310,6 +310,7 @@ onMounted(() => {
 .node.active {
   background: var(--sc-navigation-active-bg);
   color: var(--sc-app-info-text);
+  box-shadow: inset 3px 0 0 var(--sc-semantic-surface-interactive);
 }
 
 .node:not(.active):hover {

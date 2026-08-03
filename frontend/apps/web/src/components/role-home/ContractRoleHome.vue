@@ -114,7 +114,19 @@ const {
 }
 
 .contract-role-home__header {
-  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+  padding: 18px 20px;
+  border-color: var(--sc-app-info-border);
+  background: linear-gradient(110deg, var(--sc-app-info-bg), var(--sc-app-panel));
+}
+
+.contract-role-home__header::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--sc-semantic-surface-interactive);
+  content: '';
 }
 
 .contract-role-home__header h1,
@@ -128,7 +140,8 @@ const {
 }
 
 .contract-role-home__header h1 {
-  font-size: 22px;
+  color: var(--sc-app-info-text);
+  font-size: 24px;
   line-height: 1.35;
 }
 
@@ -216,11 +229,13 @@ const {
   padding: var(--sc-space-3, 12px);
   border: 1px solid var(--sc-app-border);
   border-radius: 4px;
-  background: var(--sc-app-subtle-bg);
+  border-color: var(--sc-app-info-border);
+  background: var(--sc-app-info-bg);
 }
 
 .contract-role-home__summary-list strong {
-  font-size: 22px;
+  color: var(--sc-app-info-text);
+  font-size: 26px;
 }
 
 .contract-role-home__access-grid {
@@ -241,6 +256,11 @@ const {
   width: 100%;
   padding: var(--sc-space-3, 12px);
   text-align: left;
+  transition: transform var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
+}
+
+.contract-role-home__link-list button:hover {
+  transform: translateY(-1px);
 }
 
 .contract-role-home__state {
