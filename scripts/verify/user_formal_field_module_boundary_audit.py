@@ -147,19 +147,27 @@ BOUNDARY_CASES = [
 ]
 
 
-def _addon_root(addon: Path) -> Path:
+def _find_addon_root(addon: Path) -> Path | None:
     for candidate in ADDON_ROOT_CANDIDATES:
         if (candidate / addon).exists():
             return candidate
+    return None
+
+
+def _addon_root(addon: Path) -> Path:
+    root = _find_addon_root(addon)
+    if root is not None:
+        return root
     raise FileNotFoundError(f"Cannot locate addon root for {addon}")
 
 
 def _display_path(path: Path) -> str:
-    for candidate in [
-        *_repo_root_candidates(),
-        _addon_root(CORE_ADDON),
-        _addon_root(CUSTOM_ADDON),
-    ]:
+    addon_roots = [
+        root
+        for addon in (CORE_ADDON, CUSTOM_ADDON)
+        if (root := _find_addon_root(addon)) is not None
+    ]
+    for candidate in [*_repo_root_candidates(), *addon_roots]:
         try:
             return str(path.relative_to(candidate))
         except ValueError:
@@ -180,20 +188,25 @@ def _iter_source_files(base: Path):
         yield from base.rglob(suffix)
 
 
-def _scan_static(core_addon_root: Path, custom_addon_root: Path) -> list[dict]:
+def _scan_static(core_addon_root: Path, custom_addon_root: Path | None) -> list[dict]:
     failures = []
     core = core_addon_root / CORE_ADDON
-    custom = custom_addon_root / CUSTOM_ADDON
+    custom = custom_addon_root / CUSTOM_ADDON if custom_addon_root else None
     custom_blob = "\n".join(
         path.read_text(encoding="utf-8", errors="ignore")
         for path in _iter_source_files(custom)
-    )
+    ) if custom else ""
+    custom_files = list(_iter_source_files(custom)) if custom else []
+    if custom is None and any(case.get("owner") == "custom" for case in BOUNDARY_CASES):
+        failures.append({
+            "type": "custom_source_unavailable",
+            "message": "custom-owned boundary cases require smart_construction_custom source",
+        })
     core_files = list(_iter_source_files(core))
     core_blob = "\n".join(
         path.read_text(encoding="utf-8", errors="ignore")
         for path in core_files
     )
-    custom_files = list(_iter_source_files(custom))
 
     for case in BOUNDARY_CASES:
         owner = case.get("owner")
@@ -275,7 +288,7 @@ def _runtime_rows() -> tuple[list[dict], list[dict]]:
 
 
 core_addon_root = _addon_root(CORE_ADDON)
-custom_addon_root = _addon_root(CUSTOM_ADDON)
+custom_addon_root = _find_addon_root(CUSTOM_ADDON)
 failures = _scan_static(core_addon_root, custom_addon_root)
 runtime_rows, runtime_failures = _runtime_rows()
 failures.extend(runtime_failures)
@@ -286,6 +299,10 @@ payload = {
     "failure_count": len(failures),
     "failures": failures,
     "runtime_rows": runtime_rows,
+    "source_roots": {
+        "core": str(core_addon_root),
+        "custom": str(custom_addon_root) if custom_addon_root else None,
+    },
 }
 print("USER_FORMAL_FIELD_MODULE_BOUNDARY_AUDIT=" + json.dumps(payload, ensure_ascii=False, sort_keys=True))
 if failures:
