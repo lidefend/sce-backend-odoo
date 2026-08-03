@@ -586,10 +586,18 @@ select.input {
   .o2m-row {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--sc-app-border);
+    border-radius: 8px;
+    background: var(--sc-app-panel);
   }
 
   .o2m-row-state {
     grid-column: 1 / -1;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--sc-app-border);
+    font-weight: 600;
   }
 
   .o2m-fields {

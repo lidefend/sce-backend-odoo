@@ -3,6 +3,16 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-03 — FORM-SYSTEM-PROFESSIONALIZATION-01
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `e5f0e03021b179e07c31c9e6a0e96f8dd9ad0309`.
+- Formal Product Layer: P0 shared frontend renderer; Layer Target: generic record-form presentation, interaction states, and browser audit; Modules: `ContractFormPage`, native form canvas, reusable form fields, relation dialog, x2many renderer, and the form-system Playwright audit.
+- Reason: extend the accepted readonly detail treatment into a complete, verifiable enterprise form lifecycle covering create, edit, validation, saving, failure, relationships, detail rows, collaboration, long-form navigation, and form design.
+- Standard vs User-Specific: contract-driven generic presentation only; no construction/customer field names, permissions, route identities, record data, or model-specific workflow semantics are introduced.
+- Why Here / Why Not Elsewhere: P0 owns rendering, responsive degradation, focus behavior, and reusable interaction feedback. P1 business modules, backend APIs, ACLs, and runtime configuration remain unchanged because the contract already exposes the required semantics.
+- Blast Radius: frontend presentation and a read-only/mocked-write acceptance probe; no production deployment, database mutation, API change, route change, permission change, business workflow change, or main-branch merge.
+- Validation: strict typecheck, style-token guard, release unit tests, workspace/content alignment guards, production frontend build, legacy visual/form audits, and a five-viewport form matrix with 70 assertions and zero errors.
+
 ## 2026-08-02 — DAILY-DEV-MISSING-ADDONS-PATH-RUNTIME-01
 
 - Branch / anchor: `fix/dev-missing-addons-path-runtime` from `968b942`.

@@ -1,40 +1,54 @@
 <template>
-  <PageHeaderTemplate :title="title" :subtitle="subtitle || undefined" :hide-title="hideTitle">
+  <PageHeaderTemplate class="contract-form-command-bar" :title="title" :subtitle="subtitle || undefined" :hide-title="hideTitle">
     <template #meta>
       <p v-if="showHud" class="meta">model={{ model }} · id={{ recordIdDisplay }} · action={{ actionId || '-' }}</p>
       <p v-if="showHud && contractMetaLine" class="meta">{{ contractMetaLine }}</p>
     </template>
     <template #status>
       <div class="record-header-status">
-        <div class="record-header-context" aria-label="页面模式">
+        <div class="record-header-context" aria-label="页面模式与保存状态" aria-live="polite">
           <strong>{{ modeLabel }}</strong>
-          <span v-if="dirty">{{ changedFieldCount > 0 ? `已修改 ${changedFieldCount} 项` : '有未保存修改' }}</span>
+          <span v-if="busyKind === 'save'">正在保存…</span>
+          <span v-else-if="busy">正在处理…</span>
+          <span v-else-if="dirty">{{ changedFieldCount > 0 ? `已修改 ${changedFieldCount} 项` : '有未保存修改' }}</span>
           <span v-else-if="mode !== 'readonly'">尚未修改</span>
         </div>
         <div v-if="intakeMode" class="record-header-intake">
           <p class="header-status-item">当前进度：{{ intakeRequiredSummary }}</p>
           <p class="header-status-item" :class="{ 'header-status-item--danger': intakeMissingSummary !== '无' }">缺少：{{ intakeMissingSummary }}</p>
         </div>
-        <section v-else-if="statusbar.visible" class="native-statusbar native-statusbar--header" aria-label="业务状态">
-          <button
-            v-for="item in statusbar.states"
-            :key="String(item.value)"
-            type="button"
-            class="native-statusbar-step"
-            :class="{ 'native-statusbar-step--active': statusbar.current === String(item.value), 'native-statusbar-step--done': statusbar.reachedValues.includes(String(item.value)) }"
-            :disabled="busy || statusbar.readonly"
-            @click="$emit('set-status', String(item.value))"
-          >{{ item.label }}</button>
+        <section v-else-if="statusbar.visible" class="native-statusbar native-statusbar--header" aria-label="业务状态流程">
+          <p class="native-statusbar-mobile-summary">
+            <span>当前状态</span><strong>{{ currentStatusLabel }}</strong>
+            <span v-if="nextStatusLabel">下一步 {{ nextStatusLabel }}</span>
+          </p>
+          <ol class="native-statusbar-track">
+            <li v-for="(item, index) in statusbar.states" :key="String(item.value)">
+              <button
+                type="button"
+                class="native-statusbar-step"
+                :class="{ 'native-statusbar-step--active': statusbar.current === String(item.value), 'native-statusbar-step--done': statusbar.reachedValues.includes(String(item.value)) && statusbar.current !== String(item.value) }"
+                :aria-current="statusbar.current === String(item.value) ? 'step' : undefined"
+                :aria-label="`第 ${index + 1} 步，共 ${statusbar.states.length} 步：${item.label}`"
+                :disabled="busy || statusbar.readonly"
+                @click="$emit('set-status', String(item.value))"
+              ><span class="native-statusbar-step-index" aria-hidden="true">{{ index + 1 }}</span><span>{{ item.label }}</span></button>
+            </li>
+          </ol>
         </section>
       </div>
     </template>
     <template #actions>
-      <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm contract-header-back-action" :disabled="busy" type="button" @click="$emit('back')"><ScIcon name="arrow-left" :size="15" /> 返回列表</button>
-      <button v-if="showContinueProcessing" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('continue-processing')">继续办理</button>
-      <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
-      <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
-      <button v-if="showPrimaryFormAction" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
-      <button v-for="action in directActions" :key="`hdr-${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+      <span v-if="!intakeMode || showReturn" class="contract-header-navigation-actions">
+        <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm contract-header-back-action" :disabled="busy" type="button" @click="$emit('back')"><ScIcon name="arrow-left" :size="15" /> 返回列表</button>
+        <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
+      </span>
+      <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length" class="contract-header-primary-actions">
+        <button v-if="showContinueProcessing" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('continue-processing')">继续办理</button>
+        <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
+        <button v-if="showPrimaryFormAction" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
+        <button v-for="action in directActions" :key="`hdr-${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+      </span>
       <details v-if="overflowActions.length" class="contract-header-more-actions">
         <summary class="sc-btn sc-btn-ghost sc-btn-sm">更多操作</summary>
         <div><button v-for="action in overflowActions" :key="`hdr-more-${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button></div>
@@ -50,14 +64,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
-import type { ContractAction, NativeStatusbarVm } from './types';
+import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 
-defineProps<{
+const props = defineProps<{
   title: string; subtitle: string; hideTitle: boolean; showHud: boolean; model: string; recordIdDisplay: string;
   actionId: number | null; contractMetaLine: string; intakeMode: boolean; intakeRequiredSummary: string;
-  intakeMissingSummary: string; statusbar: NativeStatusbarVm; busy: boolean; showReturn: boolean;
+  intakeMissingSummary: string; statusbar: NativeStatusbarVm; busy: boolean; busyKind: BusyKind; showReturn: boolean;
   mode: 'create' | 'edit' | 'readonly'; modeLabel: string; dirty: boolean; changedFieldCount: number;
   showContinueProcessing: boolean;
   showDraftSave: boolean; draftSaveDisabled: boolean; draftSaveLabel: string; showPrimaryFormAction: boolean;
@@ -65,6 +80,10 @@ defineProps<{
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
   discardLabel: string; reloadLabel: string;
 }>();
+
+const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
+const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');
+const nextStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value + 1]?.label || '');
 
 defineEmits<{
   back: []; 'continue-processing': []; 'set-status': [value: string]; 'return-workbench': []; 'save-draft': []; 'run-primary': [];
@@ -88,14 +107,33 @@ function buttonClass(action: ContractAction) {
 .contract-header-more-actions > summary::-webkit-details-marker { display: none; }
 .contract-header-more-actions > div { position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; display: grid; min-width: 180px; gap: 6px; padding: 8px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
 .contract-header-config-action { color: var(--sc-semantic-text-muted); }
+.contract-header-navigation-actions,
+.contract-header-primary-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .native-statusbar--header {
+  max-width: 100%;
+  min-width: 0;
+}
+.native-statusbar-track {
   display: flex;
   align-items: stretch;
-  flex-wrap: nowrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
   max-width: 100%;
   overflow-x: auto;
-  overflow-y: hidden;
   scrollbar-width: thin;
+}
+.native-statusbar-track > li { display: flex; flex: 0 0 auto; }
+.native-statusbar-mobile-summary { display: none; }
+.native-statusbar-step-index {
+  display: none;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1;
 }
 .native-statusbar--header .native-statusbar-step {
   flex: 0 0 68px;
@@ -136,21 +174,38 @@ function buttonClass(action: ContractAction) {
   .native-statusbar--header { width: 100%; }
 }
 @media (max-width: 520px) {
-  .native-statusbar--header {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .record-header-status { gap: 6px; }
+  .record-header-context { min-height: 24px; }
+  .record-header-context strong { padding: 3px 7px; }
+  .native-statusbar-mobile-summary {
+    display: flex;
+    align-items: baseline;
     gap: 6px;
-    overflow: visible;
+    margin: 0 0 6px;
+    color: var(--sc-app-text-secondary);
+    font-size: 11px;
+  }
+  .native-statusbar-mobile-summary strong { color: var(--sc-app-info-text); font-size: 13px; }
+  .native-statusbar-mobile-summary span:last-child { margin-left: auto; }
+  .native-statusbar-track {
+    gap: 0;
+    padding-bottom: 3px;
   }
   .native-statusbar--header .native-statusbar-step,
   .native-statusbar--header .native-statusbar-step:first-child,
   .native-statusbar--header .native-statusbar-step:last-child {
-    width: 100%;
-    min-width: 0;
-    min-height: 34px;
-    margin: 0;
-    padding: 0 4px;
-    border-radius: var(--sc-product-radius-control);
+    width: auto;
+    min-width: 92px;
+    min-height: 32px;
+    margin: 0 0 0 -1px;
+    padding: 0 9px;
+    border-radius: 0;
+    gap: 6px;
   }
+  .native-statusbar--header .native-statusbar-step:first-child { margin-left: 0; border-radius: 5px 0 0 5px; }
+  .native-statusbar--header .native-statusbar-step:last-child { border-radius: 0 5px 5px 0; }
+  .native-statusbar-step-index { display: grid; }
+  .contract-header-navigation-actions { order: 2; }
+  .contract-header-primary-actions { order: 1; }
 }
 </style>

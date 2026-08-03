@@ -13,6 +13,8 @@
           :class="fieldClass(field)"
           :data-field-name="field.name"
           :data-field-key="field.key"
+          :data-field-type="field.type"
+          :data-field-state="fieldState(field)"
           :tabindex="fieldSelectionMode ? 0 : undefined"
           :role="fieldSelectionMode ? 'button' : undefined"
           :aria-pressed="fieldSelectionMode ? selectedFieldKey === fieldIdentity(field) : undefined"
@@ -30,7 +32,7 @@
           <div class="field-label-row">
             <label v-if="!fieldConfigEditable" class="label" :for="fieldControlId(field)">
               {{ field.label }}
-              <span v-if="field.required && !field.readonly" class="field-state field-state--required">必填</span>
+              <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
               <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
             </label>
             <input
@@ -469,8 +471,24 @@ function fieldClass(field: FormSectionFieldSchema) {
       'field--selectable': props.fieldSelectionMode,
       'field--selected': props.fieldSelectionMode && props.selectedFieldKey === fieldKey,
       'field--config-hidden': props.fieldSelectionMode && isFieldMarkedHidden(field),
+      'field--empty': fieldHasEmptyValue(field),
     },
   ];
+}
+
+function fieldHasEmptyValue(field: FormSectionFieldSchema) {
+  const value = field.inputValue ?? field.value;
+  if (Array.isArray(value)) return value.length === 0;
+  if (field.type === 'boolean') return value === null || value === undefined;
+  return value === null || value === undefined || value === false || String(value).trim() === '';
+}
+
+function fieldState(field: FormSectionFieldSchema) {
+  if (field.invalid) return 'invalid';
+  if (field.readonly) return 'readonly';
+  if (field.required) return 'required';
+  if (fieldHasEmptyValue(field)) return 'empty';
+  return 'ready';
 }
 
 function isRadioWidget(field: FormSectionFieldSchema) {
@@ -944,8 +962,24 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-state--required {
-  border-color: var(--sc-app-danger-border);
+  min-height: auto;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
   color: var(--sc-app-danger-text);
+  font-size: 14px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .field-inline-config {
@@ -1124,6 +1158,34 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   outline: none;
   border-color: var(--sc-semantic-surface-interactive);
   box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
+}
+
+.input:hover:not(:disabled):not(:focus) {
+  border-color: var(--sc-app-border-strong);
+}
+
+.input:disabled,
+.input[readonly] {
+  background: var(--sc-app-muted-bg);
+  color: var(--sc-app-text-secondary);
+  cursor: not-allowed;
+}
+
+.field[data-field-type='integer'] .input,
+.field[data-field-type='float'] .input,
+.field[data-field-type='monetary'] .input,
+.field[data-field-type='integer'] :deep(.contract-readonly-value),
+.field[data-field-type='float'] :deep(.contract-readonly-value),
+.field[data-field-type='monetary'] :deep(.contract-readonly-value) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.field[data-field-type='date'] .input,
+.field[data-field-type='datetime'] .input,
+.field[data-field-type='date'] :deep(.contract-readonly-value),
+.field[data-field-type='datetime'] :deep(.contract-readonly-value) {
+  font-variant-numeric: tabular-nums;
 }
 
 textarea.input {

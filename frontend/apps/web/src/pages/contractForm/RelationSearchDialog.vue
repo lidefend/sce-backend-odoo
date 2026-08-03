@@ -47,7 +47,7 @@
                   @change="$emit('select-row', row)"
                 />
               </td>
-              <td v-for="column in dialog.columns" :key="`${row.id}-${column.name}`">
+              <td v-for="column in dialog.columns" :key="`${row.id}-${column.name}`" :data-label="column.label">
                 {{ relationSearchCell(row, column.name) }}
               </td>
             </tr>
@@ -119,11 +119,18 @@ defineEmits<{
 }>();
 
 const searchInputRef = ref<HTMLInputElement | null>(null);
+let openerElement: HTMLElement | null = null;
 
 watch(
   () => props.dialog.open,
   async (open) => {
-    if (!open) return;
+    if (!open) {
+      await nextTick();
+      if (openerElement?.isConnected) openerElement.focus();
+      openerElement = null;
+      return;
+    }
+    openerElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     await nextTick();
     searchInputRef.value?.focus();
   },

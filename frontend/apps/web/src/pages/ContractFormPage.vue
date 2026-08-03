@@ -22,7 +22,7 @@
       :intake-mode="isProjectIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
-      :busy="busy || status === 'loading'" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
+      :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel"
       :direct-actions="headerBusinessDirectActions" :overflow-actions="headerBusinessOverflowActions" :config-actions="headerConfigActionsVisible"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
