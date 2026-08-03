@@ -634,7 +634,7 @@
   box-shadow: var(--sc-app-shadow-popover);
 }
 
-.contract-form-native-shell :deep(.template-page-header-actions .contract-header-config-action) {
+.contract-form-native-shell :deep(.template-page-header-actions .form-header-config-action) {
   font-weight: 500;
   opacity: 0.78;
 }
@@ -682,7 +682,7 @@
     width: 100%;
   }
 
-  .contract-form-native-shell :deep(.template-page-header-actions .contract-header-primary-actions) {
+  .contract-form-native-shell :deep(.template-page-header-actions .form-header-primary-actions) {
     margin-left: auto;
   }
 }
@@ -701,13 +701,13 @@
     gap: 6px;
   }
 
-  .contract-form-native-shell :deep(.template-page-header-actions .contract-header-navigation-actions),
-  .contract-form-native-shell :deep(.template-page-header-actions .contract-header-primary-actions) {
+  .contract-form-native-shell :deep(.template-page-header-actions .form-header-navigation-actions),
+  .contract-form-native-shell :deep(.template-page-header-actions .form-header-primary-actions) {
     flex-wrap: nowrap;
     gap: 4px;
   }
 
-  .contract-form-native-shell :deep(.template-page-header-actions .contract-header-primary-actions) {
+  .contract-form-native-shell :deep(.template-page-header-actions .form-header-primary-actions) {
     justify-self: end;
     margin-left: 0;
   }
@@ -765,7 +765,7 @@
   font-weight: 600;
 }
 
-.contract-readonly-value {
+.form-readonly-value {
   display: inline-flex;
   align-items: center;
   width: 100%;
@@ -782,7 +782,7 @@
   box-sizing: border-box;
 }
 
-.contract-readonly-value--empty {
+.form-readonly-value--empty {
   min-height: 24px;
   padding-block: 3px;
   border-color: transparent;

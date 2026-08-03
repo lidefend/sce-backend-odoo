@@ -3,6 +3,16 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-04 — FRONTEND-PR-RELEASE-GATE-CONVERGENCE-05
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `0087d7b3e36c8dc7d7bed3ebdd25335473d33849`.
+- Formal Product Layer: P0 platform product; Layer Target: shared frontend semantic boundaries and release-safe presentation selectors.
+- Reason: the authoritative frontend release workflow detected industry literals in shared list/home rendering and model-prefixed CSS introduced by the experience-upgrade branch.
+- Standard vs User-Specific: generic presentation semantics only. Runtime titles remain contract-provided, list priority uses field metadata, and renamed selectors express UI roles rather than a customer or construction model.
+- Why Here / Why Not Elsewhere: shared renderers own generic field ranking and presentation classes; P1/P2 modules, runtime configuration, backend contracts, permissions, routes, and business data do not require changes.
+- Blast Radius: one role-home label binding, generic list default-column ranking, and mechanical CSS selector renames across the existing form/home components; no visual behavior, API, workflow, database, deployment, or production mutation.
+- Validation: shared-surface semantic boundary and delivery-hardening guards, strict TypeScript, release units, workspace alignment, production build, browser audits, and exact-SHA GitHub release checks.
+
 ## 2026-08-04 — FRONTEND-FULL-PRODUCT-AUDIT-04
 
 - Branch / anchor: `feature/frontend-experience-upgrade` from `b7678cb0000944afd069017da618f79fa60adc76`.

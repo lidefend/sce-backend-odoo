@@ -47,22 +47,22 @@
       </div>
     </template>
     <template #actions>
-      <span v-if="!intakeMode || showReturn" class="contract-header-navigation-actions">
-        <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm contract-header-back-action" :disabled="busy" type="button" @click="$emit('back')"><ScIcon name="arrow-left" :size="15" /> 返回列表</button>
+      <span v-if="!intakeMode || showReturn" class="form-header-navigation-actions">
+        <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-back-action" :disabled="busy" type="button" @click="$emit('back')"><ScIcon name="arrow-left" :size="15" /> 返回列表</button>
         <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
       </span>
-      <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length" class="contract-header-primary-actions">
+      <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length" class="form-header-primary-actions">
         <button v-if="showContinueProcessing" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('continue-processing')">继续办理</button>
         <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
         <button v-if="showPrimaryFormAction" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
         <button v-for="action in directActions" :key="`hdr-${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
       </span>
-      <details v-if="overflowActions.length" class="contract-header-more-actions">
+      <details v-if="overflowActions.length" class="form-header-more-actions">
         <summary class="sc-btn sc-btn-ghost sc-btn-sm">更多操作</summary>
         <div><button v-for="action in overflowActions" :key="`hdr-more-${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button></div>
       </details>
-      <span v-if="configActions.length" class="contract-header-action-separator" aria-hidden="true" />
-      <button v-for="action in configActions" :key="`hdr-config-${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm contract-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+      <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
+      <button v-for="action in configActions" :key="`hdr-config-${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
       <button v-if="showDiscard" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</button>
       <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</button>
       <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</button>
@@ -141,14 +141,14 @@ function buttonClass(action: ContractAction) {
 .record-header-context strong { padding: 4px 8px; border: 1px solid var(--sc-app-border); border-radius: 999px; background: var(--sc-app-panel-muted); color: var(--sc-app-text-primary); font-size: 12px; }
 .record-header-context span { font-weight: 600; }
 .record-header-intake { display: grid; gap: 2px; }
-.contract-header-action-separator { align-self: center; width: 1px; height: 16px; background: var(--sc-app-border); }
-.contract-header-more-actions { position: relative; }
-.contract-header-more-actions > summary { list-style: none; cursor: pointer; }
-.contract-header-more-actions > summary::-webkit-details-marker { display: none; }
-.contract-header-more-actions > div { position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; display: grid; min-width: 180px; gap: 6px; padding: 8px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
-.contract-header-config-action { color: var(--sc-semantic-text-muted); }
-.contract-header-navigation-actions,
-.contract-header-primary-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.form-header-action-separator { align-self: center; width: 1px; height: 16px; background: var(--sc-app-border); }
+.form-header-more-actions { position: relative; }
+.form-header-more-actions > summary { list-style: none; cursor: pointer; }
+.form-header-more-actions > summary::-webkit-details-marker { display: none; }
+.form-header-more-actions > div { position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; display: grid; min-width: 180px; gap: 6px; padding: 8px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
+.form-header-config-action { color: var(--sc-semantic-text-muted); }
+.form-header-navigation-actions,
+.form-header-primary-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .native-statusbar--header {
   position: relative;
   max-width: 100%;
@@ -253,7 +253,7 @@ function buttonClass(action: ContractAction) {
   .native-statusbar--header .native-statusbar-step:first-child { margin-left: 0; border-radius: 5px 0 0 5px; }
   .native-statusbar--header .native-statusbar-step:last-child { border-radius: 0 5px 5px 0; }
   .native-statusbar-step-index { display: grid; }
-  .contract-header-navigation-actions { order: 2; }
-  .contract-header-primary-actions { order: 1; }
+  .form-header-navigation-actions { order: 2; }
+  .form-header-primary-actions { order: 1; }
 }
 </style>

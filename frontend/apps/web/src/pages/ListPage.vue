@@ -1740,14 +1740,11 @@ const budgetedDefaultVisibleColumns = computed(() => {
   };
   if (rowPrimary.value && eligible.some((column) => column.name === rowPrimary.value)) names.add(rowPrimary.value);
   addFirst((column) => String(column.cellRole || '').toLowerCase() === 'identity');
-  addFirst((column) => /合同名称/.test(String(column.label || '')) || /contract.*(name|title)/i.test(column.name));
-  addFirst((column) => (column.name !== 'name' && /(^|_)(name|title|subject)($|_)/i.test(column.name)) || /名称|主题/.test(String(column.label || '')));
-  addFirst((column) => /contract.*(_no|number|code)/i.test(column.name) || /合同编号/.test(String(column.label || '')));
+  addFirst((column) => /(^|_)(name|title|subject)($|_)/i.test(column.name));
+  addFirst((column) => /(^|_)(number|code|no)($|_)/i.test(column.name));
   addFirst((column) => /(^|_)(status|state)($|_)/i.test(column.name) || ['status', 'state'].includes(String(column.cellRole || '').toLowerCase()));
-  addFirst((column) => /合同日期/.test(String(column.label || '')));
   addFirst((column) => ['date', 'datetime'].includes(String(column.type || column.dataType || '').toLowerCase()));
-  addFirst((column) => /金额/.test(String(column.label || '')) || ['money', 'monetary', 'metric'].includes(String(column.cellRole || '').toLowerCase()) || String(column.type || column.dataType || '').toLowerCase() === 'monetary');
-  addFirst((column) => /关联项目|项目/.test(String(column.label || '')) || /project/i.test(column.name));
+  addFirst((column) => ['money', 'monetary', 'metric'].includes(String(column.cellRole || '').toLowerCase()) || String(column.type || column.dataType || '').toLowerCase() === 'monetary');
   addFirst((column) => ['many2one', 'many2many', 'one2many', 'reference'].includes(String(column.type || column.dataType || '').toLowerCase()));
   for (const column of eligible) {
     if (names.size >= visibleBudget) break;

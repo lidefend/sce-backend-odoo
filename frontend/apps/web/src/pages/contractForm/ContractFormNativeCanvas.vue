@@ -24,11 +24,11 @@
     </header>
     <div
       v-if="sectionItems.length > 2"
-      class="contract-form-section-nav-shell"
+      class="form-section-nav-shell"
       :class="{ 'has-more-before': sectionHasMoreBefore, 'has-more-after': sectionHasMoreAfter }"
     >
-      <nav ref="sectionNavRef" class="contract-form-section-nav" aria-label="表单章节导航" @scroll="updateSectionOverflow">
-        <span class="contract-form-section-nav-label">章节</span>
+      <nav ref="sectionNavRef" class="form-section-nav" aria-label="表单章节导航" @scroll="updateSectionOverflow">
+        <span class="form-section-nav-label">章节</span>
         <button
           v-for="item in sectionItems"
           :key="item.title"
@@ -39,7 +39,7 @@
           @click="scrollToSection(item.title)"
         >{{ item.title }}<span v-if="item.hasError" class="section-error-dot" aria-label="本章节存在错误"></span></button>
       </nav>
-      <span class="contract-form-section-progress" aria-live="polite">
+      <span class="form-section-progress" aria-live="polite">
         {{ activeSectionIndex + 1 }}/{{ sectionItems.length }}<span v-if="sectionHasMoreBefore || sectionHasMoreAfter"> · 横向滑动</span>
       </span>
     </div>
@@ -81,7 +81,7 @@
       @native-action="emit('native-action', $event)"
     >
       <template #readonly="{ field }">
-        <span class="contract-readonly-value" :class="{ 'contract-readonly-value--empty': isEmptyValue(field.value, field.type) }">
+        <span class="form-readonly-value" :class="{ 'form-readonly-value--empty': isEmptyValue(field.value, field.type) }">
           <span v-if="isEmptyValue(field.value, field.type)">未填写</span>
           <FieldValue v-else :value="field.value" :field="field.descriptor" />
         </span>
@@ -205,7 +205,7 @@ function scrollToSection(title: string) {
   target.setAttribute('tabindex', '-1');
   target.focus({ preventScroll: true });
   const commandBottom = document.querySelector<HTMLElement>('.contract-form-command-bar')?.getBoundingClientRect().bottom || 0;
-  const stickyNav = sectionNavRef.value?.closest<HTMLElement>('.contract-form-section-nav-shell');
+  const stickyNav = sectionNavRef.value?.closest<HTMLElement>('.form-section-nav-shell');
   const navStyle = stickyNav ? getComputedStyle(stickyNav) : null;
   const navBottom = navStyle?.position === 'sticky' ? stickyNav?.getBoundingClientRect().bottom || 0 : 0;
   const obstructionBottom = Math.max(commandBottom, navBottom);
@@ -287,7 +287,7 @@ const emit = defineEmits<{
 </script>
 
 <style scoped>
-.contract-form-section-nav-shell {
+.form-section-nav-shell {
   position: sticky;
   top: 72px;
   z-index: 8;
@@ -298,7 +298,7 @@ const emit = defineEmits<{
   overflow: hidden;
 }
 
-.contract-form-section-nav {
+.form-section-nav {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -308,7 +308,7 @@ const emit = defineEmits<{
   scrollbar-width: thin;
 }
 
-.contract-form-section-progress {
+.form-section-progress {
   position: absolute;
   top: 50%;
   right: 7px;
@@ -323,7 +323,7 @@ const emit = defineEmits<{
   pointer-events: none;
 }
 
-.contract-form-section-nav-label {
+.form-section-nav-label {
   flex: 0 0 auto;
   padding: 0 6px;
   color: var(--sc-app-text-muted);
@@ -331,7 +331,7 @@ const emit = defineEmits<{
   font-weight: 600;
 }
 
-.contract-form-section-nav button {
+.form-section-nav button {
   flex: 0 0 auto;
   position: relative;
   min-height: 28px;
@@ -346,17 +346,17 @@ const emit = defineEmits<{
   white-space: nowrap;
 }
 
-.contract-form-section-nav button:hover {
+.form-section-nav button:hover {
   background: var(--sc-app-hover-bg);
   color: var(--sc-app-text-primary);
 }
 
-.contract-form-section-nav button:focus-visible {
+.form-section-nav button:focus-visible {
   outline: 2px solid var(--sc-semantic-surface-interactive);
   outline-offset: -2px;
 }
 
-.contract-form-section-nav button.is-active {
+.form-section-nav button.is-active {
   background: var(--sc-navigation-active-bg);
   color: var(--sc-app-info-text);
   font-weight: 650;
@@ -372,24 +372,24 @@ const emit = defineEmits<{
   vertical-align: 1px;
 }
 
-.contract-readonly-value--empty {
+.form-readonly-value--empty {
   color: var(--sc-app-text-muted);
   font-weight: 400;
 }
 
 @media (max-width: 860px) {
-  .contract-form-section-nav-shell {
+  .form-section-nav-shell {
     position: relative;
     top: auto;
     border-inline: 0;
     border-radius: 0;
   }
 
-  .contract-form-section-nav {
+  .form-section-nav {
     padding-right: 7px;
   }
 
-  .contract-form-section-progress {
+  .form-section-progress {
     position: static;
     display: block;
     transform: none;
