@@ -2241,3 +2241,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   permissions and business semantics remain unchanged.
 - Validation: isolated acceptance login, populated contract list, record
   detail journey and Vite build pass at 1440x900.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-GLOBAL-STAGE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `1070936`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; global
+  application shell, role home, governed lists and contract forms.
+- Outcome: completed the BOSS-aligned stage across the shared frontend system:
+  single light navigation, compact role home, continuous dense ledgers,
+  restrained form sections and responsive business-card presentation.
+- Boundary: generic renderer and acceptance-only synthetic data. No customer
+  policy, permission, route authority or production data was changed.
+- Validation: real acceptance login/list/detail journeys pass at 1440x900,
+  1280x800, 768x1024 and 390x844 with zero browser errors and zero document
+  overflow. Strict TypeScript, ESLint, release units, style-system guard,
+  standard-list scroll guard, workspace alignment, wide-form guard and Vite
+  build pass.

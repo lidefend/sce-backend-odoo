@@ -102,6 +102,40 @@
   box-sizing: border-box;
 }
 
+/* BOSS-aligned form canvas: restrained sections and denser information rhythm. */
+.page[data-product-page-mode='form'] {
+  gap: 10px;
+}
+
+.page[data-product-page-mode='form'] .header--flow {
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--sc-app-border);
+  border-top: 3px solid var(--sc-app-accent);
+  border-radius: 4px;
+  background: var(--sc-app-panel);
+}
+
+.page[data-product-page-mode='form'] .header-main h1 {
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.page[data-product-page-mode='form'] .card {
+  border-radius: 4px;
+  padding: 14px 16px 16px;
+  box-shadow: none;
+}
+
+.page[data-product-page-mode='form'] .form-grid {
+  gap: 12px;
+}
+
+.page[data-product-page-mode='form'] .chip,
+.page[data-product-page-mode='form'] .chip-btn {
+  border-radius: 4px;
+}
+
 .card.is-refreshing {
   pointer-events: none;
 }

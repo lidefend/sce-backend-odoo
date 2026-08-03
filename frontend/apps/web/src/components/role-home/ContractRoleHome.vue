@@ -99,8 +99,8 @@ const {
 .contract-role-home {
   display: grid;
   gap: var(--sc-space-4, 16px);
-  width: min(1180px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   min-width: 0;
 }
 
@@ -109,12 +109,13 @@ const {
 .contract-role-home__overview,
 .contract-role-home__access {
   border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-radius-lg, 12px);
+  border-radius: 4px;
   background: var(--sc-app-panel);
 }
 
 .contract-role-home__header {
-  padding: var(--sc-space-5, 20px);
+  padding: 14px 16px;
+  border-top: 3px solid var(--sc-semantic-surface-interactive);
 }
 
 .contract-role-home__header h1,
@@ -128,7 +129,8 @@ const {
 }
 
 .contract-role-home__header h1 {
-  font-size: clamp(24px, 3vw, 32px);
+  font-size: 22px;
+  line-height: 1.35;
 }
 
 .contract-role-home__header p,
@@ -145,7 +147,7 @@ const {
 .contract-role-home__tasks,
 .contract-role-home__overview,
 .contract-role-home__access {
-  padding: var(--sc-space-4, 16px);
+  padding: 14px 16px;
 }
 
 .contract-role-home__section-heading {
@@ -163,13 +165,13 @@ const {
 
 .contract-role-home__section-heading h2 {
   margin-top: 2px;
-  font-size: 19px;
+  font-size: 17px;
 }
 
 .contract-role-home button {
-  min-height: 36px;
+  min-height: 32px;
   border: 1px solid var(--sc-app-border-strong);
-  border-radius: var(--sc-radius-md, 8px);
+  border-radius: 4px;
   background: var(--sc-app-input-bg);
   color: var(--sc-app-text-primary);
   cursor: pointer;
@@ -193,7 +195,7 @@ const {
   gap: var(--sc-space-3, 12px);
   padding: var(--sc-space-3, 12px);
   border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-radius-md, 8px);
+  border-radius: 4px;
 }
 
 .contract-role-home__task-list button,
@@ -211,15 +213,15 @@ const {
 .contract-role-home__summary-list article {
   display: grid;
   gap: var(--sc-space-2, 8px);
-  min-height: 92px;
+  min-height: 74px;
   padding: var(--sc-space-3, 12px);
   border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-radius-md, 8px);
+  border-radius: 4px;
   background: var(--sc-app-subtle-bg);
 }
 
 .contract-role-home__summary-list strong {
-  font-size: 26px;
+  font-size: 22px;
 }
 
 .contract-role-home__access-grid {
@@ -245,7 +247,7 @@ const {
 .contract-role-home__state {
   margin: 0;
   padding: var(--sc-space-3, 12px);
-  border-radius: var(--sc-radius-md, 8px);
+  border-radius: 4px;
   background: var(--sc-app-subtle-bg);
 }
 

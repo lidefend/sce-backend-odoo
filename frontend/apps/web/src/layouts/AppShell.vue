@@ -1337,9 +1337,9 @@ function handleSelect(node: NavNode) {
   closeMobileSidebar();
   const selection = createNavigationSelectionSnapshot(node, session.routeAuthority);
   if (!selection) return;
-  const menuQuery = {
+  const menuQuery: LocationQueryRaw = {
     ...buildMenuSelectionQuery(),
-    ...buildBusinessEntryNavQuery(selection.meta),
+    ...(buildBusinessEntryNavQuery(selection.meta) as LocationQueryRaw),
   };
   const scope = {
     companyId: Number(session.projectContext?.company_id || session.projectContext?.selected?.company_id || 0) || null,
