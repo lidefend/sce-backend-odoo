@@ -1,4 +1,4 @@
-@media (max-width: 760px) {
+@media (max-width: 820px) {
   .list-toolbar {
     position: static;
     padding: 8px;
@@ -25,8 +25,17 @@
     display: none;
   }
 
+  .table-column-count--desktop {
+    display: none;
+  }
+
+  .table-column-count--mobile {
+    display: inline;
+  }
+
   .mobile-record-list {
     display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: 10px;
   }
 

@@ -1017,11 +1017,12 @@
 
 .topbar-context-caret {
   color: var(--sc-app-text-muted);
+  transform: rotate(90deg);
   transition: transform 120ms ease;
 }
 
 .topbar-context-trigger[aria-expanded='true'] .topbar-context-caret {
-  transform: rotate(180deg);
+  transform: rotate(270deg);
 }
 
 .topbar-account-panel {
@@ -1378,6 +1379,44 @@
   .topbar--minimal .crumb.active {
     color: var(--sc-app-text-primary);
     font-weight: 650;
+  }
+
+  .topbar--minimal .topbar-actions {
+    gap: 6px;
+  }
+
+  .topbar--minimal .topbar-context-trigger {
+    gap: 7px;
+    border-color: transparent;
+    background: var(--sc-app-subtle-bg);
+  }
+
+  .topbar--minimal .topbar-context-kicker {
+    display: none;
+  }
+
+  .topbar--minimal :is(.sidebar-toggle, .theme-switch) {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+    justify-content: center;
+    border-color: transparent;
+    background: transparent;
+    color: var(--sc-app-text-secondary);
+  }
+
+  .topbar--minimal :is(.sidebar-toggle, .theme-switch):hover {
+    background: var(--sc-app-hover-bg);
+    color: var(--sc-app-info-text);
+  }
+
+  .topbar--minimal .topbar-tool-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .content--with-activity-tabs > .activity-tabs {

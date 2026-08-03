@@ -108,6 +108,7 @@
 
 
       <section
+        ref="tableSurfaceRoot"
         class="table sc-product-main-surface"
         :class="{ 'is-refreshing': loading }"
         data-workspace-primary-content
@@ -118,7 +119,11 @@
       >
         <span v-if="loading" class="refresh-status">{{ uiLabel('refreshing_list', '正在刷新数据') }}</span>
         <div v-if="columnChoices.length" ref="columnPickerRoot" class="table-utility-bar">
-          <span class="table-column-count">当前显示 {{ displayedColumns.length }} / {{ columnChoices.length }} 列</span>
+          <span class="table-column-count table-column-count--desktop">
+            <template v-if="enabledColumns.length > displayedColumns.length">首屏自适应 {{ displayedColumns.length }} 列 · 已启用 {{ enabledColumns.length }} 列</template>
+            <template v-else>当前显示 {{ displayedColumns.length }} 列</template>
+          </span>
+          <span class="table-column-count table-column-count--mobile">信息卡片视图</span>
           <div class="table-column-manager">
             <button type="button" class="column-picker-btn" :aria-expanded="columnPickerOpen" :disabled="loading" @click.stop="columnPickerOpen = !columnPickerOpen">
               <ScIcon name="columns" :size="16" />
@@ -740,7 +745,7 @@ import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
-import { deriveListColumnWidth, type ListColumnLayoutRole } from './listPage/listColumnWidth';
+import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, type ListColumnLayoutRole } from './listPage/listColumnWidth';
 
 type SelectionAction = {
   key: string;
@@ -943,6 +948,9 @@ const plainSearchDraft = ref('');
 const plainSearchComposing = ref(false);
 const observedListLimit = ref(0);
 const columnPickerRoot = ref<HTMLElement | null>(null);
+const tableSurfaceRoot = ref<HTMLElement | null>(null);
+const tableSurfaceWidth = ref(0);
+let tableSurfaceResizeObserver: ResizeObserver | null = null;
 const columnPickerOpen = ref(false);
 const draggingColumn = ref('');
 const resizingColumn = ref('');
@@ -1714,9 +1722,16 @@ const columnChoices = computed<ColumnOption[]>(() => {
   }));
 });
 const DEFAULT_VISIBLE_COLUMN_BUDGET = 12;
+const adaptiveDefaultVisibleColumnBudget = computed(() => {
+  const width = tableSurfaceWidth.value;
+  if (!width || width < 760) return DEFAULT_VISIBLE_COLUMN_BUDGET;
+  const fixedLedgerWidth = (showSelectionColumn.value ? 40 : 0) + (showRowNumberColumn.value ? 52 : 0);
+  return Math.max(6, Math.min(DEFAULT_VISIBLE_COLUMN_BUDGET, Math.floor((width - fixedLedgerWidth) / 125)));
+});
 const budgetedDefaultVisibleColumns = computed(() => {
   const eligible = columnChoices.value.filter((column) => column.defaultVisible !== false && !hiddenColumns.value[column.name]);
-  if (eligible.length <= DEFAULT_VISIBLE_COLUMN_BUDGET) return new Set(eligible.map((column) => column.name));
+  const visibleBudget = adaptiveDefaultVisibleColumnBudget.value;
+  if (eligible.length <= visibleBudget) return new Set(eligible.map((column) => column.name));
 
   const names = new Set<string>();
   const addFirst = (predicate: (column: ColumnOption) => boolean) => {
@@ -1725,12 +1740,17 @@ const budgetedDefaultVisibleColumns = computed(() => {
   };
   if (rowPrimary.value && eligible.some((column) => column.name === rowPrimary.value)) names.add(rowPrimary.value);
   addFirst((column) => String(column.cellRole || '').toLowerCase() === 'identity');
+  addFirst((column) => /合同名称/.test(String(column.label || '')) || /contract.*(name|title)/i.test(column.name));
+  addFirst((column) => (column.name !== 'name' && /(^|_)(name|title|subject)($|_)/i.test(column.name)) || /名称|主题/.test(String(column.label || '')));
+  addFirst((column) => /contract.*(_no|number|code)/i.test(column.name) || /合同编号/.test(String(column.label || '')));
   addFirst((column) => /(^|_)(status|state)($|_)/i.test(column.name) || ['status', 'state'].includes(String(column.cellRole || '').toLowerCase()));
+  addFirst((column) => /合同日期/.test(String(column.label || '')));
   addFirst((column) => ['date', 'datetime'].includes(String(column.type || column.dataType || '').toLowerCase()));
-  addFirst((column) => ['integer', 'float', 'monetary'].includes(String(column.type || column.dataType || '').toLowerCase()) || ['money', 'monetary', 'metric'].includes(String(column.cellRole || '').toLowerCase()));
+  addFirst((column) => /金额/.test(String(column.label || '')) || ['money', 'monetary', 'metric'].includes(String(column.cellRole || '').toLowerCase()) || String(column.type || column.dataType || '').toLowerCase() === 'monetary');
+  addFirst((column) => /关联项目|项目/.test(String(column.label || '')) || /project/i.test(column.name));
   addFirst((column) => ['many2one', 'many2many', 'one2many', 'reference'].includes(String(column.type || column.dataType || '').toLowerCase()));
   for (const column of eligible) {
-    if (names.size >= DEFAULT_VISIBLE_COLUMN_BUDGET) break;
+    if (names.size >= visibleBudget) break;
     names.add(column.name);
   }
   return names;
@@ -1741,7 +1761,7 @@ const defaultVisibleColumnMap = computed<Record<string, boolean>>(() =>
     return acc;
   }, {}),
 );
-const displayedColumns = computed(() => {
+const enabledColumns = computed(() => {
   const source = columnChoices.value.length
     ? columnChoices.value.map((column) => column.name)
     : orderedColumnNames.value;
@@ -1754,6 +1774,55 @@ const displayedColumns = computed(() => {
   });
   return filtered.length ? filtered : source.slice(0, 1);
 });
+
+function adaptiveColumnFloor(field: string) {
+  return listColumnAdaptiveFloor(columnLayoutRole(field));
+}
+
+function derivedColumnWidth(field: string) {
+  const option = columnOption(field);
+  return deriveListColumnWidth({
+    label: columnLabel(field), type: option?.type, role: columnLayoutRole(field),
+    values: props.records.map((row) => row[field]),
+    selectionLabels: option?.selection?.map((item) => item.label),
+  });
+}
+
+function columnBusinessPriority(field: string) {
+  const option = columnOption(field);
+  return rankListBusinessColumn({
+    field, label: columnLabel(field), type: option?.dataType || option?.type,
+    role: columnLayoutRole(field), primary: field === rowPrimary.value,
+  });
+}
+
+const prioritizedEnabledColumns = computed(() => enabledColumns.value
+  .map((field, index) => ({ field, index, priority: columnBusinessPriority(field) }))
+  .sort((left, right) => left.priority - right.priority || left.index - right.index)
+  .map((item) => item.field));
+
+const displayedColumns = computed(() => {
+  const source = enabledColumns.value;
+  const surfaceWidth = tableSurfaceWidth.value;
+  if (!surfaceWidth) return source;
+  const fixedWidth = (showSelectionColumn.value ? 40 : 0) + (showRowNumberColumn.value ? 52 : 0) + 4;
+  const availableWidth = Math.max(0, surfaceWidth - fixedWidth);
+  const selected: string[] = [];
+  let usedWidth = 0;
+  for (const field of prioritizedEnabledColumns.value) {
+    const customWidth = effectiveColumnWidth(field);
+    const requiredWidth = customWidth || adaptiveColumnFloor(field);
+    if (selected.length >= DEFAULT_VISIBLE_COLUMN_BUDGET) break;
+    if (selected.length >= 3 && usedWidth + requiredWidth > availableWidth) continue;
+    selected.push(field);
+    usedWidth += requiredWidth;
+  }
+  return selected.length ? selected : source.slice(0, 1);
+});
+const mobileAvailableColumns = computed(() => {
+  const source = columnChoices.value.map((column) => column.name);
+  return source.length ? source : enabledColumns.value;
+});
 const footerLabelFieldCount = computed(() => displayedColumns.value.length
   ? Math.max(1, displayedColumns.value.indexOf(rowPrimary.value) + 1)
   : 0);
@@ -1763,35 +1832,46 @@ const footerLabelColspan = computed(() => (showSelectionColumn.value ? 1 : 0)
 const showAggregateFooter = computed(() => displayedColumns.value.some((field) => isAggregateColumn(field)));
 const mobileIdentityField = computed(() => {
   const preferred = String(rowPrimary.value || '').trim();
-  if (preferred && displayedColumns.value.includes(preferred) && !isStatusLikeColumn(preferred)) return preferred;
-  return displayedColumns.value.find((field) => !isStatusLikeColumn(field) && !isNumericColumn(field))
-    || displayedColumns.value.find((field) => !isStatusLikeColumn(field))
-    || displayedColumns.value[0]
+  if (preferred && mobileAvailableColumns.value.includes(preferred) && !isStatusLikeColumn(preferred)) return preferred;
+  return mobileAvailableColumns.value.find((field) => !isStatusLikeColumn(field) && !isNumericColumn(field))
+    || mobileAvailableColumns.value.find((field) => !isStatusLikeColumn(field))
+    || mobileAvailableColumns.value[0]
     || '';
 });
-const mobileStatusField = computed(() => displayedColumns.value.find((field) => isStatusLikeColumn(field)) || '');
+const mobileStatusField = computed(() => mobileAvailableColumns.value.find((field) => isStatusLikeColumn(field)) || '');
 const mobileFactColumns = computed(() => {
   const identity = mobileIdentityField.value;
   const status = mobileStatusField.value;
-  const candidates = displayedColumns.value.filter((field) => field !== identity && field !== status);
-  const relation = candidates.filter((field) => ['many2one', 'reference'].includes(String(columnOption(field)?.type || '')));
-  const amount = candidates.filter((field) => isNumericColumn(field));
-  const date = candidates.filter((field) => ['date', 'datetime'].includes(String(columnOption(field)?.type || '')));
-  return [...new Set([...relation.slice(0, 2), ...amount.slice(0, 1), ...date.slice(0, 1), ...candidates])].slice(0, 4);
+  return mobileAvailableColumns.value
+    .filter((field) => field !== identity && field !== status)
+    .map((field, index) => ({ field, index, priority: columnBusinessPriority(field) }))
+    .sort((left, right) => left.priority - right.priority || left.index - right.index)
+    .map((item) => item.field)
+    .slice(0, 6);
 });
-const defaultColumnWidths = computed<Record<string, number>>(() => displayedColumns.value.reduce<Record<string, number>>((widths, field) => {
-  const option = columnOption(field);
-  widths[field] = deriveListColumnWidth({
-    label: columnLabel(field), type: option?.type, role: columnLayoutRole(field),
-    values: props.records.map((row) => row[field]),
-    selectionLabels: option?.selection?.map((item) => item.label),
-  });
-  return widths;
-}, {}));
+const defaultColumnWidths = computed<Record<string, number>>(() => {
+  const fields = displayedColumns.value;
+  const desired = fields.reduce<Record<string, number>>((widths, field) => {
+    widths[field] = derivedColumnWidth(field);
+    return widths;
+  }, {});
+  const fixedWidth = (showSelectionColumn.value ? 40 : 0) + (showRowNumberColumn.value ? 52 : 0) + 4;
+  const customWidth = fields.reduce((total, field) => total + effectiveColumnWidth(field), 0);
+  const flexible = fields.filter((field) => !effectiveColumnWidth(field));
+  const availableFlexibleWidth = Math.max(0, tableSurfaceWidth.value - fixedWidth - customWidth);
+  const floorTotal = flexible.reduce((total, field) => total + adaptiveColumnFloor(field), 0);
+  const desiredExtraTotal = flexible.reduce((total, field) => total + Math.max(0, desired[field] - adaptiveColumnFloor(field)), 0);
+  const distributableExtra = Math.max(0, availableFlexibleWidth - floorTotal);
+  const extraRatio = desiredExtraTotal > 0 ? Math.min(1, distributableExtra / desiredExtraTotal) : 0;
+  for (const field of flexible) {
+    const floor = adaptiveColumnFloor(field);
+    desired[field] = Math.floor(floor + Math.max(0, desired[field] - floor) * extraRatio);
+  }
+  return desired;
+});
 const tableMinWidthPx = computed(() => {
   const fixedWidth = (showSelectionColumn.value ? 40 : 0)
-    + (showRowNumberColumn.value ? 52 : 0)
-    + (columnChoices.value.length ? 72 : 0);
+    + (showRowNumberColumn.value ? 52 : 0);
   const dynamicWidth = displayedColumns.value.reduce((total, field) => {
     return total + resolvedColumnWidth(field);
   }, 0);
@@ -2187,13 +2267,28 @@ function handleColumnPickerPointerDown(event: PointerEvent) {
   columnPickerOpen.value = false;
 }
 
+function syncTableSurfaceWidth() {
+  tableSurfaceWidth.value = Math.floor(tableSurfaceRoot.value?.getBoundingClientRect().width || 0);
+}
+
+watch(tableSurfaceRoot, (current, previous) => {
+  if (previous) tableSurfaceResizeObserver?.unobserve(previous);
+  if (!current) return;
+  syncTableSurfaceWidth();
+  tableSurfaceResizeObserver?.observe(current);
+}, { flush: 'post' });
+
 onMounted(() => {
   document.addEventListener('pointerdown', handleColumnPickerPointerDown);
+  tableSurfaceResizeObserver = new ResizeObserver(syncTableSurfaceWidth);
+  syncTableSurfaceWidth();
+  if (tableSurfaceRoot.value) tableSurfaceResizeObserver.observe(tableSurfaceRoot.value);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleColumnPickerPointerDown);
   window.removeEventListener('mousemove', onColumnResizeMove);
+  tableSurfaceResizeObserver?.disconnect();
 });
 
 </script>

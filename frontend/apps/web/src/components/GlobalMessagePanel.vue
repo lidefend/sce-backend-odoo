@@ -6,7 +6,8 @@
       :class="{ active: open }"
       @click.stop="toggle"
     >
-      消息
+      <ScIcon name="bell" :size="16" />
+      <span class="global-message__label">消息</span>
       <span v-if="unreadCount" class="global-message__badge sc-badge sc-badge-danger">{{ unreadCount }}</span>
     </button>
 
@@ -374,6 +375,37 @@ onUnmounted(() => {
 
 .global-message__trigger {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (min-width: 961px) {
+  .global-message__trigger {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+    justify-content: center;
+    border-color: transparent;
+    background: transparent;
+    color: var(--sc-app-text-secondary);
+  }
+
+  .global-message__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .global-message__badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    margin: 0;
+  }
 }
 
 .global-message__trigger.active {

@@ -18,6 +18,14 @@ type ColumnWidthInput = {
   selectionLabels?: string[];
 };
 
+type ColumnPriorityInput = {
+  field: string;
+  label: string;
+  type?: string;
+  role: ListColumnLayoutRole;
+  primary?: boolean;
+};
+
 const limits: Record<ListColumnLayoutRole, [number, number]> = {
   identity: [136, 260],
   description: [176, 300],
@@ -28,6 +36,32 @@ const limits: Record<ListColumnLayoutRole, [number, number]> = {
   date: [108, 140],
   actions: [80, 112],
 };
+
+export function listColumnAdaptiveFloor(role: ListColumnLayoutRole) {
+  const floors: Record<ListColumnLayoutRole, number> = {
+    identity: 136, description: 156, relation: 120, text: 96,
+    status: 80, money: 104, date: 108, actions: 80,
+  };
+  return floors[role];
+}
+
+export function rankListBusinessColumn(input: ColumnPriorityInput) {
+  const name = String(input.field || '').toLowerCase();
+  const label = String(input.label || '');
+  const type = String(input.type || '').toLowerCase();
+  if (input.primary || /登记单号|登记编号/.test(label)) return 0;
+  if (/contract.*(_no|number|code)/i.test(name) || /合同编号/.test(label)) return 1;
+  if (/contract.*(name|title)/i.test(name) || /合同名称/.test(label)) return 2;
+  if (input.role === 'status' || /^(status|state)$/i.test(name)) return 3;
+  if (/合同日期/.test(label) || /contract.*date/i.test(name)) return 4;
+  if (/合同金额/.test(label) || /^(amount_total|contract_amount)$/i.test(name)) return 5;
+  if (/关联项目|项目/.test(label) || /project/i.test(name)) return 6;
+  if (type === 'date' || type === 'datetime') return 10;
+  if (input.role === 'money' || ['integer', 'float', 'monetary'].includes(type)) return 11;
+  if (input.role === 'relation' || ['many2one', 'reference'].includes(type)) return 12;
+  if (/((^|_)(name|title|subject)($|_))|名称|主题/i.test(`${name} ${label}`)) return 13;
+  return 20;
+}
 
 function textWidth(value: unknown) {
   return Array.from(String(value ?? '').trim()).reduce((width, character) => {

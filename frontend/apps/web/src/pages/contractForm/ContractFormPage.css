@@ -152,17 +152,18 @@
 }
 
 .page[data-product-page-mode='form'] .card {
-  padding: 18px;
+  padding: 0 20px 24px;
   border-color: var(--sc-app-border);
   border-radius: 12px;
-  background: var(--sc-app-subtle-bg);
+  background: var(--sc-app-panel);
   box-shadow: 0 10px 30px color-mix(in srgb, var(--sc-app-shadow) 16%, transparent);
 }
 
 .page[data-product-page-mode='form'] .card--flow {
-  border: 1px solid var(--sc-app-border);
-  background: var(--sc-app-subtle-bg);
-  padding: 18px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
 .page[data-product-page-mode='form'] .form-grid {
@@ -175,10 +176,17 @@
   }
 
   .page[data-product-page-mode='form'] .header--flow,
-  .page[data-product-page-mode='form'] .card,
-  .page[data-product-page-mode='form'] .card--flow {
+  .page[data-product-page-mode='form'] .card {
     border-radius: 10px;
     padding: 12px;
+  }
+
+  .page[data-product-page-mode='form'] .card:not(.card--flow) {
+    padding: 0 12px 18px;
+  }
+
+  .page[data-product-page-mode='form'] .card--flow {
+    padding: 0;
   }
 }
 
@@ -723,29 +731,30 @@
 }
 
 .contract-form-native-shell :deep(.native-form-tree) {
-  gap: 12px;
+  gap: 0;
 }
 
 .contract-form-native-shell :deep(.native-container--sheet) {
-  gap: 12px;
+  gap: 0;
 }
 
 .contract-form-native-shell :deep(.native-container--group) {
-  gap: 10px;
-  padding: 12px 14px 14px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: linear-gradient(to bottom, var(--sc-app-info-bg) 0 42px, var(--sc-app-panel) 42px);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 24%, transparent);
+  gap: 14px;
+  padding: 20px 16px 24px;
+  border: 0;
+  border-bottom: 1px solid var(--sc-app-border);
+  border-radius: 0;
+  background: var(--sc-app-panel);
+  box-shadow: none;
 }
 
 .contract-form-native-shell :deep(.native-container--group > .native-container-head) {
-  min-height: 34px;
-  margin: -12px -14px 0;
-  padding: 0 14px;
-  border-left: 0;
+  min-height: 38px;
+  margin: -20px -16px 0;
+  padding: 0 16px;
+  border-left: 3px solid var(--sc-app-accent);
   border-bottom: 1px solid var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
+  background: color-mix(in srgb, var(--sc-app-info-bg) 52%, var(--sc-app-panel));
 }
 
 .contract-form-native-shell :deep(.native-container--group > .native-container-head h3) {
@@ -966,12 +975,12 @@
   }
 
   .contract-form-native-shell :deep(.native-container--group) {
-    gap: 9px;
-    padding: 11px 12px 12px;
+    gap: 12px;
+    padding: 18px 12px 22px;
   }
 
   .contract-form-native-shell :deep(.native-container--group > .native-container-head) {
-    margin: -11px -12px 0;
+    margin: -18px -12px 0;
     padding: 0 12px;
   }
 

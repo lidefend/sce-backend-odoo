@@ -217,9 +217,10 @@
               aria-controls="role-context-panel"
               @click="roleContextOpen = !roleContextOpen"
             >
+              <ScIcon name="user" :size="16" />
               <span class="topbar-context-kicker">当前岗位</span>
               <strong>{{ roleLabel }}</strong>
-              <span class="topbar-context-caret" aria-hidden="true">▾</span>
+              <ScIcon name="chevron-right" :size="14" class="topbar-context-caret" />
             </button>
             <section
               v-if="roleContextOpen"
@@ -261,7 +262,8 @@
             :aria-expanded="sidebarVisible"
             @click="toggleSidebar"
           >
-            {{ mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏') }}
+            <ScIcon name="panel-left" :size="16" />
+            <span class="topbar-tool-label">{{ mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏') }}</span>
           </button>
           <button
             v-if="isConfigurationRoute"
@@ -271,7 +273,10 @@
           >
             返回业务办理
           </button>
-          <button class="theme-switch sc-btn sc-btn-sm" type="button" @click="toggleTheme">主题：{{ themeLabel }}</button>
+          <button class="theme-switch sc-btn sc-btn-sm" type="button" :title="`切换主题，当前${themeLabel}`" :aria-label="`切换主题，当前${themeLabel}`" @click="toggleTheme">
+            <ScIcon name="sun" :size="16" />
+            <span class="topbar-tool-label">主题：{{ themeLabel }}</span>
+          </button>
         </div>
       </header>
 

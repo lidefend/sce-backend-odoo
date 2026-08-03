@@ -2518,3 +2518,32 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Validation: mobile geometry reports a 313px grid with three approximately
   100px columns and all six states contained within x=31..344; document overflow
   and browser errors remain zero.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-ENTERPRISE-RESPONSIVE-POLISH
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `5e05545`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shared
+  shell, role-home, list and record presentation;
+  `frontend/apps/web/src/components`, `layouts` and `pages`.
+- Outcome: aligned the light shell, role home, navigation utilities, responsive
+  ledger and record canvas into one restrained enterprise hierarchy. The ledger
+  now ranks primary business fields and packs them using the container's actual
+  pixel budget, distributes readable widths without right-edge clipping, and
+  switches narrow tablet and mobile surfaces to complete record cards. Mobile
+  cards omit desktop column-count language while retaining column settings and
+  present registration number, contract number and name, state, date, amount
+  and related project. The record view removes the intermediate tinted sheet,
+  keeps one continuous document surface and uses separated section headings.
+  Header, role, notification, panel and theme tools use the governed `ScIcon`
+  vocabulary; the light navigation rail and leftmost application shortcut are
+  retained.
+- Boundary: responsive presentation, visual hierarchy, default first-screen
+  field selection and icon semantics only. User data, backend contracts,
+  permissions, workflow transitions, search, sorting and persisted column
+  configuration remain unchanged.
+- Validation: real 1440px desktop, 768px tablet and 390px mobile home/list/detail
+  journeys report zero browser errors and zero document overflow. Desktop table
+  headings, amounts and rightmost related-project values remain fully visible;
+  tablet cards form a two-column ledger and mobile cards form a single-column
+  ledger. Strict TypeScript, release units, style-system guard, workspace
+  alignment, production build and both browser audits pass.

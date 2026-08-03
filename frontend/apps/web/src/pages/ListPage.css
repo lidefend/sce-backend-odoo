@@ -692,6 +692,10 @@
   font-size: 12px;
 }
 
+.table-column-count--mobile {
+  display: none;
+}
+
 .table-column-manager {
   position: relative;
   display: inline-flex;
@@ -908,6 +912,7 @@ table {
 
 th,
 td {
+  box-sizing: border-box;
   padding: 9px 12px;
   border-bottom: 1px solid var(--sc-app-border);
   text-align: left;
@@ -1048,6 +1053,13 @@ tbody td {
   width: 1%;
   min-width: 96px;
   white-space: nowrap;
+}
+
+@media (min-width: 761px) {
+  .desktop-record-table table {
+    width: 100%;
+    table-layout: fixed;
+  }
 }
 
 .table thead th {
@@ -1276,14 +1288,14 @@ tfoot tr:nth-child(2) td {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
   min-height: 36px;
-  max-width: calc(100% - 12px);
+  max-width: 100%;
   border: 0;
   background: transparent;
   color: var(--sc-app-text-primary);
-  padding: 8px 8px 8px 28px;
+  padding: 8px 12px 8px 18px;
   font: inherit;
   font-weight: 700;
   text-align: left;
@@ -1297,7 +1309,7 @@ tfoot tr:nth-child(2) td {
   top: 0;
   right: 0;
   z-index: 5;
-  width: 12px;
+  width: 8px;
   height: 100%;
   border: 0;
   background: transparent;

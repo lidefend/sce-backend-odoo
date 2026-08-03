@@ -1,8 +1,11 @@
 <template>
   <div class="contract-role-home" data-role-home data-role-home-renderer="contract">
     <header class="contract-role-home__header">
-      <h1>{{ title }}</h1>
-      <p>{{ subtitle }}</p>
+      <div>
+        <h1>{{ title }}</h1>
+        <p>{{ subtitle }}</p>
+      </div>
+      <div class="contract-role-home__header-mark"><ScIcon name="briefcase" :size="20" /><span>合同业务工作台</span></div>
     </header>
 
     <section class="contract-role-home__tasks" aria-labelledby="role-home-task-title">
@@ -39,7 +42,7 @@
       </div>
       <div v-if="summaries.length" class="contract-role-home__summary-list">
         <article v-for="summary in summaries" :key="summary.key">
-          <span>{{ summary.label }}</span>
+          <span class="contract-role-home__summary-label"><ScIcon :name="summaryIcon(summary.key)" :size="18" />{{ summary.label }}</span>
           <strong>{{ summary.value }}</strong>
         </article>
       </div>
@@ -58,8 +61,9 @@
           <h3>常用入口</h3>
           <div v-if="quickLinks.length" class="contract-role-home__link-list">
             <button v-for="link in quickLinks" :key="link.key" type="button" @click="navigate(link.route)">
-              <strong>{{ link.label }}</strong>
-              <span v-if="link.detail && link.detail !== link.label">{{ link.detail }}</span>
+              <ScIcon :name="entryIcon(link.key)" :size="18" />
+              <span><strong>{{ link.label }}</strong><small v-if="link.detail && link.detail !== link.label">{{ link.detail }}</small></span>
+              <ScIcon name="arrow-right" :size="16" />
             </button>
           </div>
           <p v-else class="contract-role-home__state">当前没有可用入口。</p>
@@ -80,6 +84,19 @@
 
 <script setup lang="ts">
 import { useContractRoleHome } from '../../composables/shared-surface/useContractRoleHome';
+import ScIcon from '../design-system/ScIcon.vue';
+
+type HomeIconName = 'briefcase' | 'folder' | 'building' | 'apps';
+
+function summaryIcon(key: string): HomeIconName {
+  return /launch|start|create/i.test(String(key || '')) ? 'folder' : 'briefcase';
+}
+
+function entryIcon(key: string): HomeIconName {
+  if (/project/i.test(String(key || ''))) return 'folder';
+  if (/contract/i.test(String(key || ''))) return 'briefcase';
+  return 'apps';
+}
 
 const {
   title,
@@ -98,6 +115,7 @@ const {
 <style scoped>
 .contract-role-home {
   display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
   gap: var(--sc-space-4, 16px);
   width: 100%;
   margin: 0;
@@ -109,18 +127,37 @@ const {
 .contract-role-home__overview,
 .contract-role-home__access {
   border: 1px solid var(--sc-app-border);
-  border-radius: 4px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
 
 .contract-role-home__header {
+  grid-column: 1 / -1;
   position: relative;
   overflow: hidden;
   min-height: 108px;
   box-sizing: border-box;
   padding: 22px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sc-space-4, 16px);
   border-color: var(--sc-semantic-surface-interactive);
   background: linear-gradient(118deg, var(--sc-semantic-surface-interactive), var(--sc-semantic-surface-interactive-hover));
+}
+
+.contract-role-home__header-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--sc-semantic-text-on-interactive) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sc-semantic-text-on-interactive) 12%, transparent);
+  color: var(--sc-semantic-text-on-interactive);
+  font-weight: 600;
 }
 
 .contract-role-home__header::before {
@@ -167,8 +204,11 @@ const {
 .contract-role-home__tasks,
 .contract-role-home__overview,
 .contract-role-home__access {
-  padding: 14px 16px;
+  padding: 18px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--sc-app-shadow) 12%, transparent);
 }
+
+.contract-role-home__access { grid-column: 1 / -1; }
 
 .contract-role-home__section-heading {
   display: flex;
@@ -238,12 +278,21 @@ const {
   min-height: 74px;
   padding: var(--sc-space-3, 12px);
   border: 1px solid var(--sc-app-border);
-  border-radius: 4px;
+  border-radius: var(--sc-product-radius-control);
   border-color: var(--sc-app-border);
   border-top: 3px solid var(--sc-semantic-surface-interactive);
   background: var(--sc-app-panel);
   box-shadow: 0 5px 14px color-mix(in srgb, var(--sc-app-shadow) 28%, transparent);
 }
+
+.contract-role-home__summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--sc-app-text-secondary);
+}
+
+.contract-role-home__summary-label .sc-icon { color: var(--sc-app-info-text); }
 
 .contract-role-home__summary-list strong {
   color: var(--sc-app-info-text);
@@ -264,12 +313,33 @@ const {
 
 .contract-role-home__link-list button {
   display: grid;
-  gap: 2px;
+  grid-template-columns: 32px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   padding: var(--sc-space-3, 12px);
   text-align: left;
   border-left: 3px solid var(--sc-app-info-border);
   transition: transform var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
+}
+
+.contract-role-home__link-list button > .sc-icon:first-child {
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border-radius: 8px;
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
+}
+
+.contract-role-home__link-list button > span {
+  display: grid;
+  gap: 2px;
+}
+
+.contract-role-home__link-list button small {
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
 }
 
 .contract-role-home__link-list button:hover {
@@ -286,12 +356,15 @@ const {
 
 @media (max-width: 700px) {
   .contract-role-home {
+    grid-template-columns: 1fr;
     gap: var(--sc-space-3, 12px);
   }
 
   .contract-role-home__tasks { order: 1; }
   .contract-role-home__overview { order: 2; }
   .contract-role-home__access { order: 3; }
+
+  .contract-role-home__header-mark { display: none; }
 
   .contract-role-home__access-grid,
   .contract-role-home__summary-list {
