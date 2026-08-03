@@ -2451,3 +2451,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   viewports report zero document overflow and zero browser errors. Strict
   TypeScript, release units, style-system guard, workspace alignment and Vite
   production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-NAVIGATION-BRAND-CONTEXT
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `13af40e`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; navigation
+  product identity and business-context presentation;
+  `frontend/apps/web/src/layouts/AppShell.vue`.
+- Outcome: removed raw account and fixture names from the permanent product
+  brand area. The sidebar subtitle now presents governed business context as
+  `company · role`, producing `FE Company A · 项目成员` in the acceptance
+  journey. The actual account name remains available inside the account/role
+  panel for traceability without visually contaminating product identity.
+- Boundary: shell identity presentation only. Session identity, company scope,
+  role authority, audit context and permissions are unchanged.
+- Validation: real home, ledger and record screenshots show business context in
+  the sidebar with no fixture account label. All four viewport journeys report
+  zero browser errors and zero document overflow. Strict TypeScript, release
+  units, style-system guard, workspace alignment and Vite production build pass.

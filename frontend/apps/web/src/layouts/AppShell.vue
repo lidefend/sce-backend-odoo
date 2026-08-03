@@ -400,18 +400,6 @@ function asInteger(value: unknown): number | undefined {
   return undefined;
 }
 
-function stripRoleFromIdentity(identity: string, role: string): string {
-  const source = String(identity || '').trim();
-  const roleText = String(role || '').trim();
-  if (!source || !roleText) return source;
-  const escapedRole = roleText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const removedRole = source
-    .replace(new RegExp(`[-_· ]*${escapedRole}$`, 'i'), '')
-    .replace(new RegExp(`^${escapedRole}[-_· ]*`, 'i'), '')
-    .trim();
-  return removedRole;
-}
-
 function resolveSceneKeyFromNode(node: NavNode): string | undefined {
   const sceneNode = node as SceneAwareNavNode;
   return asText(sceneNode.scene_key) || asText(sceneNode.sceneKey) || asText(node.meta?.scene_key);
@@ -483,12 +471,10 @@ const rootTitle = computed(() => {
 });
 const userName = computed(() => session.user?.name ?? '访客');
 const sidebarSubtitle = computed(() => {
-  if (!isDeliveryMode.value) return userName.value;
-  const raw = String(userName.value || '').trim();
-  if (!raw) return roleLabel.value;
-  const stripped = stripRoleFromIdentity(raw, roleLabel.value);
-  if (!stripped) return 'Demo账号';
-  return normalizeDeliveryText(stripped);
+  const context = [currentCompanyLabel.value, roleLabel.value]
+    .map((item) => normalizeDeliveryText(String(item || '').trim()))
+    .filter(Boolean);
+  return context.join(' · ') || normalizeDeliveryText(String(config.appBrand.tagline || '').trim()) || '企业业务工作台';
 });
 const roleLabel = computed(() => {
   const label = String(roleSurface.value?.role_label || '').trim();
