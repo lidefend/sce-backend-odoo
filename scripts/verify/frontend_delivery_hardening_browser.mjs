@@ -412,7 +412,7 @@ async function main() {
     await detailIdentity.waitFor({ timeout: 45000 });
     check((await page.title()).startsWith(`${journeyIdentity} - `), 'detail document title did not use the concise stable record identity');
     await open(page, recordRoute(TARGETS.journey_request));
-    const moreActions = page.locator('.contract-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first();
+    const moreActions = page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first();
     await moreActions.focus(); await moreActions.press('Enter');
     const submit = page.locator('.template-page-header-actions button:visible').filter({ hasText: /^提交$/ }).first();
     await submit.focus(); await submit.press('Enter');
@@ -503,7 +503,7 @@ async function main() {
             await page.locator('.financial-workspace[data-workspace-kind="payment_request"]').waitFor({ timeout: 45000 });
             let submitAction = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
             if (!(await submitAction.count())) {
-              await page.locator('.contract-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first().click();
+              await page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first().click();
               submitAction = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
             }
             await submitAction.click();

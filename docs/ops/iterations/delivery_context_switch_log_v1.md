@@ -3,6 +3,16 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-04 — FRONTEND-PR-MAIN-SYNC-AUDIT-SELECTOR-06
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `acfdf29154db0eda0ac51214300ca83b6fb5be1d` after synchronizing `origin/main`.
+- Formal Product Layer: P4 verification governance; Layer Target: frontend release browser audit selector alignment.
+- Reason: the enterprise form upgrade renamed the generic header overflow-action class from the model-prefixed `contract-header-more-actions` to `form-header-more-actions`, while two release-audit locators still referenced the retired selector and falsely reported that the visible “更多操作” control was missing.
+- Standard vs User-Specific: generic verification wiring only; no customer data, product behavior, route, permission, interface, visual style, performance threshold, or business workflow changes.
+- Why Here / Why Not Elsewhere: the browser audit owns DOM interaction selectors and must follow the already accepted generic component class; changing the product component or restoring a model-specific compatibility class would regress the shared semantic boundary.
+- Blast Radius: two Playwright locators in the delivery-hardening audit and this audit record; no backend, database, runtime configuration, deployment, or production mutation.
+- Validation: static selector search, strict typecheck, frontend release units/build, delivery-hardening production browser gate, full-product browser audit, generated-report guard, and exact-SHA GitHub checks.
+
 ## 2026-08-04 — FRONTEND-PR-RELEASE-GATE-CONVERGENCE-05
 
 - Branch / anchor: `feature/frontend-experience-upgrade` from `0087d7b3e36c8dc7d7bed3ebdd25335473d33849`.
