@@ -23,6 +23,12 @@ class UserFormalFieldModuleBoundaryAuditTest(unittest.TestCase):
         self.assertIn("/mnt/source-addons", candidates)
         self.assertIn("/mnt/customer-addons", candidates)
 
+    def test_custom_source_is_optional_until_a_custom_owned_case_exists(self) -> None:
+        source = AUDIT.read_text(encoding="utf-8")
+        self.assertIn('case.get("owner") == "custom"', source)
+        self.assertIn('"custom_source_unavailable"', source)
+        self.assertIn("custom_addon_root = _find_addon_root(CUSTOM_ADDON)", source)
+
 
 if __name__ == "__main__":
     unittest.main()
