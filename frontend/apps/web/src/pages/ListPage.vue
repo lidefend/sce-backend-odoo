@@ -121,6 +121,7 @@
           <span class="table-column-count">当前显示 {{ displayedColumns.length }} / {{ columnChoices.length }} 列</span>
           <div class="table-column-manager">
             <button type="button" class="column-picker-btn" :aria-expanded="columnPickerOpen" :disabled="loading" @click.stop="columnPickerOpen = !columnPickerOpen">
+              <ScIcon name="columns" :size="16" />
               列设置
             </button>
             <span v-if="columnSaveStatusText" class="column-save-badge" :class="`is-${columnSaveStatus}`">{{ columnSaveStatusText }}</span>

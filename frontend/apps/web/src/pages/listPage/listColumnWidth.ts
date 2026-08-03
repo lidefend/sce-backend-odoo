@@ -19,14 +19,14 @@ type ColumnWidthInput = {
 };
 
 const limits: Record<ListColumnLayoutRole, [number, number]> = {
-  identity: [220, 320],
-  description: [200, 320],
-  relation: [160, 260],
-  text: [112, 220],
-  status: [88, 144],
-  money: [112, 160],
-  date: [112, 160],
-  actions: [88, 120],
+  identity: [136, 260],
+  description: [176, 300],
+  relation: [132, 232],
+  text: [96, 192],
+  status: [80, 120],
+  money: [104, 148],
+  date: [108, 140],
+  actions: [80, 112],
 };
 
 function textWidth(value: unknown) {
@@ -52,11 +52,11 @@ function percentile(values: number[], ratio: number) {
 export function deriveListColumnWidth(input: ColumnWidthInput) {
   const type = String(input.type || '').trim().toLowerCase();
   const [minimum, maximum] = limits[input.role];
-  const headerWidth = textWidth(input.label) + 68;
+  const headerWidth = textWidth(input.label) + 52;
   if (input.role === 'date') {
-    return Math.min(maximum, Math.max(minimum, type === 'datetime' ? 152 : 120, headerWidth));
+    return Math.min(maximum, Math.max(minimum, type === 'datetime' ? 140 : 112, headerWidth));
   }
-  if (input.role === 'money') return Math.min(maximum, Math.max(minimum, 132, headerWidth));
+  if (input.role === 'money') return Math.min(maximum, Math.max(minimum, 120, headerWidth));
   if (input.role === 'actions') return Math.min(maximum, Math.max(minimum, headerWidth));
 
   const candidates = [...(input.values || []).slice(0, 30), ...(input.selectionLabels || [])]
@@ -65,7 +65,7 @@ export function deriveListColumnWidth(input: ColumnWidthInput) {
     .map((value) => textWidth(value) + 24);
   const sampledWidth = percentile(candidates, 0.8);
   const contentWidth = ['identity', 'description', 'relation'].includes(input.role)
-    ? Math.ceil(sampledWidth * 0.78)
+    ? Math.ceil(sampledWidth * 0.88)
     : sampledWidth;
   return Math.min(maximum, Math.max(minimum, headerWidth, contentWidth));
 }

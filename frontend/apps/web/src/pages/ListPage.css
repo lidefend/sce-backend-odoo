@@ -204,6 +204,71 @@
   background: var(--sc-app-subtle-bg);
 }
 
+/* Layered business ledger: query, dataset and pagination form one clear hierarchy. */
+@media (min-width: 761px) {
+  .page[data-product-page-mode='list'] {
+    gap: 14px;
+  }
+
+  .page[data-product-page-mode='list'] .table {
+    border-color: var(--sc-app-border);
+    border-radius: 12px;
+    background: var(--sc-app-panel);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--sc-app-shadow) 16%, transparent);
+  }
+
+  .page[data-product-page-mode='list'] .table-utility-bar {
+    min-height: 46px;
+    padding: 0 16px;
+    border-bottom-color: var(--sc-app-border);
+    background: var(--sc-app-panel);
+  }
+
+  .page[data-product-page-mode='list'] .table-column-count {
+    color: var(--sc-app-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .page[data-product-page-mode='list'] .table thead th {
+    height: 44px;
+    border-bottom-color: var(--sc-app-info-border);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--sc-app-info-bg) 76%, var(--sc-app-panel)) 0%, var(--sc-app-info-bg) 100%);
+    color: var(--sc-app-info-text);
+  }
+
+  .page[data-product-page-mode='list'] .table tbody td {
+    height: 50px;
+    background: var(--sc-app-panel);
+  }
+
+  .page[data-product-page-mode='list'] .table tbody tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--sc-app-panel) 96%, var(--sc-app-muted-bg));
+  }
+
+  .page[data-product-page-mode='list'] .table tbody tr:hover td {
+    background: var(--sc-app-hover-bg);
+  }
+
+  .page[data-product-page-mode='list'] .pagination-footer {
+    min-height: 50px;
+    padding-inline: 16px;
+    border-top-color: var(--sc-app-border);
+    background: var(--sc-app-subtle-bg);
+  }
+}
+
+@media (max-width: 760px) {
+  .page[data-product-page-mode='list'] {
+    gap: 10px;
+  }
+
+  .page[data-product-page-mode='list'] .table {
+    border-radius: 10px;
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--sc-app-shadow) 15%, transparent);
+  }
+}
+
 .table > .sc-table-shell {
   border-inline: 0;
   border-radius: 0;
@@ -635,6 +700,9 @@
 }
 
 .column-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--sc-app-info-border);
   border-radius: 6px;
   background: var(--sc-app-input-bg);

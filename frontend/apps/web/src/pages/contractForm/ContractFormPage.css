@@ -135,6 +135,53 @@
   border-radius: 4px;
 }
 
+/* Record workspace: separate command surface from the readable business document. */
+.page[data-product-page-mode='form'] {
+  gap: 16px;
+}
+
+.page[data-product-page-mode='form'] .header--flow {
+  min-height: 56px;
+  margin-bottom: 4px;
+  padding: 12px 16px;
+  align-items: center;
+  border-color: var(--sc-app-border);
+  border-radius: 12px;
+  background: var(--sc-app-panel);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--sc-app-shadow) 14%, transparent);
+}
+
+.page[data-product-page-mode='form'] .card {
+  padding: 18px;
+  border-color: var(--sc-app-border);
+  border-radius: 12px;
+  background: var(--sc-app-subtle-bg);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--sc-app-shadow) 16%, transparent);
+}
+
+.page[data-product-page-mode='form'] .card--flow {
+  border: 1px solid var(--sc-app-border);
+  background: var(--sc-app-subtle-bg);
+  padding: 18px;
+}
+
+.page[data-product-page-mode='form'] .form-grid {
+  gap: 16px;
+}
+
+@media (max-width: 760px) {
+  .page[data-product-page-mode='form'] {
+    gap: 10px;
+  }
+
+  .page[data-product-page-mode='form'] .header--flow,
+  .page[data-product-page-mode='form'] .card,
+  .page[data-product-page-mode='form'] .card--flow {
+    border-radius: 10px;
+    padding: 12px;
+  }
+}
+
 .card.is-refreshing {
   pointer-events: none;
 }
@@ -881,6 +928,34 @@
 
 .native-statusbar-step:disabled {
   cursor: default;
+}
+
+@media (max-width: 520px) {
+  .native-statusbar--header {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+  }
+
+  .native-statusbar-step,
+  .native-statusbar-step:first-child,
+  .native-statusbar-step:last-child {
+    min-width: 0;
+    width: 100%;
+    margin-left: 0;
+    padding: 8px 4px;
+    border: 1px solid var(--sc-app-border);
+    border-radius: 7px;
+    clip-path: none;
+    box-shadow: none;
+    white-space: nowrap;
+  }
+
+  .native-statusbar-step--active {
+    border-color: var(--sc-semantic-surface-interactive);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--sc-app-accent) 18%, transparent);
+  }
 }
 
 @media (max-width: 860px) {

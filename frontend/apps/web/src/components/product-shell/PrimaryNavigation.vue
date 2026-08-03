@@ -108,4 +108,39 @@ function emitSearch(event: Event) {
   white-space: nowrap;
   border: 0;
 }
+
+@media (min-width: 961px) {
+  .primary-navigation {
+    gap: 14px;
+  }
+
+  .primary-navigation__shortcuts {
+    gap: 4px;
+  }
+
+  .primary-navigation__shortcuts button {
+    min-height: 38px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .primary-navigation__shortcuts button[aria-current='page'] {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--sc-app-accent) 14%, transparent), color-mix(in srgb, var(--sc-app-accent) 6%, transparent));
+    box-shadow: inset 3px 0 0 var(--sc-semantic-surface-interactive);
+  }
+
+  .primary-navigation__search input {
+    min-height: 38px;
+    border-color: var(--sc-app-border);
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--sc-app-panel) 86%, transparent);
+    box-shadow: inset 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 6%, transparent);
+  }
+
+  .primary-navigation__search input:focus {
+    border-color: var(--sc-semantic-surface-interactive);
+    outline: 3px solid var(--sc-app-focus-ring);
+  }
+}
 </style>

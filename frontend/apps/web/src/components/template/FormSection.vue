@@ -1021,6 +1021,85 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   font-size: 14px;
 }
 
+/* Business document sections: visible grouping without a dark navigation treatment. */
+.template-form-section {
+  padding: 18px 20px 20px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 10px;
+  background: var(--sc-app-panel);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--sc-app-shadow) 8%, transparent);
+}
+
+.template-form-section--core,
+.template-form-section--advanced {
+  padding-top: 18px;
+  border-top: 1px solid var(--sc-app-border);
+  margin-top: 0;
+}
+
+.template-form-section-head {
+  position: relative;
+  min-height: 28px;
+  margin: -18px -20px 14px;
+  padding: 12px 16px 10px 20px;
+  border-bottom: 1px solid var(--sc-app-border);
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(90deg, var(--sc-app-info-bg) 0%, color-mix(in srgb, var(--sc-app-info-bg) 48%, var(--sc-app-panel)) 62%, var(--sc-app-panel) 100%);
+}
+
+.template-form-section-head::before {
+  position: absolute;
+  top: 11px;
+  bottom: 9px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: var(--sc-semantic-surface-interactive);
+  content: '';
+}
+
+.template-form-section-title {
+  color: var(--sc-app-info-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.template-form-section--readonly .template-form-section-grid {
+  row-gap: 16px;
+  column-gap: 32px;
+}
+
+.template-form-section--readonly .label {
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.template-form-section--readonly .readonly-value,
+.template-form-section--readonly :deep(.contract-readonly-value) {
+  min-height: 24px;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+@media (max-width: 760px) {
+  .template-form-section {
+    padding: 14px 14px 16px;
+    border-radius: 9px;
+  }
+
+  .template-form-section-head {
+    margin: -14px -14px 12px;
+    padding: 10px 12px 9px 16px;
+    border-radius: 9px 9px 0 0;
+  }
+
+  .template-form-section--readonly .template-form-section-grid {
+    row-gap: 14px;
+  }
+}
+
 .input {
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-component-input-radius);

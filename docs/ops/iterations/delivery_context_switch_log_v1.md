@@ -2469,3 +2469,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   the sidebar with no fixture account label. All four viewport journeys report
   zero browser errors and zero document overflow. Strict TypeScript, release
   units, style-system guard, workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-LAYERED-WORKSPACE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `c14aa65`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; shell,
+  navigation, ledger and record workspace visual hierarchy;
+  `frontend/apps/web/src/layouts`, `components/product-list`,
+  `components/template`, `pages/ListPage` and `pages/contractForm`.
+- Outcome: replaced the edge-to-edge flat canvas with a visibly layered light
+  workspace. Restored the left activity rail, retained a light navigation
+  panel, introduced separated query/data/record surfaces, stronger active-tab
+  identity and governed semantic shadows. Removed the redundant search wrapper
+  border, tightened content-sampled column widths by business field role, and
+  surfaced the shared icon system on column configuration.
+- Responsive outcome: desktop uses activity rail plus navigation panel;
+  tablet and mobile retain the drawer model and compact record cards. Record
+  sections become single-column business cards without document overflow.
+- Boundary: presentation and default width derivation only. User-resized width
+  persistence, column visibility, search semantics, workflow state, permission
+  checks and record data are unchanged.
+- Validation: real desktop, compact, tablet and mobile home/list/detail journeys
+  report zero browser errors and zero document overflow. Strict TypeScript,
+  style-system guard, release units, workspace alignment and Vite production
+  build pass.
