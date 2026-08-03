@@ -2163,3 +2163,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Validation: unit contract, release unit gate, ESLint, strict TypeScript, Vite
   development build, and browser fault injection covering delayed init, refresh,
   reload, failed init/retry, and role switching against `sc_demo`.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-ROUND-09
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `2e61ade`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; generic
+  frontend shell navigation and responsive layout; `frontend/apps/web`.
+- Reason: the activity rail exposed a hard-coded configuration route based on a
+  frontend administrator flag, bypassing the backend-published menu node and
+  its frozen route-authority selection path. The related static guard also
+  continued scanning the Vue SFC after layout CSS moved to `AppShell.css`.
+- Standard vs User-Specific / Why Here: this is generic rendering and
+  navigation behavior shared by all products. The frontend interprets only an
+  explicit backend `sc_web_route`; it does not add construction or customer
+  semantics.
+- Why Not Elsewhere: backend menu, action, ACL, and route authority already own
+  visibility and access. No P1 policy, P2 preference, P3 runtime configuration,
+  P4 data repair, or database change is required.
+- Blast Radius: AppShell configuration shortcut visibility and selection plus
+  the corresponding static guard. All business routes continue through the
+  existing immutable menu/action/authority snapshot; backend contracts and
+  business data are unchanged.

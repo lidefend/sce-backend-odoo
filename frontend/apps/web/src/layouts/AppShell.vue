@@ -26,7 +26,14 @@
         <button type="button" :class="{ active: workspacePanelMode === 'project' }" :title="switchRecordContextLabel" :aria-label="`${recordContextSpaceLabel}：${switchRecordContextLabel}`" :disabled="!showRecordContext" @click="openWorkspacePanel('project')">
           <ScIcon name="folder" :size="20" />
         </button>
-        <button v-if="isPlatformAdmin" class="workspace-activity-settings" type="button" title="系统设置" aria-label="系统设置" @click="router.push('/admin/business-config')">
+        <button
+          v-if="businessConfigWorkbenchNode"
+          class="workspace-activity-settings"
+          type="button"
+          :title="businessConfigWorkbenchNode.title || businessConfigWorkbenchNode.name || businessConfigWorkbenchNode.label || '配置中心'"
+          aria-label="配置中心"
+          @click="handleSelect(businessConfigWorkbenchNode)"
+        >
           <ScIcon name="settings" :size="20" />
         </button>
       </nav>
@@ -337,7 +344,11 @@ import { buildBusinessEntryNavQuery } from '../app/navigationContext';
 import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRuntime';
 import { applyTheme, nextTheme, persistTheme, type ScTheme } from '../styles/theme';
 import { config } from '../config';
-import { openAction } from '../services/action_service';
+import {
+  isBusinessConfigurationAction,
+  openAction,
+  resolveActionWebRoute,
+} from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
 import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore.js';
 import type { BusinessScopeOperationOption, NavNode, ProjectContextOption } from '@sc/schema';
@@ -434,6 +445,26 @@ const rootNode = computed(() => (menuTree.value.length === 1 ? menuTree.value[0]
 const menuNodes = computed(() => rootNode.value?.children ?? menuTree.value);
 const visibleMenuNodes = computed(() => menuNodes.value);
 const menuCount = computed(() => visibleMenuNodes.value.length);
+
+function businessConfigWorkbenchRoute(node: NavNode): string {
+  return resolveActionWebRoute(node.meta);
+}
+
+function isBusinessConfigWorkbenchNode(node: NavNode): boolean {
+  return businessConfigWorkbenchRoute(node) === '/admin/business-config'
+    && isBusinessConfigurationAction(node.meta);
+}
+
+function findBusinessConfigWorkbenchNode(nodes: NavNode[]): NavNode | null {
+  for (const node of nodes) {
+    if (isBusinessConfigWorkbenchNode(node)) return node;
+    const match = findBusinessConfigWorkbenchNode(node.children || []);
+    if (match) return match;
+  }
+  return null;
+}
+
+const businessConfigWorkbenchNode = computed(() => findBusinessConfigWorkbenchNode(menuTree.value));
 const routeAllowsEmptyMenu = computed(() => {
   const actionId = asInteger(route.params.actionId || route.query.action_id) || 0;
   const explicitActionRoute = actionId > 0 && routeAuthorityEntries(session.routeAuthority).some((entry) => (
