@@ -87,9 +87,51 @@ function buttonClass(action: ContractAction) {
 .contract-header-more-actions > summary::-webkit-details-marker { display: none; }
 .contract-header-more-actions > div { position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; display: grid; min-width: 180px; gap: 6px; padding: 8px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
 .contract-header-config-action { color: var(--sc-semantic-text-muted); }
-.native-statusbar--header .native-statusbar-step { min-width: 68px; min-height: 30px; padding: 0 10px; }
+.native-statusbar--header {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+.native-statusbar--header .native-statusbar-step {
+  flex: 0 0 68px;
+  min-width: 68px;
+  min-height: 30px;
+  margin: 0 0 0 -1px;
+  padding: 0 10px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 0;
+  background: var(--sc-app-subtle-bg);
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.native-statusbar--header .native-statusbar-step:first-child {
+  margin-left: 0;
+  border-radius: 4px 0 0 4px;
+}
+.native-statusbar--header .native-statusbar-step:last-child {
+  border-radius: 0 4px 4px 0;
+}
+.native-statusbar--header .native-statusbar-step--done {
+  background: var(--sc-app-success-bg);
+  color: var(--sc-app-success-text);
+}
+.native-statusbar--header .native-statusbar-step--active {
+  position: relative;
+  z-index: 1;
+  border-color: var(--sc-semantic-surface-interactive);
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
+  font-weight: 600;
+}
 @media (max-width: 860px) {
-  .record-header-status { align-items: flex-start; flex-direction: column; }
+  .record-header-status { align-items: flex-start; flex-direction: column; width: 100%; }
   .record-header-context { justify-content: flex-start; }
+  .native-statusbar--header { width: 100%; }
 }
 </style>

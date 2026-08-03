@@ -597,6 +597,7 @@
 
   .contract-form-native-shell :deep(.template-page-header-actions) {
     flex: 0 0 auto;
+    align-self: flex-start;
     justify-content: flex-start;
     width: auto;
   }

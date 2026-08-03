@@ -2310,3 +2310,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   the single-list view has no redundant switch, and all sizes have zero browser
   errors or document overflow. ESLint, strict TypeScript, release units,
   style-system guard and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-BRANCH-ACCEPTANCE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `8ee7f78`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; completed
+  frontend experience system across shell, navigation, list, record and role
+  home surfaces; `frontend/apps/web`.
+- Outcome: completed the branch-level BOSS-style alignment. The mobile contract
+  workflow status is now one horizontally scrollable business-state row instead
+  of wrapped button fragments, while desktop and tablet show the complete row.
+  Mobile header actions stay compact and no longer stretch across the canvas.
+- Boundary: generic responsive rendering only. Workflow states, action
+  availability, permissions, menu authority and backend business behavior are
+  unchanged.
+- Validation: real login, role home, contract menu, populated list, internal
+  table horizontal navigation, record detail, activity-tab switching and tab
+  closing pass at 1440x900, 1280x800, 768x1024 and 390x844. The matrix reports
+  zero browser errors and zero document overflow. ESLint, strict TypeScript,
+  release units, style-system guard, standard-list scroll contract, workspace
+  alignment, wide-form grid guard and Vite production build all pass.
