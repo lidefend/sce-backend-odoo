@@ -1,7 +1,19 @@
 const { chromium } = require('playwright');
 const fs = require('node:fs');
 
-const base = process.env.BASE_URL || 'http://127.0.0.1:18081';
+function requiredEnv(name, aliases = []) {
+  for (const key of [name, ...aliases]) {
+    const value = String(process.env[key] || '').trim();
+    if (value) return value;
+  }
+  throw new Error(`missing required environment variable: ${[name, ...aliases].join(' or ')}`);
+}
+
+const base = requiredEnv('BASE_URL', ['WORKFLOW_CONTRACT_FRONTEND_URL']);
+const dbName = requiredEnv('DB_NAME', ['DB']);
+const login = requiredEnv('E2E_LOGIN', ['LOGIN']);
+const password = requiredEnv('E2E_PASSWORD', ['PASSWORD']);
+const rootMenuXmlid = process.env.LOW_CODE_MENU_ROOT_XMLID || 'smart_construction_core.menu_sc_root';
 const outPath = process.env.OUT || '/tmp/user_page_visual_coverage.json';
 const maxActions = Number(process.env.MAX_ACTIONS || 0);
 const maxForms = Number(process.env.MAX_FORMS || 0);
@@ -51,13 +63,36 @@ async function main() {
     if (msg.type() === 'error') consoleErrors.push({ probe: currentProbe, text: msg.text().slice(0, 500) });
   });
   page.on('pageerror', (err) => consoleErrors.push({ probe: currentProbe, text: err.message.slice(0, 500) }));
+  page.on('response', async (response) => {
+    if (response.status() >= 500) {
+      const requestPayload = response.request().postData() || '';
+      const responsePayload = await response.text().catch(() => '');
+      let requestSummary = requestPayload;
+      try {
+        const parsed = JSON.parse(requestPayload);
+        requestSummary = JSON.stringify({
+          intent: parsed.intent,
+          op: parsed.params?.op,
+          model: parsed.params?.model,
+          fields: parsed.params?.fields,
+          domain: parsed.params?.domain,
+        });
+      } catch {
+        // Keep the original payload when it is not JSON.
+      }
+      consoleErrors.push({
+        probe: currentProbe,
+        text: `${response.status()} ${response.request().method()} ${response.url()} response=${responsePayload} request=${requestSummary}`.slice(0, 2000),
+      });
+    }
+  });
 
-  await page.goto(`${base}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.locator('input').nth(0).fill(process.env.LOGIN || 'wutao');
-  await page.locator('input[type="password"]').fill(process.env.PASSWORD || '123456');
+  await page.goto(`${base}/login?db=${encodeURIComponent(dbName)}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.locator('input').nth(0).fill(login);
+  await page.locator('input[type="password"]').fill(password);
   if (await page.locator('input').count() >= 3) {
     const db = page.locator('input').nth(2);
-    if (await db.isEnabled().catch(() => false)) await db.fill(process.env.DB || 'sc_demo');
+    if (await db.isEnabled().catch(() => false)) await db.fill(dbName);
   }
   await page.locator('button[type="submit"]').click();
   await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {});
@@ -79,13 +114,13 @@ async function main() {
       const body = await res.json();
       if (!res.ok || body.ok === false) throw new Error(JSON.stringify(body.error || body).slice(0, 700));
       return body.data || body;
-    }, { intentName, params, token, dbName: process.env.DB || 'sc_demo' });
+    }, { intentName, params, token, dbName });
   }
 
   const init = await intent('system.init', {
     with_preload: false,
     with: ['workspace_home'],
-    root_xmlid: 'smart_construction_core.menu_sc_root',
+    root_xmlid: rootMenuXmlid,
   });
   let entries = uniqEntries(flattenNav(init.nav || []));
   const totalDiscovered = entries.length;
@@ -135,8 +170,8 @@ async function main() {
   for (let index = 0; index < entries.length; index += 1) {
     const entry = entries[index];
     const route = entry.actionId
-      ? `/a/${entry.actionId}?db=${process.env.DB || 'sc_demo'}${entry.menuId ? `&menu_id=${entry.menuId}` : ''}`
-      : `/s/${encodeURIComponent(entry.sceneKey)}?db=${process.env.DB || 'sc_demo'}`;
+      ? `/a/${entry.actionId}?db=${encodeURIComponent(dbName)}${entry.menuId ? `&menu_id=${entry.menuId}` : ''}`
+      : `/s/${encodeURIComponent(entry.sceneKey)}?db=${encodeURIComponent(dbName)}`;
     if (!skipActions) {
       currentProbe = `list:${entry.path}`;
       const started = Date.now();
@@ -149,7 +184,7 @@ async function main() {
         const headers = await page.locator('th').evaluateAll((nodes) => (
           nodes.map((node) => node.textContent?.trim()).filter(Boolean).slice(0, 30)
         )).catch(() => []);
-        const hasErrorText = /render error|contract not renderable|missing required nav|页面加载失败|异常|Traceback|Cannot read/i.test(text);
+        const hasErrorText = /render error|contract not renderable|missing required nav|页面加载失败|系统异常|加载异常|发生异常|Traceback|Cannot read/i.test(text);
         const lastLabel = String(entry.path || '').split(' / ').pop() || '';
         const titleVisible = entry.label ? text.includes(entry.label) || text.includes(lastLabel) : true;
         actionRow = { ...actionRow, ok: !hasErrorText, elapsedMs: Date.now() - started, titleVisible, hasErrorText, headers };
@@ -185,7 +220,7 @@ async function main() {
     }
     formOpened += 1;
     currentProbe = `form:${entry.path}`;
-    const formRoute = `/r/${encodeURIComponent(entry.model)}/${recordId}?db=${process.env.DB || 'sc_demo'}&action_id=${entry.actionId}${entry.menuId ? `&menu_id=${entry.menuId}` : ''}`;
+    const formRoute = `/r/${encodeURIComponent(entry.model)}/${recordId}?db=${encodeURIComponent(dbName)}&action_id=${entry.actionId}${entry.menuId ? `&menu_id=${entry.menuId}` : ''}`;
     let formRow = { ...entry, recordId, route: formRoute, ok: false, outline: [], inputCount: 0, issue: '', hasErrorText: false };
     try {
       await page.goto(`${base}${formRoute}`, { waitUntil: 'domcontentloaded', timeout: 60000 });

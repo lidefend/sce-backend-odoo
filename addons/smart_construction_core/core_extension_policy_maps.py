@@ -91,6 +91,15 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [],
+        "contextual_action_authorities": [
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_invoice_input_report_user",
+                "action_xmlid": "smart_construction_core.action_sc_invoice_input_report_user",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "business_config.invoice_input_report_acceptance_route",
+            },
+        ],
         "admin_menu_xmlids": [
             "smart_construction_core.menu_sc_runtime_user_management",
             "smart_construction_core.menu_sc_business_config_workbench",
@@ -318,6 +327,15 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_borrowing_bill",
             "smart_construction_core.menu_sc_repayment_bill",
             "smart_construction_core.menu_sc_expense_reimbursement_group",
+        ],
+        "contextual_action_authorities": [
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_invoice_input_report_user",
+                "action_xmlid": "smart_construction_core.action_sc_invoice_input_report_user",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.invoice_input_report_contextual_route",
+            },
         ],
         "denied_menu_xmlids": [],
         "menu_blocklist_xmlids": [

@@ -3359,6 +3359,22 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         self.assertEqual(hint["role_key"], "sales")
         self.assertEqual(hint["orchestration_version"], "5")
 
+    def test_standard_legacy_contract_fields_have_business_labels(self):
+        expected = {
+            "legacy_document_no": "历史单据编号",
+            "legacy_contract_no": "历史合同编号",
+            "legacy_external_contract_no": "外部合同编号",
+            "legacy_contract_amount": "历史合同金额",
+            "legacy_contract_amount_delta": "合同金额差额",
+        }
+
+        for field_name, label in expected.items():
+            with self.subTest(field_name=field_name):
+                self.assertEqual(
+                    self.module._legacy_visible_business_label({}, "construction.contract", field_name, field_name),
+                    label,
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

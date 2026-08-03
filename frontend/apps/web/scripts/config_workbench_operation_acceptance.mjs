@@ -8,17 +8,24 @@ import {
 } from "./lib/config_workbench_operation_coverage.mjs";
 import { readProductPageRegionClasses } from "./lib/product_page_structure_source.mjs";
 
-const BASE_URL = process.env.BASE_URL || "http://127.0.0.1:18081";
-const DB_NAME = process.env.DB_NAME || "sc_demo";
-const LOGIN = process.env.E2E_LOGIN || "wutao";
-const PASSWORD = process.env.E2E_PASSWORD || "123456";
+function requiredEnv(name, aliases = []) {
+  for (const key of [name, ...aliases]) {
+    const value = String(process.env[key] || "").trim();
+    if (value) return value;
+  }
+  throw new Error(`missing required environment variable: ${[name, ...aliases].join(" or ")}`);
+}
+
+const BASE_URL = requiredEnv("BASE_URL", ["WORKFLOW_CONTRACT_FRONTEND_URL"]);
+const DB_NAME = requiredEnv("DB_NAME", ["DB"]);
+const LOGIN = requiredEnv("E2E_LOGIN", ["LOGIN"]);
+const PASSWORD = requiredEnv("E2E_PASSWORD", ["PASSWORD"]);
 const ROOT_MENU_XMLID = process.env.LOW_CODE_MENU_ROOT_XMLID || "smart_construction_core.menu_sc_root";
 const CONFIG_MODEL = process.env.LOW_CODE_CONFIG_MODEL || "construction.contract";
-const CONFIG_ACTION_ID = Number(process.env.LOW_CODE_CONFIG_ACTION_ID || 1002);
-const CONFIG_MENU_ID = Number(process.env.LOW_CODE_CONFIG_MENU_ID || 389);
-const LEGACY_DENIED_ACTION_ID = Number(process.env.LOW_CODE_LEGACY_DENIED_ACTION_ID || 562);
+const CONFIG_ACTION_ID = Number(process.env.LOW_CODE_CONFIG_ACTION_ID || 0);
+const CONFIG_MENU_ID = Number(process.env.LOW_CODE_CONFIG_MENU_ID || 0);
 const CONFIG_PAGE_LABEL = process.env.LOW_CODE_CONFIG_PAGE_LABEL || "合同办理";
-const SWITCH_PAGE_LABEL = process.env.LOW_CODE_SWITCH_PAGE_LABEL || "施工合同";
+const SWITCH_PAGE_LABEL = process.env.LOW_CODE_SWITCH_PAGE_LABEL || "项目合同汇总";
 const ARTIFACT_ROOT = path.resolve(process.cwd(), "../../../artifacts/playwright/config-workbench-operation");
 const REPORT_PATH = path.join(ARTIFACT_ROOT, "report.json");
 const SUMMARY_PATH = path.join(ARTIFACT_ROOT, "summary.json");
@@ -26,6 +33,7 @@ const VERBOSE_OUTPUT = ["1", "true", "yes"].includes(String(process.env.CONFIG_W
 const PRODUCT_PAGE_REGION_CLASSES = readProductPageRegionClasses();
 let runtimeConfigModel = CONFIG_MODEL;
 let runtimeConfigActionId = CONFIG_ACTION_ID;
+let runtimeConfigMenuId = CONFIG_MENU_ID;
 validateConfigWorkbenchOperationCoverage();
 function assert(condition, message, details = {}) {
   if (!condition) {
@@ -60,14 +68,53 @@ function configWorkbenchUrl(extra = {}) {
   return `${BASE_URL}/admin/business-config?${params.toString()}`;
 }
 
-function synchronizeRuntimeConfigSelection(page) {
+async function resolveRuntimeMenuId(page, actionId, pageLabel) {
+  const token = await page.evaluate(() => {
+    const key = Object.keys(sessionStorage).find((item) => item.startsWith("sc_auth_token")) || "";
+    return key ? sessionStorage.getItem(key) : "";
+  });
+  assert(token, "login token missing while resolving runtime menu");
+  const init = await page.evaluate(async ({ tokenValue, dbName, rootMenuXmlid }) => {
+    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(dbName)}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Odoo-DB": dbName,
+        Authorization: `Bearer ${tokenValue}`,
+      },
+      body: JSON.stringify({
+        intent: "system.init",
+        params: { with_preload: false, with: ["workspace_home"], root_xmlid: rootMenuXmlid },
+        meta: { startup_chain_bypass: true },
+      }),
+    });
+    const body = await response.json();
+    if (!response.ok || body.ok === false) throw new Error(JSON.stringify(body.error || body).slice(0, 700));
+    return body.data || body;
+  }, { tokenValue: token, dbName: DB_NAME, rootMenuXmlid: ROOT_MENU_XMLID });
+  const authority = init?.delivery_engine_v1?.route_authority_v1 || init?.route_authority_v1 || {};
+  const routes = [
+    ...(authority.primary_actions || []),
+    ...(authority.role_home_actions || []),
+    ...(authority.contextual_actions || []),
+    ...(authority.admin_actions || []),
+  ].filter((row) => Number(row?.action_id || 0) === actionId && Number(row?.menu_id || 0) > 0);
+  const exact = routes.find((row) => String(row?.name || "").trim() === pageLabel);
+  return Number((exact || routes[0])?.menu_id || 0);
+}
+
+async function synchronizeRuntimeConfigSelection(page) {
   const selectedUrl = new URL(page.url());
   const selectedModel = String(selectedUrl.searchParams.get("model") || "").trim();
   const selectedActionId = Number(selectedUrl.searchParams.get("action_id") || 0);
+  let selectedMenuId = Number(selectedUrl.searchParams.get("menu_id") || 0);
   assert(selectedModel, "selected configuration page is missing its runtime model", { url: page.url() });
   assert(Number.isInteger(selectedActionId) && selectedActionId > 0, "selected configuration page is missing its runtime action", { url: page.url() });
+  if (!selectedMenuId) selectedMenuId = await resolveRuntimeMenuId(page, selectedActionId, CONFIG_PAGE_LABEL);
+  assert(Number.isInteger(selectedMenuId) && selectedMenuId > 0, "selected configuration page is missing its runtime menu", { url: page.url() });
   runtimeConfigModel = selectedModel;
   runtimeConfigActionId = selectedActionId;
+  runtimeConfigMenuId = selectedMenuId;
 }
 
 async function login(page) {
@@ -124,7 +171,7 @@ async function openDirectSelectedWorkbench(page) {
   await page.goto(configWorkbenchUrl({
     model: runtimeConfigModel,
     action_id: String(runtimeConfigActionId),
-    menu_id: String(CONFIG_MENU_ID),
+    menu_id: String(runtimeConfigMenuId),
     page_label: CONFIG_PAGE_LABEL,
   }), { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForSelector('[data-lowcode-workbench-ia="three-column"] .config-type-tabs', { timeout: 60000 });
@@ -135,7 +182,27 @@ async function clickConfigCardButton(page, cardTitle, buttonName) {
   if (await tab.count()) await tab.click();
   const card = page.locator('[data-lowcode-config-task-card="v1"]').filter({ hasText: cardTitle }).first();
   await card.waitFor({ state: "visible", timeout: 60000 });
-  await card.getByRole("button", { name: buttonName }).click();
+  const button = card.getByRole("button", { name: buttonName });
+  await button.waitFor({ state: "visible", timeout: 60000 });
+  // The delivery-status refresh replaces the task-card subtree while the
+  // workbench is open. Trigger the current button node directly so acceptance
+  // does not require Playwright's multi-frame stability check on a node that
+  // is intentionally replaced by Vue during that refresh.
+  await button.evaluate((element) => element.click());
+}
+
+async function clickConfigCardButtonUntilUrl(page, cardTitle, buttonName, urlPredicate) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await clickConfigCardButton(page, cardTitle, buttonName);
+    try {
+      await page.waitForURL(urlPredicate, { timeout: 12000 });
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error(`${buttonName} did not navigate to the expected URL`);
 }
 
 async function capture(page, key, options = {}) {
@@ -681,7 +748,7 @@ function buildProductUsability({ ok, metrics, checks, screenshots, consoleErrors
     task_results: taskResults,
     evidence: {
       report_path: REPORT_PATH,
-      command: "DB_NAME=sc_demo WORKFLOW_CONTRACT_FRONTEND_URL=http://127.0.0.1:18081 make verify.business_config.config_workbench_operation_acceptance",
+      command: "make verify.business_config.config_workbench_operation_acceptance (environment supplied by deployment profile)",
       screenshots,
     },
   };
@@ -847,7 +914,7 @@ function buildProfessionalReadiness({ metrics, checks, screenshots, consoleError
     blockers,
     evidence: {
       report_path: REPORT_PATH,
-      command: "DB_NAME=sc_demo WORKFLOW_CONTRACT_FRONTEND_URL=http://127.0.0.1:18081 make verify.business_config.config_workbench_operation_acceptance",
+      command: "make verify.business_config.config_workbench_operation_acceptance (environment supplied by deployment profile)",
       screenshots,
     },
   };
@@ -876,17 +943,6 @@ async function main() {
   try {
     await login(page);
 
-    const legacyDeniedStartedAt = Date.now();
-    await page.goto(`${BASE_URL}/a/${LEGACY_DENIED_ACTION_ID}?db=${encodeURIComponent(DB_NAME)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.getByRole("heading", { name: "访问受限" }).waitFor({ state: "visible", timeout: 10000 });
-    checks.legacyActionAuthority = {
-      actionId: LEGACY_DENIED_ACTION_ID,
-      route: page.url(),
-      reason: new URL(page.url()).searchParams.get("reason") || "",
-      elapsedMs: Date.now() - legacyDeniedStartedAt,
-      decision: "removed_from_authoritative_navigation_safe_denial",
-    };
-
     await page.goto(configWorkbenchUrl(), { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForLoadState("networkidle", { timeout: 25000 }).catch(() => {});
     await page.getByRole("button", { name: /选择业务页面/ }).first().click();
@@ -897,7 +953,7 @@ async function main() {
     await page.locator(".scan-row").filter({ hasText: CONFIG_PAGE_LABEL }).first().getByRole("button", { name: /选择|当前配置/ }).click();
     await page.waitForSelector(".selected-page-overview", { timeout: 60000 });
     await page.waitForFunction(() => Number(new URL(window.location.href).searchParams.get("action_id") || 0) > 0, null, { timeout: 60000 });
-    synchronizeRuntimeConfigSelection(page);
+    await synchronizeRuntimeConfigSelection(page);
     await page.waitForTimeout(800);
     checks.selectedText = await page.locator(".selected-page-overview").first().innerText();
     checks.cardsAfterSelect = await visibleCardTitles(page);
@@ -982,6 +1038,20 @@ async function main() {
     checks.cardsAfterSwitch = await visibleCardTitles(page);
     screenshots.switchedPage = await capture(page, "switchedPage");
 
+    const deniedActionId = Number(new URL(page.url()).searchParams.get("action_id") || 0);
+    assert(deniedActionId > 0, "switched configuration page is missing its runtime action", { url: page.url() });
+    const legacyDeniedStartedAt = Date.now();
+    await page.goto(`${BASE_URL}/a/${deniedActionId}?db=${encodeURIComponent(DB_NAME)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.getByRole("heading", { name: "访问受限" }).waitFor({ state: "visible", timeout: 10000 });
+    checks.legacyActionAuthority = {
+      actionId: deniedActionId,
+      actionLabel: SWITCH_PAGE_LABEL,
+      route: page.url(),
+      reason: new URL(page.url()).searchParams.get("reason") || "",
+      elapsedMs: Date.now() - legacyDeniedStartedAt,
+      decision: "removed_from_authoritative_navigation_safe_denial",
+    };
+
     await openDirectSelectedWorkbench(page);
     checks.directStartCards = await visibleCardTitles(page, '[data-lowcode-workbench-ia="three-column"]');
     checks.directDeliveryStatusCount = await page.locator('[data-lowcode-delivery-readiness="low_code_delivery_readiness.v1"]').count();
@@ -1050,7 +1120,7 @@ async function main() {
     ]);
     screenshots.directSelected = await capture(page, "directSelected");
 
-    await page.goto(`${BASE_URL}/a/${runtimeConfigActionId}?menu_id=${CONFIG_MENU_ID}&db=${encodeURIComponent(DB_NAME)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(`${BASE_URL}/a/${runtimeConfigActionId}?menu_id=${runtimeConfigMenuId}&db=${encodeURIComponent(DB_NAME)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForSelector(".page .sc-product-page-toolbar, .page .sc-empty", { timeout: 60000 });
     checks.businessRuntimeWorkspaceGaps = await productWorkspaceGapEvidence(page, [
       { page: "business_runtime", selector: ".page", scope: "list_page_stack" },
@@ -1078,7 +1148,7 @@ async function main() {
     ]));
     checks.businessRuntimeListPageClass = await page.locator(".page").first().evaluate((node) => node.className || "");
     checks.businessRuntimeListToolbarCount = await page.locator(".page .sc-product-page-toolbar").count();
-    await page.goto(`${BASE_URL}/f/${encodeURIComponent(runtimeConfigModel)}/new?db=${encodeURIComponent(DB_NAME)}&action_id=${runtimeConfigActionId}&menu_id=${CONFIG_MENU_ID}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(`${BASE_URL}/f/${encodeURIComponent(runtimeConfigModel)}/new?db=${encodeURIComponent(DB_NAME)}&action_id=${runtimeConfigActionId}&menu_id=${runtimeConfigMenuId}`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForSelector(".card .form-grid", { timeout: 60000 });
     checks.businessRuntimeWorkspaceGaps.push(...await productWorkspaceGapEvidence(page, [
       { page: "business_runtime", selector: ".card", scope: "form_panel_shell" },
@@ -1286,8 +1356,12 @@ async function main() {
     await page.waitForSelector('[data-lowcode-config-task-card="v1"]', { timeout: 60000 });
     checks.formReturnedTitle = await page.locator(".business-config-context [data-workspace-page-header] h1").innerText();
 
-    await clickConfigCardButton(page, "菜单入口", "配置菜单");
-    await page.waitForURL((url) => String(url).includes("/admin/menu-config"), { timeout: 60000 });
+    await clickConfigCardButtonUntilUrl(
+      page,
+      "菜单入口",
+      "配置菜单",
+      (url) => String(url).includes("/admin/menu-config"),
+    );
     await page.waitForSelector(".menu-config-page", { timeout: 60000 });
     await page.waitForFunction(() => document.querySelectorAll(".menu-config-tree .tree-scroll .tree-node").length > 0, null, { timeout: 60000 });
     checks.menuSideSections = await page.locator(".menu-side-action-group .menu-side-section-title").evaluateAll((nodes) => (
@@ -1501,7 +1575,7 @@ async function main() {
     assert(
       checks.legacyActionAuthority?.reason === "NAVIGATION_AUTHORITY_DENIED"
       && checks.legacyActionAuthority?.elapsedMs < 10000,
-      "旧 action 562 必须从正式分母移除并保持快速安全拒绝，不能等待业务列表超时",
+      `${SWITCH_PAGE_LABEL}对应的旧动作必须从正式分母移除并保持快速安全拒绝，不能等待业务列表超时`,
       checks.legacyActionAuthority,
     );
     assert(checks.selectedText.includes(CONFIG_PAGE_LABEL), "选择页面后未展示当前配置上下文", checks);

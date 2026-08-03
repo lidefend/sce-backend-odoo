@@ -8,6 +8,7 @@ import {
 const ARTIFACT_ROOT = path.resolve(process.cwd(), "artifacts/playwright/config-workbench-operation");
 const REPORT_PATH = path.join(ARTIFACT_ROOT, "report.json");
 const SUMMARY_PATH = path.join(ARTIFACT_ROOT, "summary.json");
+const EXPECTED_PAGE_LABEL = process.env.LOW_CODE_CONFIG_PAGE_LABEL || "合同办理";
 
 const EXPECTED_FILES = [
   ...ACCEPTANCE_COVERAGE.screenshotKeys.map((key) => ACCEPTANCE_COVERAGE.screenshotFiles[key]),
@@ -202,7 +203,9 @@ async function main() {
   assertEmptyArray(report.consoleErrors, "config workbench report has console errors");
   assertEmptyArray(report.requestFailed, "config workbench report has failed requests");
   if (summary.consoleErrors !== 0 || summary.requestFailed !== 0) fail("config workbench browser health is not clean", { summary });
-  if (summary.currentPage !== "项目合同汇总" || summary.formDesignerCurrentPageLabel !== "项目合同汇总") fail("config workbench page context summary is not aligned", { summary });
+  if (summary.currentPage !== EXPECTED_PAGE_LABEL || summary.formDesignerCurrentPageLabel !== EXPECTED_PAGE_LABEL) {
+    fail("config workbench page context summary is not aligned", { summary, expectedPageLabel: EXPECTED_PAGE_LABEL });
+  }
 
   console.log(JSON.stringify({
     ok: true,

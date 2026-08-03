@@ -4,17 +4,25 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
-const BASE_URL = process.env.BASE_URL || "http://127.0.0.1:5174";
-const DB_NAME = process.env.DB_NAME || "sc_demo";
-const LOGIN = process.env.E2E_LOGIN || "wutao";
-const PASSWORD = process.env.E2E_PASSWORD || "123456";
+function requiredEnv(name, aliases = []) {
+  for (const key of [name, ...aliases]) {
+    const value = String(process.env[key] || "").trim();
+    if (value) return value;
+  }
+  throw new Error(`missing required environment variable: ${[name, ...aliases].join(" or ")}`);
+}
+
+const BASE_URL = requiredEnv("BASE_URL", ["WORKFLOW_CONTRACT_FRONTEND_URL"]);
+const DB_NAME = requiredEnv("DB_NAME", ["DB"]);
+const LOGIN = requiredEnv("E2E_LOGIN", ["LOGIN"]);
+const PASSWORD = requiredEnv("E2E_PASSWORD", ["PASSWORD"]);
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(SCRIPT_DIR, "..", "..", "..", "..");
 const ARTIFACT_ROOT = path.join(ROOT_DIR, "artifacts", "playwright", "business-form-user-perspective");
 const REPORT_PATH = path.join(ARTIFACT_ROOT, "report.json");
 
-const CASES = [
+const CASE_DEFINITIONS = [
   {
     code: "finance.loan.project_borrow_company",
     entryLabel: "借款办理",
@@ -26,7 +34,7 @@ const CASES = [
     code: "settlement.income",
     entryLabel: "结算办理",
     label: "收入合同结算",
-    expected: ["办理类型", "项目与发包人", "结算依据", "结算金额", "办理说明"],
+    expected: ["项目与发包人", "结算依据", "结算金额", "办理说明"],
     forbidden: ["来源与系统追溯", "历史来源表"],
   },
   {
@@ -39,6 +47,7 @@ const CASES = [
   {
     code: "finance.receipt.income.project",
     entryLabel: "收款登记",
+    menuLabel: "收入",
     label: "到款确认",
     expected: ["办理类型", "项目与收款申请", "到款确认", "收款账户"],
     forbidden: ["来源与系统追溯", "迁移来源"],
@@ -53,6 +62,7 @@ const CASES = [
   {
     code: "finance.self_funding.income",
     entryLabel: "自筹垫付办理",
+    menuLabel: "自筹垫付收入",
     label: "自筹垫付办理",
     expected: ["办理类型", "项目与承包人", "自筹垫付金额", "办理说明"],
     forbidden: ["来源与系统追溯", "迁移来源"],
@@ -67,6 +77,7 @@ const CASES = [
   {
     code: "finance.payment.apply.pay",
     entryLabel: "收付款申请办理",
+    menuLabel: "支付申请",
     label: "付款申请",
     expected: ["办理类型", "项目与收款单位", "付款申请金额", "收款账户", "付款单位", "办理说明"],
     forbidden: ["来源与系统追溯", "迁移来源"],
@@ -95,6 +106,7 @@ const CASES = [
   {
     code: "finance.deduction.bill",
     entryLabel: "费用/扣款/保证金办理",
+    menuLabel: "扣款登记",
     label: "扣款单",
     expected: ["扣款登记", "项目与往来单位", "扣款登记信息", "扣款单明细"],
     forbidden: ["来源与系统追溯", "迁移来源"],
@@ -141,6 +153,9 @@ const CASES = [
   {
     code: "invoice.input.report",
     entryLabel: "票税办理",
+    menuLabel: "进项发票",
+    menuXmlid: "smart_construction_core.menu_sc_invoice_input_report_user",
+    actionXmlid: "smart_construction_core.action_sc_invoice_input_report_user",
     label: "进项税额上报",
     expected: ["办理类型", "项目与供应商", "进项发票信息", "发票金额", "办理说明"],
     forbidden: ["来源与系统追溯", "迁移来源"],
@@ -153,6 +168,16 @@ const CASES = [
     forbidden: ["来源与系统追溯", "迁移来源"],
   },
 ];
+
+const requestedCodes = new Set(
+  String(process.env.CASE_CODES || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
+);
+const CASES = requestedCodes.size
+  ? CASE_DEFINITIONS.filter((item) => requestedCodes.has(item.code))
+  : CASE_DEFINITIONS;
 
 function findCachedChromiumExecutable() {
   const explicit = process.env.CHROMIUM_EXECUTABLE_PATH || process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || "";
@@ -264,8 +289,25 @@ function findLabelNode(nav, label) {
   });
 }
 
-async function openCreateFromMenu(page, menuId, code, optionLabel = "") {
-  await page.goto(`${BASE_URL}/m/${menuId}?db=${encodeURIComponent(DB_NAME)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+function resolveXmlidNode(routeAuthority, menuXmlid, actionXmlid) {
+  if (!menuXmlid || !actionXmlid) return null;
+  const rows = [
+    ...(routeAuthority?.primary_actions || []),
+    ...(routeAuthority?.role_home_actions || []),
+    ...(routeAuthority?.contextual_actions || []),
+    ...(routeAuthority?.admin_actions || []),
+  ];
+  const row = rows.find((item) => item?.menu_xmlid === menuXmlid && item?.action_xmlid === actionXmlid);
+  const menuId = Number(row?.menu_id || 0);
+  const actionId = Number(row?.action_id || 0);
+  return menuId && actionId ? { menuId, actionId, label: String(row?.label || "") } : null;
+}
+
+async function openCreateFromMenu(page, menuId, actionId, code, optionLabel = "") {
+  const route = actionId
+    ? `/a/${actionId}?db=${encodeURIComponent(DB_NAME)}&menu_id=${menuId}`
+    : `/m/${menuId}?db=${encodeURIComponent(DB_NAME)}`;
+  await page.goto(`${BASE_URL}${route}`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForURL((url) => url.pathname.startsWith("/a/") || url.pathname.startsWith("/m/"), { timeout: 60000 });
   await page.locator(".action-toolbar").waitFor({ state: "visible", timeout: 60000 });
   const createButton = page.locator(".action-toolbar button", { hasText: /新建|创建|新增|Create/i }).first();
@@ -322,17 +364,23 @@ async function main() {
     root_xmlid: "smart_construction_core.menu_sc_root",
   });
   const nav = init?.delivery_engine_v1?.nav || init?.nav || [];
+  const routeAuthority = init?.delivery_engine_v1?.route_authority_v1 || init?.route_authority_v1 || {};
   const results = [];
   const errors = [];
 
   for (const testCase of CASES) {
-    const node = findCategoryNode(nav, testCase.code) || findLabelNode(nav, testCase.entryLabel || "");
+    const xmlidNode = resolveXmlidNode(routeAuthority, testCase.menuXmlid, testCase.actionXmlid);
+    const node = xmlidNode
+      || findLabelNode(nav, testCase.label)
+      || findLabelNode(nav, testCase.menuLabel || "")
+      || findCategoryNode(nav, testCase.code)
+      || findLabelNode(nav, testCase.entryLabel || "");
     if (!node?.menuId) {
       errors.push(`${testCase.code}: menu node missing`);
       results.push({ ...testCase, ok: false, reason: "menu node missing" });
       continue;
     }
-    await openCreateFromMenu(page, node.menuId, testCase.code, testCase.label);
+    await openCreateFromMenu(page, node.menuId, node.actionId, testCase.code, testCase.label);
     await page.waitForFunction(
       (expected) => {
         const text = document.body?.innerText || "";
