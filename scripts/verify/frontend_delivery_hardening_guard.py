@@ -125,6 +125,34 @@ if (
         "[frontend_delivery_hardening_guard] FAIL governed company-switch warm-up "
         "count must cover at least the measured sample count"
     )
+baseline_path = ROOT / str(performance_policy.get("relative_baseline_path") or "")
+if not baseline_path.is_file():
+    raise SystemExit("[frontend_delivery_hardening_guard] FAIL governed performance baseline is missing")
+performance_baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+required_baseline_scenarios = set((performance_policy.get("scenarios") or {}).keys())
+actual_baseline_scenarios = set((performance_baseline.get("scenarios") or {}).keys())
+if actual_baseline_scenarios != required_baseline_scenarios:
+    missing = sorted(required_baseline_scenarios - actual_baseline_scenarios)
+    unexpected = sorted(actual_baseline_scenarios - required_baseline_scenarios)
+    raise SystemExit(
+        "[frontend_delivery_hardening_guard] FAIL governed performance baseline scenario mismatch "
+        f"missing={missing} unexpected={unexpected}"
+    )
+if int(performance_baseline.get("runs_per_scenario") or 0) < minimum_sample_count:
+    raise SystemExit("[frontend_delivery_hardening_guard] FAIL governed performance baseline sample count is too small")
+if int(performance_baseline.get("company_switch_warmup_runs") or 0) != company_switch_warmup_runs:
+    raise SystemExit("[frontend_delivery_hardening_guard] FAIL governed company-switch baseline warm-up count mismatch")
+for scenario, metrics in (performance_baseline.get("scenarios") or {}).items():
+    samples = metrics.get("samples_ms") or []
+    if len(samples) < minimum_sample_count or not all(isinstance(value, (int, float)) and value >= 0 for value in samples):
+        raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL invalid baseline samples scenario={scenario}")
+    if not all(isinstance(metrics.get(name), (int, float)) for name in ("median_ms", "p95_ms", "max_ms")):
+        raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL incomplete baseline metrics scenario={scenario}")
+for field in ("git_sha", "captured_at", "database", "environment", "source"):
+    if not performance_baseline.get(field):
+        raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL governed performance baseline missing {field}")
+if not re.fullmatch(r"[0-9a-f]{40}", str(performance_baseline.get("git_sha") or "")):
+    raise SystemExit("[frontend_delivery_hardening_guard] FAIL governed performance baseline git_sha must be full length")
 require(
     "make/runtime_ops.mk",
     "DELIVERY_HARDENING_PERF_ONLY=1",
@@ -137,6 +165,14 @@ require(
     "options?.renderProfile === 'create'",
     "!Number(options?.recordId || 0)",
 )
+
+delivery_hardening_browser = require(
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "performanceReport.scenarios.company_switch = stats(switchSamples);",
+    "[verify.frontend.delivery_hardening.performance_baseline] CAPTURED",
+)
+if delivery_hardening_browser.index("performanceReport.scenarios.company_switch = stats(switchSamples);") > delivery_hardening_browser.index("[verify.frontend.delivery_hardening.performance_baseline] CAPTURED"):
+    raise SystemExit("[frontend_delivery_hardening_guard] FAIL baseline capture must include company-switch samples")
 
 diff = subprocess.run(
     ["git", "diff", "--unified=0", "origin/main", "--", "frontend/apps/web/src"],
