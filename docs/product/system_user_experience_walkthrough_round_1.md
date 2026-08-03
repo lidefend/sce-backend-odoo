@@ -368,3 +368,40 @@ shell=PASS caseCount=5 failures=0 consoleErrors=0 requestFailed=0
 
 - 首页今日待办已横向铺开，卡片两列显示，按钮不再竖排。
 - 我的工作待办标题和动态标题不再泄漏测试/技术语义。
+
+## round 9 补充
+
+本轮从专题 quick gate 发现配置中心快捷入口的导航边界回归：
+
+- 活动栏按前端 `is_platform_admin` 标志显示“系统设置”，并直接跳转
+  `/admin/business-config`，绕过了后端发布菜单节点和统一菜单选择快照。
+- 侧栏样式已迁到 `AppShell.css`，但静态守卫仍从 Vue SFC 查找布局声明，导致
+  正确的弹性布局也被误报。
+
+已完成修复：
+
+- 活动栏配置入口只在后端菜单树真实返回带显式 `sc_web_route` 的配置工作台
+  节点时显示。
+- 点击入口复用 `handleSelect`，继续执行菜单、action、路由和权限快照的一致性
+  校验，不再由前端管理员标志合成产品入口。
+- 静态守卫分别检查 Vue 导航逻辑和外置 CSS，并直接禁止硬编码配置路由点击。
+
+代码验证：
+
+```text
+frontend_config_workbench_navigation_boundary_guard=PASS
+frontend_navigation_initialization_race.test=PASS
+vue-tsc --noEmit -p tsconfig.strict.json=PASS
+eslint src --ext .ts,.vue=PASS
+vite build=PASS
+```
+
+本地运行环境恢复后确认本地 `sc_demo` 只有 Odoo 基础模块与 `admin` 用户，
+并非日常开发服务器上的持久候选库。隔离验收库已完成最新模块升级、固定夹具装载
+和真实浏览器诊断；诊断确认配置工作台节点、页面选择与深链入口均来自后端，且
+有效合同动作/菜单为运行时发布的 `598/387`。最终验收必须在日常开发服务器的
+持久 `sc_demo` 上执行，不能用本地空库或隔离夹具替代：
+
+```bash
+ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo WORKFLOW_CONTRACT_FRONTEND_URL=http://127.0.0.1:18081 E2E_LOGIN=wutao E2E_PASSWORD=123456 make verify.system_user_experience.full_browser
+```
