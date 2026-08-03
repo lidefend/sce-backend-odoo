@@ -6,6 +6,7 @@
     "blue_500": "#2563eb",
     "blue_600": "#1d4ed8",
     "blue_700": "#1e40af",
+    "blue_800": "#1e3a8a",
     "gray_50": "#f9fafb",
     "gray_100": "#f3f4f6",
     "gray_200": "#e5e7eb",
@@ -26,6 +27,10 @@
     "slate_800": "#1e293b",
     "slate_900": "#0f172a",
     "slate_950": "#020617",
+    "sky_50": "#f0f7ff",
+    "sky_100": "#e1effe",
+    "sky_500": "#3285e6",
+    "sky_600": "#1f6fc8",
     "green_50": "#ecfdf5",
     "green_100": "#d1fae5",
     "green_500": "#22c55e",
@@ -75,7 +80,11 @@
     "size_sm": 12,
     "size_md": 14,
     "size_lg": 16,
-    "size_xl": 20
+    "size_xl": 20,
+    "size_2xl": 24,
+    "weight_medium": 500,
+    "weight_semibold": 600,
+    "weight_bold": 700
   },
   "shadow": {
     "none": "none",
@@ -85,5 +94,10 @@
   },
   "opacity": {
     "disabled": 0.55
+  },
+  "motion": {
+    "fast": "120ms",
+    "normal": "180ms",
+    "slow": "240ms"
   }
 }

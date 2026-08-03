@@ -22,7 +22,7 @@
   background: var(--sc-app-panel);
   padding: 8px 10px;
   min-height: 52px;
-  box-shadow: 0 8px 18px var(--sc-app-shadow);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 38%, transparent);
 }
 
 .list-title {
@@ -147,8 +147,8 @@
   overflow: hidden;
   background: var(--sc-app-panel);
   border: 1px solid var(--sc-app-border);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 45%, transparent);
+  border-radius: var(--sc-product-radius-panel);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 36%, transparent);
   margin-bottom: 10px;
   overscroll-behavior-x: contain;
   touch-action: pan-x pan-y;
@@ -921,7 +921,9 @@ tbody td {
   z-index: 20;
   height: var(--sc-table-header-height, 40px);
   padding: 0 12px;
-  background: var(--sc-app-muted-bg);
+  border-color: var(--sc-table-divider);
+  background: var(--sc-table-header-bg);
+  color: var(--sc-app-text-primary);
   font-size: 13px;
   font-weight: 600;
   line-height: 18px;
@@ -946,12 +948,25 @@ tbody td {
 
 .table tbody tr {
   height: var(--sc-table-row-height, 44px);
+  transition: background-color var(--sc-motion-fast, 120ms) ease;
+}
+
+.table tbody tr:hover {
+  background: var(--sc-app-hover-bg);
 }
 
 .table tbody td {
   padding: 8px 12px;
+  border-color: var(--sc-table-divider);
+  color: var(--sc-app-text-secondary);
+  font-size: 13px;
   line-height: 20px;
   vertical-align: middle;
+}
+
+.table :is(.cell-primary-link, .attachment-links a, .attachment-count-link) {
+  color: var(--sc-text-link);
+  font-weight: 500;
 }
 
 .table tbody .cell-select {

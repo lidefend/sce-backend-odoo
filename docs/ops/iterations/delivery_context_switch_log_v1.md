@@ -2164,6 +2164,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   development build, and browser fault injection covering delayed init, refresh,
   reload, failed init/retry, and role switching against `sc_demo`.
 
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-01
+
+- Branch / anchor: `feature/frontend-experience-upgrade` from `084e60d`.
+- Formal Product Layer: P0 platform kernel product.
+- Layer Target: generic frontend design system, application shell, list and
+  record presentation.
+- Module: `frontend/packages/design-tokens`, `frontend/apps/web`.
+- Standard vs User-Specific: platform-wide visual and interaction mechanism;
+  no construction-industry or tenant-specific semantics are introduced.
+- Why Here / Why Not Elsewhere: the frontend renderer owns reusable visual
+  density, navigation presentation, list scanning and form hierarchy. Backend
+  contracts, P1 business defaults, P2 customer preferences, P3 runtime
+  configuration and P4 delivery tooling remain authoritative and unchanged.
+- Blast Radius: semantic tokens, application chrome and reusable list/form
+  presentation only. Menu authority, routes, permissions, API payloads,
+  business workflows and database records are outside scope.
+- Validation: design-token generation, token verification and unit tests;
+  frontend release unit suite; strict TypeScript; source ESLint; workspace
+  alignment, list-scroll and form-canvas guards; and Vite development build
+  to an isolated temporary output directory all pass. The aggregate style
+  guard remains blocked by the pre-existing 1815-line `ContractFormPage.vue`
+  limit violation, and the aggregate quick gate reaches a pre-existing Node
+  24 CommonJS harness incompatibility in `frontend_page_identity_smoke.js`.
+
 ## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-ROUND-09
 
 - Branch / anchor: `feature/frontend-experience-upgrade` from `2e61ade`.

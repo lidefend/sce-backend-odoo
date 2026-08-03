@@ -38,6 +38,16 @@
   --sc-product-radius-panel: 8px;
   --sc-product-radius-dialog: 8px;
   --sc-product-shadow-overlay: var(--sc-semantic-shadow-popover);
+  --sc-shell-topbar-height: calc(var(--sc-component-shell-topbar-height, 48) * 1px);
+  --sc-shell-sidebar-width: calc(var(--sc-component-shell-sidebar-width, 248) * 1px);
+  --sc-shell-sidebar-collapsed-width: calc(var(--sc-component-shell-sidebar-collapsed-width, 56) * 1px);
+  --sc-shell-navigation-item-height: calc(var(--sc-component-shell-navigation-item-height, 44) * 1px);
+  --sc-shell-page-gutter: calc(var(--sc-component-shell-page-gutter, 24) * 1px);
+  --sc-table-header-bg: var(--sc-semantic-surface-table-header, var(--sc-app-muted-bg));
+  --sc-table-divider: var(--sc-semantic-border-table, var(--sc-app-border));
+  --sc-navigation-bg: var(--sc-semantic-surface-navigation, var(--sc-app-panel));
+  --sc-navigation-active-bg: var(--sc-semantic-surface-navigation-active, var(--sc-app-info-bg));
+  --sc-text-link: var(--sc-semantic-text-link, var(--sc-app-accent));
   --sc-app-bg: var(--sc-semantic-surface-page);
   --sc-app-panel: var(--sc-semantic-surface-panel);
   --sc-app-text-primary: var(--sc-semantic-text-primary);

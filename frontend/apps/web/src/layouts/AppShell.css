@@ -9,7 +9,7 @@
   height: 100vh;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 276px minmax(0, 1fr);
+  grid-template-columns: var(--sc-shell-sidebar-width) minmax(0, 1fr);
   background: var(--sc-app-bg);
   color: var(--ink);
   font-family: "Inter", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
@@ -30,7 +30,7 @@
   grid-template-columns: 48px minmax(0, 1fr);
   gap: 0;
   border-right: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
+  background: var(--sc-navigation-bg);
   height: 100vh;
   overflow: hidden;
   position: sticky;
@@ -50,7 +50,7 @@
   min-width: 0;
   padding: 10px 6px;
   border-right: 1px solid var(--layout-divider);
-  background: var(--sc-app-subtle-bg);
+  background: color-mix(in srgb, var(--sc-navigation-bg) 90%, var(--sc-app-subtle-bg));
 }
 
 .workspace-activity-brand {
@@ -77,6 +77,7 @@
   background: transparent;
   color: var(--sc-app-text-secondary);
   cursor: pointer;
+  transition: background-color var(--sc-motion-fast, 120ms) ease, color var(--sc-motion-fast, 120ms) ease;
 }
 
 .workspace-activity-rail button:hover {
@@ -85,7 +86,7 @@
 }
 
 .workspace-activity-rail button.active {
-  background: var(--sc-app-info-bg);
+  background: var(--sc-navigation-active-bg);
   color: var(--sc-app-info-text);
   box-shadow: inset 3px 0 0 var(--sc-app-accent);
 }
@@ -102,7 +103,7 @@
 .workspace-sidebar-panel {
   min-width: 0;
   min-height: 0;
-  padding: 12px 10px 10px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -699,10 +700,10 @@
   flex-wrap: wrap;
   min-width: 0;
   background: var(--panel);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 0 0 var(--sc-product-radius-panel) var(--sc-product-radius-panel);
+  padding: 6px 12px;
   border: 1px solid var(--sc-app-border);
-  box-shadow: var(--sc-app-shadow);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 38%, transparent);
 }
 
 .topbar-main {

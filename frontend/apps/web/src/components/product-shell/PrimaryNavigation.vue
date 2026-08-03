@@ -63,21 +63,22 @@ function emitSearch(event: Event) {
 .primary-navigation__shortcuts button {
   min-height: 36px;
   border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-radius-md, 8px);
-  background: var(--sc-app-panel);
+  border-radius: var(--sc-product-radius-control);
+  background: var(--sc-navigation-bg);
   color: var(--sc-app-text-primary);
   cursor: pointer;
+  transition: background-color var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
 }
 
 .primary-navigation__shortcuts button[aria-current='page'] {
   border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-app-info-bg);
+  background: var(--sc-navigation-active-bg);
   font-weight: 700;
 }
 
 .primary-navigation__search input {
   width: 100%;
-  min-height: 38px;
+  min-height: var(--sc-product-control-height);
   padding: 0 var(--sc-space-3, 12px);
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-radius-md, 8px);

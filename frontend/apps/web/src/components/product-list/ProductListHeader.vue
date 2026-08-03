@@ -115,8 +115,11 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   width: 100cqw;
-  padding-block: 6px 0;
-  background: var(--sc-app-bg);
+  padding: 8px 10px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-product-radius-panel);
+  background: var(--sc-app-panel);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 32%, transparent);
 }
 .product-list-header__tools {
   display: flex;

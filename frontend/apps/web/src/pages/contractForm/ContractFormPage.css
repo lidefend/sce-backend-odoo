@@ -480,7 +480,7 @@
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-product-panel-radius);
   background: var(--sc-app-panel);
-  box-shadow: var(--sc-app-shadow);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 36%, transparent);
 }
 
 .contract-form-native-shell :deep(.template-page-header--title-hidden:not(:has(.template-page-header-status > *))) {
@@ -520,7 +520,7 @@
   padding: 3px;
   border: 1px solid var(--sc-app-border);
   border-radius: 8px;
-  background: var(--sc-app-panel-muted);
+  background: var(--sc-app-subtle-bg);
 }
 
 .contract-form-native-shell :deep(.template-page-header-actions .sc-btn) {
@@ -644,7 +644,8 @@
   padding: 12px 14px 14px;
   border: 1px solid var(--sc-app-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--sc-app-panel) 86%, var(--sc-app-muted-bg));
+  background: var(--sc-app-panel);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 24%, transparent);
 }
 
 .contract-form-native-shell :deep(.native-container--group > .native-container-head) {
@@ -660,23 +661,28 @@
 }
 
 .contract-form-native-shell :deep(.native-tabs) {
-  border-radius: 8px;
-  padding: 5px;
-  border: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel-muted);
+  gap: 18px;
+  border: 0;
+  border-bottom: 1px solid var(--sc-app-border);
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .contract-form-native-shell :deep(.native-tab) {
-  min-height: 30px;
-  padding: 6px 10px;
-  border: 1px solid transparent;
-  border-radius: 6px;
+  min-height: 38px;
+  padding: 8px 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
 }
 
 .contract-form-native-shell :deep(.native-tab--active) {
-  border-color: var(--sc-app-border);
-  background: var(--sc-app-panel);
-  box-shadow: 0 1px 2px var(--sc-app-shadow);
+  border-bottom-color: var(--sc-app-accent);
+  background: transparent;
+  box-shadow: none;
+  color: var(--sc-app-text-primary);
+  font-weight: 600;
 }
 
 .contract-mode-actions {
