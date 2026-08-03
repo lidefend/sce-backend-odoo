@@ -71,6 +71,9 @@ function emitSearch(event: Event) {
   color: var(--sc-app-text-secondary);
   text-align: left;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
   transition: background-color var(--sc-motion-fast, 120ms) ease, color var(--sc-motion-fast, 120ms) ease;
 }
 
@@ -80,9 +83,16 @@ function emitSearch(event: Event) {
 }
 
 .primary-navigation__shortcuts button[aria-current='page'] {
-  background: var(--sc-navigation-active-bg);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sc-app-accent) 14%, transparent), color-mix(in srgb, var(--sc-app-accent) 6%, transparent));
   color: var(--sc-app-info-text);
   font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--sc-semantic-surface-interactive);
+}
+
+.primary-navigation__shortcuts button:focus-visible,
+.primary-navigation__search input:focus-visible {
+  outline: 2px solid var(--sc-semantic-surface-interactive);
+  outline-offset: -2px;
 }
 
 .primary-navigation__search input {
@@ -143,14 +153,6 @@ function emitSearch(event: Event) {
     padding: 7px 12px;
     border-radius: 8px;
     font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-  }
-
-  .primary-navigation__shortcuts button[aria-current='page'] {
-    background: linear-gradient(90deg, color-mix(in srgb, var(--sc-app-accent) 14%, transparent), color-mix(in srgb, var(--sc-app-accent) 6%, transparent));
-    box-shadow: inset 3px 0 0 var(--sc-semantic-surface-interactive);
   }
 
   .primary-navigation__search input {

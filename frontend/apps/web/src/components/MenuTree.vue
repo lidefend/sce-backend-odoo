@@ -6,22 +6,35 @@
         :class="{
           active: activeMenuId === (node.menu_id ?? node.id),
           ancestor: activeParents.has(nodeKey(node)),
+          expanded: Boolean(node.children?.length) && expanded.has(nodeKey(node)),
+          group: Boolean(node.children?.length),
+          leaf: !node.children?.length,
           disabled: isBlocked(node),
         }"
       >
-        <button v-if="node.children?.length" class="toggle" @click="toggle(nodeKey(node))">
-          <ScIcon name="chevron-right" :size="14" :class="{ 'is-expanded': expanded.has(nodeKey(node)) }" />
-        </button>
-        <span v-else class="toggle-spacer" aria-hidden="true"></span>
+        <span class="node-icon" aria-hidden="true">
+          <ScIcon :name="nodeIcon(node)" :size="level === 0 ? 16 : 14" />
+        </span>
         <button
           class="label"
           :disabled="isBlocked(node)"
-          :title="blockedTitle(node)"
+          :title="blockedTitle(node) || nodeLabel(node)"
           @click="onSelect(node)"
         >
           <span class="label-text">{{ nodeLabel(node) }}</span>
           <span v-if="isHandlingGroup(node)" class="label-badge">办理</span>
         </button>
+        <button
+          v-if="node.children?.length"
+          class="toggle"
+          :aria-label="`${expanded.has(nodeKey(node)) ? '收起' : '展开'}${nodeLabel(node)}`"
+          :aria-expanded="expanded.has(nodeKey(node))"
+          :title="`${expanded.has(nodeKey(node)) ? '收起' : '展开'}${nodeLabel(node)}`"
+          @click="toggle(nodeKey(node))"
+        >
+          <ScIcon name="chevron-right" :size="14" :class="{ 'is-expanded': expanded.has(nodeKey(node)) }" />
+        </button>
+        <span v-else class="toggle-spacer" aria-hidden="true"></span>
       </div>
       <transition name="expand">
         <MenuTree
@@ -57,6 +70,8 @@ const emit = defineEmits<{ (e: 'select', node: NavNode): void }>();
 const session = useSessionStore();
 const expanded = computed(() => new Set(session.menuExpandedKeys));
 const activeParents = ref<Set<string>>(new Set());
+
+type NavigationIconName = 'clipboard' | 'construction' | 'contract' | 'file-text' | 'folder' | 'project';
 
 const sorted = computed(() => {
   const nodes = hideEmptyDirectoryLeaves(hideDuplicateLeafBesideGroup(props.nodes));
@@ -117,6 +132,30 @@ function nodeLabel(node: NavNode) {
 
 function normalizedNodeLabel(node: NavNode) {
   return nodeLabel(node).trim();
+}
+
+function nodeIcon(node: NavNode): NavigationIconName {
+  const raw = node as NavNode & { xmlid?: string; route?: string; model?: string };
+  const identity = [
+    nodeLabel(node),
+    nodeKey(node),
+    raw.xmlid,
+    raw.route,
+    raw.model,
+    node.meta?.model,
+    node.meta?.route,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  if (/施工管理|construction[._\s-]*(management|center)/i.test(identity)) return 'construction';
+  if (/施工合同|construction[._\s-]*contract/i.test(identity)) return 'contract';
+  if (/一般合同|general[._\s-]*contract/i.test(identity)) return 'file-text';
+  if (/合同管理|contract[._\s-]*management/i.test(identity)) return 'clipboard';
+  if (/合同中心|contract[._\s-]*center/i.test(identity)) return 'contract';
+  if (/项目中心|project[._\s-]*center/i.test(identity)) return 'project';
+  if (/施工|construction/i.test(identity)) return 'construction';
+  if (/合同|contract/i.test(identity)) return 'contract';
+  if (/项目|project/i.test(identity)) return 'project';
+  return node.children?.length ? 'folder' : 'file-text';
 }
 
 function isHandlingGroup(node: NavNode) {
@@ -260,26 +299,33 @@ onMounted(() => {
   padding-left: 0;
 }
 
-.tree.depth-1 {
-  padding: 1px 0 3px 18px;
-}
-
+.tree.depth-1,
 .tree.depth-2,
 .tree.depth-3,
 .tree.depth-4,
 .tree.depth-5 {
-  padding: 1px 0 3px 16px;
+  padding: 1px 0 3px;
 }
 
 .node {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 20px minmax(0, 1fr) 20px;
   align-items: center;
-  gap: 2px;
-  min-height: 32px;
-  border-radius: 4px;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 6px 0 8px;
+  border-radius: 6px;
   color: var(--sc-app-text-secondary);
   transition: background-color var(--sc-motion-fast, 120ms) ease, color var(--sc-motion-fast, 120ms) ease;
+}
+
+.node-icon {
+  width: 20px;
+  min-width: 20px;
+  display: grid;
+  place-items: center;
+  color: var(--sc-app-text-muted);
+  transition: color var(--sc-motion-fast, 120ms) ease;
 }
 
 .label {
@@ -305,7 +351,7 @@ onMounted(() => {
 .node.ancestor .label {
   color: var(--sc-app-text-primary);
   background: transparent;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .node.active {
@@ -318,6 +364,17 @@ onMounted(() => {
   background: var(--sc-app-hover-bg);
 }
 
+.node.expanded:not(.active):not(.ancestor) {
+  background: color-mix(in srgb, var(--sc-navigation-active-bg) 42%, transparent);
+}
+
+.node.active .node-icon,
+.node.active .toggle,
+.node.ancestor .node-icon,
+.node.ancestor .toggle {
+  color: var(--sc-app-info-text);
+}
+
 .node.disabled .label {
   cursor: not-allowed;
   color: var(--sc-app-text-secondary);
@@ -328,7 +385,7 @@ onMounted(() => {
 }
 
 .toggle {
-  width: 22px;
+  width: 20px;
   height: 28px;
   border: none;
   border-radius: 6px;
@@ -354,21 +411,16 @@ onMounted(() => {
   color: var(--sc-app-text-primary);
 }
 
-.node.active .toggle,
-.node.ancestor .toggle {
-  color: var(--sc-app-info-text);
-}
-
 .toggle-spacer {
-  width: 22px;
+  width: 20px;
   display: inline-block;
-  flex: 0 0 22px;
+  flex: 0 0 20px;
 }
 
 .label {
   width: 100%;
   min-height: 30px;
-  padding: 5px 8px 5px 4px;
+  padding: 5px 0;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
@@ -378,8 +430,8 @@ onMounted(() => {
 
 .tree--root > li > .node .label {
   min-height: 34px;
-  padding: 6px 8px 6px 4px;
-  font-weight: 600;
+  padding: 6px 0;
+  font-weight: 650;
   letter-spacing: 0;
 }
 
@@ -387,11 +439,18 @@ onMounted(() => {
   font-weight: 500;
 }
 
+.depth-1 > li > .node.leaf .label,
 .depth-2 > li > .node .label,
 .depth-3 > li > .node .label,
 .depth-4 > li > .node .label,
 .depth-5 > li > .node .label {
   color: var(--sc-app-text-secondary);
+  font-weight: 450;
+}
+
+.depth-1 > li > .node.group .label {
+  color: var(--sc-app-text-primary);
+  font-weight: 550;
 }
 
 .label-text {
@@ -415,6 +474,12 @@ onMounted(() => {
 
 .label:hover {
   background-color: transparent;
+}
+
+.label:focus-visible,
+.toggle:focus-visible {
+  outline: 2px solid var(--sc-semantic-surface-interactive);
+  outline-offset: -2px;
 }
 
 .expand-enter-active,
