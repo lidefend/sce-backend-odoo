@@ -1722,9 +1722,31 @@ const columnChoices = computed<ColumnOption[]>(() => {
     defaultVisible: !hiddenColumns.value[name],
   }));
 });
+const DEFAULT_VISIBLE_COLUMN_BUDGET = 12;
+const budgetedDefaultVisibleColumns = computed(() => {
+  const eligible = columnChoices.value.filter((column) => column.defaultVisible !== false && !hiddenColumns.value[column.name]);
+  if (eligible.length <= DEFAULT_VISIBLE_COLUMN_BUDGET) return new Set(eligible.map((column) => column.name));
+
+  const names = new Set<string>();
+  const addFirst = (predicate: (column: ColumnOption) => boolean) => {
+    const match = eligible.find(predicate);
+    if (match) names.add(match.name);
+  };
+  if (rowPrimary.value && eligible.some((column) => column.name === rowPrimary.value)) names.add(rowPrimary.value);
+  addFirst((column) => String(column.cellRole || '').toLowerCase() === 'identity');
+  addFirst((column) => /(^|_)(status|state)($|_)/i.test(column.name) || ['status', 'state'].includes(String(column.cellRole || '').toLowerCase()));
+  addFirst((column) => ['date', 'datetime'].includes(String(column.type || column.dataType || '').toLowerCase()));
+  addFirst((column) => ['integer', 'float', 'monetary'].includes(String(column.type || column.dataType || '').toLowerCase()) || ['money', 'monetary', 'metric'].includes(String(column.cellRole || '').toLowerCase()));
+  addFirst((column) => ['many2one', 'many2many', 'one2many', 'reference'].includes(String(column.type || column.dataType || '').toLowerCase()));
+  for (const column of eligible) {
+    if (names.size >= DEFAULT_VISIBLE_COLUMN_BUDGET) break;
+    names.add(column.name);
+  }
+  return names;
+});
 const defaultVisibleColumnMap = computed<Record<string, boolean>>(() =>
   columnChoices.value.reduce<Record<string, boolean>>((acc, column) => {
-    acc[column.name] = column.defaultVisible !== false && !hiddenColumns.value[column.name];
+    acc[column.name] = budgetedDefaultVisibleColumns.value.has(column.name);
     return acc;
   }, {}),
 );

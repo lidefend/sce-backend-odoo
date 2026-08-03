@@ -2348,3 +2348,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   768x1024 and 390x844 with zero browser errors and zero document overflow.
   ESLint, strict TypeScript, release units, style-system guard, standard-list
   scroll contract, workspace alignment and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-LIST-FIRST-SCREEN-BUDGET
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `2e6b2b8`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; standard
+  business ledger first-screen density; `frontend/apps/web`.
+- Outcome: replaced the unbounded default ledger projection with a governed
+  12-column first-screen budget. Identity, state, date, numeric and relational
+  fields are prioritised before remaining model-order fields. All 33 available
+  fields remain accessible through column configuration and saved user choices
+  continue to override the default. The column configuration cell now uses the
+  same sticky-edge treatment as governed table navigation.
+- Boundary: default presentation only. Model fields, export data, filters,
+  sorting, permissions, backend contracts and explicit user column preferences
+  are unchanged.
+- Validation: the populated contract ledger now renders 12 business columns by
+  default instead of 33, reducing the measured table width from 5414px to
+  2113px while retaining 33 configuration choices. Real home, list and detail
+  journeys pass at 1440x900, 1280x800, 768x1024 and 390x844 with zero browser
+  errors. Strict TypeScript, release units, style-system guard, standard-list
+  scroll contract, workspace alignment and Vite production build pass.

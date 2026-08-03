@@ -610,12 +610,28 @@
 }
 
 .cell-column-picker {
-  position: relative;
+  position: sticky;
+  right: 0;
+  z-index: 15;
   width: 1%;
   min-width: 56px;
+  background: var(--sc-app-panel);
+  box-shadow: -8px 0 10px -10px var(--sc-app-shadow);
   text-align: right;
   white-space: nowrap;
   vertical-align: top;
+}
+
+.flat-table thead .cell-column-picker,
+.group-table thead .cell-column-picker {
+  z-index: 28;
+  background: var(--sc-app-info-bg);
+}
+
+.flat-table tfoot .cell-column-picker,
+.group-table tfoot .cell-column-picker {
+  z-index: 16;
+  background: var(--sc-app-muted-bg);
 }
 
 .column-picker-btn {
