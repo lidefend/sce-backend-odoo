@@ -250,14 +250,19 @@
             v-if="showMobileWorkShortcut"
             class="mobile-work-shortcut sc-btn sc-btn-sm"
             type="button"
+            title="我的工作"
+            aria-label="我的工作"
             @click="router.push('/my-work')"
           >
-            我的工作
+            <ScIcon name="briefcase" :size="16" />
+            <span class="topbar-tool-label">我的工作</span>
           </button>
           <button
             ref="sidebarToggleButton"
             class="sidebar-toggle sc-btn sc-btn-sm"
             type="button"
+            :title="mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏')"
+            :aria-label="mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏')"
             aria-controls="primary-sidebar"
             :aria-expanded="sidebarVisible"
             @click="toggleSidebar"

@@ -182,7 +182,7 @@
   }
 
   .page[data-product-page-mode='form'] .card:not(.card--flow) {
-    padding: 0 12px 18px;
+    padding: 0 0 18px;
   }
 
   .page[data-product-page-mode='form'] .card--flow {
@@ -763,6 +763,19 @@
   font-weight: 700;
 }
 
+.contract-form-native-shell :deep(.native-container--group > .template-form-section) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.contract-form-native-shell :deep(.native-container--group > .template-form-section > .template-form-section-head) {
+  margin: -20px -16px 16px;
+  border-radius: 0;
+}
+
 .contract-form-native-shell :deep(.native-tabs) {
   gap: 18px;
   border: 0;
@@ -976,12 +989,16 @@
 
   .contract-form-native-shell :deep(.native-container--group) {
     gap: 12px;
-    padding: 18px 12px 22px;
+    padding: 18px 14px 22px;
   }
 
   .contract-form-native-shell :deep(.native-container--group > .native-container-head) {
-    margin: -18px -12px 0;
-    padding: 0 12px;
+    margin: -18px -14px 0;
+    padding: 0 14px;
+  }
+
+  .contract-form-native-shell :deep(.native-container--group > .template-form-section > .template-form-section-head) {
+    margin: -18px -14px 14px;
   }
 
   .header-status {

@@ -3,6 +3,8 @@
     <button
       class="global-message__trigger sc-btn sc-btn-sm"
       type="button"
+      title="消息"
+      aria-label="消息"
       :class="{ active: open }"
       @click.stop="toggle"
     >
@@ -380,32 +382,30 @@ onUnmounted(() => {
   gap: 6px;
 }
 
-@media (min-width: 961px) {
-  .global-message__trigger {
-    width: 32px;
-    min-width: 32px;
-    padding: 0;
-    justify-content: center;
-    border-color: transparent;
-    background: transparent;
-    color: var(--sc-app-text-secondary);
-  }
+.global-message__trigger {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+  justify-content: center;
+  border-color: transparent;
+  background: transparent;
+  color: var(--sc-app-text-secondary);
+}
 
-  .global-message__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
+.global-message__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
-  .global-message__badge {
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    margin: 0;
-  }
+.global-message__badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  margin: 0;
 }
 
 .global-message__trigger.active {

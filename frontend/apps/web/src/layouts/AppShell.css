@@ -1229,7 +1229,7 @@
   }
   .topbar {
     position: relative;
-    align-items: flex-start;
+    align-items: center;
   }
   .topbar-main {
     flex: 1 1 100%;
@@ -1251,11 +1251,54 @@
     display: none;
   }
   .topbar-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 4px;
     justify-content: flex-start;
   }
   .topbar-context,
   .theme-switch {
     display: none;
+  }
+
+  .topbar--minimal {
+    min-height: 0;
+    padding-block: 4px 5px;
+    gap: 2px;
+  }
+
+  .topbar--minimal .topbar-main {
+    min-height: 22px;
+  }
+
+  .topbar--minimal .breadcrumb,
+  .topbar--minimal .crumb {
+    line-height: 18px;
+  }
+
+  .topbar--minimal .topbar-actions :is(.sc-btn, .topbar-context),
+  .topbar--minimal .topbar-actions :deep(.global-message__trigger) {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .topbar--minimal .topbar-scope {
+    flex: 1 1 auto;
+    max-width: none;
+    overflow: hidden;
+  }
+
+  .topbar--minimal .topbar-tool-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
   .activity-tabs {
     margin-inline: -2px;

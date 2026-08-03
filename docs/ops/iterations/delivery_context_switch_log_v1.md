@@ -2547,3 +2547,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   tablet cards form a two-column ledger and mobile cards form a single-column
   ledger. Strict TypeScript, release units, style-system guard, workspace
   alignment, production build and both browser audits pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-MATURITY-CONVERGENCE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `8e5f880`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; responsive
+  shell density, list query/pagination presentation, role-home balance and
+  record document continuity; `frontend/apps/web/src/components`, `layouts`
+  and `pages/contractForm`.
+- Outcome: compressed the mobile shell from three visual rows to at most two,
+  replacing message, work and navigation text controls with accessible
+  `ScIcon` tools. Removed the standalone mobile query-card treatment and joined
+  search and list controls into a lighter continuous workspace. Narrow tablet
+  pagination now forms a compact control cluster instead of distributing every
+  item across the full row. Record sections no longer render nested cards;
+  headings, dividers and spacing carry hierarchy inside one document canvas.
+  The role home uses a shorter, less saturated banner, content-height empty
+  tasks and two lightweight status metrics, eliminating the previous visual
+  imbalance.
+- Boundary: presentation and responsive density only. Business data, API
+  contracts, workflow, permissions, navigation targets, list field selection
+  and column-width behavior are unchanged.
+- Validation: Playwright journeys at 1440px, 768px and 390px show the mobile
+  business surface entering roughly 50px earlier, complete list actions, a
+  single record canvas and compact tablet pagination. Strict TypeScript,
+  release units, style-system guard with zero hardcoded colors, workspace
+  alignment, production build and both browser audits pass with zero errors
+  and zero document overflow.
