@@ -3,6 +3,16 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-04 — DAILY-DEV-ADDON-ROOT-AUDIT-COMPAT-01
+
+- Branch / anchor: `fix/daily-dev-addon-root-audit` from merged `main` at `95313b73be47107e09daa955e5e9f12ba23d7622`.
+- Formal Product Layer: P4 verification governance; Layer Target: daily-development formal-field boundary audit runtime-path compatibility.
+- Reason: the daily Compose topology mounts platform/industry addons at `/mnt/source-addons` and the private customer module at `/mnt/customer-addons`, while the audit only recognized the retired single-root `/mnt/extra-addons` layout and therefore blocked the governed daily publication before its real-login probe.
+- Standard vs User-Specific: generic verification infrastructure only; no customer data, business fields, module ownership, route, permission, interface, or application behavior changes.
+- Why Here / Why Not Elsewhere: the audit owns discovery of its static source inputs and must support the canonical split source/customer Compose mounts; changing container mounts or copying a private customer addon into the public repository would violate the product boundary.
+- Blast Radius: split core/custom audit-root resolution plus one static regression test; no database write, module upgrade, frontend behavior, deployment topology, or production mutation.
+- Validation: unit regression, Python compile, local audit, generated-report refresh/guard, PR checks, and the daily-development `release.daily_dev.acceptance.publish` entrypoint.
+
 ## 2026-08-04 — FRONTEND-ACCESSIBLE-INTERACTIVE-TOKEN-07
 
 - Branch / anchor: `feature/frontend-experience-upgrade` from `b18b71c31b2bac895ef63c65752e6fb6e3ac2f11`.

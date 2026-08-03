@@ -13,7 +13,12 @@ import json
 from pathlib import Path
 
 
-ADDON_ROOT_CANDIDATES = [Path("/mnt/extra-addons"), Path.cwd() / "addons"]
+ADDON_ROOT_CANDIDATES = [
+    Path("/mnt/source-addons"),
+    Path("/mnt/customer-addons"),
+    Path("/mnt/extra-addons"),
+    Path.cwd() / "addons",
+]
 REPO_ROOT_CANDIDATES = [Path.cwd()]
 CORE_ADDON = Path("smart_construction_core")
 CUSTOM_ADDON = Path("smart_construction_custom")
@@ -142,15 +147,19 @@ BOUNDARY_CASES = [
 ]
 
 
-def _addon_root() -> Path:
+def _addon_root(addon: Path) -> Path:
     for candidate in ADDON_ROOT_CANDIDATES:
-        if (candidate / CORE_ADDON).exists() and (candidate / CUSTOM_ADDON).exists():
+        if (candidate / addon).exists():
             return candidate
-    raise FileNotFoundError("Cannot locate smart construction addons root")
+    raise FileNotFoundError(f"Cannot locate addon root for {addon}")
 
 
 def _display_path(path: Path) -> str:
-    for candidate in [*_repo_root_candidates(), _addon_root()]:
+    for candidate in [
+        *_repo_root_candidates(),
+        _addon_root(CORE_ADDON),
+        _addon_root(CUSTOM_ADDON),
+    ]:
         try:
             return str(path.relative_to(candidate))
         except ValueError:
@@ -171,10 +180,10 @@ def _iter_source_files(base: Path):
         yield from base.rglob(suffix)
 
 
-def _scan_static(addon_root: Path) -> list[dict]:
+def _scan_static(core_addon_root: Path, custom_addon_root: Path) -> list[dict]:
     failures = []
-    core = addon_root / CORE_ADDON
-    custom = addon_root / CUSTOM_ADDON
+    core = core_addon_root / CORE_ADDON
+    custom = custom_addon_root / CUSTOM_ADDON
     custom_blob = "\n".join(
         path.read_text(encoding="utf-8", errors="ignore")
         for path in _iter_source_files(custom)
@@ -265,8 +274,9 @@ def _runtime_rows() -> tuple[list[dict], list[dict]]:
     return rows, failures
 
 
-addon_root = _addon_root()
-failures = _scan_static(addon_root)
+core_addon_root = _addon_root(CORE_ADDON)
+custom_addon_root = _addon_root(CUSTOM_ADDON)
+failures = _scan_static(core_addon_root, custom_addon_root)
 runtime_rows, runtime_failures = _runtime_rows()
 failures.extend(runtime_failures)
 
