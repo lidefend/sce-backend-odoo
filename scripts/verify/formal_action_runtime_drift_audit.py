@@ -20,6 +20,7 @@ from odoo.tools.safe_eval import safe_eval
 OUTPUT_JSON_NAME = "formal_action_runtime_drift_audit_v1.json"
 MODULE = "smart_construction_core"
 ADDON_ROOT_CANDIDATES = [
+    Path("/mnt/source-addons/smart_construction_core"),
     Path("/mnt/extra-addons/smart_construction_core"),
     Path.cwd() / "addons" / "smart_construction_core",
 ]
