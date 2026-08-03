@@ -7,8 +7,8 @@
     "input": "{color.white}",
     "hover": "{color.cyan_50}",
     "overlay": "rgba(15, 23, 42, 0.38)",
-    "interactive": "{color.cyan_500}",
-    "interactive_hover": "{color.cyan_600}",
+    "interactive": "{color.blue_500}",
+    "interactive_hover": "{color.blue_600}",
     "navigation": "{color.white}",
     "navigation_active": "{color.cyan_50}",
     "table_header": "#f5f8fa"
@@ -26,7 +26,7 @@
     "muted": "{color.slate_400}",
     "inverse": "{color.white}",
     "on_interactive": "{color.white}",
-    "link": "{color.cyan_700}"
+    "link": "{color.blue_600}"
   },
   "focus": {
     "ring": "rgba(0, 182, 254, 0.18)"
@@ -49,9 +49,9 @@
     "danger_bg": "{color.red_50}",
     "danger_border": "{color.red_100}",
     "danger_text": "{color.red_700}",
-    "info": "{color.cyan_500}",
+    "info": "{color.blue_500}",
     "info_bg": "{color.cyan_50}",
     "info_border": "{color.cyan_200}",
-    "info_text": "{color.cyan_700}"
+    "info_text": "{color.blue_600}"
   }
 }

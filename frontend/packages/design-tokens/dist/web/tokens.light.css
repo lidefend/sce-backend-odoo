@@ -145,10 +145,10 @@
   --sc-semantic-state-danger-bg: #fef2f2;
   --sc-semantic-state-danger-border: #fee2e2;
   --sc-semantic-state-danger-text: #b91c1c;
-  --sc-semantic-state-info: #00b6fe;
+  --sc-semantic-state-info: #2563eb;
   --sc-semantic-state-info-bg: #f0fbff;
   --sc-semantic-state-info-border: #aeeaff;
-  --sc-semantic-state-info-text: #007fae;
+  --sc-semantic-state-info-text: #1d4ed8;
   --sc-semantic-state-success: #22c55e;
   --sc-semantic-state-success-bg: #ecfdf5;
   --sc-semantic-state-success-border: #d1fae5;
@@ -159,8 +159,8 @@
   --sc-semantic-state-warning-text: #b45309;
   --sc-semantic-surface-hover: #f0fbff;
   --sc-semantic-surface-input: #ffffff;
-  --sc-semantic-surface-interactive: #00b6fe;
-  --sc-semantic-surface-interactive-hover: #00a4e6;
+  --sc-semantic-surface-interactive: #2563eb;
+  --sc-semantic-surface-interactive-hover: #1d4ed8;
   --sc-semantic-surface-navigation: #ffffff;
   --sc-semantic-surface-navigation-active: #f0fbff;
   --sc-semantic-surface-overlay: rgba(15, 23, 42, 0.38);
@@ -170,7 +170,7 @@
   --sc-semantic-surface-subtle: #eef4fa;
   --sc-semantic-surface-table-header: #f5f8fa;
   --sc-semantic-text-inverse: #ffffff;
-  --sc-semantic-text-link: #007fae;
+  --sc-semantic-text-link: #1d4ed8;
   --sc-semantic-text-muted: #94a3b8;
   --sc-semantic-text-on-interactive: #ffffff;
   --sc-semantic-text-primary: #2e3133;
