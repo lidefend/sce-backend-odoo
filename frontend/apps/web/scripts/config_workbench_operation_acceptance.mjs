@@ -24,6 +24,8 @@ const REPORT_PATH = path.join(ARTIFACT_ROOT, "report.json");
 const SUMMARY_PATH = path.join(ARTIFACT_ROOT, "summary.json");
 const VERBOSE_OUTPUT = ["1", "true", "yes"].includes(String(process.env.CONFIG_WORKBENCH_ACCEPTANCE_VERBOSE || "").toLowerCase());
 const PRODUCT_PAGE_REGION_CLASSES = readProductPageRegionClasses();
+let runtimeConfigModel = CONFIG_MODEL;
+let runtimeConfigActionId = CONFIG_ACTION_ID;
 validateConfigWorkbenchOperationCoverage();
 function assert(condition, message, details = {}) {
   if (!condition) {
@@ -58,6 +60,16 @@ function configWorkbenchUrl(extra = {}) {
   return `${BASE_URL}/admin/business-config?${params.toString()}`;
 }
 
+function synchronizeRuntimeConfigSelection(page) {
+  const selectedUrl = new URL(page.url());
+  const selectedModel = String(selectedUrl.searchParams.get("model") || "").trim();
+  const selectedActionId = Number(selectedUrl.searchParams.get("action_id") || 0);
+  assert(selectedModel, "selected configuration page is missing its runtime model", { url: page.url() });
+  assert(Number.isInteger(selectedActionId) && selectedActionId > 0, "selected configuration page is missing its runtime action", { url: page.url() });
+  runtimeConfigModel = selectedModel;
+  runtimeConfigActionId = selectedActionId;
+}
+
 async function login(page) {
   await page.goto(`${BASE_URL}/login?db=${encodeURIComponent(DB_NAME)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.locator("input").nth(0).fill(LOGIN);
@@ -68,6 +80,7 @@ async function login(page) {
   }
   await page.locator('button[type="submit"]').click();
   await page.waitForFunction(() => !window.location.pathname.includes("/login"), null, { timeout: 60000 });
+  await page.waitForSelector('[data-navigation-state="ready"]', { timeout: 60000 });
 }
 
 async function visibleCardTitles(page, scope = "") {
@@ -109,8 +122,8 @@ async function visibleCardPrimaryActions(page, scope = "") {
 
 async function openDirectSelectedWorkbench(page) {
   await page.goto(configWorkbenchUrl({
-    model: CONFIG_MODEL,
-    action_id: String(CONFIG_ACTION_ID),
+    model: runtimeConfigModel,
+    action_id: String(runtimeConfigActionId),
     menu_id: String(CONFIG_MENU_ID),
     page_label: CONFIG_PAGE_LABEL,
   }), { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -883,6 +896,8 @@ async function main() {
     checks.scanRowsBeforeSelect = await page.locator(".scan-row").count();
     await page.locator(".scan-row").filter({ hasText: CONFIG_PAGE_LABEL }).first().getByRole("button", { name: /选择|当前配置/ }).click();
     await page.waitForSelector(".selected-page-overview", { timeout: 60000 });
+    await page.waitForFunction(() => Number(new URL(window.location.href).searchParams.get("action_id") || 0) > 0, null, { timeout: 60000 });
+    synchronizeRuntimeConfigSelection(page);
     await page.waitForTimeout(800);
     checks.selectedText = await page.locator(".selected-page-overview").first().innerText();
     checks.cardsAfterSelect = await visibleCardTitles(page);
@@ -1035,7 +1050,7 @@ async function main() {
     ]);
     screenshots.directSelected = await capture(page, "directSelected");
 
-    await page.goto(`${BASE_URL}/a/${CONFIG_ACTION_ID}?menu_id=${CONFIG_MENU_ID}&db=${encodeURIComponent(DB_NAME)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(`${BASE_URL}/a/${runtimeConfigActionId}?menu_id=${CONFIG_MENU_ID}&db=${encodeURIComponent(DB_NAME)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForSelector(".page .sc-product-page-toolbar, .page .sc-empty", { timeout: 60000 });
     checks.businessRuntimeWorkspaceGaps = await productWorkspaceGapEvidence(page, [
       { page: "business_runtime", selector: ".page", scope: "list_page_stack" },
@@ -1063,7 +1078,7 @@ async function main() {
     ]));
     checks.businessRuntimeListPageClass = await page.locator(".page").first().evaluate((node) => node.className || "");
     checks.businessRuntimeListToolbarCount = await page.locator(".page .sc-product-page-toolbar").count();
-    await page.goto(`${BASE_URL}/f/${encodeURIComponent(CONFIG_MODEL)}/new?db=${encodeURIComponent(DB_NAME)}&action_id=${CONFIG_ACTION_ID}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(`${BASE_URL}/f/${encodeURIComponent(runtimeConfigModel)}/new?db=${encodeURIComponent(DB_NAME)}&action_id=${runtimeConfigActionId}&menu_id=${CONFIG_MENU_ID}`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForSelector(".card .form-grid", { timeout: 60000 });
     checks.businessRuntimeWorkspaceGaps.push(...await productWorkspaceGapEvidence(page, [
       { page: "business_runtime", selector: ".card", scope: "form_panel_shell" },
@@ -1202,7 +1217,7 @@ async function main() {
 
     await openDirectSelectedWorkbench(page);
     await clickConfigCardButton(page, "表单字段与布局", "配置表单与布局");
-    await page.waitForURL((url) => String(url).includes(`/f/${CONFIG_MODEL}/new`), { timeout: 60000 });
+    await page.waitForURL((url) => String(url).includes(`/f/${runtimeConfigModel}/new`), { timeout: 60000 });
     await page.waitForSelector(".contract-form-settings", { timeout: 60000 });
     checks.formDesignerTitle = await page.locator(".contract-form-settings h4").innerText();
     checks.formDesignerShellTitle = await page.locator(".topbar .headline").innerText().catch(() => "");
