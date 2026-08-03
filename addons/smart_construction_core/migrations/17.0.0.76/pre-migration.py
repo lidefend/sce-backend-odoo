@@ -10,8 +10,23 @@ def migrate(cr, installed_version):
     patterns = (ALIAS_PREFIX + "%", FORMAL_PROJECTION_PREFIX + "%")
     cr.execute(
         """
+        WITH RECURSIVE obsolete_view_ids AS (
+            SELECT id
+              FROM ir_ui_view
+             WHERE arch_db::text LIKE %s OR arch_db::text LIKE %s
+            UNION
+            SELECT child.id
+              FROM ir_ui_view child
+              JOIN obsolete_view_ids parent ON child.inherit_id = parent.id
+        ),
+        deleted_view_xmlids AS (
+            DELETE FROM ir_model_data
+             WHERE model = 'ir.ui.view'
+               AND res_id IN (SELECT id FROM obsolete_view_ids)
+            RETURNING id
+        )
         DELETE FROM ir_ui_view
-         WHERE arch_db::text LIKE %s OR arch_db::text LIKE %s
+         WHERE id IN (SELECT id FROM obsolete_view_ids)
         """,
         ("%" + ALIAS_PREFIX + "%", "%" + FORMAL_PROJECTION_PREFIX + "%"),
     )
