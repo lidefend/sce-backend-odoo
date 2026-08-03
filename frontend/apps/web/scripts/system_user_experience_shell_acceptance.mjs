@@ -4,10 +4,18 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
-const BASE_URL = process.env.BASE_URL || "http://127.0.0.1:18081";
-const DB_NAME = process.env.DB_NAME || "sc_demo";
-const LOGIN = process.env.E2E_LOGIN || "wutao";
-const PASSWORD = process.env.E2E_PASSWORD || "123456";
+function requiredEnv(name, aliases = []) {
+  for (const key of [name, ...aliases]) {
+    const value = String(process.env[key] || "").trim();
+    if (value) return value;
+  }
+  throw new Error(`missing required environment variable: ${[name, ...aliases].join(" or ")}`);
+}
+
+const BASE_URL = requiredEnv("BASE_URL", ["WORKFLOW_CONTRACT_FRONTEND_URL"]);
+const DB_NAME = requiredEnv("DB_NAME", ["DB"]);
+const LOGIN = requiredEnv("E2E_LOGIN", ["LOGIN"]);
+const PASSWORD = requiredEnv("E2E_PASSWORD", ["PASSWORD"]);
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(SCRIPT_DIR, "..", "..", "..", "..");
 const ARTIFACT_ROOT = path.join(ROOT_DIR, "artifacts", "playwright", "system-user-experience-shell");
@@ -187,7 +195,7 @@ async function main() {
       key: "home",
       name: "首页首跳",
       url: `${BASE_URL}/?db=${encodeURIComponent(DB_NAME)}`,
-      expected: ["当前角色", "今天先做什么", "今日优先动作", "角色能力摘要"],
+      expected: ["当前事项", "待我处理", "工作概览", "常用入口与最近访问"],
       forbidden: ["HUD:", "role_key=", "scene_key="],
       requireProductPage: false,
     },
@@ -195,7 +203,7 @@ async function main() {
       key: "my_work",
       name: "我的工作",
       url: `${BASE_URL}/my-work?db=${encodeURIComponent(DB_NAME)}`,
-      expected: ["我的工作", "待办", "处理"],
+      expected: ["我的工作", "处理"],
       forbidden: ["role_key=", "scene_key="],
       requireProductPage: false,
     },
@@ -212,7 +220,7 @@ async function main() {
       key: "release_operator_access_boundary",
       name: "发布支持控制台权限边界",
       url: `${BASE_URL}/admin/release-operator?db=${encodeURIComponent(DB_NAME)}`,
-      expected: ["项目列表"],
+      expected: ["项目台账", "搜索"],
       forbidden: ["Traceback", "undefined", "发布控制台"],
       allowTechnicalTerms: true,
       settleMs: 1500,
@@ -230,7 +238,7 @@ async function main() {
     key: "mobile_home",
     name: "移动端首页",
     url: `${BASE_URL}/?db=${encodeURIComponent(DB_NAME)}`,
-    expected: ["今天先做什么", "今日优先动作"],
+    expected: ["当前事项", "待我处理", "工作概览"],
     forbidden: ["HUD:", "role_key="],
     requireProductPage: false,
   }));

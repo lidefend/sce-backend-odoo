@@ -100,7 +100,11 @@ export function useBusinessConfigFieldEditors(options: UseBusinessConfigFieldEdi
     return Object.entries(labels).reduce<Record<string, string>>((acc, [name, label]) => {
       const fieldName = String(name || '').trim();
       const cleanLabel = cleanBusinessFieldLabel(fieldName, label);
-      if (fieldName && cleanLabel) acc[fieldName] = cleanLabel;
+      // A legacy view can carry the technical field name as its column label.
+      // Do not let that stale projection override the model's business label.
+      if (fieldName && cleanLabel && cleanLabel.toLowerCase() !== fieldName.toLowerCase()) {
+        acc[fieldName] = cleanLabel;
+      }
       return acc;
     }, {});
   });

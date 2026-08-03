@@ -779,6 +779,8 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
                 native_nav=native_nav,
             )
             nav = navigation.get("nav") if isinstance(navigation, dict) and isinstance(navigation.get("nav"), list) else []
+            if not nav:
+                raise RuntimeError("delivery_navigation_empty")
             meta = navigation.get("meta") if isinstance(navigation, dict) and isinstance(navigation.get("meta"), dict) else {}
             return nav, {
                 "source": "delivery_engine_v1",
