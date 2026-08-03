@@ -250,6 +250,34 @@ def _contract(env, suffix, project, partner, tax, state, amount):
     return record, line
 
 
+def _general_contract(env, suffix, project, partner, tax, state, amount):
+    contract_name = "FE-%s General Contract" % suffix
+    return _upsert(
+        env,
+        "sc.general.contract",
+        "fe_general_contract_%s" % suffix.lower(),
+        [("contract_name", "=", contract_name), ("project_id", "=", project.id)],
+        {
+            "contract_name": contract_name,
+            "project_id": project.id,
+            "company_id": project.company_id.id,
+            "partner_id": partner.id,
+            "contract_type": "工程服务",
+            "contract_attribute": "一般合同",
+            "contract_direction": "income" if suffix == "A" else "expense",
+            "contract_date": "2026-07-%02d" % ({"A": 8, "B": 15, "C": 22}[suffix]),
+            "amount_total": amount,
+            "amount_untaxed": round(amount / 1.13, 2),
+            "tax_id": tax.id,
+            "tax_rate": 13.0,
+            "currency_id": project.company_id.currency_id.id,
+            "state": state,
+            "handler_id": project.user_id.id,
+            "active": True,
+        },
+    )
+
+
 def _settlement(env, suffix, project, contract, partner, state, amount):
     name = "FE-%s-SET-001" % suffix
     record = _upsert(
@@ -754,6 +782,9 @@ def ensure_fixture(env) -> Dict[str, Any]:
     contract_a, _ = _contract(env, "A", project_a, partner_a, tax_a, "confirmed", 1000.0)
     contract_b, _ = _contract(env, "B", project_b, partner_b, tax_a, "draft", 1000.0)
     contract_c, _ = _contract(env, "C", project_c, partner_c, tax_b, "confirmed", 1000.0)
+    _general_contract(env, "A", project_a, partner_a, tax_a, "signed", 2680000.0)
+    _general_contract(env, "B", project_b, partner_b, tax_a, "confirmed", 985000.0)
+    _general_contract(env, "C", project_c, partner_c, tax_b, "draft", 460000.0)
     settlement_a = _settlement(env, "A", project_a, contract_a, partner_a, "approve", 1000.0)
     settlement_b = _settlement(env, "B", project_b, contract_b, partner_b, "draft", 1000.0)
     settlement_c = _settlement(env, "C", project_c, contract_c, partner_c, "approve", 1000.0)
@@ -803,6 +834,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
         "projects": [project_a.name, project_b.name, project_c.name],
         "records": {
             "contracts": 3,
+            "general_contracts": 3,
             "settlements": 3,
             "payment_requests": 4,
             "payment_executions": 3,

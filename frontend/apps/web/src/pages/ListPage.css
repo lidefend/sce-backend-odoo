@@ -154,6 +154,57 @@
   touch-action: pan-x pan-y;
 }
 
+/* Dense ledger surface: toolbar, rows and pagination read as one business canvas. */
+.page[data-product-page-mode='list'],
+.page.sc-product-workspace-stack {
+  --sc-table-header-height: 42px;
+  --sc-table-row-height: 46px;
+}
+
+.page[data-product-page-mode='list'] .list-toolbar,
+.page[data-product-page-mode='list'] .table,
+.page[data-product-page-mode='list'] .pagination-bar {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.page[data-product-page-mode='list'] .list-toolbar {
+  border-bottom: 0;
+  border-top: 3px solid var(--sc-app-accent);
+}
+
+.page[data-product-page-mode='list'] .table {
+  margin: 0;
+  border-color: #d7dee9;
+}
+
+.page[data-product-page-mode='list'] .table thead th {
+  border-bottom: 1px solid #cbd5e1;
+  background: #edf2f8;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.page[data-product-page-mode='list'] .table tbody td {
+  border-bottom-color: #e5eaf1;
+  color: #344054;
+}
+
+.page[data-product-page-mode='list'] .table tbody tr:nth-child(even) td {
+  background: #fbfcfe;
+}
+
+.page[data-product-page-mode='list'] .table tbody tr:hover td {
+  background: #eef6ff;
+}
+
+.page[data-product-page-mode='list'] .pagination-footer,
+.page[data-product-page-mode='list'] .pagination-bar {
+  border-top: 1px solid #d7dee9;
+  background: #f8fafc;
+}
+
 .table > .sc-table-shell {
   border-inline: 0;
   border-radius: 0;

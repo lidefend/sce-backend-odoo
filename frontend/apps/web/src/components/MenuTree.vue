@@ -281,7 +281,7 @@ onMounted(() => {
   border: none;
   text-align: left;
   cursor: pointer;
-  color: var(--sc-app-text-primary);
+  color: #d9e2f1;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -291,19 +291,19 @@ onMounted(() => {
 
 .node.active .label {
   font-weight: 600;
-  color: var(--sc-app-text-primary);
-  background: var(--sc-app-info-bg);
-  box-shadow: inset 3px 0 0 var(--sc-semantic-surface-interactive);
+  color: #fff;
+  background: #2f80ed;
+  box-shadow: inset 3px 0 0 #7db7ff;
 }
 
 .node.ancestor .label {
-  color: var(--sc-app-text-primary);
-  background: var(--sc-app-subtle-bg);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .node.disabled .label {
   cursor: not-allowed;
-  color: var(--sc-app-text-secondary);
+  color: #65738b;
 }
 
 .node.disabled .label:hover {
@@ -317,14 +317,14 @@ onMounted(() => {
   border-radius: 6px;
   background: transparent;
   cursor: pointer;
-  color: var(--sc-semantic-text-muted);
+  color: #77869f;
   font-size: 12px;
   line-height: 1;
 }
 
 .toggle:hover {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 .toggle-spacer {
@@ -359,7 +359,7 @@ onMounted(() => {
 .depth-3 > li > .node .label,
 .depth-4 > li > .node .label,
 .depth-5 > li > .node .label {
-  color: var(--sc-app-text-secondary);
+  color: #aebbd0;
 }
 
 .label-text {
@@ -372,9 +372,9 @@ onMounted(() => {
 .label-badge,
 .label-count {
   flex: 0 0 auto;
-  border: 1px solid var(--sc-app-border);
-  color: var(--sc-app-text-secondary);
-  background: var(--sc-app-subtle-bg);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #c4cee0;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
@@ -385,12 +385,12 @@ onMounted(() => {
 .label-count {
   min-width: 18px;
   text-align: center;
-  color: var(--sc-app-text-secondary);
-  background: var(--sc-app-panel);
+  color: #c4cee0;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .label:hover {
-  background-color: var(--sc-app-hover-bg);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .expand-enter-active,

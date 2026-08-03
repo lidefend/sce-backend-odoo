@@ -2208,3 +2208,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   the corresponding static guard. All business routes continue through the
   existing immutable menu/action/authority snapshot; backend contracts and
   business data are unchanged.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-STAGE-01
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `5b47663`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; generic
+  navigation shell and governed list/form presentation; `frontend/apps/web`.
+- Stage outcome: delivered a visually distinct dark enterprise navigation
+  frame and a dense, continuous contract ledger surface with integrated query
+  tools, table and pagination. The isolated acceptance fixture now includes
+  deterministic `sc.general.contract` rows so the released menu, list and
+  record-detail routes can be verified end to end without production data.
+- Boundary: presentation tokens and acceptance-only synthetic fixture data;
+  no customer policy, route authority, permission or production database
+  semantics changed.
+- Validation: acceptance login, released contract menu, populated list and
+  record-detail journey pass at 1440x900; Python compilation and Vite build
+  pass. Strict TypeScript remains blocked by pre-existing query typing errors
+  in unmodified `AppShell.vue` and `ContractFormPage.vue`.
