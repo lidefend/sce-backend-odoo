@@ -148,11 +148,21 @@ for scenario, metrics in (performance_baseline.get("scenarios") or {}).items():
         raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL invalid baseline samples scenario={scenario}")
     if not all(isinstance(metrics.get(name), (int, float)) for name in ("median_ms", "p95_ms", "max_ms")):
         raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL incomplete baseline metrics scenario={scenario}")
+    ordered = sorted(samples)
+    expected = {
+        "median_ms": ordered[len(ordered) // 2],
+        "p95_ms": ordered[max(0, ((len(ordered) * 95 + 99) // 100) - 1)],
+        "max_ms": max(ordered),
+    }
+    if any(metrics.get(name) != value for name, value in expected.items()):
+        raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL baseline metric mismatch scenario={scenario}")
 for field in ("git_sha", "captured_at", "database", "environment", "source"):
     if not performance_baseline.get(field):
         raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL governed performance baseline missing {field}")
 if not re.fullmatch(r"[0-9a-f]{40}", str(performance_baseline.get("git_sha") or "")):
     raise SystemExit("[frontend_delivery_hardening_guard] FAIL governed performance baseline git_sha must be full length")
+if not re.fullmatch(r"[0-9a-f]{40}", str(performance_baseline.get("mainline_base_sha") or "")):
+    raise SystemExit("[frontend_delivery_hardening_guard] FAIL governed performance baseline mainline_base_sha must be full length")
 require(
     "make/runtime_ops.mk",
     "DELIVERY_HARDENING_PERF_ONLY=1",
