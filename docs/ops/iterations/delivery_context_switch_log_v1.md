@@ -2257,3 +2257,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   overflow. Strict TypeScript, ESLint, release units, style-system guard,
   standard-list scroll guard, workspace alignment, wide-form guard and Vite
   build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-ACTIVITY-TABS
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `c98aa84`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; global
+  application-shell activity navigation; `frontend/apps/web`.
+- Outcome: replaced browser-like bordered activity cards with a flat business
+  tab bar. Inactive pages are neutral, the current page uses one blue bottom
+  rule, and close actions appear only for hover, focus, or the active page.
+- Boundary: generic navigation presentation only. Page lifecycle, route
+  authority, permissions and business semantics remain unchanged.
+- Validation: real acceptance login/list/detail journeys pass at 1440x900,
+  768x1024 and 390x844 with zero browser errors and zero document overflow;
+  mobile activity tabs remain hidden. ESLint, strict TypeScript, release units,
+  style-system guard and Vite production build pass.

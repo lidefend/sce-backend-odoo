@@ -8,5 +8,98 @@
 </template>
 <script setup lang="ts">import ScIcon from '../design-system/ScIcon.vue'; import type { ActivityPage } from '../../stores/session'; withDefaults(defineProps<{pages:ActivityPage[];activeKey:string;label?:string;closeLabel?:string}>(),{label:'活动页面',closeLabel:'关闭'}); defineEmits<{activate:[page:ActivityPage];close:[page:ActivityPage]}>();</script>
 <style scoped>
-.activity-tabs{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;overflow-y:hidden;padding:0 2px 1px;scrollbar-width:thin}.activity-tab{flex:0 1 152px;min-width:104px;max-width:200px;display:grid;grid-template-columns:minmax(0,1fr) 18px;align-items:center;border:1px solid var(--sc-app-border);border-radius:var(--sc-product-radius-control);background:var(--sc-app-panel);color:var(--sc-app-text-secondary);overflow:hidden}.activity-tab.active{border-color:var(--sc-app-info-border);background:var(--sc-app-info-bg);color:var(--sc-app-info-text)}.activity-tab-main,.activity-tab-close{min-width:0;height:26px;border:0;background:transparent;color:inherit;cursor:pointer}.activity-tab-main{padding:0 4px 0 6px;text-align:left;font-size:11px;font-weight:600}.activity-tab-main span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.activity-tab-close{width:18px;padding:0;font-size:var(--sc-product-text-sm);line-height:1;opacity:.7}.activity-tab-close:hover{opacity:1;background:var(--sc-app-danger-bg)}@media(max-width:760px){.activity-tabs{display:none}}
+.activity-tabs {
+  display: flex;
+  align-items: end;
+  gap: 18px;
+  min-width: 0;
+  min-height: 36px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--sc-app-border);
+  background: var(--sc-app-panel);
+  scrollbar-width: thin;
+}
+
+.activity-tab {
+  position: relative;
+  flex: 0 1 180px;
+  min-width: 96px;
+  max-width: 220px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  align-items: center;
+  color: var(--sc-app-text-secondary);
+}
+
+.activity-tab::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: transparent;
+  content: '';
+}
+
+.activity-tab.active {
+  color: var(--sc-app-info-text);
+}
+
+.activity-tab.active::after {
+  background: var(--sc-semantic-surface-interactive);
+}
+
+.activity-tab-main,
+.activity-tab-close {
+  min-width: 0;
+  height: 35px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.activity-tab-main {
+  padding: 0 4px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.activity-tab.active .activity-tab-main {
+  font-weight: 600;
+}
+
+.activity-tab-main span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-tab-close {
+  width: 20px;
+  padding: 0;
+  opacity: 0;
+  transition: opacity var(--sc-motion-fast, 120ms) ease;
+}
+
+.activity-tab:hover .activity-tab-close,
+.activity-tab.active .activity-tab-close,
+.activity-tab-close:focus-visible {
+  opacity: .65;
+}
+
+.activity-tab-close:hover {
+  opacity: 1;
+  color: var(--sc-app-danger-text);
+  background: var(--sc-app-danger-bg);
+}
+
+@media (max-width: 760px) {
+  .activity-tabs { display: none; }
+}
 </style>
