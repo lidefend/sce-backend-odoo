@@ -21,7 +21,6 @@
         >
           <span class="label-text">{{ nodeLabel(node) }}</span>
           <span v-if="isHandlingGroup(node)" class="label-badge">办理</span>
-          <span v-if="node.children?.length" class="label-count">{{ node.children.length }}</span>
         </button>
       </div>
       <transition name="expand">
@@ -173,7 +172,7 @@ function ensureExpandedForActive(nodes: NavNode[], menuId?: number): Set<string>
   const walk = (items: NavNode[], parents: string[] = []) => {
     for (const node of items) {
       const key = nodeKey(node);
-      if (node.menu_id === menuId) {
+      if ((node.menu_id ?? node.id) === menuId) {
         parents.forEach((p) => next.add(p));
       }
       if (node.children?.length) {
@@ -208,6 +207,9 @@ function ensureExpandedForDefaultGroups(nodes: NavNode[]): Set<string> {
 watchEffect(() => {
   const parents = ensureExpandedForActive(props.nodes, props.activeMenuId);
   const defaults = ensureExpandedForDefaultGroups(props.nodes);
+  if (parents.size) {
+    session.ensureMenuExpanded([...parents]);
+  }
   if (defaults.size) {
     session.ensureMenuExpanded([...defaults]);
   }
@@ -248,24 +250,24 @@ onMounted(() => {
   padding-left: 0;
   margin: 0;
   display: grid;
-  gap: 3px;
+  gap: 1px;
 }
 
 .tree:not(.tree--root) {
-  margin-top: 3px;
-  margin-bottom: 6px;
+  margin-top: 1px;
+  margin-bottom: 3px;
   padding-left: 0;
 }
 
 .tree.depth-1 {
-  padding: 3px 0 5px 22px;
+  padding: 1px 0 3px 18px;
 }
 
 .tree.depth-2,
 .tree.depth-3,
 .tree.depth-4,
 .tree.depth-5 {
-  padding: 2px 0 4px 14px;
+  padding: 1px 0 3px 16px;
 }
 
 .node {
@@ -273,7 +275,10 @@ onMounted(() => {
   grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
   gap: 2px;
-  min-height: 30px;
+  min-height: 32px;
+  border-radius: 4px;
+  color: var(--sc-app-text-secondary);
+  transition: background-color var(--sc-motion-fast, 120ms) ease, color var(--sc-motion-fast, 120ms) ease;
 }
 
 .label {
@@ -291,14 +296,24 @@ onMounted(() => {
 
 .node.active .label {
   font-weight: 600;
-  color: var(--sc-app-text-primary);
-  background: var(--sc-app-info-bg);
-  box-shadow: inset 3px 0 0 var(--sc-semantic-surface-interactive);
+  color: var(--sc-app-info-text);
+  background: transparent;
+  box-shadow: none;
 }
 
 .node.ancestor .label {
   color: var(--sc-app-text-primary);
-  background: var(--sc-app-subtle-bg);
+  background: transparent;
+  font-weight: 600;
+}
+
+.node.active {
+  background: var(--sc-navigation-active-bg);
+  color: var(--sc-app-info-text);
+}
+
+.node:not(.active):hover {
+  background: var(--sc-app-hover-bg);
 }
 
 .node.disabled .label {
@@ -323,8 +338,13 @@ onMounted(() => {
 }
 
 .toggle:hover {
-  background: var(--sc-app-hover-bg);
+  background: transparent;
   color: var(--sc-app-text-primary);
+}
+
+.node.active .toggle,
+.node.ancestor .toggle {
+  color: var(--sc-app-info-text);
 }
 
 .toggle-spacer {
@@ -336,23 +356,23 @@ onMounted(() => {
 .label {
   width: 100%;
   min-height: 30px;
-  padding: 6px 8px;
-  border-radius: 7px;
+  padding: 5px 8px 5px 4px;
+  border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
-  transition: background-color 0.16s, box-shadow 0.16s, color 0.16s;
+  transition: color var(--sc-motion-fast, 120ms) ease;
 }
 
 .tree--root > li > .node .label {
   min-height: 34px;
-  padding: 7px 9px;
-  font-weight: 700;
+  padding: 6px 8px 6px 4px;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
 .depth-1 > li > .node .label {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .depth-2 > li > .node .label,
@@ -369,8 +389,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.label-badge,
-.label-count {
+.label-badge {
   flex: 0 0 auto;
   border: 1px solid var(--sc-app-border);
   color: var(--sc-app-text-secondary);
@@ -382,15 +401,8 @@ onMounted(() => {
   padding: 2px 4px;
 }
 
-.label-count {
-  min-width: 18px;
-  text-align: center;
-  color: var(--sc-app-text-secondary);
-  background: var(--sc-app-panel);
-}
-
 .label:hover {
-  background-color: var(--sc-app-hover-bg);
+  background-color: transparent;
 }
 
 .expand-enter-active,

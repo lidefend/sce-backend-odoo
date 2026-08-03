@@ -56,24 +56,31 @@ function emitSearch(event: Event) {
 
 .primary-navigation__shortcuts {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sc-space-2, 8px);
+  grid-template-columns: 1fr;
+  gap: 1px;
 }
 
 .primary-navigation__shortcuts button {
-  min-height: 36px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-radius-control);
-  background: var(--sc-navigation-bg);
-  color: var(--sc-app-text-primary);
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--sc-app-text-secondary);
+  text-align: left;
   cursor: pointer;
-  transition: background-color var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
+  transition: background-color var(--sc-motion-fast, 120ms) ease, color var(--sc-motion-fast, 120ms) ease;
+}
+
+.primary-navigation__shortcuts button:hover {
+  background: var(--sc-app-hover-bg);
+  color: var(--sc-app-text-primary);
 }
 
 .primary-navigation__shortcuts button[aria-current='page'] {
-  border-color: var(--sc-semantic-surface-interactive);
   background: var(--sc-navigation-active-bg);
-  font-weight: 700;
+  color: var(--sc-app-info-text);
+  font-weight: 600;
 }
 
 .primary-navigation__search input {
@@ -88,5 +95,17 @@ function emitSearch(event: Event) {
 
 .primary-navigation__tree {
   min-height: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

@@ -2272,3 +2272,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   768x1024 and 390x844 with zero browser errors and zero document overflow;
   mobile activity tabs remain hidden. ESLint, strict TypeScript, release units,
   style-system guard and Vite production build pass.
+
+## 2026-08-03 — FRONTEND-EXPERIENCE-UPGRADE-MENU-STATE
+
+- Branch / anchor: `feature/frontend-experience-upgrade` at `4fef3df`.
+- Formal Product Layer / Layer Target / Module: P0 platform product; global
+  navigation state and menu-tree presentation; `frontend/apps/web`.
+- Outcome: aligned navigation with the BOSS-style business hierarchy. Route
+  selection now expands every active ancestor and presents one visible active
+  leaf; ancestors retain hierarchy without competing backgrounds. Menu-count
+  badges were removed, indentation and arrows were tightened, shortcut entries
+  became neutral rows, and the search label is visually hidden but accessible.
+- Boundary: generic navigation rendering and state only. Backend menu authority,
+  permissions, route contracts and business semantics remain unchanged.
+- Validation: the real acceptance contract route resolves one visible active
+  `一般合同（公司）` leaf beneath `合同中心 / 合同管理`, with zero count badges,
+  browser errors or horizontal overflow. Mobile keeps navigation closed by
+  default. ESLint, strict TypeScript, release units, style-system guard and Vite
+  production build pass.
