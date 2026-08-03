@@ -77,6 +77,6 @@ assert.match(router, /if \(!session\.isReady \|\| !session\.routeAuthority\) ret
 const configWorkbenchAcceptance = fs.readFileSync('frontend/apps/web/scripts/config_workbench_operation_acceptance.mjs', 'utf8');
 assert.match(configWorkbenchAcceptance, /waitForSelector\('\[data-navigation-state="ready"\]'/, 'browser journeys must not interrupt authoritative initialization after login');
 assert.match(configWorkbenchAcceptance, /synchronizeRuntimeConfigSelection\(page\)/, 'browser journeys must use the action published by the selected runtime page');
-assert.match(configWorkbenchAcceptance, /action_id=\$\{runtimeConfigActionId\}&menu_id=\$\{CONFIG_MENU_ID\}/, 'form deep links must retain action and menu authority');
+assert.match(configWorkbenchAcceptance, /action_id=\$\{runtimeConfigActionId\}&menu_id=\$\{runtimeConfigMenuId\}/, 'form deep links must retain runtime action and menu authority');
 
 console.log('[frontend_navigation_initialization_race.test] PASS immutable tuple fail-closed startup stale-session purge');
