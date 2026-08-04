@@ -26,8 +26,8 @@ Generated from repository source files. This report is informational during the 
 | 2467 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 2424 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2382 | Python source | `addons/smart_core/handlers/system_init.py` |
+| 2292 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2289 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 2288 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2087 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2051 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2028 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
@@ -140,8 +140,8 @@ Generated from repository source files. This report is informational during the 
 | 2467 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 2424 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2382 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
+| 2292 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2289 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 2288 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2087 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2051 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2028 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |

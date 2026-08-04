@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { resolveEnabledListColumns } from '../../frontend/apps/web/src/pages/listPage/listColumnVisibility.ts';
+import {
+  prioritizeExplicitlyEnabledListColumns,
+  resolveEnabledListColumns,
+} from '../../frontend/apps/web/src/pages/listPage/listColumnVisibility.ts';
 
 const columns = [
   { name: 'name', defaultVisible: true },
@@ -21,6 +24,15 @@ assert.deepEqual(
   resolveEnabledListColumns(columns, [], { name: false, company_type: false, sc_source_project_name: true }),
   ['sc_source_project_name'],
   'explicit visibility preferences must remain authoritative',
+);
+assert.deepEqual(
+  prioritizeExplicitlyEnabledListColumns(
+    ['name', 'company_type', 'sc_source_project_name'],
+    { name: true, company_type: true, sc_source_project_name: false },
+    { sc_source_project_name: true },
+  ),
+  ['sc_source_project_name', 'name', 'company_type'],
+  'an explicitly enabled default-hidden field must enter the adaptive desktop budget first',
 );
 
 console.log('[frontend_list_optional_columns_contract_test] PASS');
