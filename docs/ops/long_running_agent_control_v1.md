@@ -4,9 +4,9 @@
 
 ## 目标
 
-本控制器让仓库所有者通过 GitHub Mobile 在一个专用 Issue 中调度长期任务，
-并通过飞书及时接收开始、失败、决策、完成和安全拒绝通知。GitHub 是唯一双向
-命令与审计入口；飞书自定义机器人仅发送通知，不接收或执行聊天内容。
+本控制器让仓库所有者通过 GitHub 或已绑定的飞书应用机器人调度长期任务，
+并通过飞书及时接收开始、失败、决策、完成和安全拒绝通知。GitHub 保留审计入口；
+飞书自定义机器人发送通知，企业自建应用机器人通过官方 SDK 长连接接收严格命令。
 
 ## 架构与边界
 
@@ -41,6 +41,23 @@ Codex 官方非交互模式支持 JSONL 事件、结构化输出以及按 sessio
 ```
 
 `/agent stop` 只发送 SIGINT 请求安全停止，不会自动升级成 SIGKILL。
+
+## 飞书直接命令
+
+在完成本机用户与会话绑定后，可在应用机器人单聊中使用：
+
+```text
+状态
+开始 <任务目标、约束和验收标准>
+继续 <补充说明>
+批准 decision-YYYYMMDD-NNN <选择>
+拒绝 decision-YYYYMMDD-NNN <原因>
+停止
+部署日常 <完整 40 位 SHA>
+```
+
+桥接服务不直接执行消息，而是通过受控 Make 入口将等价 `/agent` 命令写入 GitHub
+Issue。GitHub 登录名、控制器命令解析和单 worker 租约继续构成第二层授权边界。
 
 ## 一次性配置
 
@@ -87,6 +104,16 @@ make agent.controller.enable \
 ```bash
 make agent.controller.linger.enable \
   AGENT_CONTROLLER_LINGER_CONFIRM=ENABLE_AGENT_CONTROLLER_LINGER
+```
+
+安装并启用飞书应用机器人桥接服务：
+
+```bash
+make agent.feishu_bridge.install \
+  AGENT_FEISHU_BRIDGE_INSTALL_CONFIRM=INSTALL_FEISHU_AGENT_BRIDGE
+make agent.feishu_bridge.config.check
+make agent.feishu_bridge.enable \
+  AGENT_FEISHU_BRIDGE_ENABLE_CONFIRM=ENABLE_FEISHU_AGENT_BRIDGE
 ```
 
 运行用户必须已经完成 `gh auth status` 和 `codex login`。配置文件及 webhook 禁止

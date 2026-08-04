@@ -4,10 +4,11 @@
 
 ## Goal
 
-The controller lets the repository owner dispatch long-running work from a
-dedicated GitHub Issue on GitHub Mobile and receive start, failure, decision,
-completion, and security-rejection notifications in Feishu. GitHub is the only
-two-way command and audit channel. The Feishu custom bot is outbound-only.
+The controller lets the repository owner dispatch long-running work from GitHub
+or a bound Feishu app bot and receive start, failure, decision, completion, and
+security-rejection notifications in Feishu. GitHub remains the audit channel.
+The custom bot sends notifications while the enterprise app bot receives strict
+commands over the official SDK WebSocket.
 
 ## Architecture and boundaries
 
@@ -45,6 +46,25 @@ Use these commands in the dedicated control Issue:
 
 `/agent stop` sends SIGINT for a safe stop and never escalates automatically to
 SIGKILL.
+
+## Direct Feishu commands
+
+After binding the local user and conversation, use the enterprise app-bot chat:
+
+```text
+状态
+开始 <outcome, constraints, and acceptance criteria>
+继续 <additional context>
+批准 decision-YYYYMMDD-NNN <choice>
+拒绝 decision-YYYYMMDD-NNN <reason>
+停止
+部署日常 <full 40-character SHA>
+```
+
+The bridge never executes chat text. It submits the equivalent strict `/agent`
+command to the GitHub control Issue through a governed Make target. GitHub
+identity, controller parsing, and the single-worker lease remain a second
+authorization boundary.
 
 ## One-time setup
 
@@ -85,6 +105,16 @@ make agent.controller.linger.enable \
   AGENT_CONTROLLER_LINGER_CONFIRM=ENABLE_AGENT_CONTROLLER_LINGER
 ```
 
+Install and enable the Feishu enterprise app-bot bridge:
+
+```bash
+make agent.feishu_bridge.install \
+  AGENT_FEISHU_BRIDGE_INSTALL_CONFIRM=INSTALL_FEISHU_AGENT_BRIDGE
+make agent.feishu_bridge.config.check
+make agent.feishu_bridge.enable \
+  AGENT_FEISHU_BRIDGE_ENABLE_CONFIRM=ENABLE_FEISHU_AGENT_BRIDGE
+```
+
 The service user must already pass `gh auth status` and have a valid Codex
 login. Never place the configuration or webhook in Git, an Issue, a PR, or logs.
 
@@ -103,6 +133,7 @@ executed. Send the first `/agent start` only after the ready notification.
 
 ## Feishu basis
 
-The implementation follows the official `bot/v2/hook` custom-bot endpoint,
-UTF-8 JSON, and optional HMAC-SHA256 signature flow. A custom bot only sends
-group notifications and is intentionally not a two-way command channel here.
+The implementation follows the official `bot/v2/hook` custom-bot endpoint for
+signed UTF-8 notifications and the official SDK WebSocket for enterprise
+app-bot message events. The custom bot remains outbound-only; the app bot is
+the bound command channel.
