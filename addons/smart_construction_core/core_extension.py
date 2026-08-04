@@ -632,6 +632,7 @@ FILE_ATTACHMENT_EXCLUDED_MODEL_PREFIXES = _policy_maps.FILE_ATTACHMENT_EXCLUDED_
 FILE_UPLOAD_ALLOWED_MODELS = _policy_maps.FILE_UPLOAD_ALLOWED_MODELS
 FILE_DOWNLOAD_ALLOWED_MODELS = _policy_maps.FILE_DOWNLOAD_ALLOWED_MODELS
 LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = _policy_maps.LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL
+BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = _policy_maps.BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL
 
 register_legacy_standard_list_profile({
     "profile_key": "payment.request.list",
@@ -1067,6 +1068,11 @@ def smart_core_file_download_auth_subject(env, attachment, current_subject):
 def smart_core_legacy_visible_business_column_labels(env):
     del env
     return LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL
+
+
+def smart_core_business_list_default_visibility(env):
+    del env
+    return BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL
 
 
 def smart_core_api_data_write_allowlist(env):

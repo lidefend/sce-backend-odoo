@@ -523,6 +523,35 @@ LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
     },
 }
 
+BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
+    "res.partner": {
+        "visible": [
+            "name",
+            "company_type",
+            "sc_supplier_type_label",
+            "sc_region",
+            "sc_contact_name",
+            "phone",
+            "user_id",
+        ],
+        "hidden": [
+            "sc_business_role_label",
+            "sc_business_fact_basis",
+            "sc_source_project_name",
+            "sc_source_receipt_amount",
+            "sc_source_payment_amount",
+            "sc_source_document_state",
+            "sc_source_push_result",
+            "sc_source_partner_code",
+            "sc_source_cooperation_type",
+            "sc_source_created_by",
+            "sc_source_created_at",
+            "sc_source_fact_count",
+            "sc_source_fact_source",
+        ],
+    },
+}
+
 API_DATA_WRITE_ALLOWLIST = {
     "project.project": ["name", "description", "date_start"],
     "project.task": ["name", "description", "date_deadline", "project_id"],
