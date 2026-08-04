@@ -233,6 +233,12 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                 'name="sc_default_tax_rate_text"',
                 'name="sc_source_document_state"',
                 'name="sc_source_push_result"',
+                'name="sc_source_partner_code"',
+                'name="sc_source_cooperation_type"',
+                'name="sc_source_created_by"',
+                'name="sc_source_created_at"',
+                'name="sc_business_role_label"',
+                'name="sc_business_fact_basis"',
             ):
                 field_pos = arch.index(sparse_field)
                 close_pos = arch.index("/>", field_pos)
@@ -266,6 +272,19 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="sc_legal_representative"', arch)
             self.assertIn('name="sc_contact_name"', arch)
         self.assertIn('name="company_type" string="客户类型"', customer_tree.arch_db)
+        for arch in (customer_tree.arch_db, supplier_tree.arch_db):
+            for field_name, label in (
+                ("name", "单位名称"),
+                ("sc_region", "地区"),
+                ("sc_contact_name", "联系人"),
+                ("phone", "电话"),
+                ("user_id", "负责人"),
+            ):
+                field_pos = arch.index('name="%s"' % field_name)
+                close_pos = arch.index("/>", field_pos)
+                field_node = arch[field_pos:close_pos]
+                self.assertIn('string="%s"' % label, field_node)
+                self.assertNotIn('optional="hide"', field_node)
         for label in ("客户身份", "企业资质与联系", "账户与业务画像", "账户明细", "附件与备注"):
             self.assertIn('string="%s"' % label, customer_form.arch_db)
         for label in ("供应商身份", "企业资质与联系", "账户与业务画像", "账户明细", "附件与备注"):

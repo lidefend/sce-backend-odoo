@@ -29,20 +29,21 @@
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <tree string="客户" default_order="name">
-                <field name="company_type" string="客户类型" />
                 <field name="name" string="单位名称" />
+                <field name="company_type" string="客户类型" />
+                <field name="sc_region" string="地区" />
+                <field name="sc_contact_name" string="联系人" />
+                <field name="phone" string="电话" />
+                <field name="user_id" string="负责人" />
                 <field name="sc_supplier_type_label" string="供应商类型" optional="hide" />
                 <field name="vat" string="统一社会信用代码" optional="hide" />
                 <field name="sc_default_tax_rate_text" string="主税率" optional="hide" />
-                <field name="phone" string="电话" optional="hide" />
                 <field name="mobile" string="手机" optional="hide" />
                 <field name="email" string="电子邮件" optional="hide" />
-                <field name="sc_region" optional="hide" />
                 <field name="sc_bank_name" string="开户银行" optional="hide" />
                 <field name="sc_bank_account" string="账号" optional="hide" />
                 <field name="sc_default_tax_rate" optional="hide" />
                 <field name="active" string="启用" optional="hide" />
-                <field name="user_id" string="负责人" optional="hide" />
                 <field name="category_id" widget="many2many_tags" string="标签" optional="hide" />
                 <field name="comment" string="备注" optional="hide" />
                 <field name="is_company" string="企业/组织" optional="hide" />
@@ -191,17 +192,18 @@
             <tree string="供应商" default_order="name">
                 <field name="name" string="单位名称" />
                 <field name="sc_supplier_type_label" string="供应商类型" />
+                <field name="sc_region" string="地区" />
+                <field name="sc_contact_name" string="联系人" />
+                <field name="phone" string="电话" />
+                <field name="user_id" string="负责人" />
                 <field name="vat" string="统一社会信用代码" optional="hide" />
                 <field name="sc_default_tax_rate_text" string="主税率" optional="hide" />
-                <field name="phone" string="电话" optional="hide" />
                 <field name="mobile" string="手机" optional="hide" />
                 <field name="email" string="电子邮件" optional="hide" />
-                <field name="sc_region" optional="hide" />
                 <field name="sc_bank_name" string="开户银行" optional="hide" />
                 <field name="sc_bank_account" string="账号" optional="hide" />
                 <field name="sc_default_tax_rate" optional="hide" />
                 <field name="active" string="启用" optional="hide" />
-                <field name="user_id" string="负责人" optional="hide" />
                 <field name="category_id" widget="many2many_tags" string="标签" optional="hide" />
                 <field name="comment" string="备注" optional="hide" />
                 <field name="is_company" string="企业/组织" optional="hide" />

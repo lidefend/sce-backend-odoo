@@ -184,3 +184,11 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         projected = core_extension.smart_core_finalize_projected_contract_data(self.env, data, {"view_type": "tree"})
 
         self.assertIsNone(projected)
+
+    def test_partner_trace_columns_have_business_labels(self):
+        labels = core_extension.smart_core_legacy_visible_business_column_labels(self.env)
+
+        partner_labels = labels["res.partner"]
+        self.assertEqual(partner_labels["sc_business_role_label"], "业务角色")
+        self.assertEqual(partner_labels["sc_source_project_name"], "来源项目")
+        self.assertEqual(partner_labels["sc_source_partner_code"], "来源客商编码")

@@ -868,6 +868,89 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             "business_list_config_contract_authoritative",
         )
 
+    def test_business_list_config_preserves_native_optional_hide_defaults(self):
+        class _Config:
+            contract_json = {
+                "view_orchestration": {
+                    "views": {
+                        "tree": {
+                            "columns": [
+                                {"name": "name", "label": "单位名称", "sequence": 10},
+                                {"name": "sc_source_project_name", "sequence": 20},
+                            ]
+                        }
+                    }
+                }
+            }
+
+        class _ConfigModel:
+            def _effective_view_orchestration_contracts(self, model_name, view_type, action_id=0):
+                return [_Config()]
+
+        class _Env(dict):
+            def __contains__(self, key):
+                return dict.__contains__(self, key)
+
+        handler = self.module.UiContractV2Handler(env=_Env({
+            "ui.business.config.contract": _ConfigModel(),
+        }))
+        source_contract = {
+            "action_id": 786,
+            "model": "res.partner",
+            "views": {
+                "tree": {
+                    "columns": ["name", "sc_source_project_name"],
+                    "columns_schema": [
+                        {"name": "name", "string": "单位名称", "type": "char"},
+                        {
+                            "name": "sc_source_project_name",
+                            "string": "sc_source_project_name",
+                            "type": "char",
+                            "optional": "hide",
+                        },
+                    ],
+                }
+            },
+            "list_profile": {},
+        }
+
+        handler._merge_business_list_profile(
+            source_contract,
+            common_fields=[],
+            amount_fields=[],
+            note_field="",
+            status_field="",
+            label_for=lambda name: name,
+            type_for=lambda name: "char",
+        )
+
+        profile = source_contract["list_profile"]
+        self.assertEqual(profile["columns"], ["name", "sc_source_project_name"])
+        self.assertEqual(profile["hidden_columns"], ["sc_source_project_name"])
+        schema = {
+            row["name"]: row
+            for row in source_contract["views"]["tree"]["columns_schema"]
+        }
+        self.assertEqual(schema["sc_source_project_name"]["optional"], "hide")
+
+    def test_business_column_label_replaces_raw_technical_name(self):
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *args, **kwargs: {
+            "res.partner": {"sc_source_project_name": "来源项目"},
+        }
+        try:
+            handler = self.module.UiContractV2Handler(env={})
+            self.assertEqual(
+                handler._legacy_visible_business_label(
+                    "res.partner",
+                    "sc_source_project_name",
+                    "sc_source_project_name",
+                ),
+                "来源项目",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
     def test_business_list_config_projection_enforces_exact_final_columns(self):
         handler = self.module.UiContractV2Handler(env=object())
         source_contract = {

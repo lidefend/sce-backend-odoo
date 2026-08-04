@@ -243,7 +243,7 @@ class UiContractV2Handler(BaseIntentHandler):
         model_key = str(model_name or "").strip()
         label = str(current_label or "").strip()
         if field_name in STANDARD_LOWCODE_COLUMN_LABELS:
-            return label or STANDARD_LOWCODE_COLUMN_LABELS[field_name]
+            return label if label and label != field_name else STANDARD_LOWCODE_COLUMN_LABELS[field_name]
         label_maps = call_extension_hook_first(
             self.env,
             "smart_core_legacy_visible_business_column_labels",
@@ -269,7 +269,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 if field_label and field_label != field_name and (not label or label == field_name):
                     return field_label
             return label
-        if not label or label.startswith("历史验收可见字段"):
+        if not label or label == field_name or label.startswith("历史验收可见字段"):
             return business_label
         return label
 
@@ -2410,6 +2410,13 @@ class UiContractV2Handler(BaseIntentHandler):
         tree = views.get("tree") if isinstance(views.get("tree"), dict) else views.get("list") if isinstance(views.get("list"), dict) else {}
         raw_columns = tree.get("columns") if isinstance(tree.get("columns"), list) else []
         tree_schema_rows = tree.get("columns_schema") if isinstance(tree.get("columns_schema"), list) else []
+        native_default_hidden = {
+            str(row.get("name") or "").strip()
+            for row in [*raw_columns, *tree_schema_rows]
+            if isinstance(row, dict)
+            and str(row.get("name") or "").strip()
+            and str(row.get("optional") or "").strip().lower() == "hide"
+        }
         direct_orchestration_columns: list[str] = []
         direct_orchestration_labels: dict[str, str] = {}
         direct_orchestration_hidden: set[str] = set()
@@ -2623,7 +2630,17 @@ class UiContractV2Handler(BaseIntentHandler):
             "source": "ui.contract.v2.legacy_55_legacy_visible_projection" if legacy_override else "ui.contract.v2.business_operation_projection",
             "columns": columns,
             "fact_columns": columns,
-            "hidden_columns": [name for name in (profile.get("hidden_columns") if isinstance(profile.get("hidden_columns"), list) else []) if name in columns],
+            "hidden_columns": [
+                name
+                for name in columns
+                if name in native_default_hidden
+                or name in direct_orchestration_hidden
+                or name in (
+                    profile.get("hidden_columns")
+                    if isinstance(profile.get("hidden_columns"), list)
+                    else []
+                )
+            ],
             "column_labels": labels,
             "show_row_number": False if legacy_override else profile.get("show_row_number", True),
             "row_primary": row_primary,
@@ -2663,6 +2680,7 @@ class UiContractV2Handler(BaseIntentHandler):
                     "string": labels.get(name) or label_for(name),
                     "type": schema_by_name.get(name, {}).get("type") or type_for(name) or "char",
                     "widget": schema_by_name.get(name, {}).get("widget") or type_for(name) or "char",
+                    **({"optional": "hide"} if name in native_default_hidden or name in direct_orchestration_hidden else {}),
                 }
                 for name in columns
             ]
