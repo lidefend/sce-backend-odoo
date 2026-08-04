@@ -13,7 +13,12 @@ const password = String(process.env.E2E_PASSWORD || '');
 const artifactsDir = path.resolve(process.env.ARTIFACTS_DIR || 'artifacts/frontend-dynamic-list-optional-columns');
 const routes = process.env.DYNAMIC_LIST_TARGETS_JSON
   ? JSON.parse(process.env.DYNAMIC_LIST_TARGETS_JSON)
-  : [{ name: 'customer', route: `/a/786?db=${encodeURIComponent(dbName)}&menu_id=598`, hiddenLabel: '来源项目' }];
+  : [{
+      name: 'customer',
+      route: `/a/786?db=${encodeURIComponent(dbName)}&menu_id=598`,
+      requiredHeaders: ['单位名称', '客户类型', '地区', '联系人', '电话', '负责人'],
+      hiddenLabels: ['业务角色', '业务事实依据', '来源项目', '来源单据状态', '来源客商编码'],
+    }];
 
 assert(password, 'E2E_PASSWORD is required');
 assert(Array.isArray(routes) && routes.length, 'DYNAMIC_LIST_TARGETS_JSON must contain at least one target');
@@ -60,8 +65,14 @@ async function inspectTarget(browser, target) {
 
   const defaultHeaders = await visibleHeaderLabels(page);
   const businessHeaders = defaultHeaders.filter((label) => label !== '序号');
+  const requiredHeaders = Array.isArray(target.requiredHeaders) ? target.requiredHeaders : [];
+  const hiddenLabels = Array.isArray(target.hiddenLabels)
+    ? target.hiddenLabels
+    : [target.hiddenLabel].filter(Boolean);
   assert.equal(defaultHeaders.filter((label) => technicalLabel.test(label)).length, 0, `${target.name}: default technical field headers leaked`);
   assert.equal(businessHeaders.filter((label) => !hasChinese.test(label)).length, 0, `${target.name}: visible labels are not fully Chinese`);
+  assert.deepEqual(requiredHeaders.filter((label) => !defaultHeaders.includes(label)), [], `${target.name}: required business headers are missing`);
+  assert.deepEqual(hiddenLabels.filter((label) => defaultHeaders.includes(label)), [], `${target.name}: default-hidden business trace headers leaked`);
   await page.screenshot({ path: path.join(artifactsDir, `${target.name}-desktop-default.png`), fullPage: true });
 
   await page.getByRole('button', { name: /列设置/ }).click();
@@ -78,17 +89,17 @@ async function inspectTarget(browser, target) {
     0,
     `${target.name}: default-hidden fields leaked into visible headers`,
   );
-  const hiddenChoice = choices.filter({ hasText: target.hiddenLabel }).first();
+  const hiddenChoice = choices.filter({ hasText: hiddenLabels[0] }).first();
   await hiddenChoice.waitFor({ state: 'visible' });
   const checkbox = hiddenChoice.locator('input[type="checkbox"]');
   assert.equal(await checkbox.isChecked(), false, `${target.name}: optional=hide field is enabled by default`);
   await checkbox.check();
   await page.waitForTimeout(500);
-  assert((await visibleHeaderLabels(page)).includes(target.hiddenLabel), `${target.name}: hidden field cannot be enabled through column settings`);
+  assert((await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: hidden field cannot be enabled through column settings`);
   await page.screenshot({ path: path.join(artifactsDir, `${target.name}-desktop-hidden-enabled.png`), fullPage: true });
   await page.getByRole('button', { name: '恢复默认' }).click();
   await page.waitForTimeout(500);
-  assert(!(await visibleHeaderLabels(page)).includes(target.hiddenLabel), `${target.name}: reset did not restore optional=hide default`);
+  assert(!(await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: reset did not restore optional=hide default`);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -96,6 +107,7 @@ async function inspectTarget(browser, target) {
   const mobileText = await page.locator('.mobile-record-card, .record-card, [class*=mobile][class*=card]').allTextContents();
   assert.equal(mobileText.some((text) => /\bsc_(?:source|business)_[a-z0-9_]+\b/i.test(text)), false, `${target.name}: mobile cards leak technical fields`);
   assert.equal(mobileText.some((text) => uncheckedLabels.some((label) => text.includes(label))), false, `${target.name}: optional=hide field leaked into mobile cards`);
+  assert.deepEqual(hiddenLabels.filter((label) => mobileText.some((text) => text.includes(label))), [], `${target.name}: mobile cards leak business trace fields`);
   await page.screenshot({ path: path.join(artifactsDir, `${target.name}-mobile-default.png`), fullPage: true });
 
   const result = { name: target.name, route: target.route, defaultHeaders, choiceLabels, consoleErrors, pageErrors };

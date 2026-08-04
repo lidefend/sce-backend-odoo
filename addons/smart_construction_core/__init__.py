@@ -40,6 +40,7 @@ from .core_extension import (  # noqa: F401
     smart_core_file_download_allowed_models,
     smart_core_file_download_auth_subject,
     smart_core_legacy_visible_business_column_labels,
+    smart_core_business_list_default_visibility,
     smart_core_api_data_write_allowlist,
     smart_core_api_data_mutation_policy,
     smart_core_intent_permission_model_acl_policy,

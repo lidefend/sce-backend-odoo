@@ -2426,6 +2426,26 @@ class UiContractV2Handler(BaseIntentHandler):
             or ((source_contract.get("head") or {}).get("model") if isinstance(source_contract.get("head"), dict) else "")
             or ""
         ).strip()
+        visibility_maps = call_extension_hook_first(
+            self.env,
+            "smart_core_business_list_default_visibility",
+            self.env,
+        )
+        visibility_policy = (
+            visibility_maps.get(model_name)
+            if isinstance(visibility_maps, dict) and isinstance(visibility_maps.get(model_name), dict)
+            else {}
+        )
+        policy_default_visible = [
+            str(name or "").strip()
+            for name in visibility_policy.get("visible", [])
+            if str(name or "").strip()
+        ]
+        policy_default_hidden = {
+            str(name or "").strip()
+            for name in visibility_policy.get("hidden", [])
+            if str(name or "").strip()
+        }
         if model_name and "ui.business.config.contract" in self.env:
             try:
                 direct_configs = self.env["ui.business.config.contract"]._effective_view_orchestration_contracts(
@@ -2509,6 +2529,16 @@ class UiContractV2Handler(BaseIntentHandler):
             columns = list(direct_orchestration_columns)
             explicit_view_columns = list(direct_orchestration_columns)
             has_explicit_view_columns = True
+        if policy_default_visible:
+            available_names = {
+                str(row.get("name") if isinstance(row, dict) else row or "").strip()
+                for row in [*raw_columns, *tree_schema_rows]
+            }
+            fields_map = source_contract.get("fields") if isinstance(source_contract.get("fields"), dict) else {}
+            available_names.update(str(name or "").strip() for name in fields_map)
+            preferred = [name for name in policy_default_visible if name in available_names or name in columns]
+            columns = [*preferred, *[name for name in columns if name not in preferred]]
+            explicit_view_columns = list(columns)
         profile = source_contract.get("list_profile") if isinstance(source_contract.get("list_profile"), dict) else {}
         if not direct_orchestration_columns:
             for name in profile.get("columns") if isinstance(profile.get("columns"), list) else []:
@@ -2635,6 +2665,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 for name in columns
                 if name in native_default_hidden
                 or name in direct_orchestration_hidden
+                or name in policy_default_hidden
                 or name in (
                     profile.get("hidden_columns")
                     if isinstance(profile.get("hidden_columns"), list)
@@ -2680,7 +2711,11 @@ class UiContractV2Handler(BaseIntentHandler):
                     "string": labels.get(name) or label_for(name),
                     "type": schema_by_name.get(name, {}).get("type") or type_for(name) or "char",
                     "widget": schema_by_name.get(name, {}).get("widget") or type_for(name) or "char",
-                    **({"optional": "hide"} if name in native_default_hidden or name in direct_orchestration_hidden else {}),
+                    **(
+                        {"optional": "hide"}
+                        if name in native_default_hidden or name in direct_orchestration_hidden or name in policy_default_hidden
+                        else {}
+                    ),
                 }
                 for name in columns
             ]

@@ -933,6 +933,79 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         }
         self.assertEqual(schema["sc_source_project_name"]["optional"], "hide")
 
+    def test_business_list_visibility_policy_overrides_stale_published_defaults(self):
+        class _Config:
+            contract_json = {
+                "view_orchestration": {
+                    "views": {
+                        "tree": {
+                            "columns": [
+                                {"name": "name", "sequence": 10},
+                                {"name": "sc_business_role_label", "sequence": 20},
+                                {"name": "sc_source_project_name", "sequence": 30},
+                            ]
+                        }
+                    }
+                }
+            }
+
+        class _ConfigModel:
+            def _effective_view_orchestration_contracts(self, model_name, view_type, action_id=0):
+                return [_Config()]
+
+        class _Env(dict):
+            def __contains__(self, key):
+                return dict.__contains__(self, key)
+
+        original_hook = self.module.call_extension_hook_first
+
+        def hook(_env, name, *_args, **_kwargs):
+            if name == "smart_core_business_list_default_visibility":
+                return {
+                    "res.partner": {
+                        "visible": ["name", "sc_contact_name"],
+                        "hidden": ["sc_business_role_label", "sc_source_project_name"],
+                    }
+                }
+            return None
+
+        self.module.call_extension_hook_first = hook
+        try:
+            handler = self.module.UiContractV2Handler(env=_Env({
+                "ui.business.config.contract": _ConfigModel(),
+            }))
+            source_contract = {
+                "action_id": 786,
+                "model": "res.partner",
+                "fields": {
+                    "name": {},
+                    "sc_contact_name": {},
+                    "sc_business_role_label": {},
+                    "sc_source_project_name": {},
+                },
+                "views": {"tree": {"columns": ["name", "sc_contact_name"]}},
+                "list_profile": {},
+            }
+
+            handler._merge_business_list_profile(
+                source_contract,
+                common_fields=[],
+                amount_fields=[],
+                note_field="",
+                status_field="",
+                label_for=lambda name: name,
+                type_for=lambda name: "char",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        profile = source_contract["list_profile"]
+        self.assertEqual(profile["columns"][:2], ["name", "sc_contact_name"])
+        self.assertIn("sc_business_role_label", profile["hidden_columns"])
+        self.assertIn("sc_source_project_name", profile["hidden_columns"])
+        schema = {row["name"]: row for row in source_contract["views"]["tree"]["columns_schema"]}
+        self.assertEqual(schema["sc_source_project_name"]["optional"], "hide")
+
     def test_business_column_label_replaces_raw_technical_name(self):
         original_hook = self.module.call_extension_hook_first
         self.module.call_extension_hook_first = lambda *args, **kwargs: {
