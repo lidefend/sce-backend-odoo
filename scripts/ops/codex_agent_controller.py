@@ -29,6 +29,11 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.ops.agent_progress import format_status, snapshot_from_state
+except ModuleNotFoundError:  # installed beside the controller
+    from agent_progress import format_status, snapshot_from_state
+
 
 SCHEMA_VERSION = "sce.codex_agent_controller.v1"
 ALLOWED_BRANCH_RE = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
@@ -80,6 +85,9 @@ class Config:
     feishu_webhook_url: str
     feishu_webhook_secret: str
     notification_prefix: str
+    progress_initial_seconds: int = 120
+    progress_interval_seconds: int = 300
+    progress_stale_seconds: int = 600
 
     @classmethod
     def from_env(cls, *, require_notification: bool = True) -> "Config":
@@ -108,14 +116,29 @@ class Config:
         try:
             poll_seconds = int(os.environ.get("AGENT_POLL_SECONDS", "20"))
             max_runtime_seconds = int(os.environ.get("AGENT_MAX_RUNTIME_SECONDS", "21600"))
+            progress_initial_seconds = int(
+                os.environ.get("AGENT_PROGRESS_INITIAL_SECONDS", "120")
+            )
+            progress_interval_seconds = int(
+                os.environ.get("AGENT_PROGRESS_INTERVAL_SECONDS", "300")
+            )
+            progress_stale_seconds = int(
+                os.environ.get("AGENT_PROGRESS_STALE_SECONDS", "600")
+            )
         except ValueError as exc:
             raise ConfigurationError(
-                "AGENT_POLL_SECONDS and AGENT_MAX_RUNTIME_SECONDS must be integers"
+                "controller timing values must be integers"
             ) from exc
         if not 5 <= poll_seconds <= 300:
             raise ConfigurationError("AGENT_POLL_SECONDS must be between 5 and 300")
         if not 300 <= max_runtime_seconds <= 86_400:
             raise ConfigurationError("AGENT_MAX_RUNTIME_SECONDS must be between 300 and 86400")
+        if not 60 <= progress_initial_seconds <= 3_600:
+            raise ConfigurationError("AGENT_PROGRESS_INITIAL_SECONDS must be between 60 and 3600")
+        if not 60 <= progress_interval_seconds <= 3_600:
+            raise ConfigurationError("AGENT_PROGRESS_INTERVAL_SECONDS must be between 60 and 3600")
+        if not 120 <= progress_stale_seconds <= 7_200:
+            raise ConfigurationError("AGENT_PROGRESS_STALE_SECONDS must be between 120 and 7200")
         webhook = os.environ.get("AGENT_FEISHU_WEBHOOK_URL", "").strip()
         webhook_secret = os.environ.get("AGENT_FEISHU_WEBHOOK_SECRET", "").strip()
         if require_notification and not webhook:
@@ -138,6 +161,9 @@ class Config:
             feishu_webhook_secret=webhook_secret,
             notification_prefix=os.environ.get("AGENT_NOTIFICATION_PREFIX", "SCE Codex").strip()
             or "SCE Codex",
+            progress_initial_seconds=progress_initial_seconds,
+            progress_interval_seconds=progress_interval_seconds,
+            progress_stale_seconds=progress_stale_seconds,
         )
 
 
@@ -526,7 +552,11 @@ class Controller:
         state["status"] = "RUNNING"
         task["worker_pid"] = self.worker.pid
         task["turn_started_at"] = utc_now()
+        task["turn_finished_at"] = None
         task["deadline_epoch"] = int(time.time()) + self.config.max_runtime_seconds
+        task["progress_last_notified_epoch"] = 0
+        task["progress_stale_notified"] = False
+        task["progress_last_activity_epoch"] = None
         self.store.save(state)
         self.store.event("worker_started", task_id=task["id"], pid=self.worker.pid, resume=resume)
         self.safe_notify(
@@ -596,14 +626,49 @@ class Controller:
         self.safe_notify("已请求安全停止", "已向 Codex worker 发送 SIGINT；不会自动升级为强制杀进程。")
 
     def status_text(self, state: dict[str, Any]) -> str:
+        return format_status(snapshot_from_state(state))
+
+    def maybe_notify_progress(self, state: dict[str, Any]) -> None:
+        if state.get("status") != "RUNNING":
+            return
         task = state.get("task") or {}
-        return (
-            f"状态：{state['status']}\n"
-            f"任务：{task.get('id', '-')}\n"
-            f"分支：{task.get('branch', '-')}\n"
-            f"起始 SHA：{task.get('starting_head', '-')}\n"
-            f"会话：{task.get('session_id', '-')}"
+        snapshot = snapshot_from_state(state)
+        now = int(time.time())
+        activity_epoch = snapshot.last_activity_epoch
+        prior_activity = task.get("progress_last_activity_epoch")
+        if activity_epoch is not None and activity_epoch != prior_activity:
+            task["progress_last_activity_epoch"] = activity_epoch
+            task["progress_stale_notified"] = False
+        if (
+            snapshot.last_activity_age_seconds is not None
+            and snapshot.last_activity_age_seconds >= self.config.progress_stale_seconds
+            and not task.get("progress_stale_notified")
+        ):
+            self.safe_notify(
+                "任务可能停滞",
+                format_status(snapshot, include_note=False),
+            )
+            task["progress_stale_notified"] = True
+            task["progress_last_notified_epoch"] = now
+            self.store.save(state)
+            return
+        last_notified = int(task.get("progress_last_notified_epoch") or 0)
+        initial_due = (
+            last_notified == 0
+            and snapshot.elapsed_seconds is not None
+            and snapshot.elapsed_seconds >= self.config.progress_initial_seconds
         )
+        interval_due = (
+            last_notified > 0
+            and now - last_notified >= self.config.progress_interval_seconds
+        )
+        if not initial_due and not interval_due:
+            if activity_epoch != prior_activity:
+                self.store.save(state)
+            return
+        self.safe_notify("任务进度", format_status(snapshot))
+        task["progress_last_notified_epoch"] = now
+        self.store.save(state)
 
     def handle_comment(self, state: dict[str, Any], comment: dict[str, Any]) -> None:
         comment_id = int(comment.get("id", 0))
@@ -668,6 +733,7 @@ class Controller:
         self.worker = None
         self.worker_files = None
         task["worker_pid"] = None
+        task["turn_finished_at"] = utc_now()
         final_path = Path(task["run_dir"]) / "final.json"
         result: dict[str, Any] | None = None
         if final_path.exists():
@@ -735,6 +801,7 @@ class Controller:
     def run_once(self, state: dict[str, Any]) -> None:
         self.poll_comments(state)
         self.check_worker(state)
+        self.maybe_notify_progress(state)
 
     def run(self) -> None:
         context = git_context(self.config.repository_root)

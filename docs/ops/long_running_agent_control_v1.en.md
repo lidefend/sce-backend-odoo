@@ -5,8 +5,9 @@
 ## Goal
 
 The controller lets the repository owner dispatch long-running work from GitHub
-or a bound Feishu app bot and receive start, failure, decision, completion, and
-security-rejection notifications in Feishu. GitHub remains the audit channel.
+or a bound Feishu app bot and receive start, periodic progress, stalled-task,
+failure, decision, completion, and security-rejection notifications in Feishu.
+GitHub remains the audit channel.
 The custom bot sends notifications while the enterprise app bot receives strict
 commands over the official SDK WebSocket.
 
@@ -53,6 +54,7 @@ After binding the local user and conversation, use the enterprise app-bot chat:
 
 ```text
 状态
+进度
 开始 <outcome, constraints, and acceptance criteria>
 继续 <additional context>
 批准 decision-YYYYMMDD-NNN <choice>
@@ -61,10 +63,12 @@ After binding the local user and conversation, use the enterprise app-bot chat:
 部署日常 <full 40-character SHA>
 ```
 
-The bridge never executes chat text. It submits the equivalent strict `/agent`
-command to the GitHub control Issue through a governed Make target. GitHub
-identity, controller parsing, and the single-worker lease remain a second
-authorization boundary.
+`状态` and `进度` are immediate local read-only queries. They return elapsed
+time, event counts, recent activity, the latest stage, and decision state without
+creating a GitHub comment. Commands that change task state still submit the
+equivalent strict `/agent` command to the GitHub control Issue through a governed
+Make target. GitHub identity, controller parsing, and the single-worker lease
+remain a second authorization boundary.
 
 ## One-time setup
 
@@ -88,6 +92,11 @@ make agent.controller.install \
 4. Edit the mode-`0600` file
    `~/.config/sce-agent-controller/controller.env` and set the control Issue,
    trusted sender, webhook, and signing secret.
+
+By default, the first progress heartbeat is sent after 120 seconds, subsequent
+heartbeats every 300 seconds, and a stalled-task alert after 600 seconds without
+new events. Override these values with `AGENT_PROGRESS_INITIAL_SECONDS`,
+`AGENT_PROGRESS_INTERVAL_SECONDS`, and `AGENT_PROGRESS_STALE_SECONDS`.
 5. Validate and enable:
 
 ```bash
@@ -123,9 +132,14 @@ login. Never place the configuration or webhook in Git, an Issue, a PR, or logs.
 ```bash
 make agent.controller.status
 make agent.controller.logs
+make agent.controller.watch
 make agent.controller.disable \
   AGENT_CONTROLLER_DISABLE_CONFIRM=DISABLE_LOCAL_AGENT_CONTROLLER
 ```
+
+`make agent.controller.watch` refreshes a local read-only console every two
+seconds. Installed environments can also run `sce-agent-watch`. `Ctrl+C` exits
+the viewer without stopping the task.
 
 State and evidence are stored under `.runtime/agent-controller/`. On first
 startup, existing Issue comments become the history cursor and are not

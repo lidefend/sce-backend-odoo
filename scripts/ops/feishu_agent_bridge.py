@@ -15,6 +15,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.ops.agent_progress import format_status, load_snapshot
+except ModuleNotFoundError:  # installed beside the bridge
+    from agent_progress import format_status, load_snapshot
+
 
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 DECISION_RE = re.compile(r"^decision-[0-9]{8}-[0-9]{3}$")
@@ -48,7 +53,7 @@ def translate_command(text: str) -> str | None:
         return None
     if value.startswith("/agent "):
         return value
-    if value in {"状态", "status", "Status"}:
+    if value in {"状态", "进度", "status", "Status", "progress", "Progress"}:
         return "/agent status"
     if value == "停止":
         return "/agent stop"
@@ -146,6 +151,12 @@ class FeishuBridge:
         self.inflight: set[str] = set()
         self.inflight_lock = threading.Lock()
         self.api_client: Any = None
+
+    def live_status_text(self) -> str:
+        snapshot = load_snapshot(self.config.state_root)
+        if snapshot is None:
+            return "【任务状态】\n控制器尚未生成状态文件。"
+        return format_status(snapshot)
 
     def child_environment(self) -> dict[str, str]:
         environment = dict(os.environ)
@@ -252,7 +263,7 @@ class FeishuBridge:
         if command is None:
             with self.inflight_lock:
                 self.inflight.discard(message.message_id)
-            self.safe_reply(message.message_id, "无法识别。可用：状态、开始、继续、批准、拒绝、停止、部署日常。")
+            self.safe_reply(message.message_id, "无法识别。可用：状态、进度、开始、继续、批准、拒绝、停止、部署日常。")
             return
         try:
             validate_agent_command(command)
@@ -260,6 +271,20 @@ class FeishuBridge:
             with self.inflight_lock:
                 self.inflight.discard(message.message_id)
             self.safe_reply(message.message_id, "指令格式不完整，未执行。")
+            return
+        if command == "/agent status":
+            try:
+                self.reply(message.message_id, self.live_status_text())
+                self.processed.add(message.message_id)
+            except Exception as exc:
+                print(
+                    f"FEISHU_STATUS_QUERY_ERROR={type(exc).__name__}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+            finally:
+                with self.inflight_lock:
+                    self.inflight.discard(message.message_id)
             return
         self.pending.put((message.message_id, command))
         self.safe_reply(message.message_id, "指令已接收，正在写入受控队列。")

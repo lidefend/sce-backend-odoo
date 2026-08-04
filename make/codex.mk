@@ -13,13 +13,13 @@ CODEX_ALLOWED_WRITE_BRANCH_PREFIXES := feature/* fix/* refactor/* audit/* releas
 .PHONY: gitee.ci.https.install gitee.ci.https.status gitee.ci.repository.configure
 .PHONY: verify.codex.agent_controller agent.controller.install agent.controller.config.check
 .PHONY: agent.controller.notify.test agent.controller.enable agent.controller.disable
-.PHONY: agent.controller.status agent.controller.logs agent.controller.issue.create
+.PHONY: agent.controller.status agent.controller.logs agent.controller.watch agent.controller.issue.create
 .PHONY: agent.controller.linger.enable
 .PHONY: agent.feishu_bridge.install agent.feishu_bridge.config.check agent.feishu_bridge.enable
 .PHONY: agent.feishu_bridge.disable agent.feishu_bridge.status agent.feishu_bridge.logs
 
 verify.codex.agent_controller: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/codex_agent_controller.py scripts/ops/feishu_agent_bridge.py scripts/verify/test_codex_agent_controller.py scripts/verify/test_feishu_agent_bridge.py
+	@python3 -m py_compile scripts/ops/agent_progress.py scripts/ops/codex_agent_controller.py scripts/ops/codex_agent_watch.py scripts/ops/feishu_agent_bridge.py scripts/verify/test_codex_agent_controller.py scripts/verify/test_feishu_agent_bridge.py
 	@python3 -m unittest scripts.verify.test_codex_agent_controller scripts.verify.test_feishu_agent_bridge
 	@bash -n scripts/ops/install_codex_agent_controller.sh
 	@unit="$$(mktemp --suffix=.service)"; \
@@ -59,6 +59,9 @@ agent.controller.status: guard.prod.forbid
 
 agent.controller.logs: guard.prod.forbid
 	@bash scripts/ops/install_codex_agent_controller.sh logs
+
+agent.controller.watch: guard.prod.forbid
+	@python3 scripts/ops/codex_agent_watch.py
 
 agent.controller.audit.command: guard.prod.forbid
 	@test -n "$(AGENT_CONTROLLER_COMMAND_FILE)" || (echo "❌ command file is required"; exit 2)

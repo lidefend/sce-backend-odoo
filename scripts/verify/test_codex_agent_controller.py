@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import dataclasses
+import datetime as dt
 import hashlib
 import hmac
 import json
@@ -11,6 +12,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from scripts.ops.agent_progress import snapshot_from_state
 from scripts.ops.codex_agent_controller import (
     CommandRejected,
     Config,
@@ -213,6 +215,96 @@ class StateAndGitHubTest(unittest.TestCase):
             environment = Controller(config).worker_environment()
             path_parts = environment["PATH"].split(os.pathsep)
             self.assertEqual(path_parts[:2], [str(codex_bin_dir), "/opt/github-cli/bin"])
+
+    def test_running_task_sends_initial_progress_heartbeat(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = dataclasses.replace(self.config(root), progress_initial_seconds=60)
+            controller = Controller(config)
+            controller.safe_notify = mock.Mock()
+            run_dir = root / "run"
+            run_dir.mkdir()
+            (run_dir / "codex-events.jsonl").write_text(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {"type": "agent_message", "text": "已完成预检"},
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            state = controller.store.default()
+            state["status"] = "RUNNING"
+            state["task"] = {
+                "id": "task-1",
+                "branch": "codex/test",
+                "run_dir": str(run_dir),
+                "turn_started_at": (
+                    dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=61)
+                ).isoformat(),
+                "progress_last_notified_epoch": 0,
+                "progress_stale_notified": False,
+            }
+            controller.maybe_notify_progress(state)
+            controller.safe_notify.assert_called_once()
+            title, body = controller.safe_notify.call_args.args
+            self.assertEqual(title, "任务进度")
+            self.assertIn("已完成预检", body)
+            self.assertGreater(state["task"]["progress_last_notified_epoch"], 0)
+
+    def test_stalled_task_alert_is_not_repeated_without_new_activity(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            controller = Controller(self.config(root))
+            controller.safe_notify = mock.Mock()
+            run_dir = root / "run"
+            run_dir.mkdir()
+            events = run_dir / "codex-events.jsonl"
+            events.write_text("{}\n", encoding="utf-8")
+            stale_epoch = int(dt.datetime.now(dt.timezone.utc).timestamp()) - 601
+            os.utime(events, (stale_epoch, stale_epoch))
+            state = controller.store.default()
+            state["status"] = "RUNNING"
+            state["task"] = {
+                "id": "task-1",
+                "branch": "codex/test",
+                "run_dir": str(run_dir),
+                "turn_started_at": (
+                    dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=700)
+                ).isoformat(),
+                "progress_last_notified_epoch": 0,
+                "progress_stale_notified": False,
+                "progress_last_activity_epoch": None,
+            }
+            controller.maybe_notify_progress(state)
+            controller.maybe_notify_progress(state)
+            controller.safe_notify.assert_called_once()
+            self.assertEqual(controller.safe_notify.call_args.args[0], "任务可能停滞")
+
+    def test_completed_snapshot_uses_last_event_as_elapsed_end(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run_dir = root / "run"
+            run_dir.mkdir()
+            events = run_dir / "codex-events.jsonl"
+            events.write_text("{}\n", encoding="utf-8")
+            os.utime(events, (1_060, 1_060))
+            snapshot = snapshot_from_state(
+                {
+                    "status": "COMPLETED",
+                    "task": {
+                        "id": "task-1",
+                        "run_dir": str(run_dir),
+                        "turn_started_at": dt.datetime.fromtimestamp(
+                            1_000, dt.timezone.utc
+                        ).isoformat(),
+                    },
+                },
+                now=2_000,
+            )
+            self.assertEqual(snapshot.elapsed_seconds, 60)
 
     def test_worker_command_uses_supported_noninteractive_approval_config(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
