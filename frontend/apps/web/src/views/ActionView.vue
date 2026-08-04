@@ -423,6 +423,7 @@
       @column-visibility-change="handleListColumnVisibilityChange"
       @column-order-change="handleListColumnOrderChange"
       @column-widths-change="handleListColumnWidthsChange"
+      @column-preferences-reset="handleListColumnPreferencesReset"
     >
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
@@ -2993,43 +2994,18 @@ function buildListColumnPreference(visibility: Record<string, boolean>, columnOr
 }
 
 async function handleListColumnVisibilityChange(payload: { visibility: Record<string, boolean> }): Promise<void> {
-  const saveSeq = ++listColumnSaveSeq;
   const next = payload.visibility || {};
   listColumnVisibility.value = { ...next };
-  setListColumnSaveStatus('saving');
-  try {
-    await setUserViewPreference(listColumnPreferenceScope.value, buildListColumnPreference(next, listColumnOrder.value, listColumnWidths.value));
-    if (saveSeq === listColumnSaveSeq) {
-      setListColumnSaveStatus('saved');
-    }
-  } catch (err) {
-    if (saveSeq === listColumnSaveSeq) {
-      setListColumnSaveStatus('error');
-    }
-    console.warn('[list-columns] failed to save preference', err);
-  }
+  await persistListColumnPreference('[list-columns] failed to save preference');
 }
 
 async function handleListColumnOrderChange(payload: { columnOrder: string[] }): Promise<void> {
-  const saveSeq = ++listColumnSaveSeq;
   const next = Array.isArray(payload.columnOrder) ? payload.columnOrder.map((item) => String(item || '').trim()).filter(Boolean) : [];
   listColumnOrder.value = next;
-  setListColumnSaveStatus('saving');
-  try {
-    await setUserViewPreference(listColumnPreferenceScope.value, buildListColumnPreference(listColumnVisibility.value, next, listColumnWidths.value));
-    if (saveSeq === listColumnSaveSeq) {
-      setListColumnSaveStatus('saved');
-    }
-  } catch (err) {
-    if (saveSeq === listColumnSaveSeq) {
-      setListColumnSaveStatus('error');
-    }
-    console.warn('[list-columns] failed to save column order preference', err);
-  }
+  await persistListColumnPreference('[list-columns] failed to save column order preference');
 }
 
 async function handleListColumnWidthsChange(payload: { columnWidths: Record<string, number> }): Promise<void> {
-  const saveSeq = ++listColumnSaveSeq;
   const next = Object.entries(payload.columnWidths || {}).reduce<Record<string, number>>((acc, [name, width]) => {
     const normalizedName = String(name || '').trim();
     const normalizedWidth = normalizeListColumnWidth(width);
@@ -3037,11 +3013,16 @@ async function handleListColumnWidthsChange(payload: { columnWidths: Record<stri
     return acc;
   }, {});
   listColumnWidths.value = next;
+  await persistListColumnPreference('[list-columns] failed to save column width preference');
+}
+
+async function persistListColumnPreference(errorMessage: string): Promise<void> {
+  const saveSeq = ++listColumnSaveSeq;
   setListColumnSaveStatus('saving');
   try {
     await setUserViewPreference(
       listColumnPreferenceScope.value,
-      buildListColumnPreference(listColumnVisibility.value, listColumnOrder.value, next),
+      buildListColumnPreference(listColumnVisibility.value, listColumnOrder.value, listColumnWidths.value),
     );
     if (saveSeq === listColumnSaveSeq) {
       setListColumnSaveStatus('saved');
@@ -3050,8 +3031,15 @@ async function handleListColumnWidthsChange(payload: { columnWidths: Record<stri
     if (saveSeq === listColumnSaveSeq) {
       setListColumnSaveStatus('error');
     }
-    console.warn('[list-columns] failed to save column width preference', err);
+    console.warn(errorMessage, err);
   }
+}
+
+async function handleListColumnPreferencesReset(): Promise<void> {
+  listColumnVisibility.value = {};
+  listColumnOrder.value = [];
+  listColumnWidths.value = {};
+  await persistListColumnPreference('[list-columns] failed to reset column preferences');
 }
 
 async function handleToggleRecordFavorite(row: Record<string, unknown>, field: string, nextValue: boolean): Promise<void> {
