@@ -10,6 +10,7 @@ config_file="${config_dir}/controller.env"
 lib_dir="${user_home}/.local/lib/sce-agent-controller"
 unit_dir="${user_home}/.config/systemd/user"
 unit_file="${unit_dir}/sce-agent-controller.service"
+bridge_unit_file="${unit_dir}/sce-agent-feishu-bridge.service"
 
 if ! [[ "${branch}" =~ ^(feature|fix|refactor|audit|release|codex)/.+$ ]]; then
   echo "[agent-controller] denied branch=${branch}" >&2
@@ -101,6 +102,50 @@ case "${action}" in
     loginctl enable-linger "$(id -un)"
     loginctl show-user "$(id -un)" -p Linger
     ;;
+  feishu-install)
+    test "${AGENT_FEISHU_BRIDGE_INSTALL_CONFIRM:-}" = "INSTALL_FEISHU_AGENT_BRIDGE" || {
+      echo "[agent-controller] exact Feishu bridge install confirmation is required" >&2
+      exit 2
+    }
+    install -d -m 0755 "${lib_dir}" "${unit_dir}"
+    python3 -m venv "${lib_dir}/venv"
+    "${lib_dir}/venv/bin/pip" install --disable-pip-version-check \
+      -r deploy/agent-controller/requirements-feishu.txt
+    install -m 0755 scripts/ops/feishu_agent_bridge.py "${lib_dir}/feishu_agent_bridge.py"
+    sed -e "s|@@REPOSITORY_ROOT@@|${repo_root}|g" \
+      -e "s|@@PYTHON_BIN@@|${lib_dir}/venv/bin/python|g" \
+      deploy/agent-controller/sce-agent-feishu-bridge.service.in > "${bridge_unit_file}"
+    chmod 0644 "${bridge_unit_file}"
+    systemctl --user daemon-reload
+    echo "[agent-controller] FEISHU BRIDGE INSTALL PASS unit=${bridge_unit_file}"
+    ;;
+  feishu-check)
+    load_config
+    "${lib_dir}/venv/bin/python" scripts/ops/feishu_agent_bridge.py config-check
+    ;;
+  feishu-enable)
+    test "${AGENT_FEISHU_BRIDGE_ENABLE_CONFIRM:-}" = "ENABLE_FEISHU_AGENT_BRIDGE" || {
+      echo "[agent-controller] exact Feishu bridge enable confirmation is required" >&2
+      exit 2
+    }
+    load_config
+    "${lib_dir}/venv/bin/python" scripts/ops/feishu_agent_bridge.py config-check
+    systemctl --user enable --now sce-agent-feishu-bridge.service
+    systemctl --user --no-pager --full status sce-agent-feishu-bridge.service
+    ;;
+  feishu-disable)
+    test "${AGENT_FEISHU_BRIDGE_DISABLE_CONFIRM:-}" = "DISABLE_FEISHU_AGENT_BRIDGE" || {
+      echo "[agent-controller] exact Feishu bridge disable confirmation is required" >&2
+      exit 2
+    }
+    systemctl --user disable --now sce-agent-feishu-bridge.service
+    ;;
+  feishu-status)
+    systemctl --user --no-pager --full status sce-agent-feishu-bridge.service
+    ;;
+  feishu-logs)
+    journalctl --user -u sce-agent-feishu-bridge.service -n 120 --no-pager
+    ;;
   status)
     systemctl --user --no-pager --full status sce-agent-controller.service
     ;;
@@ -108,7 +153,7 @@ case "${action}" in
     journalctl --user -u sce-agent-controller.service -n 120 --no-pager
     ;;
   *)
-    echo "usage: $0 install|check|notify-test|enable|disable|linger-enable|status|logs" >&2
+    echo "usage: $0 install|check|notify-test|enable|disable|linger-enable|status|logs|feishu-install|feishu-check|feishu-enable|feishu-disable|feishu-status|feishu-logs" >&2
     exit 2
     ;;
 esac

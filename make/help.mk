@@ -54,6 +54,7 @@ help:
 	@echo "  make codex.gate [CODEX_MODULES=...] [CODEX_NEED_UPGRADE=1]   # 门禁验收：reset+contract+gate"
 	@echo "  vars: CODEX_MODE=$(CODEX_MODE) CODEX_NEED_UPGRADE=$(CODEX_NEED_UPGRADE) CODEX_DB=$(CODEX_DB)"
 	@echo "  make verify.codex.agent_controller | agent.controller.issue.create/install/config.check/notify.test/enable/linger.enable/status/logs"
+	@echo "  make agent.feishu_bridge.install/config.check/enable/disable/status/logs"
 	@echo
 	@echo "Common vars:"
 	@echo "  MODULE=$(MODULE) DB_NAME=$(DB_NAME) DB_CI=$(DB_CI) TEST_TAGS=$(TEST_TAGS)"

@@ -2708,3 +2708,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Validation: unit coverage proves deterministic PATH construction, secret
   stripping and exactly-once pre-session recovery; the live failed task is
   resumed only after the patched service is reinstalled.
+
+## 2026-08-04 — FEISHU-DIRECT-AGENT-CONTROL
+
+- Branch / anchor: `feature/feishu-direct-agent-control` at `c42eb16`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  trusted Feishu app-bot command ingress and GitHub audit bridging;
+  `scripts/ops`, `deploy/agent-controller` and `make/codex.mk`.
+- Outcome: receive direct app-bot text through the official WebSocket SDK,
+  require an exact local user/chat binding, deduplicate message ids, translate
+  a small Chinese command vocabulary and submit the equivalent strict `/agent`
+  command through a governed Make target to the existing control Issue.
+- Boundary: no chat text is evaluated as shell, unbound users and chats are
+  rejected, secrets are stripped from child processes, production remains
+  unsupported and daily deployment still requires a full SHA.
+- Validation: translation, mention normalization, decision ids, full-SHA
+  deployment and fail-closed command validation are covered by unit tests;
+  live acceptance uses the already published Feishu enterprise app.
