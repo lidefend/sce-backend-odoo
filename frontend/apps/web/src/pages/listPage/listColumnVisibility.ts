@@ -16,3 +16,18 @@ export function resolveEnabledListColumns(
   });
   return enabled.length ? enabled : source.slice(0, 1);
 }
+
+export function prioritizeExplicitlyEnabledListColumns(
+  fields: string[],
+  defaultVisibility: Record<string, boolean>,
+  visibility: Record<string, boolean> = {},
+) {
+  return fields
+    .map((field, index) => ({
+      field,
+      index,
+      explicitlyEnabled: visibility[field] === true && defaultVisibility[field] === false,
+    }))
+    .sort((left, right) => Number(right.explicitlyEnabled) - Number(left.explicitlyEnabled) || left.index - right.index)
+    .map((item) => item.field);
+}

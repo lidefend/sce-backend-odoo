@@ -746,7 +746,7 @@ import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '.
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
 import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, type ListColumnLayoutRole } from './listPage/listColumnWidth';
-import { resolveEnabledListColumns } from './listPage/listColumnVisibility';
+import { prioritizeExplicitlyEnabledListColumns, resolveEnabledListColumns } from './listPage/listColumnVisibility';
 
 type SelectionAction = {
   key: string;
@@ -1788,10 +1788,14 @@ function columnBusinessPriority(field: string) {
   });
 }
 
-const prioritizedEnabledColumns = computed(() => enabledColumns.value
-  .map((field, index) => ({ field, index, priority: columnBusinessPriority(field) }))
-  .sort((left, right) => left.priority - right.priority || left.index - right.index)
-  .map((item) => item.field));
+const prioritizedEnabledColumns = computed(() => prioritizeExplicitlyEnabledListColumns(
+  enabledColumns.value
+    .map((field, index) => ({ field, index, priority: columnBusinessPriority(field) }))
+    .sort((left, right) => left.priority - right.priority || left.index - right.index)
+    .map((item) => item.field),
+  defaultVisibleColumnMap.value,
+  props.columnVisibility || {},
+));
 
 const displayedColumns = computed(() => {
   const source = enabledColumns.value;
