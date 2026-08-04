@@ -2663,3 +2663,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   release units, style-system guard with zero hardcoded colors, workspace
   alignment, production build and both browser audits pass with zero errors
   and zero document overflow.
+
+## 2026-08-04 — LONG-RUNNING-AGENT-CONTROL-MVP
+
+- Branch / anchor: `feature/long-running-agent-control` at `40243b1`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  local autonomous task control, GitHub Issue command polling, Codex checkpoint
+  execution and Feishu notification; `scripts/ops`, `deploy/agent-controller`
+  and `make/codex.mk`.
+- Reason / Why Here: long-running engineering coordination is an operations
+  concern and must reuse repository execution policy without entering platform,
+  construction-industry, customer, low-code or frontend product layers.
+- Why Not Elsewhere: no business semantics, runtime UI contracts or customer
+  preferences are introduced. GitHub remains the audited control plane and
+  Feishu remains notification-only.
+- Blast Radius: one explicitly configured local checkout, one trusted GitHub
+  sender, one control Issue, one worker lease and one Feishu custom bot. There
+  is no production command and daily deployment requires an exact full SHA.
+- Validation: Python unit tests cover strict command parsing, Feishu signing,
+  UTF-8 notification payloads, state round trips, GitHub GET-only polling and
+  closed structured output. The service unit and installer receive shell and
+  policy guards before local enablement.
