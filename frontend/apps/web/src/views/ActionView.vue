@@ -2889,6 +2889,7 @@ function handleListPageLimitChange(limit: number): void {
 
 let listColumnPreferenceLoadSeq = 0;
 let listColumnSaveSeq = 0;
+let listColumnSaveQueue: Promise<void> = Promise.resolve();
 let listColumnSaveStatusTimer: number | null = null;
 
 function setListColumnSaveStatus(status: 'idle' | 'saving' | 'saved' | 'error') {
@@ -3018,12 +3019,14 @@ async function handleListColumnWidthsChange(payload: { columnWidths: Record<stri
 
 async function persistListColumnPreference(errorMessage: string): Promise<void> {
   const saveSeq = ++listColumnSaveSeq;
+  const preference = buildListColumnPreference(listColumnVisibility.value, listColumnOrder.value, listColumnWidths.value);
   setListColumnSaveStatus('saving');
+  const request = listColumnSaveQueue.catch(() => {}).then(async () => {
+    await setUserViewPreference(listColumnPreferenceScope.value, preference);
+  });
+  listColumnSaveQueue = request;
   try {
-    await setUserViewPreference(
-      listColumnPreferenceScope.value,
-      buildListColumnPreference(listColumnVisibility.value, listColumnOrder.value, listColumnWidths.value),
-    );
+    await request;
     if (saveSeq === listColumnSaveSeq) {
       setListColumnSaveStatus('saved');
     }

@@ -54,7 +54,7 @@ async function resetColumnPreferences(page) {
   const picker = page.getByRole('button', { name: /列设置/ });
   if ((await picker.getAttribute('aria-expanded')) !== 'true') await picker.click();
   await page.getByRole('button', { name: '恢复默认' }).click();
-  await page.getByText('已保存', { exact: true }).first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+  await page.getByText('已保存', { exact: true }).first().waitFor({ state: 'visible', timeout: 10_000 });
   await page.waitForTimeout(500);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
@@ -106,7 +106,7 @@ async function inspectTarget(browser, target) {
   const checkbox = hiddenChoice.locator('input[type="checkbox"]');
   assert.equal(await checkbox.isChecked(), false, `${target.name}: optional=hide field is enabled by default`);
   await checkbox.check();
-  await page.waitForTimeout(500);
+  await page.getByText('已保存', { exact: true }).first().waitFor({ state: 'visible', timeout: 10_000 });
   try {
     assert((await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: hidden field cannot be enabled through column settings`);
     await page.screenshot({ path: path.join(artifactsDir, `${target.name}-desktop-hidden-enabled.png`), fullPage: true });
