@@ -11,6 +11,57 @@ CODEX_ALLOWED_WRITE_BRANCH_PREFIXES := feature/* fix/* refactor/* audit/* releas
 .PHONY: gitee.pr.bot.create gitee.pr.bot.status gitee.pr.bot.merge
 .PHONY: gitee.pr.bot.professional.run
 .PHONY: gitee.ci.https.install gitee.ci.https.status gitee.ci.repository.configure
+.PHONY: verify.codex.agent_controller agent.controller.install agent.controller.config.check
+.PHONY: agent.controller.notify.test agent.controller.enable agent.controller.disable
+.PHONY: agent.controller.status agent.controller.logs agent.controller.issue.create
+.PHONY: agent.controller.linger.enable
+
+verify.codex.agent_controller: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/codex_agent_controller.py scripts/verify/test_codex_agent_controller.py
+	@python3 -m unittest scripts.verify.test_codex_agent_controller
+	@bash -n scripts/ops/install_codex_agent_controller.sh
+	@unit="$$(mktemp --suffix=.service)"; \
+	  trap 'rm -f "$$unit"' EXIT; \
+	  sed 's|@@REPOSITORY_ROOT@@|$(CURDIR)|g' deploy/agent-controller/sce-agent-controller.service.in > "$$unit"; \
+	  systemd-analyze --user verify "$$unit"
+	@echo "[verify.codex.agent_controller] PASS"
+
+agent.controller.install: guard.prod.forbid
+	@AGENT_CONTROLLER_INSTALL_CONFIRM="$(AGENT_CONTROLLER_INSTALL_CONFIRM)" \
+	  bash scripts/ops/install_codex_agent_controller.sh install
+
+agent.controller.config.check: guard.prod.forbid
+	@bash scripts/ops/install_codex_agent_controller.sh check
+
+agent.controller.notify.test: guard.prod.forbid
+	@bash scripts/ops/install_codex_agent_controller.sh notify-test
+
+agent.controller.enable: guard.prod.forbid
+	@AGENT_CONTROLLER_ENABLE_CONFIRM="$(AGENT_CONTROLLER_ENABLE_CONFIRM)" \
+	  bash scripts/ops/install_codex_agent_controller.sh enable
+
+agent.controller.disable: guard.prod.forbid
+	@AGENT_CONTROLLER_DISABLE_CONFIRM="$(AGENT_CONTROLLER_DISABLE_CONFIRM)" \
+	  bash scripts/ops/install_codex_agent_controller.sh disable
+
+agent.controller.linger.enable: guard.prod.forbid
+	@AGENT_CONTROLLER_LINGER_CONFIRM="$(AGENT_CONTROLLER_LINGER_CONFIRM)" \
+	  bash scripts/ops/install_codex_agent_controller.sh linger-enable
+
+agent.controller.status: guard.prod.forbid
+	@bash scripts/ops/install_codex_agent_controller.sh status
+
+agent.controller.logs: guard.prod.forbid
+	@bash scripts/ops/install_codex_agent_controller.sh logs
+
+agent.controller.issue.create: guard.prod.forbid
+	@test "$(AGENT_CONTROLLER_ISSUE_CREATE_CONFIRM)" = "CREATE_AGENT_CONTROL_ISSUE" || \
+	  (echo "❌ exact issue creation confirmation is required"; exit 2)
+	@test -n "$(AGENT_CONTROLLER_GITHUB_REPOSITORY)" || \
+	  (echo "❌ AGENT_CONTROLLER_GITHUB_REPOSITORY=owner/repository is required"; exit 2)
+	@gh issue create --repo "$(AGENT_CONTROLLER_GITHUB_REPOSITORY)" \
+	  --title "Codex 长期任务控制台" \
+	  --body-file deploy/agent-controller/control_issue_body.md
 
 verify.gitee.webhook.ci: guard.prod.forbid
 	@python3 -m py_compile scripts/ci/gitee_webhook_ci.py scripts/verify/test_gitee_webhook_ci.py scripts/verify/test_gitee_to_github_mirror.py scripts/verify/test_controlled_main_cutover.py scripts/ops/configure_gitee_ci_repository.py scripts/ops/controlled_main_cutover.py scripts/ops/gitee_pr_bot.py
