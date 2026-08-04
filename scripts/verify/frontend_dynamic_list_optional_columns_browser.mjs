@@ -50,6 +50,17 @@ async function visibleHeaderLabels(page) {
     .filter(Boolean));
 }
 
+async function resetColumnPreferences(page) {
+  const picker = page.getByRole('button', { name: /列设置/ });
+  if ((await picker.getAttribute('aria-expanded')) !== 'true') await picker.click();
+  await page.getByRole('button', { name: '恢复默认' }).click();
+  await page.getByText('已保存', { exact: true }).first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+  await picker.waitFor({ state: 'visible' });
+}
+
 async function inspectTarget(browser, target) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
   const consoleErrors = [];
@@ -62,6 +73,7 @@ async function inspectTarget(browser, target) {
   await page.goto(`${baseUrl}${target.route}`, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
   await page.getByRole('button', { name: /列设置/ }).waitFor({ state: 'visible' });
+  await resetColumnPreferences(page);
 
   const defaultHeaders = await visibleHeaderLabels(page);
   const businessHeaders = defaultHeaders.filter((label) => label !== '序号');
@@ -95,10 +107,12 @@ async function inspectTarget(browser, target) {
   assert.equal(await checkbox.isChecked(), false, `${target.name}: optional=hide field is enabled by default`);
   await checkbox.check();
   await page.waitForTimeout(500);
-  assert((await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: hidden field cannot be enabled through column settings`);
-  await page.screenshot({ path: path.join(artifactsDir, `${target.name}-desktop-hidden-enabled.png`), fullPage: true });
-  await page.getByRole('button', { name: '恢复默认' }).click();
-  await page.waitForTimeout(500);
+  try {
+    assert((await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: hidden field cannot be enabled through column settings`);
+    await page.screenshot({ path: path.join(artifactsDir, `${target.name}-desktop-hidden-enabled.png`), fullPage: true });
+  } finally {
+    await resetColumnPreferences(page);
+  }
   assert(!(await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: reset did not restore optional=hide default`);
 
   await page.setViewportSize({ width: 390, height: 844 });

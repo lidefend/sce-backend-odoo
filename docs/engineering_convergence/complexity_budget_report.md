@@ -12,8 +12,8 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 3683 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3672 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
+| 3671 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3384 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3329 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
@@ -26,7 +26,7 @@ Generated from repository source files. This report is informational during the 
 | 2467 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 2424 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2382 | Python source | `addons/smart_core/handlers/system_init.py` |
-| 2292 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2291 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2289 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 2087 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2051 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
@@ -126,8 +126,8 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 3683 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3672 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
+| 3671 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3384 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3329 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
@@ -140,7 +140,7 @@ Generated from repository source files. This report is informational during the 
 | 2467 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 2424 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2382 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
-| 2292 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2291 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2289 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 2087 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2051 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |

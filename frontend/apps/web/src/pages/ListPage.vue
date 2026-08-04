@@ -898,6 +898,7 @@ const emit = defineEmits<{
   'column-visibility-change': [payload: { visibility: Record<string, boolean> }];
   'column-order-change': [payload: { columnOrder: string[] }];
   'column-widths-change': [payload: { columnWidths: Record<string, number> }];
+  'column-preferences-reset': [];
 }>();
 const attachmentViewerRef = ref<InstanceType<typeof AttachmentViewer> | null>(null);
 function uiLabel(key: string, fallback: string, vars: Record<string, string | number> = {}) {
@@ -2095,9 +2096,7 @@ function onColumnVisibilityChange(name: string, event: Event) {
 }
 
 function resetColumnVisibility() {
-  emit('column-visibility-change', { visibility: {} });
-  emit('column-order-change', { columnOrder: [] });
-  emit('column-widths-change', { columnWidths: {} });
+  emit('column-preferences-reset');
 }
 
 const pageVisibleRows = computed(() => {
