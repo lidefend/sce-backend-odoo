@@ -2684,3 +2684,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   UTF-8 notification payloads, state round trips, GitHub GET-only polling and
   closed structured output. The service unit and installer receive shell and
   policy guards before local enablement.
+
+## 2026-08-04 — LONG-RUNNING-AGENT-SYSTEMD-RUNTIME-RECOVERY
+
+- Branch / anchor: `fix/agent-controller-systemd-node-path` at `12c95a4`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  deterministic systemd worker runtime and bounded startup recovery;
+  `scripts/ops/codex_agent_controller.py` and its unit tests.
+- Outcome: prepend the configured Codex and GitHub CLI runtime directories to
+  the child PATH without resolving away the configured executable symlink, so
+  an NVM-installed Codex can resolve its adjacent `node` under systemd. A task
+  that fails before obtaining a session id receives one bounded restart recovery
+  attempt per controller recovery generation; an explicit trusted
+  `/agent continue` can also relaunch that pre-session task. Codex CLI 0.146
+  approval behavior is supplied through strict recognized configuration rather
+  than the removed `--ask-for-approval` argument. The user service permits
+  `AF_NETLINK` and PTY devices required by Codex's own bubblewrap sandbox while
+  retaining `ProtectSystem=strict`, explicit writable paths and the Codex
+  `workspace-write` boundary.
+- Boundary: local development controller only. No product, database, GitHub
+  authorization, deployment, production or notification-channel semantics
+  change.
+- Validation: unit coverage proves deterministic PATH construction, secret
+  stripping and exactly-once pre-session recovery; the live failed task is
+  resumed only after the patched service is reinstalled.

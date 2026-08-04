@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import dataclasses
 import hashlib
 import hmac
 import json
@@ -194,6 +195,109 @@ class StateAndGitHubTest(unittest.TestCase):
             self.assertNotIn("AGENT_FEISHU_WEBHOOK_SECRET", environment)
             self.assertNotIn("GH_TOKEN", environment)
             self.assertNotIn("GITHUB_TOKEN", environment)
+
+    def test_worker_environment_exposes_codex_runtime_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            codex_bin_dir = root / "nvm" / "bin"
+            codex_target = root / "nvm" / "lib" / "codex.js"
+            codex_bin_dir.mkdir(parents=True)
+            codex_target.parent.mkdir(parents=True)
+            codex_target.touch()
+            (codex_bin_dir / "codex").symlink_to(codex_target)
+            config = dataclasses.replace(
+                self.config(root),
+                codex_bin=str(codex_bin_dir / "codex"),
+                gh_bin="/opt/github-cli/bin/gh",
+            )
+            environment = Controller(config).worker_environment()
+            path_parts = environment["PATH"].split(os.pathsep)
+            self.assertEqual(path_parts[:2], [str(codex_bin_dir), "/opt/github-cli/bin"])
+
+    def test_worker_command_uses_supported_noninteractive_approval_config(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            controller = Controller(self.config(root))
+            run_dir = root / "run"
+            run_dir.mkdir()
+            task = {"run_dir": str(run_dir), "session_id": "session-1"}
+            initial = controller._worker_command(task, "audit", resume=False)
+            resumed = controller._worker_command(task, "continue", resume=True)
+            for command in (initial, resumed):
+                self.assertNotIn("--ask-for-approval", command)
+                self.assertIn("--strict-config", command)
+                self.assertIn('approval_policy="never"', command)
+
+    def test_restart_retries_pre_session_failure_once(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            controller = Controller(self.config(Path(directory)))
+            controller.github.comments = mock.Mock(return_value=[])
+            controller.safe_notify = mock.Mock()
+            controller.launch = mock.Mock()
+            state = controller.store.default()
+            state.update(
+                {
+                    "status": "FAILED_RECOVERABLE",
+                    "task": {
+                        "id": "task-1",
+                        "description": "read-only audit",
+                        "session_id": None,
+                        "startup_retry_count": 0,
+                        "startup_recovery_generation": None,
+                    },
+                }
+            )
+            controller.store.save(state)
+            controller.initialize(state)
+            self.assertEqual(state["task"]["startup_retry_count"], 1)
+            controller.launch.assert_called_once()
+
+            controller.launch.reset_mock()
+            state["status"] = "FAILED_RECOVERABLE"
+            controller.initialize(state)
+            controller.launch.assert_not_called()
+
+    def test_restart_resumes_existing_session_once_per_recovery_generation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            controller = Controller(self.config(Path(directory)))
+            controller.github.comments = mock.Mock(return_value=[])
+            controller.safe_notify = mock.Mock()
+            controller.launch = mock.Mock()
+            state = controller.store.default()
+            state.update(
+                {
+                    "status": "FAILED_RECOVERABLE",
+                    "task": {
+                        "id": "task-2",
+                        "description": "read-only audit",
+                        "session_id": "session-2",
+                        "startup_retry_count": 0,
+                        "startup_recovery_generation": None,
+                    },
+                }
+            )
+            controller.store.save(state)
+            controller.initialize(state)
+            controller.launch.assert_called_once_with(state, mock.ANY, resume=True)
+
+    def test_manual_continue_relaunches_failure_without_session(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            controller = Controller(self.config(Path(directory)))
+            controller.launch = mock.Mock()
+            state = controller.store.default()
+            state.update(
+                {
+                    "status": "FAILED_RECOVERABLE",
+                    "task": {
+                        "id": "task-1",
+                        "description": "read-only audit",
+                        "session_id": None,
+                        "startup_retry_count": 1,
+                    },
+                }
+            )
+            controller.resume_task(state, OwnerCommand(action="continue", argument="retry"))
+            controller.launch.assert_called_once()
 
 
 if __name__ == "__main__":

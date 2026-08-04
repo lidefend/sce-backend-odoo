@@ -44,6 +44,7 @@ RESUMABLE_STATUSES = {"DECISION_REQUIRED", "FAILED_RECOVERABLE", "PAUSED_RECOVER
 TERMINAL_STATUSES = {"IDLE", "COMPLETED", "STOPPED"}
 MAX_TASK_CHARS = 12_000
 MAX_NOTIFICATION_CHARS = 8_000
+STARTUP_RECOVERY_GENERATION = "systemd-bwrap-pty-v4"
 
 
 class ConfigurationError(ValueError):
@@ -430,6 +431,19 @@ class Controller:
                 state["task"]["worker_pid"] = None
             self.store.save(state)
             self.safe_notify("任务可恢复", "控制器重启后发现未完成任务，请发送 /agent continue。")
+        elif state.get("status") == "FAILED_RECOVERABLE" and state.get("task"):
+            task = state["task"]
+            prior_generation = str(task.get("startup_recovery_generation") or "")
+            if prior_generation != STARTUP_RECOVERY_GENERATION:
+                task["startup_recovery_generation"] = STARTUP_RECOVERY_GENERATION
+                task["startup_retry_count"] = int(task.get("startup_retry_count", 0)) + 1
+                self.store.save(state)
+                self.safe_notify("自动恢复技术失败", f"任务：{task['id']}\n正在执行一次受限自动重试。")
+                if task.get("session_id"):
+                    prompt = "本地控制器运行环境已经修复。继续原只读任务并重新执行失败的检查。"
+                    self.launch(state, prompt, resume=True)
+                else:
+                    self.launch(state, initial_prompt(task["description"], task["id"]))
         return state
 
     def worker_environment(self) -> dict[str, str]:
@@ -443,6 +457,12 @@ class Controller:
             environment.pop(name, None)
         environment["CODEX_MODE"] = "fast"
         environment["ENV"] = "dev"
+        executable_dirs = [
+            str(Path(self.config.codex_bin).expanduser().absolute().parent),
+            str(Path(self.config.gh_bin).expanduser().absolute().parent),
+        ]
+        inherited_path = environment.get("PATH", "/usr/local/bin:/usr/bin:/bin")
+        environment["PATH"] = os.pathsep.join(dict.fromkeys([*executable_dirs, inherited_path]))
         return environment
 
     def _worker_command(self, task: dict[str, Any], prompt: str, *, resume: bool) -> list[str]:
@@ -457,6 +477,9 @@ class Controller:
                 self.config.codex_bin,
                 "exec",
                 "resume",
+                "--strict-config",
+                "-c",
+                'approval_policy="never"',
                 task["session_id"],
                 prompt,
                 "--json",
@@ -468,11 +491,12 @@ class Controller:
         return [
             self.config.codex_bin,
             "exec",
+            "--strict-config",
+            "-c",
+            'approval_policy="never"',
             "--json",
             "--sandbox",
             "workspace-write",
-            "--ask-for-approval",
-            "never",
             "-C",
             str(self.config.repository_root),
             "--output-schema",
@@ -529,6 +553,8 @@ class Controller:
             "run_dir": str(run_dir),
             "worker_pid": None,
             "created_at": utc_now(),
+            "startup_retry_count": 0,
+            "startup_recovery_generation": None,
         }
         self.launch(state, initial_prompt(command.argument, task_id))
 
@@ -546,6 +572,10 @@ class Controller:
         task = state.get("task") or {}
         session_id = str(task.get("session_id") or "")
         if not session_id:
+            if state["status"] == "FAILED_RECOVERABLE":
+                task["startup_retry_count"] = int(task.get("startup_retry_count", 0)) + 1
+                self.launch(state, initial_prompt(task["description"], task["id"]))
+                return
             raise CommandRejected("task has no resumable Codex session id")
         decision = task.get("decision")
         if command.action in {"approve", "reject"}:
