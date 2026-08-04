@@ -8,6 +8,7 @@ user_home="$(getent passwd "$(id -u)" | cut -d: -f6)"
 config_dir="${user_home}/.config/sce-agent-controller"
 config_file="${config_dir}/controller.env"
 lib_dir="${user_home}/.local/lib/sce-agent-controller"
+bin_dir="${user_home}/.local/bin"
 unit_dir="${user_home}/.config/systemd/user"
 unit_file="${unit_dir}/sce-agent-controller.service"
 bridge_unit_file="${unit_dir}/sce-agent-feishu-bridge.service"
@@ -49,8 +50,10 @@ case "${action}" in
       exit 2
     }
     install -d -m 0700 "${config_dir}"
-    install -d -m 0755 "${lib_dir}" "${unit_dir}"
+    install -d -m 0755 "${lib_dir}" "${unit_dir}" "${bin_dir}"
+    install -m 0644 scripts/ops/agent_progress.py "${lib_dir}/agent_progress.py"
     install -m 0755 scripts/ops/codex_agent_controller.py "${lib_dir}/codex_agent_controller.py"
+    install -m 0755 scripts/ops/codex_agent_watch.py "${bin_dir}/sce-agent-watch"
     codex_bin="$(command -v codex)"
     gh_bin="$(command -v gh)"
     test -x "${codex_bin}"
@@ -111,6 +114,7 @@ case "${action}" in
     python3 -m venv "${lib_dir}/venv"
     "${lib_dir}/venv/bin/pip" install --disable-pip-version-check \
       -r deploy/agent-controller/requirements-feishu.txt
+    install -m 0644 scripts/ops/agent_progress.py "${lib_dir}/agent_progress.py"
     install -m 0755 scripts/ops/feishu_agent_bridge.py "${lib_dir}/feishu_agent_bridge.py"
     sed -e "s|@@REPOSITORY_ROOT@@|${repo_root}|g" \
       -e "s|@@PYTHON_BIN@@|${lib_dir}/venv/bin/python|g" \

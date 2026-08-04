@@ -2725,3 +2725,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Validation: translation, mention normalization, decision ids, full-SHA
   deployment and fail-closed command validation are covered by unit tests;
   live acceptance uses the already published Feishu enterprise app.
+
+## 2026-08-04 — LONG-RUNNING-AGENT-OBSERVABILITY
+
+- Branch / anchor: `codex/long-running-workspace` at `c7b29e7`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  local worker progress observation and Feishu status delivery; `scripts/ops`,
+  `deploy/agent-controller`, `make/codex.mk` and paired operations docs.
+- Reason / Why Here: a background worker must expose a consistent local and
+  mobile-readable execution state without changing task authority or product
+  behavior. One read-only progress parser now owns event counts, elapsed time,
+  recent activity, recoverable failures and the latest safe stage summary.
+- Why Not Elsewhere: this is not a platform, construction product, customer,
+  low-code, frontend or database concern. Read-only `状态` and `进度` queries bypass
+  GitHub latency, while every state-changing command remains GitHub-audited.
+- Blast Radius: the configured local controller, its bound Feishu conversation
+  and the `sce-agent-watch` terminal command. Heartbeats start after two minutes,
+  repeat every five minutes and warn after ten minutes without an event; no raw
+  command output, credential, production action or business-data write is added.
+- Validation: shared snapshot tests cover direct Feishu replies without GitHub
+  mutation and initial heartbeat emission; controller/bridge compilation, unit
+  tests, installer shell checks and systemd unit verification run through
+  `make verify.codex.agent_controller`.

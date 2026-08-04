@@ -746,6 +746,7 @@ import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '.
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
 import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, type ListColumnLayoutRole } from './listPage/listColumnWidth';
+import { resolveEnabledListColumns } from './listPage/listColumnVisibility';
 
 type SelectionAction = {
   key: string;
@@ -1759,17 +1760,11 @@ const defaultVisibleColumnMap = computed<Record<string, boolean>>(() =>
   }, {}),
 );
 const enabledColumns = computed(() => {
-  const source = columnChoices.value.length
-    ? columnChoices.value.map((column) => column.name)
-    : orderedColumnNames.value;
-  const filtered = source.filter((col) => {
-    const visibility = props.columnVisibility || {};
-    if (Object.prototype.hasOwnProperty.call(visibility, col)) {
-      return visibility[col] === true;
-    }
-    return defaultVisibleColumnMap.value[col] !== false;
-  });
-  return filtered.length ? filtered : source.slice(0, 1);
+  const options = columnChoices.value.map((column) => ({
+    name: column.name,
+    defaultVisible: defaultVisibleColumnMap.value[column.name] !== false,
+  }));
+  return resolveEnabledListColumns(options, orderedColumnNames.value, props.columnVisibility || {});
 });
 
 function adaptiveColumnFloor(field: string) {
@@ -1817,8 +1812,7 @@ const displayedColumns = computed(() => {
   return selected.length ? selected : source.slice(0, 1);
 });
 const mobileAvailableColumns = computed(() => {
-  const source = columnChoices.value.map((column) => column.name);
-  return source.length ? source : enabledColumns.value;
+  return enabledColumns.value;
 });
 const footerLabelFieldCount = computed(() => displayedColumns.value.length
   ? Math.max(1, displayedColumns.value.indexOf(rowPrimary.value) + 1)

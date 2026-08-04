@@ -462,6 +462,21 @@ FILE_UPLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.reques
 FILE_DOWNLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.request"]
 
 LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
+    "res.partner": {
+        "sc_business_role_label": "业务角色",
+        "sc_business_fact_basis": "业务事实依据",
+        "sc_source_project_name": "来源项目",
+        "sc_source_receipt_amount": "来源收款金额",
+        "sc_source_payment_amount": "来源付款金额",
+        "sc_source_document_state": "来源单据状态",
+        "sc_source_push_result": "来源推送结果",
+        "sc_source_partner_code": "来源客商编码",
+        "sc_source_cooperation_type": "来源合作类型",
+        "sc_source_created_by": "来源创建人",
+        "sc_source_created_at": "来源创建时间",
+        "sc_source_fact_count": "关联业务数",
+        "sc_source_fact_source": "业务来源",
+    },
     "project.material.plan": {
         "legacy_visible_01": "单据状态",
         "legacy_visible_02": "单据编号",

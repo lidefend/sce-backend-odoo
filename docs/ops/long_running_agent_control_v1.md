@@ -5,7 +5,7 @@
 ## 目标
 
 本控制器让仓库所有者通过 GitHub 或已绑定的飞书应用机器人调度长期任务，
-并通过飞书及时接收开始、失败、决策、完成和安全拒绝通知。GitHub 保留审计入口；
+并通过飞书及时接收开始、周期进度、停滞、失败、决策、完成和安全拒绝通知。GitHub 保留审计入口；
 飞书自定义机器人发送通知，企业自建应用机器人通过官方 SDK 长连接接收严格命令。
 
 ## 架构与边界
@@ -48,6 +48,7 @@ Codex 官方非交互模式支持 JSONL 事件、结构化输出以及按 sessio
 
 ```text
 状态
+进度
 开始 <任务目标、约束和验收标准>
 继续 <补充说明>
 批准 decision-YYYYMMDD-NNN <选择>
@@ -56,8 +57,10 @@ Codex 官方非交互模式支持 JSONL 事件、结构化输出以及按 sessio
 部署日常 <完整 40 位 SHA>
 ```
 
-桥接服务不直接执行消息，而是通过受控 Make 入口将等价 `/agent` 命令写入 GitHub
-Issue。GitHub 登录名、控制器命令解析和单 worker 租约继续构成第二层授权边界。
+“状态”和“进度”是本机只读即时查询，直接返回任务时长、事件数、最近活动、最近阶段
+和决策状态，不创建 GitHub 评论。其他会改变任务状态的命令仍通过受控 Make 入口将
+等价 `/agent` 命令写入 GitHub Issue。GitHub 登录名、控制器命令解析和单 worker
+租约继续构成第二层授权边界。
 
 ## 一次性配置
 
@@ -89,6 +92,10 @@ make agent.controller.install \
 - `AGENT_GITHUB_ALLOWED_SENDER`
 - `AGENT_FEISHU_WEBHOOK_URL`
 - `AGENT_FEISHU_WEBHOOK_SECRET`
+
+默认在任务运行 120 秒后发送第一条进度，之后每 300 秒发送一次；600 秒没有新事件时
+发送停滞提醒。可通过 `AGENT_PROGRESS_INITIAL_SECONDS`、
+`AGENT_PROGRESS_INTERVAL_SECONDS` 和 `AGENT_PROGRESS_STALE_SECONDS` 调整。
 
 5. 依次验证并启动：
 
@@ -124,9 +131,13 @@ make agent.feishu_bridge.enable \
 ```bash
 make agent.controller.status
 make agent.controller.logs
+make agent.controller.watch
 make agent.controller.disable \
   AGENT_CONTROLLER_DISABLE_CONFIRM=DISABLE_LOCAL_AGENT_CONTROLLER
 ```
+
+`make agent.controller.watch` 每两秒刷新本地只读控制台；已安装环境也可直接运行
+`sce-agent-watch`。按 `Ctrl+C` 只退出查看，不停止任务。
 
 状态和证据位于：
 
