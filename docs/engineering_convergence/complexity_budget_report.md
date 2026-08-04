@@ -12,8 +12,8 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
+| 3674 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3672 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3671 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3384 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3329 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
@@ -126,8 +126,8 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
+| 3674 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3672 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3671 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3384 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3329 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
