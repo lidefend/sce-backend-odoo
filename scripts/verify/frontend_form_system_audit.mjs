@@ -546,7 +546,7 @@ async function auditValidation(page) {
   await page.waitForTimeout(180);
   const synchronizedErrorSections = await page.locator('.form-section-nav .has-error').count();
   result('validation.section_error_state', synchronizedErrorSections > 0, { error_sections: synchronizedErrorSections, initial_count: errorSections }, 'P1');
-  await capture(page, 'form-final-validation-failure.png');
+  await capture(page, 'form-final-validation-failure.png', { fullPage: false });
 }
 
 async function auditKeyboardAndUnsaved(page) {
