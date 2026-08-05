@@ -93,13 +93,21 @@ def validate_contract(css: str, template: str, header_source: str) -> list[str]:
     desktop_page = {}
     for declarations in declarations_for(rules, ".page[data-product-page-mode='list']"):
         desktop_page.update(declarations)
-    if desktop_page.get("overflow") != "hidden" or desktop_page.get("min-height") != "0":
-        errors.append("desktop list page must delegate scrolling to its bounded data surface")
+    if (
+        desktop_page.get("overflow") != "visible"
+        or desktop_page.get("min-height") != "100%"
+        or desktop_page.get("height") != "auto"
+    ):
+        errors.append("desktop list page must use natural height and delegate vertical scrolling to the router host")
     desktop_table_shell = {}
     for declarations in declarations_for(rules, ".page[data-product-page-mode='list'] .table > .sc-table-shell"):
         desktop_table_shell.update(declarations)
-    if desktop_table_shell.get("overflow") != "auto" or desktop_table_shell.get("min-height") != "0":
-        errors.append("desktop table shell must be the single bounded two-axis scroll owner")
+    if (
+        desktop_table_shell.get("overflow-x") not in {"auto", "scroll"}
+        or desktop_table_shell.get("overflow-y") in {"auto", "scroll"}
+        or desktop_table_shell.get("flex") != "0 0 auto"
+    ):
+        errors.append("desktop table shell must use natural height and own horizontal scrolling only")
 
     for selector, declarations in rules:
         normalized = " ".join(selector.split())
@@ -145,8 +153,8 @@ def run_self_tests() -> list[str]:
       .page.sc-product-workspace-stack { isolation: isolate; }
       .table { width: 100%; overflow: hidden; }
       .table > .sc-table-shell { overflow-x: auto; overflow-y: hidden; }
-      .page[data-product-page-mode='list'] { min-height: 0; overflow: hidden; }
-      .page[data-product-page-mode='list'] .table > .sc-table-shell { min-height: 0; overflow: auto; }
+      .page[data-product-page-mode='list'] { height: auto; min-height: 100%; overflow: visible; }
+      .page[data-product-page-mode='list'] .table > .sc-table-shell { flex: 0 0 auto; min-height: auto; overflow-x: auto; overflow-y: hidden; }
       .table thead th { position: sticky; top: 0; }
       .pagination-footer { position: static; }
     """
@@ -154,6 +162,14 @@ def run_self_tests() -> list[str]:
         "valid": (valid, False),
         "vertical-auto": (valid + ".table { overflow-y: auto; }", True),
         "shell-vertical-auto": (valid + ".table > .sc-table-shell { overflow-y: auto; }", True),
+        "desktop-bounded-two-axis": (
+            valid + ".page[data-product-page-mode='list'] .table > .sc-table-shell { flex: 1 1 auto; min-height: 0; overflow: auto; }",
+            True,
+        ),
+        "desktop-page-clipping": (
+            valid + ".page[data-product-page-mode='list'] { height: 100%; min-height: 0; overflow: hidden; }",
+            True,
+        ),
         "viewport-height": (valid + ".table { max-height: calc(100vh - 12px); }", True),
         "fixed-height": (valid + ".table { height: 600px; }", True),
         "sticky-pagination": (valid + ".pagination-footer { position: sticky; }", True),
@@ -213,7 +229,7 @@ def main() -> int:
             print(f"- {error}")
         return 1
     print("[frontend_standard_list_scroll_contract_guard] PASS")
-    print("vertical_owner=router-host|bounded-list-table-shell")
+    print("vertical_owner=router-host")
     print("app_header_boundary=isolated-grid-row")
     print("table_horizontal_owner=sc-table-shell")
     print("query_bar_horizontal_motion=none")
