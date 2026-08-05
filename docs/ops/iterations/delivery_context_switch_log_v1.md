@@ -2747,3 +2747,17 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   mutation and initial heartbeat emission; controller/bridge compilation, unit
   tests, installer shell checks and systemd unit verification run through
   `make verify.codex.agent_controller`.
+## 2026-08-05 — ISOLATED-ACCEPTANCE-GATE-PORTABILITY
+
+- Branch / starting anchor: `codex/long-running-business-iteration` at `c924d9f`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  isolated acceptance profile parsing and source-ownership guards;
+  `scripts/verify` and its verification documentation.
+- Outcome: restricted validation now accepts explicit isolated company profiles
+  without changing baseline thresholds or product data, removes profile secrets
+  from child environments and reports, and checks capability delivery tokens at
+  their post-split implementation owner. Targeted tests and independent A/B
+  review pass; the final restricted gate passes against the isolated acceptance
+  database with company evidence for IDs 2 and 3.
+- Boundary: no frontend, addon runtime, contract/schema, permission, fixture,
+  business-data, deployment or merge change.

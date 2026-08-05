@@ -14,6 +14,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE_PATH = ROOT / "scripts" / "verify" / "baselines" / "scene_company_snapshot_collect.json"
 SNAPSHOT_GUARD_PATH = ROOT / "scripts" / "verify" / "scene_registry_asset_snapshot_guard.py"
+PROFILES_JSON_ENV = "SC_SCENE_COMPANY_SNAPSHOT_PROFILES_JSON"
 
 
 def _text(value: Any) -> str:
@@ -56,6 +57,35 @@ def _load_json(path: Path) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
+def _resolve_profiles(baseline: dict) -> list:
+    raw_override = os.environ.get(PROFILES_JSON_ENV)
+    if raw_override is None:
+        profiles = _as_list(baseline.get("profiles"))
+    else:
+        try:
+            profiles = json.loads(raw_override)
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"{PROFILES_JSON_ENV} must be a valid JSON array") from exc
+        if not isinstance(profiles, list):
+            raise ValueError(f"{PROFILES_JSON_ENV} must be a JSON array")
+
+    if not profiles:
+        source = PROFILES_JSON_ENV if raw_override is not None else "profiles"
+        raise ValueError(f"{source} is empty")
+    return profiles
+
+
+def _redact_passwords(value: Any, passwords: list[str]) -> str:
+    text = _text(value)
+    for password in sorted(set(filter(None, passwords)), key=len, reverse=True):
+        text = text.replace(password, "[REDACTED]")
+    return text
+
+
+def _redact_password(value: Any, password: str) -> str:
+    return _redact_passwords(value, [password])
+
+
 def _write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -70,6 +100,7 @@ def _run_snapshot(
     password: str,
 ) -> tuple[int, str]:
     env = os.environ.copy()
+    env.pop(PROFILES_JSON_ENV, None)
     env["SC_SCENE_REGISTRY_ASSET_SNAPSHOT_STATE_FILE"] = state_file
     env["SC_SCENE_REGISTRY_ASSET_SNAPSHOT_REQUIRE_LIVE"] = "1" if require_live else "0"
     if company_id > 0:
@@ -101,11 +132,18 @@ def main() -> int:
         print(f" - missing or invalid baseline: {BASELINE_PATH.relative_to(ROOT).as_posix()}")
         return 1
 
-    profiles = _as_list(baseline.get("profiles"))
-    if not profiles:
+    try:
+        profiles = _resolve_profiles(baseline)
+    except ValueError as exc:
         print("[scene_company_snapshot_collect] FAIL")
-        print(" - profiles is empty")
+        print(f" - {exc}")
         return 1
+
+    profile_passwords = [
+        password
+        for password in (_text(_as_dict(row).get("password")) for row in profiles)
+        if password
+    ]
 
     min_profiles_success = _safe_int(baseline.get("min_profiles_success"), 1)
     require_distinct_company_ids = _safe_bool(baseline.get("require_distinct_company_ids"), False)
@@ -142,6 +180,7 @@ def main() -> int:
             continue
 
         code, output = _run_snapshot(profile_key, company_id, state_file, require_live, login, password)
+        output = _redact_passwords(output, profile_passwords)
         state_payload = _load_json(ROOT / state_file)
         effective_company_id = _safe_int(state_payload.get("company_id"), 0)
         if effective_company_id > 0:
@@ -221,23 +260,26 @@ def main() -> int:
     if errors:
         lines.extend(["", "## Errors"] + [f"- {item}" for item in errors])
 
-    _write(report_json_path, json.dumps(report, ensure_ascii=False, indent=2))
-    _write(report_md_path, "\n".join(lines) + "\n")
+    _write(
+        report_json_path,
+        _redact_passwords(json.dumps(report, ensure_ascii=False, indent=2), profile_passwords),
+    )
+    _write(report_md_path, _redact_passwords("\n".join(lines) + "\n", profile_passwords))
 
     if errors:
         print("[scene_company_snapshot_collect] FAIL")
         for item in errors:
-            print(f" - {item}")
-        print(report_json_path)
-        print(report_md_path)
+            print(f" - {_redact_passwords(item, profile_passwords)}")
+        print(_redact_passwords(report_json_path, profile_passwords))
+        print(_redact_passwords(report_md_path, profile_passwords))
         return 1
 
-    print(report_json_path)
-    print(report_md_path)
+    print(_redact_passwords(report_json_path, profile_passwords))
+    print(_redact_passwords(report_md_path, profile_passwords))
     if warnings:
         print("[scene_company_snapshot_collect] PASS_WITH_WARNINGS")
         for item in warnings:
-            print(f" - {item}")
+            print(f" - {_redact_passwords(item, profile_passwords)}")
     else:
         print("[scene_company_snapshot_collect] PASS")
     return 0

@@ -403,9 +403,11 @@
     - `artifacts/backend/scene_registry_asset_snapshot_state.company_primary.json`
     - `artifacts/backend/scene_registry_asset_snapshot_state.company_secondary.json`
   - Profile-level `login/password` is supported in baseline for deterministic company target sampling (current baseline: `primary=admin`, `secondary=demo_role_pm`).
+  - For an isolated acceptance database, set `SC_SCENE_COMPANY_SNAPSHOT_PROFILES_JSON` to a non-empty JSON array of profile objects. This overrides only baseline `profiles`; all other baseline thresholds and report settings remain unchanged. Invalid JSON, non-array JSON, and empty arrays fail closed. Profile objects retain the baseline field requirements (`key` and `state_file` are required). The override variable is removed from each child process environment; every non-empty profile password is redacted from all child guard output, reports, and collector messages.
   - Wired into `verify.scene.delivery.readiness.role_company_matrix` before company matrix guard.
   - `company_secondary` runtime snapshot target defaults to `E2E_LOGIN=ROLE_PM_LOGIN` and `E2E_COMPANY_ID=2` (override via `COMPANY_SECONDARY_LOGIN/COMPANY_SECONDARY_PASSWORD/COMPANY_SECONDARY_ID`).
 - `make verify.scene.company_access.preflight.guard`
+  - For an isolated acceptance database, set `SC_SCENE_COMPANY_ACCESS_PREFLIGHT_PROFILES_JSON` to a non-empty JSON array to override only the baseline company profiles. Thresholds, strict mode, and report paths remain baseline-owned; invalid JSON, non-array JSON, and empty arrays fail closed without echoing the raw value.
   - Verifies company target reachability using collected snapshot states (`requested/effective/allowed_company_ids`).
   - Baseline: `scripts/verify/baselines/scene_company_access_preflight_guard.json`.
   - Reports:
