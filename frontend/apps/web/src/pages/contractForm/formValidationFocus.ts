@@ -10,6 +10,6 @@ export function focusProductFormValidationError(message: string, fields: Validat
   const control = container?.matches('input, select, textarea, button')
     ? container
     : container?.querySelector<HTMLElement>('input, select, textarea, button, [tabindex]');
-  control?.focus();
-  container?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  control?.focus({ preventScroll: true });
+  container?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
 }

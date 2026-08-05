@@ -523,9 +523,26 @@ async function auditValidation(page) {
   const describedBy = await invalid.getAttribute('aria-describedby').catch(() => '');
   const describedCount = describedBy ? await page.locator(describedBy.split(/\s+/).map((id) => `#${id}`).join(',')).count() : 0;
   const errorSections = await page.locator('.form-section-nav .has-error').count();
+  const summaryGeometry = await page.evaluate(() => {
+    const summaryElement = document.querySelector('[data-form-error-summary]');
+    const commandElement = document.querySelector('.contract-form-command-bar');
+    if (!(summaryElement instanceof HTMLElement) || !(commandElement instanceof HTMLElement)) return { available: false, clear: false };
+    const summaryRect = summaryElement.getBoundingClientRect();
+    const commandRect = commandElement.getBoundingClientRect();
+    const intersectsViewport = summaryRect.bottom > 0 && summaryRect.top < window.innerHeight;
+    return {
+      available: true,
+      intersects_viewport: intersectsViewport,
+      summary_top: Math.round(summaryRect.top),
+      summary_bottom: Math.round(summaryRect.bottom),
+      command_bottom: Math.round(commandRect.bottom),
+      clear: intersectsViewport && summaryRect.top >= commandRect.bottom - 1 && summaryRect.bottom <= window.innerHeight + 1,
+    };
+  });
   result('validation.summary_and_fields', await summary.count() === 1 && invalidCount > 0, { invalid_count: invalidCount }, 'P0');
   result('validation.focus_first_error', focused && inView, { focused, in_view: inView }, 'P0');
   result('validation.error_relationship', describedCount > 0, { described_by: describedBy, described_nodes: describedCount }, 'P0');
+  result('validation.summary_not_partially_covered', summaryGeometry.clear, summaryGeometry, 'P0');
   await page.waitForTimeout(180);
   const synchronizedErrorSections = await page.locator('.form-section-nav .has-error').count();
   result('validation.section_error_state', synchronizedErrorSections > 0, { error_sections: synchronizedErrorSections, initial_count: errorSections }, 'P1');
