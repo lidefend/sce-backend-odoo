@@ -214,6 +214,12 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
         && (allowWorkspace ? Boolean(main?.children.length) : Boolean(document.querySelector('#main-content .page, #main-content [data-product-page-mode]')));
     }, { source: LOADING_TEXT.source, allowWorkspace: leaf.route === '/' || leaf.route === '/my-work' }, { timeout: 45_000 });
     await page.waitForTimeout(120);
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+      const main = document.querySelector('#main-content');
+      if (main) main.scrollTop = 0;
+    });
+    await page.waitForTimeout(40);
   } catch (error) {
     navigationError = error.message;
   }
@@ -238,6 +244,13 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
   }
   const activeTab = await page.locator('.activity-tab.active').allInnerTexts().catch(() => []);
   const visibleActions = await page.locator('#main-content button:visible:not(:disabled), #main-content a:visible[href]').count().catch(() => 0);
+  const mobileToolbar = await page.evaluate(() => {
+    if (document.documentElement.clientWidth > 520) return { applicable: false, search_width: 0 };
+    const toolbar = document.querySelector('.product-list-header__tools .action-toolbar:not(.action-toolbar--without-view)');
+    const search = toolbar?.querySelector('.native-search');
+    if (!(toolbar instanceof HTMLElement) || !(search instanceof HTMLElement)) return { applicable: false, search_width: 0 };
+    return { applicable: true, search_width: Math.round(search.getBoundingClientRect().width) };
+  }).catch(() => ({ applicable: false, search_width: 0 }));
   const expectedPath = new URL(`${BASE_URL}${leaf.route}`).pathname;
   const actualUrl = new URL(page.url());
   const checks = {
@@ -252,6 +265,7 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
     active_menu_correct: leaf.menu_id <= 0 || activeMenu.some((text) => text.includes(leaf.label)),
     active_tab_correct: leaf.route === '/' ? activeTab.length === 0 : viewport.width < 760 || activeTab.length === 1,
     primary_action_reachable: visibleActions > 0 || ['workspace', 'home'].includes(mode),
+    mobile_list_toolbar_usable: !mobileToolbar.applicable || mobileToolbar.search_width >= 240,
     no_auth_or_permission_redirect: !actualUrl.pathname.includes('/login') && !FAILURE_TEXT.test(mainText),
   };
   const failures = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);
@@ -265,7 +279,7 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
     checks,
     result: failures.length ? 'FAIL' : 'PASS',
     failures,
-    diagnostics: { navigation_error: navigationError, console_errors: capture.console, page_errors: capture.page, http_errors: capture.http, clipping, mojibake: mojibake.slice(0, 10), icon_metrics: iconMetrics, active_menu: activeMenu, active_tab: activeTab, visible_actions: visibleActions, dimensions },
+    diagnostics: { navigation_error: navigationError, console_errors: capture.console, page_errors: capture.page, http_errors: capture.http, clipping, mojibake: mojibake.slice(0, 10), icon_metrics: iconMetrics, active_menu: activeMenu, active_tab: activeTab, visible_actions: visibleActions, mobile_toolbar: mobileToolbar, dimensions },
     load_ms: Date.now() - started,
   };
   if (failures.length || options.capture) {

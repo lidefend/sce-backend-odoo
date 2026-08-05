@@ -127,4 +127,25 @@ defineEmits<{
   .product-list-header__search { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   .product-list-header__search .ghost { grid-column: 1 / -1; justify-self: start; }
 }
+@media (max-width: 520px) {
+  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view)) {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view) .view-switch) {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+  }
+  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view) .toolbar-actions) {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    justify-self: end;
+  }
+  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view) .native-search) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+}
 </style>
