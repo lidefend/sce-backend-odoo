@@ -87,7 +87,7 @@ Generated from repository source files. This report is informational during the 
 | 1110 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 1097 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1093 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
-| 1057 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
+| 1074 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 967 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
@@ -196,7 +196,7 @@ Generated from repository source files. This report is informational during the 
 | 1107 | within_budget | XML data/view | `addons/smart_construction_core/views/menu_business_taxonomy.xml` |
 | 1097 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1093 | warning | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
-| 1057 | warning | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
+| 1074 | warning | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1005 | warning | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 1002 | within_budget | XML data/view | `addons/smart_construction_core/views/support/audit_list_fields_views.xml` |
 | 990 | warning | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
