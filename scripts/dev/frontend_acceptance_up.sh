@@ -13,8 +13,12 @@ port_open() {
 if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
   existing_pid="$(cat "$PIDFILE")"
   if curl -fsS "http://127.0.0.1:${PORT}/login" >/dev/null 2>&1; then
-    echo "[frontend.acceptance.up] already healthy pid=$existing_pid port=$PORT db=sc_frontend_acceptance"
-    exit 0
+    if [[ "${FRONTEND_ACCEPTANCE_ALLOW_REUSE:-0}" == "1" ]]; then
+      echo "[frontend.acceptance.up] explicitly reusing healthy pid=$existing_pid port=$PORT db=sc_frontend_acceptance"
+      exit 0
+    fi
+    echo "[frontend.acceptance.up] FAIL healthy service already belongs to another acceptance lifecycle pid=$existing_pid port=$PORT" >&2
+    exit 2
   fi
   echo "[frontend.acceptance.up] replacing unhealthy pid=$existing_pid port=$PORT" >&2
   kill -- "-$existing_pid" 2>/dev/null || kill "$existing_pid" 2>/dev/null || true

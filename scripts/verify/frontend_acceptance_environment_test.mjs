@@ -43,6 +43,7 @@ const frontendUpSource = await fs.readFile(new URL('../../scripts/dev/frontend_a
 const frontendDownSource = await fs.readFile(new URL('../../scripts/dev/frontend_acceptance_down.sh', import.meta.url), 'utf8');
 assert.match(frontendUpSource, /startup stability window/, 'frontend startup must verify that its own process remains healthy');
 assert.match(frontendUpSource, /port_open/, 'frontend startup must reject an occupied port before spawning');
+assert.match(frontendUpSource, /FRONTEND_ACCEPTANCE_ALLOW_REUSE/, 'frontend startup must require explicit authorization before reusing another lifecycle');
 assert.match(frontendDownSource, /remained occupied after shutdown/, 'frontend shutdown must fail if the port was not released');
 assert.match(frontendDownSource, /kill -KILL/, 'frontend shutdown must have a bounded stale-process fallback');
 const makeSource = await fs.readFile(new URL('../../make/dev.mk', import.meta.url), 'utf8');
