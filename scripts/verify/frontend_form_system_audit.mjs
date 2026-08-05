@@ -637,22 +637,30 @@ async function auditComplexFields(page, viewportKey) {
   }
   const many2oneComboboxes = page.locator('.many2one-combobox:visible');
   let searchableCombobox = null;
+  let dialogInput = null;
+  let dialog = null;
   for (let index = 0; index < await many2oneComboboxes.count(); index += 1) {
     const candidate = many2oneComboboxes.nth(index);
-    await candidate.locator('input:visible').first().focus();
+    const candidateInput = candidate.locator('input:visible').first();
+    await candidateInput.focus();
     await page.waitForTimeout(50);
-    if (await candidate.getByRole('button', { name: /搜索更多/ }).count()) {
+    const candidateSearch = candidate.getByRole('button', { name: /搜索更多/ });
+    if (!await candidateSearch.count()) continue;
+    await candidateSearch.click();
+    const candidateDialog = page.getByRole('dialog');
+    await candidateDialog.waitFor({ state: 'visible', timeout: 10_000 });
+    const populated = await candidateDialog.locator('.relation-dialog-result-card:visible, .relation-dialog-table tbody tr:visible').first()
+      .waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false);
+    if (populated) {
       searchableCombobox = candidate;
+      dialogInput = candidateInput;
+      dialog = candidateDialog;
       break;
     }
+    await page.keyboard.press('Escape');
+    await candidateDialog.waitFor({ state: 'hidden', timeout: 5_000 });
   }
-  if (searchableCombobox) {
-    const dialogInput = searchableCombobox.locator('input:visible').first();
-    const searchMore = searchableCombobox.getByRole('button', { name: /搜索更多/ });
-    await searchMore.waitFor({ state: 'visible', timeout: 10_000 });
-    await searchMore.click();
-    const dialog = page.getByRole('dialog');
-    await dialog.waitFor({ state: 'visible' });
+  if (searchableCombobox && dialogInput && dialog) {
     const rect = await dialog.boundingBox();
     const viewport = page.viewportSize();
     const contained = Boolean(rect && viewport && rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= viewport.width + 1 && rect.y + rect.height <= viewport.height + 1);
