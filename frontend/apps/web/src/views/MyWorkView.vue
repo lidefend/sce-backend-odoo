@@ -1,16 +1,31 @@
 <template>
-  <ScPage class="my-work-page" data-my-work-renderer="product-workspace" :content-layout="myWorkContentLayoutMode">
+  <ScPage
+    class="my-work-page"
+    data-my-work-renderer="product-workspace"
+    :data-hero-enabled="pageSectionEnabled('hero', true)"
+    :data-retry-panel-open-default="pageSectionOpenDefault('retry_panel', false)"
+    :content-layout="myWorkContentLayoutMode"
+    :style="pageSectionStyle('hero')"
+  >
     <StatusPanel v-if="loading" title="正在加载工作事项" message="正在读取当前账号可处理的业务事项。" variant="info" busy />
     <StatusPanel
-      v-else-if="errorMessage"
+      v-else-if="errorMessage && pageSectionEnabled('retry_panel', true) && pageSectionTagIs('retry_panel', 'details')"
       title="工作事项加载失败"
       :message="errorMessage"
       variant="error"
       :on-retry="load"
+      :style="pageSectionStyle('retry_panel')"
     />
     <MyWorkApprovalWorkspace
-      v-else-if="workspace"
+      v-else-if="workspace
+        && pageSectionEnabled('hero', true)
+        && pageSectionTagIs('hero', 'header')
+        && (
+          (pageSectionEnabled('todo_focus', true) && pageSectionTagIs('todo_focus', 'section'))
+          || (pageSectionEnabled('list_main', true) && pageSectionTagIs('list_main', 'section'))
+        )"
       :workspace="workspace"
+      :style="[pageSectionStyle('todo_focus'), pageSectionStyle('list_main')]"
       @refresh="load"
     />
     <StatusPanel
@@ -28,6 +43,7 @@
 import { computed, ref, watch } from 'vue';
 import { fetchMyWorkSummary, type ProductMyWorkWorkspace } from '../api/myWork';
 import { currentContextEpoch, isCurrentContextEpoch } from '../app/contextEpoch';
+import { usePageContract } from '../app/pageContract';
 import MyWorkApprovalWorkspace from '../components/business/MyWorkApprovalWorkspace.vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScPage from '../components/design-system/ScPage.vue';
@@ -35,6 +51,11 @@ import { contractContentLayoutMode, resolveContentLayoutMode } from '../componen
 import { useSessionStore } from '../stores/session';
 
 const session = useSessionStore();
+const pageContract = usePageContract('my_work');
+const pageSectionEnabled = pageContract.sectionEnabled;
+const pageSectionOpenDefault = pageContract.sectionOpenDefault;
+const pageSectionTagIs = pageContract.sectionTagIs;
+const pageSectionStyle = pageContract.sectionStyle;
 const workspace = ref<ProductMyWorkWorkspace | null>(null);
 const myWorkContentLayoutMode = computed(() => resolveContentLayoutMode({
   contractContentLayout: contractContentLayoutMode(workspace.value),

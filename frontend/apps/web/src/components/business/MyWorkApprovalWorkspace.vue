@@ -267,7 +267,7 @@ async function confirmAction() {
 </script>
 
 <style scoped>
-.product-work { display: grid; gap: 18px; }
+.product-work { display: grid; align-content: start; gap: 18px; }
 .product-work__header { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
 .product-work__header p { margin: 0; color: var(--sc-app-text-secondary); }
 .product-work__counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }

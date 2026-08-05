@@ -60,7 +60,7 @@
 - 导航与角色计数：70/70，finance 42、project member 9、PM 14、owner 5；
 - action 876 / menu 606 拒绝、A→B→A、Project A 隔离：PASS；
 - required 金额探针：PASS，`aria-required=true`、`aria-invalid=true`、错误描述关联和错误摘要聚焦均有效；
-- delivery hardening：72 个响应式场景 PASS，原性能预算复跑 PASS；
+- delivery hardening：68 个互不重复的响应式场景 PASS，原性能预算复跑 PASS；
 - frontend lint、strict typecheck、production build、`git diff --check`：PASS；
 - `make ci.local.quick`：PASS；
 - 唯一一次完整 `make ci`：PASS，CI 后生成物独立 stale 守卫 PASS。

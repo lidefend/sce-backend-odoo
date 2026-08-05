@@ -1278,10 +1278,10 @@
 
   .topbar--minimal .topbar-actions :is(.sc-btn, .topbar-context),
   .topbar--minimal .topbar-actions :deep(.global-message__trigger) {
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
-    min-height: 32px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
     padding: 0;
     justify-content: center;
   }
@@ -1334,6 +1334,13 @@
   .shell {
     grid-template-columns: 312px minmax(0, 1fr);
     background: var(--sc-app-bg);
+  }
+
+  /* Keep this more specific than the desktop shell rule: the aside is not
+   * rendered in the hidden state, so reserving its track creates a dead 312px
+   * column and makes every routed page calculate against the wrong viewport. */
+  .shell.shell--sidebar-hidden {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .sidebar {
@@ -1395,7 +1402,7 @@
   }
 
   .content {
-    padding: 0 24px 24px;
+    padding: 0;
     gap: 0;
     background: var(--sc-app-bg);
   }
@@ -1406,8 +1413,8 @@
 
   .topbar--minimal {
     min-height: 60px;
-    width: calc(100% + 48px);
-    margin-inline-start: -24px;
+    width: 100%;
+    margin-inline-start: 0;
     padding: 10px 24px;
     border-bottom: 1px solid var(--sc-app-border);
     background: color-mix(in srgb, var(--sc-app-panel) 96%, transparent);
@@ -1439,8 +1446,8 @@
   }
 
   .topbar--minimal :is(.sidebar-toggle, .theme-switch) {
-    width: 32px;
-    min-width: 32px;
+    width: 44px;
+    min-width: 44px;
     padding: 0;
     justify-content: center;
     border-color: transparent;
@@ -1463,8 +1470,8 @@
   }
 
   .content--with-activity-tabs > .activity-tabs {
-    width: calc(100% + 48px);
-    margin: 0 0 0 -24px;
+    width: 100%;
+    margin: 0;
   }
 
   .activity-tabs {
@@ -1509,6 +1516,10 @@
   }
 
   .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
+    padding-inline: var(--sc-page-padding-compact);
+  }
+
+  .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame).sc-content-layout--data-grid {
     padding-inline: 0;
   }
 }

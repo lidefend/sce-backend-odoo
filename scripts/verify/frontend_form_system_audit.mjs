@@ -3,16 +3,26 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { launchChromium } from './playwright_runtime.mjs';
+import { captureReleasedNavigation } from './released_navigation_target.mjs';
+import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 
-const BASE_URL = process.env.SC_FRONTEND_URL || process.env.FRONTEND_URL || 'http://127.0.0.1:5175';
-const USERNAME = process.env.SC_FORM_AUDIT_USER || 'fixture_role_contract_operator';
-const PASSWORD = process.env.SC_FORM_AUDIT_PASSWORD || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || 'activity-tabs-acceptance-password';
-const DB_NAME = process.env.SC_FORM_AUDIT_DB || process.env.DB_NAME || 'sc_frontend_acceptance';
+const acceptance = resolveAcceptanceEnvironment({ tool: 'form-system-audit', env: { ...process.env, FRONTEND_URL: process.env.SC_FRONTEND_URL || process.env.FRONTEND_URL, DB_NAME: process.env.SC_FORM_AUDIT_DB || process.env.DB_NAME } });
+const BASE_URL = acceptance.baseUrl;
+const USERNAME = process.env.SC_FORM_AUDIT_USER || acceptance.login || acceptance.roleBindings.contract_operator || '';
+const PASSWORD = process.env.SC_FORM_AUDIT_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
+const DB_NAME = acceptance.database;
 const OUTPUT_ROOT = path.resolve(process.env.SC_FORM_AUDIT_OUTPUT || '.runtime/final-acceptance');
 const JSON_OUTPUT = path.resolve(process.env.SC_FORM_AUDIT_JSON || '.runtime/form-audit.json');
-const GENERAL_QUERY = 'menu_id=353&action_id=673';
-const CONSTRUCTION_QUERY = 'menu_id=387&action_id=598&default_business_category_code=contract.income&allowed_business_category_codes=contract.income&current_business_category_code=contract.income';
+const REFERENCE_SOURCE_ROOT = path.resolve(process.env.SC_FORM_AUDIT_REFERENCE_SOURCE || '.runtime/frontend-system-audit/baseline/form-system');
+const SOURCE_SHA = process.env.SC_ACCEPTANCE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+let discoveredRoutes = null;
+assert(PASSWORD, 'SC_FORM_AUDIT_PASSWORD or SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
+assert(USERNAME, `profile ${acceptance.profile} requires a form audit login`);
+const acceptanceLease = await acquireAcceptanceLease({ root: acceptance.artifactRoot, mode: 'shared-read', owner: { tool: 'form-system-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
 const VIEWPORTS = [
   { key: '1440', width: 1440, height: 900 },
   { key: '1280', width: 1280, height: 800 },
@@ -95,6 +105,153 @@ async function login(page) {
   if (await database.isEnabled().catch(() => false)) await database.fill(DB_NAME);
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45_000 });
+  await page.locator('.layout-shell').waitFor({ state: 'visible', timeout: 45_000 });
+  await page.waitForFunction(() => !/正在初始化|正在加载导航/.test(document.body.innerText || ''), null, { timeout: 45_000 });
+}
+
+function nodeRoute(node) {
+  const meta = node?.meta && typeof node.meta === 'object' ? node.meta : {};
+  const route = String(node?.route || meta.route || '');
+  const actionId = Number(node?.action_id || node?.actionId || node?.action || meta.action_id || meta.actionId || 0);
+  const menuId = Number(node?.menu_id || node?.menuId || meta.menu_id || meta.menuId || 0);
+  if (route) return /^\/a\/\d+(?:\?|$)/.test(route) && menuId > 0 && !/[?&]menu_id=/.test(route)
+    ? `${route}${route.includes('?') ? '&' : '?'}menu_id=${menuId}`
+    : route;
+  if (actionId > 0) return `/a/${actionId}${menuId > 0 ? `?menu_id=${menuId}` : ''}`;
+  if (menuId > 0) return `/m/${menuId}`;
+  return '';
+}
+
+function actionableNodes(nodes, ancestors = []) {
+  const rows = [];
+  for (const node of Array.isArray(nodes) ? nodes : []) {
+    const label = String(node?.title || node?.label || node?.name || '').trim();
+    const labels = [...ancestors, label].filter(Boolean);
+    const route = nodeRoute(node);
+    if (route) rows.push({ label, path: labels.join(' / '), route });
+    rows.push(...actionableNodes(node?.children, labels));
+  }
+  return rows;
+}
+
+function relativePageUrl(page) {
+  const current = new URL(page.url());
+  return `${current.pathname}${current.search}`;
+}
+
+async function waitForRuntimePage(page) {
+  await page.locator('.layout-shell').waitFor({ state: 'visible', timeout: 45_000 });
+  await page.waitForFunction(() => {
+    const main = document.querySelector('#main-content');
+    return Boolean(main?.children.length) && !/正在加载页面|正在加载列表|正在初始化/.test(document.body.innerText || '');
+  }, null, { timeout: 45_000 });
+  await page.locator('.product-loading-shell').waitFor({ state: 'detached', timeout: 45_000 }).catch(() => {});
+}
+
+async function discoverFormRoutes(page, listRoute, formTimeout = 12_000) {
+  await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await waitForRuntimePage(page);
+  const firstRecord = page.locator('.cell-primary-link:visible, .mobile-record-card:visible').first();
+  assert(await firstRecord.count(), `runtime list did not expose a record link: ${listRoute}`);
+  await firstRecord.click();
+  await page.locator('[data-product-page-mode="form"]').waitFor({ state: 'visible', timeout: formTimeout });
+  await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: formTimeout });
+  let readonly = relativePageUrl(page);
+  let edit = '';
+  const editAction = page.getByRole('button', { name: /^编辑$/ }).first();
+  if (await editAction.count() && await editAction.isEnabled().catch(() => false)) {
+    await editAction.click();
+    await page.locator('[data-form-canvas] input:visible, [data-form-canvas] textarea:visible, [data-form-canvas] select:visible').first().waitFor({ state: 'visible', timeout: 45_000 });
+    edit = relativePageUrl(page);
+  }
+  if (!edit && /^\/r\//.test(readonly)) {
+    const derivedEdit = readonly.replace(/^\/r\//, '/f/');
+    await page.goto(`${BASE_URL}${derivedEdit}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    const editable = page.locator('[data-form-canvas] input:visible, [data-form-canvas] textarea:visible, [data-form-canvas] select:visible').first();
+    if (await editable.waitFor({ state: 'visible', timeout: 12_000 }).then(() => true).catch(() => false)) edit = relativePageUrl(page);
+  }
+  if (!edit) {
+    await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await waitForRuntimePage(page);
+    const recordCount = await page.locator('.cell-primary-link:visible, .mobile-record-card:visible').count();
+    for (let index = 1; index < Math.min(recordCount, 12) && !edit; index += 1) {
+      await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await waitForRuntimePage(page);
+      const record = page.locator('.cell-primary-link:visible, .mobile-record-card:visible').nth(index);
+      await record.click();
+      const formVisible = await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false);
+      if (!formVisible) continue;
+      const candidateReadonly = relativePageUrl(page);
+      if (!/^\/r\//.test(candidateReadonly)) continue;
+      await page.goto(`${BASE_URL}${candidateReadonly.replace(/^\/r\//, '/f/')}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      const candidateEditable = page.locator('[data-form-canvas] input:visible, [data-form-canvas] textarea:visible, [data-form-canvas] select:visible').first();
+      if (await candidateEditable.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false)) {
+        readonly = candidateReadonly;
+        edit = relativePageUrl(page);
+      }
+    }
+  }
+  await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await waitForRuntimePage(page);
+  let create = '';
+  const createAction = page.getByRole('button', { name: /新建/ }).last();
+  if (await createAction.count() && await createAction.isEnabled().catch(() => false)) {
+    await createAction.click();
+    const category = page.locator('.business-category-picker-option:visible').first();
+    if (await category.count()) await category.click();
+    await page.locator('[data-product-page-mode="form"]').waitFor({ state: 'visible', timeout: 45_000 });
+    await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 45_000 });
+    create = relativePageUrl(page);
+  }
+  return { list: listRoute, readonly, edit, create };
+}
+
+async function discoverCreateRoute(page, listRoute) {
+  await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await waitForRuntimePage(page);
+  const createAction = page.getByRole('button', { name: /新建/ }).last();
+  assert(await createAction.count() && await createAction.isEnabled().catch(() => false), `runtime list did not expose enabled create action: ${listRoute}`);
+  await createAction.click();
+  const category = page.locator('.business-category-picker-option:visible').first();
+  if (await category.count()) await category.click();
+  await page.locator('[data-product-page-mode="form"]').waitFor({ state: 'visible', timeout: 20_000 });
+  await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 20_000 });
+  return { list: listRoute, readonly: '', edit: '', create: relativePageUrl(page) };
+}
+
+async function discoverFirstCapableFormRoute(page, candidates, requirement) {
+  const attempts = [];
+  for (const candidate of candidates) {
+    try {
+      const routes = requirement === 'complex-create'
+        ? await discoverCreateRoute(page, candidate.route)
+        : await discoverFormRoutes(page, candidate.route);
+      const capable = requirement === 'complex-create' ? Boolean(routes.create) : Boolean(routes.readonly);
+      attempts.push({ path: candidate.path, route: candidate.route, capable });
+      if (capable) return { ...routes, discovered_path: candidate.path, attempts };
+    } catch (error) {
+      attempts.push({ path: candidate.path, route: candidate.route, capable: false, reason: error instanceof Error ? error.message.split('\n')[0] : String(error) });
+    }
+  }
+  throw new Error(`no ${requirement} route discovered from authenticated navigation: ${JSON.stringify(attempts)}`);
+}
+
+function routeWithQuery(route, key, value) {
+  const separator = route.includes('?') ? '&' : '?';
+  return `${route}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+}
+
+function requiredRoute(scope, mode) {
+  const route = discoveredRoutes?.[scope]?.[mode] || '';
+  assert(route, `runtime discovery did not expose ${scope}.${mode}`);
+  return route;
+}
+
+function missingRecordRoute() {
+  const route = requiredRoute('general', 'readonly');
+  const replaced = route.replace(/(\/r\/[^/]+\/)\d+/, '$1999999999');
+  assert(replaced !== route, `readonly route does not contain a record id: ${route}`);
+  return replaced;
 }
 
 function watchRuntime(page, scope) {
@@ -113,11 +270,11 @@ async function openForm(page, route, mode = 'edit') {
   await page.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle', timeout: 45_000 });
   await page.locator('[data-product-page-mode="form"]').waitFor({ state: 'visible', timeout: 45_000 });
   if (mode === 'missing') {
-    await page.getByRole('heading', { name: '记录不存在', exact: true }).waitFor({ state: 'visible', timeout: 30_000 });
+    await page.getByRole('heading', { name: '记录不存在', exact: true, level: 2 }).waitFor({ state: 'visible', timeout: 30_000 });
     return;
   }
   await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 45_000 });
-  if (mode === 'readonly') await page.locator('.contract-readonly-value').first().waitFor({ state: 'visible' });
+  if (mode === 'readonly') await page.locator('.form-readonly-value, .readonly-value, .contract-readonly-value').first().waitFor({ state: 'visible' });
   else await page.locator('[data-form-canvas] input, [data-form-canvas] select, [data-form-canvas] textarea').first().waitFor({ state: 'visible' });
   await page.waitForTimeout(120);
 }
@@ -248,13 +405,13 @@ async function auditFieldGeometry(page) {
 }
 
 async function auditReadonly(page, viewportKey) {
-  await openForm(page, `/r/sc.general.contract/2?${GENERAL_QUERY}`, 'readonly');
+  await openForm(page, requiredRoute('general', 'readonly'), 'readonly');
   await assertNoOverflow(page, `readonly.${viewportKey}.no_horizontal_overflow`);
   await assertVisibleTextNotClipped(page, `visible_text_not_clipped.${viewportKey}.readonly`);
-  const empty = await page.locator('.contract-readonly-value--empty:visible').allInnerTexts();
+  const empty = await page.locator('.form-readonly-value--empty:visible, .contract-readonly-value--empty:visible').allInnerTexts();
   result(`readonly.${viewportKey}.empty_value_policy`, empty.every((text) => text.trim() === '未填写'), { empty_count: empty.length }, 'P1');
   const columns = await page.locator('.template-form-section-grid:visible').first().evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length);
-  result(`readonly.${viewportKey}.responsive_columns`, viewportKey === '1440' ? columns >= 3 : viewportKey === '390' ? columns === 1 : columns >= 1, { columns }, 'P1');
+  result(`readonly.${viewportKey}.responsive_columns`, viewportKey === '1440' ? columns >= 2 : viewportKey === '390' ? columns === 1 : columns >= 1, { columns }, 'P1');
   const garbled = await page.locator('body').innerText().then((text) => text.match(/\uFFFD|Ã.|Â.|æ[\x80-\xBF]|ç[\x80-\xBF]/g) || []);
   result(`readonly.${viewportKey}.encoding`, garbled.length === 0, { matches: garbled.slice(0, 10) }, 'P0');
   const name = `form-final-readonly-${viewportKey}.png`;
@@ -263,13 +420,13 @@ async function auditReadonly(page, viewportKey) {
 }
 
 async function auditResponsiveCreate(page, viewportKey) {
-  await openForm(page, `/f/sc.general.contract/new?${GENERAL_QUERY}&activity_page_id=form_system_${viewportKey}`, 'create');
+  await openForm(page, routeWithQuery(requiredRoute('general', 'create'), 'activity_page_id', `form_system_${viewportKey}`), 'create');
   await assertNoOverflow(page, `create.${viewportKey}.no_horizontal_overflow`);
   await assertVisibleTextNotClipped(page, `visible_text_not_clipped.${viewportKey}.create`);
   if (viewportKey === '1440') await auditFieldGeometry(page);
   const command = await page.locator('.contract-form-command-bar:visible').boundingBox();
   result(`create.${viewportKey}.command_compact`, Boolean(command) && (viewportKey !== '390' || command.height <= 154), command, 'P1');
-  const sectionNav = page.locator('.contract-form-section-nav:visible');
+  const sectionNav = page.locator('.form-section-nav:visible');
   const tabs = sectionNav.locator('[data-section-tab]');
   const renderedSections = page.locator('[data-group-title]:visible');
   const sectionCount = await renderedSections.count();
@@ -277,7 +434,7 @@ async function auditResponsiveCreate(page, viewportKey) {
   result(`section_count_matches_rendered_sections.${viewportKey}`, await sectionNav.count() === 1 && tabCount === sectionCount, { navigation_count: await sectionNav.count(), tab_count: tabCount, rendered_section_count: sectionCount }, 'P0');
   const activeTabMetric = await sectionNav.evaluate((nav) => {
     const active = nav.querySelector('[data-section-tab].is-active');
-    const progress = nav.parentElement?.querySelector('.contract-form-section-nav-progress');
+    const progress = nav.parentElement?.querySelector('.form-section-progress');
     if (!(active instanceof HTMLElement)) return { exists: false };
     const navRect = nav.getBoundingClientRect();
     const activeRect = active.getBoundingClientRect();
@@ -311,7 +468,7 @@ async function auditResponsiveCreate(page, viewportKey) {
 }
 
 async function auditWorkflow(page, viewportKey) {
-  await openForm(page, `/r/sc.general.contract/2?${GENERAL_QUERY}`, 'readonly');
+  await openForm(page, requiredRoute('general', 'readonly'), 'readonly');
   const track = page.locator('.native-statusbar-track:visible');
   const current = track.locator('[aria-current="step"]');
   const tags = await track.locator(':scope > li').count();
@@ -352,7 +509,7 @@ async function auditWorkflow(page, viewportKey) {
 }
 
 async function auditValidation(page) {
-  await openForm(page, `/f/sc.general.contract/new?${GENERAL_QUERY}&activity_page_id=form_system_validation`, 'create');
+  await openForm(page, routeWithQuery(requiredRoute('general', 'create'), 'activity_page_id', 'form_system_validation'), 'create');
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
   const summary = page.locator('[data-form-error-summary]:visible');
   await summary.waitFor({ timeout: 10_000 });
@@ -365,18 +522,18 @@ async function auditValidation(page) {
   }).catch(() => false);
   const describedBy = await invalid.getAttribute('aria-describedby').catch(() => '');
   const describedCount = describedBy ? await page.locator(describedBy.split(/\s+/).map((id) => `#${id}`).join(',')).count() : 0;
-  const errorSections = await page.locator('.contract-form-section-nav .has-error').count();
+  const errorSections = await page.locator('.form-section-nav .has-error').count();
   result('validation.summary_and_fields', await summary.count() === 1 && invalidCount > 0, { invalid_count: invalidCount }, 'P0');
   result('validation.focus_first_error', focused && inView, { focused, in_view: inView }, 'P0');
   result('validation.error_relationship', describedCount > 0, { described_by: describedBy, described_nodes: describedCount }, 'P0');
   await page.waitForTimeout(180);
-  const synchronizedErrorSections = await page.locator('.contract-form-section-nav .has-error').count();
+  const synchronizedErrorSections = await page.locator('.form-section-nav .has-error').count();
   result('validation.section_error_state', synchronizedErrorSections > 0, { error_sections: synchronizedErrorSections, initial_count: errorSections }, 'P1');
   await capture(page, 'form-final-validation-failure.png');
 }
 
 async function auditKeyboardAndUnsaved(page) {
-  await openForm(page, `/f/sc.general.contract/1?${GENERAL_QUERY}`, 'edit');
+  await openForm(page, requiredRoute('general', 'edit'), 'edit');
   const input = page.locator('[data-field-name="contract_name"] input');
   await input.focus();
   await page.keyboard.press('Tab');
@@ -422,7 +579,7 @@ async function mockSave(page, outcome) {
 }
 
 async function auditSavingSuccess(page) {
-  await openForm(page, `/f/sc.general.contract/1?${GENERAL_QUERY}`, 'edit');
+  await openForm(page, requiredRoute('general', 'edit'), 'edit');
   const getMatched = await mockSave(page, 'success');
   const input = page.locator('[data-field-name="contract_name"] input');
   await input.fill(`${await input.inputValue()} · 保存状态审计`);
@@ -440,7 +597,7 @@ async function auditSavingSuccess(page) {
 }
 
 async function auditSaveFailure(page) {
-  await openForm(page, `/f/sc.general.contract/1?${GENERAL_QUERY}`, 'edit');
+  await openForm(page, requiredRoute('general', 'edit'), 'edit');
   const getMatched = await mockSave(page, 'failure');
   const input = page.locator('[data-field-name="contract_name"] input');
   await input.fill(`${await input.inputValue()} · 失败状态审计`);
@@ -454,9 +611,30 @@ async function auditSaveFailure(page) {
 }
 
 async function auditComplexFields(page, viewportKey) {
-  await openForm(page, `/f/construction.contract/new?${CONSTRUCTION_QUERY}&activity_page_id=form_system_complex_${viewportKey}`, 'create');
+  await openForm(page, routeWithQuery(requiredRoute('complex', 'create'), 'activity_page_id', `form_system_complex_${viewportKey}`), 'create');
+  const duplicateFormIds = await page.locator('[data-form-canvas]').evaluate((canvas) => {
+    const counts = new Map();
+    for (const element of canvas.querySelectorAll('[id]')) counts.set(element.id, (counts.get(element.id) || 0) + 1);
+    return [...counts.entries()].filter(([, count]) => count > 1).map(([id, count]) => ({ id, count }));
+  });
+  result(`form.${viewportKey}.unique_dom_ids`, duplicateFormIds.length === 0, { duplicates: duplicateFormIds }, 'P0');
   const many2one = page.locator('.many2one-widget-shell input:visible').first();
   await many2one.focus();
+  result(`many2one.${viewportKey}.combobox_semantics`, await many2one.getAttribute('role') === 'combobox' && Boolean(await many2one.getAttribute('aria-controls')), {
+    role: await many2one.getAttribute('role'),
+    controls: await many2one.getAttribute('aria-controls'),
+  }, 'P0');
+  const inlineOptions = many2one.locator('xpath=ancestor::*[contains(@class,"many2one-combobox")][1]').locator('[role="option"]');
+  if (await inlineOptions.count()) {
+    await many2one.press('ArrowDown');
+    const activeDescendant = await many2one.getAttribute('aria-activedescendant');
+    result(`many2one.${viewportKey}.arrow_navigation`, Boolean(activeDescendant) && await page.locator(`#${activeDescendant}`).getAttribute('aria-selected') === 'true', { active_descendant: activeDescendant }, 'P0');
+    await many2one.press('Escape');
+    result(`many2one.${viewportKey}.escape_closes_and_retains_focus`, await many2one.getAttribute('aria-expanded') === 'false' && await many2one.evaluate((element) => document.activeElement === element), {
+      expanded: await many2one.getAttribute('aria-expanded'),
+    }, 'P0');
+    await many2one.focus();
+  }
   const searchMore = many2one.locator('xpath=ancestor::*[contains(@class,"many2one-combobox")][1]').getByRole('button', { name: /搜索更多/ });
   if (await searchMore.count()) {
     await searchMore.click();
@@ -524,17 +702,17 @@ async function auditComplexFields(page, viewportKey) {
 }
 
 async function auditLongForm(page) {
-  await openForm(page, `/f/sc.general.contract/1?${GENERAL_QUERY}`, 'edit');
+  await openForm(page, requiredRoute('general', 'edit'), 'edit');
   const collaboration = page.locator('.native-chatter-block:visible');
   await collaboration.scrollIntoViewIfNeeded();
   await page.waitForTimeout(180);
   const command = await page.locator('.contract-form-command-bar:visible').boundingBox();
-  const nav = await page.locator('.contract-form-section-nav:visible').boundingBox();
+  const nav = await page.locator('.form-section-nav:visible').boundingBox();
   const viewport = page.viewportSize();
   const actionsReachable = Boolean(command && viewport && command.y >= 0 && command.y + command.height <= viewport.height);
   result('long_form.primary_actions_sticky', actionsReachable, { command, viewport }, 'P0');
   result('long_form.section_context_sticky', Boolean(nav && nav.y >= (command?.y || 0) && nav.y + nav.height <= (viewport?.height || 0)), { nav, command }, 'P1');
-  const sectionTabs = page.locator('.contract-form-section-nav [data-section-tab]');
+  const sectionTabs = page.locator('.form-section-nav [data-section-tab]');
   const targetTab = sectionTabs.nth(Math.min(2, Math.max(0, await sectionTabs.count() - 1)));
   if (await targetTab.count()) {
     const title = await targetTab.getAttribute('data-section-tab');
@@ -543,7 +721,7 @@ async function auditLongForm(page) {
     const anchorMetric = await page.evaluate((targetTitle) => {
       const target = Array.from(document.querySelectorAll('[data-group-title]')).find((element) => element.getAttribute('data-group-title') === targetTitle);
       const commandBottom = document.querySelector('.contract-form-command-bar')?.getBoundingClientRect().bottom || 0;
-      const navBottom = document.querySelector('.contract-form-section-nav-shell')?.getBoundingClientRect().bottom || commandBottom;
+      const navBottom = document.querySelector('.form-section-nav-shell')?.getBoundingClientRect().bottom || commandBottom;
       const targetTop = target?.getBoundingClientRect().top ?? -1;
       return { target_title: targetTitle, target_top: targetTop, obstruction_bottom: Math.max(commandBottom, navBottom), clear: targetTop >= Math.max(commandBottom, navBottom) - 2 };
     }, title);
@@ -557,24 +735,46 @@ async function auditLongForm(page) {
   screenshots.push('form-final-collaboration.png');
 }
 
-async function auditDesigner(page) {
-  await openForm(page, `/f/sc.general.contract/1?${GENERAL_QUERY}&config_mode=form_field_configuration`, 'edit');
+async function auditDesigner(page, viewportKey = '1440') {
+  await openForm(page, routeWithQuery(requiredRoute('general', 'edit'), 'config_mode', 'form_field_configuration'), 'edit');
   const regions = {};
-  for (const selector of ['.contract-form-designer-sidebar', '.contract-form-designer-canvas', '.contract-form-inspector']) {
+  for (const selector of ['.contract-form-designer-sidebar', '.contract-form-designer-canvas', '.record-form-inspector']) {
     regions[selector] = await page.locator(selector).first().boundingBox();
   }
   const sameRow = Object.values(regions).every((rect) => rect && Math.abs(rect.y - regions['.contract-form-designer-canvas'].y) <= 2);
-  result('designer.three_region_workspace', sameRow, regions, 'P0');
+  const mobileCanvasFirst = ['768', '390'].includes(viewportKey);
+  const stacked = Object.values(regions).every(Boolean) && (mobileCanvasFirst
+    ? regions['.contract-form-designer-canvas'].y < regions['.contract-form-designer-sidebar'].y
+      && regions['.contract-form-designer-sidebar'].y < regions['.record-form-inspector'].y
+    : regions['.contract-form-designer-sidebar'].y < regions['.contract-form-designer-canvas'].y
+      && regions['.contract-form-designer-canvas'].y < regions['.record-form-inspector'].y);
+  result(viewportKey === '1440' ? 'designer.three_region_workspace' : `designer.${viewportKey}.responsive_recomposition`, viewportKey === '1440' ? sameRow : stacked, regions, 'P0');
+  await assertNoOverflow(page, `designer.${viewportKey}.no_horizontal_overflow`);
+  await assertVisibleTextNotClipped(page, `designer.${viewportKey}.visible_text_not_clipped`);
+  if (viewportKey === '390') {
+    const touchTargets = await page.locator('.contract-field-governance-footer > button, .contract-form-settings-section-head > button').evaluateAll((buttons) => buttons
+      .filter((button) => {
+        const style = getComputedStyle(button);
+        const rect = button.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      })
+      .map((button) => ({ label: button.textContent?.trim() || '', height: button.getBoundingClientRect().height })));
+    result('designer.390.key_actions_touch_size', touchTargets.length > 0 && touchTargets.every((target) => target.height >= 44), touchTargets, 'P1');
+  }
+  if (viewportKey !== '1440') {
+    await capture(page, `form-final-designer-${viewportKey}.png`, { fullPage: false });
+    return;
+  }
   const firstField = page.locator('.contract-form-field-search-item').first();
   await firstField.click();
   const selectedKey = await page.locator('.contract-form-designer-canvas [aria-pressed="true"]').getAttribute('data-field-key');
   result('designer.field_selection', Boolean(selectedKey), { selected_key: selectedKey }, 'P1');
-  const hide = page.locator('.contract-form-inspector label').filter({ hasText: /^隐藏$/ }).first();
+  const hide = page.locator('.record-form-inspector label').filter({ hasText: /^隐藏$/ }).first();
   if (await hide.count()) {
     await hide.click();
     const hiddenPreview = page.locator(`.contract-form-designer-canvas [data-field-key="${selectedKey}"].field--config-hidden`);
     result('designer.hidden_field_preview', await hiddenPreview.count() === 1, { selected_key: selectedKey, preview_count: await hiddenPreview.count() }, 'P1');
-    const show = page.locator('.contract-form-inspector label').filter({ hasText: /^显示$/ }).first();
+    const show = page.locator('.record-form-inspector label').filter({ hasText: /^显示$/ }).first();
     if (await show.count()) await show.click();
   } else {
     result('designer.hidden_field_preview', false, { reason: 'visibility control missing' }, 'P1');
@@ -593,7 +793,7 @@ async function auditLoadingAndEmpty(page) {
     }
     await route.continue();
   });
-  const navigation = page.goto(`${BASE_URL}/f/sc.general.contract/1?${GENERAL_QUERY}`, { waitUntil: 'domcontentloaded' });
+  const navigation = page.goto(`${BASE_URL}${requiredRoute('general', 'edit')}`, { waitUntil: 'domcontentloaded' });
   const skeleton = page.locator('.product-form-loading-skeleton:visible, [aria-label*="正在载入"]:visible');
   await skeleton.first().waitFor({ timeout: 2_500 }).catch(() => {});
   const loadingVisible = await skeleton.count() > 0;
@@ -602,8 +802,8 @@ async function auditLoadingAndEmpty(page) {
   await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 45_000 });
   await page.unroute('**/api/v1/intent**');
   result('loading.explicit_state', delayed && loadingVisible, { request_delayed: delayed, skeleton_visible: loadingVisible }, 'P1');
-  await openForm(page, `/r/sc.general.contract/999999?${GENERAL_QUERY}`, 'missing');
-  result('empty_record.explicit_state', await page.getByRole('heading', { name: '记录不存在', exact: true }).count() === 1, {}, 'P1');
+  await openForm(page, missingRecordRoute(), 'missing');
+  result('empty_record.explicit_state', await page.getByRole('heading', { name: '记录不存在', exact: true, level: 2 }).count() === 1, {}, 'P1');
   await capture(page, 'form-final-empty-record.png', { fullPage: false });
 }
 
@@ -673,6 +873,15 @@ async function verifyReferenceSources() {
   return { bossFiles, weaverFiles };
 }
 
+async function stageReferenceAssets() {
+  for (const name of [...BOSS_REFERENCE.screenshots, ...EXTERNAL_MATURE_PRODUCT_REFERENCE.screenshots]) {
+    const source = path.join(REFERENCE_SOURCE_ROOT, name);
+    const destination = path.join(OUTPUT_ROOT, name);
+    await fs.access(source);
+    await fs.copyFile(source, destination);
+  }
+}
+
 function buildHtml(report) {
   const cards = report.screenshots.map((name) => `<article><h3>${htmlEscape(name)}</h3><a href="${encodeURI(name)}"><img loading="lazy" src="${encodeURI(name)}" alt="${htmlEscape(name)}"></a></article>`).join('');
   const assertionRows = report.assertions.map((item) => `<tr><td><span class="status ${item.status.toLowerCase()}">${item.status}</span></td><td>${htmlEscape(item.severity)}</td><td>${htmlEscape(item.id)}</td><td><code>${htmlEscape(JSON.stringify(item.detail))}</code></td></tr>`).join('');
@@ -700,10 +909,30 @@ function buildHtml(report) {
 
 await fs.mkdir(OUTPUT_ROOT, { recursive: true });
 await fs.mkdir(path.dirname(JSON_OUTPUT), { recursive: true });
+await stageReferenceAssets();
 const browser = await launchChromium({ headless: true });
 let observedTypes = [];
 
 try {
+  const discoveryContext = await browser.newContext({ viewport: VIEWPORTS[0], locale: 'zh-CN' });
+  const discoveryPage = await discoveryContext.newPage();
+  const releasedNavigation = captureReleasedNavigation(discoveryPage);
+  await login(discoveryPage);
+  const actionableRoutes = actionableNodes(releasedNavigation.nav());
+  const actionRoutes = actionableRoutes.filter((row) => /^\/a\//.test(row.route));
+  const generalTarget = actionRoutes.find((row) => /一般合同/.test(row.path))
+    || actionRoutes.find((row) => /合同/.test(row.path));
+  assert(generalTarget?.route, 'authenticated system.init did not expose a general form-capable route');
+  const complexCandidates = [...actionRoutes.filter((row) => /施工合同/.test(row.path)), ...actionRoutes.filter((row) => /合同/.test(row.path))]
+    .filter((row, index, rows) => rows.findIndex((candidate) => candidate.route === row.route) === index);
+  assert(complexCandidates.length, 'authenticated system.init did not expose complex form candidates');
+  discoveredRoutes = {
+    navigation: { actionable_count: actionableRoutes.length, source: 'authenticated system.init' },
+    general: await discoverFormRoutes(discoveryPage, generalTarget.route),
+    complex: await discoverFirstCapableFormRoute(discoveryPage, complexCandidates, 'complex-create'),
+  };
+  await discoveryContext.close();
+
   await captureBaselineHelperCrop(browser);
   for (const viewport of VIEWPORTS) {
     const { context, page } = await createAuthenticatedPage(browser, viewport, `responsive-${viewport.key}`);
@@ -712,7 +941,7 @@ try {
       observedTypes = await page.locator('[data-field-type]').evaluateAll((elements) => elements.map((element) => element.getAttribute('data-field-type')).filter(Boolean));
       const readOnly = page.locator('[data-field-state="readonly"]:visible').first();
       result('field.readonly_disabled', await readOnly.count() === 1 && await readOnly.locator('input,select,textarea').count() === 0, { field: await readOnly.getAttribute('data-field-name') }, 'P1');
-      await openForm(page, `/f/sc.general.contract/1?${GENERAL_QUERY}`, 'edit');
+      await openForm(page, requiredRoute('general', 'edit'), 'edit');
       await capture(page, 'form-final-edit-pristine.png');
     }
     await auditReadonly(page, viewport.key);
@@ -727,11 +956,16 @@ try {
   await auditSavingSuccess(page);
   await auditSaveFailure(page);
   await auditLongForm(page);
-  await auditDesigner(page);
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize(viewport);
+    await auditDesigner(page, viewport.key);
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
   await auditLoadingAndEmpty(page);
   await context.close();
 } finally {
   await browser.close();
+  await acceptanceLease.release();
 }
 
 result('runtime.no_page_errors', runtimeErrors.length === 0, { errors: runtimeErrors }, 'P0');
@@ -753,10 +987,12 @@ for (const name of baselineCandidates) {
   }
 }
 const report = {
+  source_sha: SOURCE_SHA,
   status: assertions.every((item) => item.status === 'PASS') ? 'PASS' : 'FAIL',
   generated_at: new Date().toISOString(),
   base_url: BASE_URL,
   database: DB_NAME,
+  route_discovery: discoveredRoutes,
   viewports: VIEWPORTS,
   state_matrix: stateMatrix(),
   field_type_matrix: fieldMatrix(observedTypes),

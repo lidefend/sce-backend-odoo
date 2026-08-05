@@ -6,10 +6,21 @@ LOGFILE="${FRONTEND_ACCEPTANCE_LOGFILE:-/tmp/sc-frontend-acceptance.log}"
 PORT="${FRONTEND_ACCEPTANCE_PORT:-5175}"
 MODE="${FRONTEND_ACCEPTANCE_MODE:-development}"
 if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
-  echo "[frontend.acceptance.up] already running pid=$(cat "$PIDFILE") port=$PORT db=sc_frontend_acceptance"
-  exit 0
+  existing_pid="$(cat "$PIDFILE")"
+  if curl -fsS "http://127.0.0.1:${PORT}/login" >/dev/null 2>&1; then
+    echo "[frontend.acceptance.up] already healthy pid=$existing_pid port=$PORT db=sc_frontend_acceptance"
+    exit 0
+  fi
+  echo "[frontend.acceptance.up] replacing unhealthy pid=$existing_pid port=$PORT" >&2
+  kill -- "-$existing_pid" 2>/dev/null || kill "$existing_pid" 2>/dev/null || true
+  wait "$existing_pid" 2>/dev/null || true
+  rm -f "$PIDFILE"
 fi
 rm -f "$PIDFILE"
+if curl -fsS "http://127.0.0.1:${PORT}/login" >/dev/null 2>&1; then
+  echo "[frontend.acceptance.up] FAIL untracked service already owns port=$PORT" >&2
+  exit 2
+fi
 if [[ "$MODE" == "production" ]]; then
   DIST="${FRONTEND_ACCEPTANCE_STATIC_DIST:-$ROOT_DIR/frontend/apps/web/dist-release}"
   [[ -f "$DIST/index.html" ]] || { echo "[frontend.acceptance.up] missing production build: $DIST/index.html" >&2; exit 2; }
@@ -19,6 +30,11 @@ else
 fi
 echo $! >"$PIDFILE"
 for _ in $(seq 1 30); do
+  if ! kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "[frontend.acceptance.up] FAIL service exited during startup; see $LOGFILE" >&2
+    rm -f "$PIDFILE"
+    exit 1
+  fi
   if curl -fsS "http://127.0.0.1:${PORT}/login" >/dev/null 2>&1; then
     echo "[frontend.acceptance.up] PASS mode=$MODE url=http://127.0.0.1:${PORT} db=sc_frontend_acceptance"
     exit 0

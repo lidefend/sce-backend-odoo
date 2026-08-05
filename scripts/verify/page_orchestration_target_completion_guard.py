@@ -180,10 +180,11 @@ def main() -> int:
         "MyWorkView.vue",
         files["my_work_view"],
         [
-            "<PageRenderer",
-            'v-else-if="useUnifiedMyWorkRenderer"',
-            "route.query.legacy_my_work",
-            "return hasV1 && zones.length > 0;",
+            'data-my-work-renderer="product-workspace"',
+            "<MyWorkApprovalWorkspace",
+            ':workspace="workspace"',
+            "fetchMyWorkSummary",
+            "result.product_workspace || null",
         ],
         errors,
     )

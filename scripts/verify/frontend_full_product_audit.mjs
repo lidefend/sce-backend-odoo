@@ -2,20 +2,23 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { launchChromium } from './playwright_runtime.mjs';
+import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 
-const BASE_URL = process.env.SC_FULL_PRODUCT_URL || process.env.FRONTEND_URL || 'http://127.0.0.1:5175';
-const DB_NAME = process.env.SC_FULL_PRODUCT_DB || process.env.DB_NAME || 'sc_frontend_acceptance';
-const PASSWORD = process.env.SC_FULL_PRODUCT_PASSWORD || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || 'activity-tabs-acceptance-password';
+const acceptance = resolveAcceptanceEnvironment({ tool: 'full-product-audit', env: { ...process.env, FRONTEND_URL: process.env.SC_FULL_PRODUCT_URL || process.env.FRONTEND_URL, DB_NAME: process.env.SC_FULL_PRODUCT_DB || process.env.DB_NAME } });
+const BASE_URL = acceptance.baseUrl;
+const DB_NAME = acceptance.database;
+const PASSWORD = process.env.SC_FULL_PRODUCT_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const OUTPUT_ROOT = path.resolve(process.env.SC_FULL_PRODUCT_OUTPUT || '.runtime/final-acceptance');
 const JSON_OUTPUT = path.resolve(process.env.SC_FULL_PRODUCT_JSON || '.runtime/full-product-audit.json');
 const FORM_AUDIT_INPUT = path.resolve(process.env.SC_FORM_AUDIT_JSON || '.runtime/form-audit.json');
-const ROLE_BINDINGS = [
-  { role: 'finance', login: 'fixture_role_finance' },
-  { role: 'project_member', login: 'fixture_role_project_a_member' },
-  { role: 'project_manager', login: 'fixture_role_pm' },
-  { role: 'owner', login: 'fixture_role_owner' },
-];
+const SOURCE_SHA = process.env.SC_ACCEPTANCE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+if (!PASSWORD) throw new Error('SC_FULL_PRODUCT_PASSWORD or SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
+const ROLE_BINDINGS = ['finance', 'project_member', 'project_manager', 'owner'].map((role) => ({ role, login: String(acceptance.roleBindings[role] || '') }));
+if (ROLE_BINDINGS.some((binding) => !binding.login)) throw new Error(`profile ${acceptance.profile} requires finance/project_member/project_manager/owner role bindings`);
+const PROJECT_MANAGER_LOGIN = ROLE_BINDINGS.find((binding) => binding.role === 'project_manager').login;
 const SMOKE_VIEWPORTS = [
   { key: '1440', width: 1440, height: 900 },
   { key: '390', width: 390, height: 844 },
@@ -56,6 +59,7 @@ const runtimeIssues = [];
 const uncovered = [];
 
 await fs.mkdir(OUTPUT_ROOT, { recursive: true });
+const acceptanceLease = await acquireAcceptanceLease({ root: acceptance.artifactRoot, mode: 'shared-read', owner: { tool: 'full-product-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
 
 function nodeMeta(node) {
   return node?.meta && typeof node.meta === 'object' ? node.meta : {};
@@ -360,7 +364,7 @@ try {
     const context = await browser.newContext({ viewport, locale: 'zh-CN' });
     const page = await context.newPage();
     const capture = attachRuntimeCapture(page);
-    await login(page, 'fixture_role_pm', capture);
+    await login(page, PROJECT_MANAGER_LOGIN, capture);
     for (const representative of representatives.filter((item) => item.leaf)) {
       process.stdout.write(`[full-product-audit] representative ${viewport.key} ${representative.label}\r`);
       const existing = routeRows.find((row) => row.route === representative.leaf.route && row.viewport === `${viewport.width}x${viewport.height}` && (representative.leaf.role ? row.role === representative.leaf.role : true));
@@ -380,7 +384,7 @@ try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
   const page = await context.newPage();
   const capture = attachRuntimeCapture(page);
-  await login(page, 'fixture_role_pm', capture);
+  await login(page, PROJECT_MANAGER_LOGIN, capture);
   const notFound = { label: '不存在页面', navigation_path: '错误/禁止态', route: '/__full_product_audit_not_found__', menu_id: 0, action_id: 0, menu_xmlid: 'audit.not_found', action_xmlid: '', model: '' };
   capture.reset('not-found');
   await page.goto(`${BASE_URL}${notFound.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -394,6 +398,7 @@ try {
   await context.close();
 } finally {
   await browser.close();
+  await acceptanceLease.release();
   process.stdout.write('\n');
 }
 
@@ -428,8 +433,9 @@ const status = Object.values(coverage).every((item) => item.rate === 100) && fai
 const report = {
   schema_version: 'frontend-full-product-audit/v1',
   generated_at: new Date().toISOString(),
+  source_sha: SOURCE_SHA,
   status,
-  baseline: 'b7678cb0000944afd069017da618f79fa60adc76',
+  baseline: '2ae5dd9ff99f54db66e80bf1e9855a3d59ee090e',
   environment: { base_url: BASE_URL, database: DB_NAME, write_operations: false, external_puma_accessed: false },
   discovery: { source: 'authenticated release_navigation_v1/delivery_engine_v1', roles: ROLE_BINDINGS, menu_leaves: discovered.length, smoke_viewports: SMOKE_VIEWPORTS, deep_viewports: DEEP_VIEWPORTS },
   coverage,

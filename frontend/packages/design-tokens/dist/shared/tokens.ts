@@ -292,7 +292,7 @@ export const tokenVariants = {
     "semantic.text.secondary": "#cbd5e1",
     "semantic.text.muted": "rgba(203, 213, 225, 0.68)",
     "semantic.text.inverse": "#111827",
-    "semantic.text.on_interactive": "#ffffff",
+    "semantic.text.on_interactive": "#111827",
     "semantic.text.link": "#67d8ff",
     "semantic.focus.ring": "rgba(0, 182, 254, 0.24)",
     "semantic.shadow.panel": "0 16px 36px rgba(0, 0, 0, 0.28)",

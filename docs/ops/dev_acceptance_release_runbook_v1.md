@@ -81,15 +81,16 @@ filestore.
    `ACCEPTANCE_BASE_URL=http://127.0.0.1:18081`; it requires
    `ACCEPTANCE_LOGIN=wutao` and a non-empty `ACCEPTANCE_PASSWORD`, so the
    publish gate must exercise real login and `system.init`. The daily product
-   navigation baseline requires `ACCEPTANCE_NAV_MIN_ACTIONS=60`,
-   `ACCEPTANCE_NAV_MAX_ACTIONS=70`, and
+   navigation baseline requires `ACCEPTANCE_NAV_MIN_ACTIONS=100`,
+   `ACCEPTANCE_NAV_MAX_ACTIONS=115`, and
    `ACCEPTANCE_NAV_FORBIDDEN_LABELS=用户核对菜单,用户数据验收,用户验收,直营项目系统菜单`.
    It also requires `ACCEPTANCE_NAV_REQUIRED_PATHS` to include the locked daily
    product path sample for customer, supplier, project ledger, general contract,
    construction diary, inbound, payment request, project capital overview,
    payroll, company archive, and input invoice entries.
-   `ACCEPTANCE_NAV_REQUIRED_ACTIONS` must pin the same sample paths to their
-   locked runtime action ids.
+   Action and menu ids must be discovered from the authenticated `system.init`
+   result at runtime; `ACCEPTANCE_NAV_REQUIRED_ACTIONS` must remain empty so a
+   database-specific numeric id cannot masquerade as product coverage.
    The evidence artifact must remain `artifacts/backend/dev_acceptance_release_probe.json`,
    the frontend output must remain `./frontend/apps/web/dist-dev`,
    `VITE_PLATFORM_ADMIN_DB` must remain `sc_platform_core`, and Vite build or

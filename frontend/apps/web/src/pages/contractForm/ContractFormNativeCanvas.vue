@@ -1,5 +1,5 @@
 <template>
-  <section v-if="showDefaultSectionTitle || mode !== 'readonly'" class="native-default-section-head">
+  <section v-if="!designerMode && (showDefaultSectionTitle || mode !== 'readonly')" class="native-default-section-head">
     <div>
       <h3>{{ mode === 'create' ? '填写业务信息' : mode === 'edit' ? '编辑业务信息' : '基本信息' }}</h3>
       <p v-if="mode !== 'readonly'">
@@ -157,6 +157,8 @@ const sectionHasMoreAfter = ref(false);
 const activeSectionIndex = computed(() => Math.max(0, sectionItems.value.findIndex((item) => item.title === activeSection.value)));
 let sectionObserver: IntersectionObserver | null = null;
 let sectionMutationObserver: MutationObserver | null = null;
+let sectionNavResizeObserver: ResizeObserver | null = null;
+let formShell: HTMLElement | null = null;
 let refreshQueued = false;
 
 function visibleSectionElements() {
@@ -184,6 +186,9 @@ function refreshSectionNavigation() {
   }, { rootMargin: '-18% 0px -70% 0px', threshold: 0 });
   elements.forEach((element) => sectionObserver?.observe(element));
   void nextTick(() => {
+    const navShell = sectionNavRef.value?.closest<HTMLElement>('.form-section-nav-shell');
+    if (navShell) sectionNavResizeObserver?.observe(navShell);
+    syncSectionNavHeight();
     scrollActiveSectionTabIntoView(false);
     updateSectionOverflow();
   });
@@ -232,6 +237,12 @@ function updateSectionOverflow() {
   sectionHasMoreAfter.value = nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 2;
 }
 
+function syncSectionNavHeight() {
+  const navShell = sectionNavRef.value?.closest<HTMLElement>('.form-section-nav-shell');
+  formShell = navShell?.closest<HTMLElement>('.contract-form-native-shell') || null;
+  formShell?.style.setProperty('--sc-form-section-nav-height', `${Math.ceil(navShell?.getBoundingClientRect().height || 0)}px`);
+}
+
 function scrollActiveSectionTabIntoView(smooth: boolean) {
   const nav = sectionNavRef.value;
   const active = nav?.querySelector<HTMLElement>('[aria-current="location"]');
@@ -257,6 +268,12 @@ onMounted(() => {
       attributeFilter: ['aria-invalid', 'class'],
     });
   }
+  sectionNavResizeObserver = new ResizeObserver(syncSectionNavHeight);
+  void nextTick(() => {
+    const navShell = sectionNavRef.value?.closest<HTMLElement>('.form-section-nav-shell');
+    if (navShell) sectionNavResizeObserver?.observe(navShell);
+    syncSectionNavHeight();
+  });
   queueSectionRefresh();
 });
 onUpdated(queueSectionRefresh);
@@ -265,6 +282,8 @@ watch(activeSection, () => void nextTick(() => scrollActiveSectionTabIntoView(tr
 onBeforeUnmount(() => {
   sectionObserver?.disconnect();
   sectionMutationObserver?.disconnect();
+  sectionNavResizeObserver?.disconnect();
+  formShell?.style.removeProperty('--sc-form-section-nav-height');
 });
 
 const emit = defineEmits<{
@@ -289,7 +308,7 @@ const emit = defineEmits<{
 <style scoped>
 .form-section-nav-shell {
   position: sticky;
-  top: 72px;
+  top: calc(var(--sc-form-command-bar-height, 72px) + var(--sc-form-sticky-gap, 8px));
   z-index: 8;
   min-width: 0;
   border: 1px solid var(--sc-app-border);

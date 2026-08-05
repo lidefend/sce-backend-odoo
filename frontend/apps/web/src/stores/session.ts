@@ -611,6 +611,8 @@ function isTransientLoadingActivityTitle(title: string): boolean {
   return /(?:^| · )加载中$/.test(asText(title));
 }
 
+let projectSearchRequestSequence = 0;
+
 export const useSessionStore = defineStore('session', {
   state: (): SessionState => ({
     token: null,
@@ -1701,6 +1703,7 @@ export const useSessionStore = defineStore('session', {
       return this.workspaceHome;
     },
     async searchProjectContext(search = '', requestEpoch = currentContextEpoch()) {
+      const requestSequence = ++projectSearchRequestSequence;
       const selector = this.projectContext?.selector || {};
       const intent = String(selector.intent || 'project.context.search').trim();
       const result = await intentRequest<ProjectContextContract>({
@@ -1713,7 +1716,7 @@ export const useSessionStore = defineStore('session', {
           limit: selector.limit || 20,
         },
       });
-      if (!isCurrentContextEpoch(requestEpoch)) return this.projectContext;
+      if (!isCurrentContextEpoch(requestEpoch) || requestSequence !== projectSearchRequestSequence) return this.projectContext;
       const normalized = normalizeProjectContext(result);
       if (normalized) {
         this.projectContext = {

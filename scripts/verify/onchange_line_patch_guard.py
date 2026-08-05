@@ -7,7 +7,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / 'addons/smart_core/handlers/api_onchange.py'
-FORM = ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue'
+FORM_PATHS = [
+    ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/one2manyUtils.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/onchangeNormalization.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/useRecordFormState.ts',
+]
 
 
 def _read(path: Path) -> str:
@@ -20,7 +26,7 @@ def main() -> int:
     errors: list[str] = []
     try:
         backend = _read(BACKEND)
-        form = _read(FORM)
+        form = '\n'.join(_read(path) for path in FORM_PATHS)
     except FileNotFoundError as exc:
         print('[FAIL] onchange_line_patch_guard')
         print(f'- {exc}')
@@ -47,14 +53,14 @@ def main() -> int:
 
     form_markers = [
         'const onchangeLinePatches = ref<OnchangeLinePatch[]>([]);',
-        'function applyOnchangeLinePatches(linePatches: OnchangeLinePatch[]) {',
-        'function one2manyRowHints(fieldName: string, row: One2ManyInlineRow) {',
-        "messages.push(`原因码: ${reasonCode}`);",
+        'function applyLinePatches(linePatches:',
+        'function rowHints(fieldName: string, row: One2ManyInlineRow)',
+        "messages.push(`处理原因：${formRuntimeReasonLabel(reasonCode)}`);",
         'const rowState = String(patch.row_state || \'\').trim().toLowerCase();',
-        'messages.push(`命令提示: ${patch.command_hint.join(\'/\')}`);',
-        'const linePatches = Array.isArray(response?.line_patches) ? response.line_patches : [];',
-        'onchangeLinePatches.value = linePatches;',
-        'applyOnchangeLinePatches(linePatches);',
+        'messages.push(`处理建议：${formRuntimeCommandHintLabel(patch.command_hint)}`);',
+        'linePatches: Array.isArray(response?.line_patches) ? response.line_patches : [],',
+        'context.onchangeLinePatches.value=linePatches',
+        'context.applyOnchangeLinePatches(linePatches)',
     ]
     for marker in form_markers:
         if marker not in form:
@@ -68,7 +74,7 @@ def main() -> int:
 
     print('[OK] onchange_line_patch_guard')
     print(f'- backend: {BACKEND}')
-    print(f'- form: {FORM}')
+    print(f'- form modules: {len(FORM_PATHS)}')
     return 0
 
 

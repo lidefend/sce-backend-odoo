@@ -19,7 +19,9 @@ REQUIRED = {
     ],
     "frontend/apps/web/src/components/StatusPanel.vue": [
         "errorDetails?: Record<string, unknown>;",
-        "Context:",
+        "showHudMeta",
+        "Model:",
+        "Operation:",
         "errorDetails?.model",
         "errorDetails?.op",
     ],

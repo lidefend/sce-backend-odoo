@@ -40,7 +40,6 @@
   min-width: 0;
   width: 100%;
   min-height: 100%;
-  overflow-x: visible;
 }
 
 .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
@@ -49,8 +48,7 @@
 
 .sc-page-frame,
 .sc-product-page-frame {
-  box-sizing: border-box;
-  width: 100%;
+  width: min(100%, var(--sc-content-layout-inline-size, 100%));
   min-width: 0;
   margin-inline: auto;
   padding: var(--sc-page-padding);
@@ -58,13 +56,11 @@
   max-width: min(100%, var(--sc-workspace-frame-max));
 }
 
-.sc-content-layout--data-grid,
-.sc-content-layout--record-grid,
-.sc-content-layout--form-grid,
-.sc-content-layout--focused-form,
-.sc-content-layout--reading { --sc-content-layout-inline-size: 100%; }
-
-.sc-content-layout--reading { --sc-reading-content-max: var(--sc-content-reading-max); }
+.sc-content-layout--data-grid { --sc-content-layout-inline-size: 100%; }
+.sc-content-layout--record-grid { --sc-content-layout-inline-size: var(--sc-content-record-max); }
+.sc-content-layout--form-grid { --sc-content-layout-inline-size: var(--sc-content-form-max); }
+.sc-content-layout--focused-form { --sc-content-layout-inline-size: var(--sc-content-form-max); }
+.sc-content-layout--reading { --sc-content-layout-inline-size: var(--sc-content-reading-max); }
 
 .topbar-context {
   display: inline-flex;

@@ -8,7 +8,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GOVERNANCE = ROOT / "addons/smart_core/utils/contract_governance.py"
+GOVERNANCE_MODULES = (
+    ROOT / "addons/smart_core/utils/contract_governance_form_fields.py",
+    ROOT / "addons/smart_core/utils/contract_governance_form_actions.py",
+)
 FORM_PAGE = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
+FORM_COMPONENTS = ROOT / "frontend/apps/web/src/pages/contractForm"
 REPORT_JSON = ROOT / "artifacts/backend/render_semantic_ready_report.json"
 REPORT_MD = ROOT / "docs/ops/audit/render_semantic_ready_report.md"
 
@@ -28,8 +33,9 @@ def _extract_core_cap(text: str) -> int | None:
 
 
 def main() -> int:
-    governance_text = _read(GOVERNANCE)
-    form_text = _read(FORM_PAGE)
+    governance_text = "\n".join(_read(path) for path in (GOVERNANCE, *GOVERNANCE_MODULES))
+    form_sources = [FORM_PAGE, *FORM_COMPONENTS.rglob("*.vue"), *FORM_COMPONENTS.rglob("*.ts")]
+    form_text = "\n".join(_read(path) for path in form_sources)
     errors: list[str] = []
 
     if not governance_text:
@@ -63,12 +69,13 @@ def main() -> int:
         "const showSearchFilters = computed(() => {",
         "if (renderProfile.value !== 'create') return true;",
         "return !contract.value.hide_filters_on_create;",
-        "action.semantic === 'primary_action' && !isHeaderConfigAction(action) ? 'sc-btn-primary' : 'sc-btn-ghost'",
-        "advancedExpanded.value = renderProfile.value !== 'create'",
+        "action.semantic === 'primary_action'",
+        "advancedExpanded.value = renderProfile.value !== 'create' || !hasCore;",
         "isFieldVisible(node.name)",
         "收起高级信息",
         "展开高级信息",
-        "v-if=\"showDebugActionsVisible && !isProjectIntakeCreateMode\" class=\"sc-btn sc-btn-ghost sc-btn-sm\" :disabled=\"busy || !contract\" @click=\"exportContractJson\"",
+        'v-if="showDebug && !intakeMode"',
+        '@click="$emit(\'export\')"',
     ]
     for token in required_frontend_tokens:
         if token not in form_text:
@@ -82,7 +89,7 @@ def main() -> int:
             "single_primary_action_guard": "primary_assigned = False" in governance_text,
             "create_hide_search_filters": "showSearchFilters" in form_text,
             "create_hide_export_button": "showDebugActions" in form_text and "exportContractJson" in form_text,
-            "advanced_default_collapsed_on_create": "advancedExpanded.value = renderProfile.value !== 'create'" in form_text,
+            "advanced_default_collapsed_on_create": "advancedExpanded.value = renderProfile.value !== 'create' || !hasCore;" in form_text,
         },
         "errors": errors,
     }

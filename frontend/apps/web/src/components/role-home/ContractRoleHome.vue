@@ -5,7 +5,6 @@
         <h1>{{ title }}</h1>
         <p>{{ subtitle }}</p>
       </div>
-      <div class="role-home-surface__header-mark"><ScIcon name="briefcase" :size="20" /><span>{{ title }}</span></div>
     </header>
 
     <section class="role-home-surface__tasks" aria-labelledby="role-home-task-title">
@@ -59,7 +58,7 @@
       <div class="role-home-surface__access-grid">
         <div>
           <h3>常用入口</h3>
-          <div v-if="quickLinks.length" class="role-home-surface__link-list">
+          <div v-if="quickLinks.length" class="role-home-surface__link-list role-home-surface__link-list--quick">
             <button v-for="link in quickLinks" :key="link.key" type="button" @click="navigate(link.route)">
               <ScIcon :name="entryIcon(link.key)" :size="18" />
               <span><strong>{{ link.label }}</strong><small v-if="link.detail && link.detail !== link.label">{{ link.detail }}</small></span>
@@ -70,7 +69,7 @@
         </div>
         <div>
           <h3>最近访问</h3>
-          <div v-if="recentItems.length" class="role-home-surface__link-list">
+          <div v-if="recentItems.length" class="role-home-surface__link-list role-home-surface__link-list--recent">
             <button v-for="item in recentItems" :key="item.key" type="button" @click="navigate(item.route)">
               <strong>{{ item.label }}</strong>
             </button>
@@ -127,49 +126,18 @@ const {
 .role-home-surface__tasks,
 .role-home-surface__overview,
 .role-home-surface__access {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
 
 .role-home-surface__header {
   grid-column: 1 / -1;
-  position: relative;
-  overflow: hidden;
-  min-height: 86px;
-  box-sizing: border-box;
-  padding: 16px 20px;
+  min-height: 64px;
+  padding: 8px 0 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sc-space-4, 16px);
-  border-color: var(--sc-app-info-border);
-  background: linear-gradient(118deg, color-mix(in srgb, var(--sc-semantic-surface-interactive) 78%, var(--sc-app-panel)), color-mix(in srgb, var(--sc-semantic-surface-interactive) 62%, var(--sc-app-panel)));
-}
-
-.role-home-surface__header-mark {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 0 14px;
-  border: 1px solid color-mix(in srgb, var(--sc-semantic-text-on-interactive) 28%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--sc-semantic-text-on-interactive) 12%, transparent);
-  color: var(--sc-semantic-text-on-interactive);
-  font-weight: 600;
-}
-
-.role-home-surface__header::before {
-  position: absolute;
-  top: -52px;
-  right: -24px;
-  width: 164px;
-  height: 164px;
-  border: 28px solid color-mix(in srgb, var(--sc-semantic-text-on-interactive) 10%, transparent);
-  border-radius: 50%;
-  content: '';
+  border-bottom: 1px solid var(--sc-app-border);
 }
 
 .role-home-surface__header h1,
@@ -183,9 +151,8 @@ const {
 }
 
 .role-home-surface__header h1 {
-  position: relative;
-  color: var(--sc-semantic-text-on-interactive);
-  font-size: 24px;
+  color: var(--sc-app-text-primary);
+  font-size: 22px;
   line-height: 1.35;
 }
 
@@ -197,16 +164,16 @@ const {
 }
 
 .role-home-surface__header p {
-  position: relative;
   margin-top: var(--sc-space-2, 8px);
-  color: color-mix(in srgb, var(--sc-semantic-text-on-interactive) 88%, transparent);
+  color: var(--sc-app-text-secondary);
 }
 
 .role-home-surface__tasks,
 .role-home-surface__overview,
 .role-home-surface__access {
   padding: 14px 16px;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--sc-app-shadow) 9%, transparent);
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-product-radius-panel);
 }
 
 .role-home-surface__access { grid-column: 1 / -1; }
@@ -314,7 +281,7 @@ const {
   margin-top: var(--sc-space-2, 8px);
 }
 
-.role-home-surface__link-list button {
+.role-home-surface__link-list--quick button {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) 18px;
   align-items: center;
@@ -326,7 +293,7 @@ const {
   transition: transform var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
 }
 
-.role-home-surface__link-list button > .sc-icon:first-child {
+.role-home-surface__link-list--quick button > .sc-icon:first-child {
   width: 32px;
   height: 32px;
   padding: 7px;
@@ -335,7 +302,7 @@ const {
   color: var(--sc-app-info-text);
 }
 
-.role-home-surface__link-list button > span {
+.role-home-surface__link-list--quick button > span {
   display: grid;
   gap: 2px;
 }
@@ -343,6 +310,17 @@ const {
 .role-home-surface__link-list button small {
   color: var(--sc-app-text-secondary);
   font-size: 12px;
+}
+
+.role-home-surface__link-list--recent button {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  overflow-wrap: anywhere;
+  text-align: left;
+  white-space: normal;
 }
 
 .role-home-surface__link-list button:hover {
@@ -357,7 +335,7 @@ const {
   background: var(--sc-app-subtle-bg);
 }
 
-@media (max-width: 700px) {
+@media (max-width: 960px) {
   .role-home-surface {
     grid-template-columns: 1fr;
     gap: var(--sc-space-3, 12px);
@@ -367,15 +345,22 @@ const {
   .role-home-surface__overview { order: 2; }
   .role-home-surface__access { order: 3; }
 
-  .role-home-surface__header-mark { display: none; }
-
   .role-home-surface__access-grid {
     grid-template-columns: 1fr;
+  }
+
+  .role-home-surface__access-grid > div + div {
+    padding-top: var(--sc-space-3, 12px);
+    border-top: 1px solid var(--sc-app-border);
   }
 
   .role-home-surface__task-list article {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .role-home-surface button {
+    min-height: 44px;
   }
 }
 </style>

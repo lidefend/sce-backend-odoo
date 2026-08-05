@@ -2761,3 +2761,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   database with company evidence for IDs 2 and 3.
 - Boundary: no frontend, addon runtime, contract/schema, permission, fixture,
   business-data, deployment or merge change.
+# 2026-08-05 — Custom frontend professional product convergence
+
+- Branch: `codex/long-running-business-iteration`
+- Starting product commit: `2ae5dd9ff99f54db66e80bf1e9855a3d59ee090e`
+- Formal Product Layer: P0 platform kernel product
+- Layer Target: generic frontend renderer, AppShell geometry, design-system interaction, and acceptance tooling
+- Module: `frontend/apps/web` and read-only browser acceptance scripts under `scripts/verify`
+- Reason: converge shared enterprise pages on one viewport-aware geometry, scroll, responsive, focus, and feedback contract without changing business semantics
+- Standard vs User-Specific: platform-wide rendering and interaction mechanism; no construction-specific or customer-specific rules
+- Why Here / Why Not Elsewhere: geometry, accessibility, generic native-view presentation, and runtime-discovered browser verification belong to the shared frontend; P1/P2/P3/P4 must not carry renderer fixes or database-ID exceptions
+- Blast Radius: AppShell, role home, generic list/form/dialog/relation/x2many/designer/config surfaces and acceptance evidence; excludes permissions, API semantics, business data, production, and main-branch integration
+- Validation: strict typecheck, unit and design guards, production build, runtime-discovered five-viewport geometry/form/full-route audits, visual screenshots, daily-development re-verification, and `git diff --check`

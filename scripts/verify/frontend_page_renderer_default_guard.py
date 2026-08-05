@@ -21,13 +21,11 @@ REQUIRED = {
         "<section v-else",
     ],
     "frontend/apps/web/src/views/MyWorkView.vue": [
-        "<PageRenderer",
-        'v-else-if="useUnifiedMyWorkRenderer"',
-        "const useUnifiedMyWorkRenderer = computed(() => {",
-        "route.query.legacy_my_work",
-        "const hasV1 =",
-        "return hasV1 && zones.length > 0;",
-        "<section v-else",
+        'data-my-work-renderer="product-workspace"',
+        "<MyWorkApprovalWorkspace",
+        ':workspace="workspace"',
+        "fetchMyWorkSummary",
+        "result.product_workspace || null",
     ],
 }
 

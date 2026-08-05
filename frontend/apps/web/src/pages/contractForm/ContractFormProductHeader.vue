@@ -96,6 +96,8 @@ const nextStatusLabel = computed(() => props.statusbar.states[currentStatusIndex
 const statusTrackRef = ref<HTMLOListElement | null>(null);
 const workflowHasMoreBefore = ref(false);
 const workflowHasMoreAfter = ref(false);
+let commandBarResizeObserver: ResizeObserver | null = null;
+let commandBarShell: HTMLElement | null = null;
 
 const emit = defineEmits<{
   back: []; 'continue-processing': []; 'set-status': [value: string]; 'return-workbench': []; 'save-draft': []; 'run-primary': [];
@@ -123,12 +125,29 @@ function activateStatus(value: string) {
   emit('set-status', value);
 }
 
+function syncCommandBarHeight() {
+  const commandBar = document.querySelector<HTMLElement>('.contract-form-command-bar');
+  if (!commandBar) return;
+  commandBarShell = commandBar.closest<HTMLElement>('.contract-form-native-shell');
+  commandBarShell?.style.setProperty('--sc-form-command-bar-height', `${Math.ceil(commandBar.getBoundingClientRect().height)}px`);
+}
+
 onMounted(() => {
   void nextTick(() => revealCurrentStatus(false));
+  void nextTick(() => {
+    const commandBar = document.querySelector<HTMLElement>('.contract-form-command-bar');
+    syncCommandBarHeight();
+    commandBarResizeObserver = new ResizeObserver(syncCommandBarHeight);
+    if (commandBar) commandBarResizeObserver.observe(commandBar);
+  });
   window.addEventListener('resize', updateWorkflowOverflow);
 });
 watch(() => [props.statusbar.current, props.statusbar.states.length], () => void nextTick(() => revealCurrentStatus(true)));
-onBeforeUnmount(() => window.removeEventListener('resize', updateWorkflowOverflow));
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateWorkflowOverflow);
+  commandBarResizeObserver?.disconnect();
+  commandBarShell?.style.removeProperty('--sc-form-command-bar-height');
+});
 
 function buttonClass(action: ContractAction) {
   return ['sc-btn', 'sc-btn-sm', action.destructive ? 'sc-btn-danger' : action.presentationTier === 'primary' || action.semantic === 'primary_action' ? 'sc-btn-primary' : 'sc-btn-ghost'];

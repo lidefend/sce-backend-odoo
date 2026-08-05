@@ -3,17 +3,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { launchChromium } from './playwright_runtime.mjs';
 import { applyReleasedNavigationTarget, captureReleasedNavigation } from './released_navigation_target.mjs';
 import { evaluateRelativePerformanceBudget } from './frontend_performance_budget.mjs';
+import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 
 const require = createRequire(import.meta.url);
 const axeModule = require(require.resolve('@axe-core/playwright', { paths: [path.resolve('frontend/apps/web/node_modules')] }));
 const AxeBuilder = axeModule.default || axeModule;
-const BASE_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5175';
-const DB_NAME = process.env.DB_NAME || 'sc_frontend_acceptance';
-const PASSWORD = process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
+const acceptance = resolveAcceptanceEnvironment({ tool: 'delivery-hardening', operation: 'read' });
+const BASE_URL = acceptance.baseUrl;
+const DB_NAME = acceptance.database;
+const PASSWORD = acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
+const FINANCE_LOGIN = acceptance.roleBindings.finance || 'fixture_role_finance';
+const PROJECT_MEMBER_LOGIN = acceptance.roleBindings.project_member || 'fixture_role_project_a_member';
+const PROJECT_MANAGER_LOGIN = acceptance.roleBindings.project_manager || 'fixture_role_pm';
+const CONTRACT_OPERATOR_LOGIN = acceptance.roleBindings.contract_operator || 'fixture_role_contract_operator';
 const OUT = process.env.ARTIFACTS_DIR || 'artifacts/frontend-delivery-hardening';
 const TARGETS = JSON.parse(process.env.FRONTEND_DELIVERY_HARDENING_TARGETS_JSON || '{}');
 const SCREENSHOTS = path.join(OUT, 'screenshots');
@@ -29,10 +37,79 @@ const PERF_BASELINE_PATH = process.env.DELIVERY_HARDENING_BASELINE_JSON
   || 'docs/frontend_productization/frontend_delivery_performance_baseline_v1.json';
 const PERF_RUNS = Number(process.env.DELIVERY_HARDENING_PERF_RUNS || 5);
 const runtimeByPage = new WeakMap();
+fs.rmSync(SCREENSHOTS, { recursive: true, force: true });
+fs.rmSync(TRACES, { recursive: true, force: true });
 fs.mkdirSync(SCREENSHOTS, { recursive: true });
 fs.mkdirSync(TRACES, { recursive: true });
 
 function check(value, message) { if (!value) throw new Error(message); }
+const capturedScreenshotHashes = new Map();
+
+async function waitForSurfaceReady(page, surface) {
+  const selectors = {
+    home: '[data-role-home]',
+    'my-work': '.product-work',
+    'project-list': '[data-product-page-mode="list"]',
+    'contract-list': '[data-product-page-mode="list"]',
+    'settlement-list': '[data-product-page-mode="list"]',
+    'payment-list': '[data-product-page-mode="list"]',
+    'project-detail': '[data-product-page-mode="form"]',
+    'contract-detail': '[data-product-page-mode="form"]',
+    'settlement-detail': '[data-product-page-mode="form"]',
+    'payment-detail': '[data-product-page-mode="form"]',
+    'execution-detail': '[data-product-page-mode="form"]',
+    'not-found': 'main [role="alert"], main .sc-alert',
+  };
+  const selector = selectors[surface.name];
+  if (selector) await page.locator(selector).first().waitFor({ state: 'visible', timeout: 45000 });
+  await page.waitForFunction(() => {
+    const app = document.querySelector('#app');
+    const text = String(app?.textContent || '').replace(/\s+/g, ' ').trim();
+    const rect = app?.getBoundingClientRect();
+    return Boolean(app && rect && rect.width > 0 && rect.height > 0 && app.querySelectorAll('*').length >= 5 && text.length >= 4);
+  }, undefined, { timeout: 45000 });
+  await page.waitForFunction(() => {
+    const pending = [...document.querySelectorAll('[aria-busy="true"]')].some((element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 1 && rect.height > 1 && style.visibility !== 'hidden' && style.display !== 'none';
+    });
+    return !pending;
+  }, undefined, { timeout: 45000 });
+}
+
+async function renderedSurfaceMetrics(page, buffer) {
+  const dom = await page.evaluate(() => {
+    const visible = [...document.querySelectorAll('#app *')].filter((element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 1 && rect.height > 1 && style.visibility !== 'hidden' && style.display !== 'none';
+    });
+    const colors = new Set();
+    for (const element of visible) {
+      const style = getComputedStyle(element);
+      colors.add(`${style.color}|${style.backgroundColor}|${style.borderColor}`);
+    }
+    return {
+      visible_element_count: visible.length,
+      visible_text_length: String(document.querySelector('#app')?.textContent || '').replace(/\s+/g, ' ').trim().length,
+      semantic_color_count: colors.size,
+      interactive_count: visible.filter((element) => element.matches('a,button,input,select,textarea,[role="button"],[role="link"]')).length,
+    };
+  });
+  return { ...dom, sha256: crypto.createHash('sha256').update(buffer).digest('hex') };
+}
+
+async function assertMeaningfulScreenshot(page, buffer, label) {
+  const metrics = await renderedSurfaceMetrics(page, buffer);
+  check(metrics.visible_element_count >= 5, `${label}: blank rendered surface visible_elements=${metrics.visible_element_count}`);
+  check(metrics.visible_text_length >= 4, `${label}: blank rendered surface text_length=${metrics.visible_text_length}`);
+  check(metrics.semantic_color_count >= 2, `${label}: near-blank rendered surface semantic_colors=${metrics.semantic_color_count}`);
+  const previous = capturedScreenshotHashes.get(metrics.sha256);
+  check(!previous, `${label}: screenshot is identical to ${previous}`);
+  capturedScreenshotHashes.set(metrics.sha256, label);
+  return metrics;
+}
 function recordRoute(target) { return `/r/${target.model}/${target.record_id}?action_id=${target.action_id}&menu_id=${target.menu_id}`; }
 function listRoute(target) { return `/a/${target.action_id}?menu_id=${target.menu_id}`; }
 function median(values) { const rows = [...values].sort((a, b) => a - b); return rows[Math.floor(rows.length / 2)] || 0; }
@@ -129,8 +206,17 @@ function assertRuntimeClean(state, label, allowed = []) {
 function resetRuntime(state) {
   state.console.length = 0; state.pageerror.length = 0; state.unhandled.length = 0; state.http.length = 0;
 }
+async function gotoLogin(page) {
+  try {
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  } catch (error) {
+    if (!new URL(page.url()).pathname.includes('/login')) throw error;
+  }
+  await page.waitForURL((url) => url.pathname.includes('/login'), { timeout: 45000 });
+  await page.locator('#login-username, input[autocomplete="username"]').first().waitFor({ state: 'visible', timeout: 45000 });
+}
 async function login(page, user, keyboard = false) {
-  await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await gotoLogin(page);
   const username = page.locator('#login-username, input[autocomplete="username"]').first();
   const password = page.locator('#login-password, input[autocomplete="current-password"]').first();
   await username.fill(user);
@@ -258,6 +344,7 @@ async function interceptNextBusiness(page, handler, expectedTarget) {
 async function main() {
   for (const key of ['project', 'contract', 'settlement', 'payment_request', 'payment_execution', 'journey_request', 'work_settlement']) check(TARGETS[key]?.record_id > 0, `missing ${key}`);
   check(PERF_RUNS >= 5, `performance sample count must be >=5, got ${PERF_RUNS}`);
+  const acceptanceLease = await acquireAcceptanceLease({ root: acceptance.artifactRoot, mode: 'shared-read', owner: { tool: 'delivery-hardening', profile: acceptance.profile, source_sha: process.env.GIT_SHA || '' } });
   const journeyName = String(TARGETS.journey_request.display_name || '').trim();
   check(journeyName.length > 0, 'missing journey_request display_name');
   const journeyIdentity = String(TARGETS.journey_request.record_identity || '').trim();
@@ -335,7 +422,7 @@ async function main() {
     let page = await context.newPage();
     let runtime = capture(page);
     const releasedNavigation = captureReleasedNavigation(page);
-    await login(page, 'fixture_role_finance');
+    await login(page, FINANCE_LOGIN);
     applyReleasedNavigationTarget(
       TARGETS,
       ['payment_request', 'journey_request'],
@@ -398,7 +485,7 @@ async function main() {
 
     // J10: narrow-screen keyboard path and native dialog focus containment/restore.
     await page.setViewportSize({ width: 390, height: 844 });
-    await login(page, 'fixture_role_finance', true);
+    await login(page, FINANCE_LOGIN, true);
     await page.getByRole('button', { name: '我的工作' }).focus();
     await page.keyboard.press('Enter');
     await page.locator('.product-work').waitFor({ timeout: 45000 });
@@ -447,7 +534,7 @@ async function main() {
     const workText = await page.locator('body').innerText();
     check(workText.includes('FE-C-PR-001') && !workText.includes(journeyName), 'stale company response polluted final B context');
     await page.unroute('**/api/v1/intent**', reorder);
-    await logout(page); await login(page, 'fixture_role_project_a_member');
+    await logout(page); await login(page, PROJECT_MEMBER_LOGIN);
     await page.goto(`${BASE_URL}/my-work`); await page.locator('.product-work').waitFor({ timeout: 45000 });
     const memberText = await page.locator('body').innerText();
     check(!/FE-C-PR-001|FE-JOURNEY-PAYMENT|FE-DELIVERY-HARDENING|80\.00|100\.00/.test(memberText), 'finance data survived role switch');
@@ -456,18 +543,17 @@ async function main() {
 
     // Representative responsive and accessibility matrix. Existing role permissions are preserved.
     const surfaces = [
-      { name: 'login', route: '/login', role: '' }, { name: 'home', route: '/', role: 'fixture_role_finance' }, { name: 'my-work', route: '/my-work', role: 'fixture_role_finance' },
-      { name: 'project-list', route: listRoute(TARGETS.project), role: 'fixture_role_pm' }, { name: 'project-detail', route: recordRoute(TARGETS.project), role: 'fixture_role_pm' },
-      { name: 'contract-list', route: listRoute(TARGETS.contract), role: 'fixture_role_finance' }, { name: 'contract-detail', route: recordRoute(TARGETS.contract), role: 'fixture_role_finance' },
-      { name: 'settlement-list', route: listRoute(TARGETS.settlement), role: 'fixture_role_finance' }, { name: 'settlement-detail', route: recordRoute(TARGETS.settlement), role: 'fixture_role_finance' },
-      { name: 'payment-list', route: listRoute(TARGETS.payment_request), role: 'fixture_role_finance' }, { name: 'payment-detail', route: recordRoute(TARGETS.payment_request), role: 'fixture_role_finance' },
-      { name: 'payment-form', route: recordRoute(TARGETS.work_settlement), role: 'fixture_role_finance', mode: 'form' },
-      { name: 'execution-detail', route: recordRoute(TARGETS.payment_execution), role: 'fixture_role_finance' },
-      { name: 'approval-dialog', route: recordRoute(TARGETS.journey_request), role: 'fixture_role_finance', mode: 'dialog' },
-      { name: 'denied', route: recordRoute(TARGETS.payment_request), role: 'fixture_role_project_a_member' },
-      { name: 'not-found', route: `/r/payment.request/999999?action_id=${TARGETS.payment_request.action_id}&menu_id=${TARGETS.payment_request.menu_id}`, role: 'fixture_role_finance' },
-      { name: 'network-error', route: recordRoute(TARGETS.payment_request), role: 'fixture_role_finance', mode: 'network' },
-      { name: 'legal-empty-relationship', route: recordRoute(TARGETS.payment_request), role: 'fixture_role_finance' },
+      { name: 'login', route: '/login', role: '' }, { name: 'home', route: '/', role: FINANCE_LOGIN }, { name: 'my-work', route: '/my-work', role: FINANCE_LOGIN },
+      { name: 'project-list', route: listRoute(TARGETS.project), role: PROJECT_MANAGER_LOGIN }, { name: 'project-detail', route: recordRoute(TARGETS.project), role: PROJECT_MANAGER_LOGIN },
+      { name: 'contract-list', route: listRoute(TARGETS.contract), role: CONTRACT_OPERATOR_LOGIN }, { name: 'contract-detail', route: recordRoute(TARGETS.contract), role: CONTRACT_OPERATOR_LOGIN },
+      { name: 'settlement-list', route: listRoute(TARGETS.settlement), role: FINANCE_LOGIN }, { name: 'settlement-detail', route: recordRoute(TARGETS.settlement), role: FINANCE_LOGIN },
+      { name: 'payment-list', route: listRoute(TARGETS.payment_request), role: FINANCE_LOGIN }, { name: 'payment-detail', route: recordRoute(TARGETS.payment_request), role: FINANCE_LOGIN },
+      { name: 'payment-form', route: recordRoute(TARGETS.work_settlement), role: FINANCE_LOGIN, mode: 'form' },
+      { name: 'execution-detail', route: recordRoute(TARGETS.payment_execution), role: FINANCE_LOGIN },
+      { name: 'approval-dialog', route: recordRoute(TARGETS.journey_request), role: FINANCE_LOGIN, mode: 'dialog' },
+      { name: 'denied', route: recordRoute(TARGETS.payment_request), role: PROJECT_MEMBER_LOGIN },
+      { name: 'not-found', route: `/r/payment.request/999999?action_id=${TARGETS.payment_request.action_id}&menu_id=${TARGETS.payment_request.menu_id}`, role: FINANCE_LOGIN },
+      { name: 'network-error', route: recordRoute(TARGETS.payment_request), role: FINANCE_LOGIN, mode: 'network' },
     ];
     for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
       responsive.viewports.push(viewport);
@@ -478,7 +564,7 @@ async function main() {
         let removeFault = null;
         let faultSnapshot = null;
         if (!surface.role) {
-          await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+          await gotoLogin(page);
           currentRole = '';
         } else {
           if (currentRole !== surface.role || page.url().includes('/login')) {
@@ -511,15 +597,16 @@ async function main() {
           } else if (surface.mode === 'network') {
             await page.getByRole('heading', { name: '网络连接异常' }).waitFor({ timeout: 45000 });
           } else if (surface.name === 'denied') {
-            await page.getByRole('heading', { name: '无权访问' }).waitFor({ timeout: 45000 });
+            await page.locator('main').getByRole('heading', { name: '访问受限', exact: true }).waitFor({ timeout: 45000 });
           } else {
-            await page.waitForTimeout(250);
+            await waitForSurfaceReady(page, surface);
           }
         }
         await assertNoOverflow(page, `${surface.name}-${viewport.width}`);
         const shot = path.join(SCREENSHOTS, `${surface.name}-${viewport.width}x${viewport.height}.png`);
-        await page.screenshot({ path: shot, fullPage: false });
-        responsive.pages.push({ name: surface.name, role: surface.role || 'anonymous', viewport, pass: true, screenshot: shot });
+        const screenshot = await page.screenshot({ path: shot, fullPage: false });
+        const visual = await assertMeaningfulScreenshot(page, screenshot, `${surface.name}-${viewport.width}x${viewport.height}`);
+        responsive.pages.push({ name: surface.name, role: surface.role || 'anonymous', viewport, pass: true, screenshot: shot, visual });
         if (viewport.width === 1440) {
           const scan = await axe(page, surface.name);
           accessibility.scans.push(scan); accessibility.blocking += scan.blocking;
@@ -579,13 +666,13 @@ async function main() {
       });
       await page.setViewportSize({ width: 1440, height: 900 });
       await logout(page).catch(() => {});
-      await login(page, 'fixture_role_finance');
+      await login(page, FINANCE_LOGIN);
       await logout(page);
-      await login(page, 'fixture_role_finance');
+      await login(page, FINANCE_LOGIN);
       const loginSamples = [];
       for (let i = 0; i < PERF_RUNS; i += 1) {
         await logout(page);
-        loginSamples.push(await time(() => login(page, 'fixture_role_finance')));
+        loginSamples.push(await time(() => login(page, FINANCE_LOGIN)));
       }
       performanceReport.scenarios.login_to_interactive = stats(loginSamples);
       for (const [name, route, readySelector] of [
@@ -739,6 +826,7 @@ async function main() {
     throw error;
   } finally {
     await context?.close(); await browser.close();
+    await acceptanceLease.release();
   }
 }
 

@@ -5,10 +5,6 @@
   padding-bottom: 18px;
 }
 
-:scope.business-config-page--editor-open {
-  padding-bottom: 56vh;
-}
-
 .business-config-header {
   display: flex;
   align-items: center;
@@ -532,9 +528,7 @@ h1 {
 }
 
 .page-picker-panel .scan-list {
-  max-height: clamp(260px, calc(100vh - 360px), 520px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
 }
 
 .scan-row {
@@ -1683,10 +1677,6 @@ h1 {
 
   .page-config-panel {
     order: -1;
-  }
-
-  .page-picker-panel .scan-list {
-    max-height: min(520px, 62vh);
   }
 
   .selected-page-overview {

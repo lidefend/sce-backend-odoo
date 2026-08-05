@@ -7,7 +7,7 @@ import sys
 from types import ModuleType
 
 ROOT = Path(__file__).resolve().parents[2]
-VIEWS_DIR = ROOT / "frontend/apps/web/src/views"
+SOURCE_DIR = ROOT / "frontend/apps/web/src"
 PAGE_CONTRACTS_BUILDER = ROOT / "addons/smart_core/core/page_contracts_builder.py"
 
 
@@ -40,7 +40,8 @@ def _load_builder_module(path: Path) -> ModuleType:
 def _extract_contract_keys_from_views() -> dict[str, set[str]]:
     usage: dict[str, set[str]] = {}
     marker = "usePageContract('"
-    for view in sorted(VIEWS_DIR.glob("*.vue")):
+    source_files = [*SOURCE_DIR.rglob("*.vue"), *SOURCE_DIR.rglob("*.ts")]
+    for view in sorted(source_files):
         text = _read(view)
         if not text:
             continue
@@ -104,7 +105,7 @@ def main() -> int:
 
     print(
         "[frontend_page_contract_key_consistency_guard] PASS "
-        f"(keys={len(backend_keys)}, views={len(list(VIEWS_DIR.glob('*.vue')))})"
+        f"(keys={len(backend_keys)}, source_files={len([*SOURCE_DIR.rglob('*.vue'), *SOURCE_DIR.rglob('*.ts')])})"
     )
     return 0
 

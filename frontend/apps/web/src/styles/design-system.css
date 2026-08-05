@@ -1,6 +1,13 @@
 @import '../../../../packages/design-tokens/dist/web/tokens.light.css';
 @import '../../../../packages/design-tokens/dist/web/tokens.dark.css';
 
+/* A width contract is only reliable when padding and borders stay inside it. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   /* Product design contract: components consume semantic aliases, never palette values. */
   --sc-color-surface: var(--sc-semantic-surface-page);
@@ -19,6 +26,8 @@
   --sc-product-space-4: 32px;
   --sc-workspace-frame-max: 1920px;
   --sc-content-reading-max: 72ch;
+  --sc-content-record-max: 1440px;
+  --sc-content-form-max: 1200px;
   --sc-page-padding-wide: 32px;
   --sc-page-padding-compact: 24px;
   --sc-page-padding-mobile: 16px;

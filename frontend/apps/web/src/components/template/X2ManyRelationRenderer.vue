@@ -98,13 +98,15 @@
       <span v-if="adapter.one2manySummary(field.name)" class="o2m-summary">{{ adapter.one2manySummary(field.name) }}</span>
     </div>
     <div v-if="adapter.one2manyColumns(field.name).length" class="o2m-header">
-      <span
-        v-for="column in adapter.one2manyColumns(field.name)"
-        :key="`${field.name}-header-${column.name}`"
-        class="o2m-header-cell"
-      >
-        {{ column.label }}
+      <span class="o2m-header-cell">状态</span>
+      <span class="o2m-header-fields">
+        <span
+          v-for="column in adapter.one2manyColumns(field.name)"
+          :key="`${field.name}-header-${column.name}`"
+          class="o2m-header-cell"
+        >{{ column.label }}</span>
       </span>
+      <span class="o2m-header-cell o2m-header-action">操作</span>
     </div>
     <div class="o2m-list">
       <div v-for="row in adapter.visibleOne2manyRows(field.name)" :key="row.key" class="o2m-row">
@@ -466,11 +468,25 @@ function tagColorStyle(color: unknown) {
 
 .o2m-header {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: stretch;
   gap: 1px;
   border: 1px solid var(--sc-app-border);
   background: var(--sc-app-border);
   overflow: hidden;
+}
+
+.o2m-header-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px;
+  min-width: 0;
+  background: var(--sc-app-border);
+}
+
+.o2m-header-action {
+  min-width: 76px;
+  text-align: center;
 }
 
 .o2m-header-cell {
@@ -608,7 +624,13 @@ select.input {
 
   .o2m-row-remove {
     align-self: start;
+    min-height: 44px;
     white-space: nowrap;
+  }
+
+  .o2m-toolbar .chip-btn,
+  .o2m-removed .chip-btn {
+    min-height: 44px;
   }
 
   .o2m-fields {

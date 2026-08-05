@@ -15,6 +15,7 @@
     :data-v2-shadow-value-source="v2ShadowValueSourceKind"
     :data-v2-shadow-error="v2ContractDecodeError || '-'"
   >
+    <h1 class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
     <ContractFormProductHeader
       v-if="!initialFormLoading"
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
@@ -35,11 +36,13 @@
     <StatusPanel v-else-if="recordMissing" :title="pageDisplayTitle" message="该记录不存在，可能已被删除或当前链接已经失效。" :error-code="404" variant="error" retry-label="返回安全页面" :on-retry="() => router.push('/')" />
     <section v-else :class="['card', 'sc-panel', 'sc-product-main-surface', { 'card--flow': isProjectIntakeCreateMode, 'is-refreshing': status === 'loading' }]"
       :aria-busy="status === 'loading' || undefined" data-workspace-primary-content>
-      <p v-if="financialWorkspace && submissionFeedback" class="submission-feedback" :class="`submission-feedback--${submissionFeedback.kind}`" role="status">
+      <p v-if="financialWorkspace && submissionFeedback && pageSectionEnabled('save_banner', true) && pageSectionTagIs('save_banner', 'div')" class="submission-feedback" :class="`submission-feedback--${submissionFeedback.kind}`" :style="pageSectionStyle('save_banner')" role="status">
         {{ submissionFeedback.message }}
       </p>
-      <FinancialRelationshipWorkspace v-if="financialWorkspace && renderProfile === 'readonly'" :contract="financialWorkspace" />
+      <FinancialRelationshipWorkspace v-if="financialWorkspace && renderProfile === 'readonly' && pageSectionEnabled('project_summary', true) && pageSectionTagIs('project_summary', 'section')" :contract="financialWorkspace" :style="pageSectionStyle('project_summary')" />
       <ContractFormActionBlocks
+        v-if="(pageSectionEnabled('next_actions', true) && pageSectionTagIs('next_actions', 'section')) || (pageSectionEnabled('stat_buttons', true) && pageSectionTagIs('stat_buttons', 'div'))"
+        :style="[pageSectionStyle('next_actions'), pageSectionStyle('stat_buttons')]"
         :active-filter-key="activeFilterKey"
         :body-actions="bodyActions"
         :busy="busy"
@@ -56,7 +59,7 @@
         @open-filter="openFilter"
         @run-action="runAction"
       />
-      <section v-if="!financialWorkspace || renderProfile === 'edit'" class="form-grid" :class="{ 'form-grid--designer-workspace': showCurrentFormFieldConfigScope }">
+      <section v-if="(!financialWorkspace || renderProfile === 'edit') && pageSectionEnabled('details_fallback', true) && pageSectionTagIs('details_fallback', 'section')" class="form-grid" :class="{ 'form-grid--designer-workspace': showCurrentFormFieldConfigScope }" :style="pageSectionStyle('details_fallback')">
         <StatusPanel
           v-if="sceneValidationPanel"
           title="表单校验失败"
@@ -213,14 +216,16 @@
       </PageFooterTemplate>
 
       <NativeCollaborationPanel
-        v-if="(nativeChatterActions.length || nativeAttachments) && !isProjectIntakeCreateMode && !hasNativeChatterNode"
+        v-if="(nativeChatterActions.length || nativeAttachments) && !isProjectIntakeCreateMode && !hasNativeChatterNode && pageSectionEnabled('chatter', true) && pageSectionTagIs('chatter', 'section')"
+        :style="pageSectionStyle('chatter')"
         v-bind="nativeCollaborationPanelProps"
         v-on="nativeCollaborationPanelListeners"
       />
     </section>
 
     <DevContextPanel
-      :visible="showHud"
+      :visible="showHud && pageSectionEnabled('dev_context', true) && pageSectionTagIs('dev_context', 'div')"
+      :style="pageSectionStyle('dev_context')"
       title="表单上下文"
       :entries="hudEntries"
     />
@@ -550,6 +555,7 @@ import {
 } from './contractForm/uiLabels';
 import { presentContractHeaderActions } from './contractForm/headerActionPresentation';
 import { buildContractFormPageIdentity } from '../app/pageIdentityAdapters';
+import { usePageContract } from '../app/pageContract';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import { usePublishedPageIdentity } from '../app/usePublishedPageIdentity';
 import {
@@ -667,6 +673,10 @@ import {
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
+const recordPageContract = usePageContract('record');
+const pageSectionEnabled = recordPageContract.sectionEnabled;
+const pageSectionTagIs = recordPageContract.sectionTagIs;
+const pageSectionStyle = recordPageContract.sectionStyle;
 const {
   actionResponseNavQuery,
   actionResponseRouteTarget,
@@ -927,7 +937,7 @@ const recordId = computed(() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
-const recordContentLayoutMode = computed(() => resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
+const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
 const requestedSurface = computed<'user' | 'native' | 'hud'>(() => {
@@ -1204,7 +1214,6 @@ const currentBusinessCategoryContext = computed(() => resolveBusinessCategoryCon
 }));
 const currentBusinessCategoryLabel = computed(() => currentBusinessCategoryContext.value.label);
 const currentBusinessCategoryCode = computed(() => currentBusinessCategoryContext.value.code);
-
 const pageIdentityInput = computed(() => buildContractFormPageIdentity({
   action: currentActionMeta.value, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs,
   businessCategoryLabel: currentBusinessCategoryLabel.value, contract: contract.value, formData,
@@ -1249,7 +1258,7 @@ function continueProcessing() {
   void router.push(buildModelFormRouteTarget({
     model: model.value,
     id: String(recordId.value),
-    query: { ...route.query } as LocationQueryRaw,
+    query: normalizeRouteQueryValues(route.query as Record<string, unknown>) as LocationQueryRaw,
   }));
 }
 const showDraftSaveAction = computed(() => {
@@ -1286,9 +1295,7 @@ const nativeCanvasFormLayoutNodes = computed<NativeFormLayoutNode[]>(() => {
   });
   return filterNodes(nativeFormLayoutNodes.value);
 });
-
 const contractV2ActionRules = computed(() => resolveContractActionRules(contract.value));
-
 function contractFieldActions(field: FormSectionFieldSchema) {
   return buildContractFieldActionsFromRules({
     rules: contractV2ActionRules.value,
@@ -1298,7 +1305,6 @@ function contractFieldActions(field: FormSectionFieldSchema) {
     busy: busy.value,
   });
 }
-
 function formSettingsFieldActions(field: FormSectionFieldSchema) {
   const fieldKey = String(field.name || '').trim();
   const existingRow = activeContractModeFieldRows.value.find((row) => row.fieldKey === fieldKey);
@@ -1309,7 +1315,6 @@ function formSettingsFieldActions(field: FormSectionFieldSchema) {
     busy: busy.value,
   });
 }
-
 const activeContractModeActions = computed(() => {
   return buildActiveContractModeActions({
     rules: contractV2ActionRules.value,
@@ -1317,8 +1322,6 @@ const activeContractModeActions = computed(() => {
     excludedKeys: [BUSINESS_CONFIG_ACTION_KEYS.currentFormFieldOrderSave],
   });
 });
-
-
 const {
   fieldOrderDraft, fieldOrderPreviewActive, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, formConfigFieldLabelCache,
   fieldGroupBase, fieldGroupSavedBase, fieldGroupDraft, formLayoutColumnsBase, formLayoutColumnsDraft,
@@ -1406,19 +1409,16 @@ const isStandardCreateDisabled = computed(() => {
   if (isProjectStandardIntakeMode.value) return !standardCreateReady.value;
   return false;
 });
-
 const isIntakeCreateDisabled = computed(() => {
   if (!isProjectIntakeCreateMode.value) return false;
   if (isProjectQuickIntakeMode.value) return isQuickSubmitDisabled.value;
   return isStandardCreateDisabled.value;
 });
-
 function persistIntakeAutosave() {
   const key = intakeAutosaveKey.value;
   if (!key || recordId.value) return;
   persistIntakeAutosavePayload(key, formData as Record<string, unknown>);
 }
-
 function restoreIntakeAutosave() {
   const key = intakeAutosaveKey.value;
   if (!key || recordId.value) return;
@@ -1426,13 +1426,11 @@ function restoreIntakeAutosave() {
     formData[field] = value as never;
   });
 }
-
 function clearIntakeAutosave() {
   const key = intakeAutosaveKey.value;
   if (!key) return;
   clearIntakeAutosavePayload(key);
 }
-
 const contractMetaLine = computed(() => {
   if (!contract.value) return '';
   const mode = String(contractMeta.value?.contract_mode || '-');

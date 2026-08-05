@@ -172,6 +172,7 @@ const recipientInputRef = ref<HTMLInputElement | null>(null);
 const composeNonce = ref(0);
 let userSearchTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+let closedRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 const canUseMessages = computed(() => Boolean(session.token && session.initStatus === 'ready'));
 const unreadCount = computed(() => conversations.value.reduce((sum, item) => sum + Number(item.unread_count || 0), 0));
@@ -358,15 +359,57 @@ watch(open, (value) => {
     clearInterval(pollTimer);
     pollTimer = null;
   }
+  if (!value) {
+    scheduleClosedUnreadRefresh();
+    return;
+  }
+  if (closedRefreshTimer) {
+    clearTimeout(closedRefreshTimer);
+    closedRefreshTimer = null;
+  }
   pollTimer = setInterval(() => {
     void loadConversations();
-    if (open.value && activeConversationKey.value) void loadMessagesForConversation(activeConversationKey.value);
-  }, value ? 12000 : 30000);
+    if (activeConversationKey.value) void loadMessagesForConversation(activeConversationKey.value);
+  }, 12000);
 }, { immediate: true });
+
+function scheduleClosedUnreadRefresh() {
+  if (closedRefreshTimer) clearTimeout(closedRefreshTimer);
+  if (open.value || !canUseMessages.value || document.visibilityState !== 'visible') return;
+  closedRefreshTimer = setTimeout(() => {
+    closedRefreshTimer = null;
+    const refresh = () => {
+      if (!open.value && canUseMessages.value && document.visibilityState === 'visible') {
+        void loadConversations().finally(scheduleClosedUnreadRefresh);
+      }
+    };
+    if ('requestIdleCallback' in window) window.requestIdleCallback(refresh, { timeout: 4000 });
+    else setTimeout(refresh, 1000);
+  }, 45000);
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') scheduleClosedUnreadRefresh();
+  else if (closedRefreshTimer) {
+    clearTimeout(closedRefreshTimer);
+    closedRefreshTimer = null;
+  }
+}
+
+watch(canUseMessages, (value) => {
+  // Establish the unread badge once after authoritative initialization. The
+  // full conversation list then refreshes while its progressive-disclosure
+  // panel is open, so background polling cannot contend with page navigation.
+  if (value) void loadConversations().finally(scheduleClosedUnreadRefresh);
+}, { immediate: true });
+
+document.addEventListener('visibilitychange', handleVisibilityChange);
 
 onUnmounted(() => {
   if (userSearchTimer) clearTimeout(userSearchTimer);
   if (pollTimer) clearInterval(pollTimer);
+  if (closedRefreshTimer) clearTimeout(closedRefreshTimer);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 </script>
 

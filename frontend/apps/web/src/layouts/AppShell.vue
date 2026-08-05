@@ -14,7 +14,19 @@
     :data-page-identity-title="pageTitle"
   >
     <a class="skip-link" href="#main-content">跳至主要内容</a>
-    <aside v-if="sidebarVisible" id="primary-sidebar" class="sidebar sidebar-nav" :class="sidebarClass" data-component="SidebarNav" aria-label="主导航">
+    <aside
+      v-if="sidebarVisible"
+      id="primary-sidebar"
+      ref="mobileSidebarSurface"
+      class="sidebar sidebar-nav"
+      :class="sidebarClass"
+      data-component="SidebarNav"
+      aria-label="主导航"
+      :role="mobileViewport ? 'dialog' : undefined"
+      :aria-modal="mobileViewport ? 'true' : undefined"
+      :tabindex="mobileViewport ? -1 : undefined"
+      @keydown="onMobileSidebarKeydown"
+    >
       <nav class="workspace-activity-rail" aria-label="工作空间切换">
         <span class="workspace-activity-brand" aria-hidden="true">{{ shellLogoText }}</span>
         <button type="button" :class="{ active: workspacePanelMode === 'navigation' }" title="业务导航" aria-label="业务导航" @click="openWorkspacePanel('navigation')">
@@ -177,6 +189,7 @@
     <section
       class="content"
       :class="{ 'content--with-activity-tabs': activityPages.length }"
+      :inert="mobileViewport && mobileSidebarOpen ? true : undefined"
     >
       <header
         class="topbar sc-toolbar"
@@ -210,12 +223,13 @@
           </div>
           <div class="topbar-account" @click.stop>
             <button
+              ref="roleContextTrigger"
               class="topbar-context topbar-context-trigger"
               type="button"
-              aria-haspopup="dialog"
+              aria-haspopup="true"
               :aria-expanded="roleContextOpen"
               aria-controls="role-context-panel"
-              @click="roleContextOpen = !roleContextOpen"
+              @click="toggleRoleContext"
             >
               <ScIcon name="user" :size="16" />
               <span class="topbar-context-kicker">当前岗位</span>
@@ -225,9 +239,11 @@
             <section
               v-if="roleContextOpen"
               id="role-context-panel"
+              ref="roleContextPanel"
               class="topbar-account-panel"
-              role="dialog"
+              role="region"
               aria-label="当前账户信息"
+              tabindex="-1"
             >
               <p class="topbar-account-name">{{ userName }}</p>
               <dl>
@@ -352,6 +368,7 @@ import { buildCanonicalSceneRouteTarget, buildEntryTargetRouteTarget, parseScene
 import { buildRuntimeNavigationRegistry } from '../app/navigationRegistry';
 import { buildBusinessEntryNavQuery } from '../app/navigationContext';
 import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRuntime';
+import { useModalLifecycle } from '../composables/useModalLifecycle';
 import { applyTheme, nextTheme, persistTheme, type ScTheme } from '../styles/theme';
 import { config } from '../config';
 import { BUSINESS_CONFIG_MODES } from '../app/businessConfigBoundaries';
@@ -424,6 +441,9 @@ const sidebarHidden = ref(false);
 const mobileViewport = ref(false);
 const mobileSidebarOpen = ref(false);
 const sidebarToggleButton = ref<HTMLButtonElement | null>(null);
+const mobileSidebarSurface = ref<HTMLElement | null>(null);
+const roleContextTrigger = ref<HTMLButtonElement | null>(null);
+const roleContextPanel = ref<HTMLElement | null>(null);
 const workspacePanelMode = ref<WorkspacePanelMode>('navigation');
 const companySearch = ref('');
 const roleContextOpen = ref(false);
@@ -435,7 +455,10 @@ const appCatalogLoading = ref(false);
 const appCatalogError = ref('');
 const openingAppId = ref('');
 let projectSearchTimer: ReturnType<typeof setTimeout> | null = null;
+let scopeRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 let mobileMediaQuery: MediaQueryList | null = null;
+let projectSearchRequestSequence = 0;
+let appCatalogRequestSequence = 0;
 
 const menuTree = computed(() => session.menuTree);
 const roleSurface = computed(() => session.roleSurface);
@@ -702,6 +725,7 @@ function resolvePublishedAppLabel(appId: string, rawLabel: string | undefined, k
 }
 
 async function loadPublishedApps() {
+  const requestSequence = ++appCatalogRequestSequence;
   if (!session.token || session.initStatus !== 'ready' || session.user?.is_platform_admin !== true) {
     appCatalog.value = [];
     appCatalogLoading.value = false;
@@ -715,12 +739,14 @@ async function loadPublishedApps() {
       params: { scene: 'web' },
       silentErrors: true,
     });
-    appCatalog.value = normalizePublishedApps(result);
+    if (requestSequence === appCatalogRequestSequence) appCatalog.value = normalizePublishedApps(result);
   } catch (err) {
-    appCatalog.value = [];
-    appCatalogError.value = err instanceof Error ? err.message : '平台应用目录不可用';
+    if (requestSequence === appCatalogRequestSequence) {
+      appCatalog.value = [];
+      appCatalogError.value = err instanceof Error ? err.message : '平台应用目录不可用';
+    }
   } finally {
-    appCatalogLoading.value = false;
+    if (requestSequence === appCatalogRequestSequence) appCatalogLoading.value = false;
   }
 }
 
@@ -786,14 +812,17 @@ async function openPublishedApp(app: PublishedApp) {
 
 async function loadProjectOptions() {
   if (!projectContextEnabled.value) return;
+  const requestSequence = ++projectSearchRequestSequence;
   projectSearching.value = true;
   projectError.value = '';
   try {
     await session.searchProjectContext(projectSearch.value);
   } catch (err) {
-    projectError.value = err instanceof Error ? err.message : '记录搜索失败';
+    if (requestSequence === projectSearchRequestSequence) {
+      projectError.value = err instanceof Error ? err.message : '记录搜索失败';
+    }
   } finally {
-    projectSearching.value = false;
+    if (requestSequence === projectSearchRequestSequence) projectSearching.value = false;
   }
 }
 
@@ -821,6 +850,7 @@ async function submitProjectSearch(event: KeyboardEvent) {
 }
 
 async function openWorkspacePanel(mode: WorkspacePanelMode) {
+  if (mode === 'company') cancelScheduledScopeRefresh();
   workspacePanelMode.value = mode;
   if (mobileViewport.value) mobileSidebarOpen.value = true;
   else if (sidebarHidden.value) {
@@ -844,6 +874,7 @@ async function selectProject(option: ProjectContextOption) {
 }
 
 async function selectCompanyScope(companyIdValue: number) {
+  cancelScheduledScopeRefresh();
   const companyId = Number(companyIdValue || 0) || null;
   if (companyId === selectedCompanyId.value) {
     workspacePanelMode.value = 'navigation';
@@ -855,11 +886,13 @@ async function selectCompanyScope(companyIdValue: number) {
     operation_strategy: selectedOperationStrategy.value,
   });
   if (applied === false) return;
-  emitProjectContextChanged(previousProjectId, true);
   workspacePanelMode.value = 'navigation';
+  await nextTick();
+  scheduleScopeContextChanged(previousProjectId);
 }
 
 async function changeOperationScope(operationStrategy: string) {
+  cancelScheduledScopeRefresh();
   const normalized = String(operationStrategy || '').trim();
   if (normalized === selectedOperationStrategy.value) return;
   const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
@@ -868,7 +901,9 @@ async function changeOperationScope(operationStrategy: string) {
     operation_strategy: normalized,
   });
   if (applied === false) return;
-  emitProjectContextChanged(previousProjectId, true);
+  workspacePanelMode.value = 'navigation';
+  await nextTick();
+  scheduleScopeContextChanged(previousProjectId);
 }
 
 async function clearProjectSelection() {
@@ -922,6 +957,29 @@ function persistSidebarHidden(hidden: boolean): void {
 const sidebarVisible = computed(() => mobileViewport.value ? mobileSidebarOpen.value : !sidebarHidden.value);
 const showMobileWorkShortcut = computed(() => mobileViewport.value && !['my-work', 'scene-my-work'].includes(String(route.name || '')));
 
+const { onKeydown: onMobileSidebarKeydown } = useModalLifecycle({
+  open: () => mobileViewport.value && mobileSidebarOpen.value,
+  surface: mobileSidebarSurface,
+  close: () => { void closeMobileSidebar(); },
+});
+
+async function toggleRoleContext(): Promise<void> {
+  roleContextOpen.value = !roleContextOpen.value;
+  if (roleContextOpen.value) {
+    await nextTick();
+    roleContextPanel.value?.focus();
+  }
+}
+
+async function closeRoleContext(restoreFocus = false): Promise<void> {
+  if (!roleContextOpen.value) return;
+  roleContextOpen.value = false;
+  if (restoreFocus) {
+    await nextTick();
+    roleContextTrigger.value?.focus();
+  }
+}
+
 async function closeMobileSidebar(): Promise<void> {
   const wasOpen = mobileSidebarOpen.value;
   mobileSidebarOpen.value = false;
@@ -939,7 +997,7 @@ function syncMobileViewport(event?: MediaQueryListEvent): void {
 
 function handleShellEscape(event: KeyboardEvent): void {
   if (event.key !== 'Escape') return;
-  roleContextOpen.value = false;
+  if (roleContextOpen.value) void closeRoleContext(true);
   if (mobileSidebarOpen.value) closeMobileSidebar();
 }
 
@@ -1148,6 +1206,24 @@ function emitProjectContextChanged(previousProjectId = 0, scopeChanged = false) 
   }));
 }
 
+function cancelScheduledScopeRefresh() {
+  if (!scopeRefreshTimer) return;
+  clearTimeout(scopeRefreshTimer);
+  scopeRefreshTimer = null;
+}
+
+function scheduleScopeContextChanged(previousProjectId = 0) {
+  cancelScheduledScopeRefresh();
+  // A scope switch invalidates the current page, but a rapid sequence must not
+  // start one obsolete reload per intermediate company. Coalescing the route
+  // refresh preserves the final authoritative scope and keeps shell feedback
+  // immediate without changing the emitted event contract.
+  scopeRefreshTimer = setTimeout(() => {
+    scopeRefreshTimer = null;
+    emitProjectContextChanged(previousProjectId, true);
+  }, 500);
+}
+
 function downloadTextAsFile(filename: string, content: string, mimeType = 'application/json') {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -1218,6 +1294,7 @@ onUnmounted(() => {
     clearTimeout(projectSearchTimer);
     projectSearchTimer = null;
   }
+  cancelScheduledScopeRefresh();
 });
 
 function findMenuPath(nodes: NavNode[], menuId?: number): NavNode[] {

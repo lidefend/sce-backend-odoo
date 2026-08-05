@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 <template>
   <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" :content-layout="actionContentLayoutMode">
+    <h1 class="sc-visually-hidden">{{ vm.page.title }}</h1>
     <!-- Page intent: 在列表场景中先判断状态，再给出下一步可执行动作。 -->
     <StatusPanel
       v-if="renderErrorMessage"
@@ -349,6 +350,7 @@
     </KanbanPage>
     <ListPage
       v-else-if="vm.content.kind === 'list'"
+      class="action-list-surface"
       :title="vm.page.title"
       :model="model"
       :status="vm.page.status"
@@ -3291,10 +3293,18 @@ function refreshForProjectContextChange(): void {
 
 <style scoped>
 .page {
-  display: grid;
+  display: grid; align-content: start;
   gap: var(--sc-product-workspace-stack-gap);
   width: 100%;
   box-sizing: border-box;
+}
+
+@media (min-width: 761px) {
+  .page[data-product-page-mode='list'] {
+    height: 100%; min-height: 0;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .action-list-surface { flex: 1 1 auto; min-height: 0; }
 }
 
 .page-actions {

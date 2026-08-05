@@ -84,6 +84,11 @@ ACCEPTANCE_NAV_MAX_ACTIONS ?=
 ACCEPTANCE_NAV_FORBIDDEN_LABELS ?=
 ACCEPTANCE_NAV_REQUIRED_PATHS ?=
 ACCEPTANCE_NAV_REQUIRED_ACTIONS ?=
+DAILY_ACCEPTANCE_BASE_URL ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["host_base_url"])')
+DAILY_ACCEPTANCE_NAV_MIN_ACTIONS ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["min_actions"])')
+DAILY_ACCEPTANCE_NAV_MAX_ACTIONS ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["max_actions"])')
+DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS ?= $(shell python3 -c 'import json; print(",".join(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["forbidden_labels"]))')
+DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS ?= $(shell python3 -c 'import json; print(",".join(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["required_paths"]))')
 
 verify.dev.acceptance.release: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) ACCEPTANCE_BACKUP_DIR="$(ACCEPTANCE_BACKUP_DIR)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_NAV_MIN_ACTIONS="$(ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="$(ACCEPTANCE_NAV_REQUIRED_ACTIONS)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
@@ -97,11 +102,11 @@ verify.dev.acceptance.release.schema.guard: guard.prod.forbid
 release.dev.acceptance.publish: guard.prod.forbid check-compose-project check-compose-env verify.frontend.build verify.user_confirmed.formal_surface.locked verify.dev.acceptance.release
 	@echo "[release.dev.acceptance.publish] PASS base_url=$(ACCEPTANCE_BASE_URL) db=$(DB_NAME) artifact=$(ACCEPTANCE_PROBE_OUTPUT)"
 
-release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MIN_ACTIONS := 100
-release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MAX_ACTIONS := 115
-release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_FORBIDDEN_LABELS := 用户核对菜单,用户数据验收,用户验收,直营项目系统菜单
-release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_REQUIRED_PATHS := 智慧施工管理平台 / 基础资料 / 客户,智慧施工管理平台 / 基础资料 / 供应商,智慧施工管理平台 / 项目中心 / 项目管理 / 项目台账,智慧施工管理平台 / 合同中心 / 支出合同台账 / 一般合同（公司）,智慧施工管理平台 / 施工管理 / 施工日志,智慧施工管理平台 / 物资与分包 / 材料管理 / 入库单,智慧施工管理平台 / 财务中心 / 收付款办理 / 支付申请,智慧施工管理平台 / 财务中心 / 资金往来办理 / 资金日报表,智慧施工管理平台 / 人事行政 / 项目管理人员工资登记,智慧施工管理平台 / 资料证照 / 公司资料存档,智慧施工管理平台 / 税务中心 / 进项发票,智慧施工管理平台 / 配置中心 / 低代码系统配置 / 菜单配置
-release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_REQUIRED_ACTIONS := 智慧施工管理平台 / 基础资料 / 客户=>786|智慧施工管理平台 / 基础资料 / 供应商=>787|智慧施工管理平台 / 项目中心 / 项目管理 / 项目台账=>506|智慧施工管理平台 / 合同中心 / 支出合同台账 / 一般合同（公司）=>669|智慧施工管理平台 / 施工管理 / 施工日志=>701|智慧施工管理平台 / 物资与分包 / 材料管理 / 入库单=>983|智慧施工管理平台 / 财务中心 / 收付款办理 / 支付申请=>780|智慧施工管理平台 / 财务中心 / 资金往来办理 / 资金日报表=>784|智慧施工管理平台 / 人事行政 / 项目管理人员工资登记=>862|智慧施工管理平台 / 资料证照 / 公司资料存档=>615|智慧施工管理平台 / 税务中心 / 进项发票=>756|智慧施工管理平台 / 配置中心 / 低代码系统配置 / 菜单配置=>841
+release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MIN_ACTIONS := $(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)
+release.daily_dev.acceptance.publish: ACCEPTANCE_BASE_URL := $(DAILY_ACCEPTANCE_BASE_URL)
+release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MAX_ACTIONS := $(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)
+release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_FORBIDDEN_LABELS := $(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)
+release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_REQUIRED_PATHS := $(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)
 release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean release.dev.acceptance.publish
 	@echo "[release.daily_dev.acceptance.publish] PASS base_url=$(ACCEPTANCE_BASE_URL) db=$(DB_NAME) head=$$(git rev-parse --short HEAD)"
 

@@ -10,8 +10,9 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const APP_DIR = path.join(ROOT, 'frontend/apps/web/src/app');
 const cache = new Map();
 
-function loadTs(moduleName) {
-  const sourcePath = path.join(APP_DIR, `${moduleName}.ts`);
+function loadTs(moduleName, importerDir = APP_DIR) {
+  const unresolved = path.resolve(importerDir, moduleName);
+  const sourcePath = unresolved.endsWith('.ts') ? unresolved : `${unresolved}.ts`;
   if (cache.has(sourcePath)) return cache.get(sourcePath).exports;
   const source = fs.readFileSync(sourcePath, 'utf8');
   const output = ts.transpileModule(source, {
@@ -20,7 +21,8 @@ function loadTs(moduleName) {
   const module = { exports: {} };
   cache.set(sourcePath, module);
   const localRequire = (request) => {
-    if (request.startsWith('./')) return loadTs(request.slice(2));
+    if (request.startsWith('.')) return loadTs(request, path.dirname(sourcePath));
+    if (!request.startsWith('@')) return require(request);
     throw new Error(`unsupported lifecycle smoke import: ${request}`);
   };
   vm.runInNewContext(`(function(require,module,exports){${output}\n})`, {}, { filename: sourcePath })(localRequire, module, module.exports);

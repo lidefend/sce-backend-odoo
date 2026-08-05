@@ -155,7 +155,8 @@
 
 .form-grid--designer-workspace .contract-form-designer-sidebar {
   grid-column: 1;
-  grid-row: 4 / span 2;
+  grid-row: auto;
+  order: 10;
   align-self: start;
 }
 
@@ -293,8 +294,6 @@
   display: grid;
   gap: 6px;
   align-content: start;
-  max-height: calc(100vh - 220px);
-  overflow: auto;
   padding: 10px;
   background: transparent;
 }
@@ -409,16 +408,17 @@
   padding: 0 8px;
 }
 
-.contract-form-inspector {
+.record-form-inspector {
   min-width: 0;
   display: grid;
   gap: 10px;
   align-content: start;
 }
 
-.form-grid--designer-workspace .contract-form-inspector {
+.form-grid--designer-workspace .record-form-inspector {
   grid-column: 3;
-  grid-row: 4 / span 2;
+  grid-row: auto;
+  order: 12;
   align-self: start;
 }
 
@@ -875,6 +875,7 @@
 }
 
 .form-grid--designer-workspace .contract-field-governance-footer {
+  order: 20;
   position: sticky;
   bottom: 0;
   z-index: 5;
@@ -901,6 +902,15 @@
   color: var(--sc-app-warning-text);
 }
 
+@media (max-width: 1300px) {
+  .form-grid--designer-workspace .contract-form-designer-sidebar,
+  .form-grid--designer-workspace .record-form-inspector {
+    grid-column: 1;
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
 
 @media (max-width: 860px) {
   .contract-form-designer-control-grid,
@@ -915,7 +925,7 @@
   }
 
   .contract-form-designer-sidebar,
-  .contract-form-inspector {
+  .record-form-inspector {
     grid-column: 1;
     grid-row: auto;
     position: static;
@@ -926,6 +936,15 @@
   .contract-field-governance-footer {
     position: static;
     box-shadow: none;
+  }
+
+  .contract-field-governance-footer > button,
+  .contract-form-settings-section-head > button {
+    min-height: 44px;
+  }
+
+  .contract-field-governance-footer > button {
+    flex: 1 1 calc(50% - 4px);
   }
 
   .contract-form-settings {
