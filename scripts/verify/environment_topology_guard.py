@@ -61,7 +61,7 @@ REQUIRED_TOKENS = {
         "rsync -av --relative $(cat changed_files.txt) /opt/sce/production/sce-product-odoo/",
     ),
     "makefile": (
-        ".PHONY: check-compose-project check.compose.project check-compose-env check-external-addons check-odoo-conf diag.project gate.compose.config env.print.db env.matrix.check verify.environment.topology.guard verify.daily_dev.runtime_repo.clean verify.daily_dev.acceptance.env.guard",
+        ".PHONY: check-compose-project check.compose.project check-compose-env check-external-addons check-odoo-conf diag.project gate.compose.config env.print.db env.matrix.check verify.environment.topology.guard verify.frontend.acceptance.environment.guard verify.daily_dev.runtime_repo.clean verify.daily_dev.acceptance.env.guard",
         "python3 scripts/verify/environment_topology_guard.py",
         "verify.environment.topology.guard:",
         "verify.daily_dev.runtime_repo.clean:",
