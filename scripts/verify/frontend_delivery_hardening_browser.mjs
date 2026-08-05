@@ -576,6 +576,9 @@ async function main() {
             faultSnapshot = { console: runtime.console.length, http: runtime.http.length, pageerror: runtime.pageerror.length };
             runtime.expectForbidden = true;
           }
+          if (surface.name === 'not-found') {
+            faultSnapshot = { console: runtime.console.length, http: runtime.http.length, pageerror: runtime.pageerror.length };
+          }
           if (surface.mode === 'network') {
             faultSnapshot = { console: runtime.console.length, http: runtime.http.length, pageerror: runtime.pageerror.length };
             removeFault = await interceptNextBusiness(page, (route) => route.abort('failed'), TARGETS.payment_request);
@@ -612,6 +615,18 @@ async function main() {
           accessibility.scans.push(scan); accessibility.blocking += scan.blocking;
         }
         if (surface.mode === 'dialog') await page.keyboard.press('Escape');
+        if (surface.name === 'not-found' && faultSnapshot) {
+          await page.waitForTimeout(250);
+          const expectedConsole = runtime.console.slice(faultSnapshot.console);
+          const expectedHttp = runtime.http.slice(faultSnapshot.http);
+          check(expectedConsole.every((line) => /Failed to load resource/i.test(line)), `not-found surface unexpected console=${expectedConsole.join(' | ')}`);
+          check(expectedHttp.length > 0 && expectedHttp.every((row) => row.status === 404 && ['api.data', 'chatter.timeline'].includes(row.intent)), `not-found surface unexpected HTTP=${JSON.stringify(expectedHttp)}`);
+          check(runtime.pageerror.length === faultSnapshot.pageerror, 'not-found surface caused pageerror');
+          runtime.expectedConsole.push(...expectedConsole);
+          runtime.expectedHttp.push(...expectedHttp);
+          runtime.console.length = faultSnapshot.console;
+          runtime.http.length = faultSnapshot.http;
+        }
         if (surface.name === 'denied' && faultSnapshot) {
           await page.waitForTimeout(250);
           runtime.expectForbidden = false;

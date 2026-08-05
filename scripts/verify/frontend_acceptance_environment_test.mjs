@@ -30,6 +30,7 @@ for (const relative of formalSources) {
 const deliveryAuditSource = await fs.readFile(new URL('../../scripts/verify/frontend_delivery_hardening_browser.mjs', import.meta.url), 'utf8');
 assert.match(deliveryAuditSource, /waitForSurfaceReady/, 'delivery audit must wait for route-specific rendered content');
 assert.match(deliveryAuditSource, /assertMeaningfulScreenshot/, 'delivery audit must reject blank or duplicate screenshots');
+assert.match(deliveryAuditSource, /not-found surface unexpected HTTP/, 'delivery audit must isolate and validate expected missing-record responses');
 const formAuditSource = await fs.readFile(new URL('../../scripts/verify/frontend_form_system_audit.mjs', import.meta.url), 'utf8');
 assert.doesNotMatch(formAuditSource, /\.contract-form-inspector/, 'form audit must not use the retired form inspector selector');
 assert.match(formAuditSource, /\.record-form-inspector/, 'form audit must target the shared record form inspector');
