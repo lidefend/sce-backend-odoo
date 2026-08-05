@@ -9,14 +9,30 @@ const ts = require('../../frontend/apps/web/node_modules/typescript');
 const ROOT = path.resolve(__dirname, '..', '..');
 const SOURCE = path.join(ROOT, 'frontend/apps/web/src/app/pageIdentity.ts');
 
-function loadIdentityResolver() {
-  const source = fs.readFileSync(SOURCE, 'utf8');
+function loadTypescriptModule(filename, cache = new Map()) {
+  if (cache.has(filename)) return cache.get(filename).exports;
+  const source = fs.readFileSync(filename, 'utf8');
   const transpiled = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText;
   const module = { exports: {} };
-  vm.runInNewContext(transpiled, { module, exports: module.exports }, { filename: SOURCE });
+  cache.set(filename, module);
+  const localRequire = (specifier) => {
+    if (!specifier.startsWith('.')) return require(specifier);
+    const resolved = path.resolve(path.dirname(filename), specifier);
+    const typescriptFile = resolved.endsWith('.ts') ? resolved : `${resolved}.ts`;
+    return loadTypescriptModule(typescriptFile, cache);
+  };
+  vm.runInNewContext(
+    transpiled,
+    { module, exports: module.exports, require: localRequire },
+    { filename },
+  );
   return module.exports;
+}
+
+function loadIdentityResolver() {
+  return loadTypescriptModule(SOURCE);
 }
 
 function equal(actual, expected, label) {

@@ -7,7 +7,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ENGINE = ROOT / 'frontend/apps/web/src/app/x2manyCommands.ts'
-FORM_PAGE = ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue'
+FORM_PATHS = [
+    ROOT / 'frontend/apps/web/src/pages/contractForm/fieldUtils.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/valueUtils.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/one2manyUtils.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/onchangeNormalization.ts',
+]
 
 
 def _read(path: Path) -> str:
@@ -20,7 +25,7 @@ def main() -> int:
     errors: list[str] = []
     try:
         engine = _read(ENGINE)
-        form = _read(FORM_PAGE)
+        form = '\n'.join(_read(path) for path in FORM_PATHS)
     except FileNotFoundError as exc:
         print('[FAIL] x2many_command_semantic_guard')
         print(f'- {exc}')
@@ -38,12 +43,12 @@ def main() -> int:
             errors.append(f'engine missing marker: {marker}')
 
     form_markers = [
-        "from '../app/x2manyCommands';",
+        "from '../../app/x2manyCommands';",
         'buildX2ManyCommands',
         'extractX2ManyIds',
         'return extractX2ManyIds(value);',
         'mode: \'onchange\'',
-        'mode: \'write\'',
+        "params.mode || 'write'",
     ]
     for marker in form_markers:
         if marker not in form:
@@ -57,7 +62,7 @@ def main() -> int:
 
     print('[OK] x2many_command_semantic_guard')
     print(f'- engine: {ENGINE}')
-    print(f'- form: {FORM_PAGE}')
+    print(f'- form modules: {len(FORM_PATHS)}')
     return 0
 
 

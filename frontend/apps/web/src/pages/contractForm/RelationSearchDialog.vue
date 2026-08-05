@@ -11,6 +11,7 @@
           ref="searchInputRef"
           class="input"
           type="text"
+          autofocus
           :value="dialog.keyword"
           :placeholder="dialog.labels.search_placeholder || '输入名称搜索'"
           @input="$emit('keyword-change', inputValue($event))"
@@ -148,18 +149,11 @@ defineEmits<{
 }>();
 
 const searchInputRef = ref<HTMLInputElement | null>(null);
-let openerElement: HTMLElement | null = null;
 
 watch(
   () => props.dialog.open,
   async (open) => {
-    if (!open) {
-      await nextTick();
-      if (openerElement?.isConnected) openerElement.focus();
-      openerElement = null;
-      return;
-    }
-    openerElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!open) return;
     await nextTick();
     searchInputRef.value?.focus();
   },

@@ -25,7 +25,7 @@
     "secondary": "{color.slate_300}",
     "muted": "rgba(203, 213, 225, 0.68)",
     "inverse": "{color.gray_900}",
-    "on_interactive": "{color.white}",
+    "on_interactive": "{color.gray_900}",
     "link": "#67d8ff"
   },
   "focus": {

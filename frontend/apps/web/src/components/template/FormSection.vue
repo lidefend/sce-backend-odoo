@@ -59,7 +59,7 @@
                 >
                   <input
                     type="radio"
-                    :name="`field-action-${field.key}`"
+                    :name="fieldActionGroupName(field)"
                     :value="action.value"
                     :checked="Boolean(action.checked)"
                     :disabled="Boolean(action.disabled)"
@@ -102,7 +102,7 @@
                   <input
                     class="native-radio-input"
                     type="radio"
-                    :name="field.key"
+                    :name="fieldRadioGroupName(field)"
                     :value="option.value"
                     :checked="String(field.inputValue ?? '') === String(option.value)"
                     :disabled="field.readonly"
@@ -150,7 +150,7 @@
                   <span v-if="isAvatarMany2oneWidget(field)" class="many2one-avatar" aria-hidden="true">
                     {{ avatarText(many2oneTextValue(field)) }}
                   </span>
-                  <div class="many2one-combobox">
+                  <div :class="['many2one-combobox', { 'is-open': many2oneFocusedField === field.name }]">
                     <ScRelationField
                       :id="fieldControlId(field)"
                       class="input"
@@ -159,19 +159,28 @@
                       :described-by="fieldDescribedBy(field)"
                       :model-value="many2oneTextValue(field)"
                       :placeholder="selectPlaceholderText(field)"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      :aria-expanded="many2oneFocusedField === field.name && hasMany2oneDropdown(field)"
+                      :aria-controls="many2oneListboxId(field)"
+                      :aria-activedescendant="many2oneActiveDescendant(field)"
                       @update:model-value="emitMany2oneQuery(field, $event)"
-                      @focus="emitMany2oneQuery(field, many2oneTextValue(field))"
+                      @focus="focusMany2one(field)"
                       @change="emitMany2oneCommit(field, ($event.target as HTMLInputElement).value)"
-                      @keydown.enter.prevent="emitMany2oneCommit(field, ($event.target as HTMLInputElement).value)"
-                      @blur="emitMany2oneCommit(field, ($event.target as HTMLInputElement).value)"
+                      @keydown="handleMany2oneKeydown(field, $event)"
+                      @blur="blurMany2one(field, $event)"
                     />
-                    <div v-if="hasMany2oneDropdown(field)" class="many2one-option-panel">
-                      <div v-if="field.relationOptions?.length" class="many2one-option-list">
+                    <div v-if="hasMany2oneDropdown(field)" :id="many2oneListboxId(field)" class="many2one-option-panel" role="listbox">
+                      <div v-if="field.relationOptions?.length" class="many2one-option-list" role="presentation">
                         <button
-                          v-for="option in field.relationOptions.slice(0, 8)"
+                          v-for="(option, optionIndex) in field.relationOptions.slice(0, 8)"
+                          :id="many2oneOptionId(field, optionIndex)"
                           :key="`${field.name}-option-${option.value}`"
                           type="button"
                           class="many2one-option"
+                          :class="{ 'is-active': many2oneActiveIndex[field.name] === optionIndex }"
+                          role="option"
+                          :aria-selected="many2oneActiveIndex[field.name] === optionIndex"
                           @mousedown.prevent
                           @click="emitMany2oneAction(field, option.value, $event)"
                         >
@@ -303,7 +312,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useSlots } from 'vue';
+import { computed, ref, useId, useSlots } from 'vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
@@ -361,6 +370,10 @@ const props = withDefaults(defineProps<{
   inputPlaceholder: (label: string) => resolveInputPlaceholder(label),
 });
 
+const many2oneFocusedField = ref('');
+const many2oneActiveIndex = ref<Record<string, number>>({});
+const formSectionDomId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
+
 const emit = defineEmits<{
   (e: 'field-change', payload: FormSectionFieldChange): void;
   (e: 'field-action', payload: FormSectionFieldActionPayload): void;
@@ -376,7 +389,15 @@ const emit = defineEmits<{
 }>();
 
 function fieldControlId(field: FormSectionFieldSchema) {
-  return `product-form-field-${String(field.key || field.name).replace(/[^A-Za-z0-9_-]/g, '-')}`;
+  return `${formSectionDomId}-field-${String(field.key || field.name).replace(/[^A-Za-z0-9_-]/g, '-')}`;
+}
+
+function fieldActionGroupName(field: FormSectionFieldSchema) {
+  return `${fieldControlId(field)}-action`;
+}
+
+function fieldRadioGroupName(field: FormSectionFieldSchema) {
+  return `${fieldControlId(field)}-radio`;
 }
 
 function fieldHelpId(field: FormSectionFieldSchema) {
@@ -583,11 +604,14 @@ function collapseMany2oneDropdown(event: Event) {
 }
 
 function emitMany2oneAction(field: FormSectionFieldSchema, value: string | number | boolean | null, event: Event) {
+  many2oneFocusedField.value = '';
+  many2oneActiveIndex.value[field.name] = -1;
   emitFieldChange(field, value);
   collapseMany2oneDropdown(event);
 }
 
 function emitMany2oneQuery(field: FormSectionFieldSchema, value: string) {
+  many2oneActiveIndex.value[field.name] = -1;
   emit('field-change', {
     name: field.name,
     type: field.type,
@@ -596,6 +620,63 @@ function emitMany2oneQuery(field: FormSectionFieldSchema, value: string) {
     action: 'query',
     descriptor: field.descriptor,
   });
+}
+
+function many2oneDomKey(field: FormSectionFieldSchema) {
+  return field.name.replace(/[^A-Za-z0-9_-]/g, '-');
+}
+
+function many2oneListboxId(field: FormSectionFieldSchema) {
+  return `${formSectionDomId}-many2one-options-${many2oneDomKey(field)}`;
+}
+
+function many2oneOptionId(field: FormSectionFieldSchema, index: number) {
+  return `${many2oneListboxId(field)}-${index}`;
+}
+
+function many2oneActiveDescendant(field: FormSectionFieldSchema) {
+  const index = many2oneActiveIndex.value[field.name] ?? -1;
+  return index >= 0 ? many2oneOptionId(field, index) : undefined;
+}
+
+function focusMany2one(field: FormSectionFieldSchema) {
+  many2oneFocusedField.value = field.name;
+  many2oneActiveIndex.value[field.name] = -1;
+  emitMany2oneQuery(field, many2oneTextValue(field));
+}
+
+function blurMany2one(field: FormSectionFieldSchema, event: FocusEvent) {
+  if (many2oneFocusedField.value !== field.name) return;
+  emitMany2oneCommit(field, (event.target as HTMLInputElement).value);
+  window.setTimeout(() => {
+    if (many2oneFocusedField.value === field.name) many2oneFocusedField.value = '';
+  }, 0);
+}
+
+function handleMany2oneKeydown(field: FormSectionFieldSchema, event: KeyboardEvent) {
+  const options = (field.relationOptions || []).slice(0, 8);
+  const current = many2oneActiveIndex.value[field.name] ?? -1;
+  if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && options.length) {
+    event.preventDefault();
+    const delta = event.key === 'ArrowDown' ? 1 : -1;
+    many2oneActiveIndex.value[field.name] = (current + delta + options.length) % options.length;
+    return;
+  }
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const option = current >= 0 ? options[current] : undefined;
+    if (option) emitFieldChange(field, option.value);
+    else emitMany2oneCommit(field, (event.target as HTMLInputElement).value);
+    many2oneFocusedField.value = '';
+    many2oneActiveIndex.value[field.name] = -1;
+    (event.target as HTMLInputElement).blur();
+    return;
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    many2oneFocusedField.value = '';
+    many2oneActiveIndex.value[field.name] = -1;
+  }
 }
 
 function emitMany2oneCommit(field: FormSectionFieldSchema, value: string) {
@@ -1266,7 +1347,7 @@ select.input {
   box-shadow: var(--sc-semantic-shadow-modal);
 }
 
-.many2one-combobox:focus-within .many2one-option-panel {
+.many2one-combobox.is-open .many2one-option-panel {
   display: grid;
 }
 
@@ -1285,7 +1366,8 @@ select.input {
   cursor: pointer;
 }
 
-.many2one-option:hover {
+.many2one-option:hover,
+.many2one-option.is-active {
   background: var(--sc-app-info-bg);
 }
 

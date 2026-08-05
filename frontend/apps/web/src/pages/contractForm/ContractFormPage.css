@@ -104,7 +104,14 @@
 
 /* BOSS-aligned form canvas: restrained sections and denser information rhythm. */
 .page[data-product-page-mode='form'] {
+  --sc-form-command-bar-height: 72px;
+  --sc-form-section-nav-height: 0px;
+  --sc-form-sticky-gap: 8px;
   gap: 10px;
+}
+
+.contract-form-native-shell :deep([data-group-title]) {
+  scroll-margin-top: calc(var(--sc-form-command-bar-height) + var(--sc-form-section-nav-height) + var(--sc-form-sticky-gap) * 2);
 }
 
 .page[data-product-page-mode='form'] .header--flow {
@@ -462,7 +469,7 @@
 }
 
 .form-grid--designer-workspace {
-  grid-template-columns: 240px minmax(0, 1fr) 360px;
+  grid-template-columns: 220px minmax(0, 1fr) 320px;
   align-items: start;
   gap: var(--sc-product-workspace-gap);
 }
@@ -896,9 +903,21 @@
 
 .form-grid--designer-workspace > :deep(.contract-form-designer-canvas) {
   grid-column: 2;
-  grid-row: 4 / span 2;
+  grid-row: auto;
+  order: 11;
   min-width: 0;
   min-height: 520px;
+}
+
+@media (max-width: 1300px) {
+  .form-grid--designer-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--sc-product-workspace-stack-gap);
+  }
+
+  .form-grid--designer-workspace > :deep(.contract-form-designer-canvas) {
+    grid-column: 1;
+  }
 }
 
 .contract-form-canvas-head {
@@ -1025,6 +1044,7 @@
   .form-grid--designer-workspace > :deep(.contract-form-designer-canvas) {
     grid-column: 1;
     grid-row: auto;
+    order: 9;
     position: static;
     max-height: none;
     overflow: visible;
@@ -1073,9 +1093,9 @@
 
 }
 
-@media (min-width: 1180px) {
-  .contract-form-native-shell :deep(.template-form-section-grid--columns-3) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@media (min-width: 1301px) {
+  .form-grid--designer-workspace :deep(.template-form-section-grid--columns-3) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

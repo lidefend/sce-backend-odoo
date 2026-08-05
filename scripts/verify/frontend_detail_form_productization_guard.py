@@ -30,7 +30,7 @@ require(page, "if (route.name === 'record') return 'readonly';", "explicit detai
 require(page, ":mode=\"renderProfile\"", "form mode projection")
 require(page, ":dirty=\"hasChanges\"", "dirty-state projection")
 require(page, "node.type === 'header' && !showCurrentFormFieldConfigScope.value", "duplicate native header suppression")
-require(header, "aria-label=\"页面模式\"", "mode semantics")
+require(header, "aria-label=\"页面模式与保存状态\"", "mode and save-state semantics")
 require(header, "已修改 ${changedFieldCount} 项", "dirty feedback")
 require(canvas, "填写业务信息", "create guidance")
 require(canvas, "编辑业务信息", "edit guidance")

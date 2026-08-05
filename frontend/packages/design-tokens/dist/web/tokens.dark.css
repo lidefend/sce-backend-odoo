@@ -172,7 +172,7 @@
   --sc-semantic-text-inverse: #111827;
   --sc-semantic-text-link: #67d8ff;
   --sc-semantic-text-muted: rgba(203, 213, 225, 0.68);
-  --sc-semantic-text-on-interactive: #ffffff;
+  --sc-semantic-text-on-interactive: #111827;
   --sc-semantic-text-primary: #f9fafb;
   --sc-semantic-text-secondary: #cbd5e1;
 }

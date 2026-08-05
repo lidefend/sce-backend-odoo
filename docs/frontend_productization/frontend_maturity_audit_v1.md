@@ -222,7 +222,7 @@ J07 PASS：finance 公司 A 打开 My Work 时待处理 4、我发起的 5，数
 
 session、公司、项目、角色和 logout 共用单调递增 context epoch。每次上下文切换先生成 request identity，`system.init`、项目搜索和首页加载只在 epoch 仍为当前值时写入 store；logout 立即失效所有在途请求并清空导航、页面身份、activity、My Work 和详情上下文。J11 人工延迟三次 `system.init`，执行 B→A→B 后最终只显示公司 B；随后 logout 并以 project member 登录，finance 的标题、导航、工作项和金额均未出现。
 
-浏览器证据位于 `artifacts/frontend-delivery-hardening/`。J09 对付款申请权威 `api.data read` 注入断网、409 和 401，分别验证错误文案、真实 Retry、权威刷新与安全重新登录；J10 在 390×844 仅以键盘完成登录、My Work、详情和确认框开关，并验证焦点约束及返回；J11 验证乱序公司响应和跨角色缓存隔离。18 个代表表面在 1440×900、1280×800、768×1024、390×844 共 72 个组合页面级横向溢出为 0；固定 `@axe-core/playwright@4.10.2` 对 18 个桌面表面执行 WCAG 2.1 A/AA 扫描，critical/serious 阻断为 0。J09 注入期以及无权限表面的预期浏览器资源错误单独记录并从非预期错误统计隔离，最终 console、pageerror、unhandled rejection 和非预期 HTTP 均为 0。
+浏览器证据位于 `artifacts/frontend-delivery-hardening/`。J09 对付款申请权威 `api.data read` 注入断网、409 和 401，分别验证错误文案、真实 Retry、权威刷新与安全重新登录；J10 在 390×844 仅以键盘完成登录、My Work、详情和确认框开关，并验证焦点约束及返回；J11 验证乱序公司响应和跨角色缓存隔离。17 个互不重复的代表表面在 1440×900、1280×800、768×1024、390×844 共 68 个组合页面级横向溢出为 0；固定 `@axe-core/playwright@4.10.2` 对 17 个桌面表面执行 WCAG 2.1 A/AA 扫描，critical/serious 阻断为 0。空态由全产品与表单专项使用独立夹具覆盖，禁止用同一路由重复截图充数。J09 注入期以及无权限表面的预期浏览器资源错误单独记录并从非预期错误统计隔离，最终 console、pageerror、unhandled rejection 和非预期 HTTP 均为 0。
 
 性能使用固定验收 runtime 对登录、My Work、付款申请/结算/付款执行详情、付款申请表单打开和公司切换各运行 5 次，保留所有原始样本、中位数与最慢值。最终中位数/最慢值分别为：登录 1382/1612ms、My Work 942/947ms、付款详情 1970/2051ms、结算详情 1965/1989ms、付款执行 1463/1466ms、表单 1411/1418ms、公司切换 849/1516ms。绝对指标已满足的维度直接通过；未满足绝对中位数的详情/表单逐指标与同硬件 `origin/main` 基线比较，均有改善。测量采用已初始化 SPA 路由响应，不隐藏业务数据、不减少权限检查、不跳过 mutation 后权威刷新；完整原始样本写入 `performance.json`，不能外推为生产 SLA。
 

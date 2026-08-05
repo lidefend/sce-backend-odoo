@@ -106,6 +106,7 @@ const pageSectionContractValid = computed(() => (
 ));
 const pageSectionsFingerprint = computed(() => JSON.stringify([
   pageSectionContractValid.value,
+  pageSectionStyle('root'),
   pageSectionStyle('header'),
   pageSectionStyle('coverage'),
   pageSectionStyle('designer'),

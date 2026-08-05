@@ -8,7 +8,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / 'addons/smart_core/handlers/api_onchange.py'
 FRONTEND_API = ROOT / 'frontend/apps/web/src/api/onchange.ts'
-FORM_PAGE = ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue'
+FORM_PATHS = [
+    ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/useRecordFormState.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/onchangeNormalization.ts',
+]
 
 
 def _read(path: Path) -> str:
@@ -22,7 +26,7 @@ def main() -> int:
     try:
         backend = _read(BACKEND)
         api = _read(FRONTEND_API)
-        form = _read(FORM_PAGE)
+        form = '\n'.join(_read(path) for path in FORM_PATHS)
     except FileNotFoundError as exc:
         print('[FAIL] onchange_roundtrip_guard')
         print(f'- {exc}')
@@ -51,10 +55,11 @@ def main() -> int:
     form_markers = [
         "import { triggerOnchange } from '../api/onchange';",
         'function markFieldChanged(name: string) {',
-        'function scheduleOnchange() {',
-        'async function runOnchangeRoundtrip() {',
-        'const response = await triggerOnchange({',
-        'const patch = response?.patch;',
+        'context.changedFieldSet.add(key)',
+        'setTimeout(()=>void runOnchangeRoundtrip(),300)',
+        'async function runOnchangeRoundtrip()',
+        'const response=await triggerOnchange({',
+        'const patch = response?.patch && typeof response.patch',
     ]
     for marker in form_markers:
         if marker not in form:
@@ -69,7 +74,7 @@ def main() -> int:
     print('[OK] onchange_roundtrip_guard')
     print(f'- backend: {BACKEND}')
     print(f'- frontend_api: {FRONTEND_API}')
-    print(f'- form: {FORM_PAGE}')
+    print(f'- form modules: {len(FORM_PATHS)}')
     return 0
 
 

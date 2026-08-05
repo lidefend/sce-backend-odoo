@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GOV = ROOT / "addons/smart_core/utils/contract_governance.py"
+GOV_USER_SURFACE = ROOT / "addons/smart_core/utils/contract_governance_user_surface.py"
 ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 ACTION_PRESENTATION_RUNTIME = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts"
 FILTER_COMPUTED_RUNTIME = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts"
@@ -19,7 +20,9 @@ def _read(path: Path) -> str:
 
 
 def main() -> int:
-    gov_text = _read(GOV)
+    gov_facade_text = _read(GOV)
+    gov_user_surface_text = _read(GOV_USER_SURFACE)
+    gov_text = "\n".join((gov_facade_text, gov_user_surface_text))
     view_text = _read(ACTION_VIEW)
     action_presentation_runtime_text = _read(ACTION_PRESENTATION_RUNTIME)
     filter_computed_runtime_text = _read(FILTER_COMPUTED_RUNTIME)
@@ -27,6 +30,8 @@ def main() -> int:
 
     if not gov_text:
         errors.append(f"missing file: {GOV.relative_to(ROOT).as_posix()}")
+    if not gov_user_surface_text:
+        errors.append(f"missing file: {GOV_USER_SURFACE.relative_to(ROOT).as_posix()}")
     if not view_text:
         errors.append(f"missing file: {ACTION_VIEW.relative_to(ROOT).as_posix()}")
     if not action_presentation_runtime_text:
@@ -37,6 +42,7 @@ def main() -> int:
     gov_tokens = [
         "_apply_user_surface_noise_reduction",
         "_build_user_surface_action_groups",
+        'contract_governance_user_surface.py',
         "surface_policies",
         '"filters_primary_max"',
         '"actions_primary_max"',

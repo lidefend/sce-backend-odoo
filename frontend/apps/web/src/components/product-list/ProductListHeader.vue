@@ -1,5 +1,5 @@
 <template>
-  <section ref="queryBar" class="product-list-query-bar sc-product-page-toolbar" data-list-query-action-bar aria-label="列表查询与操作">
+  <section class="product-list-query-bar sc-product-page-toolbar" data-list-query-action-bar aria-label="列表查询与操作">
     <ScActionBar class="product-list-header__tools" label="列表操作">
       <slot />
     </ScActionBar>
@@ -23,7 +23,6 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
 
@@ -43,66 +42,6 @@ defineEmits<{
   'composition-end': [event: CompositionEvent];
 }>();
 
-const queryBar = ref<HTMLElement | null>(null);
-let resizeObserver: ResizeObserver | null = null;
-let listPage: HTMLElement | null = null;
-let scrollHost: HTMLElement | null = null;
-let tableSurface: HTMLElement | null = null;
-let layoutFrame = 0;
-
-function syncListLayout() {
-  layoutFrame = 0;
-  const element = queryBar.value;
-  if (!element) return;
-  listPage = element.closest<HTMLElement>('[data-product-page-mode="list"]');
-  const queryRect = element.getBoundingClientRect();
-  listPage?.style.setProperty('--sc-list-query-bar-height', `${Math.ceil(queryRect.height)}px`);
-
-  tableSurface = listPage?.querySelector<HTMLElement>('.table') || null;
-  const tableHeader = tableSurface?.querySelector<HTMLElement>('thead') || null;
-  if (!tableSurface || !tableHeader) {
-    listPage?.style.setProperty('--sc-list-header-y-offset', '0px');
-    return;
-  }
-
-  const tableRect = tableSurface.getBoundingClientRect();
-  const headerHeight = tableHeader.getBoundingClientRect().height;
-  const paginationHeight =
-    tableSurface.querySelector<HTMLElement>('.pagination-footer')?.getBoundingClientRect().height || 0;
-  const borderTop = Number.parseFloat(window.getComputedStyle(tableSurface).borderTopWidth) || 0;
-  const headerNaturalTop = tableRect.top + borderTop;
-  const maximumOffset = Math.max(0, tableRect.height - headerHeight - paginationHeight - borderTop);
-  const headerOffset = Math.min(
-    Math.max(queryRect.bottom - headerNaturalTop, 0),
-    maximumOffset,
-  );
-  listPage?.style.setProperty('--sc-list-header-y-offset', `${Math.floor(headerOffset)}px`);
-}
-
-function scheduleListLayoutSync() {
-  if (layoutFrame) return;
-  layoutFrame = window.requestAnimationFrame(syncListLayout);
-}
-
-onMounted(async () => {
-  await nextTick();
-  scrollHost = queryBar.value?.closest<HTMLElement>('.router-host') || null;
-  syncListLayout();
-  scrollHost?.addEventListener('scroll', scheduleListLayoutSync, { passive: true });
-  window.addEventListener('resize', scheduleListLayoutSync, { passive: true });
-  resizeObserver = new ResizeObserver(scheduleListLayoutSync);
-  if (queryBar.value) resizeObserver.observe(queryBar.value);
-  if (tableSurface) resizeObserver.observe(tableSurface);
-});
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  scrollHost?.removeEventListener('scroll', scheduleListLayoutSync);
-  window.removeEventListener('resize', scheduleListLayoutSync);
-  if (layoutFrame) window.cancelAnimationFrame(layoutFrame);
-  listPage?.style.removeProperty('--sc-list-query-bar-height');
-  listPage?.style.removeProperty('--sc-list-header-y-offset');
-});
 </script>
 
 <style scoped>
@@ -124,6 +63,7 @@ onBeforeUnmount(() => {
 @media (min-width: 761px) {
   .product-list-query-bar {
     width: 100%;
+    position: relative;
     top: 0;
     padding: 0;
     border: 0;
@@ -186,5 +126,26 @@ onBeforeUnmount(() => {
   .product-list-header__tools :deep(.action-toolbar) { gap: 6px; }
   .product-list-header__search { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   .product-list-header__search .ghost { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 520px) {
+  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view)) {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view) .view-switch) {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+  }
+  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view) .toolbar-actions) {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    justify-self: end;
+  }
+  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view) .native-search) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
 }
 </style>

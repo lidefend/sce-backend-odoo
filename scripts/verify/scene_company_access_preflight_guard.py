@@ -11,6 +11,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE_PATH = ROOT / "scripts" / "verify" / "baselines" / "scene_company_access_preflight_guard.json"
+PROFILES_JSON_ENV = "SC_SCENE_COMPANY_ACCESS_PREFLIGHT_PROFILES_JSON"
 
 
 def _text(value: Any) -> str:
@@ -42,6 +43,24 @@ def _load_json(path: Path) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
+def _resolve_profiles(baseline: dict) -> list:
+    raw_override = os.environ.get(PROFILES_JSON_ENV)
+    if raw_override is None:
+        profiles = _as_list(baseline.get("profiles"))
+    else:
+        try:
+            profiles = json.loads(raw_override)
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"{PROFILES_JSON_ENV} must be a valid JSON array") from exc
+        if not isinstance(profiles, list):
+            raise ValueError(f"{PROFILES_JSON_ENV} must be a JSON array")
+
+    if not profiles:
+        source = PROFILES_JSON_ENV if raw_override is not None else "profiles"
+        raise ValueError(f"{source} is empty")
+    return profiles
+
+
 def _write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -54,10 +73,11 @@ def main() -> int:
         print(f" - missing or invalid baseline: {BASELINE_PATH.relative_to(ROOT).as_posix()}")
         return 1
 
-    profiles = _as_list(baseline.get("profiles"))
-    if not profiles:
+    try:
+        profiles = _resolve_profiles(baseline)
+    except ValueError as exc:
         print("[scene_company_access_preflight_guard] FAIL")
-        print(" - profiles is empty")
+        print(f" - {exc}")
         return 1
 
     min_reachable_block = _safe_int(baseline.get("min_reachable_count_block"), 1)
@@ -183,4 +203,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

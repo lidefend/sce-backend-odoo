@@ -17,7 +17,8 @@ REQUIRED_FILES = {
     ],
     "frontend/apps/web/src/components/page/BlockRenderer.vue": [
         "resolveBlockComponent",
-        "未支持的区块类型",
+        "当前内容暂不可用",
+        "请稍后重试或联系管理员。",
     ],
     "frontend/apps/web/src/app/pageBlockRegistry.ts": [
         "metric_row",

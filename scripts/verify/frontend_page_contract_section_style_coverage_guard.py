@@ -9,6 +9,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 VIEWS_DIR = ROOT / "frontend/apps/web/src/views"
+PAGES_DIR = ROOT / "frontend/apps/web/src/pages"
 PAGE_CONTRACTS_BUILDER = ROOT / "addons/smart_core/core/page_contracts_builder.py"
 
 
@@ -41,7 +42,8 @@ def _load_builder_module(path: Path) -> ModuleType:
 def _find_page_consumers() -> dict[str, list[Path]]:
     consumers: dict[str, list[Path]] = {}
     marker = "usePageContract('"
-    for view in sorted(VIEWS_DIR.glob("*.vue")):
+    candidates = [*VIEWS_DIR.glob("*.vue"), *PAGES_DIR.glob("*.vue")]
+    for view in sorted(candidates):
         text = _read(view)
         if not text:
             continue

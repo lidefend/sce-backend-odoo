@@ -216,7 +216,15 @@ async function prepareCase(page, entry) {
     await page.locator('main .sc-empty, main .list-empty-state').first().waitFor({ state: 'visible', timeout: 45000 });
   } else if (entry.mode === 'dialog') {
     await page.locator('.financial-workspace[data-workspace-kind="payment_request"]').waitFor({ timeout: 45000 });
-    await page.locator('.template-page-header-actions button.sc-btn-primary').filter({ hasText: /^提交$/ }).first().click();
+    let submit = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
+    if (await submit.count() === 0) {
+      const more = page.locator('.form-header-more-actions > summary:visible').filter({ hasText: /^更多操作$/ }).first();
+      await more.waitFor({ state: 'visible', timeout: 15000 });
+      await more.click();
+      submit = page.locator('.form-header-more-actions > div button:visible').filter({ hasText: /^提交$/ }).first();
+    }
+    await submit.waitFor({ state: 'visible', timeout: 15000 });
+    await submit.click();
     await page.getByRole('dialog').waitFor({ timeout: 15000 });
   }
   if (FORM_CANVAS_AUDIT && entry.pageKind !== 'detail') {

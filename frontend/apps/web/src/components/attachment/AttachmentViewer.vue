@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="attachment-viewer-backdrop" @click.self="close">
-      <section class="attachment-viewer" role="dialog" aria-modal="true" aria-label="附件查看">
+    <div v-if="visible" class="attachment-viewer-backdrop" @click.self="close" @keydown="onKeydown">
+      <section ref="viewerRef" class="attachment-viewer" role="dialog" aria-modal="true" aria-label="附件查看" tabindex="-1">
         <header class="attachment-viewer-header">
           <div class="attachment-viewer-title">
             <h3>{{ displayName }}</h3>
@@ -38,6 +38,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { downloadFile } from '../../api/files';
 import type { FileDownloadRequest, FileDownloadResponse } from '@sc/schema';
+import { useModalLifecycle } from '../../composables/useModalLifecycle';
 
 const INLINE_MIMETYPE_PREFIXES = ['image/', 'text/'];
 const INLINE_MIMETYPES = new Set(['application/pdf']);
@@ -48,6 +49,7 @@ const errorMessage = ref('');
 const payload = ref<FileDownloadResponse | null>(null);
 const fallbackName = ref('');
 const previewUrl = ref('');
+const viewerRef = ref<HTMLElement | null>(null);
 
 const displayName = computed(() => payload.value?.name || fallbackName.value || '附件');
 const mimetype = computed(() => payload.value?.mimetype || 'application/octet-stream');
@@ -118,6 +120,8 @@ function close() {
   resetPayload();
 }
 
+const { onKeydown } = useModalLifecycle({ open: () => visible.value, surface: viewerRef, close });
+
 function downloadBlob(blob: Blob, name: string) {
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -162,7 +166,7 @@ defineExpose({ open, close });
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   width: min(1040px, 100%);
-  height: min(760px, calc(100vh - 48px));
+  height: min(760px, calc(100dvh - 48px));
   min-height: 420px;
   border: 1px solid var(--sc-app-border);
   border-radius: 8px;
@@ -253,8 +257,8 @@ defineExpose({ open, close });
 
   .attachment-viewer {
     width: 100%;
-    height: 100vh;
-    min-height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
     border-radius: 0;
   }
 

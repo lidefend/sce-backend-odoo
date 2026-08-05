@@ -6,7 +6,14 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-FORM_PAGE = ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue'
+FORM_PATHS = [
+    ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/one2manyUtils.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/valueUtils.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/onchangeNormalization.ts',
+]
 ENGINE = ROOT / 'frontend/apps/web/src/app/x2manyCommands.ts'
 RELATION_RENDERER = ROOT / 'frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue'
 RELATION_ADAPTER = ROOT / 'frontend/apps/web/src/components/template/relationField.types.ts'
@@ -21,7 +28,7 @@ def _read(path: Path) -> str:
 def main() -> int:
     errors: list[str] = []
     try:
-        form = _read(FORM_PAGE)
+        form = '\n'.join(_read(path) for path in FORM_PATHS)
         engine = _read(ENGINE)
         relation_renderer = _read(RELATION_RENDERER)
         relation_adapter = _read(RELATION_ADAPTER)
@@ -45,20 +52,20 @@ def main() -> int:
         'const showOne2manyErrors = ref(false);',
         'const one2manyValidation = computed(() => collectOne2manyDraftValidation());',
         'function one2manyColumns(name: string): One2ManyColumn[] {',
-        'function one2manyColumnInputType(column: One2ManyColumn) {',
-        'function addOne2manyRow(name: string) {',
-        'function setOne2manyRowField(fieldName: string, rowKey: string, column: One2ManyColumn, value: unknown) {',
-        'function removeOne2manyRow(fieldName: string, rowKey: string) {',
-        'function restoreOne2manyRow(fieldName: string, rowKey: string) {',
+        'export function one2manyColumnInputType(column: One2ManyColumn)',
+        'function addRow(name: string)',
+        'function setRowField(fieldName: string, rowKey: string, column: One2ManyColumn, value: unknown)',
+        'function removeRow(fieldName: string, rowKey: string)',
+        'function restoreRow(fieldName: string, rowKey: string)',
         'function one2manyRowLabel(fieldName: string, row: One2ManyInlineRow) {',
-        'function one2manyRowStateLabel(row: One2ManyInlineRow) {',
+        'export function one2manyRowStateLabel(row: One2ManyInlineRow)',
         'function one2manySummary(name: string) {',
-        'function isOne2manyEmptyValue(column: One2ManyColumn, value: unknown) {',
-        'function collectOne2manyDraftValidation() {',
+        'export function isOne2manyEmptyValue(column: One2ManyColumn, value: unknown)',
+        'function collectValidation()',
         'function one2manyRowErrors(fieldName: string, rowKey: string) {',
         'required: Boolean(descriptor?.required),',
-        "return buildOne2manyCommandValue(name, 'write');",
-        "out[name] = buildOne2manyCommandValue(name, 'onchange');",
+        "params.mode || 'write'",
+        "mode: 'onchange'",
     ]
     for marker in form_markers:
         if marker not in form:
@@ -98,7 +105,7 @@ def main() -> int:
         return 1
 
     print('[OK] x2many_inline_edit_guard')
-    print(f'- form: {FORM_PAGE}')
+    print(f'- form modules: {len(FORM_PATHS)}')
     print(f'- engine: {ENGINE}')
     print(f'- relation_renderer: {RELATION_RENDERER}')
     print(f'- relation_adapter: {RELATION_ADAPTER}')

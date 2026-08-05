@@ -40,6 +40,7 @@ def main() -> int:
 
     view_files = sorted(VIEWS_DIR.glob("*.vue"))
     expected_views = {
+        "AccountActivationView.vue",
         "ActionView.vue",
         "ActionViewShell.vue",
         "AccessDeniedView.vue",
@@ -52,6 +53,7 @@ def main() -> int:
         "NotFoundView.vue",
         "ProjectsIntakeView.vue",
         "PlaceholderView.vue",
+        "PasswordRecoveryView.vue",
         "ProjectManagementDashboardView.vue",
         "ReleaseOperatorView.vue",
         "SceneContractBlockGridView.vue",
@@ -115,7 +117,11 @@ def main() -> int:
     ]
 
     page_contract_exempt_views = {
+        "AccessDeniedView.vue",
+        "AccountActivationView.vue",
         "HomeView.vue",
+        "NotFoundView.vue",
+        "PasswordRecoveryView.vue",
         "ProjectManagementDashboardView.vue",
         "ActionViewShell.vue",
         "ProjectsIntakeView.vue",

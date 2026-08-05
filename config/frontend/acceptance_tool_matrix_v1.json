@@ -1,0 +1,11 @@
+{
+  "schema": "frontend_acceptance_tool_matrix.v1",
+  "tools": {
+    "delivery-hardening": {"profiles": ["local", "test"], "operations": ["read", "fixture", "managed-service"]},
+    "full-product-audit": {"profiles": ["local", "test", "daily", "production"], "operations": ["read"]},
+    "form-system-audit": {"profiles": ["local", "test", "daily", "production"], "operations": ["read"]},
+    "geometry-scroll-audit": {"profiles": ["local", "test", "daily", "production"], "operations": ["read"]},
+    "daily-release-probe": {"profiles": ["daily"], "operations": ["read"]},
+    "acceptance-report-server": {"profiles": ["local", "test"], "operations": ["managed-service"]}
+  }
+}

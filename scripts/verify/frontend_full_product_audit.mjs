@@ -2,20 +2,23 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { launchChromium } from './playwright_runtime.mjs';
+import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 
-const BASE_URL = process.env.SC_FULL_PRODUCT_URL || process.env.FRONTEND_URL || 'http://127.0.0.1:5175';
-const DB_NAME = process.env.SC_FULL_PRODUCT_DB || process.env.DB_NAME || 'sc_frontend_acceptance';
-const PASSWORD = process.env.SC_FULL_PRODUCT_PASSWORD || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || 'activity-tabs-acceptance-password';
+const acceptance = resolveAcceptanceEnvironment({ tool: 'full-product-audit', env: { ...process.env, FRONTEND_URL: process.env.SC_FULL_PRODUCT_URL || process.env.FRONTEND_URL, DB_NAME: process.env.SC_FULL_PRODUCT_DB || process.env.DB_NAME } });
+const BASE_URL = acceptance.baseUrl;
+const DB_NAME = acceptance.database;
+const PASSWORD = process.env.SC_FULL_PRODUCT_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const OUTPUT_ROOT = path.resolve(process.env.SC_FULL_PRODUCT_OUTPUT || '.runtime/final-acceptance');
 const JSON_OUTPUT = path.resolve(process.env.SC_FULL_PRODUCT_JSON || '.runtime/full-product-audit.json');
 const FORM_AUDIT_INPUT = path.resolve(process.env.SC_FORM_AUDIT_JSON || '.runtime/form-audit.json');
-const ROLE_BINDINGS = [
-  { role: 'finance', login: 'fixture_role_finance' },
-  { role: 'project_member', login: 'fixture_role_project_a_member' },
-  { role: 'project_manager', login: 'fixture_role_pm' },
-  { role: 'owner', login: 'fixture_role_owner' },
-];
+const SOURCE_SHA = process.env.SC_ACCEPTANCE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+if (!PASSWORD) throw new Error('SC_FULL_PRODUCT_PASSWORD or SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
+const ROLE_BINDINGS = ['finance', 'project_member', 'project_manager', 'owner'].map((role) => ({ role, login: String(acceptance.roleBindings[role] || '') }));
+if (ROLE_BINDINGS.some((binding) => !binding.login)) throw new Error(`profile ${acceptance.profile} requires finance/project_member/project_manager/owner role bindings`);
+const PROJECT_MANAGER_LOGIN = ROLE_BINDINGS.find((binding) => binding.role === 'project_manager').login;
 const SMOKE_VIEWPORTS = [
   { key: '1440', width: 1440, height: 900 },
   { key: '390', width: 390, height: 844 },
@@ -56,6 +59,7 @@ const runtimeIssues = [];
 const uncovered = [];
 
 await fs.mkdir(OUTPUT_ROOT, { recursive: true });
+const acceptanceLease = await acquireAcceptanceLease({ root: acceptance.artifactRoot, mode: 'shared-read', owner: { tool: 'full-product-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
 
 function nodeMeta(node) {
   return node?.meta && typeof node.meta === 'object' ? node.meta : {};
@@ -210,6 +214,12 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
         && (allowWorkspace ? Boolean(main?.children.length) : Boolean(document.querySelector('#main-content .page, #main-content [data-product-page-mode]')));
     }, { source: LOADING_TEXT.source, allowWorkspace: leaf.route === '/' || leaf.route === '/my-work' }, { timeout: 45_000 });
     await page.waitForTimeout(120);
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+      const main = document.querySelector('#main-content');
+      if (main) main.scrollTop = 0;
+    });
+    await page.waitForTimeout(40);
   } catch (error) {
     navigationError = error.message;
   }
@@ -234,6 +244,13 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
   }
   const activeTab = await page.locator('.activity-tab.active').allInnerTexts().catch(() => []);
   const visibleActions = await page.locator('#main-content button:visible:not(:disabled), #main-content a:visible[href]').count().catch(() => 0);
+  const mobileToolbar = await page.evaluate(() => {
+    if (document.documentElement.clientWidth > 520) return { applicable: false, search_width: 0 };
+    const toolbar = document.querySelector('.product-list-header__tools .action-toolbar:not(.action-toolbar--without-view)');
+    const search = toolbar?.querySelector('.native-search');
+    if (!(toolbar instanceof HTMLElement) || !(search instanceof HTMLElement)) return { applicable: false, search_width: 0 };
+    return { applicable: true, search_width: Math.round(search.getBoundingClientRect().width) };
+  }).catch(() => ({ applicable: false, search_width: 0 }));
   const expectedPath = new URL(`${BASE_URL}${leaf.route}`).pathname;
   const actualUrl = new URL(page.url());
   const checks = {
@@ -248,6 +265,7 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
     active_menu_correct: leaf.menu_id <= 0 || activeMenu.some((text) => text.includes(leaf.label)),
     active_tab_correct: leaf.route === '/' ? activeTab.length === 0 : viewport.width < 760 || activeTab.length === 1,
     primary_action_reachable: visibleActions > 0 || ['workspace', 'home'].includes(mode),
+    mobile_list_toolbar_usable: !mobileToolbar.applicable || mobileToolbar.search_width >= 240,
     no_auth_or_permission_redirect: !actualUrl.pathname.includes('/login') && !FAILURE_TEXT.test(mainText),
   };
   const failures = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);
@@ -261,7 +279,7 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
     checks,
     result: failures.length ? 'FAIL' : 'PASS',
     failures,
-    diagnostics: { navigation_error: navigationError, console_errors: capture.console, page_errors: capture.page, http_errors: capture.http, clipping, mojibake: mojibake.slice(0, 10), icon_metrics: iconMetrics, active_menu: activeMenu, active_tab: activeTab, visible_actions: visibleActions, dimensions },
+    diagnostics: { navigation_error: navigationError, console_errors: capture.console, page_errors: capture.page, http_errors: capture.http, clipping, mojibake: mojibake.slice(0, 10), icon_metrics: iconMetrics, active_menu: activeMenu, active_tab: activeTab, visible_actions: visibleActions, mobile_toolbar: mobileToolbar, dimensions },
     load_ms: Date.now() - started,
   };
   if (failures.length || options.capture) {
@@ -360,7 +378,7 @@ try {
     const context = await browser.newContext({ viewport, locale: 'zh-CN' });
     const page = await context.newPage();
     const capture = attachRuntimeCapture(page);
-    await login(page, 'fixture_role_pm', capture);
+    await login(page, PROJECT_MANAGER_LOGIN, capture);
     for (const representative of representatives.filter((item) => item.leaf)) {
       process.stdout.write(`[full-product-audit] representative ${viewport.key} ${representative.label}\r`);
       const existing = routeRows.find((row) => row.route === representative.leaf.route && row.viewport === `${viewport.width}x${viewport.height}` && (representative.leaf.role ? row.role === representative.leaf.role : true));
@@ -380,7 +398,7 @@ try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
   const page = await context.newPage();
   const capture = attachRuntimeCapture(page);
-  await login(page, 'fixture_role_pm', capture);
+  await login(page, PROJECT_MANAGER_LOGIN, capture);
   const notFound = { label: '不存在页面', navigation_path: '错误/禁止态', route: '/__full_product_audit_not_found__', menu_id: 0, action_id: 0, menu_xmlid: 'audit.not_found', action_xmlid: '', model: '' };
   capture.reset('not-found');
   await page.goto(`${BASE_URL}${notFound.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -394,6 +412,7 @@ try {
   await context.close();
 } finally {
   await browser.close();
+  await acceptanceLease.release();
   process.stdout.write('\n');
 }
 
@@ -428,8 +447,9 @@ const status = Object.values(coverage).every((item) => item.rate === 100) && fai
 const report = {
   schema_version: 'frontend-full-product-audit/v1',
   generated_at: new Date().toISOString(),
+  source_sha: SOURCE_SHA,
   status,
-  baseline: 'b7678cb0000944afd069017da618f79fa60adc76',
+  baseline: '2ae5dd9ff99f54db66e80bf1e9855a3d59ee090e',
   environment: { base_url: BASE_URL, database: DB_NAME, write_operations: false, external_puma_accessed: false },
   discovery: { source: 'authenticated release_navigation_v1/delivery_engine_v1', roles: ROLE_BINDINGS, menu_leaves: discovered.length, smoke_viewports: SMOKE_VIEWPORTS, deep_viewports: DEEP_VIEWPORTS },
   coverage,

@@ -47,6 +47,11 @@ def main() -> int:
         page_key = page_match.group(1).strip()
         rel = view.relative_to(ROOT).as_posix()
 
+        # My Work consumes the dedicated product_workspace action contract;
+        # layering generic page actions back onto it duplicates product actions.
+        if page_key == "my_work" and 'data-my-work-renderer="product-workspace"' in text:
+            continue
+
         for token in REQUIRED_TOKENS:
             if token not in text:
                 errors.append(f"{rel} (page={page_key}) missing token: {token}")

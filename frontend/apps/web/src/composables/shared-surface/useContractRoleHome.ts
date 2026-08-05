@@ -75,6 +75,7 @@ export function useContractRoleHome() {
   const loading = ref(false);
   const error = ref('');
   const workWorkspace = ref<ProductMyWorkWorkspace | null>(null);
+  let loadRequestSequence = 0;
 
   const pageProfile = computed(() => pageContract.contract.value?.page_orchestration_v1?.page || {});
   const title = computed(() => text(pageProfile.value.title) || pageContract.text('title', '首页'));
@@ -114,6 +115,7 @@ export function useContractRoleHome() {
   });
 
   async function load() {
+    const requestSequence = ++loadRequestSequence;
     if (!session.token) {
       workWorkspace.value = null;
       return;
@@ -124,13 +126,13 @@ export function useContractRoleHome() {
     workWorkspace.value = null;
     try {
       const result = await fetchMyWorkSummary(12, 4, { page: 1, pageSize: 12, sortBy: 'priority', sortDir: 'desc' });
-      if (isCurrentContextEpoch(requestEpoch)) workWorkspace.value = result.product_workspace || null;
+      if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) workWorkspace.value = result.product_workspace || null;
     } catch {
-      if (isCurrentContextEpoch(requestEpoch)) {
+      if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) {
         error.value = pageContract.text('load_error', '当前页面暂时无法加载，请稍后重试。');
       }
     } finally {
-      if (isCurrentContextEpoch(requestEpoch)) loading.value = false;
+      if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) loading.value = false;
     }
   }
 

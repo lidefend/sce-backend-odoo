@@ -8,7 +8,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND_PATH = ROOT / "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py"
-FRONTEND_PATH = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
+FRONTEND_PATHS = [
+    ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue",
+    ROOT / "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+]
 
 
 def _read(path: Path) -> str:
@@ -27,7 +33,7 @@ def _fail(lines: list[str]) -> int:
 def main() -> int:
     try:
         backend = _read(BACKEND_PATH)
-        frontend = _read(FRONTEND_PATH)
+        frontend = "\n".join(_read(path) for path in FRONTEND_PATHS)
     except FileNotFoundError as exc:
         return _fail([str(exc)])
 
@@ -51,7 +57,7 @@ def main() -> int:
 
     frontend_required = [
         "canRead: row.can_read !== false,",
-        "if (entry && entry.canRead === false) {",
+        "if (entry && entry.canRead === false)",
         "const contractAccessPolicy = computed<ContractAccessPolicy>(() => {",
         "if (policy.mode === 'block') {",
         "throw new ContractAccessPolicyError(",
@@ -61,7 +67,7 @@ def main() -> int:
             errors.append(f"frontend missing marker: {marker}")
 
     # Both query paths must enforce relation_entry.can_read guard.
-    if frontend.count("if (entry && entry.canRead === false) {") < 2:
+    if frontend.count("if (entry && entry.canRead === false)") < 2:
         errors.append("frontend missing canRead guard in one of relation query paths")
 
     # Frontend must not re-introduce hardcoded model-level ACL inference.
@@ -77,7 +83,7 @@ def main() -> int:
 
     print("[OK] relation_read_closure_guard")
     print(f"- backend: {BACKEND_PATH}")
-    print(f"- frontend: {FRONTEND_PATH}")
+    print(f"- frontend modules: {len(FRONTEND_PATHS)}")
     return 0
 
 

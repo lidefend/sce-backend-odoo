@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 NAME=sc-backend-odoo-acceptance
-if docker ps --format '{{.Names}}' | grep -qx "$NAME"; then echo "[backend.acceptance.up] already running"; exit 0; fi
+if docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
+  if curl -fsS http://127.0.0.1:18082/web/login >/dev/null 2>&1; then
+    echo "[backend.acceptance.up] already healthy"
+    exit 0
+  fi
+  echo "[backend.acceptance.up] replacing unhealthy container" >&2
+fi
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 PRODUCT_VERSION="$(tr -d '[:space:]' < VERSION)"
 SOURCE_REVISION="$(git rev-parse HEAD)"

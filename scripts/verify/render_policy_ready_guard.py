@@ -7,7 +7,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GOV = ROOT / "addons/smart_core/utils/contract_governance.py"
+GOV_MODULES = (
+    ROOT / "addons/smart_core/utils/contract_governance_form_actions.py",
+    ROOT / "addons/smart_core/utils/contract_governance_form_validation.py",
+)
 FORM = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
+FORM_MODULES = ROOT / "frontend/apps/web/src/pages/contractForm"
 POLICY = ROOT / "frontend/apps/web/src/app/contractPolicies.ts"
 REPORT_JSON = ROOT / "artifacts/backend/render_policy_ready_report.json"
 REPORT_MD = ROOT / "docs/ops/audit/render_policy_ready_report.md"
@@ -18,8 +23,9 @@ def _read(path: Path) -> str:
 
 
 def main() -> int:
-    gov_text = _read(GOV)
-    form_text = _read(FORM)
+    gov_text = "\n".join(_read(path) for path in (GOV, *GOV_MODULES))
+    form_sources = [FORM, *FORM_MODULES.rglob("*.vue"), *FORM_MODULES.rglob("*.ts")]
+    form_text = "\n".join(_read(path) for path in form_sources)
     policy_text = _read(POLICY)
     errors: list[str] = []
 
@@ -66,7 +72,7 @@ def main() -> int:
 
     form_tokens = [
         "evaluateFieldPolicy(",
-        "evaluateActionPolicy(contract.value, key, policyContext.value)",
+        "evaluateActionPolicy(params.contract, key, params.policyContext)",
         "collectPolicyValidationErrors(contract.value, policyContext.value)",
         "capabilities: runtimeCapabilities.value",
         "userGroups: runtimeUserGroups.value",

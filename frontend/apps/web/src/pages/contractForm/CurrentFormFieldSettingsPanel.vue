@@ -127,7 +127,7 @@
             </label>
           </section>
         </aside>
-        <aside class="contract-form-inspector" aria-label="字段属性检查器">
+        <aside class="record-form-inspector" aria-label="字段属性检查器">
           <section class="contract-field-selection-panel">
             <div v-if="selectedFieldRow" class="contract-field-selection-card">
               <div class="contract-field-selection-main">

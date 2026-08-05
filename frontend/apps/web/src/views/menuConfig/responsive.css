@@ -69,7 +69,7 @@
 
 .table-wrap {
   overflow: auto;
-  max-height: min(420px, calc(100vh - 260px));
+  max-height: 420px;
 }
 
 table {

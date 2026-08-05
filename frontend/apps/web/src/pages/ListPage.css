@@ -208,10 +208,19 @@
 /* Layered business ledger: query, dataset and pagination form one clear hierarchy. */
 @media (min-width: 761px) {
   .page[data-product-page-mode='list'] {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     gap: 14px;
   }
 
   .page[data-product-page-mode='list'] .table {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     border-color: var(--sc-app-border);
     border-radius: 12px;
     background: var(--sc-app-panel);
@@ -252,10 +261,20 @@
   }
 
   .page[data-product-page-mode='list'] .pagination-footer {
+    flex: 0 0 auto;
     min-height: 50px;
     padding-inline: 16px;
     border-top-color: var(--sc-app-border);
     background: var(--sc-app-subtle-bg);
+  }
+
+  .page[data-product-page-mode='list'] .table > .sc-table-shell,
+  .page[data-product-page-mode='list'] .table > .grouped-table {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
   }
 }
 
@@ -1065,7 +1084,8 @@ tbody td {
 
 .table thead th {
   box-sizing: border-box;
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 20;
   height: var(--sc-table-header-height, 40px);
   padding: 0 12px;
@@ -1077,7 +1097,6 @@ tbody td {
   line-height: 18px;
   vertical-align: middle;
   white-space: nowrap;
-  transform: translateY(var(--sc-list-header-y-offset, 0px));
 }
 
 .table thead .cell-select {

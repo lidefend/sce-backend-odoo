@@ -60,6 +60,7 @@ const pageSectionsReady = computed(() => (
   && pageSectionTagIs('editor', 'section')
 ));
 const pageSectionsFingerprint = computed(() => JSON.stringify([
+  pageSectionStyle('root'),
   pageSectionStyle('header'),
   pageSectionStyle('tree'),
   pageSectionStyle('editor'),

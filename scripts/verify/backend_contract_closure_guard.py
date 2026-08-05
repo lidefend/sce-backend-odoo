@@ -25,7 +25,7 @@ CHECKS: list[tuple[Path, list[str]]] = [
         ],
     ),
     (
-        ROOT / "addons" / "smart_core" / "utils" / "contract_governance.py",
+        ROOT / "addons" / "smart_core" / "utils" / "contract_governance_capabilities.py",
         [
             '"delivery_level"',
             '"target_scene_key"',
@@ -80,4 +80,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

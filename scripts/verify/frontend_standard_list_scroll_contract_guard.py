@@ -83,10 +83,23 @@ def validate_contract(css: str, template: str, header_source: str) -> list[str]:
     header = {}
     for declarations in header_rules:
         header.update(declarations)
-    if header.get("position") != "relative":
-        errors.append("standard table header must use the governed page-scroll offset")
-    if "var(--sc-list-header-y-offset" not in header.get("transform", ""):
-        errors.append("standard table header must bind to the governed vertical offset")
+    if header.get("position") != "sticky":
+        errors.append("standard table header must use native sticky positioning")
+    if header.get("top") != "0":
+        errors.append("standard table header must bind to the local scroll-owner origin")
+    if "transform" in header:
+        errors.append("standard table header must not simulate sticky positioning with transforms")
+
+    desktop_page = {}
+    for declarations in declarations_for(rules, ".page[data-product-page-mode='list']"):
+        desktop_page.update(declarations)
+    if desktop_page.get("overflow") != "hidden" or desktop_page.get("min-height") != "0":
+        errors.append("desktop list page must delegate scrolling to its bounded data surface")
+    desktop_table_shell = {}
+    for declarations in declarations_for(rules, ".page[data-product-page-mode='list'] .table > .sc-table-shell"):
+        desktop_table_shell.update(declarations)
+    if desktop_table_shell.get("overflow") != "auto" or desktop_table_shell.get("min-height") != "0":
+        errors.append("desktop table shell must be the single bounded two-axis scroll owner")
 
     for selector, declarations in rules:
         normalized = " ".join(selector.split())
@@ -132,7 +145,9 @@ def run_self_tests() -> list[str]:
       .page.sc-product-workspace-stack { isolation: isolate; }
       .table { width: 100%; overflow: hidden; }
       .table > .sc-table-shell { overflow-x: auto; overflow-y: hidden; }
-      .table thead th { position: relative; transform: translateY(var(--sc-list-header-y-offset, 0px)); }
+      .page[data-product-page-mode='list'] { min-height: 0; overflow: hidden; }
+      .page[data-product-page-mode='list'] .table > .sc-table-shell { min-height: 0; overflow: auto; }
+      .table thead th { position: sticky; top: 0; }
       .pagination-footer { position: static; }
     """
     fixtures = {
@@ -145,6 +160,10 @@ def run_self_tests() -> list[str]:
         "fixed-pagination": (valid + ".pagination-footer { position: fixed; }", True),
         "missing-horizontal": (
             valid + ".table > .sc-table-shell { overflow-x: hidden; }",
+            True,
+        ),
+        "transform-sticky": (
+            valid + ".table thead th { position: relative; transform: translateY(4px); }",
             True,
         ),
     }
@@ -194,12 +213,12 @@ def main() -> int:
             print(f"- {error}")
         return 1
     print("[frontend_standard_list_scroll_contract_guard] PASS")
-    print("vertical_owner=router-host")
+    print("vertical_owner=router-host|bounded-list-table-shell")
     print("app_header_boundary=isolated-grid-row")
     print("table_horizontal_owner=sc-table-shell")
     print("query_bar_horizontal_motion=none")
     print("pagination_document_flow=true")
-    print("header_page_scroll_offset=governed")
+    print("header_native_sticky=true")
     print("list_overlay_containment=isolated")
     return 0
 

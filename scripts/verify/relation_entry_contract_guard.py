@@ -8,7 +8,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND_PATH = ROOT / "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py"
-FRONTEND_PATH = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
+FRONTEND_PATHS = [
+    ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue",
+    ROOT / "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/createDefaults.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/valueUtils.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
+]
 
 
 def _read(path: Path) -> str:
@@ -27,7 +37,7 @@ def _fail(lines: list[str]) -> int:
 def main() -> int:
     try:
         backend = _read(BACKEND_PATH)
-        frontend = _read(FRONTEND_PATH)
+        frontend = "\n".join(_read(path) for path in FRONTEND_PATHS)
     except FileNotFoundError as exc:
         return _fail([str(exc)])
 
@@ -46,15 +56,15 @@ def main() -> int:
 
     frontend_required = [
         "const createModeRaw = String(row.create_mode || '').trim().toLowerCase();",
-        "const defaultVals = row.default_vals",
-        "function relationCreateMode(",
+        "const defaultVals = row.default_vals && typeof row.default_vals === 'object'",
+        "export function relationCreateMode(",
         "function relationDomain(",
-        "function normalizeRouteDefault(value: unknown)",
+        "export function normalizeRouteDefault(value: unknown)",
         "if (key.startsWith('default_')) {",
-        "function relationUiLabel(descriptor: FieldDescriptor | undefined, key: string, fallback = '')",
-        "if (mode === 'page') return relationUiLabel(descriptor, 'create_and_edit');",
-        "if (mode === 'quick') return relationUiLabel(descriptor, 'quick_create');",
-        "{{ relationSearchDialog.labels.create || '新建' }}",
+        "export function relationUiLabel(descriptor: FieldDescriptor | undefined, key: string, fallback = '')",
+        "mode==='page'?context.relationUiLabel(descriptor,'create_and_edit')",
+        "mode==='quick'?context.relationUiLabel(descriptor,'quick_create')",
+        "{{ dialog.labels.create || '新建' }}",
         "acc[`default_${key}`] = value;",
     ]
     for marker in frontend_required:
@@ -74,7 +84,7 @@ def main() -> int:
 
     print("[OK] relation_entry contract guard")
     print(f"- backend: {BACKEND_PATH}")
-    print(f"- frontend: {FRONTEND_PATH}")
+    print(f"- frontend modules: {len(FRONTEND_PATHS)}")
     return 0
 
 
