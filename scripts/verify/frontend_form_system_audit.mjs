@@ -9,6 +9,7 @@ import { launchChromium } from './playwright_runtime.mjs';
 import { captureReleasedNavigation } from './released_navigation_target.mjs';
 import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
+import { discoverEditableFormRoute } from './lib/frontend_form_editability_discovery.mjs';
 
 const acceptance = resolveAcceptanceEnvironment({ tool: 'form-system-audit', env: { ...process.env, FRONTEND_URL: process.env.SC_FRONTEND_URL || process.env.FRONTEND_URL, DB_NAME: process.env.SC_FORM_AUDIT_DB || process.env.DB_NAME } });
 const BASE_URL = acceptance.baseUrl;
@@ -69,6 +70,9 @@ const screenshots = [];
 const issues = [];
 const runtimeErrors = [];
 const resolvedIssues = [
+  { severity: 'P0', issue: '可编辑记录发现只扫描默认列表前十二条', resolution: '从运行时 action 契约取得模型、数据域和上下文，并逐条用 form 契约 pageAuth 证明编辑资格' },
+  { severity: 'P0', issue: '保存动作被硬编码为精确文案“保存”', resolution: '按可访问名称识别“保存”“保存修改”“保存草稿”，保持运行时产品文案权威' },
+  { severity: 'P1', issue: '表单审计依赖全局 networkidle 导致持续请求页面误超时', resolution: '改为 domcontentloaded 后等待表单产品模式、画布和目标状态语义就绪' },
   { severity: 'P0', issue: '自动审计只覆盖只读详情', resolution: '扩展为五档视口、完整状态矩阵和 70 项行为断言' },
   { severity: 'P0', issue: '编辑态缺少视觉与交互验证', resolution: '覆盖 pristine、dirty、saving、success、failure 与 validation' },
   { severity: 'P1', issue: '移动状态流程退化为按钮矩阵', resolution: '改为当前/下一步摘要与可横向阅读的有序流程' },
@@ -109,6 +113,25 @@ async function login(page) {
   await page.waitForFunction(() => !/正在初始化|正在加载导航/.test(document.body.innerText || ''), null, { timeout: 45_000 });
 }
 
+async function intentRequestFromPage(page, intent, params) {
+  return page.evaluate(async ({ dbName, intentName, payload }) => {
+    const bearer = sessionStorage.getItem(`sc_auth_token:${dbName}`) || '';
+    const traceId = `form-system-discovery-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(dbName)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: bearer ? `Bearer ${bearer}` : '',
+        'X-Odoo-DB': dbName,
+        'X-Trace-Id': traceId,
+      },
+      body: JSON.stringify({ intent: intentName, params: payload }),
+    });
+    const body = await response.json().catch(() => ({}));
+    return { ...body, status: response.status, traceId: body?.trace_id || response.headers.get('x-trace-id') || traceId };
+  }, { dbName: DB_NAME, intentName: intent, payload: params });
+}
+
 function nodeRoute(node) {
   const meta = node?.meta && typeof node.meta === 'object' ? node.meta : {};
   const route = String(node?.route || meta.route || '');
@@ -137,6 +160,10 @@ function actionableNodes(nodes, ancestors = []) {
 function relativePageUrl(page) {
   const current = new URL(page.url());
   return `${current.pathname}${current.search}`;
+}
+
+function saveAction(page) {
+  return page.getByRole('button', { name: /^保存(?:修改|草稿)?$/ }).first();
 }
 
 async function waitForRuntimePage(page) {
@@ -170,25 +197,16 @@ async function discoverFormRoutes(page, listRoute, formTimeout = 12_000) {
     const editable = page.locator('[data-form-canvas] input:visible, [data-form-canvas] textarea:visible, [data-form-canvas] select:visible').first();
     if (await editable.waitFor({ state: 'visible', timeout: 12_000 }).then(() => true).catch(() => false)) edit = relativePageUrl(page);
   }
+  let editDiscovery = null;
   if (!edit) {
-    await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await waitForRuntimePage(page);
-    const recordCount = await page.locator('.cell-primary-link:visible, .mobile-record-card:visible').count();
-    for (let index = 1; index < Math.min(recordCount, 12) && !edit; index += 1) {
-      await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-      await waitForRuntimePage(page);
-      const record = page.locator('.cell-primary-link:visible, .mobile-record-card:visible').nth(index);
-      await record.click();
-      const formVisible = await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false);
-      if (!formVisible) continue;
-      const candidateReadonly = relativePageUrl(page);
-      if (!/^\/r\//.test(candidateReadonly)) continue;
-      await page.goto(`${BASE_URL}${candidateReadonly.replace(/^\/r\//, '/f/')}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-      const candidateEditable = page.locator('[data-form-canvas] input:visible, [data-form-canvas] textarea:visible, [data-form-canvas] select:visible').first();
-      if (await candidateEditable.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false)) {
-        readonly = candidateReadonly;
-        edit = relativePageUrl(page);
-      }
+    editDiscovery = await discoverEditableFormRoute({
+      listRoute,
+      requestIntent: (intent, params) => intentRequestFromPage(page, intent, params),
+    });
+    if (editDiscovery.route) {
+      await page.goto(`${BASE_URL}${editDiscovery.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      const editable = page.locator('[data-form-canvas] input:visible:enabled, [data-form-canvas] textarea:visible:enabled, [data-form-canvas] select:visible:enabled').first();
+      if (await editable.waitFor({ state: 'visible', timeout: 12_000 }).then(() => true).catch(() => false)) edit = relativePageUrl(page);
     }
   }
   await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -203,7 +221,7 @@ async function discoverFormRoutes(page, listRoute, formTimeout = 12_000) {
     await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 45_000 });
     create = relativePageUrl(page);
   }
-  return { list: listRoute, readonly, edit, create };
+  return { list: listRoute, readonly, edit, create, edit_discovery: editDiscovery };
 }
 
 async function discoverCreateRoute(page, listRoute) {
@@ -267,7 +285,7 @@ function watchRuntime(page, scope) {
 }
 
 async function openForm(page, route, mode = 'edit') {
-  await page.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle', timeout: 45_000 });
+  await page.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.locator('[data-product-page-mode="form"]').waitFor({ state: 'visible', timeout: 45_000 });
   if (mode === 'missing') {
     await page.getByRole('heading', { name: '记录不存在', exact: true, level: 2 }).waitFor({ state: 'visible', timeout: 30_000 });
@@ -570,7 +588,7 @@ async function auditKeyboardAndUnsaved(page) {
     dialogType = dialog.type();
     await dialog.accept();
   });
-  await page.reload({ waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   result('edit.unsaved_leave_confirmation', dialogType === 'beforeunload', { dialog_type: dialogType }, 'P0');
 }
 
@@ -600,7 +618,7 @@ async function auditSavingSuccess(page) {
   const getMatched = await mockSave(page, 'success');
   const input = page.locator('[data-field-name="contract_name"] input');
   await input.fill(`${await input.inputValue()} · 保存状态审计`);
-  await page.getByRole('button', { name: '保存', exact: true }).click({ noWaitAfter: true });
+  await saveAction(page).click({ noWaitAfter: true });
   const saving = page.getByText('正在保存…', { exact: true });
   await saving.waitFor({ state: 'visible', timeout: 2_000 });
   const saveButtonDisabled = await page.getByRole('button', { name: /保存/ }).first().isDisabled();
@@ -618,10 +636,10 @@ async function auditSaveFailure(page) {
   const getMatched = await mockSave(page, 'failure');
   const input = page.locator('[data-field-name="contract_name"] input');
   await input.fill(`${await input.inputValue()} · 失败状态审计`);
-  await page.getByRole('button', { name: '保存', exact: true }).click();
+  await saveAction(page).click();
   const feedback = page.locator('.submission-feedback--error:visible');
   await feedback.waitFor({ timeout: 10_000 });
-  const retryReachable = await page.getByRole('button', { name: '保存', exact: true }).isEnabled();
+  const retryReachable = await saveAction(page).isEnabled();
   result('save.failure_feedback_and_retry', getMatched() && retryReachable && /模拟保存失败/.test(await feedback.innerText()), { request_matched: getMatched(), message: await feedback.innerText(), retry_reachable: retryReachable }, 'P0');
   await capture(page, 'form-final-save-failure.png', { fullPage: false });
   await page.unroute('**/api/v1/intent**');

@@ -35,6 +35,10 @@ const formAuditSource = await fs.readFile(new URL('../../scripts/verify/frontend
 assert.doesNotMatch(formAuditSource, /\.contract-form-inspector/, 'form audit must not use the retired form inspector selector');
 assert.match(formAuditSource, /\.record-form-inspector/, 'form audit must target the shared record form inspector');
 assert.match(formAuditSource, /many2oneComboboxes[\s\S]*candidate.*focus\(\)[\s\S]*搜索更多/, 'form audit must discover a relation dialog by interacting with each eligible field');
+assert.match(formAuditSource, /discoverEditableFormRoute/, 'form audit must discover editable records from runtime contracts');
+assert.doesNotMatch(formAuditSource, /Math\.min\(recordCount,\s*12\)/, 'form audit must not cap editability discovery to the first visible records');
+assert.doesNotMatch(formAuditSource, /name:\s*['"]保存['"],\s*exact:\s*true/, 'form audit must accept the runtime save-action label');
+assert.doesNotMatch(formAuditSource, /waitUntil:\s*['"]networkidle['"]/, 'form audit must use rendered-page readiness instead of global network idleness');
 const myWorkSource = await fs.readFile(new URL('../../frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue', import.meta.url), 'utf8');
 assert.match(myWorkSource, /\.product-work\s*\{[^}]*align-content:\s*start/s, 'empty my-work grids must not stretch summary cards');
 const actionViewSource = await fs.readFile(new URL('../../frontend/apps/web/src/views/ActionView.vue', import.meta.url), 'utf8');
