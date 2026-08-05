@@ -33,6 +33,7 @@ assert.match(deliveryAuditSource, /assertMeaningfulScreenshot/, 'delivery audit 
 const formAuditSource = await fs.readFile(new URL('../../scripts/verify/frontend_form_system_audit.mjs', import.meta.url), 'utf8');
 assert.doesNotMatch(formAuditSource, /\.contract-form-inspector/, 'form audit must not use the retired form inspector selector');
 assert.match(formAuditSource, /\.record-form-inspector/, 'form audit must target the shared record form inspector');
+assert.match(formAuditSource, /many2oneComboboxes[\s\S]*candidate.*focus\(\)[\s\S]*搜索更多/, 'form audit must discover a relation dialog by interacting with each eligible field');
 const myWorkSource = await fs.readFile(new URL('../../frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue', import.meta.url), 'utf8');
 assert.match(myWorkSource, /\.product-work\s*\{[^}]*align-content:\s*start/s, 'empty my-work grids must not stretch summary cards');
 const actionViewSource = await fs.readFile(new URL('../../frontend/apps/web/src/views/ActionView.vue', import.meta.url), 'utf8');

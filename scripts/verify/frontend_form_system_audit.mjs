@@ -635,8 +635,21 @@ async function auditComplexFields(page, viewportKey) {
     }, 'P0');
     await many2one.focus();
   }
-  const searchMore = many2one.locator('xpath=ancestor::*[contains(@class,"many2one-combobox")][1]').getByRole('button', { name: /搜索更多/ });
-  if (await searchMore.count()) {
+  const many2oneComboboxes = page.locator('.many2one-combobox:visible');
+  let searchableCombobox = null;
+  for (let index = 0; index < await many2oneComboboxes.count(); index += 1) {
+    const candidate = many2oneComboboxes.nth(index);
+    await candidate.locator('input:visible').first().focus();
+    await page.waitForTimeout(50);
+    if (await candidate.getByRole('button', { name: /搜索更多/ }).count()) {
+      searchableCombobox = candidate;
+      break;
+    }
+  }
+  if (searchableCombobox) {
+    const dialogInput = searchableCombobox.locator('input:visible').first();
+    const searchMore = searchableCombobox.getByRole('button', { name: /搜索更多/ });
+    await searchMore.waitFor({ state: 'visible', timeout: 10_000 });
     await searchMore.click();
     const dialog = page.getByRole('dialog');
     await dialog.waitFor({ state: 'visible' });
@@ -660,7 +673,7 @@ async function auditComplexFields(page, viewportKey) {
     await capture(page, `form-final-relation-dialog-${viewportKey}.png`, { fullPage: false });
     await page.keyboard.press('Escape');
     await page.waitForTimeout(100);
-    result(`relation.${viewportKey}.escape_restores_focus`, await many2one.evaluate((element) => document.activeElement === element), {}, 'P1');
+    result(`relation.${viewportKey}.escape_restores_focus`, await dialogInput.evaluate((element) => document.activeElement === element), {}, 'P1');
   } else {
     result(`relation.${viewportKey}.dialog_available`, false, { reason: 'search more action missing' }, 'P0');
   }
