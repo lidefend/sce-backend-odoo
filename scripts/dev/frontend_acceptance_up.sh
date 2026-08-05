@@ -5,6 +5,11 @@ PIDFILE="${FRONTEND_ACCEPTANCE_PIDFILE:-/tmp/sc-frontend-acceptance.pid}"
 LOGFILE="${FRONTEND_ACCEPTANCE_LOGFILE:-/tmp/sc-frontend-acceptance.log}"
 PORT="${FRONTEND_ACCEPTANCE_PORT:-5175}"
 MODE="${FRONTEND_ACCEPTANCE_MODE:-development}"
+
+port_open() {
+  (exec 3<>"/dev/tcp/127.0.0.1/${PORT}") >/dev/null 2>&1
+}
+
 if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
   existing_pid="$(cat "$PIDFILE")"
   if curl -fsS "http://127.0.0.1:${PORT}/login" >/dev/null 2>&1; then
@@ -17,7 +22,7 @@ if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
   rm -f "$PIDFILE"
 fi
 rm -f "$PIDFILE"
-if curl -fsS "http://127.0.0.1:${PORT}/login" >/dev/null 2>&1; then
+if port_open; then
   echo "[frontend.acceptance.up] FAIL untracked service already owns port=$PORT" >&2
   exit 2
 fi
@@ -30,12 +35,19 @@ else
 fi
 echo $! >"$PIDFILE"
 for _ in $(seq 1 30); do
-  if ! kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+  service_pid="$(cat "$PIDFILE")"
+  if ! kill -0 "$service_pid" 2>/dev/null; then
     echo "[frontend.acceptance.up] FAIL service exited during startup; see $LOGFILE" >&2
     rm -f "$PIDFILE"
     exit 1
   fi
   if curl -fsS "http://127.0.0.1:${PORT}/login" >/dev/null 2>&1; then
+    sleep 0.25
+    if ! kill -0 "$service_pid" 2>/dev/null || ! curl -fsS "http://127.0.0.1:${PORT}/login" >/dev/null 2>&1; then
+      echo "[frontend.acceptance.up] FAIL service did not survive the startup stability window; see $LOGFILE" >&2
+      rm -f "$PIDFILE"
+      exit 1
+    fi
     echo "[frontend.acceptance.up] PASS mode=$MODE url=http://127.0.0.1:${PORT} db=sc_frontend_acceptance"
     exit 0
   fi

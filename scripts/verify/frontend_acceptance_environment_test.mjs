@@ -38,6 +38,12 @@ const myWorkSource = await fs.readFile(new URL('../../frontend/apps/web/src/comp
 assert.match(myWorkSource, /\.product-work\s*\{[^}]*align-content:\s*start/s, 'empty my-work grids must not stretch summary cards');
 const actionViewSource = await fs.readFile(new URL('../../frontend/apps/web/src/views/ActionView.vue', import.meta.url), 'utf8');
 assert.match(actionViewSource, /\.page\s*\{[^}]*align-content:\s*start/s, 'empty list grids must not create artificial vertical gaps');
+const frontendUpSource = await fs.readFile(new URL('../../scripts/dev/frontend_acceptance_up.sh', import.meta.url), 'utf8');
+const frontendDownSource = await fs.readFile(new URL('../../scripts/dev/frontend_acceptance_down.sh', import.meta.url), 'utf8');
+assert.match(frontendUpSource, /startup stability window/, 'frontend startup must verify that its own process remains healthy');
+assert.match(frontendUpSource, /port_open/, 'frontend startup must reject an occupied port before spawning');
+assert.match(frontendDownSource, /remained occupied after shutdown/, 'frontend shutdown must fail if the port was not released');
+assert.match(frontendDownSource, /kill -KILL/, 'frontend shutdown must have a bounded stale-process fallback');
 const makeSource = await fs.readFile(new URL('../../make/dev.mk', import.meta.url), 'utf8');
 assert.doesNotMatch(makeSource, /REQUIRED_ACTIONS\s*:=\s*[^\n]*=>\d+/, 'formal daily target must not pin numeric action ids');
 
