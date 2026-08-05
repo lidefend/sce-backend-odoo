@@ -152,6 +152,13 @@ export function formatAttachmentReferenceValue(value: unknown): string {
   return parseAttachmentReferenceLinks(value).map((item) => item.name).join('、');
 }
 
+export function stripInternalMigrationMetadata(value: string): string {
+  return String(value || '').replace(
+    /^\s*\[migration:[a-z0-9_.:-]+\]\s+legacy_record_id=[^\s\r\n]+(?:[ \t]*\r?\n|[ \t]+)?/i,
+    '',
+  ).trimStart();
+}
+
 export function parseAttachmentReferenceLinks(value: unknown): Array<{ name: string; url: string }> {
   const rawItems = Array.isArray(value) ? value.map((item) => String(item ?? '')) : [String(value ?? '')];
   const seen = new Set<string>();
@@ -240,7 +247,8 @@ export function formatDisplayValue(
     return normalized.emptyText;
   }
 
-  const rawText = String(value);
+  const rawText = stripInternalMigrationMetadata(String(value));
+  if (!rawText) return normalized.emptyText;
   if (/\|\s*(?:(?:legacy-file-id|legacy-file|https?|file):\/\/|\/web\/content\/)/i.test(rawText)) {
     return formatAttachmentReferenceValue(rawText) || rawText;
   }

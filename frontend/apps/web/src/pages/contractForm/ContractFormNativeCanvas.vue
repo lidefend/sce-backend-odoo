@@ -1,5 +1,5 @@
 <template>
-  <section v-if="!designerMode && (showDefaultSectionTitle || mode !== 'readonly')" class="native-default-section-head">
+  <section v-if="!designerMode && (showDefaultSectionTitle || mode === 'create')" class="native-default-section-head">
     <div>
       <h3>{{ mode === 'create' ? '填写业务信息' : mode === 'edit' ? '编辑业务信息' : '基本信息' }}</h3>
       <p v-if="mode !== 'readonly'">
@@ -225,8 +225,8 @@ function scrollToSection(title: string) {
     return null;
   })();
   const delta = targetTop - obstructionBottom - 12;
-  if (scrollHost) scrollHost.scrollBy({ top: delta, behavior: 'smooth' });
-  else window.scrollBy({ top: delta, behavior: 'smooth' });
+  if (scrollHost) scrollHost.scrollBy({ top: delta, behavior: 'auto' });
+  else window.scrollBy({ top: delta, behavior: 'auto' });
   void nextTick(() => scrollActiveSectionTabIntoView(true));
 }
 

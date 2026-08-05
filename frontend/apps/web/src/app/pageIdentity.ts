@@ -142,7 +142,10 @@ export function resolveProductPageIdentity(input: PageIdentityInput): ProductPag
 
   if (kind === 'detail' || kind === 'edit') {
     if (record) {
-      title = kind === 'edit' ? `编辑 ${record}` : record;
+      // Keep the record identity stable while switching between readonly and edit.
+      // The command bar already exposes the current mode, so prefixing the shell
+      // title with an operation only introduces layout movement on narrow screens.
+      title = record;
       source = 'record';
     } else if (object.label) {
       const objectName = stripOperation(object.label);

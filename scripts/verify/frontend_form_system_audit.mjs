@@ -272,6 +272,13 @@ function missingRecordRoute() {
   return replaced;
 }
 
+function readonlyRouteForEditableRecord() {
+  const editRoute = requiredRoute('general', 'edit');
+  const readonlyRoute = editRoute.replace(/\/f\//, '/r/');
+  assert(readonlyRoute !== editRoute, `editable route does not use the expected form route contract: ${editRoute}`);
+  return readonlyRoute;
+}
+
 function watchRuntime(page, scope) {
   page.on('pageerror', (error) => runtimeErrors.push({ scope, type: 'pageerror', message: error.message }));
   page.on('console', (message) => {
@@ -435,6 +442,90 @@ async function auditReadonly(page, viewportKey) {
   const name = `form-final-readonly-${viewportKey}.png`;
   await capture(page, name);
   return name;
+}
+
+async function formGeometrySnapshot(page) {
+  return page.evaluate(() => {
+    const selectors = {
+      main: '#main-content',
+      page: '[data-product-page-mode="form"]',
+      headline: '.topbar .headline',
+      command: '.contract-form-command-bar',
+      card: '[data-workspace-primary-content]',
+      canvas: '[data-form-canvas]',
+    };
+    const metric = (selector) => {
+      const element = document.querySelector(selector);
+      if (!(element instanceof HTMLElement)) return null;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      const round = (value) => Math.round(value * 100) / 100;
+      return {
+        x: round(rect.x), y: round(rect.y), width: round(rect.width), height: round(rect.height),
+        clientWidth: element.clientWidth, clientHeight: element.clientHeight,
+        scrollWidth: element.scrollWidth, scrollHeight: element.scrollHeight,
+        overflowX: style.overflowX, overflowY: style.overflowY,
+        position: style.position, stickyTop: style.position === 'sticky' ? style.top : null,
+      };
+    };
+    return {
+      url: `${location.pathname}${location.search}`,
+      title: String(document.querySelector('[data-product-page-mode="form"] > h1')?.textContent || '').trim(),
+      viewport: { width: document.documentElement.clientWidth, height: window.innerHeight },
+      document: {
+        clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight,
+        scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight,
+      },
+      containers: Object.fromEntries(Object.entries(selectors).map(([key, selector]) => [key, metric(selector)])),
+    };
+  });
+}
+
+async function auditContinueProcessingGeometry(page, viewportKey) {
+  const route = readonlyRouteForEditableRecord();
+  await openForm(page, route, 'readonly');
+  const readonly = await formGeometrySnapshot(page);
+  await capture(page, `form-continue-readonly-${viewportKey}.png`);
+
+  const continueButton = page.getByRole('button', { name: '继续办理', exact: true });
+  await continueButton.waitFor({ state: 'visible', timeout: 15_000 });
+  await continueButton.click();
+  await page.waitForURL((url) => /\/f\//.test(url.pathname), { timeout: 15_000 });
+  await page.locator('[data-form-canvas] input, [data-form-canvas] select, [data-form-canvas] textarea').first().waitFor({ state: 'visible', timeout: 15_000 });
+  await page.waitForTimeout(120);
+  const edit = await formGeometrySnapshot(page);
+  await capture(page, `form-continue-edit-${viewportKey}.png`);
+
+  const delta = {};
+  for (const key of ['main', 'page', 'headline', 'command', 'card', 'canvas']) {
+    const before = readonly.containers[key];
+    const after = edit.containers[key];
+    delta[key] = before && after ? {
+      x: Math.round(Math.abs(before.x - after.x) * 100) / 100,
+      y: Math.round(Math.abs(before.y - after.y) * 100) / 100,
+      width: Math.round(Math.abs(before.width - after.width) * 100) / 100,
+      clientWidth: Math.abs(before.clientWidth - after.clientWidth),
+      scrollWidth: Math.abs(before.scrollWidth - after.scrollWidth),
+    } : null;
+  }
+  const horizontalFrameStable = ['main', 'page', 'command', 'card', 'canvas'].every((key) =>
+    delta[key] && delta[key].x <= 1 && delta[key].width <= 1 && delta[key].clientWidth <= 1,
+  );
+  const visibleContextKeys = ['command', 'card', 'canvas'];
+  if (delta.headline) visibleContextKeys.unshift('headline');
+  const verticalContextStable = visibleContextKeys.every((key) => delta[key] && delta[key].y <= 1);
+  const rootsContained = [readonly, edit].every((snapshot) =>
+    snapshot.document.scrollWidth <= snapshot.document.clientWidth + 1
+    && ['main', 'page', 'card', 'canvas'].every((key) => {
+      const box = snapshot.containers[key];
+      return box && box.scrollWidth <= box.clientWidth + 1;
+    }),
+  );
+  const detail = { route, readonly, edit, absolute_delta: delta };
+  result(`continue_processing.${viewportKey}.stable_record_identity`, readonly.title === edit.title && Boolean(readonly.title), detail, 'P0');
+  result(`continue_processing.${viewportKey}.horizontal_geometry_contract`, horizontalFrameStable, detail, 'P0');
+  result(`continue_processing.${viewportKey}.vertical_context_contract`, verticalContextStable, detail, 'P0');
+  result(`continue_processing.${viewportKey}.container_containment`, rootsContained, detail, 'P0');
 }
 
 async function auditResponsiveCreate(page, viewportKey) {
@@ -840,24 +931,31 @@ async function auditDesigner(page, viewportKey = '1440') {
 
 async function auditLoadingAndEmpty(page) {
   let delayed = false;
+  let notifyDelayStarted = () => {};
+  const delayStarted = new Promise((resolve) => { notifyDelayStarted = () => resolve(true); });
   await page.route('**/api/v1/intent**', async (route) => {
     let payload = {};
     try { payload = JSON.parse(route.request().postData() || '{}'); } catch { payload = {}; }
     if (!delayed && /ui\.contract/.test(String(payload?.intent || ''))) {
       delayed = true;
+      notifyDelayStarted();
       await new Promise((resolve) => setTimeout(resolve, 1_500));
     }
     await route.continue();
   });
   const navigation = page.goto(`${BASE_URL}${requiredRoute('general', 'edit')}`, { waitUntil: 'domcontentloaded' });
-  const skeleton = page.locator('.product-form-loading-skeleton:visible, [aria-label*="正在载入"]:visible');
+  const skeleton = page.locator('.product-form-loading:visible, [aria-label*="正在载入"]:visible, [data-workspace-primary-content][aria-busy="true"]:visible');
+  const delayObserved = await Promise.race([
+    delayStarted,
+    new Promise((resolve) => setTimeout(() => resolve(false), 15_000)),
+  ]);
   await skeleton.first().waitFor({ timeout: 2_500 }).catch(() => {});
   const loadingVisible = await skeleton.count() > 0;
   if (loadingVisible) await capture(page, 'form-final-loading.png', { fullPage: false });
   await navigation;
   await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 45_000 });
   await page.unroute('**/api/v1/intent**');
-  result('loading.explicit_state', delayed && loadingVisible, { request_delayed: delayed, skeleton_visible: loadingVisible }, 'P1');
+  result('loading.explicit_state', delayed && delayObserved && loadingVisible, { request_delayed: delayed, delay_observed: delayObserved, skeleton_visible: loadingVisible }, 'P1');
   await openForm(page, missingRecordRoute(), 'missing');
   result('empty_record.explicit_state', await page.getByRole('heading', { name: '记录不存在', exact: true, level: 2 }).count() === 1, {}, 'P1');
   await capture(page, 'form-final-empty-record.png', { fullPage: false });
@@ -1001,6 +1099,7 @@ try {
       await capture(page, 'form-final-edit-pristine.png');
     }
     await auditReadonly(page, viewport.key);
+    if (viewport.key === '1440' || viewport.key === '390') await auditContinueProcessingGeometry(page, viewport.key);
     if (viewport.key === '1440' || viewport.key === '390') await auditWorkflow(page, viewport.key);
     if (viewport.key === '1440' || viewport.key === '390') observedTypes.push(...await auditComplexFields(page, viewport.key));
     await context.close();

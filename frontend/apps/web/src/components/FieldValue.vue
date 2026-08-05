@@ -1,5 +1,5 @@
 <template>
-  <span v-if="attachmentLinks.length" class="attachment-links">
+  <span v-if="attachmentLinks.length" class="field-value attachment-links">
     <a
       v-for="link in attachmentLinks"
       :key="`${link.name}-${link.url}`"
@@ -11,7 +11,7 @@
       {{ link.name }}
     </a>
   </span>
-  <span v-else>{{ display }}</span>
+  <span v-else class="field-value">{{ display }}</span>
   <AttachmentViewer ref="attachmentViewerRef" />
 </template>
 
@@ -42,6 +42,13 @@ async function previewAttachmentLink(link: { name: string; url: string }) {
 </script>
 
 <style scoped>
+.field-value {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .attachment-links {
   display: inline-flex;
   flex-wrap: wrap;
