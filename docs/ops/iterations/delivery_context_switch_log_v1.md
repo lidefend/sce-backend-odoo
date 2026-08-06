@@ -2877,3 +2877,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   count assertions. Daily application remains protected by the verified paired
   backup and exact bundle synchronization; rollback restores the paired backup
   and preceding exact source SHA rather than attempting a module downgrade.
+
+## 2026-08-06 — PRODUCT-MENU-GOVERNANCE-M0-M3
+
+- Branch / anchor: `feature/product-menu-governance` from full SHA
+  `6250dc64eeb67bdd5a5e6686e6ac7c8233e0d4ce` in the isolated
+  `sce-backend-odoo-menu-governance` worktree.
+- Formal Product Layer / Layer Target / Module: P4 delivery governance tooling;
+  static navigation inventory, evidence schema and review-only taxonomy;
+  `scripts/verify` and `docs/engineering_convergence/menu_governance`.
+- Reason / Why Here: the product needs a reproducible menu/action/group asset
+  ledger and a fail-closed review surface before P1/P2/P3 menu facts can change.
+- Why Not Elsewhere: this batch does not encode construction naming in P0,
+  customer preferences in P1, runtime low-code state in source, or menu guesses
+  in the frontend.
+- Blast Radius: generated audit assets and governance documents only. Menu XML,
+  database records, ACLs, actions, AppShell, ScIcon, design tokens and runtime
+  parsers are unchanged; runtime/browser resources are not used.
+- Validation / rollback: deterministic regeneration, UTF-8/JSON Schema,
+  manifest/XML reference and set consistency, negative fail-closed fixtures and
+  `git diff --check`. Rollback removes this isolated P4 commit; no product or
+  runtime state requires reversal.
