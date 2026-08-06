@@ -22,7 +22,8 @@
 ## 4. 验证
 
 - PASS：`make verify.daily.runtime.main.bundle_sync`。
-- PASS：临时仓库正向快进 `main`/`origin/main`，并验证文件内容更新。
+- PASS：从权威 `refs/remotes/origin/main` 生成 bundle，临时远端仓库正向快进
+  `main`/`origin/main`，并验证文件内容更新。
 - PASS：远端脏工作树负向夹具在移动 HEAD 前失败。
 - PASS：`python3 scripts/verify/environment_topology_guard.py`。
 - CONDITIONAL：`make verify.restricted` 的前端 lint/typecheck/build 通过；总线仍被既有第二公司快照 `1/2` 阻断。

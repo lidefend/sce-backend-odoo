@@ -16,7 +16,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
+ALLOWED_LOCAL_BRANCH = re.compile(r"^(main|(feature|fix|refactor|audit|release|codex)/.+)$")
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
+BUNDLE_MAIN_REF = "refs/remotes/origin/main"
 CONFIRMATION = "SYNC_EXACT_DAILY_MAIN_SHA_WITH_BUNDLE"
 MAX_BUNDLE_BYTES = 128 * 1024 * 1024
 
@@ -85,17 +87,17 @@ with lock_path.open("a+b") as lock:
             raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED bundle digest differs")
 
         git("bundle", "verify", str(bundle_path))
-        heads = git("bundle", "list-heads", str(bundle_path), "refs/heads/main").stdout.split()
-        if len(heads) != 2 or heads[0] != expected_sha or heads[1] != "refs/heads/main":
+        heads = git("bundle", "list-heads", str(bundle_path), "refs/remotes/origin/main").stdout.split()
+        if len(heads) != 2 or heads[0] != expected_sha or heads[1] != "refs/remotes/origin/main":
             raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED bundle main identity differs")
 
-        git("fetch", str(bundle_path), "refs/heads/main")
+        git("fetch", str(bundle_path), "refs/remotes/origin/main")
         if git("rev-parse", "FETCH_HEAD").stdout.strip() != expected_sha:
             raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED fetched bundle SHA differs")
         if git("merge-base", "--is-ancestor", expected_old_sha, expected_sha, check=False).returncode:
             raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED candidate is not a fast-forward descendant")
 
-        git("pull", "--ff-only", str(bundle_path), "refs/heads/main")
+        git("pull", "--ff-only", str(bundle_path), "refs/remotes/origin/main")
         if git("rev-parse", "HEAD").stdout.strip() != expected_sha:
             raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED post-sync HEAD differs")
         git("update-ref", "refs/remotes/origin/main", expected_sha, expected_old_sha)
@@ -146,8 +148,9 @@ def preflight(expected_sha: str, expected_old_sha: str, ssh_host: str) -> None:
         raise SyncError("SSH host must be a configured host alias")
     if os.environ.get("CONFIRM_DAILY_RUNTIME_BUNDLE_SYNC") != CONFIRMATION:
         raise SyncError("exact daily runtime bundle synchronization confirmation is required")
-    if git("branch", "--show-current") != "main" or git("rev-parse", "HEAD") != expected_sha:
-        raise SyncError("bundle sync must run from the exact approved local main SHA")
+    branch = git("branch", "--show-current")
+    if not ALLOWED_LOCAL_BRANCH.fullmatch(branch) or git("rev-parse", "HEAD") != expected_sha:
+        raise SyncError("bundle sync must run from the exact approved SHA on a governed branch")
     if git("status", "--porcelain"):
         raise SyncError("local main worktree must be clean")
     if git("rev-parse", "refs/remotes/origin/main") != expected_sha:
@@ -160,7 +163,7 @@ def create_bundle(expected_old_sha: str) -> bytes:
     with tempfile.TemporaryDirectory(prefix="sc-daily-bundle-") as directory:
         bundle_path = Path(directory) / "main.bundle"
         result = run(
-            ["git", "bundle", "create", str(bundle_path), "refs/heads/main", f"^{expected_old_sha}"],
+            ["git", "bundle", "create", str(bundle_path), BUNDLE_MAIN_REF, f"^{expected_old_sha}"],
         )
         if result.returncode:
             raise SyncError(f"git bundle create failed: {result.stderr.decode(errors='replace').strip()[:600]}")
