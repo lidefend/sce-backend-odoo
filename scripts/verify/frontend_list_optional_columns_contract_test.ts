@@ -29,11 +29,16 @@ const actionContractRuntimeSource = readFileSync(
   new URL('../../frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts', import.meta.url),
   'utf8',
 );
+const listPageSource = readFileSync(new URL('../../frontend/apps/web/src/pages/ListPage.vue', import.meta.url), 'utf8');
+const selectionExportSource = readFileSync(new URL('../../frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts', import.meta.url), 'utf8');
 assert.match(
   actionContractRuntimeSource,
   /cross_device_critical_columns:\s*crossDeviceCriticalColumns/,
   'the action contract shape runtime must explicitly preserve cross-device critical columns',
 );
+assert.match(listPageSource, /props\.selectionEnabled !== false/, 'selection must be a stable backend-governed list capability');
+assert.match(selectionExportSource, /ids: options\.ids/, 'selected-record export must send only the explicit selected ids');
+assert.match(selectionExportSource, /columnLabels:/, 'selected-record export must preserve governed business labels');
 
 assert.equal(listColumnSemanticTextRole({ field: 'contract_no', label: '合同编号' }), 'identity');
 assert.equal(listColumnSemanticTextRole({ field: 'contract_name', label: '合同名称' }), 'description');

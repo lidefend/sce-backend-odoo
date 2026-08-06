@@ -85,6 +85,9 @@ def apply_standard_search_toolbar_labels(data: dict) -> None:
         "clear": "清空",
         "batch_label_archive": "批量归档",
         "batch_label_activate": "批量激活",
+        "batch_label_export": "导出所选",
+        "batch_msg_export_done": "所选记录导出完成",
+        "batch_msg_export_failed": "导出失败，请稍后重试",
         "batch_msg_archive_done_prefix": "批量归档完成：成功 ",
         "batch_msg_activate_done_prefix": "批量激活完成：成功 ",
         "batch_msg_done_middle": "，失败 ",
@@ -317,6 +320,7 @@ def govern_standard_list_for_user(
     permissions = _as_dict(data.get("permissions"))
     effective = _as_dict(permissions.get("effective"))
     rights = _as_dict(effective.get("rights"))
+    read_allowed = not rights or rights.get("read") is not False
     write_allowed = bool(rights.get("write"))
     unlink_right_allowed = bool(rights.get("unlink"))
     raw_available_actions = (
@@ -324,7 +328,7 @@ def govern_standard_list_for_user(
         if isinstance(surface_batch_policy.get("available_actions"), list)
         else []
     )
-    if rights and not (write_allowed or unlink_right_allowed):
+    if rights and not (read_allowed or write_allowed or unlink_right_allowed):
         raw_available_actions = []
     delete_mode = _safe_text(
         surface_policies.get("delete_mode")
@@ -332,7 +336,7 @@ def govern_standard_list_for_user(
         or data.get("delete_mode"),
         "none",
     )
-    available_actions = []
+    available_actions = ["export"] if read_allowed else []
     if (write_allowed or unlink_right_allowed) and not raw_available_actions:
         raw_available_actions = []
         if active_field:
@@ -341,6 +345,10 @@ def govern_standard_list_for_user(
             raw_available_actions.append("delete")
     for raw_action in raw_available_actions:
         action = _safe_lower(raw_action)
+        if action == "export":
+            if read_allowed and action not in available_actions:
+                available_actions.append(action)
+            continue
         if action in {"archive", "activate"}:
             if active_field and write_allowed and action not in available_actions:
                 available_actions.append(action)
@@ -366,9 +374,10 @@ def govern_standard_list_for_user(
         "delete_mode": delete_mode if "delete" in available_actions else "none",
         "available_actions": available_actions,
         "execution_intents": {
-            action: "api.data.unlink" if action == "delete" else "api.data.batch"
+            action: "api.data" if action == "export" else ("api.data.unlink" if action == "delete" else "api.data.batch")
             for action in available_actions
         },
+        "execution_operations": {action: "export_csv" for action in available_actions if action == "export"},
     }
     selection_policy = {
         "enabled": True,

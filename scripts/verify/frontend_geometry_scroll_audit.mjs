@@ -388,9 +388,14 @@ async function listSelectionProof(page) {
   await first.check();
   const selectedBar = page.locator('.batch-bar:visible');
   const selectedText = String(await selectedBar.textContent().catch(() => '') || '').trim();
-  const passed = await first.isChecked() && await selectedBar.count() > 0 && /已选\s*1\s*条/.test(selectedText);
-  await first.uncheck();
-  return { available: true, passed, row_count: rowCount, selected_text: selectedText };
+  const exportAction = selectedBar.getByRole('button', { name: '导出所选' });
+  const selectionPassed = await first.isChecked() && await selectedBar.count() > 0 && /已选\s*1\s*条/.test(selectedText);
+  const downloadPromise = page.waitForEvent('download');
+  await exportAction.click();
+  const download = await downloadPromise;
+  const exportPassed = /\.csv$/i.test(download.suggestedFilename());
+  if (await first.isChecked().catch(() => false)) await first.uncheck();
+  return { available: true, passed: selectionPassed && exportPassed, row_count: rowCount, selected_text: selectedText, export_file: download.suggestedFilename() };
 }
 
 async function negativeStickyFixtureProof(page) {

@@ -1104,7 +1104,7 @@ class TestProjectFormGovernance(unittest.TestCase):
             "head": {"model": "payment.request", "view_type": "tree"},
             "views": {"tree": {"columns": ["name"]}},
             "fields": {"name": {"string": "名称", "type": "char"}},
-            "permissions": {"effective": {"rights": {"write": True}}},
+            "permissions": {"effective": {"rights": {"read": True, "write": False, "unlink": False}}},
             "surface_policies": {
                 "delete_mode": "none",
                 "batch_policy": {
@@ -1117,11 +1117,12 @@ class TestProjectFormGovernance(unittest.TestCase):
         out = apply_contract_governance(data, "user")
 
         batch_policy = (out.get("list_profile") or {}).get("batch_policy") or {}
-        self.assertFalse(batch_policy.get("enabled"))
+        self.assertTrue(batch_policy.get("enabled"))
         self.assertEqual(batch_policy.get("active_field"), "")
         self.assertEqual(batch_policy.get("delete_mode"), "none")
-        self.assertEqual(batch_policy.get("available_actions"), [])
-        self.assertEqual(batch_policy.get("execution_intents"), {})
+        self.assertEqual(batch_policy.get("available_actions"), ["export"])
+        self.assertEqual(batch_policy.get("execution_intents"), {"export": "api.data"})
+        self.assertEqual(batch_policy.get("execution_operations"), {"export": "export_csv"})
         selection_policy = (out.get("list_profile") or {}).get("selection_policy") or {}
         self.assertTrue(selection_policy.get("enabled"))
         self.assertFalse(selection_policy.get("requires_batch_action"))
@@ -1151,15 +1152,17 @@ class TestProjectFormGovernance(unittest.TestCase):
         self.assertTrue(batch_policy.get("enabled"))
         self.assertEqual(batch_policy.get("active_field"), "active")
         self.assertEqual(batch_policy.get("delete_mode"), "unlink")
-        self.assertEqual(batch_policy.get("available_actions"), ["archive", "activate", "delete"])
+        self.assertEqual(batch_policy.get("available_actions"), ["export", "archive", "activate", "delete"])
         self.assertEqual(
             batch_policy.get("execution_intents"),
             {
+                "export": "api.data",
                 "archive": "api.data.batch",
                 "activate": "api.data.batch",
                 "delete": "api.data.unlink",
             },
         )
+        self.assertEqual(batch_policy.get("execution_operations"), {"export": "export_csv"})
         selection_policy = (out.get("list_profile") or {}).get("selection_policy") or {}
         self.assertEqual(selection_policy.get("action_source"), "batch_policy.available_actions")
 

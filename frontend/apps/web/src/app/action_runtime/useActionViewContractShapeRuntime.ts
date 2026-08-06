@@ -604,6 +604,8 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         : undefined,
       execution_intents: Object.fromEntries(Object.entries((rawBatchPolicy.execution_intents || {}) as Dict)
         .map(([action, intent]) => [action, String(intent || '').trim()]).filter(([, intent]) => Boolean(intent))),
+      execution_operations: Object.fromEntries(Object.entries((rawBatchPolicy.execution_operations || {}) as Dict)
+        .map(([action, operation]) => [action, String(operation || '').trim()]).filter(([, operation]) => Boolean(operation))),
     };
     const rawSelectionPolicy = (rawProfile.selection_policy || listSemantics.selection_policy || surfacePolicies.selection_policy || {}) as Dict;
     const selectionPolicy = {

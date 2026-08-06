@@ -71,6 +71,7 @@ export interface SceneListProfile {
     delete_mode?: string;
     available_actions?: string[];
     execution_intents?: Record<string, string>;
+    execution_operations?: Record<string, string>;
   };
   grouping?: {
     sample_limits?: number[];

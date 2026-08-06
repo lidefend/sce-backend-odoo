@@ -30,6 +30,7 @@ export async function listRecords(params: {
   search_term?: string;
   context?: Record<string, unknown>;
   fieldSemantics?: Array<Record<string, unknown>>;
+  columnLabels?: Record<string, string>;
   context_raw?: string;
   silentErrors?: boolean;
 }) {
@@ -257,6 +258,7 @@ export type ApiDataExportCsvResult = {
   content_b64: string;
   count: number;
   fields: string[];
+  column_labels?: Record<string, string>;
 };
 
 export type ApiDataBatchItemResult = {
@@ -349,6 +351,7 @@ export async function exportRecordsCsv(params: {
       limit: params.limit ?? 2000,
       context: params.context ?? {},
       field_semantics: params.fieldSemantics ?? [],
+      column_labels: params.columnLabels ?? {},
     },
   });
 }

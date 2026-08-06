@@ -430,6 +430,7 @@ function buildRuntimeProjectionFromV2(v2Contract: Dict, requestParams: Dict = {}
     },
   };
   const rights = asDict(asDict(head.permissions).rights);
+  const readAllowed = rights.read !== false;
   const activeField = fieldNames.includes('active') ? 'active' : '';
   const writeAllowed = rights.write !== false;
   const unlinkRightAllowed = rights.unlink !== false;
@@ -444,6 +445,9 @@ function buildRuntimeProjectionFromV2(v2Contract: Dict, requestParams: Dict = {}
   if (sourceBatchActions.length) {
     batchActions = sourceBatchActions;
   } else {
+    if (readAllowed) {
+      batchActions.push('export');
+    }
     if (writeAllowed && activeField) {
       batchActions.push('archive', 'activate');
     }
@@ -463,6 +467,8 @@ function buildRuntimeProjectionFromV2(v2Contract: Dict, requestParams: Dict = {}
       : (activeField ? true : null),
     delete_mode: String(sourceBatchPolicy.delete_mode || (unlinkAllowed ? 'unlink' : 'none')).trim().toLowerCase(),
     available_actions: batchActions,
+    execution_intents: sourceBatchPolicy.execution_intents || Object.fromEntries(batchActions.map((action) => [action, action === 'export' ? 'api.data' : action === 'delete' ? 'api.data.unlink' : 'api.data.batch'])),
+    execution_operations: sourceBatchPolicy.execution_operations || (batchActions.includes('export') ? { export: 'export_csv' } : {}),
   };
   const formLayout = buildLegacyFormLayout(v2Fields, fieldLabels);
   const subviews = buildLegacySubViews(v2Fields, mainData);
@@ -574,6 +580,13 @@ function buildRuntimeProjectionFromV2(v2Contract: Dict, requestParams: Dict = {}
     surface_policies: {
       delete_mode: batchPolicy.delete_mode,
       batch_policy: batchPolicy,
+      selection_policy: sourceSurfacePolicies.selection_policy || {
+        enabled: viewType === 'list' || viewType === 'tree',
+        mode: 'multiple',
+        scope: 'current_page',
+        requires_batch_action: false,
+        action_source: 'batch_policy.available_actions',
+      },
     },
     surface_mapping: buildSurfaceMapping(contractSurface, renderMode, sourceMode),
     ...(Object.keys(workflowContract).length ? {
