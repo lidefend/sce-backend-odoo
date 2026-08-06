@@ -23,6 +23,24 @@ Before every upgrade or publish step, run:
 ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make verify.daily_dev.runtime_repo.clean
 ```
 
+If the daily server cannot read GitHub smart HTTP, the approved fallback is an
+exact incremental Git bundle sent over the configured SSH host. It is allowed
+only after the candidate is merged to authoritative `origin/main`:
+
+```bash
+CONFIRM_DAILY_RUNTIME_BUNDLE_SYNC=SYNC_EXACT_DAILY_MAIN_SHA_WITH_BUNDLE \
+make daily.runtime.main.bundle_sync \
+  DAILY_RUNTIME_EXPECTED_SHA=<merged-main-full-sha> \
+  DAILY_RUNTIME_EXPECTED_OLD_SHA=<current-daily-main-full-sha> \
+  DAILY_RUNTIME_SSH_HOST=sc-root
+```
+
+The fallback requires clean local and remote `main` worktrees, exact old and
+new SHAs, an incremental bundle digest match, and a fast-forward ancestry
+check. It updates the checked-out `main` and its local `origin/main`
+remote-tracking identity to the same bundle-proven SHA; it does not modify Git
+remote configuration and cannot perform a non-fast-forward update.
+
 ## Scratch Work
 
 Temporary development, migration replay, attachment probes, and acceptance runs

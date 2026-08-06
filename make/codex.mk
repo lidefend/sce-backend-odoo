@@ -444,12 +444,29 @@ workspace.worktree.cleanup: guard.prod.forbid
 	@python3 scripts/ops/safe_worktree_cleanup.py --path "$(CLEAN_WORKTREE)" $(if $(filter 1,$(APPLY)),--apply,)
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee
+.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee
+
+DAILY_RUNTIME_SSH_HOST ?= sc-root
+DAILY_RUNTIME_EXPECTED_SHA ?=
+DAILY_RUNTIME_EXPECTED_OLD_SHA ?=
+DAILY_RUNTIME_BUNDLE_SYNC_REPORT ?= .runtime/final-acceptance/daily-deployed/bundle-sync.json
 
 main.sync: guard.prod.forbid
 	@echo "[main.sync] checkout main + fast-forward pull"
 	@git checkout main
 	@git pull --ff-only origin main
+
+verify.daily.runtime.main.bundle_sync: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_bundle_sync.py scripts/ops/test_daily_runtime_bundle_sync.py
+	@python3 scripts/ops/test_daily_runtime_bundle_sync.py
+
+daily.runtime.main.bundle_sync: guard.prod.forbid verify.daily.runtime.main.bundle_sync
+	@test "$${CONFIRM_DAILY_RUNTIME_BUNDLE_SYNC:-}" = "SYNC_EXACT_DAILY_MAIN_SHA_WITH_BUNDLE" || { echo "exact daily runtime bundle sync confirmation is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_bundle_sync.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--expected-old-sha "$(DAILY_RUNTIME_EXPECTED_OLD_SHA)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--report "$(DAILY_RUNTIME_BUNDLE_SYNC_REPORT)"
 
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh
