@@ -2853,3 +2853,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Boundary: no frontend, API, ACL, workflow, route, customer override, database
   patch, or business-record repair. Daily application remains a P4 governed
   upgrade protected by the paired backup and successful isolated restore drill.
+
+## 2026-08-06 — FORMAL-ENTRY-METADATA-ORPHAN-HANDOFF-ROOTFIX
+
+- Branch / anchor: `codex/daily-runtime-sync-6387` from `6387c30`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product; L2 native model/view contract plus versioned upgrade
+  migration; `smart_construction_core` and its formal-surface verification.
+- Reason / Why Here: five supported business models lacked a truthful visible
+  entry-source pair, while three active menus targeted customer-handoff models
+  absent from the runtime registry. The industry module owns reproducible native
+  views and fail-closed menu usability; the migration owns a precise,
+  replay-safe UI metadata retirement.
+- Why Not Elsewhere: no frontend fallback, low-code override, customer-module
+  reconstruction, audit exclusion, `create_uid/create_date` substitution, or
+  business-data repair can correct this product/runtime split.
+- Blast Radius: five formal metadata surfaces and the menu/action/view/XMLID
+  records for exactly three orphan models. Six legacy summary/fact relations,
+  attachments, permissions, public contracts, workflow, and production remain
+  untouched.
+- Validation / rollback: real `.81 -> .82` isolated upgrade and repeated
+  migration, Odoo TransactionCase negative fixtures, formal P1 gates and exact
+  count assertions. Daily application remains protected by the verified paired
+  backup and exact bundle synchronization; rollback restores the paired backup
+  and preceding exact source SHA rather than attempting a module downgrade.

@@ -17,10 +17,12 @@ FORMAL_ENTRY_METADATA_MODELS = (
     "project.cost.code",
     "project.cost.ledger",
     "project.dictionary",
+    "project.funding.actual.event.allocation",
     "project.funding.baseline",
     "project.material.plan",
     "project.milestone",
     "project.progress.entry",
+    "project.project",
     "project.project.stage",
     "sc.approval.policy",
     "sc.approval.scope",
@@ -40,6 +42,7 @@ FORMAL_ENTRY_METADATA_MODELS = (
     "sc.fund.account",
     "sc.general.contract",
     "sc.hazard.source",
+    "sc.historical.payment.fact",
     "sc.hr.payroll.document",
     "sc.labor.plan",
     "sc.labor.price",
@@ -85,6 +88,7 @@ FORMAL_ENTRY_METADATA_MODELS = (
     "sc.subcontract.register",
     "sc.subcontract.request",
     "sc.subcontract.settlement",
+    "sc.tax.certificate.registration",
     "sc.tax.deduction.registration",
     "sc.treasury.ledger",
     "sc.treasury.reconciliation",
@@ -93,6 +97,33 @@ FORMAL_ENTRY_METADATA_MODELS = (
     "tender.guarantee",
     "tender.opening",
 )
+
+
+def active_unresolved_model_errors(env, include_prefixes, exclude_prefixes):
+    """Return active menu actions whose target model is absent from registry."""
+    failures = []
+    Menu = env["ir.ui.menu"].sudo()
+    for menu in Menu.search([("active", "=", True), ("action", "!=", False)]):
+        action = menu.action
+        if not action or action._name != "ir.actions.act_window":
+            continue
+        model_name = action.res_model
+        if (
+            model_name
+            and model_name.startswith(include_prefixes)
+            and not model_name.startswith(exclude_prefixes)
+            and model_name not in env
+        ):
+            failures.append(
+                {
+                    "model": model_name,
+                    "error": "active_unresolved_model",
+                    "menu_id": menu.id,
+                    "menu": menu.complete_name,
+                    "action_id": action.id,
+                }
+            )
+    return failures
 
 
 def _extension_attrs(model_name):

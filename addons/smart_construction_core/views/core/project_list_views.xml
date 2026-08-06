@@ -16,6 +16,8 @@
                 <field name="manager_id" string="项目经理" optional="hide"/>
                 <field name="contract_amount" string="合同总额" optional="show"/>
                 <field name="dashboard_progress_rate" string="进度(%)" optional="show"/>
+                <field name="source_created_by" string="录入人" optional="hide"/>
+                <field name="source_created_at" string="录入时间" optional="hide"/>
                 <field name="write_date" string="更新时间" optional="show"/>
             </tree>
         </field>

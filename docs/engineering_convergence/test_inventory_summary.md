@@ -4,20 +4,20 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1059`
+- Total assets: `1061`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `134`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `700`
+- PR dedupe candidates: `702`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
 | governance | 410 |
-| contract | 311 |
+| contract | 313 |
 | unit | 173 |
 | odoo_integration | 77 |
 | e2e | 34 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 919 |
+| pr_candidate | 921 |
 | integration_candidate | 99 |
 | release_candidate | 32 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 700 |
+| deduplicate_before_required | 702 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 98 |
 | keep_release_only | 32 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 921 |
+| <5m | 923 |
 | 10-30m | 100 |
 | 30-60m | 34 |
 | unknown | 3 |
@@ -153,7 +153,7 @@ Generated from `test_inventory.csv`.
 | Owner | Count |
 | --- | ---: |
 | architecture owner | 410 |
-| platform owner | 311 |
+| platform owner | 313 |
 | test owner | 174 |
 | backend owner | 77 |
 | qa owner | 34 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 948 |
+| scripts/verify | 950 |
 | scripts/ops | 50 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 12 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-178 | security | `scripts/verify/construction_core_extension_actor_roles_split_guard.py` | security owner |
 | T-ASSET-179 | governance | `scripts/verify/construction_core_extension_capability_rows_split_guard.py` | architecture owner |
 | T-ASSET-180 | contract | `scripts/verify/construction_core_extension_contract_helpers_split_guard.py` | platform owner |
-| ... | ... | 620 more | ... |
+| ... | ... | 622 more | ... |
 
 ## Dedupe Hotspots
 
@@ -294,6 +294,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/contract_form_runtime` | 2 |
 | `scripts/verify/form_m2_payment` | 2 |
 | `scripts/verify/form_m3_purchase` | 2 |
+| `scripts/verify/formal_entry_metadata` | 2 |
 | `scripts/verify/frontend_my_work` | 2 |
 | `scripts/verify/intent_smoke_utils` | 2 |
 | `scripts/verify/material_business_category` | 2 |
@@ -311,7 +312,6 @@ Generated from `test_inventory.csv`.
 | `frontend/apps/web/scripts/handling_entry_catalog` | 1 |
 | `frontend/apps/web/scripts/list_selection_contract` | 1 |
 | `frontend/apps/web/scripts/low_code_business` | 1 |
-| `frontend/apps/web/scripts/low_code_change` | 1 |
 
 ## Residual Dedupe Hotspot Disposition
 
@@ -329,6 +329,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/contract_form_runtime` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/form_m2_payment` | 2 | test owner | owner-reviewed PR candidates | Retain as explicit PR candidates; acceptance pair has no confirmed Make aggregate. |
 | `scripts/verify/form_m3_purchase` | 2 | test owner | owner-reviewed PR candidates | Retain as explicit PR candidates; purchase/order-line acceptance pair has no confirmed Make aggregate. |
+| `scripts/verify/formal_entry_metadata` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/frontend_my_work` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/intent_smoke_utils` | 2 | platform owner | helper debt, no aggregate gate | Retain as helper debt; utility modules are consumed by multiple smokes and should not be marked covered by one gate. |
 | `scripts/verify/material_business_category` | 2 | architecture owner | owner-reviewed PR candidates | Retain as explicit PR candidates; action and binding audits are only wrapped by separate ops scripts. |
