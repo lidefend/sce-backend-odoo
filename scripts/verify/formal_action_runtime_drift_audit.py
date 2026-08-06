@@ -52,7 +52,7 @@ EXPECTED_NON_EMPTY_ACTIONS = {
     "action_sc_settlement_order_income",
     "action_sc_settlement_order_expense",
 }
-LEGACY_SOURCE_PARITY_ACTIONS = {
+FORMAL_ACCEPTANCE_LABEL_ACTIONS = {
     "action_sc_material_inbound": "入库",
     "action_sc_material_rental_in_acceptance": "租入",
     "action_sc_material_rental_return_acceptance": "还租",
@@ -416,26 +416,17 @@ for action_id, spec in sorted(action_records().items()):
     else:
         count_error = "missing_res_model"
 
-    source_count = None
-    source_count_error = None
-    source_label = LEGACY_SOURCE_PARITY_ACTIONS.get(action_id)
-    if source_label:
-        source_model = "sc.legacy.direct.acceptance.fact"
-        if source_model in env:  # noqa: F821
-            try:
-                source_count = int(
-                    env[source_model].sudo().search_count(  # noqa: F821
-                        [
-                            ("source_system", "=", "online_old_legacy_direct"),
-                            ("acceptance_label", "=", source_label),
-                            ("active", "=", True),
-                        ]
-                    )
-                )
-            except Exception as exc:  # pragma: no cover - executed inside Odoo shell
-                source_count_error = f"{type(exc).__name__}: {str(exc)[:240]}"
-        else:
-            source_count_error = "missing_source_model"
+    projection_count = None
+    expected_acceptance_domain = None
+    acceptance_label = FORMAL_ACCEPTANCE_LABEL_ACTIONS.get(action_id)
+    if acceptance_label and action.res_model in env:  # noqa: F821
+        expected_acceptance_domain = [("legacy_acceptance_label", "=", acceptance_label)]
+        try:
+            projection_count = int(
+                env[action.res_model].sudo().search_count(expected_acceptance_domain)  # noqa: F821
+            )
+        except Exception as exc:  # pragma: no cover - executed inside Odoo shell
+            count_error = count_error or f"{type(exc).__name__}: {str(exc)[:240]}"
 
     tree_bindings = action.view_ids.filtered(lambda item: item.view_mode == "tree").sorted("sequence")
     primary_tree = action.view_id if action.view_id.type == "tree" else (tree_bindings[0].view_id if tree_bindings else False)
@@ -452,8 +443,8 @@ for action_id, spec in sorted(action_records().items()):
         "domain": action.domain or "",
         "record_count": count,
         "count_error": count_error,
-        "source_count": source_count,
-        "source_count_error": source_count_error,
+        "projection_count": projection_count,
+        "expected_acceptance_domain": expected_acceptance_domain,
         "primary_tree": primary_tree.name if primary_tree else "",
         "field_count": len(actual_fields),
         "default_order_fields": order_fields,
@@ -465,10 +456,10 @@ for action_id, spec in sorted(action_records().items()):
 
     if count_error:
         failures.append({"reason": "domain_count_error", **row})
-    if source_count_error:
-        failures.append({"reason": "source_count_error", **row})
-    if source_count is not None and count is not None and source_count != count:
-        failures.append({"reason": "legacy_source_projection_count_mismatch", **row})
+    if expected_acceptance_domain is not None and domain != expected_acceptance_domain:
+        failures.append({"reason": "wrong_formal_acceptance_domain", **row})
+    if projection_count is not None and count is not None and projection_count != count:
+        failures.append({"reason": "formal_acceptance_domain_count_mismatch", **row})
     if action_id in EXPECTED_NON_EMPTY_ACTIONS and count == 0:
         failures.append({"reason": "empty_high_risk_formal_action_domain", **row})
     if missing_registered_fields:

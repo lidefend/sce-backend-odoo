@@ -95,10 +95,10 @@ class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
             if action.find("field[@name='name']") is not None:
                 self.assertEqual(self._field_text(action, "name"), expected["name"], action_id)
 
-    def test_legacy_actions_use_source_projection_parity_instead_of_fixture_presence(self) -> None:
+    def test_formal_acceptance_actions_use_generic_projection_labels(self) -> None:
         assignments = self._assignments()
         non_empty = set(ast.literal_eval(assignments["EXPECTED_NON_EMPTY_ACTIONS"]))
-        parity = ast.literal_eval(assignments["LEGACY_SOURCE_PARITY_ACTIONS"])
+        parity = ast.literal_eval(assignments["FORMAL_ACCEPTANCE_LABEL_ACTIONS"])
         expected = {
             "action_sc_material_inbound": "入库",
             "action_sc_material_rental_in_acceptance": "租入",
@@ -107,8 +107,18 @@ class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
         self.assertEqual(parity, expected)
         self.assertTrue(expected.keys().isdisjoint(non_empty))
 
+        for action_id, label in expected.items():
+            action = self._record(FORMAL_LISTS, action_id)
+            self.assertEqual(
+                ast.literal_eval(self._field_text(action, "domain")),
+                [("legacy_acceptance_label", "=", label)],
+            )
+
         source = AUDIT.read_text(encoding="utf-8")
-        self.assertIn("legacy_source_projection_count_mismatch", source)
+        self.assertIn("wrong_formal_acceptance_domain", source)
+        self.assertIn("formal_acceptance_domain_count_mismatch", source)
+        self.assertNotIn("missing_source_model", source)
+        self.assertNotIn("online_old_legacy_direct", source)
         self.assertIn('"name": "进项税额上报"', source)
         self.assertIn("tree_fields_missing_from_registered_model", source)
         self.assertIn("tree_order_fields_missing_from_registered_model", source)

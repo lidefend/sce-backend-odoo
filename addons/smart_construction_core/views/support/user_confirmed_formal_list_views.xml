@@ -501,19 +501,19 @@
         <field name="name">入库</field>
         <field name="view_id" ref="smart_construction_core.view_sc_material_inbound_user_confirmed_tree" />
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_inbound_user_confirmed_tree')})         ]" />
-        <field name="domain">[('legacy_fact_model', '=', 'online_old_legacy_direct:direct_acceptance_fact'), ('legacy_fact_type', '=', 'direct_acceptance:入库')]</field>
+        <field name="domain">[('legacy_acceptance_label', '=', '入库')]</field>
         <field name="context">{'create': False, 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_material_rental_in_acceptance" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_sc_material_rental_in_user_confirmed_tree" />
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_in_user_confirmed_tree')})         ]" />
-        <field name="domain">[('legacy_fact_model', '=', 'online_old_legacy_direct:direct_acceptance_fact'), ('legacy_fact_type', '=', 'direct_acceptance:租入')]</field>
+        <field name="domain">[('legacy_acceptance_label', '=', '租入')]</field>
         <field name="context">{'create': False, 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_material_rental_return_acceptance" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_sc_material_rental_return_user_confirmed_tree" />
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_return_user_confirmed_tree')})         ]" />
-        <field name="domain">[('legacy_fact_model', '=', 'online_old_legacy_direct:direct_acceptance_fact'), ('legacy_fact_type', '=', 'direct_acceptance:还租')]</field>
+        <field name="domain">[('legacy_acceptance_label', '=', '还租')]</field>
         <field name="context">{'create': False, 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_salary_registration" model="ir.actions.act_window">
