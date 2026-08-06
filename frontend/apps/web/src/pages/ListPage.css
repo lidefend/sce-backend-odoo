@@ -284,6 +284,10 @@
   overflow-y: hidden;
 }
 
+.table {
+  container-type: inline-size;
+}
+
 .table.is-refreshing {
   pointer-events: none;
 }
@@ -346,7 +350,7 @@
   display: none;
 }
 
-@media (max-width: 820px) {
+@container (max-width: 1126px) {
   .mobile-record-list .mobile-record-row {
     position: relative;
     min-width: 0;
