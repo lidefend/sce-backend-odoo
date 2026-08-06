@@ -741,30 +741,28 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(contract.received_amount, 80)
         self.assertEqual(contract.paid_amount, 50)
 
-    def test_contract_list_exposes_legacy_contract_numbers(self):
+    def test_contract_list_exposes_single_formal_number(self):
         contract = self.env["construction.contract"].create(
             {
-                "subject": "Feedback Legacy Contract No",
+                "subject": "Feedback Formal Contract Number",
                 "type": "out",
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
-                "legacy_contract_no": "HT-OLD-001",
-                "legacy_document_no": "DJ-OLD-001",
-                "legacy_external_contract_no": "WB-OLD-001",
             }
         )
         view = self.env.ref("smart_construction_core.view_construction_contract_tree")
         form = self.env.ref("smart_construction_core.view_construction_contract_form")
 
         self.assertEqual(contract.name[:3], "CON")
-        self.assertEqual(contract.legacy_contract_no, "HT-OLD-001")
-        self.assertEqual(contract._fields["name"].string, "单据编号")
-        self.assertEqual(contract._fields["legacy_contract_no"].string, "合同编号")
-        self.assertIn('name="legacy_contract_no"', view.arch_db)
-        self.assertIn('name="legacy_external_contract_no"', view.arch_db)
-        self.assertIn('name="legacy_document_no"', form.arch_db)
+        self.assertEqual(contract._fields["name"].string, "平台单据编号")
+        self.assertNotIn("legacy_contract_no", contract._fields)
+        self.assertNotIn("legacy_document_no", contract._fields)
+        self.assertNotIn("legacy_external_contract_no", contract._fields)
+        self.assertNotIn('name="legacy_contract_no"', view.arch_db)
+        self.assertNotIn('name="legacy_external_contract_no"', view.arch_db)
+        self.assertNotIn('name="legacy_document_no"', form.arch_db)
         self.assertIn('name="settlement_amount" sum="结算金额合计"', view.arch_db)
-        self.assertIn('name="invoice_amount" sum="开票金额合计"', view.arch_db)
+        self.assertIn('name="visible_invoice_amount" sum="累计开票合计"', view.arch_db)
         self.assertIn('name="unpaid_amount" sum="未付款金额合计"', view.arch_db)
 
     def test_legacy_purchase_contract_is_not_business_approval_target(self):

@@ -2827,3 +2827,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   temporary repositories and prove main/upstream alignment. A failed preflight
   performs no repository update; the previous commit remains an ancestor for an
   explicitly governed rollback task.
+
+## 2026-08-06 — FORMAL-CONTRACT-VIEW-FIELD-CONTRACT-ROOTFIX
+
+- Branch / anchor: `fix/daily-runtime-deploy-a514e0c` from `a514e0c`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product; native formal list field and ordering contract;
+  `smart_construction_core`.
+- Root cause: the previous action-drift repair referenced two aliases that the
+  governed field-architecture cleanup had removed, and retained a legacy sort
+  field absent from `construction.contract.income`. Odoo rejected the view and
+  rolled the daily upgrade back.
+- Resolution: expose the single governed `name` identifier once as `单据编号`,
+  use `date_contract desc, id desc`, remove the stale legacy-number test
+  contract, add negative source regression, and advance the module to
+  `17.0.0.79`.
+- Boundary: no frontend, API, ACL, workflow, route, customer override, database
+  patch, or business-record repair. Daily application remains a P4 governed
+  upgrade protected by the paired backup and successful isolated restore drill.
