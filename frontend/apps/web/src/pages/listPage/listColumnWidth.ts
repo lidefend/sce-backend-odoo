@@ -1,4 +1,4 @@
-import { resolveLocalizedDisplayValue } from '../../utils/display';
+import { resolveLocalizedDisplayValue } from '../../utils/display.ts';
 
 export type ListColumnLayoutRole =
   | 'identity'
@@ -32,17 +32,25 @@ const limits: Record<ListColumnLayoutRole, [number, number]> = {
   relation: [132, 232],
   text: [96, 192],
   status: [80, 120],
-  money: [104, 148],
+  money: [128, 148],
   date: [108, 140],
   actions: [80, 112],
 };
 
 export function listColumnAdaptiveFloor(role: ListColumnLayoutRole) {
   const floors: Record<ListColumnLayoutRole, number> = {
-    identity: 136, description: 156, relation: 120, text: 96,
-    status: 80, money: 104, date: 108, actions: 80,
+    identity: 136, description: 176, relation: 120, text: 96,
+    status: 80, money: 128, date: 108, actions: 80,
   };
   return floors[role];
+}
+
+export function listColumnSemanticTextRole(input: { field: string; label: string }) {
+  const field = String(input.field || '').trim().toLowerCase();
+  const label = String(input.label || '').trim();
+  if (/(^|_)(?:no|number|code)($|_)/.test(field) || /编号|编码|单号/.test(label)) return 'identity' as const;
+  if (/(^|_)(?:name|title|subject)($|_)/.test(field) || /名称|标题|主题/.test(label)) return 'description' as const;
+  return '' as const;
 }
 
 export function rankListBusinessColumn(input: ColumnPriorityInput) {
@@ -90,7 +98,7 @@ export function deriveListColumnWidth(input: ColumnWidthInput) {
   if (input.role === 'date') {
     return Math.min(maximum, Math.max(minimum, type === 'datetime' ? 140 : 112, headerWidth));
   }
-  if (input.role === 'money') return Math.min(maximum, Math.max(minimum, 120, headerWidth));
+  if (input.role === 'money') return Math.min(maximum, Math.max(minimum, 128, headerWidth));
   if (input.role === 'actions') return Math.min(maximum, Math.max(minimum, headerWidth));
 
   const candidates = [...(input.values || []).slice(0, 30), ...(input.selectionLabels || [])]

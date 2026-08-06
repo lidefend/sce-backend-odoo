@@ -2943,3 +2943,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   absolute-path references; neither document changed in this batch contributes
   a missing link. Reverting this commit restores the previous tools and does
   not change any runtime or database state.
+
+## 2026-08-06 — FRONTEND-RUNTIME-LABEL-AND-GEOMETRY-CLOSURE
+
+- Branch / anchor: `fix/runtime-view-contract-product-closure` from `74a6766`.
+- Formal Product Layer / Layer Target / Module: P0 native view contract assembly,
+  responsive list rendering and P4 acceptance assertions; `smart_core`,
+  `smart_construction_core`, `frontend/apps/web` and `scripts/verify`.
+- Reason / Why Here: isolated browser evidence found native Chinese tree labels
+  being replaced by generic English field metadata and business amounts/names
+  clipping at 1280px and browser zoom. Native view strings now remain the
+  display authority, critical contract columns participate in the same
+  cross-device policy, and semantic width floors force secondary columns out
+  before key facts are truncated.
+- Why Not Elsewhere: no customer configuration, user preference, permission,
+  route, workflow or business record is changed to hide the defect. Runtime
+  action/menu identifiers are discovered from authenticated navigation instead
+  of copied from one database.
+- Blast Radius / validation: customer, supplier, project and contract list
+  labels, column choice/default semantics and geometry audit thresholds. The
+  isolated acceptance database is upgraded/restarted and tested at five
+  viewports plus zoom before any daily-development deployment.

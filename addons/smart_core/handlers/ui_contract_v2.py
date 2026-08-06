@@ -2499,17 +2499,6 @@ class UiContractV2Handler(BaseIntentHandler):
                         direct_orchestration_columns.append(name)
                     if label:
                         direct_orchestration_labels[name] = label
-        governance = source_contract.get("governance") if isinstance(source_contract.get("governance"), dict) else {}
-        view_governance = governance.get("view_orchestration") if isinstance(governance.get("view_orchestration"), dict) else {}
-        source_trace = source_contract.get("source_trace") if isinstance(source_contract.get("source_trace"), dict) else {}
-        view_trace = source_trace.get("view_orchestration") if isinstance(source_trace.get("view_orchestration"), dict) else {}
-        business_view_orchestration_applied = bool(
-            view_governance.get("applied")
-            or view_governance.get("business_config_contracts")
-            or view_trace.get("business_config_contracts")
-            or direct_orchestration_columns
-            or direct_orchestration_labels
-        )
         action_view_override = None
         action_view_columns = list(action_view_override.get("columns") or []) if action_view_override else []
         action_view_labels = dict(action_view_override.get("column_labels") or {}) if action_view_override else {}
@@ -2612,8 +2601,6 @@ class UiContractV2Handler(BaseIntentHandler):
                 continue
             name = str(row.get("name") or "").strip()
             if not name:
-                continue
-            if not business_view_orchestration_applied and not name.startswith("legacy_visible_"):
                 continue
             label = str(row.get("label") or row.get("string") or "").strip()
             if label:

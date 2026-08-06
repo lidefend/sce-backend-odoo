@@ -527,6 +527,27 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
     "project.project": {
         "critical": ["name", "project_code", "lifecycle_state", "user_id"],
     },
+    "sc.general.contract": {
+        "critical": [
+            "name",
+            "contract_no",
+            "contract_name",
+            "state",
+            "contract_date",
+            "amount_total",
+            "project_id",
+        ],
+    },
+    "construction.contract": {
+        "critical": [
+            "name",
+            "state",
+            "date_contract",
+            "project_id",
+            "partner_id",
+            "visible_contract_amount",
+        ],
+    },
     "res.partner": {
         "visible": [
             "name",

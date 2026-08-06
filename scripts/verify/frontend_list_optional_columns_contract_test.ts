@@ -5,6 +5,7 @@ import {
   resolveEnabledListColumns,
   resolveResponsiveListColumns,
 } from '../../frontend/apps/web/src/pages/listPage/listColumnVisibility.ts';
+import { deriveListColumnWidth, listColumnAdaptiveFloor, listColumnSemanticTextRole } from '../../frontend/apps/web/src/pages/listPage/listColumnWidth.ts';
 
 const columns = [
   { name: 'name', defaultVisible: true },
@@ -32,6 +33,16 @@ assert.match(
   actionContractRuntimeSource,
   /cross_device_critical_columns:\s*crossDeviceCriticalColumns/,
   'the action contract shape runtime must explicitly preserve cross-device critical columns',
+);
+
+assert.equal(listColumnSemanticTextRole({ field: 'contract_no', label: '合同编号' }), 'identity');
+assert.equal(listColumnSemanticTextRole({ field: 'contract_name', label: '合同名称' }), 'description');
+assert.equal(listColumnAdaptiveFloor('money'), 128, 'money columns must reserve enough width for business amounts and footer totals');
+assert.equal(listColumnAdaptiveFloor('description'), 176, 'business names must retain a readable non-truncating floor');
+assert.equal(
+  deriveListColumnWidth({ label: '合同金额', type: 'monetary', role: 'money', values: [3665000] }),
+  128,
+  'derived money width must not shrink below the readable amount floor',
 );
 
 for (const client of ['windows-chromium', 'windows-edge', 'harmony-webview']) {

@@ -933,6 +933,41 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         }
         self.assertEqual(schema["sc_source_project_name"]["optional"], "hide")
 
+    def test_native_tree_labels_override_generic_field_metadata_without_business_config(self):
+        handler = self.module.UiContractV2Handler(env={})
+        source_contract = {
+            "model": "res.partner",
+            "fields": {
+                "company_type": {"string": "Company Type", "type": "selection"},
+                "mobile": {"string": "Mobile", "type": "char"},
+            },
+            "views": {
+                "tree": {
+                    "columns": ["company_type", "mobile"],
+                    "columns_schema": [
+                        {"name": "company_type", "string": "客户类型", "type": "selection"},
+                        {"name": "mobile", "string": "手机", "type": "char", "optional": "hide"},
+                    ],
+                }
+            },
+            "list_profile": {},
+        }
+
+        handler._merge_business_list_profile(
+            source_contract,
+            common_fields=[],
+            amount_fields=[],
+            note_field="",
+            status_field="",
+            label_for=lambda name: source_contract["fields"][name]["string"],
+            type_for=lambda name: source_contract["fields"][name]["type"],
+        )
+
+        profile = source_contract["list_profile"]
+        self.assertEqual(profile["column_labels"]["company_type"], "客户类型")
+        self.assertEqual(profile["column_labels"]["mobile"], "手机")
+        self.assertIn("mobile", profile["hidden_columns"])
+
     def test_business_list_visibility_policy_overrides_stale_published_defaults(self):
         class _Config:
             contract_json = {

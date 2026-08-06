@@ -768,7 +768,7 @@ import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
-import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, type ListColumnLayoutRole } from './listPage/listColumnWidth';
+import { deriveListColumnWidth, listColumnAdaptiveFloor, listColumnSemanticTextRole, rankListBusinessColumn, type ListColumnLayoutRole } from './listPage/listColumnWidth';
 import {
   prioritizeExplicitlyEnabledListColumns,
   resolveEnabledListColumns,
@@ -2038,6 +2038,8 @@ function columnLayoutRole(field: string): ListColumnLayoutRole {
   if (['money', 'monetary', 'metric'].includes(cellRole) || ['integer', 'float', 'monetary'].includes(type)) return 'money';
   if (isListTemporalColumn(columnSemanticInput(field))) return 'date';
   if (['actions', 'action', 'favorite'].includes(cellRole)) return 'actions';
+  const semanticTextRole = listColumnSemanticTextRole({ field, label: columnLabel(field) });
+  if (semanticTextRole) return semanticTextRole;
   if (['description', 'long-text', 'reading'].includes(cellRole) || ['text', 'html'].includes(type)) return 'description';
   if (['many2one', 'many2many', 'one2many', 'reference'].includes(type)) return 'relation';
   return 'text';

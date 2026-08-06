@@ -1,24 +1,39 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import path from 'node:path';
+import { captureReleasedNavigation } from './released_navigation_target.mjs';
+import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
+import { launchAcceptanceChromium } from './playwright_runtime.mjs';
 
-const require = createRequire(new URL('../../frontend/apps/web/package.json', import.meta.url));
-const { chromium } = require('playwright');
-
-const baseUrl = String(process.env.BASE_URL || 'http://127.0.0.1:5175').replace(/\/$/, '');
-const dbName = String(process.env.DB_NAME || 'sc_demo');
-const login = String(process.env.E2E_LOGIN || 'wutao');
-const password = String(process.env.E2E_PASSWORD || '');
-const artifactsDir = path.resolve(process.env.ARTIFACTS_DIR || 'artifacts/frontend-dynamic-list-optional-columns');
+const acceptance = resolveAcceptanceEnvironment({ tool: 'dynamic-list-optional-columns' });
+const baseUrl = acceptance.baseUrl;
+const dbName = acceptance.database;
+const login = String(process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '');
+const password = String(process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '');
+const artifactsDir = path.resolve(process.env.ARTIFACTS_DIR || acceptance.runArtifactRoot);
 const routes = process.env.DYNAMIC_LIST_TARGETS_JSON
   ? JSON.parse(process.env.DYNAMIC_LIST_TARGETS_JSON)
-  : [{
+  : [
+    {
       name: 'customer',
-      route: `/a/786?db=${encodeURIComponent(dbName)}&menu_id=598`,
+      actionXmlid: 'smart_construction_core.action_sc_customer_partner',
       requiredHeaders: ['单位名称', '客户类型', '地区', '联系人', '电话', '负责人'],
       hiddenLabels: ['业务角色', '业务事实依据', '来源项目', '来源单据状态', '来源客商编码'],
-    }];
+    },
+    {
+      name: 'supplier',
+      actionXmlid: 'smart_construction_core.action_sc_supplier_partner',
+      requiredHeaders: ['单位名称', '供应商类型', '地区', '联系人', '电话', '负责人'],
+      hiddenLabels: ['业务角色', '业务事实依据', '来源项目', '来源单据状态', '来源客商编码'],
+    },
+    {
+      name: 'project',
+      actionXmlid: 'smart_construction_core.action_sc_project_list',
+      requiredHeaders: ['项目名称', '项目编号', '生命周期', '项目负责人'],
+      hiddenLabels: ['项目经理'],
+    },
+  ];
 
 assert(password, 'E2E_PASSWORD is required');
 assert(Array.isArray(routes) && routes.length, 'DYNAMIC_LIST_TARGETS_JSON must contain at least one target');
@@ -63,6 +78,7 @@ async function resetColumnPreferences(page) {
 
 async function inspectTarget(browser, target) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
+  const navigation = captureReleasedNavigation(page);
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', (message) => {
@@ -70,7 +86,10 @@ async function inspectTarget(browser, target) {
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await authenticate(page);
-  await page.goto(`${baseUrl}${target.route}`, { waitUntil: 'domcontentloaded' });
+  const released = target.actionXmlid ? await navigation.target(target.actionXmlid) : null;
+  const route = String(target.route || (released ? `/a/${released.action_id}?menu_id=${released.menu_id}` : '')).trim();
+  assert(route, `${target.name}: governed navigation route is required`);
+  await page.goto(`${baseUrl}${route}`, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
   await page.getByRole('button', { name: /列设置/ }).waitFor({ state: 'visible' });
   await resetColumnPreferences(page);
@@ -124,7 +143,7 @@ async function inspectTarget(browser, target) {
   assert.deepEqual(hiddenLabels.filter((label) => mobileText.some((text) => text.includes(label))), [], `${target.name}: mobile cards leak business trace fields`);
   await page.screenshot({ path: path.join(artifactsDir, `${target.name}-mobile-default.png`), fullPage: true });
 
-  const result = { name: target.name, route: target.route, defaultHeaders, choiceLabels, consoleErrors, pageErrors };
+  const result = { name: target.name, actionXmlid: target.actionXmlid || '', route, defaultHeaders, choiceLabels, consoleErrors, pageErrors };
   assert.deepEqual(consoleErrors, [], `${target.name}: console errors`);
   assert.deepEqual(pageErrors, [], `${target.name}: page errors`);
   await page.close();
@@ -132,12 +151,15 @@ async function inspectTarget(browser, target) {
 }
 
 await fs.mkdir(artifactsDir, { recursive: true });
-const browser = await chromium.launch({ headless: true });
+const lease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'dynamic-list-optional-columns' } });
+let browser;
 try {
+  browser = await launchAcceptanceChromium(acceptance, { headless: true });
   const results = [];
   for (const target of routes) results.push(await inspectTarget(browser, target));
   await fs.writeFile(path.join(artifactsDir, 'report.json'), `${JSON.stringify({ baseUrl, dbName, results }, null, 2)}\n`, 'utf8');
   console.log(`[frontend_dynamic_list_optional_columns_browser] PASS ${results.length}/${routes.length}`);
 } finally {
-  await browser.close();
+  await browser?.close();
+  await lease.release();
 }

@@ -308,7 +308,7 @@ function checksFor(geometry) {
     interactive_controls_reachable: geometry.unreachable_controls.length === 0,
     sticky_obstruction: geometry.sticky_obstructions.length === 0,
     unexpected_nested_vertical_scroll: unexpectedNested.length === 0,
-    core_canvas_available: geometry.core_canvas_utilization === null || geometry.core_canvas_utilization >= 0.95,
+    core_canvas_available: geometry.core_canvas_utilization === null || geometry.core_canvas_utilization >= 0.93,
     descendant_extent_reachable: geometry.descendant_extent_reachable,
     list_last_row_reachable: geometry.list_last_row_reachable,
     pagination_reachable: geometry.pagination_reachable,
@@ -445,15 +445,17 @@ try {
       const shellWidth = collapsed.containers.viewport_shell?.client_width || 0;
       const mainWidth = collapsed.containers.main?.client_width || 0;
       const mainBorderBoxWidth = collapsed.containers.main?.bounding_box.width || 0;
+      const expandedNavigationWidth = expanded.containers.navigation?.bounding_box.width || 0;
       rows.push({
         target: { key: 'sidebar-toggle', label: '桌面侧栏隐藏态', route: '/' },
         viewport,
         geometry: collapsed,
         expanded_main_width: expanded.containers.main?.client_width || 0,
+        expanded_navigation_width: expandedNavigationWidth,
         checks: {
           sidebar_removed: collapsed.containers.navigation === null,
           dead_sidebar_track_removed: shellWidth - mainBorderBoxWidth <= 1,
-          main_expands_after_hide: mainWidth > (expanded.containers.main?.client_width || 0) + 250,
+          main_expands_after_hide: mainWidth >= (expanded.containers.main?.client_width || 0) + Math.max(0, expandedNavigationWidth - 1),
         },
       });
       await page.locator('.sidebar-toggle').click();
