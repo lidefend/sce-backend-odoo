@@ -2805,3 +2805,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `17.0.0.78` through the governed `make mod.upgrade` target. Roll back the
   source commit and run the same module upgrade; no schema or data migration is
   introduced.
+
+## 2026-08-06 — DAILY-RUNTIME-EXACT-BUNDLE-SYNC
+
+- Branch / anchor: `fix/daily-runtime-bundle-sync` from `2a6759f`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  exact daily-development runtime repository synchronization;
+  `scripts/ops` and `make/codex.mk`.
+- Reason / Why Here: the daily server can reach ordinary GitHub HTTP but its Git
+  smart-HTTP transfer repeatedly times out. A governed incremental bundle keeps
+  iteration independent of that external transport without weakening source
+  identity or repository isolation.
+- Why Not Elsewhere: this is not product, frontend, module, database, tenant,
+  low-code, or production behavior. It must not be implemented as ad hoc server
+  edits, a Git configuration override, or a database patch.
+- Blast Radius: one configured SSH host and the fixed clean runtime repository
+  `/opt/projects/repos/sce-product-odoo`. Exact local/remote SHAs, bundle digest,
+  upstream identity, ancestry, clean worktrees, and post-sync equality are all
+  fail-closed; only a fast-forward of `main` is possible.
+- Validation / rollback: unit tests execute the embedded remote program against
+  temporary repositories and prove main/upstream alignment. A failed preflight
+  performs no repository update; the previous commit remains an ancestor for an
+  explicitly governed rollback task.
