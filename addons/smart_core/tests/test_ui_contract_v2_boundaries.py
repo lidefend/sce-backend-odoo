@@ -1059,6 +1059,22 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         finally:
             self.module.call_extension_hook_first = original_hook
 
+    def test_business_column_label_replaces_generic_model_label(self):
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *args, **kwargs: {
+            "project.project": {"name": "项目名称"},
+        }
+        try:
+            field = type("Field", (), {"string": "名称"})()
+            model = type("Model", (), {"_fields": {"name": field}})()
+            handler = self.module.UiContractV2Handler(env={"project.project": model})
+            self.assertEqual(
+                handler._legacy_visible_business_label("project.project", "name", "名称"),
+                "项目名称",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
     def test_business_list_config_projection_enforces_exact_final_columns(self):
         handler = self.module.UiContractV2Handler(env=object())
         source_contract = {

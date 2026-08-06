@@ -253,6 +253,13 @@ class UiContractV2Handler(BaseIntentHandler):
             label_maps = LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL
         label_map = label_maps.get(model_key, {}) if isinstance(label_maps.get(model_key), dict) else {}
         business_label = label_map.get(field_name)
+        model_field_label = ""
+        if business_label:
+            try:
+                model_field = self.env[model_key]._fields.get(field_name) if model_key in self.env else None
+            except Exception:
+                model_field = None
+            model_field_label = str(getattr(model_field, "string", "") or "").strip()
         if not business_label:
             try:
                 has_model = bool(model_key in self.env)
@@ -269,7 +276,12 @@ class UiContractV2Handler(BaseIntentHandler):
                 if field_label and field_label != field_name and (not label or label == field_name):
                     return field_label
             return label
-        if not label or label == field_name or label.startswith("历史验收可见字段"):
+        if (
+            not label
+            or label == field_name
+            or label.startswith("历史验收可见字段")
+            or (model_field_label and label == model_field_label)
+        ):
             return business_label
         return label
 

@@ -14,8 +14,8 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 3684 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3672 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
+| 3391 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
-| 3379 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3329 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3046 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
@@ -28,7 +28,7 @@ Generated from repository source files. This report is informational during the 
 | 2382 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2299 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2289 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 2122 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 2138 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2051 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2028 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
@@ -129,8 +129,8 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- | --- |
 | 3684 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3672 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
+| 3391 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
-| 3379 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3329 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3046 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
@@ -143,7 +143,7 @@ Generated from repository source files. This report is informational during the 
 | 2382 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2299 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2289 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 2122 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 2138 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2051 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2028 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
