@@ -134,7 +134,7 @@
     </record>
 
     <record id="action_sc_leave_request" model="ir.actions.act_window">
-      <field name="name">请休假审批</field>
+      <field name="name">请假/休假审批单</field>
       <field name="res_model">sc.office.admin.document</field>
       <field name="view_mode">tree,form</field>
       <field name="search_view_id" ref="smart_construction_core.view_sc_office_admin_document_search"/>
@@ -159,7 +159,7 @@
               sequence="55"
               groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin"/>
     <menuitem id="menu_sc_leave_request"
-              name="请休假审批"
+              name="请假/休假审批单"
               parent="smart_construction_core.menu_sc_hr_admin_center"
               action="smart_construction_core.action_sc_leave_request"
               sequence="10"
