@@ -5,25 +5,25 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { launchChromium } from './playwright_runtime.mjs';
+import { launchAcceptanceChromium } from './playwright_runtime.mjs';
 import { captureReleasedNavigation } from './released_navigation_target.mjs';
-import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { redactedEnvironmentEvidence, resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 import { discoverEditableFormRoute } from './lib/frontend_form_editability_discovery.mjs';
 
-const acceptance = resolveAcceptanceEnvironment({ tool: 'form-system-audit', env: { ...process.env, FRONTEND_URL: process.env.SC_FRONTEND_URL || process.env.FRONTEND_URL, DB_NAME: process.env.SC_FORM_AUDIT_DB || process.env.DB_NAME } });
+const acceptance = resolveAcceptanceEnvironment({ tool: 'form-system-audit', operation: 'isolated-write', env: { ...process.env, SC_ACCEPTANCE_FRONTEND_URL: process.env.SC_FRONTEND_URL || process.env.SC_ACCEPTANCE_FRONTEND_URL, SC_ACCEPTANCE_DATABASE: process.env.SC_FORM_AUDIT_DB || process.env.SC_ACCEPTANCE_DATABASE } });
 const BASE_URL = acceptance.baseUrl;
 const USERNAME = process.env.SC_FORM_AUDIT_USER || acceptance.login || acceptance.roleBindings.contract_operator || '';
 const PASSWORD = process.env.SC_FORM_AUDIT_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const DB_NAME = acceptance.database;
-const OUTPUT_ROOT = path.resolve(process.env.SC_FORM_AUDIT_OUTPUT || '.runtime/final-acceptance');
-const JSON_OUTPUT = path.resolve(process.env.SC_FORM_AUDIT_JSON || '.runtime/form-audit.json');
+const OUTPUT_ROOT = path.resolve(process.env.SC_FORM_AUDIT_OUTPUT || acceptance.runArtifactRoot);
+const JSON_OUTPUT = path.resolve(process.env.SC_FORM_AUDIT_JSON || path.join(OUTPUT_ROOT, 'form-audit.json'));
 const REFERENCE_SOURCE_ROOT = path.resolve(process.env.SC_FORM_AUDIT_REFERENCE_SOURCE || '.runtime/frontend-system-audit/baseline/form-system');
 const SOURCE_SHA = process.env.SC_ACCEPTANCE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 let discoveredRoutes = null;
 assert(PASSWORD, 'SC_FORM_AUDIT_PASSWORD or SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
 assert(USERNAME, `profile ${acceptance.profile} requires a form audit login`);
-const acceptanceLease = await acquireAcceptanceLease({ root: acceptance.artifactRoot, mode: 'shared-read', owner: { tool: 'form-system-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
+const acceptanceLease = await acquireAcceptanceLease({ environment: acceptance, mode: 'exclusive-write', owner: { tool: 'form-system-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
 const VIEWPORTS = [
   { key: '1440', width: 1440, height: 900 },
   { key: '1280', width: 1280, height: 800 },
@@ -1064,7 +1064,7 @@ function buildHtml(report) {
 await fs.mkdir(OUTPUT_ROOT, { recursive: true });
 await fs.mkdir(path.dirname(JSON_OUTPUT), { recursive: true });
 await stageReferenceAssets();
-const browser = await launchChromium({ headless: true });
+const browser = await launchAcceptanceChromium(acceptance, { headless: true });
 let observedTypes = [];
 
 try {
@@ -1145,8 +1145,7 @@ const report = {
   source_sha: SOURCE_SHA,
   status: assertions.every((item) => item.status === 'PASS') ? 'PASS' : 'FAIL',
   generated_at: new Date().toISOString(),
-  base_url: BASE_URL,
-  database: DB_NAME,
+  environment: redactedEnvironmentEvidence(acceptance),
   route_discovery: discoveredRoutes,
   viewports: VIEWPORTS,
   state_matrix: stateMatrix(),

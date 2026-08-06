@@ -2894,3 +2894,52 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Strict typecheck, release unit, style guard, production build, isolated module
   upgrade, multi-viewport browser evidence and independent QA are required before
   daily-development deployment.
+
+## 2026-08-06 — GOVERNED-WORKTREE-CREATE-ENTRY
+
+- Branch / anchor: `fix/worktree-create-governance` from `6250dc6`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  local parallel-workspace lifecycle governance; `scripts/ops`,
+  `make/codex.mk`, and Codex execution policy.
+- Reason / Why Here: the policy correctly prohibited ungoverned `git worktree`
+  mutation but exposed only a cleanup target, leaving no compliant creation
+  path for isolated parallel tasks. The new Make entry keeps raw Git mutation
+  prohibited while validating an exact reachable base, eligible new branch,
+  controlled sibling path, nonexistence, explicit apply confirmation, and the
+  created worktree's branch, HEAD, and cleanliness.
+- Why Not Elsewhere: this is not a product, frontend, database, permission,
+  menu, or deployment concern. It must not be implemented as an agent-specific
+  shell exception or by weakening the raw Git command ban.
+- Blast Radius / validation: local linked worktree creation only; no remote,
+  database, service, or product state changes. Fourteen isolated create and
+  cleanup tests cover successful creation plus confirmation, path, branch,
+  commit identity, reachability, dirty, unmerged, and primary-worktree denials.
+
+## 2026-08-06 — FRONTEND-ACCEPTANCE-ENVIRONMENT-PORTABILITY
+
+- Branch / anchor: `feature/frontend-acceptance-environment-portability` from
+  `b7bb5565c82d784ac96c5f64f54a7e36106ead6a`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  frontend acceptance environment policy, target safety, process lifecycle and
+  evidence isolation; `config/frontend`, `scripts/verify`, release probe and
+  Make verification entrypoints.
+- Reason / Why Here: browser and release audits had divergent URL, database,
+  credential, artifact, browser and lifecycle assumptions. P4 owns execution
+  safety and portable evidence; the frontend renderer and construction modules
+  do not own runner or deployment topology.
+- Why Not Elsewhere: no business permission, route, API, field, customer
+  preference or database record changes are needed. Environment differences
+  must not be encoded as UI branches or customer-module overrides.
+- Blast Radius: the versioned acceptance profiles and tool matrix, canonical
+  resolver and cross-worktree lease, daily release identity probe, report
+  server, and the full-product/form/geometry formal audit entrypoints. The
+  remaining historical browser scripts are deliberately outside this batch.
+- Validation / rollback: fail-closed tests cover alias conflicts, unsafe target
+  management, daily/production write denial, weak credentials, identity drift,
+  path escape and numeric routes before network launch; concurrency tests cover
+  shared reads, exclusive writes, independent artifacts, dynamic ports and
+  owned-process cleanup. Generated-report consistency passes. The optional
+  documentation link check still reports the repository's existing 69 legacy
+  absolute-path references; neither document changed in this batch contributes
+  a missing link. Reverting this commit restores the previous tools and does
+  not change any runtime or database state.

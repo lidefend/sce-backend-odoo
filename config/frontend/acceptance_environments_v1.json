@@ -1,37 +1,38 @@
 {
   "schema": "frontend_acceptance_environments.v1",
   "default_profile": "local",
+  "canonical_environment_prefix": "SC_ACCEPTANCE_",
   "profiles": {
     "local": {
       "environment": "dev",
+      "target_mode": "managed",
       "base_url": "http://127.0.0.1:5175",
       "database": "sc_frontend_acceptance",
-      "service_mode": "managed",
-      "allowed_operations": ["read", "fixture", "managed-service"],
+      "allowed_operations": ["readonly", "simulated-write", "isolated-write", "managed-service"],
+      "fixture_required_for_write": true,
       "credential_env": {"login": "E2E_LOGIN", "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"},
-      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator"},
-      "artifact_root": ".runtime/acceptance/local"
+      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator"}
     },
     "test": {
       "environment": "test",
+      "target_mode": "managed",
       "base_url": "http://127.0.0.1:5175",
       "database": "sc_frontend_acceptance",
-      "service_mode": "managed",
-      "allowed_operations": ["read", "fixture", "managed-service"],
+      "allowed_operations": ["readonly", "simulated-write", "isolated-write", "managed-service"],
+      "fixture_required_for_write": true,
       "credential_env": {"login": "E2E_LOGIN", "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"},
-      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator"},
-      "artifact_root": ".runtime/acceptance/test"
+      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator"}
     },
     "daily": {
       "environment": "dev",
-      "base_url": "http://1.95.85.92:18081",
-      "host_base_url": "http://127.0.0.1:18081",
+      "target_mode": "external",
+      "base_url_required": true,
       "database": "sc_demo",
-      "service_mode": "external",
-      "allowed_operations": ["read"],
+      "allowed_operations": ["readonly"],
+      "expected_sha_required": true,
+      "target_identity_required": true,
       "credential_env": {"login": "ACCEPTANCE_LOGIN", "password": "ACCEPTANCE_PASSWORD"},
       "role_bindings_env": "SC_ACCEPTANCE_ROLE_BINDINGS_JSON",
-      "artifact_root": ".runtime/acceptance/daily",
       "runtime_identity_path": "/api/runtime-version",
       "navigation_policy": {
         "min_actions": 100,
@@ -55,13 +56,15 @@
     },
     "production": {
       "environment": "prod",
-      "base_url_env": "ACCEPTANCE_BASE_URL",
-      "database_env": "DB_NAME",
-      "service_mode": "external",
-      "allowed_operations": ["read"],
+      "target_mode": "external",
+      "base_url_required": true,
+      "database_required": true,
+      "allowed_operations": ["production-safe-smoke"],
+      "expected_sha_required": true,
+      "target_identity_required": true,
+      "redaction_required": true,
       "credential_env": {"login": "ACCEPTANCE_LOGIN", "password": "ACCEPTANCE_PASSWORD"},
       "role_bindings_env": "SC_ACCEPTANCE_ROLE_BINDINGS_JSON",
-      "artifact_root": ".runtime/acceptance/production",
       "runtime_identity_path": "/api/runtime-version"
     }
   }

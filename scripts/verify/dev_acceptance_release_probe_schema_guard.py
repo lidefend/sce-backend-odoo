@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import re
 import sys
 
 
@@ -175,6 +176,21 @@ def _check_login(value: object, errors: list[str]) -> str:
     return str(login.get("status") or "FAIL")
 
 
+def _check_runtime_identity(value: object, errors: list[str]) -> str:
+    identity = _check_status_block("runtime_identity", value, errors)
+    if not identity:
+        return "FAIL"
+    expected = identity.get("expected_sha")
+    if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{40}", expected):
+        errors.append("runtime_identity.expected_sha must be full commit SHA")
+    if identity.get("status") == "PASS":
+        if identity.get("http_status") != 200:
+            errors.append("runtime_identity.http_status must be 200 when identity passes")
+        if identity.get("served_sha") != expected:
+            errors.append("runtime_identity.served_sha must match expected_sha")
+    return str(identity.get("status") or "FAIL")
+
+
 def main() -> int:
     payload = _load_json(REPORT_JSON)
     errors: list[str] = []
@@ -190,12 +206,13 @@ def main() -> int:
                 errors.append(f"{key} must be non-empty string")
         statuses = [
             _check_backup(payload.get("backup"), errors),
+            _check_runtime_identity(payload.get("runtime_identity"), errors),
             _check_frontend(payload.get("frontend"), errors),
             _check_login(payload.get("login"), errors),
         ]
         expected_status = "PASS" if all(status == "PASS" for status in statuses) else "FAIL"
         if payload.get("status") in {"PASS", "FAIL"} and payload.get("status") != expected_status:
-            errors.append("status must match backup/frontend/login aggregate status")
+            errors.append("status must match backup/runtime_identity/frontend/login aggregate status")
 
     if errors:
         print("[dev_acceptance_release_probe_schema_guard] FAIL")

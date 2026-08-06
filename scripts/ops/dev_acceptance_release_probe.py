@@ -21,6 +21,34 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ARTIFACT = ROOT / "artifacts" / "backend" / "dev_acceptance_release_probe.json"
 
 
+def probe_runtime_identity(base_url: str, db_name: str, expected_sha: str, requester=None) -> dict[str, Any]:
+    result: dict[str, Any] = {"status": "FAIL", "expected_sha": expected_sha}
+    if not re.fullmatch(r"[0-9a-f]{40}", expected_sha):
+        result["errors"] = ["expected_sha_invalid"]
+        return result
+    request = requester or http_request
+    status, body, _headers = request(f"{base_url.rstrip('/')}/api/runtime-version")
+    result["http_status"] = status
+    try:
+        raw = json.loads(body)
+        payload = raw.get("data") or raw.get("result") or raw
+    except (json.JSONDecodeError, AttributeError):
+        payload = {}
+    served_sha = str(payload.get("git_sha") or payload.get("source_sha") or payload.get("source_revision") or "").strip()
+    served_db = str(payload.get("database") or payload.get("db_name") or payload.get("db") or "").strip()
+    result.update({"served_sha": served_sha, "served_database": served_db, "frontend_build_sha256": payload.get("frontend_build_sha256")})
+    errors = []
+    if status != 200:
+        errors.append("runtime_identity_http_failed")
+    if served_sha != expected_sha:
+        errors.append("runtime_identity_sha_mismatch")
+    if served_db and served_db != db_name:
+        errors.append("runtime_identity_database_mismatch")
+    result["errors"] = errors
+    result["status"] = "PASS" if not errors else "FAIL"
+    return result
+
+
 def run_cmd(args: list[str], cwd: Path | None = None, timeout: int = 120) -> tuple[int, str]:
     proc = subprocess.run(
         args,
@@ -369,8 +397,9 @@ def probe_login(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--backup-dir", default=os.getenv("ACCEPTANCE_BACKUP_DIR", ""))
-    parser.add_argument("--base-url", default=os.getenv("ACCEPTANCE_BASE_URL", "http://127.0.0.1:18081"))
-    parser.add_argument("--db-name", default=os.getenv("DB_NAME", "sc_demo"))
+    parser.add_argument("--base-url", default=os.getenv("ACCEPTANCE_BASE_URL", ""), required=not bool(os.getenv("ACCEPTANCE_BASE_URL")))
+    parser.add_argument("--db-name", default=os.getenv("DB_NAME", ""), required=not bool(os.getenv("DB_NAME")))
+    parser.add_argument("--expected-sha", default=os.getenv("SC_ACCEPTANCE_EXPECTED_SHA", ""), required=not bool(os.getenv("SC_ACCEPTANCE_EXPECTED_SHA")))
     parser.add_argument("--app-env", default=os.getenv("VITE_APP_ENV", os.getenv("ENV", "dev")))
     parser.add_argument("--forbidden-db", default=os.getenv("ACCEPTANCE_FORBIDDEN_DB", "sc_prod_sim"))
     parser.add_argument("--login", default=os.getenv("ACCEPTANCE_LOGIN", ""))
@@ -389,6 +418,7 @@ def main() -> int:
         "db_name": args.db_name,
         "base_url": args.base_url,
         "app_env": args.app_env,
+        "runtime_identity": probe_runtime_identity(args.base_url, args.db_name, args.expected_sha),
         "backup": probe_backup(backup_dir, args.db_name),
         "frontend": probe_frontend(args.base_url, args.db_name, args.app_env, args.forbidden_db),
         "login": probe_login(
@@ -405,6 +435,7 @@ def main() -> int:
     }
     statuses = [
         report["backup"].get("status", "PASS"),
+        report["runtime_identity"].get("status", "FAIL"),
         report["frontend"].get("status", "PASS"),
         report["login"].get("status", "PASS"),
     ]

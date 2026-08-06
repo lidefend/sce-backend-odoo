@@ -2,13 +2,41 @@
 
 ## Scope
 
-This runbook unifies three execution tiers:
+This runbook unifies four frontend acceptance profiles while preserving the
+three deployment tiers:
 
-- Daily development (`dev`)
-- Test dedicated (`test`)
-- Production (`prod`)
+- Local development (`local`)
+- Isolated test / CI (`test`)
+- Daily development server (`daily`)
+- Production safe smoke (`production`)
 
 It is the single command policy for environment setup, script usage, and Makefile entrypoints.
+
+Frontend acceptance distinguishes the runner from the target. A developer or
+CI runner may connect to an external daily target without acquiring authority
+to start or stop that target. `managed` targets must be loopback; `external`
+targets must never be managed by an audit script.
+
+The versioned policy is
+`config/frontend/acceptance_environments_v1.json`; tool applicability is
+`config/frontend/acceptance_tool_matrix_v1.json`. The canonical resolver uses
+this precedence:
+
+```text
+CLI > SC_ACCEPTANCE_* > compatibility environment aliases > profile > safe default
+```
+
+Conflicting aliases fail. Daily and production targets require an explicit URL,
+a full expected source SHA, and matching served runtime identity. Production
+only permits `production-safe-smoke`; form and configuration writes only permit
+the isolated local/test fixture database.
+
+Each run receives an independent artifact directory keyed by profile, SHA,
+tool, and run id. Cross-worktree leases live below `XDG_RUNTIME_DIR` (or the
+system temporary directory), not in a worktree. Read-only tools share a target
+lease; write-capable and managed-service tools take an exclusive lease. A
+managed service uses a dynamic port and may terminate only a process whose
+recorded PID, start time, and command identity still match.
 
 ## Layer Target / Module / Reason
 
