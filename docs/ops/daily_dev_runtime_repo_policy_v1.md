@@ -35,9 +35,12 @@ make daily.runtime.main.bundle_sync \
   DAILY_RUNTIME_SSH_HOST=sc-root
 ```
 
-The fallback requires clean local and remote `main` worktrees, exact old and
-new SHAs, an incremental bundle digest match, and a fast-forward ancestry
-check. It updates the checked-out `main` and its local `origin/main`
+The fallback requires a clean governed local branch at the exact authoritative
+`origin/main` SHA, a clean remote `main`, exact old and new SHAs, an incremental
+bundle digest match, and a fast-forward ancestry check. The local checkout does
+not need to be `main`, which may be reserved by another governed worktree. The
+bundle is created only from `refs/remotes/origin/main`. It updates the remote
+checked-out `main` and its local `origin/main`
 remote-tracking identity to the same bundle-proven SHA; it does not modify Git
 remote configuration and cannot perform a non-fast-forward update.
 

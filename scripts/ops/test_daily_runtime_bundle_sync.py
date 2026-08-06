@@ -62,7 +62,8 @@ class DailyRuntimeBundleSyncTests(unittest.TestCase):
             git(target, "branch", "--set-upstream-to=origin/main", "main")
 
             bundle_path = root / "main.bundle"
-            git(source, "bundle", "create", str(bundle_path), "refs/heads/main", f"^{old_sha}")
+            git(source, "update-ref", "refs/remotes/origin/main", expected_sha)
+            git(source, "bundle", "create", str(bundle_path), "refs/remotes/origin/main", f"^{old_sha}")
             bundle = bundle_path.read_bytes()
             digest = hashlib.sha256(bundle).hexdigest()
             test_program = sync.REMOTE_SYNC.replace(
@@ -87,7 +88,8 @@ class DailyRuntimeBundleSyncTests(unittest.TestCase):
             git(source, "commit", "-am", "newer")
             newer_sha = git(source, "rev-parse", "HEAD")
             second_bundle_path = root / "second.bundle"
-            git(source, "bundle", "create", str(second_bundle_path), "refs/heads/main", f"^{expected_sha}")
+            git(source, "update-ref", "refs/remotes/origin/main", newer_sha, expected_sha)
+            git(source, "bundle", "create", str(second_bundle_path), "refs/remotes/origin/main", f"^{expected_sha}")
             second_bundle = second_bundle_path.read_bytes()
             (target / "untracked.txt").write_text("dirty\n", encoding="utf-8")
             dirty_result = subprocess.run(
