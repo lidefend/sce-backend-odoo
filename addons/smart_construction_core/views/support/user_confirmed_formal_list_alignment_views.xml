@@ -167,7 +167,7 @@
         <field name="view_id" ref="smart_construction_core.view_tender_guarantee_formal_payment_deposit_return_tree"/>
         <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_tender_guarantee_formal_payment_deposit_return_tree')})]"/>
         <field name="search_view_id" ref="smart_construction_core.view_tender_guarantee_search"/>
-        <field name="domain">[('guarantee_type', '=', 'bid')]</field>
+        <field name="domain">[]</field>
         <field name="context">{'search_default_group_project': 1}</field>
     </record>
 

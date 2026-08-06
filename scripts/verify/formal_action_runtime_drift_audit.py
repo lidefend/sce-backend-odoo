@@ -45,15 +45,17 @@ EXPECTED_NON_EMPTY_ACTIONS = {
     "action_sc_legacy_fuel_card_recharge_fact",
     "action_sc_legacy_fuel_card_refuel_fact",
     "action_construction_contract_income_construction",
-    "action_sc_material_inbound",
-    "action_sc_material_rental_in_acceptance",
-    "action_sc_material_rental_return_acceptance",
     "action_sc_construction_diary",
     "action_sc_receipt_income_engineering_progress",
     "action_sc_invoice_input_report_user",
     "action_sc_invoice_registration_user",
     "action_sc_settlement_order_income",
     "action_sc_settlement_order_expense",
+}
+LEGACY_SOURCE_PARITY_ACTIONS = {
+    "action_sc_material_inbound": "入库",
+    "action_sc_material_rental_in_acceptance": "租入",
+    "action_sc_material_rental_return_acceptance": "还租",
 }
 EXPECTED_ACTION_CONTRACTS = {
     "action_construction_contract_income_construction": {
@@ -278,7 +280,7 @@ EXPECTED_ACTION_CONTRACTS = {
         ],
     },
     "action_sc_invoice_input_report_user": {
-        "name": "进项发票",
+        "name": "进项税额上报",
         "res_model": "sc.invoice.registration",
         "view_name": "sc.invoice.registration.input.tax.user.confirmed.tree",
         "field_names": [
@@ -404,6 +406,27 @@ for action_id, spec in sorted(action_records().items()):
     else:
         count_error = "missing_res_model"
 
+    source_count = None
+    source_count_error = None
+    source_label = LEGACY_SOURCE_PARITY_ACTIONS.get(action_id)
+    if source_label:
+        source_model = "sc.legacy.direct.acceptance.fact"
+        if source_model in env:  # noqa: F821
+            try:
+                source_count = int(
+                    env[source_model].sudo().search_count(  # noqa: F821
+                        [
+                            ("source_system", "=", "online_old_legacy_direct"),
+                            ("acceptance_label", "=", source_label),
+                            ("active", "=", True),
+                        ]
+                    )
+                )
+            except Exception as exc:  # pragma: no cover - executed inside Odoo shell
+                source_count_error = f"{type(exc).__name__}: {str(exc)[:240]}"
+        else:
+            source_count_error = "missing_source_model"
+
     tree_bindings = action.view_ids.filtered(lambda item: item.view_mode == "tree").sorted("sequence")
     primary_tree = action.view_id if action.view_id.type == "tree" else (tree_bindings[0].view_id if tree_bindings else False)
     row = {
@@ -414,6 +437,8 @@ for action_id, spec in sorted(action_records().items()):
         "domain": action.domain or "",
         "record_count": count,
         "count_error": count_error,
+        "source_count": source_count,
+        "source_count_error": source_count_error,
         "primary_tree": primary_tree.name if primary_tree else "",
         "field_count": len(tree_field_names(primary_tree)) if primary_tree else 0,
         **spec,
@@ -422,6 +447,10 @@ for action_id, spec in sorted(action_records().items()):
 
     if count_error:
         failures.append({"reason": "domain_count_error", **row})
+    if source_count_error:
+        failures.append({"reason": "source_count_error", **row})
+    if source_count is not None and count is not None and source_count != count:
+        failures.append({"reason": "legacy_source_projection_count_mismatch", **row})
     if action_id in EXPECTED_NON_EMPTY_ACTIONS and count == 0:
         failures.append({"reason": "empty_high_risk_formal_action_domain", **row})
 
