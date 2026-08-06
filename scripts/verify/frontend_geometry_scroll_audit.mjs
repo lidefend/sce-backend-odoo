@@ -422,7 +422,10 @@ try {
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForPage(page);
       const geometry = await inspectGeometry(page);
-      const stickyProof = target.key === 'runtime-list' && viewport.width >= 961 ? await nativeTableStickyProof(page) : null;
+      const desktopTableVisible = target.key === 'runtime-list'
+        ? await page.locator('.desktop-record-table').isVisible().catch(() => false)
+        : false;
+      const stickyProof = desktopTableVisible ? await nativeTableStickyProof(page) : null;
       const screenshot = path.join(OUTPUT_DIR, `${target.key}-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
       rows.push({ target, viewport, geometry, sticky_proof: stickyProof, checks: { ...checksFor(geometry), ...(stickyProof ? { native_table_header_sticky: stickyProof.passed } : {}) }, screenshot });
