@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 AUDIT = ROOT / "scripts" / "verify" / "formal_action_runtime_drift_audit.py"
 FORMAL_LISTS = ROOT / "addons" / "smart_construction_core" / "views" / "support" / "user_confirmed_formal_list_views.xml"
 ALIGNMENT_LISTS = ROOT / "addons" / "smart_construction_core" / "views" / "support" / "user_confirmed_formal_list_alignment_views.xml"
+USER_FEEDBACK_TESTS = ROOT / "addons" / "smart_construction_core" / "tests" / "test_user_feedback_business_views.py"
 
 
 class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
@@ -56,9 +57,19 @@ class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
         )
 
         contract_tree = self._record(FORMAL_LISTS, "view_construction_contract_income_construction_user_confirmed_tree")
+        tree_node = contract_tree.find(".//tree")
+        self.assertIsNotNone(tree_node)
+        self.assertEqual(tree_node.attrib.get("default_order"), "date_contract desc, id desc")
         contract_fields = [field.attrib.get("name") for field in contract_tree.findall(".//tree/field")]
-        self.assertIn("legacy_document_no", contract_fields)
-        self.assertIn("legacy_contract_no", contract_fields)
+        self.assertEqual(contract_fields.count("name"), 1)
+        number_columns = [
+            (field.attrib.get("name"), field.attrib.get("string"))
+            for field in contract_tree.findall(".//tree/field")
+            if field.attrib.get("string") in {"单据编号", "合同编号"}
+        ]
+        self.assertEqual(number_columns, [("name", "单据编号")])
+        self.assertNotIn("legacy_document_no", contract_fields)
+        self.assertNotIn("legacy_contract_no", contract_fields)
 
         receipt_tree = self._record(FORMAL_LISTS, "view_sc_receipt_income_engineering_progress_formal_tree")
         receipt_fields = [field.attrib.get("name") for field in receipt_tree.findall(".//tree/field")]
@@ -99,6 +110,20 @@ class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
         source = AUDIT.read_text(encoding="utf-8")
         self.assertIn("legacy_source_projection_count_mismatch", source)
         self.assertIn('"name": "进项税额上报"', source)
+        self.assertIn("tree_fields_missing_from_registered_model", source)
+        self.assertIn("tree_order_fields_missing_from_registered_model", source)
+
+    def test_contract_feedback_regression_uses_single_formal_number_contract(self) -> None:
+        source = USER_FEEDBACK_TESTS.read_text(encoding="utf-8")
+        self.assertIn("def test_contract_list_exposes_single_formal_number", source)
+        self.assertNotIn("def test_contract_list_exposes_legacy_contract_numbers", source)
+        contract_case = source.split("def test_contract_list_exposes_single_formal_number", 1)[1].split(
+            "def test_legacy_purchase_contract_is_not_business_approval_target", 1
+        )[0]
+        for field_name in ("legacy_contract_no", "legacy_document_no", "legacy_external_contract_no"):
+            self.assertNotIn(f'"{field_name}":', contract_case)
+            self.assertNotIn(f"contract.{field_name}", contract_case)
+            self.assertIn(f'self.assertNotIn("{field_name}", contract._fields)', contract_case)
 
 
 if __name__ == "__main__":

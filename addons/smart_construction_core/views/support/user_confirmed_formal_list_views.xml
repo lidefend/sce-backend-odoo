@@ -314,9 +314,9 @@
         <field name="name">construction.contract.income.construction.user.confirmed.tree</field>
         <field name="model">construction.contract.income</field>
         <field name="arch" type="xml">
-            <tree string="施工合同" create="false" edit="false" delete="false" default_order="legacy_acceptance_sort_id desc, id desc">
+            <tree string="施工合同" create="false" edit="false" delete="false" default_order="date_contract desc, id desc">
                 <field name="document_status" string="单据状态" />
-                <field name="legacy_document_no" string="单据编号" />
+                <field name="name" string="单据编号" />
                 <field name="partner_id" string="发包人" />
                 <field name="company_id" string="承包人" />
                 <field name="project_id" string="项目名称" />
@@ -327,7 +327,6 @@
                 <field name="visible_invoice_unreceived_amount" string="开票未收款" />
                 <field name="visible_unreceived_amount" string="未收款" />
                 <field name="visible_unreceived_rate" string="未收款比例" />
-                <field name="legacy_contract_no" string="合同编号" />
                 <field name="date_contract" string="合同订立日期" />
                 <field name="engineering_address" string="工程地址" />
                 <field name="engineering_content" string="工程内容" />

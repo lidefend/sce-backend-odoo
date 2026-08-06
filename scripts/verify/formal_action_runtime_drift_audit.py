@@ -64,7 +64,7 @@ EXPECTED_ACTION_CONTRACTS = {
         "view_name": "construction.contract.income.construction.user.confirmed.tree",
         "field_names": [
             "document_status",
-            "legacy_document_no",
+            "name",
             "partner_id",
             "company_id",
             "project_id",
@@ -75,7 +75,6 @@ EXPECTED_ACTION_CONTRACTS = {
             "visible_invoice_unreceived_amount",
             "visible_unreceived_amount",
             "visible_unreceived_rate",
-            "legacy_contract_no",
             "date_contract",
             "engineering_address",
             "engineering_content",
@@ -387,6 +386,17 @@ def tree_field_names(view) -> list[str]:
     return [node.get("name") or "" for node in root.iter("field")]
 
 
+def tree_default_order_fields(view) -> list[str]:
+    if not view:
+        return []
+    root = ET.fromstring(view.arch_db.encode("utf-8"))
+    tree = root if root.tag == "tree" else root.find(".//tree")
+    if tree is None:
+        return []
+    order = tree.get("default_order") or ""
+    return [part.strip().split()[0] for part in order.split(",") if part.strip()]
+
+
 rows = []
 failures = []
 for action_id, spec in sorted(action_records().items()):
@@ -429,6 +439,11 @@ for action_id, spec in sorted(action_records().items()):
 
     tree_bindings = action.view_ids.filtered(lambda item: item.view_mode == "tree").sorted("sequence")
     primary_tree = action.view_id if action.view_id.type == "tree" else (tree_bindings[0].view_id if tree_bindings else False)
+    actual_fields = tree_field_names(primary_tree)
+    order_fields = tree_default_order_fields(primary_tree)
+    registered_fields = set(env[action.res_model]._fields) if action.res_model in env else set()  # noqa: F821
+    missing_registered_fields = sorted(set(actual_fields) - registered_fields)
+    missing_registered_order_fields = sorted(set(order_fields) - registered_fields)
     row = {
         "action_xmlid": xmlid,
         "action_id": int(action.id),
@@ -440,7 +455,10 @@ for action_id, spec in sorted(action_records().items()):
         "source_count": source_count,
         "source_count_error": source_count_error,
         "primary_tree": primary_tree.name if primary_tree else "",
-        "field_count": len(tree_field_names(primary_tree)) if primary_tree else 0,
+        "field_count": len(actual_fields),
+        "default_order_fields": order_fields,
+        "missing_registered_fields": missing_registered_fields,
+        "missing_registered_order_fields": missing_registered_order_fields,
         **spec,
     }
     rows.append(row)
@@ -453,10 +471,13 @@ for action_id, spec in sorted(action_records().items()):
         failures.append({"reason": "legacy_source_projection_count_mismatch", **row})
     if action_id in EXPECTED_NON_EMPTY_ACTIONS and count == 0:
         failures.append({"reason": "empty_high_risk_formal_action_domain", **row})
+    if missing_registered_fields:
+        failures.append({"reason": "tree_fields_missing_from_registered_model", **row})
+    if missing_registered_order_fields:
+        failures.append({"reason": "tree_order_fields_missing_from_registered_model", **row})
 
     expected = EXPECTED_ACTION_CONTRACTS.get(action_id)
     if expected:
-        actual_fields = tree_field_names(primary_tree)
         for key in ("name", "res_model"):
             if row[key] != expected[key]:
                 failures.append({"reason": f"wrong_{key}", "expected": expected[key], **row})
