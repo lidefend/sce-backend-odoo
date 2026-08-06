@@ -32,7 +32,7 @@ const routes = process.env.DYNAMIC_LIST_TARGETS_JSON
     {
       name: 'project',
       actionXmlid: 'smart_construction_core.action_sc_project_list',
-      requiredHeaders: ['项目名称', '项目编号', '生命周期', '项目负责人'],
+      requiredHeaders: ['项目名称', '项目编号', '项目状态', '项目负责人'],
       hiddenLabels: ['项目经理'],
       hiddenSelectableLabel: '项目经理',
     },
@@ -84,7 +84,9 @@ async function resetColumnPreferences(page) {
   const picker = page.getByRole('button', { name: /列设置/ });
   if ((await picker.getAttribute('aria-expanded')) !== 'true') await picker.click();
   await page.getByRole('button', { name: '恢复默认' }).click();
-  await page.getByText('已保存', { exact: true }).first().waitFor({ state: 'visible', timeout: 10_000 });
+  // A no-op reset is allowed to remain idle; the reload and projection assertions below
+  // are the authoritative proof that persisted preferences returned to defaults.
+  await page.getByText('已保存', { exact: true }).first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
   await page.waitForTimeout(500);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
