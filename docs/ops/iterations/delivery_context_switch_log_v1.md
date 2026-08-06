@@ -2781,3 +2781,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Outcome: replace the first-twelve-record UI scan with action-contract-driven candidate discovery and form-contract `pageAuth=edit` proof, accept the authoritative runtime save label, and use rendered form semantics instead of global network idleness.
 - Boundary: no frontend product behavior, permission, workflow, API, contract/schema, route authority, module, or business-data change. Daily verification is read-only and does not click save.
 - Validation: negative fixture and acceptance environment guard PASS; daily browser discovery finds 30 enabled controls and “保存修改” with zero console errors; frontend lint/typecheck/build PASS. Restricted remains blocked by the isolated secondary-company snapshot (1/2 profiles), while the full form audit truthfully retains 11 product visual/state failures for the next P0 batch.
+
+## 2026-08-06 — FORMAL-ACTION-RUNTIME-DRIFT-ROOTFIX
+
+- Branch / anchor: `fix/daily-formal-action-runtime-drift` from `4420ca4`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry standard
+  product; L2 native action and list-view release definitions;
+  `smart_construction_core`. The controlled daily upgrade and verification are
+  P4 delivery operations only.
+- Reason / Why Here: seven formal actions were either overwritten by later XML,
+  bound to incomplete columns, filtered with a field absent from their model, or
+  checked against fixture presence instead of their historical source facts.
+  The industry module owns the reproducible action/view defaults and the runtime
+  audit owns source-to-projection validation.
+- Why Not Elsewhere: no frontend workaround, low-code override, customer module,
+  permission change, or business-record repair can make these P1 definitions
+  correct for a fresh install and a repeatable module upgrade.
+- Blast Radius: the construction-contract, engineering-progress receipt,
+  input-tax report, material inbound/rental acceptance, and tender-guarantee
+  formal list actions. Login, `system.init`, `ui.contract`, public routes,
+  workflow semantics, ACLs, and customer data remain unchanged.
+- Upgrade / rollback: upgrade `smart_construction_core` from `17.0.0.77` to
+  `17.0.0.78` through the governed `make mod.upgrade` target. Roll back the
+  source commit and run the same module upgrade; no schema or data migration is
+  introduced.
