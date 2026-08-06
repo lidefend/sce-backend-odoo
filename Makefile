@@ -101,7 +101,7 @@ COMPOSE_FILE_BASE      ?= docker-compose.yml
 COMPOSE_FILE_TESTDEPS  ?= docker-compose.testdeps.yml
 COMPOSE_FILE_CI        ?= docker-compose.ci.yml
 
-COMPOSE_FILES       ?= -f $(COMPOSE_FILE_BASE)
+COMPOSE_FILES       ?= -f $(COMPOSE_FILE_BASE) $(if $(strip $(SC_CUSTOMER_ADDONS_ROOT)),-f docker-compose.customer-addons.yml)
 COMPOSE_TEST_FILES  ?= -f $(COMPOSE_FILE_BASE) -f $(COMPOSE_FILE_TESTDEPS)
 COMPOSE_CI_FILES    ?= -f $(COMPOSE_FILE_BASE) -f $(COMPOSE_FILE_CI)
 

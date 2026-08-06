@@ -1,7 +1,7 @@
 # ======================================================
 # ==================== Guards ==========================
 # ======================================================
-.PHONY: check-compose-project check.compose.project check-compose-env check-external-addons check-odoo-conf diag.project gate.compose.config env.print.db env.matrix.check verify.environment.topology.guard verify.frontend.acceptance.environment.guard verify.daily_dev.runtime_repo.clean verify.daily_dev.acceptance.env.guard
+.PHONY: check-compose-project check.compose.project check-compose-env check-external-addons check-odoo-conf diag.project gate.compose.config env.print.db env.print.compose_files env.matrix.check verify.environment.topology.guard verify.frontend.acceptance.environment.guard verify.daily_dev.customer_addons.runtime verify.daily_dev.runtime_repo.clean verify.daily_dev.acceptance.env.guard
 
 IS_PROD := 0
 ifneq (,$(filter prod,$(ENV)))
@@ -81,6 +81,9 @@ check-compose-env:
 env.print.db:
 	@echo "$(DB_NAME)"
 
+env.print.compose_files:
+	@echo "$(strip $(COMPOSE_FILES))"
+
 env.matrix.check:
 	@set -e; \
 	for env_name in dev test prod; do \
@@ -111,15 +114,21 @@ env.matrix.check:
 	echo "✅ [env.matrix.check] PASS"
 
 verify.environment.topology.guard:
-	@python3 -m py_compile scripts/verify/environment_topology_guard.py
+	@python3 -m py_compile scripts/verify/environment_topology_guard.py scripts/verify/daily_dev_customer_addons_runtime_guard.py
+	@python3 -m unittest scripts.verify.test_daily_dev_customer_addons_runtime_guard
 	@python3 scripts/verify/environment_topology_guard.py
 
 verify.frontend.acceptance.environment.guard:
 	@node scripts/verify/frontend_acceptance_environment_test.mjs
 	@node scripts/verify/frontend_form_editability_discovery_test.mjs
 
+verify.daily_dev.customer_addons.runtime:
+	@python3 -m py_compile scripts/verify/daily_dev_customer_addons_runtime_guard.py
+	@$(RUN_ENV) python3 scripts/verify/daily_dev_customer_addons_runtime_guard.py
+
 verify.daily_dev.runtime_repo.clean:
 	@bash scripts/ops/daily_dev_runtime_repo_guard.sh
+	@$(MAKE) --no-print-directory verify.daily_dev.customer_addons.runtime
 
 verify.daily_dev.acceptance.env.guard:
 	@node scripts/verify/frontend_acceptance_environment_test.mjs

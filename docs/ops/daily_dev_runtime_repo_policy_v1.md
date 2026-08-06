@@ -23,6 +23,22 @@ Before every upgrade or publish step, run:
 ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make verify.daily_dev.runtime_repo.clean
 ```
 
+This preflight also fails closed unless `smart_construction_custom` is
+`installed`, its database version equals the external package manifest, the
+running Odoo container has the configured customer directory mounted read-only
+at `/mnt/customer-addons`, and Odoo resolves the module from that exact path.
+
+Start or recreate the daily Odoo service through the repository entrypoint.
+When `SC_CUSTOMER_ADDONS_ROOT` is configured, Make automatically includes the
+customer overlay; a base-compose-only restart is not a valid daily runtime. The
+explicit equivalent is:
+
+```bash
+ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo \
+COMPOSE_FILES="-f docker-compose.yml -f docker-compose.customer-addons.yml" \
+make restart
+```
+
 If the daily server cannot read GitHub smart HTTP, the approved fallback is an
 exact incremental Git bundle sent over the configured SSH host. It is allowed
 only after the candidate is merged to authoritative `origin/main`:

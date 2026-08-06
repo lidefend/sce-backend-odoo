@@ -61,14 +61,17 @@ REQUIRED_TOKENS = {
         "rsync -av --relative $(cat changed_files.txt) /opt/sce/production/sce-product-odoo/",
     ),
     "makefile": (
-        ".PHONY: check-compose-project check.compose.project check-compose-env check-external-addons check-odoo-conf diag.project gate.compose.config env.print.db env.matrix.check verify.environment.topology.guard verify.frontend.acceptance.environment.guard verify.daily_dev.runtime_repo.clean verify.daily_dev.acceptance.env.guard",
+        ".PHONY: check-compose-project check.compose.project check-compose-env check-external-addons check-odoo-conf diag.project gate.compose.config env.print.db env.print.compose_files env.matrix.check verify.environment.topology.guard verify.frontend.acceptance.environment.guard verify.daily_dev.customer_addons.runtime verify.daily_dev.runtime_repo.clean verify.daily_dev.acceptance.env.guard",
         "python3 scripts/verify/environment_topology_guard.py",
         "verify.environment.topology.guard:",
+        "env.print.compose_files:",
         "verify.daily_dev.runtime_repo.clean:",
+        "verify.daily_dev.customer_addons.runtime:",
         "verify.daily_dev.acceptance.env.guard:",
         "python3 scripts/verify/daily_dev_acceptance_env_guard.py",
         "release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean release.dev.acceptance.publish",
         "bash scripts/ops/daily_dev_runtime_repo_guard.sh",
+        "python3 scripts/verify/daily_dev_customer_addons_runtime_guard.py",
         ".PHONY: verify.production_git.authority.guard",
     ),
 }
