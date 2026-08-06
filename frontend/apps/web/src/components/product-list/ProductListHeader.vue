@@ -139,4 +139,15 @@ defineEmits<{
   .product-list-header__search { min-width: 0; }
   .product-list-header__search :deep(button) { min-width: 44px; min-height: 44px; }
 }
+@media (max-width: 520px) {
+  .product-list-header__tools {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'main'
+      'utility';
+  }
+  .product-list-header__tools :deep(.list-surface-utilities) {
+    justify-self: end;
+  }
+}
 </style>
