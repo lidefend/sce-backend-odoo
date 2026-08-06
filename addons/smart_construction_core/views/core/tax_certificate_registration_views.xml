@@ -41,6 +41,8 @@
                 <field name="prepaid_tax_date" optional="show" />
                 <field name="tax_payment_certificate_no" optional="show" />
                 <field name="handler_id" />
+                <field name="source_created_by" string="录入人" optional="hide" />
+                <field name="source_created_at" string="录入时间" optional="hide" />
                 <field name="state" />
             </tree>
         </field>
@@ -88,6 +90,10 @@
                     <group string="预缴税与完税凭证">
                         <field name="prepaid_tax_date" readonly="state in ('completed', 'cancelled')" />
                         <field name="tax_payment_certificate_no" readonly="state in ('completed', 'cancelled')" />
+                    </group>
+                    <group string="录入来源">
+                        <field name="source_created_by" string="录入人" readonly="1" />
+                        <field name="source_created_at" string="录入时间" readonly="1" />
                     </group>
                     <notebook>
                         <page string="附件">

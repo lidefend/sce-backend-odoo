@@ -42,6 +42,8 @@
                     <field name="source_paid_at" optional="show"/>
                     <field name="source_system" optional="hide"/>
                     <field name="source_execution_count" optional="hide"/>
+                    <field name="source_created_by" string="录入人" optional="show"/>
+                    <field name="source_created_at" string="录入时间" optional="show"/>
                     <field name="execution_blocked" optional="show"/>
                 </tree>
             </field>
@@ -90,6 +92,8 @@
                                 <field name="decision_version"/>
                                 <field name="migration_batch_id"/>
                                 <field name="migration_notice"/>
+                                <field name="source_created_by" string="录入人"/>
+                                <field name="source_created_at" string="录入时间"/>
                             </group>
                         </group>
                     </sheet>

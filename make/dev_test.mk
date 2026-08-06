@@ -1071,8 +1071,12 @@ verify.engineering_progress_income.visible_contract.audit: guard.prod.forbid che
 verify.formal_action.runtime_drift.audit: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) MIGRATION_ARTIFACT_ROOT="$(MIGRATION_ARTIFACT_ROOT)" bash scripts/ops/odoo_shell_exec.sh < scripts/verify/formal_action_runtime_drift_audit.py
 
-.PHONY: verify.user_confirmed.formal_surface.locked
-verify.user_confirmed.formal_surface.locked: guard.prod.forbid verify.formal_product_field_purity verify.formal_surface.transition_field_audit verify.user_formal_field.module_boundary.audit verify.formal_action.runtime_drift.audit verify.engineering_progress_income.visible_contract.audit verify.formal_entry_metadata.audit
+.PHONY: verify.user_confirmed.formal_surface.locked verify.formal_entry_metadata.source_contract
+verify.formal_entry_metadata.source_contract: guard.prod.forbid
+	@python3 scripts/verify/test_formal_entry_metadata_contract_guard.py
+	@python3 scripts/verify/formal_entry_metadata_contract_guard.py
+
+verify.user_confirmed.formal_surface.locked: guard.prod.forbid verify.formal_product_field_purity verify.formal_surface.transition_field_audit verify.user_formal_field.module_boundary.audit verify.formal_action.runtime_drift.audit verify.engineering_progress_income.visible_contract.audit verify.formal_entry_metadata.source_contract verify.formal_entry_metadata.audit
 	@echo "[OK] verify.user_confirmed.formal_surface.locked db=$(DB_NAME)"
 
 .PHONY: verify.input_invoice.visible_surface_alignment.audit
