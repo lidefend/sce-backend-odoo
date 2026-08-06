@@ -29,7 +29,6 @@ export function resolveResponsiveListColumns(options: {
   const enabled = new Set(options.enabledColumns);
   const ordered = options.orderedColumns.filter((field, index, rows) => enabled.has(field) && rows.indexOf(field) === index);
   const visibility = options.visibility || {};
-  const defaults = options.defaultVisibility || {};
   const critical = new Set((options.criticalColumns || []).filter((field) => enabled.has(field)));
   const explicitVisible = new Set(ordered.filter((field) => visibility[field] === true));
   const candidates = new Set((options.responsiveCandidates || ordered).filter((field) => enabled.has(field)));
