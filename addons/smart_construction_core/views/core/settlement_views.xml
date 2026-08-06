@@ -449,14 +449,14 @@
 
         <menuitem id="menu_sc_settlement_order"
                   name="结算单"
-                  parent="smart_construction_core.menu_sc_receipt_payment_group"
+                  parent="menu_sc_settlement_center"
                   action="action_sc_settlement_order"
                   sequence="10"
                   groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_settlement_read,smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_cost_read,smart_construction_core.group_sc_cap_finance_read"/>
 
         <menuitem id="menu_sc_settlement_adjustment"
                   name="结算调整"
-                  parent="smart_construction_core.menu_sc_receipt_payment_group"
+                  parent="menu_sc_settlement_center"
                   action="action_sc_settlement_adjustment"
                   sequence="20"
                   groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_settlement_read,smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_cost_read,smart_construction_core.group_sc_cap_finance_read"/>

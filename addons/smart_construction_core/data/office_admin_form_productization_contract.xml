@@ -19,7 +19,7 @@
                     },
                     'views': {
                         'form': {
-                            'title': '请假/休假审批单',
+                            'title': '请休假审批',
                             'composition_mode': 'entry_semantic_surface',
                             'columns': 2,
                             'sections': [
