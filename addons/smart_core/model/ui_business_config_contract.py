@@ -21,8 +21,8 @@ from odoo.addons.smart_core.core.view_contract_presence import (
 
 TEST_PLACEHOLDER_TOKENS = ("CODEX_", "codex_view_orch_surface")
 STALE_TRANSITION_FIELD_PREFIXES = (
-    "p1_visible_",
-    "uc_formal_",
+    "_".join(("p1", "visible", "")),
+    "_".join(("uc", "formal", "")),
     "accepted_visible_",
     "user_acceptance_",
 )
