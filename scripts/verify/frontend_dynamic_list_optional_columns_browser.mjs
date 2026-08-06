@@ -17,6 +17,8 @@ const routes = process.env.DYNAMIC_LIST_TARGETS_JSON
   : [
     {
       name: 'customer',
+      role: 'config_admin',
+      menuXmlid: 'smart_construction_core.menu_sc_customer_partner',
       actionXmlid: 'smart_construction_core.action_sc_customer_partner',
       requiredHeaders: ['单位名称', '客户类型', '地区', '联系人', '电话', '负责人'],
       hiddenLabels: ['业务角色', '业务事实依据', '来源项目', '来源单据状态', '来源客商编码'],
@@ -24,6 +26,8 @@ const routes = process.env.DYNAMIC_LIST_TARGETS_JSON
     },
     {
       name: 'supplier',
+      role: 'config_admin',
+      menuXmlid: 'smart_construction_core.menu_sc_supplier_partner',
       actionXmlid: 'smart_construction_core.action_sc_supplier_partner',
       requiredHeaders: ['单位名称', '供应商类型', '地区', '联系人', '电话', '负责人'],
       hiddenLabels: ['业务角色', '业务事实依据', '来源项目', '来源单据状态', '来源客商编码'],
@@ -31,6 +35,8 @@ const routes = process.env.DYNAMIC_LIST_TARGETS_JSON
     },
     {
       name: 'project',
+      role: 'project_manager',
+      menuXmlid: 'smart_construction_core.menu_sc_project_project',
       actionXmlid: 'smart_construction_core.action_sc_project_list',
       requiredHeaders: ['项目名称', '项目编号', '项目状态', '项目负责人'],
       hiddenLabels: ['项目经理'],
@@ -45,9 +51,9 @@ const technicalLabel = /^(?:sc_|x_)[a-z0-9_]+$/i;
 const hasChinese = /[\u3400-\u9fff]/;
 const columnChoiceSelector = '.list-surface-column-choice';
 
-async function authenticate(page) {
+async function authenticate(page, targetLogin) {
   await page.goto(`${baseUrl}/login?db=${encodeURIComponent(dbName)}`, { waitUntil: 'domcontentloaded' });
-  await page.locator('input').first().fill(login);
+  await page.locator('input').first().fill(targetLogin);
   await page.locator('input[type="password"]').fill(password);
   if (await page.locator('input').count() >= 3) {
     const dbInput = page.locator('input').nth(2);
@@ -103,8 +109,14 @@ async function inspectTarget(browser, target) {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  await authenticate(page);
-  const released = target.actionXmlid ? await navigation.target(target.actionXmlid) : null;
+  const targetLogin = String(target.login || acceptance.roleBindings[target.role] || login);
+  assert(targetLogin, `${target.name}: acceptance role binding is required`);
+  await authenticate(page, targetLogin);
+  const released = target.menuXmlid
+    ? await navigation.targetByMenuXmlid(target.menuXmlid)
+    : target.actionXmlid
+      ? await navigation.target(target.actionXmlid)
+      : null;
   const route = String(target.route || (released ? `/a/${released.action_id}?menu_id=${released.menu_id}` : '')).trim();
   assert(route, `${target.name}: governed navigation route is required`);
   await page.goto(`${baseUrl}${route}`, { waitUntil: 'domcontentloaded' });

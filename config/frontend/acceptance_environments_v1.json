@@ -11,7 +11,7 @@
       "allowed_operations": ["readonly", "simulated-write", "isolated-write", "managed-service"],
       "fixture_required_for_write": true,
       "credential_env": {"login": "E2E_LOGIN", "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"},
-      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator"}
+      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator", "config_admin": "fixture_role_config_admin"}
     },
     "test": {
       "environment": "test",
@@ -21,7 +21,7 @@
       "allowed_operations": ["readonly", "simulated-write", "isolated-write", "managed-service"],
       "fixture_required_for_write": true,
       "credential_env": {"login": "E2E_LOGIN", "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"},
-      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator"}
+      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator", "config_admin": "fixture_role_config_admin"}
     },
     "daily": {
       "environment": "dev",
