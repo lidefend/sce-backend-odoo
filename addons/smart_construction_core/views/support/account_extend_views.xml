@@ -51,6 +51,19 @@
                 <field name="sc_account_name" optional="hide" />
                 <field name="street" string="地址" optional="hide" />
                 <field name="sc_business_scope" optional="hide" />
+                <field name="sc_business_role_label" string="业务角色" optional="hide" />
+                <field name="sc_business_fact_basis" string="业务事实依据" optional="hide" />
+                <field name="sc_source_project_name" string="来源项目" optional="hide" />
+                <field name="sc_source_receipt_amount" string="来源收款金额" optional="hide" />
+                <field name="sc_source_payment_amount" string="来源付款金额" optional="hide" />
+                <field name="sc_source_document_state" string="来源单据状态" optional="hide" />
+                <field name="sc_source_push_result" string="来源推送结果" optional="hide" />
+                <field name="sc_source_partner_code" string="来源客商编码" optional="hide" />
+                <field name="sc_source_cooperation_type" string="来源合作类型" optional="hide" />
+                <field name="sc_source_created_by" string="来源创建人" optional="hide" />
+                <field name="sc_source_created_at" string="来源创建时间" optional="hide" />
+                <field name="sc_source_fact_count" string="关联业务数" optional="hide" />
+                <field name="sc_source_fact_source" string="业务来源" optional="hide" />
             </tree>
         </field>
     </record>
@@ -211,6 +224,19 @@
                 <field name="sc_account_name" optional="hide" />
                 <field name="street" string="地址" optional="hide" />
                 <field name="sc_business_scope" optional="hide" />
+                <field name="sc_business_role_label" string="业务角色" optional="hide" />
+                <field name="sc_business_fact_basis" string="业务事实依据" optional="hide" />
+                <field name="sc_source_project_name" string="来源项目" optional="hide" />
+                <field name="sc_source_receipt_amount" string="来源收款金额" optional="hide" />
+                <field name="sc_source_payment_amount" string="来源付款金额" optional="hide" />
+                <field name="sc_source_document_state" string="来源单据状态" optional="hide" />
+                <field name="sc_source_push_result" string="来源推送结果" optional="hide" />
+                <field name="sc_source_partner_code" string="来源客商编码" optional="hide" />
+                <field name="sc_source_cooperation_type" string="来源合作类型" optional="hide" />
+                <field name="sc_source_created_by" string="来源创建人" optional="hide" />
+                <field name="sc_source_created_at" string="来源创建时间" optional="hide" />
+                <field name="sc_source_fact_count" string="关联业务数" optional="hide" />
+                <field name="sc_source_fact_source" string="业务来源" optional="hide" />
             </tree>
         </field>
     </record>

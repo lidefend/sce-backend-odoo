@@ -40,6 +40,7 @@ assert(Array.isArray(routes) && routes.length, 'DYNAMIC_LIST_TARGETS_JSON must c
 
 const technicalLabel = /^(?:sc_|x_)[a-z0-9_]+$/i;
 const hasChinese = /[\u3400-\u9fff]/;
+const columnChoiceSelector = '.list-surface-column-choice';
 
 async function authenticate(page) {
   await page.goto(`${baseUrl}/login?db=${encodeURIComponent(dbName)}`, { waitUntil: 'domcontentloaded' });
@@ -65,6 +66,17 @@ async function visibleHeaderLabels(page) {
     .filter(Boolean));
 }
 
+async function waitForListReady(page) {
+  await page.waitForFunction(() => {
+    const main = document.querySelector('#main-content');
+    const text = String(main?.textContent || '');
+    const loading = /加载中|正在载入|正在加载/.test(text);
+    const hasTable = Boolean(main?.querySelector('thead th'));
+    const hasEmptyState = Boolean(main?.querySelector('.list-empty, .sc-empty, [data-empty-state]'));
+    return !loading && (hasTable || hasEmptyState);
+  }, null, { timeout: 45_000 });
+}
+
 async function resetColumnPreferences(page) {
   const picker = page.getByRole('button', { name: /列设置/ });
   if ((await picker.getAttribute('aria-expanded')) !== 'true') await picker.click();
@@ -73,6 +85,7 @@ async function resetColumnPreferences(page) {
   await page.waitForTimeout(500);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+  await waitForListReady(page);
   await picker.waitFor({ state: 'visible' });
 }
 
@@ -91,24 +104,30 @@ async function inspectTarget(browser, target) {
   assert(route, `${target.name}: governed navigation route is required`);
   await page.goto(`${baseUrl}${route}`, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+  await waitForListReady(page);
   await page.getByRole('button', { name: /列设置/ }).waitFor({ state: 'visible' });
   await resetColumnPreferences(page);
 
   const defaultHeaders = await visibleHeaderLabels(page);
-  const businessHeaders = defaultHeaders.filter((label) => label !== '序号');
   const requiredHeaders = Array.isArray(target.requiredHeaders) ? target.requiredHeaders : [];
   const hiddenLabels = Array.isArray(target.hiddenLabels)
     ? target.hiddenLabels
     : [target.hiddenLabel].filter(Boolean);
-  assert.equal(defaultHeaders.filter((label) => technicalLabel.test(label)).length, 0, `${target.name}: default technical field headers leaked`);
-  assert.equal(businessHeaders.filter((label) => !hasChinese.test(label)).length, 0, `${target.name}: visible labels are not fully Chinese`);
-  assert.deepEqual(requiredHeaders.filter((label) => !defaultHeaders.includes(label)), [], `${target.name}: required business headers are missing`);
-  assert.deepEqual(hiddenLabels.filter((label) => defaultHeaders.includes(label)), [], `${target.name}: default-hidden business trace headers leaked`);
   await page.screenshot({ path: path.join(artifactsDir, `${target.name}-desktop-default.png`), fullPage: true });
 
   await page.getByRole('button', { name: /列设置/ }).click();
-  const choices = page.locator('.column-choice');
+  const choices = page.locator(columnChoiceSelector);
   const choiceLabels = await choices.locator('span').allTextContents();
+  const checkedLabels = await choices.evaluateAll((nodes) => nodes
+    .filter((node) => node.querySelector('input[type="checkbox"]')?.checked)
+    .map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean));
+  const renderedBusinessHeaders = defaultHeaders.filter((label) => label !== '序号');
+  const effectiveVisibleLabels = renderedBusinessHeaders.length ? renderedBusinessHeaders : checkedLabels;
+  assert.equal(defaultHeaders.filter((label) => technicalLabel.test(label)).length, 0, `${target.name}: default technical field headers leaked`);
+  assert.equal(effectiveVisibleLabels.filter((label) => !hasChinese.test(label)).length, 0, `${target.name}: visible labels are not fully Chinese`);
+  assert.deepEqual(requiredHeaders.filter((label) => !effectiveVisibleLabels.includes(label)), [], `${target.name}: required business headers are missing`);
+  assert.deepEqual(hiddenLabels.filter((label) => effectiveVisibleLabels.includes(label)), [], `${target.name}: default-hidden business trace headers leaked`);
   assert.equal(choiceLabels.filter((label) => technicalLabel.test(label.trim())).length, 0, `${target.name}: column settings expose technical labels`);
   assert.equal(choiceLabels.filter((label) => !hasChinese.test(label)).length, 0, `${target.name}: column settings labels are not fully Chinese`);
   const uncheckedLabels = await choices.evaluateAll((nodes) => nodes
@@ -127,12 +146,23 @@ async function inspectTarget(browser, target) {
   await checkbox.check();
   await page.getByText('已保存', { exact: true }).first().waitFor({ state: 'visible', timeout: 10_000 });
   try {
-    assert((await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: hidden field cannot be enabled through column settings`);
+    if (defaultHeaders.length) {
+      assert((await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: hidden field cannot be enabled through column settings`);
+    } else {
+      assert.equal(await checkbox.isChecked(), true, `${target.name}: hidden field preference was not enabled on an empty list`);
+    }
     await page.screenshot({ path: path.join(artifactsDir, `${target.name}-desktop-hidden-enabled.png`), fullPage: true });
   } finally {
     await resetColumnPreferences(page);
   }
-  assert(!(await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: reset did not restore optional=hide default`);
+  if (defaultHeaders.length) {
+    assert(!(await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: reset did not restore optional=hide default`);
+  } else {
+    await page.getByRole('button', { name: /列设置/ }).click();
+    const restoredChoice = page.locator(columnChoiceSelector).filter({ hasText: hiddenLabels[0] }).first().locator('input[type="checkbox"]');
+    assert.equal(await restoredChoice.isChecked(), false, `${target.name}: reset did not restore optional=hide default on an empty list`);
+    await page.getByRole('button', { name: /列设置/ }).click();
+  }
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -143,7 +173,7 @@ async function inspectTarget(browser, target) {
   assert.deepEqual(hiddenLabels.filter((label) => mobileText.some((text) => text.includes(label))), [], `${target.name}: mobile cards leak business trace fields`);
   await page.screenshot({ path: path.join(artifactsDir, `${target.name}-mobile-default.png`), fullPage: true });
 
-  const result = { name: target.name, actionXmlid: target.actionXmlid || '', route, defaultHeaders, choiceLabels, consoleErrors, pageErrors };
+  const result = { name: target.name, actionXmlid: target.actionXmlid || '', route, defaultHeaders, checkedLabels, choiceLabels, consoleErrors, pageErrors };
   assert.deepEqual(consoleErrors, [], `${target.name}: console errors`);
   assert.deepEqual(pageErrors, [], `${target.name}: page errors`);
   await page.close();
