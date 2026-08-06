@@ -91,6 +91,11 @@ async function login(page, role) {
   }
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
   await page.waitForFunction(() => !(document.body.innerText || '').includes('正在初始化'), null, { timeout: 45000 });
+  await page.waitForFunction(
+    () => !/正在加载(?:场景|页面|列表)/.test(document.body.innerText || ''),
+    null,
+    { timeout: 45000 },
+  );
 }
 
 fs.mkdirSync(path.join(OUTPUT_DIR, 'screenshots'), { recursive: true });
