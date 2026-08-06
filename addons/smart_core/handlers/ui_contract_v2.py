@@ -253,13 +253,25 @@ class UiContractV2Handler(BaseIntentHandler):
             label_maps = LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL
         label_map = label_maps.get(model_key, {}) if isinstance(label_maps.get(model_key), dict) else {}
         business_label = label_map.get(field_name)
-        model_field_label = ""
+        model_field_labels: set[str] = set()
         if business_label:
             try:
-                model_field = self.env[model_key]._fields.get(field_name) if model_key in self.env else None
+                model_recordset = self.env[model_key] if model_key in self.env else None
+                model_field = model_recordset._fields.get(field_name) if model_recordset else None
             except Exception:
+                model_recordset = None
                 model_field = None
-            model_field_label = str(getattr(model_field, "string", "") or "").strip()
+            raw_model_field_label = str(getattr(model_field, "string", "") or "").strip()
+            if raw_model_field_label:
+                model_field_labels.add(raw_model_field_label)
+            if model_recordset is not None and label and label not in model_field_labels:
+                try:
+                    translated_field = model_recordset.fields_get([field_name]).get(field_name, {})
+                except Exception:
+                    translated_field = {}
+                translated_label = str(translated_field.get("string") or "").strip()
+                if translated_label:
+                    model_field_labels.add(translated_label)
         if not business_label:
             try:
                 has_model = bool(model_key in self.env)
@@ -280,7 +292,7 @@ class UiContractV2Handler(BaseIntentHandler):
             not label
             or label == field_name
             or label.startswith("历史验收可见字段")
-            or (model_field_label and label == model_field_label)
+            or label in model_field_labels
         ):
             return business_label
         return label
