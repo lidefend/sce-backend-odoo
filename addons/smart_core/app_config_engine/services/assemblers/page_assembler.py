@@ -178,8 +178,16 @@ class PageAssembler:
             _logger.warning("Action %s has no res_model, returning diagnostic contract", action.get('id') if action else 'unknown')
             return ClientUrlReportAssembler(self.env).assemble_diagnostic_contract(p, action, issue="动作未配置模型 (res_model)")
 
-        env = self.env
-        su = self.su_env
+        # Page assembly is a runtime read path.  Every metadata generator must
+        # return a transient projection here; otherwise concurrent page loads
+        # can update the same app.*.config rows and make unrelated user writes
+        # fail at transaction commit with a serialization error.
+        projection_context = dict(self.env.context or {})
+        projection_context["contract_projection_readonly"] = True
+        env = self.env(context=projection_context)
+        su_context = dict(self.su_env.context or {})
+        su_context["contract_projection_readonly"] = True
+        su = self.su_env(context=su_context)
         action = action or self._resolve_action_from_payload(p, model)
         view_types = self._include_configured_orchestrated_view_types(
             p.get("view_types"),

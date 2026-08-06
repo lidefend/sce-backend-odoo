@@ -462,6 +462,9 @@ FILE_UPLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.reques
 FILE_DOWNLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.request"]
 
 LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
+    "project.project": {
+        "name": "项目名称",
+    },
     "res.partner": {
         "sc_business_role_label": "业务角色",
         "sc_business_fact_basis": "业务事实依据",
