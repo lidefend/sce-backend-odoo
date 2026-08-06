@@ -561,6 +561,11 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
     const factColumns = Array.isArray(rawProfile.fact_columns)
       ? rawProfile.fact_columns.map((item) => String(item || '').trim()).filter(Boolean)
       : [];
+    const crossDeviceCriticalColumns = Array.isArray(rawProfile.cross_device_critical_columns)
+      ? rawProfile.cross_device_critical_columns
+          .map((item) => String(item || '').trim())
+          .filter(Boolean)
+      : [];
     const columnLabels: Record<string, string> = {};
     Object.entries((rawProfile.column_labels || {}) as Dict).forEach(([name, labelRaw]) => {
       const label = String(labelRaw || '').trim();
@@ -629,12 +634,13 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         ? rawPreferencePolicy.must_request_columns.map((item) => String(item || '').trim()).filter(Boolean)
         : [],
     };
-    if (!columns.length && !Object.keys(columnLabels).length && !rowPrimary && !rowSecondary && !statusField && !metricFields.length && !Object.keys(rawBatchPolicy).length && !Object.keys(rawGrouping).length) {
+    if (!columns.length && !crossDeviceCriticalColumns.length && !Object.keys(columnLabels).length && !rowPrimary && !rowSecondary && !statusField && !metricFields.length && !Object.keys(rawBatchPolicy).length && !Object.keys(rawGrouping).length) {
       return null;
     }
     return {
       columns,
       fact_columns: factColumns,
+      cross_device_critical_columns: crossDeviceCriticalColumns,
       hidden_columns: hiddenColumns,
       column_labels: columnLabels,
       preference_policy: preferencePolicy,

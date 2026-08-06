@@ -217,9 +217,14 @@
         </div>
         <div class="topbar-actions">
           <div v-if="showRecordContext" class="topbar-scope" :aria-label="`当前公司和${recordContextSubject}`">
-            <button type="button" title="切换公司" @click="openWorkspacePanel('company')">{{ currentCompanyLabel || '全部公司' }}</button>
-            <span aria-hidden="true">/</span>
-            <button type="button" :title="switchRecordContextLabel" @click="openWorkspacePanel('project')">{{ currentProjectLabel }}</button>
+            <button type="button" :title="`切换公司：${currentCompanyLabel || '全部公司'}`" :aria-label="`切换公司：${currentCompanyLabel || '全部公司'}`" @click="openWorkspacePanel('company')">
+              <ScIcon name="building" :size="16" />
+              <span class="topbar-scope-label">{{ currentCompanyLabel || '全部公司' }}</span>
+            </button>
+            <button type="button" :title="`${switchRecordContextLabel}：${currentProjectLabel}`" :aria-label="`${switchRecordContextLabel}：${currentProjectLabel}`" @click="openWorkspacePanel('project')">
+              <ScIcon name="project" :size="16" />
+              <span class="topbar-scope-label">{{ currentProjectLabel }}</span>
+            </button>
           </div>
           <div class="topbar-account" @click.stop>
             <button
@@ -227,6 +232,8 @@
               class="topbar-context topbar-context-trigger"
               type="button"
               aria-haspopup="true"
+              :aria-label="`账户与岗位：${roleLabel}`"
+              :title="`账户与岗位：${roleLabel}`"
               :aria-expanded="roleContextOpen"
               aria-controls="role-context-panel"
               @click="toggleRoleContext"

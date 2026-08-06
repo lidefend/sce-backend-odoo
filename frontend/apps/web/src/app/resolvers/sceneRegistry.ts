@@ -46,6 +46,7 @@ export interface SceneListProfile {
   row_secondary?: string;
   show_row_number?: boolean;
   status_field?: string;
+  cross_device_critical_columns?: string[];
   metric_fields?: string[];
   batch_policy?: {
     enabled?: boolean;

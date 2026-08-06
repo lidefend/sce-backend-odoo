@@ -524,6 +524,9 @@ LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
 }
 
 BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
+    "project.project": {
+        "critical": ["name", "project_code", "lifecycle_state", "user_id"],
+    },
     "res.partner": {
         "visible": [
             "name",

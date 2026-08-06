@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Any
+
+from lxml import etree as ET
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
@@ -17,6 +20,14 @@ from odoo.addons.smart_core.core.view_contract_presence import (
 )
 
 TEST_PLACEHOLDER_TOKENS = ("CODEX_", "codex_view_orch_surface")
+STALE_TRANSITION_FIELD_PREFIXES = (
+    "p1_visible_",
+    "uc_formal_",
+    "accepted_visible_",
+    "user_acceptance_",
+)
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -247,6 +258,162 @@ class UIBusinessConfigContract(models.Model):
                 add_ref(view_type, key, spec.get(key))
         return sorted(set(unknown))
 
+    @classmethod
+    def _view_orchestration_rows(cls, payload: dict, requested_view_type: str) -> list[dict[str, str]]:
+        orchestration = payload.get("view_orchestration") if isinstance(payload, dict) else {}
+        views = orchestration.get("views") if isinstance(orchestration, dict) and isinstance(orchestration.get("views"), dict) else {}
+        normalized = normalize_contract_view_type(requested_view_type)
+        spec = views.get(normalized) if isinstance(views.get(normalized), dict) else {}
+        if normalized == "tree" and not spec:
+            spec = views.get("list") if isinstance(views.get("list"), dict) else {}
+        rows = spec.get("columns") if normalized == "tree" and isinstance(spec.get("columns"), list) else spec.get("fields")
+        if not isinstance(rows, list):
+            return []
+        normalized_rows: list[dict[str, str]] = []
+        for row in rows:
+            if isinstance(row, str):
+                name = cls._simple_view_orchestration_field_name(row)
+                label = ""
+            elif isinstance(row, dict):
+                name = cls._simple_view_orchestration_field_name(
+                    row.get("name") or row.get("field") or row.get("field_name")
+                )
+                label = str(row.get("label") or row.get("string") or row.get("display_label") or "").strip()
+            else:
+                continue
+            if name:
+                normalized_rows.append({"name": name, "label": label})
+        return normalized_rows
+
+    @api.model
+    def _authoritative_action_view_columns(
+        self,
+        model_name: str,
+        *,
+        action_id: int = 0,
+        view_id: int = 0,
+    ) -> list[dict[str, str]]:
+        if not model_name or model_name not in self.env:
+            return []
+        resolved_view_id = int(view_id or 0)
+        if not resolved_view_id and action_id and "ir.actions.act_window" in self.env:
+            action = self.env["ir.actions.act_window"].sudo().browse(int(action_id))
+            if action.exists():
+                action_views = action.view_ids.filtered(lambda row: row.view_mode in ("tree", "list")).sorted("sequence")
+                candidate = action_views[:1].view_id if action_views else action.view_id
+                if candidate and candidate.type in ("tree", "list"):
+                    resolved_view_id = int(candidate.id or 0)
+        try:
+            Model = self.env[model_name].sudo().with_context(
+                contract_projection_readonly=True,
+                contract_action_id=int(action_id or 0),
+                contract_view_id=resolved_view_id,
+            )
+            if hasattr(Model, "get_view"):
+                view_def = Model.get_view(view_id=resolved_view_id or None, view_type="tree")
+            else:
+                view_def = Model.fields_view_get(view_id=resolved_view_id or None, view_type="tree", toolbar=False)
+            root = ET.fromstring(str((view_def or {}).get("arch") or ""))
+        except Exception:
+            _logger.exception(
+                "RUNTIME_VIEW_CONTRACT_DIAGNOSTIC reason_code=authoritative_view_unavailable model=%s action_id=%s view_id=%s",
+                model_name,
+                int(action_id or 0),
+                resolved_view_id,
+            )
+            return []
+        columns: list[dict[str, str]] = []
+        for node in root.iter("field"):
+            name = self._simple_view_orchestration_field_name(node.get("name"))
+            if not name or any(row["name"] == name for row in columns):
+                continue
+            field = self.env[model_name]._fields.get(name)
+            label = str(node.get("string") or getattr(field, "string", "") or "").strip()
+            columns.append({"name": name, "label": label})
+        return columns
+
+    @api.model
+    def _runtime_contract_validation(
+        self,
+        contract,
+        *,
+        requested_view_type: str,
+        action_id: int = 0,
+        view_id: int = 0,
+        model_name: str = "",
+    ) -> dict[str, Any]:
+        model_name = str(model_name or (contract.model if hasattr(contract, "model") else "")).strip()
+        payload = contract.contract_json if isinstance(getattr(contract, "contract_json", None), dict) else {}
+        normalized = self._normalize_view_orchestration_view_type(requested_view_type)
+        rows = self._view_orchestration_rows(payload, normalized)
+        reasons: list[dict[str, Any]] = []
+        if model_name not in self.env:
+            reasons.append({"reason_code": "runtime_model_unavailable", "model": model_name})
+            model_fields = {}
+        else:
+            model_fields = self.env[model_name]._fields
+        names = [row["name"] for row in rows]
+        referenced_values: list[str] = []
+
+        def collect_references(value) -> None:
+            if isinstance(value, dict):
+                for nested in value.values():
+                    collect_references(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_references(nested)
+            elif isinstance(value, str):
+                candidate = self._simple_view_orchestration_field_name(value)
+                if candidate:
+                    referenced_values.append(candidate)
+
+        collect_references(payload.get("view_orchestration"))
+        stale = sorted({name for name in referenced_values if name.startswith(STALE_TRANSITION_FIELD_PREFIXES)})
+        if stale:
+            reasons.append({"reason_code": "historical_stale_alias", "fields": stale})
+        unknown_paths = self._unknown_view_orchestration_fields(payload, model_fields)
+        unknown = sorted({path.rsplit(":", 1)[-1] for path in unknown_paths})
+        if unknown:
+            reasons.append({"reason_code": "runtime_unknown_columns", "fields": unknown})
+        unlabeled = []
+        for row in rows:
+            field = model_fields.get(row["name"]) if model_fields else None
+            label = str(row["label"] or getattr(field, "string", "") or "").strip()
+            if not label or label == row["name"] or label.startswith(STALE_TRANSITION_FIELD_PREFIXES):
+                unlabeled.append(row["name"])
+        if unlabeled:
+            reasons.append({"reason_code": "runtime_unlabeled_columns", "fields": unlabeled})
+        authoritative: list[dict[str, str]] = []
+        effective_action_id = int(action_id or getattr(getattr(contract, "action_id", None), "id", 0) or 0)
+        effective_view_id = int(view_id or getattr(getattr(contract, "view_id", None), "id", 0) or 0)
+        if normalized == "tree" and (effective_action_id or effective_view_id):
+            authoritative = self._authoritative_action_view_columns(
+                model_name,
+                action_id=effective_action_id,
+                view_id=effective_view_id,
+            )
+            authoritative_names = [row["name"] for row in authoritative]
+            if not authoritative_names:
+                reasons.append({"reason_code": "authoritative_view_unavailable"})
+            else:
+                positions = [authoritative_names.index(name) for name in names if name in authoritative_names]
+                nonmembers = [name for name in names if name not in authoritative_names]
+                if nonmembers:
+                    reasons.append({"reason_code": "runtime_columns_not_in_authoritative_view", "fields": nonmembers})
+                if positions != sorted(positions):
+                    reasons.append({"reason_code": "runtime_columns_order_drift"})
+        return {
+            "valid": not reasons,
+            "reason_codes": [row["reason_code"] for row in reasons],
+            "reasons": reasons,
+            "fields": names,
+            "authoritative_fields": [row["name"] for row in authoritative],
+            "view_type": normalized,
+            "model": model_name,
+            "action_id": effective_action_id,
+            "view_id": effective_view_id,
+        }
+
     @api.constrains("contract_json", "model")
     def _check_contract_json(self):
         for rec in self:
@@ -318,6 +485,31 @@ class UIBusinessConfigContract(models.Model):
                 target_field = str(action.get("field") or "").strip()
                 if target_obj and target_field and target_obj in object_fields_map and target_field not in object_fields_map[target_obj]:
                     raise ValidationError("规则动作引用不存在字段：%s.%s" % (target_obj, target_field))
+
+    @api.constrains("contract_json", "model", "view_type", "action_id", "view_id", "active", "status")
+    def _check_published_runtime_contract(self):
+        for rec in self:
+            if not rec.active or rec.status != "published":
+                continue
+            payload = rec.contract_json if isinstance(rec.contract_json, dict) else {}
+            orchestration = payload.get("view_orchestration") if isinstance(payload.get("view_orchestration"), dict) else {}
+            views = orchestration.get("views") if isinstance(orchestration.get("views"), dict) else {}
+            requested_types = list(views) or [rec.view_type or "form"]
+            failures = []
+            for requested_type in requested_types:
+                validation = rec._runtime_contract_validation(
+                    rec,
+                    requested_view_type=requested_type,
+                    action_id=int(rec.action_id.id or 0),
+                    view_id=int(rec.view_id.id or 0),
+                    model_name=rec.model,
+                )
+                if not validation["valid"]:
+                    failures.extend(validation["reason_codes"])
+            if failures:
+                raise ValidationError(
+                    "发布配置未通过正式视图合同校验：%s" % ", ".join(sorted(set(failures)))
+                )
 
     @api.constrains("model", "action_id", "view_id")
     def _check_view_scope(self):
@@ -446,7 +638,30 @@ class UIBusinessConfigContract(models.Model):
                 return False
             return True
 
-        effective = [ViewOrchestrationContractProjection.from_record(contract) for contract in records if applies(contract)]
+        effective = []
+        for contract in records:
+            if not applies(contract):
+                continue
+            validation = self._runtime_contract_validation(
+                contract,
+                requested_view_type=normalized_view_type or contract.view_type or "form",
+                action_id=int(action_id or 0),
+                view_id=int(view_id or 0),
+                model_name=model_name,
+            )
+            if not validation["valid"]:
+                _logger.warning(
+                    "RUNTIME_VIEW_CONTRACT_DIAGNOSTIC reason_code=contract_rejected contract_id=%s contract_name=%s model=%s action_id=%s view_id=%s view_type=%s reason_codes=%s",
+                    int(contract.id or 0),
+                    contract.name,
+                    model_name,
+                    validation["action_id"],
+                    validation["view_id"],
+                    validation["view_type"],
+                    ",".join(validation["reason_codes"]),
+                )
+                continue
+            effective.append(ViewOrchestrationContractProjection.from_record(contract))
 
         preview_token = str(self.env.context.get("business_config_preview_token") or "").strip()
         preview_user_id = int(self.env.context.get("business_config_preview_user_id") or 0)
@@ -473,6 +688,23 @@ class UIBusinessConfigContract(models.Model):
                         if item.view_id and int(item.view_id) != int(view_id or 0):
                             continue
                         if item.role_key and str(item.role_key or "").strip() != requested_role:
+                            continue
+                        validation = self._runtime_contract_validation(
+                            preview_projection,
+                            requested_view_type=normalized_view_type or item.view_type or "form",
+                            action_id=int(action_id or 0),
+                            view_id=int(view_id or 0),
+                            model_name=model_name,
+                        )
+                        if not validation["valid"]:
+                            _logger.warning(
+                                "RUNTIME_VIEW_CONTRACT_DIAGNOSTIC reason_code=preview_contract_rejected model=%s action_id=%s view_id=%s view_type=%s reason_codes=%s",
+                                model_name,
+                                validation["action_id"],
+                                validation["view_id"],
+                                validation["view_type"],
+                                ",".join(validation["reason_codes"]),
+                            )
                             continue
                         effective = [contract for contract in effective if contract.id != item.target_contract_id.id]
                         effective.append(preview_projection)

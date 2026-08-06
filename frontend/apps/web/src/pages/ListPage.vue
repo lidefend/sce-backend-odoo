@@ -2,6 +2,7 @@
   <section
     class="page sc-page sc-product-workspace-stack"
     data-product-page-mode="list"
+    :data-list-status="status"
   >
     <ScPageHeader
       v-if="status === 'error'"
@@ -30,18 +31,30 @@
       :on-retry="onReload"
     />
     <template v-else-if="status === 'empty'">
-      <ProductListHeader
+      <ListSurfaceHeader
         :loading="loading"
-        :show-search="showPlainSearch"
+        :show-search="showFallbackPlainSearch"
         :search-value="plainSearchDraft"
         :search-label="uiLabel('search_submit', '搜索')"
         :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
+        :columns="columnChoices"
+        :visible-columns="enabledColumns"
+        :last-visible-column="lastVisibleColumnName"
+        :save-status="columnSaveStatus"
+        :save-status-text="columnSaveStatusText"
+        :show-fallback-create="canCreateRecord && !hasToolbarSlot"
+        :create-label="createLabelText"
         @search-input="onPlainSearchInput"
         @search-submit="submitPlainSearch"
         @search-clear="clearPlainSearch"
         @composition-start="plainSearchComposing = true"
         @composition-end="onPlainSearchCompositionEnd"
-      ><slot name="toolbar"></slot></ProductListHeader>
+        @column-visibility-change="onColumnVisibilityToggle"
+        @column-reset="resetColumnVisibility"
+        @create="onCreate"
+      >
+        <slot name="toolbar"></slot>
+      </ListSurfaceHeader>
       <ScEmptyState :title="emptyStateTitle" :description="emptyStateMessage">
         <template #actions>
           <ScButton
@@ -51,14 +64,6 @@
             @click="clearActiveConditions"
           >
             清除查询条件
-          </ScButton>
-          <ScButton
-            v-else-if="canCreateRecord"
-            variant="primary"
-            :disabled="loading"
-            @click="onCreate"
-          >
-            {{ createLabelText }}
           </ScButton>
           <ScButton variant="secondary" :disabled="loading" @click="onReload">
             {{ uiLabel('empty_retry', '刷新') }}
@@ -72,41 +77,51 @@
       </section>
     </template>
     <template v-else>
-      <ProductListHeader
+      <ListSurfaceHeader
         :loading="loading"
-        :show-search="showPlainSearch"
+        :show-search="showFallbackPlainSearch"
         :search-value="plainSearchDraft"
         :search-label="uiLabel('search_submit', '搜索')"
         :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
+        :columns="columnChoices"
+        :visible-columns="enabledColumns"
+        :last-visible-column="lastVisibleColumnName"
+        :save-status="columnSaveStatus"
+        :save-status-text="columnSaveStatusText"
+        :contextual="showBatchBar"
+        :show-fallback-create="canCreateRecord && !hasToolbarSlot"
+        :create-label="createLabelText"
         @search-input="onPlainSearchInput"
         @search-submit="submitPlainSearch"
         @search-clear="clearPlainSearch"
         @composition-start="plainSearchComposing = true"
         @composition-end="onPlainSearchCompositionEnd"
-      ><slot name="toolbar"></slot></ProductListHeader>
+        @column-visibility-change="onColumnVisibilityToggle"
+        @column-reset="resetColumnVisibility"
+        @create="onCreate"
+      >
+        <slot name="toolbar"></slot>
+        <template #contextual>
+          <section class="batch-bar sc-product-feedback-layer">
+            <span>{{ uiLabel('selected_count', '已选 {count} 条', { count: selectedCount }) }}</span>
+            <button v-for="(action, actionIndex) in selectionActions" :key="`selection-action-${action.key}`" type="button" class="batch-action" :class="{ 'batch-action--secondary': actionIndex > 0 }" :disabled="loading || !selectedCount || !action.enabled" :title="action.hint || ''" @click="runSelectionAction(action.key)">{{ action.label }}</button>
+            <div v-if="selectionActions.length > 1" ref="batchOverflowRoot" class="batch-overflow">
+              <button type="button" class="batch-overflow-toggle" :disabled="loading" :aria-expanded="batchOverflowOpen" :aria-label="uiLabel('more_batch_actions', '更多批量操作')" :title="uiLabel('more_batch_actions', '更多批量操作')" @click.stop="batchOverflowOpen = !batchOverflowOpen" @keydown.esc="batchOverflowOpen = false"><ScIcon name="menu" :size="18" /></button>
+              <div v-if="batchOverflowOpen" class="batch-overflow-menu" :aria-label="uiLabel('more_batch_actions', '更多批量操作')">
+                <button v-for="action in selectionActions.slice(1)" :key="`selection-overflow-${action.key}`" type="button" :disabled="loading || !selectedCount || !action.enabled" :title="action.hint || ''" @click="runSelectionAction(action.key)">{{ action.label }}</button>
+              </div>
+            </div>
+            <button type="button" class="ghost" :disabled="loading" @click="clearSelection">{{ uiLabel('clear', '取消选择') }}</button>
+            <span v-if="selectedCount > 0 && batchMessage" class="batch-message">{{ batchMessage }}</span>
+          </section>
+        </template>
+      </ListSurfaceHeader>
       <section v-if="enableSummaryStrip && summaryItems.length" class="summary-strip sc-product-summary-strip">
         <article v-for="item in summaryItems" :key="item.key" class="summary-card" :class="`tone-${item.tone || 'neutral'}`">
           <p class="summary-label">{{ item.label }}</p>
           <p class="summary-value">{{ item.value }}</p>
         </article>
       </section>
-      <section v-if="showBatchBar" class="batch-bar sc-product-feedback-layer">
-        <span>{{ uiLabel('selected_count', '已选 {count} 条', { count: selectedCount }) }}</span>
-        <button
-          v-for="action in selectionActions"
-          :key="`selection-action-${action.key}`"
-          type="button"
-          :disabled="loading || !selectedCount || !action.enabled"
-          :title="action.hint || ''"
-          @click="runSelectionAction(action.key)"
-        >
-          {{ action.label }}
-        </button>
-        <button type="button" class="ghost" :disabled="loading" @click="clearSelection">{{ uiLabel('clear', '清空') }}</button>
-        <span v-if="selectedCount > 0 && batchMessage" class="batch-message">{{ batchMessage }}</span>
-      </section>
-
-
       <section
         ref="tableSurfaceRoot"
         class="table sc-product-main-surface"
@@ -115,31 +130,12 @@
         role="region"
         aria-label="业务列表，可横向滚动"
         :aria-busy="loading || undefined"
+        :data-visible-columns="displayedColumns.join(',')"
+        :data-mobile-visible-columns="mobileAvailableColumns.join(',')"
+        :data-column-decision-trace="columnDecisionTraceJson"
         tabindex="0"
       >
         <span v-if="loading" class="refresh-status">{{ uiLabel('refreshing_list', '正在刷新数据') }}</span>
-        <div v-if="columnChoices.length" ref="columnPickerRoot" class="table-utility-bar">
-          <span class="table-column-count table-column-count--desktop">
-            <template v-if="enabledColumns.length > displayedColumns.length">首屏自适应 {{ displayedColumns.length }} 列 · 已启用 {{ enabledColumns.length }} 列</template>
-            <template v-else>当前显示 {{ displayedColumns.length }} 列</template>
-          </span>
-          <span class="table-column-count table-column-count--mobile">信息卡片视图</span>
-          <div class="table-column-manager">
-            <button type="button" class="column-picker-btn" :aria-expanded="columnPickerOpen" :disabled="loading" @click.stop="columnPickerOpen = !columnPickerOpen">
-              <ScIcon name="columns" :size="16" />
-              列设置
-            </button>
-            <span v-if="columnSaveStatusText" class="column-save-badge" :class="`is-${columnSaveStatus}`">{{ columnSaveStatusText }}</span>
-            <div v-if="columnPickerOpen" class="column-picker-menu">
-              <label v-for="column in columnChoices" :key="`column-choice-${column.name}`" class="column-choice">
-                <input type="checkbox" :checked="isColumnVisible(column.name)" :disabled="loading || isLastVisibleColumn(column.name)" @change="onColumnVisibilityChange(column.name, $event)" />
-                <span>{{ columnChoiceLabel(column) }}</span>
-              </label>
-              <button type="button" class="column-reset" :disabled="loading" @click="resetColumnVisibility">恢复默认</button>
-              <p v-if="columnSaveStatusText" class="column-save-message" :class="`is-${columnSaveStatus}`">{{ columnSaveStatusText }}</p>
-            </div>
-          </div>
-        </div>
 	        <section v-if="showGroupedRows" class="grouped-table">
         <header class="grouped-toolbar">
           <div class="grouped-toolbar-title">
@@ -311,7 +307,7 @@
                     @click.stop="toggleColumnSort(col)"
                   >
                     <span>{{ columnLabel(col) }}</span>
-                    <span class="sort-indicator" aria-hidden="true">{{ columnSortIndicator(col) }}</span>
+                    <ScIcon v-if="isSortedColumn(col)" class="sort-indicator" :name="columnSortIcon(col)" :size="14" />
                   </button>
                   <button
                     type="button"
@@ -429,33 +425,60 @@
           </ScDataTable>
         </article>
       </section>
-      <section v-if="!showGroupedRows" class="mobile-record-list" aria-label="移动端记录列表">
-        <ScMobileRecordCard
+      <section
+        v-if="!showGroupedRows"
+        class="mobile-record-list"
+        aria-label="移动端记录列表"
+        :role="showSelectionColumn ? 'listbox' : undefined"
+        :aria-multiselectable="showSelectionColumn || undefined"
+      >
+        <article
           v-for="(row, index) in records"
           :key="`mobile-${String(row.id ?? index)}`"
-          class="mobile-record-card"
-          as="button"
-          @click="handleRow(row)"
+          class="mobile-record-row"
+          data-mobile-record-row
+          :class="{ 'is-selected': isSelected(row) }"
+          :role="showSelectionColumn ? 'option' : undefined"
+          :aria-selected="showSelectionColumn ? isSelected(row) : undefined"
         >
-          <template #identity>
-            <strong>{{ semanticCell(mobileIdentityField, row[mobileIdentityField]).text }}</strong>
-          </template>
-          <template #status>
-            <ScStatusBadge
-              v-if="mobileStatusField"
-              :value="String(row[mobileStatusField] ?? '')"
-              :label="semanticCell(mobileStatusField, row[mobileStatusField]).text"
-              :semantic="statusSemantic(semanticCell(mobileStatusField, row[mobileStatusField]).tone)"
+          <label
+            v-if="showSelectionColumn"
+            class="mobile-record-select"
+            data-mobile-record-select
+            @click.stop
+          >
+            <input
+              type="checkbox"
+              :checked="isSelected(row)"
+              :aria-label="`选择第 ${index + 1} 条记录`"
+              @change="onRowCheckboxChange(row, $event)"
             />
-          </template>
-          <template v-for="col in mobileFactColumns" :key="`mobile-${String(row.id ?? index)}-${col}`">
-            <span class="mobile-record-fact">
-              <small>{{ columnLabel(col) }}</small>
-              <b>{{ semanticCell(col, row[col]).text }}</b>
-            </span>
-          </template>
-          <template #actions><span class="mobile-record-card__open">查看详情 <ScIcon name="arrow-right" :size="16" /></span></template>
-        </ScMobileRecordCard>
+          </label>
+          <ScMobileRecordCard
+            class="mobile-record-card"
+            as="button"
+            @click="handleRow(row)"
+          >
+            <template #identity>
+              <strong>{{ semanticCell(mobileIdentityField, row[mobileIdentityField]).text }}</strong>
+            </template>
+            <template #status>
+              <ScStatusBadge
+                v-if="mobileStatusField"
+                :value="String(row[mobileStatusField] ?? '')"
+                :label="semanticCell(mobileStatusField, row[mobileStatusField]).text"
+                :semantic="statusSemantic(semanticCell(mobileStatusField, row[mobileStatusField]).tone)"
+              />
+            </template>
+            <template v-for="col in mobileFactColumns" :key="`mobile-${String(row.id ?? index)}-${col}`">
+              <span class="mobile-record-fact">
+                <small>{{ columnLabel(col) }}</small>
+                <b>{{ semanticCell(col, row[col]).text }}</b>
+              </span>
+            </template>
+            <template #actions><span class="mobile-record-card__open">查看详情 <ScIcon name="arrow-right" :size="16" /></span></template>
+          </ScMobileRecordCard>
+        </article>
       </section>
       <ScDataTable
         v-if="!showGroupedRows"
@@ -517,7 +540,7 @@
                 @click.stop="toggleColumnSort(col)"
               >
                 <span>{{ columnLabel(col) }}</span>
-                <span class="sort-indicator" aria-hidden="true">{{ columnSortIndicator(col) }}</span>
+                <ScIcon v-if="isSortedColumn(col)" class="sort-indicator" :name="columnSortIcon(col)" :size="14" />
               </button>
               <button
                 type="button"
@@ -728,10 +751,10 @@
   </section>
 </template>
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
-import ProductListHeader from '../components/product-list/ProductListHeader.vue';
+import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
@@ -746,7 +769,11 @@ import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '.
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
 import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, type ListColumnLayoutRole } from './listPage/listColumnWidth';
-import { prioritizeExplicitlyEnabledListColumns, resolveEnabledListColumns } from './listPage/listColumnVisibility';
+import {
+  prioritizeExplicitlyEnabledListColumns,
+  resolveEnabledListColumns,
+  resolveResponsiveListColumns,
+} from './listPage/listColumnVisibility';
 
 type SelectionAction = {
   key: string;
@@ -900,7 +927,10 @@ const emit = defineEmits<{
   'column-widths-change': [payload: { columnWidths: Record<string, number> }];
   'column-preferences-reset': [];
 }>();
+const slots = useSlots();
 const attachmentViewerRef = ref<InstanceType<typeof AttachmentViewer> | null>(null);
+const batchOverflowRoot = ref<HTMLElement | null>(null);
+const batchOverflowOpen = ref(false);
 function uiLabel(key: string, fallback: string, vars: Record<string, string | number> = {}) {
   const candidate = String(props.uiLabels?.[key] || '').trim();
   const template = candidate || fallback;
@@ -938,6 +968,8 @@ const emptyStateMessage = computed(() =>
     : uiLabel('empty_readonly_message', emptyCopy.value.message),
 );
 const showPlainSearch = computed(() => props.showPlainSearch !== false);
+const hasToolbarSlot = computed(() => Boolean(slots.toolbar));
+const showFallbackPlainSearch = computed(() => showPlainSearch.value && !hasToolbarSlot.value);
 const hasRetainedContent = computed(() => props.records.length > 0 && props.columns.length > 0);
 const groupedRows = computed(() =>
   Array.isArray(props.groupedRows) ? props.groupedRows : [],
@@ -949,11 +981,9 @@ const pageLimitInput = ref('');
 const plainSearchDraft = ref('');
 const plainSearchComposing = ref(false);
 const observedListLimit = ref(0);
-const columnPickerRoot = ref<HTMLElement | null>(null);
 const tableSurfaceRoot = ref<HTMLElement | null>(null);
 const tableSurfaceWidth = ref(0);
 let tableSurfaceResizeObserver: ResizeObserver | null = null;
-const columnPickerOpen = ref(false);
 const draggingColumn = ref('');
 const resizingColumn = ref('');
 const resizeStartX = ref(0);
@@ -1543,14 +1573,13 @@ function onGroupSelectAllChange(group: { sampleRows?: Array<Record<string, unkno
   props.onToggleSelectionAll(groupSelectableRows(group), selected);
 }
 
-function clearSelection() {
-  props.onClearSelection?.();
-}
-
+function clearSelection() { batchOverflowOpen.value = false; props.onClearSelection?.(); }
 function runSelectionAction(key: string) {
   if (!key || selectedCount.value <= 0) return;
-  props.onRunSelectionAction?.(key);
+  batchOverflowOpen.value = false; props.onRunSelectionAction?.(key);
 }
+
+function closeBatchOverflowOnOutsidePointer(event: PointerEvent) { if (!batchOverflowRoot.value?.contains(event.target as Node)) batchOverflowOpen.value = false; }
 
 function emitPageOffset(offset: number) {
   if (!props.onPageChange) return;
@@ -1691,6 +1720,7 @@ const hiddenColumns = computed(() => {
   }, {});
 });
 const preferredColumns = computed(() => props.listProfile?.columns || []);
+const crossDeviceCriticalColumns = computed(() => props.listProfile?.cross_device_critical_columns || []);
 const columnLabels = computed(() => props.listProfile?.column_labels || {});
 const contractColumnLabels = computed(() => props.columnLabels || {});
 
@@ -1724,39 +1754,9 @@ const columnChoices = computed<ColumnOption[]>(() => {
   }));
 });
 const DEFAULT_VISIBLE_COLUMN_BUDGET = 12;
-const adaptiveDefaultVisibleColumnBudget = computed(() => {
-  const width = tableSurfaceWidth.value;
-  if (!width || width < 760) return DEFAULT_VISIBLE_COLUMN_BUDGET;
-  const fixedLedgerWidth = (showSelectionColumn.value ? 40 : 0) + (showRowNumberColumn.value ? 52 : 0);
-  return Math.max(6, Math.min(DEFAULT_VISIBLE_COLUMN_BUDGET, Math.floor((width - fixedLedgerWidth) / 125)));
-});
-const budgetedDefaultVisibleColumns = computed(() => {
-  const eligible = columnChoices.value.filter((column) => column.defaultVisible !== false && !hiddenColumns.value[column.name]);
-  const visibleBudget = adaptiveDefaultVisibleColumnBudget.value;
-  if (eligible.length <= visibleBudget) return new Set(eligible.map((column) => column.name));
-
-  const names = new Set<string>();
-  const addFirst = (predicate: (column: ColumnOption) => boolean) => {
-    const match = eligible.find(predicate);
-    if (match) names.add(match.name);
-  };
-  if (rowPrimary.value && eligible.some((column) => column.name === rowPrimary.value)) names.add(rowPrimary.value);
-  addFirst((column) => String(column.cellRole || '').toLowerCase() === 'identity');
-  addFirst((column) => /(^|_)(name|title|subject)($|_)/i.test(column.name));
-  addFirst((column) => /(^|_)(number|code|no)($|_)/i.test(column.name));
-  addFirst((column) => /(^|_)(status|state)($|_)/i.test(column.name) || ['status', 'state'].includes(String(column.cellRole || '').toLowerCase()));
-  addFirst((column) => ['date', 'datetime'].includes(String(column.type || column.dataType || '').toLowerCase()));
-  addFirst((column) => ['money', 'monetary', 'metric'].includes(String(column.cellRole || '').toLowerCase()) || String(column.type || column.dataType || '').toLowerCase() === 'monetary');
-  addFirst((column) => ['many2one', 'many2many', 'one2many', 'reference'].includes(String(column.type || column.dataType || '').toLowerCase()));
-  for (const column of eligible) {
-    if (names.size >= visibleBudget) break;
-    names.add(column.name);
-  }
-  return names;
-});
 const defaultVisibleColumnMap = computed<Record<string, boolean>>(() =>
   columnChoices.value.reduce<Record<string, boolean>>((acc, column) => {
-    acc[column.name] = budgetedDefaultVisibleColumns.value.has(column.name);
+    acc[column.name] = column.defaultVisible !== false && !hiddenColumns.value[column.name];
     return acc;
   }, {}),
 );
@@ -1798,7 +1798,7 @@ const prioritizedEnabledColumns = computed(() => prioritizeExplicitlyEnabledList
   props.columnVisibility || {},
 ));
 
-const displayedColumns = computed(() => {
+const desktopResponsiveCandidates = computed(() => {
   const source = enabledColumns.value;
   const surfaceWidth = tableSurfaceWidth.value;
   if (!surfaceWidth) return source;
@@ -1816,9 +1816,41 @@ const displayedColumns = computed(() => {
   }
   return selected.length ? selected : source.slice(0, 1);
 });
-const mobileAvailableColumns = computed(() => {
-  return enabledColumns.value;
-});
+const desktopColumnDecision = computed(() => resolveResponsiveListColumns({
+  enabledColumns: enabledColumns.value,
+  orderedColumns: orderedColumnNames.value,
+  criticalColumns: crossDeviceCriticalColumns.value,
+  defaultVisibility: defaultVisibleColumnMap.value,
+  visibility: props.columnVisibility || {},
+  responsiveCandidates: desktopResponsiveCandidates.value,
+  capacity: desktopResponsiveCandidates.value.length,
+}));
+const displayedColumns = computed(() => desktopColumnDecision.value.visibleColumns);
+const mobileResponsiveCandidates = computed(() => enabledColumns.value
+  .map((field, index) => ({ field, index, priority: columnBusinessPriority(field) }))
+  .sort((left, right) => left.priority - right.priority || left.index - right.index)
+  .slice(0, 8)
+  .map((item) => item.field));
+const mobileColumnDecision = computed(() => resolveResponsiveListColumns({
+  enabledColumns: enabledColumns.value,
+  orderedColumns: orderedColumnNames.value,
+  criticalColumns: crossDeviceCriticalColumns.value,
+  defaultVisibility: defaultVisibleColumnMap.value,
+  visibility: props.columnVisibility || {},
+  responsiveCandidates: mobileResponsiveCandidates.value,
+  capacity: 8,
+}));
+const lastVisibleColumnName = computed(() => enabledColumns.value.length === 1 ? enabledColumns.value[0] : '');
+const columnDecisionTraceJson = computed(() => JSON.stringify({
+  authoritativeColumns: orderedColumnNames.value,
+  enabledColumns: enabledColumns.value,
+  criticalColumns: crossDeviceCriticalColumns.value,
+  explicitVisibility: props.columnVisibility || {},
+  defaultVisibility: defaultVisibleColumnMap.value,
+  desktop: desktopColumnDecision.value,
+  mobile: mobileColumnDecision.value,
+}));
+const mobileAvailableColumns = computed(() => mobileColumnDecision.value.visibleColumns);
 const footerLabelFieldCount = computed(() => displayedColumns.value.length
   ? Math.max(1, displayedColumns.value.indexOf(rowPrimary.value) + 1)
   : 0);
@@ -1840,9 +1872,6 @@ const mobileFactColumns = computed(() => {
   const status = mobileStatusField.value;
   return mobileAvailableColumns.value
     .filter((field) => field !== identity && field !== status)
-    .map((field, index) => ({ field, index, priority: columnBusinessPriority(field) }))
-    .sort((left, right) => left.priority - right.priority || left.index - right.index)
-    .map((item) => item.field)
     .slice(0, 6);
 });
 const defaultColumnWidths = computed<Record<string, number>>(() => {
@@ -1894,9 +1923,9 @@ function isSortedColumn(col: string) {
   return sortField(props.sortValue || '') === String(option?.sortField || col);
 }
 
-function columnSortIndicator(col: string) {
-  if (!isSortedColumn(col)) return '';
-  return sortDirection(props.sortValue || '') === 'desc' ? '▼' : '▲';
+function columnSortIcon(col: string): 'chevron-down' | 'chevron-up' {
+  const descending = isSortedColumn(col) && sortDirection(props.sortValue || '') === 'desc';
+  return descending ? 'chevron-down' : 'chevron-up';
 }
 
 function columnAriaSort(col: string) {
@@ -2055,10 +2084,6 @@ function columnLabel(col: string) {
   return option?.label || columnLabels.value[col] || contractColumnLabels.value[col] || col;
 }
 
-function columnChoiceLabel(column: ColumnOption) {
-  return column.label || columnLabel(column.name);
-}
-
 function columnOption(field: string) {
   return columnChoices.value.find((column) => column.name === field) || null;
 }
@@ -2072,25 +2097,12 @@ function isColumnSortable(field: string) {
   return columnOption(field)?.sortable !== false;
 }
 
-function isColumnVisible(name: string) {
-  const visibility = props.columnVisibility || {};
-  if (Object.prototype.hasOwnProperty.call(visibility, name)) {
-    return visibility[name] === true;
-  }
-  return defaultVisibleColumnMap.value[name] !== false;
-}
-
-function isLastVisibleColumn(name: string) {
-  return isColumnVisible(name) && displayedColumns.value.length <= 1;
-}
-
-function onColumnVisibilityChange(name: string, event: Event) {
-  const checked = Boolean((event.target as HTMLInputElement | null)?.checked);
-  if (!checked && isLastVisibleColumn(name)) return;
+function onColumnVisibilityToggle(payload: { name: string; checked: boolean }) {
+  if (!payload.checked && lastVisibleColumnName.value === payload.name) return;
   emit('column-visibility-change', {
     visibility: {
       ...(props.columnVisibility || {}),
-      [name]: checked,
+      [payload.name]: payload.checked,
     },
   });
 }
@@ -2255,12 +2267,6 @@ function footerRowLabel(scope: 'page' | 'total', rowCount: number) {
     : uiLabel('page_footer_total', '总计');
 }
 
-function handleColumnPickerPointerDown(event: PointerEvent) {
-  const root = columnPickerRoot.value;
-  if (!root || root.contains(event.target as Node)) return;
-  columnPickerOpen.value = false;
-}
-
 function syncTableSurfaceWidth() {
   tableSurfaceWidth.value = Math.floor(tableSurfaceRoot.value?.getBoundingClientRect().width || 0);
 }
@@ -2273,14 +2279,14 @@ watch(tableSurfaceRoot, (current, previous) => {
 }, { flush: 'post' });
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleColumnPickerPointerDown);
+  document.addEventListener('pointerdown', closeBatchOverflowOnOutsidePointer);
   tableSurfaceResizeObserver = new ResizeObserver(syncTableSurfaceWidth);
   syncTableSurfaceWidth();
   if (tableSurfaceRoot.value) tableSurfaceResizeObserver.observe(tableSurfaceRoot.value);
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleColumnPickerPointerDown);
+  document.removeEventListener('pointerdown', closeBatchOverflowOnOutsidePointer);
   window.removeEventListener('mousemove', onColumnResizeMove);
   tableSurfaceResizeObserver?.disconnect();
 });

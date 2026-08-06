@@ -163,6 +163,57 @@ async function inspectGeometry(page) {
     }
     const page = containers.page;
     const main = containers.main;
+    const mainElement = document.querySelector('#main-content');
+    const mainRect = mainElement?.getBoundingClientRect();
+    const descendantElements = mainElement ? Array.from(mainElement.querySelectorAll('*')).filter(visible) : [];
+    const descendantExtent = mainElement && mainRect
+      ? descendantElements.reduce((bottom, element) => Math.max(
+        bottom,
+        element.getBoundingClientRect().bottom - mainRect.top + mainElement.scrollTop,
+      ), 0)
+      : 0;
+    const relativeBottom = (element) => element && mainElement && mainRect
+      ? element.getBoundingClientRect().bottom - mainRect.top + mainElement.scrollTop
+      : null;
+    const lastListRow = document.querySelector('.table tbody tr:last-child, .mobile-record-card:last-child');
+    const pagination = document.querySelector('.pagination-footer:last-of-type, .pagination-bar:last-of-type');
+    const primaryVerticalScrollOwners = scrollOwners.filter((owner) => (
+      !/menu|sidebar|navigation|dialog|drawer|designer/i.test(owner.selector)
+    ));
+    const tableShell = document.querySelector('.table > .sc-table-shell, .table > .grouped-table');
+    let columnDecision = {};
+    try {
+      columnDecision = JSON.parse(document.querySelector('[data-column-decision-trace]')?.getAttribute('data-column-decision-trace') || '{}');
+    } catch {
+      columnDecision = {};
+    }
+    const explicitVisibleColumns = Array.isArray(columnDecision?.desktop?.trace)
+      ? columnDecision.desktop.trace.filter((row) => row?.visible && row?.reasonCode === 'explicit_visible').map((row) => row.field)
+      : [];
+    const visibleHeaderClips = Array.from(document.querySelectorAll('.table thead th[data-column]')).flatMap((header) => {
+      if (!visible(header)) return [];
+      const label = header.querySelector('.column-sort-btn > span:first-child');
+      if (!(label instanceof HTMLElement)) return [];
+      const clipped = label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1;
+      return clipped ? [{
+        field: header.getAttribute('data-column') || '',
+        label: String(label.textContent || '').trim(),
+        client_width: label.clientWidth,
+        scroll_width: label.scrollWidth,
+        client_height: label.clientHeight,
+        scroll_height: label.scrollHeight,
+      }] : [];
+    });
+    const semanticHeading = document.querySelector('#main-content h1.sc-visually-hidden');
+    const headingRect = semanticHeading?.getBoundingClientRect();
+    const headingStyle = semanticHeading ? getComputedStyle(semanticHeading) : null;
+    const accessibleHiddenHeading = !semanticHeading || Boolean(
+      headingRect && headingStyle
+      && headingRect.width <= 1.5 && headingRect.height <= 1.5
+      && headingStyle.position === 'absolute'
+      && (headingStyle.overflow === 'hidden' || headingStyle.clipPath !== 'none')
+    );
+    const firstBusinessContent = document.querySelector('.table thead, .mobile-record-card, .sc-empty-state');
     return {
       viewport: { width: innerWidth, height: innerHeight, device_pixel_ratio: devicePixelRatio },
       document: { client_width: document.documentElement.clientWidth, scroll_width: document.documentElement.scrollWidth, client_height: document.documentElement.clientHeight, scroll_height: document.documentElement.scrollHeight },
@@ -173,6 +224,24 @@ async function inspectGeometry(page) {
       unreachable_controls: unreachableControls.slice(0, 40),
       sticky_obstructions: stickyObstructions.slice(0, 20),
       core_canvas_utilization: page && main ? page.bounding_box.width / Math.max(1, main.client_width) : null,
+      descendant_extent: descendantExtent,
+      descendant_extent_reachable: !mainElement || descendantExtent <= mainElement.scrollHeight + 2,
+      list_last_row_bottom: relativeBottom(lastListRow),
+      list_last_row_reachable: !lastListRow || relativeBottom(lastListRow) <= mainElement.scrollHeight + 2,
+      pagination_bottom: relativeBottom(pagination),
+      pagination_reachable: !pagination || relativeBottom(pagination) <= mainElement.scrollHeight + 2,
+      primary_vertical_scroll_owners: primaryVerticalScrollOwners,
+      single_vertical_scroll_owner: primaryVerticalScrollOwners.length <= 1
+        && (!mainElement || descendantExtent <= mainElement.clientHeight + 2 || primaryVerticalScrollOwners.some((owner) => owner.selector === '#main-content')),
+      table_horizontal_overflow: tableShell instanceof HTMLElement ? Math.max(0, tableShell.scrollWidth - tableShell.clientWidth) : 0,
+      explicit_visible_columns: explicitVisibleColumns,
+      default_table_horizontal_overflow: explicitVisibleColumns.length
+        ? null
+        : (tableShell instanceof HTMLElement ? Math.max(0, tableShell.scrollWidth - tableShell.clientWidth) : 0),
+      visible_header_clips: visibleHeaderClips,
+      accessible_hidden_h1: accessibleHiddenHeading,
+      first_business_content_y: firstBusinessContent?.getBoundingClientRect().top ?? null,
+      standalone_column_meta_rows: document.querySelectorAll('.table-utility-row, .column-summary-row, [data-column-summary-row]').length,
     };
   });
 }
@@ -240,6 +309,14 @@ function checksFor(geometry) {
     sticky_obstruction: geometry.sticky_obstructions.length === 0,
     unexpected_nested_vertical_scroll: unexpectedNested.length === 0,
     core_canvas_available: geometry.core_canvas_utilization === null || geometry.core_canvas_utilization >= 0.95,
+    descendant_extent_reachable: geometry.descendant_extent_reachable,
+    list_last_row_reachable: geometry.list_last_row_reachable,
+    pagination_reachable: geometry.pagination_reachable,
+    single_vertical_scroll_owner: geometry.single_vertical_scroll_owner,
+    default_table_horizontal_overflow: geometry.default_table_horizontal_overflow === null || geometry.default_table_horizontal_overflow <= 1,
+    visible_table_headers_unclipped: geometry.visible_header_clips.length === 0,
+    accessible_hidden_h1: geometry.accessible_hidden_h1,
+    standalone_column_meta_row: geometry.standalone_column_meta_rows === 0,
   };
 }
 

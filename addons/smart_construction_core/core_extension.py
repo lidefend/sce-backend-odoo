@@ -390,7 +390,11 @@ register_legacy_standard_list_profile(
         "row_primary": "name",
         "row_secondary": "",
         "status_field": "lifecycle_state",
-        "strict_columns": True,
+        # Keep the standard ordering and labels, while allowing the action's
+        # native tree view to remain authoritative for optional columns such
+        # as manager_id. A model-wide strict projection makes those columns
+        # impossible to enable from the column settings UI.
+        "strict_columns": False,
     }
 )
 register_legacy_standard_list_profile(

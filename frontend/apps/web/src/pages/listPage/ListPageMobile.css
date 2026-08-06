@@ -29,14 +29,6 @@
     display: none;
   }
 
-  .table-column-count--desktop {
-    display: none;
-  }
-
-  .table-column-count--mobile {
-    display: inline;
-  }
-
   .mobile-record-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));

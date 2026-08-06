@@ -2877,3 +2877,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   count assertions. Daily application remains protected by the verified paired
   backup and exact bundle synchronization; rollback restores the paired backup
   and preceding exact source SHA rather than attempting a module downgrade.
+## 2026-08-06 — FRONTEND-RUNTIME-VIEW-CONTRACT-PRODUCT-CLOSURE
+
+- Branch / anchor: `fix/runtime-view-contract-product-closure` from `6250dc6`.
+- Formal Product Layer / Layer Target / Module: P0 generic contract assembly and
+  frontend renderer plus P1 construction standard list defaults;
+  `smart_core`, `smart_construction_core`, `frontend/apps/web` and design tokens.
+- Reason / Why Here: native optional-column semantics, action-specific labels,
+  cross-device critical columns and compact list surfaces must stay consistent
+  across Windows and Harmony clients without frontend model-name branches.
+- Why Not Elsewhere: customer preferences remain in governed runtime preference
+  storage; migrations only retire stale configuration metadata. No permission,
+  route, workflow or business-record semantics are changed to mask UI defects.
+- Blast Radius / validation: dynamic list/form headers, project and partner list
+  contracts, responsive list selection, Shell spacing and semantic color tokens.
+  Strict typecheck, release unit, style guard, production build, isolated module
+  upgrade, multi-viewport browser evidence and independent QA are required before
+  daily-development deployment.

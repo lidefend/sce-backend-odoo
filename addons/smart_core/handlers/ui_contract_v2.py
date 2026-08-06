@@ -436,7 +436,7 @@ class UiContractV2Handler(BaseIntentHandler):
         if action_id <= 0 or "sc.user.view.preference" not in self.env:
             return columns
         model_name = self._source_model_name(source_contract)
-        model_fields = set(getattr(self.env[model_name], "_fields", {}) or {}) if model_name in self.env else set()
+        authoritative_columns = set(columns)
         try:
             rec = self.env["sc.user.view.preference"].sudo().search(
                 [
@@ -459,7 +459,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 name = str(raw or "").strip()
                 if not name or name in preferred:
                     continue
-                if model_fields and name not in model_fields:
+                if name not in authoritative_columns:
                     continue
                 preferred.append(name)
         if not preferred:
@@ -2446,6 +2446,11 @@ class UiContractV2Handler(BaseIntentHandler):
             for name in visibility_policy.get("hidden", [])
             if str(name or "").strip()
         }
+        policy_cross_device_critical = [
+            str(name or "").strip()
+            for name in visibility_policy.get("critical", [])
+            if str(name or "").strip()
+        ]
         if model_name and "ui.business.config.contract" in self.env:
             try:
                 direct_configs = self.env["ui.business.config.contract"]._effective_view_orchestration_contracts(
@@ -2677,6 +2682,9 @@ class UiContractV2Handler(BaseIntentHandler):
             "row_primary": row_primary,
             "row_secondary": row_secondary,
             "status_field": derived_status_field,
+            "cross_device_critical_columns": [
+                name for name in policy_cross_device_critical if name in columns
+            ],
             "preference_policy": {
                 **(profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}),
                 "scope": "ui_only",

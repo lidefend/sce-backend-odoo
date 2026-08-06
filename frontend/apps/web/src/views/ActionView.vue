@@ -3301,10 +3301,10 @@ function refreshForProjectContextChange(): void {
 
 @media (min-width: 761px) {
   .page[data-product-page-mode='list'] {
-    height: 100%; min-height: 0;
-    overflow: hidden; display: flex; flex-direction: column;
+    min-height: 100%; height: auto;
+    overflow: visible; display: flex; flex-direction: column;
   }
-  .action-list-surface { flex: 1 1 auto; min-height: 0; }
+  .action-list-surface { flex: 0 0 auto; min-height: 0; }
 }
 
 .page-actions {

@@ -1,9 +1,12 @@
 <template>
-  <section class="product-list-query-bar sc-product-page-toolbar" data-list-query-action-bar aria-label="列表查询与操作">
+  <section
+    class="product-list-query-bar sc-product-page-toolbar"
+    :class="{ 'product-list-query-bar--without-search': !showSearch }"
+    data-list-query-action-bar
+    aria-label="列表查询与操作"
+  >
     <ScActionBar class="product-list-header__tools" label="列表操作">
-      <slot />
-    </ScActionBar>
-    <form v-if="showSearch" class="product-list-header__search" role="search" @submit.prevent="$emit('search-submit')">
+      <form v-if="showSearch" class="product-list-header__search" role="search" @submit.prevent="$emit('search-submit')">
         <label>
           <span class="sc-visually-hidden">{{ searchLabel }}</span>
           <input
@@ -19,6 +22,9 @@
         <ScButton type="submit" :disabled="loading">{{ searchLabel }}</ScButton>
         <ScButton v-if="searchValue" variant="ghost" :disabled="loading" @click="$emit('search-clear')">清除</ScButton>
       </form>
+      <slot />
+      <slot name="auxiliary" />
+    </ScActionBar>
   </section>
 </template>
 
@@ -50,12 +56,11 @@ defineEmits<{
   position: sticky;
   top: 0;
   z-index: 4;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  display: block;
   width: 100cqw;
-  padding: 8px 12px;
-  border: 0;
+  min-height: 44px;
+  padding: 0 var(--sc-space-sm);
+  border: 1px solid var(--sc-app-border);
   border-radius: 0;
   background: var(--sc-app-panel);
   box-shadow: none;
@@ -65,10 +70,10 @@ defineEmits<{
     width: 100%;
     position: relative;
     top: 0;
-    padding: 0;
-    border: 0;
+    padding: 0 var(--sc-space-sm);
+    border: 1px solid var(--sc-app-border);
     border-radius: 0;
-    background: transparent;
+    background: var(--sc-app-panel);
     box-shadow: none;
   }
   .product-list-header__tools :deep(.native-search) {
@@ -76,20 +81,21 @@ defineEmits<{
   }
 }
 .product-list-header__tools {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-areas: 'main utility';
+  align-items: center;
+  gap: var(--sc-toolbar-group-gap);
   min-width: 0;
   width: 100%;
 }
 .product-list-header__tools :deep(.action-toolbar) {
-  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  grid-area: main;
   width: 100%;
   border: 0;
   border-radius: 0;
   background: transparent;
   padding: 0;
-}
-.product-list-header__tools :deep(.action-toolbar.action-toolbar--without-view) {
-  grid-template-columns: minmax(0, 1fr) max-content;
 }
 .product-list-header__tools :deep(.native-search) {
   justify-self: stretch;
@@ -97,12 +103,13 @@ defineEmits<{
   max-width: none;
 }
 .product-list-header__tools :deep(.toolbar-actions) { width: auto; }
-.product-list-header__search { display: flex; gap: var(--sc-product-space-1); align-items: center; }
+.product-list-header__tools :deep(.list-surface-utilities) { grid-area: utility; }
+.product-list-header__search { grid-area: main; display: flex; gap: var(--sc-toolbar-gap); align-items: center; min-width: 320px; }
 .product-list-header__search label { min-width: 0; flex: 1; }
 .product-list-header__search input {
   width: 100%;
-  min-height: 38px;
-  padding: 0 12px;
+  min-height: 40px;
+  padding: 0 var(--sc-space-sm);
   border: 1px solid var(--sc-app-border-strong);
   border-radius: var(--sc-product-radius-control);
   background: var(--sc-app-panel);
@@ -116,36 +123,20 @@ defineEmits<{
 @media (max-width: 720px) {
   .product-list-query-bar {
     width: 100%;
-    padding: 6px 0 8px;
-    border: 0;
+    padding: 0 var(--sc-space-xs);
+    border: 1px solid var(--sc-app-border);
     border-bottom: 1px solid var(--sc-app-border);
     border-radius: 0;
     background: transparent;
     box-shadow: none;
   }
-  .product-list-header__tools :deep(.action-toolbar) { gap: 6px; }
-  .product-list-header__search { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-  .product-list-header__search .ghost { grid-column: 1 / -1; justify-self: start; }
+  .product-list-header__tools :deep(.action-toolbar) { gap: var(--sc-toolbar-gap); }
+  .product-list-header__search { min-width: 190px; }
+  .product-list-header__search .ghost { display: none; }
 }
-@media (max-width: 520px) {
-  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view)) {
-    grid-template-columns: minmax(0, 1fr) max-content;
-  }
-  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view) .view-switch) {
-    grid-column: 1;
-    grid-row: 1;
-    width: auto;
-  }
-  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view) .toolbar-actions) {
-    grid-column: 2;
-    grid-row: 1;
-    width: auto;
-    justify-self: end;
-  }
-  .product-list-header__tools :deep(.action-toolbar:not(.action-toolbar--without-view) .native-search) {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: 100%;
-  }
+@media (max-width: 760px) {
+  .product-list-header__tools { gap: var(--sc-toolbar-gap); }
+  .product-list-header__search { min-width: 0; }
+  .product-list-header__search :deep(button) { min-width: 44px; min-height: 44px; }
 }
 </style>
