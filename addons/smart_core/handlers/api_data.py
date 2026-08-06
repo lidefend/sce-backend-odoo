@@ -2334,6 +2334,9 @@ class ApiDataHandler(BaseIntentHandler):
         fields, fields_error = self._read_fields_param(p, [])
         if fields_error:
             return fields_error
+        raw_column_labels = self._dig(p, "column_labels", {})
+        if not isinstance(raw_column_labels, dict):
+            return self._err(400, "column_labels 无效")
 
         env_model = self.env[model].with_context(ctx)
         if sudo:
@@ -2357,6 +2360,10 @@ class ApiDataHandler(BaseIntentHandler):
         export_fields = self._filter_readable_fields(env_model, list(dict.fromkeys(export_fields)))
         if export_fields:
             fields_safe = export_fields
+        column_labels = {
+            field_name: str(raw_column_labels.get(field_name) or getattr(env_model._fields.get(field_name), "string", "") or field_name).strip()[:120]
+            for field_name in fields_safe
+        }
         order = self._translate_semantic_order(order, field_semantics)
 
         if ids:
@@ -2376,6 +2383,7 @@ class ApiDataHandler(BaseIntentHandler):
                 "content_b64": "",
                 "count": 0,
                 "fields": fields_safe,
+                "column_labels": column_labels,
             }
             meta = {
                 "op": "export_csv",
@@ -2398,7 +2406,7 @@ class ApiDataHandler(BaseIntentHandler):
 
         buf = io.StringIO()
         writer = csv.writer(buf)
-        writer.writerow(fields_safe)
+        writer.writerow([column_labels.get(field_name) or field_name for field_name in fields_safe])
         for row in rows:
             writer.writerow([self._format_csv_value(row.get(col)) for col in fields_safe])
         raw = buf.getvalue().encode("utf-8-sig")
@@ -2411,6 +2419,7 @@ class ApiDataHandler(BaseIntentHandler):
             "content_b64": b64,
             "count": len(rows),
             "fields": fields_safe,
+            "column_labels": column_labels,
         }
         meta = {
             "op": "export_csv",

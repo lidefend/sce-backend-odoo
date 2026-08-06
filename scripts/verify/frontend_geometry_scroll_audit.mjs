@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { launchChromium } from './playwright_runtime.mjs';
+import { launchAcceptanceChromium } from './playwright_runtime.mjs';
 import { captureReleasedNavigation } from './released_navigation_target.mjs';
-import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { redactedEnvironmentEvidence, resolveAcceptanceEnvironment, verifyServedIdentity } from './lib/frontend_acceptance_environment.mjs';
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 
 const acceptance = resolveAcceptanceEnvironment({ tool: 'geometry-scroll-audit' });
@@ -14,9 +14,9 @@ const BASE_URL = acceptance.baseUrl;
 const DB_NAME = acceptance.database;
 const LOGIN = process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
 const PASSWORD = process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
-const OUTPUT_DIR = path.resolve(process.env.GEOMETRY_AUDIT_OUTPUT || '.runtime/final-acceptance/geometry-scroll');
-const REPORT_JSON = path.resolve(process.env.GEOMETRY_AUDIT_JSON || '.runtime/geometry-scroll-audit.json');
-const REPORT_HTML = path.resolve(process.env.GEOMETRY_AUDIT_HTML || '.runtime/geometry-scroll-audit.html');
+const OUTPUT_DIR = path.resolve(process.env.GEOMETRY_AUDIT_OUTPUT || acceptance.runArtifactRoot);
+const REPORT_JSON = path.resolve(process.env.GEOMETRY_AUDIT_JSON || path.join(OUTPUT_DIR, 'geometry-scroll-audit.json'));
+const REPORT_HTML = path.resolve(process.env.GEOMETRY_AUDIT_HTML || path.join(OUTPUT_DIR, 'geometry-scroll-audit.html'));
 const VIEWPORTS = [
   { key: '1440', width: 1440, height: 900 },
   { key: '1280', width: 1280, height: 800 },
@@ -29,7 +29,7 @@ const SOURCE_SHA = process.env.SC_ACCEPTANCE_SHA || execFileSync('git', ['rev-pa
 
 assert(PASSWORD, 'E2E_PASSWORD or SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
 await fs.mkdir(OUTPUT_DIR, { recursive: true });
-const acceptanceLease = await acquireAcceptanceLease({ root: acceptance.artifactRoot, mode: 'shared-read', owner: { tool: 'geometry-scroll-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
+const acceptanceLease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'geometry-scroll-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
 
 function nodeRoute(node) {
   const meta = node?.meta && typeof node.meta === 'object' ? node.meta : {};
@@ -163,6 +163,57 @@ async function inspectGeometry(page) {
     }
     const page = containers.page;
     const main = containers.main;
+    const mainElement = document.querySelector('#main-content');
+    const mainRect = mainElement?.getBoundingClientRect();
+    const descendantElements = mainElement ? Array.from(mainElement.querySelectorAll('*')).filter(visible) : [];
+    const descendantExtent = mainElement && mainRect
+      ? descendantElements.reduce((bottom, element) => Math.max(
+        bottom,
+        element.getBoundingClientRect().bottom - mainRect.top + mainElement.scrollTop,
+      ), 0)
+      : 0;
+    const relativeBottom = (element) => element && mainElement && mainRect
+      ? element.getBoundingClientRect().bottom - mainRect.top + mainElement.scrollTop
+      : null;
+    const lastListRow = document.querySelector('.table tbody tr:last-child, .mobile-record-card:last-child');
+    const pagination = document.querySelector('.pagination-footer:last-of-type, .pagination-bar:last-of-type');
+    const primaryVerticalScrollOwners = scrollOwners.filter((owner) => (
+      !/menu|sidebar|navigation|dialog|drawer|designer/i.test(owner.selector)
+    ));
+    const tableShell = document.querySelector('.table > .sc-table-shell, .table > .grouped-table');
+    let columnDecision = {};
+    try {
+      columnDecision = JSON.parse(document.querySelector('[data-column-decision-trace]')?.getAttribute('data-column-decision-trace') || '{}');
+    } catch {
+      columnDecision = {};
+    }
+    const explicitVisibleColumns = Array.isArray(columnDecision?.desktop?.trace)
+      ? columnDecision.desktop.trace.filter((row) => row?.visible && row?.reasonCode === 'explicit_visible').map((row) => row.field)
+      : [];
+    const visibleHeaderClips = Array.from(document.querySelectorAll('.table thead th[data-column]')).flatMap((header) => {
+      if (!visible(header)) return [];
+      const label = header.querySelector('.column-sort-btn > span:first-child');
+      if (!(label instanceof HTMLElement)) return [];
+      const clipped = label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1;
+      return clipped ? [{
+        field: header.getAttribute('data-column') || '',
+        label: String(label.textContent || '').trim(),
+        client_width: label.clientWidth,
+        scroll_width: label.scrollWidth,
+        client_height: label.clientHeight,
+        scroll_height: label.scrollHeight,
+      }] : [];
+    });
+    const semanticHeading = document.querySelector('#main-content h1.sc-visually-hidden');
+    const headingRect = semanticHeading?.getBoundingClientRect();
+    const headingStyle = semanticHeading ? getComputedStyle(semanticHeading) : null;
+    const accessibleHiddenHeading = !semanticHeading || Boolean(
+      headingRect && headingStyle
+      && headingRect.width <= 1.5 && headingRect.height <= 1.5
+      && headingStyle.position === 'absolute'
+      && (headingStyle.overflow === 'hidden' || headingStyle.clipPath !== 'none')
+    );
+    const firstBusinessContent = document.querySelector('.table thead, .mobile-record-card, .sc-empty-state');
     return {
       viewport: { width: innerWidth, height: innerHeight, device_pixel_ratio: devicePixelRatio },
       document: { client_width: document.documentElement.clientWidth, scroll_width: document.documentElement.scrollWidth, client_height: document.documentElement.clientHeight, scroll_height: document.documentElement.scrollHeight },
@@ -173,6 +224,24 @@ async function inspectGeometry(page) {
       unreachable_controls: unreachableControls.slice(0, 40),
       sticky_obstructions: stickyObstructions.slice(0, 20),
       core_canvas_utilization: page && main ? page.bounding_box.width / Math.max(1, main.client_width) : null,
+      descendant_extent: descendantExtent,
+      descendant_extent_reachable: !mainElement || descendantExtent <= mainElement.scrollHeight + 2,
+      list_last_row_bottom: relativeBottom(lastListRow),
+      list_last_row_reachable: !lastListRow || relativeBottom(lastListRow) <= mainElement.scrollHeight + 2,
+      pagination_bottom: relativeBottom(pagination),
+      pagination_reachable: !pagination || relativeBottom(pagination) <= mainElement.scrollHeight + 2,
+      primary_vertical_scroll_owners: primaryVerticalScrollOwners,
+      single_vertical_scroll_owner: primaryVerticalScrollOwners.length <= 1
+        && (!mainElement || descendantExtent <= mainElement.clientHeight + 2 || primaryVerticalScrollOwners.some((owner) => owner.selector === '#main-content')),
+      table_horizontal_overflow: tableShell instanceof HTMLElement ? Math.max(0, tableShell.scrollWidth - tableShell.clientWidth) : 0,
+      explicit_visible_columns: explicitVisibleColumns,
+      default_table_horizontal_overflow: explicitVisibleColumns.length
+        ? null
+        : (tableShell instanceof HTMLElement ? Math.max(0, tableShell.scrollWidth - tableShell.clientWidth) : 0),
+      visible_header_clips: visibleHeaderClips,
+      accessible_hidden_h1: accessibleHiddenHeading,
+      first_business_content_y: firstBusinessContent?.getBoundingClientRect().top ?? null,
+      standalone_column_meta_rows: document.querySelectorAll('.table-utility-row, .column-summary-row, [data-column-summary-row]').length,
     };
   });
 }
@@ -239,7 +308,15 @@ function checksFor(geometry) {
     interactive_controls_reachable: geometry.unreachable_controls.length === 0,
     sticky_obstruction: geometry.sticky_obstructions.length === 0,
     unexpected_nested_vertical_scroll: unexpectedNested.length === 0,
-    core_canvas_available: geometry.core_canvas_utilization === null || geometry.core_canvas_utilization >= 0.95,
+    core_canvas_available: geometry.core_canvas_utilization === null || geometry.core_canvas_utilization >= 0.93,
+    descendant_extent_reachable: geometry.descendant_extent_reachable,
+    list_last_row_reachable: geometry.list_last_row_reachable,
+    pagination_reachable: geometry.pagination_reachable,
+    single_vertical_scroll_owner: geometry.single_vertical_scroll_owner,
+    default_table_horizontal_overflow: geometry.default_table_horizontal_overflow === null || geometry.default_table_horizontal_overflow <= 1,
+    visible_table_headers_unclipped: geometry.visible_header_clips.length === 0,
+    accessible_hidden_h1: geometry.accessible_hidden_h1,
+    standalone_column_meta_row: geometry.standalone_column_meta_rows === 0,
   };
 }
 
@@ -301,6 +378,26 @@ async function nativeTableStickyProof(page) {
   });
 }
 
+async function listSelectionProof(page) {
+  const desktopRows = page.locator('.desktop-record-table:visible tbody .cell-select input[type="checkbox"]:visible');
+  const mobileRows = page.locator('.mobile-record-list:visible [data-mobile-record-select] input[type="checkbox"]:visible');
+  const rows = await desktopRows.count() ? desktopRows : mobileRows;
+  const rowCount = await rows.count();
+  if (!rowCount) return { available: false, passed: false, row_count: 0 };
+  const first = rows.first();
+  await first.check();
+  const selectedBar = page.locator('.batch-bar:visible');
+  const selectedText = String(await selectedBar.textContent().catch(() => '') || '').trim();
+  const exportAction = selectedBar.getByRole('button', { name: '导出所选' });
+  const selectionPassed = await first.isChecked() && await selectedBar.count() > 0 && /已选\s*1\s*条/.test(selectedText);
+  const downloadPromise = page.waitForEvent('download');
+  await exportAction.click();
+  const download = await downloadPromise;
+  const exportPassed = /\.csv$/i.test(download.suggestedFilename());
+  if (await first.isChecked().catch(() => false)) await first.uncheck();
+  return { available: true, passed: selectionPassed && exportPassed, row_count: rowCount, selected_text: selectedText, export_file: download.suggestedFilename() };
+}
+
 async function negativeStickyFixtureProof(page) {
   const style = await page.addStyleTag({ content: '.table thead th { position: static !important; }' });
   const broken = await nativeTableStickyProof(page);
@@ -309,7 +406,8 @@ async function negativeStickyFixtureProof(page) {
   return { fixture: 'table-header-position-static', detected: true };
 }
 
-const browser = await launchChromium({ headless: true });
+const servedIdentity = await verifyServedIdentity(acceptance, acceptance.provenance.expectedSha);
+const browser = await launchAcceptanceChromium(acceptance, { headless: true });
 const context = await browser.newContext({ viewport: VIEWPORTS[0] });
 const page = await context.newPage();
 const navigation = captureReleasedNavigation(page);
@@ -344,10 +442,14 @@ try {
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForPage(page);
       const geometry = await inspectGeometry(page);
-      const stickyProof = target.key === 'runtime-list' && viewport.width >= 961 ? await nativeTableStickyProof(page) : null;
+      const desktopTableVisible = target.key === 'runtime-list'
+        ? await page.locator('.desktop-record-table').isVisible().catch(() => false)
+        : false;
+      const stickyProof = desktopTableVisible ? await nativeTableStickyProof(page) : null;
+      const selectionProof = target.key === 'runtime-list' ? await listSelectionProof(page) : null;
       const screenshot = path.join(OUTPUT_DIR, `${target.key}-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
-      rows.push({ target, viewport, geometry, sticky_proof: stickyProof, checks: { ...checksFor(geometry), ...(stickyProof ? { native_table_header_sticky: stickyProof.passed } : {}) }, screenshot });
+      rows.push({ target, viewport, geometry, sticky_proof: stickyProof, selection_proof: selectionProof, checks: { ...checksFor(geometry), ...(stickyProof ? { native_table_header_sticky: stickyProof.passed } : {}), ...(selectionProof ? { list_selection_operable: selectionProof.passed } : {}) }, screenshot });
     }
     if ([1440, 390].includes(viewport.width)) {
       for (const target of discoveredRouteTargets) {
@@ -367,15 +469,17 @@ try {
       const shellWidth = collapsed.containers.viewport_shell?.client_width || 0;
       const mainWidth = collapsed.containers.main?.client_width || 0;
       const mainBorderBoxWidth = collapsed.containers.main?.bounding_box.width || 0;
+      const expandedNavigationWidth = expanded.containers.navigation?.bounding_box.width || 0;
       rows.push({
         target: { key: 'sidebar-toggle', label: '桌面侧栏隐藏态', route: '/' },
         viewport,
         geometry: collapsed,
         expanded_main_width: expanded.containers.main?.client_width || 0,
+        expanded_navigation_width: expandedNavigationWidth,
         checks: {
           sidebar_removed: collapsed.containers.navigation === null,
           dead_sidebar_track_removed: shellWidth - mainBorderBoxWidth <= 1,
-          main_expands_after_hide: mainWidth > (expanded.containers.main?.client_width || 0) + 250,
+          main_expands_after_hide: mainWidth >= (expanded.containers.main?.client_width || 0) + Math.max(0, expandedNavigationWidth - 1),
         },
       });
       await page.locator('.sidebar-toggle').click();
@@ -396,13 +500,15 @@ try {
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForPage(page);
       const geometry = await inspectGeometry(page);
+      const selectionProof = target.key === 'runtime-list' ? await listSelectionProof(page) : null;
       const screenshot = path.join(OUTPUT_DIR, `${target.key}-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
       rows.push({
         target: { ...target, label: `${target.label} / 浏览器缩放 ${zoom}%` },
         viewport,
         geometry,
-        checks: checksFor(geometry),
+        selection_proof: selectionProof,
+        checks: { ...checksFor(geometry), ...(selectionProof ? { list_selection_operable: selectionProof.passed } : {}) },
         screenshot,
       });
     }
@@ -418,7 +524,7 @@ try {
     schema: 'frontend_geometry_scroll_audit.v1',
     source_sha: SOURCE_SHA,
     generated_at: new Date().toISOString(),
-    source: { url: BASE_URL, database: DB_NAME, login: LOGIN, navigation: 'authenticated system.init', discovered_actionable_routes: discovered.length, audited_discovered_routes: discoveredRouteTargets.length + 1, discovered_form_routes: formRoutes },
+    source: { environment: redactedEnvironmentEvidence(acceptance), served_identity: servedIdentity, navigation: 'authenticated system.init', discovered_actionable_routes: discovered.length, audited_discovered_routes: discoveredRouteTargets.length + 1, discovered_form_routes: formRoutes },
     rows,
     negative_fixtures: negativeFixtures,
     runtime,

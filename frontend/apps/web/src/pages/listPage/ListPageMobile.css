@@ -1,4 +1,7 @@
-@media (max-width: 820px) {
+/* Measure the real business surface, not the browser viewport: when the
+   critical desktop projection cannot keep its natural 1127px canvas, use the
+   same governed facts as cards instead of introducing a horizontal scroller. */
+@container (max-width: 1126px) {
   .list-toolbar {
     position: static;
     padding: 6px 0 8px;
@@ -27,14 +30,6 @@
 
   .desktop-record-table {
     display: none;
-  }
-
-  .table-column-count--desktop {
-    display: none;
-  }
-
-  .table-column-count--mobile {
-    display: inline;
   }
 
   .mobile-record-list {

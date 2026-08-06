@@ -2877,6 +2877,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   count assertions. Daily application remains protected by the verified paired
   backup and exact bundle synchronization; rollback restores the paired backup
   and preceding exact source SHA rather than attempting a module downgrade.
+## 2026-08-06 — FRONTEND-RUNTIME-VIEW-CONTRACT-PRODUCT-CLOSURE
+
+- Branch / anchor: `fix/runtime-view-contract-product-closure` from `6250dc6`.
+- Formal Product Layer / Layer Target / Module: P0 generic contract assembly and
+  frontend renderer plus P1 construction standard list defaults;
+  `smart_core`, `smart_construction_core`, `frontend/apps/web` and design tokens.
+- Reason / Why Here: native optional-column semantics, action-specific labels,
+  cross-device critical columns and compact list surfaces must stay consistent
+  across Windows and Harmony clients without frontend model-name branches.
+- Why Not Elsewhere: customer preferences remain in governed runtime preference
+  storage; migrations only retire stale configuration metadata. No permission,
+  route, workflow or business-record semantics are changed to mask UI defects.
+- Blast Radius / validation: dynamic list/form headers, project and partner list
+  contracts, responsive list selection, Shell spacing and semantic color tokens.
+  Strict typecheck, release unit, style guard, production build, isolated module
+  upgrade, multi-viewport browser evidence and independent QA are required before
+  daily-development deployment.
 
 ## 2026-08-06 — GOVERNED-WORKTREE-CREATE-ENTRY
 
@@ -2897,3 +2914,52 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   database, service, or product state changes. Fourteen isolated create and
   cleanup tests cover successful creation plus confirmation, path, branch,
   commit identity, reachability, dirty, unmerged, and primary-worktree denials.
+## 2026-08-06 — FRONTEND-ACCEPTANCE-ENVIRONMENT-PORTABILITY
+
+- Branch / anchor: `feature/frontend-acceptance-environment-portability` from
+  `b7bb5565c82d784ac96c5f64f54a7e36106ead6a`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  frontend acceptance environment policy, target safety, process lifecycle and
+  evidence isolation; `config/frontend`, `scripts/verify`, release probe and
+  Make verification entrypoints.
+- Reason / Why Here: browser and release audits had divergent URL, database,
+  credential, artifact, browser and lifecycle assumptions. P4 owns execution
+  safety and portable evidence; the frontend renderer and construction modules
+  do not own runner or deployment topology.
+- Why Not Elsewhere: no business permission, route, API, field, customer
+  preference or database record changes are needed. Environment differences
+  must not be encoded as UI branches or customer-module overrides.
+- Blast Radius: the versioned acceptance profiles and tool matrix, canonical
+  resolver and cross-worktree lease, daily release identity probe, report
+  server, and the full-product/form/geometry formal audit entrypoints. The
+  remaining historical browser scripts are deliberately outside this batch.
+- Validation / rollback: fail-closed tests cover alias conflicts, unsafe target
+  management, daily/production write denial, weak credentials, identity drift,
+  path escape and numeric routes before network launch; concurrency tests cover
+  shared reads, exclusive writes, independent artifacts, dynamic ports and
+  owned-process cleanup. Generated-report consistency passes. The optional
+  documentation link check still reports the repository's existing 69 legacy
+  absolute-path references; neither document changed in this batch contributes
+  a missing link. Reverting this commit restores the previous tools and does
+  not change any runtime or database state.
+
+## 2026-08-06 — FRONTEND-RUNTIME-LABEL-AND-GEOMETRY-CLOSURE
+
+- Branch / anchor: `fix/runtime-view-contract-product-closure` from `74a6766`.
+- Formal Product Layer / Layer Target / Module: P0 native view contract assembly,
+  responsive list rendering and P4 acceptance assertions; `smart_core`,
+  `smart_construction_core`, `frontend/apps/web` and `scripts/verify`.
+- Reason / Why Here: isolated browser evidence found native Chinese tree labels
+  being replaced by generic English field metadata and business amounts/names
+  clipping at 1280px and browser zoom. Native view strings now remain the
+  display authority, critical contract columns participate in the same
+  cross-device policy, and semantic width floors force secondary columns out
+  before key facts are truncated.
+- Why Not Elsewhere: no customer configuration, user preference, permission,
+  route, workflow or business record is changed to hide the defect. Runtime
+  action/menu identifiers are discovered from authenticated navigation instead
+  of copied from one database.
+- Blast Radius / validation: customer, supplier, project and contract list
+  labels, column choice/default semantics and geometry audit thresholds. The
+  isolated acceptance database is upgraded/restarted and tested at five
+  viewports plus zoom before any daily-development deployment.

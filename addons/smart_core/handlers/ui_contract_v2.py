@@ -253,6 +253,25 @@ class UiContractV2Handler(BaseIntentHandler):
             label_maps = LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL
         label_map = label_maps.get(model_key, {}) if isinstance(label_maps.get(model_key), dict) else {}
         business_label = label_map.get(field_name)
+        model_field_labels: set[str] = set()
+        if business_label:
+            try:
+                model_recordset = self.env[model_key] if model_key in self.env else None
+                model_field = model_recordset._fields.get(field_name) if model_recordset else None
+            except Exception:
+                model_recordset = None
+                model_field = None
+            raw_model_field_label = str(getattr(model_field, "string", "") or "").strip()
+            if raw_model_field_label:
+                model_field_labels.add(raw_model_field_label)
+            if model_recordset is not None and label and label not in model_field_labels:
+                try:
+                    translated_field = model_recordset.fields_get([field_name]).get(field_name, {})
+                except Exception:
+                    translated_field = {}
+                translated_label = str(translated_field.get("string") or "").strip()
+                if translated_label:
+                    model_field_labels.add(translated_label)
         if not business_label:
             try:
                 has_model = bool(model_key in self.env)
@@ -269,7 +288,12 @@ class UiContractV2Handler(BaseIntentHandler):
                 if field_label and field_label != field_name and (not label or label == field_name):
                     return field_label
             return label
-        if not label or label == field_name or label.startswith("历史验收可见字段"):
+        if (
+            not label
+            or label == field_name
+            or label.startswith("历史验收可见字段")
+            or label in model_field_labels
+        ):
             return business_label
         return label
 
@@ -436,7 +460,7 @@ class UiContractV2Handler(BaseIntentHandler):
         if action_id <= 0 or "sc.user.view.preference" not in self.env:
             return columns
         model_name = self._source_model_name(source_contract)
-        model_fields = set(getattr(self.env[model_name], "_fields", {}) or {}) if model_name in self.env else set()
+        authoritative_columns = set(columns)
         try:
             rec = self.env["sc.user.view.preference"].sudo().search(
                 [
@@ -459,7 +483,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 name = str(raw or "").strip()
                 if not name or name in preferred:
                     continue
-                if model_fields and name not in model_fields:
+                if name not in authoritative_columns:
                     continue
                 preferred.append(name)
         if not preferred:
@@ -2446,6 +2470,11 @@ class UiContractV2Handler(BaseIntentHandler):
             for name in visibility_policy.get("hidden", [])
             if str(name or "").strip()
         }
+        policy_cross_device_critical = [
+            str(name or "").strip()
+            for name in visibility_policy.get("critical", [])
+            if str(name or "").strip()
+        ]
         if model_name and "ui.business.config.contract" in self.env:
             try:
                 direct_configs = self.env["ui.business.config.contract"]._effective_view_orchestration_contracts(
@@ -2494,17 +2523,6 @@ class UiContractV2Handler(BaseIntentHandler):
                         direct_orchestration_columns.append(name)
                     if label:
                         direct_orchestration_labels[name] = label
-        governance = source_contract.get("governance") if isinstance(source_contract.get("governance"), dict) else {}
-        view_governance = governance.get("view_orchestration") if isinstance(governance.get("view_orchestration"), dict) else {}
-        source_trace = source_contract.get("source_trace") if isinstance(source_contract.get("source_trace"), dict) else {}
-        view_trace = source_trace.get("view_orchestration") if isinstance(source_trace.get("view_orchestration"), dict) else {}
-        business_view_orchestration_applied = bool(
-            view_governance.get("applied")
-            or view_governance.get("business_config_contracts")
-            or view_trace.get("business_config_contracts")
-            or direct_orchestration_columns
-            or direct_orchestration_labels
-        )
         action_view_override = None
         action_view_columns = list(action_view_override.get("columns") or []) if action_view_override else []
         action_view_labels = dict(action_view_override.get("column_labels") or {}) if action_view_override else {}
@@ -2608,8 +2626,6 @@ class UiContractV2Handler(BaseIntentHandler):
             name = str(row.get("name") or "").strip()
             if not name:
                 continue
-            if not business_view_orchestration_applied and not name.startswith("legacy_visible_"):
-                continue
             label = str(row.get("label") or row.get("string") or "").strip()
             if label:
                 view_column_labels[name] = label
@@ -2677,6 +2693,9 @@ class UiContractV2Handler(BaseIntentHandler):
             "row_primary": row_primary,
             "row_secondary": row_secondary,
             "status_field": derived_status_field,
+            "cross_device_critical_columns": [
+                name for name in policy_cross_device_critical if name in columns
+            ],
             "preference_policy": {
                 **(profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}),
                 "scope": "ui_only",
@@ -2685,6 +2704,13 @@ class UiContractV2Handler(BaseIntentHandler):
                 "allow_width": True,
                 "locked_columns": [],
                 "must_request_columns": columns,
+            },
+            "selection_policy": {
+                "enabled": True,
+                "mode": "multiple",
+                "scope": "current_page",
+                "requires_batch_action": False,
+                "action_source": "batch_policy.available_actions",
             },
         })
         if direct_orchestration_columns:

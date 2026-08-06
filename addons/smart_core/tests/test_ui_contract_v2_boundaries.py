@@ -567,6 +567,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             source_contract["list_profile"]["preference_policy"]["must_request_columns"],
             profile_columns,
         )
+        self.assertEqual(
+            source_contract["list_profile"]["selection_policy"],
+            {
+                "enabled": True,
+                "mode": "multiple",
+                "scope": "current_page",
+                "requires_batch_action": False,
+                "action_source": "batch_policy.available_actions",
+            },
+        )
 
     def test_business_list_profile_preserves_business_config_column_order(self):
         class _Config:
@@ -933,6 +943,41 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         }
         self.assertEqual(schema["sc_source_project_name"]["optional"], "hide")
 
+    def test_native_tree_labels_override_generic_field_metadata_without_business_config(self):
+        handler = self.module.UiContractV2Handler(env={})
+        source_contract = {
+            "model": "res.partner",
+            "fields": {
+                "company_type": {"string": "Company Type", "type": "selection"},
+                "mobile": {"string": "Mobile", "type": "char"},
+            },
+            "views": {
+                "tree": {
+                    "columns": ["company_type", "mobile"],
+                    "columns_schema": [
+                        {"name": "company_type", "string": "客户类型", "type": "selection"},
+                        {"name": "mobile", "string": "手机", "type": "char", "optional": "hide"},
+                    ],
+                }
+            },
+            "list_profile": {},
+        }
+
+        handler._merge_business_list_profile(
+            source_contract,
+            common_fields=[],
+            amount_fields=[],
+            note_field="",
+            status_field="",
+            label_for=lambda name: source_contract["fields"][name]["string"],
+            type_for=lambda name: source_contract["fields"][name]["type"],
+        )
+
+        profile = source_contract["list_profile"]
+        self.assertEqual(profile["column_labels"]["company_type"], "客户类型")
+        self.assertEqual(profile["column_labels"]["mobile"], "手机")
+        self.assertIn("mobile", profile["hidden_columns"])
+
     def test_business_list_visibility_policy_overrides_stale_published_defaults(self):
         class _Config:
             contract_json = {
@@ -1020,6 +1065,41 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     "sc_source_project_name",
                 ),
                 "来源项目",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+    def test_business_column_label_replaces_generic_model_label(self):
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *args, **kwargs: {
+            "project.project": {"name": "项目名称"},
+        }
+        try:
+            field = type("Field", (), {"string": "名称"})()
+            model = type("Model", (), {"_fields": {"name": field}})()
+            handler = self.module.UiContractV2Handler(env={"project.project": model})
+            self.assertEqual(
+                handler._legacy_visible_business_label("project.project", "name", "名称"),
+                "项目名称",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+    def test_business_column_label_replaces_translated_generic_model_label(self):
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *args, **kwargs: {
+            "project.project": {"name": "项目名称"},
+        }
+        try:
+            field = type("Field", (), {"string": "Name"})()
+            model = type("Model", (), {
+                "_fields": {"name": field},
+                "fields_get": lambda _self, _names: {"name": {"string": "名称"}},
+            })()
+            handler = self.module.UiContractV2Handler(env={"project.project": model})
+            self.assertEqual(
+                handler._legacy_visible_business_label("project.project", "name", "名称"),
+                "项目名称",
             )
         finally:
             self.module.call_extension_hook_first = original_hook

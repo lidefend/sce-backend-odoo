@@ -5,6 +5,7 @@ import {
   collectUnifiedPageContractV2FieldStatus,
   resolveUnifiedPageContractV2,
   resolveUnifiedPageContractV2ListProfile,
+  resolveUnifiedPageContractV2SurfacePolicies,
 } from '../contracts/unifiedPageContractV2';
 
 type Dict = Record<string, unknown>;
@@ -549,6 +550,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
   function extractListProfile(contract: unknown) {
     const typed = (contract || {}) as Dict;
     const rawProfile = resolveUnifiedPageContractV2ListProfile(typed);
+    const surfacePolicies = resolveUnifiedPageContractV2SurfacePolicies(typed);
     const semanticPage = (typed.semantic_page || {}) as Dict;
     const listSemantics = (semanticPage.list_semantics || {}) as Dict;
     const semanticColumns = Array.isArray(listSemantics.columns) ? (listSemantics.columns as Array<Dict>) : [];
@@ -560,6 +562,11 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       : [];
     const factColumns = Array.isArray(rawProfile.fact_columns)
       ? rawProfile.fact_columns.map((item) => String(item || '').trim()).filter(Boolean)
+      : [];
+    const crossDeviceCriticalColumns = Array.isArray(rawProfile.cross_device_critical_columns)
+      ? rawProfile.cross_device_critical_columns
+          .map((item) => String(item || '').trim())
+          .filter(Boolean)
       : [];
     const columnLabels: Record<string, string> = {};
     Object.entries((rawProfile.column_labels || {}) as Dict).forEach(([name, labelRaw]) => {
@@ -595,6 +602,18 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       available_actions: Array.isArray(rawBatchPolicy.available_actions)
         ? rawBatchPolicy.available_actions.map((item) => String(item || '').trim()).filter(Boolean)
         : undefined,
+      execution_intents: Object.fromEntries(Object.entries((rawBatchPolicy.execution_intents || {}) as Dict)
+        .map(([action, intent]) => [action, String(intent || '').trim()]).filter(([, intent]) => Boolean(intent))),
+      execution_operations: Object.fromEntries(Object.entries((rawBatchPolicy.execution_operations || {}) as Dict)
+        .map(([action, operation]) => [action, String(operation || '').trim()]).filter(([, operation]) => Boolean(operation))),
+    };
+    const rawSelectionPolicy = (rawProfile.selection_policy || listSemantics.selection_policy || surfacePolicies.selection_policy || {}) as Dict;
+    const selectionPolicy = {
+      enabled: rawSelectionPolicy.enabled !== false,
+      mode: String(rawSelectionPolicy.mode || 'multiple').trim(),
+      scope: String(rawSelectionPolicy.scope || 'current_page').trim(),
+      requires_batch_action: rawSelectionPolicy.requires_batch_action === true,
+      action_source: String(rawSelectionPolicy.action_source || 'batch_policy.available_actions').trim(),
     };
     const rawGrouping = (rawProfile.grouping || listSemantics.grouping || {}) as Dict;
     const rawGroupingSort = (rawGrouping.sort || {}) as Dict;
@@ -629,12 +648,13 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         ? rawPreferencePolicy.must_request_columns.map((item) => String(item || '').trim()).filter(Boolean)
         : [],
     };
-    if (!columns.length && !Object.keys(columnLabels).length && !rowPrimary && !rowSecondary && !statusField && !metricFields.length && !Object.keys(rawBatchPolicy).length && !Object.keys(rawGrouping).length) {
+    if (!columns.length && !crossDeviceCriticalColumns.length && !Object.keys(columnLabels).length && !rowPrimary && !rowSecondary && !statusField && !metricFields.length && !Object.keys(rawBatchPolicy).length && !Object.keys(rawGrouping).length) {
       return null;
     }
     return {
       columns,
       fact_columns: factColumns,
+      cross_device_critical_columns: crossDeviceCriticalColumns,
       hidden_columns: hiddenColumns,
       column_labels: columnLabels,
       preference_policy: preferencePolicy,
@@ -643,6 +663,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       show_row_number: showRowNumber,
       status_field: statusField,
       metric_fields: metricFields,
+      selection_policy: selectionPolicy,
       ...(hasRawBatchPolicy ? { batch_policy: batchPolicy } : {}),
       grouping,
     };

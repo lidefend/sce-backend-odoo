@@ -1,11 +1,7 @@
 <template>
   <div class="role-home-surface" data-role-home data-role-home-renderer="contract">
-    <header class="role-home-surface__header">
-      <div>
-        <h1>{{ title }}</h1>
-        <p>{{ subtitle }}</p>
-      </div>
-    </header>
+    <h1 class="sc-visually-hidden">{{ title }}</h1>
+    <p class="sc-visually-hidden">{{ subtitle }}</p>
 
     <section class="role-home-surface__tasks" aria-labelledby="role-home-task-title">
       <div class="role-home-surface__section-heading">
@@ -122,26 +118,12 @@ const {
   align-items: start;
 }
 
-.role-home-surface__header,
 .role-home-surface__tasks,
 .role-home-surface__overview,
 .role-home-surface__access {
   background: var(--sc-app-panel);
 }
 
-.role-home-surface__header {
-  grid-column: 1 / -1;
-  min-height: 64px;
-  padding: 8px 0 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sc-space-4, 16px);
-  border-bottom: 1px solid var(--sc-app-border);
-}
-
-.role-home-surface__header h1,
-.role-home-surface__header p,
 .role-home-surface__section-heading p,
 .role-home-surface__section-heading h2,
 .role-home-surface__access h3,
@@ -150,28 +132,16 @@ const {
   margin: 0;
 }
 
-.role-home-surface__header h1 {
-  color: var(--sc-app-text-primary);
-  font-size: 22px;
-  line-height: 1.35;
-}
-
-.role-home-surface__header p,
 .role-home-surface__task-list p,
 .role-home-surface__link-list span,
 .role-home-surface__state {
   color: var(--sc-app-text-secondary);
 }
 
-.role-home-surface__header p {
-  margin-top: var(--sc-space-2, 8px);
-  color: var(--sc-app-text-secondary);
-}
-
 .role-home-surface__tasks,
 .role-home-surface__overview,
 .role-home-surface__access {
-  padding: 14px 16px;
+  padding: var(--sc-surface-padding);
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-product-radius-panel);
 }

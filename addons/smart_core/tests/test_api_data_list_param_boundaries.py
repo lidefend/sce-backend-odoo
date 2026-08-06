@@ -329,10 +329,11 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         )
 
     def test_list_applies_search_term_alias_to_domain(self):
-        field = lambda field_type, store=True, groups="": types.SimpleNamespace(
+        field = lambda field_type, store=True, groups="", string="": types.SimpleNamespace(
             type=field_type,
             store=store,
             groups=groups,
+            string=string,
         )
 
         class _Recordset:
@@ -372,6 +373,7 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         env = _Env()
         env.user = user
         env.context = {}
+        env.lang = "zh_CN"
         model = _Model()
         model.env = env
         env["x.model"] = model
@@ -425,10 +427,11 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         self.assertIn(("name", "ilike", "绵阳"), model.count_domains[0])
 
     def test_export_csv_applies_search_term_alias_to_domain(self):
-        field = lambda field_type, store=True, groups="": types.SimpleNamespace(
+        field = lambda field_type, store=True, groups="", string="": types.SimpleNamespace(
             type=field_type,
             store=store,
             groups=groups,
+            string=string,
         )
 
         class _Recordset:
@@ -441,7 +444,7 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
 
             def __init__(self):
                 self.env = None
-                self._fields = {"id": field("integer"), "name": field("char")}
+                self._fields = {"id": field("integer", string="标识"), "name": field("char", string="名称")}
                 self.search_domains = []
 
             def with_context(self, ctx):
@@ -459,15 +462,24 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         env = _Env()
         env.user = user
         env.context = {}
+        env.lang = "zh_CN"
         model = _Model()
         model.env = env
         env["x.model"] = model
         handler = _load_handler().ApiDataHandler(env=env)
 
-        data, meta = handler._op_export_csv("x.model", {"q": "绵阳", "fields": ["id", "name"]}, {}, False)
+        data, meta = handler._op_export_csv(
+            "x.model",
+            {"q": "绵阳", "fields": ["id", "name"], "column_labels": {"id": "记录ID", "name": "项目名称"}},
+            {},
+            False,
+        )
 
         self.assertEqual(data["count"], 1)
         self.assertEqual(meta["count"], 1)
+        self.assertEqual(data["column_labels"], {"id": "记录ID", "name": "项目名称"})
+        import base64
+        self.assertTrue(base64.b64decode(data["content_b64"]).decode("utf-8-sig").startswith("记录ID,项目名称"))
         self.assertIn(("name", "ilike", "绵阳"), model.search_domains[0])
 
     def test_safe_eval_runtime_supports_allowed_company_ids(self):
@@ -745,6 +757,7 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         cases = [
             ({"fields": 7}, "fields 无效"),
             ({"domain": "bad"}, "domain 无效"),
+            ({"column_labels": []}, "column_labels 无效"),
         ]
         for params, message in cases:
             with self.subTest(params=params):

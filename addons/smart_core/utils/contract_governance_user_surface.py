@@ -329,6 +329,15 @@ def apply_user_surface_policies(
         "delete_only_mode": False,
         "delete_mode": "none",
         "available_actions": [],
+        "execution_intents": {},
+        "execution_operations": {},
+    }
+    selection_policy = {
+        "enabled": bool(view_types & {"tree", "list"} or has_list_view),
+        "mode": "multiple",
+        "scope": "current_page",
+        "requires_batch_action": False,
+        "action_source": "batch_policy.available_actions",
     }
     if "form" in view_types and not (view_types & {"tree", "list"} or has_list_view):
         filters_primary_max = 0
@@ -337,6 +346,7 @@ def apply_user_surface_policies(
         permissions = _as_dict(data.get("permissions"))
         effective = _as_dict(permissions.get("effective"))
         rights = _as_dict(effective.get("rights"))
+        read_allowed = not rights or rights.get("read") is not False
         write_allowed = bool(rights.get("write"))
         unlink_right_allowed = bool(rights.get("unlink"))
         delete_policy = _as_dict(data.get("delete_policy"))
@@ -347,7 +357,7 @@ def apply_user_surface_policies(
             mark_model_policy(data, f"{model}.delete_only")
         delete_allowed = bool(unlink_right_allowed and unlink_allowed)
         delete_only_mode = bool(delete_allowed and model in delete_only_models)
-        available_actions = []
+        available_actions = ["export"] if read_allowed else []
         if write_allowed and active_field and not delete_only_mode:
             available_actions.extend(["archive", "activate"])
         if delete_allowed:
@@ -365,11 +375,18 @@ def apply_user_surface_policies(
             "delete_only_mode": delete_only_mode,
             "delete_mode": "unlink" if delete_allowed and "delete" in available_actions else "none",
             "available_actions": available_actions,
+            "execution_intents": {
+                action: "api.data" if action == "export" else ("api.data.unlink" if action == "delete" else "api.data.batch")
+                for action in available_actions
+            },
+            "execution_operations": {action: "export_csv" for action in available_actions if action == "export"},
         }
         if not write_allowed and not unlink_right_allowed:
-            batch_policy["available_actions"] = []
-            batch_policy["enabled"] = False
+            batch_policy["available_actions"] = ["export"] if read_allowed else []
+            batch_policy["enabled"] = read_allowed
             batch_policy["delete_mode"] = "none"
+            batch_policy["execution_intents"] = {"export": "api.data"} if read_allowed else {}
+            batch_policy["execution_operations"] = {"export": "export_csv"} if read_allowed else {}
     if model and primary_model and model == primary_model:
         filters_primary_max = min(filters_primary_max, 4)
         actions_primary_max = min(actions_primary_max, 3)
@@ -380,5 +397,6 @@ def apply_user_surface_policies(
         "actions_max": action_max,
         "delete_mode": batch_policy.get("delete_mode") or "none",
         "batch_policy": batch_policy,
+        "selection_policy": selection_policy,
         "record_open_policy": record_open_policy,
     }

@@ -188,6 +188,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
     def test_partner_trace_columns_have_business_labels(self):
         labels = core_extension.smart_core_legacy_visible_business_column_labels(self.env)
 
+        self.assertEqual(labels["project.project"]["name"], "项目名称")
         partner_labels = labels["res.partner"]
         self.assertEqual(partner_labels["sc_business_role_label"], "业务角色")
         self.assertEqual(partner_labels["sc_source_project_name"], "来源项目")
@@ -196,9 +197,6 @@ class TestCoreExtensionV2Finalize(TransactionCase):
     def test_partner_trace_columns_are_opt_in_by_default(self):
         policy = core_extension.smart_core_business_list_default_visibility(self.env)["res.partner"]
 
-        self.assertEqual(
-            policy["visible"],
-            ["name", "company_type", "sc_supplier_type_label", "sc_region", "sc_contact_name", "phone", "user_id"],
-        )
+        self.assertNotIn("visible", policy)
         self.assertIn("sc_source_project_name", policy["hidden"])
         self.assertIn("sc_business_role_label", policy["hidden"])

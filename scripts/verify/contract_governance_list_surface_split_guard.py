@@ -225,8 +225,20 @@ def main() -> int:
         if schema_by_name.get("stage_id", {}).get("cell_role") != "status":
             errors.append("standard list must mark status column schema")
         batch_policy = ((list_data.get("surface_policies") or {}).get("batch_policy")) or {}
-        if batch_policy.get("available_actions") != ["archive", "activate", "delete"]:
-            errors.append("standard list batch policy must derive archive/activate/delete actions")
+        if batch_policy.get("available_actions") != ["export", "archive", "activate", "delete"]:
+            errors.append("standard list batch policy must derive export/archive/activate/delete actions")
+        if batch_policy.get("execution_intents") != {
+            "export": "api.data",
+            "archive": "api.data.batch",
+            "activate": "api.data.batch",
+            "delete": "api.data.unlink",
+        }:
+            errors.append("standard list batch actions must bind to executable backend intents")
+        if batch_policy.get("execution_operations") != {"export": "export_csv"}:
+            errors.append("standard list export must bind to api.data export_csv")
+        selection_policy = ((list_data.get("surface_policies") or {}).get("selection_policy")) or {}
+        if not selection_policy.get("enabled") or selection_policy.get("requires_batch_action") is not False:
+            errors.append("standard list selection must not disappear when no batch action is available")
         list_profile = list_data.get("list_profile") or {}
         if list_profile.get("primary_field") != "name" or list_profile.get("status_field") != "stage_id":
             errors.append("standard list profile must expose primary/status fields")

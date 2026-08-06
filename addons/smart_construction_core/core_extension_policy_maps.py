@@ -462,6 +462,9 @@ FILE_UPLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.reques
 FILE_DOWNLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.request"]
 
 LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
+    "project.project": {
+        "name": "项目名称",
+    },
     "res.partner": {
         "sc_business_role_label": "业务角色",
         "sc_business_fact_basis": "业务事实依据",
@@ -524,16 +527,31 @@ LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
 }
 
 BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
-    "res.partner": {
-        "visible": [
+    "project.project": {
+        "critical": ["name", "project_code", "lifecycle_state", "user_id"],
+    },
+    "sc.general.contract": {
+        "critical": [
             "name",
-            "company_type",
-            "sc_supplier_type_label",
-            "sc_region",
-            "sc_contact_name",
-            "phone",
-            "user_id",
+            "contract_no",
+            "contract_name",
+            "state",
+            "contract_date",
+            "amount_total",
+            "project_id",
         ],
+    },
+    "construction.contract": {
+        "critical": [
+            "name",
+            "state",
+            "date_contract",
+            "project_id",
+            "partner_id",
+            "visible_contract_amount",
+        ],
+    },
+    "res.partner": {
         "hidden": [
             "sc_business_role_label",
             "sc_business_fact_basis",

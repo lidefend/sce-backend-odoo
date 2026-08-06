@@ -376,7 +376,7 @@ register_legacy_standard_list_profile(
             "write_date",
         ],
         "column_labels": {
-            "name": "名称",
+            "name": "项目名称",
             "project_code": "项目编号",
             "owner_id": "业主单位",
             "sc_partner_display_name": "关联单位",
@@ -390,7 +390,11 @@ register_legacy_standard_list_profile(
         "row_primary": "name",
         "row_secondary": "",
         "status_field": "lifecycle_state",
-        "strict_columns": True,
+        # Keep the standard ordering and labels, while allowing the action's
+        # native tree view to remain authoritative for optional columns such
+        # as manager_id. A model-wide strict projection makes those columns
+        # impossible to enable from the column settings UI.
+        "strict_columns": False,
     }
 )
 register_legacy_standard_list_profile(

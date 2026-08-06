@@ -726,6 +726,26 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(transient.projection_scope, scope)
         self.assertEqual(transient.version, 0)
 
+    def test_page_assembler_runtime_projection_does_not_update_workflow_cache(self):
+        WorkflowConfig = self.env["app.workflow.config"].sudo()
+        cached = WorkflowConfig._generate_from_workflow("res.partner")
+        self.env.flush_all()
+        before = (cached.version, cached.config_hash, cached.write_date)
+        action = self.env.ref("base.action_partner_form").read()[0]
+
+        PageAssembler(self.env, self.env["ir.model"].sudo().env).assemble_page_contract(
+            {
+                "model": "res.partner",
+                "view_types": ["tree"],
+                "action_id": action["id"],
+            },
+            action=action,
+        )
+        self.env.flush_all()
+        cached.invalidate_recordset()
+
+        self.assertEqual((cached.version, cached.config_hash, cached.write_date), before)
+
     def test_view_config_form_fallback_preserves_sheet_groups_and_direct_page_fields(self):
         parsed = self.env["app.view.config"]._fallback_parse(
             "res.partner",

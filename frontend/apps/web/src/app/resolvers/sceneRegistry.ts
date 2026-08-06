@@ -46,6 +46,14 @@ export interface SceneListProfile {
   row_secondary?: string;
   show_row_number?: boolean;
   status_field?: string;
+  cross_device_critical_columns?: string[];
+  selection_policy?: {
+    enabled?: boolean;
+    mode?: 'multiple' | string;
+    scope?: 'current_page' | string;
+    requires_batch_action?: boolean;
+    action_source?: 'batch_policy.available_actions' | string;
+  };
   metric_fields?: string[];
   batch_policy?: {
     enabled?: boolean;
@@ -62,6 +70,8 @@ export interface SceneListProfile {
     } | null;
     delete_mode?: string;
     available_actions?: string[];
+    execution_intents?: Record<string, string>;
+    execution_operations?: Record<string, string>;
   };
   grouping?: {
     sample_limits?: number[];

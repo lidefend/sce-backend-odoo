@@ -101,6 +101,16 @@
         >
           <ScIcon name="chevron-right" :size="14" class="search-menu-caret" :class="{ 'is-open': searchMenuOpen }" />
         </button>
+        <button
+          v-if="hasStructuredConditions"
+          class="toolbar-clear-all"
+          type="button"
+          :disabled="loading"
+          :aria-label="`已应用 ${activeConditionCount} 项查询条件，清除全部`"
+          @click="$emit('clear-all')"
+        >
+          清除全部
+        </button>
       </div>
       <div v-if="searchMenuOpen && hasSearchMenu" class="search-dropdown">
         <section v-if="showFilterColumn" class="search-dropdown-section">
@@ -244,15 +254,64 @@
       </div>
     </div>
 
+    <div v-if="hasResponsiveOverflow" class="toolbar-overflow">
+      <button
+        class="toolbar-overflow-toggle"
+        type="button"
+        :disabled="loading"
+        :aria-expanded="overflowMenuOpen"
+        :aria-label="uiLabel('more_actions', '更多列表操作')"
+        :title="uiLabel('more_actions', '更多列表操作')"
+        @click="overflowMenuOpen = !overflowMenuOpen"
+        @keydown.esc="overflowMenuOpen = false"
+      >
+        <ScIcon name="menu" :size="18" />
+      </button>
+      <div v-if="overflowMenuOpen" class="toolbar-overflow-menu" :aria-label="uiLabel('more_actions', '更多列表操作')">
+        <section v-if="showViewSwitch && viewModes.length > 1" class="toolbar-overflow-section">
+          <p>{{ viewLabel }}</p>
+          <button
+            v-for="mode in viewModes"
+            :key="`overflow-view-mode-${mode}`"
+            type="button"
+            :class="{ active: currentViewMode === mode }"
+            :disabled="loading"
+            @click="selectOverflowView(mode)"
+          >
+            {{ viewModeLabels[mode] || mode }}
+          </button>
+        </section>
+        <section v-if="sortOptions.length" class="toolbar-overflow-section">
+          <p>{{ sortLabel }}</p>
+          <button
+            v-for="option in sortOptions"
+            :key="`overflow-sort-${option.value}`"
+            type="button"
+            :class="{ active: option.value === sortValue }"
+            :disabled="loading"
+            @click="selectOverflowSort(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        </section>
+        <button
+          v-if="canCreateRecord"
+          class="toolbar-overflow-create"
+          type="button"
+          :disabled="loading"
+          @click="createFromOverflow"
+        >
+          <ScIcon name="plus" :size="16" />
+          {{ createLabel }}
+        </button>
+      </div>
+    </div>
+
     <div v-if="canCreateRecord" class="toolbar-actions">
       <button class="contract-chip primary" type="button" :disabled="loading" @click="$emit('create')">
         <ScIcon name="plus" :size="16" />
         {{ createLabel }}
       </button>
-    </div>
-    <div v-if="activeConditionCount > 0" class="active-conditions-summary" role="status">
-      <span>已应用 {{ activeConditionCount }} 项查询条件</span>
-      <button type="button" :disabled="loading" @click="$emit('clear-all')">清除全部</button>
     </div>
   </section>
 </template>
@@ -338,6 +397,7 @@ const emit = defineEmits<{
 }>();
 
 const searchMenuOpen = ref(false);
+const overflowMenuOpen = ref(false);
 const customFilterOpen = ref(false);
 const favoriteSaveOpen = ref(false);
 const customFilterField = ref('');
@@ -408,6 +468,32 @@ const hasSearchMenu = computed(() =>
   || showGroupColumn.value
   || showSavedFilterColumn.value,
 );
+const hasStructuredConditions = computed(() => Boolean(
+  props.activeFilterKey
+  || props.activeSavedFilterKey
+  || props.activeCustomFilterLabel
+  || props.activeGroupKey,
+));
+const hasResponsiveOverflow = computed(() =>
+  (props.showViewSwitch && props.viewModes.length > 1)
+  || props.sortOptions.length > 0
+  || props.canCreateRecord,
+);
+
+function selectOverflowView(mode: string) {
+  overflowMenuOpen.value = false;
+  emit('switch-view', mode);
+}
+
+function selectOverflowSort(value: string) {
+  overflowMenuOpen.value = false;
+  emit('sort', value);
+}
+
+function createFromOverflow() {
+  overflowMenuOpen.value = false;
+  emit('create');
+}
 
 function selectFilter(key: string) {
   searchMenuOpen.value = false;
@@ -483,6 +569,7 @@ function handleDocumentPointerDown(event: PointerEvent) {
   const root = toolbarRoot.value;
   if (!root || root.contains(event.target as Node | null)) return;
   searchMenuOpen.value = false;
+  overflowMenuOpen.value = false;
 }
 
 onMounted(() => {
@@ -499,7 +586,8 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 40;
   display: grid;
-  grid-template-columns: max-content minmax(320px, 560px) minmax(max-content, 1fr);
+  grid-template-columns: max-content minmax(320px, 1fr) max-content max-content;
+  grid-template-areas: 'view search sort primary';
   justify-content: stretch;
   align-items: center;
   gap: 8px;
@@ -513,8 +601,15 @@ onBeforeUnmount(() => {
 }
 
 .action-toolbar--without-view {
-  grid-template-columns: minmax(320px, 560px) minmax(max-content, 1fr);
+  grid-template-columns: minmax(320px, 1fr) max-content max-content;
+  grid-template-areas: 'search sort primary';
 }
+
+.view-switch { grid-area: view; }
+.native-search { grid-area: search; }
+.sort-switch { grid-area: sort; }
+.toolbar-actions { grid-area: primary; }
+.toolbar-overflow { grid-area: overflow; }
 
 .toolbar-section,
 .view-switch,
@@ -553,8 +648,8 @@ onBeforeUnmount(() => {
   position: relative;
   display: flex;
   align-items: center;
-  justify-self: center;
-  width: clamp(320px, 46vw, 560px);
+  justify-self: stretch;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
 }
@@ -565,7 +660,7 @@ onBeforeUnmount(() => {
   flex-wrap: nowrap;
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 36px;
+  min-height: 44px;
   gap: 4px;
   border: 1px solid var(--sc-app-border-strong);
   border-radius: 8px;
@@ -589,7 +684,8 @@ onBeforeUnmount(() => {
 }
 
 .toolbar-search-submit,
-.toolbar-search-clear {
+.toolbar-search-clear,
+.toolbar-clear-all {
   flex: 0 0 auto;
   border: 1px solid var(--sc-app-border-strong);
   border-radius: 8px;
@@ -599,6 +695,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
+  min-height: 36px;
 }
 
 .toolbar-search-submit {
@@ -826,31 +923,6 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
-.active-conditions-summary {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
-
-.active-conditions-summary button {
-  border: 0;
-  background: transparent;
-  color: var(--sc-app-accent);
-  padding: 2px 0;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.active-conditions-summary button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
 .contract-label {
   margin: 0;
   font-size: 13px;
@@ -880,17 +952,20 @@ onBeforeUnmount(() => {
   cursor: pointer;
   max-width: 100%;
   white-space: nowrap;
+  min-height: 44px;
 }
 
-@media (max-width: 1360px) {
-  .action-toolbar {
-    grid-template-columns: max-content minmax(300px, 500px) minmax(max-content, 1fr);
-  }
-
-  .native-search {
-    width: clamp(300px, 44vw, 500px);
-  }
-}
+.toolbar-overflow { position: relative; display: none; }
+.toolbar-overflow-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-control); background: var(--sc-app-input-bg); color: var(--sc-app-text-primary); cursor: pointer; }
+.toolbar-overflow-menu { position: absolute; z-index: 90; top: calc(100% + var(--sc-space-2xs)); right: 0; display: grid; gap: var(--sc-space-xs); min-width: 220px; max-height: min(420px, 70vh); overflow: auto; padding: var(--sc-space-xs); border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
+.toolbar-overflow-section { display: grid; gap: var(--sc-space-2xs); }
+.toolbar-overflow-section p { margin: 0; color: var(--sc-app-text-secondary); font-size: 12px; font-weight: 700; }
+.toolbar-overflow-section button,
+.toolbar-overflow-create { display: flex; align-items: center; gap: var(--sc-space-xs); width: 100%; min-height: 44px; padding: var(--sc-space-xs); border: 1px solid transparent; border-radius: var(--sc-product-radius-control); background: var(--sc-app-panel); color: var(--sc-app-text-primary); text-align: left; cursor: pointer; }
+.toolbar-overflow-section button:hover,
+.toolbar-overflow-section button.active,
+.toolbar-overflow-create:hover { border-color: var(--sc-app-border); background: var(--sc-app-muted-bg); }
+.toolbar-overflow-create { display: none; }
 
 .contract-chip.active {
   border-color: var(--sc-semantic-surface-interactive);
@@ -921,21 +996,16 @@ onBeforeUnmount(() => {
   opacity: 0.6;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1199px) {
   .action-toolbar {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(240px, 1fr) max-content max-content;
+    grid-template-areas: 'search primary overflow';
   }
 
-  .toolbar-section,
   .view-switch,
-  .filter-switch,
-  .saved-filter-switch,
-  .sort-switch,
-  .group-switch,
-  .toolbar-actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
+  .sort-switch { display: none; }
+
+  .toolbar-overflow { display: block; }
 
   .native-search {
     width: 100%;
@@ -962,5 +1032,19 @@ onBeforeUnmount(() => {
     border-left: 0;
     border-top: 1px solid var(--sc-app-border);
   }
+}
+
+@media (max-width: 760px) {
+  .action-toolbar,
+  .action-toolbar--without-view {
+    grid-template-columns: minmax(190px, 1fr) max-content;
+    grid-template-areas: 'search overflow';
+  }
+  .toolbar-actions { display: none; }
+  .toolbar-overflow-create { display: flex; }
+  .toolbar-search-clear,
+  .toolbar-clear-all { display: none; }
+  .toolbar-search-submit { width: 44px; min-height: 44px; padding-inline: 0; font-size: 0; justify-content: center; }
+  .search-menu-toggle { width: 44px; min-height: 44px; }
 }
 </style>

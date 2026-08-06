@@ -3,17 +3,17 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { launchChromium } from './playwright_runtime.mjs';
-import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { launchAcceptanceChromium } from './playwright_runtime.mjs';
+import { redactedEnvironmentEvidence, resolveAcceptanceEnvironment, verifyServedIdentity } from './lib/frontend_acceptance_environment.mjs';
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 
-const acceptance = resolveAcceptanceEnvironment({ tool: 'full-product-audit', env: { ...process.env, FRONTEND_URL: process.env.SC_FULL_PRODUCT_URL || process.env.FRONTEND_URL, DB_NAME: process.env.SC_FULL_PRODUCT_DB || process.env.DB_NAME } });
+const acceptance = resolveAcceptanceEnvironment({ tool: 'full-product-audit', env: { ...process.env, SC_ACCEPTANCE_FRONTEND_URL: process.env.SC_FULL_PRODUCT_URL || process.env.SC_ACCEPTANCE_FRONTEND_URL, SC_ACCEPTANCE_DATABASE: process.env.SC_FULL_PRODUCT_DB || process.env.SC_ACCEPTANCE_DATABASE } });
 const BASE_URL = acceptance.baseUrl;
 const DB_NAME = acceptance.database;
 const PASSWORD = process.env.SC_FULL_PRODUCT_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
-const OUTPUT_ROOT = path.resolve(process.env.SC_FULL_PRODUCT_OUTPUT || '.runtime/final-acceptance');
-const JSON_OUTPUT = path.resolve(process.env.SC_FULL_PRODUCT_JSON || '.runtime/full-product-audit.json');
-const FORM_AUDIT_INPUT = path.resolve(process.env.SC_FORM_AUDIT_JSON || '.runtime/form-audit.json');
+const OUTPUT_ROOT = path.resolve(process.env.SC_FULL_PRODUCT_OUTPUT || acceptance.runArtifactRoot);
+const JSON_OUTPUT = path.resolve(process.env.SC_FULL_PRODUCT_JSON || path.join(OUTPUT_ROOT, 'full-product-audit.json'));
+const FORM_AUDIT_INPUT = path.resolve(process.env.SC_FORM_AUDIT_JSON || path.join(OUTPUT_ROOT, 'form-audit.json'));
 const SOURCE_SHA = process.env.SC_ACCEPTANCE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 if (!PASSWORD) throw new Error('SC_FULL_PRODUCT_PASSWORD or SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
 const ROLE_BINDINGS = ['finance', 'project_member', 'project_manager', 'owner'].map((role) => ({ role, login: String(acceptance.roleBindings[role] || '') }));
@@ -59,7 +59,7 @@ const runtimeIssues = [];
 const uncovered = [];
 
 await fs.mkdir(OUTPUT_ROOT, { recursive: true });
-const acceptanceLease = await acquireAcceptanceLease({ root: acceptance.artifactRoot, mode: 'shared-read', owner: { tool: 'full-product-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
+const acceptanceLease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'full-product-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
 
 function nodeMeta(node) {
   return node?.meta && typeof node.meta === 'object' ? node.meta : {};
@@ -343,7 +343,8 @@ async function loadFormTemplateEvidence() {
   }
 }
 
-const browser = await launchChromium({ headless: true });
+const servedIdentity = await verifyServedIdentity(acceptance, acceptance.provenance.expectedSha);
+const browser = await launchAcceptanceChromium(acceptance, { headless: true });
 const discovered = [];
 try {
   for (const binding of ROLE_BINDINGS) {
@@ -450,7 +451,8 @@ const report = {
   source_sha: SOURCE_SHA,
   status,
   baseline: '2ae5dd9ff99f54db66e80bf1e9855a3d59ee090e',
-  environment: { base_url: BASE_URL, database: DB_NAME, write_operations: false, external_puma_accessed: false },
+  environment: redactedEnvironmentEvidence(acceptance),
+  served_identity: servedIdentity,
   discovery: { source: 'authenticated release_navigation_v1/delivery_engine_v1', roles: ROLE_BINDINGS, menu_leaves: discovered.length, smoke_viewports: SMOKE_VIEWPORTS, deep_viewports: DEEP_VIEWPORTS },
   coverage,
   representatives,

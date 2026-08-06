@@ -1,5 +1,6 @@
 import {
   batchUpdateRecords,
+  exportRecordsCsv,
   listRecordsRaw,
   saveSearchFavorite,
   unlinkRecord,
@@ -7,6 +8,7 @@ import {
 } from '../../api/data';
 
 export const batchUpdateActionViewRecords = batchUpdateRecords;
+export const exportActionViewRecords = exportRecordsCsv;
 export const listActionViewRecordsRaw = listRecordsRaw;
 export const saveActionViewSearchFavorite = saveSearchFavorite;
 export const unlinkActionViewRecord = unlinkRecord;

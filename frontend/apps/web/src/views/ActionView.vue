@@ -382,6 +382,7 @@
       :enable-grouped-rows="listGroupedRowsEnabled"
       :summary-items="vm.content.list?.summaryItems || []"
       :selected-ids="selectedIds"
+      :selection-enabled="listProfile?.selection_policy?.enabled !== false"
       :selection-actions="selectionActions"
       :batch-message="batchMessage"
       :list-profile="listProfile"
@@ -570,7 +571,6 @@ import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorC
 import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
 import { useRoute, useRouter } from 'vue-router';
 import type { ActionContract } from '@sc/schema';
-import { ApiError } from '../api/client';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
@@ -753,6 +753,7 @@ import {
 import {
   buildBatchUpdateRequest,
   resolveBatchActionFailureMessage,
+  resolveBatchDeleteFailureMessage,
   resolveBatchActionGuardMessage,
   resolveBatchActionResultMessage,
 } from '../app/runtime/actionViewBatchRuntime';
@@ -761,6 +762,7 @@ import {
   resolveBatchDeleteExecutionSeed,
   resolveBatchStandardExecutionSeed,
 } from '../app/runtime/actionViewBatchActionFlowRuntime';
+import { executeActionViewSelectionExport, resolveSelectionActions } from '../app/runtime/actionViewSelectionExportRuntime';
 import { applyActionViewLoadResetState } from '../app/runtime/actionViewLoadResetRuntime';
 import {
   resolveContractFlagApplyState,
@@ -1149,7 +1151,6 @@ const listProfile = computed<SceneListProfile | null>(() => {
   return extractListProfile(actionContract.value);
 });
 type ActionBatchPolicy = NonNullable<SceneListProfile['batch_policy']>;
-
 const batchPolicy = computed<ActionBatchPolicy>(() => {
   const profilePolicy = listProfile.value?.batch_policy;
   if (profilePolicy && Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0) {
@@ -1793,21 +1794,28 @@ const {
 });
 
 const selectionActions = computed(() => {
-  return allowedBatchActions.value
-    .filter((action): action is 'archive' | 'activate' | 'delete' => action === 'archive' || action === 'activate' || action === 'delete')
-    .map((action) => ({
-      key: `batch:${action}`,
-      label: action === 'delete'
-        ? toolbarUiLabel('batch_label_delete', '批量删除')
-        : toolbarUiLabel(action === 'activate' ? 'batch_label_activate' : 'batch_label_archive', action === 'activate' ? '批量激活' : '批量归档'),
-      enabled: action === 'delete' ? String(batchPolicy.value.delete_mode || 'none') === 'unlink' : Boolean(activeField.value),
-      hint: '',
-    }));
+  return resolveSelectionActions(
+    allowedBatchActions.value, String(batchPolicy.value.delete_mode || 'none'), activeField.value, toolbarUiLabel,
+  );
 });
-
 function handleSelectionAction(key: string) {
   if (key.startsWith('batch:')) {
     const action = key.slice('batch:'.length);
+    if (action === 'export') {
+      void executeActionViewSelectionExport({
+        model: String(resolvedModelRef.value || model.value || '').trim(),
+        ids: [...selectedIds.value],
+        columns: columns.value,
+        columnOptions: listColumnOptions.value,
+        visibility: listColumnVisibility.value,
+        columnLabels: contractColumnLabels.value,
+        context: resolveEffectiveRequestContext(),
+        setBusy: (busy) => { batchBusy.value = busy; },
+        onSuccess: (count) => { clearSelection(); batchMessage.value = toolbarUiLabel('batch_msg_export_done', `已导出 ${count} 条记录`); },
+        onFailure: () => { batchMessage.value = toolbarUiLabel('batch_msg_export_failed', '导出失败，请稍后重试'); },
+      });
+      return;
+    }
     if (action === 'archive' || action === 'activate' || action === 'delete') {
       void runBatchPolicyAction(action);
     }
@@ -1817,15 +1825,6 @@ function handleSelectionAction(key: string) {
   if (!target || !target.enabled) return;
   void runContractAction(target as ContractActionButton);
 }
-
-function resolveBatchDeleteFailureMessage(err: unknown) {
-  if (err instanceof ApiError) {
-    const message = String(err.message || '').trim();
-    if (message) return message;
-  }
-  return resolveBatchActionFailureMessage({ action: 'delete', text: toolbarUiLabel });
-}
-
 async function runBatchPolicyAction(action: 'archive' | 'activate' | 'delete') {
   const targetModel = String(resolvedModelRef.value || model.value || '').trim();
   const selected = [...selectedIds.value];
@@ -1883,7 +1882,7 @@ async function runBatchPolicyAction(action: 'archive' | 'activate' | 'delete') {
       batchMessage.value = resultMessage;
     } catch (err) {
       batchMessage.value = action === 'delete'
-        ? resolveBatchDeleteFailureMessage(err)
+        ? resolveBatchDeleteFailureMessage(err, toolbarUiLabel)
         : resolveBatchActionFailureMessage({ action, text: toolbarUiLabel });
     } finally {
       batchBusy.value = false;
@@ -3301,10 +3300,10 @@ function refreshForProjectContextChange(): void {
 
 @media (min-width: 761px) {
   .page[data-product-page-mode='list'] {
-    height: 100%; min-height: 0;
-    overflow: hidden; display: flex; flex-direction: column;
+    min-height: 100%; height: auto;
+    overflow: visible; display: flex; flex-direction: column;
   }
-  .action-list-surface { flex: 1 1 auto; min-height: 0; }
+  .action-list-surface { flex: 0 0 auto; min-height: 0; }
 }
 
 .page-actions {

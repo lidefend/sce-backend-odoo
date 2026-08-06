@@ -134,6 +134,11 @@ export function resolveBatchActionFailureMessage(options: {
       : options.text('batch_msg_delete_failed', '批量删除失败');
 }
 
+export function resolveBatchDeleteFailureMessage(error: unknown, text: (key: string, fallback: string) => string): string {
+  if (error instanceof ApiError && String(error.message || '').trim()) return String(error.message).trim();
+  return resolveBatchActionFailureMessage({ action: 'delete', text });
+}
+
 export function resolveBatchActionErrorLabel(options: {
   action: 'archive' | 'activate' | 'delete';
   text: (key: string, fallback: string) => string;

@@ -61,3 +61,4 @@ from . import test_um_p3_payment_ledger_request_permission_boundaries
 from . import test_um_p3_subcontract_cumulative_amount_boundaries
 from . import test_historical_payment_fact_boundaries
 from . import test_orphan_handoff_ui_migration
+from . import test_runtime_view_contract_cleanup_migration
