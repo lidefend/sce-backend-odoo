@@ -2877,3 +2877,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   count assertions. Daily application remains protected by the verified paired
   backup and exact bundle synchronization; rollback restores the paired backup
   and preceding exact source SHA rather than attempting a module downgrade.
+
+## 2026-08-06 — GOVERNED-WORKTREE-CREATE-ENTRY
+
+- Branch / anchor: `fix/worktree-create-governance` from `6250dc6`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  local parallel-workspace lifecycle governance; `scripts/ops`,
+  `make/codex.mk`, and Codex execution policy.
+- Reason / Why Here: the policy correctly prohibited ungoverned `git worktree`
+  mutation but exposed only a cleanup target, leaving no compliant creation
+  path for isolated parallel tasks. The new Make entry keeps raw Git mutation
+  prohibited while validating an exact reachable base, eligible new branch,
+  controlled sibling path, nonexistence, explicit apply confirmation, and the
+  created worktree's branch, HEAD, and cleanliness.
+- Why Not Elsewhere: this is not a product, frontend, database, permission,
+  menu, or deployment concern. It must not be implemented as an agent-specific
+  shell exception or by weakening the raw Git command ban.
+- Blast Radius / validation: local linked worktree creation only; no remote,
+  database, service, or product state changes. Fourteen isolated create and
+  cleanup tests cover successful creation plus confirmation, path, branch,
+  commit identity, reachability, dirty, unmerged, and primary-worktree denials.

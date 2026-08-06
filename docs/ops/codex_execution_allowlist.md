@@ -262,12 +262,29 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 * ❌ `git tag`
 * ❌ `git branch -d / -D`
   （**除非** 通过 `make branch.cleanup.feature` 执行）
-* ❌ `git worktree`
+* ❌ 裸用 `git worktree`
+  （创建只能通过 `make workspace.worktree.create`，清理只能通过
+  `make workspace.worktree.cleanup`；两个入口均为本地操作并执行路径、分支、
+  精确基线和状态校验）
 * ❌ `git config`
 * ❌ `git clean -fdx`
 
 > ⚠️ 所有 **远端状态变更**
 > 必须通过 Makefile 封装流程完成。
+
+受控并行工作区创建默认仅执行预检。实际创建必须显式提供：
+
+```bash
+make workspace.worktree.create \
+  CREATE_WORKTREE=/absolute/sibling/path \
+  CREATE_WORKTREE_BRANCH=feature/example \
+  CREATE_WORKTREE_BASE=<full-40-character-sha> \
+  APPLY=1 \
+  CREATE_WORKTREE_CONFIRM=CREATE_GOVERNED_WORKTREE
+```
+
+目标必须是主仓库同级且以 `<repository-name>-` 开头的新目录；目标分支必须符合
+自治写入分支规则且尚不存在；基线必须是本地或 `origin` 分支可达的既有提交。
 
 > 解释：
 > PR 的代码更新 **必须通过 `make pr.push`**，
