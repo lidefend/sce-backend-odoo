@@ -329,6 +329,14 @@ def apply_user_surface_policies(
         "delete_only_mode": False,
         "delete_mode": "none",
         "available_actions": [],
+        "execution_intents": {},
+    }
+    selection_policy = {
+        "enabled": bool(view_types & {"tree", "list"} or has_list_view),
+        "mode": "multiple",
+        "scope": "current_page",
+        "requires_batch_action": False,
+        "action_source": "batch_policy.available_actions",
     }
     if "form" in view_types and not (view_types & {"tree", "list"} or has_list_view):
         filters_primary_max = 0
@@ -365,11 +373,16 @@ def apply_user_surface_policies(
             "delete_only_mode": delete_only_mode,
             "delete_mode": "unlink" if delete_allowed and "delete" in available_actions else "none",
             "available_actions": available_actions,
+            "execution_intents": {
+                action: "api.data.unlink" if action == "delete" else "api.data.batch"
+                for action in available_actions
+            },
         }
         if not write_allowed and not unlink_right_allowed:
             batch_policy["available_actions"] = []
             batch_policy["enabled"] = False
             batch_policy["delete_mode"] = "none"
+            batch_policy["execution_intents"] = {}
     if model and primary_model and model == primary_model:
         filters_primary_max = min(filters_primary_max, 4)
         actions_primary_max = min(actions_primary_max, 3)
@@ -380,5 +393,6 @@ def apply_user_surface_policies(
         "actions_max": action_max,
         "delete_mode": batch_policy.get("delete_mode") or "none",
         "batch_policy": batch_policy,
+        "selection_policy": selection_policy,
         "record_open_policy": record_open_policy,
     }

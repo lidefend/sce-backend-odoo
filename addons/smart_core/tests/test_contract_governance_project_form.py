@@ -1121,6 +1121,10 @@ class TestProjectFormGovernance(unittest.TestCase):
         self.assertEqual(batch_policy.get("active_field"), "")
         self.assertEqual(batch_policy.get("delete_mode"), "none")
         self.assertEqual(batch_policy.get("available_actions"), [])
+        self.assertEqual(batch_policy.get("execution_intents"), {})
+        selection_policy = (out.get("list_profile") or {}).get("selection_policy") or {}
+        self.assertTrue(selection_policy.get("enabled"))
+        self.assertFalse(selection_policy.get("requires_batch_action"))
 
     def test_list_batch_policy_keeps_executable_archive_and_delete(self):
         data = {
@@ -1148,6 +1152,16 @@ class TestProjectFormGovernance(unittest.TestCase):
         self.assertEqual(batch_policy.get("active_field"), "active")
         self.assertEqual(batch_policy.get("delete_mode"), "unlink")
         self.assertEqual(batch_policy.get("available_actions"), ["archive", "activate", "delete"])
+        self.assertEqual(
+            batch_policy.get("execution_intents"),
+            {
+                "archive": "api.data.batch",
+                "activate": "api.data.batch",
+                "delete": "api.data.unlink",
+            },
+        )
+        selection_policy = (out.get("list_profile") or {}).get("selection_policy") or {}
+        self.assertEqual(selection_policy.get("action_source"), "batch_policy.available_actions")
 
     def test_project_kanban_adds_profile_and_filters_fields(self):
         data = _sample_kanban_payload()

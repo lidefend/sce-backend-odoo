@@ -2705,6 +2705,13 @@ class UiContractV2Handler(BaseIntentHandler):
                 "locked_columns": [],
                 "must_request_columns": columns,
             },
+            "selection_policy": {
+                "enabled": True,
+                "mode": "multiple",
+                "scope": "current_page",
+                "requires_batch_action": False,
+                "action_source": "batch_policy.available_actions",
+            },
         })
         if direct_orchestration_columns:
             profile["column_policy"] = {

@@ -382,6 +382,7 @@
       :enable-grouped-rows="listGroupedRowsEnabled"
       :summary-items="vm.content.list?.summaryItems || []"
       :selected-ids="selectedIds"
+      :selection-enabled="listProfile?.selection_policy?.enabled !== false"
       :selection-actions="selectionActions"
       :batch-message="batchMessage"
       :list-profile="listProfile"
@@ -1149,7 +1150,6 @@ const listProfile = computed<SceneListProfile | null>(() => {
   return extractListProfile(actionContract.value);
 });
 type ActionBatchPolicy = NonNullable<SceneListProfile['batch_policy']>;
-
 const batchPolicy = computed<ActionBatchPolicy>(() => {
   const profilePolicy = listProfile.value?.batch_policy;
   if (profilePolicy && Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0) {

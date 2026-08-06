@@ -172,8 +172,8 @@ def _probe_frontend_delete_flow(errors: list[str]) -> None:
     _assert("dryRunIdempotencyKey" in flow and "'delete.dry_run'" in flow, "batch delete must use a distinct dry-run idempotency key", errors)
     _assert("dryRun: true" in action_view, "ActionView batch delete must preflight with dryRun", errors)
     _assert("const result = await unlinkActionViewRecord" in action_view, "ActionView batch delete must still execute real unlink after preflight", errors)
-    _assert("const hasSelectionActions = computed(() => selectionActions.value.length > 0);" in list_page, "ListPage must derive selection visibility from executable actions", errors)
-    _assert("const showSelectionColumn = computed(() => hasSelectionActions.value" in list_page, "ListPage must hide selection column without delete/archive actions", errors)
+    _assert("props.selectionEnabled !== false" in list_page, "ListPage must keep selection as a backend-governed list capability", errors)
+    _assert(':selection-enabled="listProfile?.selection_policy?.enabled !== false"' in action_view, "ActionView must consume backend selection policy", errors)
     _assert(
         "Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0" in action_view
         and "actionContract.value?.surface_policies?.batch_policy || profilePolicy || {}" in action_view,

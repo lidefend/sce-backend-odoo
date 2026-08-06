@@ -298,7 +298,6 @@ def _probe_contract_governance(errors: list[str]) -> None:
 
 def _probe_real_action_catalog(errors: list[str]) -> None:
     rows = _iter_xml_act_window_actions()
-    active_models = _collect_models_with_active_field()
     by_id = {row.get("id"): row for row in rows if row.get("id")}
     list_actions = [row for row in rows if _action_has_list_view(row)]
     _assert(list_actions, "static action catalog must include at least one list/tree action", errors)
@@ -309,13 +308,10 @@ def _probe_real_action_catalog(errors: list[str]) -> None:
             continue
         _assert(row.get("model") == expected_model, f"{action_id} must target {expected_model}", errors)
         _assert(_action_has_list_view(row), f"{action_id} must include tree/list view mode", errors)
-    business_models = sorted({row.get("model", "") for row in list_actions if _is_business_list_model(row.get("model", ""))})
-    missing_active = [model for model in business_models if model not in active_models]
-    _assert(
-        not missing_active,
-        "business list models missing active field for batch archive: " + ", ".join(missing_active[:30]),
-        errors,
-    )
+    # A list is not automatically an archive-capable aggregate. Immutable facts,
+    # workflow documents and relationship records must not gain a synthetic
+    # ``active`` field merely to satisfy a UI convention. The explicit
+    # REQUIRED_ARCHIVE_MODELS boundary below owns that product decision.
 
 
 def _probe_real_model_archive_fields(errors: list[str]) -> None:
@@ -334,13 +330,13 @@ def _probe_frontend_sources(errors: list[str]) -> None:
     batch_flow = _read("frontend/apps/web/src/app/runtime/actionViewBatchActionFlowRuntime.ts")
 
     _assert(
-        "const hasSelectionActions = computed(() => selectionActions.value.length > 0);" in list_page,
-        "ListPage must compute hasSelectionActions",
+        "props.selectionEnabled !== false" in list_page,
+        "ListPage must render the backend-governed stable list selection capability",
         errors,
     )
     _assert(
-        "const showSelectionColumn = computed(() => hasSelectionActions.value" in list_page,
-        "ListPage selection column must be hidden when no batch action is executable",
+        ':selection-enabled="listProfile?.selection_policy?.enabled !== false"' in action_view,
+        "ActionView must consume the backend selection policy without model branches",
         errors,
     )
     _assert(
@@ -378,6 +374,14 @@ def _probe_backend_handlers(errors: list[str]) -> None:
     _assert("env_model.check_access_rights(\"unlink\")" in unlink, "api.data.unlink must check unlink ACL", errors)
     _assert("recs.check_access_rule(\"unlink\")" in unlink, "api.data.unlink must check record unlink rule", errors)
     _assert("dry_run = parse_bool" in unlink, "api.data.unlink must keep dry_run support", errors)
+    user_surface = _read("addons/smart_core/utils/contract_governance_user_surface.py")
+    list_surface = _read("addons/smart_core/utils/contract_governance_list_surface.py")
+    for source, label in ((user_surface, "user surface"), (list_surface, "standard list")):
+        _assert(
+            '"api.data.unlink" if action == "delete" else "api.data.batch"' in source,
+            f"{label} must bind every published batch action to an executable backend intent",
+            errors,
+        )
 
 
 def main() -> int:

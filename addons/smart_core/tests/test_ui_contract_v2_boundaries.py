@@ -567,6 +567,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             source_contract["list_profile"]["preference_policy"]["must_request_columns"],
             profile_columns,
         )
+        self.assertEqual(
+            source_contract["list_profile"]["selection_policy"],
+            {
+                "enabled": True,
+                "mode": "multiple",
+                "scope": "current_page",
+                "requires_batch_action": False,
+                "action_source": "batch_policy.available_actions",
+            },
+        )
 
     def test_business_list_profile_preserves_business_config_column_order(self):
         class _Config:

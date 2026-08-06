@@ -857,6 +857,7 @@ const props = defineProps<{
   summaryItems?: Array<{ key: string; label: string; value: string; tone?: string }>;
   selectedIds?: number[];
   selectionActions?: SelectionAction[];
+  selectionEnabled?: boolean;
   onToggleSelection?: (id: number, selected: boolean) => void;
   onToggleSelectionAll?: (ids: number[], selected: boolean) => void;
   onRunSelectionAction?: (key: string) => void;
@@ -1477,9 +1478,8 @@ const selectedCount = computed(() => (props.selectedIds || []).length);
 const selectionActions = computed(() =>
   Array.isArray(props.selectionActions) ? props.selectionActions : [],
 );
-const hasSelectionActions = computed(() => selectionActions.value.length > 0);
 const selectableRows = computed(() => pageVisibleRows.value.map((row) => rowId(row)).filter((id): id is number => typeof id === 'number'));
-const showSelectionColumn = computed(() => hasSelectionActions.value && !!props.onToggleSelection && !!props.onToggleSelectionAll);
+const showSelectionColumn = computed(() => props.selectionEnabled !== false && !!props.onToggleSelection && !!props.onToggleSelectionAll);
 const showBatchBar = computed(() => showSelectionColumn.value && (selectedCount.value > 0 || Boolean(props.batchMessage)));
 const allSelected = computed(() => {
   const rows = selectableRows.value;

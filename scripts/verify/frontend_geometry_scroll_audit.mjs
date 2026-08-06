@@ -378,6 +378,21 @@ async function nativeTableStickyProof(page) {
   });
 }
 
+async function listSelectionProof(page) {
+  const desktopRows = page.locator('.desktop-record-table:visible tbody .cell-select input[type="checkbox"]:visible');
+  const mobileRows = page.locator('.mobile-record-list:visible [data-mobile-record-select] input[type="checkbox"]:visible');
+  const rows = await desktopRows.count() ? desktopRows : mobileRows;
+  const rowCount = await rows.count();
+  if (!rowCount) return { available: false, passed: false, row_count: 0 };
+  const first = rows.first();
+  await first.check();
+  const selectedBar = page.locator('.batch-bar:visible');
+  const selectedText = String(await selectedBar.textContent().catch(() => '') || '').trim();
+  const passed = await first.isChecked() && await selectedBar.count() > 0 && /已选\s*1\s*条/.test(selectedText);
+  await first.uncheck();
+  return { available: true, passed, row_count: rowCount, selected_text: selectedText };
+}
+
 async function negativeStickyFixtureProof(page) {
   const style = await page.addStyleTag({ content: '.table thead th { position: static !important; }' });
   const broken = await nativeTableStickyProof(page);
@@ -426,9 +441,10 @@ try {
         ? await page.locator('.desktop-record-table').isVisible().catch(() => false)
         : false;
       const stickyProof = desktopTableVisible ? await nativeTableStickyProof(page) : null;
+      const selectionProof = target.key === 'runtime-list' ? await listSelectionProof(page) : null;
       const screenshot = path.join(OUTPUT_DIR, `${target.key}-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
-      rows.push({ target, viewport, geometry, sticky_proof: stickyProof, checks: { ...checksFor(geometry), ...(stickyProof ? { native_table_header_sticky: stickyProof.passed } : {}) }, screenshot });
+      rows.push({ target, viewport, geometry, sticky_proof: stickyProof, selection_proof: selectionProof, checks: { ...checksFor(geometry), ...(stickyProof ? { native_table_header_sticky: stickyProof.passed } : {}), ...(selectionProof ? { list_selection_operable: selectionProof.passed } : {}) }, screenshot });
     }
     if ([1440, 390].includes(viewport.width)) {
       for (const target of discoveredRouteTargets) {
@@ -479,13 +495,15 @@ try {
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForPage(page);
       const geometry = await inspectGeometry(page);
+      const selectionProof = target.key === 'runtime-list' ? await listSelectionProof(page) : null;
       const screenshot = path.join(OUTPUT_DIR, `${target.key}-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
       rows.push({
         target: { ...target, label: `${target.label} / 浏览器缩放 ${zoom}%` },
         viewport,
         geometry,
-        checks: checksFor(geometry),
+        selection_proof: selectionProof,
+        checks: { ...checksFor(geometry), ...(selectionProof ? { list_selection_operable: selectionProof.passed } : {}) },
         screenshot,
       });
     }

@@ -5,6 +5,7 @@ import {
   collectUnifiedPageContractV2FieldStatus,
   resolveUnifiedPageContractV2,
   resolveUnifiedPageContractV2ListProfile,
+  resolveUnifiedPageContractV2SurfacePolicies,
 } from '../contracts/unifiedPageContractV2';
 
 type Dict = Record<string, unknown>;
@@ -549,6 +550,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
   function extractListProfile(contract: unknown) {
     const typed = (contract || {}) as Dict;
     const rawProfile = resolveUnifiedPageContractV2ListProfile(typed);
+    const surfacePolicies = resolveUnifiedPageContractV2SurfacePolicies(typed);
     const semanticPage = (typed.semantic_page || {}) as Dict;
     const listSemantics = (semanticPage.list_semantics || {}) as Dict;
     const semanticColumns = Array.isArray(listSemantics.columns) ? (listSemantics.columns as Array<Dict>) : [];
@@ -600,6 +602,16 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       available_actions: Array.isArray(rawBatchPolicy.available_actions)
         ? rawBatchPolicy.available_actions.map((item) => String(item || '').trim()).filter(Boolean)
         : undefined,
+      execution_intents: Object.fromEntries(Object.entries((rawBatchPolicy.execution_intents || {}) as Dict)
+        .map(([action, intent]) => [action, String(intent || '').trim()]).filter(([, intent]) => Boolean(intent))),
+    };
+    const rawSelectionPolicy = (rawProfile.selection_policy || listSemantics.selection_policy || surfacePolicies.selection_policy || {}) as Dict;
+    const selectionPolicy = {
+      enabled: rawSelectionPolicy.enabled !== false,
+      mode: String(rawSelectionPolicy.mode || 'multiple').trim(),
+      scope: String(rawSelectionPolicy.scope || 'current_page').trim(),
+      requires_batch_action: rawSelectionPolicy.requires_batch_action === true,
+      action_source: String(rawSelectionPolicy.action_source || 'batch_policy.available_actions').trim(),
     };
     const rawGrouping = (rawProfile.grouping || listSemantics.grouping || {}) as Dict;
     const rawGroupingSort = (rawGrouping.sort || {}) as Dict;
@@ -649,6 +661,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       show_row_number: showRowNumber,
       status_field: statusField,
       metric_fields: metricFields,
+      selection_policy: selectionPolicy,
       ...(hasRawBatchPolicy ? { batch_policy: batchPolicy } : {}),
       grouping,
     };

@@ -134,6 +134,15 @@ def main() -> int:
         batch_policy = policies.get("batch_policy") or {}
         if batch_policy.get("available_actions") != ["archive", "activate", "delete"]:
             errors.append("apply_user_surface_policies must derive archive/activate/delete batch actions")
+        if batch_policy.get("execution_intents") != {
+            "archive": "api.data.batch",
+            "activate": "api.data.batch",
+            "delete": "api.data.unlink",
+        }:
+            errors.append("each governed batch action must bind to its executable backend intent")
+        selection_policy = policies.get("selection_policy") or {}
+        if not selection_policy.get("enabled") or selection_policy.get("requires_batch_action") is not False:
+            errors.append("list selection must remain available independently from optional batch actions")
         record_open = policies.get("record_open_policy") or {}
         if record_open.get("carry_query_mode") != "clear_scene_context":
             errors.append("apply_user_surface_policies must preserve legacy record-open context policy")

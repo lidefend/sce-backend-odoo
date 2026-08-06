@@ -365,6 +365,17 @@ def govern_standard_list_for_user(
         else None,
         "delete_mode": delete_mode if "delete" in available_actions else "none",
         "available_actions": available_actions,
+        "execution_intents": {
+            action: "api.data.unlink" if action == "delete" else "api.data.batch"
+            for action in available_actions
+        },
+    }
+    selection_policy = {
+        "enabled": True,
+        "mode": "multiple",
+        "scope": "current_page",
+        "requires_batch_action": False,
+        "action_source": "batch_policy.available_actions",
     }
 
     list_profile = _as_dict(data.get("list_profile"))
@@ -389,6 +400,7 @@ def govern_standard_list_for_user(
                 "must_request_columns": selected,
             },
             "batch_policy": batch_policy,
+            "selection_policy": selection_policy,
             "grouping": {
                 "sample_limits": [3, 5, 8],
                 "default_sample_limit": 3,
@@ -420,6 +432,7 @@ def govern_standard_list_for_user(
             views["list"] = tree_view
         data["views"] = views
     surface_policies["batch_policy"] = batch_policy
+    surface_policies["selection_policy"] = selection_policy
     surface_policies["delete_mode"] = batch_policy.get("delete_mode") or surface_policies.get("delete_mode") or "none"
     data["surface_policies"] = surface_policies
 
@@ -441,6 +454,7 @@ def govern_standard_list_for_user(
     list_semantics["status_field"] = status_field
     list_semantics["metric_fields"] = metric_fields
     list_semantics["batch_policy"] = batch_policy
+    list_semantics["selection_policy"] = selection_policy
     semantic_page["list_semantics"] = list_semantics
     data["semantic_page"] = semantic_page
     apply_standard_search_toolbar_labels(data)
