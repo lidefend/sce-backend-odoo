@@ -15,7 +15,7 @@
       "additionalProperties": false,
       "required": ["frozen_issue_count", "runtime_sampling_performed", "menu_xml_modified", "database_write_performed", "frontend_modified"],
       "properties": {
-        "frozen_issue_count": {"const": 22},
+        "frozen_issue_count": {"const": 6},
         "runtime_sampling_performed": {"const": false},
         "menu_xml_modified": {"const": false},
         "database_write_performed": {"const": false},
@@ -25,8 +25,8 @@
     "runtime_admission": {"type": "object"},
     "decisions": {
       "type": "array",
-      "minItems": 22,
-      "maxItems": 22,
+      "minItems": 6,
+      "maxItems": 6,
       "items": {
         "type": "object",
         "additionalProperties": false,

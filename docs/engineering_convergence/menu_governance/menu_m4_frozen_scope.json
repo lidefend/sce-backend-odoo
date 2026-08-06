@@ -1,0 +1,30 @@
+{
+  "schema": "sce.menu_governance_m4_frozen_scope.v1",
+  "static_inventory_sha": "6250dc64eeb67bdd5a5e6686e6ac7c8233e0d4ce",
+  "baseline_runtime_sha": "0abb989a6df017e8bd1bd0ce41e09b29f5d27549",
+  "candidate_product_sha": "a85740c453a01e167faeaaf59c9fad9d74cc3e81",
+  "menu_xmlids": [
+    "smart_construction_core.menu_sc_business_config_center",
+    "smart_construction_core.menu_sc_config_center",
+    "smart_construction_core.menu_sc_contract_center",
+    "smart_construction_core.menu_sc_cost_center",
+    "smart_construction_core.menu_sc_cost_report_group",
+    "smart_construction_core.menu_sc_data_center",
+    "smart_construction_core.menu_sc_equipment_management_group",
+    "smart_construction_core.menu_sc_invoice_management_group",
+    "smart_construction_core.menu_sc_labor_management_group",
+    "smart_construction_core.menu_sc_leave_request",
+    "smart_construction_core.menu_sc_material_center",
+    "smart_construction_core.menu_sc_material_management_group",
+    "smart_construction_core.menu_sc_material_rental_group",
+    "smart_construction_core.menu_sc_material_stock_statistics_report",
+    "smart_construction_core.menu_sc_output_invoice_change_registration",
+    "smart_construction_core.menu_sc_project_center",
+    "smart_construction_core.menu_sc_project_manage",
+    "smart_construction_core.menu_sc_project_wbs_cost",
+    "smart_construction_core.menu_sc_settlement_adjustment",
+    "smart_construction_core.menu_sc_settlement_order",
+    "smart_construction_core.menu_sc_subcontract_management_group",
+    "smart_construction_core.menu_sc_tender_management_group"
+  ]
+}

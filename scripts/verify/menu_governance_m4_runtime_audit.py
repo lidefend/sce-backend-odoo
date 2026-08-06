@@ -80,9 +80,14 @@ def _action(menu) -> dict[str, object]:
 
 
 scope = json.loads(SCOPE_PATH.read_text(encoding="utf-8"))
-expected_sha = _text(scope.get("source_commit_sha"))
+expected_sha = _text(scope.get("static_inventory_sha") or scope.get("source_commit_sha"))
 if len(expected_sha) != 40:
-    raise AssertionError("M4 scope does not bind a full source commit SHA")
+    raise AssertionError("M4 scope does not bind a full static inventory SHA")
+frozen_xmlids = scope.get("menu_xmlids")
+if frozen_xmlids is None:
+    frozen_xmlids = [item.get("menu_xmlid") for item in scope.get("decisions", [])]
+if len(frozen_xmlids) != 22 or len(set(frozen_xmlids)) != 22:
+    raise AssertionError("M4 frozen scope must contain exactly 22 unique XMLIDs")
 
 companies = env["res.company"].sudo().search([], order="id")  # noqa: F821
 company_aliases = {int(company.id): f"company_{index + 1}" for index, company in enumerate(companies)}
@@ -95,8 +100,8 @@ if missing_users:
     raise AssertionError("missing fixture roles: %s" % ", ".join(missing_users))
 
 rows = []
-for decision in scope.get("decisions", []):
-    xmlid = _text(decision.get("menu_xmlid"))
+for frozen_xmlid in frozen_xmlids:
+    xmlid = _text(frozen_xmlid)
     menu = env.ref(xmlid, raise_if_not_found=False)  # noqa: F821
     if not menu or menu._name != "ir.ui.menu":
         rows.append({"menu_xmlid": xmlid, "exists": False, "visibility": []})
@@ -135,7 +140,7 @@ report = {
     "static_scope_source_sha": expected_sha,
     "served_runtime_source_sha": None,
     "read_only": True,
-    "scope_count": len(scope.get("decisions", [])),
+    "scope_count": len(frozen_xmlids),
     "resolved_count": sum(1 for row in rows if row["exists"]),
     "role_count": len(ROLES),
     "company_count": len(companies),

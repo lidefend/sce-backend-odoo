@@ -5,8 +5,8 @@
 ## 当前裁决
 
 - 状态：`BLOCKED_ON_RUNTIME_EVIDENCE`
-- 冻结资产：22
-- 重复 `<menuitem>`：16
+- 冻结资产：6
+- 重复 `<menuitem>`：0
 - 技术/临时命名：4
 - 第四级路径：2
 - 菜单 XML 修改：否

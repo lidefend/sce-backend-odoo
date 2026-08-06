@@ -94,7 +94,7 @@ class MenuGovernanceInventoryTest(unittest.TestCase):
         report = inventory.collect()
         inventory.validate_inventory(report)
         self.assertEqual(report["source"]["commit_sha"], inventory._scope()["audited_commit_sha"])
-        self.assertEqual(report["statistics"]["menuitem_declaration_count"], 320)
+        self.assertEqual(report["statistics"]["menuitem_declaration_count"], 304)
         self.assertEqual(report["statistics"]["unique_menuitem_xmlid_count"], 304)
         self.assertEqual(report["statistics"]["missing_local_action_count"], 0)
         self.assertEqual(report["statistics"]["missing_local_parent_count"], 0)
@@ -114,7 +114,7 @@ class MenuGovernanceInventoryTest(unittest.TestCase):
     def test_m4_frozen_set_is_exact_and_fail_closed(self) -> None:
         report = inventory.collect()
         m4 = inventory.build_m4_governance(report)
-        self.assertEqual(22, len(m4["decisions"]))
+        self.assertEqual(6, len(m4["decisions"]))
         self.assertEqual("BLOCKED_ON_RUNTIME_EVIDENCE", m4["status"])
         self.assertFalse(m4["scope"]["runtime_sampling_performed"])
         self.assertFalse(m4["scope"]["menu_xml_modified"])

@@ -2953,7 +2953,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000936
+          "source_index": 17000941
         }
       ],
       "declaration_kinds": [
@@ -3527,7 +3527,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000970
+          "source_index": 17000975
         }
       ],
       "declaration_kinds": [
@@ -3797,7 +3797,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000783
+          "source_index": 17000788
         }
       ],
       "declaration_kinds": [
@@ -3861,7 +3861,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000829
+          "source_index": 17000834
         }
       ],
       "declaration_kinds": [
@@ -3923,7 +3923,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000867
+          "source_index": 17000872
         }
       ],
       "declaration_kinds": [
@@ -3991,7 +3991,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000958
+          "source_index": 17000963
         }
       ],
       "declaration_kinds": [
@@ -4058,7 +4058,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000966
+          "source_index": 17000971
         }
       ],
       "declaration_kinds": [
@@ -4130,7 +4130,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000927
+          "source_index": 17000932
         }
       ],
       "declaration_kinds": [
@@ -4200,7 +4200,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000915
+          "source_index": 17000920
         }
       ],
       "declaration_kinds": [
@@ -4275,7 +4275,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000922
+          "source_index": 17000927
         }
       ],
       "declaration_kinds": [
@@ -4344,7 +4344,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000823
+          "source_index": 17000828
         },
         {
           "kind": "record_patch",
@@ -4480,7 +4480,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000840
+          "source_index": 17000845
         },
         {
           "kind": "record_patch",
@@ -4557,7 +4557,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000841
+          "source_index": 17000846
         },
         {
           "kind": "record_patch",
@@ -4694,7 +4694,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000830
+          "source_index": 17000835
         }
       ],
       "declaration_kinds": [
@@ -4756,7 +4756,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000803
+          "source_index": 17000808
         },
         {
           "kind": "record_patch",
@@ -4892,7 +4892,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000860
+          "source_index": 17000865
         }
       ],
       "declaration_kinds": [
@@ -4949,7 +4949,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_centers.xml",
-          "source_index": 4400008
+          "source_index": 4400032
         }
       ],
       "declaration_kinds": [
@@ -5065,9 +5065,9 @@
       "declaration_count": 3,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_centers.xml",
-          "source_index": 4400007
+          "source_index": 4400027
         },
         {
           "kind": "menuitem",
@@ -5081,7 +5081,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem",
         "record_patch"
       ],
@@ -5578,7 +5578,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000826
+          "source_index": 17000831
         }
       ],
       "declaration_kinds": [
@@ -5700,7 +5700,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000828
+          "source_index": 17000833
         }
       ],
       "declaration_kinds": [
@@ -5762,7 +5762,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000801
+          "source_index": 17000806
         },
         {
           "kind": "record_patch",
@@ -5832,7 +5832,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000827
+          "source_index": 17000832
         }
       ],
       "declaration_kinds": [
@@ -5894,7 +5894,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000914
+          "source_index": 17000919
         }
       ],
       "declaration_kinds": [
@@ -5959,7 +5959,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000884
+          "source_index": 17000889
         }
       ],
       "declaration_kinds": [
@@ -6024,9 +6024,9 @@
       "declaration_count": 4,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_centers.xml",
-          "source_index": 4400010
+          "source_index": 4400034
         },
         {
           "kind": "menuitem",
@@ -6045,7 +6045,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem",
         "record_patch",
         "record_patch"
@@ -6362,9 +6362,9 @@
       "declaration_count": 5,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_centers.xml",
-          "source_index": 4400003
+          "source_index": 4400007
         },
         {
           "kind": "menuitem",
@@ -6388,7 +6388,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem",
         "record_patch",
         "record_patch",
@@ -6455,7 +6455,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000842
+          "source_index": 17000847
         },
         {
           "kind": "record_patch",
@@ -6532,7 +6532,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000843
+          "source_index": 17000848
         },
         {
           "kind": "record_patch",
@@ -6904,7 +6904,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000807
+          "source_index": 17000812
         },
         {
           "kind": "record_patch",
@@ -6974,7 +6974,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000806
+          "source_index": 17000811
         },
         {
           "kind": "record_patch",
@@ -7104,9 +7104,9 @@
       "declaration_count": 3,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_centers.xml",
-          "source_index": 4400004
+          "source_index": 4400012
         },
         {
           "kind": "menuitem",
@@ -7120,7 +7120,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem",
         "record_patch"
       ],
@@ -7178,18 +7178,18 @@
       "declaration_count": 2,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
-          "source_index": 4500009
+          "source_index": 4500030
         },
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000868
+          "source_index": 17000873
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem"
       ],
       "effective_authority_source": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
@@ -7198,7 +7198,7 @@
         "action": null,
         "groups": null,
         "name": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-        "parent": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+        "parent": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
         "sequence": "addons/smart_construction_core/views/menu_business_taxonomy.xml"
       },
       "group_xmlids": [],
@@ -7317,7 +7317,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000947
+          "source_index": 17000952
         }
       ],
       "declaration_kinds": [
@@ -7487,9 +7487,9 @@
       "declaration_count": 3,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_centers.xml",
-          "source_index": 4400006
+          "source_index": 4400022
         },
         {
           "kind": "menuitem",
@@ -7503,7 +7503,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem",
         "record_patch"
       ],
@@ -7569,7 +7569,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000817
+          "source_index": 17000822
         },
         {
           "kind": "record_patch",
@@ -7639,7 +7639,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000818
+          "source_index": 17000823
         },
         {
           "kind": "record_patch",
@@ -7709,7 +7709,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000819
+          "source_index": 17000824
         },
         {
           "kind": "record_patch",
@@ -7778,7 +7778,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000816
+          "source_index": 17000821
         },
         {
           "kind": "record_patch",
@@ -7842,7 +7842,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000839
+          "source_index": 17000844
         },
         {
           "kind": "record_patch",
@@ -7984,7 +7984,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000949
+          "source_index": 17000954
         }
       ],
       "declaration_kinds": [
@@ -8326,7 +8326,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000973
+          "source_index": 17000978
         }
       ],
       "declaration_kinds": [
@@ -8642,7 +8642,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000800
+          "source_index": 17000805
         },
         {
           "kind": "record_patch",
@@ -8709,9 +8709,9 @@
       "declaration_count": 2,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
-          "source_index": 4500005
+          "source_index": 4500014
         },
         {
           "kind": "menuitem",
@@ -8720,7 +8720,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem"
       ],
       "effective_authority_source": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
@@ -8729,7 +8729,7 @@
         "action": null,
         "groups": null,
         "name": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-        "parent": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+        "parent": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
         "sequence": "addons/smart_construction_core/views/menu_business_taxonomy.xml"
       },
       "group_xmlids": [],
@@ -9088,7 +9088,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000832
+          "source_index": 17000837
         },
         {
           "kind": "record_patch",
@@ -9849,7 +9849,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000797
+          "source_index": 17000802
         },
         {
           "kind": "record_patch",
@@ -9914,7 +9914,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000903
+          "source_index": 17000908
         }
       ],
       "declaration_kinds": [
@@ -10050,7 +10050,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000905
+          "source_index": 17000910
         }
       ],
       "declaration_kinds": [
@@ -10555,7 +10555,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000854
+          "source_index": 17000859
         },
         {
           "kind": "record_patch",
@@ -10755,12 +10755,12 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000821
+          "source_index": 17000826
         },
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000845
+          "source_index": 17000850
         },
         {
           "kind": "record_patch",
@@ -10830,7 +10830,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000844
+          "source_index": 17000849
         },
         {
           "kind": "record_patch",
@@ -10894,12 +10894,12 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000820
+          "source_index": 17000825
         },
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000848
+          "source_index": 17000853
         }
       ],
       "declaration_kinds": [
@@ -10958,7 +10958,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000859
+          "source_index": 17000864
         },
         {
           "kind": "record_patch",
@@ -11037,7 +11037,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000944
+          "source_index": 17000949
         }
       ],
       "declaration_kinds": [
@@ -11102,7 +11102,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000824
+          "source_index": 17000829
         },
         {
           "kind": "record_patch",
@@ -11167,7 +11167,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000825
+          "source_index": 17000830
         },
         {
           "kind": "record_patch",
@@ -11236,7 +11236,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000802
+          "source_index": 17000807
         },
         {
           "kind": "record_patch",
@@ -11301,7 +11301,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000858
+          "source_index": 17000863
         },
         {
           "kind": "record_patch",
@@ -11370,7 +11370,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000857
+          "source_index": 17000862
         },
         {
           "kind": "record_patch",
@@ -11439,7 +11439,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000795
+          "source_index": 17000800
         }
       ],
       "declaration_kinds": [
@@ -11500,7 +11500,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000794
+          "source_index": 17000799
         }
       ],
       "declaration_kinds": [
@@ -11558,7 +11558,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000796
+          "source_index": 17000801
         }
       ],
       "declaration_kinds": [
@@ -12131,7 +12131,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000798
+          "source_index": 17000803
         },
         {
           "kind": "record_patch",
@@ -12196,7 +12196,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000893
+          "source_index": 17000898
         }
       ],
       "declaration_kinds": [
@@ -12383,7 +12383,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000901
+          "source_index": 17000906
         }
       ],
       "declaration_kinds": [
@@ -12446,7 +12446,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000788
+          "source_index": 17000793
         },
         {
           "kind": "record_patch",
@@ -12516,7 +12516,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000902
+          "source_index": 17000907
         }
       ],
       "declaration_kinds": [
@@ -12579,7 +12579,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000782
+          "source_index": 17000787
         }
       ],
       "declaration_kinds": [
@@ -12641,7 +12641,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000791
+          "source_index": 17000796
         },
         {
           "kind": "record_patch",
@@ -12708,9 +12708,9 @@
       "declaration_count": 3,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
-          "source_index": 4500008
+          "source_index": 4500026
         },
         {
           "kind": "menuitem",
@@ -12724,7 +12724,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem",
         "record_patch"
       ],
@@ -12844,7 +12844,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000790
+          "source_index": 17000795
         },
         {
           "kind": "record_patch",
@@ -12991,7 +12991,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000789
+          "source_index": 17000794
         },
         {
           "kind": "record_patch",
@@ -13060,7 +13060,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000787
+          "source_index": 17000792
         },
         {
           "kind": "record_patch",
@@ -13189,9 +13189,9 @@
       "declaration_count": 2,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
-          "source_index": 4500004
+          "source_index": 4500010
         },
         {
           "kind": "menuitem",
@@ -13200,7 +13200,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem"
       ],
       "effective_authority_source": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
@@ -13209,7 +13209,7 @@
         "action": null,
         "groups": null,
         "name": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-        "parent": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+        "parent": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
         "sequence": "addons/smart_construction_core/views/menu_business_taxonomy.xml"
       },
       "group_xmlids": [],
@@ -13682,7 +13682,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_centers.xml",
-          "source_index": 4400009
+          "source_index": 4400033
         }
       ],
       "declaration_kinds": [
@@ -13920,9 +13920,9 @@
       "declaration_count": 3,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_centers.xml",
-          "source_index": 4400005
+          "source_index": 4400017
         },
         {
           "kind": "menuitem",
@@ -13936,7 +13936,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem",
         "record_patch"
       ],
@@ -14119,9 +14119,9 @@
       "declaration_count": 2,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
-          "source_index": 4500003
+          "source_index": 4500006
         },
         {
           "kind": "menuitem",
@@ -14130,7 +14130,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem"
       ],
       "effective_authority_source": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
@@ -14139,7 +14139,7 @@
         "action": null,
         "groups": null,
         "name": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-        "parent": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+        "parent": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
         "sequence": "addons/smart_construction_core/views/menu_business_taxonomy.xml"
       },
       "group_xmlids": [],
@@ -14438,9 +14438,9 @@
       "declaration_count": 2,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
-          "source_index": 4500006
+          "source_index": 4500018
         },
         {
           "kind": "menuitem",
@@ -14449,7 +14449,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem"
       ],
       "effective_authority_source": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
@@ -14458,7 +14458,7 @@
         "action": null,
         "groups": null,
         "name": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-        "parent": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+        "parent": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
         "sequence": "addons/smart_construction_core/views/menu_business_taxonomy.xml"
       },
       "group_xmlids": [],
@@ -14877,7 +14877,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000876
+          "source_index": 17000881
         }
       ],
       "declaration_kinds": [
@@ -15134,7 +15134,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000865
+          "source_index": 17000870
         }
       ],
       "declaration_kinds": [
@@ -15263,7 +15263,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000953
+          "source_index": 17000958
         }
       ],
       "declaration_kinds": [
@@ -15325,7 +15325,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000781
+          "source_index": 17000786
         }
       ],
       "declaration_kinds": [
@@ -15390,14 +15390,14 @@
           "source_index": 9300090
         },
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
           "source_index": 17000780
         }
       ],
       "declaration_kinds": [
         "menuitem",
-        "menuitem"
+        "record_patch"
       ],
       "effective_authority_source": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
       "evidence_refs": [],
@@ -15587,7 +15587,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000815
+          "source_index": 17000820
         },
         {
           "kind": "record_patch",
@@ -16067,7 +16067,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000812
+          "source_index": 17000817
         },
         {
           "kind": "record_patch",
@@ -16391,7 +16391,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000808
+          "source_index": 17000813
         },
         {
           "kind": "record_patch",
@@ -16649,7 +16649,7 @@
       "declaration_count": 3,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_centers.xml",
           "source_index": 4400002
         },
@@ -16665,7 +16665,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem",
         "record_patch"
       ],
@@ -16730,7 +16730,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000861
+          "source_index": 17000866
         }
       ],
       "declaration_kinds": [
@@ -16803,7 +16803,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000962
+          "source_index": 17000967
         }
       ],
       "declaration_kinds": [
@@ -17073,7 +17073,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000838
+          "source_index": 17000843
         },
         {
           "kind": "record_patch",
@@ -17148,7 +17148,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000805
+          "source_index": 17000810
         },
         {
           "kind": "record_patch",
@@ -17658,7 +17658,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000913
+          "source_index": 17000918
         }
       ],
       "declaration_kinds": [
@@ -17922,7 +17922,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000809
+          "source_index": 17000814
         },
         {
           "kind": "record_patch",
@@ -18002,7 +18002,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000968
+          "source_index": 17000973
         }
       ],
       "declaration_kinds": [
@@ -18846,7 +18846,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000822
+          "source_index": 17000827
         },
         {
           "kind": "record_patch",
@@ -18911,7 +18911,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000837
+          "source_index": 17000842
         },
         {
           "kind": "record_patch",
@@ -18981,7 +18981,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000831
+          "source_index": 17000836
         }
       ],
       "declaration_kinds": [
@@ -19043,7 +19043,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000804
+          "source_index": 17000809
         },
         {
           "kind": "record_patch",
@@ -19489,7 +19489,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000904
+          "source_index": 17000909
         }
       ],
       "declaration_kinds": [
@@ -19810,7 +19810,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000810
+          "source_index": 17000815
         },
         {
           "kind": "record_patch",
@@ -19880,7 +19880,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000811
+          "source_index": 17000816
         },
         {
           "kind": "record_patch",
@@ -20466,9 +20466,9 @@
       "declaration_count": 2,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
-          "source_index": 4500007
+          "source_index": 4500022
         },
         {
           "kind": "menuitem",
@@ -20477,7 +20477,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem"
       ],
       "effective_authority_source": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
@@ -20486,7 +20486,7 @@
         "action": null,
         "groups": null,
         "name": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-        "parent": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+        "parent": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
         "sequence": "addons/smart_construction_core/views/menu_business_taxonomy.xml"
       },
       "group_xmlids": [],
@@ -20899,7 +20899,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000948
+          "source_index": 17000953
         }
       ],
       "declaration_kinds": [
@@ -21020,7 +21020,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000793
+          "source_index": 17000798
         }
       ],
       "declaration_kinds": [
@@ -21083,7 +21083,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000792
+          "source_index": 17000797
         },
         {
           "kind": "record_patch",
@@ -21152,7 +21152,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000906
+          "source_index": 17000911
         }
       ],
       "declaration_kinds": [
@@ -21268,7 +21268,7 @@
       "declaration_count": 2,
       "declaration_history": [
         {
-          "kind": "menuitem",
+          "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
           "source_index": 4500002
         },
@@ -21279,7 +21279,7 @@
         }
       ],
       "declaration_kinds": [
-        "menuitem",
+        "record_patch",
         "menuitem"
       ],
       "effective_authority_source": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
@@ -21288,7 +21288,7 @@
         "action": null,
         "groups": null,
         "name": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-        "parent": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+        "parent": "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
         "sequence": "addons/smart_construction_core/views/menu_business_taxonomy.xml"
       },
       "group_xmlids": [],
@@ -21907,7 +21907,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000941
+          "source_index": 17000946
         }
       ],
       "declaration_kinds": [
@@ -21983,7 +21983,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000932
+          "source_index": 17000937
         }
       ],
       "declaration_kinds": [
@@ -22054,7 +22054,7 @@
         {
           "kind": "record_patch",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000850
+          "source_index": 17000855
         }
       ],
       "declaration_kinds": [
@@ -22175,7 +22175,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000799
+          "source_index": 17000804
         },
         {
           "kind": "record_patch",
@@ -22245,7 +22245,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000813
+          "source_index": 17000818
         },
         {
           "kind": "record_patch",
@@ -22315,7 +22315,7 @@
         {
           "kind": "menuitem",
           "source_file": "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-          "source_index": 17000814
+          "source_index": 17000819
         },
         {
           "kind": "record_patch",
@@ -23216,24 +23216,7 @@
   },
   "findings": {
     "depth_graph_errors": [],
-    "duplicate_menuitem_xmlids": [
-      "smart_construction_core.menu_sc_business_config_center",
-      "smart_construction_core.menu_sc_config_center",
-      "smart_construction_core.menu_sc_contract_center",
-      "smart_construction_core.menu_sc_cost_center",
-      "smart_construction_core.menu_sc_cost_report_group",
-      "smart_construction_core.menu_sc_data_center",
-      "smart_construction_core.menu_sc_equipment_management_group",
-      "smart_construction_core.menu_sc_invoice_management_group",
-      "smart_construction_core.menu_sc_labor_management_group",
-      "smart_construction_core.menu_sc_material_center",
-      "smart_construction_core.menu_sc_material_management_group",
-      "smart_construction_core.menu_sc_material_rental_group",
-      "smart_construction_core.menu_sc_output_invoice_change_registration",
-      "smart_construction_core.menu_sc_project_center",
-      "smart_construction_core.menu_sc_subcontract_management_group",
-      "smart_construction_core.menu_sc_tender_management_group"
-    ],
+    "duplicate_menuitem_xmlids": [],
     "missing_local_actions": [],
     "missing_local_parents": [],
     "over_depth_risks": [
@@ -23247,7 +23230,7 @@
       "smart_construction_core.menu_sc_project_wbs_cost"
     ]
   },
-  "generated_at_utc": "2026-08-06T08:46:15+00:00",
+  "generated_at_utc": "2026-08-06T09:47:20+00:00",
   "groups": [
     {
       "group_xmlid": "base.group_system",
@@ -23531,9 +23514,9 @@
       "menuitem_declarations": 320,
       "unique_menuitem_xmlids": 304
     },
-    "matches": true,
+    "matches": false,
     "observed": {
-      "menuitem_declarations": 320,
+      "menuitem_declarations": 304,
       "unique_menuitem_xmlids": 304
     }
   },
@@ -23542,12 +23525,12 @@
     "formal_product_layer": "P4",
     "mode": "static_read_only",
     "runtime_fields_are_unknown": true,
-    "runtime_sampling": "not_run_no_isolated_runtime_lease_or_auth_evidence",
+    "runtime_sampling": "not_run_in_static_inventory_runtime_evidence_is_external",
     "writes_product_facts": false
   },
   "source": {
     "branch": "feature/product-menu-governance",
-    "commit_sha": "6250dc64eeb67bdd5a5e6686e6ac7c8233e0d4ce",
+    "commit_sha": "a85740c453a01e167faeaaf59c9fad9d74cc3e81",
     "manifest": "addons/smart_construction_core/__manifest__.py",
     "manifest_xml_files": [
       "addons/smart_construction_core/data/sequence.xml",
@@ -23756,10 +23739,10 @@
       "addons/smart_construction_core/data/remaining_p3_form_productization_contract.xml",
       "addons/smart_construction_core/data/product_policy_menu_sync.xml"
     ],
-    "manifest_xml_sha256": "c4c1100538dac4736d182aaddfd26971870902c69b617e5b868d783c21230c32",
+    "manifest_xml_sha256": "affaa236894a8b19b41e47ab4f471e6be75de0edd7b3f7146cb0df51e1cdc4b3",
     "module": "smart_construction_core",
     "repository": "sce-backend-odoo",
-    "tree_sha": "9d74824e89acdb60fb9056f3ec68c8f066427d1f",
+    "tree_sha": "5cfd85eaeeab847cbcdc20f63a5eaf668fd59bad",
     "unloaded_xml_files": [
       "addons/smart_construction_core/data/tax.xml",
       "addons/smart_construction_core/static/src/xml/form_status_indicator_patch.xml",
@@ -23777,13 +23760,13 @@
     "action_bound_menu_count": 251,
     "all_module_xml_file_count": 215,
     "capability_mapping_resolved_count": 0,
-    "duplicate_menuitem_xmlid_count": 16,
+    "duplicate_menuitem_xmlid_count": 0,
     "effective_menu_asset_count": 314,
     "local_action_count": 376,
     "local_group_count": 55,
     "manifest_xml_file_count": 205,
-    "menu_record_patch_count": 209,
-    "menuitem_declaration_count": 320,
+    "menu_record_patch_count": 225,
+    "menuitem_declaration_count": 304,
     "missing_local_action_count": 0,
     "missing_local_parent_count": 0,
     "over_depth_risk_count": 2,

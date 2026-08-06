@@ -1,7 +1,7 @@
 # 菜单能力静态资产账（生成文件）
 
 > 由 `scripts/verify/menu_governance_inventory.py` 生成，禁止人工修改。
-> 来源提交：`6250dc64eeb67bdd5a5e6686e6ac7c8233e0d4ce`
+> 来源提交：`a85740c453a01e167faeaaf59c9fad9d74cc3e81`
 > 模式：P4 静态只读；运行时可见性和路由可达性均未宣称通过。
 
 ## 统计口径
@@ -9,18 +9,18 @@
 | 指标 | 数量 |
 | --- | ---: |
 | manifest 加载 XML | 205 |
-| `<menuitem>` 声明 | 320 |
+| `<menuitem>` 声明 | 304 |
 | 唯一 `<menuitem>` XML ID | 304 |
 | 合并 `ir.ui.menu` patch 后有效资产 | 314 |
 | 本模块 action | 376 |
 | 本模块权限组 | 55 |
-| 重复 `<menuitem>` XML ID 风险 | 16 |
+| 重复 `<menuitem>` XML ID 风险 | 0 |
 | 本地 action 断链 | 0 |
 | 本地 parent 断链 | 0 |
 | 技术/临时命名风险 | 4 |
 | 超过三级风险 | 2 |
 
-初查假设 320/304：`MATCH`。有效资产数量不同，是因为正式加载链中还包含 `ir.ui.menu` record patch；JSON 保留每个 XML ID 的完整声明历史和来源文件。
+初查假设 320/304：`DIFF`。有效资产数量不同，是因为正式加载链中还包含 `ir.ui.menu` record patch；JSON 保留每个 XML ID 的完整声明历史和来源文件。
 
 ## 覆盖率
 

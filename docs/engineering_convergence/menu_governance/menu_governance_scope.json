@@ -1,6 +1,6 @@
 {
   "schema_version": "sce.menu_governance_scope.v1",
-  "audited_commit_sha": "6250dc64eeb67bdd5a5e6686e6ac7c8233e0d4ce",
+  "audited_commit_sha": "a85740c453a01e167faeaaf59c9fad9d74cc3e81",
   "module": "smart_construction_core",
-  "runtime_sampling": "not_run_no_isolated_runtime_lease_or_auth_evidence"
+  "runtime_sampling": "not_run_in_static_inventory_runtime_evidence_is_external"
 }
