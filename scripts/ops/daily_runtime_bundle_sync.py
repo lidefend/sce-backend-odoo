@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 from pathlib import Path
@@ -173,6 +174,16 @@ def create_bundle(expected_old_sha: str) -> bytes:
     return payload
 
 
+def remote_command(expected_sha: str, expected_old_sha: str, bundle_sha: str) -> str:
+    return " ".join(
+        shlex.quote(item)
+        for item in (
+            "python3", "-c", REMOTE_SYNC,
+            expected_sha, expected_old_sha, bundle_sha, REMOTE_ROOT,
+        )
+    )
+
+
 def synchronize(expected_sha: str, expected_old_sha: str, ssh_host: str) -> dict[str, object]:
     preflight(expected_sha, expected_old_sha, ssh_host)
     bundle = create_bundle(expected_old_sha)
@@ -184,8 +195,7 @@ def synchronize(expected_sha: str, expected_old_sha: str, ssh_host: str) -> dict
         "-o", "ServerAliveInterval=15",
         "-o", "ServerAliveCountMax=4",
         ssh_host,
-        "python3", "-c", REMOTE_SYNC,
-        expected_sha, expected_old_sha, bundle_sha, REMOTE_ROOT,
+        remote_command(expected_sha, expected_old_sha, bundle_sha),
     ]
     result = run(command, input_bytes=bundle)
     if result.returncode:

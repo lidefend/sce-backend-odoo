@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -24,6 +25,16 @@ def git(root: Path, *args: str) -> str:
 
 
 class DailyRuntimeBundleSyncTests(unittest.TestCase):
+    def test_remote_command_preserves_multiline_program_as_one_argument(self) -> None:
+        expected = "a" * 40
+        old = "b" * 40
+        digest = "c" * 64
+        command = sync.remote_command(expected, old, digest)
+        self.assertEqual(
+            shlex.split(command),
+            ["python3", "-c", sync.REMOTE_SYNC, expected, old, digest, sync.REMOTE_ROOT],
+        )
+
     def test_remote_contract_is_fixed_fast_forward_and_fail_closed(self) -> None:
         source = sync.REMOTE_SYNC
         self.assertIn('/opt/projects/repos/sce-product-odoo', source)
