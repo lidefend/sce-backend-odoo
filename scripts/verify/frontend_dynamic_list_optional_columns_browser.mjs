@@ -20,18 +20,21 @@ const routes = process.env.DYNAMIC_LIST_TARGETS_JSON
       actionXmlid: 'smart_construction_core.action_sc_customer_partner',
       requiredHeaders: ['单位名称', '客户类型', '地区', '联系人', '电话', '负责人'],
       hiddenLabels: ['业务角色', '业务事实依据', '来源项目', '来源单据状态', '来源客商编码'],
+      hiddenSelectableLabel: '统一社会信用代码',
     },
     {
       name: 'supplier',
       actionXmlid: 'smart_construction_core.action_sc_supplier_partner',
       requiredHeaders: ['单位名称', '供应商类型', '地区', '联系人', '电话', '负责人'],
       hiddenLabels: ['业务角色', '业务事实依据', '来源项目', '来源单据状态', '来源客商编码'],
+      hiddenSelectableLabel: '统一社会信用代码',
     },
     {
       name: 'project',
       actionXmlid: 'smart_construction_core.action_sc_project_list',
       requiredHeaders: ['项目名称', '项目编号', '生命周期', '项目负责人'],
       hiddenLabels: ['项目经理'],
+      hiddenSelectableLabel: '项目经理',
     },
   ];
 
@@ -113,6 +116,7 @@ async function inspectTarget(browser, target) {
   const hiddenLabels = Array.isArray(target.hiddenLabels)
     ? target.hiddenLabels
     : [target.hiddenLabel].filter(Boolean);
+  const hiddenSelectableLabel = String(target.hiddenSelectableLabel || hiddenLabels[0] || '');
   await page.screenshot({ path: path.join(artifactsDir, `${target.name}-desktop-default.png`), fullPage: true });
 
   await page.getByRole('button', { name: /列设置/ }).click();
@@ -139,7 +143,8 @@ async function inspectTarget(browser, target) {
     0,
     `${target.name}: default-hidden fields leaked into visible headers`,
   );
-  const hiddenChoice = choices.filter({ hasText: hiddenLabels[0] }).first();
+  assert(hiddenSelectableLabel, `${target.name}: a selectable optional=hide field is required`);
+  const hiddenChoice = choices.filter({ hasText: hiddenSelectableLabel }).first();
   await hiddenChoice.waitFor({ state: 'visible' });
   const checkbox = hiddenChoice.locator('input[type="checkbox"]');
   assert.equal(await checkbox.isChecked(), false, `${target.name}: optional=hide field is enabled by default`);
@@ -147,7 +152,7 @@ async function inspectTarget(browser, target) {
   await page.getByText('已保存', { exact: true }).first().waitFor({ state: 'visible', timeout: 10_000 });
   try {
     if (defaultHeaders.length) {
-      assert((await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: hidden field cannot be enabled through column settings`);
+      assert((await visibleHeaderLabels(page)).includes(hiddenSelectableLabel), `${target.name}: hidden field cannot be enabled through column settings`);
     } else {
       assert.equal(await checkbox.isChecked(), true, `${target.name}: hidden field preference was not enabled on an empty list`);
     }
@@ -156,10 +161,10 @@ async function inspectTarget(browser, target) {
     await resetColumnPreferences(page);
   }
   if (defaultHeaders.length) {
-    assert(!(await visibleHeaderLabels(page)).includes(hiddenLabels[0]), `${target.name}: reset did not restore optional=hide default`);
+    assert(!(await visibleHeaderLabels(page)).includes(hiddenSelectableLabel), `${target.name}: reset did not restore optional=hide default`);
   } else {
     await page.getByRole('button', { name: /列设置/ }).click();
-    const restoredChoice = page.locator(columnChoiceSelector).filter({ hasText: hiddenLabels[0] }).first().locator('input[type="checkbox"]');
+    const restoredChoice = page.locator(columnChoiceSelector).filter({ hasText: hiddenSelectableLabel }).first().locator('input[type="checkbox"]');
     assert.equal(await restoredChoice.isChecked(), false, `${target.name}: reset did not restore optional=hide default on an empty list`);
     await page.getByRole('button', { name: /列设置/ }).click();
   }
