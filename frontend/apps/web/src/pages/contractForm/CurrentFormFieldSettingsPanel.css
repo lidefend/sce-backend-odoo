@@ -268,9 +268,9 @@
 
 .contract-form-field-search-item span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding-block: 7px;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .contract-form-field-search-item em {

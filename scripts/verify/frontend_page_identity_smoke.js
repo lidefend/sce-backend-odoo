@@ -57,7 +57,7 @@ function main() {
   equal(resolve({ kind: 'detail', modelName: 'construction.contract' }).title, '记录详情', 'technical model never reaches detail fallback');
   equal(resolve({ kind: 'detail', actionName: '付款申请' }).title, '付款申请详情', 'detail action fallback');
   equal(resolve({ kind: 'create', actionName: '付款申请' }).title, '新建付款申请', 'create title');
-  equal(resolve({ kind: 'edit', actionName: '付款申请', record: { display_name: 'FE-A-PR-001' } }).title, '编辑 FE-A-PR-001', 'edit title');
+  equal(resolve({ kind: 'edit', actionName: '付款申请', record: { display_name: 'FE-A-PR-001' } }).title, 'FE-A-PR-001', 'edit keeps stable record identity');
   equal(resolve({ kind: 'list', actionName: '付款申请', state: 'loading' }).title, '付款申请 · 加载中', 'loading title');
   equal(resolve({ kind: 'list', actionName: '付款申请', state: 'empty' }).title, '付款申请 · 暂无数据', 'empty title');
   equal(resolve({ kind: 'list', actionName: '付款申请', state: 'denied' }).title, '付款申请 · 无权访问', 'denied title');

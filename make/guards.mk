@@ -116,12 +116,14 @@ verify.environment.topology.guard:
 
 verify.frontend.acceptance.environment.guard:
 	@node scripts/verify/frontend_acceptance_environment_test.mjs
+	@node scripts/verify/frontend_form_editability_discovery_test.mjs
 
 verify.daily_dev.runtime_repo.clean:
 	@bash scripts/ops/daily_dev_runtime_repo_guard.sh
 
 verify.daily_dev.acceptance.env.guard:
 	@node scripts/verify/frontend_acceptance_environment_test.mjs
+	@node scripts/verify/frontend_form_editability_discovery_test.mjs
 	@python3 -m py_compile scripts/verify/daily_dev_acceptance_env_guard.py
 	@ENV="$(ENV)" ENV_FILE="$(ENV_FILE)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_NAV_MIN_ACTIONS="$(ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="$(ACCEPTANCE_NAV_REQUIRED_ACTIONS)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" FRONTEND_DIST_DIR="$(FRONTEND_DIST_DIR)" VITE_API_BASE_URL="$(VITE_API_BASE_URL)" VITE_API_PROXY_TARGET="$(VITE_API_PROXY_TARGET)" VITE_ODOO_DB="$(VITE_ODOO_DB)" VITE_ODOO_DB_LOCKED="$(VITE_ODOO_DB_LOCKED)" VITE_APP_ENV="$(VITE_APP_ENV)" VITE_BUILD_MODE="$(VITE_BUILD_MODE)" VITE_BUILD_OUT_DIR="$(VITE_BUILD_OUT_DIR)" VITE_DELIVERY_MODE="$(VITE_DELIVERY_MODE)" VITE_FEATURE_FLAGS="$(VITE_FEATURE_FLAGS)" VITE_LITE_CONTRACT_PILOT="$(VITE_LITE_CONTRACT_PILOT)" VITE_LITE_CONTRACT_ROLLOUT="$(VITE_LITE_CONTRACT_ROLLOUT)" VITE_PLATFORM_ADMIN_DB="$(VITE_PLATFORM_ADMIN_DB)" VITE_TENANT="$(VITE_TENANT)" python3 scripts/verify/daily_dev_acceptance_env_guard.py
 

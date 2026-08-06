@@ -196,7 +196,8 @@ function buttonClass(action: ContractAction) {
   line-height: 1;
 }
 .native-statusbar--header .native-statusbar-step {
-  flex: 0 0 68px;
+  flex: 0 0 auto;
+  width: max-content;
   min-width: 68px;
   min-height: 30px;
   margin: 0 0 0 -1px;

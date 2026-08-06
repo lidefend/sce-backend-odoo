@@ -207,7 +207,7 @@ async function main() {
     }));
     report.scenarios.push(await inspectScenario(page, capture, {
       id: '12-edit-form', role: 'finance', route: recordRoute(payment, 'edit'),
-      expectedTitle: `编辑 ${payment.display_name}`, expectedSource: 'record', menu_xmlid: payment.menu_xmlid, action_xmlid: payment.action_xmlid,
+      expectedTitle: payment.display_name, expectedSource: 'record', menu_xmlid: payment.menu_xmlid, action_xmlid: payment.action_xmlid,
     }));
     report.scenarios.push(await inspectScenario(page, capture, {
       id: '14-not-found', role: 'finance', route: recordRoute(payment, 'detail', 999999999),

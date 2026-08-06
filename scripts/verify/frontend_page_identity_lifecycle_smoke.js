@@ -42,7 +42,7 @@ function main() {
   equal(coordinator.begin('/a/1', { kind: 'list', actionName: '付款申请' }).title, '付款申请', 'list route begins identity');
   equal(coordinator.begin('/r/payment.request/1', { kind: 'detail', actionName: '付款申请', state: 'loading' }).title, '付款申请 · 加载中', 'direct detail refresh loading identity');
   equal(coordinator.publish('/r/payment.request/1', { kind: 'detail', actionName: '付款申请', recordDisplayName: 'FE-A-PR-001' }).title, 'FE-A-PR-001', 'async detail publication');
-  equal(coordinator.publish('/r/payment.request/1', { kind: 'edit', actionName: '付款申请', recordDisplayName: 'FE-A-PR-001' }).title, '编辑 FE-A-PR-001', 'detail to edit lifecycle');
+  equal(coordinator.publish('/r/payment.request/1', { kind: 'edit', actionName: '付款申请', recordDisplayName: 'FE-A-PR-001' }).title, 'FE-A-PR-001', 'detail to edit keeps stable record identity');
   equal(coordinator.begin('/r/payment.request/2', { kind: 'detail', actionName: '付款申请', state: 'loading' }).title, '付款申请 · 加载中', 'fast record switch begins clean identity');
   equal(coordinator.publish('/r/payment.request/1', { kind: 'detail', recordDisplayName: 'STALE-PR-001' }), null, 'stale record publication rejected');
   equal(coordinator.publish('/r/payment.request/2', { kind: 'detail', recordDisplayName: 'FE-A-PR-002' }).title, 'FE-A-PR-002', 'active record publication accepted');

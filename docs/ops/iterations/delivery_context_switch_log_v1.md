@@ -2773,3 +2773,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Here / Why Not Elsewhere: geometry, accessibility, generic native-view presentation, and runtime-discovered browser verification belong to the shared frontend; P1/P2/P3/P4 must not carry renderer fixes or database-ID exceptions
 - Blast Radius: AppShell, role home, generic list/form/dialog/relation/x2many/designer/config surfaces and acceptance evidence; excludes permissions, API semantics, business data, production, and main-branch integration
 - Validation: strict typecheck, unit and design guards, production build, runtime-discovered five-viewport geometry/form/full-route audits, visual screenshots, daily-development re-verification, and `git diff --check`
+
+## 2026-08-06 — FRONTEND-FORM-AUDIT-RUNTIME-EDITABILITY-RF1
+
+- Branch / anchor: `codex/form-audit-runtime-editability` from `a2848368730a2c283f276d875d4c18b84caa2855`.
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool; runtime form editability and save-action verification; `scripts/verify`.
+- Outcome: replace the first-twelve-record UI scan with action-contract-driven candidate discovery and form-contract `pageAuth=edit` proof, accept the authoritative runtime save label, and use rendered form semantics instead of global network idleness.
+- Boundary: no frontend product behavior, permission, workflow, API, contract/schema, route authority, module, or business-data change. Daily verification is read-only and does not click save.
+- Validation: negative fixture and acceptance environment guard PASS; daily browser discovery finds 30 enabled controls and “保存修改” with zero console errors; frontend lint/typecheck/build PASS. Restricted remains blocked by the isolated secondary-company snapshot (1/2 profiles), while the full form audit truthfully retains 11 product visual/state failures for the next P0 batch.
