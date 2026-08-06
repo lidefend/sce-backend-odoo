@@ -159,7 +159,7 @@
               sequence="55"
               groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin"/>
     <menuitem id="menu_sc_leave_request"
-              name="请假/休假审批单"
+              name="请休假审批"
               parent="smart_construction_core.menu_sc_hr_admin_center"
               action="smart_construction_core.action_sc_leave_request"
               sequence="10"

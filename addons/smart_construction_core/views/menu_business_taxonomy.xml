@@ -880,7 +880,13 @@
         <field name="sequence">10</field>
     </record>
     <menuitem id="menu_sc_invoice_output" name="销项发票" parent="smart_construction_core.menu_sc_invoice_management_group" action="smart_construction_core.action_sc_invoice_output" sequence="20" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
-    <menuitem id="menu_sc_output_invoice_change_registration" name="销项变更登记" parent="smart_construction_core.menu_sc_invoice_management_group" action="smart_construction_core.action_sc_output_invoice_change_registration" sequence="24" groups="smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
+    <record id="menu_sc_output_invoice_change_registration" model="ir.ui.menu">
+        <field name="name">销项变更登记</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_invoice_management_group"/>
+        <field name="action" ref="smart_construction_core.action_sc_output_invoice_change_registration"/>
+        <field name="sequence">24</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
+    </record>
     <menuitem id="menu_sc_output_invoice_adjustment" name="销项调整记录" parent="smart_construction_core.menu_sc_invoice_management_group" action="smart_construction_core.action_sc_output_invoice_adjustment" sequence="25" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_invoice_input" name="进项发票" parent="smart_construction_core.menu_sc_invoice_management_group" action="smart_construction_core.action_sc_invoice_input" sequence="30" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <record id="menu_receipt_invoice_line" model="ir.ui.menu">
