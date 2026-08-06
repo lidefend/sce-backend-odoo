@@ -196,9 +196,6 @@ class TestCoreExtensionV2Finalize(TransactionCase):
     def test_partner_trace_columns_are_opt_in_by_default(self):
         policy = core_extension.smart_core_business_list_default_visibility(self.env)["res.partner"]
 
-        self.assertEqual(
-            policy["visible"],
-            ["name", "company_type", "sc_supplier_type_label", "sc_region", "sc_contact_name", "phone", "user_id"],
-        )
+        self.assertNotIn("visible", policy)
         self.assertIn("sc_source_project_name", policy["hidden"])
         self.assertIn("sc_business_role_label", policy["hidden"])

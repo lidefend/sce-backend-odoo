@@ -549,15 +549,6 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
         ],
     },
     "res.partner": {
-        "visible": [
-            "name",
-            "company_type",
-            "sc_supplier_type_label",
-            "sc_region",
-            "sc_contact_name",
-            "phone",
-            "user_id",
-        ],
         "hidden": [
             "sc_business_role_label",
             "sc_business_fact_basis",

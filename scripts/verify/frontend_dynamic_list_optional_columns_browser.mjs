@@ -154,7 +154,9 @@ async function inspectTarget(browser, target) {
     if (defaultHeaders.length) {
       assert((await visibleHeaderLabels(page)).includes(hiddenSelectableLabel), `${target.name}: hidden field cannot be enabled through column settings`);
     } else {
-      assert.equal(await checkbox.isChecked(), true, `${target.name}: hidden field preference was not enabled on an empty list`);
+      await page.waitForFunction((label) => Array.from(document.querySelectorAll('.list-surface-column-choice'))
+        .some((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim().includes(label)
+          && node.querySelector('input[type="checkbox"]')?.checked), hiddenSelectableLabel, { timeout: 10_000 });
     }
     await page.screenshot({ path: path.join(artifactsDir, `${target.name}-desktop-hidden-enabled.png`), fullPage: true });
   } finally {
