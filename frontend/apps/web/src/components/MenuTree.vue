@@ -21,7 +21,7 @@
           :title="blockedTitle(node) || nodeLabel(node)"
           @click="onSelect(node)"
         >
-          <span class="label-text">{{ nodeLabel(node) }}</span>
+          <span class="label-text" :title="nodeLabel(node)">{{ nodeLabel(node) }}</span>
           <span v-if="isHandlingGroup(node)" class="label-badge">办理</span>
         </button>
         <button
@@ -311,7 +311,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) 20px;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-height: 34px;
   padding: 0 6px 0 8px;
   border-radius: 6px;
