@@ -403,9 +403,13 @@ pr.status:
 	@gh pr status || true
 
 # ------------------ Branch cleanup (Codex-safe) ------------------
-.PHONY: branch.cleanup branch.cleanup.feature workspace.worktree.cleanup
+.PHONY: branch.cleanup branch.cleanup.feature workspace.worktree.create workspace.worktree.cleanup verify.workspace.worktree.guard
 
 CLEAN_BRANCH ?=
+CREATE_WORKTREE ?=
+CREATE_WORKTREE_BRANCH ?=
+CREATE_WORKTREE_BASE ?=
+CREATE_WORKTREE_CONFIRM ?=
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -439,9 +443,23 @@ branch.cleanup: guard.prod.forbid
 branch.cleanup.feature: guard.prod.forbid
 	@bash scripts/ops/branch_cleanup_safe.sh "$(CLEAN_BRANCH)"
 
+workspace.worktree.create: guard.prod.forbid
+	@test -n "$(CREATE_WORKTREE)" || { echo "❌ CREATE_WORKTREE is required"; exit 2; }
+	@test -n "$(CREATE_WORKTREE_BRANCH)" || { echo "❌ CREATE_WORKTREE_BRANCH is required"; exit 2; }
+	@test -n "$(CREATE_WORKTREE_BASE)" || { echo "❌ CREATE_WORKTREE_BASE is required"; exit 2; }
+	@python3 scripts/ops/safe_worktree_create.py \
+		--path "$(CREATE_WORKTREE)" \
+		--branch "$(CREATE_WORKTREE_BRANCH)" \
+		--base "$(CREATE_WORKTREE_BASE)" \
+		$(if $(filter 1,$(APPLY)),--apply --confirm "$(CREATE_WORKTREE_CONFIRM)",)
+
 workspace.worktree.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_WORKTREE)" ]; then echo "❌ CLEAN_WORKTREE is required"; exit 2; fi
 	@python3 scripts/ops/safe_worktree_cleanup.py --path "$(CLEAN_WORKTREE)" $(if $(filter 1,$(APPLY)),--apply,)
+
+verify.workspace.worktree.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/safe_worktree_create.py scripts/ops/test_safe_worktree_create.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py
+	@python3 -m unittest scripts/ops/test_safe_worktree_create.py scripts/ops/test_safe_worktree_cleanup.py
 
 # ------------------ Main sync (safe) ------------------
 .PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee

@@ -2914,7 +2914,6 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   database, service, or product state changes. Fourteen isolated create and
   cleanup tests cover successful creation plus confirmation, path, branch,
   commit identity, reachability, dirty, unmerged, and primary-worktree denials.
-
 ## 2026-08-06 — FRONTEND-ACCEPTANCE-ENVIRONMENT-PORTABILITY
 
 - Branch / anchor: `feature/frontend-acceptance-environment-portability` from
