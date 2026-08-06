@@ -2898,3 +2898,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   manifest/XML reference and set consistency, negative fail-closed fixtures and
   `git diff --check`. Rollback removes this isolated P4 commit; no product or
   runtime state requires reversal.
+
+## 2026-08-06 — PRODUCT-MENU-GOVERNANCE-M4-RUNTIME-ADMISSION
+
+- Branch / anchor: `feature/product-menu-governance` from
+  `db4faf2ced9f4147b7a1dadadb110025a23e7aaa`.
+- Formal Product Layer / Layer Target / Module: P4 governance evidence and M4
+  runtime admission; `scripts/verify` and
+  `docs/engineering_convergence/menu_governance`.
+- Decision: the 22 frozen assets now have field-level source authority,
+  action/model/group structural anchors, compatibility invariants and a bounded
+  minimal-fix proposal. They remain review candidates, not P1 product facts.
+- Runtime boundary: port 18094 is reserved by the active list topic and has no
+  exclusive lease; 8070/18081 mounts a different source SHA and exposes no
+  trusted runtime identity. Both were rejected. No login, browser capture,
+  database write, menu XML edit or runtime claim was performed.
+- Exit state: `BLOCKED_ON_RUNTIME_EVIDENCE`. Resume only after env-portability
+  provides an exclusive database/service/browser/evidence lease and proves the
+  runtime SHA equals the frozen source SHA.

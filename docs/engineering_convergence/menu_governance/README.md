@@ -25,6 +25,8 @@ python3 -m unittest scripts/verify/test_menu_governance_inventory.py
 - `menu_capability_inventory.json`
 - `menu_capability_inventory.md`
 - `menu_migration_mapping.csv`
+- `menu_m4_governance.json`
+- `M4_RUNTIME_AND_MINIMAL_FIX_PLAN.md`
 
 `--release-candidate` 是未来 M4+ 的失败关闭入口；当前 M1 资产账含有待治理风险，因此本阶段不以该入口通过作为完成条件。
 
@@ -36,5 +38,6 @@ python3 -m unittest scripts/verify/test_menu_governance_inventory.py
 | M1 | 完成 | manifest 加载链的静态菜单资产覆盖 100% |
 | M2 | 框架完成 | 静态 action/group 链已记录；运行时角色、路由与标杆会话证据未采集 |
 | M3 | 候选框架完成 | 词典、候选三级树、逐项迁移表与产品待决项已建立，未发布产品事实 |
+| M4 | 证据阻塞 | 22 项静态权威和最小修复方案已冻结；因无独占运行时租约，未改菜单 XML |
 
-详细结论见 [M0 基线](M0_BASELINE.md)、[M2 证据框架](M2_CAPABILITY_EVIDENCE.md) 和 [M3 候选方案](M3_NAMING_TAXONOMY.md)。
+详细结论见 [M0 基线](M0_BASELINE.md)、[M2 证据框架](M2_CAPABILITY_EVIDENCE.md)、[M3 候选方案](M3_NAMING_TAXONOMY.md) 和 [M4 最小修复计划](M4_RUNTIME_AND_MINIMAL_FIX_PLAN.md)。

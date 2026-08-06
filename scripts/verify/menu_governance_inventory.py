@@ -32,7 +32,20 @@ SCOPE_PATH = OUT_DIR / "menu_governance_scope.json"
 INVENTORY_PATH = OUT_DIR / "menu_capability_inventory.json"
 SUMMARY_PATH = OUT_DIR / "menu_capability_inventory.md"
 MAPPING_PATH = OUT_DIR / "menu_migration_mapping.csv"
+M4_PATH = OUT_DIR / "menu_m4_governance.json"
+M4_SUMMARY_PATH = OUT_DIR / "M4_RUNTIME_AND_MINIMAL_FIX_PLAN.md"
 SCHEMA_VERSION = "sce.menu_governance_inventory.v1"
+M4_SCHEMA_VERSION = "sce.menu_governance_m4.v1"
+PROPOSED_LABELS = {
+    f"{MODULE}.menu_sc_leave_request": "请休假审批",
+    f"{MODULE}.menu_sc_material_stock_statistics_report": "库存统计",
+    f"{MODULE}.menu_sc_project_manage": "项目配置",
+    f"{MODULE}.menu_sc_project_wbs_cost": "成本分解结构",
+}
+PROPOSED_PARENTS = {
+    f"{MODULE}.menu_sc_settlement_adjustment": f"{MODULE}.menu_sc_receipt_payment_group",
+    f"{MODULE}.menu_sc_settlement_order": f"{MODULE}.menu_sc_receipt_payment_group",
+}
 TECHNICAL_NAME = re.compile(
     r"(?:\b(?:legacy|runtime|projection|backend|debug|test|temp|v\d+)\b|"
     r"(?:后台|旧版|临时|测试|新)[）)]?$|[_/]|（(?:后台|旧版|临时|测试|新)）)",
@@ -186,8 +199,12 @@ def collect() -> dict[str, Any]:
     for xmlid in sorted(by_id):
         history = sorted(by_id[xmlid], key=lambda item: item.source_index)
         merged: dict[str, Any] = {}
+        field_authority: dict[str, str] = {}
         for declaration in history:
-            merged.update({key: value for key, value in declaration.values.items() if value is not None and value != ""})
+            for key, value in declaration.values.items():
+                if value is not None and value != "":
+                    merged[key] = value
+                    field_authority[key] = declaration.source_file
         parent_value = merged.get("parent_id") if "parent_id" in merged else merged.get("parent")
         parent = _qualify(parent_value) if parent_value is not False else None
         action_value = merged.get("action")
@@ -200,6 +217,18 @@ def collect() -> dict[str, Any]:
                 "menu_xmlid": xmlid,
                 "source_file": history[0].source_file,
                 "source_files": sorted({item.source_file for item in history}),
+                "declaration_history": [
+                    {"kind": item.kind, "source_file": item.source_file, "source_index": item.source_index}
+                    for item in history
+                ],
+                "effective_authority_source": history[-1].source_file,
+                "field_authority": {
+                    "name": field_authority.get("name"),
+                    "parent": field_authority.get("parent_id") or field_authority.get("parent"),
+                    "action": field_authority.get("action"),
+                    "groups": field_authority.get("groups_id") or field_authority.get("groups"),
+                    "sequence": field_authority.get("sequence"),
+                },
                 "declaration_count": len(history),
                 "declaration_kinds": [item.kind for item in history],
                 "current_name": merged.get("name") or None,
@@ -235,6 +264,9 @@ def collect() -> dict[str, Any]:
             depth_errors.append(error)
         action = asset["action_xmlid"]
         asset["action_reference_status"] = _reference_status(action, actions)
+        action_asset = actions.get(action or "", {})
+        asset["action_type"] = action_asset.get("model")
+        asset["action_res_model"] = action_asset.get("res_model")
         asset["parent_reference_status"] = _reference_status(asset["parent_xmlid"], asset_map)
         asset["technical_name_risk"] = bool(asset["current_name"] and TECHNICAL_NAME.search(asset["current_name"]))
         asset["over_depth_risk"] = bool(asset["level"] and asset["level"] > 3)
@@ -319,6 +351,159 @@ def collect() -> dict[str, Any]:
     }
     validate_inventory(report)
     return report
+
+
+def build_m4_governance(report: dict[str, Any]) -> dict[str, Any]:
+    findings = report["findings"]
+    issue_sets = {
+        "duplicate_menuitem": set(findings["duplicate_menuitem_xmlids"]),
+        "technical_name": set(findings["technical_name_risks"]),
+        "over_depth": set(findings["over_depth_risks"]),
+    }
+    frozen = sorted(set().union(*issue_sets.values()))
+    by_id = {item["menu_xmlid"]: item for item in report["assets"]}
+    decisions = []
+    for xmlid in frozen:
+        asset = by_id[xmlid]
+        issue_types = sorted(key for key, values in issue_sets.items() if xmlid in values)
+        proposed: dict[str, Any] = {
+            "change_scope": [],
+            "new_name": PROPOSED_LABELS.get(xmlid),
+            "new_parent_xmlid": PROPOSED_PARENTS.get(xmlid),
+            "duplicate_resolution": None,
+            "apply_status": "not_applied_runtime_evidence_required",
+        }
+        if "technical_name" in issue_types:
+            proposed["change_scope"].append("name_only")
+        if "over_depth" in issue_types:
+            proposed["change_scope"].append("parent_only")
+        if "duplicate_menuitem" in issue_types:
+            proposed["change_scope"].append("declaration_form_only")
+            proposed["duplicate_resolution"] = (
+                "preserve_first_menuitem_create_and_convert_later_redeclarations_to_explicit_ir_ui_menu_patches"
+            )
+        decisions.append(
+            {
+                "menu_xmlid": xmlid,
+                "issue_types": issue_types,
+                "formal_product_owner": "P1_smart_construction_core_candidate_pending_product_review",
+                "authority": {
+                    "effective_source": asset["effective_authority_source"],
+                    "field_sources": asset["field_authority"],
+                    "load_order_evidence": asset["declaration_history"],
+                },
+                "current": {
+                    "name": asset["current_name"],
+                    "path": asset["current_path"],
+                    "level": asset["level"],
+                    "parent_xmlid": asset["parent_xmlid"],
+                    "action_xmlid": asset["action_xmlid"],
+                    "action_type": asset["action_type"],
+                    "action_res_model": asset["action_res_model"],
+                    "group_xmlids": asset["group_xmlids"],
+                    "sequence": asset["sequence"],
+                },
+                "capability_route_mapping": {
+                    "capability_status": "structural_anchor_only_runtime_semantics_unverified",
+                    "capability_anchor": {
+                        "action_xmlid": asset["action_xmlid"],
+                        "action_type": asset["action_type"],
+                        "res_model": asset["action_res_model"],
+                        "group_xmlids": asset["group_xmlids"],
+                    },
+                    "route_candidate": asset["route_evidence"],
+                    "runtime_visible": None,
+                    "route_reachable": None,
+                    "page_identity_consistent": None,
+                },
+                "proposed_minimal_change": proposed,
+                "compatibility_invariants": {
+                    "preserve_menu_xmlid": True,
+                    "preserve_action_xmlid": True,
+                    "preserve_group_xmlids": True,
+                    "preserve_sequence": True,
+                    "no_acl_or_record_rule_change": True,
+                    "no_frontend_change": True,
+                },
+                "runtime_evidence": {
+                    "status": "BLOCKED_ON_RUNTIME_EVIDENCE",
+                    "reason": "18094_reserved_by_list_topic_and_8070_18081_source_sha_mismatch",
+                    "required_lease_capability": "env_portability_isolated_runtime_browser_lease",
+                    "evidence_refs": [],
+                },
+                "decision": "investigate",
+            }
+        )
+    m4 = {
+        "schema_version": M4_SCHEMA_VERSION,
+        "source_inventory_schema_version": report["schema_version"],
+        "source_commit_sha": report["source"]["commit_sha"],
+        "status": "BLOCKED_ON_RUNTIME_EVIDENCE",
+        "scope": {
+            "frozen_issue_count": len(frozen),
+            "runtime_sampling_performed": False,
+            "menu_xml_modified": False,
+            "database_write_performed": False,
+            "frontend_modified": False,
+        },
+        "runtime_admission": {
+            "accepted_resources": [],
+            "rejected_resources": [
+                {"resource": "18094", "reason": "reserved_by_active_list_topic_no_exclusive_lease"},
+                {"resource": "8070/18081", "reason": "mounted_source_sha_differs_from_frozen_baseline_and_runtime_identity_endpoint_missing"},
+            ],
+            "required_before_apply": [
+                "exclusive_runtime_database_browser_and_evidence_lease",
+                "runtime_service_sha_equals_source_commit_sha",
+                "read_only_or_isolated_rehearsal_database_role_resolved",
+                "role_company_and_route_evidence_complete",
+            ],
+        },
+        "decisions": decisions,
+    }
+    validate_m4_governance(m4, report)
+    return m4
+
+
+def validate_m4_governance(m4: dict[str, Any], report: dict[str, Any]) -> None:
+    if m4.get("schema_version") != M4_SCHEMA_VERSION:
+        raise InventoryError("M4 schema_version mismatch")
+    expected = set().union(
+        set(report["findings"]["duplicate_menuitem_xmlids"]),
+        set(report["findings"]["technical_name_risks"]),
+        set(report["findings"]["over_depth_risks"]),
+    )
+    decisions = m4.get("decisions")
+    if not isinstance(decisions, list):
+        raise InventoryError("M4 decisions must be a list")
+    ids = [item.get("menu_xmlid") for item in decisions]
+    if len(ids) != len(set(ids)) or set(ids) != expected:
+        raise InventoryError("M4 decision set has duplicate, extra or missing frozen assets")
+    by_id = {item["menu_xmlid"]: item for item in report["assets"]}
+    for decision in decisions:
+        xmlid = decision["menu_xmlid"]
+        source = by_id[xmlid]
+        current = decision.get("current", {})
+        if current.get("action_xmlid") != source["action_xmlid"] or current.get("group_xmlids") != source["group_xmlids"]:
+            raise InventoryError(f"M4 compatibility snapshot mismatch: {xmlid}")
+        authority = decision.get("authority", {})
+        if authority.get("effective_source") != source["effective_authority_source"]:
+            raise InventoryError(f"M4 authority mismatch: {xmlid}")
+        if decision.get("runtime_evidence", {}).get("status") != "BLOCKED_ON_RUNTIME_EVIDENCE":
+            raise InventoryError(f"M4 runtime status is not fail-closed: {xmlid}")
+        route = decision.get("capability_route_mapping", {})
+        if any(route.get(key) is not None for key in ("runtime_visible", "route_reachable", "page_identity_consistent")):
+            raise InventoryError(f"M4 contains unproved runtime claim: {xmlid}")
+        proposal = decision.get("proposed_minimal_change", {})
+        if "technical_name" in decision["issue_types"]:
+            new_name = proposal.get("new_name")
+            if not new_name or TECHNICAL_NAME.search(new_name):
+                raise InventoryError(f"M4 technical-name proposal is invalid: {xmlid}")
+        if "over_depth" in decision["issue_types"] and not proposal.get("new_parent_xmlid"):
+            raise InventoryError(f"M4 over-depth proposal lacks parent: {xmlid}")
+        invariants = decision.get("compatibility_invariants", {})
+        if not all(invariants.values()):
+            raise InventoryError(f"M4 compatibility invariant weakened: {xmlid}")
 
 
 def _safe_int(value: Any) -> int | None:
@@ -465,18 +650,58 @@ def _mapping_csv(report: dict[str, Any]) -> str:
     return stream.getvalue()
 
 
+def _m4_summary(m4: dict[str, Any]) -> str:
+    issue_counts = Counter(
+        issue for decision in m4["decisions"] for issue in decision["issue_types"]
+    )
+    return f"""# M4：运行时准入与最小修复计划（生成文件）
+
+> 由 `scripts/verify/menu_governance_inventory.py` 生成，禁止人工修改。
+
+## 当前裁决
+
+- 状态：`{m4['status']}`
+- 冻结资产：{m4['scope']['frozen_issue_count']}
+- 重复 `<menuitem>`：{issue_counts['duplicate_menuitem']}
+- 技术/临时命名：{issue_counts['technical_name']}
+- 第四级路径：{issue_counts['over_depth']}
+- 菜单 XML 修改：否
+- 数据库写入：否
+- 浏览器/运行时事实声明：否
+
+## 资源准入
+
+- `18094` 属于当前列表专题，缺少独占租约，拒绝使用。
+- `8070/18081` 的挂载源码 SHA 与冻结基线不同，且运行时身份端点缺失，拒绝作为证据。
+- 后续依赖 env-portability 提供数据库、服务、浏览器 profile 和证据目录的统一独占租约。
+
+## 最小修复边界
+
+- 16 个重复声明仅允许改为显式 `ir.ui.menu` patch 或在运行时等价证明后移除后置重声明；不得重建 XML ID。
+- 4 个命名候选仅改变 `name`，不改变 action、groups、sequence 或权限。
+- 2 个第四级候选仅改变 parent，使业务深度回到三级；空容器的后续处置另行评审。
+- 所有候选在运行时角色、路由、页面身份和兼容证据完成前均保持 `not_applied_runtime_evidence_required`。
+"""
+
+
 def write_outputs(report: dict[str, Any]) -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    m4 = build_m4_governance(report)
     INVENTORY_PATH.write_bytes(_json_bytes(report))
     SUMMARY_PATH.write_text(_summary(report), encoding="utf-8")
     MAPPING_PATH.write_text(_mapping_csv(report), encoding="utf-8", newline="")
+    M4_PATH.write_text(json.dumps(m4, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    M4_SUMMARY_PATH.write_text(_m4_summary(m4), encoding="utf-8")
 
 
 def check_outputs(report: dict[str, Any]) -> None:
+    m4 = build_m4_governance(report)
     expected = {
         INVENTORY_PATH: _json_bytes(report),
         SUMMARY_PATH: _summary(report).encode("utf-8"),
         MAPPING_PATH: _mapping_csv(report).encode("utf-8"),
+        M4_PATH: (json.dumps(m4, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8"),
+        M4_SUMMARY_PATH: _m4_summary(m4).encode("utf-8"),
     }
     for path, content in expected.items():
         if not path.exists() or path.read_bytes() != content:

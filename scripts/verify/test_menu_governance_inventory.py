@@ -111,6 +111,53 @@ class MenuGovernanceInventoryTest(unittest.TestCase):
         errors = sorted(Draft202012Validator(schema).iter_errors(inventory.collect()), key=lambda item: list(item.path))
         self.assertEqual([], [error.message for error in errors])
 
+    def test_m4_frozen_set_is_exact_and_fail_closed(self) -> None:
+        report = inventory.collect()
+        m4 = inventory.build_m4_governance(report)
+        self.assertEqual(22, len(m4["decisions"]))
+        self.assertEqual("BLOCKED_ON_RUNTIME_EVIDENCE", m4["status"])
+        self.assertFalse(m4["scope"]["runtime_sampling_performed"])
+        self.assertFalse(m4["scope"]["menu_xml_modified"])
+        self.assertTrue(all(item["decision"] == "investigate" for item in m4["decisions"]))
+
+    def test_m4_extra_or_missing_decision_fails_closed(self) -> None:
+        report = inventory.collect()
+        m4 = inventory.build_m4_governance(report)
+        m4["decisions"].pop()
+        with self.assertRaisesRegex(inventory.InventoryError, "extra or missing"):
+            inventory.validate_m4_governance(m4, report)
+
+    def test_m4_authority_drift_fails_closed(self) -> None:
+        report = inventory.collect()
+        m4 = inventory.build_m4_governance(report)
+        m4["decisions"][0]["authority"]["effective_source"] = "wrong.xml"
+        with self.assertRaisesRegex(inventory.InventoryError, "authority mismatch"):
+            inventory.validate_m4_governance(m4, report)
+
+    def test_m4_unproved_runtime_claim_fails_closed(self) -> None:
+        report = inventory.collect()
+        m4 = inventory.build_m4_governance(report)
+        m4["decisions"][0]["capability_route_mapping"]["route_reachable"] = True
+        with self.assertRaisesRegex(inventory.InventoryError, "unproved runtime claim"):
+            inventory.validate_m4_governance(m4, report)
+
+    def test_m4_compatibility_weakening_fails_closed(self) -> None:
+        report = inventory.collect()
+        m4 = inventory.build_m4_governance(report)
+        m4["decisions"][0]["compatibility_invariants"]["preserve_action_xmlid"] = False
+        with self.assertRaisesRegex(inventory.InventoryError, "invariant weakened"):
+            inventory.validate_m4_governance(m4, report)
+
+    def test_m4_matches_json_schema(self) -> None:
+        report = inventory.collect()
+        m4 = inventory.build_m4_governance(report)
+        schema = inventory.json.loads(
+            (inventory.OUT_DIR / "menu_m4_governance.schema.json").read_text(encoding="utf-8")
+        )
+        Draft202012Validator.check_schema(schema)
+        errors = sorted(Draft202012Validator(schema).iter_errors(m4), key=lambda item: list(item.path))
+        self.assertEqual([], [error.message for error in errors])
+
 
 if __name__ == "__main__":
     unittest.main()
