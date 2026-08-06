@@ -84,14 +84,13 @@ ACCEPTANCE_NAV_MAX_ACTIONS ?=
 ACCEPTANCE_NAV_FORBIDDEN_LABELS ?=
 ACCEPTANCE_NAV_REQUIRED_PATHS ?=
 ACCEPTANCE_NAV_REQUIRED_ACTIONS ?=
-DAILY_ACCEPTANCE_BASE_URL ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["host_base_url"])')
 DAILY_ACCEPTANCE_NAV_MIN_ACTIONS ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["min_actions"])')
 DAILY_ACCEPTANCE_NAV_MAX_ACTIONS ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["max_actions"])')
 DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS ?= $(shell python3 -c 'import json; print(",".join(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["forbidden_labels"]))')
 DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS ?= $(shell python3 -c 'import json; print(",".join(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["required_paths"]))')
 
 verify.dev.acceptance.release: guard.prod.forbid check-compose-project check-compose-env
-	@$(RUN_ENV) DB_NAME=$(DB_NAME) ACCEPTANCE_BACKUP_DIR="$(ACCEPTANCE_BACKUP_DIR)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_NAV_MIN_ACTIONS="$(ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="$(ACCEPTANCE_NAV_REQUIRED_ACTIONS)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
+	@$(RUN_ENV) SC_ACCEPTANCE_EXPECTED_SHA="$$(git rev-parse HEAD)" DB_NAME=$(DB_NAME) ACCEPTANCE_BACKUP_DIR="$(ACCEPTANCE_BACKUP_DIR)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_NAV_MIN_ACTIONS="$(ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="$(ACCEPTANCE_NAV_REQUIRED_ACTIONS)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
 	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
 
 .PHONY: verify.dev.acceptance.release.schema.guard
@@ -103,7 +102,6 @@ release.dev.acceptance.publish: guard.prod.forbid check-compose-project check-co
 	@echo "[release.dev.acceptance.publish] PASS base_url=$(ACCEPTANCE_BASE_URL) db=$(DB_NAME) artifact=$(ACCEPTANCE_PROBE_OUTPUT)"
 
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MIN_ACTIONS := $(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)
-release.daily_dev.acceptance.publish: ACCEPTANCE_BASE_URL := $(DAILY_ACCEPTANCE_BASE_URL)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MAX_ACTIONS := $(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_FORBIDDEN_LABELS := $(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_REQUIRED_PATHS := $(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)

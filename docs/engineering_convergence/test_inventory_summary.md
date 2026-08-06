@@ -4,21 +4,21 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1062`
+- Total assets: `1065`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `135`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `702`
+- PR dedupe candidates: `705`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 410 |
+| governance | 411 |
 | contract | 313 |
-| unit | 173 |
+| unit | 175 |
 | odoo_integration | 78 |
 | e2e | 34 |
 | security | 26 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 921 |
+| pr_candidate | 924 |
 | integration_candidate | 100 |
 | release_candidate | 32 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 702 |
+| deduplicate_before_required | 705 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 99 |
 | keep_release_only | 32 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 923 |
+| <5m | 926 |
 | 10-30m | 101 |
 | 30-60m | 34 |
 | unknown | 3 |
@@ -152,9 +152,9 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 410 |
+| architecture owner | 411 |
 | platform owner | 313 |
-| test owner | 174 |
+| test owner | 176 |
 | backend owner | 78 |
 | qa owner | 34 |
 | security owner | 26 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 950 |
+| scripts/verify | 953 |
 | scripts/ops | 51 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 12 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-179 | security | `scripts/verify/construction_core_extension_actor_roles_split_guard.py` | security owner |
 | T-ASSET-180 | governance | `scripts/verify/construction_core_extension_capability_rows_split_guard.py` | architecture owner |
 | T-ASSET-181 | contract | `scripts/verify/construction_core_extension_contract_helpers_split_guard.py` | platform owner |
-| ... | ... | 622 more | ... |
+| ... | ... | 625 more | ... |
 
 ## Dedupe Hotspots
 
@@ -285,6 +285,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/construction_core_extension` | 12 |
 | `scripts/verify/contract_governance_form` | 5 |
 | `scripts/verify/test_frontend_release` | 5 |
+| `scripts/verify/frontend_acceptance_environment` | 3 |
 | `scripts/verify/frontend_financial_workspace` | 3 |
 | `scripts/verify/frontend_page_identity` | 3 |
 | `frontend/apps/web/scripts/low_code_workbench` | 2 |
@@ -311,7 +312,6 @@ Generated from `test_inventory.csv`.
 | `frontend/apps/web/scripts/frontend_role_journey` | 1 |
 | `frontend/apps/web/scripts/handling_entry_catalog` | 1 |
 | `frontend/apps/web/scripts/list_selection_contract` | 1 |
-| `frontend/apps/web/scripts/low_code_business` | 1 |
 
 ## Residual Dedupe Hotspot Disposition
 
@@ -320,6 +320,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/construction_core_extension` | 12 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/contract_governance_form` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_release` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/frontend_acceptance_environment` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/frontend_financial_workspace` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/frontend_page_identity` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `frontend/apps/web/scripts/low_code_workbench` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |

@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { launchChromium } from './playwright_runtime.mjs';
+import { launchAcceptanceChromium } from './playwright_runtime.mjs';
 import { captureReleasedNavigation } from './released_navigation_target.mjs';
-import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { redactedEnvironmentEvidence, resolveAcceptanceEnvironment, verifyServedIdentity } from './lib/frontend_acceptance_environment.mjs';
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 
 const acceptance = resolveAcceptanceEnvironment({ tool: 'geometry-scroll-audit' });
@@ -14,9 +14,9 @@ const BASE_URL = acceptance.baseUrl;
 const DB_NAME = acceptance.database;
 const LOGIN = process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
 const PASSWORD = process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
-const OUTPUT_DIR = path.resolve(process.env.GEOMETRY_AUDIT_OUTPUT || '.runtime/final-acceptance/geometry-scroll');
-const REPORT_JSON = path.resolve(process.env.GEOMETRY_AUDIT_JSON || '.runtime/geometry-scroll-audit.json');
-const REPORT_HTML = path.resolve(process.env.GEOMETRY_AUDIT_HTML || '.runtime/geometry-scroll-audit.html');
+const OUTPUT_DIR = path.resolve(process.env.GEOMETRY_AUDIT_OUTPUT || acceptance.runArtifactRoot);
+const REPORT_JSON = path.resolve(process.env.GEOMETRY_AUDIT_JSON || path.join(OUTPUT_DIR, 'geometry-scroll-audit.json'));
+const REPORT_HTML = path.resolve(process.env.GEOMETRY_AUDIT_HTML || path.join(OUTPUT_DIR, 'geometry-scroll-audit.html'));
 const VIEWPORTS = [
   { key: '1440', width: 1440, height: 900 },
   { key: '1280', width: 1280, height: 800 },
@@ -29,7 +29,7 @@ const SOURCE_SHA = process.env.SC_ACCEPTANCE_SHA || execFileSync('git', ['rev-pa
 
 assert(PASSWORD, 'E2E_PASSWORD or SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
 await fs.mkdir(OUTPUT_DIR, { recursive: true });
-const acceptanceLease = await acquireAcceptanceLease({ root: acceptance.artifactRoot, mode: 'shared-read', owner: { tool: 'geometry-scroll-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
+const acceptanceLease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'geometry-scroll-audit', profile: acceptance.profile, source_sha: SOURCE_SHA } });
 
 function nodeRoute(node) {
   const meta = node?.meta && typeof node.meta === 'object' ? node.meta : {};
@@ -309,7 +309,8 @@ async function negativeStickyFixtureProof(page) {
   return { fixture: 'table-header-position-static', detected: true };
 }
 
-const browser = await launchChromium({ headless: true });
+const servedIdentity = await verifyServedIdentity(acceptance, acceptance.provenance.expectedSha);
+const browser = await launchAcceptanceChromium(acceptance, { headless: true });
 const context = await browser.newContext({ viewport: VIEWPORTS[0] });
 const page = await context.newPage();
 const navigation = captureReleasedNavigation(page);
@@ -418,7 +419,7 @@ try {
     schema: 'frontend_geometry_scroll_audit.v1',
     source_sha: SOURCE_SHA,
     generated_at: new Date().toISOString(),
-    source: { url: BASE_URL, database: DB_NAME, login: LOGIN, navigation: 'authenticated system.init', discovered_actionable_routes: discovered.length, audited_discovered_routes: discoveredRouteTargets.length + 1, discovered_form_routes: formRoutes },
+    source: { environment: redactedEnvironmentEvidence(acceptance), served_identity: servedIdentity, navigation: 'authenticated system.init', discovered_actionable_routes: discovered.length, audited_discovered_routes: discoveredRouteTargets.length + 1, discovered_form_routes: formRoutes },
     rows,
     negative_fixtures: negativeFixtures,
     runtime,

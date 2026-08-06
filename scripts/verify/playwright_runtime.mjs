@@ -59,7 +59,6 @@ export function resolveChromiumExecutablePath() {
 function loadPlaywrightChromium() {
   const modulePath = require.resolve('playwright', {
     paths: [
-      process.cwd(),
       path.join(repoRoot, 'frontend', 'apps', 'web', 'node_modules'),
       path.join(repoRoot, 'frontend', 'node_modules'),
     ],
@@ -74,4 +73,11 @@ export async function launchChromium(options = {}) {
     return chromium.launch({ ...options, executablePath });
   }
   return chromium.launch(options);
+}
+
+export async function launchAcceptanceChromium(environment, options = {}) {
+  if (!environment?.schema?.startsWith('frontend_acceptance_environment.')) {
+    throw new Error('a resolved frontend acceptance environment is required');
+  }
+  return launchChromium(options);
 }
