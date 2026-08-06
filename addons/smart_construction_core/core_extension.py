@@ -376,7 +376,7 @@ register_legacy_standard_list_profile(
             "write_date",
         ],
         "column_labels": {
-            "name": "名称",
+            "name": "项目名称",
             "project_code": "项目编号",
             "owner_id": "业主单位",
             "sc_partner_display_name": "关联单位",
