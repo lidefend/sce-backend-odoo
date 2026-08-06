@@ -12,7 +12,7 @@
   document number). The tree now exposes that field once as `单据编号`; it does
   not duplicate the value under a second `合同编号` label. Ordering now uses
   `date_contract desc, id desc`.
-- The module version advances from `17.0.0.78` to `17.0.0.79` so a governed
+- The module version advances from `17.0.0.78` to `17.0.0.80` so governed
   daily upgrade replays the corrected XML.
 
 ## 2. Architecture boundary
@@ -88,3 +88,18 @@
 - A second governed `make mod.upgrade` against the same isolated database loaded
   `smart_construction_core` and the formal view again and exited zero, proving
   the repeat upgrade path rather than element-presence only.
+
+## 6. Post-deploy formal-action root extension
+
+- The first daily runtime audit proved the contract tree itself clean, then
+  exposed three material actions with zero rows. Their target records were not
+  missing: daily runtime contained 13,184 inbound, 166 rental-in, and 37
+  rental-return projections.
+- The actions encoded the invented source identity
+  `online_old_legacy_direct:direct_acceptance_fact`, while the actual lineage
+  is customer-specific. Encoding the observed customer identity in P1 would
+  repeat the boundary violation.
+- The three actions now filter by the P1-owned semantic projection field
+  `legacy_acceptance_label`. The runtime gate compares each action domain and
+  count with the generic label projection, without importing an archived
+  customer carrier model or requiring fixture rows.

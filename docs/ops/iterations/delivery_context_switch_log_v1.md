@@ -2841,7 +2841,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Resolution: expose the single governed `name` identifier once as `单据编号`,
   use `date_contract desc, id desc`, remove the stale legacy-number test
   contract, add negative source regression, and advance the module to
-  `17.0.0.79`.
+  `17.0.0.80`.
+- Post-deploy root extension: the formal-action gate found three material
+  actions filtering an invented generic source identity while all 13,387
+  projected rows carried their real customer lineage. The P1 actions now use
+  the generic `legacy_acceptance_label` semantic field; the gate locks both the
+  domain and action-to-projection count without importing a private carrier.
 - Boundary: no frontend, API, ACL, workflow, route, customer override, database
   patch, or business-record repair. Daily application remains a P4 governed
   upgrade protected by the paired backup and successful isolated restore drill.
