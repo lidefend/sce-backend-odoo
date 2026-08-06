@@ -103,3 +103,12 @@
   `legacy_acceptance_label`. The runtime gate compares each action domain and
   count with the generic label projection, without importing an archived
   customer carrier model or requiring fixture rows.
+
+## 7. Full-surface label closure
+
+- The post-upgrade full formal-surface gate found the engineering-progress
+  income tree labeling `legacy_contract_no` as generic `合同编号`, while this
+  relationship denotes the construction-management contract for the receipt.
+- The tree now uses `施工管理合同`, matching the locked runtime contract. The
+  source regression asserts both the required semantic label and absence of
+  the generic label. The module advances to `17.0.0.81` for XML replay.
