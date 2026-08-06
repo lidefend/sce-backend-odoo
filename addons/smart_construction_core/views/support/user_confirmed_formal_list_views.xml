@@ -346,7 +346,7 @@
                 <field name="project_id" string="项目名称" readonly="1" />
                 <field name="partner_id" string="往来单位" readonly="1" />
                 <field name="company_id" string="承包单位" readonly="1" />
-                <field name="legacy_contract_no" string="合同编号" readonly="1" />
+                <field name="legacy_contract_no" string="施工管理合同" readonly="1" />
                 <field name="name" string="单据编号" readonly="1" />
                 <field name="creator_name" string="填写人" readonly="1" />
                 <field name="receiving_account" string="收款账户" readonly="1" />

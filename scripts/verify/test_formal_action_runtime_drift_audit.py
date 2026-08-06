@@ -72,8 +72,12 @@ class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
         self.assertNotIn("legacy_contract_no", contract_fields)
 
         receipt_tree = self._record(FORMAL_LISTS, "view_sc_receipt_income_engineering_progress_formal_tree")
-        receipt_fields = [field.attrib.get("name") for field in receipt_tree.findall(".//tree/field")]
-        self.assertIn("legacy_contract_no", receipt_fields)
+        receipt_fields = [
+            (field.attrib.get("name"), field.attrib.get("string"))
+            for field in receipt_tree.findall(".//tree/field")
+        ]
+        self.assertIn(("legacy_contract_no", "施工管理合同"), receipt_fields)
+        self.assertNotIn(("legacy_contract_no", "合同编号"), receipt_fields)
 
         tender_action = self._record(ALIGNMENT_LISTS, "action_tender_guarantee_formal_payment_deposit_return")
         self.assertEqual(self._field_text(tender_action, "domain"), "[]")
