@@ -553,7 +553,7 @@
     "menu_xml_modified": false,
     "runtime_sampling_performed": false
   },
-  "source_commit_sha": "ae97639287f62b6d9242bbf27a1c010c1c15a1d5",
+  "source_commit_sha": "00c149fe60c7e270eca8f1466c9bbb64253e267a",
   "source_inventory_schema_version": "sce.menu_governance_inventory.v1",
   "status": "BLOCKED_ON_RUNTIME_EVIDENCE"
 }

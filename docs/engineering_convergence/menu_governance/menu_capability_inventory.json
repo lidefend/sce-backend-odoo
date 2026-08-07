@@ -23230,7 +23230,7 @@
       "smart_construction_core.menu_sc_project_wbs_cost"
     ]
   },
-  "generated_at_utc": "2026-08-07T03:45:31+00:00",
+  "generated_at_utc": "2026-08-07T04:18:50+00:00",
   "groups": [
     {
       "group_xmlid": "base.group_system",
@@ -23530,7 +23530,7 @@
   },
   "source": {
     "branch": "feature/menu-collection-convergence",
-    "commit_sha": "ae97639287f62b6d9242bbf27a1c010c1c15a1d5",
+    "commit_sha": "00c149fe60c7e270eca8f1466c9bbb64253e267a",
     "manifest": "addons/smart_construction_core/__manifest__.py",
     "manifest_xml_files": [
       "addons/smart_construction_core/data/sequence.xml",
@@ -23742,7 +23742,7 @@
     "manifest_xml_sha256": "61d53ff036b31daf3d9633f543d89394d90960c1371e07f7ccc2d8d81243b3f9",
     "module": "smart_construction_core",
     "repository": "sce-backend-odoo",
-    "tree_sha": "ff4f650b4bdcc6b34701567e6470a3f6273e719b",
+    "tree_sha": "4cfaacf27f0963148942c8122237e05ca6c4e6cf",
     "unloaded_xml_files": [
       "addons/smart_construction_core/data/tax.xml",
       "addons/smart_construction_core/static/src/xml/form_status_indicator_patch.xml",

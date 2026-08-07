@@ -1,7 +1,7 @@
 # 菜单能力静态资产账（生成文件）
 
 > 由 `scripts/verify/menu_governance_inventory.py` 生成，禁止人工修改。
-> 来源提交：`ae97639287f62b6d9242bbf27a1c010c1c15a1d5`
+> 来源提交：`00c149fe60c7e270eca8f1466c9bbb64253e267a`
 > 模式：P4 静态只读；运行时可见性和路由可达性均未宣称通过。
 
 ## 统计口径
