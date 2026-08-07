@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 from pathlib import Path
 
@@ -67,7 +68,21 @@ def scan(root: Path) -> list[dict[str, str]]:
         if forbidden.lower() in migration.lower():
             failures.append({"path": migration_path, "reason": "business_data_destructive_cleanup", "token": forbidden})
 
-    require("addons/smart_construction_core/__manifest__.py", "17.0.0.82", "module_version_not_bumped")
+    manifest_path = "addons/smart_construction_core/__manifest__.py"
+    manifest_file = root / manifest_path
+    try:
+        manifest = ast.literal_eval(manifest_file.read_text(encoding="utf-8"))
+        version = tuple(int(part) for part in str(manifest.get("version", "")).split("."))
+    except (OSError, SyntaxError, ValueError, AttributeError):
+        version = ()
+    if version < (17, 0, 0, 82):
+        failures.append(
+            {
+                "path": manifest_path,
+                "reason": "module_version_not_bumped",
+                "token": ">=17.0.0.82",
+            }
+        )
     return failures
 
 

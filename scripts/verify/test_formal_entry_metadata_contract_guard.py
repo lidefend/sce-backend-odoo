@@ -36,6 +36,15 @@ class FormalEntryMetadataContractGuardTest(unittest.TestCase):
     def test_current_contract_passes(self):
         self.assertEqual(scan(self.fixture()), [])
 
+    def test_module_version_below_migration_version_fails(self):
+        root = self.fixture()
+        path = root / "addons/smart_construction_core/__manifest__.py"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace("17.0.0.86", "17.0.0.81"),
+            encoding="utf-8",
+        )
+        self.assertIn("module_version_not_bumped", {row["reason"] for row in scan(root)})
+
     def test_missing_model_extension_fails(self):
         root = self.fixture()
         path = root / "addons/smart_construction_core/models/support/formal_entry_metadata_extensions.py"
