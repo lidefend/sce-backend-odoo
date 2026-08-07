@@ -161,8 +161,8 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         result = CONTRACT.assert_policy_matches_locked_contract(
             contract, "construction.standard", list(projected.values())
         )
-        self.assertEqual(result["menu_count"], 104)
-        self.assertEqual(result["authorized_addition_count"], 6)
+        self.assertEqual(result["menu_count"], 106)
+        self.assertEqual(result["authorized_addition_count"], 8)
 
         projected["成本中心"]["menus"].append(
             {

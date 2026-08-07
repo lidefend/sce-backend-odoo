@@ -211,6 +211,20 @@ PRODUCT_MENU_BUSINESS_DOMAIN_OVERRIDES = {
     },
 }
 NATIVE_MODELED_PRODUCT_CAPABILITY_MENUS = {
+    "smart_construction_core.menu_sc_project_operation_statistics_report": {
+        "group_label": "报表中心",
+        "domain": "经营报表",
+        "target": "sc.project.operation.statistics.report 项目经营统计表",
+        "product_domain": "management_reporting",
+        "product_domain_label": "经营报表",
+    },
+    "smart_construction_core.menu_sc_company_operation_summary_report": {
+        "group_label": "报表中心",
+        "domain": "经营报表",
+        "target": "sc.company.operation.summary 公司经营情况表",
+        "product_domain": "management_reporting",
+        "product_domain_label": "经营报表",
+    },
     "smart_construction_core.menu_sc_project_budget": {
         "group_label": "成本中心",
         "label": "目标成本",
@@ -1205,6 +1219,7 @@ class ScProductPolicy(models.Model):
             "施工管理",
             "财务中心",
             "税务中心",
+            "报表中心",
             "组织行政",
             CONFIG_CENTER_GROUP_LABEL,
         )

@@ -27,6 +27,8 @@ PRODUCT_NAVIGATION_V2_GROUP_ALIASES = {
     "资料证照": "组织行政",
 }
 PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES = {
+    ("报表中心", "项目经营统计表", "smart_construction_core.menu_sc_project_operation_statistics_report"),
+    ("报表中心", "公司经营情况表", "smart_construction_core.menu_sc_company_operation_summary_report"),
     ("成本中心", "目标成本", "smart_construction_core.menu_sc_project_budget"),
     ("成本中心", "预算清单分摊", "smart_construction_core.menu_sc_budget_alloc"),
     ("成本中心", "进度计量", "smart_construction_core.menu_sc_project_progress"),

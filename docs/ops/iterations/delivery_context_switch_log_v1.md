@@ -3093,7 +3093,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   configuration remain unchanged. The P0 frontend receives the released
   policy without construction-specific navigation branches. The locked user
   baseline remains page-identity authority; only explicit navigation-v2 group
-  aliases and six allowlisted cost entries may extend it.
+  aliases, six allowlisted cost entries and two allowlisted management reports
+  may extend it.
 - Blast Radius / validation: `smart_construction_core` menu parentage and
   product-policy grouping, frontend acceptance paths, menu release evidence and
   guards. WBS remains internal-only. Static manifest/XML checks, locked-contract

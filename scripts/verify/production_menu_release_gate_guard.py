@@ -35,6 +35,7 @@ EXPECTED_FORMAL_TOP_GROUPS = (
     "施工管理",
     "财务中心",
     "税务中心",
+    "报表中心",
     "组织行政",
     "配置中心",
 )
@@ -190,11 +191,25 @@ def _assert_runtime_gate(product_key: str, released_policy_count: int) -> dict:
         raise AssertionError(f"{product_key} release gate snapshot drift: {gate!r} active={snapshot.id}")
     if int(gate.get("page_count") or 0) != released_policy_count:
         raise AssertionError(f"{product_key} release gate page_count drift: {gate!r}")
-    delivery = DeliveryEngine(env).build(  # noqa: F821
+    full_product_group = env.ref(  # noqa: F821
+        "smart_construction_core.group_sc_business_full", raise_if_not_found=False
+    )
+    full_product_user = (
+        env["res.users"].sudo().search(  # noqa: F821
+            [("active", "=", True), ("groups_id", "in", [full_product_group.id])],
+            order="id",
+            limit=1,
+        )
+        if full_product_group
+        else env["res.users"].browse()  # noqa: F821
+    )
+    if not full_product_user:
+        raise AssertionError("formal release gate requires one active business-full principal")
+    delivery_env = env(user=int(full_product_user.id))  # noqa: F821
+    delivery = DeliveryEngine(delivery_env).build(
         data={
             "role_surface": {
-                "role_code": "business_config_admin",
-                "is_business_config_admin": True,
+                "role_code": "business_full",
                 "exposure_policy_declared": True,
                 "discover_installed_capabilities": True,
             },
@@ -237,6 +252,7 @@ def _assert_runtime_gate(product_key: str, released_policy_count: int) -> dict:
         "raw_nav_node_count": sum(1 for _path, _node in _walk(raw_nav)),
         "gated_nav_node_count": sum(1 for _path, _node in _walk(gated_nav)),
         "top_groups": top_groups,
+        "guard_user": _text(full_product_user.login),
         "gate_meta": gate_meta,
     }
 

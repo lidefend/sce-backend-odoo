@@ -27,6 +27,10 @@ REQUIRED_COST_XMLIDS = {
     "menu_sc_cost_reports",
     "menu_sc_profit_reports",
 }
+REQUIRED_REPORT_XMLIDS = {
+    "menu_sc_project_operation_statistics_report",
+    "menu_sc_company_operation_summary_report",
+}
 
 
 def main() -> int:
@@ -78,6 +82,10 @@ def main() -> int:
         token = f'"smart_construction_core.{xmlid}"'
         if token not in policy:
             errors.append(f"released cost capability missing from policy: {xmlid}")
+    for xmlid in REQUIRED_REPORT_XMLIDS:
+        token = f'"smart_construction_core.{xmlid}"'
+        if token not in policy:
+            errors.append(f"released reporting capability missing from policy: {xmlid}")
     for group in ("进度与施工", "质量管理", "安全管理", "行政审批", "人事薪酬"):
         if f'name="{group}"' not in xml:
             errors.append(f"level-two product group missing: {group}")
