@@ -218,7 +218,10 @@ const validationHint = ref('');
 const embeddedActionId = ref(0);
 const embeddedRecordActionId = ref(0);
 const sceneReadyHydrateRequested = ref(false);
-const compactSceneControls = computed(() => currentSceneKey.value === 'projects.list');
+// An embedded action already owns the complete list canvas and its controls.
+// Scene chrome must therefore stay neutral for every business collection;
+// key-based exceptions make otherwise identical lists drift across modules.
+const compactSceneControls = computed(() => embeddedActionId.value > 0);
 type SceneBlockViewMode = 'form' | 'list' | 'kanban';
 type HandlingEntryItem = {
   key: string;
