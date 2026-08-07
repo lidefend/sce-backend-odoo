@@ -42,49 +42,6 @@
     />
 
     <template v-else>
-      <section class="kanban-toolbar sc-product-page-toolbar">
-        <div class="kanban-title">
-          <h2>{{ title }}</h2>
-          <p>{{ compactSubtitle }}</p>
-        </div>
-        <div v-if="showPagination" class="pagination-actions pagination-actions--top">
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canPagePrev"
-            @click="pagePrev"
-          >
-            上一页
-          </button>
-          <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canPageNext"
-            @click="pageNext"
-          >
-            下一页
-          </button>
-          <input
-            class="pagination-input"
-            :value="pageJumpInput"
-            :disabled="loading || totalPages <= 1"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            @input="onPageJumpInput"
-            @keyup.enter="jumpPage"
-          />
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || totalPages <= 1"
-            @click="jumpPage"
-          >
-            跳转
-          </button>
-        </div>
-      </section>
-
       <slot name="toolbar"></slot>
 
       <section
@@ -304,14 +261,6 @@ const canPageNext = computed(() => {
   return listOffset.value + listLimit.value < total;
 });
 const paginationTotalText = computed(() => `共 ${listTotal.value ?? props.records.length} 条`);
-const compactSubtitle = computed(() => {
-  const source = String(props.subtitle || '').trim();
-  return source
-    .replace(/^共\s*\d+\s*条(?:，当前\s*\d+\s*-\s*\d+\s*条)?\s*·?\s*/, '')
-    .replace(/^\d+\s*条记录\s*·?\s*/, '')
-    .trim();
-});
-
 function semanticCell(field: string, value: unknown) {
   return semanticValueByField(field, value);
 }
@@ -501,37 +450,6 @@ function formatValue(value: unknown) {
   }
 }
 
-.kanban-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  padding: 10px 12px;
-  box-shadow: 0 8px 20px var(--sc-app-shadow);
-}
-
-.kanban-title {
-  min-width: 0;
-}
-
-.kanban-title h2 {
-  margin: 0;
-  color: var(--sc-app-text-primary);
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.kanban-title p {
-  margin: 3px 0 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
 .card {
   background: var(--sc-app-panel);
   border: 1px solid var(--sc-app-border);
@@ -632,10 +550,6 @@ function formatValue(value: unknown) {
   white-space: nowrap;
 }
 
-.pagination-actions--top {
-  flex: 0 0 auto;
-}
-
 .pagination-btn {
   border: 1px solid var(--sc-app-info-border);
   border-radius: 8px;
@@ -661,15 +575,10 @@ function formatValue(value: unknown) {
 }
 
 @media (max-width: 720px) {
-  .kanban-toolbar,
   .pagination-bar,
   .pagination-actions {
     align-items: flex-start;
     flex-wrap: wrap;
-  }
-
-  .pagination-actions--top {
-    flex: 1 1 100%;
   }
 }
 </style>

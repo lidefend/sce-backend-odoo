@@ -7,22 +7,17 @@
     aria-busy="true"
   >
     <header class="loading-toolbar">
-      <div class="loading-title">
-        <h2>{{ title }}</h2>
-        <span>{{ loadingLabel }}</span>
+      <p class="sc-visually-hidden">{{ title }}，{{ loadingLabel }}</p>
+      <div class="loading-search" aria-hidden="true">
+        <i class="loading-search-input" />
+        <i class="loading-search-submit" />
+        <i class="loading-search-menu" />
       </div>
-      <div class="loading-controls" aria-hidden="true">
-        <i />
-        <i />
-        <i />
+      <div class="loading-utilities" aria-hidden="true">
+        <i class="loading-utility-primary" />
+        <i class="loading-utility-secondary" />
       </div>
     </header>
-
-    <section v-if="mode === 'kanban'" class="loading-secondary-toolbar" aria-hidden="true">
-      <i />
-      <i />
-      <i />
-    </section>
 
     <section v-if="mode === 'kanban'" class="loading-card-grid" aria-hidden="true">
       <article v-for="index in 20" :key="index" class="loading-card">
@@ -69,59 +64,44 @@ withDefaults(
 .product-loading-shell {
   display: grid;
   align-content: start;
-  gap: var(--sc-product-workspace-stack-gap);
+  gap: 0;
   width: 100%;
   min-width: 0;
 }
 
+.product-loading-shell.mode-kanban {
+  gap: var(--sc-product-workspace-stack-gap);
+}
+
 .loading-toolbar {
   box-sizing: border-box;
-  display: flex;
-  height: 42px;
-  min-height: 42px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-areas: 'search utility';
+  min-height: var(--sc-product-toolbar-height);
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: var(--sc-toolbar-group-gap);
   border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--sc-app-panel);
-  padding: 4px 12px;
-  box-shadow: 0 8px 18px var(--sc-app-shadow);
+  padding: 0 var(--sc-space-sm);
+  box-shadow: none;
 }
 
-.mode-kanban .loading-toolbar {
-  height: 47px;
-  min-height: 47px;
-}
-
-.loading-title {
-  min-width: 0;
-}
-
-.loading-title h2 {
-  margin: 0;
-  overflow: hidden;
-  color: var(--sc-app-text-primary);
-  font-size: 16px;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.loading-title span {
-  display: block;
-  margin-top: 3px;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
-
-.loading-controls {
+.loading-search {
+  grid-area: search;
   display: flex;
   align-items: center;
-  gap: 8px;
+  min-height: 44px;
+  min-width: 0;
+  gap: var(--sc-toolbar-gap);
+  border: 1px solid var(--sc-app-border-strong);
+  border-radius: var(--sc-product-radius-control);
+  padding: 3px;
 }
 
-.loading-controls i,
+.loading-search i,
+.loading-utilities i,
 .loading-table i,
 .loading-card i {
   display: block;
@@ -136,13 +116,37 @@ withDefaults(
   animation: product-loading-shimmer 1.35s ease-in-out infinite;
 }
 
-.loading-controls i {
-  width: 74px;
-  height: 30px;
+.loading-search-input {
+  flex: 1 1 auto;
+  min-width: 72px;
+  height: 28px;
 }
 
-.loading-controls i:first-child {
-  width: clamp(180px, 24vw, 330px);
+.loading-search-submit {
+  flex: 0 0 68px;
+  height: 36px;
+}
+
+.loading-search-menu {
+  flex: 0 0 28px;
+  height: 28px;
+}
+
+.loading-utilities {
+  grid-area: utility;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sc-toolbar-gap);
+}
+
+.loading-utilities i {
+  width: 72px;
+  height: 36px;
+}
+
+.loading-utility-secondary {
+  width: 82px;
 }
 
 .loading-table {
@@ -247,31 +251,6 @@ withDefaults(
   box-shadow: 0 16px 30px var(--sc-app-shadow);
 }
 
-.loading-secondary-toolbar {
-  box-sizing: border-box;
-  display: flex;
-  height: 42px;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  padding: 4px 10px;
-  box-shadow: 0 8px 18px var(--sc-app-shadow);
-}
-
-.loading-secondary-toolbar i {
-  display: block;
-  width: 78px;
-  height: 28px;
-  border-radius: 6px;
-  background: var(--sc-app-muted-bg);
-}
-
-.loading-secondary-toolbar i:first-child {
-  width: min(330px, 40%);
-}
-
 .skeleton-line {
   width: 72%;
   height: 11px;
@@ -304,17 +283,31 @@ withDefaults(
 }
 
 @media (max-width: 720px) {
-  .loading-controls i:not(:first-child) {
-    display: none;
+  .loading-toolbar {
+    min-height: calc(var(--sc-product-toolbar-height) * 2 + 2px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'search'
+      'utility';
+    align-content: start;
+    row-gap: 0;
+    padding: 0 var(--sc-space-xs);
   }
 
-  .loading-controls i:first-child {
-    width: 112px;
+  .loading-utilities {
+    min-height: var(--sc-product-toolbar-height);
+    justify-self: end;
+  }
+
+  .loading-utilities i {
+    width: 44px;
+    height: 44px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loading-controls i,
+  .loading-search i,
+  .loading-utilities i,
   .loading-table i,
   .loading-card i {
     animation: none;

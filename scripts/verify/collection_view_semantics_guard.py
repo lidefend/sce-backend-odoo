@@ -53,6 +53,21 @@ assert 'p2["view_type"] = requested_view_type' in menu_contract
 dispatcher = (ROOT / "addons/smart_core/app_config_engine/services/dispatchers/action_dispatcher.py").read_text(encoding="utf-8")
 assert "p.get('view_type') or info.get('view_mode')" in dispatcher
 
+# Loading, table and explicit-card states keep one shared top command baseline.
+loading_skeleton = (ROOT / "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue").read_text(encoding="utf-8")
+assert "sc-visually-hidden" in loading_skeleton
+assert "loading-search" in loading_skeleton
+assert "loading-utilities" in loading_skeleton
+assert "min-height: calc(var(--sc-product-toolbar-height) * 2 + 2px)" in loading_skeleton
+assert "row-gap: 0" in loading_skeleton
+assert "loading-title" not in loading_skeleton
+assert "loading-secondary-toolbar" not in loading_skeleton
+
+kanban_page = (ROOT / "frontend/apps/web/src/pages/KanbanPage.vue").read_text(encoding="utf-8")
+assert 'class="kanban-toolbar' not in kanban_page
+assert "pagination-actions--top" not in kanban_page
+assert kanban_page.count('<slot name="toolbar"></slot>') == 1
+
 contract_mixin = (ROOT / "addons/smart_core/app_config_engine/models/contract_mixin.py").read_text(encoding="utf-8")
 assert "'kanban'," in contract_mixin
 assert "passthrough=k in passthrough_roots" in contract_mixin
