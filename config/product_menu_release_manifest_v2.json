@@ -50,7 +50,7 @@
       {"name": "现金流预测", "release_status": "FOLLOWUP", "launch_note": "待合同计划、资金计划和实际收付形成可验证联动后上线"}
     ]},
     "物资与分包": {"locked": true, "level_two_order": [
-      {"name": "材料计划", "release_status": "RELEASED"}, {"name": "询价采购", "release_status": "RELEASED"}, {"name": "材料管理", "release_status": "RELEASED"},
+      {"name": "材料管理", "release_status": "RELEASED", "child_pages": ["材料档案", "材料计划", "采购申请", "采购订单", "入库单", "出库单"]}, {"name": "询价采购", "release_status": "RELEASED"},
       {"name": "劳务管理", "release_status": "RELEASED"}, {"name": "机械管理", "release_status": "RELEASED"}, {"name": "周转材料", "release_status": "RELEASED"},
       {"name": "分包管理", "release_status": "RELEASED"}, {"name": "供应链协同", "release_status": "FOLLOWUP", "launch_note": "待外部供应商门户、身份隔离和交付对账闭环后上线"}
     ]},

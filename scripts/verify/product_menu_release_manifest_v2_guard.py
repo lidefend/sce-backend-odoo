@@ -96,6 +96,12 @@ def main() -> int:
                 errors.append(f"{center} invalid release status: {row.get('name')}")
             if row.get("release_status") == "FOLLOWUP" and not row.get("launch_note"):
                 errors.append(f"{center} follow-up item missing launch note: {row.get('name')}")
+    material_rows = (center_ia.get("物资与分包") or {}).get("level_two_order") or []
+    if any(row.get("name") == "材料计划" for row in material_rows):
+        errors.append("material plan must not remain a material-center level-two domain")
+    material_management = next((row for row in material_rows if row.get("name") == "材料管理"), {})
+    if "材料计划" not in (material_management.get("child_pages") or []):
+        errors.append("material plan must be locked as a child page of material management")
 
     checklist = payload.get("capability_release_checklist") or []
     if not checklist:
@@ -155,6 +161,12 @@ def main() -> int:
     ):
         if token not in policy:
             errors.append(f"project center delivery projection missing: {token}")
+    for token in (
+        '"smart_construction_core.menu_project_material_plan": "材料管理"',
+        '"material_center_locked_level_two_projection"',
+    ):
+        if token not in policy:
+            errors.append(f"material center delivery projection missing: {token}")
     for group in ("进度与施工", "质量管理", "安全管理", "行政审批", "人事薪酬"):
         if f'name="{group}"' not in xml:
             errors.append(f"level-two product group missing: {group}")
