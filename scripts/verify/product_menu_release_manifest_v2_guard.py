@@ -107,6 +107,14 @@ def main() -> int:
         token = f'"smart_construction_core.{xmlid}"'
         if token not in policy:
             errors.append(f"released reporting capability missing from policy: {xmlid}")
+    for token in (
+        '"smart_construction_core.menu_sc_project_project": "项目台账"',
+        '"smart_construction_core.menu_sc_tender_registration": "项目前期"',
+        '"smart_construction_core.menu_sc_tender_registration_fee": "项目前期"',
+        '"project_center_locked_level_two_projection"',
+    ):
+        if token not in policy:
+            errors.append(f"project center delivery projection missing: {token}")
     for group in ("进度与施工", "质量管理", "安全管理", "行政审批", "人事薪酬"):
         if f'name="{group}"' not in xml:
             errors.append(f"level-two product group missing: {group}")

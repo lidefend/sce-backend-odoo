@@ -1211,6 +1211,11 @@ class ScProductPolicy(models.Model):
             "smart_construction_core.menu_sc_leave_request",
             "smart_construction_core.menu_sc_seal_use_request",
         }
+        project_level_two_by_xmlid = {
+            "smart_construction_core.menu_sc_project_project": "项目台账",
+            "smart_construction_core.menu_sc_tender_registration": "项目前期",
+            "smart_construction_core.menu_sc_tender_registration_fee": "项目前期",
+        }
         ordered_labels = (
             "项目中心",
             "合同中心",
@@ -1253,6 +1258,12 @@ class ScProductPolicy(models.Model):
                 domain = default_domain
                 if legacy_label == "人事行政" and menu_xmlid in admin_approval_xmlids:
                     domain = "行政审批"
+                if target_label == "项目中心" and menu_xmlid in project_level_two_by_xmlid:
+                    domain = project_level_two_by_xmlid[menu_xmlid]
+                    next_menu["visible_menu_path"] = " / ".join(
+                        part for part in ("智慧施工管理平台", target_label, domain, label) if part
+                    )
+                    next_menu["policy_note"] = "project_center_locked_level_two_projection"
                 if target_label != legacy_label:
                     next_menu["product_key"] = target_label
                     next_menu["visible_menu_path"] = " / ".join(
