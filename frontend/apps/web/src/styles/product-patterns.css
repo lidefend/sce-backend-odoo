@@ -5,8 +5,8 @@
   --sc-product-workspace-stack-gap: 12px;
   --sc-product-panel-gap: 12px;
   --sc-product-panel-radius: 8px;
-  --sc-product-data-grid-inline-start: 0px;
-  --sc-product-data-grid-inline-end: var(--sc-page-padding);
+  --sc-product-list-inline-start: 0px;
+  --sc-product-list-inline-end: var(--sc-page-padding);
   --sc-lowcode-workspace-gap: var(--sc-product-workspace-gap);
   --sc-lowcode-panel-gap: var(--sc-product-panel-gap);
   --sc-lowcode-panel-radius: var(--sc-product-panel-radius);
@@ -59,10 +59,9 @@
 }
 
 .sc-content-layout--data-grid { --sc-content-layout-inline-size: 100%; }
-.sc-page-frame.sc-content-layout--data-grid,
-.sc-product-page-frame.sc-content-layout--data-grid {
-  padding-inline-start: var(--sc-product-data-grid-inline-start);
-  padding-inline-end: var(--sc-product-data-grid-inline-end);
+:is(.sc-page-frame, .sc-product-page-frame)[data-product-page-mode='list'] {
+  padding-inline-start: var(--sc-product-list-inline-start);
+  padding-inline-end: var(--sc-product-list-inline-end);
 }
 .sc-content-layout--record-grid { --sc-content-layout-inline-size: var(--sc-content-record-max); }
 .sc-content-layout--form-grid { --sc-content-layout-inline-size: var(--sc-content-form-max); }
