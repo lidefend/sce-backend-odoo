@@ -21,7 +21,6 @@
 <script setup lang="ts">
 import { watch } from 'vue';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
-import { findActionMeta, findActionMetaByMenu } from './app/menu';
 import { PRODUCT_APP_TITLE } from './app/pageIdentity';
 import { usePageIdentityRuntime } from './app/pageIdentityRuntime';
 import AppShell from './layouts/AppShell.vue';
@@ -49,33 +48,16 @@ function positiveInteger(value: unknown): number {
   return Math.trunc(parsed);
 }
 
-function activityProjectPart(policy: string): string {
-  const normalizedPolicy = String(policy || '').trim().toLowerCase();
-  if (normalizedPolicy === 'global' || normalizedPolicy === 'exempt') return 'global';
+function activityContextPart(): string {
   const selectedId = Number(session.recordContext?.selected?.id || 0) || 0;
-  return selectedId > 0 ? `project:${selectedId}` : 'all';
-}
-
-function currentActionMatches(actionId: number): boolean {
-  const current = session.currentAction as Record<string, unknown> | null;
-  if (!current || actionId <= 0) return false;
-  return positiveInteger(current.action_id || current.actionId || current.id) === actionId;
-}
-
-function resolveActivityRoutePolicy(actionId: number, menuId: number): string {
-  const meta = (menuId > 0 ? findActionMetaByMenu(session.menuTree, menuId, actionId) : null)
-    || (actionId > 0 ? findActionMeta(session.menuTree, actionId) : null)
-    || (currentActionMatches(actionId) ? session.currentAction : null)
-    || null;
-  return String(meta?.project_scope_policy || meta?.collectionScopePolicy || '').trim().toLowerCase();
+  return selectedId > 0 ? `record-context:${selectedId}` : 'all';
 }
 
 function activityRouteKey(route: RouteLocationNormalizedLoaded): string {
   if (route.name === 'action') {
     const actionId = positiveInteger(route.params.actionId || route.query.action_id);
     const menuId = positiveInteger(route.query.menu_id);
-    const collectionScopePolicy = resolveActivityRoutePolicy(actionId, menuId);
-    return actionId ? `action:${actionId}:menu:${menuId || 0}:${activityProjectPart(collectionScopePolicy)}` : '';
+    return actionId ? `action:${actionId}:menu:${menuId || 0}:${activityContextPart()}` : '';
   }
   if (route.name === 'record' || route.name === 'model-form') {
     const model = routeText(route.params.model);
@@ -84,10 +66,9 @@ function activityRouteKey(route: RouteLocationNormalizedLoaded): string {
     const actionId = positiveInteger(route.query.action_id);
     const menuId = positiveInteger(route.query.menu_id);
     const viewId = positiveInteger(route.query.view_id || route.query.viewId);
-    const collectionScopePolicy = resolveActivityRoutePolicy(actionId, menuId);
     if (recordId === 'new') {
       const activityInstanceId = routeText(route.query.activity_page_id);
-      return `new:${model}:action:${actionId || 0}:menu:${menuId || 0}:view:${viewId || 0}:${activityProjectPart(collectionScopePolicy || 'current_project')}:${activityInstanceId || 'route'}`;
+      return `new:${model}:action:${actionId || 0}:menu:${menuId || 0}:view:${viewId || 0}:${activityContextPart()}:${activityInstanceId || 'route'}`;
     }
     // A persisted record id already identifies the activity page. Including the
     // live selected-project projection makes the KeepAlive key change during
@@ -98,7 +79,7 @@ function activityRouteKey(route: RouteLocationNormalizedLoaded): string {
   if (route.name === 'scene' || String(route.name || '').startsWith('scene-')) {
     const sceneKey = routeText(route.params.sceneKey || route.meta?.sceneKey || route.query.scene_key || route.query.scene);
     if (!sceneKey || sceneKey === 'workspace.home') return '';
-    return `scene:${sceneKey}:${activityProjectPart('current_project')}`;
+    return `scene:${sceneKey}:${activityContextPart()}`;
   }
   if (route.name === 'my-work' || route.name === 'scene-my-work') return 'workspace:my-work';
   return '';

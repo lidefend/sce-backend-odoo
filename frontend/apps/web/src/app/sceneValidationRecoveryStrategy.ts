@@ -24,8 +24,8 @@ export type SceneValidationRecoveryRuntimeContext = {
 };
 
 const DEFAULT_STRATEGY: SceneValidationRecoveryStrategy = {
-  preferredRecordModels: ['project.project', 'project.task', 'purchase.order', 'account.move'],
-  actionPreferredRoleTokens: ['operator', 'staff', 'clerk'],
+  preferredRecordModels: [],
+  actionPreferredRoleTokens: [],
 };
 
 let runtimeStrategy: SceneValidationRecoveryStrategy = { ...DEFAULT_STRATEGY };

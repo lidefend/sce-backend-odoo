@@ -357,12 +357,11 @@ async function loadContract() {
     const data = await intentRequest<SceneContract>({
       intent: props.intent,
       params: {
-        project_id: positiveRouteInt('project_id', 'record_id') || undefined,
-        record_id: positiveRouteInt('record_id', 'project_id') || undefined,
+        record_id: positiveRouteInt('record_id') || undefined,
       },
       context: {
         scene_key: props.sceneKey,
-        project_id: positiveRouteInt('project_id', 'record_id') || undefined,
+        record_id: positiveRouteInt('record_id') || undefined,
       },
     });
     rawContract.value = (data && typeof data === 'object') ? data : {};

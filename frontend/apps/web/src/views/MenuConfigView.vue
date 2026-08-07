@@ -199,7 +199,7 @@ const groupOptions = computed(() => {
 const ALL_ROLE_GROUP_DOMAINS = '全部业务角色';
 
 const roleGroupDomainOptions = computed(() => {
-  const domains = new Set(groupOptions.value.map((group) => roleGroupDomain(group.display_name)));
+  const domains = new Set(groupOptions.value.map((group) => roleGroupDomain(group.category)));
   return [
     ALL_ROLE_GROUP_DOMAINS,
     ...Array.from(domains).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
@@ -207,10 +207,7 @@ const roleGroupDomainOptions = computed(() => {
 });
 
 function isProductNavigationRoot(menu: MenuConfigMenu | null | undefined) {
-  if (!menu) return false;
-  const label = String(menu.display_name || menu.name || '').trim();
-  const completeName = String(menu.complete_name || '').trim();
-  return label === '智慧施工管理平台' || completeName === '智慧施工管理平台';
+  return Boolean(menu && rootMenu.value && Number(menu.id) === Number(rootMenu.value.id));
 }
 
 function isSystemNavigationRoot(menu: MenuConfigMenu | null | undefined) {
@@ -459,11 +456,8 @@ const rootMenu = computed(() => (
     ? menus.value.find((menu) => menu.xmlid === rootMenuXmlid.value) || null
     : null
 ));
-const BUSINESS_MENU_ROOT_LABEL = '智慧施工管理平台';
-
 function isBusinessRootNode(node: NavNode) {
-  const label = navMenuLabel(node);
-  return label === BUSINESS_MENU_ROOT_LABEL || Number(navMenuId(node)) === Number(rootMenu.value?.id || 0);
+  return Boolean(rootMenu.value?.id) && Number(navMenuId(node)) === Number(rootMenu.value?.id || 0);
 }
 
 function unwrapProductNavigationRoot(nodes: NavNode[]) {
@@ -569,13 +563,7 @@ function roleGroupName(groupId: number) {
 }
 
 function roleGroupDomain(label: string) {
-  if (/项目|业主/.test(label)) return '项目中心';
-  if (/合同/.test(label)) return '合同中心';
-  if (/结算/.test(label)) return '结算中心';
-  if (/付款|财务|资金|费用|保证金/.test(label)) return '财务/付款';
-  if (/物资|采购|供应/.test(label)) return '物资/采购';
-  if (/经营|管理层|业务配置|通用/.test(label)) return '管理/通用';
-  return '其他';
+  return String(label || '').trim() || '其他';
 }
 
 function roleGroupDomainForMenu(menuId: number) {
@@ -589,7 +577,7 @@ function setRoleGroupDomain(menuId: number, value: string) {
 function scopedRoleGroupOptions(menuId: number) {
   const domain = roleGroupDomainForMenu(menuId);
   return groupOptions.value.filter((group) => {
-    return domain === ALL_ROLE_GROUP_DOMAINS || roleGroupDomain(group.display_name) === domain;
+    return domain === ALL_ROLE_GROUP_DOMAINS || roleGroupDomain(group.category) === domain;
   });
 }
 

@@ -21,7 +21,6 @@ export const CONTRACT_NAV_QUERY_KEYS = [
   'list_offset',
   'ctx_source',
   'group_by_cleared',
-  'project_scope_policy',
   'product_domain',
   'entry_intent',
   'disposition_policy',

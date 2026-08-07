@@ -16,33 +16,16 @@ export async function validateBeforeSaveRecord(params: {
   collectSceneValidationPrecheckErrors: (fieldLabels: Record<string, string>) => string[];
   collectWritableValues: () => Record<string, unknown>;
   formData: Record<string, unknown>;
-  isProjectStandardIntakeMode: boolean;
   isWritableFieldVisible: (name: string) => boolean;
   layoutNodes: LayoutNode[];
   layoutFieldLabels: () => Record<string, string>;
   normalizeFieldValue: (name: string, value: unknown) => unknown;
   one2manyIssues: string[];
-  projectManagerId: unknown;
-  projectName: unknown;
   recordId: number | null;
   resolvePendingInlineRelationCreates: () => Promise<string[]>;
   resolvePendingMany2manyTagCreates: () => Promise<string[]>;
   validateContractFormData: (fieldLabels: Record<string, string>, values: Record<string, unknown>) => string[];
 }): Promise<SaveRecordValidationResult> {
-  if (params.isProjectStandardIntakeMode) {
-    const draftErrors: string[] = [];
-    const projectName = String(params.projectName || '').trim();
-    const managerId = Number(params.projectManagerId || 0);
-    if (!projectName) draftErrors.push('请填写项目名称');
-    if (!Number.isFinite(managerId) || managerId <= 0) draftErrors.push('请填写项目经理');
-    if (draftErrors.length) {
-      return {
-        ok: false,
-        validationErrors: draftErrors,
-        submissionFeedback: { kind: 'warn', message: '创建失败，请检查填写内容' },
-      };
-    }
-  }
   if (params.one2manyIssues.length) {
     return {
       ok: false,
@@ -97,25 +80,23 @@ export async function validateBeforeSaveRecord(params: {
       };
     }
   }
-  if (!params.isProjectStandardIntakeMode) {
-    const policyIssues = params.collectPolicyValidationErrors(new Set(Object.keys(editableMap)));
-    if (policyIssues.length) {
-      return {
-        ok: false,
-        showOne2manyErrors: false,
-        validationErrors: Array.from(new Set(policyIssues)).slice(0, 5),
-        submissionFeedback: { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' },
-      };
-    }
-    const issues = params.validateContractFormData(labels, editableMap);
-    if (issues.length) {
-      return {
-        ok: false,
-        showOne2manyErrors: false,
-        validationErrors: Array.from(new Set(issues)).slice(0, 5),
-        submissionFeedback: { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' },
-      };
-    }
+  const policyIssues = params.collectPolicyValidationErrors(new Set(Object.keys(editableMap)));
+  if (policyIssues.length) {
+    return {
+      ok: false,
+      showOne2manyErrors: false,
+      validationErrors: Array.from(new Set(policyIssues)).slice(0, 5),
+      submissionFeedback: { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' },
+    };
+  }
+  const issues = params.validateContractFormData(labels, editableMap);
+  if (issues.length) {
+    return {
+      ok: false,
+      showOne2manyErrors: false,
+      validationErrors: Array.from(new Set(issues)).slice(0, 5),
+      submissionFeedback: { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' },
+    };
   }
   return {
     editableMap,

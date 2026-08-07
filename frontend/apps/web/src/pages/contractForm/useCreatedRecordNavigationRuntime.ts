@@ -5,11 +5,11 @@ import type { ContractAction } from './types';
 export function useCreatedRecordNavigationRuntime(params: {
   applyProjectionRefreshPolicy: (policy?: ContractAction['refreshPolicy']) => Promise<void>;
   currentQuery: () => Record<string, unknown>;
-  isProjectQuickIntakeMode: () => boolean;
-  isProjectStandardIntakeMode: () => boolean;
+  isQuickIntakeMode: () => boolean;
+  isStandardIntakeMode: () => boolean;
   modelName: () => string;
   resolveWorkspaceContextQuery: () => Record<string, unknown>;
-  returnToProjectIntakeList: (createdId: number | string) => Promise<boolean>;
+  returnToIntakeList: (createdId: number | string) => Promise<boolean>;
   router: Router;
 }) {
   async function navigateCreatedRecord(options: {
@@ -19,34 +19,19 @@ export function useCreatedRecordNavigationRuntime(params: {
     refreshPolicy?: ContractAction['refreshPolicy'];
   }) {
     const resolvedNextRoute = options.nextSceneRoute || (options.nextSceneKey ? `/s/${options.nextSceneKey}` : '');
-    if (params.isProjectQuickIntakeMode() && params.modelName() === 'project.project') {
+    if (params.isQuickIntakeMode() || params.isStandardIntakeMode()) {
       await params.applyProjectionRefreshPolicy(options.refreshPolicy || { on_success: ['scene_projection', 'workbench_projection'] });
-      if (await params.returnToProjectIntakeList(options.createdId)) return true;
-      const routePath = resolvedNextRoute || '/s/project.management';
-      await params.router.replace({
-        path: routePath,
-        query: {
-          project_id: String(options.createdId),
-          ...params.resolveWorkspaceContextQuery(),
-        },
-      });
-      return true;
-    }
-    if (params.isProjectStandardIntakeMode() && resolvedNextRoute) {
-      await params.applyProjectionRefreshPolicy(options.refreshPolicy || { on_success: ['scene_projection', 'workbench_projection'] });
-      if (await params.returnToProjectIntakeList(options.createdId)) return true;
-      await params.router.replace({
-        path: resolvedNextRoute,
-        query: {
-          project_id: String(options.createdId),
-          ...params.resolveWorkspaceContextQuery(),
-        },
-      });
-      return true;
-    }
-    if (params.isProjectStandardIntakeMode() && params.modelName() === 'project.project') {
-      await params.applyProjectionRefreshPolicy(options.refreshPolicy || { on_success: ['scene_projection', 'workbench_projection'] });
-      if (await params.returnToProjectIntakeList(options.createdId)) return true;
+      if (await params.returnToIntakeList(options.createdId)) return true;
+      if (resolvedNextRoute) {
+        await params.router.replace({
+          path: resolvedNextRoute,
+          query: {
+            record_id: String(options.createdId),
+            ...params.resolveWorkspaceContextQuery(),
+          },
+        });
+        return true;
+      }
     }
     const createdRoute = params.router.resolve({
       name: 'model-form',

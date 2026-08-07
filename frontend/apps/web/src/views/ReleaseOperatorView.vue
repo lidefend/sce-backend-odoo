@@ -91,7 +91,7 @@
           <article>
             <span>授权层级</span>
             <strong>{{ productLicense.level || '-' }}</strong>
-            <small>{{ productLicense.customer_visible === false ? '内部可见' : '客户可见' }}</small>
+                  <small>{{ productLicense.customer_visible === false ? '平台可见' : '交付可见' }}</small>
           </article>
           <article>
             <span>交付就绪</span>

@@ -9,7 +9,7 @@ export function useFormAuxiliaryWatchersRuntime(params: {
   collaborationReady: () => boolean;
   currentQuery: () => Record<string, unknown>;
   isActive: () => boolean;
-  isProjectIntake: () => boolean;
+  isIntake: () => boolean;
   loadNativeChatterTimeline: () => Promise<void>;
   modelName: () => string;
   nativeChatterAutoLoadKey: Ref<string>;
@@ -68,7 +68,7 @@ export function useFormAuxiliaryWatchersRuntime(params: {
       model: params.modelName(),
       recordId: params.recordId(),
       collaborationReady: params.collaborationReady(),
-      projectIntake: params.isProjectIntake(),
+      projectIntake: params.isIntake(),
     }),
     (state) => {
       if (!params.isActive()) return;

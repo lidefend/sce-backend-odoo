@@ -1,11 +1,11 @@
 <template>
-  <section v-if="warnings.length && !isProjectIntakeCreateMode" class="block warn">
+  <section v-if="warnings.length && !isIntakeCreateMode" class="block warn">
     <h3>提示信息</h3>
     <ul>
       <li v-for="item in warnings" :key="item">{{ item }}</li>
     </ul>
   </section>
-  <section v-if="workflowEvidenceGateRows.length && !isProjectIntakeCreateMode" class="block workflow-evidence-block">
+  <section v-if="workflowEvidenceGateRows.length && !isIntakeCreateMode" class="block workflow-evidence-block">
     <h3>办理前置条件</h3>
     <ul class="workflow-evidence-list">
       <li
@@ -17,13 +17,13 @@
       </li>
     </ul>
   </section>
-  <section v-if="strictContractMissingSummary && !isProjectIntakeCreateMode" class="block contract-missing-block">
+  <section v-if="strictContractMissingSummary && !isIntakeCreateMode" class="block contract-missing-block">
     <h3>配置状态提示</h3>
     <p class="contract-missing-summary">{{ strictContractMissingSummary }}</p>
     <p v-if="strictContractDefaultsSummary" class="contract-missing-defaults">{{ strictContractDefaultsSummary }}</p>
   </section>
 
-  <section v-if="workflowTransitions.length && !isProjectIntakeCreateMode && !useNativeFormTree" class="block">
+  <section v-if="workflowTransitions.length && !isIntakeCreateMode && !useNativeFormTree" class="block">
     <h3>流程操作</h3>
     <div class="chips">
       <button
@@ -39,7 +39,7 @@
     </div>
   </section>
 
-  <section v-if="showSearchFilters && searchFilters.length && !isProjectIntakeCreateMode" class="block">
+  <section v-if="showSearchFilters && searchFilters.length && !isIntakeCreateMode" class="block">
     <h3>快捷筛选</h3>
     <div class="chips">
       <button
@@ -55,7 +55,7 @@
     </div>
   </section>
 
-  <section v-if="bodyActions.length && !isProjectIntakeCreateMode && !useNativeFormTree" class="block">
+  <section v-if="bodyActions.length && !isIntakeCreateMode && !useNativeFormTree" class="block">
     <h3>可执行操作</h3>
     <div class="chips">
       <button
@@ -103,7 +103,7 @@ defineProps<{
   searchFilters: SearchFilterRow[];
   activeFilterKey: string;
   bodyActions: ContractAction[];
-  isProjectIntakeCreateMode: boolean;
+  isIntakeCreateMode: boolean;
   useNativeFormTree: boolean;
   busy: boolean;
   showHud: boolean;

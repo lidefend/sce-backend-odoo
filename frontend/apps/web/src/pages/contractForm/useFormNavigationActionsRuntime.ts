@@ -4,7 +4,7 @@ import { pickContractNavQuery } from '../../app/navigationContext';
 export function useFormNavigationActionsRuntime(params: {
   actionId: () => number;
   currentQuery: () => Record<string, unknown>;
-  isProjectIntakeCreateMode: () => boolean;
+  isIntakeCreateMode: () => boolean;
   resolveLandingPath: (fallback: string) => string;
   resolveWorkspaceContextQuery: () => LocationQueryRaw;
   router: Router;
@@ -29,18 +29,18 @@ export function useFormNavigationActionsRuntime(params: {
   }
 
   async function cancelIntake() {
-    if (!params.isProjectIntakeCreateMode()) return;
+    if (!params.isIntakeCreateMode()) return;
     const target = params.resolveLandingPath('/');
     await params.router.replace({ path: target, query: params.resolveWorkspaceContextQuery() });
   }
 
-  async function returnToProjectIntakeList(createdId: number | string) {
+  async function returnToIntakeList(createdId: number | string) {
     const queryActionId = Number(params.currentQuery().action_id || params.actionId() || 0) || 0;
     if (queryActionId > 0) {
       await params.router.replace({
         path: `/a/${queryActionId}`,
         query: pickContractNavQuery(params.currentQuery(), {
-          project_id: String(createdId),
+          record_id: String(createdId),
           view_mode: 'tree',
         }),
       });
@@ -52,6 +52,6 @@ export function useFormNavigationActionsRuntime(params: {
   return {
     cancelIntake,
     openFilter,
-    returnToProjectIntakeList,
+    returnToIntakeList,
   };
 }

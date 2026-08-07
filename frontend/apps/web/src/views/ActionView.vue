@@ -1119,12 +1119,11 @@ const actionId = computed(() => {
 });
 const actionMeta = computed(() => session.currentAction);
 function resolveActionCollectionScopeContext(): Record<string, unknown> {
-  const policy = String(
-    (actionMeta.value as Record<string, unknown> | null)?.project_scope_policy
-      || (actionMeta.value as Record<string, unknown> | null)?.collectionScopePolicy
-      || '',
-  ).trim();
-  return policy ? { project_scope_policy: policy } : {};
+  const meta = actionMeta.value as Record<string, unknown> | null;
+  const requestContext = meta?.collection_request_context || meta?.request_context;
+  return requestContext && typeof requestContext === 'object' && !Array.isArray(requestContext)
+    ? { ...(requestContext as Record<string, unknown>) }
+    : {};
 }
 const businessCategoryCreatePickerVisible = ref(false);
 const routeSceneLabel = computed(() => String(route.query.scene_label || '').trim());

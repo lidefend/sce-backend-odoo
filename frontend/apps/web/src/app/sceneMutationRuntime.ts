@@ -25,59 +25,48 @@ function asInt(value: unknown): number {
   return Number.isFinite(num) && num > 0 ? Math.trunc(num) : 0;
 }
 
-function resolveIntentByMutation(mutation: Partial<MutationContract> & Record<string, unknown>): string {
-  const model = asText(mutation.model).toLowerCase();
-  if (model === 'finance.payment.request' || model === 'payment.request') {
-    return 'payment.request.execute';
+function valueAtPath(source: Record<string, unknown>, path: string): unknown {
+  return path.split('.').reduce<unknown>((value, key) => (
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)[key]
+      : undefined
+  ), source);
+}
+
+function resolveParamValue(value: unknown, sources: Record<string, unknown>): unknown {
+  if (typeof value === 'string' && value.startsWith('$')) {
+    return valueAtPath(sources, value.slice(1));
   }
-  if (model === 'project.risk.action') {
-    return 'risk.action.execute';
+  if (Array.isArray(value)) return value.map((item) => resolveParamValue(item, sources));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+      .map(([key, item]) => [key, resolveParamValue(item, sources)]));
   }
-  return '';
+  return value;
 }
 
 function buildParams(input: SceneMutationExecuteInput): Record<string, unknown> {
-  const mutation = input.mutation;
-  const operation = asText(mutation.operation).toLowerCase();
-  const model = asText(mutation.model).toLowerCase();
   const context = (input.context && typeof input.context === 'object')
     ? (input.context as Record<string, unknown>)
     : {};
   const params = (input.params && typeof input.params === 'object')
     ? (input.params as Record<string, unknown>)
     : {};
-  const recordId = asInt(input.recordId);
-
-  if (model === 'finance.payment.request' || model === 'payment.request') {
-    return {
-      id: asInt(context.id) || asInt(context.record_id) || recordId,
-      action: operation,
-      reason: asText(params.reason) || asText(context.reason),
-    };
-  }
-
-  if (model === 'project.risk.action') {
-    return {
-      action: operation,
-      risk_action_id: asInt(context.risk_action_id) || recordId,
-      project_id: asInt(context.project_id),
-      name: asText(context.name),
-      risk_level: asText(context.risk_level),
-      note: asText(context.note),
-      owner_id: asInt(context.owner_id),
-    };
-  }
-
-  return {
-    action: operation,
-    id: asInt(context.id) || asInt(context.record_id) || recordId,
-  };
+  const template = input.mutation.params;
+  if (!template || typeof template !== 'object' || Array.isArray(template)) return {};
+  return resolveParamValue(template, {
+    record_id: asInt(input.recordId),
+    action_key: asText(input.actionKey),
+    operation: asText(input.mutation.operation),
+    context,
+    params,
+  }) as Record<string, unknown>;
 }
 
 export async function executeSceneMutation(input: SceneMutationExecuteInput): Promise<SceneMutationExecuteResult> {
-  const intent = resolveIntentByMutation(input.mutation);
+  const intent = asText(input.mutation.intent);
   if (!intent) {
-    throw new Error(`unsupported mutation model: ${input.mutation.model}`);
+    throw new Error('mutation intent is required by the backend contract');
   }
   const params = buildParams(input);
   const response = await intentRequestRaw<Record<string, unknown>>({

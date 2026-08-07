@@ -352,10 +352,7 @@ function idempotentIntentKey(path: string, options: RequestInit): string {
       surface: params.surface,
       res_id: params.res_id,
       limit: params.limit,
-      company_id: params.company_id || context.company_id,
-      current_project_id: params.current_project_id || context.current_project_id,
-      operation_strategy: params.operation_strategy || context.operation_strategy,
-      project_scope_policy: context.project_scope_policy,
+      context,
     };
     return `${session.sessionDb}|${session.token || ''}|${currentContextEpoch()}|${JSON.stringify(semanticRequest)}`;
   } catch {

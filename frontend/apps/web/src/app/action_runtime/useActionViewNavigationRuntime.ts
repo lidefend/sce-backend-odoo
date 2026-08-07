@@ -90,12 +90,15 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
     const rawTarget = rowAction.target && typeof rowAction.target === 'object' ? rowAction.target as Dict : {};
     const target = materializeRowTargetValue(rawTarget, row) as Dict;
     const carryQuery = resolveCarryQuery();
+    const targetQuery = target.query && typeof target.query === 'object' && !Array.isArray(target.query)
+      ? materializeRowTargetValue(target.query as Dict, row) as Dict
+      : {};
     const query = {
       ...carryQuery,
+      ...targetQuery,
       menu_id: options.menuId.value || undefined,
       action_id: options.actionId.value || undefined,
       entry_intent: routeQueryValue(target.entry_intent || target.entryIntent),
-      project_id: routeQueryValue(target.project_id || target.projectId),
       record_id: routeQueryValue(target.record_id || target.recordId),
     };
     const entryTarget = target.entry_target && typeof target.entry_target === 'object'

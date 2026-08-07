@@ -122,25 +122,15 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
   return String(to.path || to.fullPath || '').trim();
 }
 
-function activityProjectPart(session: ReturnType<typeof useSessionStore>, policy: string): string {
-  const normalizedPolicy = String(policy || '').trim().toLowerCase();
-  if (normalizedPolicy === 'global' || normalizedPolicy === 'exempt') return 'global';
+function activityContextPart(session: ReturnType<typeof useSessionStore>): string {
   const selectedId = Number(session.recordContext?.selected?.id || 0) || 0;
-  return selectedId > 0 ? `project:${selectedId}` : 'all';
+  return selectedId > 0 ? `record-context:${selectedId}` : 'all';
 }
 
 function currentActionMatches(session: ReturnType<typeof useSessionStore>, actionId: number): boolean {
   const current = session.currentAction as Record<string, unknown> | null;
   if (!current || actionId <= 0) return false;
   return positiveInteger(current.action_id || current.actionId || current.id) === actionId;
-}
-
-function resolveActivityRoutePolicy(actionId: number, menuId: number, session: ReturnType<typeof useSessionStore>): string {
-  const meta = (menuId > 0 ? findActionMetaByMenu(session.menuTree, menuId, actionId) : null)
-    || (actionId > 0 ? findActionMeta(session.menuTree, actionId) : null)
-    || (currentActionMatches(session, actionId) ? session.currentAction : null)
-    || null;
-  return String(meta?.project_scope_policy || meta?.collectionScopePolicy || '').trim().toLowerCase();
 }
 
 function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<typeof useSessionStore>): string {
@@ -199,25 +189,23 @@ function registerRouteActivity(to: RouteLocationNormalized) {
   let model = '';
   let recordId = '';
   let sceneKey = '';
-  let collectionScopePolicy = '';
   let activityRoute = '';
   if (to.name === 'action') {
     actionId = positiveInteger(to.params.actionId || to.query.action_id);
     menuId = positiveInteger(to.query.menu_id);
-    collectionScopePolicy = resolveActivityRoutePolicy(actionId, menuId, session);
-    key = `action:${actionId}:menu:${menuId}:${activityProjectPart(session, collectionScopePolicy)}`;
+    key = `action:${actionId}:menu:${menuId}:${activityContextPart(session)}`;
     kind = 'menu_action';
   } else if (to.name === 'record' || to.name === 'model-form') {
     model = routeQueryText(to.params.model);
     recordId = routeQueryText(to.params.id);
     const activityInstanceId = routeQueryText(to.query.activity_page_id);
     key = recordId === 'new'
-      ? `new:${model}:${routeQueryText(to.query.menu_id)}:${activityProjectPart(session, 'current_project')}:${activityInstanceId || now}`
+      ? `new:${model}:${routeQueryText(to.query.menu_id)}:${activityContextPart(session)}:${activityInstanceId || now}`
       : `record:${model}:${recordId}`;
     kind = 'record_form';
   } else if (to.name === 'scene' || String(to.name || '').startsWith('scene-')) {
     sceneKey = routeQueryText(to.params.sceneKey || to.meta?.sceneKey || to.query.scene_key || to.query.scene);
-    key = `scene:${sceneKey || String(to.name || 'scene')}:${activityProjectPart(session, 'current_project')}`;
+    key = `scene:${sceneKey || String(to.name || 'scene')}:${activityContextPart(session)}`;
     kind = sceneKey === 'workspace.home' || to.name === 'scene-home' ? 'workspace' : 'scene';
   } else if (to.name === 'home' || to.name === 'my-work') {
     key = `workspace:${String(to.name)}`;
@@ -236,7 +224,6 @@ function registerRouteActivity(to: RouteLocationNormalized) {
     menu_id: menuId || undefined,
     record_id: recordId || undefined,
     scene_key: sceneKey || undefined,
-    project_scope_policy: collectionScopePolicy || undefined,
     record_context: session.currentActivityRecordContextSnapshot(),
   });
 }
@@ -252,7 +239,6 @@ const router = createRouter({
     { path: '/s/workspace.home', name: 'scene-home', component: () => import('../views/HomeView.vue'), meta: { layout: 'shell', sceneKey: 'workspace.home' } },
     { path: '/my-work', name: 'my-work', component: () => import('../views/MyWorkView.vue'), meta: { layout: 'shell' } },
     { path: '/s/my_work.workspace', name: 'scene-my-work', component: () => import('../views/MyWorkView.vue'), meta: { layout: 'shell', sceneKey: 'my_work.workspace' } },
-    { path: '/pm/dashboard', name: 'project-management-dashboard', redirect: '/s/project.management', meta: { layout: 'shell' } },
     { path: '/s/:sceneKey', name: 'scene', component: () => import('../views/SceneView.vue'), meta: { layout: 'shell' } },
     { path: '/m/:menuId', name: 'menu', component: () => import('../views/MenuView.vue'), meta: { layout: 'shell' } },
     { path: '/access-denied', name: 'access-denied', component: () => import('../views/AccessDeniedView.vue'), meta: { layout: 'shell' } },

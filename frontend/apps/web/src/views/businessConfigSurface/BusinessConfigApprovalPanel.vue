@@ -108,7 +108,7 @@
         >
           <span class="approval-step-seq">{{ index + 1 }}</span>
           <div class="approval-step-cell">
-            <input v-model="step.name" type="text" placeholder="例如：合同中心审核" :disabled="!form.approval_required" :aria-label="`第${index + 1}步名称`" />
+          <input v-model="step.name" type="text" placeholder="例如：业务复核" :disabled="!form.approval_required" :aria-label="`第${index + 1}步名称`" />
           </div>
           <div class="approval-step-cell">
             <select v-model="step.approval_scope_key" :disabled="!form.approval_required" :aria-label="`第${index + 1}步审批岗位`">

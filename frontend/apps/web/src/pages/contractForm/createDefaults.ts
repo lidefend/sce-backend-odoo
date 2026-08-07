@@ -4,7 +4,6 @@ import {
   resolveUnifiedPageContractV2SourceContext,
 } from '../../app/contracts/unifiedPageContractV2';
 import type { ContractV2NormalizedStore } from '../../app/contracts/v2/types';
-import { normalizeRelationIds } from './fieldUtils';
 import { normalizeRouteDefault } from './valueUtils';
 
 export function formCreateContext(params: {
@@ -44,37 +43,6 @@ export function resolveCreateDefaults(params: {
         defaults[key] = value === 'dynamic' ? '' : value;
       }
     });
-  }
-  const selectedProject = params.selectedProject;
-  const selectedProjectId = Number(selectedProject?.id || 0);
-  if (
-    selectedProjectId > 0
-    && params.contract?.fields?.project_id
-    && normalizeRelationIds(defaults.project_id).length === 0
-  ) {
-    defaults.project_id = [
-      selectedProjectId,
-      selectedProject?.display_name || selectedProject?.name || `项目 ${selectedProjectId}`,
-    ];
-  }
-  const selectedStrategy = String(selectedProject?.operation_strategy || '').trim();
-  if (
-    selectedStrategy
-    && params.contract?.fields?.operation_strategy
-    && !String(defaults.operation_strategy || '').trim()
-  ) {
-    defaults.operation_strategy = selectedStrategy;
-  }
-  const selectedOwnerId = Number(selectedProject?.owner_id || 0);
-  if (
-    selectedOwnerId > 0
-    && params.contract?.fields?.owner_id
-    && normalizeRelationIds(defaults.owner_id).length === 0
-  ) {
-    defaults.owner_id = [
-      selectedOwnerId,
-      selectedProject?.owner_name || `业主 ${selectedOwnerId}`,
-    ];
   }
   return defaults;
 }

@@ -39,7 +39,7 @@ export function useRecordContractSemantics(context: {
   renderProfile: ComputedRef<string>;
   runtimeRoleCode: ComputedRef<string>;
   validationErrors: Ref<string[]>;
-  isProjectIntakeCreateMode: ComputedRef<boolean>;
+  isIntakeCreateMode: ComputedRef<boolean>;
   intentConfirmationRef: Ref<{ confirm: (input: { actionLabel: string; message: string }) => Promise<boolean> } | null>;
   formConflict: Ref<boolean>;
   layoutNodes: () => Array<{ kind: string; name: string; label: string }>;
@@ -77,7 +77,7 @@ export function useRecordContractSemantics(context: {
     || context.session.currentAction?.scene_key || context.session.currentAction?.sceneKey || '',
   ).trim());
   const sceneReadyHydrateRequested = ref(false);
-  const useSceneFormAugmentations = computed(() => context.isProjectIntakeCreateMode.value || Boolean(sceneReadySceneKey.value));
+  const useSceneFormAugmentations = computed(() => context.isIntakeCreateMode.value || Boolean(sceneReadySceneKey.value));
   const sceneReadyEntry = computed<Record<string, unknown> | null>(() => {
     if (!useSceneFormAugmentations.value) return null;
     return sceneReadySceneKey.value ? findSceneReadyEntry(context.session.sceneReadyContractV1, sceneReadySceneKey.value) : null;

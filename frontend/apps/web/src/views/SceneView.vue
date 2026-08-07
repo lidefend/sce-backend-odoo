@@ -430,7 +430,6 @@ const sceneResolveSignature = computed(() => JSON.stringify({
   preset: String(route.query.preset || '').trim(),
   ctxSource: String(route.query.ctx_source || '').trim(),
   search: String(route.query.search || '').trim(),
-  projectId: String(route.query.project_id || '').trim(),
   entryContext: String(route.query.entry_context || '').trim(),
 }));
 function resolveWorkspaceContextQuery() {
@@ -706,9 +705,7 @@ function sanitizeWorkspaceContextForLayout(
   if (layoutKind !== 'list' && layoutKind !== 'ledger') {
     return raw;
   }
-  const next = { ...raw };
-  delete next.project_id;
-  return next;
+  return { ...raw };
 }
 
 function isPortalPath(url: string) {
@@ -1105,8 +1102,7 @@ async function resolveScene() {
           await router.replace({ path: normalizedRoute, query: asRouteQuery(workspaceContextQuery) });
           return;
         }
-        // Keep evaluating action/menu/model targets for self-routed scene entries
-        // such as /s/project.management?project_id=<id>.
+        // Keep evaluating action/menu/model targets for self-routed scene entries.
       }
       const page = resolvedScene.page;
       const pageType = String(page?.page_type || '').trim().toLowerCase();

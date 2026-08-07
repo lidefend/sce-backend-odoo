@@ -49,7 +49,7 @@ export function useBusinessConfigRemediationLifecycle(deps: Record<string, any>)
     const missingContractTypes = rowBootstrapMissingViewTypes(row, ['form', 'tree', 'search', 'pivot', 'graph']);
     if (!missingContractTypes.length) {
       await openVersionsForRuntimeGaps(row);
-      setMessage('没有可自动生成的配置项', '当前项目需要检查发布状态或配置作用域。');
+    setMessage('没有可自动生成的配置项', '当前工作区需要检查发布状态或配置作用域。');
       return;
     }
     listSearchSaving.value = true;

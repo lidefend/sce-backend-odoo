@@ -34,7 +34,7 @@ import {
 export function useRecordFormLayout(context: {
   contract: Ref<ActionContract | null>; v2ContractStore: Ref<ContractV2NormalizedStore | null>;
   contractVisibleFields: ComputedRef<string[]>; onchangeModifiersPatch: Ref<Record<string, Record<string, unknown>>>;
-  formData: Record<string, unknown>; isProjectQuickIntakeMode: ComputedRef<boolean>;
+  formData: Record<string, unknown>; isQuickIntakeMode: ComputedRef<boolean>;
   contractFieldLabel: (name: string) => string; fieldSemanticMeta: (name: string) => FieldSemanticMeta;
   showHud: ComputedRef<boolean>; advancedExpanded: Ref<boolean>; coreFieldNames: ComputedRef<string[]>;
   advancedFieldNames: ComputedRef<string[]>; renderProfile: ComputedRef<string>; recordId: ComputedRef<number | null>;

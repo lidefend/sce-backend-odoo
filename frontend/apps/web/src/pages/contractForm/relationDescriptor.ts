@@ -336,12 +336,6 @@ export function buildRelationDomainFromParts(params: {
     out.push(...params.entryDomain);
   }
   out.push(...params.dynamicDomain);
-  const descriptorRecord = params.descriptor as Record<string, unknown> | undefined;
-  const fieldName = String(descriptorRecord?.name || descriptorRecord?.field || '').trim();
-  const relation = String(descriptorRecord?.relation || params.entryModel || '').trim();
-  if (!out.length && fieldName === 'original_contract_id' && relation === 'construction.contract' && ['out', 'in'].includes(params.routeDefaultType)) {
-    out.push(['type', '=', params.routeDefaultType]);
-  }
   if (params.entryDefaultType) out.push(['type', '=', params.entryDefaultType]);
   return out.length ? out : undefined;
 }

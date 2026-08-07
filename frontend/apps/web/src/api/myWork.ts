@@ -141,7 +141,7 @@ export type ProductMyWorkItem = {
 
 export type ProductMyWorkWorkspace = {
   version: string;
-  query_scope: { user_id: number; company_ids: number[]; project_id?: number };
+  query_scope: Record<string, unknown>;
   sections: Array<{ key: string; label: string; count: number; items: ProductMyWorkItem[] }>;
   counts: Record<string, number>;
   total: number;

@@ -3,6 +3,9 @@ export interface MutationContract {
   type: string;
   model: string;
   operation: string;
+  intent: string;
+  params?: Record<string, unknown>;
+  requires_record?: boolean;
   payload_schema?: Record<string, unknown>;
 }
 
@@ -50,11 +53,14 @@ export function normalizeSceneActionProtocol(row: unknown): SceneActionProtocol 
   const mutationRaw = asDict(payload.mutation || target.mutation);
   const refreshRaw = asDict(payload.refresh_policy || target.refresh_policy);
 
-  const mutation = (asText(mutationRaw.type) && asText(mutationRaw.model) && asText(mutationRaw.operation))
+  const mutation = (asText(mutationRaw.type) && asText(mutationRaw.intent) && asText(mutationRaw.operation))
     ? {
         type: asText(mutationRaw.type),
         model: asText(mutationRaw.model),
         operation: asText(mutationRaw.operation),
+        intent: asText(mutationRaw.intent),
+        params: asDict(mutationRaw.params),
+        requires_record: mutationRaw.requires_record === true,
         payload_schema: asDict(mutationRaw.payload_schema),
       }
     : undefined;

@@ -1,6 +1,6 @@
 {
     "name": "Smart Construction Demo Data",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "summary": "Demo dataset for Smart Construction Core (projects, partners, light links)",
     "category": "Smart Construction",
     "depends": [
@@ -20,6 +20,7 @@
         "data/base/20_projects.xml",
         "data/base/25_project_tasks.xml",
         "data/demo/sc_demo_users.xml",
+        "data/demo/wutao_full_product_user.xml",
         "data/demo/role_matrix_demo_users.xml",
         "data/demo/sc_demo_showcase_actions.xml",
         "data/scenario/s00_min_path/10_project_boq.xml",

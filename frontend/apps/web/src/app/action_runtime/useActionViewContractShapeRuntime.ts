@@ -294,14 +294,6 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       const label = String(row.label || '').trim();
       if (name && label) labels[name] = label;
     });
-    const head = ((contract as Dict).head && typeof (contract as Dict).head === 'object')
-      ? (contract as Dict).head as Dict
-      : {};
-    const modelName = String((contract as Dict).model || head.model || '').trim();
-    if (modelName === 'project.project') {
-      labels.name = labels.name || '名称';
-      labels.business_nature = labels.business_nature || '经营性质';
-    }
     return labels;
   });
 

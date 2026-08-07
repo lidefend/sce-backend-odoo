@@ -21,7 +21,7 @@ export function buildSnapshotRemediationPlan(result: BusinessConfigSnapshotCompa
     ...result.added.map((row) => ({
       action: 'review_added_contract',
       severity: 'review_required',
-      reason: '当前环境存在基线快照中没有的业务配置合同，确认是否应沉淀到目标环境或回退。',
+      reason: '当前环境存在基线快照中没有的配置记录，确认是否应沉淀到目标环境或回退。',
       contract: snapshotContractIdentity(row),
       current: {
         status: row.status,
@@ -32,7 +32,7 @@ export function buildSnapshotRemediationPlan(result: BusinessConfigSnapshotCompa
     ...result.removed.map((row) => ({
       action: 'restore_or_accept_removed_contract',
       severity: 'review_required',
-      reason: '基线快照存在但当前环境缺失该业务配置合同，确认是否需要从基线恢复或接受删除。',
+      reason: '基线快照存在但当前环境缺失该配置记录，确认是否需要从基线恢复或接受删除。',
       contract: snapshotContractIdentity(row),
       baseline: {
         status: row.status,
@@ -43,7 +43,7 @@ export function buildSnapshotRemediationPlan(result: BusinessConfigSnapshotCompa
     ...result.changed.map((row) => ({
       action: 'review_changed_contract',
       severity: 'review_required',
-      reason: '当前环境与基线快照的业务配置合同状态或内容不同，确认保留当前版本还是按基线调整。',
+      reason: '当前环境与基线快照的配置记录状态或内容不同，确认保留当前版本还是按基线调整。',
       contract: {
         key: row.key,
         name: row.name || '',
@@ -76,7 +76,7 @@ export function buildSnapshotRemediationPlan(result: BusinessConfigSnapshotCompa
     },
     acceptance: {
       product_boundary: '仅包含低代码配置差异项。',
-      execution_policy: '本清单用于上线复核，变更应通过低代码配置页面、迁移脚本或客户模块基线完成。',
+    execution_policy: '本清单用于上线复核，变更应通过低代码配置页面、迁移脚本或扩展模块基线完成。',
       required_after_action: [
         '复核配置快照一致性',
         '复核低代码运行边界',

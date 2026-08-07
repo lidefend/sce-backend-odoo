@@ -50,7 +50,6 @@ export function buildContractFormPageIdentity(input: {
   formData: Record<string, unknown>;
   isCreate: boolean;
   isEdit: boolean;
-  isProjectIntake: boolean;
   menuName?: unknown;
   modelName?: unknown;
   recordMissing: boolean;
@@ -71,7 +70,7 @@ export function buildContractFormPageIdentity(input: {
     record: input.formData,
     recordDisplayName: recordName,
     primaryFieldNames: formPrimaryFields(input.contract),
-    subtitle: input.isProjectIntake ? '填写核心信息即可完成项目立项' : recordName ? businessName || input.menuName : '',
+    subtitle: recordName ? businessName || input.menuName : '',
     breadcrumbs: input.breadcrumbs,
     state: input.recordMissing ? 'not-found' : input.status === 'loading' ? 'loading' : input.status === 'error' || input.renderError ? 'error' : '',
   };

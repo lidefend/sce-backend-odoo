@@ -245,17 +245,6 @@ export function executeSuggestedAction(
   if (parsed.kind === 'open_scene_packages') {
     return finish(safeNavigate(appendQuery('/admin/scene-packages', parsed.query)));
   }
-  if (parsed.kind === 'open_projects_list') {
-    return finish(safeNavigate(appendQuery('/', parsed.query)));
-  }
-  if (parsed.kind === 'open_projects_board') {
-    return finish(safeNavigate(appendQuery('/', parsed.query)));
-  }
-  if (parsed.kind === 'open_project' && parsed.projectId) {
-    return finish(
-      safeNavigate(appendHash(appendQuery(`/r/${encodeURIComponent('project.project')}/${parsed.projectId}`, parsed.query), parsed.hash)),
-    );
-  }
   if (parsed.kind === 'open_scene' && parsed.sceneKey) {
     return finish(safeNavigate(appendHash(appendQuery(`/s/${encodeURIComponent(parsed.sceneKey)}`, parsed.query), parsed.hash)));
   }

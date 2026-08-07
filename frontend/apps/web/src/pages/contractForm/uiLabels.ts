@@ -45,12 +45,10 @@ export function resolvePageTitle(params: {
 }
 
 export function resolvePageDisplayTitle(params: {
-  isProjectIntakeCreateMode: boolean;
   currentBusinessCategoryLabel: string;
   pageTitle: string;
   recordId: number;
 }) {
-  if (params.isProjectIntakeCreateMode) return '创建项目';
   const businessTitle = String(params.currentBusinessCategoryLabel || params.pageTitle || '').trim();
   if (!businessTitle) return params.pageTitle;
   if (params.recordId) return businessTitle;
@@ -58,14 +56,12 @@ export function resolvePageDisplayTitle(params: {
 }
 
 export function resolvePageDisplaySubtitle(params: {
-  isProjectIntakeCreateMode: boolean;
   currentBusinessCategoryLabel: string;
   pageTitle: string;
   recordTitle: string;
   pageDisplayTitle: string;
   recordId: number;
 }) {
-  if (params.isProjectIntakeCreateMode) return '填写核心信息即可完成项目立项';
   if (params.currentBusinessCategoryLabel && params.pageTitle !== params.currentBusinessCategoryLabel) return params.pageTitle;
   const recordTitle = String(params.recordTitle || '').trim();
   if (recordTitle && recordTitle !== params.pageDisplayTitle) return recordTitle;
@@ -78,14 +74,11 @@ export function resolveSubmitButtonLabel(params: {
   footerActionLabel: string;
   hasFooterAction: boolean;
   hasPrimarySubmitAction: boolean;
-  isProjectQuickIntakeMode: boolean;
-  isProjectIntakeCreateMode: boolean;
   recordId: number;
   saveLabel: string;
   savingLabel: string;
 }) {
   if (params.busy && params.busyKind === 'save' && !params.hasPrimarySubmitAction) {
-    if (params.isProjectQuickIntakeMode) return '创建中...';
     if (!params.recordId && params.hasFooterAction) return '处理中...';
     return !params.recordId ? '提交中...' : params.savingLabel;
   }
@@ -94,8 +87,7 @@ export function resolveSubmitButtonLabel(params: {
   }
   if (params.hasFooterAction) return params.footerActionLabel;
   if (params.hasPrimarySubmitAction) return '提交';
-  if (params.isProjectQuickIntakeMode && !params.recordId) return '创建并进入项目驾驶舱';
-  if (!params.recordId && !params.isProjectIntakeCreateMode) return '提交';
+  if (!params.recordId) return '提交';
   return params.saveLabel;
 }
 

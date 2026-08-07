@@ -191,7 +191,7 @@ export function useBusinessConfigPublishLifecycle(deps: Record<string, any>) {
   async function previewUnifiedDraft(device: 'desktop' | 'tablet' | 'mobile' = 'desktop') {
     try {
       const result = await previewDraft(device);
-      setMessage('草稿预览已生成', `预览令牌仅对当前管理员有效，正式合同写入 ${result.preview?.formal_contract_write_count || 0}`);
+    setMessage('草稿预览已生成', `预览令牌仅对当前管理员有效，正式配置写入 ${result.preview?.formal_contract_write_count || 0}`);
     } catch (err) { error.value = err instanceof Error ? err.message : '草稿预览失败'; }
   }
 

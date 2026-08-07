@@ -9,7 +9,6 @@ import {
 
 type Dict = Record<string, unknown>;
 
-export const LITE_CONTRACT_PILOT_MODEL = 'project.project';
 export const LITE_CONTRACT_PILOT_VIEW = 'tree';
 export const LITE_CONTRACT_ROLLOUT_ENV = 'VITE_LITE_CONTRACT_ROLLOUT';
 
@@ -47,7 +46,8 @@ export function isLiteContractPilotCandidate(meta?: NavMeta | null): boolean {
   const isTree = !modes.length || modes.includes(LITE_CONTRACT_PILOT_VIEW);
   if (!isTree) return false;
   if (rollout === 'all_tree') return true;
-  return model === LITE_CONTRACT_PILOT_MODEL;
+  const pilotModel = String(import.meta.env.VITE_LITE_CONTRACT_PILOT_MODEL || '').trim();
+  return Boolean(pilotModel) && model === pilotModel;
 }
 
 export function needsLiteContractAllTreeViewPreflight(meta?: NavMeta | null): boolean {

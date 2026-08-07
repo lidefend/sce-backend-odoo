@@ -20,7 +20,7 @@
       v-if="!initialFormLoading"
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
-      :intake-mode="isProjectIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
+      :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
       :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
@@ -34,7 +34,7 @@
     <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="recordMissing" :title="pageDisplayTitle" message="该记录不存在，可能已被删除或当前链接已经失效。" :error-code="404" variant="error" retry-label="返回安全页面" :on-retry="() => router.push('/')" />
-    <section v-else :class="['card', 'sc-panel', 'sc-product-main-surface', { 'card--flow': isProjectIntakeCreateMode, 'is-refreshing': status === 'loading' }]"
+    <section v-else :class="['card', 'sc-panel', 'sc-product-main-surface', { 'card--flow': isIntakeCreateMode, 'is-refreshing': status === 'loading' }]"
       :aria-busy="status === 'loading' || undefined" data-workspace-primary-content>
       <ContractFormActionBlocks
         v-if="(pageSectionEnabled('next_actions', true) && pageSectionTagIs('next_actions', 'section')) || (pageSectionEnabled('stat_buttons', true) && pageSectionTagIs('stat_buttons', 'div'))"
@@ -42,7 +42,7 @@
         :active-filter-key="activeFilterKey"
         :body-actions="bodyActions"
         :busy="busy"
-        :is-project-intake-create-mode="isProjectIntakeCreateMode"
+        :is-project-intake-create-mode="isIntakeCreateMode"
         :search-filters="searchFilters"
         :show-hud="showHud"
         :show-search-filters="showSearchFilters"
@@ -160,7 +160,7 @@
           :root-columns="nativeFormRootColumns"
           :selected-field-key="selectedFormSettingsFieldKey"
           :selected-field-row-label="selectedFormSettingsFieldRow?.label || ''"
-          :show-collaboration-panel="(nativeChatterActions.length || nativeAttachments) && !isProjectIntakeCreateMode"
+          :show-collaboration-panel="(nativeChatterActions.length || nativeAttachments) && !isIntakeCreateMode"
           :show-default-section-title="showNativeDefaultSectionTitle"
           :use-native-form-tree="useNativeFormTree"
           @field-action="onContractFieldAction"
@@ -189,7 +189,7 @@
           :prompt-fields="contractPromptFields"
           :prompt-values="contractPromptValues"
           :prompt-visible="Boolean(contractPromptRule)"
-          :show-advanced-toggle="hasAdvancedFields && !isProjectIntakeCreateMode && !useNativeFormTree"
+          :show-advanced-toggle="hasAdvancedFields && !isIntakeCreateMode && !useNativeFormTree"
           @cancel-prompt="closeContractPromptAction"
           @close-field-create="closeInlineCustomFieldCreate"
           @field-create-label-change="setFieldCreateLabel"
@@ -202,7 +202,7 @@
         />
       </section>
 
-      <PageFooterTemplate v-if="isProjectIntakeCreateMode" hint="填写完成后点击“创建项目”">
+      <PageFooterTemplate v-if="isIntakeCreateMode" :hint="formUiLabel('create_hint')">
         <template #default>
           <button class="ghost" :disabled="busy" @click="cancelIntake">取消</button>
           <button class="primary" :disabled="isIntakeCreateDisabled" @click="() => saveRecord()">
@@ -212,7 +212,7 @@
       </PageFooterTemplate>
 
       <NativeCollaborationPanel
-        v-if="(nativeChatterActions.length || nativeAttachments) && !isProjectIntakeCreateMode && !hasNativeChatterNode && pageSectionEnabled('chatter', true) && pageSectionTagIs('chatter', 'section')"
+        v-if="(nativeChatterActions.length || nativeAttachments) && !isIntakeCreateMode && !hasNativeChatterNode && pageSectionEnabled('chatter', true) && pageSectionTagIs('chatter', 'section')"
         :style="pageSectionStyle('chatter')"
         v-bind="nativeCollaborationPanelProps"
         v-on="nativeCollaborationPanelListeners"
@@ -990,21 +990,21 @@ const {
 } = useCreatedRecordNavigationRuntime({
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
   currentQuery: () => route.query as Record<string, unknown>,
-  isProjectQuickIntakeMode: () => isProjectQuickIntakeMode.value,
-  isProjectStandardIntakeMode: () => isProjectStandardIntakeMode.value,
+  isQuickIntakeMode: () => isQuickIntakeMode.value,
+  isStandardIntakeMode: () => isStandardIntakeMode.value,
   modelName: () => model.value,
   resolveWorkspaceContextQuery: () => readWorkspaceContext(route.query as Record<string, unknown>),
-  returnToProjectIntakeList: (createdId) => returnToProjectIntakeList(createdId),
+  returnToIntakeList: (createdId) => returnToIntakeList(createdId),
   router,
 });
 const {
   cancelIntake,
   openFilter,
-  returnToProjectIntakeList,
+  returnToIntakeList,
 } = useFormNavigationActionsRuntime({
   actionId: () => actionId.value || 0,
   currentQuery: () => route.query as Record<string, unknown>,
-  isProjectIntakeCreateMode: () => isProjectIntakeCreateMode.value,
+  isIntakeCreateMode: () => isIntakeCreateMode.value,
   resolveLandingPath: (fallback) => session.resolveLandingPath(fallback),
   resolveWorkspaceContextQuery: () => readWorkspaceContext(route.query as Record<string, unknown>),
   router,
@@ -1065,36 +1065,35 @@ const relationRecordCountLabel = computed(() => {
   const count = String(relationSearchDialog.rows.length);
   return template.includes('%s') ? template.replace('%s', count) : `${count} ${template}`.trim();
 });
-const isProjectQuickIntakeMode = computed(() => {
-  if (String(model.value || '').trim() !== 'project.project') return false;
+const isQuickIntakeMode = computed(() => {
   if (recordId.value) return false;
   return String(route.query.intake_mode || '').trim().toLowerCase() === 'quick';
 });
-const isProjectStandardIntakeMode = computed(() => {
-  if (String(model.value || '').trim() !== 'project.project') return false;
+const isStandardIntakeMode = computed(() => {
   if (recordId.value) return false;
-  if (isProjectQuickIntakeMode.value) return false;
-  if (String(route.query.intake_mode || '').trim().toLowerCase() === 'standard') return true;
-  return String(route.query.scene_key || '').trim() === 'projects.intake';
+  if (isQuickIntakeMode.value) return false;
+  return String(route.query.intake_mode || '').trim().toLowerCase() === 'standard';
 });
-const isProjectIntakeCreateMode = computed(() => isProjectQuickIntakeMode.value || isProjectStandardIntakeMode.value);
+const isIntakeCreateMode = computed(() => isQuickIntakeMode.value || isStandardIntakeMode.value);
 const intakeAutosaveKey = computed(() => {
-  if (!isProjectIntakeCreateMode.value) return '';
-  const mode = isProjectQuickIntakeMode.value ? 'quick' : 'standard';
+  if (!isIntakeCreateMode.value) return '';
+  const mode = isQuickIntakeMode.value ? 'quick' : 'standard';
   const userId = Number(session.user?.id || 0) || 0;
-  return `sc:intake:autosave:project.project:${mode}:u${userId}`;
+  return `sc:intake:autosave:${String(model.value || 'record')}:${mode}:u${userId}`;
+});
+const intakeAutosaveFields = computed(() => {
+  const views = contract.value?.views as Record<string, unknown> | undefined;
+  const form = views?.form && typeof views.form === 'object' ? views.form as Record<string, unknown> : {};
+  const autosave = form.autosave && typeof form.autosave === 'object' ? form.autosave as Record<string, unknown> : {};
+  return Array.isArray(autosave.fields) ? autosave.fields : [];
 });
 const quickRequiredReady = computed(() => {
-  if (!isProjectQuickIntakeMode.value) return true;
-  const projectName = String(formData.name || '').trim();
-  const managerId = Number(formData.manager_id || 0);
-  return Boolean(projectName) && Number.isFinite(managerId) && managerId > 0;
+  if (!isQuickIntakeMode.value) return true;
+  return intakeRequiredReadyCount.value >= intakeRequiredFields.value.length;
 });
 const standardCreateReady = computed(() => {
-  if (!isProjectStandardIntakeMode.value) return true;
-  const projectName = String(formData.name || '').trim();
-  const managerId = Number(formData.manager_id || 0);
-  return Boolean(projectName) && Number.isFinite(managerId) && managerId > 0;
+  if (!isStandardIntakeMode.value) return true;
+  return intakeRequiredReadyCount.value >= intakeRequiredFields.value.length;
 });
 function hasPendingInlineRelationChange() {
   return layoutNodes.value.some((node) => {
@@ -1153,13 +1152,13 @@ const changedFieldCount = computed(() =>
     + (hasOne2manyDraftChanges() ? 1 : 0),
 );
 const intakeRequiredFields = computed(() => {
-  if (!isProjectIntakeCreateMode.value) return [];
+  if (!isIntakeCreateMode.value) return [];
   return layoutNodes.value
     .filter((node) => node.kind === 'field' && node.required && isFieldVisible(node.name))
     .map((node) => ({ name: node.name, label: node.label || node.name }));
 });
 const intakeRequiredReadyCount = computed(() => {
-  if (!isProjectIntakeCreateMode.value) return 0;
+  if (!isIntakeCreateMode.value) return 0;
   return intakeRequiredFields.value.filter((field) => {
     const value = formData[field.name];
     if (value === null || value === undefined) return false;
@@ -1171,7 +1170,7 @@ const intakeRequiredReadyCount = computed(() => {
   }).length;
 });
 const intakeMissingRequiredLabels = computed(() => {
-  if (!isProjectIntakeCreateMode.value) return [];
+  if (!isIntakeCreateMode.value) return [];
   return intakeRequiredFields.value
     .filter((field) => {
       const value = formData[field.name];
@@ -1185,14 +1184,14 @@ const intakeMissingRequiredLabels = computed(() => {
     .slice(0, 5);
 });
 const intakeRequiredSummary = computed(() => {
-  if (!isProjectIntakeCreateMode.value) return '';
+  if (!isIntakeCreateMode.value) return '';
   const total = intakeRequiredFields.value.length;
   const done = intakeRequiredReadyCount.value;
   if (total <= 0) return '当前页面未提供必填字段约束。';
   return `${done}/${total}`;
 });
 const intakeMissingSummary = computed(() => {
-  if (!isProjectIntakeCreateMode.value) return '';
+  if (!isIntakeCreateMode.value) return '';
   if (!intakeMissingRequiredLabels.value.length) return '无';
   return intakeMissingRequiredLabels.value.join('、');
 });
@@ -1208,7 +1207,7 @@ const currentBusinessCategoryCode = computed(() => currentBusinessCategoryContex
 const pageIdentityInput = computed(() => buildContractFormPageIdentity({
   action: currentActionMeta.value, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs,
   businessCategoryLabel: currentBusinessCategoryLabel.value, contract: contract.value, formData,
-  isCreate: !recordId.value, isEdit: route.name === 'model-form', isProjectIntake: isProjectIntakeCreateMode.value,
+  isCreate: !recordId.value, isEdit: route.name === 'model-form',
   menuName: currentMenuTitle.value, modelName: model.value, recordMissing: recordMissing.value,
   renderError: Boolean(renderErrorMessage.value), status: status.value,
 }));
@@ -1219,8 +1218,7 @@ const pageDisplaySubtitle = computed(() => pageIdentity.value.subtitle || '');
 const suppressPageHeaderTitle = computed(() => true);
 const currentRenderProfileLabel = computed(() => renderProfileLabel(renderProfile.value));
 const intakeCreateButtonLabel = computed(() => {
-  if (!isProjectIntakeCreateMode.value) return '创建项目';
-  return busy.value && busyKind.value === 'save' ? '创建中…' : '创建项目';
+  return busy.value && busyKind.value === 'save' ? formUiLabel('saving') : formUiLabel('save');
 });
 const submitButtonLabel = computed(() => resolveSubmitButtonLabel({
   busy: busy.value,
@@ -1228,15 +1226,13 @@ const submitButtonLabel = computed(() => resolveSubmitButtonLabel({
   footerActionLabel: primaryCreateFooterAction.value?.label || '',
   hasFooterAction: Boolean(primaryCreateFooterAction.value),
   hasPrimarySubmitAction: Boolean(primarySubmitAction.value),
-  isProjectQuickIntakeMode: isProjectQuickIntakeMode.value,
-  isProjectIntakeCreateMode: isProjectIntakeCreateMode.value,
   recordId: recordId.value,
   saveLabel: formUiLabel('save'),
   savingLabel: formUiLabel('saving'),
 }));
 const showPrimaryBusinessFormAction = computed(() => canSave.value
   && !showCurrentFormFieldConfigScope.value
-  && !isProjectIntakeCreateMode.value);
+  && !isIntakeCreateMode.value);
 const showContinueProcessing = computed(() => (
   route.name === 'record'
   && Boolean(recordId.value)
@@ -1259,9 +1255,9 @@ const draftSaveButtonLabel = computed(() => {
   if (busy.value && busyKind.value === 'save') return formUiLabel('saving');
   return recordId.value ? '保存修改' : '保存草稿';
 });
-const showDiscardAction = computed(() => !isProjectIntakeCreateMode.value && Boolean(recordId.value) && hasChanges.value);
+const showDiscardAction = computed(() => !isIntakeCreateMode.value && Boolean(recordId.value) && hasChanges.value);
 const groupedHeaderActions = computed(() => groupContractHeaderActions({
-  actions: headerActions.value, intakeMode: isProjectIntakeCreateMode.value, nativeTree: useNativeFormTree.value,
+  actions: headerActions.value, intakeMode: isIntakeCreateMode.value, nativeTree: useNativeFormTree.value,
   configurationMode: showCurrentFormFieldConfigScope.value,
   isSubmitAction: isUnifiedSubmitAction,
 }));
@@ -1376,7 +1372,7 @@ const {
 const isQuickSubmitDisabled = computed(() => {
   if (busy.value) return true;
   if (!canSave.value) return true;
-  if (isProjectQuickIntakeMode.value) return !quickRequiredReady.value;
+  if (isQuickIntakeMode.value) return !quickRequiredReady.value;
   return Boolean(recordId.value) && !hasChanges.value;
 });
 const primaryFormActionDisabled = computed(() => {
@@ -1395,23 +1391,23 @@ const draftSaveDisabled = computed(() => {
 const isStandardCreateDisabled = computed(() => {
   if (busy.value) return true;
   if (!canSave.value) return true;
-  if (isProjectStandardIntakeMode.value) return !standardCreateReady.value;
+  if (isStandardIntakeMode.value) return !standardCreateReady.value;
   return false;
 });
 const isIntakeCreateDisabled = computed(() => {
-  if (!isProjectIntakeCreateMode.value) return false;
-  if (isProjectQuickIntakeMode.value) return isQuickSubmitDisabled.value;
+  if (!isIntakeCreateMode.value) return false;
+  if (isQuickIntakeMode.value) return isQuickSubmitDisabled.value;
   return isStandardCreateDisabled.value;
 });
 function persistIntakeAutosave() {
   const key = intakeAutosaveKey.value;
   if (!key || recordId.value) return;
-  persistIntakeAutosavePayload(key, formData as Record<string, unknown>);
+  persistIntakeAutosavePayload(key, formData as Record<string, unknown>, intakeAutosaveFields.value);
 }
 function restoreIntakeAutosave() {
   const key = intakeAutosaveKey.value;
   if (!key || recordId.value) return;
-  Object.entries(restoreIntakeAutosavePayload(key)).forEach(([field, value]) => {
+  Object.entries(restoreIntakeAutosavePayload(key, intakeAutosaveFields.value)).forEach(([field, value]) => {
     formData[field] = value as never;
   });
 }
@@ -1590,7 +1586,7 @@ const {
   filteredRelationOptions, focusProductFormValidationError, formConflict,
   formData, formLayoutColumnsDraft, inputFieldValue,
   intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue,
-  isProjectIntakeCreateMode, isProjectQuickIntakeMode, isTierValidationActionHidden: (methodName: string) => isTierValidationActionHidden(methodName),
+  isIntakeCreateMode, isQuickIntakeMode, isTierValidationActionHidden: (methodName: string) => isTierValidationActionHidden(methodName),
   layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase,
   many2oneValue, markFieldChanged, model,
   nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision,
@@ -1720,7 +1716,7 @@ const {
   hasChanges, hasCurrentFormFieldDraftChanges, instanceRouteIdentity,
   intentConfirmationRef, isBusinessConfigMode, isBusinessConfigRuntimeModel,
   isComponentActive, isContractFieldOrderEditable, isFormPageRouteOwner,
-  isProjectStandardIntakeMode, isTierValidationActionHiddenFromState, isWritableFieldVisible,
+  isStandardIntakeMode, isTierValidationActionHiddenFromState, isWritableFieldVisible,
   layoutNodes, model, moveFieldOrder,
   navigateCreatedRecord, normalizeFieldGroupTitle, normalizeFieldValue,
   onContractInlineGroupRename, onErrorCaptured, onFieldOrderDragEnd,
@@ -1755,14 +1751,7 @@ async function returnToPreviousPage() {
 useFormAuxiliaryWatchersRuntime({
   autosaveSource: () => [
     intakeAutosaveKey.value,
-    formData.name,
-    formData.manager_id,
-    formData.owner_id,
-    formData.project_type_id,
-    formData.project_category_id,
-    formData.location,
-    formData.start_date,
-    formData.end_date,
+    ...Object.keys(formData).sort().map((key) => comparableFieldValue(key, formData[key])),
   ],
   businessCategoryCode: () => currentBusinessCategoryCode.value,
   businessCategoryLabel: () => currentBusinessCategoryLabel.value,
@@ -1770,7 +1759,7 @@ useFormAuxiliaryWatchersRuntime({
   collaborationReady: () => Boolean(nativeChatterActions.value.length || nativeAttachments.value),
   currentQuery: () => route.query as Record<string, unknown>,
   isActive: () => isComponentActive.value,
-  isProjectIntake: () => isProjectIntakeCreateMode.value,
+  isIntake: () => isIntakeCreateMode.value,
   loadNativeChatterTimeline: () => loadNativeChatterTimeline(),
   modelName: () => model.value,
   nativeChatterAutoLoadKey,

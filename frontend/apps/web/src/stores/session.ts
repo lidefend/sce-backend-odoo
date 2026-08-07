@@ -210,7 +210,6 @@ export interface ActivityPage {
   menu_id?: number;
   record_id?: string;
   scene_key?: string;
-  project_scope_policy?: string;
   record_context?: ActivityRecordContextSnapshot | null;
   runtime_query?: ActivityRuntimeQuery;
   dirty?: boolean;
@@ -1048,7 +1047,6 @@ export const useSessionStore = defineStore('session', {
         menu_id: Number(rawPage.menu_id || 0) || undefined,
         record_id: asText(rawPage.record_id) || undefined,
         scene_key: asText(rawPage.scene_key) || undefined,
-        project_scope_policy: asText(rawPage.project_scope_policy) || undefined,
         record_context: rawPage.record_context ?? this.currentActivityRecordContextSnapshot(),
         runtime_query: existing?.runtime_query,
         dirty: Boolean(rawPage.dirty || existing?.dirty),

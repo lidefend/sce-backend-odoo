@@ -50,15 +50,15 @@ RULES: tuple[tuple[str, re.Pattern[str], str], ...] = (
     (
         "industry_model_or_xmlid",
         re.compile(
-            r"['\"`][^'\"`]*(?:smart_construction|project\.project|sc\.(?:project|contract|payment|settlement)|"
-            r"payment[._-](?:request|application)|construction[._-]|settlement[._-])[^'\"`]*['\"`]",
+            r"['\"`][^'\"`\r\n]*(?:smart_construction|project\.project|sc\.(?:project|contract|payment|settlement)|"
+            r"payment[._-](?:request|application)|construction[._-]|settlement[._-])[^'\"`\r\n]*['\"`]",
             re.IGNORECASE,
         ),
         "生产前端不得识别行业模块、业务模型或行业 XML ID。",
     ),
     (
         "industry_literal",
-        re.compile(r"['\"`]([^'\"`]*(?:项目|合同|施工|付款|结算|财务|经营|材料|供应商|客户)[^'\"`]*)['\"`]"),
+        re.compile(r"['\"`]([^'\"`\r\n]*(?:项目|合同|施工|付款|结算|财务|经营|材料|供应商|客户)[^'\"`\r\n]*)['\"`]"),
         "行业标题、说明和回退文案必须来自后端契约。",
     ),
     (
@@ -148,4 +148,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -84,7 +84,7 @@
         <h3>Export Package</h3>
         <label>
           <span>Package Name</span>
-          <input v-model="exportName" type="text" placeholder="example: construction-default" />
+          <input v-model="exportName" type="text" placeholder="example: workspace-default" />
         </label>
         <label>
           <span>Package Version</span>
