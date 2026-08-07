@@ -1,7 +1,8 @@
-/* Measure the real business surface, not the browser viewport: when the
-   critical desktop projection cannot keep its natural 1127px canvas, use the
-   same governed facts as cards instead of introducing a horizontal scroller. */
-@container (max-width: 1126px) {
+/* Responsive cards are a narrow-viewport projection of list semantics.
+   Do not infer the device class from the content container: a desktop sidebar,
+   browser zoom or shell layout can narrow that container and must not silently
+   replace the user's table with cards. */
+@media (max-width: 768px) {
   .list-toolbar {
     position: static;
     padding: 6px 0 8px;
