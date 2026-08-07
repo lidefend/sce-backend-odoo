@@ -282,8 +282,13 @@ def main():
         admin_delivery = _delivery_summary(
             user_env,
             product_key=product_key,
-            native_nav=[],
-            role_surface={"role_code": "platform_admin", "is_platform_admin": True},
+            native_nav=native_nav,
+            role_surface={
+                "role_code": "platform_admin",
+                "is_platform_admin": True,
+                "exposure_policy_declared": True,
+                "discover_installed_capabilities": True,
+            },
         )
 
         if source_kind not in allowed_policy_sources:

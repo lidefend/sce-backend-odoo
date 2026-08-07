@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
 from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
@@ -46,6 +47,7 @@ REQUIRED_FORMAL_MENU_XMLIDS = (
     "smart_construction_core.menu_sc_supplier_partner",
 )
 FORMAL_MENU_CONFIG_MAX_EXTRA_MENU_COUNT = 80
+FULL_PRODUCT_LOGIN = str(os.getenv("PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN", "wutao") or "").strip()
 def _text(value):
     return str(value or "").strip()
 
@@ -193,20 +195,12 @@ def _assert_runtime_gate(product_key: str, released_policy_count: int) -> dict:
         raise AssertionError(f"{product_key} release gate snapshot drift: {gate!r} active={snapshot.id}")
     if int(gate.get("page_count") or 0) != released_policy_count:
         raise AssertionError(f"{product_key} release gate page_count drift: {gate!r}")
-    full_product_group = env.ref(  # noqa: F821
-        "smart_construction_core.group_sc_business_full", raise_if_not_found=False
+    full_product_user = env["res.users"].sudo().search(  # noqa: F821
+        [("active", "=", True), ("login", "=", FULL_PRODUCT_LOGIN)],
+        limit=2,
     )
-    full_product_user = (
-        env["res.users"].sudo().search(  # noqa: F821
-            [("active", "=", True), ("groups_id", "in", [full_product_group.id])],
-            order="id",
-            limit=1,
-        )
-        if full_product_group
-        else env["res.users"].browse()  # noqa: F821
-    )
-    if not full_product_user:
-        raise AssertionError("formal release gate requires one active business-full principal")
+    if len(full_product_user) != 1:
+        raise AssertionError("formal release gate requires exactly one active full-product principal")
     delivery_env = env(user=int(full_product_user.id))  # noqa: F821
     native_facts = MenuFactService(delivery_env).export_visible_menu_facts()
     native_nav = MenuService._menu_fact_tree_as_native(native_facts.tree)
