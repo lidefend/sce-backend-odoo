@@ -78,7 +78,7 @@ withDefaults(
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   grid-template-areas: 'search utility';
-  min-height: var(--sc-product-toolbar-height);
+  min-height: var(--sc-product-list-toolbar-height);
   align-items: center;
   gap: var(--sc-toolbar-group-gap);
   border: 1px solid var(--sc-app-border);

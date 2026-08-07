@@ -75,6 +75,7 @@ defineEmits<{
     border-radius: 0;
     background: var(--sc-app-panel);
     box-shadow: none;
+    min-height: var(--sc-product-list-toolbar-height);
   }
   .product-list-header__tools :deep(.native-search) {
     min-height: 42px;

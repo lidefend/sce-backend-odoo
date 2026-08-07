@@ -58,6 +58,7 @@ loading_skeleton = (ROOT / "frontend/apps/web/src/components/product-list/Produc
 assert "sc-visually-hidden" in loading_skeleton
 assert "loading-search" in loading_skeleton
 assert "loading-utilities" in loading_skeleton
+assert "min-height: var(--sc-product-list-toolbar-height)" in loading_skeleton
 assert "min-height: calc(var(--sc-product-toolbar-height) * 2 + 2px)" in loading_skeleton
 assert "row-gap: 0" in loading_skeleton
 assert "loading-title" not in loading_skeleton
