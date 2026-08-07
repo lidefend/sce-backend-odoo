@@ -10,6 +10,7 @@ from xml.etree import ElementTree
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/product_menu_release_manifest_v2.json"
 MENU_XML = ROOT / "addons/smart_construction_core/views/menu_product_navigation_v2.xml"
+BASE_MENU_XML = ROOT / "addons/smart_construction_core/views/menu.xml"
 POLICY_SYNC = ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py"
 HOOK_FACTS = ROOT / "addons/smart_construction_core/core_extension_hook_facts.py"
 DEV_MAKE = ROOT / "make/dev.mk"
@@ -120,6 +121,7 @@ def main() -> int:
 
     xml = MENU_XML.read_text(encoding="utf-8")
     xml_root = ElementTree.fromstring(xml)
+    base_menu_root = ElementTree.parse(BASE_MENU_XML).getroot()
     policy = POLICY_SYNC.read_text(encoding="utf-8")
     hook_facts = HOOK_FACTS.read_text(encoding="utf-8")
     dev_make = DEV_MAKE.read_text(encoding="utf-8")
@@ -161,12 +163,14 @@ def main() -> int:
     ):
         if token not in policy:
             errors.append(f"project center delivery projection missing: {token}")
-    for token in (
-        '"smart_construction_core.menu_project_material_plan": "材料管理"',
-        '"material_center_locked_level_two_projection"',
-    ):
-        if token not in policy:
-            errors.append(f"material center delivery projection missing: {token}")
+    base_material_plan = next(
+        (node for node in base_menu_root.findall("menuitem") if node.get("id") == "menu_project_material_plan"),
+        None,
+    )
+    if base_material_plan is None:
+        errors.append("base material-plan menu is missing")
+    elif base_material_plan.get("parent") != "menu_sc_material_management_group":
+        errors.append("base material-plan menu must belong to material management")
     for group in ("进度与施工", "质量管理", "安全管理", "行政审批", "人事薪酬"):
         if f'name="{group}"' not in xml:
             errors.append(f"level-two product group missing: {group}")

@@ -138,12 +138,6 @@
     <record id="menu_sc_project_budget_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_cost_center"/><field name="active">False</field></record>
     <record id="menu_sc_doc_center" model="ir.ui.menu"><field name="active">False</field></record>
 
-    <!-- Material plan is an actionable page under Material Management, not a level-two domain. -->
-    <record id="menu_project_material_plan" model="ir.ui.menu">
-        <field name="parent_id" ref="smart_construction_core.menu_sc_material_management_group"/>
-        <field name="sequence">10</field>
-    </record>
-
     <!-- Construction delivery: replace a ten-item flat list with processes. -->
     <menuitem id="menu_sc_schedule_delivery_group_v2" name="进度与施工" parent="smart_construction_core.menu_sc_construction_management_center" sequence="10"/>
     <menuitem id="menu_sc_quality_delivery_group_v2" name="质量管理" parent="smart_construction_core.menu_sc_construction_management_center" sequence="20"/>

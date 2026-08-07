@@ -1258,9 +1258,6 @@ class ScProductPolicy(models.Model):
             "smart_construction_core.menu_sc_tender_registration": "项目前期",
             "smart_construction_core.menu_sc_tender_registration_fee": "项目前期",
         }
-        material_level_two_by_xmlid = {
-            "smart_construction_core.menu_project_material_plan": "材料管理",
-        }
         ordered_labels = (
             "项目中心",
             "合同中心",
@@ -1309,12 +1306,6 @@ class ScProductPolicy(models.Model):
                         part for part in ("智慧施工管理平台", target_label, domain, label) if part
                     )
                     next_menu["policy_note"] = "project_center_locked_level_two_projection"
-                if target_label == "物资与分包" and menu_xmlid in material_level_two_by_xmlid:
-                    domain = material_level_two_by_xmlid[menu_xmlid]
-                    next_menu["visible_menu_path"] = " / ".join(
-                        part for part in ("智慧施工管理平台", target_label, domain, label) if part
-                    )
-                    next_menu["policy_note"] = "material_center_locked_level_two_projection"
                 if target_label != legacy_label:
                     next_menu["product_key"] = target_label
                     next_menu["visible_menu_path"] = " / ".join(
@@ -1357,6 +1348,7 @@ class ScProductPolicy(models.Model):
             view_modes = [_text(item) for item in action.view_mode.split(",") if _text(item)]
         menu_is_active = bool(getattr(menu_record, "active", False))
         runtime_menu_id = int(menu_record.id) if menu_is_active else 0
+        native_visible_path = _text(getattr(menu_record, "complete_name", ""))
         runtime_route = ""
         if action_id:
             runtime_route = "/a/%s?menu_id=%s" % (action_id, runtime_menu_id) if runtime_menu_id else "/a/%s" % action_id
@@ -1369,6 +1361,11 @@ class ScProductPolicy(models.Model):
                 "action_id": action_id or int(row.get("action_id") or 0),
                 "res_model": res_model,
                 "route": runtime_route or _text(row.get("route")),
+                # The installed ir.ui.menu hierarchy is the navigation fact
+                # authority. Release policy validates exposure; it must not
+                # retain a stale flattened path after the native parent moves.
+                "visible_menu_path": native_visible_path or _text(row.get("visible_menu_path")),
+                "menu_complete_name": native_visible_path or _text(row.get("menu_complete_name")),
                 "view_modes": view_modes or row.get("view_modes") or [],
                 "enabled": True,
                 "release_state": "released",
