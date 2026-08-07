@@ -182,6 +182,16 @@ def main() -> int:
         for name in names:
             if f'name="{name}（后续上线）"' not in xml:
                 errors.append(f"{center} roadmap menu missing: {name}")
+    explicit_admin_bindings = sum(
+        1 for record in xml_root.findall("record")
+        if (record.get("id") or "").endswith("roadmap_v2")
+        and any(
+            field.get("name") == "groups_id" and "group_sc_cap_business_config_admin" in (field.get("eval") or "")
+            for field in record.findall("field")
+        )
+    )
+    if explicit_admin_bindings != 12:
+        errors.append(f"cross-center roadmap menus require 12 explicit admin bindings, got {explicit_admin_bindings}")
     expected_center_ranks = {"工作台": 5, "项目中心": 10, "合同中心": 20, "成本中心": 30, "物资与分包": 40, "施工管理": 50, "财务中心": 60, "税务中心": 70, "报表中心": 80, "组织行政": 90}
     for center, expected_rank in expected_center_ranks.items():
         if f'"{center}": {expected_rank}' not in hook_facts:
