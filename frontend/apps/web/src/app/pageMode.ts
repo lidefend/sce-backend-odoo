@@ -2,13 +2,10 @@ export const PAGE_MODES = ['dashboard', 'workspace', 'list', 'form', 'detail', '
 
 export type PageMode = typeof PAGE_MODES[number];
 
-export function resolvePageMode(sceneKey: string, layoutKind: string): PageMode {
-  const key = String(sceneKey || '').trim();
+export function resolvePageMode(_sceneKey: string, layoutKind: string): PageMode {
   const kind = String(layoutKind || '').trim().toLowerCase();
 
-  if (key === 'project.management' || key === 'projects.dashboard') {
-    return 'dashboard';
-  }
+  if (kind === 'dashboard') return 'dashboard';
   if (kind === 'list') {
     return 'list';
   }

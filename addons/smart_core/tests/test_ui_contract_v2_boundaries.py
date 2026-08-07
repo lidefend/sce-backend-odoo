@@ -1010,6 +1010,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     "res.partner": {
                         "visible": ["name", "sc_contact_name"],
                         "hidden": ["sc_business_role_label", "sc_source_project_name"],
+                        "roles": {"name": "description", "sc_contact_name": "text"},
                     }
                 }
             return None
@@ -1050,6 +1051,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertIn("sc_source_project_name", profile["hidden_columns"])
         schema = {row["name"]: row for row in source_contract["views"]["tree"]["columns_schema"]}
         self.assertEqual(schema["sc_source_project_name"]["optional"], "hide")
+        self.assertEqual(schema["name"]["cell_role"], "description")
+        self.assertEqual(schema["sc_contact_name"]["cell_role"], "text")
 
     def test_business_column_label_replaces_raw_technical_name(self):
         original_hook = self.module.call_extension_hook_first

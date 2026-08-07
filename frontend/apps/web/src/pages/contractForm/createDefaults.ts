@@ -17,7 +17,6 @@ export function formCreateContext(params: {
 export function resolveCreateDefaults(params: {
   contract: ActionContract | null;
   routeQuery: Record<string, unknown>;
-  selectedProject?: Record<string, unknown> | null;
   v2ContractStore: ContractV2NormalizedStore | null;
 }) {
   const storeMainData = resolveUnifiedPageContractV2MainData(params.v2ContractStore);

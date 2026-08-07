@@ -261,7 +261,9 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
     visible_text_not_clipped: clipping.length === 0,
     utf8_text: mojibake.length === 0,
     navigation_icons_complete: iconMetrics.nodes > 0 && iconMetrics.missing.length === 0,
-    identity_present: Boolean(shellTitle) && documentTitle === `${shellTitle} - 智能施工企业管理平台`,
+    identity_present: Boolean(shellTitle)
+      && documentTitle.startsWith(`${shellTitle} - `)
+      && documentTitle.length > `${shellTitle} - `.length,
     active_menu_correct: leaf.menu_id <= 0 || activeMenu.some((text) => text.includes(leaf.label)),
     active_tab_correct: leaf.route === '/' ? activeTab.length === 0 : viewport.width < 760 || activeTab.length === 1,
     primary_action_reachable: visibleActions > 0 || ['workspace', 'home'].includes(mode),

@@ -300,6 +300,7 @@ export interface RecordContextContract {
     label?: string;
     all_label?: string;
     placeholder?: string;
+    icon?: string;
   };
   persistence?: {
     scope?: string;

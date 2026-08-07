@@ -18,9 +18,6 @@ export type SuggestedActionKind =
   | 'open_hidden'
   | 'open_scene_health'
   | 'open_scene_packages'
-  | 'open_projects_list'
-  | 'open_projects_board'
-  | 'open_project'
   | 'open_dashboard'
   | 'open_record'
   | 'open_scene'
@@ -46,7 +43,6 @@ export type SuggestedActionParsed = {
   url?: string;
   menuId?: number;
   actionId?: number;
-  projectId?: number;
   query?: string;
   hash?: string;
   section?: string;

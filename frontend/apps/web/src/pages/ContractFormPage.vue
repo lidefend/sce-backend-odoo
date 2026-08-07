@@ -42,7 +42,7 @@
         :active-filter-key="activeFilterKey"
         :body-actions="bodyActions"
         :busy="busy"
-        :is-project-intake-create-mode="isIntakeCreateMode"
+        :is-intake-create-mode="isIntakeCreateMode"
         :search-filters="searchFilters"
         :show-hud="showHud"
         :show-search-filters="showSearchFilters"

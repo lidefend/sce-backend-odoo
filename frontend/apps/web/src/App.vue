@@ -71,7 +71,7 @@ function activityRouteKey(route: RouteLocationNormalizedLoaded): string {
       return `new:${model}:action:${actionId || 0}:menu:${menuId || 0}:view:${viewId || 0}:${activityContextPart()}:${activityInstanceId || 'route'}`;
     }
     // A persisted record id already identifies the activity page. Including the
-    // live selected-project projection makes the KeepAlive key change during
+    // A live selected-record projection makes the KeepAlive key change during
     // route registration, remounting RecordView and duplicating all first-load
     // business requests. Company/scope transitions invalidate cache epochs.
     return `record:${model}:${recordId}:action:${actionId || 0}:menu:${menuId || 0}`;

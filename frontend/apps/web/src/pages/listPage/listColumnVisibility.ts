@@ -32,12 +32,19 @@ export function resolveResponsiveListColumns(options: {
   const critical = new Set((options.criticalColumns || []).filter((field) => enabled.has(field)));
   const explicitVisible = new Set(ordered.filter((field) => visibility[field] === true));
   const candidates = new Set((options.responsiveCandidates || ordered).filter((field) => enabled.has(field)));
-  const required = new Set([...critical, ...explicitVisible]);
+  // Contract-critical columns are priority hints, not an instruction to break
+  // the available-width budget. Only a user's explicit visibility choice may
+  // require controlled horizontal overflow.
+  const required = explicitVisible;
   const capacity = Math.max(1, Number(options.capacity || ordered.length || 1));
   const selected = new Set<string>();
 
   for (const field of ordered) {
     if (required.has(field)) selected.add(field);
+  }
+  for (const field of ordered) {
+    if (selected.size >= capacity) break;
+    if (critical.has(field) && candidates.has(field)) selected.add(field);
   }
   for (const field of ordered) {
     if (selected.size >= capacity && !required.has(field)) continue;
@@ -47,7 +54,7 @@ export function resolveResponsiveListColumns(options: {
   const trace: ListColumnSelectionTrace[] = options.orderedColumns.map((field) => {
     if (visibility[field] === false) return { field, visible: false, reasonCode: 'explicit_hidden' };
     if (!enabled.has(field)) return { field, visible: false, reasonCode: 'default_hidden' };
-    if (critical.has(field)) return { field, visible: true, reasonCode: 'critical_contract' };
+    if (critical.has(field) && selected.has(field)) return { field, visible: true, reasonCode: 'critical_contract' };
     if (explicitVisible.has(field)) return { field, visible: true, reasonCode: 'explicit_visible' };
     if (selected.has(field)) return { field, visible: true, reasonCode: 'responsive_budget' };
     return { field, visible: false, reasonCode: 'responsive_capacity' };

@@ -766,7 +766,7 @@ import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
-import { deriveListColumnWidth, listColumnAdaptiveFloor, listColumnSemanticTextRole, rankListBusinessColumn, type ListColumnLayoutRole } from './listPage/listColumnWidth';
+import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, resolveListColumnBudgetWidth, type ListColumnLayoutRole } from './listPage/listColumnWidth';
 import {
   prioritizeExplicitlyEnabledListColumns,
   resolveEnabledListColumns,
@@ -803,13 +803,6 @@ type ColumnOption = {
   toneByValue?: Record<string, string>;
 };
 type GroupSortDirection = 'asc' | 'desc';
-
-const standardAuditColumnLabels: Record<string, string> = {
-  create_uid: '创建人',
-  create_date: '创建时间',
-  write_uid: '最后修改人',
-  write_date: '最后修改时间',
-};
 
 const props = defineProps<{
   title: string;
@@ -1780,8 +1773,10 @@ function derivedColumnWidth(field: string) {
 }
 
 function columnBusinessPriority(field: string) {
+  const criticalIndex = crossDeviceCriticalColumns.value.indexOf(field);
+  if (criticalIndex >= 0) return criticalIndex;
   const option = columnOption(field);
-  return rankListBusinessColumn({
+  return crossDeviceCriticalColumns.value.length + rankListBusinessColumn({
     field, label: columnLabel(field), type: option?.dataType || option?.type,
     role: columnLayoutRole(field), primary: field === rowPrimary.value,
   });
@@ -1800,13 +1795,16 @@ const desktopResponsiveCandidates = computed(() => {
   const source = enabledColumns.value;
   const surfaceWidth = tableSurfaceWidth.value;
   if (!surfaceWidth) return source;
-  const fixedWidth = (showSelectionColumn.value ? 40 : 0) + (showRowNumberColumn.value ? 52 : 0) + 4;
+  const fixedWidth = (showSelectionColumn.value ? 40 : 0) + (showRowNumberColumn.value ? 52 : 0) + 16;
   const availableWidth = Math.max(0, surfaceWidth - fixedWidth);
   const selected: string[] = [];
   let usedWidth = 0;
   for (const field of prioritizedEnabledColumns.value) {
-    const customWidth = effectiveColumnWidth(field);
-    const requiredWidth = customWidth || adaptiveColumnFloor(field);
+    const requiredWidth = resolveListColumnBudgetWidth({
+      customWidth: effectiveColumnWidth(field),
+      derivedWidth: derivedColumnWidth(field),
+      role: columnLayoutRole(field),
+    });
     if (selected.length >= DEFAULT_VISIBLE_COLUMN_BUDGET) break;
     if (selected.length >= 3 && usedWidth + requiredWidth > availableWidth) continue;
     selected.push(field);
@@ -2036,8 +2034,6 @@ function columnLayoutRole(field: string): ListColumnLayoutRole {
   if (['money', 'monetary', 'metric'].includes(cellRole) || ['integer', 'float', 'monetary'].includes(type)) return 'money';
   if (isListTemporalColumn(columnSemanticInput(field))) return 'date';
   if (['actions', 'action', 'favorite'].includes(cellRole)) return 'actions';
-  const semanticTextRole = listColumnSemanticTextRole({ field, label: columnLabel(field) });
-  if (semanticTextRole) return semanticTextRole;
   if (['description', 'long-text', 'reading'].includes(cellRole) || ['text', 'html'].includes(type)) return 'description';
   if (['many2one', 'many2many', 'one2many', 'reference'].includes(type)) return 'relation';
   return 'text';
@@ -2079,7 +2075,6 @@ function stopColumnResize() {
 }
 
 function columnLabel(col: string) {
-  if (standardAuditColumnLabels[col]) return standardAuditColumnLabels[col];
   const option = columnOption(col);
   return option?.label || columnLabels.value[col] || contractColumnLabels.value[col] || col;
 }

@@ -143,14 +143,14 @@ export function nextRouteAuthorityRecordContext(
   current: RecordContextContract,
   snapshot: RouteAuthorityRecordContextSnapshot,
 ): RecordContextContract | null {
-  const currentProjectId = positiveInteger(current.selected?.id);
-  const nextProjectId = positiveInteger(snapshot.selected?.id);
+  const currentSelectedRecordId = positiveInteger(current.selected?.id);
+  const nextSelectedRecordId = positiveInteger(snapshot.selected?.id);
   const currentCompanyId = positiveInteger(current.company_id || current.selected?.company_id);
   const nextCompanyId = positiveInteger(snapshot.company_id || snapshot.selected?.company_id);
   const currentOperation = String(current.operation_strategy || current.selected?.operation_strategy || '').trim();
   const nextOperation = String(snapshot.operation_strategy || snapshot.selected?.operation_strategy || '').trim();
   if (
-    currentProjectId === nextProjectId
+    currentSelectedRecordId === nextSelectedRecordId
     && currentCompanyId === nextCompanyId
     && currentOperation === nextOperation
   ) return null;
@@ -185,7 +185,7 @@ function queryValue(query: Record<string, unknown>, key: string): string {
 export function routeAuthorityContextAllowed(
   entry: RouteAuthorityEntry,
   query: Record<string, unknown>,
-  currentScope: { companyId?: number | null; projectId?: number | null },
+  currentScope: { companyId?: number | null; selectedRecordId?: number | null },
 ): boolean {
   const requirements = entry.context_requirements || {};
   const required = Array.isArray(requirements.required_query)
@@ -193,17 +193,17 @@ export function routeAuthorityContextAllowed(
     : [];
   if (required.some((key) => !queryValue(query, key))) return false;
   const companyKey = String(requirements.company_query || '').trim();
-  const projectKey = String(requirements.project_query || '').trim();
+  const selectedRecordKey = String(requirements.selected_record_query || '').trim();
   const recordKey = String(requirements.record_query || '').trim();
   if (companyKey && currentScope.companyId && positiveInteger(queryValue(query, companyKey)) !== currentScope.companyId) return false;
-  if (projectKey && currentScope.projectId && positiveInteger(queryValue(query, projectKey)) !== currentScope.projectId) return false;
+  if (selectedRecordKey && currentScope.selectedRecordId && positiveInteger(queryValue(query, selectedRecordKey)) !== currentScope.selectedRecordId) return false;
   if (recordKey && !positiveInteger(queryValue(query, recordKey))) return false;
   return true;
 }
 
 export function findRouteAuthority(
   contract: RouteAuthorityContract | null,
-  input: { actionId: number; menuId: number; query: Record<string, unknown>; companyId?: number | null; projectId?: number | null },
+  input: { actionId: number; menuId: number; query: Record<string, unknown>; companyId?: number | null; selectedRecordId?: number | null },
 ): RouteAuthorityEntry | null {
   const entry = routeAuthorityEntries(contract).find((row) => (
     (input.actionId > 0 ? row.action_id === input.actionId : input.menuId > 0 && row.menu_id === input.menuId)

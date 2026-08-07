@@ -293,7 +293,7 @@ router.beforeEach(async (to) => {
       menuId,
       query: to.query as Record<string, unknown>,
       companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
-      projectId: Number(session.recordContext?.selected?.id || 0) || null,
+      selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
     }) : null;
     let runtimeRouteAuthorized = Boolean(routeAuthority);
     if (routeAuthority && Array.isArray(routeAuthority.context_requirements.required_query)

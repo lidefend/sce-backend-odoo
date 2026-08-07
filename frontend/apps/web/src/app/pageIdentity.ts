@@ -44,13 +44,8 @@ const GENERIC_TITLES = new Set([
 ]);
 
 const DEFAULT_PRIMARY_FIELDS = [
+  'display_name',
   'name',
-  'code',
-  'number',
-  'reference',
-  'document_no',
-  'contract_no',
-  'project_code',
 ];
 
 function text(value: unknown): string {

@@ -68,10 +68,10 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
                 return self._deny("ROUTE_CONTEXT_REQUIRED")
 
         company_key = str(requirements.get("company_query") or "").strip()
-        project_key = str(requirements.get("project_query") or "").strip()
+        selected_record_key = str(requirements.get("selected_record_query") or "").strip()
         record_key = str(requirements.get("record_query") or "").strip()
         company_id = _positive_int(params.get(company_key)) if company_key else 0
-        project_id = _positive_int(params.get(project_key)) if project_key else 0
+        selected_record_id = _positive_int(params.get(selected_record_key)) if selected_record_key else 0
         record_id = _positive_int(params.get(record_key)) if record_key else 0
         if company_id and company_id not in self.env.companies.ids:
             return self._deny("ROUTE_COMPANY_SCOPE_DENIED")
@@ -87,10 +87,10 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
                 record.check_access_rule("read")
             except Exception:
                 return self._deny("ROUTE_CONTEXT_RECORD_DENIED")
-            project_field = str(requirements.get("record_project_field") or "").strip()
+            selected_record_field = str(requirements.get("record_selected_context_field") or "").strip()
             company_field = str(requirements.get("record_company_field") or "").strip()
-            if project_field and project_id and _positive_int(getattr(record, project_field, None).id) != project_id:
-                return self._deny("ROUTE_PROJECT_SCOPE_DENIED")
+            if selected_record_field and selected_record_id and _positive_int(getattr(record, selected_record_field, None).id) != selected_record_id:
+                return self._deny("ROUTE_RECORD_CONTEXT_SCOPE_DENIED")
             if company_field and company_id and _positive_int(getattr(record, company_field, None).id) != company_id:
                 return self._deny("ROUTE_COMPANY_SCOPE_DENIED")
 

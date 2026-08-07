@@ -27,8 +27,6 @@ const SIMPLE_ALIASES: Record<string, SuggestedActionKind> = {
   open_hidden: 'open_hidden',
   open_scene_health: 'open_scene_health',
   open_scene_packages: 'open_scene_packages',
-  open_projects_list: 'open_projects_list',
-  open_projects_board: 'open_projects_board',
   open_dashboard: 'open_dashboard',
   copy_trace: 'copy_trace',
   copy_trace_id: 'copy_trace',
@@ -56,8 +54,6 @@ const QUERY_ONLY_PREFIXES: Array<{ prefix: string; kind: SuggestedActionKind }> 
   { prefix: 'open_usage_analytics?', kind: 'open_usage_analytics' },
   { prefix: 'open_scene_health?', kind: 'open_scene_health' },
   { prefix: 'open_scene_packages?', kind: 'open_scene_packages' },
-  { prefix: 'open_projects_list?', kind: 'open_projects_list' },
-  { prefix: 'open_projects_board?', kind: 'open_projects_board' },
 ];
 
 const QUERY_HASH_PREFIXES: Array<{ prefix: string; kind: SuggestedActionKind }> = [
@@ -67,7 +63,6 @@ const QUERY_HASH_PREFIXES: Array<{ prefix: string; kind: SuggestedActionKind }> 
 
 const SCENE_SECTION_PATTERNS = [/^open_my_work_section:([a-z0-9_]+)$/i, /^open_my_work:([a-z0-9_]+)$/i];
 
-const PROJECT_PATTERNS = [/^open_project:([0-9]+)(?:\?([^#]+))?(?:#(.+))?$/i, /^goto_project:([0-9]+)(?:\?([^#]+))?(?:#(.+))?$/i];
 const RECORD_PATTERNS = [/^open_record:([^:]+):([0-9]+)(?:\?([^#]+))?(?:#(.+))?$/i, /^go_record:([^:]+):([0-9]+)(?:\?([^#]+))?(?:#(.+))?$/i];
 const MENU_PATTERNS = [/^open_menu:([0-9]+)(?:\?([^#]+))?(?:#(.+))?$/i, /^goto_menu:([0-9]+)(?:\?([^#]+))?(?:#(.+))?$/i];
 const ACTION_PATTERNS = [/^open_action:([0-9]+)(?:\?([^#]+))?(?:#(.+))?$/i, /^goto_action:([0-9]+)(?:\?([^#]+))?(?:#(.+))?$/i];
@@ -118,7 +113,7 @@ function parseNumericIdAction(
   raw: string,
   kind: SuggestedActionKind,
   patterns: RegExp[],
-  idKey: 'projectId' | 'menuId' | 'actionId',
+  idKey: 'menuId' | 'actionId',
 ): SuggestedActionParsed | null {
   for (const pattern of patterns) {
     const match = rawInput.match(pattern);
@@ -133,10 +128,6 @@ function parseNumericIdAction(
     return { kind, raw, [idKey]: id } as SuggestedActionParsed;
   }
   return null;
-}
-
-function parseProject(rawInput: string, raw: string): SuggestedActionParsed | null {
-  return parseNumericIdAction(rawInput, raw, 'open_project', PROJECT_PATTERNS, 'projectId');
 }
 
 function parseMenu(rawInput: string, raw: string): SuggestedActionParsed | null {
@@ -206,9 +197,6 @@ export function parseSuggestedAction(value?: string): SuggestedActionParsed {
 
   const section = parseSectionAction(rawInput, raw);
   if (section) return section;
-
-  const project = parseProject(rawInput, raw);
-  if (project) return project;
 
   const record = parseRecord(rawInput, raw);
   if (record) return record;

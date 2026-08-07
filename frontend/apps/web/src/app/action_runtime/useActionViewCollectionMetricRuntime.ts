@@ -26,7 +26,7 @@ export function useActionViewCollectionMetricRuntime(options: {
     return fields.map((item) => String(item || '').trim()).filter(Boolean);
   }
 
-  function resolveProjectStateCell(row: Record<string, unknown>) {
+  function resolveCollectionStateCell(row: Record<string, unknown>) {
     const statusField = String(options.listProfile.value?.status_field || '').trim();
     if (!statusField) return { text: '', tone: 'neutral' };
     const column = options.listColumnOptions.value.find((item) => item.name === statusField);
@@ -41,7 +41,7 @@ export function useActionViewCollectionMetricRuntime(options: {
     };
   }
 
-  function resolveProjectAmount(row: Record<string, unknown>) {
+  function resolveCollectionAmount(row: Record<string, unknown>) {
     for (const field of metricFields()) {
       const candidate = row[field];
       const amount = Number(candidate);
@@ -56,8 +56,8 @@ export function useActionViewCollectionMetricRuntime(options: {
 
   return {
     metricFields,
-    resolveProjectStateCell,
-    resolveProjectAmount,
+    resolveCollectionStateCell,
+    resolveCollectionAmount,
     isCompletedState,
   };
 }

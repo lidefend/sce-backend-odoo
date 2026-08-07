@@ -70,13 +70,20 @@ def main() -> int:
         if marker not in contract_shape_runtime:
             errors.append(f'contract_shape_runtime missing marker: {marker}')
 
-    load_request_markers = [
-        'if (mode === \'pivot\' || mode === \'graph\' || mode === \'calendar\' || mode === \'gantt\' || mode === \'activity\' || mode === \'dashboard\')',
-        "const advancedContractFields = options.extractAdvancedViewFields(options.contract, options.viewMode);",
+    load_request_marker = "const advancedContractFields = options.extractAdvancedViewFields(options.contract, options.viewMode);"
+    if load_request_marker not in load_request_runtime:
+        errors.append(f'load_request_runtime missing marker: {load_request_marker}')
+
+    advanced_mode_markers = [
+        "if (mode === 'pivot')",
+        "if (mode === 'graph')",
+        "if (mode === 'calendar' || mode === 'gantt')",
+        "if (mode === 'activity')",
+        "if (mode === 'dashboard')",
     ]
-    for marker in load_request_markers:
-        if marker not in load_request_runtime and marker not in action_view:
-            errors.append(f'load_request_runtime missing marker: {marker}')
+    for marker in advanced_mode_markers:
+        if marker not in contract_shape_runtime:
+            errors.append(f'contract_shape_runtime missing advanced view marker: {marker}')
 
     field_state_markers = [
         "if (options.viewMode === 'kanban') {",

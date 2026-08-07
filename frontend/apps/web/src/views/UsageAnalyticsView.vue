@@ -55,7 +55,7 @@
           <input
             v-model.trim="scenePrefix"
             type="text"
-            :placeholder="pageText('placeholder_scene_prefix', '如 projects.')"
+            :placeholder="pageText('placeholder_scene_prefix', '如 workspace.')"
             :disabled="loading"
           />
         </label>

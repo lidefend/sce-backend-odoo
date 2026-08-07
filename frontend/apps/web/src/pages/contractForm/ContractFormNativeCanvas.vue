@@ -254,8 +254,10 @@ function scrollActiveSectionTabIntoView(smooth: boolean) {
 
 function isEmptyValue(value: unknown, type: unknown) {
   if (Array.isArray(value)) return value.length === 0;
-  if (String(type || '').toLowerCase() === 'boolean') return value === null || value === undefined;
-  return value === null || value === undefined || value === false || String(value).trim() === '';
+  const normalizedType = String(type || '').trim().toLowerCase();
+  if (normalizedType === 'boolean') return value === null || value === undefined;
+  const normalizedValue = String(value ?? '').trim().toLowerCase();
+  return value === null || value === undefined || value === false || normalizedValue === '' || normalizedValue === 'false';
 }
 
 onMounted(() => {

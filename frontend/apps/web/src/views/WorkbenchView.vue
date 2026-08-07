@@ -395,7 +395,7 @@ function refresh() {
   window.location.reload();
 }
 
-async function goToProjects() {
+async function goToLandingPage() {
   await router.push({ path: session.resolveLandingPath('/'), query: workspaceContextQuery.value });
 }
 
@@ -422,7 +422,7 @@ async function executeWorkbenchAction(actionKey: string) {
     },
     onFallback: async (key) => {
       if (key === 'open_workbench') {
-        await goToProjects();
+        await goToLandingPage();
         return true;
       }
       if (key === 'open_menu') {

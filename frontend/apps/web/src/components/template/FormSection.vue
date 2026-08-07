@@ -113,7 +113,7 @@
               </div>
               <template v-else-if="field.readonly">
                 <slot name="readonly" :field="field">
-                  <span class="readonly-value">{{ readonlyText(field.value) }}</span>
+                  <span class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </template>
               <template v-else-if="isRelationEditorField(field) && relationAdapter">
@@ -568,8 +568,17 @@ function inputPlaceholderText(field: FormSectionFieldSchema) {
   return props.inputPlaceholder(field.label);
 }
 
-function readonlyText(value: unknown) {
-  return formatDisplayValue(value, undefined, { emptyText: '-' });
+function readonlyText(field: FormSectionFieldSchema) {
+  const fieldType = String(field.type || field.descriptor?.ttype || field.descriptor?.type || '').trim().toLowerCase();
+  const normalizedValue = ['date', 'datetime', 'many2one'].includes(fieldType)
+    && String(field.value).trim().toLowerCase() === 'false'
+    ? ''
+    : field.value;
+  return formatDisplayValue(
+    normalizedValue,
+    { ...(field.descriptor || {}), type: fieldType || field.descriptor?.type },
+    { emptyText: '-' },
+  );
 }
 
 function fieldActionsFor(field: FormSectionFieldSchema) {

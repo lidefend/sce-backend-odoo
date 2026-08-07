@@ -92,7 +92,7 @@ export function buildDetailSectionViews(options: {
   visibleSectionFieldCount: (section: LayoutSectionView) => number;
   buildSectionFields: (section: LayoutSectionView) => FormSectionFieldSchema[];
   preferNativeFormSurface: boolean;
-  projectCreateMode: boolean;
+  createMode: boolean;
   renderProfile?: RenderProfile;
 }): DetailSectionView[] {
   const {
@@ -100,13 +100,13 @@ export function buildDetailSectionViews(options: {
     visibleSectionFieldCount,
     buildSectionFields,
     preferNativeFormSurface,
-    projectCreateMode,
+    createMode,
     renderProfile,
   } = options;
-  const resolvedRenderProfile = normalizeRenderProfile(renderProfile, projectCreateMode ? 'create' : 'edit');
+  const resolvedRenderProfile = normalizeRenderProfile(renderProfile, createMode ? 'create' : 'edit');
 
   return layoutSections.map((section) => {
-    const presentation = resolveTemplateSectionPresentation(section, { projectCreateMode });
+    const presentation = resolveTemplateSectionPresentation(section, { createMode });
     return {
       key: section.key,
       title: presentation.title,
@@ -213,7 +213,7 @@ function createDetailSectionView(options: {
   visibleSectionFieldCount: (section: LayoutTreeSectionView) => number;
   buildSectionFields: (section: LayoutTreeSectionView) => FormSectionFieldSchema[];
   preferNativeFormSurface: boolean;
-  projectCreateMode: boolean;
+  createMode: boolean;
   renderProfile: RenderProfile;
   titleOverride?: string;
 }): DetailSectionView {
@@ -222,11 +222,11 @@ function createDetailSectionView(options: {
     visibleSectionFieldCount,
     buildSectionFields,
     preferNativeFormSurface,
-    projectCreateMode,
+    createMode,
     renderProfile,
     titleOverride,
   } = options;
-  const presentation = resolveTemplateSectionPresentation(section, { projectCreateMode });
+  const presentation = resolveTemplateSectionPresentation(section, { createMode });
   return {
     key: section.key,
     title: titleOverride ?? presentation.title,
@@ -246,7 +246,7 @@ function buildNestedSections(options: {
   visibleSectionFieldCount: (section: LayoutTreeSectionView) => number;
   buildSectionFields: (section: LayoutTreeSectionView) => FormSectionFieldSchema[];
   preferNativeFormSurface: boolean;
-  projectCreateMode: boolean;
+  createMode: boolean;
   renderProfile: RenderProfile;
 }): DetailSectionView[] {
   const {
@@ -254,7 +254,7 @@ function buildNestedSections(options: {
     visibleSectionFieldCount,
     buildSectionFields,
     preferNativeFormSurface,
-    projectCreateMode,
+    createMode,
     renderProfile,
   } = options;
   const sections: DetailSectionView[] = [];
@@ -270,7 +270,7 @@ function buildNestedSections(options: {
         visibleSectionFieldCount,
         buildSectionFields,
         preferNativeFormSurface,
-        projectCreateMode,
+        createMode,
         renderProfile,
       }));
     }
@@ -280,7 +280,7 @@ function buildNestedSections(options: {
         visibleSectionFieldCount,
         buildSectionFields,
         preferNativeFormSurface,
-        projectCreateMode,
+        createMode,
         renderProfile,
       }));
     }
@@ -292,14 +292,14 @@ function buildNotebookShell(node: LayoutTreeSectionView, options: {
   visibleSectionFieldCount: (section: LayoutTreeSectionView) => number;
   buildSectionFields: (section: LayoutTreeSectionView) => FormSectionFieldSchema[];
   preferNativeFormSurface: boolean;
-  projectCreateMode: boolean;
+  createMode: boolean;
   renderProfile: RenderProfile;
 }): DetailShellView | null {
   const {
     visibleSectionFieldCount,
     buildSectionFields,
     preferNativeFormSurface,
-    projectCreateMode,
+    createMode,
     renderProfile,
   } = options;
   const collectPageNodesRecursively = (nodes: LayoutTreeSectionView[]): LayoutTreeSectionView[] => {
@@ -331,7 +331,7 @@ function buildNotebookShell(node: LayoutTreeSectionView, options: {
         visibleSectionFieldCount,
         buildSectionFields,
         preferNativeFormSurface,
-        projectCreateMode,
+        createMode,
         renderProfile,
       });
       const ensuredSections = sections.length
@@ -372,7 +372,7 @@ function collectNestedNotebookShells(nodes: LayoutTreeSectionView[], options: {
   visibleSectionFieldCount: (section: LayoutTreeSectionView) => number;
   buildSectionFields: (section: LayoutTreeSectionView) => FormSectionFieldSchema[];
   preferNativeFormSurface: boolean;
-  projectCreateMode: boolean;
+  createMode: boolean;
   renderProfile: RenderProfile;
 }): DetailShellView[] {
   const shells: DetailShellView[] = [];
@@ -394,7 +394,7 @@ function buildContainerSections(options: {
   visibleSectionFieldCount: (section: LayoutTreeSectionView) => number;
   buildSectionFields: (section: LayoutTreeSectionView) => FormSectionFieldSchema[];
   preferNativeFormSurface: boolean;
-  projectCreateMode: boolean;
+  createMode: boolean;
   renderProfile: RenderProfile;
 }): DetailSectionView[] {
   const {
@@ -402,7 +402,7 @@ function buildContainerSections(options: {
     visibleSectionFieldCount,
     buildSectionFields,
     preferNativeFormSurface,
-    projectCreateMode,
+    createMode,
     renderProfile,
   } = options;
   const sections: DetailSectionView[] = [];
@@ -412,7 +412,7 @@ function buildContainerSections(options: {
       visibleSectionFieldCount,
       buildSectionFields,
       preferNativeFormSurface,
-      projectCreateMode,
+      createMode,
       renderProfile,
     }));
   }
@@ -422,7 +422,7 @@ function buildContainerSections(options: {
       visibleSectionFieldCount,
       buildSectionFields,
       preferNativeFormSurface,
-      projectCreateMode,
+      createMode,
       renderProfile,
     }));
   }
@@ -434,7 +434,7 @@ export function buildDetailShellViewsFromTree(options: {
   visibleSectionFieldCount: (section: LayoutTreeSectionView) => number;
   buildSectionFields: (section: LayoutTreeSectionView) => FormSectionFieldSchema[];
   preferNativeFormSurface: boolean;
-  projectCreateMode: boolean;
+  createMode: boolean;
   renderProfile?: RenderProfile;
 }): DetailShellView[] {
   const {
@@ -442,16 +442,16 @@ export function buildDetailShellViewsFromTree(options: {
     visibleSectionFieldCount,
     buildSectionFields,
     preferNativeFormSurface,
-    projectCreateMode,
+    createMode,
     renderProfile,
   } = options;
-  const resolvedRenderProfile = normalizeRenderProfile(renderProfile, projectCreateMode ? 'create' : 'edit');
+  const resolvedRenderProfile = normalizeRenderProfile(renderProfile, createMode ? 'create' : 'edit');
   const shells: DetailShellView[] = [];
   const shellOptions = {
     visibleSectionFieldCount,
     buildSectionFields,
     preferNativeFormSurface,
-    projectCreateMode,
+    createMode,
     renderProfile: resolvedRenderProfile,
   };
   const collectPageNodesRecursively = (nodes: LayoutTreeSectionView[]): LayoutTreeSectionView[] => {
@@ -483,7 +483,7 @@ export function buildDetailShellViewsFromTree(options: {
         visibleSectionFieldCount,
         buildSectionFields,
         preferNativeFormSurface,
-        projectCreateMode,
+        createMode,
         renderProfile: resolvedRenderProfile,
       });
       const ensuredSections = sections.length
@@ -539,7 +539,7 @@ export function buildDetailShellViewsFromTree(options: {
       visibleSectionFieldCount,
       buildSectionFields,
       preferNativeFormSurface,
-      projectCreateMode,
+      createMode,
       renderProfile: resolvedRenderProfile,
     });
     if (!sections.length) continue;

@@ -65,6 +65,7 @@ from .core_extension import (  # noqa: F401
     smart_core_build_payment_slice_service,
     smart_core_build_settlement_slice_service,
     smart_core_business_config_admin_group_xmlids,
+    smart_core_menu_config_only_exempt_group_xmlids,
     smart_core_business_config_form_settings_refs,
     smart_core_business_config_approval_policy_refs,
     smart_core_native_config_root_menu_xmlid,

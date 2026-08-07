@@ -793,6 +793,7 @@ def smart_core_resolve_record_context_config(env, params):
         "model": "project.project",
         "label": "当前项目",
         "placeholder": "搜索项目名称",
+        "icon": "project",
         "selected_id_param": "selected_id",
     }
 
@@ -1326,6 +1327,11 @@ def smart_core_build_settlement_slice_service(env):
 def smart_core_business_config_admin_group_xmlids(env):
     del env
     return _hook_facts.business_config_admin_group_xmlids()
+
+
+def smart_core_menu_config_only_exempt_group_xmlids(env):
+    del env
+    return ["smart_construction_core.group_sc_business_full"]
 
 
 def smart_core_business_config_form_settings_refs(env):

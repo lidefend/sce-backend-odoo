@@ -25,7 +25,20 @@ const VIEWPORTS = [
   { key: '390', width: 390, height: 844 },
 ];
 const ZOOM_LEVELS = [80, 100, 125, 150];
+const FAST_MODE = String(process.env.GEOMETRY_AUDIT_FAST || '').trim() === '1';
 const SOURCE_SHA = process.env.SC_ACCEPTANCE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+const EXPECTED_ROLE_CODE = String(process.env.SC_EXPECTED_ROLE_CODE || '').trim();
+const REQUIRED_FORM_MODES = String(process.env.SC_REQUIRED_FORM_MODES || '')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean);
+const REQUIRED_NAV_LABELS = (() => {
+  const raw = String(process.env.SC_REQUIRED_NAV_LABELS_JSON || '').trim();
+  if (!raw) return [];
+  const parsed = JSON.parse(raw);
+  assert(Array.isArray(parsed), 'SC_REQUIRED_NAV_LABELS_JSON must be a JSON array');
+  return parsed.map((item) => String(item || '').trim()).filter(Boolean);
+})();
 
 assert(PASSWORD, 'E2E_PASSWORD or SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
 await fs.mkdir(OUTPUT_DIR, { recursive: true });
@@ -57,13 +70,39 @@ function actionableNodes(nodes, ancestors = []) {
 }
 
 async function login(page, navigation) {
-  await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  await page.locator('#login-username, input[autocomplete="username"]').first().fill(LOGIN);
-  await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(PASSWORD);
-  const database = page.locator('input').nth(2);
-  if (await database.isEnabled().catch(() => false)) await database.fill(DB_NAME);
-  await page.getByRole('button', { name: /^登录$/ }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45_000 });
+  let lastFailure = null;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await page.locator('#login-username, input[autocomplete="username"]').first().fill(LOGIN);
+    await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(PASSWORD);
+    const database = page.locator('input').nth(2);
+    if (await database.isEnabled().catch(() => false)) await database.fill(DB_NAME);
+    const loginResponsePromise = page.waitForResponse((response) => {
+      if (!response.url().includes('/api/v1/intent')) return false;
+      try {
+        return JSON.parse(response.request().postData() || '{}')?.intent === 'login';
+      } catch {
+        return false;
+      }
+    }, { timeout: 45_000 });
+    await page.getByRole('button', { name: /^登录$/ }).click();
+    const loginResponse = await loginResponsePromise;
+    const loginBody = await loginResponse.json().catch(() => ({}));
+    const loginOk = loginResponse.status() < 400 && loginBody?.ok !== false;
+    if (loginOk) {
+      await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 90_000 });
+      lastFailure = null;
+      break;
+    }
+    const reason = String(loginBody?.error?.reason_code || loginBody?.error?.message || '').trim();
+    lastFailure = { status: loginResponse.status(), reason };
+    const retryable = loginResponse.status() >= 500 || Boolean(loginBody?.error?.retryable);
+    if (!retryable || attempt === 2) break;
+    await page.waitForTimeout(2_000);
+  }
+  if (lastFailure) {
+    throw new Error(`browser login rejected: status=${lastFailure.status} reason=${lastFailure.reason || 'unspecified'}`);
+  }
   await page.locator('.layout-shell').waitFor({ state: 'visible', timeout: 45_000 });
   await page.waitForFunction(() => !/正在初始化|正在加载导航/.test(document.body.innerText || ''), null, { timeout: 45_000 });
   assert(navigation.nav().length, 'authenticated system.init navigation was not captured');
@@ -110,6 +149,8 @@ async function inspectGeometry(page) {
       toolbar: '#main-content :is(.list-command-surface, .product-list-header, .sc-action-bar, .form-command-bar)',
       table: '#main-content :is(.sc-table-shell, .native-list-scroll, .table-scroll, table)',
       form: '#main-content :is([data-product-page-mode="form"], .contract-form-document)',
+      loading_surface: '#main-content :is(.product-loading-shell, .product-form-loading)',
+      primary_surface: '#main-content [data-workspace-primary-content]',
       dialog: ':is(.sc-dialog, .sc-drawer, [role="dialog"])',
     };
     const containers = Object.fromEntries(Object.entries(namedSelectors).map(([name, selector]) => [name, measure(document.querySelector(selector))]));
@@ -260,6 +301,56 @@ async function waitForPage(page) {
   await page.waitForTimeout(250);
 }
 
+function boxAxisStable(left, right, tolerance = 1) {
+  if (!left || !right) return false;
+  return Math.abs(left.x - right.x) <= tolerance
+    && Math.abs(left.width - right.width) <= tolerance;
+}
+
+async function loadingTransitionProof(page, target, viewport) {
+  await page.setViewportSize(viewport);
+  let delayed = false;
+  const delayFirstDataRequest = async (route) => {
+    if (!delayed && route.request().method() === 'POST') {
+      delayed = true;
+      await page.waitForTimeout(800);
+    }
+    await route.continue();
+  };
+  await page.route('**/api/**', delayFirstDataRequest);
+  try {
+    await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    const loadingLocator = page.locator('.product-loading-shell:visible, .product-form-loading:visible').first();
+    await loadingLocator.waitFor({ state: 'visible', timeout: 8_000 });
+    const loading = await inspectGeometry(page);
+    await waitForPage(page);
+    const stable = await inspectGeometry(page);
+    const loadingPage = loading.containers.page?.bounding_box;
+    const stablePage = stable.containers.page?.bounding_box;
+    const loadingMain = loading.containers.main?.bounding_box;
+    const stableMain = stable.containers.main?.bounding_box;
+    const loadingSurface = loading.containers.loading_surface?.bounding_box;
+    const stableSurface = stable.containers.primary_surface?.bounding_box;
+    return {
+      target: { ...target, key: `${target.key}-loading-transition`, label: `${target.label} / 加载至稳态` },
+      viewport,
+      geometry: stable,
+      loading_geometry: loading,
+      checks: {
+        loading_state_captured: delayed && Boolean(loading.containers.loading_surface),
+        loading_page_axis_stable: boxAxisStable(loadingPage, stablePage),
+        loading_main_axis_stable: boxAxisStable(loadingMain, stableMain),
+        loading_primary_surface_axis_stable: boxAxisStable(loadingSurface, stableSurface),
+        loading_root_horizontal_overflow: loading.document.scroll_width - loading.document.client_width <= 1,
+        loading_silent_text_clipping: loading.silent_text_clips.length === 0,
+        loading_interactive_controls_reachable: loading.unreachable_controls.length === 0,
+      },
+    };
+  } finally {
+    await page.unroute('**/api/**', delayFirstDataRequest);
+  }
+}
+
 function relativePageUrl(page) {
   const current = new URL(page.url());
   return `${current.pathname}${current.search}`;
@@ -269,17 +360,18 @@ async function discoverFormRoutes(page, listRoute) {
   await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await waitForPage(page);
   const firstRecord = page.locator('.cell-primary-link:visible, .mobile-record-card:visible').first();
-  assert(await firstRecord.count(), 'runtime list did not expose a record link for form discovery');
+  if (!await firstRecord.count()) return { readonly: '', edit: '', create: '' };
   await firstRecord.click();
   await page.locator('[data-product-page-mode="form"]').waitFor({ state: 'visible', timeout: 45_000 });
   await page.locator('.product-form-loading-skeleton').waitFor({ state: 'detached', timeout: 45_000 }).catch(() => {});
   await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 45_000 });
   const readonly = relativePageUrl(page);
   let edit = '';
-  const editAction = page.getByRole('button', { name: /^编辑$/ }).first();
+  const editAction = page.locator('[data-form-mode-action="edit"]:visible').first();
   if (await editAction.count() && await editAction.isEnabled().catch(() => false)) {
     await editAction.click();
-    await page.locator('[data-product-page-mode="form"] input:visible, [data-product-page-mode="form"] textarea:visible, [data-product-page-mode="form"] select:visible').first().waitFor({ state: 'visible', timeout: 45_000 });
+    await page.waitForURL((url) => url.pathname.startsWith('/f/'), { timeout: 45_000 });
+    await page.locator('[data-form-canvas] input:not([disabled]):visible, [data-form-canvas] textarea:not([disabled]):visible, [data-form-canvas] select:not([disabled]):visible').first().waitFor({ state: 'visible', timeout: 45_000 });
     edit = relativePageUrl(page);
   }
   await page.goto(`${BASE_URL}${listRoute}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -419,12 +511,38 @@ page.on('response', (response) => { if (response.status() >= 400) runtime.failed
 try {
   await login(page, navigation);
   const discovered = actionableNodes(navigation.nav());
-  const representative = discovered.find((row) => /一般合同/.test(row.path))
-    || discovered.find((row) => /施工合同/.test(row.path))
-    || discovered.find((row) => /项目台账/.test(row.path))
-    || discovered[0];
-  assert(representative?.route, 'no actionable route discovered from current system.init navigation');
-  const formRoutes = await discoverFormRoutes(page, representative.route);
+  const initPayload = navigation.payload();
+  const observedRoleCode = String(initPayload?.role_surface?.role_code || '').trim();
+  if (EXPECTED_ROLE_CODE) {
+    assert.equal(observedRoleCode, EXPECTED_ROLE_CODE, `unexpected runtime role surface for ${LOGIN}`);
+  }
+  const discoveredLabels = new Set(discovered.map((row) => row.label));
+  for (const requiredLabel of REQUIRED_NAV_LABELS) {
+    assert(discoveredLabels.has(requiredLabel), `required navigation entry missing for ${LOGIN}: ${requiredLabel}`);
+  }
+  const uniqueDiscoveredRoutes = [...new Map(discovered.map((row) => [row.route, row])).values()];
+  const rankedRoutes = [...uniqueDiscoveredRoutes].sort((left, right) => {
+    const priority = (row) => row.label === '项目台账' ? 0 : row.label === '一般合同（公司）' ? 1 : row.label === '施工合同' ? 2 : 3;
+    return priority(left) - priority(right);
+  });
+  assert(rankedRoutes[0]?.route, 'no actionable route discovered from current system.init navigation');
+  let representative = rankedRoutes[0];
+  let formRoutes = { readonly: '', edit: '', create: '' };
+  for (const candidate of rankedRoutes) {
+    process.stdout.write(`[frontend_geometry_scroll_audit] probing ${candidate.label} ${candidate.route}\n`);
+    const candidateForms = await discoverFormRoutes(page, candidate.route);
+    if (!candidateForms.readonly) continue;
+    representative = candidate;
+    formRoutes = candidateForms;
+    break;
+  }
+  assert(formRoutes.readonly, 'no record-bearing list was discovered for form-depth geometry acceptance');
+  for (const requiredMode of REQUIRED_FORM_MODES) {
+    assert(
+      ['readonly', 'edit', 'create'].includes(requiredMode) && formRoutes[requiredMode],
+      `required form mode is not reachable for ${LOGIN}: ${requiredMode}`,
+    );
+  }
   const targets = [
     { key: 'home', label: '首页', route: '/' },
     { key: 'runtime-list', label: representative.path, route: representative.route },
@@ -432,7 +550,7 @@ try {
     ...(formRoutes.create ? [{ key: 'runtime-form-create', label: `${representative.path} / 新建`, route: formRoutes.create }] : []),
     ...(formRoutes.edit ? [{ key: 'runtime-form-edit', label: `${representative.path} / 编辑`, route: formRoutes.edit }] : []),
   ];
-  const discoveredRouteTargets = [...new Map(discovered.map((row) => [row.route, row])).values()]
+  const discoveredRouteTargets = (FAST_MODE ? [] : uniqueDiscoveredRoutes)
     .filter((row) => row.route && !targets.some((target) => target.route === row.route))
     .map((row, index) => ({ key: `discovered-route-${index + 1}`, label: row.path, route: row.route }));
   const rows = [];
@@ -513,6 +631,10 @@ try {
       });
     }
   }
+  for (const viewport of VIEWPORTS.filter((item) => [1024, 390].includes(item.width))) {
+    rows.push(await loadingTransitionProof(page, targets.find((item) => item.key === 'runtime-list'), viewport));
+    rows.push(await loadingTransitionProof(page, targets.find((item) => item.key === 'runtime-form-readonly'), viewport));
+  }
   await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await waitForPage(page);
   const negativeFixtures = [await negativeFixtureProof(page)];
@@ -524,7 +646,7 @@ try {
     schema: 'frontend_geometry_scroll_audit.v1',
     source_sha: SOURCE_SHA,
     generated_at: new Date().toISOString(),
-    source: { environment: redactedEnvironmentEvidence(acceptance), served_identity: servedIdentity, navigation: 'authenticated system.init', discovered_actionable_routes: discovered.length, audited_discovered_routes: discoveredRouteTargets.length + 1, discovered_form_routes: formRoutes },
+    source: { environment: redactedEnvironmentEvidence(acceptance), served_identity: servedIdentity, navigation: 'authenticated system.init', observed_role_code: observedRoleCode, required_navigation_labels: REQUIRED_NAV_LABELS, required_form_modes: REQUIRED_FORM_MODES, discovered_actionable_routes: discovered.length, audited_discovered_routes: discoveredRouteTargets.length + 1, discovered_form_routes: formRoutes },
     rows,
     negative_fixtures: negativeFixtures,
     runtime,

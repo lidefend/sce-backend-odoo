@@ -351,11 +351,6 @@ export function isSuggestedInternalFormField(fieldKey: string, label = '') {
   if (['access_token', 'access_url', 'access_warning', 'website_message_ids'].includes(name)) return true;
   return [
     'last updated on',
-    'project manager',
-    '初始录入',
-    '录入时间',
-    '来源',
-    '协作成员',
     'collaborator',
   ].some((keyword) => text.includes(keyword));
 }

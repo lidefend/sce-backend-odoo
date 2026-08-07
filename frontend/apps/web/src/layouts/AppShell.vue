@@ -35,8 +35,8 @@
         <button type="button" :class="{ active: workspacePanelMode === 'company' }" title="切换公司" aria-label="公司空间：切换公司" @click="openWorkspacePanel('company')">
           <ScIcon name="building" :size="20" />
         </button>
-        <button type="button" :class="{ active: workspacePanelMode === 'project' }" :title="switchRecordContextLabel" :aria-label="`${recordContextSpaceLabel}：${switchRecordContextLabel}`" :disabled="!showRecordContext" @click="openWorkspacePanel('project')">
-          <ScIcon name="folder" :size="20" />
+        <button type="button" :class="{ active: workspacePanelMode === 'record' }" :title="switchRecordContextLabel" :aria-label="`${recordContextSpaceLabel}：${switchRecordContextLabel}`" :disabled="!showRecordContext" @click="openWorkspacePanel('record')">
+          <ScIcon :name="recordContextIcon" :size="20" />
         </button>
         <button
           v-if="businessConfigWorkbenchNode"
@@ -78,14 +78,14 @@
               <span>{{ company.company_name || `公司 ${company.company_id}` }}</span>
               <small v-if="company.company_id === selectedCompanyId">当前公司</small>
             </button>
-            <p v-if="!filteredCompanyOptions.length" class="project-empty">无匹配公司</p>
+            <p v-if="!filteredCompanyOptions.length" class="record-context-empty">无匹配公司</p>
           </div>
         </section>
 
-        <section v-else-if="workspacePanelMode === 'project'" class="workspace-scope-panel" aria-labelledby="project-space-title">
+        <section v-else-if="workspacePanelMode === 'record'" class="workspace-scope-panel" aria-labelledby="record-context-space-title">
           <header>
-            <div><small>{{ currentCompanyLabel || '全部公司' }}</small><h2 id="project-space-title">{{ recordContextSpaceLabel }}</h2></div>
-            <button v-if="selectedProject" class="workspace-scope-clear" type="button" @click="clearProjectSelection">{{ recordContextAllLabel }}</button>
+            <div><small>{{ currentCompanyLabel || '全部公司' }}</small><h2 id="record-context-space-title">{{ recordContextSpaceLabel }}</h2></div>
+            <button v-if="selectedRecordContext" class="workspace-scope-clear" type="button" @click="clearRecordContextSelection">{{ recordContextAllLabel }}</button>
           </header>
           <div v-if="operationOptions.length" class="business-scope-segments" role="group" :aria-label="recordContextLabel">
             <button
@@ -99,29 +99,29 @@
             >{{ operationScopeLabel(operation) }}</button>
           </div>
           <input
-            v-model="projectSearch"
+            v-model="recordContextSearch"
             class="workspace-scope-search sc-search"
             type="search"
-            :aria-label="projectSearchPlaceholder"
-            :placeholder="projectSearchPlaceholder"
-            @input="queueProjectSearch"
-            @keydown.enter.prevent="submitProjectSearch"
+            :aria-label="recordContextSearchPlaceholder"
+            :placeholder="recordContextSearchPlaceholder"
+            @input="queueRecordContextSearch"
+            @keydown.enter.prevent="submitRecordContextSearch"
           />
           <div class="workspace-scope-options">
             <button
-              v-for="option in projectOptions"
-              :key="`project-space-${option.id}`"
+              v-for="option in recordContextOptions"
+              :key="`record-context-space-${option.id}`"
               type="button"
-              :class="{ active: option.id === selectedProject?.id }"
-              :aria-current="option.id === selectedProject?.id ? 'true' : undefined"
-              @click="selectProject(option)"
+              :class="{ active: option.id === selectedRecordContext?.id }"
+              :aria-current="option.id === selectedRecordContext?.id ? 'true' : undefined"
+              @click="selectRecordContext(option)"
             >
-              <span>{{ projectOptionLabel(option) }}</span>
+              <span>{{ recordContextOptionLabel(option) }}</span>
               <small v-if="option.code">{{ option.code }}</small>
             </button>
-            <p v-if="projectSearching" class="project-empty">搜索中...</p>
-            <p v-else-if="projectError" class="project-empty">{{ projectError }}</p>
-            <p v-else-if="!projectOptions.length" class="project-empty">{{ recordContextEmptyText }}</p>
+            <p v-if="recordContextSearching" class="record-context-empty">搜索中...</p>
+            <p v-else-if="recordContextError" class="record-context-empty">{{ recordContextError }}</p>
+            <p v-else-if="!recordContextOptions.length" class="record-context-empty">{{ recordContextEmptyText }}</p>
           </div>
         </section>
 
@@ -216,14 +216,14 @@
           <p v-if="!useMinimalTopbar && topbarSubtitle" class="headline-subtitle">{{ topbarSubtitle }}</p>
         </div>
         <div class="topbar-actions">
-          <div v-if="showRecordContext" class="topbar-scope" :aria-label="`当前公司和${recordContextSubject}`">
+          <div v-if="showRecordContext && (mobileViewport || sidebarHidden)" class="topbar-scope" :aria-label="`当前公司和${recordContextSubject}`">
             <button type="button" :title="`切换公司：${currentCompanyLabel || '全部公司'}`" :aria-label="`切换公司：${currentCompanyLabel || '全部公司'}`" @click="openWorkspacePanel('company')">
               <ScIcon name="building" :size="16" />
               <span class="topbar-scope-label">{{ currentCompanyLabel || '全部公司' }}</span>
             </button>
-            <button type="button" :title="`${switchRecordContextLabel}：${currentProjectLabel}`" :aria-label="`${switchRecordContextLabel}：${currentProjectLabel}`" @click="openWorkspacePanel('project')">
-              <ScIcon name="project" :size="16" />
-              <span class="topbar-scope-label">{{ currentProjectLabel }}</span>
+            <button type="button" :title="`${switchRecordContextLabel}：${currentRecordContextLabel}`" :aria-label="`${switchRecordContextLabel}：${currentRecordContextLabel}`" @click="openWorkspacePanel('record')">
+              <ScIcon :name="recordContextIcon" :size="16" />
+              <span class="topbar-scope-label">{{ currentRecordContextLabel }}</span>
             </button>
           </div>
           <div class="topbar-account" @click.stop>
@@ -407,7 +407,7 @@ type PublishedApp = {
   category: string;
   badges: Record<string, unknown>;
 };
-type WorkspacePanelMode = 'navigation' | 'company' | 'project';
+type WorkspacePanelMode = 'navigation' | 'company' | 'record';
 const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
 const SIDEBAR_HIDDEN_STORAGE_KEY = 'sc_shell_sidebar_hidden';
 
@@ -454,17 +454,17 @@ const roleContextPanel = ref<HTMLElement | null>(null);
 const workspacePanelMode = ref<WorkspacePanelMode>('navigation');
 const companySearch = ref('');
 const roleContextOpen = ref(false);
-const projectSearch = ref('');
-const projectSearching = ref(false);
-const projectError = ref('');
+const recordContextSearch = ref('');
+const recordContextSearching = ref(false);
+const recordContextError = ref('');
 const appCatalog = ref<PublishedApp[]>([]);
 const appCatalogLoading = ref(false);
 const appCatalogError = ref('');
 const openingAppId = ref('');
-let projectSearchTimer: ReturnType<typeof setTimeout> | null = null;
+let recordContextSearchTimer: ReturnType<typeof setTimeout> | null = null;
 let scopeRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 let mobileMediaQuery: MediaQueryList | null = null;
-let projectSearchRequestSequence = 0;
+let recordContextSearchRequestSequence = 0;
 let appCatalogRequestSequence = 0;
 
 const menuTree = computed(() => session.menuTree);
@@ -535,8 +535,8 @@ const recordContextReasonCode = computed(() => String(recordContext.value?.reaso
 const showRecordContext = computed(() =>
   recordContextEnabled.value || recordContextReasonCode.value !== 'RECORD_CONTEXT_MODEL_NOT_INSTALLED'
 );
-const selectedProject = computed(() => recordContext.value?.selected ?? null);
-const projectOptions = computed(() => recordContext.value?.options ?? []);
+const selectedRecordContext = computed(() => recordContext.value?.selected ?? null);
+const recordContextOptions = computed(() => recordContext.value?.options ?? []);
 const companyOptions = computed(() => recordContext.value?.company_options ?? []);
 const filteredCompanyOptions = computed(() => {
   const keyword = companySearch.value.trim().toLowerCase();
@@ -547,7 +547,7 @@ const filteredCompanyOptions = computed(() => {
 });
 const operationOptions = computed(() => recordContext.value?.operation_options ?? []);
 const selectedCompanyId = computed(() =>
-  Number(recordContext.value?.company_id || selectedProject.value?.company_id || 0) || 0,
+  Number(recordContext.value?.company_id || selectedRecordContext.value?.company_id || 0) || 0,
 );
 const selectedOperationStrategy = computed(() =>
   String(recordContext.value?.operation_strategy || '').trim(),
@@ -560,15 +560,16 @@ const recordContextSpaceLabel = computed(() => `${recordContextSubject.value}空
 const switchRecordContextLabel = computed(() => `切换${recordContextSubject.value}`);
 const recordContextAllLabel = computed(() => String(recordContext.value?.selector?.all_label || '全部').trim() || '全部');
 const recordContextEmptyText = computed(() => `无匹配${recordContextSubject.value}`);
-const currentProjectLabel = computed(() => {
+const recordContextIcon = computed(() => String(recordContext.value?.selector?.icon || 'folder').trim() || 'folder');
+const currentRecordContextLabel = computed(() => {
   if (!recordContextEnabled.value) {
     return recordContext.value?.message || '未启用';
   }
-  const selected = selectedProject.value;
+  const selected = selectedRecordContext.value;
   if (!selected) return recordContextAllLabel.value;
-  return projectNameLabel(selected);
+  return recordContextNameLabel(selected);
 });
-const projectSearchPlaceholder = computed(() =>
+const recordContextSearchPlaceholder = computed(() =>
   String(recordContext.value?.selector?.placeholder || `搜索${recordContextSubject.value}名称`).trim()
     || `搜索${recordContextSubject.value}名称`,
 );
@@ -692,14 +693,14 @@ function normalizeDeliveryText(input: string) {
   return source.replace(/\s*\(\d+\)\s*$/g, '');
 }
 
-function projectOptionLabel(option: RecordContextOption | null | undefined) {
+function recordContextOptionLabel(option: RecordContextOption | null | undefined) {
   if (!option) return '';
-  const label = projectNameLabel(option);
+  const label = recordContextNameLabel(option);
   const scope = String(option.operation_strategy_label || option.operation_strategy || '').trim();
   return scope ? `${label} · ${scope}` : label;
 }
 
-function projectNameLabel(option: RecordContextOption | null | undefined) {
+function recordContextNameLabel(option: RecordContextOption | null | undefined) {
   if (!option) return '';
   return String(option.display_name || option.name || `记录 ${option.id}`).trim();
 }
@@ -820,43 +821,43 @@ async function openPublishedApp(app: PublishedApp) {
   }
 }
 
-async function loadProjectOptions() {
+async function loadRecordContextOptions() {
   if (!recordContextEnabled.value) return;
-  const requestSequence = ++projectSearchRequestSequence;
-  projectSearching.value = true;
-  projectError.value = '';
+  const requestSequence = ++recordContextSearchRequestSequence;
+  recordContextSearching.value = true;
+  recordContextError.value = '';
   try {
-    await session.searchRecordContext(projectSearch.value);
+    await session.searchRecordContext(recordContextSearch.value);
   } catch (err) {
-    if (requestSequence === projectSearchRequestSequence) {
-      projectError.value = err instanceof Error ? err.message : '记录搜索失败';
+    if (requestSequence === recordContextSearchRequestSequence) {
+      recordContextError.value = err instanceof Error ? err.message : '记录搜索失败';
     }
   } finally {
-    if (requestSequence === projectSearchRequestSequence) projectSearching.value = false;
+    if (requestSequence === recordContextSearchRequestSequence) recordContextSearching.value = false;
   }
 }
 
-function queueProjectSearch() {
-  if (projectSearchTimer) {
-    clearTimeout(projectSearchTimer);
+function queueRecordContextSearch() {
+  if (recordContextSearchTimer) {
+    clearTimeout(recordContextSearchTimer);
   }
-  projectSearchTimer = setTimeout(() => {
-    projectSearchTimer = null;
-    void loadProjectOptions();
+  recordContextSearchTimer = setTimeout(() => {
+    recordContextSearchTimer = null;
+    void loadRecordContextOptions();
   }, 260);
 }
 
-async function submitProjectSearch(event: KeyboardEvent) {
+async function submitRecordContextSearch(event: KeyboardEvent) {
   if (event.isComposing) return;
   const target = event.currentTarget;
   if (target instanceof HTMLInputElement) {
-    projectSearch.value = target.value;
+    recordContextSearch.value = target.value;
   }
-  if (projectSearchTimer) {
-    clearTimeout(projectSearchTimer);
-    projectSearchTimer = null;
+  if (recordContextSearchTimer) {
+    clearTimeout(recordContextSearchTimer);
+    recordContextSearchTimer = null;
   }
-  await loadProjectOptions();
+  await loadRecordContextOptions();
 }
 
 async function openWorkspacePanel(mode: WorkspacePanelMode) {
@@ -868,18 +869,18 @@ async function openWorkspacePanel(mode: WorkspacePanelMode) {
     persistSidebarHidden(false);
   }
   if (mode === 'company') companySearch.value = '';
-  if (mode === 'project' && recordContextEnabled.value) {
-    projectSearch.value = '';
-    await loadProjectOptions();
+  if (mode === 'record' && recordContextEnabled.value) {
+    recordContextSearch.value = '';
+    await loadRecordContextOptions();
   }
 }
 
-async function selectProject(option: RecordContextOption) {
-  const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
-  const nextProjectId = Number(option?.id || 0) || 0;
-  if (previousProjectId === nextProjectId) return;
+async function selectRecordContext(option: RecordContextOption) {
+  const previousRecordContextId = Number(selectedRecordContext.value?.id || 0) || 0;
+  const nextRecordContextId = Number(option?.id || 0) || 0;
+  if (previousRecordContextId === nextRecordContextId) return;
   await session.selectRecordContext(option);
-  emitRecordContextChanged(previousProjectId);
+  emitRecordContextChanged(previousRecordContextId);
   workspacePanelMode.value = 'navigation';
 }
 
@@ -890,7 +891,7 @@ async function selectCompanyScope(companyIdValue: number) {
     workspacePanelMode.value = 'navigation';
     return;
   }
-  const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
+  const previousRecordContextId = Number(selectedRecordContext.value?.id || 0) || 0;
   const applied = await session.selectBusinessScope({
     company_id: companyId,
     operation_strategy: selectedOperationStrategy.value,
@@ -898,14 +899,14 @@ async function selectCompanyScope(companyIdValue: number) {
   if (applied === false) return;
   workspacePanelMode.value = 'navigation';
   await nextTick();
-  scheduleScopeContextChanged(previousProjectId);
+  scheduleScopeContextChanged(previousRecordContextId);
 }
 
 async function changeOperationScope(operationStrategy: string) {
   cancelScheduledScopeRefresh();
   const normalized = String(operationStrategy || '').trim();
   if (normalized === selectedOperationStrategy.value) return;
-  const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
+  const previousRecordContextId = Number(selectedRecordContext.value?.id || 0) || 0;
   const applied = await session.selectBusinessScope({
     company_id: selectedCompanyId.value || null,
     operation_strategy: normalized,
@@ -913,14 +914,14 @@ async function changeOperationScope(operationStrategy: string) {
   if (applied === false) return;
   workspacePanelMode.value = 'navigation';
   await nextTick();
-  scheduleScopeContextChanged(previousProjectId);
+  scheduleScopeContextChanged(previousRecordContextId);
 }
 
-async function clearProjectSelection() {
-  const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
-  if (!previousProjectId) return;
+async function clearRecordContextSelection() {
+  const previousRecordContextId = Number(selectedRecordContext.value?.id || 0) || 0;
+  if (!previousRecordContextId) return;
   await session.selectRecordContext(null);
-  emitRecordContextChanged(previousProjectId);
+  emitRecordContextChanged(previousRecordContextId);
   workspacePanelMode.value = 'navigation';
 }
 
@@ -1201,16 +1202,16 @@ function handleTraceUpdate() {
   suggestedActionStamp.value = Date.now();
 }
 
-function closeProjectMenu() {
+function closeRecordContextMenu() {
   roleContextOpen.value = false;
 }
 
-function emitRecordContextChanged(previousProjectId = 0, scopeChanged = false) {
+function emitRecordContextChanged(previousRecordContextId = 0, scopeChanged = false) {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent(RECORD_CONTEXT_CHANGED_EVENT, {
     detail: {
-      previous_project_id: previousProjectId || null,
-      selected_project_id: selectedProject.value?.id || null,
+      previous_record_context_id: previousRecordContextId || null,
+      selected_record_context_id: selectedRecordContext.value?.id || null,
       scope_changed: scopeChanged,
     },
   }));
@@ -1222,7 +1223,7 @@ function cancelScheduledScopeRefresh() {
   scopeRefreshTimer = null;
 }
 
-function scheduleScopeContextChanged(previousProjectId = 0) {
+function scheduleScopeContextChanged(previousRecordContextId = 0) {
   cancelScheduledScopeRefresh();
   // A scope switch invalidates the current page, but a rapid sequence must not
   // start one obsolete reload per intermediate company. Coalescing the route
@@ -1230,7 +1231,7 @@ function scheduleScopeContextChanged(previousProjectId = 0) {
   // immediate without changing the emitted event contract.
   scopeRefreshTimer = setTimeout(() => {
     scopeRefreshTimer = null;
-    emitRecordContextChanged(previousProjectId, true);
+    emitRecordContextChanged(previousRecordContextId, true);
   }, 500);
 }
 
@@ -1282,7 +1283,7 @@ onMounted(() => {
   mobileMediaQuery.addEventListener('change', syncMobileViewport);
   window.addEventListener('keydown', handleShellEscape);
   window.addEventListener(getTraceUpdateEventName(), handleTraceUpdate as (event: Event) => void);
-  window.addEventListener('click', closeProjectMenu);
+  window.addEventListener('click', closeRecordContextMenu);
   handleTraceUpdate();
 });
 
@@ -1299,10 +1300,10 @@ onUnmounted(() => {
   mobileMediaQuery = null;
   window.removeEventListener('keydown', handleShellEscape);
   window.removeEventListener(getTraceUpdateEventName(), handleTraceUpdate as (event: Event) => void);
-  window.removeEventListener('click', closeProjectMenu);
-  if (projectSearchTimer) {
-    clearTimeout(projectSearchTimer);
-    projectSearchTimer = null;
+  window.removeEventListener('click', closeRecordContextMenu);
+  if (recordContextSearchTimer) {
+    clearTimeout(recordContextSearchTimer);
+    recordContextSearchTimer = null;
   }
   cancelScheduledScopeRefresh();
 });
@@ -1432,7 +1433,7 @@ function handleSelect(node: NavNode) {
   };
   const scope = {
     companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
-    projectId: Number(session.recordContext?.selected?.id || 0) || null,
+    selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
   };
   if (!routeAuthorityContextAllowed(selection.authority, menuQuery as Record<string, unknown>, scope)) return;
   if (selection.targetKind === 'entry_target' && selection.entryTarget) {

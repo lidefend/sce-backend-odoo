@@ -66,17 +66,23 @@ export function findReleasedNavigationTargetByMenuXmlid(nav, menuXmlid) {
 
 export function captureReleasedNavigation(page) {
   let current = [];
+  let currentPayload = {};
   page.on('response', async (response) => {
     if (!response.url().includes('/api/v1/intent')) return;
     try {
       const request = JSON.parse(response.request().postData() || '{}');
       if (request?.intent !== SYSTEM_INIT_INTENT || response.status() >= 400) return;
-      const nav = navigationFromPayload(await response.json());
-      if (nav.length) current = nav;
+      const payload = await response.json();
+      const nav = navigationFromPayload(payload);
+      if (nav.length) {
+        current = nav;
+        currentPayload = payload?.result || payload?.data || payload || {};
+      }
     } catch {}
   });
   return {
     nav: () => current,
+    payload: () => currentPayload,
     async target(actionXmlid, timeoutMs = 45000) {
       const started = Date.now();
       while (Date.now() - started < timeoutMs) {

@@ -122,6 +122,17 @@ class IdentityResolver:
                 explicit_hits[role] = hits
         if explicit_hits:
             surface_roles = [role for role in self._role_precedence if role in explicit_hits]
+            dominant_role = next(
+                (
+                    role
+                    for role in surface_roles
+                    if bool((self._role_surface_map.get(role) or {}).get("exclusive_surface"))
+                ),
+                "",
+            )
+            if dominant_role:
+                surface_roles = [dominant_role]
+                explicit_hits = {dominant_role: explicit_hits[dominant_role]}
             role_codes = [
                 role for role in surface_roles
                 if (self._role_surface_map.get(role) or {}).get("identity_role", True) is not False

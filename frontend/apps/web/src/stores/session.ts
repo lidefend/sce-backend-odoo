@@ -479,6 +479,7 @@ function normalizeRecordContext(raw: unknown): RecordContextContract | null {
       label: asText(selector.label),
       all_label: asText(selector.all_label),
       placeholder: asText(selector.placeholder),
+      icon: asText(selector.icon),
     } : undefined,
     persistence: Object.keys(persistence).length ? {
       scope: asText(persistence.scope),
@@ -1215,7 +1216,7 @@ export const useSessionStore = defineStore('session', {
       }
       const run = (async () => {
       // Every authoritative bootstrap starts fail-closed. This covers login,
-      // company/project/role transitions and policy publish/rollback refreshes.
+      // Company/record-context/role transitions and policy publish/rollback refreshes.
       this.isReady = false;
       this.routeAuthority = null;
       this.menuTree = [];

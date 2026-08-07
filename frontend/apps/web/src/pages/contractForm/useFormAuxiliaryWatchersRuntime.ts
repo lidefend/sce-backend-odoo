@@ -68,11 +68,11 @@ export function useFormAuxiliaryWatchersRuntime(params: {
       model: params.modelName(),
       recordId: params.recordId(),
       collaborationReady: params.collaborationReady(),
-      projectIntake: params.isIntake(),
+      intakeMode: params.isIntake(),
     }),
     (state) => {
       if (!params.isActive()) return;
-      if (state.projectIntake || !state.model || !state.recordId || !state.collaborationReady) return;
+      if (state.intakeMode || !state.model || !state.recordId || !state.collaborationReady) return;
       const key = `${state.model}:${state.recordId}`;
       if (params.nativeChatterAutoLoadKey.value === key || params.chatterLoading()) return;
       params.nativeChatterAutoLoadKey.value = key;

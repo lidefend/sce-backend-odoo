@@ -2137,6 +2137,33 @@ class TestMenuConfigurationAudit(unittest.TestCase):
         self.assertEqual(stats["hidden_count"], 0)
         self.assertTrue(stats["config_only"])
 
+    def test_runtime_overlay_full_navigation_group_bypasses_config_only_pruning(self):
+        module = _load_policy_model()
+        company = types.SimpleNamespace(id=7)
+        user = _User([])
+        user.has_group = lambda xmlid: xmlid == "extension.group_business_full"
+        env = _Env({}, company=company, user=user)
+        policy_model = object.__new__(module.UiMenuConfigPolicy)
+        policy_model.env = env
+        policy_model._runtime_menu_config_source_for_user = lambda user=None: ({}, "ui.menu.config.policy")
+        original_hook = module.call_extension_hook_first
+        module.call_extension_hook_first = lambda _env, hook_name, *_args, **_kwargs: (
+            ["extension.group_business_full"]
+            if hook_name == "smart_core_menu_config_only_exempt_group_xmlids"
+            else None
+        )
+        nav = {
+            "tree": [{"menu_id": 291, "name": "业务根", "children": []}],
+            "flat": [{"menu_id": 291, "name": "业务根"}],
+        }
+        try:
+            overlaid, stats = policy_model.apply_runtime_overlay(nav, user=user)
+        finally:
+            module.call_extension_hook_first = original_hook
+
+        self.assertFalse(stats["config_only"])
+        self.assertEqual(overlaid, nav)
+
     def test_runtime_overlay_config_only_recovers_config_center_product_baseline(self):
         module = _load_policy_model()
         module.call_extension_hook_first = _config_center_product_baseline_menu_xmlids_hook

@@ -114,7 +114,11 @@ async function inspectScenario(page, capture, input) {
   }
   const beforeRefresh = await identitySnapshot(page);
   requireCheck(beforeRefresh.heading === input.expectedTitle, `${input.id}: heading mismatch ${beforeRefresh.heading}`);
-  requireCheck(beforeRefresh.document_title === `${input.expectedTitle} - 智能施工企业管理平台`, `${input.id}: document title mismatch`);
+  requireCheck(
+    beforeRefresh.document_title.startsWith(`${input.expectedTitle} - `)
+      && beforeRefresh.document_title.length > `${input.expectedTitle} - `.length,
+    `${input.id}: document title mismatch`,
+  );
   requireCheck(beforeRefresh.identity_source === input.expectedSource, `${input.id}: source mismatch ${beforeRefresh.identity_source}`);
   requireCheck(beforeRefresh.breadcrumbs.length > 0, `${input.id}: breadcrumbs missing`);
   requireCheck(beforeRefresh.breadcrumbs.at(-1) === input.expectedTitle, `${input.id}: current breadcrumb mismatch`);

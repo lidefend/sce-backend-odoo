@@ -63,7 +63,7 @@ async function logout(page) {
 async function openMyWork(page) {
   await page.goto(`${BASE_URL}/my-work`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('.product-work').waitFor({ timeout: 45000 });
-  check((await page.title()).endsWith(' - 智能施工企业管理平台'), `My Work document title invalid: ${await page.title()}`);
+  check((await page.title()).startsWith('我的工作 - '), `My Work document title invalid: ${await page.title()}`);
 }
 
 async function selectCompany(page, companyName) {

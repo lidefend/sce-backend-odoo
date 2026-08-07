@@ -46,7 +46,7 @@ function assert(value, label) {
 }
 
 function main() {
-  const { resolveProductPageIdentity, isTechnicalPageIdentity } = loadIdentityResolver();
+  const { resolveProductPageIdentity, isTechnicalPageIdentity, PRODUCT_APP_TITLE } = loadIdentityResolver();
   const resolve = resolveProductPageIdentity;
 
   equal(resolve({ kind: 'list', actionName: '我的付款申请', menuName: '付款申请', modelLabel: '付款申请单' }).title, '我的付款申请', 'action outranks menu and model');
@@ -79,7 +79,7 @@ function main() {
   assert(isTechnicalPageIdentity('合同 #12'), 'hash id detection');
   assert(isTechnicalPageIdentity('undefined'), 'undefined detection');
   assert(!isTechnicalPageIdentity('FE-A-PR-001'), 'business identifier accepted');
-  assert(resolve({ kind: 'list', actionName: '结算管理' }).documentTitle === '结算管理 - 智能施工企业管理平台', 'document title contract');
+  assert(resolve({ kind: 'list', actionName: '结算管理' }).documentTitle === `结算管理 - ${PRODUCT_APP_TITLE}`, 'document title contract');
 
   console.log('[frontend_page_identity_smoke] PASS assertions=23');
 }

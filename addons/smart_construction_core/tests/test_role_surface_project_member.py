@@ -66,6 +66,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
     def test_role_matrix_uses_authoritative_groups(self):
         resolver = self._resolver()
         matrix = {
+            "business_full": {"smart_construction_core.group_sc_business_full"},
             "project_member": {"smart_construction_core.group_sc_cap_project_read"},
             "finance": {"smart_construction_core.group_sc_role_finance_manager"},
             "pm": {"smart_construction_core.group_sc_role_project_manager", "smart_construction_core.group_sc_cap_project_read"},
@@ -83,6 +84,13 @@ class TestProjectMemberRoleSurface(TransactionCase):
             resolver.resolve_role_code({"base.group_system"}),
             "restricted",
         )
+        role_codes, evidence = resolver.resolve_role_codes_with_evidence({
+            "smart_construction_core.group_sc_business_full",
+            "smart_construction_core.group_sc_cap_business_config_admin",
+            "smart_construction_core.group_sc_cap_project_manager",
+        })
+        self.assertEqual(role_codes, ["business_full"])
+        self.assertEqual(evidence["surface_roles"], ["business_full"])
 
     def test_formal_role_surface_uses_authoritative_product_label_and_home(self):
         resolver = self._resolver()

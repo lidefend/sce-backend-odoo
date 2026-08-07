@@ -62,6 +62,25 @@ RULES: tuple[tuple[str, re.Pattern[str], str], ...] = (
         "行业标题、说明和回退文案必须来自后端契约。",
     ),
     (
+        "industry_regex_inference",
+        re.compile(r"/(?:[^/\\\r\n]|\\.)*(?:项目|合同|施工|付款|结算|财务|经营|材料|供应商|客户)(?:[^/\\\r\n]|\\.)*/[a-z]*"),
+        "生产前端不得通过行业词汇正则推断字段语义或交互。",
+    ),
+    (
+        "industry_text_anywhere",
+        re.compile(r"项目|合同|施工|付款|结算|财务|经营|材料|供应商|客户"),
+        "生产前端源码不得携带行业文案；展示文案必须由后端契约提供。",
+    ),
+    (
+        "industry_behavior_identifier",
+        re.compile(
+            r"\b(?:projectCreateMode|projectIntake|projectId|selectedProject|resolveProject|"
+            r"open_projects?|project_code|contract_no|project_query|record_project_field)\b|"
+            r"project\.management|projects\.dashboard"
+        ),
+        "生产前端不得保留按行业对象命名的分支、适配器或上下文参数。",
+    ),
+    (
         "business_field_inference",
         re.compile(
             r"\b(?:project_id|contract_id|payment_id|settlement_id|project_manager_id|project_owner_id)\b"
@@ -94,7 +113,7 @@ def source_files() -> list[Path]:
     return sorted(
         path
         for path in SOURCE_ROOT.rglob("*")
-        if path.is_file() and path.suffix in {".ts", ".vue"} and not path.name.endswith(".d.ts")
+        if path.is_file() and path.suffix in {".ts", ".vue", ".css"} and not path.name.endswith(".d.ts")
     )
 
 

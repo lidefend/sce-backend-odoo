@@ -188,9 +188,8 @@ export function resolveFormSceneReady(entry: SceneReadyEntry | null) {
   const actions = Array.isArray(row.actions) ? row.actions as Array<Record<string, unknown>> : [];
 
   const preferredAction = actions.find((item) => {
-    const key = asText(item.key).toLowerCase();
     const tier = asText(item.tier).toLowerCase();
-    return tier === 'primary' || key === 'submit_intake' || key === 'create_project';
+    return tier === 'primary';
   }) || actions[0] || {};
   const preferredTarget = asDict(asDict(preferredAction).target);
 

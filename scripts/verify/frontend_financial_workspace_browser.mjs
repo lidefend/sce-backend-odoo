@@ -117,7 +117,7 @@ async function assertIdentity(page, expectedFragment) {
   const title = await page.title();
   const crumbs = (await page.locator('.breadcrumb .crumb').allTextContents()).join(' / ');
   check(heading.includes(expectedFragment), `heading lacks ${expectedFragment}: ${heading}`);
-  check(title.includes(expectedFragment) && title.endsWith(' - 智能施工企业管理平台'), `document title mismatch: ${title}`);
+  check(title.includes(expectedFragment) && /^.+ - .+$/.test(title), `document title mismatch: ${title}`);
   check(crumbs && !/(?:[a-z_]\w*\.)+[a-z_]\w*|#\d+/.test(crumbs), `technical breadcrumb: ${crumbs}`);
   return { heading, title, crumbs };
 }

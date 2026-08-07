@@ -28,11 +28,11 @@ def main() -> int:
     config_text = _read(CONFIG)
     db_context_text = _read(DB_CONTEXT)
     static_build_text = _read(FRONTEND_STATIC_BUILD)
-    if "const startupRootXmlid = String(import.meta.env.VITE_STARTUP_ROOT_XMLID ?? 'smart_construction_core.menu_sc_root').trim();" not in config_text:
-        errors.append("config.ts must expose VITE_STARTUP_ROOT_XMLID with the construction root only as compatibility default")
+    if "const startupRootXmlid = String(import.meta.env.VITE_STARTUP_ROOT_XMLID ?? '').trim();" not in config_text:
+        errors.append("config.ts must expose VITE_STARTUP_ROOT_XMLID without an industry-specific default")
     if "const localDevPinnedDb = isLocalDevRuntime && !runtimeDb && !localBlockedEnvDb ? 'sc_demo' : '';" not in config_text:
         errors.append("config.ts local dev fallback must not override explicit URL or VITE_ODOO_DB database")
-    if "const envDbLocked = envDb && String(import.meta.env.VITE_ODOO_DB_LOCKED ?? '1').trim() !== '0';" not in config_text:
+    if "runtimeOdooDbLocked" not in config_text or "Boolean(envDb && String(import.meta.env.VITE_ODOO_DB_LOCKED ?? '1').trim() !== '0')" not in config_text:
         errors.append("config.ts must expose VITE_ODOO_DB_LOCKED and lock explicit env db by default")
     if "const platformAdminDb = String(import.meta.env.VITE_PLATFORM_ADMIN_DB ?? '').trim();" not in config_text:
         errors.append("config.ts must expose VITE_PLATFORM_ADMIN_DB for platform-admin entry")
@@ -67,8 +67,8 @@ def main() -> int:
         errors.append("config.ts must prevent URL db from overriding locked VITE_ODOO_DB")
     if "startupRootXmlid," not in config_text:
         errors.append("config.ts must publish startupRootXmlid in runtime config")
-    if "const appTitle = String(import.meta.env.VITE_APP_TITLE ?? '智能施工企业管理平台').trim();" not in config_text:
-        errors.append("config.ts must expose VITE_APP_TITLE with the construction title only as compatibility default")
+    if "const appTitle = String(import.meta.env.VITE_APP_TITLE ?? '企业业务管理平台').trim();" not in config_text:
+        errors.append("config.ts must expose VITE_APP_TITLE with an industry-neutral compatibility default")
     if "appBrand," not in config_text:
         errors.append("config.ts must publish appBrand in runtime config")
     if "VITE_BUILD_MODE" not in static_build_text:
@@ -88,7 +88,6 @@ def main() -> int:
         "VITE_BRAND_SUBTITLE",
         "VITE_PRODUCT_BADGE",
         "VITE_SHELL_LOGO_TEXT",
-        "VITE_CAPABILITY_PROJECT",
         "VITE_VALUE_LINE_1",
     ):
         if env_key not in config_text:
@@ -133,8 +132,8 @@ def main() -> int:
         errors.append("LoginView.vue must refresh displayed locked db after route changes")
     if '<div class="logo">SC</div>' in shell_text:
         errors.append("AppShell.vue must not hardcode SC logo text")
-    if 'v-if="showRecordContext"' not in shell_text:
-        errors.append("AppShell.vue must hide unavailable record context instead of showing project-model install errors")
+    if "recordContextReasonCode.value !== 'RECORD_CONTEXT_MODEL_NOT_INSTALLED'" not in shell_text:
+        errors.append("AppShell.vue must hide unavailable record context instead of showing model-install errors")
     if "<span>当前项目：</span>" in shell_text:
         errors.append("AppShell.vue must not hardcode project context label")
     if "data-platform-app-catalog" not in shell_text or "app.catalog" not in shell_text or "app.open" not in shell_text:

@@ -390,6 +390,20 @@ class UiMenuConfigPolicy(models.Model):
         scene_target_resolver = MenuTargetInterpreterService(self.env)
 
         def config_only_enabled() -> bool:
+            exempt_group_xmlids = call_extension_hook_first(
+                self.env,
+                "smart_core_menu_config_only_exempt_group_xmlids",
+                self.env,
+            )
+            if isinstance(exempt_group_xmlids, (list, tuple, set, frozenset)):
+                effective_user = user or self.env.user
+                if any(
+                    isinstance(xmlid, str)
+                    and xmlid.strip()
+                    and effective_user.has_group(xmlid.strip())
+                    for xmlid in exempt_group_xmlids
+                ):
+                    return False
             try:
                 raw = self.env["ir.config_parameter"].sudo().get_param(
                     MENU_CONFIG_CONFIG_ONLY_PARAM,

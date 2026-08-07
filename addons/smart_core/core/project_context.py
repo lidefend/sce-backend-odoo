@@ -136,6 +136,7 @@ def _resolve_record_context_config(env, params: dict | None = None) -> dict[str,
         "source": "params" if explicit_model else "extension_hook" if hook_payload else "config" if str(cfg_model or "").strip() else "legacy_default",
         "label": str((hook_payload or {}).get("label") or "当前记录").strip(),
         "placeholder": str((hook_payload or {}).get("placeholder") or "搜索记录").strip(),
+        "icon": str((hook_payload or {}).get("icon") or "folder").strip(),
         "selected_id_param": str((hook_payload or {}).get("selected_id_param") or ("selected_id")).strip(),
     }
 
@@ -628,6 +629,7 @@ def build_record_context_contract(env, params: dict | None = None, *, search: st
         "limit": safe_limit,
         "label": context_config.get("label") or "当前记录",
         "placeholder": context_config.get("placeholder") or "搜索记录",
+        "icon": context_config.get("icon") or "folder",
     }
     base = {
         "contract_version": "v1",

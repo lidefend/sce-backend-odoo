@@ -73,6 +73,25 @@ ROLE_SURFACE_OVERRIDES = {
             "construction.人事行政",
         ],
     },
+    "business_full": {
+        "label": "业务全功能",
+        "exclusive_surface": True,
+        "landing_scene_candidates": ["workspace.home", "projects.list"],
+        "discover_installed_capabilities": True,
+        "menu_xmlids": [
+            "smart_construction_core.menu_sc_root",
+        ],
+        "primary_menu_xmlids": [],
+        "role_home_menu_xmlids": [],
+        "contextual_menu_xmlids": [],
+        "admin_menu_xmlids": [],
+        "denied_menu_xmlids": [],
+        "menu_blocklist_xmlids": [],
+        "action_blocklist_xmlids": [],
+        "model_blocklist": [],
+        "model_prefix_blocklist": [],
+        "group_key_blocklist": [],
+    },
     "business_config_admin": {
         "label": "业务配置管理员",
         "landing_scene_candidates": ["projects.list", "projects.ledger", "projects.intake"],
@@ -122,6 +141,7 @@ ROLE_SURFACE_OVERRIDES = {
     },
     "system_admin": {
         "label": "系统管理员",
+        "exclusive_surface": True,
         "landing_scene_candidates": ["workspace.home"],
         "discover_installed_capabilities": True,
         "system_configuration_visible": True,
@@ -241,10 +261,10 @@ ROLE_SURFACE_OVERRIDES = {
                 "context_requirements": {
                     "required_query": ["company_id", "project_id", "contract_id"],
                     "company_query": "company_id",
-                    "project_query": "project_id",
+                    "selected_record_query": "project_id",
                     "record_query": "contract_id",
                     "record_model": "construction.contract",
-                    "record_project_field": "project_id",
+                    "record_selected_context_field": "project_id",
                     "record_company_field": "company_id",
                 },
                 "source": "nav_policy_01.pm.contract_relation",
@@ -366,6 +386,9 @@ ROLE_GROUPS_EXPLICIT = {
     "system_admin": {
         "smart_core.group_smart_core_admin",
     },
+    "business_full": {
+        "smart_construction_core.group_sc_business_full",
+    },
     "owner": {
         "smart_construction_core.group_sc_role_owner",
     },
@@ -399,7 +422,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
     },
 }
 
-ROLE_PRECEDENCE = ("system_admin", "business_config_admin", "executive", "owner", "pm", "finance")
+ROLE_PRECEDENCE = ("system_admin", "business_full", "business_config_admin", "executive", "owner", "pm", "finance")
 
 NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",
@@ -530,6 +553,21 @@ LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
 BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
     "project.project": {
         "critical": ["name", "project_code", "lifecycle_state", "user_id"],
+        "roles": {
+            "name": "description",
+            "project_code": "identity",
+            "lifecycle_state": "status",
+            "user_id": "relation",
+            "owner_id": "relation",
+            "partner_id": "relation",
+            "sc_partner_display_name": "relation",
+            "operation_strategy": "status",
+            "contract_amount": "money",
+            "dashboard_progress_rate": "text",
+            "date_start": "date",
+            "date": "date",
+            "write_date": "date",
+        },
     },
     "sc.general.contract": {
         "critical": [
@@ -541,6 +579,16 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
             "amount_total",
             "project_id",
         ],
+        "roles": {
+            "name": "identity",
+            "contract_no": "identity",
+            "contract_name": "description",
+            "state": "status",
+            "contract_date": "date",
+            "amount_total": "money",
+            "project_id": "relation",
+            "partner_id": "relation",
+        },
     },
     "construction.contract": {
         "critical": [
@@ -551,8 +599,24 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
             "partner_id",
             "visible_contract_amount",
         ],
+        "roles": {
+            "name": "description",
+            "contract_no": "identity",
+            "state": "status",
+            "date_contract": "date",
+            "project_id": "relation",
+            "partner_id": "relation",
+            "visible_contract_amount": "money",
+        },
     },
     "res.partner": {
+        "roles": {
+            "name": "description",
+            "company_type": "status",
+            "state_id": "relation",
+            "country_id": "relation",
+            "user_id": "relation",
+        },
         "hidden": [
             "sc_business_role_label",
             "sc_business_fact_basis",

@@ -4,7 +4,7 @@
       <div><p class="eyebrow">当前草稿效果</p><h2>{{ deviceLabel }}</h2></div>
       <ScStatusBadge label="仅创建者可见" semantic="info" />
     </header>
-    <p class="muted">此预览读取临时变更集，不改变线上合同、版本或其他用户页面；令牌到期后自动失效。</p>
+    <p class="muted">此预览读取临时变更集，不改变线上配置契约、版本或其他用户页面；令牌到期后自动失效。</p>
     <div class="preview-devices" role="group" aria-label="预览设备">
       <ScButton v-for="option in devices" :key="option.value" :variant="preview.device === option.value ? 'primary' : 'ghost'" @click="$emit('device', option.value)">{{ option.label }}</ScButton>
       <ScButton variant="primary" :disabled="!runtimePreviewItem" @click="openRuntimePreview">打开草稿运行页</ScButton>

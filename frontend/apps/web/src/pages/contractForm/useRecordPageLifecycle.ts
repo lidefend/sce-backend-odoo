@@ -225,7 +225,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       initOne2manyRows,
     };
     if (!recordId.value) {
-      const defaults = resolveCreateDefaultsFromState({ contract: contract.value, routeQuery: route.query as Record<string, unknown>, selectedProject: session.recordContext?.selected || null, v2ContractStore: v2ContractStore.value });
+      const defaults = resolveCreateDefaultsFromState({ contract: contract.value, routeQuery: route.query as Record<string, unknown>, v2ContractStore: v2ContractStore.value });
       fieldNames.forEach((name) => {
         const descriptor = contract.value?.fields?.[name];
         applyIncomingFormFieldValue({

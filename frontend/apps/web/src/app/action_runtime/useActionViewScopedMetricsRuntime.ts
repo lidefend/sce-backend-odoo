@@ -4,9 +4,9 @@ type Dict = Record<string, unknown>;
 
 type UseActionViewScopedMetricsRuntimeOptions = {
   listRecordsRaw: (payload: Dict) => Promise<{ data: unknown }>;
-  resolveProjectStateCell: (row: Record<string, unknown>) => { text: string; tone: string };
+  resolveCollectionStateCell: (row: Record<string, unknown>) => { text: string; tone: string };
   isCompletedState: (stateText: string, tone: string) => boolean;
-  resolveProjectAmount: (row: Record<string, unknown>) => number;
+  resolveCollectionAmount: (row: Record<string, unknown>) => number;
   resolveCollectionMetricFields: () => string[];
 };
 
@@ -74,10 +74,10 @@ export function useActionViewScopedMetricsRuntime(options: UseActionViewScopedMe
         : [];
       if (!pageRows.length) break;
       pageRows.forEach((row) => {
-        const state = options.resolveProjectStateCell(row);
+        const state = options.resolveCollectionStateCell(row);
         if (state.tone === 'danger' || state.tone === 'warning') warning += 1;
         if (options.isCompletedState(String(state.text || ''), state.tone)) done += 1;
-        amount += options.resolveProjectAmount(row);
+        amount += options.resolveCollectionAmount(row);
       });
       const nextOffset = Number(payload.next_offset || 0);
       if (!Number.isFinite(nextOffset) || nextOffset <= offset) {

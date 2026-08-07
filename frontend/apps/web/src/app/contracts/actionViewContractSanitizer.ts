@@ -1,4 +1,4 @@
-const USER_SURFACE_NOISE_MARKERS = ['demo', 'showcase', 'smoke', 'internal', 'ir_cron', 'project_update_all_action'];
+const USER_SURFACE_NOISE_MARKERS = ['demo', 'showcase', 'smoke', 'internal', 'ir_cron'];
 
 export function hasActionViewNoiseMarker(...values: unknown[]): boolean {
   const merged = values

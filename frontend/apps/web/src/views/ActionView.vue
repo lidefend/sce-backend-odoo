@@ -660,7 +660,6 @@ import { useActionViewHudEntriesInputRuntime } from '../app/action_runtime/useAc
 import { useActionViewSurfaceIntentRuntime } from '../app/action_runtime/useActionViewSurfaceIntentRuntime';
 import { useActionViewAdvancedDisplayRuntime } from '../app/action_runtime/useActionViewAdvancedDisplayRuntime';
 import { useActionViewContentDisplayRuntime } from '../app/action_runtime/useActionViewContentDisplayRuntime';
-import { useActionViewSurfaceDisplayRuntime } from '../app/action_runtime/useActionViewSurfaceDisplayRuntime';
 import { useActionViewLoadRequestPhaseRuntime } from '../app/action_runtime/useActionViewLoadRequestPhaseRuntime';
 import { useActionViewLoadCatchPhaseRuntime } from '../app/action_runtime/useActionViewLoadCatchPhaseRuntime';
 import { useActionViewLoadSuccessDynamicInputRuntime } from '../app/action_runtime/useActionViewLoadSuccessDynamicInputRuntime';
@@ -868,7 +867,6 @@ import {
 } from '../app/contracts/unifiedPageContractV2';
 import {
   mapProjectionMetricItems,
-  resolveActionViewSurfaceKind,
 } from '../app/contracts/actionViewProjectionContract';
 import {
   hasActionViewNoiseMarker,
@@ -1568,15 +1566,7 @@ const kanbanFieldLabels = computed<Record<string, string>>(() => ({
   ...extractViewFieldLabels(actionContract.value, 'kanban'),
   ...(listProfile.value?.column_labels || {}),
 }));
-const {
-  sortLabel,
-} = useActionViewSurfaceDisplayRuntime({
-  sortValue,
-  strictContractMode,
-  strictSurfaceContract,
-  actionContract,
-  resolveActionViewSurfaceKind,
-});
+const sortLabel = computed(() => sortValue.value || 'id asc');
 const {
   subtitle,
   statusLabel,
@@ -1596,8 +1586,8 @@ const displaySortOptions = computed(() => {
 
 const {
   metricFields: resolveCollectionMetricFields,
-  resolveProjectStateCell,
-  resolveProjectAmount,
+  resolveCollectionStateCell,
+  resolveCollectionAmount,
   isCompletedState,
 } = useActionViewCollectionMetricRuntime({
   listProfile,
@@ -2292,9 +2282,9 @@ const {
   fetchCollectionScopeMetrics,
 } = useActionViewScopedMetricsRuntime({
   listRecordsRaw: listActionViewRecordsRaw,
-  resolveProjectStateCell,
+  resolveCollectionStateCell,
   isCompletedState,
-  resolveProjectAmount,
+  resolveCollectionAmount,
   resolveCollectionMetricFields,
 });
 

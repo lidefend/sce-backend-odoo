@@ -18,13 +18,8 @@ function formPrimaryFields(contract: BusinessMetadata): unknown[] {
 function primaryRecordName(contract: BusinessMetadata, formData: Record<string, unknown>): string {
   const fieldNames = [
     ...formPrimaryFields(contract),
+    'display_name',
     'name',
-    'code',
-    'number',
-    'reference',
-    'document_no',
-    'contract_no',
-    'project_code',
   ];
   for (const fieldName of Array.from(new Set(fieldNames))) {
     const normalizedFieldName = String(fieldName || '').trim();

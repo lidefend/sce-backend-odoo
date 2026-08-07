@@ -32,8 +32,6 @@ const DIRECT_ACTIONS = new Set<SuggestedActionKind>([
   'open_hidden',
   'open_scene_health',
   'open_scene_packages',
-  'open_projects_list',
-  'open_projects_board',
   'open_dashboard',
 ]);
 
@@ -156,7 +154,6 @@ export function canRunSuggestedAction(
   if (parsed.kind === 'open_scene') return Boolean(parsed.sceneKey);
   if (parsed.kind === 'open_menu') return Boolean(parsed.menuId);
   if (parsed.kind === 'open_action') return Boolean(parsed.actionId);
-  if (parsed.kind === 'open_project') return Boolean(parsed.projectId);
   if (ROUTE_ACTIONS.has(parsed.kind)) return Boolean(parsed.url && isSafeRelativePath(parsed.url));
   if (DIRECT_ACTIONS.has(parsed.kind)) return true;
   if (parsed.kind === 'copy_trace') return Boolean(String(options.traceId || '').trim());

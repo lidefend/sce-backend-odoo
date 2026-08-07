@@ -29,12 +29,8 @@ function normalized(input: unknown) {
 export function isListTemporalColumn(input: ColumnSemanticInput) {
   const type = normalized(input.type).toLowerCase();
   const role = normalized(input.cellRole).toLowerCase();
-  const field = normalized(input.field).toLowerCase();
-  const label = normalized(input.label);
   return ['date', 'datetime'].includes(type)
-    || ['date', 'datetime'].includes(role)
-    || /(?:^|_)(?:date|datetime|time|at)(?:_|$)/.test(field)
-    || /(?:日期|时间)$/.test(label);
+    || ['date', 'datetime'].includes(role);
 }
 
 export function formatListTemporalValue(value: unknown, input: ColumnSemanticInput) {
@@ -49,29 +45,12 @@ export function formatListTemporalValue(value: unknown, input: ColumnSemanticInp
 
 export function isListStatusColumn(input: ColumnSemanticInput) {
   const role = normalized(input.cellRole).toLowerCase();
-  const field = normalized(input.field).toLowerCase();
-  const label = normalized(input.label);
-  return role === 'status'
-    || /(?:^|_)(?:status|state)(?:_|$)/.test(field)
-    || /(?:状态|审批结果)$/.test(label);
-}
-
-export function resolveListStatusTone(value: unknown, label: unknown): ListStatusTone {
-  const text = `${normalized(value)} ${normalized(label)}`.toLowerCase();
-  if (/(?:驳回|拒绝|退回|失败|异常|reject|denied|fail|error)/.test(text)) return 'danger';
-  if (/(?:待审|待批|审批中|审核中|待提交|已提交|submit|pending|waiting|review)/.test(text)) return 'warning';
-  if (/(?:审核通过|审批通过|已批准|已完成|已生效|通过|完成|approved|validated|success|done)/.test(text)) return 'success';
-  if (/(?:处理中|执行中|进行中|running|progress|processing)/.test(text)) return 'info';
-  return 'neutral';
+  return role === 'status';
 }
 
 export function isListBusinessIdentifierColumn(input: ColumnSemanticInput) {
   const role = normalized(input.cellRole).toLowerCase();
-  const field = normalized(input.field).toLowerCase();
-  const label = normalized(input.label);
-  if (role === 'identity') return true;
-  return /(?:^|_)(?:document_no|number|code|name)(?:_|$)/.test(field)
-    || /(?:单据|合同|项目|申请|结算|发票|订单|计划).*(?:编号|单号)$/.test(label);
+  return role === 'identity';
 }
 
 export function presentListCell(input: CellPresentationInput) {
@@ -100,7 +79,7 @@ export function presentListCell(input: CellPresentationInput) {
   else text = attachmentText || temporalText || numericText || String(displayRaw);
   const toneKey = normalized(displayRaw);
   const tone = isListStatusColumn(column)
-    ? (toneByValue[toneKey] || resolveListStatusTone(toneKey, text))
+    ? (toneByValue[toneKey] || 'neutral')
     : 'neutral';
   return { text, tone };
 }

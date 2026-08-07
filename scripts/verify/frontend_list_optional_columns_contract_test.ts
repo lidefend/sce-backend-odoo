@@ -5,7 +5,11 @@ import {
   resolveEnabledListColumns,
   resolveResponsiveListColumns,
 } from '../../frontend/apps/web/src/pages/listPage/listColumnVisibility.ts';
-import { deriveListColumnWidth, listColumnAdaptiveFloor, listColumnSemanticTextRole } from '../../frontend/apps/web/src/pages/listPage/listColumnWidth.ts';
+import {
+  deriveListColumnWidth,
+  listColumnAdaptiveFloor,
+  resolveListColumnBudgetWidth,
+} from '../../frontend/apps/web/src/pages/listPage/listColumnWidth.ts';
 
 const columns = [
   { name: 'name', defaultVisible: true },
@@ -40,14 +44,22 @@ assert.match(listPageSource, /props\.selectionEnabled !== false/, 'selection mus
 assert.match(selectionExportSource, /ids: options\.ids/, 'selected-record export must send only the explicit selected ids');
 assert.match(selectionExportSource, /columnLabels:/, 'selected-record export must preserve governed business labels');
 
-assert.equal(listColumnSemanticTextRole({ field: 'contract_no', label: '合同编号' }), 'identity');
-assert.equal(listColumnSemanticTextRole({ field: 'contract_name', label: '合同名称' }), 'description');
 assert.equal(listColumnAdaptiveFloor('money'), 128, 'money columns must reserve enough width for business amounts and footer totals');
 assert.equal(listColumnAdaptiveFloor('description'), 176, 'business names must retain a readable non-truncating floor');
 assert.equal(
   deriveListColumnWidth({ label: '合同金额', type: 'monetary', role: 'money', values: [3665000] }),
   128,
   'derived money width must not shrink below the readable amount floor',
+);
+assert.equal(
+  resolveListColumnBudgetWidth({ customWidth: 0, derivedWidth: 184, role: 'text' }),
+  184,
+  'responsive selection must budget the same content-derived width used by the rendered column',
+);
+assert.equal(
+  resolveListColumnBudgetWidth({ customWidth: 112, derivedWidth: 184, role: 'text' }),
+  112,
+  'an explicit user column width must remain authoritative',
 );
 
 for (const client of ['windows-chromium', 'windows-edge', 'harmony-webview']) {
@@ -59,16 +71,16 @@ for (const client of ['windows-chromium', 'windows-edge', 'harmony-webview']) {
     responsiveCandidates: ['name', 'project_code', 'lifecycle_state'],
     capacity: 3,
   });
-  assert.equal(defaultDecision.visibleColumns.includes('user_id'), true, `${client}: default project owner must survive responsive capacity`);
+  assert.equal(defaultDecision.visibleColumns.includes('user_id'), false, `${client}: lower-priority critical columns must respect responsive capacity`);
   assert.equal(defaultDecision.visibleColumns.includes('manager_id'), false, `${client}: default-hidden project manager must not leak`);
-  assert.equal(defaultDecision.trace.find((row) => row.field === 'user_id')?.reasonCode, 'critical_contract');
+  assert.equal(defaultDecision.trace.find((row) => row.field === 'user_id')?.reasonCode, 'responsive_capacity');
 
   const managerEnabled = resolveResponsiveListColumns({
     enabledColumns: projectColumns,
     orderedColumns: projectColumns,
     criticalColumns,
     defaultVisibility: projectDefaults,
-    visibility: { manager_id: true },
+    visibility: { manager_id: true, owner_id: true, contract_amount: true, operation_strategy: true },
     responsiveCandidates: ['name', 'project_code', 'lifecycle_state'],
     capacity: 3,
   });

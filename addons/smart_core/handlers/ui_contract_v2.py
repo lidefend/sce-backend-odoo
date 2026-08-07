@@ -2475,6 +2475,27 @@ class UiContractV2Handler(BaseIntentHandler):
             for name in visibility_policy.get("critical", [])
             if str(name or "").strip()
         ]
+        allowed_cell_roles = {
+            "actions",
+            "date",
+            "description",
+            "favorite",
+            "identity",
+            "money",
+            "relation",
+            "status",
+            "text",
+        }
+        policy_cell_roles = {
+            str(name or "").strip(): str(role or "").strip().lower()
+            for name, role in (
+                visibility_policy.get("roles", {}).items()
+                if isinstance(visibility_policy.get("roles"), dict)
+                else []
+            )
+            if str(name or "").strip()
+            and str(role or "").strip().lower() in allowed_cell_roles
+        }
         if model_name and "ui.business.config.contract" in self.env:
             try:
                 direct_configs = self.env["ui.business.config.contract"]._effective_view_orchestration_contracts(
@@ -2660,6 +2681,11 @@ class UiContractV2Handler(BaseIntentHandler):
         derived_status_field = str(profile.get("status_field") or status_field or "").strip()
         if not derived_status_field:
             derived_status_field = next(
+                (name for name in columns if policy_cell_roles.get(name) == "status"),
+                "",
+            )
+        if not derived_status_field:
+            derived_status_field = next(
                 (
                     name
                     for name in columns
@@ -2737,6 +2763,11 @@ class UiContractV2Handler(BaseIntentHandler):
                     "string": labels.get(name) or label_for(name),
                     "type": schema_by_name.get(name, {}).get("type") or type_for(name) or "char",
                     "widget": schema_by_name.get(name, {}).get("widget") or type_for(name) or "char",
+                    **(
+                        {"cell_role": policy_cell_roles[name]}
+                        if name in policy_cell_roles
+                        else {}
+                    ),
                     **(
                         {"optional": "hide"}
                         if name in native_default_hidden or name in direct_orchestration_hidden or name in policy_default_hidden
