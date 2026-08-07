@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3514`
+- Scanned files: `3516`
 - Files requiring split plan: `39`
 - Files above warning threshold: `66`
 
@@ -96,8 +96,8 @@ Generated from repository source files. This report is informational during the 
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
+| 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 895 | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 895 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 892 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
@@ -206,7 +206,7 @@ Generated from repository source files. This report is informational during the 
 | 950 | warning | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 916 | warning | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
-| 905 | within_budget | XML data/view | `addons/smart_construction_core/views/core/material_acceptance_views.xml` |
+| 911 | warning | Python source | `scripts/ops/codex_agent_controller.py` |
 
 ## Interpretation
 

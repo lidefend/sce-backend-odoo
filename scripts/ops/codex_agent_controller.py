@@ -174,6 +174,7 @@ class OwnerCommand:
     decision_id: str = ""
     choice: str = ""
     sha: str = ""
+    source_branch: str = ""
 
 
 def parse_owner_command(body: str) -> OwnerCommand | None:
@@ -211,9 +212,20 @@ def parse_owner_command(body: str) -> OwnerCommand | None:
         )
     if action == "deploy":
         parts = remainder.split()
-        if len(parts) != 2 or parts[0] != "daily" or not FULL_SHA_RE.fullmatch(parts[1]):
-            raise CommandRejected("/agent deploy requires: daily <full-40-character-sha>")
-        return OwnerCommand(action="deploy_daily", sha=parts[1])
+        if len(parts) == 2 and parts[0] == "daily" and FULL_SHA_RE.fullmatch(parts[1]):
+            return OwnerCommand(action="deploy_daily", sha=parts[1], source_branch="main")
+        if (
+            len(parts) == 3
+            and parts[0] == "daily"
+            and ALLOWED_BRANCH_RE.fullmatch(parts[1])
+            and FULL_SHA_RE.fullmatch(parts[2])
+        ):
+            return OwnerCommand(
+                action="deploy_daily", source_branch=parts[1], sha=parts[2]
+            )
+        raise CommandRejected(
+            "/agent deploy requires: daily [<governed-source-branch>] <full-40-character-sha>"
+        )
     raise CommandRejected(f"unsupported command: {action}")
 
 
@@ -589,10 +601,14 @@ class Controller:
         self.launch(state, initial_prompt(command.argument, task_id))
 
     def start_daily_deploy(self, state: dict[str, Any], command: OwnerCommand, comment_id: int) -> None:
+        source_branch = command.source_branch or "main"
+        source_kind = "main" if source_branch == "main" else "candidate branch"
         task = (
-            f"Deploy exact main SHA {command.sha} to the daily development environment only. "
+            f"Deploy exact {source_kind} {source_branch} SHA {command.sha} "
+            "to the daily development environment only. "
             "Run all repository preflights, preserve sc_demo user data, use Makefile runtime targets, "
-            "perform real Playwright browser acceptance, and stop before any production action."
+            "record source branch and exact SHA, perform real Playwright browser acceptance, "
+            "and stop before merge-to-main or any production action."
         )
         self.start_task(state, OwnerCommand(action="start", argument=task), comment_id)
 

@@ -22,6 +22,7 @@ except ModuleNotFoundError:  # installed beside the bridge
 
 
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+ALLOWED_BRANCH_RE = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 DECISION_RE = re.compile(r"^decision-[0-9]{8}-[0-9]{3}$")
 MENTION_RE = re.compile(r"@_user_[0-9]+\s*")
 MAX_TEXT_CHARS = 12_000
@@ -70,8 +71,16 @@ def translate_command(text: str) -> str | None:
                 return f"/agent {action} {parts[0]} {parts[1]}"
             return None
     if value.startswith("部署日常"):
-        sha = value[4:].strip()
-        return f"/agent deploy daily {sha}" if FULL_SHA_RE.fullmatch(sha) else None
+        parts = value[4:].strip().split()
+        if len(parts) == 1 and FULL_SHA_RE.fullmatch(parts[0]):
+            return f"/agent deploy daily {parts[0]}"
+        if (
+            len(parts) == 2
+            and ALLOWED_BRANCH_RE.fullmatch(parts[0])
+            and FULL_SHA_RE.fullmatch(parts[1])
+        ):
+            return f"/agent deploy daily {parts[0]} {parts[1]}"
+        return None
     return None
 
 

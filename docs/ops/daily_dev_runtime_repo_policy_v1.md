@@ -2,25 +2,40 @@
 
 ## Purpose
 
-The daily development runtime repository is the deployable working tree for
-`ENV=dev`, `.env.dev`, and `DB_NAME=sc_demo`. It must stay aligned with
-`origin/main` so upgrades can be fast-forwarded and verified without preserving
-ad hoc local state.
+The daily development runtime repository is the deployable acceptance working
+tree for `ENV=dev`, `.env.dev`, and `DB_NAME=sc_demo`. It accepts either the
+authoritative `origin/main` identity or one explicitly approved governed branch
+candidate at an immutable full SHA. A candidate is deployed before merge so the
+owner can accept the real daily runtime; production authority remains `main`.
 
 ## Runtime Repository
 
 - Host alias: `sc-root`
 - Path: `/opt/projects/repos/sce-product-odoo`
-- Required branch: `main`
-- Required state: clean working tree, aligned with upstream
+- Main mode: branch `main`, clean and aligned with `origin/main`
+- Candidate mode: detached exact SHA with a matching
+  `refs/daily-candidates/<source-branch>` evidence ref
+- Candidate source branch: `feature/*`, `fix/*`, `refactor/*`, `audit/*`,
+  `release/*`, or `codex/*`
+- Required state: clean working tree and an explicitly declared deployment mode
 - Allowed operations: deploy, module upgrade, restart, read-only inspection
 - Forbidden operations: exploratory edits, replay output generation, migration
   asset generation, long-running validation that writes into the repository
 
-Before every upgrade or publish step, run:
+Before every main-mode upgrade or publish step, run:
 
 ```bash
 ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make verify.daily_dev.runtime_repo.clean
+```
+
+Before every candidate-mode upgrade or publish step, bind the exact source:
+
+```bash
+ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo \
+DAILY_DEV_DEPLOYMENT_MODE=candidate \
+DAILY_DEV_CANDIDATE_SOURCE_BRANCH=feature/example \
+DAILY_DEV_CANDIDATE_EXPECTED_SHA=<full-40-character-sha> \
+make verify.daily_dev.runtime_repo.clean
 ```
 
 This preflight also fails closed unless `smart_construction_custom` is
@@ -39,9 +54,33 @@ COMPOSE_FILES="-f docker-compose.yml -f docker-compose.customer-addons.yml" \
 make restart
 ```
 
-If the daily server cannot read GitHub smart HTTP, the approved fallback is an
-exact incremental Git bundle sent over the configured SSH host. It is allowed
-only after the candidate is merged to authoritative `origin/main`:
+If the daily server cannot read GitHub smart HTTP, a locally committed and
+validated governed branch can be sent as an exact verified Git bundle before
+merge:
+
+```bash
+CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC=SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE \
+make daily.runtime.candidate.bundle_sync \
+  DAILY_CANDIDATE_SOURCE_REPOSITORY=/absolute/path/to/topic-worktree \
+  DAILY_CANDIDATE_SOURCE_BRANCH=feature/example \
+  DAILY_CANDIDATE_EXPECTED_SHA=<candidate-full-sha> \
+  DAILY_CANDIDATE_EXPECTED_OLD_SHA=<current-daily-full-sha> \
+  DAILY_RUNTIME_SSH_HOST=sc-root
+```
+
+The server records the source under `refs/daily-candidates/`, checks out the
+candidate as detached HEAD, and does not update `main` or `origin/main`.
+The tool may run from the governance/main worktree while reading a separate
+clean topic worktree through `DAILY_CANDIDATE_SOURCE_REPOSITORY`; that source
+must have the authoritative GitHub `origin`, exact branch, and exact SHA.
+
+After owner acceptance, open or update the PR and merge through protected
+`main`. A later main-mode deployment replaces the candidate runtime. Candidate
+rejection returns to the previously recorded accepted SHA; it never rewrites
+the source branch or production state.
+
+For an already merged main commit, the existing incremental main bundle remains
+available:
 
 ```bash
 CONFIRM_DAILY_RUNTIME_BUNDLE_SYNC=SYNC_EXACT_DAILY_MAIN_SHA_WITH_BUNDLE \
@@ -51,7 +90,7 @@ make daily.runtime.main.bundle_sync \
   DAILY_RUNTIME_SSH_HOST=sc-root
 ```
 
-The fallback requires a clean governed local branch at the exact authoritative
+The main fallback requires a clean governed local branch at the exact authoritative
 `origin/main` SHA, a clean remote `main`, exact old and new SHAs, an incremental
 bundle digest match, and a fast-forward ancestry check. The local checkout does
 not need to be `main`, which may be reserved by another governed worktree. The
@@ -78,9 +117,17 @@ Generated outputs must stay outside the runtime repository, preferably under:
 - `/opt/projects/backups`
 - `/opt/projects/scratch`
 
-If a scratch result becomes product code, move it through the normal local
-branch, review, validation, merge, and deploy flow. Do not apply scratch
-changes directly to the runtime repository.
+If a scratch result becomes product code, move it to a governed branch and
+commit it before candidate deployment. Do not apply scratch changes directly
+to the runtime repository. The fixed flow is:
+
+```text
+governed branch local gates
+→ exact branch SHA on daily development
+→ owner acceptance
+→ PR review and merge to main
+→ production release process
+```
 
 ## Closeout Rule
 

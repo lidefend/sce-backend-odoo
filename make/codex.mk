@@ -462,12 +462,17 @@ verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m unittest scripts/ops/test_safe_worktree_create.py scripts/ops/test_safe_worktree_cleanup.py
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee
+.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee
 
 DAILY_RUNTIME_SSH_HOST ?= sc-root
 DAILY_RUNTIME_EXPECTED_SHA ?=
 DAILY_RUNTIME_EXPECTED_OLD_SHA ?=
 DAILY_RUNTIME_BUNDLE_SYNC_REPORT ?= .runtime/final-acceptance/daily-deployed/bundle-sync.json
+DAILY_CANDIDATE_SOURCE_BRANCH ?= $(shell git branch --show-current)
+DAILY_CANDIDATE_SOURCE_REPOSITORY ?= $(CURDIR)
+DAILY_CANDIDATE_EXPECTED_SHA ?= $(shell git rev-parse HEAD 2>/dev/null)
+DAILY_CANDIDATE_EXPECTED_OLD_SHA ?=
+DAILY_CANDIDATE_BUNDLE_SYNC_REPORT ?= .runtime/final-acceptance/daily-deployed/candidate-bundle-sync.json
 
 main.sync: guard.prod.forbid
 	@echo "[main.sync] checkout main + fast-forward pull"
@@ -485,6 +490,20 @@ daily.runtime.main.bundle_sync: guard.prod.forbid verify.daily.runtime.main.bund
 		--expected-old-sha "$(DAILY_RUNTIME_EXPECTED_OLD_SHA)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--report "$(DAILY_RUNTIME_BUNDLE_SYNC_REPORT)"
+
+verify.daily.runtime.candidate.bundle_sync: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_candidate_bundle_sync.py scripts/ops/test_daily_candidate_bundle_sync.py
+	@python3 scripts/ops/test_daily_candidate_bundle_sync.py
+
+daily.runtime.candidate.bundle_sync: guard.prod.forbid verify.daily.runtime.candidate.bundle_sync
+	@test "$${CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC:-}" = "SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE" || { echo "exact daily candidate bundle sync confirmation is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_candidate_bundle_sync.py \
+		--source-repository "$(DAILY_CANDIDATE_SOURCE_REPOSITORY)" \
+		--source-branch "$(DAILY_CANDIDATE_SOURCE_BRANCH)" \
+		--expected-sha "$(DAILY_CANDIDATE_EXPECTED_SHA)" \
+		--expected-old-sha "$(DAILY_CANDIDATE_EXPECTED_OLD_SHA)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--report "$(DAILY_CANDIDATE_BUNDLE_SYNC_REPORT)"
 
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh
