@@ -1,0 +1,81 @@
+{
+  "schema_version": "sce.frontend_product_stable_baseline.v1",
+  "formal_product_layer": "P0",
+  "baseline_sha": "074938d2bf9096b2258cbbdc8137c22c2dc979ca",
+  "runtime_chain": [
+    "native_view",
+    "normalized_semantic_contract",
+    "page_orchestration",
+    "shared_renderer",
+    "design_system_component"
+  ],
+  "viewports": [
+    { "width": 1920, "height": 1080, "depth": "deep" },
+    { "width": 1440, "height": 900, "depth": "all_routes" },
+    { "width": 1280, "height": 800, "depth": "deep" },
+    { "width": 1024, "height": 768, "depth": "deep" },
+    { "width": 768, "height": 1024, "depth": "deep" },
+    { "width": 390, "height": 844, "depth": "all_routes" }
+  ],
+  "page_templates": [
+    "home",
+    "collection_table",
+    "collection_card",
+    "readonly_form",
+    "create_edit_form",
+    "relation_dialog",
+    "one2many",
+    "collaboration",
+    "designer",
+    "loading",
+    "empty",
+    "error_forbidden"
+  ],
+  "representative_domains": [
+    "home_my_work",
+    "project_ledger",
+    "general_contract",
+    "construction_contract",
+    "construction_diary",
+    "plan_progress",
+    "partners",
+    "payments_receipts",
+    "materials"
+  ],
+  "zoom_percentages": [80, 100, 125, 150],
+  "zero_tolerance": {
+    "p0_issues": 0,
+    "p1_issues": 0,
+    "unregistered_exceptions": 0,
+    "production_frontend_industry_knowledge": 0,
+    "production_frontend_business_special_cases": 0,
+    "technical_field_titles": 0,
+    "default_hidden_field_leaks": 0,
+    "mojibake": 0,
+    "missing_icons": 0,
+    "console_errors": 0,
+    "unexpected_request_failures": 0,
+    "page_horizontal_overflow_px": 0,
+    "main_vertical_scroll_owners_per_page": 1,
+    "loading_ready_canvas_drift_px": 0,
+    "cross_browser_default_presentation_drift": 0,
+    "cross_browser_visible_column_drift": 0
+  },
+  "required_coverage_percent": {
+    "accessible_routes": 100,
+    "page_templates": 100,
+    "representative_domains": 100,
+    "visible_business_labels_localized": 100,
+    "critical_actions_reachable": 100,
+    "environment_inputs_governed": 100
+  },
+  "exception_required_fields": [
+    "id",
+    "owner",
+    "reason",
+    "scope",
+    "exit_condition",
+    "gate",
+    "browser_evidence"
+  ]
+}
