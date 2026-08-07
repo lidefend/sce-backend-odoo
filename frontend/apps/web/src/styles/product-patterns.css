@@ -68,7 +68,7 @@
 }
 
 .sc-content-layout--data-grid { --sc-content-layout-inline-size: 100%; }
-:is(.sc-page-frame, .sc-product-page-frame)[data-product-page-mode='list'] {
+:is(.sc-page-frame, .sc-product-page-frame)[data-product-page-mode] {
   padding-inline-start: var(--sc-product-list-inline-start);
   padding-inline-end: var(--sc-product-list-inline-end);
 }

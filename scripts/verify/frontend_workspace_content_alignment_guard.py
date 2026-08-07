@@ -80,6 +80,8 @@ if "--sc-content-focused-form-max" in tokens:
 require(patterns, "max-width: min(100%, var(--sc-workspace-frame-max))", "single workspace CSS authority")
 require(patterns, ":is(.sc-page-frame, .sc-product-page-frame)[data-product-page-mode]", "stable product page canvas selector")
 require(patterns, ":is(.sc-page-frame, .sc-product-page-frame)[data-product-page-mode] {\n  width: 100%;", "stable product page canvas width")
+if "[data-product-page-mode='list']" in patterns:
+    fail("list-only global product page canvas override remains")
 require(patterns, ".sc-content-layout--focused-form", "internal focused layout")
 require(patterns, ".router-host > :is(.sc-page-frame, .sc-product-page-frame)", "routed page height authority")
 require(patterns, "min-height: 100%", "stable routed page minimum height")
