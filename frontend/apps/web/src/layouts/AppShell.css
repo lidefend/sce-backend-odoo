@@ -907,7 +907,7 @@
   margin-inline: 0;
 }
 
-.shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
+.shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame):not([data-product-page-mode]) {
   padding-inline: var(--sc-page-padding);
 }
 
@@ -1223,7 +1223,7 @@
     width: 100%;
     margin-inline: 0;
   }
-  .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
+  .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame):not([data-product-page-mode]) {
     padding-inline: var(--sc-page-padding);
   }
   .shell:not(.shell--configuration) .router-host > [data-product-page-mode] {
@@ -1540,7 +1540,7 @@
     margin-inline: 0;
   }
 
-  .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
+  .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame):not([data-product-page-mode]) {
     padding-inline: var(--sc-page-padding);
   }
 

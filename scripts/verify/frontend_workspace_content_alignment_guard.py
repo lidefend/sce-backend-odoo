@@ -88,6 +88,8 @@ require(patterns, "min-height: 100%", "stable routed page minimum height")
 require(shell_css, "scrollbar-gutter: stable", "stable content scrollbar gutter")
 if shell_css.count(".router-host > [data-product-page-mode]") < 3:
     fail("product page canvas gutters must be shared across desktop and responsive shell rules")
+if shell_css.count(":not([data-product-page-mode])") < 3:
+    fail("generic shell gutters must explicitly exclude governed product pages")
 if ".router-host > [data-product-page-mode='list']" in shell_css:
     fail("list-only routed canvas gutter override remains")
 if not re.search(r"\.sidebar\s*\{[^}]*box-sizing\s*:\s*border-box", shell_css, re.DOTALL):
