@@ -90,6 +90,56 @@ export function normalizeActionViewMode(raw: unknown): string {
   return mode;
 }
 
+export type ActionCollectionPresentation = {
+  semantic: 'table' | 'card' | 'workflow_board';
+  label: string;
+  groupField: string;
+  groupedLanes: boolean;
+};
+
+export function resolveActionCollectionPresentation(
+  contract: Dict | null,
+  modeRaw: unknown,
+): ActionCollectionPresentation {
+  const mode = normalizeActionViewMode(modeRaw);
+  if (mode === 'tree') {
+    return { semantic: 'table', label: '表格', groupField: '', groupedLanes: false };
+  }
+  if (mode !== 'kanban') {
+    return { semantic: 'card', label: String(modeRaw || ''), groupField: '', groupedLanes: false };
+  }
+  const views = asDict(contract?.views);
+  const kanban = asDict(views.kanban);
+  const presentation = asDict(kanban.collection_presentation);
+  const capabilities = asDict(presentation.capabilities);
+  const semantic = String(presentation.semantic || '').trim().toLowerCase();
+  const groupField = String(presentation.group_field || '').trim();
+  const groupedLanes = capabilities.grouped_lanes === true;
+  if (semantic === 'workflow_board' && groupField && groupedLanes) {
+    return {
+      semantic: 'workflow_board',
+      label: String(presentation.label || '').trim() || '流程看板',
+      groupField,
+      groupedLanes: true,
+    };
+  }
+  return {
+    semantic: 'card',
+    label: semantic === 'card' ? String(presentation.label || '').trim() || '卡片' : '卡片',
+    groupField: '',
+    groupedLanes: false,
+  };
+}
+
+export function resolveGroupedCollectionPresentation(
+  presentation: ActionCollectionPresentation,
+  activeGroupFieldRaw: unknown,
+): ActionCollectionPresentation {
+  const groupField = String(activeGroupFieldRaw || '').trim();
+  if (presentation.semantic !== 'card' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(groupField)) return presentation;
+  return { semantic: 'workflow_board', label: '流程看板', groupField, groupedLanes: true };
+}
+
 export function resolveActionViewAvailableModes(options: {
   contractViewTypeRaw: unknown;
   metaViewModesRaw: unknown;
@@ -114,17 +164,26 @@ export function resolveActionViewAvailableModes(options: {
   return out;
 }
 
+export function resolveRenderableActionViewMode(preferredRaw: unknown, modes: string[], fallback: string): string {
+  const mode = normalizeActionViewMode(preferredRaw) || modes[0] || fallback;
+  if (mode === 'list' || mode === 'tree') return 'tree';
+  if (['kanban', 'pivot', 'graph', 'calendar', 'gantt', 'activity', 'dashboard'].includes(mode)) return mode;
+  return '';
+}
+
 export function resolveActionViewModeLabel(options: {
   mode: string;
   strictContractMode: boolean;
   strictLabelMap: Record<string, string>;
   pageText: (key: string, fallback: string) => string;
+  contract?: Dict | null;
 }): string {
   const normalized = normalizeActionViewMode(options.mode);
+  if (normalized === 'tree' || normalized === 'kanban') {
+    return resolveActionCollectionPresentation(options.contract || null, normalized).label;
+  }
   const strictLabel = options.strictLabelMap[normalized];
   if (options.strictContractMode && strictLabel) return strictLabel;
-  if (normalized === 'tree') return options.pageText('view_mode_tree', '列表');
-  if (normalized === 'kanban') return options.pageText('view_mode_kanban', '看板');
   if (normalized === 'pivot') return options.pageText('view_mode_pivot', '透视');
   if (normalized === 'graph') return options.pageText('view_mode_graph', '图表');
   if (normalized === 'calendar') return options.pageText('view_mode_calendar', '日历');

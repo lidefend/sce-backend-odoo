@@ -92,7 +92,7 @@ class ActionDispatcher:
             if not info.get('res_model'):
                 return ClientUrlReportAssembler(self.env).assemble_diagnostic_contract(p, info, issue="窗口动作必须配置 res_model")
             p['model'] = info.get('res_model')
-            p['view_types'] = PageAssembler.normalize_view_types(info.get('view_mode') or p.get('view_type') or 'tree,form')
+            p['view_types'] = PageAssembler.normalize_view_types(p.get('view_type') or info.get('view_mode') or 'tree,form')
             if amid:
                 # 把 active_menu_id 放入上下文，利于 domain/context 计算
                 ctx = p.setdefault('context', {})
@@ -131,7 +131,7 @@ class ActionDispatcher:
         atype = (info.get('type') or info.get('_name') or '').strip()
         if atype == 'ir.actions.act_window':
             p['model'] = info.get('res_model') or p.get('model')
-            p['view_types'] = PageAssembler.normalize_view_types(info.get('view_mode') or p.get('view_type') or 'tree,form')
+            p['view_types'] = PageAssembler.normalize_view_types(p.get('view_type') or info.get('view_mode') or 'tree,form')
             return PageAssembler(self.env, self.su_env).assemble_page_contract(p, action=info)
         if atype == 'ir.actions.client':
             return ClientUrlReportAssembler(self.env, self.su_env).assemble_client_contract(p, info)

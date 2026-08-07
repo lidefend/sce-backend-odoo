@@ -36,13 +36,19 @@ verify.frontend.typecheck.strict: guard.prod.forbid
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 
-.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit
+.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit
 
 verify.frontend.localized_display.unit: guard.prod.forbid
 	@node --experimental-strip-types scripts/verify/frontend_localized_display_contract_test.ts
 
 verify.frontend.list_optional_columns.unit: guard.prod.forbid
 	@node --experimental-strip-types scripts/verify/frontend_list_optional_columns_contract_test.ts
+
+verify.frontend.collection_view_semantics.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/collection_view_semantics_test.ts --bundle --platform=node --format=esm --outfile=/tmp/collection-view-semantics-test.mjs >/dev/null
+	@node /tmp/collection-view-semantics-test.mjs
+	@python3 addons/smart_core/tests/test_native_view_parser_surfaces.py
+	@python3 scripts/verify/collection_view_semantics_guard.py
 
 .PHONY: verify.frontend.detail_form_productization.guard
 verify.frontend.detail_form_productization.guard: guard.prod.forbid

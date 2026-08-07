@@ -61,7 +61,7 @@ class ContractSchemaMixin(models.AbstractModel):
         specific = self._allowed_keys_by_view(vt)
         keep = set(common) | set(specific)
 
-        form_passthrough_roots = {
+        passthrough_roots = {
             'layout',
             'header_buttons',
             'button_box',
@@ -72,6 +72,7 @@ class ContractSchemaMixin(models.AbstractModel):
             'attachments',
             'widgets',
             'capabilities',
+            'kanban',
         }
 
         def _prune(obj, passthrough=False):
@@ -81,7 +82,7 @@ class ContractSchemaMixin(models.AbstractModel):
                 out = {}
                 for k, v in obj.items():
                     if k in keep:
-                        out[k] = _prune(v, passthrough=(vt == 'form' and k in form_passthrough_roots))
+                        out[k] = _prune(v, passthrough=k in passthrough_roots)
                         continue
                     if not isinstance(v, (dict, list)):
                         out[k] = v

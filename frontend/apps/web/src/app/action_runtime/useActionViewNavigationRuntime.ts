@@ -2,7 +2,7 @@ import type { Ref } from 'vue';
 import { pickContractNavQuery } from '../navigationContext';
 import { readWorkspaceContext } from '../workspaceContext';
 import { buildEntryTargetRouteTarget } from '../routeQuery';
-import { buildActionViewRowClickTarget } from '../runtime/actionViewInteractionRuntime';
+import { buildActionViewRowClickTarget, shouldUseCanonicalCollectionDetail } from '../runtime/actionViewInteractionRuntime';
 import { resolveRowClickPushState } from '../runtime/actionViewNavigationApplyRuntime';
 import { resolveUnifiedPageContractV2 } from '../contracts/unifiedPageContractV2';
 
@@ -14,6 +14,7 @@ type UseActionViewNavigationRuntimeOptions = {
   menuId: Ref<number | null>;
   actionId: Ref<number | null>;
   actionContract: Ref<Record<string, unknown> | null>;
+  collectionSemantic?: Ref<string>;
   resolvedModelRef: Ref<string>;
   modelRef: Ref<string>;
   routerPush: (target: unknown) => Promise<unknown>;
@@ -151,19 +152,28 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
   }
 
   function handleRowClick(row: Dict) {
-    const rowAction = resolveRowOpenAction();
-    if (!rowAction) return;
-    const contractTarget = buildContractRowClickTarget(rowAction, row);
-    if (contractTarget) {
-      const rowClickState = resolveRowClickPushState({ routeTarget: contractTarget });
-      if (rowClickState.shouldNavigate) void options.routerPush(rowClickState.target);
-      return;
+    const canonicalCollectionDetail = shouldUseCanonicalCollectionDetail({
+      viewMode: options.routeQueryMap.value.view_mode,
+      collectionSemantic: options.collectionSemantic?.value,
+    });
+    const rowAction = canonicalCollectionDetail ? undefined : resolveRowOpenAction();
+    if (!rowAction && !canonicalCollectionDetail) return;
+    if (rowAction) {
+      const contractTarget = buildContractRowClickTarget(rowAction, row);
+      if (contractTarget) {
+        const rowClickState = resolveRowClickPushState({ routeTarget: contractTarget });
+        if (rowClickState.shouldNavigate) void options.routerPush(rowClickState.target);
+        return;
+      }
+      const payload = (rowAction.payload && typeof rowAction.payload === 'object' ? rowAction.payload : {}) as Dict;
+      const viewMode = String(payload.view_mode || '').trim();
+      if (viewMode && viewMode !== 'form') return;
     }
-    const payload = (rowAction.payload && typeof rowAction.payload === 'object' ? rowAction.payload : {}) as Dict;
-    const viewMode = String(payload.view_mode || '').trim();
-    if (viewMode && viewMode !== 'form') return;
+    const contract = options.actionContract.value || {};
+    const head = contract.head && typeof contract.head === 'object' ? contract.head as Dict : {};
     const routeTarget = buildActionViewRowClickTarget({
-      targetModel: options.resolvedModelRef.value || options.modelRef.value,
+      targetModel: options.resolvedModelRef.value || options.modelRef.value
+        || String(contract.model || contract.res_model || head.model || head.res_model || ''),
       rawId: row.id,
       menuId: options.menuId.value,
       actionId: options.actionId.value,

@@ -2122,7 +2122,7 @@ class PageAssembler:
                     cfg[key] = value
             return cfg
         if vt == "kanban":
-            for key in ("fields", "slots", "kanban_profile", "row_actions", "quick_actions", "actions"):
+            for key in ("fields", "slots", "kanban_profile", "row_actions", "quick_actions", "actions", "collection_presentation"):
                 value = cfg.get(key, nested.get(key))
                 if isinstance(value, (list, dict)):
                     cfg[key] = value

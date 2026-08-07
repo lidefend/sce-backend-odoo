@@ -2963,3 +2963,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   labels, column choice/default semantics and geometry audit thresholds. The
   isolated acceptance database is upgraded/restarted and tested at five
   viewports plus zoom before any daily-development deployment.
+
+## 2026-08-07 — COLLECTION-VIEW-SEMANTICS
+
+- Branch / anchor: `feature/collection-view-semantics` from
+  `e081c5494e95cfdf33ab0f34548e11f810ab51b1`.
+- Formal Product Layer / Layer Target / Module: P0 native-view semantic
+  contract and generic collection renderer in `smart_core` and
+  `frontend/apps/web`; P1 construction defaults and project projections in
+  `smart_construction_core`; P4 automated and browser acceptance evidence.
+- Standard vs User-Specific / Reason / Why Here: table/card presentation,
+  workflow-board capability detection, route-local collection continuity and
+  renderer behavior are platform mechanisms. Project-ledger defaults, card
+  fields and lifecycle lanes are construction-standard semantics. Browser
+  state remains tab/session local and is not a shared cross-device preference.
+- Why Not Elsewhere: P0 must not branch on project model, action, menu or role;
+  P1 must not duplicate generic parser, router or renderer behavior. No P2/P3
+  preference, permission, business record or second data source is introduced.
+- Blast Radius / validation: actions exposing tree/kanban views, especially
+  project ledger, project overview/management and a non-project collection.
+  Contract/unit assertions, strict typecheck, design/style guards, production
+  build and multi-viewport Playwright evidence prove safe fallback, record-set
+  equivalence, responsive distinction and collection-context restoration.

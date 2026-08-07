@@ -24,7 +24,7 @@
     <record id="action_sc_project_list_kanban_view" model="ir.actions.act_window.view">
         <field name="sequence" eval="30"/>
         <field name="view_mode">kanban</field>
-        <field name="view_id" ref="smart_construction_core.view_sc_project_kanban_lifecycle"/>
+        <field name="view_id" ref="smart_construction_core.view_sc_project_kanban_card"/>
         <field name="act_window_id" ref="smart_construction_core.action_sc_project_list"/>
     </record>
 

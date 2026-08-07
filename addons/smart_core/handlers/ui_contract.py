@@ -418,14 +418,26 @@ class UiContractHandler(BaseIntentHandler):
             view_id = v.id or None
 
         view_modes = [ _VIEW_MAP.get(x.strip(), x.strip()) for x in (action.view_mode or "tree,form").split(",") if x.strip() ]
-        # 收集各类视图 id
+        # Collect each action-bound view before falling back to a model-wide
+        # default. A model may expose several kanban projections with different
+        # semantics, so an arbitrary global view would break action authority.
         view_ids_by_type = {}
         try:
             View = self.env["ir.ui.view"].sudo().with_context(ctx)
+            action_views = {
+                _VIEW_MAP.get(str(row.view_mode or "").strip(), str(row.view_mode or "").strip()): row.view_id.id
+                for row in action.view_ids.sorted(key=lambda row: (row.sequence, row.id))
+                if row.view_id and str(row.view_mode or "").strip()
+            }
             for v in view_modes:
                 odoo_type = _VIEW_INV.get(v, v)
-                vv = View.search([("model","=",model),("type","=",odoo_type)], limit=1, order="priority,id")
-                view_ids_by_type[v] = vv.id or None
+                bound_view_id = action_views.get(v)
+                if not bound_view_id and action.view_id and action.view_id.type == odoo_type:
+                    bound_view_id = action.view_id.id
+                if not bound_view_id:
+                    vv = View.search([("model","=",model),("type","=",odoo_type)], limit=1, order="priority,id")
+                    bound_view_id = vv.id or None
+                view_ids_by_type[v] = bound_view_id
         except Exception:
             pass
 
@@ -597,6 +609,11 @@ class UiContractHandler(BaseIntentHandler):
 
         # 统一服务的 action 分发
         p2 = {"subject":"action","action_id": action_id, "with_data": False}
+        if requested_view_type:
+            p2["view_type"] = requested_view_type
+        menu_id = self._get_param(p, "menu_id", "menuId")
+        if menu_id:
+            p2["menu_id"] = menu_id
         data, versions = self._build_dispatcher(ctx).dispatch(p2)
         return self._finalize_projected_contract(
             data=data,

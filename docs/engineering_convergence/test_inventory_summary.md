@@ -4,19 +4,19 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1065`
+- Total assets: `1066`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `135`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `705`
+- PR dedupe candidates: `706`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 411 |
+| governance | 412 |
 | contract | 313 |
 | unit | 175 |
 | odoo_integration | 78 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 924 |
+| pr_candidate | 925 |
 | integration_candidate | 100 |
 | release_candidate | 32 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 705 |
+| deduplicate_before_required | 706 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 99 |
 | keep_release_only | 32 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 926 |
+| <5m | 927 |
 | 10-30m | 101 |
 | 30-60m | 34 |
 | unknown | 3 |
@@ -152,7 +152,7 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 411 |
+| architecture owner | 412 |
 | platform owner | 313 |
 | test owner | 176 |
 | backend owner | 78 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 953 |
+| scripts/verify | 954 |
 | scripts/ops | 51 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 12 |
@@ -270,13 +270,13 @@ Generated from `test_inventory.csv`.
 | T-ASSET-167 | unit | `scripts/verify/capability_registry_smoke.py` | test owner |
 | T-ASSET-168 | unit | `scripts/verify/capability_smoke.py` | test owner |
 | T-ASSET-171 | governance | `scripts/verify/clean_product_tree_guard.py` | architecture owner |
-| T-ASSET-172 | contract | `scripts/verify/company_contractor_responsibility_context_audit.py` | platform owner |
-| T-ASSET-177 | governance | `scripts/verify/complexity_guard.py` | architecture owner |
-| T-ASSET-178 | contract | `scripts/verify/construction_contract_history_value_gap_probe.py` | platform owner |
-| T-ASSET-179 | security | `scripts/verify/construction_core_extension_actor_roles_split_guard.py` | security owner |
-| T-ASSET-180 | governance | `scripts/verify/construction_core_extension_capability_rows_split_guard.py` | architecture owner |
-| T-ASSET-181 | contract | `scripts/verify/construction_core_extension_contract_helpers_split_guard.py` | platform owner |
-| ... | ... | 625 more | ... |
+| T-ASSET-172 | governance | `scripts/verify/collection_view_semantics_guard.py` | architecture owner |
+| T-ASSET-173 | contract | `scripts/verify/company_contractor_responsibility_context_audit.py` | platform owner |
+| T-ASSET-178 | governance | `scripts/verify/complexity_guard.py` | architecture owner |
+| T-ASSET-179 | contract | `scripts/verify/construction_contract_history_value_gap_probe.py` | platform owner |
+| T-ASSET-180 | security | `scripts/verify/construction_core_extension_actor_roles_split_guard.py` | security owner |
+| T-ASSET-181 | governance | `scripts/verify/construction_core_extension_capability_rows_split_guard.py` | architecture owner |
+| ... | ... | 626 more | ... |
 
 ## Dedupe Hotspots
 

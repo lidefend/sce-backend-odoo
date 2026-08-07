@@ -26,6 +26,14 @@ export function buildActionViewRowClickTarget(options: {
   };
 }
 
+export function shouldUseCanonicalCollectionDetail(options: {
+  viewMode: unknown;
+  collectionSemantic: unknown;
+}): boolean {
+  return String(options.viewMode || '').trim().toLowerCase() === 'kanban'
+    && String(options.collectionSemantic || '').trim().toLowerCase() === 'card';
+}
+
 export function resolveListControlTransition(options: {
   control: 'search' | 'sort' | 'filter';
   value: string;

@@ -1,7 +1,7 @@
 # ======================================================
 # ==================== Dev =============================
 # ======================================================
-.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish
+.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish
 up: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/up.sh
 down: check-compose-project check-compose-env
@@ -74,6 +74,15 @@ backend.acceptance.down:
 backend.acceptance.health:
 	@curl -fsS http://127.0.0.1:18082/web/login >/dev/null
 	@echo "[backend.acceptance.health] PASS db=sc_frontend_acceptance"
+
+backend.collection.acceptance.up: guard.prod.forbid check-compose-project check-compose-env
+	@BACKEND_ACCEPTANCE_NAME=sc-backend-odoo-collection-view-semantics BACKEND_ACCEPTANCE_PORT=18102 bash scripts/dev/backend_acceptance_up.sh
+backend.collection.acceptance.down:
+	@BACKEND_ACCEPTANCE_NAME=sc-backend-odoo-collection-view-semantics bash scripts/dev/backend_acceptance_down.sh
+frontend.collection.acceptance.up: guard.prod.forbid
+	@FRONTEND_ACCEPTANCE_PORT=5192 FRONTEND_ACCEPTANCE_PIDFILE=/tmp/sc-collection-view-semantics.pid FRONTEND_ACCEPTANCE_LOGFILE=/tmp/sc-collection-view-semantics.log VITE_API_PROXY_TARGET=http://127.0.0.1:18102 bash scripts/dev/frontend_acceptance_up.sh
+frontend.collection.acceptance.down: guard.prod.forbid
+	@FRONTEND_ACCEPTANCE_PORT=5192 FRONTEND_ACCEPTANCE_PIDFILE=/tmp/sc-collection-view-semantics.pid bash scripts/dev/frontend_acceptance_down.sh
 
 ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(NGINX_PORT)
 ACCEPTANCE_PROBE_OUTPUT ?= artifacts/backend/dev_acceptance_release_probe.json

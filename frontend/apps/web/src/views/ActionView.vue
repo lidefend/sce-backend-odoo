@@ -282,8 +282,9 @@
       :list-offset="listOffset"
       :list-limit="contractLimit"
       :on-reload="reload"
-      :on-card-click="handleRowClick"
+      :on-card-click="handleCollectionRowClick"
       :on-page-change="handleListPageChange"
+      :presentation-semantic="collectionPresentation.semantic" :group-field="collectionPresentation.groupField"
     >
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
@@ -419,7 +420,7 @@
       :on-run-selection-action="handleSelectionAction"
       :on-clear-selection="clearSelection"
       :on-toggle-record-favorite="handleToggleRecordFavorite"
-      :on-row-click="handleRowClick"
+      :on-row-click="handleCollectionRowClick"
       :on-page-change="handleListPageChange"
       :on-page-limit-change="handleListPageLimitChange"
       :on-create="openCreateRecord"
@@ -622,6 +623,7 @@ import { useActionViewContractShapeRuntime } from '../app/action_runtime/useActi
 import { useActionViewActionMetaRuntime } from '../app/action_runtime/useActionViewActionMetaRuntime';
 import { useActionViewSceneIdentityRuntime } from '../app/action_runtime/useActionViewSceneIdentityRuntime';
 import { useActionViewModeRuntime } from '../app/action_runtime/useActionViewModeRuntime';
+import { useCollectionViewContextRuntime } from '../app/action_runtime/useCollectionViewContextRuntime';
 import { useActionViewProjectMetricRuntime } from '../app/action_runtime/useActionViewProjectMetricRuntime';
 import { useActionViewContractActionButtonRuntime } from '../app/action_runtime/useActionViewContractActionButtonRuntime';
 import { useActionViewActionGroupingRuntime } from '../app/action_runtime/useActionViewActionGroupingRuntime';
@@ -851,7 +853,10 @@ import { resolvePageMode } from '../app/pageMode';
 import { useActionViewStrictContractBundle } from '../app/contracts/actionViewStrictContract';
 import {
   normalizeActionViewMode,
+  resolveActionCollectionPresentation,
+  resolveGroupedCollectionPresentation,
   resolveActionViewAvailableModes,
+  resolveRenderableActionViewMode,
   resolveActionViewModeLabel,
   resolveActionViewSurfaceIntent,
   type SurfaceIntentContract,
@@ -874,7 +879,6 @@ import {
   resolveActionViewAdvancedTitle,
 } from '../app/contracts/actionViewAdvancedContract';
 import { useActionPageModel } from '../app/assemblers/action/useActionPageModel';
-
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
@@ -887,7 +891,6 @@ const pageText = pageContract.text;
 const pageSectionEnabled = pageContract.sectionEnabled;
 const pageSectionStyle = pageContract.sectionStyle;
 const pageSectionTagIs = pageContract.sectionTagIs;
-
 let loadPageInvoker: () => Promise<void> = async () => {};
 function requestLoadPage(): Promise<void> {
   return loadPageInvoker();
@@ -925,7 +928,7 @@ const traceId = ref('');
 const lastTraceId = ref('');
 const records = ref<Array<Record<string, unknown>>>([]);
 const listTotalCount = ref<number | null>(null);
-const listOffset = ref(0);
+const listOffset = ref(Math.max(0, Math.trunc(Number(route.query.list_offset || 0))));
 const listLimitOverride = ref(0);
 const listAggregates = ref<Record<string, Record<string, unknown>>>({});
 const projectScopeTotals = ref<{ all: number; active: number; archived: number } | null>(null);
@@ -1327,7 +1330,7 @@ const showViewSwitch = computed(() =>
 );
 const toolbarViewModeLabels = computed(() =>
   vm.value.page.availableViewModes.reduce<Record<string, string>>((acc, mode) => {
-    acc[mode] = viewModeLabel(mode);
+    acc[mode] = mode === 'kanban' ? resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(actionContract.value as Record<string, unknown> | null, mode), route.query.group_by).label : viewModeLabel(mode);
     return acc;
   }, {}),
 );
@@ -1515,26 +1518,15 @@ async function openCreateRecord() {
   }
   await openCreateRecordWithBusinessCategory(existingCategoryCode || businessCategoryCreateOptions.value[0]?.code || '');
 }
-const availableViewModes = computed(() =>
-  resolveActionViewAvailableModes({
-    contractViewTypeRaw: contractViewType.value,
-    metaViewModesRaw: (actionMeta.value as { view_modes?: unknown } | null)?.view_modes,
-    contract: (actionContract.value as Record<string, unknown> | null),
-  }),
-);
+const availableViewModes = computed(() => resolveActionViewAvailableModes({ contractViewTypeRaw: contractViewType.value,
+  metaViewModesRaw: (actionMeta.value as { view_modes?: unknown } | null)?.view_modes,
+  contract: actionContract.value as Record<string, unknown> | null }));
 const viewMode = computed(() => {
-  const modes = availableViewModes.value;
-  const routeActionId = Number(route.query.action_id || 0);
-  const fallbackMode = resolvedModelRef.value || routeActionId > 0 ? 'tree' : '';
-  const mode = normalizeActionViewMode(preferredViewMode.value) || modes[0] || fallbackMode;
-  if (mode === 'kanban') return 'kanban';
-  if (mode === 'list' || mode === 'tree') return 'tree';
-  if (mode === 'pivot' || mode === 'graph' || mode === 'calendar' || mode === 'gantt' || mode === 'activity' || mode === 'dashboard') {
-    return mode;
-  }
-  return '';
+  const fallbackMode = resolvedModelRef.value || Number(route.query.action_id || 0) > 0 ? 'tree' : '';
+  return resolveRenderableActionViewMode(preferredViewMode.value, availableViewModes.value, fallbackMode);
 });
-
+const collectionPresentation = computed(() => resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(
+  actionContract.value as Record<string, unknown> | null, viewMode.value), route.query.group_by));
 const {
   viewModeLabel,
   switchViewMode,
@@ -1546,6 +1538,8 @@ const {
   viewMode,
   normalizeActionViewMode,
   resolveActionViewModeLabel,
+  contract: actionContract,
+  persistMode: (mode) => persistCollectionMode(mode),
   load: requestLoadPage,
 });
 const {
@@ -1994,7 +1988,6 @@ const { vm } = useActionPageModel({
     entries: hudEntries,
   },
 });
-
 const {
   resolveWorkspaceContextQuery,
   resolveCarryQuery,
@@ -2006,9 +1999,16 @@ const {
   menuId,
   actionId,
   actionContract,
+  collectionSemantic: computed(() => collectionPresentation.value.semantic),
   resolvedModelRef,
   modelRef: model,
   routerPush: (target) => router.push(target as never),
+});
+const { handleRowClick: handleCollectionRowClick, persistMode: persistCollectionMode,
+  persistOffset: persistCollectionOffset, restoreScroll: restoreCollectionScroll } = useCollectionViewContextRuntime({
+  actionId, menuId, listOffset, currentPath: () => route.path,
+  currentQuery: () => route.query as Record<string, unknown>,
+  replaceRoute: (target) => { void router.replace(target as never); }, openRow: handleRowClick,
 });
 
 function resolveMenuCarryQuery(meta?: Record<string, unknown> | null, extra?: Record<string, unknown>) {
@@ -2873,9 +2873,8 @@ watch(
 );
 
 function handleListPageChange(offset: number): void {
-  listOffset.value = Math.max(0, Math.trunc(Number(offset || 0)));
+  persistCollectionOffset(offset);
   clearSelection();
-  void requestLoadPage();
 }
 
 function handleListPageLimitChange(limit: number): void {
@@ -3197,6 +3196,7 @@ onMounted(async () => {
   }
   await requestLoadPage();
   retainedRouteFullPath.value = route.fullPath;
+  restoreCollectionScroll();
   if (typeof window !== 'undefined') {
     window.addEventListener(PROJECT_CONTEXT_CHANGED_EVENT, handleProjectContextChanged);
   }
@@ -3204,6 +3204,7 @@ onMounted(async () => {
 
 onActivated(() => {
   isComponentActive.value = true;
+  restoreCollectionScroll();
 });
 
 onDeactivated(() => {
@@ -3246,7 +3247,7 @@ watch(
       return;
     }
     renderErrorMessage.value = '';
-    listOffset.value = 0;
+    listOffset.value = Math.max(0, Math.trunc(Number(route.query.list_offset || 0)));
     clearSelection();
     applyRoutePreset();
     updateActivityRuntimeQueryFromRoute();

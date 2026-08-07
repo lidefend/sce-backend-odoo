@@ -714,7 +714,19 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
 
         # ======== KANBAN：最小块 + 从 arch 抽取常见属性 ========
         if view_type == 'kanban':
-            kb = {'template_qweb': None, 'quick_create': True, 'stages_field': 'stage_id', 'fields': []}
+            kb = {
+                'template_qweb': None,
+                'quick_create': True,
+                'stages_field': 'stage_id',
+                'fields': [],
+                'collection_presentation': {
+                    'semantic': 'card',
+                    'label': '卡片',
+                    'group_field': None,
+                    'capabilities': {'grouped_lanes': False},
+                    'source': 'native_view_derived',
+                },
+            }
             if arch:
                 try:
                     root = ET.fromstring(arch)
@@ -741,6 +753,15 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                             continue
                         seen_fields.add(fname)
                         kb['fields'].append(fname)
+                    group_field = root.get('default_group_by') or root.get('group_by')
+                    if group_field and (not known_fields or group_field in known_fields):
+                        kb['collection_presentation'] = {
+                            'semantic': 'workflow_board',
+                            'label': '流程看板',
+                            'group_field': group_field,
+                            'capabilities': {'grouped_lanes': True},
+                            'source': 'native_view_derived',
+                        }
                 except Exception as e:
                     _logger.warning('KANBAN fallback: 解析属性失败: %s', e)
             base.update({'kanban': kb})
