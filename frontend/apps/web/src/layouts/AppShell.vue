@@ -632,7 +632,10 @@ const activeLayout = computed(() => {
   const scene = sceneKey ? getSceneByKey(sceneKey) : null;
   return resolveSceneLayout(scene);
 });
-const businessRouteUsesCompactTopbar = computed(() => ['action', 'record', 'model-form'].includes(String(route.name || '')));
+// Canonical scene routes and legacy action routes represent the same business
+// surface. Keep their shell density identical so moving navigation authority
+// from `/a/:id` to `/s/:sceneKey` cannot re-expand company, role and tool text.
+const businessRouteUsesCompactTopbar = computed(() => ['scene', 'action', 'record', 'model-form'].includes(String(route.name || '')));
 const useMinimalTopbar = computed(() =>
   route.name === 'workbench'
   || route.name === 'home'
