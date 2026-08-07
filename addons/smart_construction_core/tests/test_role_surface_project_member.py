@@ -553,15 +553,6 @@ class TestProjectMemberRoleSurface(TransactionCase):
         config_contract = MenuService(self.env(user=config_user)).build_route_authority(config_surface)
 
         self.assertEqual(pm_contract["contract_version"], "route_authority.v1")
-        project_intake = next(
-            row for row in pm_contract["primary_actions"]
-            if row["action_xmlid"] == "smart_construction_core.action_project_initiation"
-        )
-        self.assertEqual(project_intake["route_kind"], "PRIMARY_NAV")
-        self.assertEqual(
-            project_intake["menu_xmlid"],
-            "smart_construction_core.menu_sc_project_initiation",
-        )
         execution = next(
             row for row in pm_contract["contextual_actions"]
             if row["action_xmlid"] == "smart_construction_core.action_construction_contract_income_execution"

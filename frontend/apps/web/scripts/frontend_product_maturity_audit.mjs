@@ -37,6 +37,7 @@ const actionXmlids = JSON.parse(process.env.FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS
 const navigationManifestPath = process.env.FRONTEND_NAVIGATION_MANIFEST
   || 'config/frontend/authoritative_navigation_v1.json';
 const gitSha = String(process.env.GIT_SHA || '').trim();
+const expectedAppTitle = String(process.env.AUDIT_APP_TITLE || '企业业务管理平台').trim();
 const writeAction = /新建|创建|保存|提交|审批|删除|撤销|登记|确认|导入|发布|重置|编辑/i;
 const navigationManifest = loadNavigationManifest(navigationManifestPath);
 
@@ -163,7 +164,7 @@ async function inspectPage(page, role, route, screenshotPath) {
     const documentTitle = await page.title();
     const breadcrumbs = await page.locator('.breadcrumb .crumb').allTextContents();
     const technicalPattern = /(?:[a-z_][a-z0-9_]*\.)+[a-z_][a-z0-9_]*|\s#\d+|undefined|null|\b(?:action|menu|record)_?id\b/i;
-    const genericTitle = mainTitle === '业务动作' || documentTitle === `业务动作 - 智能施工企业管理平台`;
+    const genericTitle = mainTitle === '业务动作' || documentTitle === `业务动作 - ${expectedAppTitle}`;
     const technicalFallback = technicalPattern.test(mainTitle) || technicalPattern.test(documentTitle) || breadcrumbs.some((item) => technicalPattern.test(item));
     await page.screenshot({
       path: screenshotPath,
@@ -187,7 +188,7 @@ async function inspectPage(page, role, route, screenshotPath) {
       http_errors: httpErrors,
       technical_leak: technicalFallback,
       generic_title: genericTitle,
-      identity_result: mainTitle && documentTitle === `${mainTitle} - 智能施工企业管理平台` && identitySource && !genericTitle && !technicalFallback && !consoleErrors.length && !pageErrors.length && !httpErrors.length ? 'PASS' : 'FAIL',
+      identity_result: mainTitle && documentTitle === `${mainTitle} - ${expectedAppTitle}` && identitySource && !genericTitle && !technicalFallback && !consoleErrors.length && !pageErrors.length && !httpErrors.length ? 'PASS' : 'FAIL',
       screenshot: screenshotPath,
     };
   } finally {

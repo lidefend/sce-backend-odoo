@@ -3051,3 +3051,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   record-form action/lifecycle dependency extraction only. Source lint, strict
   type checking, release units, deterministic build and exact-SHA browser
   release gates must pass after integrating the current authoritative main.
+- First full-gate correction: `7ff409a` removed the project-intake-specific
+  frontend route but also added its menu to the P1 project-manager primary
+  surface without adding it to the locked formal product menu. Exact runtime
+  evidence proved the released authority remains PM 14 and aggregate 71. The
+  unconfirmed primary-menu expansion is removed; generic `/s/:sceneKey`
+  rendering continues to own the scene entry. The browser identity audit now
+  reads the platform-neutral app title used by the runtime instead of freezing
+  the retired construction-specific brand suffix.
