@@ -911,6 +911,10 @@
   padding-inline: var(--sc-page-padding);
 }
 
+.shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame).sc-content-layout--data-grid {
+  padding-inline: var(--sc-product-data-grid-inline-gutter);
+}
+
 .shell:not(.shell--configuration) .router-host :deep([data-product-page-mode='list']) {
   padding-top: 0;
 }
@@ -1220,6 +1224,9 @@
   }
   .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
     padding-inline: var(--sc-page-padding);
+  }
+  .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame).sc-content-layout--data-grid {
+    padding-inline: var(--sc-product-data-grid-inline-gutter);
   }
   .topbar {
     position: relative;
@@ -1536,7 +1543,7 @@
   }
 
   .shell:not(.shell--configuration) .router-host > :is(.sc-page-frame, .sc-product-page-frame).sc-content-layout--data-grid {
-    padding-inline: var(--sc-page-padding);
+    padding-inline: var(--sc-product-data-grid-inline-gutter);
   }
 }
 
