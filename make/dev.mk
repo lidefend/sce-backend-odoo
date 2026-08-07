@@ -57,15 +57,18 @@ frontend.logs:
 	@echo "[frontend.logs] $(FRONTEND_DEV_LOG)"
 	@tail -n 120 "$(FRONTEND_DEV_LOG)" || true
 
+FRONTEND_ACCEPTANCE_PORT ?= 5175
+FRONTEND_ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(FRONTEND_ACCEPTANCE_PORT)
+
 frontend.acceptance.up: guard.prod.forbid
-	@FRONTEND_ACCEPTANCE_PORT=5175 bash scripts/dev/frontend_acceptance_up.sh
+	@FRONTEND_ACCEPTANCE_PORT="$(FRONTEND_ACCEPTANCE_PORT)" bash scripts/dev/frontend_acceptance_up.sh
 
 frontend.acceptance.down: guard.prod.forbid
-	@bash scripts/dev/frontend_acceptance_down.sh
+	@FRONTEND_ACCEPTANCE_PORT="$(FRONTEND_ACCEPTANCE_PORT)" bash scripts/dev/frontend_acceptance_down.sh
 
 frontend.acceptance.health:
-	@curl -fsS http://127.0.0.1:5175/login >/dev/null
-	@echo "[frontend.acceptance.health] PASS url=http://127.0.0.1:5175 db=sc_frontend_acceptance"
+	@curl -fsS "$(FRONTEND_ACCEPTANCE_BASE_URL)/login" >/dev/null
+	@echo "[frontend.acceptance.health] PASS url=$(FRONTEND_ACCEPTANCE_BASE_URL) db=sc_frontend_acceptance"
 
 backend.acceptance.up: guard.prod.forbid check-compose-project check-compose-env
 	@bash scripts/dev/backend_acceptance_up.sh

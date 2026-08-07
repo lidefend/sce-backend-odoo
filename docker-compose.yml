@@ -78,6 +78,10 @@ services:
       SCENE_CHANNEL: ${SCENE_CHANNEL}
       SCENE_USE_PINNED: ${SCENE_USE_PINNED}
       SCENE_ROLLBACK: ${SCENE_ROLLBACK}
+      # Source-mounted acceptance runtimes must expose the exact candidate SHA
+      # through system.init; callers set this explicitly and unknown fails
+      # closed in browser acceptance.
+      SC_SOURCE_REVISION: ${SC_SOURCE_REVISION:-unknown}
 
       REDIS_HOST: redis
       # === 新增：runtime 明确配置出口 ===

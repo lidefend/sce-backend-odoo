@@ -2987,3 +2987,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Documentation link check: the repository-wide guard still reports the 69
   pre-existing legacy absolute-path references; none originate from the files
   changed by this batch.
+
+## 2026-08-07 — PRODUCT-MENU-GOVERNANCE-CURRENT-MAIN-CANDIDATE
+
+- Branch / anchor: `feature/product-menu-governance-current` from
+  `de8bbcaeb382147e7224d1df0db5addbb073d14a` (`origin/main`).
+- Formal Product Layer / Layer Target / Module: P1 construction product menu
+  defaults plus P4 deterministic governance evidence;
+  `smart_construction_core`, `scripts/verify`, and
+  `docs/engineering_convergence/menu_governance`.
+- Reason / Why Here: the completed menu-governance branch was based on
+  `6250dc64` and conflicted with the accepted frontend and daily-candidate
+  infrastructure already in main. This candidate reapplies only the reviewed
+  menu declaration changes and their evidence to current main without merging,
+  rebasing, or deploying the stale branch tree.
+- Why Not Elsewhere: no P0 frontend/model/action/role special case and no P2/P3
+  customer preference or runtime menu mutation is introduced. Existing XMLIDs,
+  actions, groups, names, sequences, and role/company visibility remain the
+  compatibility boundary.
+- Blast Radius / validation: `smart_construction_core` menu XML and module
+  version, source-revision acceptance plumbing, deterministic menu inventory,
+  runtime/browser audit tooling, and generated engineering reports. Local
+  static/unit/build gates and a fresh isolated module/browser acceptance run
+  must pass before exact-SHA daily deployment.

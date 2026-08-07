@@ -1327,6 +1327,16 @@ verify.product.menu.catalog: guard.prod.forbid check-compose-project check-compo
 	@python3 scripts/verify/product_menu_catalog_report.py
 	@python3 scripts/verify/product_menu_blueprint_report.py
 
+.PHONY: verify.product.menu.governance.m4.runtime
+verify.product.menu.governance.m4.runtime: guard.prod.forbid check-compose-project check-compose-env
+	@install -d -m 0777 artifacts/menu-governance
+	@python3 -m py_compile scripts/verify/menu_governance_m4_runtime_audit.py
+	@$(RUN_ENV) PRODUCT_MENU_M4_SCOPE_PATH=/mnt/docs/engineering_convergence/menu_governance/menu_m4_frozen_scope.json PRODUCT_MENU_M4_RUNTIME_PATH=/mnt/artifacts/menu-governance/menu-m4-runtime-resource-probe.json DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/menu_governance_m4_runtime_audit.py
+
+.PHONY: verify.product.menu.governance.m4.closure
+verify.product.menu.governance.m4.closure: guard.prod.forbid
+	@python3 scripts/verify/menu_governance_m4_closure.py
+
 .PHONY: verify.system_init.menu_boundary.guard
 verify.system_init.menu_boundary.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/system_init_menu_boundary_guard.py
