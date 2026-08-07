@@ -23230,7 +23230,7 @@
       "smart_construction_core.menu_sc_project_wbs_cost"
     ]
   },
-  "generated_at_utc": "2026-08-07T03:05:20+00:00",
+  "generated_at_utc": "2026-08-07T03:45:31+00:00",
   "groups": [
     {
       "group_xmlid": "base.group_system",
@@ -23529,8 +23529,8 @@
     "writes_product_facts": false
   },
   "source": {
-    "branch": "feature/product-menu-governance-current",
-    "commit_sha": "5de81e505bf7765146f088b5aac068b817e36f93",
+    "branch": "feature/menu-collection-convergence",
+    "commit_sha": "ae97639287f62b6d9242bbf27a1c010c1c15a1d5",
     "manifest": "addons/smart_construction_core/__manifest__.py",
     "manifest_xml_files": [
       "addons/smart_construction_core/data/sequence.xml",
@@ -23739,10 +23739,10 @@
       "addons/smart_construction_core/data/remaining_p3_form_productization_contract.xml",
       "addons/smart_construction_core/data/product_policy_menu_sync.xml"
     ],
-    "manifest_xml_sha256": "e112d719a5688a07ec4b7d17896a1338af36d3324617b774e5bff57065f0f92a",
+    "manifest_xml_sha256": "61d53ff036b31daf3d9633f543d89394d90960c1371e07f7ccc2d8d81243b3f9",
     "module": "smart_construction_core",
     "repository": "sce-backend-odoo",
-    "tree_sha": "0cb322c60700a0549f502867d232f7bce376055f",
+    "tree_sha": "ff4f650b4bdcc6b34701567e6470a3f6273e719b",
     "unloaded_xml_files": [
       "addons/smart_construction_core/data/tax.xml",
       "addons/smart_construction_core/static/src/xml/form_status_indicator_patch.xml",

@@ -2,7 +2,7 @@
   "schema": "sce.menu_governance_m4_frozen_scope.v1",
   "static_inventory_sha": "6250dc64eeb67bdd5a5e6686e6ac7c8233e0d4ce",
   "baseline_runtime_sha": "0abb989a6df017e8bd1bd0ce41e09b29f5d27549",
-  "candidate_product_sha": "5de81e505bf7765146f088b5aac068b817e36f93",
+  "candidate_product_sha": "ae97639287f62b6d9242bbf27a1c010c1c15a1d5",
   "menu_xmlids": [
     "smart_construction_core.menu_sc_business_config_center",
     "smart_construction_core.menu_sc_config_center",
