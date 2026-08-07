@@ -340,6 +340,8 @@ router.beforeEach(async (to) => {
         view_id: routeAuthority.view_id,
         domain: routeAuthority.domain,
         context: routeAuthority.context,
+        scene_key: routeAuthority.scene_key,
+        entry_target: routeAuthority.entry_target,
       } as NavMeta);
     }
     const authorityBoundRoute = to.name === 'action' || to.name === 'menu'

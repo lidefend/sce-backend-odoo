@@ -14,6 +14,7 @@ from odoo.addons.smart_core.utils.backend_contract_boundaries import (
 )
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 from odoo.addons.smart_core.utils.business_config_mutation_audit import record_business_config_mutation
+from odoo.addons.smart_core.delivery.menu_target_interpreter_service import MenuTargetInterpreterService
 
 _PROTECTED_NODE_EXCLUDED_FINGERPRINT_TOKENS: set[str] = set()
 LOWCODE_SYSTEM_CONFIG_MENU_XMLIDS_PARAM = "smart_core.lowcode.system_config_menu_xmlids"
@@ -386,6 +387,7 @@ class UiMenuConfigPolicy(models.Model):
         if not isinstance(nav_fact, dict):
             return nav_fact, {"applied_count": 0, "hidden_count": 0, "renamed_count": 0, "reordered_count": 0, "moved_count": 0}
         policies_by_menu, runtime_source = self._runtime_menu_config_source_for_user(user=user)
+        scene_target_resolver = MenuTargetInterpreterService(self.env)
 
         def config_only_enabled() -> bool:
             try:
@@ -937,25 +939,37 @@ class UiMenuConfigPolicy(models.Model):
             else:
                 view_modes = [item.strip() for item in str(view_modes_raw or "").split(",") if item.strip()]
             native_view_mode = ",".join(view_modes)
+            scene_entry_target = scene_target_resolver.resolve_scene_target(
+                menu_id=menu_id,
+                action_id=action_id,
+                model=model,
+                view_modes=view_modes,
+            )
+            scene_key = str(scene_entry_target.get("scene_key") or "").strip()
+            scene_route = str(scene_entry_target.get("route") or "").strip()
 
             node["is_visible"] = True
-            node["scene_key"] = None
+            node["scene_key"] = scene_key or None
             node["native_action_id"] = action_id or None
             node["native_model"] = model or None
             node["native_view_mode"] = native_view_mode or None
             node["confidence"] = "medium"
 
             if action_id:
-                node["target_type"] = "action"
-                node["delivery_mode"] = "custom_action"
+                node["target_type"] = "scene" if scene_key else "action"
+                node["delivery_mode"] = "custom_scene" if scene_key else "custom_action"
                 node["is_clickable"] = True
-                node["compatibility_used"] = True
-                node["target"] = {
+                node["compatibility_used"] = not bool(scene_key)
+                node["target"] = ({
+                    "scene_key": scene_key,
+                    "route": scene_route,
+                    "action_id": action_id,
+                } if scene_key else {
                     "action_id": action_id,
                     "res_model": model or None,
                     "view_mode": native_view_mode or None,
-                }
-                node["entry_target"] = {
+                })
+                node["entry_target"] = scene_entry_target or {
                     "type": "compatibility",
                     "route": route or "/a/%s?menu_id=%s" % (action_id, menu_id),
                     "compatibility_refs": {
@@ -967,10 +981,17 @@ class UiMenuConfigPolicy(models.Model):
                 }
                 node["active_match"] = {
                     "menu_id": menu_id,
-                    "scene_key": None,
+                    "scene_key": scene_key or None,
                     "action_id": action_id,
-                    "route_prefix": "/a/%s" % action_id,
+                    "route_prefix": scene_route if scene_key else "/a/%s" % action_id,
                 }
+                if scene_route:
+                    node["route"] = scene_route
+                meta = dict(node.get("meta") if isinstance(node.get("meta"), dict) else {})
+                meta["scene_key"] = scene_key or None
+                meta["route"] = scene_route or route
+                meta["entry_target"] = node["entry_target"]
+                node["meta"] = meta
                 node["availability_status"] = "ok"
                 node["reason_code"] = ""
             else:

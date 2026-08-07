@@ -23,6 +23,8 @@ export interface RouteAuthorityEntry {
   domain: string;
   context: string;
   route: string;
+  scene_key?: string;
+  entry_target?: Record<string, unknown>;
   allowed_operation: string;
   required_capability: string;
   context_requirements: Record<string, unknown>;
@@ -72,6 +74,8 @@ function normalizeEntry(value: unknown, expectedKind: RouteAuthorityKind, allowC
     domain: String(row.domain || '').trim(),
     context: String(row.context || '').trim(),
     route: String(row.route || '').trim(),
+    scene_key: String(row.scene_key || '').trim() || undefined,
+    entry_target: Object.keys(record(row.entry_target)).length ? record(row.entry_target) : undefined,
     allowed_operation: String(row.allowed_operation || '').trim(),
     required_capability: String(row.required_capability || '').trim(),
     context_requirements: record(row.context_requirements),

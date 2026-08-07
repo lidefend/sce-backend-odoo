@@ -4,6 +4,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 SMART_CORE_DIR = Path(__file__).resolve().parents[1]
@@ -34,6 +35,40 @@ MenuTargetInterpreterService = menu_target_interpreter_service.MenuTargetInterpr
 
 
 class TestMenuTargetInterpreterEntryTarget(unittest.TestCase):
+    def test_extension_scene_map_resolves_formal_scene_before_navigation(self):
+        service = MenuTargetInterpreterService(env=object())
+        id_by_xmlid = {
+            "smart_construction_core.menu_sc_project_project": 379,
+            "smart_construction_core.action_sc_project_list": 506,
+        }
+        extension_maps = {
+            "menu_scene_map": {
+                "smart_construction_core.menu_sc_project_project": "projects.list",
+            },
+            "action_xmlid_scene_map": {
+                "smart_construction_core.action_sc_project_list": "projects.list",
+            },
+            "model_view_scene_map": {
+                ("project.project", "list"): "projects.list",
+            },
+        }
+        with (
+            patch.object(menu_target_interpreter_service, "call_extension_hook_first", return_value=extension_maps),
+            patch.object(service, "_resolve_xmlid_to_res_id", side_effect=lambda xmlid, **_kwargs: id_by_xmlid.get(xmlid)),
+        ):
+            target = service.resolve_scene_target(
+                menu_id=379,
+                action_id=506,
+                model="project.project",
+                view_modes=["tree", "kanban", "form"],
+            )
+
+        self.assertEqual(target["type"], "scene")
+        self.assertEqual(target["scene_key"], "projects.list")
+        self.assertEqual(target["route"], "/s/projects.list")
+        self.assertEqual(target["compatibility_refs"]["menu_id"], 379)
+        self.assertEqual(target["compatibility_refs"]["action_id"], 506)
+
     def test_scene_node_exposes_formal_entry_target(self):
         service = MenuTargetInterpreterService(env=None)
         nav_fact = {

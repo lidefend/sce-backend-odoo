@@ -67,7 +67,13 @@ export function createNavigationSelectionSnapshot(node, routeAuthority) {
   ));
   if (!authority) return null;
 
-  const rawEntryTarget = target?.entry_target || target?.meta?.entry_target;
+  const targetEntry = target?.entry_target || target?.meta?.entry_target;
+  const authorityEntry = authority?.entry_target;
+  const rawEntryTarget = (
+    authorityEntry && typeof authorityEntry === 'object' && String(authorityEntry.type || '') === 'scene'
+      ? authorityEntry
+      : targetEntry
+  );
   const entryTarget = rawEntryTarget && typeof rawEntryTarget === 'object'
     ? cloneJson(rawEntryTarget)
     : null;

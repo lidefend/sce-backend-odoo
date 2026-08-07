@@ -49,6 +49,20 @@ assert.ok(reactiveSnapshot, 'rendered reactive menu nodes must be snapshot-compa
 assert.equal(reactiveSnapshot.menuId, 438);
 assert.equal(reactiveSnapshot.actionId, 723);
 
+const canonicalAuthority = structuredClone(authority);
+canonicalAuthority.admin_actions[0].scene_key = 'people.directory';
+canonicalAuthority.admin_actions[0].route = '/s/people.directory';
+canonicalAuthority.admin_actions[0].entry_target = {
+  type: 'scene',
+  scene_key: 'people.directory',
+  route: '/s/people.directory',
+  compatibility_refs: { menu_id: 438, action_id: 723 },
+};
+const canonicalSnapshot = createNavigationSelectionSnapshot(node, canonicalAuthority);
+assert.equal(canonicalSnapshot.targetKind, 'entry_target');
+assert.equal(canonicalSnapshot.entryTarget.type, 'scene');
+assert.equal(canonicalSnapshot.entryTarget.route, '/s/people.directory');
+
 node.meta.action_id = 506;
 assert.equal(snapshot.actionId, 723, 'selection must not follow later menu mutation');
 assert.equal(snapshot.meta.action_id, 723, 'selection metadata must remain immutable');

@@ -68,6 +68,17 @@ assert 'class="kanban-toolbar' not in kanban_page
 assert "pagination-actions--top" not in kanban_page
 assert kanban_page.count('<slot name="toolbar"></slot>') == 1
 
+# Canonical scene ownership must survive menu configuration overlays so a
+# menu click never renders an action page and then remounts as a scene page.
+menu_overlay = (ROOT / "addons/smart_core/model/ui_menu_config_policy.py").read_text(encoding="utf-8")
+assert "scene_target_resolver.resolve_scene_target" in menu_overlay
+assert 'node["target_type"] = "scene" if scene_key else "action"' in menu_overlay
+assert 'node["route"] = scene_route' in menu_overlay
+
+route_authority = (ROOT / "addons/smart_core/delivery/menu_service.py").read_text(encoding="utf-8")
+assert "_nav_target_index" in route_authority
+assert 'entry["entry_target"] = target["entry_target"]' in route_authority
+
 contract_mixin = (ROOT / "addons/smart_core/app_config_engine/models/contract_mixin.py").read_text(encoding="utf-8")
 assert "'kanban'," in contract_mixin
 assert "passthrough=k in passthrough_roots" in contract_mixin

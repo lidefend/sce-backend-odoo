@@ -374,6 +374,32 @@ class MenuService:
             yield from MenuService._walk_nav_action_refs(node.get("children") or [])
 
     @staticmethod
+    def _nav_target_index(nodes: list[dict]) -> dict[tuple[int, int], dict]:
+        targets: dict[tuple[int, int], dict] = {}
+        for node in nodes or []:
+            if not isinstance(node, dict):
+                continue
+            meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+            try:
+                pair = (
+                    int(node.get("menu_id") or meta.get("menu_id") or 0),
+                    int(node.get("action_id") or meta.get("action_id") or 0),
+                )
+            except (TypeError, ValueError):
+                pair = (0, 0)
+            if pair[0] > 0 and pair[1] > 0:
+                entry_target = (
+                    node.get("entry_target") if isinstance(node.get("entry_target"), dict)
+                    else meta.get("entry_target") if isinstance(meta.get("entry_target"), dict)
+                    else {}
+                )
+                scene_key = str(node.get("scene_key") or meta.get("scene_key") or entry_target.get("scene_key") or "").strip()
+                route = str(node.get("route") or meta.get("route") or entry_target.get("route") or "").strip()
+                targets[pair] = {"scene_key": scene_key, "route": route, "entry_target": entry_target}
+            targets.update(MenuService._nav_target_index(node.get("children") or []))
+        return targets
+
+    @staticmethod
     def filter_nav_by_route_authority(nav: list[dict], route_authority: dict | None) -> list[dict]:
         """Keep compatibility routes only when the same payload authorizes them."""
         authority = route_authority if isinstance(route_authority, dict) else {}
@@ -530,6 +556,18 @@ class MenuService:
                 if entry:
                     buckets["primary_actions"].append(entry)
                     existing_pairs.add(pair)
+
+        nav_targets = self._nav_target_index(nav if isinstance(nav, list) else [])
+        for bucket_name in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+            for entry in buckets[bucket_name]:
+                pair = (int(entry.get("menu_id") or 0), int(entry.get("action_id") or 0))
+                target = nav_targets.get(pair) or {}
+                if target.get("route"):
+                    entry["route"] = target["route"]
+                if target.get("scene_key"):
+                    entry["scene_key"] = target["scene_key"]
+                if target.get("entry_target"):
+                    entry["entry_target"] = target["entry_target"]
 
         for bucket_name, bucket in buckets.items():
             deduped = {

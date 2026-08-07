@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from odoo.addons.smart_core.core.navigation_entry_target import normalize_entry_target
+from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 
 def _text(value) -> str:
@@ -125,6 +126,13 @@ class MenuTargetInterpreterService:
 
         payload = scene_map if isinstance(scene_map, dict) else {}
         self._merge_explicit_scene_map(payload, menu_id_to_scene, action_id_to_scene, scene_key_to_route, model_view_to_scene)
+        extension_maps = call_extension_hook_first(self.env, "smart_core_nav_scene_maps", self.env) if self.env is not None else {}
+        self._merge_extension_scene_map(
+            extension_maps if isinstance(extension_maps, dict) else {},
+            menu_id_to_scene,
+            action_id_to_scene,
+            model_view_to_scene,
+        )
         self._merge_scene_registry_mapping(menu_id_to_scene, action_id_to_scene, scene_key_to_route, model_view_to_scene)
         return {
             "menu_id": menu_id_to_scene,
@@ -132,6 +140,75 @@ class MenuTargetInterpreterService:
             "scene_route": scene_key_to_route,
             "model_view": model_view_to_scene,
         }
+
+    def _merge_extension_scene_map(
+        self,
+        payload: dict,
+        menu_id_to_scene: dict[int, str],
+        action_id_to_scene: dict[int, str],
+        model_view_to_scene: dict[tuple[str, str], str],
+    ) -> None:
+        menu_map = payload.get("menu_scene_map") if isinstance(payload.get("menu_scene_map"), dict) else {}
+        action_map = payload.get("action_xmlid_scene_map") if isinstance(payload.get("action_xmlid_scene_map"), dict) else {}
+        model_map = payload.get("model_view_scene_map") if isinstance(payload.get("model_view_scene_map"), dict) else {}
+        for xmlid, scene_key in menu_map.items():
+            menu_id = self._resolve_xmlid_to_res_id(_text(xmlid), expected_model="ir.ui.menu")
+            if menu_id and _text(scene_key):
+                menu_id_to_scene.setdefault(menu_id, _text(scene_key))
+        for xmlid, scene_key in action_map.items():
+            action_id = self._resolve_xmlid_to_res_id(_text(xmlid), expected_model_prefix="ir.actions.")
+            if action_id and _text(scene_key):
+                action_id_to_scene.setdefault(action_id, _text(scene_key))
+        for key, scene_key in model_map.items():
+            if not (isinstance(key, (list, tuple)) and len(key) == 2 and _text(scene_key)):
+                continue
+            model_name = _text(key[0])
+            view_mode = self._normalize_view_mode(key[1])
+            if model_name and view_mode:
+                model_view_to_scene.setdefault((model_name, view_mode), _text(scene_key))
+
+    def resolve_scene_target(
+        self,
+        *,
+        menu_id: int | None = None,
+        action_id: int | None = None,
+        model: str = "",
+        view_modes: list[str] | tuple[str, ...] | str = (),
+        scene_map: dict | None = None,
+        policy: dict | None = None,
+    ) -> dict:
+        resolver = self._build_scene_resolver(scene_map=scene_map, policy=policy)
+        normalized_menu_id = _to_int(menu_id)
+        normalized_action_id = _to_int(action_id)
+        scene_key = self._resolve_scene_key(
+            menu_id=normalized_menu_id,
+            action_id=normalized_action_id,
+            resolver=resolver,
+        )
+        normalized_view_modes = (
+            [_text(item) for item in view_modes if _text(item)]
+            if isinstance(view_modes, (list, tuple))
+            else [_text(item) for item in _text(view_modes).split(",") if _text(item)]
+        )
+        if not scene_key:
+            scene_key = self._resolve_scene_key_from_model_view(
+                res_model=_text(model),
+                view_modes=normalized_view_modes,
+                resolver=resolver,
+            )
+        if not scene_key:
+            return {}
+        route = self._resolve_scene_route(scene_key=scene_key, resolver=resolver) or f"/s/{scene_key}"
+        return normalize_entry_target(
+            menu_id=normalized_menu_id,
+            action_id=normalized_action_id,
+            scene_key=scene_key,
+            model=_text(model),
+            view_modes=normalized_view_modes,
+            target_type="scene",
+            delivery_mode="custom_scene",
+            route=route,
+        )
 
     def _normalize_view_mode(self, raw: str | None) -> str | None:
         if not raw:
