@@ -12,6 +12,7 @@ MANIFEST = ROOT / "config/product_menu_release_manifest_v2.json"
 MENU_XML = ROOT / "addons/smart_construction_core/views/menu_product_navigation_v2.xml"
 POLICY_SYNC = ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py"
 DEV_MAKE = ROOT / "make/dev.mk"
+ODOO_SHELL_EXEC = ROOT / "scripts/ops/odoo_shell_exec.sh"
 
 EXPECTED_CENTERS = [
     "工作台", "项目中心", "合同中心", "成本中心", "物资与分包",
@@ -59,6 +60,7 @@ def main() -> int:
     xml_root = ElementTree.fromstring(xml)
     policy = POLICY_SYNC.read_text(encoding="utf-8")
     dev_make = DEV_MAKE.read_text(encoding="utf-8")
+    shell_exec = ODOO_SHELL_EXEC.read_text(encoding="utf-8")
     for center in EXPECTED_CENTERS:
         if f">{center}</field>" not in xml:
             errors.append(f"visible menu XML missing center: {center}")
@@ -88,6 +90,9 @@ def main() -> int:
     ):
         if token not in dev_make:
             errors.append(f"daily navigation release boundary missing: {token}")
+    for token in ("PLATFORM_RELEASE_*", "SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY"):
+        if token not in shell_exec:
+            errors.append(f"daily navigation release env forwarding missing: {token}")
 
     if errors:
         print("[product_menu_release_manifest_v2_guard] FAIL")
