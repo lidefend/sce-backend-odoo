@@ -27,6 +27,11 @@ PRODUCT_NAVIGATION_V2_GROUP_ALIASES = {
     "资料证照": "组织行政",
 }
 PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES = {
+    ("项目中心", "项目组织（后续上线）", "smart_construction_core.menu_sc_project_organization_group_v2"),
+    ("项目中心", "里程碑管理（后续上线）", "smart_construction_core.menu_sc_project_milestone_group_v2"),
+    ("项目中心", "项目协同（后续上线）", "smart_construction_core.menu_sc_project_collaboration_group_v2"),
+    ("项目中心", "风险与问题（后续上线）", "smart_construction_core.menu_sc_project_risk_group_v2"),
+    ("项目中心", "项目收尾（后续上线）", "smart_construction_core.menu_sc_project_closeout_group_v2"),
     ("报表中心", "项目经营统计表", "smart_construction_core.menu_sc_project_operation_statistics_report"),
     ("报表中心", "公司经营情况表", "smart_construction_core.menu_sc_company_operation_summary_report"),
     ("成本中心", "目标成本", "smart_construction_core.menu_sc_project_budget"),

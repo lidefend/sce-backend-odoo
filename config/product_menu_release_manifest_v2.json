@@ -25,6 +25,7 @@
   "project_center_information_architecture": {
     "locked": true,
     "empty_roadmap_menus_visible_to_business_users": false,
+    "roadmap_menus_visible_roles": ["business_config_admin"],
     "level_two_order": [
       {"name": "项目总览", "release_status": "READY_TO_CONVERGE", "current_foundation": ["项目驾驶舱", "项目看板"]},
       {"name": "项目前期", "release_status": "RELEASED", "current_foundation": ["投标准备", "投标报名", "开标记录", "中标记录", "投标保证金"]},

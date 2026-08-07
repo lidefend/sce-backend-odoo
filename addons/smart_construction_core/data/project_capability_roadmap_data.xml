@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="project_capability_roadmap_organization" model="sc.project.capability.roadmap">
+        <field name="name">项目组织</field><field name="capability_key">project_organization</field><field name="sequence">50</field>
+        <field name="planned_scope">项目团队、岗位角色、参建单位、项目通讯录。</field>
+        <field name="launch_note">项目责任矩阵与成员授权形成统一维护页面并通过角色权限验收后上线。</field>
+    </record>
+    <record id="project_capability_roadmap_milestone" model="sc.project.capability.roadmap">
+        <field name="name">里程碑管理</field><field name="capability_key">project_milestone</field><field name="sequence">60</field>
+        <field name="planned_scope">总控节点、基准里程碑、节点达成和偏差分析。</field>
+        <field name="launch_note">补齐基准版本、偏差分析和节点关闭证据后上线。</field>
+    </record>
+    <record id="project_capability_roadmap_collaboration" model="sc.project.capability.roadmap">
+        <field name="name">项目协同</field><field name="capability_key">project_collaboration</field><field name="sequence">70</field>
+        <field name="planned_scope">RFI、报审、会议、决议、任务及行动项。</field>
+        <field name="launch_note">完成外部参建方权限、流程流转和关闭追溯验收后上线。</field>
+    </record>
+    <record id="project_capability_roadmap_risk" model="sc.project.capability.roadmap">
+        <field name="name">风险与问题</field><field name="capability_key">project_risk_issue</field><field name="sequence">90</field>
+        <field name="planned_scope">风险台账、综合问题单、预警、措施和关闭复盘。</field>
+        <field name="launch_note">统一风险与问题入口并形成关闭验证链路后上线。</field>
+    </record>
+    <record id="project_capability_roadmap_closeout" model="sc.project.capability.roadmap">
+        <field name="name">项目收尾</field><field name="capability_key">project_closeout</field><field name="sequence">100</field>
+        <field name="planned_scope">竣工验收、移交清单、竣工档案和项目后评价。</field>
+        <field name="launch_note">完成验收、移交、归档、质保和后评价闭环后上线。</field>
+    </record>
+</odoo>

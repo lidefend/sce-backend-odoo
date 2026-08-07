@@ -211,6 +211,36 @@ PRODUCT_MENU_BUSINESS_DOMAIN_OVERRIDES = {
     },
 }
 NATIVE_MODELED_PRODUCT_CAPABILITY_MENUS = {
+    "smart_construction_core.menu_sc_project_organization_group_v2": {
+        "group_label": "项目中心",
+        "target": "sc.project.capability.roadmap 项目组织后续上线说明",
+        "product_domain": "project_roadmap",
+        "product_domain_label": "后续上线",
+    },
+    "smart_construction_core.menu_sc_project_milestone_group_v2": {
+        "group_label": "项目中心",
+        "target": "sc.project.capability.roadmap 里程碑管理后续上线说明",
+        "product_domain": "project_roadmap",
+        "product_domain_label": "后续上线",
+    },
+    "smart_construction_core.menu_sc_project_collaboration_group_v2": {
+        "group_label": "项目中心",
+        "target": "sc.project.capability.roadmap 项目协同后续上线说明",
+        "product_domain": "project_roadmap",
+        "product_domain_label": "后续上线",
+    },
+    "smart_construction_core.menu_sc_project_risk_group_v2": {
+        "group_label": "项目中心",
+        "target": "sc.project.capability.roadmap 风险与问题后续上线说明",
+        "product_domain": "project_roadmap",
+        "product_domain_label": "后续上线",
+    },
+    "smart_construction_core.menu_sc_project_closeout_group_v2": {
+        "group_label": "项目中心",
+        "target": "sc.project.capability.roadmap 项目收尾后续上线说明",
+        "product_domain": "project_roadmap",
+        "product_domain_label": "后续上线",
+    },
     "smart_construction_core.menu_sc_project_operation_statistics_report": {
         "group_label": "报表中心",
         "domain": "经营报表",

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sc_project_capability_roadmap_tree" model="ir.ui.view">
+        <field name="name">sc.project.capability.roadmap.tree</field>
+        <field name="model">sc.project.capability.roadmap</field>
+        <field name="arch" type="xml">
+            <tree string="项目中心后续上线能力" create="false" edit="false" delete="false">
+                <field name="sequence" column_invisible="True"/>
+                <field name="name"/>
+                <field name="release_status" widget="badge" decoration-info="release_status == 'followup'"/>
+                <field name="planned_scope"/>
+                <field name="launch_note"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_sc_project_capability_roadmap_form" model="ir.ui.view">
+        <field name="name">sc.project.capability.roadmap.form</field>
+        <field name="model">sc.project.capability.roadmap</field>
+        <field name="arch" type="xml">
+            <form string="项目中心能力上线说明" create="false" edit="false" delete="false">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <field name="release_status" widget="badge" readonly="1"/>
+                        <field name="capability_key" readonly="1"/>
+                    </group>
+                    <group string="规划范围"><field name="planned_scope" nolabel="1" readonly="1"/></group>
+                    <group string="上线条件"><field name="launch_note" nolabel="1" readonly="1"/></group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sc_project_organization_roadmap" model="ir.actions.act_window">
+        <field name="name">项目组织（后续上线）</field>
+        <field name="res_model">sc.project.capability.roadmap</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('capability_key', '=', 'project_organization')]</field>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="action_sc_project_milestone_roadmap" model="ir.actions.act_window">
+        <field name="name">里程碑管理（后续上线）</field>
+        <field name="res_model">sc.project.capability.roadmap</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('capability_key', '=', 'project_milestone')]</field>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="action_sc_project_collaboration_roadmap" model="ir.actions.act_window">
+        <field name="name">项目协同（后续上线）</field>
+        <field name="res_model">sc.project.capability.roadmap</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('capability_key', '=', 'project_collaboration')]</field>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="action_sc_project_risk_roadmap" model="ir.actions.act_window">
+        <field name="name">风险与问题（后续上线）</field>
+        <field name="res_model">sc.project.capability.roadmap</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('capability_key', '=', 'project_risk_issue')]</field>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="action_sc_project_closeout_roadmap" model="ir.actions.act_window">
+        <field name="name">项目收尾（后续上线）</field>
+        <field name="res_model">sc.project.capability.roadmap</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('capability_key', '=', 'project_closeout')]</field>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+</odoo>

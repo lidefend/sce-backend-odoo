@@ -46,4 +46,5 @@ from . import partner_business_fact_line
 from . import runtime_user_management
 from . import formal_user_management
 from . import product_policy_sync
+from . import project_capability_roadmap
 from . import formal_list_contract_sync

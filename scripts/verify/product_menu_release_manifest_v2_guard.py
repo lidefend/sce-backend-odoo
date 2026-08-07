@@ -57,6 +57,8 @@ def main() -> int:
         errors.append("project center information architecture must be locked")
     if project_ia.get("empty_roadmap_menus_visible_to_business_users") is not False:
         errors.append("empty project roadmap menus must stay out of business navigation")
+    if project_ia.get("roadmap_menus_visible_roles") != ["business_config_admin"]:
+        errors.append("project roadmap menus must be restricted to business_config_admin")
     if project_level_two_names != EXPECTED_PROJECT_LEVEL_TWO:
         errors.append("project center level-two order mismatch")
     for index, row in enumerate(project_level_two):
@@ -128,6 +130,16 @@ def main() -> int:
     for group in [row["name"] for row in project_level_two if row.get("release_status") == "FOLLOWUP"]:
         if f'name="{group}（后续上线）"' not in xml:
             errors.append(f"follow-up project group missing launch label: {group}")
+    for token in (
+        "action_sc_project_organization_roadmap",
+        "action_sc_project_milestone_roadmap",
+        "action_sc_project_collaboration_roadmap",
+        "action_sc_project_risk_roadmap",
+        "action_sc_project_closeout_roadmap",
+        "group_sc_cap_business_config_admin",
+    ):
+        if token not in xml:
+            errors.append(f"project roadmap admin visibility binding missing: {token}")
     for token in (
         "release.daily_product_navigation.snapshot:",
         'test "$(ENV)" = "dev"',

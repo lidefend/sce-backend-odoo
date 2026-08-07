@@ -147,7 +147,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         result = CONTRACT.assert_policy_matches_locked_contract(contract, "construction.standard", groups)
         self.assertEqual(result["menu_count"], 98)
 
-    def test_navigation_v2_group_projection_and_cost_additions_are_authorized(self):
+    def test_navigation_v2_group_projection_and_authorized_additions_are_authorized(self):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         groups = copy.deepcopy(contract["products"]["construction.standard"]["menu_groups"])
         projected = {}
@@ -161,8 +161,8 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         result = CONTRACT.assert_policy_matches_locked_contract(
             contract, "construction.standard", list(projected.values())
         )
-        self.assertEqual(result["menu_count"], 106)
-        self.assertEqual(result["authorized_addition_count"], 8)
+        self.assertEqual(result["menu_count"], 111)
+        self.assertEqual(result["authorized_addition_count"], 13)
 
         projected["成本中心"]["menus"].append(
             {

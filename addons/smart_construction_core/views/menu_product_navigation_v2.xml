@@ -112,6 +112,26 @@
     <record id="menu_sc_project_quick_create" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_management_group"/><field name="sequence">20</field></record>
     <record id="menu_sc_project_project" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_ledger_group_v2"/><field name="sequence">10</field></record>
     <record id="menu_sc_project_documents" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_document_group_v2"/><field name="sequence">10</field></record>
+    <record id="menu_sc_project_organization_group_v2" model="ir.ui.menu">
+        <field name="action" ref="smart_construction_core.action_sc_project_organization_roadmap"/>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="menu_sc_project_milestone_group_v2" model="ir.ui.menu">
+        <field name="action" ref="smart_construction_core.action_sc_project_milestone_roadmap"/>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="menu_sc_project_collaboration_group_v2" model="ir.ui.menu">
+        <field name="action" ref="smart_construction_core.action_sc_project_collaboration_roadmap"/>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="menu_sc_project_risk_group_v2" model="ir.ui.menu">
+        <field name="action" ref="smart_construction_core.action_sc_project_risk_roadmap"/>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="menu_sc_project_closeout_group_v2" model="ir.ui.menu">
+        <field name="action" ref="smart_construction_core.action_sc_project_closeout_roadmap"/>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
     <record id="menu_sc_project_wbs" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_internal_group_v2"/></record>
     <record id="menu_sc_project_work_breakdown" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_internal_group_v2"/></record>
     <record id="menu_sc_project_structure_wbs" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_internal_group_v2"/></record>
