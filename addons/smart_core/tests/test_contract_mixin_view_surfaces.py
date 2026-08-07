@@ -86,6 +86,29 @@ class ContractMixinViewSurfaceTests(unittest.TestCase):
                 self.assertIn(surface_key, result)
                 self.assertNotIn("unsafe_nested", result)
 
+    def test_governed_sanitize_preserves_native_kanban_semantics(self):
+        result = self.mixin.sanitize_governed_contract(
+            "kanban",
+            {
+                "kanban": {
+                    "fields": ["name", "state"],
+                    "collection_presentation": {
+                        "semantic": "workflow_board",
+                        "group_field": "state",
+                        "capabilities": {"grouped_lanes": True},
+                    },
+                },
+                "unsafe_nested": {"should": "drop"},
+            },
+        )
+
+        self.assertEqual(result["kanban"]["fields"], ["name", "state"])
+        self.assertEqual(
+            result["kanban"]["collection_presentation"]["semantic"],
+            "workflow_board",
+        )
+        self.assertNotIn("unsafe_nested", result)
+
 
 if __name__ == "__main__":
     unittest.main()

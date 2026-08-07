@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-NAME=sc-backend-odoo-acceptance
+NAME="${BACKEND_ACCEPTANCE_NAME:-sc-backend-odoo-acceptance}"
+PORT="${BACKEND_ACCEPTANCE_PORT:-18082}"
 if docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
-  if curl -fsS http://127.0.0.1:18082/web/login >/dev/null 2>&1; then
+  if curl -fsS "http://127.0.0.1:${PORT}/web/login" >/dev/null 2>&1; then
     echo "[backend.acceptance.up] already healthy"
     exit 0
   fi
@@ -11,7 +12,7 @@ fi
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 PRODUCT_VERSION="$(tr -d '[:space:]' < VERSION)"
 SOURCE_REVISION="$(git rev-parse HEAD)"
-docker compose run -d --no-deps --name "$NAME" -p 127.0.0.1:18082:8069 \
+docker compose run -d --no-deps --name "$NAME" -p "127.0.0.1:${PORT}:8069" \
   -e ODOO_DB=sc_frontend_acceptance \
   -e DB_NAME=sc_frontend_acceptance \
   -e ODOO_DBFILTER='^sc_frontend_acceptance$' \
@@ -20,7 +21,7 @@ docker compose run -d --no-deps --name "$NAME" -p 127.0.0.1:18082:8069 \
   -e SC_SOURCE_REVISION="$SOURCE_REVISION" \
   odoo >/dev/null
 for _ in $(seq 1 60); do
-  if curl -fsS http://127.0.0.1:18082/web/login >/dev/null 2>&1; then echo "[backend.acceptance.up] PASS db=sc_frontend_acceptance port=18082"; exit 0; fi
+  if curl -fsS "http://127.0.0.1:${PORT}/web/login" >/dev/null 2>&1; then echo "[backend.acceptance.up] PASS db=sc_frontend_acceptance port=${PORT}"; exit 0; fi
   sleep 2
 done
 docker logs --tail 100 "$NAME" >&2

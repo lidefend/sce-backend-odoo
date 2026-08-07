@@ -59,6 +59,16 @@ def _load_calendar_mixin():
     return module._CalendarGanttActivitySearchParserMixin
 
 
+def _load_kanban_mixin():
+    _install_lxml_shim()
+    root = Path(__file__).resolve().parents[1]
+    module_path = root / "app_config_engine" / "services" / "view_Parser" / "parsers Kanban Pivot Graph.py"
+    spec = importlib.util.spec_from_file_location("kanban_pivot_graph_parser_probe", module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module._KanbanPivotGraphParserMixin
+
+
 class _ParserProbe(_load_calendar_mixin()):
     def _safe_eval_expr(self, expr):
         try:
@@ -67,9 +77,18 @@ class _ParserProbe(_load_calendar_mixin()):
             return None
 
 
+class _KanbanParserProbe(_load_kanban_mixin()):
+    def _safe_eval_expr(self, expr):
+        return expr
+
+    def _button_to_action(self, _button, level='header'):
+        return None
+
+
 class TestNativeViewParserSurfaces(unittest.TestCase):
     def setUp(self):
         self.parser = _ParserProbe()
+        self.kanban_parser = _KanbanParserProbe()
 
     def test_calendar_parser_preserves_native_slots_and_fields(self):
         result = self.parser._parse_calendar_view(
@@ -117,6 +136,25 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(result["filters"][0]["name"], "mine")
         self.assertEqual(result["group_by"], ["user_id"])
         self.assertEqual(result["group_by_fields"][0]["field"], "user_id")
+
+    def test_workflow_board_requires_group_semantics(self):
+        result = self.kanban_parser._parse_kanban_view(
+            '<kanban default_group_by="state"><field name="name"/><field name="state"/></kanban>',
+            {"name": {}, "state": {}},
+        )
+        presentation = result["collection_presentation"]
+        self.assertEqual(presentation["semantic"], "workflow_board")
+        self.assertEqual(presentation["group_field"], "state")
+        self.assertTrue(presentation["capabilities"]["grouped_lanes"])
+
+    def test_unknown_kanban_semantic_fails_safe(self):
+        result = self.kanban_parser._parse_kanban_view(
+            '<kanban><field name="name"/></kanban>',
+            {"name": {}},
+        )
+        presentation = result["collection_presentation"]
+        self.assertEqual(presentation["semantic"], "card")
+        self.assertFalse(presentation["capabilities"]["grouped_lanes"])
 
 
 if __name__ == "__main__":

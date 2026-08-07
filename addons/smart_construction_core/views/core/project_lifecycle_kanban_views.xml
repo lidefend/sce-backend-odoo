@@ -1,5 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <record id="view_sc_project_kanban_card" model="ir.ui.view">
+        <field name="name">project.project.kanban.card</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="project_code"/>
+                <field name="manager_id"/>
+                <field name="lifecycle_state"/>
+                <field name="end_date"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click o_kanban_record">
+                            <div class="o_kanban_record_top">
+                                <strong><field name="name"/></strong>
+                            </div>
+                            <div><field name="project_code"/></div>
+                            <div><field name="manager_id"/></div>
+                            <div class="o_kanban_record_bottom">
+                                <span class="badge"><field name="lifecycle_state"/></span>
+                                <field name="end_date"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
     <record id="view_sc_project_kanban_lifecycle" model="ir.ui.view">
         <field name="name">project.project.kanban.lifecycle</field>
         <field name="model">project.project</field>

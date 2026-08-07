@@ -3010,3 +3010,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   runtime/browser audit tooling, and generated engineering reports. Local
   static/unit/build gates and a fresh isolated module/browser acceptance run
   must pass before exact-SHA daily deployment.
+
+## 2026-08-07 — MENU-AND-COLLECTION-RUNTIME-CONVERGENCE
+
+- Branch / anchor: `feature/menu-collection-convergence` from the exact daily
+  menu candidate `0193b5b23f799bdb8475f94fdd21daf12ad49199`.
+- Formal Product Layer / Layer Target / Module: P0 generic collection contract,
+  dispatcher and renderer semantics; P1 project table/card/workflow bindings;
+  P4 deterministic menu and browser acceptance evidence.
+- Reason / Why Here: a full module upgrade for the menu candidate reloaded
+  action/view metadata and exposed an existing divergence between requested
+  view mode, user column preferences and responsive presentation. Windows and
+  Harmony must resolve the same action facts while retaining intentional table,
+  explicit card and grouped workflow semantics.
+- Why Not Elsewhere: the frontend contains no device, model, action or role
+  special case. Project-specific view declarations remain in the P1 product
+  module; generic selection, route continuity and fail-safe semantics remain in
+  P0 platform code.
+- Blast Radius / validation: `smart_core`, project collection views, generic SPA
+  action navigation and collection rendering, plus focused unit/guard/browser
+  audits. Daily acceptance must bind the combined exact SHA and prove Windows
+  table, Harmony responsive cards, explicit cards and grouped workflow all
+  preserve the same record set without technical-field leakage or overflow.

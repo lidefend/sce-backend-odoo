@@ -11,6 +11,24 @@ type ListProfileLike = {
   columns?: string[];
 };
 
+function normalizeRuntimeFieldName(raw: unknown): string {
+  if (typeof raw === 'string' || typeof raw === 'number') {
+    const text = String(raw || '').trim();
+    if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(text)) return text;
+    return text.match(/(?:^|[,{])\s*name\s*[:.]\s*\.?([A-Za-z_][A-Za-z0-9_]*)/i)?.[1] || '';
+  }
+  const row = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+  for (const candidate of [row.name, row.field_name, row.field_code, row.fieldCode, row.field]) {
+    const name = candidate === raw ? '' : normalizeRuntimeFieldName(candidate);
+    if (name) return name;
+  }
+  return '';
+}
+
+function normalizeRuntimeFieldNames(rows: unknown[]): string[] {
+  return rows.map(normalizeRuntimeFieldName).filter(Boolean);
+}
+
 export function resolveLoadKanbanFieldApplyState(options: {
   kanbanContractFields: string[];
   fallbackKanbanFields: string[];
@@ -27,24 +45,27 @@ export function resolveLoadKanbanFieldApplyState(options: {
   kanbanMetricFields: string[];
   kanbanQuickActionCount: number;
 } {
-  const effectiveKanbanFields = options.kanbanContractFields.length
-    ? options.kanbanContractFields
-    : options.uniqueFieldsFn([...options.fallbackKanbanFields, 'id', 'name']);
+  const contractFields = normalizeRuntimeFieldNames(options.kanbanContractFields);
+  const fallbackFields = normalizeRuntimeFieldNames(options.fallbackKanbanFields);
+  const effectiveKanbanFields = contractFields.length
+    ? options.uniqueFieldsFn(contractFields)
+    : options.uniqueFieldsFn([...fallbackFields, 'id', 'name']);
+  const normalizeProfile = (rows: string[]) => normalizeRuntimeFieldNames(rows);
   return {
     advancedFields: options.advancedContractFields,
     kanbanFields: effectiveKanbanFields,
     kanbanTitleFieldHint: options.kanbanProfile.titleField,
     kanbanPrimaryFields: options.uniqueFieldsFn(
-      [...options.kanbanProfile.primaryFields].filter((name) => effectiveKanbanFields.includes(name)),
+      normalizeProfile(options.kanbanProfile.primaryFields).filter((name) => effectiveKanbanFields.includes(name)),
     ),
     kanbanSecondaryFields: options.uniqueFieldsFn(
-      [...options.kanbanProfile.secondaryFields].filter((name) => effectiveKanbanFields.includes(name)),
+      normalizeProfile(options.kanbanProfile.secondaryFields).filter((name) => effectiveKanbanFields.includes(name)),
     ),
     kanbanStatusFields: options.uniqueFieldsFn(
-      [...options.kanbanProfile.statusFields].filter((name) => effectiveKanbanFields.includes(name)),
+      normalizeProfile(options.kanbanProfile.statusFields).filter((name) => effectiveKanbanFields.includes(name)),
     ),
     kanbanMetricFields: options.uniqueFieldsFn(
-      [...options.kanbanProfile.metricFields].filter((name) => effectiveKanbanFields.includes(name)),
+      normalizeProfile(options.kanbanProfile.metricFields).filter((name) => effectiveKanbanFields.includes(name)),
     ),
     kanbanQuickActionCount: Number(options.kanbanProfile.quickActionCount || 0),
   };

@@ -36,6 +36,13 @@ class _KanbanPivotGraphParserMixin:
             "class_list": [],
             "decorations": [],
             "fields": [],
+            "collection_presentation": {
+                "semantic": "card",
+                "label": "卡片",
+                "group_field": None,
+                "capabilities": {"grouped_lanes": False},
+                "source": "native_view_derived",
+            },
         }
         try:
             if not arch:
@@ -76,6 +83,16 @@ class _KanbanPivotGraphParserMixin:
                     continue
                 seen_fields.add(fname)
                 out["fields"].append(fname)
+
+            group_field = out["default_group_by"]
+            if group_field and (not known_fields or group_field in known_fields):
+                out["collection_presentation"] = {
+                    "semantic": "workflow_board",
+                    "label": "流程看板",
+                    "group_field": group_field,
+                    "capabilities": {"grouped_lanes": True},
+                    "source": "native_view_derived",
+                }
 
             tmpl = root.xpath('.//templates')
             out["template_qweb"] = tmpl and etree.tostring(tmpl[0], encoding='unicode') or None

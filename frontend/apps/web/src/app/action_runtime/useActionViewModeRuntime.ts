@@ -10,7 +10,10 @@ type UseActionViewModeRuntimeOptions = {
     strictContractMode: boolean;
     strictLabelMap: Record<string, string>;
     pageText: (key: string, fallback: string) => string;
+    contract?: Record<string, unknown> | null;
   }) => string;
+  contract: { value: Record<string, unknown> | null };
+  persistMode?: (mode: string) => void;
   load: () => Promise<void>;
 };
 
@@ -21,6 +24,7 @@ export function useActionViewModeRuntime(options: UseActionViewModeRuntimeOption
       strictContractMode: options.strictContractMode.value,
       strictLabelMap: options.strictViewModeLabelMap.value,
       pageText: options.pageText,
+      contract: options.contract.value,
     });
   }
 
@@ -28,6 +32,10 @@ export function useActionViewModeRuntime(options: UseActionViewModeRuntimeOption
     const normalized = options.normalizeActionViewMode(mode);
     if (!normalized || normalized === options.viewMode.value) return;
     options.preferredViewMode.value = normalized;
+    if (options.persistMode) {
+      options.persistMode(normalized);
+      return;
+    }
     void options.load();
   }
 

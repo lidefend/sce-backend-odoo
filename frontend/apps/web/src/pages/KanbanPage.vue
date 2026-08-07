@@ -87,34 +87,47 @@
 
       <slot name="toolbar"></slot>
 
-      <section class="grid sc-product-main-surface" :class="{ 'is-refreshing': loading }" :aria-busy="loading || undefined">
+      <section
+        class="grid sc-product-main-surface"
+        :class="{ 'is-refreshing': loading, 'is-workflow-board': workflowBoard }"
+        :data-collection-presentation="workflowBoard ? 'workflow_board' : 'explicit_card'"
+        :aria-busy="loading || undefined"
+      >
         <span v-if="loading" class="refresh-status">正在刷新数据</span>
-        <article
-          v-for="(row, index) in records"
-          :key="String(row.id ?? index)"
-          class="card"
-          :class="`tone-${rowTone(row)}`"
-          @click="handleCard(row)"
-        >
-          <h3 class="card-title">{{ formatValue(row[titleField]) || formatValue(row.name) || formatValue(row.display_name) || row.id }}</h3>
-          <div v-if="statusMetaFields.length" class="status-chips">
-            <span v-for="field in statusMetaFields" :key="`status-${field}`" class="status-chip">
-              {{ fieldLabel(field) }}: {{ semanticCell(field, row[field]).text }}
-            </span>
+        <section v-for="lane in displayLanes" :key="lane.key" class="workflow-lane">
+          <header v-if="workflowBoard" class="workflow-lane-header">
+            <h3>{{ lane.label }}</h3>
+            <span>{{ lane.records.length }}</span>
+          </header>
+          <div class="workflow-lane-cards">
+            <article
+              v-for="(row, index) in lane.records"
+              :key="String(row.id ?? index)"
+              class="card"
+              :class="`tone-${rowTone(row)}`"
+              @click="handleCard(row)"
+            >
+              <h3 class="card-title">{{ formatValue(row[titleField]) || formatValue(row.name) || formatValue(row.display_name) || row.id }}</h3>
+              <div v-if="statusMetaFields.length" class="status-chips">
+                <span v-for="field in statusMetaFields" :key="`status-${field}`" class="status-chip">
+                  {{ fieldLabel(field) }}: {{ semanticCell(field, row[field]).text }}
+                </span>
+              </div>
+              <dl v-if="primaryMetaFields.length" class="card-meta primary">
+                <div v-for="field in primaryMetaFields" :key="`primary-${field}`" class="meta-row">
+                  <dt>{{ fieldLabel(field) }}</dt>
+                  <dd>{{ semanticCell(field, row[field]).text }}</dd>
+                </div>
+              </dl>
+              <dl class="card-meta">
+                <div v-for="field in secondaryMetaFields" :key="field" class="meta-row">
+                  <dt>{{ fieldLabel(field) }}</dt>
+                  <dd>{{ semanticCell(field, row[field]).text }}</dd>
+                </div>
+              </dl>
+            </article>
           </div>
-          <dl v-if="primaryMetaFields.length" class="card-meta primary">
-            <div v-for="field in primaryMetaFields" :key="`primary-${field}`" class="meta-row">
-              <dt>{{ fieldLabel(field) }}</dt>
-              <dd>{{ semanticCell(field, row[field]).text }}</dd>
-            </div>
-          </dl>
-          <dl class="card-meta">
-            <div v-for="field in secondaryMetaFields" :key="field" class="meta-row">
-              <dt>{{ fieldLabel(field) }}</dt>
-              <dd>{{ semanticCell(field, row[field]).text }}</dd>
-            </div>
-          </dl>
-        </article>
+        </section>
       </section>
 
       <section v-if="showPagination" class="pagination-bar">
@@ -171,6 +184,7 @@ import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSke
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { pageModeLabel } from '../app/pageMode';
 import { semanticStatus, semanticValueByField } from '../utils/semantic';
+import { groupCollectionRecords } from '../app/runtime/collectionViewRuntime';
 
 const props = defineProps<{
   title: string;
@@ -198,6 +212,8 @@ const props = defineProps<{
   listOffset?: number;
   listLimit?: number;
   onPageChange?: (offset: number) => void;
+  presentationSemantic?: 'card' | 'workflow_board' | string;
+  groupField?: string;
 }>();
 const errorCopy = computed(() =>
   resolveErrorCopy(
@@ -207,24 +223,47 @@ const errorCopy = computed(() =>
 );
 const emptyCopy = computed(() => resolveEmptyCopy('card'));
 const hasRetainedContent = computed(() => props.records.length > 0 && props.fields.length > 0);
+const workflowBoard = computed(() => props.presentationSemantic === 'workflow_board' && Boolean(props.groupField));
+const displayLanes = computed(() => {
+  if (!workflowBoard.value || !props.groupField) {
+    return groupCollectionRecords(props.records, '');
+  }
+  return groupCollectionRecords(props.records, props.groupField);
+});
 
-const fallbackMetaFields = computed(() => props.fields.filter((field) => field !== props.titleField));
+function normalizedFieldName(raw: unknown): string {
+  if (typeof raw === 'string' || typeof raw === 'number') {
+    const text = String(raw || '').trim();
+    if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(text)) return text;
+    return text.match(/(?:^|[,{])\s*name\s*[:.]\s*\.?([A-Za-z_][A-Za-z0-9_]*)/i)?.[1] || '';
+  }
+  const row = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+  for (const candidate of [row.name, row.field_name, row.field_code, row.fieldCode, row.field]) {
+    const name = candidate === raw ? '' : normalizedFieldName(candidate);
+    if (name) return name;
+  }
+  return '';
+}
+const normalizedFields = computed(() => props.fields.map(normalizedFieldName).filter(Boolean));
+const technicalFields = new Set(['id', 'create_uid', 'create_date', 'write_uid', 'write_date', '__last_update']);
+const businessMetaField = (field: string) => field && field !== props.titleField && !technicalFields.has(field);
+const fallbackMetaFields = computed(() => normalizedFields.value.filter(businessMetaField));
 const statusMetaFields = computed(() => {
-  const preferred = (props.statusFields || []).filter((field) => field);
+  const preferred = (props.statusFields || []).map(normalizedFieldName).filter(businessMetaField);
   if (preferred.length) return preferred.slice(0, 2);
   return [];
 });
 const primaryMetaFields = computed(() => {
-  const preferred = (props.primaryFields || []).filter(
-    (field) => field && !statusMetaFields.value.includes(field),
+  const preferred = (props.primaryFields || []).map(normalizedFieldName).filter(
+    (field) => businessMetaField(field) && !statusMetaFields.value.includes(field),
   );
   if (preferred.length) return preferred.slice(0, 2);
   return fallbackMetaFields.value.filter((field) => !statusMetaFields.value.includes(field)).slice(0, 2);
 });
 const secondaryMetaFields = computed(() => {
-  const preferred = (props.secondaryFields || []).filter(
+  const preferred = (props.secondaryFields || []).map(normalizedFieldName).filter(
     (field) =>
-      field
+      businessMetaField(field)
       && !statusMetaFields.value.includes(field)
       && !primaryMetaFields.value.includes(field),
   );
@@ -379,6 +418,48 @@ function formatValue(value: unknown) {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.workflow-lane {
+  min-width: 0;
+}
+
+.workflow-lane-cards {
+  display: grid;
+  gap: 16px;
+}
+
+.grid:not(.is-workflow-board) .workflow-lane-cards {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.grid.is-workflow-board {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-items: start;
+}
+
+.workflow-lane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  border-bottom: 2px solid var(--sc-app-border);
+  padding: 8px 4px;
+}
+
+.workflow-lane-header h3 {
+  margin: 0;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
+}
+
+.workflow-lane-header span {
+  border-radius: 999px;
+  background: var(--sc-app-info-bg);
+  padding: 2px 8px;
+  color: var(--sc-app-info-text);
+  font-size: 12px;
 }
 
 .grid.is-refreshing {

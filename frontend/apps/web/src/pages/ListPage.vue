@@ -1,9 +1,5 @@
 <template>
-  <section
-    class="page sc-page sc-product-workspace-stack"
-    data-product-page-mode="list"
-    :data-list-status="status"
-  >
+  <section class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" :data-list-status="status">
     <ScPageHeader
       v-if="status === 'error'"
       :title="title"
@@ -127,6 +123,7 @@
         class="table sc-product-main-surface"
         :class="{ 'is-refreshing': loading }"
         data-workspace-primary-content
+        data-collection-presentation="table"
         role="region"
         aria-label="业务列表，可横向滚动"
         :aria-busy="loading || undefined"
@@ -428,6 +425,7 @@
       <section
         v-if="!showGroupedRows"
         class="mobile-record-list"
+        data-collection-presentation="responsive_table_card"
         aria-label="移动端记录列表"
         :role="showSelectionColumn ? 'listbox' : undefined"
         :aria-multiselectable="showSelectionColumn || undefined"

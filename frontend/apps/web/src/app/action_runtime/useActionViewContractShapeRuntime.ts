@@ -60,7 +60,15 @@ function normalizeFieldNames(rows: unknown): string[] {
     .map((item) => {
       if (typeof item === 'string' || typeof item === 'number') return String(item || '').trim();
       const row = (item || {}) as Dict;
-      return String(row.field || row.name || row.field_name || '').trim();
+      const direct = row.name || row.field_name || row.field_code || row.fieldCode;
+      if (typeof direct === 'string' || typeof direct === 'number') return String(direct || '').trim();
+      const nested = row.field;
+      if (typeof nested === 'string' || typeof nested === 'number') return String(nested || '').trim();
+      if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+        const field = nested as Dict;
+        return String(field.name || field.field_name || field.field_code || field.fieldCode || '').trim();
+      }
+      return '';
     })
     .filter((name) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name));
 }
@@ -435,8 +443,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
     const directViews = typed.views as Dict | undefined;
     const block = (directViews?.kanban || {}) as Dict;
     const profile = (block.kanban_profile || {}) as Dict;
-    const normalize = (rows: unknown) =>
-      Array.isArray(rows) ? rows.map((item) => String(item || '').trim()).filter(Boolean) : [];
+    const normalize = (rows: unknown) => normalizeFieldNames(rows);
     return {
       titleField: String(profile.title_field || '').trim(),
       primaryFields: normalize(profile.primary_fields),
