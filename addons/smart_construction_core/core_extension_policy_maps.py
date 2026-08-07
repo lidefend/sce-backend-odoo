@@ -193,6 +193,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_cost_center",
         ],
         "primary_menu_xmlids": [
+            "smart_construction_core.menu_sc_project_initiation",
             "smart_construction_core.menu_sc_project_project",
             "smart_construction_core.menu_sc_general_contract",
             "smart_construction_core.menu_sc_construction_contract",

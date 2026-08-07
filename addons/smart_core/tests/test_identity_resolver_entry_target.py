@@ -100,6 +100,26 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
             surface["menu_blocklist_xmlids"],
         )
 
+    def test_multi_role_project_manager_keeps_project_intake_executable_surface(self):
+        resolver = self._construction_resolver()
+        surface = resolver.build_role_surface(
+            {
+                "smart_construction_core.group_sc_cap_business_config_admin",
+                "smart_construction_core.group_sc_role_executive",
+                "smart_construction_core.group_sc_role_project_user",
+            },
+            [],
+            {"workspace.home", "projects.intake", "projects.list"},
+            construction_policy.ROLE_SURFACE_OVERRIDES,
+        )
+
+        self.assertEqual(surface["role_codes"], ["business_config_admin", "executive", "pm"])
+        self.assertIn(
+            "smart_construction_core.menu_sc_project_initiation",
+            surface["primary_menu_xmlids"],
+        )
+        self.assertIn("projects.intake", surface["scene_candidates"])
+
     def test_additive_technical_surface_does_not_impersonate_business_role(self):
         resolver = self._construction_resolver()
         resolver._role_precedence = ("pm", "uat_helper", "finance")

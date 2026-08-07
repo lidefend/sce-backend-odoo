@@ -24,7 +24,6 @@ function routeTitle(routeName: string | symbol | null | undefined): string {
     'scene-home': '角色首页',
     'my-work': '我的工作',
     'scene-my-work': '我的工作',
-    'projects-intake': '项目立项',
     scene: '业务场景',
     menu: '业务菜单',
     action: '业务列表',
@@ -115,7 +114,7 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
     const prefix = to.name === 'record' ? '/r' : '/f';
     return `${prefix}/${encodeURIComponent(model)}/${encodeURIComponent(recordId)}${query}`;
   }
-  if (to.name === 'scene' || to.name === 'projects-intake' || String(to.name || '').startsWith('scene-')) {
+  if (to.name === 'scene' || String(to.name || '').startsWith('scene-')) {
     const query = buildActivityQuery(to, ['menu_id', 'action_id', 'scene_key', 'scene']);
     return `${to.path}${query}`;
   }
@@ -216,7 +215,7 @@ function registerRouteActivity(to: RouteLocationNormalized) {
       ? `new:${model}:${routeQueryText(to.query.menu_id)}:${activityProjectPart(session, 'current_project')}:${activityInstanceId || now}`
       : `record:${model}:${recordId}`;
     kind = 'record_form';
-  } else if (to.name === 'scene' || to.name === 'projects-intake' || String(to.name || '').startsWith('scene-')) {
+  } else if (to.name === 'scene' || String(to.name || '').startsWith('scene-')) {
     sceneKey = routeQueryText(to.params.sceneKey || to.meta?.sceneKey || to.query.scene_key || to.query.scene);
     key = `scene:${sceneKey || String(to.name || 'scene')}:${activityProjectPart(session, 'current_project')}`;
     kind = sceneKey === 'workspace.home' || to.name === 'scene-home' ? 'workspace' : 'scene';
@@ -254,7 +253,6 @@ const router = createRouter({
     { path: '/my-work', name: 'my-work', component: () => import('../views/MyWorkView.vue'), meta: { layout: 'shell' } },
     { path: '/s/my_work.workspace', name: 'scene-my-work', component: () => import('../views/MyWorkView.vue'), meta: { layout: 'shell', sceneKey: 'my_work.workspace' } },
     { path: '/pm/dashboard', name: 'project-management-dashboard', redirect: '/s/project.management', meta: { layout: 'shell' } },
-    { path: '/s/projects.intake', name: 'projects-intake', component: () => import('../views/ProjectsIntakeView.vue'), meta: { layout: 'shell', sceneKey: 'projects.intake' } },
     { path: '/s/:sceneKey', name: 'scene', component: () => import('../views/SceneView.vue'), meta: { layout: 'shell' } },
     { path: '/m/:menuId', name: 'menu', component: () => import('../views/MenuView.vue'), meta: { layout: 'shell' } },
     { path: '/access-denied', name: 'access-denied', component: () => import('../views/AccessDeniedView.vue'), meta: { layout: 'shell' } },

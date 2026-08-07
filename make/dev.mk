@@ -17,6 +17,7 @@ odoo-shell: check-compose-project check-compose-env
 
 FRONTEND_DEV_LOG ?= /tmp/sc-frontend-dev.log
 FRONTEND_DEV_PID ?= /tmp/sc-frontend-dev.pid
+FRONTEND_DEV_PORT ?= 5174
 
 frontend.dev: guard.prod.forbid
 	@FRONTEND_PROFILE=$${FRONTEND_PROFILE:-daily} \
@@ -29,20 +30,20 @@ frontend.stop: guard.prod.forbid
 	@if [ -f "$(FRONTEND_DEV_PID)" ]; then \
 		pid="$$(cat "$(FRONTEND_DEV_PID)" 2>/dev/null || true)"; \
 		if [ -n "$$pid" ] && kill -0 "$$pid" 2>/dev/null; then \
-			kill "$$pid" 2>/dev/null || true; \
-			echo "[frontend.stop] killed pid=$$pid"; \
+			kill -- "-$$pid" 2>/dev/null || kill "$$pid" 2>/dev/null || true; \
+			echo "[frontend.stop] killed process-group=$$pid"; \
 		fi; \
 	fi
 	@pids=""; \
 	if command -v lsof >/dev/null 2>&1; then \
-		pids="$$(lsof -tiTCP:5174 -sTCP:LISTEN 2>/dev/null || true)"; \
+		pids="$$(lsof -tiTCP:$(FRONTEND_DEV_PORT) -sTCP:LISTEN 2>/dev/null || true)"; \
 	elif command -v ss >/dev/null 2>&1; then \
-		pids="$$(ss -ltnp 2>/dev/null | awk '$$4 ~ /:5174$$/ {print $$NF}' | sed -n 's/.*pid=\([0-9]\+\).*/\1/p' | sort -u)"; \
+		pids="$$(ss -ltnp 2>/dev/null | awk -v target=":$(FRONTEND_DEV_PORT)" '$$4 ~ target"$$" {print $$NF}' | sed -n 's/.*pid=\([0-9]\+\).*/\1/p' | sort -u)"; \
 	fi; \
 	if [ -n "$$pids" ]; then \
-		for pid in $$pids; do kill "$$pid" 2>/dev/null || true; echo "[frontend.stop] killed listener pid=$$pid"; done; \
+		for pid in $$pids; do kill "$$pid" 2>/dev/null || true; echo "[frontend.stop] killed listener pid=$$pid port=$(FRONTEND_DEV_PORT)"; done; \
 	else \
-		echo "[frontend.stop] no listener on :5174"; \
+		echo "[frontend.stop] no listener on :$(FRONTEND_DEV_PORT)"; \
 	fi
 	@rm -f "$(FRONTEND_DEV_PID)"
 
@@ -59,24 +60,29 @@ frontend.logs:
 
 FRONTEND_ACCEPTANCE_PORT ?= 5175
 FRONTEND_ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(FRONTEND_ACCEPTANCE_PORT)
+FRONTEND_ACCEPTANCE_DB ?= sc_frontend_acceptance
+BACKEND_ACCEPTANCE_NAME ?= sc-backend-odoo-acceptance
+BACKEND_ACCEPTANCE_PORT ?= 18082
+BACKEND_ACCEPTANCE_DB ?= sc_frontend_acceptance
+BACKEND_ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(BACKEND_ACCEPTANCE_PORT)
 
 frontend.acceptance.up: guard.prod.forbid
-	@FRONTEND_ACCEPTANCE_PORT="$(FRONTEND_ACCEPTANCE_PORT)" bash scripts/dev/frontend_acceptance_up.sh
+	@FRONTEND_ACCEPTANCE_PORT="$(FRONTEND_ACCEPTANCE_PORT)" FRONTEND_ACCEPTANCE_DB="$(FRONTEND_ACCEPTANCE_DB)" bash scripts/dev/frontend_acceptance_up.sh
 
 frontend.acceptance.down: guard.prod.forbid
 	@FRONTEND_ACCEPTANCE_PORT="$(FRONTEND_ACCEPTANCE_PORT)" bash scripts/dev/frontend_acceptance_down.sh
 
 frontend.acceptance.health:
 	@curl -fsS "$(FRONTEND_ACCEPTANCE_BASE_URL)/login" >/dev/null
-	@echo "[frontend.acceptance.health] PASS url=$(FRONTEND_ACCEPTANCE_BASE_URL) db=sc_frontend_acceptance"
+	@echo "[frontend.acceptance.health] PASS url=$(FRONTEND_ACCEPTANCE_BASE_URL) db=$(FRONTEND_ACCEPTANCE_DB)"
 
 backend.acceptance.up: guard.prod.forbid check-compose-project check-compose-env
-	@bash scripts/dev/backend_acceptance_up.sh
+	@BACKEND_ACCEPTANCE_NAME="$(BACKEND_ACCEPTANCE_NAME)" BACKEND_ACCEPTANCE_PORT="$(BACKEND_ACCEPTANCE_PORT)" BACKEND_ACCEPTANCE_DB="$(BACKEND_ACCEPTANCE_DB)" bash scripts/dev/backend_acceptance_up.sh
 backend.acceptance.down:
-	@bash scripts/dev/backend_acceptance_down.sh
+	@BACKEND_ACCEPTANCE_NAME="$(BACKEND_ACCEPTANCE_NAME)" bash scripts/dev/backend_acceptance_down.sh
 backend.acceptance.health:
-	@curl -fsS http://127.0.0.1:18082/web/login >/dev/null
-	@echo "[backend.acceptance.health] PASS db=sc_frontend_acceptance"
+	@curl -fsS "$(BACKEND_ACCEPTANCE_BASE_URL)/web/login" >/dev/null
+	@echo "[backend.acceptance.health] PASS db=$(BACKEND_ACCEPTANCE_DB) url=$(BACKEND_ACCEPTANCE_BASE_URL)"
 
 backend.collection.acceptance.up: guard.prod.forbid check-compose-project check-compose-env
 	@BACKEND_ACCEPTANCE_NAME=sc-backend-odoo-collection-view-semantics BACKEND_ACCEPTANCE_PORT=18102 bash scripts/dev/backend_acceptance_up.sh

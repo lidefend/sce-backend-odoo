@@ -26,6 +26,7 @@ fi
 # ---- Snapshot externally provided vars (highest priority) ----
 _pre_DB_NAME="${DB_NAME:-}"
 _pre_DB="${DB:-}"
+_pre_ENV_FILE="${ENV_FILE:-}"
 _pre_DB_USER="${DB_USER:-}"
 _pre_DB_PASSWORD="${DB_PASSWORD:-}"
 _pre_MODULE="${MODULE:-}"
@@ -43,6 +44,7 @@ set +a
 # ---- Restore external overrides (do NOT let .env override them) ----
 [[ -n "${_pre_DB_NAME}" ]] && DB_NAME="${_pre_DB_NAME}"
 [[ -n "${_pre_DB}" ]] && DB="${_pre_DB}"
+[[ -n "${_pre_ENV_FILE}" ]] && ENV_FILE="${_pre_ENV_FILE}"
 [[ -n "${_pre_DB_USER}" ]] && DB_USER="${_pre_DB_USER}"
 [[ -n "${_pre_DB_PASSWORD}" ]] && DB_PASSWORD="${_pre_DB_PASSWORD}"
 [[ -n "${_pre_MODULE}" ]] && MODULE="${_pre_MODULE}"

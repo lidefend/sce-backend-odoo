@@ -49,6 +49,8 @@ REQUESTED_BD := $(BD)
 REQUESTED_DB_NAME_ORIGIN := $(origin DB_NAME)
 REQUESTED_DB_ORIGIN := $(origin DB)
 REQUESTED_BD_ORIGIN := $(origin BD)
+REQUESTED_ENV_FILE := $(ENV_FILE)
+REQUESTED_ENV_FILE_ORIGIN := $(origin ENV_FILE)
 
 # ======================================================
 # ==================== Codex SOP =======================
@@ -85,6 +87,9 @@ ENV_FILE := $(ENV_FILE_RESOLVED)
 ifneq ($(strip $(ENV_FILE_RESOLVED)),)
 include $(ENV_FILE_RESOLVED)
 export
+endif
+ifneq (,$(filter command line environment environment\ override,$(REQUESTED_ENV_FILE_ORIGIN)))
+ENV_FILE := $(REQUESTED_ENV_FILE)
 endif
 
 # ------------------ Compose ------------------

@@ -96,7 +96,7 @@ export function resolveRoutePageIdentity(route: RouteLike, menuTree: NavNode[]):
       state: isCreate ? '' : 'loading',
     };
   }
-  if (name === 'scene' || name === 'projects-intake' || name.startsWith('scene-')) {
+  if (name === 'scene' || name.startsWith('scene-')) {
     const sceneKey = routeText(route.params.sceneKey || route.meta?.sceneKey || route.query.scene_key || route.query.scene);
     const scene = sceneKey ? getSceneByKey(sceneKey) : null;
     return { menuName: scene?.label, fallbackTitle: scene?.label || '业务场景', breadcrumbs: crumbs };

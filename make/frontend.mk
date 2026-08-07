@@ -36,7 +36,7 @@ verify.frontend.typecheck.strict: guard.prod.forbid
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 
-.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit audit.frontend.industry_agnostic verify.frontend.industry_agnostic.guard
+.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.runtime_environment.unit audit.frontend.industry_agnostic verify.frontend.industry_agnostic.guard
 
 audit.frontend.industry_agnostic: guard.prod.forbid
 	@python3 scripts/verify/frontend_industry_agnostic_audit.py
@@ -55,6 +55,10 @@ verify.frontend.collection_view_semantics.unit: guard.prod.forbid
 	@node /tmp/collection-view-semantics-test.mjs
 	@python3 addons/smart_core/tests/test_native_view_parser_surfaces.py
 	@python3 scripts/verify/collection_view_semantics_guard.py
+
+verify.frontend.runtime_environment.unit: guard.prod.forbid
+	@python3 scripts/verify/test_common_env_explicit_path.py
+	@python3 scripts/verify/frontend_dev_process_isolation_guard.py
 
 .PHONY: verify.frontend.detail_form_productization.guard
 verify.frontend.detail_form_productization.guard: guard.prod.forbid

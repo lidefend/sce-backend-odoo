@@ -95,7 +95,7 @@ function activityRouteKey(route: RouteLocationNormalizedLoaded): string {
     // business requests. Company/scope transitions invalidate cache epochs.
     return `record:${model}:${recordId}:action:${actionId || 0}:menu:${menuId || 0}`;
   }
-  if (route.name === 'scene' || route.name === 'projects-intake' || String(route.name || '').startsWith('scene-')) {
+  if (route.name === 'scene' || String(route.name || '').startsWith('scene-')) {
     const sceneKey = routeText(route.params.sceneKey || route.meta?.sceneKey || route.query.scene_key || route.query.scene);
     if (!sceneKey || sceneKey === 'workspace.home') return '';
     return `scene:${sceneKey}:${activityProjectPart('current_project')}`;
