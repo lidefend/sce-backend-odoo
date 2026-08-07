@@ -3032,3 +3032,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   audits. Daily acceptance must bind the combined exact SHA and prove Windows
   table, Harmony responsive cards, explicit cards and grouped workflow all
   preserve the same record set without technical-field leakage or overflow.
+
+## 2026-08-08 — FRONTEND-PRODUCT-STABLE-BASELINE-FINAL-CLOSURE
+
+- Branch / anchor: `feature/frontend-product-stable-baseline` from
+  `901e97af54e3bc288a008cfb183485fd55aa0d65`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product;
+  shared frontend contract consumption, renderer and form lifecycle;
+  `frontend/apps/web`.
+- Reason / Why Here: the candidate's source lint gate exposed three stale
+  dependency declarations after the frontend stopped owning the related
+  product semantics. The generic frontend layer owns removal of those unused
+  inputs while preserving existing compatibility call shapes.
+- Why Not Elsewhere: no construction or customer semantics, permission, API,
+  route, database record, native view definition or low-code configuration is
+  changed. No frontend fallback or model/scene-specific branch is introduced.
+- Blast Radius / validation: section presentation compatibility and generic
+  record-form action/lifecycle dependency extraction only. Source lint, strict
+  type checking, release units, deterministic build and exact-SHA browser
+  release gates must pass after integrating the current authoritative main.

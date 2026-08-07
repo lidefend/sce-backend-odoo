@@ -16,6 +16,7 @@ export function resolveTemplateSectionPresentation(
   section: TemplateSectionInput,
   _options?: Record<string, unknown>,
 ): TemplateSectionPresentation {
+  void _options;
   const rawTitle = String(section.title || '').trim();
   return {
     title: rawTitle || '信息分组',
