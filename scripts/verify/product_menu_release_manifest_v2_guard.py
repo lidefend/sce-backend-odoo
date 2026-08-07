@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/product_menu_release_manifest_v2.json"
 MENU_XML = ROOT / "addons/smart_construction_core/views/menu_product_navigation_v2.xml"
 POLICY_SYNC = ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py"
+HOOK_FACTS = ROOT / "addons/smart_construction_core/core_extension_hook_facts.py"
 DEV_MAKE = ROOT / "make/dev.mk"
 ODOO_SHELL_EXEC = ROOT / "scripts/ops/odoo_shell_exec.sh"
 
@@ -36,6 +37,16 @@ EXPECTED_PROJECT_LEVEL_TWO = [
     "里程碑管理", "项目协同", "项目资料", "风险与问题", "项目收尾",
 ]
 ALLOWED_PROJECT_RELEASE_STATUS = {"RELEASED", "READY_TO_CONVERGE", "FOLLOWUP"}
+EXPECTED_FOLLOWUP_BY_CENTER = {
+    "合同中心": ["履约与预警"],
+    "成本中心": ["成本预测", "现金流预测"],
+    "物资与分包": ["供应链协同"],
+    "施工管理": ["现场移动", "BIM协同"],
+    "财务中心": ["资金预测"],
+    "税务中心": ["税务申报", "发票查验"],
+    "报表中心": ["预测预警"],
+    "组织行政": ["人员生命周期", "资源能力"],
+}
 
 
 def main() -> int:
@@ -68,6 +79,24 @@ def main() -> int:
         if status == "FOLLOWUP" and not row.get("launch_note"):
             errors.append(f"project level-two[{index}] follow-up item missing launch note")
 
+    center_ia = payload.get("center_information_architecture") or {}
+    if list(center_ia) != list(EXPECTED_FOLLOWUP_BY_CENTER):
+        errors.append("cross-center information architecture order mismatch")
+    for center, followup_names in EXPECTED_FOLLOWUP_BY_CENTER.items():
+        architecture = center_ia.get(center) or {}
+        rows = architecture.get("level_two_order") or []
+        if architecture.get("locked") is not True or not rows:
+            errors.append(f"{center} information architecture must be locked and non-empty")
+            continue
+        actual_followup = [row.get("name") for row in rows if row.get("release_status") == "FOLLOWUP"]
+        if actual_followup != followup_names:
+            errors.append(f"{center} follow-up capability order mismatch")
+        for row in rows:
+            if row.get("release_status") not in ALLOWED_PROJECT_RELEASE_STATUS:
+                errors.append(f"{center} invalid release status: {row.get('name')}")
+            if row.get("release_status") == "FOLLOWUP" and not row.get("launch_note"):
+                errors.append(f"{center} follow-up item missing launch note: {row.get('name')}")
+
     checklist = payload.get("capability_release_checklist") or []
     if not checklist:
         errors.append("capability release checklist is empty")
@@ -86,6 +115,7 @@ def main() -> int:
     xml = MENU_XML.read_text(encoding="utf-8")
     xml_root = ElementTree.fromstring(xml)
     policy = POLICY_SYNC.read_text(encoding="utf-8")
+    hook_facts = HOOK_FACTS.read_text(encoding="utf-8")
     dev_make = DEV_MAKE.read_text(encoding="utf-8")
     shell_exec = ODOO_SHELL_EXEC.read_text(encoding="utf-8")
     for center in EXPECTED_CENTERS:
@@ -101,6 +131,14 @@ def main() -> int:
     ]
     if cost_parent_refs != ["smart_construction_core.menu_sc_root"]:
         errors.append("cost center is not explicitly rooted in the product application")
+    center_sequence = {}
+    for record in xml_root.findall("record"):
+        record_id = record.get("id")
+        for field in record.findall("field"):
+            if field.get("name") == "sequence" and (field.text or "").strip().isdigit():
+                center_sequence[record_id] = int((field.text or "0").strip())
+    if center_sequence.get("menu_sc_contract_center") + 10 != center_sequence.get("menu_sc_cost_center"):
+        errors.append("cost center must be sequenced immediately after contract center")
     for xmlid in REQUIRED_COST_XMLIDS:
         token = f'"smart_construction_core.{xmlid}"'
         if token not in policy:
@@ -140,6 +178,14 @@ def main() -> int:
     ):
         if token not in xml:
             errors.append(f"project roadmap admin visibility binding missing: {token}")
+    for center, names in EXPECTED_FOLLOWUP_BY_CENTER.items():
+        for name in names:
+            if f'name="{name}（后续上线）"' not in xml:
+                errors.append(f"{center} roadmap menu missing: {name}")
+    expected_center_ranks = {"工作台": 5, "项目中心": 10, "合同中心": 20, "成本中心": 30, "物资与分包": 40, "施工管理": 50, "财务中心": 60, "税务中心": 70, "报表中心": 80, "组织行政": 90}
+    for center, expected_rank in expected_center_ranks.items():
+        if f'"{center}": {expected_rank}' not in hook_facts:
+            errors.append(f"delivery center order missing: {center}")
     for token in (
         "release.daily_product_navigation.snapshot:",
         'test "$(ENV)" = "dev"',

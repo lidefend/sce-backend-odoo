@@ -4,9 +4,10 @@ from odoo import fields, models
 
 class ScProjectCapabilityRoadmap(models.Model):
     _name = "sc.project.capability.roadmap"
-    _description = "项目中心能力上线说明"
-    _order = "sequence, id"
+    _description = "产品中心能力上线说明"
+    _order = "center_name, sequence, id"
 
+    center_name = fields.Char(string="所属中心", required=True, readonly=True, index=True, default="项目中心")
     name = fields.Char(string="能力域", required=True, readonly=True)
     capability_key = fields.Char(string="能力标识", required=True, readonly=True, index=True)
     release_status = fields.Selection(

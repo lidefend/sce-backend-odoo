@@ -27,6 +27,18 @@ PRODUCT_NAVIGATION_V2_GROUP_ALIASES = {
     "资料证照": "组织行政",
 }
 PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES = {
+    ("合同中心", "履约与预警（后续上线）", "smart_construction_core.menu_sc_contract_performance_roadmap_v2"),
+    ("成本中心", "成本预测（后续上线）", "smart_construction_core.menu_sc_cost_forecast_roadmap_v2"),
+    ("成本中心", "现金流预测（后续上线）", "smart_construction_core.menu_sc_cost_cashflow_roadmap_v2"),
+    ("物资与分包", "供应链协同（后续上线）", "smart_construction_core.menu_sc_supply_collaboration_roadmap_v2"),
+    ("施工管理", "现场移动（后续上线）", "smart_construction_core.menu_sc_field_mobile_roadmap_v2"),
+    ("施工管理", "BIM协同（后续上线）", "smart_construction_core.menu_sc_bim_collaboration_roadmap_v2"),
+    ("财务中心", "资金预测（后续上线）", "smart_construction_core.menu_sc_fund_forecast_roadmap_v2"),
+    ("税务中心", "税务申报（后续上线）", "smart_construction_core.menu_sc_tax_filing_roadmap_v2"),
+    ("税务中心", "发票查验（后续上线）", "smart_construction_core.menu_sc_invoice_verification_roadmap_v2"),
+    ("报表中心", "预测预警（后续上线）", "smart_construction_core.menu_sc_report_prediction_roadmap_v2"),
+    ("组织行政", "人员生命周期（后续上线）", "smart_construction_core.menu_sc_people_lifecycle_roadmap_v2"),
+    ("组织行政", "资源能力（后续上线）", "smart_construction_core.menu_sc_resource_capacity_roadmap_v2"),
     ("项目中心", "项目组织（后续上线）", "smart_construction_core.menu_sc_project_organization_group_v2"),
     ("项目中心", "里程碑管理（后续上线）", "smart_construction_core.menu_sc_project_milestone_group_v2"),
     ("项目中心", "项目协同（后续上线）", "smart_construction_core.menu_sc_project_collaboration_group_v2"),

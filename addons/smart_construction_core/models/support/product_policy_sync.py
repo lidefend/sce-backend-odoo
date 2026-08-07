@@ -211,6 +211,18 @@ PRODUCT_MENU_BUSINESS_DOMAIN_OVERRIDES = {
     },
 }
 NATIVE_MODELED_PRODUCT_CAPABILITY_MENUS = {
+    "smart_construction_core.menu_sc_contract_performance_roadmap_v2": {"group_label": "合同中心", "target": "sc.project.capability.roadmap 履约与预警后续上线说明", "product_domain": "contract_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_cost_forecast_roadmap_v2": {"group_label": "成本中心", "target": "sc.project.capability.roadmap 成本预测后续上线说明", "product_domain": "cost_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_cost_cashflow_roadmap_v2": {"group_label": "成本中心", "target": "sc.project.capability.roadmap 现金流预测后续上线说明", "product_domain": "cost_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_supply_collaboration_roadmap_v2": {"group_label": "物资与分包", "target": "sc.project.capability.roadmap 供应链协同后续上线说明", "product_domain": "supply_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_field_mobile_roadmap_v2": {"group_label": "施工管理", "target": "sc.project.capability.roadmap 现场移动后续上线说明", "product_domain": "construction_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_bim_collaboration_roadmap_v2": {"group_label": "施工管理", "target": "sc.project.capability.roadmap BIM协同后续上线说明", "product_domain": "construction_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_fund_forecast_roadmap_v2": {"group_label": "财务中心", "target": "sc.project.capability.roadmap 资金预测后续上线说明", "product_domain": "finance_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_tax_filing_roadmap_v2": {"group_label": "税务中心", "target": "sc.project.capability.roadmap 税务申报后续上线说明", "product_domain": "tax_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_invoice_verification_roadmap_v2": {"group_label": "税务中心", "target": "sc.project.capability.roadmap 发票查验后续上线说明", "product_domain": "tax_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_report_prediction_roadmap_v2": {"group_label": "报表中心", "target": "sc.project.capability.roadmap 预测预警后续上线说明", "product_domain": "report_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_people_lifecycle_roadmap_v2": {"group_label": "组织行政", "target": "sc.project.capability.roadmap 人员生命周期后续上线说明", "product_domain": "organization_roadmap", "product_domain_label": "后续上线"},
+    "smart_construction_core.menu_sc_resource_capacity_roadmap_v2": {"group_label": "组织行政", "target": "sc.project.capability.roadmap 资源能力后续上线说明", "product_domain": "organization_roadmap", "product_domain_label": "后续上线"},
     "smart_construction_core.menu_sc_project_organization_group_v2": {
         "group_label": "项目中心",
         "target": "sc.project.capability.roadmap 项目组织后续上线说明",

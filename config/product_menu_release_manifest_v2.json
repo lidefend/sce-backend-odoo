@@ -39,6 +39,46 @@
       {"name": "项目收尾", "release_status": "FOLLOWUP", "launch_note": "待补齐验收、移交、竣工档案和后评价后上线"}
     ]
   },
+  "center_information_architecture": {
+    "合同中心": {"locked": true, "level_two_order": [
+      {"name": "合同管理", "release_status": "RELEASED"}, {"name": "变更签证", "release_status": "RELEASED"}, {"name": "结算管理", "release_status": "RELEASED"},
+      {"name": "履约与预警", "release_status": "FOLLOWUP", "launch_note": "待合同义务、履约事件、预警处置和关闭形成统一闭环后上线"}
+    ]},
+    "成本中心": {"locked": true, "level_two_order": [
+      {"name": "目标与预算", "release_status": "RELEASED"}, {"name": "动态成本", "release_status": "RELEASED"}, {"name": "成本分析", "release_status": "RELEASED"},
+      {"name": "成本预测", "release_status": "FOLLOWUP", "launch_note": "待预算、承诺、实际和完工预测形成跨期闭环后上线"},
+      {"name": "现金流预测", "release_status": "FOLLOWUP", "launch_note": "待合同计划、资金计划和实际收付形成可验证联动后上线"}
+    ]},
+    "物资与分包": {"locked": true, "level_two_order": [
+      {"name": "材料计划", "release_status": "RELEASED"}, {"name": "询价采购", "release_status": "RELEASED"}, {"name": "材料管理", "release_status": "RELEASED"},
+      {"name": "劳务管理", "release_status": "RELEASED"}, {"name": "机械管理", "release_status": "RELEASED"}, {"name": "周转材料", "release_status": "RELEASED"},
+      {"name": "分包管理", "release_status": "RELEASED"}, {"name": "供应链协同", "release_status": "FOLLOWUP", "launch_note": "待外部供应商门户、身份隔离和交付对账闭环后上线"}
+    ]},
+    "施工管理": {"locked": true, "level_two_order": [
+      {"name": "进度与施工", "release_status": "RELEASED"}, {"name": "质量管理", "release_status": "RELEASED"}, {"name": "安全管理", "release_status": "RELEASED"},
+      {"name": "现场移动", "release_status": "FOLLOWUP", "launch_note": "待移动离线、影像定位和整改复验链路通过验收后上线"},
+      {"name": "BIM协同", "release_status": "FOLLOWUP", "launch_note": "待模型版本、图纸和业务单据构件关联通过验收后上线"}
+    ]},
+    "财务中心": {"locked": true, "level_two_order": [
+      {"name": "收款管理", "release_status": "RELEASED"}, {"name": "付款管理", "release_status": "RELEASED"}, {"name": "借还款", "release_status": "RELEASED"},
+      {"name": "费用与保证金", "release_status": "RELEASED"}, {"name": "账户资金", "release_status": "RELEASED"}, {"name": "资金计划", "release_status": "RELEASED"},
+      {"name": "融资与自筹", "release_status": "RELEASED"}, {"name": "资金预测", "release_status": "FOLLOWUP", "launch_note": "待合同、结算、收付款实际与滚动资金计划自动联动后上线"}
+    ]},
+    "税务中心": {"locked": true, "level_two_order": [
+      {"name": "发票管理", "release_status": "RELEASED"}, {"name": "预缴与抵扣", "release_status": "RELEASED"}, {"name": "外经证", "release_status": "RELEASED"},
+      {"name": "税务申报", "release_status": "FOLLOWUP", "launch_note": "待申报口径、属地规则和业财税勾稽通过验收后上线"},
+      {"name": "发票查验", "release_status": "FOLLOWUP", "launch_note": "待外部查验接口和异常处置链路稳定后上线"}
+    ]},
+    "报表中心": {"locked": true, "level_two_order": [
+      {"name": "综合看板", "release_status": "RELEASED"}, {"name": "经营报表", "release_status": "RELEASED"}, {"name": "成本分析", "release_status": "RELEASED"},
+      {"name": "财务分析", "release_status": "RELEASED"}, {"name": "预测预警", "release_status": "FOLLOWUP", "launch_note": "待组合预测、预警准确性和明细钻取一致性通过验收后上线"}
+    ]},
+    "组织行政": {"locked": true, "level_two_order": [
+      {"name": "行政审批", "release_status": "RELEASED"}, {"name": "人事薪酬", "release_status": "RELEASED"}, {"name": "资料证照", "release_status": "RELEASED"}, {"name": "基础资料", "release_status": "RELEASED"},
+      {"name": "人员生命周期", "release_status": "FOLLOWUP", "launch_note": "待入转调离、权限回收和档案留存形成闭环后上线"},
+      {"name": "资源能力", "release_status": "FOLLOWUP", "launch_note": "待技能资质、人员负荷和项目调度场景通过验收后上线"}
+    ]}
+  },
   "capability_release_checklist": [
     {
       "domain": "工作台",

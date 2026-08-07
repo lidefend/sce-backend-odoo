@@ -4,8 +4,9 @@
         <field name="name">sc.project.capability.roadmap.tree</field>
         <field name="model">sc.project.capability.roadmap</field>
         <field name="arch" type="xml">
-            <tree string="项目中心后续上线能力" create="false" edit="false" delete="false">
+            <tree string="产品中心后续上线能力" create="false" edit="false" delete="false">
                 <field name="sequence" column_invisible="True"/>
+                <field name="center_name"/>
                 <field name="name"/>
                 <field name="release_status" widget="badge" decoration-info="release_status == 'followup'"/>
                 <field name="planned_scope"/>
@@ -18,10 +19,11 @@
         <field name="name">sc.project.capability.roadmap.form</field>
         <field name="model">sc.project.capability.roadmap</field>
         <field name="arch" type="xml">
-            <form string="项目中心能力上线说明" create="false" edit="false" delete="false">
+            <form string="产品中心能力上线说明" create="false" edit="false" delete="false">
                 <sheet>
                     <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
                     <group>
+                        <field name="center_name" readonly="1"/>
                         <field name="release_status" widget="badge" readonly="1"/>
                         <field name="capability_key" readonly="1"/>
                     </group>
@@ -72,4 +74,17 @@
         <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
         <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
     </record>
+
+    <record id="action_sc_contract_performance_roadmap" model="ir.actions.act_window"><field name="name">履约与预警（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'contract_performance_alert')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_cost_forecast_roadmap" model="ir.actions.act_window"><field name="name">成本预测（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'cost_forecast')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_cost_cashflow_roadmap" model="ir.actions.act_window"><field name="name">现金流预测（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'cost_cashflow_forecast')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_supply_collaboration_roadmap" model="ir.actions.act_window"><field name="name">供应链协同（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'supply_chain_collaboration')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_field_mobile_roadmap" model="ir.actions.act_window"><field name="name">现场移动（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'field_mobile')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_bim_collaboration_roadmap" model="ir.actions.act_window"><field name="name">BIM协同（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'bim_collaboration')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_fund_forecast_roadmap" model="ir.actions.act_window"><field name="name">资金预测（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'fund_forecast')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_tax_filing_roadmap" model="ir.actions.act_window"><field name="name">税务申报（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'tax_filing')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_invoice_verification_roadmap" model="ir.actions.act_window"><field name="name">发票查验（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'invoice_verification')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_report_prediction_roadmap" model="ir.actions.act_window"><field name="name">预测预警（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'report_prediction_alert')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_people_lifecycle_roadmap" model="ir.actions.act_window"><field name="name">人员生命周期（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'people_lifecycle')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
+    <record id="action_sc_resource_capacity_roadmap" model="ir.actions.act_window"><field name="name">资源能力（后续上线）</field><field name="res_model">sc.project.capability.roadmap</field><field name="view_mode">tree,form</field><field name="domain">[('capability_key', '=', 'resource_capacity')]</field><field name="context">{'create': False, 'edit': False, 'delete': False}</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
 </odoo>

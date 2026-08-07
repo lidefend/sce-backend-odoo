@@ -1,28 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
     <record id="project_capability_roadmap_organization" model="sc.project.capability.roadmap">
-        <field name="name">项目组织</field><field name="capability_key">project_organization</field><field name="sequence">50</field>
+        <field name="center_name">项目中心</field><field name="name">项目组织</field><field name="capability_key">project_organization</field><field name="sequence">50</field>
         <field name="planned_scope">项目团队、岗位角色、参建单位、项目通讯录。</field>
         <field name="launch_note">项目责任矩阵与成员授权形成统一维护页面并通过角色权限验收后上线。</field>
     </record>
     <record id="project_capability_roadmap_milestone" model="sc.project.capability.roadmap">
-        <field name="name">里程碑管理</field><field name="capability_key">project_milestone</field><field name="sequence">60</field>
+        <field name="center_name">项目中心</field><field name="name">里程碑管理</field><field name="capability_key">project_milestone</field><field name="sequence">60</field>
         <field name="planned_scope">总控节点、基准里程碑、节点达成和偏差分析。</field>
         <field name="launch_note">补齐基准版本、偏差分析和节点关闭证据后上线。</field>
     </record>
     <record id="project_capability_roadmap_collaboration" model="sc.project.capability.roadmap">
-        <field name="name">项目协同</field><field name="capability_key">project_collaboration</field><field name="sequence">70</field>
+        <field name="center_name">项目中心</field><field name="name">项目协同</field><field name="capability_key">project_collaboration</field><field name="sequence">70</field>
         <field name="planned_scope">RFI、报审、会议、决议、任务及行动项。</field>
         <field name="launch_note">完成外部参建方权限、流程流转和关闭追溯验收后上线。</field>
     </record>
     <record id="project_capability_roadmap_risk" model="sc.project.capability.roadmap">
-        <field name="name">风险与问题</field><field name="capability_key">project_risk_issue</field><field name="sequence">90</field>
+        <field name="center_name">项目中心</field><field name="name">风险与问题</field><field name="capability_key">project_risk_issue</field><field name="sequence">90</field>
         <field name="planned_scope">风险台账、综合问题单、预警、措施和关闭复盘。</field>
         <field name="launch_note">统一风险与问题入口并形成关闭验证链路后上线。</field>
     </record>
     <record id="project_capability_roadmap_closeout" model="sc.project.capability.roadmap">
-        <field name="name">项目收尾</field><field name="capability_key">project_closeout</field><field name="sequence">100</field>
+        <field name="center_name">项目中心</field><field name="name">项目收尾</field><field name="capability_key">project_closeout</field><field name="sequence">100</field>
         <field name="planned_scope">竣工验收、移交清单、竣工档案和项目后评价。</field>
         <field name="launch_note">完成验收、移交、归档、质保和后评价闭环后上线。</field>
+    </record>
+    <record id="capability_roadmap_contract_performance" model="sc.project.capability.roadmap">
+        <field name="center_name">合同中心</field><field name="name">履约与预警</field><field name="capability_key">contract_performance_alert</field><field name="sequence">40</field>
+        <field name="planned_scope">履约事件、义务节点、担保保险、索赔争议和到期预警。</field><field name="launch_note">形成合同义务、事件、预警、处置和关闭的统一闭环后上线。</field>
+    </record>
+    <record id="capability_roadmap_cost_forecast" model="sc.project.capability.roadmap">
+        <field name="center_name">成本中心</field><field name="name">成本预测</field><field name="capability_key">cost_forecast</field><field name="sequence">70</field>
+        <field name="planned_scope">完工估算、剩余成本、成本趋势和偏差归因。</field><field name="launch_note">预算、承诺、实际和完工预测通过跨期一致性验收后上线。</field>
+    </record>
+    <record id="capability_roadmap_cost_cashflow" model="sc.project.capability.roadmap">
+        <field name="center_name">成本中心</field><field name="name">现金流预测</field><field name="capability_key">cost_cashflow_forecast</field><field name="sequence">80</field>
+        <field name="planned_scope">项目收支曲线、资金缺口、回款付款联动和情景预测。</field><field name="launch_note">合同计划、资金计划与实际收付可勾稽并通过预测准确性验收后上线。</field>
+    </record>
+    <record id="capability_roadmap_supply_collaboration" model="sc.project.capability.roadmap">
+        <field name="center_name">物资与分包</field><field name="name">供应链协同</field><field name="capability_key">supply_chain_collaboration</field><field name="sequence">90</field>
+        <field name="planned_scope">供应商门户、询报价协同、交付确认、对账和绩效评价。</field><field name="launch_note">外部供应商身份、数据隔离和交付对账闭环验收后上线。</field>
+    </record>
+    <record id="capability_roadmap_field_mobile" model="sc.project.capability.roadmap">
+        <field name="center_name">施工管理</field><field name="name">现场移动</field><field name="capability_key">field_mobile</field><field name="sequence">40</field>
+        <field name="planned_scope">移动巡检、拍照定位、离线填报、整改复验和现场签认。</field><field name="launch_note">移动端离线、弱网同步、影像定位和整改复验链路验收后上线。</field>
+    </record>
+    <record id="capability_roadmap_bim_collaboration" model="sc.project.capability.roadmap">
+        <field name="center_name">施工管理</field><field name="name">BIM协同</field><field name="capability_key">bim_collaboration</field><field name="sequence">50</field>
+        <field name="planned_scope">模型浏览、构件关联、图纸版本、问题定位和模型交底。</field><field name="launch_note">统一文档环境、模型版本和业务单据构件关联通过验收后上线。</field>
+    </record>
+    <record id="capability_roadmap_fund_forecast" model="sc.project.capability.roadmap">
+        <field name="center_name">财务中心</field><field name="name">资金预测</field><field name="capability_key">fund_forecast</field><field name="sequence">90</field>
+        <field name="planned_scope">滚动资金预测、缺口分析、融资需求和情景模拟。</field><field name="launch_note">资金计划与合同、结算、收付款实际自动联动并通过跨期验收后上线。</field>
+    </record>
+    <record id="capability_roadmap_tax_filing" model="sc.project.capability.roadmap">
+        <field name="center_name">税务中心</field><field name="name">税务申报</field><field name="capability_key">tax_filing</field><field name="sequence">40</field>
+        <field name="planned_scope">项目税负测算、申报台账、属地预缴和申报差异。</field><field name="launch_note">申报口径、属地规则和业财税勾稽通过财税验收后上线。</field>
+    </record>
+    <record id="capability_roadmap_invoice_verification" model="sc.project.capability.roadmap">
+        <field name="center_name">税务中心</field><field name="name">发票查验</field><field name="capability_key">invoice_verification</field><field name="sequence">50</field>
+        <field name="planned_scope">发票真伪查验、重复票识别、状态同步和异常处置。</field><field name="launch_note">外部查验接口、异常重试和查验留痕满足安全稳定性要求后上线。</field>
+    </record>
+    <record id="capability_roadmap_report_prediction" model="sc.project.capability.roadmap">
+        <field name="center_name">报表中心</field><field name="name">预测预警</field><field name="capability_key">report_prediction_alert</field><field name="sequence">50</field>
+        <field name="planned_scope">组合预测、异常指标、风险预警、趋势解释和钻取追溯。</field><field name="launch_note">指标口径、预测准确性与明细钻取一致性通过验收后上线。</field>
+    </record>
+    <record id="capability_roadmap_people_lifecycle" model="sc.project.capability.roadmap">
+        <field name="center_name">组织行政</field><field name="name">人员生命周期</field><field name="capability_key">people_lifecycle</field><field name="sequence">50</field>
+        <field name="planned_scope">入转调离、劳动合同、任职、证照、培训和人员档案。</field><field name="launch_note">人员主数据、审批、权限回收和档案留存形成闭环后上线。</field>
+    </record>
+    <record id="capability_roadmap_resource_capacity" model="sc.project.capability.roadmap">
+        <field name="center_name">组织行政</field><field name="name">资源能力</field><field name="capability_key">resource_capacity</field><field name="sequence">60</field>
+        <field name="planned_scope">人员技能、资质矩阵、项目配置、负荷和资源调度。</field><field name="launch_note">技能资质、可用性与项目需求数据完整并通过调度场景验收后上线。</field>
     </record>
 </odoo>
