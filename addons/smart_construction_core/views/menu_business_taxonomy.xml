@@ -742,7 +742,7 @@
     <menuitem id="menu_sc_income_contract_execution" name="收入合同执行" parent="smart_construction_core.menu_sc_income_contract_group" action="smart_construction_core.action_construction_contract_income_execution" sequence="30" groups="smart_construction_core.group_sc_cap_contract_read" />
     <menuitem id="menu_sc_income_contract_settlement" name="收入合同结算" parent="smart_construction_core.menu_sc_income_contract_group" action="smart_construction_core.action_sc_settlement_order_income" sequence="40" groups="smart_construction_core.group_sc_cap_settlement_read" />
     <menuitem id="menu_sc_contract_event" name="合同履约事件" parent="smart_construction_core.menu_sc_income_contract_group" action="smart_construction_core.action_sc_contract_event" sequence="50" groups="smart_construction_core.group_sc_cap_contract_read,smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" />
-    <menuitem id="menu_sc_expense_contract_group" name="支出合同台账" parent="smart_construction_core.menu_sc_contract_center" action="smart_construction_core.action_sc_expense_contract_ledger" sequence="20" />
+    <menuitem id="menu_sc_expense_contract_group" name="合同管理" parent="smart_construction_core.menu_sc_contract_center" action="smart_construction_core.action_sc_expense_contract_ledger" sequence="20" />
     <record id="menu_sc_general_contract" model="ir.ui.menu">
         <field name="parent_id" ref="smart_construction_core.menu_sc_expense_contract_group" />
         <field name="sequence">5</field>
@@ -821,29 +821,30 @@
     <delete model="ir.ui.menu" search="[('name', 'in', ['质量检查', '质量整改', '质量复验', '安全检查', '安全整改', '安全复验']), ('parent_id', '=', ref('smart_construction_core.menu_sc_construction_management_center')), ('id', 'not in', [ref('smart_construction_core.menu_sc_quality_issue'), ref('smart_construction_core.menu_sc_quality_rectification'), ref('smart_construction_core.menu_sc_quality_recheck'), ref('smart_construction_core.menu_sc_safety_issue'), ref('smart_construction_core.menu_sc_safety_rectification'), ref('smart_construction_core.menu_sc_safety_recheck')])]" />
     <record id="menu_sc_project_budget" model="ir.ui.menu">
         <field name="name">目标成本</field>
-        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_center" />
+        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_target_budget_group" />
         <field name="sequence">10</field>
     </record>
     <record id="menu_sc_budget_alloc" model="ir.ui.menu">
+        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_target_budget_group" />
         <field name="sequence">20</field>
     </record>
     <record id="menu_sc_project_progress" model="ir.ui.menu">
         <field name="name">进度计量</field>
-        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_center" />
+        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_dynamic_group" />
         <field name="sequence">30</field>
     </record>
     <record id="menu_sc_project_cost_ledger" model="ir.ui.menu">
-        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_center" />
+        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_dynamic_group" />
         <field name="sequence">40</field>
     </record>
     <record id="menu_sc_cost_reports" model="ir.ui.menu">
         <field name="name">成本汇总</field>
-        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_center" />
+        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_analysis_group_v2" />
         <field name="sequence">50</field>
         <field name="action" ref="smart_construction_core.action_project_cost_compare" />
     </record>
     <record id="menu_sc_profit_reports" model="ir.ui.menu">
-        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_center" />
+        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_analysis_group_v2" />
         <field name="sequence">60</field>
     </record>
     <menuitem id="menu_sc_receipt_payment_group" name="收付款管理" parent="smart_construction_core.menu_sc_finance_center" sequence="10" />
@@ -919,7 +920,7 @@
     <menuitem id="menu_sc_project_repay_company" name="项目还公司款登记" parent="smart_construction_core.menu_sc_project_fund_user_group" action="smart_construction_core.action_sc_expense_claim_project_repay_company" sequence="40" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_self_funding_advance_income" name="自筹垫付办理" parent="smart_construction_core.menu_sc_project_fund_user_group" action="smart_construction_core.action_sc_self_funding_registration_income" sequence="50" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_self_funding_advance_refund" name="自筹退回办理" parent="smart_construction_core.menu_sc_project_fund_user_group" action="smart_construction_core.action_sc_self_funding_registration_refund" sequence="60" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
-    <menuitem id="menu_sc_payment_user_group" name="付款" parent="smart_construction_core.menu_sc_finance_center" sequence="37" />
+    <menuitem id="menu_sc_payment_user_group" name="付款管理" parent="smart_construction_core.menu_sc_finance_center" sequence="37" />
     <menuitem id="menu_sc_user_payment_apply" name="支付申请" parent="smart_construction_core.menu_sc_payment_user_group" action="smart_construction_core.action_payment_request_user_payment_apply" sequence="10" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_user_payment_apply_acceptance" name="支付申请" parent="smart_construction_core.menu_sc_receipt_payment_group" action="smart_construction_core.action_payment_request_user_payment_apply" sequence="28" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_partner_payment" name="往来单位付款" parent="smart_construction_core.menu_sc_payment_user_group" action="smart_construction_core.action_sc_payment_execution_partner_payment" sequence="20" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
@@ -927,12 +928,12 @@
     <menuitem id="menu_sc_deduction_bill" name="扣款登记" parent="smart_construction_core.menu_sc_deduction_user_group" action="smart_construction_core.action_sc_expense_claim_deduction_bill" sequence="10" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_deduction_paid" name="扣款实缴登记" parent="smart_construction_core.menu_sc_deduction_user_group" action="smart_construction_core.action_sc_expense_claim_deduction_paid" sequence="20" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_deduction_paid_refund" name="扣款实缴退回" parent="smart_construction_core.menu_sc_deduction_user_group" action="smart_construction_core.action_sc_expense_claim_deduction_paid_refund" sequence="30" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
-    <menuitem id="menu_sc_fund_account_user_group" name="资金账户" parent="smart_construction_core.menu_sc_finance_center" sequence="39" />
+    <menuitem id="menu_sc_fund_account_user_group" name="账户资金" parent="smart_construction_core.menu_sc_finance_center" sequence="39" />
     <menuitem id="menu_sc_fund_account_between_user" name="账户间资金往来" parent="smart_construction_core.menu_sc_fund_account_user_group" action="smart_construction_core.action_sc_fund_account_between_user" sequence="10" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_receipt_user_group" name="收款" parent="smart_construction_core.menu_sc_finance_center" sequence="41" />
     <menuitem id="menu_sc_arrival_confirmation" name="到款确认表" parent="smart_construction_core.menu_sc_receipt_user_group" action="smart_construction_core.action_sc_receipt_income_arrival_confirmation" sequence="10" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
-    <menuitem id="menu_sc_fund_daily_user_group" name="资金日报" parent="smart_construction_core.menu_sc_finance_center" sequence="42" />
-    <menuitem id="menu_sc_fund_daily_user_report" name="资金日报表" parent="smart_construction_core.menu_sc_fund_daily_user_group" action="smart_construction_core.action_sc_fund_daily_user_report" sequence="10" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
+    <menuitem id="menu_sc_fund_daily_user_group" name="资金日报" parent="smart_construction_core.menu_sc_fund_account_user_group" sequence="42" />
+    <menuitem id="menu_sc_fund_daily_user_report" name="资金日报表" parent="smart_construction_core.menu_sc_fund_account_user_group" action="smart_construction_core.action_sc_fund_daily_user_report" sequence="20" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_company_deduction" name="公司扣款" parent="smart_construction_core.menu_sc_expense_reimbursement_group" action="smart_construction_core.action_sc_expense_claim_expense" sequence="40" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_company_income" name="公司收入" parent="smart_construction_core.menu_sc_expense_reimbursement_group" action="smart_construction_core.action_sc_receipt_income" sequence="50" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_company_expense" name="公司支出" parent="smart_construction_core.menu_sc_expense_reimbursement_group" action="smart_construction_core.action_sc_payment_execution" sequence="60" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />

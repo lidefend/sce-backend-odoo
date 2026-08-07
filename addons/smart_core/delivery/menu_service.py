@@ -930,7 +930,6 @@ class MenuService:
             "integration_model",
             "record_scope_policy",
             "project_scope_policy",
-            "path_authority",
         )
         for group in policy.get("menu_groups") or []:
             if not isinstance(group, dict):
@@ -946,11 +945,7 @@ class MenuService:
                 route = str(menu.get("route") or "").strip()
                 action_id = menu.get("action_id")
                 menu_xmlid = str(menu.get("menu_xmlid") or "").strip()
-                native_visible_menu_path = (
-                    self._native_visible_menu_path(menu_xmlid)
-                    if str(menu.get("path_authority") or "").strip() == "native_menu"
-                    else ""
-                )
+                native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)
                 if route.startswith("/a/") and scene_key == menu_xmlid:
                     scene_key = ""
                 raw_anchor = scene_key or (str(menu_id) if isinstance(menu_id, int) and menu_id > 0 else str(menu.get("menu_key") or "").strip() or str(index))

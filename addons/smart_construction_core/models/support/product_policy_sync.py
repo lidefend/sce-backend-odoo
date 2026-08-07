@@ -45,10 +45,6 @@ FORMAL_SETTLEMENT_PRODUCT_MENU_XMLIDS = {
     "smart_construction_core.menu_sc_subcontract_settlement",
 }
 
-NATIVE_MENU_PATH_AUTHORITY_XMLIDS = {
-    "smart_construction_core.menu_project_material_plan",
-}
-
 USER_ACCEPTANCE_PRODUCT_MENU_XMLIDS = {
     "smart_construction_core.menu_sc_customer_partner",
     "smart_construction_core.menu_sc_supplier_partner",
@@ -1373,7 +1369,6 @@ class ScProductPolicy(models.Model):
                 # retain a stale flattened path after the native parent moves.
                 "visible_menu_path": native_visible_path or _text(row.get("visible_menu_path")),
                 "menu_complete_name": native_visible_path or _text(row.get("menu_complete_name")),
-                "path_authority": "native_menu" if menu_xmlid in NATIVE_MENU_PATH_AUTHORITY_XMLIDS else "product_policy",
                 "view_modes": view_modes or row.get("view_modes") or [],
                 "enabled": True,
                 "release_state": "released",
