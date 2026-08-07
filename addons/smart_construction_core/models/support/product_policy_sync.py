@@ -1348,7 +1348,10 @@ class ScProductPolicy(models.Model):
             view_modes = [_text(item) for item in action.view_mode.split(",") if _text(item)]
         menu_is_active = bool(getattr(menu_record, "active", False))
         runtime_menu_id = int(menu_record.id) if menu_is_active else 0
-        native_visible_path = _text(getattr(menu_record, "complete_name", ""))
+        native_complete_name = _text(getattr(menu_record, "complete_name", ""))
+        native_visible_path = " / ".join(
+            part.strip() for part in native_complete_name.split("/") if part.strip()
+        )
         runtime_route = ""
         if action_id:
             runtime_route = "/a/%s?menu_id=%s" % (action_id, runtime_menu_id) if runtime_menu_id else "/a/%s" % action_id
