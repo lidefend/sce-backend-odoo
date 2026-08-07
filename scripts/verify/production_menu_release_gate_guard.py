@@ -191,7 +191,16 @@ def _assert_runtime_gate(product_key: str, released_policy_count: int) -> dict:
     if int(gate.get("page_count") or 0) != released_policy_count:
         raise AssertionError(f"{product_key} release gate page_count drift: {gate!r}")
     delivery = DeliveryEngine(env).build(  # noqa: F821
-        data={"role_surface": {"role_code": "business_config_admin"}, "scenes": [], "capabilities": []},
+        data={
+            "role_surface": {
+                "role_code": "business_config_admin",
+                "is_business_config_admin": True,
+                "exposure_policy_declared": True,
+                "discover_installed_capabilities": True,
+            },
+            "scenes": [],
+            "capabilities": [],
+        },
         product_key=product_key,
         edition_key="standard" if product_key.endswith(".standard") else "preview",
         base_product_key=EXPECTED_BASE_PRODUCT_KEY,

@@ -28,6 +28,8 @@ RUNTIME_USER_ROLE_SURFACE = {
     "role_code": "runtime_user",
     "is_platform_admin": False,
     "is_business_config_admin": False,
+    "exposure_policy_declared": True,
+    "discover_installed_capabilities": True,
 }
 
 
