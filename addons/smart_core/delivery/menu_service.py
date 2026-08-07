@@ -945,6 +945,7 @@ class MenuService:
                 route = str(menu.get("route") or "").strip()
                 action_id = menu.get("action_id")
                 menu_xmlid = str(menu.get("menu_xmlid") or "").strip()
+                native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)
                 if route.startswith("/a/") and scene_key == menu_xmlid:
                     scene_key = ""
                 raw_anchor = scene_key or (str(menu_id) if isinstance(menu_id, int) and menu_id > 0 else str(menu.get("menu_key") or "").strip() or str(index))
@@ -969,7 +970,7 @@ class MenuService:
                     "scene_source": "delivery_policy",
                     "policy_group_key": str(group.get("group_key") or "").strip(),
                     "policy_group_label": str(group.get("group_label") or "").strip(),
-                    "visible_menu_path": str(menu.get("visible_menu_path") or "").strip(),
+                    "visible_menu_path": native_visible_menu_path or str(menu.get("visible_menu_path") or "").strip(),
                     "entry_target": menu.get("entry_target") if isinstance(menu.get("entry_target"), dict) else {},
                 }
                 for key in productization_keys:
@@ -978,6 +979,24 @@ class MenuService:
                         row[key] = value
                 out.append(row)
         return [row for row in out if row.get("menu_key") and row.get("label")]
+
+    def _native_visible_menu_path(self, menu_xmlid: str) -> str:
+        """Return the installed menu ancestry as the runtime path authority."""
+        if self.env is None or not menu_xmlid or not hasattr(self.env, "ref"):
+            return ""
+        try:
+            menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+        except TypeError:
+            try:
+                menu = self.env.ref(menu_xmlid)
+            except Exception:
+                return ""
+        except Exception:
+            return ""
+        if not menu or getattr(menu, "_name", "") != "ir.ui.menu":
+            return ""
+        complete_name = str(getattr(menu, "complete_name", "") or "").strip()
+        return " / ".join(part.strip() for part in complete_name.split("/") if part.strip())
 
     def _policy_menu_path_parts(self, menu: dict) -> list[str]:
         path = str(menu.get("visible_menu_path") or "").strip()
