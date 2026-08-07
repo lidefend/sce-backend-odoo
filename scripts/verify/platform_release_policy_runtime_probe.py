@@ -138,7 +138,7 @@ def _native_nav_for_user(user_env, *, limit: int | None = None) -> list[dict]:
     leaves.sort(key=lambda row: (_text(row.get("label")), int(row.get("menu_id") or 0)))
     if limit is not None:
         leaves = leaves[: max(0, int(limit))]
-    return [{"label": "runtime_authorized_menus", "children": leaves}]
+    return leaves
 
 
 def _policy_surface_counts(policy: dict) -> dict:

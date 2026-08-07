@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
+from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
+from odoo.addons.smart_core.delivery.menu_service import MenuService
 from odoo.addons.smart_core.handlers.menu_configuration import (
     BUSINESS_CONFIG_GROUP,
     MenuConfigurationAuditHandler,
@@ -206,6 +208,8 @@ def _assert_runtime_gate(product_key: str, released_policy_count: int) -> dict:
     if not full_product_user:
         raise AssertionError("formal release gate requires one active business-full principal")
     delivery_env = env(user=int(full_product_user.id))  # noqa: F821
+    native_facts = MenuFactService(delivery_env).export_visible_menu_facts()
+    native_nav = MenuService._menu_fact_tree_as_native(native_facts.tree)
     delivery = DeliveryEngine(delivery_env).build(
         data={
             "role_surface": {
@@ -219,6 +223,7 @@ def _assert_runtime_gate(product_key: str, released_policy_count: int) -> dict:
         product_key=product_key,
         edition_key="standard" if product_key.endswith(".standard") else "preview",
         base_product_key=EXPECTED_BASE_PRODUCT_KEY,
+        native_nav=native_nav,
     )
     raw_nav = delivery.get("nav") if isinstance(delivery.get("nav"), list) else []
     gated_nav, gate_meta = _filter_nav_by_release_gate(raw_nav, gate, env=env)  # noqa: F821
