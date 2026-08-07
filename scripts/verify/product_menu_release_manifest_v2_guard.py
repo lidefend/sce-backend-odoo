@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/product_menu_release_manifest_v2.json"
 MENU_XML = ROOT / "addons/smart_construction_core/views/menu_product_navigation_v2.xml"
 POLICY_SYNC = ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py"
+DEV_MAKE = ROOT / "make/dev.mk"
 
 EXPECTED_CENTERS = [
     "工作台", "项目中心", "合同中心", "成本中心", "物资与分包",
@@ -57,6 +58,7 @@ def main() -> int:
     xml = MENU_XML.read_text(encoding="utf-8")
     xml_root = ElementTree.fromstring(xml)
     policy = POLICY_SYNC.read_text(encoding="utf-8")
+    dev_make = DEV_MAKE.read_text(encoding="utf-8")
     for center in EXPECTED_CENTERS:
         if f">{center}</field>" not in xml:
             errors.append(f"visible menu XML missing center: {center}")
@@ -77,6 +79,15 @@ def main() -> int:
     for group in ("进度与施工", "质量管理", "安全管理", "行政审批", "人事薪酬"):
         if f'name="{group}"' not in xml:
             errors.append(f"level-two product group missing: {group}")
+    for token in (
+        "release.daily_product_navigation.snapshot:",
+        'test "$(ENV)" = "dev"',
+        'test "$(DB_NAME)" = "sc_demo"',
+        "CONFIRM_DAILY_PRODUCT_NAVIGATION_SNAPSHOT",
+        "initialize_colocated_platform_snapshot.py",
+    ):
+        if token not in dev_make:
+            errors.append(f"daily navigation release boundary missing: {token}")
 
     if errors:
         print("[product_menu_release_manifest_v2_guard] FAIL")

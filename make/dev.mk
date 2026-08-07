@@ -1,7 +1,7 @@
 # ======================================================
 # ==================== Dev =============================
 # ======================================================
-.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish
+.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish release.daily_product_navigation.snapshot
 up: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/up.sh
 down: check-compose-project check-compose-env
@@ -125,6 +125,17 @@ release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_FORBIDDEN_LABELS := $(DAILY
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_REQUIRED_PATHS := $(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)
 release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean release.dev.acceptance.publish
 	@echo "[release.daily_dev.acceptance.publish] PASS base_url=$(ACCEPTANCE_BASE_URL) db=$(DB_NAME) head=$$(git rev-parse --short HEAD)"
+
+release.daily_product_navigation.snapshot: guard.prod.forbid check-compose-project check-compose-env
+	@test "$(ENV)" = "dev" || { echo "daily product navigation snapshot requires ENV=dev" >&2; exit 2; }
+	@test "$(DB_NAME)" = "sc_demo" || { echo "daily product navigation snapshot requires DB_NAME=sc_demo" >&2; exit 2; }
+	@test "$${CONFIRM_DAILY_PRODUCT_NAVIGATION_SNAPSHOT:-}" = "RELEASE_EXACT_DAILY_PRODUCT_NAVIGATION" || { echo "daily product navigation snapshot confirmation is required" >&2; exit 2; }
+	@$(RUN_ENV) DB_NAME=sc_demo \
+	  PLATFORM_RELEASE_DB=sc_demo \
+	  PLATFORM_RELEASE_PRODUCT_KEY=construction.standard \
+	  PLATFORM_RELEASE_VERSION="daily-navigation-$$(git rev-parse --short=12 HEAD)" \
+	  SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY=I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/release/initialize_colocated_platform_snapshot.py
 
 prod.restart.safe: guard.prod.danger check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/restart.sh

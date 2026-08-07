@@ -3099,3 +3099,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   guards. WBS remains internal-only. Static manifest/XML checks, locked-contract
   unit tests, module upgrade, product menu runtime audit, release snapshot and
   real `wutao` daily navigation acceptance must pass before handoff.
+- Daily release operation: the acceptance-fixture snapshot tool remains denied
+  for `sc_demo`. `release.daily_product_navigation.snapshot` is the only V2
+  daily write entry; it is fixed to dev/sc_demo, requires an explicit
+  confirmation, derives the exact HEAD version and reuses the formal snapshot
+  service plus locked-contract assertions.
