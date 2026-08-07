@@ -15,7 +15,7 @@ function normalizeCellRawValue(value: unknown) {
   return value;
 }
 
-export function useActionViewProjectMetricRuntime(options: {
+export function useActionViewCollectionMetricRuntime(options: {
   listProfile: Ref<SceneListProfile | null>;
   listColumnOptions: Ref<ListColumnMetricOption[]>;
 }) {

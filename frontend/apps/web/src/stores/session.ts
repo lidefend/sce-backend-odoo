@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { AppInitResponse, LoginResponse, NavMeta, NavNode, ProjectContextContract, ProjectContextOption } from '@sc/schema';
+import type { AppInitResponse, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
 import { config } from '../config';
@@ -9,7 +9,7 @@ import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
 import { applySceneValidationRecoveryStrategyRuntime, setSceneValidationRecoveryStrategy } from '../app/sceneValidationRecoveryStrategy';
 import { isConfiguredDbPinned, resolveActiveDb, resolveConfiguredDb, resolveLoginRoutingDb, setActiveDb } from '../services/dbContext';
 import { beginContextTransition, currentContextEpoch, invalidateContextRequests, isCurrentContextEpoch } from '../app/contextEpoch';
-import { nextRouteAuthorityProjectContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityProjectContextSnapshot } from '../app/routeAuthority';
+import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
 import type {
   WorkspaceAdviceRow,
   WorkspaceCapabilityGroupRow,
@@ -196,7 +196,7 @@ export interface WorkspaceHomeContract {
   advice?: unknown[];
 }
 
-export type ActivityProjectContextSnapshot = RouteAuthorityProjectContextSnapshot;
+export type ActivityRecordContextSnapshot = RouteAuthorityRecordContextSnapshot;
 
 export type ActivityRuntimeQuery = Record<string, string | string[]>;
 
@@ -211,7 +211,7 @@ export interface ActivityPage {
   record_id?: string;
   scene_key?: string;
   project_scope_policy?: string;
-  project_context?: ActivityProjectContextSnapshot | null;
+  record_context?: ActivityRecordContextSnapshot | null;
   runtime_query?: ActivityRuntimeQuery;
   dirty?: boolean;
   created_at: number;
@@ -289,7 +289,7 @@ export interface SessionState {
   sceneVersion: string | null;
   roleSurface: RoleSurface | null;
   roleSurfaceMap: RoleSurfaceMap;
-  projectContext: ProjectContextContract | null;
+  recordContext: RecordContextContract | null;
   activityPages: ActivityPage[];
   activeActivityPageKey: string;
   activityPageCacheEpochs: Record<string, number>;
@@ -392,7 +392,7 @@ function asObjectList(value: unknown): Record<string, unknown>[] {
     : [];
 }
 
-function normalizeProjectOption(raw: unknown): ProjectContextOption | null {
+function normalizeRecordOption(raw: unknown): RecordContextOption | null {
   const row = asRecord(raw);
   const id = Number(row.id || 0);
   if (!Number.isFinite(id) || id <= 0) return null;
@@ -409,6 +409,7 @@ function normalizeProjectOption(raw: unknown): ProjectContextOption | null {
     operation_strategy: asText(row.operation_strategy),
     operation_strategy_label: asText(row.operation_strategy_label),
     active: row.active === undefined ? undefined : Boolean(row.active),
+    request_context: asRecord(row.request_context),
   };
 }
 
@@ -423,7 +424,7 @@ function normalizeCompanyOptions(raw: unknown) {
         company_name: asText(row.company_name),
         active: row.active === undefined ? undefined : Boolean(row.active),
       };
-    }).filter(Boolean) as NonNullable<ProjectContextContract['company_options']>
+    }).filter(Boolean) as NonNullable<RecordContextContract['company_options']>
     : [];
 }
 
@@ -439,25 +440,24 @@ function normalizeOperationOptions(raw: unknown) {
         disabled: row.disabled === undefined ? undefined : Boolean(row.disabled),
         disabled_reason: asText(row.disabled_reason),
       };
-    }).filter(Boolean) as NonNullable<ProjectContextContract['operation_options']>
+    }).filter(Boolean) as NonNullable<RecordContextContract['operation_options']>
     : [];
 }
 
-function normalizeProjectContext(raw: unknown): ProjectContextContract | null {
+function normalizeRecordContext(raw: unknown): RecordContextContract | null {
   const row = asRecord(raw);
   if (!Object.keys(row).length) return null;
   const selector = asRecord(row.selector);
   const persistence = asRecord(row.persistence);
-  const selected = normalizeProjectOption(row.selected);
+  const selected = normalizeRecordOption(row.selected);
   const options = Array.isArray(row.options)
-    ? row.options.map((item) => normalizeProjectOption(item)).filter(Boolean) as ProjectContextOption[]
+    ? row.options.map((item) => normalizeRecordOption(item)).filter(Boolean) as RecordContextOption[]
     : [];
   return {
     contract_version: asText(row.contract_version),
     enabled: Boolean(row.enabled),
     source: asText(row.source),
     model: asText(row.model),
-    legacy_project_context: Boolean(row.legacy_project_context),
     company_id: Number(row.company_id || 0) || selected?.company_id || null,
     company_name: asText(row.company_name) || selected?.company_name || '',
     company_options: normalizeCompanyOptions(row.company_options),
@@ -470,6 +470,8 @@ function normalizeProjectContext(raw: unknown): ProjectContextContract | null {
     query: asText(row.query),
     reason_code: asText(row.reason_code),
     message: asText(row.message),
+    request_context: asRecord(row.request_context),
+    clear_request_context: asRecord(row.clear_request_context),
     selector: Object.keys(selector).length ? {
       intent: asText(selector.intent),
       search_param: asText(selector.search_param),
@@ -486,7 +488,7 @@ function normalizeProjectContext(raw: unknown): ProjectContextContract | null {
   };
 }
 
-function projectContextStorageSnapshot(raw: ProjectContextContract | null): ProjectContextContract | null {
+function recordContextStorageSnapshot(raw: RecordContextContract | null): RecordContextContract | null {
   if (!raw) return null;
   return {
     ...raw,
@@ -514,54 +516,6 @@ function normalizeActivityRuntimeQuery(raw: unknown): ActivityRuntimeQuery | und
   return Object.keys(next).length ? next : undefined;
 }
 
-function isDeprecatedMergedExpenseDepositActivity(row: ActivityPage): boolean {
-  const title = asText(row.title);
-  if (title === '费用/保证金申请') return true;
-  const route = asText(row.route);
-  if (!route.includes('integration_target')) return false;
-  try {
-    const queryText = route.split('?', 2)[1]?.split('#', 1)[0] || '';
-    const target = asText(new URLSearchParams(queryText).get('integration_target'));
-    return target === 'sc.expense.claim 费用/保证金申请';
-  } catch {
-    return route.includes('sc.expense.claim+%E8%B4%B9%E7%94%A8/%E4%BF%9D%E8%AF%81%E9%87%91%E7%94%B3%E8%AF%B7')
-      || route.includes('sc.expense.claim%20%E8%B4%B9%E7%94%A8%2F%E4%BF%9D%E8%AF%81%E9%87%91%E7%94%B3%E8%AF%B7');
-  }
-}
-
-function isDeprecatedMergedContractHandlingActivity(row: ActivityPage): boolean {
-  const title = asText(row.title);
-  const model = asText(row.model);
-  const route = asText(row.route);
-  if (title === '合同办理' && model === 'construction.contract') return true;
-  if (route.includes('/a/1002') && (title === '合同办理' || model === 'construction.contract')) return true;
-  if (!route.includes('integration_target')) return false;
-  try {
-    const queryText = route.split('?', 2)[1]?.split('#', 1)[0] || '';
-    const target = asText(new URLSearchParams(queryText).get('integration_target'));
-    return target === 'construction.contract 合同办理';
-  } catch {
-    return route.includes('construction.contract+%E5%90%88%E5%90%8C%E5%8A%9E%E7%90%86')
-      || route.includes('construction.contract%20%E5%90%88%E5%90%8C%E5%8A%9E%E7%90%86');
-  }
-}
-
-function isDeprecatedMergedContractSettlementActivity(row: ActivityPage): boolean {
-  const title = asText(row.title);
-  const model = asText(row.model);
-  const route = asText(row.route);
-  if (title === '结算办理' && model === 'sc.settlement.order') return true;
-  if (!route.includes('integration_target')) return false;
-  try {
-    const queryText = route.split('?', 2)[1]?.split('#', 1)[0] || '';
-    const target = asText(new URLSearchParams(queryText).get('integration_target'));
-    return target === 'sc.settlement.order 结算办理';
-  } catch {
-    return route.includes('sc.settlement.order+%E7%BB%93%E7%AE%97%E5%8A%9E%E7%90%86')
-      || route.includes('sc.settlement.order%20%E7%BB%93%E7%AE%97%E5%8A%9E%E7%90%86');
-  }
-}
-
 function trimActivityPages(pages: ActivityPage[], activeKey: string): ActivityPage[] {
   if (pages.length <= MAX_ACTIVITY_PAGES) return pages;
   const keep = [...pages];
@@ -579,9 +533,6 @@ function trimActivityPages(pages: ActivityPage[], activeKey: string): ActivityPa
 
 function isRetainedActivityPage(page: ActivityPage | null): page is ActivityPage {
   if (!page) return false;
-  if (isDeprecatedMergedExpenseDepositActivity(page)) return false;
-  if (isDeprecatedMergedContractHandlingActivity(page)) return false;
-  if (isDeprecatedMergedContractSettlementActivity(page)) return false;
   const key = asText(page.key).toLowerCase();
   const route = asText(page.route).split(/[?#]/, 1)[0];
   const pageRecord = page as unknown as Record<string, unknown>;
@@ -611,7 +562,7 @@ function isTransientLoadingActivityTitle(title: string): boolean {
   return /(?:^| · )加载中$/.test(asText(title));
 }
 
-let projectSearchRequestSequence = 0;
+let recordSearchRequestSequence = 0;
 
 export const useSessionStore = defineStore('session', {
   state: (): SessionState => ({
@@ -627,7 +578,7 @@ export const useSessionStore = defineStore('session', {
     sceneVersion: null,
     roleSurface: null,
     roleSurfaceMap: {},
-    projectContext: null,
+    recordContext: null,
     activityPages: [],
     activeActivityPageKey: '',
     activityPageCacheEpochs: {},
@@ -898,7 +849,7 @@ export const useSessionStore = defineStore('session', {
           this.sceneVersion = null;
           this.roleSurface = null;
           this.roleSurfaceMap = {};
-          this.projectContext = projectContextStorageSnapshot(normalizeProjectContext(parsed.projectContext));
+          this.recordContext = recordContextStorageSnapshot(normalizeRecordContext(parsed.recordContext));
           this.activityPages = [];
           this.activeActivityPageKey = '';
           this.activityPageCacheEpochs = {};
@@ -946,7 +897,7 @@ export const useSessionStore = defineStore('session', {
       this.roleSurface = null;
       this.roleSurfaceMap = {};
       this.routeAuthority = null;
-      this.projectContext = null;
+      this.recordContext = null;
       this.activityPages = [];
       this.activeActivityPageKey = '';
       this.activityPageCacheEpochs = {};
@@ -1014,7 +965,7 @@ export const useSessionStore = defineStore('session', {
         sceneVersion: this.sceneVersion,
         roleSurface: this.roleSurface,
         roleSurfaceMap: this.roleSurfaceMap,
-        projectContext: projectContextStorageSnapshot(this.projectContext),
+        recordContext: recordContextStorageSnapshot(this.recordContext),
         activityPages: this.activityPages,
         activeActivityPageKey: this.activeActivityPageKey,
         activityPageCacheEpochs: this.activityPageCacheEpochs,
@@ -1048,7 +999,7 @@ export const useSessionStore = defineStore('session', {
           menuExpandedKeys: this.menuExpandedKeys,
           currentAction: this.currentAction,
           roleSurface: this.roleSurface,
-          projectContext: this.projectContext,
+          recordContext: this.recordContext,
           activityPages: this.activityPages,
           activeActivityPageKey: this.activeActivityPageKey,
           activityPageCacheEpochs: this.activityPageCacheEpochs,
@@ -1066,8 +1017,8 @@ export const useSessionStore = defineStore('session', {
         localStorage.removeItem(sessionStorageKey());
       }
     },
-    currentActivityProjectContextSnapshot(): ActivityProjectContextSnapshot | null {
-      const current = this.projectContext;
+    currentActivityRecordContextSnapshot(): ActivityRecordContextSnapshot | null {
+      const current = this.recordContext;
       if (!current) return null;
       return {
         selected: current.selected ?? null,
@@ -1098,7 +1049,7 @@ export const useSessionStore = defineStore('session', {
         record_id: asText(rawPage.record_id) || undefined,
         scene_key: asText(rawPage.scene_key) || undefined,
         project_scope_policy: asText(rawPage.project_scope_policy) || undefined,
-        project_context: rawPage.project_context ?? this.currentActivityProjectContextSnapshot(),
+        record_context: rawPage.record_context ?? this.currentActivityRecordContextSnapshot(),
         runtime_query: existing?.runtime_query,
         dirty: Boolean(rawPage.dirty || existing?.dirty),
         created_at: existing?.created_at || Number(rawPage.created_at || 0) || now,
@@ -1192,13 +1143,13 @@ export const useSessionStore = defineStore('session', {
       });
       if (changed) this.persist();
     },
-    async applyActivityProjectContext(snapshot: ActivityProjectContextSnapshot | null | undefined) {
-      if (!snapshot || !this.projectContext) return;
-      const nextContext = nextRouteAuthorityProjectContext(this.projectContext, snapshot);
+    async applyActivityRecordContext(snapshot: ActivityRecordContextSnapshot | null | undefined) {
+      if (!snapshot || !this.recordContext) return;
+      const nextContext = nextRouteAuthorityRecordContext(this.recordContext, snapshot);
       if (!nextContext) return;
       const requestEpoch = beginContextTransition();
       this.routeAuthority = null;
-      this.projectContext = nextContext;
+      this.recordContext = nextContext;
       this.persist();
       await this.loadAppInit({ force: true, contextEpoch: requestEpoch });
     },
@@ -1323,9 +1274,7 @@ export const useSessionStore = defineStore('session', {
           with: ['workspace_home'],
           ...(config.startupRootXmlid ? { root_xmlid: config.startupRootXmlid } : {}),
           ...(currentSceneKey ? { scene_key: currentSceneKey } : {}),
-          ...(this.projectContext?.company_id ? { company_id: this.projectContext.company_id } : {}),
-          ...(this.projectContext?.operation_strategy ? { operation_strategy: this.projectContext.operation_strategy } : {}),
-          ...(this.projectContext?.selected?.id ? { current_project_id: this.projectContext.selected.id } : {}),
+          ...(this.recordContext?.request_context || {}),
         },
       };
       if (debugIntent) {
@@ -1494,7 +1443,7 @@ export const useSessionStore = defineStore('session', {
         },
       );
       this.roleSurfaceMap = ((result as AppInitResponse & { role_surface_map?: RoleSurfaceMap }).role_surface_map ?? {});
-      this.projectContext = normalizeProjectContext((result as AppInitResponse & { project_context?: ProjectContextContract }).project_context);
+      this.recordContext = normalizeRecordContext((result as AppInitResponse & { record_context?: RecordContextContract }).record_context);
       const rawCapabilityGroups = (result as AppInitResponse & { capability_groups?: unknown[] }).capability_groups ?? [];
       this.capabilityGroups = rawCapabilityGroups
         .map((raw) => {
@@ -1609,7 +1558,7 @@ export const useSessionStore = defineStore('session', {
         {
           userId: Number(this.user?.id || 0),
           roleCode: String(this.roleSurface?.role_code || '').trim(),
-          companyId: Number(this.projectContext?.company_id || this.projectContext?.selected?.company_id || 0),
+          companyId: Number(this.recordContext?.company_id || this.recordContext?.selected?.company_id || 0),
         },
       );
       if (!this.routeAuthority) {
@@ -1683,9 +1632,7 @@ export const useSessionStore = defineStore('session', {
           scene_ready_mode: 'registry',
           with: ['workspace_home'],
           ...(config.startupRootXmlid ? { root_xmlid: config.startupRootXmlid } : {}),
-          ...(this.projectContext?.company_id ? { company_id: this.projectContext.company_id } : {}),
-          ...(this.projectContext?.operation_strategy ? { operation_strategy: this.projectContext.operation_strategy } : {}),
-          ...(this.projectContext?.selected?.id ? { current_project_id: this.projectContext.selected.id } : {}),
+          ...(this.recordContext?.request_context || {}),
         },
       });
       if (!isCurrentContextEpoch(requestEpoch)) return this.workspaceHome;
@@ -1702,37 +1649,39 @@ export const useSessionStore = defineStore('session', {
       this.persist();
       return this.workspaceHome;
     },
-    async searchProjectContext(search = '', requestEpoch = currentContextEpoch()) {
-      const requestSequence = ++projectSearchRequestSequence;
-      const selector = this.projectContext?.selector || {};
-      const intent = String(selector.intent || 'project.context.search').trim();
-      const result = await intentRequest<ProjectContextContract>({
+    async searchRecordContext(search = '', requestEpoch = currentContextEpoch()) {
+      const requestSequence = ++recordSearchRequestSequence;
+      const selector = this.recordContext?.selector || {};
+      const intent = String(selector.intent || 'record.context.search').trim();
+      const searchParam = String(selector.search_param || 'search').trim() || 'search';
+      const selectedIdParam = String(selector.selected_id_param || 'selected_id').trim() || 'selected_id';
+      const result = await intentRequest<RecordContextContract>({
         intent,
         params: {
-          search,
-          company_id: this.projectContext?.company_id || undefined,
-          operation_strategy: this.projectContext?.operation_strategy || undefined,
-          selected_id: this.projectContext?.selected?.id || undefined,
+          ...(this.recordContext?.request_context || {}),
+          [searchParam]: search,
+          [selectedIdParam]: this.recordContext?.selected?.id || undefined,
           limit: selector.limit || 20,
         },
       });
-      if (!isCurrentContextEpoch(requestEpoch) || requestSequence !== projectSearchRequestSequence) return this.projectContext;
-      const normalized = normalizeProjectContext(result);
+      if (!isCurrentContextEpoch(requestEpoch) || requestSequence !== recordSearchRequestSequence) return this.recordContext;
+      const normalized = normalizeRecordContext(result);
       if (normalized) {
-        this.projectContext = {
+        this.recordContext = {
           ...normalized,
-          selected: normalized.selected ?? this.projectContext?.selected ?? null,
+          selected: normalized.selected ?? this.recordContext?.selected ?? null,
         };
         this.persist();
       }
-      return this.projectContext;
+      return this.recordContext;
     },
-    async selectProjectContext(option: ProjectContextOption | null) {
+    async selectRecordContext(option: RecordContextOption | null) {
       const requestEpoch = beginContextTransition();
-      const current = this.projectContext || {};
-      this.projectContext = {
+      const current = this.recordContext || {};
+      this.recordContext = {
         ...current,
         selected: option,
+        request_context: option?.request_context || current.clear_request_context || {},
         company_id: option?.company_id || current.company_id || null,
         company_name: option?.company_name || current.company_name || '',
         operation_strategy: option?.operation_strategy || current.operation_strategy || '',
@@ -1743,7 +1692,7 @@ export const useSessionStore = defineStore('session', {
     },
     async selectBusinessScope(scope: { company_id?: number | null; operation_strategy?: string }) {
       const requestEpoch = beginContextTransition();
-      const current = this.projectContext || {};
+      const current = this.recordContext || {};
       const currentCompanyId = Number(current.company_id || 0) || null;
       const currentOperation = asText(current.operation_strategy);
       const nextCompanyId = Number(scope.company_id ?? current.company_id ?? 0) || null;
@@ -1753,7 +1702,7 @@ export const useSessionStore = defineStore('session', {
       const keepSelected = selected
         && (!nextCompanyId || !selected.company_id || selected.company_id === nextCompanyId)
         && (!nextOperation || !selected.operation_strategy || selected.operation_strategy === nextOperation);
-      this.projectContext = {
+      this.recordContext = {
         ...current,
         company_id: nextCompanyId,
         operation_strategy: nextOperation,
@@ -1772,7 +1721,7 @@ export const useSessionStore = defineStore('session', {
         this.activityPageCacheEpochs = nextEpochs;
       }
       this.persist();
-      // system.init is authoritative and already returns project_context.
+      // system.init is authoritative and already returns record_context.
       await this.loadAppInit({ force: true, contextEpoch: requestEpoch });
       if (!isCurrentContextEpoch(requestEpoch)) return false;
       return true;

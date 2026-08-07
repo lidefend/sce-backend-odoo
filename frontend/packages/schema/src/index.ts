@@ -181,7 +181,7 @@ export interface AppInitResponse {
     scene_candidates?: string[];
     menu_xmlids?: string[];
   }>;
-  project_context?: ProjectContextContract;
+  record_context?: RecordContextContract;
   user: {
     id: number;
     name: string;
@@ -242,7 +242,7 @@ export interface AppInitResponse {
   meta?: Record<string, unknown>;
 }
 
-export interface ProjectContextOption {
+export interface RecordContextOption {
   id: number;
   name?: string;
   display_name?: string;
@@ -255,6 +255,7 @@ export interface ProjectContextOption {
   operation_strategy?: string;
   operation_strategy_label?: string;
   active?: boolean;
+  request_context?: Record<string, unknown>;
 }
 
 export interface BusinessScopeCompanyOption {
@@ -271,7 +272,7 @@ export interface BusinessScopeOperationOption {
   disabled_reason?: string;
 }
 
-export interface ProjectContextContract {
+export interface RecordContextContract {
   contract_version?: string;
   enabled?: boolean;
   source?: string;
@@ -283,12 +284,14 @@ export interface ProjectContextContract {
   operation_strategy?: string;
   operation_strategy_label?: string;
   operation_options?: BusinessScopeOperationOption[];
-  selected?: ProjectContextOption | null;
-  options?: ProjectContextOption[];
+  selected?: RecordContextOption | null;
+  options?: RecordContextOption[];
   total?: number;
   query?: string;
   reason_code?: string;
   message?: string;
+  request_context?: Record<string, unknown>;
+  clear_request_context?: Record<string, unknown>;
   selector?: {
     intent?: string;
     search_param?: string;
@@ -303,6 +306,11 @@ export interface ProjectContextContract {
     server_preference?: boolean;
   };
 }
+
+/** @deprecated Backend compatibility type; production frontend uses RecordContextContract. */
+export type ProjectContextContract = RecordContextContract;
+/** @deprecated Backend compatibility type; production frontend uses RecordContextOption. */
+export type ProjectContextOption = RecordContextOption;
 
 export interface ApiDataListResult {
   records: Array<Record<string, unknown>>;

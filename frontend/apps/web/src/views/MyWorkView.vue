@@ -97,8 +97,8 @@ async function load() {
 watch(
   [
     () => session.token,
-    () => session.projectContext?.company_id,
-    () => session.projectContext?.selected?.id,
+    () => session.recordContext?.company_id,
+    () => session.recordContext?.selected?.id,
     () => session.roleSurface?.role_code,
   ],
   () => { void load(); },

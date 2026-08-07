@@ -3,7 +3,7 @@ type Dict = Record<string, unknown>;
 type ScopeTotals = { all: number; active: number; archived: number } | null;
 type ScopeMetrics = { warning: number; done: number; amount: number } | null;
 
-export async function loadActionViewProjectScopeSnapshot(options: {
+export async function loadActionViewCollectionScopeSnapshot(options: {
   enabled: boolean;
   activeField: string;
   model: string;
@@ -22,7 +22,7 @@ export async function loadActionViewProjectScopeSnapshot(options: {
     searchTerm: string;
     order: string;
   }) => Promise<number | null>;
-  fetchProjectScopeMetrics: (params: {
+  fetchCollectionScopeMetrics: (params: {
     model: string;
     domain: unknown[];
     domainRaw: string;
@@ -69,7 +69,7 @@ export async function loadActionViewProjectScopeSnapshot(options: {
         searchTerm: term,
         order: options.order,
       }),
-      options.fetchProjectScopeMetrics({
+      options.fetchCollectionScopeMetrics({
         model: options.model,
         domain: options.baseDomain,
         domainRaw: options.domainRaw,

@@ -22,7 +22,7 @@
           @click="onSelect(node)"
         >
           <span class="label-text" :title="nodeLabel(node)">{{ nodeLabel(node) }}</span>
-          <span v-if="isHandlingGroup(node)" class="label-badge">办理</span>
+          <span v-if="nodeBadge(node)" class="label-badge">{{ nodeBadge(node) }}</span>
         </button>
         <button
           v-if="node.children?.length"
@@ -71,7 +71,10 @@ const session = useSessionStore();
 const expanded = computed(() => new Set(session.menuExpandedKeys));
 const activeParents = ref<Set<string>>(new Set());
 
-type NavigationIconName = 'clipboard' | 'construction' | 'contract' | 'file-text' | 'folder' | 'project';
+type NavigationIconName = 'apps' | 'briefcase' | 'building' | 'clipboard' | 'construction' | 'contract' | 'file-text' | 'folder' | 'home' | 'project' | 'settings' | 'user';
+const navigationIconNames = new Set<NavigationIconName>([
+  'apps', 'briefcase', 'building', 'clipboard', 'construction', 'contract', 'file-text', 'folder', 'home', 'project', 'settings', 'user',
+]);
 
 const sorted = computed(() => {
   const nodes = hideEmptyDirectoryLeaves(hideDuplicateLeafBesideGroup(props.nodes));
@@ -118,16 +121,7 @@ function nodeKey(node: NavNode) {
 
 function nodeLabel(node: NavNode) {
   const raw = String(node.title || node.name || node.label || 'Unnamed');
-  return raw
-    .replace(/\s*\(\d+\)\s*$/g, '')
-    .replace(/^project\s*manager$/i, '负责人')
-    .replace(/^purchase\s*manager$/i, '采购经理')
-    .replace(/^finance$/i, '财务主管')
-    .replace(/^executive$/i, '管理层')
-    .replace(/^ops$/i, '运维专员')
-    .replace(/^admin$/i, '系统管理员')
-    .replace(/^workbench$/i, '诊断页')
-    .replace(/^dashboard$/i, '看板');
+  return raw.replace(/\s*\(\d+\)\s*$/g, '');
 }
 
 function normalizedNodeLabel(node: NavNode) {
@@ -135,34 +129,13 @@ function normalizedNodeLabel(node: NavNode) {
 }
 
 function nodeIcon(node: NavNode): NavigationIconName {
-  const raw = node as NavNode & { xmlid?: string; route?: string; model?: string };
-  const identity = [
-    nodeLabel(node),
-    nodeKey(node),
-    raw.xmlid,
-    raw.route,
-    raw.model,
-    node.meta?.model,
-    node.meta?.route,
-  ].filter(Boolean).join(' ').toLowerCase();
-
-  if (/施工管理|construction[._\s-]*(management|center)/i.test(identity)) return 'construction';
-  if (/施工合同|construction[._\s-]*contract/i.test(identity)) return 'contract';
-  if (/一般合同|general[._\s-]*contract/i.test(identity)) return 'file-text';
-  if (/合同管理|contract[._\s-]*management/i.test(identity)) return 'clipboard';
-  if (/合同中心|contract[._\s-]*center/i.test(identity)) return 'contract';
-  if (/项目中心|project[._\s-]*center/i.test(identity)) return 'project';
-  if (/施工|construction/i.test(identity)) return 'construction';
-  if (/合同|contract/i.test(identity)) return 'contract';
-  if (/项目|project/i.test(identity)) return 'project';
+  const requested = String(node.icon || node.meta?.icon || '').trim() as NavigationIconName;
+  if (navigationIconNames.has(requested)) return requested;
   return node.children?.length ? 'folder' : 'file-text';
 }
 
-function isHandlingGroup(node: NavNode) {
-  return Boolean(node.children?.length) && (
-    /办理$/.test(normalizedNodeLabel(node))
-    || String(node.meta?.intent_group || '').trim() === 'handling'
-  );
+function nodeBadge(node: NavNode): string {
+  return String(node.meta?.badge_label || '').trim();
 }
 
 function onSelect(node: NavNode) {
@@ -226,17 +199,14 @@ function ensureExpandedForActive(nodes: NavNode[], menuId?: number): Set<string>
 
 function ensureExpandedForDefaultGroups(nodes: NavNode[]): Set<string> {
   const next = new Set<string>();
-  const walk = (items: NavNode[], insideJointAcceptance = false) => {
+  const walk = (items: NavNode[]) => {
     for (const node of items) {
       const key = nodeKey(node);
-      const label = normalizedNodeLabel(node);
-      const isJointAcceptanceRoot = label === '联营项目数据核对';
-      const shouldExpand = isJointAcceptanceRoot || isHandlingGroup(node) || (insideJointAcceptance && Boolean(node.children?.length));
-      if (shouldExpand) {
+      if (node.children?.length && node.meta?.default_expanded === true) {
         next.add(key);
       }
       if (node.children?.length) {
-        walk(node.children, insideJointAcceptance || isJointAcceptanceRoot);
+        walk(node.children);
       }
     }
   };

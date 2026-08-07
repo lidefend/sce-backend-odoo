@@ -386,7 +386,7 @@ import {
 } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
 import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore.js';
-import type { BusinessScopeOperationOption, NavNode, ProjectContextOption } from '@sc/schema';
+import type { BusinessScopeOperationOption, NavNode, RecordContextOption } from '@sc/schema';
 import {
   exportSuggestedActionTraces,
   getLatestSuggestedActionTrace,
@@ -408,7 +408,7 @@ type PublishedApp = {
   badges: Record<string, unknown>;
 };
 type WorkspacePanelMode = 'navigation' | 'company' | 'project';
-const PROJECT_CONTEXT_CHANGED_EVENT = 'sc:project-context-changed';
+const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
 const SIDEBAR_HIDDEN_STORAGE_KEY = 'sc_shell_sidebar_hidden';
 
 function asDict(value: unknown): UnknownDict | null {
@@ -525,19 +525,19 @@ const roleLabel = computed(() => {
   return '当前用户';
 });
 const currentCompanyLabel = computed(() => String(
-  projectContext.value?.company_name
-  || projectContext.value?.selected?.company_name
+  recordContext.value?.company_name
+  || recordContext.value?.selected?.company_name
   || '',
 ).trim());
-const projectContext = computed(() => session.projectContext);
-const projectContextEnabled = computed(() => Boolean(projectContext.value?.enabled));
-const projectContextReasonCode = computed(() => String(projectContext.value?.reason_code || '').trim());
+const recordContext = computed(() => session.recordContext);
+const recordContextEnabled = computed(() => Boolean(recordContext.value?.enabled));
+const recordContextReasonCode = computed(() => String(recordContext.value?.reason_code || '').trim());
 const showRecordContext = computed(() =>
-  projectContextEnabled.value || projectContextReasonCode.value !== 'RECORD_CONTEXT_MODEL_NOT_INSTALLED'
+  recordContextEnabled.value || recordContextReasonCode.value !== 'RECORD_CONTEXT_MODEL_NOT_INSTALLED'
 );
-const selectedProject = computed(() => projectContext.value?.selected ?? null);
-const projectOptions = computed(() => projectContext.value?.options ?? []);
-const companyOptions = computed(() => projectContext.value?.company_options ?? []);
+const selectedProject = computed(() => recordContext.value?.selected ?? null);
+const projectOptions = computed(() => recordContext.value?.options ?? []);
+const companyOptions = computed(() => recordContext.value?.company_options ?? []);
 const filteredCompanyOptions = computed(() => {
   const keyword = companySearch.value.trim().toLowerCase();
   if (!keyword) return companyOptions.value;
@@ -545,31 +545,31 @@ const filteredCompanyOptions = computed(() => {
     String(company.company_name || company.company_id || '').toLowerCase().includes(keyword)
   ));
 });
-const operationOptions = computed(() => projectContext.value?.operation_options ?? []);
+const operationOptions = computed(() => recordContext.value?.operation_options ?? []);
 const selectedCompanyId = computed(() =>
-  Number(projectContext.value?.company_id || selectedProject.value?.company_id || 0) || 0,
+  Number(recordContext.value?.company_id || selectedProject.value?.company_id || 0) || 0,
 );
 const selectedOperationStrategy = computed(() =>
-  String(projectContext.value?.operation_strategy || '').trim(),
+  String(recordContext.value?.operation_strategy || '').trim(),
 );
 const recordContextLabel = computed(() =>
-  String(projectContext.value?.selector?.label || '当前范围').trim() || '当前范围'
+  String(recordContext.value?.selector?.label || '当前范围').trim() || '当前范围'
 );
 const recordContextSubject = computed(() => recordContextLabel.value.replace(/^当前/, '') || '记录');
 const recordContextSpaceLabel = computed(() => `${recordContextSubject.value}空间`);
 const switchRecordContextLabel = computed(() => `切换${recordContextSubject.value}`);
-const recordContextAllLabel = computed(() => String(projectContext.value?.selector?.all_label || '全部').trim() || '全部');
+const recordContextAllLabel = computed(() => String(recordContext.value?.selector?.all_label || '全部').trim() || '全部');
 const recordContextEmptyText = computed(() => `无匹配${recordContextSubject.value}`);
 const currentProjectLabel = computed(() => {
-  if (!projectContextEnabled.value) {
-    return projectContext.value?.message || '未启用';
+  if (!recordContextEnabled.value) {
+    return recordContext.value?.message || '未启用';
   }
   const selected = selectedProject.value;
   if (!selected) return recordContextAllLabel.value;
   return projectNameLabel(selected);
 });
 const projectSearchPlaceholder = computed(() =>
-  String(projectContext.value?.selector?.placeholder || `搜索${recordContextSubject.value}名称`).trim()
+  String(recordContext.value?.selector?.placeholder || `搜索${recordContextSubject.value}名称`).trim()
     || `搜索${recordContextSubject.value}名称`,
 );
 const roleLandingPath = computed(() => session.resolveLandingPath('/'));
@@ -692,14 +692,14 @@ function normalizeDeliveryText(input: string) {
   return source.replace(/\s*\(\d+\)\s*$/g, '');
 }
 
-function projectOptionLabel(option: ProjectContextOption | null | undefined) {
+function projectOptionLabel(option: RecordContextOption | null | undefined) {
   if (!option) return '';
   const label = projectNameLabel(option);
   const scope = String(option.operation_strategy_label || option.operation_strategy || '').trim();
   return scope ? `${label} · ${scope}` : label;
 }
 
-function projectNameLabel(option: ProjectContextOption | null | undefined) {
+function projectNameLabel(option: RecordContextOption | null | undefined) {
   if (!option) return '';
   return String(option.display_name || option.name || `记录 ${option.id}`).trim();
 }
@@ -821,12 +821,12 @@ async function openPublishedApp(app: PublishedApp) {
 }
 
 async function loadProjectOptions() {
-  if (!projectContextEnabled.value) return;
+  if (!recordContextEnabled.value) return;
   const requestSequence = ++projectSearchRequestSequence;
   projectSearching.value = true;
   projectError.value = '';
   try {
-    await session.searchProjectContext(projectSearch.value);
+    await session.searchRecordContext(projectSearch.value);
   } catch (err) {
     if (requestSequence === projectSearchRequestSequence) {
       projectError.value = err instanceof Error ? err.message : '记录搜索失败';
@@ -868,18 +868,18 @@ async function openWorkspacePanel(mode: WorkspacePanelMode) {
     persistSidebarHidden(false);
   }
   if (mode === 'company') companySearch.value = '';
-  if (mode === 'project' && projectContextEnabled.value) {
+  if (mode === 'project' && recordContextEnabled.value) {
     projectSearch.value = '';
     await loadProjectOptions();
   }
 }
 
-async function selectProject(option: ProjectContextOption) {
+async function selectProject(option: RecordContextOption) {
   const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
   const nextProjectId = Number(option?.id || 0) || 0;
   if (previousProjectId === nextProjectId) return;
-  await session.selectProjectContext(option);
-  emitProjectContextChanged(previousProjectId);
+  await session.selectRecordContext(option);
+  emitRecordContextChanged(previousProjectId);
   workspacePanelMode.value = 'navigation';
 }
 
@@ -919,8 +919,8 @@ async function changeOperationScope(operationStrategy: string) {
 async function clearProjectSelection() {
   const previousProjectId = Number(selectedProject.value?.id || 0) || 0;
   if (!previousProjectId) return;
-  await session.selectProjectContext(null);
-  emitProjectContextChanged(previousProjectId);
+  await session.selectRecordContext(null);
+  emitRecordContextChanged(previousProjectId);
   workspacePanelMode.value = 'navigation';
 }
 
@@ -1205,9 +1205,9 @@ function closeProjectMenu() {
   roleContextOpen.value = false;
 }
 
-function emitProjectContextChanged(previousProjectId = 0, scopeChanged = false) {
+function emitRecordContextChanged(previousProjectId = 0, scopeChanged = false) {
   if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(PROJECT_CONTEXT_CHANGED_EVENT, {
+  window.dispatchEvent(new CustomEvent(RECORD_CONTEXT_CHANGED_EVENT, {
     detail: {
       previous_project_id: previousProjectId || null,
       selected_project_id: selectedProject.value?.id || null,
@@ -1230,7 +1230,7 @@ function scheduleScopeContextChanged(previousProjectId = 0) {
   // immediate without changing the emitted event contract.
   scopeRefreshTimer = setTimeout(() => {
     scopeRefreshTimer = null;
-    emitProjectContextChanged(previousProjectId, true);
+    emitRecordContextChanged(previousProjectId, true);
   }, 500);
 }
 
@@ -1287,7 +1287,7 @@ onMounted(() => {
 });
 
 watch(
-  () => [session.initStatus, session.token, session.projectContext?.selected?.id],
+  () => [session.initStatus, session.token, session.recordContext?.selected?.id],
   () => {
     void loadPublishedApps();
   },
@@ -1431,8 +1431,8 @@ function handleSelect(node: NavNode) {
     ...(buildBusinessEntryNavQuery(selection.meta) as LocationQueryRaw),
   };
   const scope = {
-    companyId: Number(session.projectContext?.company_id || session.projectContext?.selected?.company_id || 0) || null,
-    projectId: Number(session.projectContext?.selected?.id || 0) || null,
+    companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+    projectId: Number(session.recordContext?.selected?.id || 0) || null,
   };
   if (!routeAuthorityContextAllowed(selection.authority, menuQuery as Record<string, unknown>, scope)) return;
   if (selection.targetKind === 'entry_target' && selection.entryTarget) {
@@ -1485,7 +1485,7 @@ function resolveActivityPageRoute(page: ActivityPage): string {
 
 async function activateActivityPage(page: ActivityPage) {
   if (!page?.key || !page.route) return;
-  await session.applyActivityProjectContext(page.project_context);
+  await session.applyActivityRecordContext(page.record_context);
   const targetRoute = resolveActivityPageRoute(page);
   if (route.fullPath !== targetRoute) {
     await router.push(targetRoute).catch(() => {});

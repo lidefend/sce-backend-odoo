@@ -149,8 +149,14 @@ class TestProjectContextBoundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
 
+    def test_record_context_search_is_canonical_with_legacy_alias(self):
+        handler = self.module.RecordContextSearchHandler
+
+        self.assertEqual(handler.INTENT_TYPE, "record.context.search")
+        self.assertEqual(handler.ALIASES, ["project.context.search"])
+
     def test_search_rejects_invalid_limit(self):
-        handler = self.module.ProjectContextSearchHandler(env=object())
+        handler = self.module.RecordContextSearchHandler(env=object())
 
         result = handler.handle(payload={"params": {"limit": "bad"}})
 
@@ -159,7 +165,7 @@ class TestProjectContextBoundaries(unittest.TestCase):
         self.assertEqual(result.error["message"], "limit 无效")
 
     def test_search_rejects_zero_limit(self):
-        handler = self.module.ProjectContextSearchHandler(env=object())
+        handler = self.module.RecordContextSearchHandler(env=object())
 
         result = handler.handle(payload={"params": {"limit": 0}})
 
@@ -168,7 +174,7 @@ class TestProjectContextBoundaries(unittest.TestCase):
         self.assertEqual(result.error["message"], "limit 无效")
 
     def test_search_passes_parsed_limit(self):
-        handler = self.module.ProjectContextSearchHandler(env=object())
+        handler = self.module.RecordContextSearchHandler(env=object())
 
         result = handler.handle(payload={"params": {"search": "abc", "limit": "7"}})
 

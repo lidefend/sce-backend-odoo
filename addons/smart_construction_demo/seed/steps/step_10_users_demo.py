@@ -82,6 +82,18 @@ def run(env):
     )
     _ensure_user(
         env,
+        login="wutao",
+        name="吴涛",
+        groups_xmlids=[
+            base_group,
+            "smart_construction_core.group_sc_business_full",
+        ],
+        password=password,
+        lang=lang,
+        tz=tz,
+    )
+    _ensure_user(
+        env,
         login="demo_pm",
         name="Demo-项目经理",
         groups_xmlids=[
@@ -140,7 +152,7 @@ def run(env):
 register(
     SeedStep(
         name="demo_10_users",
-        description="Create demo_full/demo_pm/demo_finance/demo_cost/demo_readonly users.",
+        description="Create the wutao full-product principal and representative demo role users.",
         run=run,
     )
 )

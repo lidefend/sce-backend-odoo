@@ -17,9 +17,9 @@ type GroupPagingState = {
   groupWindowIdentityKey: string;
 };
 
-type ProjectScopeState = {
-  projectScopeTotals: Record<string, number>;
-  projectScopeMetrics: Record<string, unknown>;
+type CollectionScopeState = {
+  collectionScopeTotals: Record<string, number>;
+  collectionScopeMetrics: Record<string, unknown>;
 };
 
 type WindowMetricsState = {
@@ -70,12 +70,12 @@ export function resolveGroupPagingIdentityApplyState(options: {
   };
 }
 
-export function resolveProjectScopeApplyState(options: {
-  projectScopeState: ProjectScopeState;
-}): ProjectScopeState {
+export function resolveCollectionScopeApplyState(options: {
+  collectionScopeState: CollectionScopeState;
+}): CollectionScopeState {
   return {
-    projectScopeTotals: options.projectScopeState.projectScopeTotals,
-    projectScopeMetrics: options.projectScopeState.projectScopeMetrics,
+    collectionScopeTotals: options.collectionScopeState.collectionScopeTotals,
+    collectionScopeMetrics: options.collectionScopeState.collectionScopeMetrics,
   };
 }
 

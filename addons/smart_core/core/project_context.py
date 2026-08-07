@@ -253,6 +253,11 @@ def format_project_option(record) -> dict:
         except Exception:
             company_id = 0
             company_name = ""
+    request_context = {
+        "current_project_id": int(record.id),
+        **({"company_id": company_id} if company_id else {}),
+        **({"operation_strategy": operation_strategy} if operation_strategy else {}),
+    }
     return {
         "id": int(record.id),
         "name": name,
@@ -266,6 +271,7 @@ def format_project_option(record) -> dict:
         "operation_strategy": operation_strategy,
         "operation_strategy_label": operation_strategy_label,
         "active": bool(getattr(record, "active", True)),
+        "request_context": request_context,
     }
 
 
@@ -616,7 +622,7 @@ def build_record_context_contract(env, params: dict | None = None, *, search: st
     if not selected_company_id:
         selected_company_id = _as_int(getattr(env.company, "id", 0))
     selector = {
-        "intent": "project.context.search",
+        "intent": "record.context.search",
         "search_param": "search",
         "selected_id_param": context_config.get("selected_id_param") or "selected_id",
         "limit": safe_limit,
@@ -645,6 +651,15 @@ def build_record_context_contract(env, params: dict | None = None, *, search: st
         "persistence": {
             "scope": "browser_session",
             "server_preference": False,
+        },
+        "request_context": {
+            **({"company_id": selected_company_id} if selected_company_id else {}),
+            **({"operation_strategy": selected_operation_strategy} if selected_operation_strategy else {}),
+            **({"current_project_id": selected_id} if selected_id else {}),
+        },
+        "clear_request_context": {
+            **({"company_id": selected_company_id} if selected_company_id else {}),
+            **({"operation_strategy": selected_operation_strategy} if selected_operation_strategy else {}),
         },
     }
     if not _model_available(env, context_model):

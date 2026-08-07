@@ -4,18 +4,11 @@
       <section class="brand-panel" aria-label="平台介绍">
         <p class="brand-title">{{ pageText('brand_name', config.appBrand.name) }}</p>
         <p class="brand-subtitle">{{ pageText('brand_subtitle', config.appBrand.subtitle) }}</p>
-        <p class="brand-slogan">{{ pageText('brand_slogan', config.appBrand.slogan) }}</p>
+        <p v-if="brandSlogan" class="brand-slogan">{{ brandSlogan }}</p>
 
-        <ul class="value-list" aria-label="价值主张">
+        <ul v-if="valueLines.length" class="value-list" aria-label="价值主张">
           <li v-for="line in valueLines" :key="line">{{ line }}</li>
         </ul>
-
-        <section class="capability-strip" aria-label="系统核心能力">
-          <div v-for="capability in capabilityItems" :key="capability.key" class="capability-card">
-            <span class="capability-icon" aria-hidden="true">{{ capability.icon }}</span>
-            <span>{{ capability.label }}</span>
-          </div>
-        </section>
       </section>
 
       <section class="auth-panel">
@@ -37,8 +30,8 @@
           :style="pageSectionStyle('card')"
         >
           <header class="brand-header">
-            <span class="product-badge">{{ config.appBrand.productBadge }}</span>
-            <p class="brand-kicker">{{ config.appBrand.kicker }}</p>
+            <span v-if="config.appBrand.productBadge" class="product-badge">{{ config.appBrand.productBadge }}</span>
+            <p v-if="config.appBrand.kicker" class="brand-kicker">{{ config.appBrand.kicker }}</p>
             <h1>{{ pageText('title', loginTitleFallback) }}</h1>
           </header>
 
@@ -114,9 +107,9 @@
       </section>
     </section>
 
-    <footer class="page-footer">
-      <p>{{ config.appBrand.footerPrimary }}</p>
-      <p>{{ config.appBrand.footerSecondary }}</p>
+    <footer v-if="config.appBrand.footerPrimary || config.appBrand.footerSecondary" class="page-footer">
+      <p v-if="config.appBrand.footerPrimary">{{ config.appBrand.footerPrimary }}</p>
+      <p v-if="config.appBrand.footerSecondary">{{ config.appBrand.footerSecondary }}</p>
     </footer>
   </main>
 </template>
@@ -155,12 +148,7 @@ const authEntryActions = computed(() => pageGlobalActions.value.filter((action) 
 const headerActions = computed(() => pageGlobalActions.value.filter((action) => !authActionKeys.has(action.key)));
 const dbInputDisabled = computed(() => loading.value || isConfiguredDbPinned());
 const loginTitleFallback = computed(() => isPlatformAdminEntryRuntime() ? '平台管理员登录' : '登录');
-const capabilityItems = computed(() => [
-  { key: 'project', icon: '📊', label: pageText('capability_project', config.appBrand.capabilities.project) },
-  { key: 'contract_cost', icon: '📑', label: pageText('capability_contract_cost', config.appBrand.capabilities.contractCost) },
-  { key: 'fund', icon: '💰', label: pageText('capability_fund', config.appBrand.capabilities.fund) },
-  { key: 'risk', icon: '⚠', label: pageText('capability_risk', config.appBrand.capabilities.risk) },
-]);
+const brandSlogan = computed(() => pageText('brand_slogan', config.appBrand.slogan).trim());
 const valueLines = computed(() => config.appBrand.valueLines.map((line, index) => pageText(`value_line_${index + 1}`, line)));
 
 watch([username, password], () => {
@@ -396,10 +384,9 @@ h1 {
   font-size: 14px;
 }
 
-.value-list li::before {
-  content: '▣';
-  color: var(--sc-semantic-surface-interactive);
-  margin-right: 8px;
+.value-list li {
+  border-inline-start: 2px solid var(--sc-semantic-surface-interactive);
+  padding-inline-start: 8px;
 }
 
 form {
@@ -445,36 +432,6 @@ input:focus-visible {
 
 .error {
   font-size: 13px;
-}
-
-.capability-strip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 6px;
-}
-
-.capability-card {
-  border-radius: var(--sc-component-card-radius);
-  border: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  box-shadow: var(--sc-app-shadow);
-  color: var(--sc-app-text-primary);
-  font-size: 14px;
-  font-weight: 600;
-  padding: 11px 13px;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.capability-icon {
-  width: 20px;
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  color: var(--sc-semantic-surface-interactive);
 }
 
 .page-footer {

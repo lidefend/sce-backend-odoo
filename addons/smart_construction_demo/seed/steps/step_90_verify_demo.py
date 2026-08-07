@@ -29,6 +29,17 @@ ALL_DEMO_PROJECT_CODES = [
 RATIO_TARGETS = [0.0, 0.7, 0.95, 1.0]
 
 
+def _verify_full_product_principal(env):
+    users = env["res.users"].sudo().search([("login", "=", "wutao")])
+    full_group = env.ref("smart_construction_core.group_sc_business_full", raise_if_not_found=False)
+    if len(users) != 1:
+        raise UserError("wutao must resolve to exactly one demo full-product principal.")
+    if users.share or not users.active:
+        raise UserError("wutao must be an active internal user.")
+    if not full_group or full_group not in users.groups_id:
+        raise UserError("wutao must carry the business-full permission aggregate.")
+
+
 def _get_project(env, code):
     return env["project.project"].sudo().search([("project_code", "=", code)], limit=1)
 
@@ -253,6 +264,7 @@ def run(env):
         if warn_ratio < 0.15 or warn_ratio > 0.25:
             raise UserError(f"Warn ratio out of range: {warn_ratio:.2f}")
 
+    _verify_full_product_principal(env)
     _verify_demo_full_my_work(env)
 
     stage_xmlids = [
@@ -294,7 +306,7 @@ def run(env):
 register(
     SeedStep(
         name="demo_90_verify",
-        description="Verify demo_full data completeness.",
+        description="Verify full-product acceptance principal and demo data completeness.",
         run=run,
     )
 )

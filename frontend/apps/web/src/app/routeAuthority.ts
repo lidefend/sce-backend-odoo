@@ -1,9 +1,9 @@
-import type { ProjectContextContract, ProjectContextOption } from '@sc/schema';
+import type { RecordContextContract, RecordContextOption } from '@sc/schema';
 
 export type RouteAuthorityKind = 'PRIMARY_NAV' | 'DISCOVERED_PRIMARY_NAV' | 'ROLE_HOME_ACTION' | 'CONTEXTUAL_ROUTE' | 'ADMIN_ROUTE' | 'DENIED';
 
-export interface RouteAuthorityProjectContextSnapshot {
-  selected: ProjectContextOption | null;
+export interface RouteAuthorityRecordContextSnapshot {
+  selected: RecordContextOption | null;
   company_id: number | null;
   company_name: string;
   operation_strategy: string;
@@ -139,10 +139,10 @@ export function routeAuthorityForPrincipal(
   return contract;
 }
 
-export function nextRouteAuthorityProjectContext(
-  current: ProjectContextContract,
-  snapshot: RouteAuthorityProjectContextSnapshot,
-): ProjectContextContract | null {
+export function nextRouteAuthorityRecordContext(
+  current: RecordContextContract,
+  snapshot: RouteAuthorityRecordContextSnapshot,
+): RecordContextContract | null {
   const currentProjectId = positiveInteger(current.selected?.id);
   const nextProjectId = positiveInteger(snapshot.selected?.id);
   const currentCompanyId = positiveInteger(current.company_id || current.selected?.company_id);

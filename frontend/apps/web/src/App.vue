@@ -52,7 +52,7 @@ function positiveInteger(value: unknown): number {
 function activityProjectPart(policy: string): string {
   const normalizedPolicy = String(policy || '').trim().toLowerCase();
   if (normalizedPolicy === 'global' || normalizedPolicy === 'exempt') return 'global';
-  const selectedId = Number(session.projectContext?.selected?.id || 0) || 0;
+  const selectedId = Number(session.recordContext?.selected?.id || 0) || 0;
   return selectedId > 0 ? `project:${selectedId}` : 'all';
 }
 
@@ -67,15 +67,15 @@ function resolveActivityRoutePolicy(actionId: number, menuId: number): string {
     || (actionId > 0 ? findActionMeta(session.menuTree, actionId) : null)
     || (currentActionMatches(actionId) ? session.currentAction : null)
     || null;
-  return String(meta?.project_scope_policy || meta?.projectScopePolicy || '').trim().toLowerCase();
+  return String(meta?.project_scope_policy || meta?.collectionScopePolicy || '').trim().toLowerCase();
 }
 
 function activityRouteKey(route: RouteLocationNormalizedLoaded): string {
   if (route.name === 'action') {
     const actionId = positiveInteger(route.params.actionId || route.query.action_id);
     const menuId = positiveInteger(route.query.menu_id);
-    const projectScopePolicy = resolveActivityRoutePolicy(actionId, menuId);
-    return actionId ? `action:${actionId}:menu:${menuId || 0}:${activityProjectPart(projectScopePolicy)}` : '';
+    const collectionScopePolicy = resolveActivityRoutePolicy(actionId, menuId);
+    return actionId ? `action:${actionId}:menu:${menuId || 0}:${activityProjectPart(collectionScopePolicy)}` : '';
   }
   if (route.name === 'record' || route.name === 'model-form') {
     const model = routeText(route.params.model);
@@ -84,10 +84,10 @@ function activityRouteKey(route: RouteLocationNormalizedLoaded): string {
     const actionId = positiveInteger(route.query.action_id);
     const menuId = positiveInteger(route.query.menu_id);
     const viewId = positiveInteger(route.query.view_id || route.query.viewId);
-    const projectScopePolicy = resolveActivityRoutePolicy(actionId, menuId);
+    const collectionScopePolicy = resolveActivityRoutePolicy(actionId, menuId);
     if (recordId === 'new') {
       const activityInstanceId = routeText(route.query.activity_page_id);
-      return `new:${model}:action:${actionId || 0}:menu:${menuId || 0}:view:${viewId || 0}:${activityProjectPart(projectScopePolicy || 'current_project')}:${activityInstanceId || 'route'}`;
+      return `new:${model}:action:${actionId || 0}:menu:${menuId || 0}:view:${viewId || 0}:${activityProjectPart(collectionScopePolicy || 'current_project')}:${activityInstanceId || 'route'}`;
     }
     // A persisted record id already identifies the activity page. Including the
     // live selected-project projection makes the KeepAlive key change during

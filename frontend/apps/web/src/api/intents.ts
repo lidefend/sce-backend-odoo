@@ -62,101 +62,30 @@ function buildHeaders(intent: string, traceId: string) {
   return headers;
 }
 
-function withCurrentProjectContext(session: ReturnType<typeof useSessionStore>, payload: IntentPayload): IntentPayload {
+function withCurrentRecordContext(session: ReturnType<typeof useSessionStore>, payload: IntentPayload): IntentPayload {
   const intent = String(payload.intent || '').trim();
-  const skip = new Set(['login', 'auth.login', 'auth.logout', 'session.bootstrap', 'sys.intents', 'project.context.search']);
+  const skip = new Set(['login', 'auth.login', 'auth.logout', 'session.bootstrap', 'sys.intents', 'record.context.search']);
+  const supplied = session.recordContext?.request_context;
+  const requestContext = supplied && typeof supplied === 'object' && !Array.isArray(supplied)
+    ? { ...supplied }
+    : {};
+  if (!Object.keys(requestContext).length || skip.has(intent)) return payload;
   const params = (payload.params && typeof payload.params === 'object' && !Array.isArray(payload.params))
     ? { ...(payload.params as Record<string, unknown>) }
     : payload.params;
-  const paramsContext = (params && typeof params === 'object' && !Array.isArray(params)
-    && (params as Record<string, unknown>).context
-    && typeof (params as Record<string, unknown>).context === 'object'
-    && !Array.isArray((params as Record<string, unknown>).context))
-    ? (params as Record<string, unknown>).context as Record<string, unknown>
-    : {};
-  const projectId = Number(session.projectContext?.selected?.id || 0);
-  const companyId = Number(session.projectContext?.company_id || session.projectContext?.selected?.company_id || 0);
-  const operationStrategy = String(
-    session.projectContext?.operation_strategy || session.projectContext?.selected?.operation_strategy || '',
-  ).trim();
-  const isMenuListRequest = intent === 'api.data'
-    && params
-    && typeof params === 'object'
-    && !Array.isArray(params)
-    && ['list', 'read'].includes(String((params as Record<string, unknown>).op || '').trim())
-    && Number(paramsContext.menu_id || 0) > 0;
-  if ((!projectId && !companyId && !operationStrategy) || skip.has(intent)) {
-    return payload;
-  }
-  const projectScopePolicy = String(
-    paramsContext.project_scope_policy
-      || paramsContext.projectScopePolicy
-      || payload.context?.project_scope_policy
-      || payload.context?.projectScopePolicy
-      || '',
-  ).trim().toLowerCase();
-  const shouldUseProjectScope = projectScopePolicy !== 'global' && projectScopePolicy !== 'exempt';
-  if (isMenuListRequest) {
-    const context = {
-      ...(payload.context || {}),
-      ...(companyId ? { company_id: companyId } : {}),
-      ...(operationStrategy ? { operation_strategy: operationStrategy } : {}),
-      ...(projectScopePolicy ? { project_scope_policy: projectScopePolicy } : {}),
-      ...(shouldUseProjectScope && projectId ? { current_project_id: projectId } : {}),
-    };
-    const paramsRecord = params as Record<string, unknown>;
-    const requestContext = (paramsRecord.context && typeof paramsRecord.context === 'object' && !Array.isArray(paramsRecord.context))
-      ? paramsRecord.context as Record<string, unknown>
-      : {};
-    paramsRecord.context = {
-      ...requestContext,
-      ...(companyId ? { company_id: companyId } : {}),
-      ...(operationStrategy ? { operation_strategy: operationStrategy } : {}),
-      ...(projectScopePolicy ? { project_scope_policy: projectScopePolicy } : {}),
-      ...(shouldUseProjectScope && projectId ? { current_project_id: projectId } : {}),
-    };
-    if (companyId) paramsRecord.company_id = companyId;
-    if (operationStrategy) paramsRecord.operation_strategy = operationStrategy;
-    if (shouldUseProjectScope && projectId) {
-      paramsRecord.current_project_id = projectId;
-    } else {
-      delete paramsRecord.current_project_id;
-      delete (paramsRecord.context as Record<string, unknown>).current_project_id;
-    }
-    return {
-      ...payload,
-      context,
-      params,
-    };
-  }
   const context = {
+    ...requestContext,
     ...(payload.context || {}),
-    ...(companyId ? { company_id: companyId } : {}),
-    ...(operationStrategy ? { operation_strategy: operationStrategy } : {}),
-    ...(projectScopePolicy ? { project_scope_policy: projectScopePolicy } : {}),
-    ...(shouldUseProjectScope && projectId ? { current_project_id: projectId } : {}),
   };
-  if (!shouldUseProjectScope) delete context.current_project_id;
   if (params && typeof params === 'object' && !Array.isArray(params)) {
     const paramsRecord = params as Record<string, unknown>;
-    const requestContext = (paramsRecord.context && typeof paramsRecord.context === 'object' && !Array.isArray(paramsRecord.context))
+    const explicitContext = (paramsRecord.context && typeof paramsRecord.context === 'object' && !Array.isArray(paramsRecord.context))
       ? paramsRecord.context as Record<string, unknown>
       : {};
     paramsRecord.context = {
       ...requestContext,
-      ...(companyId ? { company_id: companyId } : {}),
-      ...(operationStrategy ? { operation_strategy: operationStrategy } : {}),
-      ...(projectScopePolicy ? { project_scope_policy: projectScopePolicy } : {}),
-      ...(shouldUseProjectScope && projectId ? { current_project_id: projectId } : {}),
+      ...explicitContext,
     };
-    if (companyId) paramsRecord.company_id = companyId;
-    if (operationStrategy) paramsRecord.operation_strategy = operationStrategy;
-    if (shouldUseProjectScope && projectId) {
-      paramsRecord.current_project_id = projectId;
-    } else {
-      delete paramsRecord.current_project_id;
-      delete (paramsRecord.context as Record<string, unknown>).current_project_id;
-    }
   }
   return {
     ...payload,
@@ -202,7 +131,7 @@ function throwEnvelopeError(
 export async function intentRequest<T>(payload: IntentPayload) {
   const traceId = generateTraceId();
   const session = useSessionStore();
-  const effectivePayload = withCurrentProjectContext(session, payload);
+  const effectivePayload = withCurrentRecordContext(session, payload);
   const startedAt = Date.now();
   enforceStartupChainOrThrow(session, effectivePayload);
   try {
@@ -247,7 +176,7 @@ export async function intentRequest<T>(payload: IntentPayload) {
 export async function intentRequestRaw<T>(payload: IntentPayload) {
   const traceId = generateTraceId();
   const session = useSessionStore();
-  const effectivePayload = withCurrentProjectContext(session, payload);
+  const effectivePayload = withCurrentRecordContext(session, payload);
   const startedAt = Date.now();
   enforceStartupChainOrThrow(session, effectivePayload);
   const response = await apiRequestRaw<IntentEnvelope<T>>('/api/v1/intent', {

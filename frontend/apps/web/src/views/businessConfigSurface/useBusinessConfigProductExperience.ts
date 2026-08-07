@@ -40,8 +40,8 @@ export function useBusinessConfigProductExperience(options: {
   openImpactDialog: (options: { summary: string; immediate?: boolean; rollbackText?: string }) => Promise<boolean>;
 }) {
   const workbenchCompanyLabel = computed(() => String(
-    options.session.projectContext?.company_name
-    || options.session.projectContext?.selected?.company_name
+    options.session.recordContext?.company_name
+    || options.session.recordContext?.selected?.company_name
     || '',
   ).trim());
   const workbenchRoleLabel = computed(() => String(options.session.roleSurface?.role_label || '').trim());
@@ -106,7 +106,7 @@ export function useBusinessConfigProductExperience(options: {
     });
   });
   watch(
-    () => `${options.session.projectContext?.company_id || ''}:${options.session.roleSurface?.role_code || ''}`,
+    () => `${options.session.recordContext?.company_id || ''}:${options.session.roleSurface?.role_code || ''}`,
     async (nextScope, previousScope) => {
       if (!previousScope || nextScope === previousScope) return;
       options.resetListSearchDraft();

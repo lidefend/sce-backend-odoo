@@ -12,7 +12,6 @@ export function groupContractHeaderActions(params: {
   intakeMode: boolean;
   nativeTree: boolean;
   configurationMode: boolean;
-  productRecord: boolean;
   isSubmitAction: (action: ContractAction) => boolean;
 }) {
   const visible = params.intakeMode
@@ -22,13 +21,11 @@ export function groupContractHeaderActions(params: {
       .filter((action) => Boolean(action.mutation) || !params.isSubmitAction(action));
   const business = params.configurationMode ? [] : visible.filter((action) => !isConfigurationAction(action));
   const primary = business.find((action) => action.presentationTier === 'primary');
-  const direct = params.productRecord
-    ? [...(primary ? [primary] : []), ...business.filter((action) => action.presentationTier === 'secondary' && action.key !== primary?.key).slice(0, 2)]
-    : business;
+  const direct = [...(primary ? [primary] : []), ...business.filter((action) => action.presentationTier === 'secondary' && action.key !== primary?.key).slice(0, 2)];
   const directKeys = new Set(direct.map((action) => action.key));
   return {
     direct,
-    overflow: params.productRecord ? business.filter((action) => !directKeys.has(action.key)) : [],
+    overflow: business.filter((action) => !directKeys.has(action.key)),
     configuration: visible.filter((action) => isConfigurationAction(action) && action.enabled),
   };
 }

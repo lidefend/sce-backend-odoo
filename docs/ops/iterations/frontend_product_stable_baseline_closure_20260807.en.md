@@ -49,6 +49,7 @@ Any retained exception requires an identifier, owner component, rationale, scope
 
 ## Acceptance
 
+- Primary acceptance principal: `wutao`, defined as the full-product account. Any inaccessible formal menu, action, page, read, or export capability is a backend role mapping, menu-group, model-access, record-rule, or contract-projection defect; it must not be hidden by frontend logic or dismissed as insufficient account permission.
 - Viewports: 1920×1080, 1440×900, 1280×800, 1024×768, 768×1024, and 390×844; all routes smoke at 1440 and 390.
 - Templates: home, table, card, readonly, create/edit, relation dialog, one2many, collaboration, designer, loading, empty, and error/forbidden.
 - Representative domains: home/my work, project ledger, general contract, construction contract, construction diary, plan progress, partners, payment/receipt, and materials.

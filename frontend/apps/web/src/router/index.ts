@@ -125,7 +125,7 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
 function activityProjectPart(session: ReturnType<typeof useSessionStore>, policy: string): string {
   const normalizedPolicy = String(policy || '').trim().toLowerCase();
   if (normalizedPolicy === 'global' || normalizedPolicy === 'exempt') return 'global';
-  const selectedId = Number(session.projectContext?.selected?.id || 0) || 0;
+  const selectedId = Number(session.recordContext?.selected?.id || 0) || 0;
   return selectedId > 0 ? `project:${selectedId}` : 'all';
 }
 
@@ -140,7 +140,7 @@ function resolveActivityRoutePolicy(actionId: number, menuId: number, session: R
     || (actionId > 0 ? findActionMeta(session.menuTree, actionId) : null)
     || (currentActionMatches(session, actionId) ? session.currentAction : null)
     || null;
-  return String(meta?.project_scope_policy || meta?.projectScopePolicy || '').trim().toLowerCase();
+  return String(meta?.project_scope_policy || meta?.collectionScopePolicy || '').trim().toLowerCase();
 }
 
 function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<typeof useSessionStore>): string {
@@ -199,13 +199,13 @@ function registerRouteActivity(to: RouteLocationNormalized) {
   let model = '';
   let recordId = '';
   let sceneKey = '';
-  let projectScopePolicy = '';
+  let collectionScopePolicy = '';
   let activityRoute = '';
   if (to.name === 'action') {
     actionId = positiveInteger(to.params.actionId || to.query.action_id);
     menuId = positiveInteger(to.query.menu_id);
-    projectScopePolicy = resolveActivityRoutePolicy(actionId, menuId, session);
-    key = `action:${actionId}:menu:${menuId}:${activityProjectPart(session, projectScopePolicy)}`;
+    collectionScopePolicy = resolveActivityRoutePolicy(actionId, menuId, session);
+    key = `action:${actionId}:menu:${menuId}:${activityProjectPart(session, collectionScopePolicy)}`;
     kind = 'menu_action';
   } else if (to.name === 'record' || to.name === 'model-form') {
     model = routeQueryText(to.params.model);
@@ -236,8 +236,8 @@ function registerRouteActivity(to: RouteLocationNormalized) {
     menu_id: menuId || undefined,
     record_id: recordId || undefined,
     scene_key: sceneKey || undefined,
-    project_scope_policy: projectScopePolicy || undefined,
-    project_context: session.currentActivityProjectContextSnapshot(),
+    project_scope_policy: collectionScopePolicy || undefined,
+    record_context: session.currentActivityRecordContextSnapshot(),
   });
 }
 
@@ -306,8 +306,8 @@ router.beforeEach(async (to) => {
       actionId,
       menuId,
       query: to.query as Record<string, unknown>,
-      companyId: Number(session.projectContext?.company_id || session.projectContext?.selected?.company_id || 0) || null,
-      projectId: Number(session.projectContext?.selected?.id || 0) || null,
+      companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+      projectId: Number(session.recordContext?.selected?.id || 0) || null,
     }) : null;
     let runtimeRouteAuthorized = Boolean(routeAuthority);
     if (routeAuthority && Array.isArray(routeAuthority.context_requirements.required_query)

@@ -2,6 +2,11 @@
   "schema_version": "sce.frontend_product_stable_baseline.v1",
   "formal_product_layer": "P0",
   "baseline_sha": "074938d2bf9096b2258cbbdc8137c22c2dc979ca",
+  "acceptance_principal": {
+    "login": "wutao",
+    "expected_surface": "full_product",
+    "permission_shortfall_classification": "backend_permission_contract_defect"
+  },
   "runtime_chain": [
     "native_view",
     "normalized_semantic_contract",

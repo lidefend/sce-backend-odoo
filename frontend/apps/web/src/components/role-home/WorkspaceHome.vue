@@ -1,5 +1,5 @@
 <template>
-  <div class="role-home-surface" data-role-home data-role-home-renderer="contract">
+  <div class="role-home-surface" data-role-home data-role-home-renderer="workspace-contract">
     <h1 class="sc-visually-hidden">{{ title }}</h1>
     <p class="sc-visually-hidden">{{ subtitle }}</p>
 
@@ -78,19 +78,17 @@
 </template>
 
 <script setup lang="ts">
-import { useContractRoleHome } from '../../composables/shared-surface/useContractRoleHome';
+import { useWorkspaceHome } from '../../composables/shared-surface/useWorkspaceHome';
 import ScIcon from '../design-system/ScIcon.vue';
 
 type HomeIconName = 'briefcase' | 'folder' | 'building' | 'apps';
 
 function summaryIcon(key: string): HomeIconName {
-  return /launch|start|create/i.test(String(key || '')) ? 'folder' : 'briefcase';
+  return String(key || '').trim() ? 'briefcase' : 'apps';
 }
 
 function entryIcon(key: string): HomeIconName {
-  if (/project/i.test(String(key || ''))) return 'folder';
-  if (/contract/i.test(String(key || ''))) return 'briefcase';
-  return 'apps';
+  return String(key || '').trim() ? 'apps' : 'folder';
 }
 
 const {
@@ -104,7 +102,7 @@ const {
   error,
   load,
   navigate,
-} = useContractRoleHome();
+} = useWorkspaceHome();
 </script>
 
 <style scoped>

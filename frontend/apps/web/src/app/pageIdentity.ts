@@ -32,7 +32,7 @@ export interface PageIdentityInput {
   fallbackTitle?: unknown;
 }
 
-export const PRODUCT_APP_TITLE = '智能施工企业管理平台';
+export const PRODUCT_APP_TITLE = '企业业务管理平台';
 
 const GENERIC_TITLES = new Set([
   '业务动作',

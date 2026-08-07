@@ -44,8 +44,8 @@ export function resolveLoadCatchState(options: {
   startedAt: number;
 }): {
   listTotalCount: null;
-  projectScopeTotals: null;
-  projectScopeMetrics: null;
+  collectionScopeTotals: null;
+  collectionScopeMetrics: null;
   traceId: string;
   lastTraceId: string;
   statusError: string;
@@ -54,8 +54,8 @@ export function resolveLoadCatchState(options: {
 } {
   return {
     listTotalCount: null,
-    projectScopeTotals: null,
-    projectScopeMetrics: null,
+    collectionScopeTotals: null,
+    collectionScopeMetrics: null,
     traceId: options.traceId,
     lastTraceId: options.traceId,
     statusError: options.errorMessage,

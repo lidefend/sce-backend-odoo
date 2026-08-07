@@ -2299,7 +2299,10 @@ class SystemInitHandler(BaseIntentHandler):
         except Exception:
             pass
         data = _normalize_access_suggested_action(data)
-        data["project_context"] = build_record_context_contract(env, params)
+        data["record_context"] = build_record_context_contract(env, params)
+        # Compatibility carrier for clients released before the canonical
+        # record-context contract. New consumers must use record_context.
+        data["project_context"] = data["record_context"]
         # Bind route authority to the final navigation projection. Customer
         # acceptance overlays and late delivery normalization can add or
         # re-key legitimate menu/action pairs after DeliveryEngine.build().
@@ -2313,7 +2316,7 @@ class SystemInitHandler(BaseIntentHandler):
         data["route_authority_v1"] = _final_route_authority
         data["delivery_engine_v1"] = dict(data.get("delivery_engine_v1") or {})
         data["delivery_engine_v1"]["route_authority_v1"] = _final_route_authority
-        _route_company_id = int((data.get("project_context") or {}).get("company_id") or env.company.id)
+        _route_company_id = int((data.get("record_context") or {}).get("company_id") or env.company.id)
         for _route_contract in (
             data.get("route_authority_v1"),
             (data.get("delivery_engine_v1") or {}).get("route_authority_v1"),

@@ -7,7 +7,7 @@ type UseActionViewScopedMetricsRuntimeOptions = {
   resolveProjectStateCell: (row: Record<string, unknown>) => { text: string; tone: string };
   isCompletedState: (stateText: string, tone: string) => boolean;
   resolveProjectAmount: (row: Record<string, unknown>) => number;
-  resolveProjectMetricFields: () => string[];
+  resolveCollectionMetricFields: () => string[];
 };
 
 export function useActionViewScopedMetricsRuntime(options: UseActionViewScopedMetricsRuntimeOptions) {
@@ -36,7 +36,7 @@ export function useActionViewScopedMetricsRuntime(options: UseActionViewScopedMe
     return readTotalFromListResult(result.data);
   }
 
-  async function fetchProjectScopeMetrics(params: {
+  async function fetchCollectionScopeMetrics(params: {
     model: string;
     domain: unknown[];
     domainRaw: string;
@@ -45,7 +45,7 @@ export function useActionViewScopedMetricsRuntime(options: UseActionViewScopedMe
     searchTerm: string;
     order: string;
   }) {
-    const fields = Array.from(new Set(['id', ...options.resolveProjectMetricFields()]));
+    const fields = Array.from(new Set(['id', ...options.resolveCollectionMetricFields()]));
     const pageLimit = 200;
     const maxPages = 25;
     let page = 0;
@@ -93,6 +93,6 @@ export function useActionViewScopedMetricsRuntime(options: UseActionViewScopedMe
 
   return {
     fetchScopedTotal,
-    fetchProjectScopeMetrics,
+    fetchCollectionScopeMetrics,
   };
 }

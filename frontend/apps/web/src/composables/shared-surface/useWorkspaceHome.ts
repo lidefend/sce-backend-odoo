@@ -64,11 +64,11 @@ function taskLink(item: ProductMyWorkItem): SurfaceLink | null {
 
 function recentMatchesCompany(page: ActivityPage, companyId: number): boolean {
   if (!companyId) return true;
-  const pageCompanyId = Number(page.project_context?.company_id || page.project_context?.selected?.company_id || 0);
+  const pageCompanyId = Number(page.record_context?.company_id || page.record_context?.selected?.company_id || 0);
   return !pageCompanyId || pageCompanyId === companyId;
 }
 
-export function useContractRoleHome() {
+export function useWorkspaceHome() {
   const router = useRouter();
   const session = useSessionStore();
   const pageContract = usePageContract('home');
@@ -89,7 +89,7 @@ export function useContractRoleHome() {
     .map((section) => ({ key: section.key, label: section.label, value: section.count }))
     .slice(0, 4));
   const quickLinks = computed<SurfaceLink[]>(() => {
-    const contractLinks = (workWorkspace.value?.presentation.quick_links || [])
+    const workspaceLinks = (workWorkspace.value?.presentation.quick_links || [])
       .filter((item) => text(item.route) && text(item.label))
       .map((item) => ({ key: text(item.key) || text(item.route), label: text(item.label), detail: text(item.detail), route: text(item.route) }));
     const navigationLinks = topNodes(session.menuTree)
@@ -101,12 +101,12 @@ export function useContractRoleHome() {
         detail: nodeLabel(target),
         route: nodeRoute(target),
       }));
-    return [...contractLinks, ...navigationLinks]
+    return [...workspaceLinks, ...navigationLinks]
       .filter((item, index, rows) => rows.findIndex((row) => row.route === item.route) === index)
       .slice(0, 7);
   });
   const recentItems = computed<SurfaceLink[]>(() => {
-    const companyId = Number(session.projectContext?.company_id || 0);
+    const companyId = Number(session.recordContext?.company_id || 0);
     return session.activityPages
       .filter((page) => page.route && page.title && recentMatchesCompany(page, companyId))
       .sort((left, right) => right.last_active_at - left.last_active_at)
@@ -143,8 +143,8 @@ export function useContractRoleHome() {
   watch(
     [
       () => session.token,
-      () => session.projectContext?.company_id,
-      () => session.projectContext?.selected?.id,
+      () => session.recordContext?.company_id,
+      () => session.recordContext?.selected?.id,
     ],
     () => { void load(); },
     { immediate: true },

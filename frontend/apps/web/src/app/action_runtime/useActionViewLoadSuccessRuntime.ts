@@ -29,7 +29,7 @@ type ApplyLoadSuccessOptions = {
   resolveEffectiveFilterDomainRaw: () => string;
   pageText: (key: string, fallback: string) => string;
   fetchScopedTotal: (input: Dict) => Promise<number>;
-  fetchProjectScopeMetrics: (input: Dict) => Promise<Array<Record<string, unknown>>>;
+  fetchCollectionScopeMetrics: (input: Dict) => Promise<Array<Record<string, unknown>>>;
   restartLoadWithRouteSync: (patch: Dict) => Promise<void>;
   syncRouteListState: (patch: Dict) => void;
   normalizeGroupedRouteState: () => void;
@@ -63,10 +63,10 @@ type ApplyLoadSuccessOptions = {
   resolveLoadGroupRouteSyncPatch: (input: Dict) => Dict;
   resolveLoadRouteSyncApplyState: (input: Dict) => { shouldSync: boolean; patch?: Dict };
   resolveLoadListTotalApplyState: (input: Dict) => { listTotalCount: number | null };
-  resolveLoadSuccessProjectScopeApplyState: (input: Dict) => Promise<Dict>;
-  resolveProjectScopeApplyState: (input: Dict) => {
-    projectScopeTotals: Record<string, number>;
-    projectScopeMetrics: Array<Record<string, unknown>>;
+  resolveLoadSuccessCollectionScopeApplyState: (input: Dict) => Promise<Dict>;
+  resolveCollectionScopeApplyState: (input: Dict) => {
+    collectionScopeTotals: Record<string, number>;
+    collectionScopeMetrics: Array<Record<string, unknown>>;
   };
   resolveLoadSuccessRecordsState: (input: Dict) => Array<Record<string, unknown>>;
   resolveLoadGroupSummaryApplyState: (input: Dict) => {
@@ -115,8 +115,8 @@ type ApplyLoadSuccessOptions = {
   collapsedGroupKeysRef: { value: string[] };
   listTotalCountRef: { value: number | null };
   listAggregatesRef?: { value: Record<string, Record<string, unknown>> };
-  projectScopeTotalsRef: { value: Record<string, number> };
-  projectScopeMetricsRef: { value: Array<Record<string, unknown>> };
+  collectionScopeTotalsRef: { value: Record<string, number> };
+  collectionScopeMetricsRef: { value: Array<Record<string, unknown>> };
   recordsRef: { value: Array<Record<string, unknown>> };
   groupSummaryItemsRef: { value: Array<Record<string, unknown>> };
   groupWindowCountRef: { value: number };
@@ -192,7 +192,7 @@ export function useActionViewLoadSuccessRuntime() {
       options.listAggregatesRef.value = aggregates;
     }
 
-    const projectScopeState = await options.resolveLoadSuccessProjectScopeApplyState({
+    const collectionScopeState = await options.resolveLoadSuccessCollectionScopeApplyState({
       pageMode: options.pageMode,
       hasActiveField: options.hasActiveField,
       activeField: options.activeField,
@@ -204,11 +204,11 @@ export function useActionViewLoadSuccessRuntime() {
       searchTerm: options.searchTerm,
       order: options.sortLabel,
       fetchScopedTotal: options.fetchScopedTotal,
-      fetchProjectScopeMetrics: options.fetchProjectScopeMetrics,
+      fetchCollectionScopeMetrics: options.fetchCollectionScopeMetrics,
     });
-    const projectScopeApplyState = options.resolveProjectScopeApplyState({ projectScopeState });
-    options.projectScopeTotalsRef.value = projectScopeApplyState.projectScopeTotals;
-    options.projectScopeMetricsRef.value = projectScopeApplyState.projectScopeMetrics;
+    const collectionScopeApplyState = options.resolveCollectionScopeApplyState({ collectionScopeState });
+    options.collectionScopeTotalsRef.value = collectionScopeApplyState.collectionScopeTotals;
+    options.collectionScopeMetricsRef.value = collectionScopeApplyState.collectionScopeMetrics;
 
     options.recordsRef.value = options.resolveLoadSuccessRecordsState({ resultDataRaw: resultData });
     const groupSummaryState = options.resolveLoadGroupSummaryApplyState({

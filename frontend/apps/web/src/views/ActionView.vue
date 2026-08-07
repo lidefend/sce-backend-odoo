@@ -624,7 +624,7 @@ import { useActionViewActionMetaRuntime } from '../app/action_runtime/useActionV
 import { useActionViewSceneIdentityRuntime } from '../app/action_runtime/useActionViewSceneIdentityRuntime';
 import { useActionViewModeRuntime } from '../app/action_runtime/useActionViewModeRuntime';
 import { useCollectionViewContextRuntime } from '../app/action_runtime/useCollectionViewContextRuntime';
-import { useActionViewProjectMetricRuntime } from '../app/action_runtime/useActionViewProjectMetricRuntime';
+import { useActionViewCollectionMetricRuntime } from '../app/action_runtime/useActionViewCollectionMetricRuntime';
 import { useActionViewContractActionButtonRuntime } from '../app/action_runtime/useActionViewContractActionButtonRuntime';
 import { useActionViewActionGroupingRuntime } from '../app/action_runtime/useActionViewActionGroupingRuntime';
 import { useActionViewDisplayComputedRuntime } from '../app/action_runtime/useActionViewDisplayComputedRuntime';
@@ -717,14 +717,14 @@ import {
 import {
   resolveLoadCatchLatencyState,
   resolveLoadCatchListTotalState,
-  resolveLoadCatchProjectScopeState,
+  resolveLoadCatchCollectionScopeState,
   resolveLoadCatchStatusApplyInput,
   resolveLoadCatchTraceApplyState,
 } from '../app/runtime/actionViewLoadCatchApplyRuntime';
 import {
   resolveLoadSuccessGroupedRowsState,
   resolveLoadSuccessGroupSummaryState,
-  resolveLoadSuccessProjectScopeApplyState,
+  resolveLoadSuccessCollectionScopeApplyState,
   resolveLoadSuccessRecordsState,
   resolveLoadSuccessWindowApplyState,
 } from '../app/runtime/actionViewLoadSuccessApplyRuntime';
@@ -769,7 +769,7 @@ import { applyActionViewLoadResetState } from '../app/runtime/actionViewLoadRese
 import {
   resolveContractFlagApplyState,
   resolveGroupPagingIdentityApplyState,
-  resolveProjectScopeApplyState,
+  resolveCollectionScopeApplyState,
   resolveRouteSelectionApplyState,
   resolveWindowMetricsApplyState,
 } from '../app/runtime/actionViewLoadStateApplyRuntime';
@@ -882,7 +882,7 @@ import { useActionPageModel } from '../app/assemblers/action/useActionPageModel'
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
-const PROJECT_CONTEXT_CHANGED_EVENT = 'sc:project-context-changed';
+const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
 const {
   resolveSceneCode,
 } = useActionViewSceneIdentityRuntime();
@@ -931,8 +931,8 @@ const listTotalCount = ref<number | null>(null);
 const listOffset = ref(Math.max(0, Math.trunc(Number(route.query.list_offset || 0))));
 const listLimitOverride = ref(0);
 const listAggregates = ref<Record<string, Record<string, unknown>>>({});
-const projectScopeTotals = ref<{ all: number; active: number; archived: number } | null>(null);
-const projectScopeMetrics = ref<{ warning: number; done: number; amount: number } | null>(null);
+const collectionScopeTotals = ref<{ all: number; active: number; archived: number } | null>(null);
+const collectionScopeMetrics = ref<{ warning: number; done: number; amount: number } | null>(null);
 const searchTerm = ref('');
 const toolbarSearchDraft = ref('');
 const toolbarSearchComposing = ref(false);
@@ -1118,10 +1118,10 @@ const actionId = computed(() => {
   return Number.isFinite(fromQuery) && fromQuery > 0 ? fromQuery : 0;
 });
 const actionMeta = computed(() => session.currentAction);
-function resolveActionProjectScopeContext(): Record<string, unknown> {
+function resolveActionCollectionScopeContext(): Record<string, unknown> {
   const policy = String(
     (actionMeta.value as Record<string, unknown> | null)?.project_scope_policy
-      || (actionMeta.value as Record<string, unknown> | null)?.projectScopePolicy
+      || (actionMeta.value as Record<string, unknown> | null)?.collectionScopePolicy
       || '',
   ).trim();
   return policy ? { project_scope_policy: policy } : {};
@@ -1596,11 +1596,11 @@ const displaySortOptions = computed(() => {
 });
 
 const {
-  metricFields: resolveProjectMetricFields,
+  metricFields: resolveCollectionMetricFields,
   resolveProjectStateCell,
   resolveProjectAmount,
   isCompletedState,
-} = useActionViewProjectMetricRuntime({
+} = useActionViewCollectionMetricRuntime({
   listProfile,
   listColumnOptions,
 });
@@ -2222,7 +2222,7 @@ const {
   routeContextRaw: () => String(route.query.context_raw || '').trim(),
   routeContext: () => ({
     ...buildBusinessEntryRequestContext(route.query as Record<string, unknown>),
-    ...resolveActionProjectScopeContext(),
+    ...resolveActionCollectionScopeContext(),
   }),
   menuId,
   activeField,
@@ -2290,13 +2290,13 @@ const {
 
 const {
   fetchScopedTotal,
-  fetchProjectScopeMetrics,
+  fetchCollectionScopeMetrics,
 } = useActionViewScopedMetricsRuntime({
   listRecordsRaw: listActionViewRecordsRaw,
   resolveProjectStateCell,
   isCompletedState,
   resolveProjectAmount,
-  resolveProjectMetricFields,
+  resolveCollectionMetricFields,
 });
 
 const {
@@ -2460,7 +2460,7 @@ const {
     resolveEffectiveFilterDomainRaw,
     pageText,
     fetchScopedTotal,
-    fetchProjectScopeMetrics,
+    fetchCollectionScopeMetrics,
     restartLoadWithRouteSync,
     syncRouteListState,
     normalizeGroupedRouteState,
@@ -2477,8 +2477,8 @@ const {
     resolveLoadGroupRouteSyncPatch,
     resolveLoadRouteSyncApplyState,
     resolveLoadListTotalApplyState,
-    resolveLoadSuccessProjectScopeApplyState,
-    resolveProjectScopeApplyState,
+    resolveLoadSuccessCollectionScopeApplyState,
+    resolveCollectionScopeApplyState,
     resolveLoadSuccessRecordsState,
     resolveLoadGroupSummaryApplyState,
     resolveLoadSuccessGroupSummaryState,
@@ -2502,8 +2502,8 @@ const {
     collapsedGroupKeysRef: collapsedGroupKeys,
     listTotalCountRef: listTotalCount,
     listAggregatesRef: listAggregates,
-    projectScopeTotalsRef: projectScopeTotals,
-    projectScopeMetricsRef: projectScopeMetrics,
+    collectionScopeTotalsRef: collectionScopeTotals,
+    collectionScopeMetricsRef: collectionScopeMetrics,
     recordsRef: records,
     groupSummaryItemsRef: groupSummaryItems,
     groupWindowCountRef: groupWindowCount,
@@ -2533,14 +2533,14 @@ const {
     errorTraceId: () => (error.value as { traceId?: string } | null)?.traceId || '',
     resolveLoadCatchState,
     resolveLoadCatchListTotalState,
-    resolveLoadCatchProjectScopeState,
+    resolveLoadCatchCollectionScopeState,
     resolveLoadCatchTraceApplyState,
     resolveLoadCatchStatusApplyInput,
     resolveLoadCatchLatencyState,
     deriveListStatus,
     listTotalCount,
-    projectScopeTotals,
-    projectScopeMetrics,
+    collectionScopeTotals,
+    collectionScopeMetrics,
     traceId,
     lastTraceId,
     status,
@@ -3198,7 +3198,7 @@ onMounted(async () => {
   retainedRouteFullPath.value = route.fullPath;
   restoreCollectionScroll();
   if (typeof window !== 'undefined') {
-    window.addEventListener(PROJECT_CONTEXT_CHANGED_EVENT, handleProjectContextChanged);
+    window.addEventListener(RECORD_CONTEXT_CHANGED_EVENT, handleRecordContextChanged);
   }
 });
 
@@ -3213,7 +3213,7 @@ onDeactivated(() => {
 
 onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
-    window.removeEventListener(PROJECT_CONTEXT_CHANGED_EVENT, handleProjectContextChanged);
+    window.removeEventListener(RECORD_CONTEXT_CHANGED_EVENT, handleRecordContextChanged);
   }
   if (listColumnSaveStatusTimer) {
     window.clearTimeout(listColumnSaveStatusTimer);
@@ -3272,18 +3272,18 @@ watch(
 );
 
 watch(
-  () => Number(session.projectContext?.selected?.id || 0),
+  () => Number(session.recordContext?.selected?.id || 0),
   () => {
     if (!isComponentActive.value) return;
-    refreshForProjectContextChange();
+    refreshForRecordContextChange();
   },
 );
 
-function handleProjectContextChanged(): void {
-  refreshForProjectContextChange();
+function handleRecordContextChanged(): void {
+  refreshForRecordContextChange();
 }
 
-function refreshForProjectContextChange(): void {
+function refreshForRecordContextChange(): void {
   renderErrorMessage.value = '';
   listOffset.value = 0;
   clearSelection();

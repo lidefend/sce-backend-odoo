@@ -1,7 +1,7 @@
 type LoadCatchState = {
   listTotalCount: number | null;
-  projectScopeTotals: unknown;
-  projectScopeMetrics: unknown;
+  collectionScopeTotals: unknown;
+  collectionScopeMetrics: unknown;
   traceId: string;
   lastTraceId: string;
   statusError: string;
@@ -15,15 +15,15 @@ export function resolveLoadCatchListTotalState(options: {
   return options.catchState.listTotalCount;
 }
 
-export function resolveLoadCatchProjectScopeState(options: {
+export function resolveLoadCatchCollectionScopeState(options: {
   catchState: LoadCatchState;
 }): {
-  projectScopeTotals: unknown;
-  projectScopeMetrics: unknown;
+  collectionScopeTotals: unknown;
+  collectionScopeMetrics: unknown;
 } {
   return {
-    projectScopeTotals: options.catchState.projectScopeTotals,
-    projectScopeMetrics: options.catchState.projectScopeMetrics,
+    collectionScopeTotals: options.catchState.collectionScopeTotals,
+    collectionScopeMetrics: options.catchState.collectionScopeMetrics,
   };
 }
 

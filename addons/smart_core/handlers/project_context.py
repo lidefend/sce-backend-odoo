@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Record context selector intents.
-
-The intent name remains project.context.search for client compatibility.
-"""
+"""Record context selector intents."""
 
 from ..core.base_handler import BaseIntentHandler
 from ..core.intent_execution_result import IntentExecutionResult
@@ -14,8 +11,9 @@ from ..core.project_context import source_authority_contract
 from ..core.request_params import parse_positive_int
 
 
-class ProjectContextSearchHandler(BaseIntentHandler):
-    INTENT_TYPE = "project.context.search"
+class RecordContextSearchHandler(BaseIntentHandler):
+    INTENT_TYPE = "record.context.search"
+    ALIASES = ["project.context.search"]
     DESCRIPTION = "Search selectable records for current context"
     VERSION = "1.0.0"
     SOURCE_KIND = "record_context_projection"

@@ -1,11 +1,11 @@
-import { loadActionViewProjectScopeSnapshot } from './actionViewProjectScopeRuntime';
+import { loadActionViewCollectionScopeSnapshot } from './actionViewCollectionScopeRuntime';
 import { mapActionViewGroupSummaryItems, resolveActionViewGroupWindowMetrics } from './actionViewGroupSummaryRuntime';
 import { mapActionViewGroupedRows, resolveActionViewGroupedRowsRaw, resolveActionViewRecords } from './actionViewLoadResultRuntime';
-import { resolveLoadSuccessProjectScopeState, resolveLoadSuccessWindowState } from './actionViewLoadSuccessRuntime';
+import { resolveLoadSuccessCollectionScopeState, resolveLoadSuccessWindowState } from './actionViewLoadSuccessRuntime';
 
 type Dict = Record<string, unknown>;
 
-export async function resolveLoadSuccessProjectScopeApplyState(options: {
+export async function resolveLoadSuccessCollectionScopeApplyState(options: {
   pageMode: string;
   hasActiveField: boolean;
   activeField: string;
@@ -25,7 +25,7 @@ export async function resolveLoadSuccessProjectScopeApplyState(options: {
     searchTerm: string;
     order: string;
   }) => Promise<number>;
-  fetchProjectScopeMetrics: (params: {
+  fetchCollectionScopeMetrics: (params: {
     model: string;
     domain: unknown[];
     domainRaw: string;
@@ -34,8 +34,8 @@ export async function resolveLoadSuccessProjectScopeApplyState(options: {
     searchTerm: string;
     order: string;
   }) => Promise<{ warning: number; done: number; amount: number }>;
-}): Promise<{ projectScopeTotals: unknown; projectScopeMetrics: unknown }> {
-  const snapshot = await loadActionViewProjectScopeSnapshot({
+}): Promise<{ collectionScopeTotals: unknown; collectionScopeMetrics: unknown }> {
+  const snapshot = await loadActionViewCollectionScopeSnapshot({
     enabled: options.pageMode === 'list' && options.hasActiveField,
     activeField: options.activeField,
     model: options.model,
@@ -46,9 +46,9 @@ export async function resolveLoadSuccessProjectScopeApplyState(options: {
     searchTerm: options.searchTerm,
     order: options.order,
     fetchScopedTotal: options.fetchScopedTotal,
-    fetchProjectScopeMetrics: options.fetchProjectScopeMetrics,
+    fetchCollectionScopeMetrics: options.fetchCollectionScopeMetrics,
   });
-  return resolveLoadSuccessProjectScopeState({
+  return resolveLoadSuccessCollectionScopeState({
     totals: snapshot.totals,
     metrics: snapshot.metrics,
   });

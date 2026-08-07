@@ -16,14 +16,14 @@ export function isFormPageRouteOwner(routeName: unknown): boolean {
 export function useFormPageLifecycleRuntime(params: {
   contract: Ref<ActionContract | null>;
   formRouteIdentity: () => string;
-  handleProjectContextChanged: (event: Event) => void;
+  handleRecordContextChanged: (event: Event) => void;
   instanceRouteIdentity: Ref<string>;
   isComponentActive: Ref<boolean>;
   onFieldOrderDragEnd: () => void;
   onFieldOrderWindowDragOver: (event: DragEvent) => void;
   onFieldOrderWindowDragStop: () => void;
   onRelationDialogDocumentKeydown: (event: KeyboardEvent) => void;
-  projectContextChangedEvent: string;
+  recordContextChangedEvent: string;
   routeIsOwned: () => boolean;
   reload: () => Promise<void>;
   retainedRouteIdentity: Ref<string>;
@@ -46,7 +46,7 @@ export function useFormPageLifecycleRuntime(params: {
 
   onMounted(() => {
     if (typeof window !== 'undefined') {
-      window.addEventListener(params.projectContextChangedEvent, params.handleProjectContextChanged);
+      window.addEventListener(params.recordContextChangedEvent, params.handleRecordContextChanged);
       window.addEventListener('dragover', params.onFieldOrderWindowDragOver);
       window.addEventListener('drop', params.onFieldOrderWindowDragStop);
       window.addEventListener('dragend', params.onFieldOrderWindowDragStop);
@@ -73,7 +73,7 @@ export function useFormPageLifecycleRuntime(params: {
 
   onBeforeUnmount(() => {
     if (typeof window !== 'undefined') {
-      window.removeEventListener(params.projectContextChangedEvent, params.handleProjectContextChanged);
+      window.removeEventListener(params.recordContextChangedEvent, params.handleRecordContextChanged);
       window.removeEventListener('dragover', params.onFieldOrderWindowDragOver);
       window.removeEventListener('drop', params.onFieldOrderWindowDragStop);
       window.removeEventListener('dragend', params.onFieldOrderWindowDragStop);

@@ -13,7 +13,7 @@ export type { FormRuntimeStateSnapshot } from './runtimeStateReducer';
 export const MANY2ONE_CREATE_OPTION = '__create__';
 export const MANY2ONE_SEARCH_MORE_OPTION = '__search_more__';
 export const MANY2ONE_OPEN_RECORD_OPTION = '__open_record__';
-export const PROJECT_CONTEXT_CHANGED_EVENT = 'sc:project-context-changed';
+export const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
 
 export type ContractAction = {
   key: string;

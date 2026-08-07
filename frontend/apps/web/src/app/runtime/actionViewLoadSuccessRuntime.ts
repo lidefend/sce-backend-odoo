@@ -1,13 +1,13 @@
-export function resolveLoadSuccessProjectScopeState(options: {
+export function resolveLoadSuccessCollectionScopeState(options: {
   totals: unknown;
   metrics: unknown;
 }): {
-  projectScopeTotals: unknown;
-  projectScopeMetrics: unknown;
+  collectionScopeTotals: unknown;
+  collectionScopeMetrics: unknown;
 } {
   return {
-    projectScopeTotals: options.totals,
-    projectScopeMetrics: options.metrics,
+    collectionScopeTotals: options.totals,
+    collectionScopeMetrics: options.metrics,
   };
 }
 

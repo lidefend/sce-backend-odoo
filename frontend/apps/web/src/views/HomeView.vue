@@ -1,10 +1,10 @@
 <template>
   <ScPage content-layout="record-grid">
-    <ContractRoleHome />
+    <WorkspaceHome />
   </ScPage>
 </template>
 
 <script setup lang="ts">
-import ContractRoleHome from '../components/role-home/ContractRoleHome.vue';
+import WorkspaceHome from '../components/role-home/WorkspaceHome.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 </script>

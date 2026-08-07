@@ -36,10 +36,6 @@
     <StatusPanel v-else-if="recordMissing" :title="pageDisplayTitle" message="该记录不存在，可能已被删除或当前链接已经失效。" :error-code="404" variant="error" retry-label="返回安全页面" :on-retry="() => router.push('/')" />
     <section v-else :class="['card', 'sc-panel', 'sc-product-main-surface', { 'card--flow': isProjectIntakeCreateMode, 'is-refreshing': status === 'loading' }]"
       :aria-busy="status === 'loading' || undefined" data-workspace-primary-content>
-      <p v-if="financialWorkspace && submissionFeedback && pageSectionEnabled('save_banner', true) && pageSectionTagIs('save_banner', 'div')" class="submission-feedback" :class="`submission-feedback--${submissionFeedback.kind}`" :style="pageSectionStyle('save_banner')" role="status">
-        {{ submissionFeedback.message }}
-      </p>
-      <FinancialRelationshipWorkspace v-if="financialWorkspace && renderProfile === 'readonly' && pageSectionEnabled('project_summary', true) && pageSectionTagIs('project_summary', 'section')" :contract="financialWorkspace" :style="pageSectionStyle('project_summary')" />
       <ContractFormActionBlocks
         v-if="(pageSectionEnabled('next_actions', true) && pageSectionTagIs('next_actions', 'section')) || (pageSectionEnabled('stat_buttons', true) && pageSectionTagIs('stat_buttons', 'div'))"
         :style="[pageSectionStyle('next_actions'), pageSectionStyle('stat_buttons')]"
@@ -59,7 +55,7 @@
         @open-filter="openFilter"
         @run-action="runAction"
       />
-      <section v-if="(!financialWorkspace || renderProfile === 'edit') && pageSectionEnabled('details_fallback', true) && pageSectionTagIs('details_fallback', 'section')" class="form-grid" :class="{ 'form-grid--designer-workspace': showCurrentFormFieldConfigScope }" :style="pageSectionStyle('details_fallback')">
+      <section v-if="pageSectionEnabled('details_fallback', true) && pageSectionTagIs('details_fallback', 'section')" class="form-grid" :class="{ 'form-grid--designer-workspace': showCurrentFormFieldConfigScope }" :style="pageSectionStyle('details_fallback')">
         <StatusPanel
           v-if="sceneValidationPanel"
           title="表单校验失败"
@@ -250,7 +246,6 @@ import { computed, nextTick, onErrorCaptured, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
-import FinancialRelationshipWorkspace from '../components/business/FinancialRelationshipWorkspace.vue';
 import ProductFormErrorSummary from '../components/product-record/ProductFormErrorSummary.vue';
 import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
@@ -304,7 +299,6 @@ import { findActionMeta, findActionMetaByMenu, findMenuNode } from '../app/menu'
 import { pickContractNavQuery } from '../app/navigationContext';
 import { buildModelFormRouteTarget } from '../app/runtime/actionViewRouteRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
-import { resolveFinancialWorkspaceContract } from '../app/financialWorkspaceContract';
 import { collectPolicyValidationErrors, evaluateActionPolicy, evaluateFieldPolicy } from '../app/contractPolicies';
 import { buildRuntimeFieldStates } from '../app/modifierEngine';
 import { resolveSceneValidationSuggestedAction } from '../app/sceneValidationRecoveryStrategy';
@@ -577,7 +571,7 @@ import {
   MANY2ONE_CREATE_OPTION,
   MANY2ONE_OPEN_RECORD_OPTION,
   MANY2ONE_SEARCH_MORE_OPTION,
-  PROJECT_CONTEXT_CHANGED_EVENT,
+  RECORD_CONTEXT_CHANGED_EVENT,
   ContractAccessPolicyError,
   type BusyKind,
   type ContractAccessPolicy,
@@ -628,7 +622,7 @@ import { useFormActionRuntime } from './contractForm/useFormActionRuntime';
 import { useFormConfigSaveRuntime } from './contractForm/useFormConfigSaveRuntime';
 import { applyFormRuntimeStatusEvent } from './contractForm/runtimeStateApplier';
 import { useContractDebugExportRuntime } from './contractForm/useContractDebugExportRuntime';
-import { useProjectContextChangeRuntime } from './contractForm/useProjectContextChangeRuntime';
+import { useRecordContextChangeRuntime } from './contractForm/useRecordContextChangeRuntime';
 import { selectAuthoritativeBusinessActionRows } from './contractForm/authoritativeBusinessActionRows';
 import { isFormPageRouteOwner, useFormPageLifecycleRuntime } from './contractForm/useFormPageLifecycleRuntime';
 import { useFormAuxiliaryWatchersRuntime } from './contractForm/useFormAuxiliaryWatchersRuntime';
@@ -650,7 +644,8 @@ import { useRecordPageLifecycle } from './contractForm/useRecordPageLifecycle';
 import { useRecordActionPresentation } from './contractForm/useRecordActionPresentation';
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
 import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigationActionsRuntime';
-import { applyRouteRelationLabel, isProjectScopeExempt, scopedCreateContext, scopedOnchangeContext } from './contractForm/financialFormScope';
+import { buildFormRequestContext } from './contractForm/formRequestContext';
+import { applyRouteRelationLabel } from './contractForm/routeRelationLabel';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
 import {
   formCreateContext as formCreateContextFromState,
@@ -720,14 +715,10 @@ const {
   modelName: () => model.value,
 });
 const {
-  handleProjectContextChanged,
-} = useProjectContextChangeRuntime({
+  handleRecordContextChanged,
+} = useRecordContextChangeRuntime({
   isActive: () => isComponentActive.value,
-  modelName: () => model.value,
-  recordId: () => recordId.value,
-  resolveWorkspaceContextQuery: () => readWorkspaceContext(route.query as Record<string, unknown>),
-  router,
-  selectedProjectId: () => Number(session.projectContext?.selected?.id || 0) || 0,
+  reload: () => reload(),
 });
 const v2ContractStore = ref<ContractV2NormalizedStore | null>(null);
 const v2ContractDecodeError = ref('');
@@ -1225,7 +1216,6 @@ const pageIdentity = usePublishedPageIdentity(pageIdentityInput, { routeKey: () 
   active: () => isComponentActive.value && isFormPageRouteOwner(route.name), onTitle: (title) => session.updateActiveActivityTitle(title) });
 const pageDisplayTitle = computed(() => pageIdentity.value.title);
 const pageDisplaySubtitle = computed(() => pageIdentity.value.subtitle || '');
-const financialWorkspace = computed(() => resolveFinancialWorkspaceContract(contract.value));
 const suppressPageHeaderTitle = computed(() => true);
 const currentRenderProfileLabel = computed(() => renderProfileLabel(renderProfile.value));
 const intakeCreateButtonLabel = computed(() => {
@@ -1245,7 +1235,6 @@ const submitButtonLabel = computed(() => resolveSubmitButtonLabel({
   savingLabel: formUiLabel('saving'),
 }));
 const showPrimaryBusinessFormAction = computed(() => canSave.value
-  && (!financialWorkspace.value || renderProfile.value === 'edit')
   && !showCurrentFormFieldConfigScope.value
   && !isProjectIntakeCreateMode.value);
 const showContinueProcessing = computed(() => (
@@ -1273,7 +1262,7 @@ const draftSaveButtonLabel = computed(() => {
 const showDiscardAction = computed(() => !isProjectIntakeCreateMode.value && Boolean(recordId.value) && hasChanges.value);
 const groupedHeaderActions = computed(() => groupContractHeaderActions({
   actions: headerActions.value, intakeMode: isProjectIntakeCreateMode.value, nativeTree: useNativeFormTree.value,
-  configurationMode: showCurrentFormFieldConfigScope.value, productRecord: Boolean(financialWorkspace.value),
+  configurationMode: showCurrentFormFieldConfigScope.value,
   isSubmitAction: isUnifiedSubmitAction,
 }));
 const headerBusinessActionPresentation = computed(() => presentContractHeaderActions({
@@ -1648,7 +1637,7 @@ recordFormStateRuntime = useRecordFormState({
   validationErrors, onchangeModifiersPatch, onchangeWarnings, onchangeLinePatches, applyingOnchangePatch,
   changedFieldSet, dirtyFieldSet, getOnchangeTimer: () => onchangeTimer,
   setOnchangeTimer: (timer) => { onchangeTimer = timer; }, contractV2ActionRules, layoutNodes,
-  nativeStatusbar, financialWorkspace, route, isNativeFavoriteField, clearDynamicRelationDependents,
+  nativeStatusbar, route, isNativeFavoriteField, clearDynamicRelationDependents,
   openRelationCreateForm, openRelationSearchDialog, openRelationRecordForm, relationOptionsForField,
   switchFormByRelationOption, queryRelationOptions, setRelationKeyword, setMany2oneOption,
   relationKeyword, quickCreateRelation, relationUiLabel, relationModel, relationIds, upsertRelationOption,
@@ -1676,9 +1665,9 @@ const {
   contractActions, contractMeta, contractModelName,
   contractReadiness, coreFieldNames, createContractV2Store,
   decodeContractV2Snapshot, dirtyFieldSet, fieldType,
-  financialWorkspace, formData, formDataFieldNames,
+  formData, formDataFieldNames,
   formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows,
-  initOne2manyRows, isProjectScopeExempt, layoutNodes,
+  initOne2manyRows, layoutNodes,
   loadActionContractRaw, loadError, loadModelContractRaw,
   loadNativeChatterTimeline, loadRelationOptions, menuId,
   mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeAttachments,
@@ -1712,7 +1701,7 @@ const {
   previewCurrentFormConfiguration, returnToBusinessConfigDesigner, isTierValidationActionHidden, applyProjectionRefreshPolicy, saveRecord,
 } = useRecordFormActions({
   ApiError, BUSINESS_CONFIG_ACTION_KEYS, BUSINESS_CONFIG_MODES,
-  BUSINESS_CONFIG_ROUTE_FLAGS, PROJECT_CONTEXT_CHANGED_EVENT, actionId,
+  BUSINESS_CONFIG_ROUTE_FLAGS, RECORD_CONTEXT_CHANGED_EVENT, actionId,
   activeContractMode, activeContractModeFieldRows, appendFormConfigOperation,
   buildLowCodeApplyBaseParams, buildLowCodePreviewQuery, buildLowCodeReturnQuery,
   buildSaveRecordPayload, busy, busyKind,
@@ -1727,7 +1716,7 @@ const {
   fieldVisibilityDraft, focusFirstValidationError, formConfigAuditResult,
   formConflict, formCreateContextFromState, formData,
   formDesignFieldLabel, formDesignerGroupNavigatorItems, formRouteIdentity,
-  formSettingsActiveTab, formUiLabel, handleProjectContextChanged,
+  formSettingsActiveTab, formUiLabel, handleRecordContextChanged,
   hasChanges, hasCurrentFormFieldDraftChanges, instanceRouteIdentity,
   intentConfirmationRef, isBusinessConfigMode, isBusinessConfigRuntimeModel,
   isComponentActive, isContractFieldOrderEditable, isFormPageRouteOwner,
@@ -1744,7 +1733,7 @@ const {
   resolvePendingInlineRelationCreates, resolvePendingMany2manyTagCreates, retainedRouteIdentity,
   route, router, runContractRuleAction,
   sanitizeUiErrorMessage, saveContractFieldOrder, sceneReadyFormSurface,
-  scopedCreateContext, selectedFormSettingsFieldGroupTitle, selectedFormSettingsFieldGroupTitleDraft,
+  buildFormRequestContext, selectedFormSettingsFieldGroupTitle, selectedFormSettingsFieldGroupTitleDraft,
   selectedFormSettingsFieldGroupTitleEdit, selectedFormSettingsFieldKey, selectedFormSettingsFieldLabel,
   selectedFormSettingsFieldRow, session, setInlineFieldPolicy,
   showOne2manyErrors, status, submissionFeedback,

@@ -23,14 +23,18 @@ ROOT_XMLIDS = tuple(
     if item.strip()
 )
 OUTPUT_PATH = Path(os.getenv("PRODUCT_MENU_CATALOG_RUNTIME_PATH", "/tmp/product_menu_catalog_runtime_v1.json"))
-VISIBLE_LOGINS = tuple(
+FULL_PRODUCT_LOGIN = str(os.getenv("PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN", "wutao") or "").strip()
+VISIBLE_LOGINS = tuple(dict.fromkeys([
+    *(
     item.strip()
     for item in os.getenv(
         "PRODUCT_MENU_CATALOG_VISIBLE_LOGINS",
         "admin,wutao,demo_business_full,demo_role_project_manager,demo_role_finance,demo_role_executive",
     ).split(",")
     if item.strip()
-)
+    ),
+    *([FULL_PRODUCT_LOGIN] if FULL_PRODUCT_LOGIN else []),
+]))
 BUSINESS_VISIBLE_LOGINS = {
     item.strip()
     for item in os.getenv(
@@ -506,6 +510,26 @@ def _export() -> dict[str, object]:
                     "visible_logins": visible_ordinary_business_logins,
                 }
             )
+    full_product_user = env["res.users"].sudo().search([("login", "=", FULL_PRODUCT_LOGIN)], limit=2) if FULL_PRODUCT_LOGIN else env["res.users"].browse()  # noqa: F821
+    if FULL_PRODUCT_LOGIN and len(full_product_user) != 1:
+        raise AssertionError("full-product acceptance principal must resolve exactly once: %s" % FULL_PRODUCT_LOGIN)
+    full_product_missing = [
+        {
+            "xmlid": row.get("xmlid"),
+            "path": row.get("path"),
+            "action_xmlid": row.get("action_xmlid"),
+        }
+        for row in rows
+        if row.get("active")
+        and row.get("layer") == "formal_product"
+        and bool(row.get("action_raw") or row.get("scene_key"))
+        and FULL_PRODUCT_LOGIN not in (row.get("visible_logins") or [])
+    ]
+    if full_product_missing:
+        raise AssertionError(
+            "full-product acceptance principal is missing formal product entries: %s"
+            % json.dumps(full_product_missing[:50], ensure_ascii=False)
+        )
     if internal_history_business_visible:
         raise AssertionError(
             "internal history menus must not be visible to business users: %s"
@@ -547,6 +571,8 @@ def _export() -> dict[str, object]:
             "business_config_legacy_active_count": len(business_config_legacy_active),
             "runtime_user_menu_without_xmlid_count": len(runtime_user_menus_without_xmlid),
             "formal_center_inactive_history_count": len(formal_center_inactive_history),
+            "full_product_login": FULL_PRODUCT_LOGIN,
+            "full_product_missing_formal_entry_count": len(full_product_missing),
             "layer_counts": layer_counts,
         },
         "top_level": [

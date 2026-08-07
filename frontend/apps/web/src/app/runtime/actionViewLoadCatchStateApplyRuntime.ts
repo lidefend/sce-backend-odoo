@@ -10,16 +10,16 @@ export function resolveLoadCatchListApplyState(options: {
 
 export function resolveLoadCatchScopeApplyState(options: {
   catchState: {
-    projectScopeTotals: Record<string, number>;
-    projectScopeMetrics: Record<string, unknown>;
+    collectionScopeTotals: Record<string, number>;
+    collectionScopeMetrics: Record<string, unknown>;
   };
 }): {
-  projectScopeTotals: Record<string, number>;
-  projectScopeMetrics: Record<string, unknown>;
+  collectionScopeTotals: Record<string, number>;
+  collectionScopeMetrics: Record<string, unknown>;
 } {
   return {
-    projectScopeTotals: options.catchState.projectScopeTotals,
-    projectScopeMetrics: options.catchState.projectScopeMetrics,
+    collectionScopeTotals: options.catchState.collectionScopeTotals,
+    collectionScopeMetrics: options.catchState.collectionScopeMetrics,
   };
 }
 
