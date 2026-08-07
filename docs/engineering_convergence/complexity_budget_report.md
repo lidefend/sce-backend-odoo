@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3514`
+- Scanned files: `3518`
 - Files requiring split plan: `39`
-- Files above warning threshold: `66`
+- Files above warning threshold: `67`
 
 ## Split Plan Required
 
@@ -79,7 +79,7 @@ Generated from repository source files. This report is informational during the 
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1206 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1190 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
+| 1195 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
@@ -88,7 +88,7 @@ Generated from repository source files. This report is informational during the 
 | 1110 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 1097 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1093 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
-| 1050 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1067 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 967 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
@@ -96,8 +96,9 @@ Generated from repository source files. This report is informational during the 
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
+| 911 | Python source | `scripts/ops/codex_agent_controller.py` |
+| 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 895 | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 895 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 892 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
@@ -187,7 +188,7 @@ Generated from repository source files. This report is informational during the 
 | 1218 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1206 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1190 | warning | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
+| 1195 | warning | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1157 | warning | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
@@ -197,7 +198,7 @@ Generated from repository source files. This report is informational during the 
 | 1107 | within_budget | XML data/view | `addons/smart_construction_core/views/menu_business_taxonomy.xml` |
 | 1097 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1093 | warning | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
-| 1050 | warning | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1067 | warning | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1005 | warning | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 1002 | within_budget | XML data/view | `addons/smart_construction_core/views/support/audit_list_fields_views.xml` |
 | 990 | warning | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
@@ -206,7 +207,7 @@ Generated from repository source files. This report is informational during the 
 | 950 | warning | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 916 | warning | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
-| 905 | within_budget | XML data/view | `addons/smart_construction_core/views/core/material_acceptance_views.xml` |
+| 911 | warning | Python source | `scripts/ops/codex_agent_controller.py` |
 
 ## Interpretation
 

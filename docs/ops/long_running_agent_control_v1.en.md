@@ -22,7 +22,9 @@ commands over the official SDK WebSocket.
 - A file lease limits each repository to one worker.
 - Workers use `workspace-write` and `approval_policy=never`; decisions are
   returned as structured terminal results instead of expanding permissions.
-- Automated deployment only supports `daily <full SHA>`. No production command
+- Automated deployment only supports daily
+  `daily [governed-source-branch] <full SHA>`. Omitting the branch is the
+  backward-compatible merged-main mode. No production command
   exists.
 
 The controller uses Codex non-interactive JSONL events, structured output, and
@@ -41,7 +43,7 @@ Use these commands in the dedicated control Issue:
 /agent continue <additional context>
 /agent approve decision-YYYYMMDD-NNN <choice>
 /agent reject decision-YYYYMMDD-NNN <reason>
-/agent deploy daily <full 40-character main SHA>
+/agent deploy daily <governed source branch> <full 40-character candidate SHA>
 /agent stop
 ```
 

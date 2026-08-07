@@ -37,7 +37,23 @@ class CommandParserTest(unittest.TestCase):
         approved = parse_owner_command("/agent approve decision-20260804-001 A")
         self.assertEqual(approved.decision_id, "decision-20260804-001")
         deployed = parse_owner_command("/agent deploy daily " + "a" * 40)
-        self.assertEqual(deployed, OwnerCommand(action="deploy_daily", sha="a" * 40))
+        self.assertEqual(
+            deployed,
+            OwnerCommand(action="deploy_daily", sha="a" * 40, source_branch="main"),
+        )
+        candidate = parse_owner_command(
+            "/agent deploy daily feature/example " + "b" * 40
+        )
+        self.assertEqual(
+            candidate,
+            OwnerCommand(
+                action="deploy_daily",
+                source_branch="feature/example",
+                sha="b" * 40,
+            ),
+        )
+        with self.assertRaises(CommandRejected):
+            parse_owner_command("/agent deploy daily main " + "b" * 40)
         with self.assertRaises(CommandRejected):
             parse_owner_command("/agent deploy production " + "a" * 40)
 

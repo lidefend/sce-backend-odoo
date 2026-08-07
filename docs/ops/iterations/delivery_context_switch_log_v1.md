@@ -2963,3 +2963,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   labels, column choice/default semantics and geometry audit thresholds. The
   isolated acceptance database is upgraded/restarted and tested at five
   viewports plus zoom before any daily-development deployment.
+
+## 2026-08-07 — DAILY-CANDIDATE-BEFORE-MAIN-ACCEPTANCE-FLOW
+
+- Branch / anchor: `feature/daily-candidate-acceptance-flow` from
+  `e081c5494e95cfdf33ab0f34548e11f810ab51b1` (`origin/main`).
+- Formal Product Layer / Layer Target / Module: P4 operations delivery tool;
+  daily-development candidate source identity, exact Git bundle transport,
+  runtime repository guard, controller command grammar and release runbooks.
+- Reason / Why Here: daily development is the owner's acceptance environment,
+  so a clean locally validated governed branch must be deployable at an exact
+  SHA before the PR merges. Requiring `main` first inverted acceptance and
+  integration order.
+- Why Not Elsewhere: no platform, construction, customer, low-code, permission,
+  route, API or business-data semantics change. Production remains restricted
+  to `main` or a frozen release package.
+- Blast Radius / validation: only `/opt/projects/repos/sce-product-odoo` in
+  `ENV=dev`, `.env.dev`, `DB_NAME=sc_demo`. Candidate transport leaves
+  `main`/`origin/main` untouched, records a `refs/daily-candidates/*` evidence
+  ref and runs detached at the exact SHA. Unit and negative tests cover source
+  branch syntax, full SHA identity, clean worktrees, bundle digest/base,
+  detached runtime identity and missing/mismatched evidence refs.
+- Documentation link check: the repository-wide guard still reports the 69
+  pre-existing legacy absolute-path references; none originate from the files
+  changed by this batch.

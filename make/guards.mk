@@ -114,8 +114,9 @@ env.matrix.check:
 	echo "✅ [env.matrix.check] PASS"
 
 verify.environment.topology.guard:
-	@python3 -m py_compile scripts/verify/environment_topology_guard.py scripts/verify/daily_dev_customer_addons_runtime_guard.py
+	@python3 -m py_compile scripts/verify/environment_topology_guard.py scripts/verify/daily_dev_customer_addons_runtime_guard.py scripts/ops/daily_candidate_bundle_sync.py scripts/ops/test_daily_candidate_bundle_sync.py
 	@python3 -m unittest scripts.verify.test_daily_dev_customer_addons_runtime_guard
+	@python3 scripts/ops/test_daily_candidate_bundle_sync.py
 	@python3 scripts/verify/environment_topology_guard.py
 
 verify.frontend.acceptance.environment.guard:
@@ -129,7 +130,11 @@ verify.daily_dev.customer_addons.runtime:
 	@$(RUN_ENV) python3 scripts/verify/daily_dev_customer_addons_runtime_guard.py
 
 verify.daily_dev.runtime_repo.clean:
-	@bash scripts/ops/daily_dev_runtime_repo_guard.sh
+	@DAILY_DEV_DEPLOYMENT_MODE="$(or $(DAILY_DEV_DEPLOYMENT_MODE),main)" \
+	 DAILY_DEV_RUNTIME_BRANCH="$(or $(DAILY_DEV_RUNTIME_BRANCH),main)" \
+	 DAILY_DEV_CANDIDATE_SOURCE_BRANCH="$(DAILY_DEV_CANDIDATE_SOURCE_BRANCH)" \
+	 DAILY_DEV_CANDIDATE_EXPECTED_SHA="$(DAILY_DEV_CANDIDATE_EXPECTED_SHA)" \
+	 bash scripts/ops/daily_dev_runtime_repo_guard.sh
 	@$(MAKE) --no-print-directory verify.daily_dev.customer_addons.runtime
 
 verify.daily_dev.acceptance.env.guard:
