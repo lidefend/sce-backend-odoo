@@ -338,6 +338,7 @@ export async function exportRecordsCsv(params: {
   limit?: number;
   context?: Record<string, unknown>;
   fieldSemantics?: Array<Record<string, unknown>>;
+  columnLabels?: Record<string, string>;
 }) {
   return intentRequest<ApiDataExportCsvResult>({
     intent: 'api.data',

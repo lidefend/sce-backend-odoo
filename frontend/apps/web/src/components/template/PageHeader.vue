@@ -31,14 +31,14 @@ defineProps<{
 .template-page-header {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sc-space-sm);
   align-items: center;
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-product-panel-radius);
   background: var(--sc-app-panel);
   box-shadow: var(--sc-app-shadow);
-  padding: 10px 12px;
-  margin-bottom: 12px;
+  padding: var(--sc-space-xs) var(--sc-space-sm);
+  margin-bottom: var(--sc-space-sm);
   min-width: 0;
 }
 
@@ -66,7 +66,7 @@ defineProps<{
 .template-page-header-status {
   flex: 1 1 auto;
   display: grid;
-  gap: 4px;
+  gap: var(--sc-space-2xs);
   margin-left: auto;
   text-align: right;
   min-width: 0;
@@ -80,7 +80,7 @@ defineProps<{
 .template-page-header-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--sc-space-xs);
   align-items: center;
   justify-content: flex-end;
 }

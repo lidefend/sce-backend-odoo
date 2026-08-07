@@ -912,10 +912,15 @@ async function auditDesigner(page, viewportKey = '1440') {
     await capture(page, `form-final-designer-${viewportKey}.png`, { fullPage: false });
     return;
   }
-  const firstField = page.locator('.contract-form-field-search-item').first();
-  await firstField.click();
-  const selectedKey = await page.locator('.contract-form-designer-canvas [aria-pressed="true"]').getAttribute('data-field-key');
-  result('designer.field_selection', Boolean(selectedKey), { selected_key: selectedKey }, 'P1');
+  let selectedKey = '';
+  const selectableField = page.locator('.contract-form-designer-canvas [role="button"][data-field-key]:visible').first();
+  if (await selectableField.count()) {
+    await selectableField.click();
+    selectedKey = String(await selectableField.getAttribute('data-field-key') || '');
+  }
+  const selected = selectedKey ? page.locator(`.contract-form-designer-canvas [data-field-key="${selectedKey}"]`).first() : null;
+  const selectedPressed = selected ? await selected.getAttribute('aria-pressed') : null;
+  result('designer.field_selection', Boolean(selectedKey) && selectedPressed === 'true', { selected_key: selectedKey, aria_pressed: selectedPressed }, 'P1');
   const hide = page.locator('.record-form-inspector label').filter({ hasText: /^隐藏$/ }).first();
   if (await hide.count()) {
     await hide.click();

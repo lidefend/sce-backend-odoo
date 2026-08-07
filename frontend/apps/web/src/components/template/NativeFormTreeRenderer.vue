@@ -789,7 +789,7 @@ function closeMore(node: NativeFormLayoutNode) {
 <style scoped>
 .native-form-tree {
   display: grid;
-  gap: 14px;
+  gap: var(--sc-field-row-gap);
   grid-column: 1 / -1;
   min-width: 0;
 }
@@ -812,7 +812,7 @@ function closeMore(node: NativeFormLayoutNode) {
 
 .native-container--group {
   border-top: 1px solid var(--sc-app-border);
-  padding-top: 14px;
+  padding-top: var(--sc-space-sm);
 }
 
 .native-container--field-drop-target.native-container--group,

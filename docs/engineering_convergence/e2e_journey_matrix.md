@@ -4,10 +4,10 @@ Generated from `test_inventory.csv` E2E-classified assets.
 
 ## Summary
 
-- E2E-classified assets: `34`
+- E2E-classified assets: `35`
 - Strong or near-strong coverage: `10`
-- Partial coverage: `1`
-- Gaps: `1`
+- Partial coverage: `2`
+- Gaps: `0`
 
 ## Coverage Matrix
 
@@ -22,8 +22,8 @@ Generated from `test_inventory.csv` E2E-classified assets.
 | E2E-07: Finance user records receipt/payment and invoice. | partial_to_strong | `scripts/ops/validate_finance_browser_acceptance.sh`<br>`scripts/verify/finance_handling_browser_acceptance.js`<br>`scripts/verify/finance_interfund_product_menu_browser_acceptance.js`<br>`scripts/verify/invoice_entry_fact_browser_smoke.js`<br>`scripts/verify/invoice_output_detail_browser_smoke.js`<br>`scripts/verify/payment_request_receipt_type_browser_group_smoke.js` | Map assertions to acceptance points and add missing business data checks if needed. |
 | E2E-08: Settlement user creates and approves settlement. | strong | `make test.e2e.fixed_data.odoo`<br>`scripts/e2e/e2e_settlement_approval_preflight.py` | Keep Odoo fixed-data gate green; add role/browser evidence before release if this journey is user-facing. |
 | E2E-09: Management reviews operating dashboard. | partial_to_strong | `frontend/apps/web/scripts/system_user_experience_full_browser_summary_guard.mjs`<br>`scripts/verify/company_operation_summary_browser_acceptance.js` | Map assertions to acceptance points and add missing business data checks if needed. |
-| E2E-10: Ordinary member is blocked from unauthorized project access. | gap | - | Create fixed-data browser/API journey with screenshots, logs, request/response evidence. |
-| E2E-11: System administrator adjusts role permissions. | partial_to_strong | `scripts/verify/business_config_runtime_routes_browser_acceptance.mjs`<br>`scripts/verify/finance_interfund_product_menu_browser_acceptance.js` | Map assertions to acceptance points and add missing business data checks if needed. |
+| E2E-10: Ordinary member is blocked from unauthorized project access. | partial | `scripts/verify/frontend_color_role_browser_audit.mjs` | Confirm fixed data, role assertions, failure artifacts, and link to nightly/release gate. |
+| E2E-11: System administrator adjusts role permissions. | partial_to_strong | `scripts/verify/business_config_runtime_routes_browser_acceptance.mjs`<br>`scripts/verify/finance_interfund_product_menu_browser_acceptance.js`<br>`scripts/verify/frontend_color_role_browser_audit.mjs` | Map assertions to acceptance points and add missing business data checks if needed. |
 | E2E-12: Release user upgrades and rolls back version. | partial_to_strong | `frontend/apps/web/scripts/system_user_experience_full_browser_summary_guard.mjs`<br>`scripts/verify/user_form_preference_full_browser_acceptance.mjs` | Map assertions to acceptance points and add missing business data checks if needed. |
 
 ## Required Next Actions

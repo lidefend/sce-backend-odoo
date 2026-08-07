@@ -126,9 +126,13 @@
   cursor: pointer;
 }
 
-.relation-dialog-table tbody tr:hover,
-.relation-dialog-row--active {
+.relation-dialog-table tbody tr:hover {
   background: var(--sc-app-hover-bg);
+}
+
+.relation-dialog-table tbody .relation-dialog-row--active {
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
 }
 
 .relation-dialog-select-col {

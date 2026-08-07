@@ -217,11 +217,11 @@ export function buildPathRouteTarget(path: string, query?: Dict): { path: string
   };
 }
 
-export function buildModelFormRouteTarget(options: {
+export function buildModelFormRouteTarget<TQuery extends Dict>(options: {
   model: string;
   id: string;
-  query: Dict;
-}): { name: 'model-form'; params: { model: string; id: string }; query: Dict } {
+  query: TQuery;
+}): { name: 'model-form'; params: { model: string; id: string }; query: TQuery } {
   return {
     name: 'model-form',
     params: {
