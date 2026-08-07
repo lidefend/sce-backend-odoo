@@ -61,6 +61,7 @@ merge:
 ```bash
 CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC=SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE \
 make daily.runtime.candidate.bundle_sync \
+  DAILY_CANDIDATE_SOURCE_REPOSITORY=/absolute/path/to/topic-worktree \
   DAILY_CANDIDATE_SOURCE_BRANCH=feature/example \
   DAILY_CANDIDATE_EXPECTED_SHA=<candidate-full-sha> \
   DAILY_CANDIDATE_EXPECTED_OLD_SHA=<current-daily-full-sha> \
@@ -69,6 +70,9 @@ make daily.runtime.candidate.bundle_sync \
 
 The server records the source under `refs/daily-candidates/`, checks out the
 candidate as detached HEAD, and does not update `main` or `origin/main`.
+The tool may run from the governance/main worktree while reading a separate
+clean topic worktree through `DAILY_CANDIDATE_SOURCE_REPOSITORY`; that source
+must have the authoritative GitHub `origin`, exact branch, and exact SHA.
 
 After owner acceptance, open or update the PR and merge through protected
 `main`. A later main-mode deployment replaces the candidate runtime. Candidate

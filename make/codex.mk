@@ -469,6 +469,7 @@ DAILY_RUNTIME_EXPECTED_SHA ?=
 DAILY_RUNTIME_EXPECTED_OLD_SHA ?=
 DAILY_RUNTIME_BUNDLE_SYNC_REPORT ?= .runtime/final-acceptance/daily-deployed/bundle-sync.json
 DAILY_CANDIDATE_SOURCE_BRANCH ?= $(shell git branch --show-current)
+DAILY_CANDIDATE_SOURCE_REPOSITORY ?= $(CURDIR)
 DAILY_CANDIDATE_EXPECTED_SHA ?= $(shell git rev-parse HEAD 2>/dev/null)
 DAILY_CANDIDATE_EXPECTED_OLD_SHA ?=
 DAILY_CANDIDATE_BUNDLE_SYNC_REPORT ?= .runtime/final-acceptance/daily-deployed/candidate-bundle-sync.json
@@ -497,6 +498,7 @@ verify.daily.runtime.candidate.bundle_sync: guard.prod.forbid
 daily.runtime.candidate.bundle_sync: guard.prod.forbid verify.daily.runtime.candidate.bundle_sync
 	@test "$${CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC:-}" = "SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE" || { echo "exact daily candidate bundle sync confirmation is required" >&2; exit 2; }
 	@python3 scripts/ops/daily_candidate_bundle_sync.py \
+		--source-repository "$(DAILY_CANDIDATE_SOURCE_REPOSITORY)" \
 		--source-branch "$(DAILY_CANDIDATE_SOURCE_BRANCH)" \
 		--expected-sha "$(DAILY_CANDIDATE_EXPECTED_SHA)" \
 		--expected-old-sha "$(DAILY_CANDIDATE_EXPECTED_OLD_SHA)" \

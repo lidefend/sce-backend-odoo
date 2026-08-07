@@ -50,6 +50,7 @@ REQUIRED_TOKENS = {
         "DAILY_DEV_CANDIDATE_SOURCE_BRANCH=feature/example",
         "DAILY_DEV_CANDIDATE_EXPECTED_SHA=<full-40-character-sha>",
         "make daily.runtime.candidate.bundle_sync",
+        "DAILY_CANDIDATE_SOURCE_REPOSITORY=/absolute/path/to/topic-worktree",
         "does not update `main` or `origin/main`",
         "Do not apply scratch changes directly",
         "to the runtime repository.",

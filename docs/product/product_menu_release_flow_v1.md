@@ -115,6 +115,7 @@ make verify.product.menu.release.ready DB_NAME=sc_demo
 ```bash
 CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC=SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE \
 make daily.runtime.candidate.bundle_sync \
+  DAILY_CANDIDATE_SOURCE_REPOSITORY=/home/lidefend/workspace/sce-backend-odoo-menu-governance \
   DAILY_CANDIDATE_SOURCE_BRANCH=feature/product-menu-governance \
   DAILY_CANDIDATE_EXPECTED_SHA=<candidate-full-sha> \
   DAILY_CANDIDATE_EXPECTED_OLD_SHA=<current-daily-full-sha>

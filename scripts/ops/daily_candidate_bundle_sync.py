@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+AUTHORITATIVE_REMOTE = "https://github.com/lidefend/sce-backend-odoo.git"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
@@ -141,8 +142,8 @@ def run(
     )
 
 
-def git(*arguments: str) -> str:
-    result = run(["git", *arguments])
+def git(repository: Path, *arguments: str) -> str:
+    result = run(["git", *arguments], cwd=repository)
     if result.returncode:
         raise SyncError(
             f"git {arguments[0]} failed: "
@@ -151,7 +152,20 @@ def git(*arguments: str) -> str:
     return result.stdout.decode().strip()
 
 
-def preflight(source_branch: str, expected_sha: str, expected_old_sha: str, ssh_host: str) -> None:
+def preflight(
+    repository: Path,
+    source_branch: str,
+    expected_sha: str,
+    expected_old_sha: str,
+    ssh_host: str,
+) -> Path:
+    repository = repository.resolve()
+    if not repository.is_dir():
+        raise SyncError("source repository must be an existing directory")
+    if git(repository, "rev-parse", "--show-toplevel") != str(repository):
+        raise SyncError("source repository must be an exact Git worktree root")
+    if git(repository, "remote", "get-url", "origin") != AUTHORITATIVE_REMOTE:
+        raise SyncError("source repository origin is not the authoritative GitHub repository")
     if not ALLOWED_BRANCH.fullmatch(source_branch):
         raise SyncError("source branch must be a governed development branch")
     if not FULL_SHA.fullmatch(expected_sha) or not FULL_SHA.fullmatch(expected_old_sha):
@@ -162,19 +176,24 @@ def preflight(source_branch: str, expected_sha: str, expected_old_sha: str, ssh_
         raise SyncError("SSH host must be a configured host alias")
     if os.environ.get("CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC") != CONFIRMATION:
         raise SyncError("exact daily candidate bundle synchronization confirmation is required")
-    if git("branch", "--show-current") != source_branch:
+    if git(repository, "branch", "--show-current") != source_branch:
         raise SyncError("source branch differs from the current governed branch")
-    if git("rev-parse", "HEAD") != expected_sha:
+    if git(repository, "rev-parse", "HEAD") != expected_sha:
         raise SyncError("local HEAD differs from the approved candidate SHA")
-    if git("status", "--porcelain"):
+    if git(repository, "status", "--porcelain"):
         raise SyncError("local candidate worktree must be clean")
-    check_ref = run(["git", "check-ref-format", f"refs/heads/{source_branch}"])
+    check_ref = run(
+        ["git", "check-ref-format", f"refs/heads/{source_branch}"], cwd=repository
+    )
     if check_ref.returncode:
         raise SyncError("source branch is not a valid Git ref")
+    return repository
 
 
-def create_bundle(source_branch: str, expected_old_sha: str) -> tuple[bytes, str]:
-    bundle_base_sha = git("merge-base", expected_old_sha, "HEAD")
+def create_bundle(
+    repository: Path, source_branch: str, expected_old_sha: str
+) -> tuple[bytes, str]:
+    bundle_base_sha = git(repository, "merge-base", expected_old_sha, "HEAD")
     if not FULL_SHA.fullmatch(bundle_base_sha):
         raise SyncError("candidate and daily runtime have no valid merge base")
     with tempfile.TemporaryDirectory(prefix="sc-daily-candidate-bundle-") as directory:
@@ -187,7 +206,8 @@ def create_bundle(source_branch: str, expected_old_sha: str) -> tuple[bytes, str
                 str(bundle_path),
                 f"refs/heads/{source_branch}",
                 f"^{bundle_base_sha}",
-            ]
+            ],
+            cwd=repository,
         )
         if result.returncode:
             raise SyncError(
@@ -224,10 +244,18 @@ def remote_command(
 
 
 def synchronize(
-    source_branch: str, expected_sha: str, expected_old_sha: str, ssh_host: str
+    repository: Path,
+    source_branch: str,
+    expected_sha: str,
+    expected_old_sha: str,
+    ssh_host: str,
 ) -> dict[str, object]:
-    preflight(source_branch, expected_sha, expected_old_sha, ssh_host)
-    bundle, bundle_base_sha = create_bundle(source_branch, expected_old_sha)
+    repository = preflight(
+        repository, source_branch, expected_sha, expected_old_sha, ssh_host
+    )
+    bundle, bundle_base_sha = create_bundle(
+        repository, source_branch, expected_old_sha
+    )
     bundle_sha = hashlib.sha256(bundle).hexdigest()
     command = [
         "ssh",
@@ -277,6 +305,7 @@ def synchronize(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--source-repository", default=str(ROOT))
     parser.add_argument("--source-branch", required=True)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--expected-old-sha", required=True)
@@ -285,6 +314,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         evidence = synchronize(
+            Path(args.source_repository),
             args.source_branch,
             args.expected_sha,
             args.expected_old_sha,

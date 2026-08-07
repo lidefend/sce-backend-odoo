@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = Path(__file__).with_name("daily_candidate_bundle_sync.py")
@@ -34,6 +35,34 @@ def git(root: Path, *args: str) -> str:
 
 
 class DailyCandidateBundleSyncTests(unittest.TestCase):
+    def test_preflight_accepts_explicit_authoritative_topic_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            git(root, "init", "-b", "feature/topic")
+            git(root, "config", "user.name", "Candidate Test")
+            git(root, "config", "user.email", "candidate@example.invalid")
+            git(root, "remote", "add", "origin", sync.AUTHORITATIVE_REMOTE)
+            (root / "value.txt").write_text("candidate\n", encoding="utf-8")
+            git(root, "add", "value.txt")
+            git(root, "commit", "-m", "candidate")
+            sha = git(root, "rev-parse", "HEAD")
+            with mock.patch.dict(
+                os.environ,
+                {"CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC": sync.CONFIRMATION},
+            ):
+                resolved = sync.preflight(
+                    root, "feature/topic", sha, "b" * 40, "sc-root"
+                )
+            self.assertEqual(resolved, root.resolve())
+
+            git(root, "remote", "set-url", "origin", "https://example.invalid/wrong.git")
+            with mock.patch.dict(
+                os.environ,
+                {"CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC": sync.CONFIRMATION},
+            ):
+                with self.assertRaisesRegex(sync.SyncError, "authoritative"):
+                    sync.preflight(root, "feature/topic", sha, "b" * 40, "sc-root")
+
     def test_remote_command_preserves_candidate_identity(self) -> None:
         command = sync.remote_command(
             "a" * 40,
