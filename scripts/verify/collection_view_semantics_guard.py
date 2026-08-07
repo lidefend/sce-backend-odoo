@@ -69,6 +69,17 @@ assert 'class="kanban-toolbar' not in kanban_page
 assert "pagination-actions--top" not in kanban_page
 assert kanban_page.count('<slot name="toolbar"></slot>') == 1
 
+# Every embedded business collection owns one global canvas boundary. Scene
+# keys and optional content-layout hints must not create module-specific gaps.
+scene_view = (ROOT / "frontend/apps/web/src/views/SceneView.vue").read_text(encoding="utf-8")
+assert "compactSceneControls = computed(() => embeddedActionId.value > 0)" in scene_view
+assert "currentSceneKey.value === 'projects.list'" not in scene_view
+
+shell_css = (ROOT / "frontend/apps/web/src/layouts/AppShell.css").read_text(encoding="utf-8")
+assert ".router-host > [data-product-page-mode='list']" in shell_css
+assert "--sc-product-list-inline-start" in shell_css
+assert "--sc-product-list-inline-end" in shell_css
+
 # Canonical scene ownership must survive menu configuration overlays so a
 # menu click never renders an action page and then remounts as a scene page.
 menu_overlay = (ROOT / "addons/smart_core/model/ui_menu_config_policy.py").read_text(encoding="utf-8")
