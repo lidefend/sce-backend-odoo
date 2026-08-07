@@ -713,10 +713,10 @@ onBeforeUnmount(() => {
   gap: 5px;
   min-height: 22px;
   max-width: min(150px, 38%);
-  border: 1px solid var(--sc-app-info-border);
+  border: 1px solid var(--sc-app-selected-border);
   border-radius: 5px;
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
   padding: 2px 6px;
   font-size: 12px;
   cursor: pointer;
@@ -748,7 +748,7 @@ onBeforeUnmount(() => {
 }
 
 .search-menu-toggle.active {
-  color: var(--sc-app-info-text);
+  color: var(--sc-app-selected-text);
 }
 
 .search-menu-caret {
@@ -823,10 +823,14 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 
-.search-menu-item:hover,
+.search-menu-item:hover {
+  background: var(--sc-app-hover-bg);
+  color: var(--sc-app-text-primary);
+}
+
 .search-menu-item.selected {
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
 }
 
 .search-menu-item.custom-entry {
@@ -900,7 +904,7 @@ onBeforeUnmount(() => {
 }
 
 .menu-check {
-  color: var(--sc-app-info-text);
+  color: var(--sc-app-selected-text);
   font-weight: 700;
 }
 
@@ -963,14 +967,18 @@ onBeforeUnmount(() => {
 .toolbar-overflow-section button,
 .toolbar-overflow-create { display: flex; align-items: center; gap: var(--sc-space-xs); width: 100%; min-height: 44px; padding: var(--sc-space-xs); border: 1px solid transparent; border-radius: var(--sc-product-radius-control); background: var(--sc-app-panel); color: var(--sc-app-text-primary); text-align: left; cursor: pointer; }
 .toolbar-overflow-section button:hover,
-.toolbar-overflow-section button.active,
 .toolbar-overflow-create:hover { border-color: var(--sc-app-border); background: var(--sc-app-muted-bg); }
+.toolbar-overflow-section button.active {
+  border-color: var(--sc-app-selected-border);
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
+}
 .toolbar-overflow-create { display: none; }
 
 .contract-chip.active {
-  border-color: var(--sc-semantic-surface-interactive);
-  color: var(--sc-app-info-text);
-  background: var(--sc-app-info-bg);
+  border-color: var(--sc-app-selected-border);
+  color: var(--sc-app-selected-text);
+  background: var(--sc-app-selected-bg);
 }
 
 .contract-chip.primary {
@@ -1018,6 +1026,15 @@ onBeforeUnmount(() => {
 
   .native-searchbox {
     min-width: 0;
+  }
+
+  .toolbar-search-submit {
+    min-height: 44px;
+  }
+
+  .search-menu-toggle {
+    width: 44px;
+    min-height: 44px;
   }
 
   .search-dropdown {

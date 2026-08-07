@@ -132,11 +132,12 @@
   --sc-component-toolbar-radius: 8;
   --sc-platform-density-touch-target-min: 32;
   --sc-semantic-border-default: #e2e8f0;
-  --sc-semantic-border-interactive: #aeeaff;
+  --sc-semantic-border-interactive: #2563eb;
+  --sc-semantic-border-selected: #2563eb;
   --sc-semantic-border-strong: #cbd5e1;
   --sc-semantic-border-subtle: #e5e7eb;
   --sc-semantic-border-table: #e8edf2;
-  --sc-semantic-focus-ring: rgba(0, 182, 254, 0.18);
+  --sc-semantic-focus-ring: #1e40af;
   --sc-semantic-shadow-modal: 0 18px 50px rgba(15, 23, 42, 0.18);
   --sc-semantic-shadow-panel: 0 10px 26px rgba(15, 23, 42, 0.08);
   --sc-semantic-shadow-popover: 0 14px 28px rgba(15, 23, 42, 0.16);
@@ -144,10 +145,10 @@
   --sc-semantic-state-danger-bg: #fef2f2;
   --sc-semantic-state-danger-border: #fee2e2;
   --sc-semantic-state-danger-text: #b91c1c;
-  --sc-semantic-state-info: #2563eb;
+  --sc-semantic-state-info: #007fae;
   --sc-semantic-state-info-bg: #f0fbff;
-  --sc-semantic-state-info-border: #aeeaff;
-  --sc-semantic-state-info-text: #1d4ed8;
+  --sc-semantic-state-info-border: #007fae;
+  --sc-semantic-state-info-text: #1e293b;
   --sc-semantic-state-success: #22c55e;
   --sc-semantic-state-success-bg: #ecfdf5;
   --sc-semantic-state-success-border: #d1fae5;
@@ -156,16 +157,17 @@
   --sc-semantic-state-warning-bg: #fffbeb;
   --sc-semantic-state-warning-border: #fef3c7;
   --sc-semantic-state-warning-text: #b45309;
-  --sc-semantic-surface-hover: #f0fbff;
+  --sc-semantic-surface-hover: #f1f5f9;
   --sc-semantic-surface-input: #ffffff;
   --sc-semantic-surface-interactive: #2563eb;
   --sc-semantic-surface-interactive-hover: #1d4ed8;
   --sc-semantic-surface-navigation: #ffffff;
-  --sc-semantic-surface-navigation-active: #f0fbff;
+  --sc-semantic-surface-navigation-active: #eff6ff;
   --sc-semantic-surface-overlay: rgba(15, 23, 42, 0.38);
   --sc-semantic-surface-page: #f3f6f9;
   --sc-semantic-surface-panel: #ffffff;
   --sc-semantic-surface-panel-muted: #f7f9fb;
+  --sc-semantic-surface-selected: #eff6ff;
   --sc-semantic-surface-subtle: #eef4fa;
   --sc-semantic-surface-table-header: #f5f8fa;
   --sc-semantic-text-inverse: #ffffff;
@@ -174,4 +176,5 @@
   --sc-semantic-text-on-interactive: #ffffff;
   --sc-semantic-text-primary: #2e3133;
   --sc-semantic-text-secondary: #5c6166;
+  --sc-semantic-text-selected: #1e40af;
 }

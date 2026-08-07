@@ -46,6 +46,8 @@ function loadRuntime() {
           collectUnifiedPageContractV2FieldWidgets: () => [],
           collectUnifiedPageContractV2FieldStatus: () => ({}),
           resolveUnifiedPageContractV2: () => null,
+          resolveUnifiedPageContractV2ListProfile: (contract) => contract?.list_profile || {},
+          resolveUnifiedPageContractV2SurfacePolicies: () => ({}),
         };
       }
       throw new Error(`unexpected require: ${name}`);
@@ -168,6 +170,29 @@ function main() {
   if (viewLabels.partner_id !== 'CODEX_PARTNER_CARD') {
     throw new Error('view-specific labels must prefer the current view block');
   }
+
+  const projectListProfile = projectShapeRuntime.extractListProfile({
+    list_profile: {
+      columns: ['name', 'user_id', 'manager_id'],
+      hidden_columns: ['manager_id'],
+      cross_device_critical_columns: ['name', 'user_id'],
+      column_labels: {
+        name: '项目名称',
+        user_id: '项目负责人',
+        manager_id: '项目经理',
+      },
+    },
+  });
+  assertDeepEqual(
+    projectListProfile.cross_device_critical_columns,
+    ['name', 'user_id'],
+    'cross-device critical columns survive contract shape extraction',
+  );
+  assertDeepEqual(
+    projectListProfile.hidden_columns,
+    ['manager_id'],
+    'optional hidden columns remain available without becoming default-visible',
+  );
 
   console.log('[action_view_orchestration_contract_shape_smoke] PASS');
 }

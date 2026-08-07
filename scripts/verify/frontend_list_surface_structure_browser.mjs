@@ -21,9 +21,11 @@ const VIEWPORTS = PHASE === 'current-fail'
       { key: '1440', width: 1440, height: 900 },
       { key: '1024', width: 1024, height: 768 },
       { key: '768', width: 768, height: 1024 },
+      { key: '521', width: 521, height: 844 },
+      { key: '520', width: 520, height: 844 },
       { key: '390', width: 390, height: 844 },
     ];
-const FIRST_CONTENT_LIMITS = { 1440: 165, 1024: 160, 768: 200, 390: 160 };
+const FIRST_CONTENT_LIMITS = { 1440: 165, 1024: 160, 768: 200, 521: 160, 520: 160, 390: 160 };
 
 if (!LOGIN || (!PASSWORD && !BOOTSTRAP_SECRET)) {
   throw new Error('acceptance login and password or isolated bootstrap secret are required');
@@ -210,7 +212,44 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
     const firstContent = expectedState === 'empty' ? emptyState : table || firstCard;
     const firstContentY = visible(firstContent) ? firstContent.getBoundingClientRect().top : null;
     const sidebarSubtitle = String(document.querySelector('#primary-sidebar .brand .subtitle')?.textContent || '').trim();
-    const topbarText = String(document.querySelector('.topbar-actions')?.textContent || '').replace(/\s+/g, ' ').trim();
+    const topbarActions = document.querySelector('.topbar-actions');
+    const visiblyReadableText = (element) => {
+      if (!visible(element)) return false;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      const clip = String(style.clip || '').replace(/\s+/g, '').toLowerCase();
+      return rect.width > 2 && rect.height > 2 && clip !== 'rect(0px,0px,0px,0px)' && clip !== 'rect(0,0,0,0)';
+    };
+    const topbarTextSources = [];
+    if (topbarActions) {
+      const walker = document.createTreeWalker(topbarActions, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const text = String(node.nodeValue || '').replace(/\s+/g, ' ').trim();
+        const parent = node.parentElement;
+        if (!text || !parent) continue;
+        let readable = true;
+        for (let current = parent; current && current !== topbarActions; current = current.parentElement) {
+          if (!visiblyReadableText(current)) {
+            readable = false;
+            break;
+          }
+        }
+        if (!readable) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rect = range.getBoundingClientRect();
+        if (rect.width <= 2 || rect.height <= 2) continue;
+        topbarTextSources.push({
+          tag: parent.tagName.toLowerCase(),
+          class_name: String(parent.className || ''),
+          text,
+          width: rect.width,
+          height: rect.height,
+          clip: String(getComputedStyle(parent).clip || ''),
+        });
+      }
+    }
+    const topbarText = topbarTextSources.map((item) => item.text).join(' ');
     const contextTokens = sidebarSubtitle.split('·').map((item) => item.trim()).filter(Boolean);
     const repeatedContext = contextTokens.filter((token) => token.length > 1 && topbarText.includes(token));
     const visibleHomeHeader = Array.from(document.querySelectorAll('.role-home-surface__header, [data-home-title-canvas]')).some(visible);
@@ -224,6 +263,19 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
     const searchInsideSingleActionBar = actionBars.length === 1
       && searches.length === 1
       && actionBars[0].contains(searches[0]);
+    const toolbarRect = toolbar.getBoundingClientRect();
+    const controlRects = controls.map((control) => {
+      const rect = control.getBoundingClientRect();
+      return { tag: control.tagName.toLowerCase(), type: control.getAttribute('type') || '', className: String(control.className || '').slice(0, 160), ariaLabel: control.getAttribute('aria-label') || '', left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+    });
+    const controlsOverlap = controlRects.some((left, leftIndex) => controlRects.some((right, rightIndex) => (
+      rightIndex > leftIndex
+      && Math.min(left.right, right.right) - Math.max(left.left, right.left) > 1
+      && Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top) > 1
+    )));
+    const controlsInViewport = controlRects.every((rect) => rect.left >= -1 && rect.right <= innerWidth + 1);
+    const mobileTouchTargetsPass = !mobileMode || controlRects.filter((rect) => rect.tag === 'button').every((rect) => rect.width >= 44 && rect.height >= 44);
+    const searchInputRect = searches[0]?.getBoundingClientRect();
     const checks = {
       toolbar_present: true,
       search_implementation_count: searches.length === 1,
@@ -236,6 +288,11 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       decision_trace_complete: expectedState === 'empty' || traceComplete,
       column_count_not_visible: !visible(columnCountHint) && !visibleColumnCountText,
       empty_clear_semantics_unique: expectedState !== 'empty' || clearActions.length === 1,
+      toolbar_no_horizontal_overflow: toolbar.scrollWidth <= toolbar.clientWidth + 1 && toolbarRect.right <= innerWidth + 1,
+      toolbar_controls_in_viewport: controlsInViewport,
+      toolbar_controls_not_overlapping: !controlsOverlap,
+      mobile_touch_targets: mobileTouchTargetsPass,
+      search_input_usable: Boolean(searchInputRect && searchInputRect.width >= 72 && searchInputRect.height >= 28),
     };
     return {
       checks,
@@ -248,11 +305,17 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
         first_business_content_y: firstContentY,
         first_business_content_limit: firstContentLimit,
         repeated_context_tokens: repeatedContext,
+        visible_topbar_text_sources: topbarTextSources,
         visible_home_title_canvas: visibleHomeHeader,
         clear_action_labels: clearActions.map((button) => String(button.textContent || '').replace(/\s+/g, '').trim()),
         mobile_mode: mobileMode,
         visible_mobile_selection_control_count: visibleMobileSelectors.length,
         mobile_selection_target_sizes: mobileSelectionTargetSizes,
+        toolbar_client_width: toolbar.clientWidth,
+        toolbar_scroll_width: toolbar.scrollWidth,
+        toolbar_rect: { left: toolbarRect.left, right: toolbarRect.right, width: toolbarRect.width },
+        toolbar_control_rects: controlRects,
+        search_input_rect: searchInputRect ? { left: searchInputRect.left, right: searchInputRect.right, width: searchInputRect.width, height: searchInputRect.height } : null,
         column_decision_trace: columnDecisionTrace,
       },
       observations: {
@@ -282,42 +345,21 @@ async function hasVisibleHomeTitleCanvas(page) {
 }
 
 async function productionComponentProof(page) {
-  await page.evaluate(async () => {
-    const [{ createApp, h, nextTick }, { default: ProductListHeader }] = await Promise.all([
-      import('/node_modules/.vite/deps/vue.js'),
-      import('/src/components/product-list/ProductListHeader.vue'),
-    ]);
-    document.querySelector('[data-list-surface-component-fixture]')?.remove();
-    const host = document.createElement('div');
-    host.dataset.listSurfaceComponentFixture = 'plain-search';
-    host.style.cssText = 'position:fixed;inset:80px 24px auto 280px;z-index:10000;background:white';
-    document.body.append(host);
-    const app = createApp({
-      render: () => h(ProductListHeader, {
-        loading: false,
-        showSearch: true,
-        searchValue: '',
-        searchLabel: '搜索',
-        searchPlaceholder: '输入业务编号或名称',
-      }),
-    });
-    app.mount(host);
-    await nextTick();
-  });
-  const proof = await page.locator('[data-list-surface-component-fixture]').evaluate((host) => {
+  const surface = page.locator('[data-list-query-action-bar]:visible').first();
+  const proof = await surface.evaluate((host) => {
     const toolbar = host.querySelector('[data-list-query-action-bar]');
-    const actionBars = Array.from(toolbar?.querySelectorAll('.sc-design-action-bar') || []);
-    const searches = Array.from(toolbar?.querySelectorAll('input[type="search"]') || []);
+    const root = toolbar || host;
+    const actionBars = Array.from(root.querySelectorAll('.sc-design-action-bar'));
+    const searches = Array.from(root.querySelectorAll('input[type="search"]'));
     return {
-      fixture: 'production_product_list_header_plain_search',
+      fixture: 'runtime_product_list_header_release_surface',
       action_bar_count: actionBars.length,
       search_implementation_count: searches.length,
       search_inside_single_action_bar: actionBars.length === 1 && searches.length === 1 && actionBars[0].contains(searches[0]),
-      root_direct_formatting_children: toolbar?.children.length || 0,
+      root_direct_formatting_children: root.children.length,
     };
   });
-  await page.locator('[data-list-surface-component-fixture]').screenshot({ path: path.join(OUTPUT, 'production-component-plain-search.png') });
-  await page.locator('[data-list-surface-component-fixture]').evaluate((host) => host.remove());
+  await surface.screenshot({ path: path.join(OUTPUT, 'production-component-release-surface.png') });
   return proof;
 }
 
@@ -344,6 +386,21 @@ async function negativeProofs(page, viewport) {
   const brokenContext = await measure(page, viewport);
   results.push({ fixture: 'duplicated_sidebar_context_in_topbar', detected: contextDetected && brokenContext.observations.desktop_context_text_duplicated, metrics: brokenContext.metrics });
   await page.locator('[data-negative-duplicate-context]').evaluateAll((rows) => rows.forEach((row) => row.remove()));
+
+  const hiddenContextInserted = await page.evaluate(() => {
+    const subtitle = document.querySelector('#primary-sidebar .brand .subtitle');
+    const target = document.querySelector('.topbar-actions');
+    if (!subtitle || !target) return false;
+    const clone = document.createElement('span');
+    clone.dataset.negativeHiddenDuplicateContext = 'true';
+    clone.hidden = true;
+    clone.textContent = subtitle.textContent || '';
+    target.append(clone);
+    return true;
+  });
+  const hiddenContext = await measure(page, viewport);
+  results.push({ fixture: 'hidden_context_text_is_not_visible_duplication', detected: hiddenContextInserted && !hiddenContext.observations.desktop_context_text_duplicated, metrics: hiddenContext.metrics });
+  await page.locator('[data-negative-hidden-duplicate-context]').evaluateAll((rows) => rows.forEach((row) => row.remove()));
 
   await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.locator('[data-role-home]').waitFor({ state: 'visible', timeout: 45_000 });
@@ -441,6 +498,11 @@ try {
     'decision_trace_complete',
     'column_count_not_visible',
     'empty_clear_semantics_unique',
+    'toolbar_no_horizontal_overflow',
+    'toolbar_controls_in_viewport',
+    'toolbar_controls_not_overlapping',
+    'mobile_touch_targets',
+    'search_input_usable',
   ]);
   const failures = rows.flatMap((row) => Object.entries(row.measurement.checks)
     .filter(([check, passed]) => gatedChecks.has(check) && !passed)

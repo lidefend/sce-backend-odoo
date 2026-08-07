@@ -17,6 +17,8 @@ const PASSWORD = process.env.E2E_PASSWORD || acceptance.password || process.env.
 const OUTPUT_DIR = path.resolve(process.env.GEOMETRY_AUDIT_OUTPUT || acceptance.runArtifactRoot);
 const REPORT_JSON = path.resolve(process.env.GEOMETRY_AUDIT_JSON || path.join(OUTPUT_DIR, 'geometry-scroll-audit.json'));
 const REPORT_HTML = path.resolve(process.env.GEOMETRY_AUDIT_HTML || path.join(OUTPUT_DIR, 'geometry-scroll-audit.html'));
+const SPACING_REPORT_JSON = path.resolve(process.env.SPACING_GEOMETRY_AUDIT_JSON || path.join(OUTPUT_DIR, 'spacing-geometry-audit.json'));
+const SPACING_REPORT_HTML = path.resolve(process.env.SPACING_GEOMETRY_AUDIT_HTML || path.join(OUTPUT_DIR, 'spacing-geometry-audit.html'));
 const VIEWPORTS = [
   { key: '1440', width: 1440, height: 900 },
   { key: '1280', width: 1280, height: 800 },
@@ -214,6 +216,65 @@ async function inspectGeometry(page) {
       && (headingStyle.overflow === 'hidden' || headingStyle.clipPath !== 'none')
     );
     const firstBusinessContent = document.querySelector('.table thead, .mobile-record-card, .sc-empty-state');
+    const numberPx = (value) => {
+      const parsed = Number.parseFloat(value || '0');
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+    const spacingSurfaceSelectors = [
+      '.list-toolbar', '.table', '.pagination-footer', '.mobile-record-list', '.mobile-record-card',
+      '.contract-form-native-shell', '.contract-form-command-bar', '.contract-form-canvas-shell',
+      '.native-form-tree', '.native-container--group', '.template-form-section',
+      '.relation-dialog', '.relation-dialog-search', '.relation-dialog-footer',
+      '[data-spacing-audit-target]',
+    ];
+    const spacingSurfaces = spacingSurfaceSelectors.flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+      .filter((element, index, rows) => visible(element) && rows.indexOf(element) === index)
+      .map((element) => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        const paddingRight = numberPx(style.paddingRight);
+        const touchTarget = numberPx(getComputedStyle(document.documentElement).getPropertyValue('--sc-touch-target-min'));
+        const spaceXs = numberPx(getComputedStyle(document.documentElement).getPropertyValue('--sc-space-xs'));
+        const compositeContracts = element.matches('.mobile-record-card')
+          && element.closest('.mobile-record-row')?.querySelector('.mobile-record-select')
+          && Math.abs(paddingRight - touchTarget - spaceXs) <= 1
+          ? [{ property: 'padding-right', reason_code: 'visible_touch_target_reservation', components_px: [touchTarget, spaceXs] }]
+          : [];
+        return {
+          selector: selectorFor(element),
+          bounding_box: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height },
+          padding: {
+            top: numberPx(style.paddingTop), right: paddingRight,
+            bottom: numberPx(style.paddingBottom), left: numberPx(style.paddingLeft),
+          },
+          gap: { row: numberPx(style.rowGap), column: numberPx(style.columnGap) },
+          composite_spacing_contracts: compositeContracts,
+        };
+      });
+    const listToolbar = document.querySelector('.list-toolbar');
+    const listTable = document.querySelector('.table');
+    const listPagination = document.querySelector('.pagination-footer');
+    const rectOf = (element) => element && visible(element) ? element.getBoundingClientRect() : null;
+    const toolbarRect = rectOf(listToolbar);
+    const tableRect = rectOf(listTable);
+    const paginationRect = rectOf(listPagination);
+    const mobileCards = Array.from(document.querySelectorAll('.mobile-record-card')).filter(visible);
+    const actualCardGaps = mobileCards.slice(1).map((card, index) => {
+      const previous = mobileCards[index].getBoundingClientRect();
+      const current = card.getBoundingClientRect();
+      return current.top >= previous.bottom - 1 ? current.top - previous.bottom : current.left - previous.right;
+    }).filter((value) => value >= -1);
+    const mainBounds = mainElement?.getBoundingClientRect();
+    const horizontalAxis = mainBounds ? {
+      toolbar_left: toolbarRect?.left ?? null,
+      table_left: tableRect?.left ?? null,
+      pagination_left: paginationRect?.left ?? null,
+      toolbar_right: toolbarRect?.right ?? null,
+      table_right: tableRect?.right ?? null,
+      pagination_right: paginationRect?.right ?? null,
+      main_left: mainBounds.left,
+      main_right: mainBounds.right,
+    } : null;
     return {
       viewport: { width: innerWidth, height: innerHeight, device_pixel_ratio: devicePixelRatio },
       document: { client_width: document.documentElement.clientWidth, scroll_width: document.documentElement.scrollWidth, client_height: document.documentElement.clientHeight, scroll_height: document.documentElement.scrollHeight },
@@ -242,6 +303,14 @@ async function inspectGeometry(page) {
       accessible_hidden_h1: accessibleHiddenHeading,
       first_business_content_y: firstBusinessContent?.getBoundingClientRect().top ?? null,
       standalone_column_meta_rows: document.querySelectorAll('.table-utility-row, .column-summary-row, [data-column-summary-row]').length,
+      spacing: {
+        scale: [0, 4, 8, 12, 16, 24, 32],
+        surfaces: spacingSurfaces,
+        horizontal_axis: horizontalAxis,
+        toolbar_table_gap: toolbarRect && tableRect ? Math.max(0, tableRect.top - toolbarRect.bottom) : null,
+        table_pagination_gap: tableRect && paginationRect ? Math.max(0, paginationRect.top - tableRect.bottom) : null,
+        card_gaps: actualCardGaps,
+      },
     };
   });
 }
@@ -406,18 +475,69 @@ async function negativeStickyFixtureProof(page) {
   return { fixture: 'table-header-position-static', detected: true };
 }
 
+function nearestSpacingToken(value) {
+  const scale = [0, 4, 8, 12, 16, 24, 32];
+  return scale.reduce((best, token) => Math.abs(token - value) < Math.abs(best - value) ? token : best, scale[0]);
+}
+
+function spacingFindings(rows) {
+  const findings = [];
+  for (const row of rows) {
+    const spacing = row.geometry?.spacing;
+    if (!spacing) continue;
+    for (const surface of spacing.surfaces || []) {
+      for (const [side, value] of Object.entries(surface.padding || {})) {
+        if ((surface.composite_spacing_contracts || []).some((contract) => contract.property === `padding-${side}`)) continue;
+        const nearest = nearestSpacingToken(value);
+        if (Math.abs(value - nearest) > 1) findings.push({ target: row.target, viewport: row.viewport, selector: surface.selector, property: `padding-${side}`, value, nearest_token: nearest });
+      }
+      for (const [axis, value] of Object.entries(surface.gap || {})) {
+        const nearest = nearestSpacingToken(value);
+        if (Math.abs(value - nearest) > 1) findings.push({ target: row.target, viewport: row.viewport, selector: surface.selector, property: `${axis}-gap`, value, nearest_token: nearest });
+      }
+    }
+  }
+  return findings;
+}
+
+async function negativeSpacingFixtureProof(page) {
+  await page.evaluate(() => {
+    const fixture = document.createElement('div');
+    fixture.id = 'spacing-negative-fixture';
+    fixture.dataset.spacingAuditTarget = 'true';
+    fixture.style.cssText = 'display:block;padding:18px;gap:20px;width:40px;height:40px';
+    document.querySelector('#main-content')?.append(fixture);
+  });
+  const broken = await inspectGeometry(page);
+  const fixtureSurface = broken.spacing.surfaces.find((surface) => surface.selector === '#spacing-negative-fixture');
+  await page.locator('#spacing-negative-fixture').evaluate((element) => element.remove());
+  const detected = fixtureSurface?.padding?.left === 18 && fixtureSurface?.gap?.row === 20;
+  assert(detected, 'negative spacing fixture did not expose rogue computed spacing');
+  return { fixture: 'rogue-computed-spacing-18-20', detected };
+}
+
 const servedIdentity = await verifyServedIdentity(acceptance, acceptance.provenance.expectedSha);
-const browser = await launchAcceptanceChromium(acceptance, { headless: true });
-const context = await browser.newContext({ viewport: VIEWPORTS[0] });
-const page = await context.newPage();
-const navigation = captureReleasedNavigation(page);
+let browser;
+let context;
+let page;
+let navigation;
 const runtime = { console_errors: [], page_errors: [], failed_responses: [] };
-page.on('console', (message) => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) runtime.console_errors.push(message.text()); });
-page.on('pageerror', (error) => runtime.page_errors.push(error.message));
-page.on('response', (response) => { if (response.status() >= 400) runtime.failed_responses.push({ status: response.status(), url: response.url() }); });
+
+async function startBrowserSession(viewport) {
+  await context?.close().catch(() => {});
+  await browser?.close().catch(() => {});
+  browser = await launchAcceptanceChromium(acceptance, { headless: true });
+  context = await browser.newContext({ viewport });
+  page = await context.newPage();
+  navigation = captureReleasedNavigation(page);
+  page.on('console', (message) => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) runtime.console_errors.push(message.text()); });
+  page.on('pageerror', (error) => runtime.page_errors.push(error.message));
+  page.on('response', (response) => { if (response.status() >= 400) runtime.failed_responses.push({ status: response.status(), url: response.url() }); });
+  await login(page, navigation);
+}
 
 try {
-  await login(page, navigation);
+  await startBrowserSession(VIEWPORTS[0]);
   const discovered = actionableNodes(navigation.nav());
   const representative = discovered.find((row) => /一般合同/.test(row.path))
     || discovered.find((row) => /施工合同/.test(row.path))
@@ -436,9 +556,10 @@ try {
     .filter((row) => row.route && !targets.some((target) => target.route === row.route))
     .map((row, index) => ({ key: `discovered-route-${index + 1}`, label: row.path, route: row.route }));
   const rows = [];
-  for (const viewport of VIEWPORTS) {
-    await page.setViewportSize(viewport);
+  for (const [viewportIndex, viewport] of VIEWPORTS.entries()) {
+    if (viewportIndex > 0) await startBrowserSession(viewport);
     for (const target of targets) {
+      process.stdout.write(`[geometry] ${viewport.key} ${target.key}\n`);
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForPage(page);
       const geometry = await inspectGeometry(page);
@@ -446,13 +567,15 @@ try {
         ? await page.locator('.desktop-record-table').isVisible().catch(() => false)
         : false;
       const stickyProof = desktopTableVisible ? await nativeTableStickyProof(page) : null;
-      const selectionProof = target.key === 'runtime-list' ? await listSelectionProof(page) : null;
       const screenshot = path.join(OUTPUT_DIR, `${target.key}-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
+      const selectionProof = target.key === 'runtime-list' ? await listSelectionProof(page) : null;
       rows.push({ target, viewport, geometry, sticky_proof: stickyProof, selection_proof: selectionProof, checks: { ...checksFor(geometry), ...(stickyProof ? { native_table_header_sticky: stickyProof.passed } : {}), ...(selectionProof ? { list_selection_operable: selectionProof.passed } : {}) }, screenshot });
     }
     if ([1440, 390].includes(viewport.width)) {
-      for (const target of discoveredRouteTargets) {
+      for (const [routeIndex, target] of discoveredRouteTargets.entries()) {
+        if (routeIndex > 0 && routeIndex % 5 === 0) await startBrowserSession(viewport);
+        process.stdout.write(`[geometry] ${viewport.key} ${target.key} ${target.route}\n`);
         await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
         await waitForPage(page);
         const geometry = await inspectGeometry(page);
@@ -495,14 +618,15 @@ try {
       physical_height: 900,
       browser_zoom_percent: zoom,
     };
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await startBrowserSession({ width: viewport.width, height: viewport.height });
     for (const target of targets.filter((item) => ['home', 'runtime-list', 'runtime-form-readonly'].includes(item.key))) {
+      process.stdout.write(`[geometry] ${viewport.key} ${target.key}\n`);
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForPage(page);
       const geometry = await inspectGeometry(page);
-      const selectionProof = target.key === 'runtime-list' ? await listSelectionProof(page) : null;
       const screenshot = path.join(OUTPUT_DIR, `${target.key}-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
+      const selectionProof = target.key === 'runtime-list' ? await listSelectionProof(page) : null;
       rows.push({
         target: { ...target, label: `${target.label} / 浏览器缩放 ${zoom}%` },
         viewport,
@@ -519,6 +643,7 @@ try {
   await page.goto(`${BASE_URL}${representative.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await waitForPage(page);
   negativeFixtures.push(await negativeStickyFixtureProof(page));
+  negativeFixtures.push(await negativeSpacingFixtureProof(page));
   const failures = rows.flatMap((row) => Object.entries(row.checks).filter(([, passed]) => !passed).map(([check]) => ({ target: row.target, viewport: row.viewport, check, geometry: row.geometry })));
   const report = {
     schema: 'frontend_geometry_scroll_audit.v1',
@@ -534,10 +659,53 @@ try {
   await fs.writeFile(REPORT_JSON, `${JSON.stringify(report, null, 2)}\n`);
   const html = `<!doctype html><meta charset="utf-8"><title>SCE 几何与滚动审计</title><style>body{font:14px system-ui;margin:32px;color:#172033}table{border-collapse:collapse;width:100%}th,td{border:1px solid #d8dee8;padding:8px;text-align:left;vertical-align:top}.pass{color:#087443}.fail{color:#b42318}code{white-space:pre-wrap}</style><h1>SCE 几何与滚动审计</h1><p>来源：当前角色 authenticated system.init；数据库：${DB_NAME}；结果：<strong class="${report.passed ? 'pass' : 'fail'}">${report.passed ? 'PASS' : 'FAIL'}</strong></p><table><thead><tr><th>页面</th><th>视口</th><th>检查</th><th>画布利用率</th><th>滚动所有者</th></tr></thead><tbody>${rows.map((row) => `<tr><td>${row.target.label}</td><td>${row.viewport.width}×${row.viewport.height}</td><td><code>${Object.entries(row.checks).map(([key, value]) => `${value ? 'PASS' : 'FAIL'} ${key}`).join('\n')}</code></td><td>${row.geometry.core_canvas_utilization === null ? '-' : (row.geometry.core_canvas_utilization * 100).toFixed(1) + '%'}</td><td>${row.geometry.scroll_owners.map((owner) => owner.selector).join(', ') || '-'}</td></tr>`).join('')}</tbody></table>`;
   await fs.writeFile(REPORT_HTML, html);
+  const spacingRogueValues = spacingFindings(rows);
+  const spacingRows = rows.filter((row) => row.geometry?.spacing).map((row) => {
+    const spacing = row.geometry.spacing;
+    const axisValues = spacing.horizontal_axis
+      ? [spacing.horizontal_axis.toolbar_left, spacing.horizontal_axis.table_left, spacing.horizontal_axis.pagination_left].filter(Number.isFinite)
+      : [];
+    const axisDelta = axisValues.length > 1 ? Math.max(...axisValues) - Math.min(...axisValues) : 0;
+    const cardGaps = spacing.card_gaps || [];
+    const cardGapConsistent = cardGaps.length < 2 || Math.max(...cardGaps) - Math.min(...cardGaps) <= 1;
+    return {
+      target: row.target,
+      viewport: row.viewport,
+      measurements: spacing,
+      checks: {
+        shared_horizontal_axis_delta: axisDelta <= 1,
+        normal_list_toolbar_table_gap: spacing.toolbar_table_gap === null || spacing.toolbar_table_gap <= 1,
+        table_pagination_gap: spacing.table_pagination_gap === null || spacing.table_pagination_gap <= 1,
+        card_gap_consistent: cardGapConsistent,
+      },
+      shared_horizontal_axis_delta_px: axisDelta,
+    };
+  });
+  const spacingFailures = [
+    ...spacingRows.flatMap((row) => Object.entries(row.checks).filter(([, passed]) => !passed).map(([check]) => ({ target: row.target, viewport: row.viewport, check }))),
+    ...spacingRogueValues.map((finding) => ({ check: 'rogue_spacing_value_on_target_surfaces', ...finding })),
+  ];
+  const spacingReport = {
+    schema: 'frontend_spacing_geometry_audit.v1',
+    source_sha: SOURCE_SHA,
+    generated_at: new Date().toISOString(),
+    source: report.source,
+    token_scale_px: [0, 4, 8, 12, 16, 24, 32],
+    measurement_method: 'Playwright bounding boxes plus browser computed padding/row-gap/column-gap',
+    rows: spacingRows,
+    negative_fixtures: negativeFixtures.filter((fixture) => fixture.fixture.includes('spacing')),
+    rogue_values: spacingRogueValues,
+    failures: spacingFailures,
+    passed: spacingFailures.length === 0,
+  };
+  await fs.writeFile(SPACING_REPORT_JSON, `${JSON.stringify(spacingReport, null, 2)}\n`);
+  const spacingHtml = `<!doctype html><meta charset="utf-8"><title>SCE 空间几何审计</title><style>body{font:14px system-ui;margin:32px;color:#172033}table{border-collapse:collapse;width:100%}th,td{border:1px solid #d8dee8;padding:8px;text-align:left;vertical-align:top}.pass{color:#087443}.fail{color:#b42318}code{white-space:pre-wrap}</style><h1>SCE 空间几何审计</h1><p>测量：真实浏览器 bounding boxes + computed padding/gap；结果：<strong class="${spacingReport.passed ? 'pass' : 'fail'}">${spacingReport.passed ? 'PASS' : 'FAIL'}</strong></p><table><thead><tr><th>页面</th><th>视口</th><th>轴线偏差</th><th>工具栏→内容</th><th>检查</th></tr></thead><tbody>${spacingRows.map((row) => `<tr><td>${row.target.label}</td><td>${row.viewport.width}×${row.viewport.height}</td><td>${row.shared_horizontal_axis_delta_px.toFixed(1)}px</td><td>${row.measurements.toolbar_table_gap ?? '-'}</td><td><code>${Object.entries(row.checks).map(([key, value]) => `${value ? 'PASS' : 'FAIL'} ${key}`).join('\n')}</code></td></tr>`).join('')}</tbody></table>`;
+  await fs.writeFile(SPACING_REPORT_HTML, spacingHtml);
   process.stdout.write(`[frontend_geometry_scroll_audit] ${report.passed ? 'PASS' : 'FAIL'} rows=${rows.length} failures=${failures.length} routes=${discovered.length}\n`);
-  if (!report.passed) process.exitCode = 1;
+  process.stdout.write(`[frontend_spacing_geometry_audit] ${spacingReport.passed ? 'PASS' : 'FAIL'} rows=${spacingRows.length} failures=${spacingFailures.length}\n`);
+  if (!report.passed || !spacingReport.passed) process.exitCode = 1;
 } finally {
-  await context.close();
-  await browser.close();
+  await context.close().catch(() => {});
+  await browser.close().catch(() => {});
   await acceptanceLease.release();
 }

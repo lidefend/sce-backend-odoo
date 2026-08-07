@@ -515,7 +515,7 @@ const sidebarSubtitle = computed(() => {
   const context = [currentCompanyLabel.value, roleLabel.value]
     .map((item) => normalizeDeliveryText(String(item || '').trim()))
     .filter(Boolean);
-  return context.join(' · ') || normalizeDeliveryText(String(config.appBrand.tagline || '').trim()) || '企业业务工作台';
+  return context.join(' · ') || normalizeDeliveryText(String(config.appBrand.subtitle || '').trim()) || '企业业务工作台';
 });
 const roleLabel = computed(() => {
   const label = String(roleSurface.value?.role_label || '').trim();

@@ -377,7 +377,7 @@ const emit = defineEmits<{
 
 .form-section-nav button.is-active {
   background: var(--sc-navigation-active-bg);
-  color: var(--sc-app-info-text);
+  color: var(--sc-app-selected-text);
   font-weight: 650;
 }
 
