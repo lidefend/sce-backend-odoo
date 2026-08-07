@@ -81,6 +81,43 @@
         <field name="sequence">40</field>
     </record>
 
+    <!--
+      Project center target architecture is locked before every capability is
+      released. Empty ROADMAP groups intentionally have no action/children, so
+      Odoo and the delivery policy keep them out of ordinary user navigation.
+      They remain visible to menu governance as an explicit launch backlog.
+    -->
+    <menuitem id="menu_sc_project_overview_group_v2" name="项目总览" parent="smart_construction_core.menu_sc_project_center" sequence="10"/>
+    <record id="menu_sc_tender_management_group" model="ir.ui.menu">
+        <field name="name">项目前期</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_sc_project_management_group" model="ir.ui.menu">
+        <field name="name">项目立项</field>
+        <field name="sequence">30</field>
+    </record>
+    <menuitem id="menu_sc_project_ledger_group_v2" name="项目台账" parent="smart_construction_core.menu_sc_project_center" sequence="40"/>
+    <menuitem id="menu_sc_project_organization_group_v2" name="项目组织（后续上线）" parent="smart_construction_core.menu_sc_project_center" sequence="50"/>
+    <menuitem id="menu_sc_project_milestone_group_v2" name="里程碑管理（后续上线）" parent="smart_construction_core.menu_sc_project_center" sequence="60"/>
+    <menuitem id="menu_sc_project_collaboration_group_v2" name="项目协同（后续上线）" parent="smart_construction_core.menu_sc_project_center" sequence="70"/>
+    <menuitem id="menu_sc_project_document_group_v2" name="项目资料" parent="smart_construction_core.menu_sc_project_center" sequence="80"/>
+    <menuitem id="menu_sc_project_risk_group_v2" name="风险与问题（后续上线）" parent="smart_construction_core.menu_sc_project_center" sequence="90"/>
+    <menuitem id="menu_sc_project_closeout_group_v2" name="项目收尾（后续上线）" parent="smart_construction_core.menu_sc_project_center" sequence="100"/>
+    <menuitem id="menu_sc_project_internal_group_v2" name="项目内部结构" parent="smart_construction_core.menu_sc_config_center" sequence="45" groups="base.group_no_one"/>
+
+    <record id="menu_sc_project_dashboard" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_overview_group_v2"/><field name="sequence">10</field></record>
+    <record id="menu_sc_project_kanban" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_overview_group_v2"/><field name="sequence">20</field></record>
+    <record id="menu_sc_project_management_scene" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_overview_group_v2"/><field name="sequence">30</field></record>
+    <record id="menu_sc_project_initiation" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_management_group"/><field name="sequence">10</field></record>
+    <record id="menu_sc_project_quick_create" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_management_group"/><field name="sequence">20</field></record>
+    <record id="menu_sc_project_project" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_ledger_group_v2"/><field name="sequence">10</field></record>
+    <record id="menu_sc_project_documents" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_document_group_v2"/><field name="sequence">10</field></record>
+    <record id="menu_sc_project_wbs" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_internal_group_v2"/></record>
+    <record id="menu_sc_project_work_breakdown" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_internal_group_v2"/></record>
+    <record id="menu_sc_project_structure_wbs" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_internal_group_v2"/></record>
+    <record id="menu_sc_project_budget_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_cost_center"/><field name="active">False</field></record>
+    <record id="menu_sc_doc_center" model="ir.ui.menu"><field name="active">False</field></record>
+
     <!-- Construction delivery: replace a ten-item flat list with processes. -->
     <menuitem id="menu_sc_schedule_delivery_group_v2" name="进度与施工" parent="smart_construction_core.menu_sc_construction_management_center" sequence="10"/>
     <menuitem id="menu_sc_quality_delivery_group_v2" name="质量管理" parent="smart_construction_core.menu_sc_construction_management_center" sequence="20"/>

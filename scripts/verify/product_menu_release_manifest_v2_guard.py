@@ -31,6 +31,11 @@ REQUIRED_REPORT_XMLIDS = {
     "menu_sc_project_operation_statistics_report",
     "menu_sc_company_operation_summary_report",
 }
+EXPECTED_PROJECT_LEVEL_TWO = [
+    "项目总览", "项目前期", "项目立项", "项目台账", "项目组织",
+    "里程碑管理", "项目协同", "项目资料", "风险与问题", "项目收尾",
+]
+ALLOWED_PROJECT_RELEASE_STATUS = {"RELEASED", "READY_TO_CONVERGE", "FOLLOWUP"}
 
 
 def main() -> int:
@@ -44,6 +49,22 @@ def main() -> int:
         errors.append("primary center order/count mismatch")
     if rules.get("maximum_business_depth") != 3:
         errors.append("business menu depth must be exactly 3")
+
+    project_ia = payload.get("project_center_information_architecture") or {}
+    project_level_two = project_ia.get("level_two_order") or []
+    project_level_two_names = [row.get("name") for row in project_level_two]
+    if project_ia.get("locked") is not True:
+        errors.append("project center information architecture must be locked")
+    if project_ia.get("empty_roadmap_menus_visible_to_business_users") is not False:
+        errors.append("empty project roadmap menus must stay out of business navigation")
+    if project_level_two_names != EXPECTED_PROJECT_LEVEL_TWO:
+        errors.append("project center level-two order mismatch")
+    for index, row in enumerate(project_level_two):
+        status = row.get("release_status")
+        if status not in ALLOWED_PROJECT_RELEASE_STATUS:
+            errors.append(f"project level-two[{index}] invalid release status")
+        if status == "FOLLOWUP" and not row.get("launch_note"):
+            errors.append(f"project level-two[{index}] follow-up item missing launch note")
 
     checklist = payload.get("capability_release_checklist") or []
     if not checklist:
@@ -89,6 +110,16 @@ def main() -> int:
     for group in ("进度与施工", "质量管理", "安全管理", "行政审批", "人事薪酬"):
         if f'name="{group}"' not in xml:
             errors.append(f"level-two product group missing: {group}")
+    for group in EXPECTED_PROJECT_LEVEL_TWO:
+        if (
+            f'name="{group}"' not in xml
+            and f'name="{group}（后续上线）"' not in xml
+            and f'>{group}</field>' not in xml
+        ):
+            errors.append(f"locked project level-two group missing: {group}")
+    for group in [row["name"] for row in project_level_two if row.get("release_status") == "FOLLOWUP"]:
+        if f'name="{group}（后续上线）"' not in xml:
+            errors.append(f"follow-up project group missing launch label: {group}")
     for token in (
         "release.daily_product_navigation.snapshot:",
         'test "$(ENV)" = "dev"',

@@ -22,6 +22,22 @@
     "separate_governance_centers": ["产品配置", "系统管理"],
     "forbidden_primary_centers": ["智慧大屏", "资料证照", "基础资料", "人事行政"]
   },
+  "project_center_information_architecture": {
+    "locked": true,
+    "empty_roadmap_menus_visible_to_business_users": false,
+    "level_two_order": [
+      {"name": "项目总览", "release_status": "READY_TO_CONVERGE", "current_foundation": ["项目驾驶舱", "项目看板"]},
+      {"name": "项目前期", "release_status": "RELEASED", "current_foundation": ["投标准备", "投标报名", "开标记录", "中标记录", "投标保证金"]},
+      {"name": "项目立项", "release_status": "READY_TO_CONVERGE", "current_foundation": ["项目立项", "快速创建项目"]},
+      {"name": "项目台账", "release_status": "RELEASED", "current_foundation": ["项目台账"]},
+      {"name": "项目组织", "release_status": "FOLLOWUP", "launch_note": "项目责任矩阵与成员授权已有基础，待形成统一角色维护页面后上线"},
+      {"name": "里程碑管理", "release_status": "FOLLOWUP", "launch_note": "待补齐基准版本、偏差分析和节点闭环后上线"},
+      {"name": "项目协同", "release_status": "FOLLOWUP", "launch_note": "待补齐RFI、报审、会议、决议和行动项后上线"},
+      {"name": "项目资料", "release_status": "READY_TO_CONVERGE", "current_foundation": ["项目资料", "附件版本", "审核归档"]},
+      {"name": "风险与问题", "release_status": "FOLLOWUP", "launch_note": "风险及措施模型已有基础，待统一问题关闭与正式入口后上线"},
+      {"name": "项目收尾", "release_status": "FOLLOWUP", "launch_note": "待补齐验收、移交、竣工档案和后评价后上线"}
+    ]
+  },
   "capability_release_checklist": [
     {
       "domain": "工作台",
