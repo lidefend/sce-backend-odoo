@@ -515,7 +515,7 @@ const sidebarSubtitle = computed(() => {
   const context = [currentCompanyLabel.value, roleLabel.value]
     .map((item) => normalizeDeliveryText(String(item || '').trim()))
     .filter(Boolean);
-  return context.join(' · ') || normalizeDeliveryText(String(config.appBrand.tagline || '').trim()) || '企业业务工作台';
+  return context.join(' · ') || normalizeDeliveryText(String(config.appBrand.subtitle || '').trim()) || '企业业务工作台';
 });
 const roleLabel = computed(() => {
   const label = String(roleSurface.value?.role_label || '').trim();
@@ -560,7 +560,12 @@ const recordContextSpaceLabel = computed(() => `${recordContextSubject.value}空
 const switchRecordContextLabel = computed(() => `切换${recordContextSubject.value}`);
 const recordContextAllLabel = computed(() => String(recordContext.value?.selector?.all_label || '全部').trim() || '全部');
 const recordContextEmptyText = computed(() => `无匹配${recordContextSubject.value}`);
-const recordContextIcon = computed(() => String(recordContext.value?.selector?.icon || 'folder').trim() || 'folder');
+const recordContextIcon = computed<'briefcase' | 'file-text' | 'folder' | 'project'>(() => {
+  const icon = String(recordContext.value?.selector?.icon || '').trim();
+  return ['briefcase', 'file-text', 'folder', 'project'].includes(icon)
+    ? icon as 'briefcase' | 'file-text' | 'folder' | 'project'
+    : 'folder';
+});
 const currentRecordContextLabel = computed(() => {
   if (!recordContextEnabled.value) {
     return recordContext.value?.message || '未启用';

@@ -44,6 +44,7 @@ export function useNativeChatterRuntime(params: {
   const error = ref('');
   const timeline = ref<ChatterTimelineEntry[]>([]);
   const activityUpdatingIds = ref<number[]>([]);
+  let timelineRequestToken = 0;
 
   const selectedMentionUsers = computed(() => {
     const selected = new Set(selectedMentionUserIds.value);
@@ -55,6 +56,8 @@ export function useNativeChatterRuntime(params: {
   });
 
   function clearForRecordLoad() {
+    timelineRequestToken += 1;
+    loading.value = false;
     error.value = '';
     timeline.value = [];
   }
@@ -73,6 +76,12 @@ export function useNativeChatterRuntime(params: {
 
   async function loadTimeline(targetResId = params.recordId(), targetModel = params.model()) {
     if (!targetResId || !targetModel) return;
+    const requestToken = ++timelineRequestToken;
+    const isCurrentRequest = () => (
+      requestToken === timelineRequestToken
+      && Number(params.recordId() || 0) === Number(targetResId)
+      && String(params.model() || '') === String(targetModel)
+    );
     loading.value = true;
     try {
       const response = await fetchChatterTimeline({
@@ -81,11 +90,13 @@ export function useNativeChatterRuntime(params: {
         limit: 12,
         include_audit: false,
       });
+      if (!isCurrentRequest()) return;
       timeline.value = Array.isArray(response.items) ? response.items : [];
     } catch (err) {
+      if (!isCurrentRequest()) return;
       error.value = err instanceof Error ? err.message : '协作记录加载失败';
     } finally {
-      loading.value = false;
+      if (requestToken === timelineRequestToken) loading.value = false;
     }
   }
 

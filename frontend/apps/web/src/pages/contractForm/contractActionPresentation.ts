@@ -184,7 +184,7 @@ export function buildContractFormActions(params: {
       targetModel: String(row.target_model || row.model || params.model || '').trim(),
       context: parseMaybeJsonRecord(payload.context_raw),
       domainRaw: String(payload.domain_raw || '').trim(),
-      target: String(payload.target || '').trim(),
+      target: String(payload.target || row.target || '').trim(),
       url: String(payload.url || row.url || '').trim(),
       enabled,
       hint: status?.disabled === true

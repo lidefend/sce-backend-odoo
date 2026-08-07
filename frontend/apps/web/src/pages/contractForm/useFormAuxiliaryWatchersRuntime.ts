@@ -14,6 +14,7 @@ export function useFormAuxiliaryWatchersRuntime(params: {
   modelName: () => string;
   nativeChatterAutoLoadKey: Ref<string>;
   persistIntakeAutosave: () => void;
+  primaryReady: () => boolean;
   recordId: () => number | null;
   router: Router;
 }) {
@@ -69,15 +70,16 @@ export function useFormAuxiliaryWatchersRuntime(params: {
       recordId: params.recordId(),
       collaborationReady: params.collaborationReady(),
       intakeMode: params.isIntake(),
+      primaryReady: params.primaryReady(),
     }),
     (state) => {
       if (!params.isActive()) return;
-      if (state.intakeMode || !state.model || !state.recordId || !state.collaborationReady) return;
+      if (state.intakeMode || !state.model || !state.recordId || !state.collaborationReady || !state.primaryReady) return;
       const key = `${state.model}:${state.recordId}`;
       if (params.nativeChatterAutoLoadKey.value === key || params.chatterLoading()) return;
       params.nativeChatterAutoLoadKey.value = key;
       void params.loadNativeChatterTimeline();
     },
-    { immediate: true },
+    { immediate: true, flush: 'post' },
   );
 }

@@ -1244,7 +1244,7 @@ function continueProcessing() {
     model: model.value,
     id: String(recordId.value),
     query: normalizeRouteQueryValues(route.query as Record<string, unknown>) as LocationQueryRaw,
-  }));
+  }) as Parameters<typeof router.push>[0]);
 }
 const showDraftSaveAction = computed(() => {
   if (!showPrimaryBusinessFormAction.value || !canSave.value || primaryCreateFooterAction.value) return false;
@@ -1540,7 +1540,7 @@ const {
   relationEntry, relationFieldDescriptors, relationInlineCreate,
   relationKeyword, relationKeywords, relationModelFromDescriptor,
   relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords,
-  relationOrder, relationQueryTimers, relationReadFields,
+  relationOrder, relationQueryTimers, relationReadFields, renderProfile,
   relationSearchColumnsFromContract, relationSearchDialog, relationSearchDialogContract,
   relationSearchLimit, relationSearchOrder, relationSearchReadFields,
   relationSearchRowsFromRecords, relationUiLabel, relationUiLabels,
@@ -1764,6 +1764,7 @@ useFormAuxiliaryWatchersRuntime({
   modelName: () => model.value,
   nativeChatterAutoLoadKey,
   persistIntakeAutosave: () => persistIntakeAutosave(),
+  primaryReady: () => status.value === 'ok',
   recordId: () => recordId.value,
   router,
 });

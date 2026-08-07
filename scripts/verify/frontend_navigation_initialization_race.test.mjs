@@ -83,6 +83,8 @@ const session = fs.readFileSync('frontend/apps/web/src/stores/session.ts', 'utf8
 assert.match(session, /this\.isReady = false;[\s\S]*this\.routeAuthority = null;[\s\S]*this\.menuTree = \[\];[\s\S]*this\.currentAction = null;/);
 assert.match(session, /appInitEpoch === requestEpoch/);
 assert.match(session, /this\.currentAction = null;[\s\S]*this\.scenes = \[\];[\s\S]*this\.defaultRoute = null;/);
+assert.match(session, /request_context: nextRequestContext/);
+assert.match(session, /clear_request_context: \{[\s\S]*company_id: nextCompanyId \|\| undefined/);
 
 const router = fs.readFileSync('frontend/apps/web/src/router/index.ts', 'utf8');
 assert.doesNotMatch(router, /resolveExplicitSceneKeyFromMenuContext/);

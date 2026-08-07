@@ -25,7 +25,6 @@ REQUIRED_PRODUCT_COMPONENTS = {
 
 REQUIRED_PRODUCT_CONSUMERS = {
     "ScActionBar": "components/business/MyWorkApprovalWorkspace.vue",
-    "ScAuditTrail": "components/product-record/ProductAuditSection.vue",
     "ScDataTable": "pages/ListPage.vue",
     "ScDateField": "components/template/FormSection.vue",
     "ScDialog": "pages/contractForm/RelationSearchDialog.vue",
@@ -33,15 +32,21 @@ REQUIRED_PRODUCT_CONSUMERS = {
     "ScErrorState": "views/NotFoundView.vue",
     "ScField": "components/business/MyWorkApprovalWorkspace.vue",
     "ScIcon": "components/template/FormSection.vue",
-    "ScMoney": "components/product-record/ProductFactGrid.vue",
+    "ScMoney": "components/business/MyWorkApprovalWorkspace.vue",
     "ScPage": "pages/ListPage.vue",
     "ScPageHeader": "pages/ListPage.vue",
-    "ScPanel": "components/product-record/ProductBusinessSections.vue",
+    "ScPanel": "components/business/MyWorkApprovalWorkspace.vue",
     "ScRelationField": "components/template/FormSection.vue",
-    "ScRelationshipFlow": "components/product-record/ProductRelationshipFlow.vue",
     "ScSection": "components/business/MyWorkApprovalWorkspace.vue",
     "ScSelect": "components/template/FormSection.vue",
     "ScStatusBadge": "components/product-record/ProductRecordStatus.vue",
+}
+
+RETIRED_PRODUCT_RECORD_WRAPPERS = {
+    "ProductAuditSection.vue",
+    "ProductBusinessSections.vue",
+    "ProductFactGrid.vue",
+    "ProductRelationshipFlow.vue",
 }
 
 GENERIC_BOUNDARY_RE = re.compile(
@@ -197,6 +202,12 @@ def _check_product_component_boundary(errors: list[str]) -> None:
         text = _check_required_file(consumer, errors)
         if f"<{component}" not in text:
             errors.append(f"{_rel(consumer)} does not consume required product component: {component}")
+
+    product_record_dir = WEB_SRC / "components/product-record"
+    for retired in sorted(RETIRED_PRODUCT_RECORD_WRAPPERS):
+        path = product_record_dir / retired
+        if path.exists():
+            errors.append(f"retired specialized record wrapper still exists: {_rel(path)}")
 
     for path in sorted(WEB_SRC.rglob("*")):
         if path.suffix not in {".vue", ".css"}:

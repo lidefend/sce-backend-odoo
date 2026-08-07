@@ -3059,3 +3059,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   rendering continues to own the scene entry. The browser identity audit now
   reads the platform-neutral app title used by the runtime instead of freezing
   the retired construction-specific brand suffix.
+- Delivery-hardening correction: the release browser still waited for the
+  retired finance-specific workspace after the production renderer converged
+  on the generic record surface. Its readiness checks now bind to the shared
+  record container. Read-only forms no longer preload edit-time relation
+  candidate lists; selected relation identities remain contract/record driven,
+  avoiding both unnecessary enumeration requests and permission-noise 403s.
+  Four orphan product-record components left behind by the retired workspace
+  are removed, and the full source typecheck joins lint, strict typecheck,
+  release units, build and exact-SHA browser evidence in the final gate set.
+- Generic entry-action correction: the retired workspace component had also
+  been the only renderer of settlement `entry_actions`. The P1 provider now
+  projects those authorized entries into the existing generic V2
+  `businessActions` protocol as same-tab open actions; the shared P0 form
+  remains model-neutral. The V2 runtime probe asserts the URL, visibility and
+  settlement default binding before browser acceptance.

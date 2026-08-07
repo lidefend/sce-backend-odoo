@@ -7,7 +7,7 @@ type LifecycleDependencies = Record<string, any>;
 
 /** Owns authoritative contract loading, record hydration, and stale-response isolation. */
 export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
-  const { ApiError, ContractAccessPolicyError, ContractV2DecodeError, ErrorCodes, actionId, advancedExpanded, analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent, applyRouteRelationLabel, buildRouteContractContext, changedFieldCount, changedFieldSet, chatterLoading, clearNativeAttachmentError, clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments, closeNativeChatterComposer, contract, contractAccessPolicy, contractActions, contractMeta, contractModelName, contractReadiness, coreFieldNames, createContractV2Store, decodeContractV2Snapshot, dirtyFieldSet, fieldType, formData, formDataFieldNames, formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows, initOne2manyRows, layoutNodes, loadActionContractRaw, loadError, loadModelContractRaw, loadNativeChatterTimeline, loadRelationOptions, menuId, mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeAttachments, nativeChatterActions, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision, onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer, setOnchangeTimer, onchangeWarnings, originalValues, pickContractNavQuery, readContractFormRecord, recordId, recordIdDisplay, recordMissing, recordVersionPolicy, recordVersionToken, relationKeywords, relationOptions, renderErrorMessage, renderProfile, requestedSourceMode, requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState, resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData, restoreIntakeAutosave, retainedRouteIdentity, rights, route, router, setStatusbarValue, showHud, showOne2manyErrors, snapshotOriginalFormValues, status, toPositiveInt, upsertRelationOption, v2ContractDecodeError, v2ContractStore, v2ShadowActionCount, v2ShadowButtonStatusCount, v2ShadowFieldCodeCount, v2ShadowGlobalSourceKind, v2ShadowLayoutSourceKind, v2ShadowLegacyFieldMissingPreview, v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount, v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady, v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount, validateSurfaceMarkers, validationErrors, writableFieldCount } = dependencies;
+  const { ApiError, ContractAccessPolicyError, ContractV2DecodeError, ErrorCodes, actionId, advancedExpanded, analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent, applyRouteRelationLabel, buildRouteContractContext, changedFieldCount, changedFieldSet, clearNativeAttachmentError, clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments, closeNativeChatterComposer, contract, contractAccessPolicy, contractActions, contractMeta, contractModelName, contractReadiness, coreFieldNames, createContractV2Store, decodeContractV2Snapshot, dirtyFieldSet, fieldType, formData, formDataFieldNames, formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows, initOne2manyRows, layoutNodes, loadActionContractRaw, loadError, loadModelContractRaw, loadRelationOptions, menuId, mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision, onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer, setOnchangeTimer, onchangeWarnings, originalValues, pickContractNavQuery, readContractFormRecord, recordId, recordIdDisplay, recordMissing, recordVersionPolicy, recordVersionToken, relationKeywords, relationOptions, renderErrorMessage, renderProfile, requestedSourceMode, requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState, resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData, restoreIntakeAutosave, retainedRouteIdentity, rights, route, router, setStatusbarValue, showHud, showOne2manyErrors, snapshotOriginalFormValues, status, toPositiveInt, upsertRelationOption, v2ContractDecodeError, v2ContractStore, v2ShadowActionCount, v2ShadowButtonStatusCount, v2ShadowFieldCodeCount, v2ShadowGlobalSourceKind, v2ShadowLayoutSourceKind, v2ShadowLegacyFieldMissingPreview, v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount, v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady, v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount, validateSurfaceMarkers, validationErrors, writableFieldCount } = dependencies;
   let activeReloadToken = 0;
   let activeReloadIdentity = '';
   let activeReloadPromise: Promise<void> | null = null;
@@ -241,19 +241,28 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       restoreIntakeAutosave();
       return;
     }
-    const read = await readContractFormRecord({
-      model: model.value,
-      ids: [recordId.value],
-      fields: fieldNames.length ? fieldNames : '*',
-    });
-    const row = read.records?.[0];
+    const storeMainData = resolveContractV2MainData(v2ContractStore.value);
+    const contractMainData = Object.keys(storeMainData).length ? storeMainData : resolveUnifiedPageContractV2MainData(contract.value);
+    const canUseReadonlyMainData = (
+      renderProfile.value === 'readonly'
+      && Object.keys(contractMainData).length > 0
+    );
+    let row: Record<string, unknown> | undefined;
+    if (canUseReadonlyMainData) {
+      row = contractMainData;
+    } else {
+      const read = await readContractFormRecord({
+        model: model.value,
+        ids: [recordId.value],
+        fields: fieldNames.length ? fieldNames : '*',
+      });
+      row = read.records?.[0];
+    }
     if (!row) {
       recordMissing.value = true;
       return;
     }
     recordMissing.value = false;
-    const storeMainData = resolveContractV2MainData(v2ContractStore.value);
-    const contractMainData = Object.keys(storeMainData).length ? storeMainData : resolveUnifiedPageContractV2MainData(contract.value);
     if (versionPolicy?.tokenField) {
       recordVersionToken.value = String((row as Record<string, unknown>)[versionPolicy.tokenField] || '').trim();
     }
@@ -271,12 +280,6 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     });
     originalValues.value = snapshotOriginalFormValues(fieldNames, formData);
     nativeLayoutVisibilityRevision.value += 1;
-    if (recordId.value && (nativeChatterActions.value.length || nativeAttachments.value)) {
-      if (nativeChatterAutoLoadKey.value !== `${model.value}:${recordId.value}` && !chatterLoading.value) {
-        nativeChatterAutoLoadKey.value = `${model.value}:${recordId.value}`;
-        await loadNativeChatterTimeline(recordId.value, model.value);
-      }
-    }
   }
   function handleSceneBlockAction(payload: { action?: { target?: Record<string, unknown> } }) {
     const target = payload?.action?.target && typeof payload.action.target === 'object'
@@ -379,8 +382,10 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     try {
       await loadRelationOptions();
       if (reloadToken !== activeReloadToken) return;
-      await hydrateSelectedRelationOptions();
-      if (reloadToken !== activeReloadToken) return;
+      if (renderProfile.value !== 'readonly') {
+        await hydrateSelectedRelationOptions();
+        if (reloadToken !== activeReloadToken) return;
+      }
       await hydrateVisibleOne2manyRows();
     } catch {
       // Auxiliary data can be completed by explicit field interactions after the form renders.

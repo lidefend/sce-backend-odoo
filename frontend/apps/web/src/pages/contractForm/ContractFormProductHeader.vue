@@ -48,7 +48,7 @@
     </template>
     <template #actions>
       <span v-if="!intakeMode || showReturn" class="form-header-navigation-actions">
-        <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-back-action" :disabled="busy" type="button" @click="$emit('back')"><ScIcon name="arrow-left" :size="15" /> 返回列表</button>
+        <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-back-action" :disabled="busy" type="button" @click="$emit('back')"><ScIcon name="arrow-left" :size="14" /> 返回列表</button>
         <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
       </span>
       <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length" class="form-header-primary-actions">

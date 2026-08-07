@@ -77,6 +77,13 @@ export function useFormActionRuntime(params: {
     }
     if (plan.kind === 'open_url') {
       const navUrl = params.resolveNavigationUrl(plan.url);
+      if (plan.target === 'self') {
+        const destination = new URL(navUrl, window.location.origin);
+        if (destination.origin === window.location.origin) {
+          await params.router.push(`${destination.pathname}${destination.search}${destination.hash}`);
+          return;
+        }
+      }
       window.open(navUrl, plan.target === 'self' ? '_self' : '_blank', 'noopener,noreferrer');
       return;
     }

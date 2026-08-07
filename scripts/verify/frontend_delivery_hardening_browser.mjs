@@ -36,6 +36,7 @@ const PERF_BASELINE_PATH = process.env.DELIVERY_HARDENING_BASELINE_JSON
   || performanceBudgets.relative_baseline_path
   || 'docs/frontend_productization/frontend_delivery_performance_baseline_v1.json';
 const PERF_RUNS = Number(process.env.DELIVERY_HARDENING_PERF_RUNS || 5);
+const FORM_SURFACE_SELECTOR = '[data-workspace-primary-content]';
 const runtimeByPage = new WeakMap();
 fs.rmSync(SCREENSHOTS, { recursive: true, force: true });
 fs.rmSync(TRACES, { recursive: true, force: true });
@@ -261,9 +262,9 @@ async function selectCompany(page, label) {
     try { return JSON.parse(response.request().postData() || '{}').intent === 'system.init'; } catch { return false; }
   }, { timeout: 45000 });
   await companyOption.click();
-  await initialized;
+  const initializedResponse = await initialized;
+  check(initializedResponse.ok(), `company switch system.init failed: HTTP ${initializedResponse.status()}`);
   await companyPanel.waitFor({ state: 'hidden', timeout: 45000 });
-  await page.waitForFunction((expected) => document.body.innerText.includes(expected), label, { timeout: 45000 });
   return true;
 }
 async function navigateSpa(page, route, readySelector = '.sc-product-main-surface, .financial-workspace, .product-work, .sc-state-panel') {
@@ -329,8 +330,15 @@ async function interceptNextBusiness(page, handler, expectedTarget) {
     const ids = Array.isArray(params.ids) ? params.ids.map(Number) : [];
     const isTargetRead = intent === 'api.data' && params.op === 'read'
       && params.model === expectedTarget.model && ids.includes(Number(expectedTarget.record_id));
-    if (isTargetRead) {
-      if (!used) console.log(`[delivery-hardening] injecting ${intent}:${params.op}:${params.model}:${ids.join(',')}`);
+    const isTargetActionContract = intent === 'ui.contract.v2' && params.op === 'action_open'
+      && Number(params.action_id || 0) === Number(expectedTarget.action_id)
+      && Number(params.record_id || 0) === Number(expectedTarget.record_id);
+    const isTargetModelContract = intent === 'ui.contract.v2' && params.op === 'model'
+      && params.model === expectedTarget.model
+      && Number(params.record_id || 0) === Number(expectedTarget.record_id);
+    const isTargetContract = isTargetActionContract || isTargetModelContract;
+    if (isTargetRead || isTargetContract) {
+      if (!used) console.log(`[delivery-hardening] injecting ${intent}:${params.op}:${params.model || ''}:${params.record_id || ids.join(',')}`);
       used = true;
       await handler(route, intent);
       return;
@@ -456,7 +464,7 @@ async function main() {
     await page.getByRole('heading', { name: '网络连接异常' }).waitFor({ timeout: 30000 });
     await remove();
     await page.getByRole('button', { name: '重试' }).click();
-    await page.locator('.financial-workspace[data-workspace-kind="payment_request"]').waitFor({ timeout: 45000 });
+    await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
     errorRecovery.network_retry = 'PASS';
 
     remove = await interceptNextBusiness(page, (route) => fulfillError(route, 409, 'CONFLICT', 'stale write conflict'), TARGETS.payment_request);
@@ -464,7 +472,7 @@ async function main() {
     await page.getByRole('heading', { name: '数据已发生变化' }).waitFor({ timeout: 30000 });
     await remove();
     await page.getByRole('button', { name: '获取最新数据' }).click();
-    await page.locator('.financial-workspace[data-workspace-kind="payment_request"]').waitFor({ timeout: 45000 });
+    await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
     errorRecovery.conflict_refresh = 'PASS';
 
     remove = await interceptNextBusiness(page, (route) => fulfillError(route, 401, 'SESSION_EXPIRED', 'expired'), TARGETS.payment_request);
@@ -585,11 +593,11 @@ async function main() {
           }
           await page.goto(`${BASE_URL}${surface.route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
           if (surface.mode === 'form') {
-            await page.locator('.financial-workspace[data-workspace-kind="settlement"]').waitFor({ timeout: 45000 });
+            await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
             await page.getByRole('button', { name: '新建付款申请' }).click();
             await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
           } else if (surface.mode === 'dialog') {
-            await page.locator('.financial-workspace[data-workspace-kind="payment_request"]').waitFor({ timeout: 45000 });
+            await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
             let submitAction = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
             if (!(await submitAction.count())) {
               await page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first().click();
@@ -641,7 +649,7 @@ async function main() {
         if (removeFault) {
           await removeFault();
           await page.getByRole('button', { name: '重试' }).click();
-          await page.locator('.financial-workspace').waitFor({ timeout: 45000 });
+          await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
           const injectedConsole = runtime.console.slice(faultSnapshot.console);
           check(injectedConsole.every((line) => /Failed to load resource/i.test(line)), `responsive network unexpected console=${injectedConsole.join(' | ')}`);
           check(runtime.pageerror.length === faultSnapshot.pageerror, 'responsive network caused pageerror');
@@ -692,9 +700,9 @@ async function main() {
       performanceReport.scenarios.login_to_interactive = stats(loginSamples);
       for (const [name, route, readySelector] of [
         ['my_work', '/my-work', '.product-work'],
-        ['payment_detail', recordRoute(TARGETS.payment_request), '.financial-workspace[data-workspace-kind="payment_request"]'],
-        ['settlement_detail', recordRoute(TARGETS.settlement), '.financial-workspace[data-workspace-kind="settlement"]'],
-        ['execution_detail', recordRoute(TARGETS.payment_execution), '.financial-workspace[data-workspace-kind="payment_execution"]'],
+        ['payment_detail', recordRoute(TARGETS.payment_request), FORM_SURFACE_SELECTOR],
+        ['settlement_detail', recordRoute(TARGETS.settlement), FORM_SURFACE_SELECTOR],
+        ['execution_detail', recordRoute(TARGETS.payment_execution), FORM_SURFACE_SELECTOR],
       ]) {
         const samples = [];
         const requestSamples = [];
@@ -719,14 +727,14 @@ async function main() {
         performanceReport.scenarios[name] = { ...stats(samples), request_samples: requestSamples };
       }
       const formSamples = [];
-      await navigateSpa(page, recordRoute(TARGETS.work_settlement), '.financial-workspace[data-workspace-kind="settlement"]');
-      await page.locator('.financial-workspace[data-workspace-kind="settlement"]').getByRole('button', { name: '新建付款申请', exact: true }).click();
+      await navigateSpa(page, recordRoute(TARGETS.work_settlement), FORM_SURFACE_SELECTOR);
+      await page.locator('#main-content').getByRole('button', { name: '新建付款申请', exact: true }).click();
       await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
       await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
       for (let i = 0; i < PERF_RUNS; i += 1) {
-        await navigateSpa(page, recordRoute(TARGETS.work_settlement), '.financial-workspace[data-workspace-kind="settlement"]');
+        await navigateSpa(page, recordRoute(TARGETS.work_settlement), FORM_SURFACE_SELECTOR);
         formSamples.push(await time(async () => {
-          await page.locator('.financial-workspace[data-workspace-kind="settlement"]').getByRole('button', { name: '新建付款申请', exact: true }).click();
+          await page.locator('#main-content').getByRole('button', { name: '新建付款申请', exact: true }).click();
           await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
           await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
         }));

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from urllib.parse import urlencode
 
 from ..models.support import operating_metrics as opm
 
@@ -409,6 +410,65 @@ def _detail_section(record, declaration):
     return {"key": declaration["key"], "label": declaration["label"], "rows": rows, "empty_text": "暂无%s" % declaration["label"]}
 
 
+def _build_settlement_entry_actions(env, record):
+    if not record or record._name != "sc.settlement.order" or _text(record.state) != "approve":
+        return []
+    PaymentRequest = env["payment.request"]
+    can_create = bool(PaymentRequest.check_access_rights("create", raise_exception=False))
+    has_finance_capability = bool(env.user.has_group("smart_construction_core.group_sc_cap_finance_user"))
+    payment_menu = env.ref(
+        "smart_construction_core.menu_sc_user_payment_apply_acceptance",
+        raise_if_not_found=False,
+    )
+    action = payment_menu.action if payment_menu else None
+    category = env.ref(
+        "smart_construction_core.business_category_finance_payment_apply_pay",
+        raise_if_not_found=False,
+    )
+    if not (can_create and has_finance_capability and payment_menu and action):
+        return []
+    route_query = {
+        "menu_id": int(payment_menu.id),
+        "action_id": int(action.id),
+        "project_scope_policy": "exempt",
+        "default_type": "pay",
+        "current_business_category_code": "finance.payment.apply.pay",
+        "default_business_category_code": "finance.payment.apply.pay",
+        "current_business_category_label": "付款申请",
+        "default_business_category_label": "付款申请",
+        "default_business_category_id": int(category.id) if category else 0,
+        "default_business_category_id_label": _text(category.display_name) if category else "付款申请",
+        "default_project_id": int(record.project_id.id) if record.project_id else 0,
+        "default_project_id_label": _text(record.project_id.display_name) if record.project_id else "",
+        "default_contract_id": int(record.contract_id.id) if record.contract_id else 0,
+        "default_contract_id_label": _identity(record.contract_id, ("name", "subject")) if record.contract_id else "",
+        "default_settlement_id": int(record.id),
+        "default_settlement_id_label": _identity(record, ("name", "title")),
+        "default_partner_id": int(record.partner_id.id) if record.partner_id else 0,
+        "default_partner_id_label": _text(record.partner_id.display_name) if record.partner_id else "",
+        "default_currency_id": int(record.currency_id.id) if record.currency_id else 0,
+        "default_currency_id_label": _text(record.currency_id.display_name) if record.currency_id else "",
+        "default_note": "FE-B05 form approval journey",
+    }
+    return [{
+        "key": "create_payment_request",
+        "label": "新建付款申请",
+        "kind": "open",
+        "level": "header",
+        "source_widget_id": "page.header",
+        "presentation": {"tier": "secondary"},
+        "target": "self",
+        "url": "/f/payment.request/new?%s" % urlencode(route_query),
+        "visible_profiles": ["readonly"],
+        "route": {
+            "name": "model-form",
+            "params": {"model": "payment.request", "id": "new"},
+            "query": route_query,
+        },
+        "source_authority": "payment.request create ACL + finance capability + approved settlement",
+    }]
+
+
 def build_financial_workspace_contract(env, model_name, record_id):
     declaration = WORKSPACE_DECLARATIONS.get(_text(model_name))
     if not declaration:
@@ -441,53 +501,7 @@ def build_financial_workspace_contract(env, model_name, record_id):
         and _text(row["currency"].get("name"))
     })
     currency_mismatch = bool(primary_currency_id and related_currency_names)
-    entry_actions = []
-    if record._name == "sc.settlement.order" and _text(record.state) == "approve":
-        PaymentRequest = env["payment.request"]
-        can_create = bool(PaymentRequest.check_access_rights("create", raise_exception=False))
-        has_finance_capability = bool(env.user.has_group("smart_construction_core.group_sc_cap_finance_user"))
-        payment_menu = env.ref(
-            "smart_construction_core.menu_sc_user_payment_apply_acceptance",
-            raise_if_not_found=False,
-        )
-        action = payment_menu.action if payment_menu else None
-        category = env.ref(
-            "smart_construction_core.business_category_finance_payment_apply_pay",
-            raise_if_not_found=False,
-        )
-        if can_create and has_finance_capability and payment_menu and action:
-            entry_actions.append({
-                "key": "create_payment_request",
-                "label": "新建付款申请",
-                "route": {
-                    "name": "model-form",
-                    "params": {"model": "payment.request", "id": "new"},
-                    "query": {
-                        "menu_id": int(payment_menu.id),
-                        "action_id": int(action.id),
-                        "project_scope_policy": "exempt",
-                        "default_type": "pay",
-                        "current_business_category_code": "finance.payment.apply.pay",
-                        "default_business_category_code": "finance.payment.apply.pay",
-                        "current_business_category_label": "付款申请",
-                        "default_business_category_label": "付款申请",
-                        "default_business_category_id": int(category.id) if category else 0,
-                        "default_business_category_id_label": _text(category.display_name) if category else "付款申请",
-                        "default_project_id": int(record.project_id.id) if record.project_id else 0,
-                        "default_project_id_label": _text(record.project_id.display_name) if record.project_id else "",
-                        "default_contract_id": int(record.contract_id.id) if record.contract_id else 0,
-                        "default_contract_id_label": _identity(record.contract_id, ("name", "subject")) if record.contract_id else "",
-                        "default_settlement_id": int(record.id),
-                        "default_settlement_id_label": _identity(record, ("name", "title")),
-                        "default_partner_id": int(record.partner_id.id) if record.partner_id else 0,
-                        "default_partner_id_label": _text(record.partner_id.display_name) if record.partner_id else "",
-                        "default_currency_id": int(record.currency_id.id) if record.currency_id else 0,
-                        "default_currency_id_label": _text(record.currency_id.display_name) if record.currency_id else "",
-                        "default_note": "FE-B05 form approval journey",
-                    },
-                },
-                "source_authority": "payment.request create ACL + finance capability + approved settlement",
-            })
+    entry_actions = _build_settlement_entry_actions(env, record)
     return {
         "version": "2.0",
         "kind": declaration["kind"],
@@ -536,12 +550,16 @@ def build_financial_workspace_contract(env, model_name, record_id):
 
 
 def build_financial_form_business_actions(env, model_name, record_id):
-    """Combine authoritative payment actions with the read-only financial workspace."""
+    """Build only the actions and collaboration metadata consumed by the generic form."""
     model = str(model_name or "").strip()
-    workspace = build_financial_workspace_contract(env, model, record_id)
     if model != "payment.request":
-        return {"actions": [], "business_workspace": workspace} if workspace else None
-    record = env[model].browse(int(record_id or 0)).exists()
+        try:
+            record = _safe_record(env[model].browse(int(record_id or 0)))
+        except Exception:
+            record = None
+        actions = _build_settlement_entry_actions(env, record)
+        return {"actions": actions} if actions else None
+    record = _safe_record(env[model].browse(int(record_id or 0)))
     if not record:
         return None
     from odoo.addons.smart_construction_core.handlers.payment_request_available_actions import (
@@ -611,5 +629,4 @@ def build_financial_form_business_actions(env, model_name, record_id):
             "ui_labels": {"upload": "上传附件", "uploading": "上传中...", "download": "下载",
                           "upload_failed": "附件上传失败", "download_failed": "附件下载失败", "size_exceeded": "文件过大"},
         },
-        "business_workspace": workspace,
     }

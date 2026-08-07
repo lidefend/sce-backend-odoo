@@ -5,7 +5,7 @@ import type { RelationOption } from './types';
 type NavigationDependencies = Record<string, any>;
 
 export function useRecordRelationshipNavigation(dependencies: NavigationDependencies) {
-  const { ApiError, actionId, contract, createContractFormRecord, deniedRelationModels, fetchRelationOptions, fieldType, formData, isWritableFieldVisible, layoutNodes, listContractFormRecords, loadModelContractRaw, mergeRelationOptions, mergedRelationDomain, model, normalizeFieldValue, one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationOptionsFromRecords, relationOrder, relationReadFields, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
+  const { ApiError, actionId, contract, createContractFormRecord, deniedRelationModels, fetchRelationOptions, fieldType, formData, isWritableFieldVisible, layoutNodes, listContractFormRecords, loadModelContractRaw, mergeRelationOptions, mergedRelationDomain, model, normalizeFieldValue, one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationOptionsFromRecords, relationOrder, relationReadFields, relationUiLabel, renderProfile, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
   async function ensureRelationFieldDescriptors(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
@@ -167,6 +167,11 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
   }
 
   async function loadRelationOptions() {
+    // Read-only records already carry their selected relation identities in
+    // the record/contract payload. Candidate lists are edit-time data: eager
+    // loading here adds avoidable requests and can probe models that the user
+    // may reference through the record but may not enumerate.
+    if (String(renderProfile?.value || '').trim() === 'readonly') return;
     const fields = contract.value?.fields || {};
     const visibleRelationFields = new Set(
       layoutNodes.value

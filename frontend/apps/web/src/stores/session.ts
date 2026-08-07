@@ -1701,12 +1701,22 @@ export const useSessionStore = defineStore('session', {
       const keepSelected = selected
         && (!nextCompanyId || !selected.company_id || selected.company_id === nextCompanyId)
         && (!nextOperation || !selected.operation_strategy || selected.operation_strategy === nextOperation);
+      const nextRequestContext = Object.fromEntries(Object.entries({
+        ...(keepSelected ? selected?.request_context : current.clear_request_context),
+        company_id: nextCompanyId || undefined,
+        operation_strategy: nextOperation || undefined,
+      }).filter(([, value]) => value !== undefined && value !== null && value !== ''));
       this.recordContext = {
         ...current,
         company_id: nextCompanyId,
         operation_strategy: nextOperation,
         operation_strategy_label: current.operation_options?.find((option) => option.operation_strategy === nextOperation)?.operation_strategy_label || '',
         selected: keepSelected ? selected : null,
+        request_context: nextRequestContext,
+        clear_request_context: {
+          company_id: nextCompanyId || undefined,
+          operation_strategy: nextOperation || undefined,
+        },
       };
       if (scopeChanged) {
         const nextEpochs = { ...this.activityPageCacheEpochs };
