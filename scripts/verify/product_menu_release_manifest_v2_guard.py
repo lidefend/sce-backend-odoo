@@ -11,8 +11,17 @@ ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/product_menu_release_manifest_v2.json"
 MENU_XML = ROOT / "addons/smart_construction_core/views/menu_product_navigation_v2.xml"
 BASE_MENU_XML = ROOT / "addons/smart_construction_core/views/menu.xml"
+NATIVE_MENU_LOAD_ORDER = [
+    ROOT / "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
+    BASE_MENU_XML,
+    ROOT / "addons/smart_construction_core/views/support/menu_config_policy_views.xml",
+    ROOT / "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+    ROOT / "addons/smart_construction_core/views/menu_user_acceptance_cleanup.xml",
+    MENU_XML,
+]
 POLICY_SYNC = ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py"
 HOOK_FACTS = ROOT / "addons/smart_construction_core/core_extension_hook_facts.py"
+MENU_SERVICE = ROOT / "addons/smart_core/delivery/menu_service.py"
 DEV_MAKE = ROOT / "make/dev.mk"
 ODOO_SHELL_EXEC = ROOT / "scripts/ops/odoo_shell_exec.sh"
 
@@ -124,6 +133,7 @@ def main() -> int:
     base_menu_root = ElementTree.parse(BASE_MENU_XML).getroot()
     policy = POLICY_SYNC.read_text(encoding="utf-8")
     hook_facts = HOOK_FACTS.read_text(encoding="utf-8")
+    menu_service = MENU_SERVICE.read_text(encoding="utf-8")
     dev_make = DEV_MAKE.read_text(encoding="utf-8")
     shell_exec = ODOO_SHELL_EXEC.read_text(encoding="utf-8")
     for center in EXPECTED_CENTERS:
@@ -171,6 +181,64 @@ def main() -> int:
         errors.append("base material-plan menu is missing")
     elif base_material_plan.get("parent") != "menu_sc_material_management_group":
         errors.append("base material-plan menu must belong to material management")
+
+    # Rebuild the final native menu facts in module load order. Policy may
+    # expose or hide these facts, but must never invent a different hierarchy.
+    native_facts = {}
+    for source in NATIVE_MENU_LOAD_ORDER:
+        root = ElementTree.parse(source).getroot()
+        for node in root.iter():
+            menu_id = node.get("id")
+            if not menu_id or node.tag not in {"menuitem", "record"}:
+                continue
+            if node.tag == "record" and node.get("model") != "ir.ui.menu":
+                continue
+            fact = native_facts.setdefault(menu_id, {})
+            if node.tag == "menuitem":
+                if node.get("name"):
+                    fact["name"] = node.get("name")
+                if node.get("parent"):
+                    fact["parent"] = node.get("parent").split(".")[-1]
+            else:
+                for field in node.findall("field"):
+                    if field.get("name") == "name" and (field.text or "").strip():
+                        fact["name"] = (field.text or "").strip()
+                    if field.get("name") == "parent_id" and field.get("ref"):
+                        fact["parent"] = field.get("ref").split(".")[-1]
+    required_native_parents = {
+        "menu_project_material_plan": "menu_sc_material_management_group",
+        "menu_sc_general_contract": "menu_sc_expense_contract_group",
+        "menu_sc_project_budget": "menu_sc_cost_target_budget_group",
+        "menu_sc_construction_diary": "menu_sc_schedule_delivery_group_v2",
+        "menu_sc_user_payment_apply_acceptance": "menu_sc_payment_user_group",
+        "menu_sc_fund_daily_user_report": "menu_sc_fund_account_group",
+        "menu_sc_invoice_input": "menu_sc_invoice_tax_user_group",
+        "menu_ui_menu_config_policy_business_config": "menu_sc_lowcode_system_config_group",
+    }
+    for menu_id, parent_id in required_native_parents.items():
+        if native_facts.get(menu_id, {}).get("parent") != parent_id:
+            errors.append(f"native hierarchy mismatch: {menu_id} must belong to {parent_id}")
+    required_native_names = {
+        "menu_sc_expense_contract_group": "合同管理",
+        "menu_sc_cost_target_budget_group": "目标与预算",
+        "menu_sc_cost_dynamic_group": "动态成本",
+        "menu_sc_cost_analysis_group_v2": "成本分析",
+        "menu_sc_payment_user_group": "付款管理",
+        "menu_sc_fund_account_group": "账户资金",
+        "menu_sc_invoice_tax_user_group": "发票管理",
+    }
+    for menu_id, name in required_native_names.items():
+        if native_facts.get(menu_id, {}).get("name") != name:
+            errors.append(f"native menu name mismatch: {menu_id} must be {name}")
+    if "path_authority" in policy or "NATIVE_MENU_PATH_AUTHORITY_XMLIDS" in policy:
+        errors.append("per-menu path authority forks are forbidden")
+    for token in (
+        'native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)',
+        'native_group_label = native_path_parts[1]',
+        '"visible_menu_path": native_visible_menu_path or',
+    ):
+        if token not in menu_service:
+            errors.append(f"native menu runtime authority missing: {token}")
     for group in ("进度与施工", "质量管理", "安全管理", "行政审批", "人事薪酬"):
         if f'name="{group}"' not in xml:
             errors.append(f"level-two product group missing: {group}")
