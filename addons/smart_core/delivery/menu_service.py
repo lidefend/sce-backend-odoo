@@ -946,6 +946,8 @@ class MenuService:
                 action_id = menu.get("action_id")
                 menu_xmlid = str(menu.get("menu_xmlid") or "").strip()
                 native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)
+                native_path_parts = self._policy_menu_path_parts({"visible_menu_path": native_visible_menu_path})
+                native_group_label = native_path_parts[1] if len(native_path_parts) >= 3 else ""
                 if route.startswith("/a/") and scene_key == menu_xmlid:
                     scene_key = ""
                 raw_anchor = scene_key or (str(menu_id) if isinstance(menu_id, int) and menu_id > 0 else str(menu.get("menu_key") or "").strip() or str(index))
@@ -968,8 +970,10 @@ class MenuService:
                     "view_modes": menu.get("view_modes") if isinstance(menu.get("view_modes"), list) else [],
                     "sequence": self._positive_int(menu.get("sequence")),
                     "scene_source": "delivery_policy",
-                    "policy_group_key": str(group.get("group_key") or "").strip(),
-                    "policy_group_label": str(group.get("group_label") or "").strip(),
+                    "policy_group_key": (
+                        f"native.center.{native_group_label}" if native_group_label else str(group.get("group_key") or "").strip()
+                    ),
+                    "policy_group_label": native_group_label or str(group.get("group_label") or "").strip(),
                     "visible_menu_path": native_visible_menu_path or str(menu.get("visible_menu_path") or "").strip(),
                     "entry_target": menu.get("entry_target") if isinstance(menu.get("entry_target"), dict) else {},
                 }

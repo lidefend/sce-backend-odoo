@@ -169,6 +169,10 @@
             <field name="parent_id" ref="smart_construction_core.menu_sc_fund_account_group" />
             <field name="sequence">70</field>
         </record>
+        <record id="menu_sc_user_payment_apply_acceptance" model="ir.ui.menu">
+            <field name="parent_id" ref="smart_construction_core.menu_sc_payment_user_group" />
+            <field name="sequence">10</field>
+        </record>
         <record id="menu_payment_request" model="ir.ui.menu">
             <field name="active">0</field>
         </record>

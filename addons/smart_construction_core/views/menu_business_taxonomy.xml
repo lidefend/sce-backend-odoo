@@ -953,7 +953,7 @@
     <menuitem id="menu_sc_bid_deposit_return" name="投标保证金退回" parent="smart_construction_core.menu_sc_deposit_management_group" action="smart_construction_core.action_sc_bid_deposit_return" sequence="20" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_contract_deposit_register" name="合同保证金登记" parent="smart_construction_core.menu_sc_deposit_management_group" action="smart_construction_core.action_sc_contract_deposit_pay" sequence="30" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     <menuitem id="menu_sc_contract_deposit_return" name="合同保证金退回" parent="smart_construction_core.menu_sc_deposit_management_group" action="smart_construction_core.action_sc_contract_deposit_return" sequence="40" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
-    <menuitem id="menu_sc_fund_account_group" name="资金账户" parent="smart_construction_core.menu_sc_finance_center" sequence="50" />
+    <menuitem id="menu_sc_fund_account_group" name="账户资金" parent="smart_construction_core.menu_sc_finance_center" sequence="50" />
     <record id="menu_sc_fund_account_between_user" model="ir.ui.menu">
         <field name="parent_id" ref="smart_construction_core.menu_sc_fund_account_group" />
         <field name="sequence">44</field>
