@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sce.local/schemas/menu-governance-m4-v1.json",
+  "title": "SCE menu governance M4 blocked plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source_inventory_schema_version", "source_commit_sha", "status", "scope", "runtime_admission", "decisions"],
+  "properties": {
+    "schema_version": {"const": "sce.menu_governance_m4.v1"},
+    "source_inventory_schema_version": {"const": "sce.menu_governance_inventory.v1"},
+    "source_commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "status": {"const": "BLOCKED_ON_RUNTIME_EVIDENCE"},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frozen_issue_count", "runtime_sampling_performed", "menu_xml_modified", "database_write_performed", "frontend_modified"],
+      "properties": {
+        "frozen_issue_count": {"const": 6},
+        "runtime_sampling_performed": {"const": false},
+        "menu_xml_modified": {"const": false},
+        "database_write_performed": {"const": false},
+        "frontend_modified": {"const": false}
+      }
+    },
+    "runtime_admission": {"type": "object"},
+    "decisions": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["menu_xmlid", "issue_types", "formal_product_owner", "authority", "current", "capability_route_mapping", "proposed_minimal_change", "compatibility_invariants", "runtime_evidence", "decision"],
+        "properties": {
+          "menu_xmlid": {"type": "string"},
+          "issue_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["duplicate_menuitem", "technical_name", "over_depth"]}},
+          "formal_product_owner": {"const": "P1_smart_construction_core_candidate_pending_product_review"},
+          "authority": {"type": "object"},
+          "current": {"type": "object"},
+          "capability_route_mapping": {"type": "object"},
+          "proposed_minimal_change": {"type": "object"},
+          "compatibility_invariants": {"type": "object"},
+          "runtime_evidence": {
+            "type": "object",
+            "required": ["status", "reason", "required_lease_capability", "evidence_refs"],
+            "properties": {
+              "status": {"const": "BLOCKED_ON_RUNTIME_EVIDENCE"},
+              "reason": {"type": "string"},
+              "required_lease_capability": {"const": "env_portability_isolated_runtime_browser_lease"},
+              "evidence_refs": {"type": "array", "maxItems": 0}
+            },
+            "additionalProperties": false
+          },
+          "decision": {"const": "investigate"}
+        }
+      }
+    }
+  }
+}

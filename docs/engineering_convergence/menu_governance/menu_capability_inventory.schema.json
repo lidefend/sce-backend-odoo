@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sce.local/schemas/menu-capability-inventory-v1.json",
+  "title": "SCE menu governance static inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at_utc",
+    "source",
+    "scope",
+    "statistics",
+    "initial_hypothesis_comparison",
+    "findings",
+    "coverage",
+    "actions",
+    "groups",
+    "assets"
+  ],
+  "properties": {
+    "schema_version": {"const": "sce.menu_governance_inventory.v1"},
+    "generated_at_utc": {"type": "string", "format": "date-time"},
+    "source": {"type": "object", "required": ["commit_sha", "tree_sha", "branch", "module", "manifest_xml_files", "manifest_xml_sha256", "unloaded_xml_files"], "additionalProperties": true},
+    "scope": {
+      "type": "object",
+      "required": ["formal_product_layer", "mode", "runtime_sampling", "runtime_fields_are_unknown", "writes_product_facts"],
+      "properties": {
+        "formal_product_layer": {"const": "P4"},
+        "mode": {"const": "static_read_only"},
+        "runtime_sampling": {"type": "string", "pattern": "^not_run"},
+        "runtime_fields_are_unknown": {"const": true},
+        "writes_product_facts": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "statistics": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "initial_hypothesis_comparison": {"type": "object"},
+    "findings": {"type": "object"},
+    "coverage": {"type": "object"},
+    "actions": {"type": "array", "items": {"type": "object"}},
+    "groups": {"type": "array", "items": {"type": "object"}},
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "menu_xmlid", "source_file", "source_files", "declaration_history", "effective_authority_source", "field_authority", "declaration_count",
+          "current_name", "parent_xmlid", "level", "action_xmlid", "group_xmlids",
+          "capability_key", "capability_status", "product_layer", "context",
+          "audience_roles", "runtime_visible", "route_reachable", "proposed_path",
+          "decision", "evidence_refs", "current_path", "action_reference_status",
+          "parent_reference_status", "technical_name_risk", "over_depth_risk"
+        ],
+        "properties": {
+          "menu_xmlid": {"type": "string", "minLength": 3},
+          "source_file": {"type": "string"},
+          "source_files": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+          "declaration_history": {"type": "array", "items": {"type": "object"}, "minItems": 1},
+          "effective_authority_source": {"type": "string"},
+          "field_authority": {"type": "object"},
+          "declaration_count": {"type": "integer", "minimum": 1},
+          "declaration_kinds": {"type": "array", "items": {"enum": ["menuitem", "record_patch"]}},
+          "current_name": {"type": ["string", "null"]},
+          "parent_xmlid": {"type": ["string", "null"]},
+          "sequence": {"type": ["integer", "null"]},
+          "action_xmlid": {"type": ["string", "null"]},
+          "action_type": {"type": ["string", "null"]},
+          "action_res_model": {"type": ["string", "null"]},
+          "group_xmlids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "web_icon": {"type": ["string", "null"]},
+          "active_expression": {"type": ["string", "null"]},
+          "capability_key": {"type": ["string", "null"]},
+          "capability_status": {"type": "string"},
+          "product_layer": {"type": "string"},
+          "context": {"type": "string"},
+          "audience_roles": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "runtime_visible": {"type": ["boolean", "null"]},
+          "route_reachable": {"type": ["boolean", "null"]},
+          "route_evidence": {"type": ["string", "null"]},
+          "proposed_path": {"type": ["array", "null"], "items": {"type": "string"}, "maxItems": 3},
+          "decision": {"enum": ["keep", "rename", "move", "merge", "hide", "retire", "investigate"]},
+          "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "current_path": {"type": "array", "items": {"type": "string"}},
+          "hierarchy_depth_including_app_root": {"type": ["integer", "null"], "minimum": 0},
+          "level": {"type": ["integer", "null"], "minimum": 0},
+          "action_reference_status": {"enum": ["none", "resolved_local", "external_not_resolved_by_module_audit", "missing_local"]},
+          "parent_reference_status": {"enum": ["none", "resolved_local", "external_not_resolved_by_module_audit", "missing_local"]},
+          "technical_name_risk": {"type": "boolean"},
+          "over_depth_risk": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

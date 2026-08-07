@@ -1,0 +1,17 @@
+{
+  "schema": "sce.menu_governance_m4_closure_summary.v1",
+  "result": "PASS",
+  "static_inventory_sha": "6250dc64eeb67bdd5a5e6686e6ac7c8233e0d4ce",
+  "baseline_runtime_sha": "0abb989a6df017e8bd1bd0ce41e09b29f5d27549",
+  "candidate_product_sha": "a85740c453a01e167faeaaf59c9fad9d74cc3e81",
+  "frozen_scope_count": 22,
+  "resolved_duplicate_declaration_count": 16,
+  "remaining_reviewed_candidate_count": 6,
+  "role_viewport_observation_count": 16,
+  "runtime_invariant_asset_count": 22,
+  "browser_projection_invariant": true,
+  "console_error_count": 0,
+  "page_error_count": 0,
+  "unexpected_api_error_count": 0,
+  "horizontal_overflow_count": 0
+}
