@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1061`
+- Total assets: `1064`
 - Review queue: `4`
 - Unknown runtime: `3`
-- Long-running assets: `134`
+- Long-running assets: `136`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `702`
+- PR dedupe candidates: `703`
 
 ## By Layer
 
@@ -18,9 +18,9 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 410 |
 | contract | 313 |
-| unit | 173 |
-| odoo_integration | 77 |
-| e2e | 34 |
+| unit | 174 |
+| odoo_integration | 78 |
+| e2e | 35 |
 | security | 26 |
 | frontend_acceptance | 24 |
 | gate | 2 |
@@ -30,9 +30,9 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 921 |
-| integration_candidate | 99 |
-| release_candidate | 32 |
+| pr_candidate | 922 |
+| integration_candidate | 100 |
+| release_candidate | 33 |
 | manual_review | 4 |
 | release_required | 2 |
 | local_iteration | 1 |
@@ -43,10 +43,10 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 702 |
+| deduplicate_before_required | 703 |
 | covered_by_aggregate | 220 |
-| keep_integration_or_release_only | 98 |
-| keep_release_only | 32 |
+| keep_integration_or_release_only | 99 |
+| keep_release_only | 33 |
 | canonical_entry | 5 |
 | review_or_archive | 4 |
 
@@ -142,9 +142,9 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 923 |
-| 10-30m | 100 |
-| 30-60m | 34 |
+| <5m | 924 |
+| 10-30m | 101 |
+| 30-60m | 35 |
 | unknown | 3 |
 | 10-15m | 1 |
 
@@ -154,9 +154,9 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 410 |
 | platform owner | 313 |
-| test owner | 174 |
-| backend owner | 77 |
-| qa owner | 34 |
+| test owner | 175 |
+| backend owner | 78 |
+| qa owner | 35 |
 | security owner | 26 |
 | frontend owner | 25 |
 | data owner | 2 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 950 |
+| scripts/verify | 953 |
 | scripts/ops | 50 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 12 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-178 | security | `scripts/verify/construction_core_extension_actor_roles_split_guard.py` | security owner |
 | T-ASSET-179 | governance | `scripts/verify/construction_core_extension_capability_rows_split_guard.py` | architecture owner |
 | T-ASSET-180 | contract | `scripts/verify/construction_core_extension_contract_helpers_split_guard.py` | platform owner |
-| ... | ... | 622 more | ... |
+| ... | ... | 623 more | ... |
 
 ## Dedupe Hotspots
 
