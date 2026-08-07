@@ -58,6 +58,15 @@
   max-width: min(100%, var(--sc-workspace-frame-max));
 }
 
+/*
+ * Routed product pages share one stable workspace canvas. Content-layout modes
+ * describe layout inside that canvas; they must never resize the routed page
+ * when navigation changes from a collection to a form or detail surface.
+ */
+:is(.sc-page-frame, .sc-product-page-frame)[data-product-page-mode] {
+  width: 100%;
+}
+
 .sc-content-layout--data-grid { --sc-content-layout-inline-size: 100%; }
 :is(.sc-page-frame, .sc-product-page-frame)[data-product-page-mode='list'] {
   padding-inline-start: var(--sc-product-list-inline-start);

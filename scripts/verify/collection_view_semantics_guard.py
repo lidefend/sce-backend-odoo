@@ -76,7 +76,8 @@ assert "compactSceneControls = computed(() => embeddedActionId.value > 0)" in sc
 assert "currentSceneKey.value === 'projects.list'" not in scene_view
 
 shell_css = (ROOT / "frontend/apps/web/src/layouts/AppShell.css").read_text(encoding="utf-8")
-assert ".router-host > [data-product-page-mode='list']" in shell_css
+assert ".router-host > [data-product-page-mode]" in shell_css
+assert ".router-host > [data-product-page-mode='list']" not in shell_css
 assert "--sc-product-list-inline-start" in shell_css
 assert "--sc-product-list-inline-end" in shell_css
 
