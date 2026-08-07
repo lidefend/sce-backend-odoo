@@ -55,6 +55,7 @@ CONFIG_ADMIN_GROUP_XMLIDS = (
     "smart_core.group_smart_core_business_config_admin",
     "smart_core.group_smart_core_admin",
 )
+INTERNAL_ONLY_GROUP_XMLIDS = {"base.group_no_one"}
 
 SYSTEM_CONFIG_XMLIDS = set(LOWCODE_SYSTEM_CONFIG_MENU_XMLIDS) | {
     "smart_construction_core.menu_sc_business_config_center",
@@ -227,6 +228,15 @@ def _groups(menu) -> list[dict[str, object]]:
             }
         )
     return sorted(rows, key=lambda item: (item["xmlid"] or "", item["name"]))
+
+
+def _is_intentionally_internal(row: dict[str, object]) -> bool:
+    group_xmlids = {
+        _text(group.get("xmlid"))
+        for group in (row.get("groups") or [])
+        if isinstance(group, dict) and _text(group.get("xmlid"))
+    }
+    return bool(group_xmlids) and group_xmlids.issubset(INTERNAL_ONLY_GROUP_XMLIDS)
 
 
 def _user_meta(user) -> dict[str, object]:
@@ -523,6 +533,7 @@ def _export() -> dict[str, object]:
         if row.get("active")
         and row.get("layer") == "formal_product"
         and bool(row.get("action_raw") or row.get("scene_key"))
+        and not _is_intentionally_internal(row)
         and FULL_PRODUCT_LOGIN not in (row.get("visible_logins") or [])
     ]
     if full_product_missing:

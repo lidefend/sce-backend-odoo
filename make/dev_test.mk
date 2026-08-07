@@ -1387,8 +1387,13 @@ verify.product.delivery.scoreboard.final_closeout.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_delivery_scoreboard_final_closeout_guard.py
 	@python3 scripts/verify/product_delivery_scoreboard_final_closeout_guard.py
 
-.PHONY: verify.product.menu.release.ready
+.PHONY: verify.product.menu.release_manifest_v2.guard verify.product.menu.release.ready
+verify.product.menu.release_manifest_v2.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_menu_release_manifest_v2_guard.py
+	@python3 scripts/verify/product_menu_release_manifest_v2_guard.py
+
 verify.product.menu.release.ready: guard.prod.forbid \
+	verify.product.menu.release_manifest_v2.guard \
 	verify.product.menu.catalog \
 	verify.system_init.menu_boundary.guard \
 	verify.platform.release_policy.runtime \

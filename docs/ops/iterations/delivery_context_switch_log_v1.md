@@ -3074,3 +3074,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `businessActions` protocol as same-tab open actions; the shared P0 form
   remains model-neutral. The V2 runtime probe asserts the URL, visibility and
   settlement default binding before browser acceptance.
+
+## 2026-08-08 — PRODUCT-MENU-VISIBLE-CONVERGENCE-V2
+
+- Branch / anchor: `feature/product-menu-visible-convergence` from the exact
+  daily frontend candidate `ca1ee11165ec1ea7f7be527ba05fab999b417f09`.
+- Formal Product Layer / Layer Target / Module: P1 construction standard
+  product navigation and truthful release maturity; native menu XML, released
+  product-policy projection and release guards in `smart_construction_core`.
+- Reason / Why Here: the native cost center and its actions existed, but the
+  locked released policy omitted them, so the frontend correctly filtered the
+  center out. The product menu also mixed centers, process groups and leaves at
+  the same visual level. This batch restores cost as an independent center,
+  keeps construction delivery and resource/subcontract supply as peer centers,
+  keeps tax as an independent compliance center, names the cross-domain
+  analytics surface “报表中心”, and converges organization/admin branches.
+- Why Not Elsewhere: XMLIDs, actions, ACLs, record rules and P3 user runtime
+  configuration remain unchanged. The P0 frontend receives the released
+  policy without construction-specific navigation branches. The locked user
+  baseline remains page-identity authority; only explicit navigation-v2 group
+  aliases and six allowlisted cost entries may extend it.
+- Blast Radius / validation: `smart_construction_core` menu parentage and
+  product-policy grouping, frontend acceptance paths, menu release evidence and
+  guards. WBS remains internal-only. Static manifest/XML checks, locked-contract
+  unit tests, module upgrade, product menu runtime audit, release snapshot and
+  real `wutao` daily navigation acceptance must pass before handoff.

@@ -32,15 +32,16 @@ REPORT_PATH = Path(os.getenv(
 ))
 REQUIRED_VIEW_TYPES = ("tree", "form", "search")
 FORMAL_CENTER_ORDER = [
-    "基础资料",
     "项目中心",
     "合同中心",
-    "施工管理",
+    "成本中心",
     "物资与分包",
+    "施工管理",
     "财务中心",
-    "人事行政",
-    "资料证照",
     "税务中心",
+    "报表中心",
+    "组织行政",
+    "配置中心",
 ]
 
 

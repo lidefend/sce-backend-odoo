@@ -1,0 +1,119 @@
+{
+  "schema": "sce.product_menu_release_manifest.v2",
+  "release_name": "construction-visible-navigation-v2",
+  "product_layer": "P1",
+  "module": "smart_construction_core",
+  "navigation_rules": {
+    "application_root_is_business_level": false,
+    "maximum_business_depth": 3,
+    "primary_center_count": 10,
+    "primary_centers": [
+      "工作台",
+      "项目中心",
+      "合同中心",
+      "成本中心",
+      "物资与分包",
+      "施工管理",
+      "财务中心",
+      "税务中心",
+      "报表中心",
+      "组织行政"
+    ],
+    "separate_governance_centers": ["产品配置", "系统管理"],
+    "forbidden_primary_centers": ["智慧大屏", "资料证照", "基础资料", "人事行政"]
+  },
+  "capability_release_checklist": [
+    {
+      "domain": "工作台",
+      "maturity": "GA",
+      "default_visible": true,
+      "scope": ["角色首页", "我的项目", "我的待办", "我的审批"],
+      "evidence": ["system.init role navigation", "daily real-user acceptance"]
+    },
+    {
+      "domain": "项目中心",
+      "maturity": "GA",
+      "default_visible": true,
+      "scope": ["项目立项", "项目台账", "项目看板", "投标管理", "项目资料"],
+      "evidence": ["formal operation matrix", "project role surface smoke"]
+    },
+    {
+      "domain": "合同中心",
+      "maturity": "GA",
+      "default_visible": true,
+      "scope": ["收入合同", "支出合同", "签证变更", "合同结算"],
+      "evidence": ["formal operation matrix", "contract productization forms"]
+    },
+    {
+      "domain": "成本中心",
+      "maturity": "PILOT",
+      "default_visible": true,
+      "scope": ["目标成本", "预算清单分摊", "进度计量", "成本台账", "成本汇总", "经营利润"],
+      "evidence": ["native action and model bindings", "cost capability matrix"],
+      "promotion_requirements": ["预算-承诺-实际-预测闭环", "现金流预测", "挣值或等价进度成本联动证据"]
+    },
+    {
+      "domain": "物资与分包",
+      "maturity": "GA",
+      "default_visible": true,
+      "scope": ["材料", "采购", "劳务", "机械设备", "周转材料租赁", "专业分包"],
+      "evidence": ["formal operation matrix", "full-product capability scope"]
+    },
+    {
+      "domain": "施工管理",
+      "maturity": "PILOT",
+      "default_visible": true,
+      "scope": ["进度与施工", "质量管理", "安全管理"],
+      "evidence": ["formal operation matrix", "quality and safety CRUD contracts"],
+      "promotion_requirements": ["移动端现场闭环", "离线能力", "照片位置与整改复验链路证据"]
+    },
+    {
+      "domain": "财务中心",
+      "maturity": "GA",
+      "default_visible": true,
+      "scope": ["收付款", "结算", "费用保证金", "资金往来", "资金计划"],
+      "evidence": ["formal operation matrix", "finance relationship workspace acceptance"]
+    },
+    {
+      "domain": "税务中心",
+      "maturity": "PILOT",
+      "default_visible": true,
+      "scope": ["进销项发票", "预缴税款", "抵扣登记"],
+      "evidence": ["invoice and tax form productization contracts"],
+      "promotion_requirements": ["外部税务接口", "发票查验", "业财税自动勾稽证据"]
+    },
+    {
+      "domain": "报表中心",
+      "maturity": "PILOT",
+      "default_visible": true,
+      "scope": ["综合看板", "跨项目经营报表", "成本与财务分析"],
+      "evidence": ["dashboard cockpit facts", "projection model audits"],
+      "promotion_requirements": ["跨项目组合分析", "预测预警准确性", "指标钻取一致性"]
+    },
+    {
+      "domain": "组织行政",
+      "maturity": "PILOT",
+      "default_visible": true,
+      "scope": ["行政审批", "人事薪酬", "资料证照", "基础资料"],
+      "evidence": ["formal operation matrix", "document and payroll form contracts"],
+      "promotion_requirements": ["完整人员生命周期", "资源能力与负荷管理", "文档版本和外部协作"]
+    },
+    {
+      "domain": "产品配置",
+      "maturity": "GA",
+      "default_visible": true,
+      "scope": ["菜单配置", "表单配置", "审批配置", "业务字典"],
+      "evidence": ["low-code release boundary", "configuration recovery path"]
+    }
+  ],
+  "benchmark_gap_backlog": [
+    {"priority": "P0", "capability": "成本预测与现金流", "status": "OPEN", "benchmark": ["Oracle Primavera Unifier", "Autodesk Cost Management"]},
+    {"priority": "P0", "capability": "计划进度与成本联动", "status": "OPEN", "benchmark": ["Oracle Primavera Unifier", "广联达GEPS"]},
+    {"priority": "P1", "capability": "图纸BIM与统一文档环境", "status": "OPEN", "benchmark": ["Autodesk Forma", "广联达智慧工地"]},
+    {"priority": "P1", "capability": "现场移动与离线作业", "status": "OPEN", "benchmark": ["Oracle Primavera Unifier", "Procore"]},
+    {"priority": "P1", "capability": "变更风险与预测预警", "status": "PARTIAL", "benchmark": ["Oracle Primavera Unifier", "Autodesk Cost Management"]},
+    {"priority": "P1", "capability": "外部参建方协同", "status": "OPEN", "benchmark": ["Procore", "Oracle Primavera Unifier"]},
+    {"priority": "P2", "capability": "资产运维全生命周期", "status": "OPEN", "benchmark": ["Oracle Primavera Unifier"]},
+    {"priority": "P2", "capability": "AI流程摘要与风险洞察", "status": "OPEN", "benchmark": ["Oracle Primavera Unifier", "Autodesk Insight"]}
+  ]
+}

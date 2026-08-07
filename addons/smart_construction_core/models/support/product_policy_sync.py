@@ -211,6 +211,50 @@ PRODUCT_MENU_BUSINESS_DOMAIN_OVERRIDES = {
     },
 }
 NATIVE_MODELED_PRODUCT_CAPABILITY_MENUS = {
+    "smart_construction_core.menu_sc_project_budget": {
+        "group_label": "成本中心",
+        "label": "目标成本",
+        "domain": "目标与预算",
+        "target": "project.budget 目标成本",
+        "product_domain": "cost_budget",
+        "product_domain_label": "目标与预算",
+    },
+    "smart_construction_core.menu_sc_budget_alloc": {
+        "group_label": "成本中心",
+        "domain": "目标与预算",
+        "target": "project.budget.cost.alloc 预算清单分摊",
+        "product_domain": "cost_budget",
+        "product_domain_label": "目标与预算",
+    },
+    "smart_construction_core.menu_sc_project_progress": {
+        "group_label": "成本中心",
+        "domain": "动态成本",
+        "target": "project.progress.entry 进度计量",
+        "product_domain": "cost_control",
+        "product_domain_label": "动态成本",
+    },
+    "smart_construction_core.menu_sc_project_cost_ledger": {
+        "group_label": "成本中心",
+        "domain": "动态成本",
+        "target": "project.cost.ledger 成本台账",
+        "product_domain": "cost_control",
+        "product_domain_label": "动态成本",
+    },
+    "smart_construction_core.menu_sc_cost_reports": {
+        "group_label": "成本中心",
+        "label": "成本汇总",
+        "domain": "成本分析",
+        "target": "project.cost.compare 成本汇总",
+        "product_domain": "cost_analysis",
+        "product_domain_label": "成本分析",
+    },
+    "smart_construction_core.menu_sc_profit_reports": {
+        "group_label": "成本中心",
+        "domain": "成本分析",
+        "target": "project.profit.compare 经营利润",
+        "product_domain": "cost_analysis",
+        "product_domain_label": "成本分析",
+    },
     "smart_construction_core.menu_sc_income_contract_variation": {
         "group_label": "合同中心",
         "domain": "变更签证",
@@ -696,7 +740,6 @@ class ScProductPolicy(models.Model):
             raise LockedMenuPolicyContractError("LOCKED_MENU_BASELINE_PRODUCT_MISMATCH", product_key)
 
         menu_groups = []
-        hydrated_by_xmlid = {}
         for group in product.get("menu_groups") or []:
             legacy_label = _text(group.get("group_label") or group.get("label") or group.get("title"))
             group_label = canonical_group_label(legacy_label)
@@ -770,28 +813,17 @@ class ScProductPolicy(models.Model):
                 )
                 row.pop("id", None)
                 menus.append(row)
-                hydrated_by_xmlid[menu_xmlid] = row
             next_group["menus"] = menus
             menu_groups.append(next_group)
 
-        capabilities = []
-        for capability in product.get("capabilities") or []:
-            if not isinstance(capability, dict):
-                continue
-            row = dict(capability)
-            menu_xmlid = _text(row.get("menu_xmlid") or row.get("target_page_key"))
-            hydrated = hydrated_by_xmlid.get(menu_xmlid)
-            if hydrated:
-                row.update(
-                    {
-                        "menu_xmlid": menu_xmlid,
-                        "target_page_key": menu_xmlid,
-                        "action_id": int(hydrated.get("action_id") or 0),
-                        "res_model": _text(hydrated.get("res_model")),
-                    }
-                )
-            row.pop("id", None)
-            capabilities.append(row)
+        menu_groups = self._append_finance_interfund_analysis_product_menus(menu_groups)
+        menu_groups = self._append_native_modeled_product_capability_menus(menu_groups)
+        menu_groups = self._apply_finance_cash_noncash_product_menu_overrides(menu_groups)
+        menu_groups = self._move_tax_product_menus_to_tax_center(menu_groups)
+        menu_groups = self._normalize_product_menu_business_domains(menu_groups)
+        menu_groups = self._normalize_config_center_product_menu_groups(menu_groups)
+        menu_groups = self._converge_visible_product_menu_information_architecture(menu_groups)
+        capabilities = self._capabilities_from_user_confirmed_menu_groups(menu_groups)
 
         values = {
             "active": True,
@@ -1147,6 +1179,75 @@ class ScProductPolicy(models.Model):
         if label in LEGACY_CONFIG_GROUP_LABELS:
             return CONFIG_CENTER_GROUP_LABEL
         return label
+
+    @api.model
+    def _converge_visible_product_menu_information_architecture(self, menu_groups):
+        """Project the released policy into the productized navigation v2 tree.
+
+        The locked baseline remains the page-identity authority.  This method
+        changes only presentation grouping and visible paths, preserving menu
+        XMLIDs, actions, permissions and business semantics.
+        """
+        group_projection = {
+            "基础资料": ("组织行政", "基础资料"),
+            "人事行政": ("组织行政", "人事薪酬"),
+            "资料证照": ("组织行政", "资料证照"),
+        }
+        admin_approval_xmlids = {
+            "smart_construction_core.menu_sc_leave_request",
+            "smart_construction_core.menu_sc_seal_use_request",
+        }
+        ordered_labels = (
+            "项目中心",
+            "合同中心",
+            "成本中心",
+            "物资与分包",
+            "施工管理",
+            "财务中心",
+            "税务中心",
+            "组织行政",
+            CONFIG_CENTER_GROUP_LABEL,
+        )
+        merged = {}
+        order = []
+        for group in menu_groups or []:
+            if not isinstance(group, dict):
+                continue
+            legacy_label = _text(group.get("group_label") or group.get("label") or group.get("title"))
+            target_label, default_domain = group_projection.get(legacy_label, (legacy_label, ""))
+            if target_label not in merged:
+                next_group = dict(group)
+                next_group.update(
+                    {
+                        "group_key": "construction.%s" % target_label,
+                        "group_label": target_label,
+                        "label": target_label,
+                        "title": target_label,
+                        "menus": [],
+                    }
+                )
+                merged[target_label] = next_group
+                order.append(target_label)
+            target_group = merged[target_label]
+            for menu in group.get("menus") or []:
+                if not isinstance(menu, dict):
+                    continue
+                next_menu = dict(menu)
+                menu_xmlid = _text(next_menu.get("menu_xmlid") or next_menu.get("page_key") or next_menu.get("menu_key"))
+                label = _text(next_menu.get("label") or next_menu.get("page_label"))
+                domain = default_domain
+                if legacy_label == "人事行政" and menu_xmlid in admin_approval_xmlids:
+                    domain = "行政审批"
+                if target_label != legacy_label:
+                    next_menu["product_key"] = target_label
+                    next_menu["visible_menu_path"] = " / ".join(
+                        part for part in ("智慧施工管理平台", target_label, domain, label) if part
+                    )
+                    next_menu["policy_note"] = "product_navigation_v2_visible_group_convergence"
+                target_group["menus"].append(next_menu)
+        return [merged[label] for label in ordered_labels if label in merged] + [
+            merged[label] for label in order if label not in ordered_labels
+        ]
 
     @api.model
     def _normalize_menu_for_canonical_group(self, menu, canonical_label, legacy_label=""):
@@ -1799,6 +1900,7 @@ class ScProductPolicy(models.Model):
             menu_groups = self._move_tax_product_menus_to_tax_center(menu_groups)
             menu_groups = self._normalize_product_menu_business_domains(menu_groups)
             menu_groups = self._normalize_config_center_product_menu_groups(menu_groups)
+            menu_groups = self._converge_visible_product_menu_information_architecture(menu_groups)
             capabilities = self._capabilities_from_user_confirmed_menu_groups(menu_groups)
             values = {
                 "active": bool(item.get("active", True)),

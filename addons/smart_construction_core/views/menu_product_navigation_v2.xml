@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      P1 construction product navigation v2.
+
+      The application root is not counted as a business level. Beneath it the
+      visible product is constrained to primary domain -> process group ->
+      actionable/query page. Existing XMLIDs, actions and group permissions
+      remain stable; only product naming, parentage and sequence are changed.
+    -->
+
+    <!-- Primary business domains. -->
+    <record id="menu_sc_workspace_center" model="ir.ui.menu">
+        <field name="name">工作台</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_sc_project_center" model="ir.ui.menu">
+        <field name="name">项目中心</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_sc_contract_center" model="ir.ui.menu">
+        <field name="name">合同中心</field>
+        <field name="sequence">30</field>
+        <field name="action" eval="False"/>
+    </record>
+    <record id="menu_sc_cost_center" model="ir.ui.menu">
+        <field name="name">成本中心</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_root"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="menu_sc_project_budget" model="ir.ui.menu"><field name="name">目标成本</field></record>
+    <record id="menu_sc_cost_reports" model="ir.ui.menu"><field name="name">成本汇总</field></record>
+    <record id="menu_sc_material_center" model="ir.ui.menu">
+        <field name="name">物资与分包</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="menu_sc_construction_management_center" model="ir.ui.menu">
+        <field name="name">施工管理</field>
+        <field name="sequence">60</field>
+    </record>
+    <record id="menu_sc_finance_center" model="ir.ui.menu">
+        <field name="name">财务中心</field>
+        <field name="sequence">70</field>
+    </record>
+    <record id="menu_sc_tax_center" model="ir.ui.menu">
+        <field name="name">税务中心</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_root"/>
+        <field name="sequence">75</field>
+    </record>
+    <record id="menu_sc_data_center" model="ir.ui.menu">
+        <field name="name">报表中心</field>
+        <field name="sequence">80</field>
+    </record>
+    <record id="menu_sc_hr_admin_center" model="ir.ui.menu">
+        <field name="name">组织行政</field>
+        <field name="sequence">85</field>
+    </record>
+    <record id="menu_sc_business_config_center" model="ir.ui.menu">
+        <field name="name">产品配置</field>
+        <field name="sequence">90</field>
+    </record>
+    <record id="menu_sc_config_center" model="ir.ui.menu">
+        <field name="name">系统管理</field>
+        <field name="sequence">95</field>
+    </record>
+
+    <!-- Consolidate former primary centers as level-two process groups. -->
+    <record id="menu_sc_projection_root" model="ir.ui.menu">
+        <field name="name">综合看板</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_data_center"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_sc_document_admin_center" model="ir.ui.menu">
+        <field name="name">资料证照</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_hr_admin_center"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_sc_master_data_center" model="ir.ui.menu">
+        <field name="name">基础资料</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_hr_admin_center"/>
+        <field name="sequence">40</field>
+    </record>
+
+    <!-- Construction delivery: replace a ten-item flat list with processes. -->
+    <menuitem id="menu_sc_schedule_delivery_group_v2" name="进度与施工" parent="smart_construction_core.menu_sc_construction_management_center" sequence="10"/>
+    <menuitem id="menu_sc_quality_delivery_group_v2" name="质量管理" parent="smart_construction_core.menu_sc_construction_management_center" sequence="20"/>
+    <menuitem id="menu_sc_safety_delivery_group_v2" name="安全管理" parent="smart_construction_core.menu_sc_construction_management_center" sequence="30"/>
+    <record id="menu_sc_construction_progress" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_schedule_delivery_group_v2"/><field name="sequence">10</field></record>
+    <record id="menu_sc_plan" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_schedule_delivery_group_v2"/><field name="sequence">20</field></record>
+    <record id="menu_sc_plan_report" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_schedule_delivery_group_v2"/><field name="sequence">30</field></record>
+    <record id="menu_sc_construction_diary" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_schedule_delivery_group_v2"/><field name="sequence">40</field></record>
+    <record id="menu_sc_quality_issue" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_quality_delivery_group_v2"/><field name="sequence">10</field></record>
+    <record id="menu_sc_quality_rectification" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_quality_delivery_group_v2"/><field name="sequence">20</field></record>
+    <record id="menu_sc_quality_recheck" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_quality_delivery_group_v2"/><field name="sequence">30</field></record>
+    <record id="menu_sc_safety_issue" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_safety_delivery_group_v2"/><field name="sequence">10</field></record>
+    <record id="menu_sc_safety_rectification" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_safety_delivery_group_v2"/><field name="sequence">20</field></record>
+    <record id="menu_sc_safety_recheck" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_safety_delivery_group_v2"/><field name="sequence">30</field></record>
+
+    <!-- Organization and administration: separate approvals from payroll. -->
+    <menuitem id="menu_sc_admin_approval_group_v2" name="行政审批" parent="smart_construction_core.menu_sc_hr_admin_center" sequence="10"/>
+    <menuitem id="menu_sc_people_payroll_group_v2" name="人事薪酬" parent="smart_construction_core.menu_sc_hr_admin_center" sequence="20"/>
+    <record id="menu_sc_leave_request" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_admin_approval_group_v2"/><field name="sequence">10</field></record>
+    <record id="menu_sc_seal_use_request" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_admin_approval_group_v2"/><field name="sequence">20</field></record>
+    <record id="menu_sc_social_person_registration" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_people_payroll_group_v2"/><field name="sequence">10</field></record>
+    <record id="menu_sc_social_registration" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_people_payroll_group_v2"/><field name="sequence">20</field></record>
+    <record id="menu_sc_salary_registration" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_people_payroll_group_v2"/><field name="sequence">30</field></record>
+    <record id="menu_sc_subsidy" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_people_payroll_group_v2"/><field name="sequence">40</field></record>
+    <record id="menu_sc_bonus" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_people_payroll_group_v2"/><field name="sequence">50</field></record>
+
+    <!-- Cross-domain management reports belong to the report center. -->
+    <record id="menu_sc_tax_finance_report_group" model="ir.ui.menu">
+        <field name="name">经营报表</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_data_center"/>
+        <field name="active">True</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_sc_project_operation_statistics_report" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_tax_finance_report_group"/><field name="sequence">10</field></record>
+    <record id="menu_sc_company_operation_summary_report" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_tax_finance_report_group"/><field name="sequence">20</field></record>
+</odoo>

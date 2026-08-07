@@ -28,16 +28,15 @@ MIN_RELEASED_POLICY_MENU_COUNT = 1
 FORBIDDEN_RUNTIME_LABEL_TOKENS = ("用户核对菜单",)
 FORBIDDEN_POLICY_PATH_TOKENS = ("用户核对菜单", "旧业务数据核对", "直营项目数据核对")
 EXPECTED_FORMAL_TOP_GROUPS = (
-    "基础资料",
     "项目中心",
     "合同中心",
-    "施工管理",
+    "成本中心",
     "物资与分包",
+    "施工管理",
     "财务中心",
-    "人事行政",
-    "资料证照",
-    "配置中心",
     "税务中心",
+    "组织行政",
+    "配置中心",
 )
 REQUIRED_FORMAL_MENU_XMLIDS = (
     "smart_construction_core.menu_sc_customer_partner",

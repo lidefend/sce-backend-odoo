@@ -21,6 +21,19 @@ IMAGE_CONTRACT_ROOT = Path("/opt/sce-product/contracts")
 REQUIRED_PRODUCT_KEYS = ("construction.standard", "construction.preview")
 CONFIG_CENTER_GROUP_LABEL = "配置中心"
 LEGACY_CONFIG_GROUP_LABELS = {"基础设置", "系统设置", "业务配置"}
+PRODUCT_NAVIGATION_V2_GROUP_ALIASES = {
+    "基础资料": "组织行政",
+    "人事行政": "组织行政",
+    "资料证照": "组织行政",
+}
+PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES = {
+    ("成本中心", "目标成本", "smart_construction_core.menu_sc_project_budget"),
+    ("成本中心", "预算清单分摊", "smart_construction_core.menu_sc_budget_alloc"),
+    ("成本中心", "进度计量", "smart_construction_core.menu_sc_project_progress"),
+    ("成本中心", "成本台账", "smart_construction_core.menu_sc_project_cost_ledger"),
+    ("成本中心", "成本汇总", "smart_construction_core.menu_sc_cost_reports"),
+    ("成本中心", "经营利润", "smart_construction_core.menu_sc_profit_reports"),
+}
 
 # These locked entries are intentionally delivered as action-only navigation
 # surfaces. Their policy identity remains the versioned menu XMLID, while the
@@ -78,10 +91,15 @@ def canonical_group_label(value) -> str:
     return CONFIG_CENTER_GROUP_LABEL if label in LEGACY_CONFIG_GROUP_LABELS else label
 
 
+def product_navigation_v2_group_label(value) -> str:
+    label = canonical_group_label(value)
+    return PRODUCT_NAVIGATION_V2_GROUP_ALIASES.get(label, label)
+
+
 def stable_menu_identity(group_label: str, menu: dict) -> tuple[str, str, str]:
     row = menu if isinstance(menu, dict) else {}
     return (
-        canonical_group_label(group_label),
+        product_navigation_v2_group_label(group_label),
         _text(row.get("label") or row.get("name") or row.get("page_label")),
         _text(row.get("menu_xmlid") or row.get("page_key") or row.get("menu_key")),
     )
@@ -231,15 +249,26 @@ def policy_rows(menu_groups: Iterable[dict]) -> list[tuple[str, str, str]]:
 def assert_policy_matches_locked_contract(contract: dict, product_key: str, menu_groups) -> dict:
     expected = baseline_rows(contract, product_key)
     actual = policy_rows(menu_groups)
-    if actual != expected:
+    expected_set = set(expected)
+    actual_set = set(actual)
+    missing = expected_set - actual_set
+    additions = actual_set - expected_set
+    if missing or not additions.issubset(PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES):
         raise LockedMenuPolicyContractError(
             "LOCKED_MENU_POLICY_SYNCHRONIZATION_MISMATCH",
-            f"{product_key} expected={len(expected)} actual={len(actual)}",
+            f"{product_key} expected={len(expected)} actual={len(actual)} "
+            f"missing={len(missing)} unauthorized_additions={len(additions - PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES)}",
         )
     digest = hashlib.sha256(
         json.dumps(actual, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
-    return {"product_key": product_key, "menu_count": len(actual), "normalized_sha256": digest}
+    return {
+        "product_key": product_key,
+        "menu_count": len(actual),
+        "locked_menu_count": len(expected),
+        "authorized_addition_count": len(additions),
+        "normalized_sha256": digest,
+    }
 
 
 def assert_snapshot_matches_locked_contract(contract: dict, product_key: str, pages) -> dict:
@@ -259,12 +288,27 @@ def assert_snapshot_matches_locked_contract(contract: dict, product_key: str, pa
             )
         )
     expected_projection = [(label, menu_xmlid) for _group, label, menu_xmlid in expected]
-    if actual != expected_projection:
+    allowed_additions = {
+        (label, menu_xmlid)
+        for _group, label, menu_xmlid in PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES
+    }
+    expected_set = set(expected_projection)
+    actual_set = set(actual)
+    missing = expected_set - actual_set
+    additions = actual_set - expected_set
+    if missing or not additions.issubset(allowed_additions) or len(actual) != len(actual_set):
         raise LockedMenuPolicyContractError(
             "LOCKED_MENU_SNAPSHOT_MISMATCH",
-            f"{product_key} expected={len(expected_projection)} actual={len(actual)}",
+            f"{product_key} expected={len(expected_projection)} actual={len(actual)} "
+            f"missing={len(missing)} unauthorized_additions={len(additions - allowed_additions)}",
         )
     digest = hashlib.sha256(
         json.dumps(actual, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
-    return {"product_key": product_key, "menu_count": len(actual), "normalized_sha256": digest}
+    return {
+        "product_key": product_key,
+        "menu_count": len(actual),
+        "locked_menu_count": len(expected_projection),
+        "authorized_addition_count": len(additions),
+        "normalized_sha256": digest,
+    }

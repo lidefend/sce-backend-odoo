@@ -2,7 +2,7 @@
 # pyright: reportUnusedExpression=false
 {
     'name': 'Smart Construction Core',
-    'version': '17.0.0.86',
+    'version': '17.0.0.87',
     'summary': 'Core module for construction enterprise management (Architecture 2.0)',
     'author': 'Leedefend',
     'depends': [
@@ -209,6 +209,9 @@
         'views/support/audit_list_fields_views.xml',
         'views/support/user_confirmed_formal_list_alignment_views.xml',
         'views/support/user_confirmed_formal_list_views.xml',
+        # Productized visible navigation authority. Keep this after all native
+        # menu declarations and before the product-policy synchronization.
+        'views/menu_product_navigation_v2.xml',
         'data/hr_payroll_form_productization_contract.xml',
         'data/office_admin_form_productization_contract.xml',
         'data/document_admin_form_productization_contract.xml',

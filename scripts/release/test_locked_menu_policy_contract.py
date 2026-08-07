@@ -147,7 +147,39 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         result = CONTRACT.assert_policy_matches_locked_contract(contract, "construction.standard", groups)
         self.assertEqual(result["menu_count"], 98)
 
-    def test_snapshot_must_match_locked_baseline_in_order(self):
+    def test_navigation_v2_group_projection_and_cost_additions_are_authorized(self):
+        contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
+        groups = copy.deepcopy(contract["products"]["construction.standard"]["menu_groups"])
+        projected = {}
+        for group in groups:
+            label = CONTRACT.product_navigation_v2_group_label(group["group_label"])
+            projected.setdefault(label, {"group_label": label, "menus": []})["menus"].extend(group["menus"])
+        for group_label, label, menu_xmlid in sorted(CONTRACT.PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES):
+            projected.setdefault(group_label, {"group_label": group_label, "menus": []})["menus"].append(
+                {"label": label, "menu_xmlid": menu_xmlid, "enabled": True, "release_state": "released"}
+            )
+        result = CONTRACT.assert_policy_matches_locked_contract(
+            contract, "construction.standard", list(projected.values())
+        )
+        self.assertEqual(result["menu_count"], 104)
+        self.assertEqual(result["authorized_addition_count"], 6)
+
+        projected["成本中心"]["menus"].append(
+            {
+                "label": "未授权成本入口",
+                "menu_xmlid": "smart_construction_core.menu_sc_unauthorized_cost",
+                "enabled": True,
+                "release_state": "released",
+            }
+        )
+        with self.assertRaisesRegex(
+            CONTRACT.LockedMenuPolicyContractError, "LOCKED_MENU_POLICY_SYNCHRONIZATION_MISMATCH"
+        ):
+            CONTRACT.assert_policy_matches_locked_contract(
+                contract, "construction.standard", list(projected.values())
+            )
+
+    def test_snapshot_must_preserve_locked_pages_and_only_authorized_additions(self):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         rows = CONTRACT.baseline_rows(contract, "construction.standard")
         pages = [
@@ -158,7 +190,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             CONTRACT.assert_snapshot_matches_locked_contract(contract, "construction.standard", pages)["menu_count"],
             98,
         )
-        pages.reverse()
+        pages.pop()
         with self.assertRaisesRegex(CONTRACT.LockedMenuPolicyContractError, "LOCKED_MENU_SNAPSHOT_MISMATCH"):
             CONTRACT.assert_snapshot_matches_locked_contract(contract, "construction.standard", pages)
 

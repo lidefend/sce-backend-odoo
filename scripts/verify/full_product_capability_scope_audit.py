@@ -25,15 +25,16 @@ PRODUCT_ROOT_XMLID = "smart_construction_core.menu_sc_root"
 PRODUCT_ROOT_LABEL = "智慧施工管理平台"
 
 FORMAL_CENTER_ORDER = [
-    "基础资料",
     "项目中心",
     "合同中心",
-    "施工管理",
+    "成本中心",
     "物资与分包",
+    "施工管理",
     "财务中心",
-    "人事行政",
-    "资料证照",
     "税务中心",
+    "报表中心",
+    "组织行政",
+    "配置中心",
 ]
 
 HANDLING_NAME_TOKENS = (
