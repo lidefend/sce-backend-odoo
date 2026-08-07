@@ -19,7 +19,7 @@
 - 每个仓库同时只运行一个 worker，并由文件锁保护。
 - worker 使用 `workspace-write` 与 `approval_policy=never`；决策通过结构化结果退出，
   而不是扩大权限。
-- 自动部署只支持 `daily <完整 SHA>`，生产部署没有命令入口。
+- 自动部署只支持日常环境的 `daily [合规来源分支] <完整 SHA>`，生产部署没有命令入口。省略来源分支时仅表示已合并的 `main` 兼容模式。
 
 Codex 官方非交互模式支持 JSONL 事件、结构化输出以及按 session id 恢复，控制器
 据此保存 checkpoint。长期运行仍保留原有 sandbox 和仓库规则，不因后台执行扩大授权。
@@ -36,7 +36,7 @@ Codex 官方非交互模式支持 JSONL 事件、结构化输出以及按 sessio
 /agent continue <补充说明>
 /agent approve decision-YYYYMMDD-NNN <选择>
 /agent reject decision-YYYYMMDD-NNN <原因>
-/agent deploy daily <完整 40 位 main SHA>
+/agent deploy daily <合规来源分支> <完整 40 位候选 SHA>
 /agent stop
 ```
 

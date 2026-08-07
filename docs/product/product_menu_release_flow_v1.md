@@ -113,12 +113,19 @@ make verify.product.menu.release.ready DB_NAME=sc_demo
 日常开发服务器发布必须执行同一套门禁，不能只拉代码或只重启服务。
 
 ```bash
-ssh root@1.95.85.92 'cd /opt/projects/repos/sce-product-odoo && git status --short && git pull --ff-only origin main'
+CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC=SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE \
+make daily.runtime.candidate.bundle_sync \
+  DAILY_CANDIDATE_SOURCE_BRANCH=feature/product-menu-governance \
+  DAILY_CANDIDATE_EXPECTED_SHA=<candidate-full-sha> \
+  DAILY_CANDIDATE_EXPECTED_OLD_SHA=<current-daily-full-sha>
 ssh root@1.95.85.92 'cd /opt/projects/repos/sce-product-odoo && make mod.upgrade MODULE=smart_construction_core DB_NAME=sc_demo CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core'
 ssh root@1.95.85.92 'cd /opt/projects/repos/sce-product-odoo && make odoo.recreate'
 ssh root@1.95.85.92 'cd /opt/projects/repos/sce-product-odoo && make verify.product.menu.release.ready DB_NAME=sc_demo'
 ssh root@1.95.85.92 'cd /opt/projects/repos/sce-product-odoo && docker compose -p sc-backend-odoo-dev ps && curl -I --max-time 10 http://127.0.0.1:18081/web/login | head -5'
 ```
+
+以上候选部署和验收在合并 `main` 之前执行。验收通过后才创建或更新 PR 并合并；
+验收失败则恢复上一日常验收 SHA，不得通过合并主线来试错。
 
 服务器门禁可能因为真实租户运行时配置生成与本地不同的菜单文档。处理规则：
 

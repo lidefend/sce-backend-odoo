@@ -116,6 +116,21 @@ topology-locked entrypoint:
 ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make release.daily_dev.acceptance.publish
 ```
 
+专题分支不需要先合并 `main`。本地门禁通过并形成干净提交后，使用
+`make daily.runtime.candidate.bundle_sync` 将“来源分支 + 完整 SHA”部署到日常
+开发服务器；服务器以 detached HEAD 运行该候选并保留证据 ref。随后使用候选模式执行：
+
+```bash
+ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo \
+DAILY_DEV_DEPLOYMENT_MODE=candidate \
+DAILY_DEV_CANDIDATE_SOURCE_BRANCH=<governed-branch> \
+DAILY_DEV_CANDIDATE_EXPECTED_SHA=<full-40-character-sha> \
+make release.daily_dev.acceptance.publish
+```
+
+固定顺序为“本地验证 → 分支候选部署日常 → 用户验收 → PR 合并 main”。日常验收
+不授予生产权限；生产仍只接受 `main` 或冻结发布包。
+
 开发阶段允许模块版本领先生产，但必须记录该差异。不能因为 dev 验证通过就直接判断生产可部署。
 
 ### 5.2 发布冻结

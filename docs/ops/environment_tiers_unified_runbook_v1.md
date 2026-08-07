@@ -70,6 +70,9 @@ recorded PID, start time, and command identity still match.
 | Production | `sc-prod` | `/opt/sce/production/sce-product-odoo` | `prod` | `.env.prod` | `sc_prod` |
 
 The daily development runtime repository is the only deployable `dev` working tree.
+It may run `main` or one explicitly approved governed branch candidate at an
+immutable detached SHA. Daily candidate acceptance happens before merge to
+`main`; production authority is unchanged.
 Before publishing or upgrading it, run `make verify.daily_dev.runtime_repo.clean`
 inside `/opt/projects/repos/sce-product-odoo`.
 Daily acceptance publication must use `make release.daily_dev.acceptance.publish`
@@ -152,7 +155,18 @@ Production (guarded):
 ENV=prod ENV_FILE=.env.prod DB_NAME=sc_prod make verify.prod.guard
 ```
 
-## Merge-to-main Gate (Deployment Readiness)
+## Daily Acceptance and Merge-to-main Gate
+
+Daily development candidate order is fixed:
+
+1. Complete local gates on a clean governed branch and commit the candidate.
+2. Deploy that exact branch SHA with `make daily.runtime.candidate.bundle_sync`
+   (or an equivalent governed fetch path).
+3. Run `make release.daily_dev.acceptance.publish` in candidate mode and obtain
+   owner acceptance.
+4. Only then open/update the PR and merge to protected `main`.
+
+Daily acceptance is evidence for merge readiness, not production authorization.
 
 Before integrating to `main`, required minimum:
 

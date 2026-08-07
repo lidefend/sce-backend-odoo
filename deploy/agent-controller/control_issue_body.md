@@ -12,14 +12,14 @@
 /agent continue <补充说明>
 /agent approve decision-YYYYMMDD-NNN <选择>
 /agent reject decision-YYYYMMDD-NNN <原因>
-/agent deploy daily <完整 40 位 SHA>
+/agent deploy daily <合规来源分支> <完整 40 位候选 SHA>
 /agent stop
 ```
 
 安全边界：
 
 - 评论不会作为 shell 命令执行。
-- 日常开发部署必须指定完整提交 SHA。
+- 日常开发部署必须指定完整提交 SHA；专题分支候选可在合并 main 前部署验收。
 - 不支持生产部署、审批、删除或其他不可逆业务操作。
 - 凭据、token、webhook 和业务敏感数据禁止写入本 Issue。
 

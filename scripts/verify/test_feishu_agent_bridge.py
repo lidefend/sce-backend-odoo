@@ -34,7 +34,12 @@ class FeishuCommandTest(unittest.TestCase):
 
     def test_daily_deploy_requires_full_sha(self) -> None:
         self.assertEqual(translate_command("部署日常 " + "a" * 40), "/agent deploy daily " + "a" * 40)
+        self.assertEqual(
+            translate_command("部署日常 feature/example " + "b" * 40),
+            "/agent deploy daily feature/example " + "b" * 40,
+        )
         self.assertIsNone(translate_command("部署日常 main"))
+        self.assertIsNone(translate_command("部署日常 main " + "b" * 40))
 
     def test_command_validation_is_fail_closed(self) -> None:
         validate_agent_command("/agent status")
