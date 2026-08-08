@@ -79,6 +79,13 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         )[1].split("production.acceptance.clone.remote_activate:", 1)[0]
         self.assertIn("cat >/dev/null; exit 0", tenant_target)
 
+    def test_existing_tool_package_still_consumes_archive_stream(self) -> None:
+        source = RELEASE_MAKE.read_text(encoding="utf-8")
+        tool_target = source.split(
+            "production.acceptance.backup.remote_install:", 1
+        )[1].split("production.acceptance.backup.remote_sync:", 1)[0]
+        self.assertIn("cat >/dev/null; exit 0", tool_target)
+
     def test_clone_runtime_includes_formal_external_dependencies(self) -> None:
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertIn("/mnt/addons_external/oca_server_ux", source)
@@ -87,7 +94,9 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         with mock.patch.object(RUNTIME, "url_ready", side_effect=[False, True]), mock.patch.object(
             RUNTIME, "run", return_value="172.27.0.3"
         ):
-            url, loopback_bound = RUNTIME.health_endpoint("acceptance", 18098)
+            url, loopback_bound = RUNTIME.container_endpoint(
+                "acceptance", 8069, "/web/health", loopback_port=18098
+            )
         self.assertEqual(url, "http://172.27.0.3:8069/web/health")
         self.assertFalse(loopback_bound)
 
@@ -95,7 +104,27 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         with mock.patch.object(RUNTIME, "url_ready", return_value=False), mock.patch.object(
             RUNTIME, "run", return_value="8.8.8.8"
         ):
-            self.assertEqual(RUNTIME.health_endpoint("acceptance", 18098), ("", False))
+            self.assertEqual(
+                RUNTIME.container_endpoint(
+                    "acceptance", 8069, "/web/health", loopback_port=18098
+                ),
+                ("", False),
+            )
+
+    def test_public_frontend_binds_only_the_approved_port(self) -> None:
+        with mock.patch.object(RUNTIME, "run") as runner:
+            RUNTIME.start_frontend(
+                web_container="acceptance_web",
+                network="acceptance_internal",
+                image="sha256:" + "2" * 64,
+                database="r10e_acceptance",
+                host="0.0.0.0",
+                port=18081,
+            )
+        command = runner.call_args.args[0]
+        self.assertIn("0.0.0.0:18081:80", command)
+        self.assertIn("sc.production-acceptance-clone=true", command)
+        self.assertEqual(command[command.index("--user") + 1], "root")
 
 
 if __name__ == "__main__":

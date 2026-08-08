@@ -20,6 +20,7 @@ SHA = re.compile(r"^[0-9a-f]{40}$")
 IMAGE = re.compile(r"^sha256:[0-9a-f]{64}$")
 MODULE = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
 CONFIRMATION = "ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE"
+PUBLIC_CONFIRMATION = "PUBLISH_ISOLATED_ACCEPTANCE_FRONTEND_TO_APPROVED_PORT"
 MODULE_SET_PATH = Path(__file__).resolve().parents[2] / "config/tenant/module_sets.v1.json"
 
 
@@ -61,7 +62,7 @@ def validate_identity(restore_id: str, tenant_sha: str, tenant_module: str, imag
         raise CloneRuntimeError("invalid immutable clone identity")
     if not MODULE.fullmatch(tenant_module):
         raise CloneRuntimeError("invalid tenant module identity")
-    if not IMAGE.fullmatch(image) or not 18095 <= port <= 18120:
+    if not IMAGE.fullmatch(image) or not (port == 18081 or 18095 <= port <= 18120):
         raise CloneRuntimeError("invalid immutable image or loopback port")
 
 
@@ -157,18 +158,27 @@ def odoo_container_args(
     ]
 
 
-def url_ready(url: str) -> bool:
+def url_ready(url: str, expected: str = "") -> bool:
     try:
         with urllib.request.urlopen(url, timeout=2) as response:
-            return response.status == 200
+            body = response.read().decode("utf-8", errors="replace")
+            return response.status == 200 and (not expected or expected in body)
     except (urllib.error.URLError, TimeoutError):
         return False
 
 
-def health_endpoint(container: str, port: int) -> tuple[str, bool]:
-    loopback = f"http://127.0.0.1:{port}/web/health"
-    if url_ready(loopback):
-        return loopback, True
+def container_endpoint(
+    container: str,
+    container_port: int,
+    path: str,
+    *,
+    loopback_port: int | None = None,
+    expected: str = "",
+) -> tuple[str, bool]:
+    if loopback_port is not None:
+        loopback = f"http://127.0.0.1:{loopback_port}{path}"
+        if url_ready(loopback, expected):
+            return loopback, True
     address = run(
         [
             "docker",
@@ -185,8 +195,62 @@ def health_endpoint(container: str, port: int) -> tuple[str, bool]:
         return "", False
     if not parsed.is_private:
         return "", False
-    internal = f"http://{address}:8069/web/health"
-    return (internal, False) if url_ready(internal) else ("", False)
+    internal = f"http://{address}:{container_port}{path}"
+    return (internal, False) if url_ready(internal, expected) else ("", False)
+
+
+def start_frontend(
+    *,
+    web_container: str,
+    network: str,
+    image: str,
+    database: str,
+    host: str,
+    port: int,
+) -> None:
+    run(
+        [
+            "docker",
+            "run",
+            "-d",
+            "--name",
+            web_container,
+            "--network",
+            network,
+            "--user",
+            "root",
+            "--publish",
+            f"{host}:{port}:80",
+            "--label",
+            "sc.production-acceptance-clone=true",
+            "-e",
+            f"ODOO_DB={database}",
+            "--entrypoint",
+            "/usr/local/bin/render_nginx_conf.sh",
+            image,
+        ]
+    )
+
+
+def wait_frontend(web_container: str, database: str, port: int) -> tuple[str, bool]:
+    for _ in range(60):
+        state = run(
+            ["docker", "inspect", web_container, "--format", "{{.State.Running}}|{{.State.ExitCode}}"],
+            False,
+        )
+        endpoint, loopback_bound = container_endpoint(
+            web_container,
+            80,
+            "/runtime-config.js",
+            loopback_port=port,
+            expected=database,
+        )
+        if state.startswith("true|") and endpoint:
+            return endpoint.removesuffix("/runtime-config.js"), loopback_bound
+        if state and not state.startswith("true|"):
+            raise CloneRuntimeError("acceptance frontend exited before readiness")
+        time.sleep(1)
+    raise CloneRuntimeError("acceptance frontend did not become ready")
 
 
 def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, port: int) -> dict[str, object]:
@@ -284,8 +348,8 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
             *runtime_args[:2],
             "-d",
             *runtime_args[2:8],
-            "--publish",
-            f"127.0.0.1:{port}:8069",
+            "--network-alias",
+            "odoo",
             "--label",
             "sc.production-acceptance-clone=true",
             *runtime_args[8:],
@@ -295,41 +359,129 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
     )
     for _ in range(120):
         state = run(["docker", "inspect", container, "--format", "{{.State.Running}}|{{.State.ExitCode}}"], False)
-        health_url, loopback_bound = health_endpoint(container, port)
+        health_url, _unused = container_endpoint(container, 8069, "/web/health")
         if state.startswith("true|") and health_url:
-            return {
-                "status": "PASS",
-                "database": database,
-                "container": container,
-                "loopback_port": port if loopback_bound else None,
-                "host_private_health_url": health_url,
-                "exact_dbfilter": True,
-                "tenant_sha": tenant_sha,
-                "tenant_module": tenant_module,
-                "upgraded_modules": list(modules),
-                "protected_counts_before": before,
-                "protected_counts_after": after,
-                "pending_modules": 0,
-                "http_health": 200,
-                "external_egress": False,
-            }
+            break
         if state and not state.startswith("true|"):
             raise CloneRuntimeError("acceptance clone exited before HTTP readiness")
         time.sleep(1)
-    raise CloneRuntimeError("acceptance clone did not remain running")
+    else:
+        raise CloneRuntimeError("acceptance clone did not remain running")
+
+    web_container = f"{restore_id}_acceptance_web"
+    start_frontend(
+        web_container=web_container,
+        network=str(network),
+        image=image,
+        database=database,
+        host="127.0.0.1",
+        port=port,
+    )
+    frontend_url, loopback_bound = wait_frontend(web_container, database, port)
+    return {
+        "status": "PASS",
+        "database": database,
+        "container": container,
+        "web_container": web_container,
+        "loopback_port": port if loopback_bound else None,
+        "frontend_url": frontend_url,
+        "host_private_health_url": health_url,
+        "exact_dbfilter": True,
+        "tenant_sha": tenant_sha,
+        "tenant_module": tenant_module,
+        "upgraded_modules": list(modules),
+        "protected_counts_before": before,
+        "protected_counts_after": after,
+        "pending_modules": 0,
+        "http_health": 200,
+        "external_egress": False,
+    }
+
+
+def publish_existing(restore_id: str, image: str, port: int) -> dict[str, object]:
+    if os.environ.get("CONFIRM_PRODUCTION_ACCEPTANCE_PUBLIC_FRONTEND") != PUBLIC_CONFIRMATION:
+        raise CloneRuntimeError("exact public acceptance frontend confirmation is required")
+    if not RESTORE_ID.fullmatch(restore_id) or not IMAGE.fullmatch(image) or port != 18081:
+        raise CloneRuntimeError("public acceptance identity must use the approved port")
+    report_path = Path(f"/data/backups/sc_production/restore-rehearsals/{restore_id}.json")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if report.get("status") != "PASS" or report.get("production_database_connected") is not False:
+        raise CloneRuntimeError("verified isolated restore report is required")
+    resources = report.get("resources") or {}
+    network = str(resources.get("network") or "")
+    if not network.startswith(restore_id):
+        raise CloneRuntimeError("restore network escaped the isolated namespace")
+    database = f"r10e_{restore_id}"
+    runtime_root = Path(f"/data/backups/sc_production/acceptance-runtimes/{restore_id}")
+    config = runtime_root / "odoo.conf"
+    if not config.is_file() or f"dbfilter = ^{database}$" not in config.read_text(encoding="utf-8"):
+        raise CloneRuntimeError("exact acceptance database filter is unavailable")
+    odoo_container = f"{restore_id}_acceptance_odoo"
+    observed = run(
+        [
+            "docker",
+            "inspect",
+            odoo_container,
+            "--format",
+            "{{.State.Running}}|{{index .Config.Labels \"sc.production-acceptance-clone\"}}|{{.HostConfig.NetworkMode}}|{{.Image}}",
+        ]
+    )
+    if observed != f"true|true|{network}|{image}":
+        raise CloneRuntimeError("running isolated acceptance backend identity differs")
+    web_container = f"{restore_id}_acceptance_web"
+    existing = run(
+        [
+            "docker",
+            "inspect",
+            web_container,
+            "--format",
+            "{{index .Config.Labels \"sc.production-acceptance-clone\"}}|{{.HostConfig.NetworkMode}}",
+        ],
+        False,
+    )
+    if existing:
+        if existing != f"true|{network}":
+            raise CloneRuntimeError("existing acceptance frontend identity differs")
+        run(["docker", "rm", "-f", web_container])
+    start_frontend(
+        web_container=web_container,
+        network=network,
+        image=image,
+        database=database,
+        host="0.0.0.0",
+        port=port,
+    )
+    frontend_url, loopback_bound = wait_frontend(web_container, database, port)
+    if not loopback_bound:
+        raise CloneRuntimeError("approved public acceptance port was not bound")
+    return {
+        "status": "PASS",
+        "database": database,
+        "public_url": f"http://1.95.85.92:{port}/",
+        "frontend_url": frontend_url,
+        "exact_dbfilter": True,
+        "external_egress": False,
+        "production_database_connected": False,
+    }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--restore-id", required=True)
-    parser.add_argument("--tenant-sha", required=True)
-    parser.add_argument("--tenant-module", required=True)
+    parser.add_argument("--tenant-sha", default="")
+    parser.add_argument("--tenant-module", default="")
     parser.add_argument("--image", required=True)
     parser.add_argument("--port", required=True, type=int)
+    parser.add_argument("--publish-existing", action="store_true")
     args = parser.parse_args()
+    result = (
+        publish_existing(args.restore_id, args.image, args.port)
+        if args.publish_existing
+        else activate(args.restore_id, args.tenant_sha, args.tenant_module, args.image, args.port)
+    )
     print(
         json.dumps(
-            activate(args.restore_id, args.tenant_sha, args.tenant_module, args.image, args.port),
+            result,
             sort_keys=True,
         )
     )
