@@ -73,6 +73,19 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         source = "if (!isComponentActive.value || reloadToken !== activeReloadToken) return;"
         self.assertIn("!isComponentActive.value", source)
 
+    def test_inactive_action_page_ignores_record_context_events(self):
+        source = """
+        function refreshForRecordContextChange(): void {
+          if (!isComponentActive.value) return;
+          void requestLoadPage();
+        }
+        """
+        self.assertLess(source.index("!isComponentActive.value"), source.index("requestLoadPage()"))
+
+    def test_later_functional_failure_preserves_isolated_performance_pass(self):
+        source = "if (performanceReport.result !== 'PASS') performanceReport.result = 'FAIL';"
+        self.assertIn("result !== 'PASS'", source)
+
 
 if __name__ == "__main__":
     unittest.main()

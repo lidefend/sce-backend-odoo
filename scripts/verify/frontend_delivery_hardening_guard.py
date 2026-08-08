@@ -198,6 +198,15 @@ require(
     "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
     "if (!isComponentActive.value || reloadToken !== activeReloadToken) return;",
 )
+require(
+    "frontend/apps/web/src/views/ActionView.vue",
+    "function refreshForRecordContextChange(): void {",
+    "if (!isComponentActive.value) return;",
+)
+require(
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "if (performanceReport.result !== 'PASS') performanceReport.result = 'FAIL';",
+)
 forbid(
     "frontend/apps/web/src/pages/ContractFormRoute.vue",
     ':key="routeIdentity"',

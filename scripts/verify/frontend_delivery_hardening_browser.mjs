@@ -854,7 +854,10 @@ async function main() {
     accessibility.critical = accessibility.scans.reduce((sum, row) => sum + row.violations.filter((item) => item.impact === 'critical').length, 0);
     accessibility.serious = accessibility.scans.reduce((sum, row) => sum + row.violations.filter((item) => item.impact === 'serious').length, 0);
     accessibility.result = accessibility.scans.length > 0 && accessibility.blocking === 0 ? 'PASS' : 'NOT_RUN';
-    performanceReport.result = 'FAIL';
+    // The release entrypoint measures performance in an isolated renderer and
+    // then consumes that SHA-bound PASS evidence in the full browser matrix.
+    // A later functional failure must not relabel valid performance evidence.
+    if (performanceReport.result !== 'PASS') performanceReport.result = 'FAIL';
     fs.writeFileSync(path.join(OUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
     fs.writeFileSync(path.join(OUT, 'performance.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
     fs.writeFileSync(path.join(OUT, 'accessibility.json'), `${JSON.stringify(accessibility, null, 2)}\n`);

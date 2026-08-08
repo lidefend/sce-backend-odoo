@@ -3273,6 +3273,10 @@ function handleRecordContextChanged(): void {
 }
 
 function refreshForRecordContextChange(): void {
+  // KeepAlive retains inactive action pages and their window listeners. A
+  // scope event belongs only to the visible page; otherwise an old actor's
+  // list can reload after login or company context has already changed.
+  if (!isComponentActive.value) return;
   renderErrorMessage.value = '';
   listOffset.value = 0;
   clearSelection();
