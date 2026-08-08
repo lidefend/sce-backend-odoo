@@ -96,6 +96,21 @@ class DailyAcceptanceCandidateImportTests(unittest.TestCase):
             )
         stream.assert_called_once()
 
+    def test_remote_inspection_is_one_shell_quoted_command(self):
+        completed = module.subprocess.CompletedProcess(
+            [], 0, "sha256:" + "d" * 64 + "|" + "a" * 40 + "\n", ""
+        )
+        with mock.patch.object(module.subprocess, "run", return_value=completed) as runner:
+            observed = module.remote_identity(
+                "sc-root", "ghcr.io/lidefend/sce-product:9.9.9-rc.99"
+            )
+        command = runner.call_args.args[0]
+        self.assertEqual(command[:4], ["ssh", "-o", "BatchMode=yes", "sc-root"])
+        self.assertEqual(len(command), 5)
+        self.assertIn("docker image inspect", command[4])
+        self.assertIn("'{{.Id}}|{{index .Config.Labels", command[4])
+        self.assertEqual(observed, "sha256:" + "d" * 64 + "|" + "a" * 40)
+
 
 if __name__ == "__main__":
     unittest.main()
