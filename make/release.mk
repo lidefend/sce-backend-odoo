@@ -21,7 +21,7 @@ RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RE
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
 .PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.public_signup.close.plan release.production.public_signup.close.apply release.production.public_signup.close.verify release.production.user_activation.readiness release.production.user_activation.predeploy.plan release.production.user_activation.predeploy.apply release.production.user_activation.predeploy.verify release.production.single_user_activation.plan release.production.single_user_activation.apply release.production.single_user_activation.verify release.production.formal_modules.install_missing ops.user.password-reset ops.user.password-verify
-.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore production.acceptance.backup.remote_install production.acceptance.backup.remote_sync production.acceptance.image.remote_import production.acceptance.restore.remote_verify production.acceptance.tenant.remote_install production.acceptance.clone.remote_activate verify.production.backup_restore_contract
+.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore production.acceptance.backup.remote_install production.acceptance.backup.remote_sync production.acceptance.image.remote_import production.acceptance.candidate.remote_import production.acceptance.restore.remote_verify production.acceptance.tenant.remote_install production.acceptance.clone.remote_activate verify.production.backup_restore_contract
 .PHONY: verify.production.acceptance.harness acceptance.package.verify verify.production.promotion.config.preflight release.daily_dev.production_acceptance.harness release.production.acceptance.harness release.daily_dev.promotion.config.preflight release.production.promotion.config.preflight
 
 verify.release.guard: verify.repository.release_hygiene
@@ -204,6 +204,12 @@ PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY ?=
 PRODUCTION_ACCEPTANCE_TENANT_SHA ?=
 PRODUCTION_ACCEPTANCE_TENANT_MODULE ?=
 PRODUCTION_ACCEPTANCE_PORT ?= 18095
+DAILY_ACCEPTANCE_CANDIDATE_ARCHIVE ?=
+DAILY_ACCEPTANCE_CANDIDATE_ARCHIVE_SHA256 ?=
+DAILY_ACCEPTANCE_CANDIDATE_IMAGE_REF ?=
+DAILY_ACCEPTANCE_CANDIDATE_LOCAL_CONTENT_ID ?=
+DAILY_ACCEPTANCE_CANDIDATE_REMOTE_CONFIG_ID ?=
+DAILY_ACCEPTANCE_CANDIDATE_SOURCE_SHA ?=
 
 production.acceptance.backup.remote_install: guard.prod.forbid
 	@test -n "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" || { echo "PRODUCTION_ACCEPTANCE_DAILY_HOST is required" >&2; exit 2; }
@@ -228,6 +234,20 @@ production.acceptance.image.remote_import: guard.prod.forbid
 	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_IMAGE_IMPORT:-}" = "IMPORT_EXACT_PRODUCTION_IMAGE_TO_DAILY_ACCEPTANCE" || { echo "exact production acceptance image import confirmation is required" >&2; exit 2; }
 	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" \
 		'set -eu; if docker image inspect "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" >/dev/null 2>&1; then :; else ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i /root/.ssh/id_ed25519 root@172.31.4.192 docker image save "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE)" | docker image load >/dev/null; fi; test "$$(docker image inspect "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --format "{{.Id}}")" = "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)"; test "$$(docker image inspect "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --format "{{index .Config.Labels \"org.opencontainers.image.revision\"}}")" = "$(PRODUCTION_ACCEPTANCE_SOURCE_REVISION)"; echo "[production.acceptance.image] PASS exact immutable image identity"'
+
+production.acceptance.candidate.remote_import: guard.prod.forbid
+	@test "$${CONFIRM_DAILY_ACCEPTANCE_CANDIDATE_IMPORT:-}" = "IMPORT_VERIFIED_CANDIDATE_TO_DAILY_ACCEPTANCE" || { echo "exact daily acceptance candidate import confirmation is required" >&2; exit 2; }
+	@python3 -m py_compile scripts/ops/daily_acceptance_candidate_image_import.py scripts/ops/test_daily_acceptance_candidate_image_import.py
+	@python3 -m unittest scripts/ops/test_daily_acceptance_candidate_image_import.py
+	@CONFIRM_DAILY_ACCEPTANCE_CANDIDATE_IMPORT="$${CONFIRM_DAILY_ACCEPTANCE_CANDIDATE_IMPORT}" \
+		python3 scripts/ops/daily_acceptance_candidate_image_import.py \
+			--expected-main-sha "$(DAILY_ACCEPTANCE_CANDIDATE_SOURCE_SHA)" \
+			--archive "$(DAILY_ACCEPTANCE_CANDIDATE_ARCHIVE)" \
+			--archive-sha256 "$(DAILY_ACCEPTANCE_CANDIDATE_ARCHIVE_SHA256)" \
+			--image-ref "$(DAILY_ACCEPTANCE_CANDIDATE_IMAGE_REF)" \
+			--local-content-id "$(DAILY_ACCEPTANCE_CANDIDATE_LOCAL_CONTENT_ID)" \
+			--remote-config-id "$(DAILY_ACCEPTANCE_CANDIDATE_REMOTE_CONFIG_ID)" \
+			--host "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)"
 
 production.acceptance.restore.remote_verify: production.acceptance.backup.remote_install
 	@[[ "$(PRODUCTION_ACCEPTANCE_BACKUP_SET_ID)" =~ ^sc_production-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid production backup set ID" >&2; exit 2; }
@@ -380,9 +400,10 @@ production.backup.timer.restore: guard.prod.danger
 			--restore-report "$(RESTORE_REPORT)"
 
 verify.production.backup_restore_contract:
-	@python3 -m py_compile scripts/release/production_backup_restore.py scripts/ops/production_acceptance_backup_sync.py scripts/ops/production_acceptance_clone_runtime.py scripts/ops/test_production_acceptance_backup_sync.py scripts/ops/test_production_acceptance_clone_runtime.py scripts/ops/production_backup_install.py scripts/ops/production_restore_tool_sync.py scripts/ops/test_production_restore_tool_sync.py scripts/ops/production_candidate_image_sync.py scripts/ops/test_production_candidate_image_sync.py scripts/ops/production_candidate_manifest_sync.py scripts/ops/test_production_candidate_manifest_sync.py scripts/ops/production_deployment_tool_sync.py scripts/ops/test_production_deployment_tool_sync.py scripts/ops/production_release_config_promote.py scripts/ops/test_production_release_config_promote.py scripts/ops/production_restore_cancel.py scripts/ops/test_production_restore_cancel.py scripts/release/test_production_backup_restore_contract.py
+	@python3 -m py_compile scripts/release/production_backup_restore.py scripts/ops/production_acceptance_backup_sync.py scripts/ops/production_acceptance_clone_runtime.py scripts/ops/daily_acceptance_candidate_image_import.py scripts/ops/test_production_acceptance_backup_sync.py scripts/ops/test_production_acceptance_clone_runtime.py scripts/ops/test_daily_acceptance_candidate_image_import.py scripts/ops/production_backup_install.py scripts/ops/production_restore_tool_sync.py scripts/ops/test_production_restore_tool_sync.py scripts/ops/production_candidate_image_sync.py scripts/ops/test_production_candidate_image_sync.py scripts/ops/production_candidate_manifest_sync.py scripts/ops/test_production_candidate_manifest_sync.py scripts/ops/production_deployment_tool_sync.py scripts/ops/test_production_deployment_tool_sync.py scripts/ops/production_release_config_promote.py scripts/ops/test_production_release_config_promote.py scripts/ops/production_restore_cancel.py scripts/ops/test_production_restore_cancel.py scripts/release/test_production_backup_restore_contract.py
 	@PYTHONPATH=scripts/release python3 scripts/ops/test_production_acceptance_backup_sync.py
 	@python3 scripts/ops/test_production_acceptance_clone_runtime.py
+	@python3 -m unittest scripts/ops/test_daily_acceptance_candidate_image_import.py
 	@python3 scripts/release/test_production_backup_restore_contract.py
 	@python3 scripts/ops/test_production_restore_tool_sync.py
 	@python3 scripts/ops/test_production_candidate_image_sync.py
