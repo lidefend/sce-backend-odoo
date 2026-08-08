@@ -17,6 +17,28 @@ export type ListColumnSelectionTrace = {
   reasonCode: ListColumnSelectionReason;
 };
 
+export function resolveDesktopListCandidates(options: {
+  fields: Array<{ field: string; width: number }>;
+  availableWidth: number;
+  capacity?: number;
+}) {
+  const capacity = Math.max(1, Number(options.capacity || 12));
+  const fields = options.fields.filter((item) => Boolean(item.field));
+  // A native tree view within the desktop product budget is authoritative.
+  // Keep all declared columns and let the table scroll horizontally instead
+  // of silently dropping business fields based on the current viewport width.
+  if (fields.length <= capacity) return fields.map((item) => item.field);
+  const selected: string[] = [];
+  let usedWidth = 0;
+  for (const item of fields) {
+    if (selected.length >= capacity) break;
+    if (selected.length >= 3 && usedWidth + item.width > options.availableWidth) continue;
+    selected.push(item.field);
+    usedWidth += item.width;
+  }
+  return selected.length ? selected : fields.slice(0, 1).map((item) => item.field);
+}
+
 export function resolveResponsiveListColumns(options: {
   enabledColumns: string[];
   orderedColumns: string[];

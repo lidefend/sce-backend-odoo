@@ -131,6 +131,16 @@
                   type="checkbox"
                   @change="emitFieldChange(field, ($event.target as HTMLInputElement).checked)"
                 />
+                <input
+                  v-else-if="field.type === 'binary'"
+                  :id="fieldControlId(field)"
+                  class="input input--file"
+                  :aria-required="field.required || undefined"
+                  :aria-invalid="field.invalid || undefined"
+                  :aria-describedby="fieldDescribedBy(field)"
+                  type="file"
+                  @change="emitBinaryFieldChange(field, $event)"
+                />
                 <ScSelect
                   v-else-if="field.type === 'selection'"
                   :id="fieldControlId(field)"
@@ -427,6 +437,7 @@ function isBaseFieldType(type: TemplateFieldType) {
     'selection',
     'many2one',
     'boolean',
+    'binary',
     'date',
     'datetime',
     'integer',
@@ -600,6 +611,23 @@ function emitFieldChange(field: FormSectionFieldSchema, value: string | number |
     value,
     descriptor: field.descriptor,
   });
+}
+
+function emitBinaryFieldChange(field: FormSectionFieldSchema, event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) {
+    emitFieldChange(field, null);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = String(reader.result || '');
+    const separatorIndex = result.indexOf(',');
+    emitFieldChange(field, separatorIndex >= 0 ? result.slice(separatorIndex + 1) : result);
+  };
+  reader.onerror = () => emitFieldChange(field, null);
+  reader.readAsDataURL(file);
 }
 
 function collapseMany2oneDropdown(event: Event) {

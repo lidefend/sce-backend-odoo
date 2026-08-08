@@ -101,6 +101,7 @@ def _component_key(widget_type: str) -> str:
         return "sc.select.remote"
     mapping = {
         "input": "sc.input.text",
+        "binary": "sc.input.binary",
         "textarea": "sc.input.textarea",
         "number": "sc.input.number",
         "select": "sc.select.remote",
@@ -133,6 +134,8 @@ def _widget_type_from_field(field: dict[str, Any]) -> str:
         return "textarea"
     if ttype in {"boolean"}:
         return "checkbox"
+    if ttype == "binary":
+        return "binary"
     return "input"
 
 
@@ -2317,13 +2320,14 @@ def _append_ui_contract_actions(
 ) -> None:
     rows: list[dict[str, Any]] = []
     form_view = _dict(_dict(ui.get("views")).get("form"))
-    for row in _list(form_view.get("header_buttons")):
-        if isinstance(row, dict):
-            rows.append({
-                **row,
-                "level": _text(row.get("level"), "header"),
-                "target_scope": _text(row.get("target_scope"), "header"),
-            })
+    for header_button_source in (form_view.get("header_buttons"), ui.get("header_buttons")):
+        for row in _list(header_button_source):
+            if isinstance(row, dict):
+                rows.append({
+                    **row,
+                    "level": _text(row.get("level"), "header"),
+                    "target_scope": _text(row.get("target_scope"), "header"),
+                })
     for key in ("buttons", "business_actions"):
         for row in _list(ui.get(key)):
             if isinstance(row, dict):
@@ -2382,8 +2386,19 @@ def _append_ui_contract_actions(
             action_intent = _text(row.get("intent"), "execute_button")
             target = deepcopy(_dict(row.get("target")))
             button = {
-                "name": _text(row.get("name") or row.get("button_name") or row.get("method_name"), key),
-                "type": _text(row.get("type") or row.get("button_type"), "object"),
+                "name": _text(
+                    row.get("name")
+                    or row.get("button_name")
+                    or row.get("method_name")
+                    or payload.get("method"),
+                    key,
+                ),
+                "type": _text(
+                    row.get("type")
+                    or row.get("button_type")
+                    or payload.get("type"),
+                    "object",
+                ),
             }
         normalized.append(
             {
