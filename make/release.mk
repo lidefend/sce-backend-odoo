@@ -217,6 +217,7 @@ production.acceptance.backup.remote_install: guard.prod.forbid
 	@[[ "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" =~ ^[0-9a-f]{40}$$ ]] || { echo "invalid immutable tool SHA" >&2; exit 2; }
 	@test -z "$$(git status --porcelain)" || { echo "clean worktree is required for immutable tool install" >&2; exit 2; }
 	@git archive --format=tar "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" \
+		config/tenant/module_sets.v1.json \
 		scripts/ops/production_acceptance_backup_sync.py \
 		scripts/ops/production_acceptance_clone_runtime.py \
 		scripts/release/production_backup_restore.py | \
@@ -261,7 +262,7 @@ production.acceptance.tenant.remote_install: guard.prod.forbid
 	@[[ "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" =~ ^[0-9a-f]{40}$$ ]] || { echo "immutable tenant SHA is required" >&2; exit 2; }
 	@[[ "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" =~ ^[a-z][a-z0-9_]{2,63}$$ ]] || { echo "valid tenant module is required" >&2; exit 2; }
 	@test -z "$$(git -C "$(PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY)" status --porcelain)" || { echo "clean tenant worktree is required" >&2; exit 2; }
-	@git -C "$(PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY)" archive --format=tar "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" "addons/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" | ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'set -eu; root="/opt/sce/tenant-addons/acceptance"; final="$$root/$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; staging="$$root/.incomplete-$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/TENANT_SHA")" = "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; test -f "$$final/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)/__manifest__.py"; exit 0; fi; test ! -e "$$staging"; install -d -m 0755 "$$staging"; tar -xf - --strip-components=1 -C "$$staging"; test -f "$$staging/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)/__manifest__.py"; printf "%s\n" "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" > "$$staging/TENANT_SHA"; chmod -R a-w "$$staging"; mv "$$staging" "$$final"'
+	@git -C "$(PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY)" archive --format=tar "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" addons | ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'set -eu; root="/opt/sce/tenant-addons/acceptance"; final="$$root/$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; staging="$$root/.incomplete-$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/TENANT_SHA")" = "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; test -f "$$final/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)/__manifest__.py"; cat >/dev/null; exit 0; fi; test ! -e "$$staging"; install -d -m 0755 "$$staging"; tar -xf - --strip-components=1 -C "$$staging"; test -f "$$staging/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)/__manifest__.py"; printf "%s\n" "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" > "$$staging/TENANT_SHA"; chmod -R a-w "$$staging"; mv "$$staging" "$$final"'
 
 production.acceptance.clone.remote_activate: production.acceptance.backup.remote_install production.acceptance.tenant.remote_install
 	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }

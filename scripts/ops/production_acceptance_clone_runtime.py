@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import os
 import re
 import subprocess
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 
@@ -17,10 +20,26 @@ SHA = re.compile(r"^[0-9a-f]{40}$")
 IMAGE = re.compile(r"^sha256:[0-9a-f]{64}$")
 MODULE = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
 CONFIRMATION = "ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE"
+MODULE_SET_PATH = Path(__file__).resolve().parents[2] / "config/tenant/module_sets.v1.json"
 
 
 class CloneRuntimeError(RuntimeError):
     pass
+
+
+def product_modules() -> tuple[str, ...]:
+    try:
+        payload = json.loads(MODULE_SET_PATH.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise CloneRuntimeError("authoritative product module set is unavailable") from exc
+    modules = payload.get("product_modules")
+    if not isinstance(modules, list) or not modules or not all(
+        isinstance(name, str) and MODULE.fullmatch(name) for name in modules
+    ):
+        raise CloneRuntimeError("authoritative product module set is invalid")
+    if len(modules) != len(set(modules)):
+        raise CloneRuntimeError("authoritative product module set contains duplicates")
+    return tuple(modules)
 
 
 def run(args: list[str], check: bool = True) -> str:
@@ -44,6 +63,130 @@ def validate_identity(restore_id: str, tenant_sha: str, tenant_module: str, imag
         raise CloneRuntimeError("invalid tenant module identity")
     if not IMAGE.fullmatch(image) or not 18095 <= port <= 18120:
         raise CloneRuntimeError("invalid immutable image or loopback port")
+
+
+def database_snapshot(db_container: str, database: str) -> dict[str, int]:
+    output = run(
+        [
+            "docker",
+            "exec",
+            db_container,
+            "psql",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-U",
+            "odoo",
+            "-d",
+            database,
+            "-At",
+            "-F",
+            "|",
+            "-c",
+            "SELECT (SELECT count(*) FROM res_users),"
+            "(SELECT count(*) FROM project_project),"
+            "(SELECT count(*) FROM ir_attachment);",
+        ]
+    )
+    try:
+        users, projects, attachments = (int(value) for value in output.split("|"))
+    except (TypeError, ValueError) as exc:
+        raise CloneRuntimeError("acceptance data snapshot is invalid") from exc
+    return {"res_users": users, "project_project": projects, "ir_attachment": attachments}
+
+
+def module_state(db_container: str, database: str, modules: tuple[str, ...]) -> dict[str, int]:
+    names = ",".join(modules)
+    output = run(
+        [
+            "docker",
+            "exec",
+            db_container,
+            "psql",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-U",
+            "odoo",
+            "-d",
+            database,
+            "-At",
+            "-F",
+            "|",
+            "-c",
+            "SELECT (SELECT count(*) FROM ir_module_module "
+            f"WHERE name = ANY(string_to_array('{names}', ',')) AND state='installed'),"
+            "(SELECT count(*) FROM ir_module_module "
+            "WHERE state IN ('to install','to upgrade','to remove'));",
+        ]
+    )
+    try:
+        installed, pending = (int(value) for value in output.split("|"))
+    except (TypeError, ValueError) as exc:
+        raise CloneRuntimeError("acceptance module state is invalid") from exc
+    return {"installed": installed, "pending": pending}
+
+
+def odoo_container_args(
+    *,
+    name: str,
+    network: str,
+    filestore: str,
+    tenant_root: Path,
+    config: Path,
+    image: str,
+) -> list[str]:
+    return [
+        "docker",
+        "run",
+        "--name",
+        name,
+        "--network",
+        network,
+        "--group-add",
+        "0",
+        "-v",
+        f"{filestore}:/var/lib/odoo/filestore",
+        "-v",
+        f"{tenant_root}:/mnt/tenant-addons:ro",
+        "-v",
+        f"{config}:/etc/odoo/odoo.conf:ro",
+        "--entrypoint",
+        "odoo",
+        image,
+        "-c",
+        "/etc/odoo/odoo.conf",
+    ]
+
+
+def url_ready(url: str) -> bool:
+    try:
+        with urllib.request.urlopen(url, timeout=2) as response:
+            return response.status == 200
+    except (urllib.error.URLError, TimeoutError):
+        return False
+
+
+def health_endpoint(container: str, port: int) -> tuple[str, bool]:
+    loopback = f"http://127.0.0.1:{port}/web/health"
+    if url_ready(loopback):
+        return loopback, True
+    address = run(
+        [
+            "docker",
+            "inspect",
+            container,
+            "--format",
+            "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+        ],
+        False,
+    )
+    try:
+        parsed = ipaddress.ip_address(address)
+    except ValueError:
+        return "", False
+    if not parsed.is_private:
+        return "", False
+    internal = f"http://{address}:8069/web/health"
+    return (internal, False) if url_ready(internal) else ("", False)
 
 
 def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, port: int) -> dict[str, object]:
@@ -80,7 +223,7 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
     config = runtime_root / "odoo.conf"
     config.write_text(
         "[options]\n"
-        "addons_path = /mnt/product-addons,/mnt/tenant-addons,/usr/lib/python3/dist-packages/odoo/addons\n"
+        "addons_path = /mnt/product-addons,/mnt/tenant-addons,/mnt/addons_external/oca_server_ux,/usr/lib/python3/dist-packages/odoo/addons\n"
         f"db_host = {db_container}\n"
         "db_port = 5432\n"
         "db_user = odoo\n"
@@ -93,50 +236,85 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
         encoding="utf-8",
     )
     config.chmod(0o640)
-    container = f"{restore_id}_acceptance_odoo"
+    modules = (*product_modules(), tenant_module)
+    before = database_snapshot(str(db_container), database)
+    upgrade_container = f"{restore_id}_acceptance_upgrade"
+    upgrade_args = odoo_container_args(
+        name=upgrade_container,
+        network=str(network),
+        filestore=str(filestore),
+        tenant_root=tenant_root,
+        config=config,
+        image=image,
+    )
     run(
         [
-            "docker",
-            "run",
+            *upgrade_args[:2],
+            *upgrade_args[2:],
             "-d",
-            "--name",
-            container,
-            "--network",
-            str(network),
+            database,
+            "--no-http",
+            "--workers=0",
+            "--max-cron-threads=0",
+            "--without-demo=all",
+            "--stop-after-init",
+            "-u",
+            ",".join(modules),
+        ]
+    )
+    after = database_snapshot(str(db_container), database)
+    if after != before:
+        raise CloneRuntimeError("acceptance upgrade changed protected business-data counts")
+    state = module_state(str(db_container), database, modules)
+    if state != {"installed": len(modules), "pending": 0}:
+        raise CloneRuntimeError("acceptance module upgrade did not converge")
+    run(["docker", "rm", upgrade_container])
+
+    container = f"{restore_id}_acceptance_odoo"
+    runtime_args = odoo_container_args(
+        name=container,
+        network=str(network),
+        filestore=str(filestore),
+        tenant_root=tenant_root,
+        config=config,
+        image=image,
+    )
+    run(
+        [
+            *runtime_args[:2],
+            "-d",
+            *runtime_args[2:8],
             "--publish",
             f"127.0.0.1:{port}:8069",
-            "--group-add",
-            "0",
             "--label",
             "sc.production-acceptance-clone=true",
-            "-v",
-            f"{filestore}:/var/lib/odoo/filestore",
-            "-v",
-            f"{tenant_root}:/mnt/tenant-addons:ro",
-            "-v",
-            f"{config}:/etc/odoo/odoo.conf:ro",
-            "--entrypoint",
-            "odoo",
-            image,
-            "-c",
-            "/etc/odoo/odoo.conf",
+            *runtime_args[8:],
             "-d",
             database,
         ]
     )
-    for _ in range(60):
+    for _ in range(120):
         state = run(["docker", "inspect", container, "--format", "{{.State.Running}}|{{.State.ExitCode}}"], False)
-        if state.startswith("true|"):
+        health_url, loopback_bound = health_endpoint(container, port)
+        if state.startswith("true|") and health_url:
             return {
                 "status": "PASS",
                 "database": database,
                 "container": container,
-                "loopback_port": port,
+                "loopback_port": port if loopback_bound else None,
+                "host_private_health_url": health_url,
                 "exact_dbfilter": True,
                 "tenant_sha": tenant_sha,
                 "tenant_module": tenant_module,
+                "upgraded_modules": list(modules),
+                "protected_counts_before": before,
+                "protected_counts_after": after,
+                "pending_modules": 0,
+                "http_health": 200,
                 "external_egress": False,
             }
+        if state and not state.startswith("true|"):
+            raise CloneRuntimeError("acceptance clone exited before HTTP readiness")
         time.sleep(1)
     raise CloneRuntimeError("acceptance clone did not remain running")
 
