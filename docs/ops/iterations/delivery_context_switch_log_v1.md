@@ -3169,8 +3169,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Reason / Why Here: the installed norm module exposed all four authorized child
   actions, but its root had no action and the delivery projection rebuilt that
   root as a targetless synthetic group. The root now explicitly opens the norm
-  item list, while the platform mechanism preserves only targets declared by
-  native parent menus.
+  item list. When native discovery and policy paths emit the same menu once as
+  an action and once as a directory, the platform merges them by exact native
+  menu identity, preserving both the declared target and directory children.
 - Why Not Elsewhere: no frontend label special case, low-code override, database
   repair, or customer-module behavior is introduced.
 - Blast Radius / validation: explicit-action native groups can open their declared

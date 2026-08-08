@@ -712,6 +712,59 @@ class MenuService:
             or meta.get("model")
         )
 
+    def _merge_explicit_entry_with_directory(self, nodes: list[dict]) -> list[dict]:
+        """Merge one native action entry into its same-menu policy directory."""
+        normalized = []
+        for node in nodes or []:
+            if not isinstance(node, dict):
+                continue
+            next_node = dict(node)
+            children = next_node.get("children") if isinstance(next_node.get("children"), list) else []
+            next_node["children"] = self._merge_explicit_entry_with_directory(children)
+            normalized.append(next_node)
+
+        removed = set()
+        for directory_index, directory in enumerate(normalized):
+            children = directory.get("children") if isinstance(directory.get("children"), list) else []
+            if not children:
+                continue
+            directory_meta = directory.get("meta") if isinstance(directory.get("meta"), dict) else {}
+            config_menu_id = self._positive_int(
+                directory.get("config_menu_id") or directory_meta.get("config_menu_id")
+            )
+            label = str(directory.get("label") or "").strip()
+            if not config_menu_id or not label:
+                continue
+            entry_index = next((
+                index
+                for index, entry in enumerate(normalized)
+                if index != directory_index
+                and index not in removed
+                and str(entry.get("label") or "").strip() == label
+                and not (entry.get("children") if isinstance(entry.get("children"), list) else [])
+                and self._positive_int(entry.get("menu_id")) == config_menu_id
+                and self._node_has_target(entry)
+            ), None)
+            if entry_index is None:
+                continue
+            entry = normalized[entry_index]
+            entry_meta = entry.get("meta") if isinstance(entry.get("meta"), dict) else {}
+            merged_meta = dict(directory_meta)
+            merged_meta["explicit_group_entry_target"] = True
+            merged_meta["merged_native_entry_key"] = str(entry.get("key") or "")
+            directory["menu_id"] = config_menu_id
+            for field in (
+                "route", "scene_key", "action_id", "action_xmlid", "model",
+                "view_modes", "entry_target",
+            ):
+                value = entry.get(field) if entry.get(field) not in (None, "", []) else entry_meta.get(field)
+                if value not in (None, "", []):
+                    directory[field] = value
+                    merged_meta[field] = value
+            directory["meta"] = merged_meta
+            removed.add(entry_index)
+        return [node for index, node in enumerate(normalized) if index not in removed]
+
     def _iter_leaf_nodes(self, nodes, ancestors=None):
         parent_chain = list(ancestors or [])
         for node in nodes or []:
@@ -1994,6 +2047,7 @@ class MenuService:
                 group_node["meta"] = group_meta
             group_nodes.append(group_node)
 
+        group_nodes = self._merge_explicit_entry_with_directory(group_nodes)
         group_nodes = self._sort_delivery_nodes(group_nodes, top_level=True)
         group_nodes = self._filter_primary_delivery_nodes(group_nodes, role_surface)
         root = build_delivery_menu_root(group_nodes, role_code)

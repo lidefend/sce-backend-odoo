@@ -722,6 +722,35 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertNotIn("route", group)
         self.assertFalse((group.get("meta") or {}).get("explicit_group_entry_target", False))
 
+    def test_same_native_entry_and_policy_directory_merge_into_one_clickable_node(self):
+        service = menu_service.MenuService()
+        nodes = service._merge_explicit_entry_with_directory([
+            {
+                "key": "system.menu_616",
+                "label": "定额引擎",
+                "menu_id": 616,
+                "action_id": 829,
+                "model": "sc.norm.item",
+                "route": "/a/829?menu_id=616",
+                "children": [],
+            },
+            {
+                "key": "group:construction.config.norm",
+                "label": "定额引擎",
+                "menu_id": 882860817,
+                "config_menu_id": 616,
+                "children": [{"label": "定额子目", "menu_id": 619, "children": []}],
+                "meta": {"config_menu_id": 616, "explicit_menu_path_group": True},
+            },
+        ])
+
+        self.assertEqual(len(nodes), 1)
+        self.assertEqual(nodes[0].get("menu_id"), 616)
+        self.assertEqual(nodes[0].get("action_id"), 829)
+        self.assertEqual(nodes[0].get("route"), "/a/829?menu_id=616")
+        self.assertEqual(len(nodes[0].get("children") or []), 1)
+        self.assertTrue((nodes[0].get("meta") or {}).get("explicit_group_entry_target"))
+
     def test_user_acceptance_policy_menu_keeps_legacy_subgroups(self):
         self._register_acceptance_menu_labels()
 
