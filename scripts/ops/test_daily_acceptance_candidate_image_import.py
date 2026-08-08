@@ -115,6 +115,15 @@ class DailyAcceptanceCandidateImportTests(unittest.TestCase):
             )
         stream.assert_called_once()
 
+    def test_remote_identity_quotes_the_format_as_one_remote_command(self):
+        completed = mock.Mock(returncode=0, stdout="sha256:" + "a" * 64 + "|" + "b" * 40 + "\n", stderr="")
+        with mock.patch.object(module.subprocess, "run", return_value=completed) as invoke:
+            module.remote_identity("sc-root", "ghcr.io/lidefend/sce-product:sha-" + "c" * 12)
+        command = invoke.call_args.args[0]
+        self.assertEqual(command[:4], ["ssh", "-o", "BatchMode=yes", "sc-root"])
+        self.assertEqual(len(command), 5)
+        self.assertIn("'{{.Id}}|{{index .Config.Labels", command[4])
+
 
 if __name__ == "__main__":
     unittest.main()

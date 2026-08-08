@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import tarfile
 from pathlib import Path
@@ -131,11 +132,12 @@ def validate_local_image(image_ref: str, content_id: str, source_sha: str) -> No
 
 
 def remote_identity(host: str, image_ref: str) -> str | None:
+    remote_command = shlex.join([
+        "docker", "image", "inspect", image_ref,
+        "--format", '{{.Id}}|{{index .Config.Labels "org.opencontainers.image.revision"}}',
+    ])
     completed = subprocess.run(
-        [
-            "ssh", "-o", "BatchMode=yes", host, "docker", "image", "inspect", image_ref,
-            "--format", '{{.Id}}|{{index .Config.Labels "org.opencontainers.image.revision"}}',
-        ],
+        ["ssh", "-o", "BatchMode=yes", host, remote_command],
         cwd=ROOT,
         text=True,
         stdout=subprocess.PIPE,
