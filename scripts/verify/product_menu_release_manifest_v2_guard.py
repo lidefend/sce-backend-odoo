@@ -25,6 +25,7 @@ HOOK_FACTS = ROOT / "addons/smart_construction_core/core_extension_hook_facts.py
 MENU_SERVICE = ROOT / "addons/smart_core/delivery/menu_service.py"
 DEV_MAKE = ROOT / "make/dev.mk"
 ODOO_SHELL_EXEC = ROOT / "scripts/ops/odoo_shell_exec.sh"
+ACCEPTANCE_ENVIRONMENTS = ROOT / "config/frontend/acceptance_environments_v1.json"
 
 EXPECTED_CENTERS = [
     "工作台", "项目中心", "合同中心", "成本中心", "物资与分包",
@@ -64,6 +65,7 @@ def main() -> int:
     errors: list[str] = []
     payload = json.loads(MANIFEST.read_text(encoding="utf-8"))
     locked_baseline = json.loads(LOCKED_BASELINE.read_text(encoding="utf-8"))
+    acceptance_environments = json.loads(ACCEPTANCE_ENVIRONMENTS.read_text(encoding="utf-8"))
     rules = payload.get("navigation_rules") or {}
     centers = rules.get("primary_centers") or []
     if payload.get("schema") != "sce.product_menu_release_manifest.v2":
@@ -111,6 +113,21 @@ def main() -> int:
         missing_xmlids = sorted(required_full_scope_xmlids - xmlids)
         if missing_xmlids:
             errors.append(f"{product.get('product_key')} missing full construction scope: {missing_xmlids}")
+    daily_navigation = (
+        ((acceptance_environments.get("profiles") or {}).get("daily") or {}).get("navigation_policy") or {}
+    )
+    if daily_navigation.get("max_actions") != 159:
+        errors.append("daily acceptance maximum must lock the 159-action full user surface")
+    daily_required_paths = set(daily_navigation.get("required_paths") or [])
+    for path in (
+        "系统菜单 / 施工管理 / 质量管理 / 质量标准",
+        "系统菜单 / 施工管理 / 质量管理 / 现场影像",
+        "系统菜单 / 施工管理 / 安全管理 / 安全方案",
+        "系统菜单 / 施工管理 / 安全管理 / 安全巡检",
+        "系统菜单 / 施工管理 / 安全管理 / 安全复验",
+    ):
+        if path not in daily_required_paths:
+            errors.append(f"daily acceptance missing full construction path: {path}")
 
     project_ia = payload.get("project_center_information_architecture") or {}
     project_level_two = project_ia.get("level_two_order") or []
