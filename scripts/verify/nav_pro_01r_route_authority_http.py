@@ -55,7 +55,8 @@ def require_denied(result: tuple[int, dict], label: str) -> None:
 
 def authority(token: str) -> dict:
     data = require_ok(intent("system.init", {"contract_mode": "user", "with_preload": False}, token), "system.init")
-    contract = data.get("route_authority_v1") if isinstance(data.get("route_authority_v1"), dict) else {}
+    navigation = data.get("navigation_v1") if isinstance(data.get("navigation_v1"), dict) else {}
+    contract = navigation.get("route_authority_v1") if isinstance(navigation.get("route_authority_v1"), dict) else {}
     if contract.get("contract_version") != "route_authority.v1":
         raise RuntimeError("route_authority_v1 missing or invalid")
     return contract

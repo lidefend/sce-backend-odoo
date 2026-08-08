@@ -7,6 +7,7 @@ import getpass
 import json
 import os
 import re
+import stat
 import subprocess
 import urllib.request
 from pathlib import Path
@@ -14,6 +15,27 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_FRONTEND_URL = "http://1.95.85.92:18081"
+SECRET_FILE = Path("/home/lidefend/workspace/.secure/runtime-credentials/wutao-acceptance.password")
+
+
+def stored_password(path: Path = SECRET_FILE) -> str:
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        return ""
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid():
+        raise SystemExit("凭据文件必须属于当前用户且为普通文件")
+    if stat.S_IMODE(info.st_mode) != 0o600:
+        raise SystemExit("凭据文件权限必须是 600")
+    if info.st_size <= 0 or info.st_size > 512:
+        raise SystemExit("凭据文件大小异常")
+    payload = path.read_bytes()
+    if b"\x00" in payload or b"\n" in payload or b"\r" in payload:
+        raise SystemExit("凭据文件格式异常")
+    try:
+        return payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise SystemExit("凭据文件编码异常") from exc
 
 
 def locked_database(frontend_url: str) -> str:
@@ -32,7 +54,7 @@ def locked_database(frontend_url: str) -> str:
 def main() -> int:
     frontend_url = str(os.environ.get("FRONTEND_URL") or DEFAULT_FRONTEND_URL).rstrip("/")
     database = locked_database(frontend_url)
-    password = getpass.getpass("请输入 wutao 正式密码（输入不回显）: ")
+    password = stored_password() or getpass.getpass("请输入 wutao 正式密码（输入不回显）: ")
     if not password:
         raise SystemExit("密码不能为空")
     environment = os.environ.copy()

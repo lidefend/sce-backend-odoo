@@ -103,9 +103,6 @@ def _extract_case(case_key: str, payload: dict) -> dict:
         }
     if case_key == "system_init_admin":
         caps = raw.get("capabilities") if isinstance(raw.get("capabilities"), list) else []
-        if not caps:
-            delivery_engine = raw.get("delivery_engine_v1") if isinstance(raw.get("delivery_engine_v1"), dict) else {}
-            caps = delivery_engine.get("capabilities") if isinstance(delivery_engine.get("capabilities"), list) else []
         intents = raw.get("intents") if isinstance(raw.get("intents"), list) else []
         feature_flags = raw.get("feature_flags") if isinstance(raw.get("feature_flags"), dict) else {}
         return {

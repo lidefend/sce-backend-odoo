@@ -74,22 +74,8 @@ function findFirstResolvableTarget(nodes) {
 }
 
 function resolveActionId(node) {
-  const actionId = Number(
-    node?.meta?.action_id
-      || node?.action_id
-      || node?.native_action_id
-      || actionIdFromRoute(node?.route)
-      || actionIdFromRoute(node?.meta?.route)
-      || actionIdFromRoute(node?.entry_target?.route)
-      || actionIdFromRoute(node?.meta?.entry_target?.route)
-      || 0,
-  );
+  const actionId = Number(node?.meta?.action_id || node?.action_id || node?.native_action_id || 0);
   return Number.isFinite(actionId) && actionId > 0 ? actionId : 0;
-}
-
-function actionIdFromRoute(value) {
-  const match = String(value || '').trim().match(/^\/a\/([1-9]\d*)(?:[/?#]|$)/);
-  return match ? Number(match[1]) : 0;
 }
 
 function resolveActionMeta(node) {

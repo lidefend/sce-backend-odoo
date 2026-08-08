@@ -42,6 +42,37 @@ function findNavNode(nodes, xmlid) {
   return null;
 }
 
+function findNavNodeByLabel(nodes, label) {
+  for (const node of Array.isArray(nodes) ? nodes : []) {
+    if (String(node.label || node.name || node.title || '').trim() === label) return node;
+    const found = findNavNodeByLabel(node.children, label);
+    if (found) return found;
+  }
+  return null;
+}
+
+function diagnosticNode(node) {
+  const meta = node && typeof node.meta === 'object' ? node.meta : {};
+  return {
+    id: Number(node.id || 0),
+    menuId: Number(node.menu_id || 0),
+    key: String(node.key || ''),
+    menuXmlid: String(node.menu_xmlid || node.xmlid || meta.menu_xmlid || ''),
+    actionId: Number(node.action_id || node.native_action_id || meta.action_id || 0),
+    route: String(node.route || meta.route || ''),
+    model: String(node.model || meta.model || ''),
+    targetType: String(node.target_type || meta.target_type || ''),
+    deliveryMode: String(node.delivery_mode || meta.delivery_mode || ''),
+    metaKeys: Object.keys(meta).sort(),
+  };
+}
+
+function navigationCandidates(payload) {
+  return [
+    { source: 'navigation_v1.nav', nodes: payload?.navigation_v1?.nav },
+  ].filter((candidate) => Array.isArray(candidate.nodes));
+}
+
 function actionIdFromNode(node) {
   const meta = node && typeof node.meta === 'object' ? node.meta : {};
   const direct = Number(node.action_id || node.native_action_id || meta.action_id || 0);
@@ -81,7 +112,7 @@ async function login(page) {
   const consoleErrors = [];
   const pageErrors = [];
   const intents = [];
-  let systemInit = null;
+  const systemInits = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(sanitized(message.text()));
   });
@@ -101,24 +132,39 @@ async function login(page) {
       const requestPayload = JSON.parse(response.request().postData() || '{}');
       if (String(requestPayload.intent || '') !== 'system.init') return;
       const body = await response.json();
-      systemInit = body && typeof body.data === 'object' ? body.data : null;
+      const payload = body && typeof body.data === 'object' ? body.data : null;
+      if (payload) systemInits.push(payload);
     } catch {
-      systemInit = null;
+      // A malformed response is ignored; the report never records response bodies.
     }
   });
 
   const rows = [];
   try {
     await login(page);
-    for (let attempt = 0; attempt < 50 && !systemInit; attempt += 1) await page.waitForTimeout(100);
-    assert(systemInit, 'system.init response was not captured');
+    for (let attempt = 0; attempt < 50 && !systemInits.length; attempt += 1) await page.waitForTimeout(100);
+    assert(systemInits.length, 'system.init response was not captured');
+    await page.waitForTimeout(1000);
     for (const [index, target] of TARGETS.entries()) {
-      const navNode = findNavNode(systemInit.nav, target.xmlid);
+      let matchedInit = null;
+      let matchedNavigation = null;
+      for (const payload of [...systemInits].reverse()) {
+        const candidate = navigationCandidates(payload).find(({ nodes }) => (
+          findNavNode(nodes, target.xmlid) || findNavNodeByLabel(nodes, target.label)
+        ));
+        if (candidate) {
+          matchedInit = payload;
+          matchedNavigation = candidate;
+          break;
+        }
+      }
+      const identifiedNode = matchedNavigation ? findNavNode(matchedNavigation.nodes, target.xmlid) : null;
+      const navNode = identifiedNode || (matchedNavigation ? findNavNodeByLabel(matchedNavigation.nodes, target.label) : null);
       assert(navNode, `${target.label} navigation node is missing`);
       const expectedMenuId = Number(navNode.menu_id || navNode.id || 0);
       const expectedActionId = actionIdFromNode(navNode);
       assert(expectedMenuId > 0 && expectedActionId > 0, `${target.label} navigation target is incomplete`);
-      const authorityFound = authorityHasPair(systemInit.route_authority_v1, expectedMenuId, expectedActionId);
+      const authorityFound = authorityHasPair(matchedInit.navigation_v1?.route_authority_v1, expectedMenuId, expectedActionId);
       const search = page.locator('.primary-navigation__search input');
       await search.fill(target.label);
       const button = page.locator('[data-component="SidebarNav"] .node button.label').filter({ hasText: target.label });
@@ -132,6 +178,9 @@ async function login(page) {
       const row = {
         label: target.label,
         menuXmlid: target.xmlid,
+        matchedByStableIdentity: Boolean(identifiedNode),
+        navigationSource: matchedNavigation.source,
+        deliveredNode: diagnosticNode(navNode),
         expectedActionId,
         expectedMenuId,
         authorityFound,

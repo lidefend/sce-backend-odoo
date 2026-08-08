@@ -5,7 +5,6 @@ import {
   routeAuthorityContextAllowed,
   routeAuthorityForPrincipal,
 } from '../src/app/routeAuthority';
-import { createNavigationSelectionSnapshot } from '../src/app/navigationSelectionCore.js';
 
 const raw = {
   contract_version: 'route_authority.v1',
@@ -117,37 +116,6 @@ assert.equal(findRouteAuthority(menuBoundActionWithoutActionXmlid, {
   menuId: 805,
   query: {},
 })?.menu_xmlid, 'smart_construction_core.menu_sc_salary_registration_legacy_tenant_fixture_formal');
-
-const routeOnlyMenuSelection = createNavigationSelectionSnapshot({
-  id: 340,
-  menu_id: 340,
-  label: '油卡登记',
-  route: '/a/640?menu_id=340',
-  meta: {
-    menu_id: 340,
-    route: '/a/640?menu_id=340',
-    model: 'sc.fund.account.operation',
-    view_modes: ['tree', 'form'],
-  },
-  children: [],
-}, normalizeRouteAuthorityContract({
-  ...raw,
-  primary_actions: [{
-    action_xmlid: 'smart_construction_core.action_sc_fuel_card_registration_formal',
-    menu_xmlid: 'smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance',
-    route_kind: 'DISCOVERED_PRIMARY_NAV',
-    menu_id: 340,
-    action_id: 640,
-    model: 'sc.fund.account.operation',
-    allowed_operation: 'read',
-    required_capability: 'menu_action_read',
-    context_requirements: {},
-  }],
-}));
-assert.ok(routeOnlyMenuSelection);
-assert.equal(routeOnlyMenuSelection.actionId, 640);
-assert.equal(routeOnlyMenuSelection.menuId, 340);
-assert.equal(routeOnlyMenuSelection.targetKind, 'action');
 
 const shellOnly = {
   ...raw,

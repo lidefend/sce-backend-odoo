@@ -2,11 +2,7 @@ const SYSTEM_INIT_INTENT = 'system.init';
 
 function navigationFromPayload(payload) {
   const data = payload?.result || payload?.data || payload || {};
-  const release = data?.release_navigation_v1?.nav;
-  const delivery = data?.delivery_engine_v1?.nav;
-  if (Array.isArray(release)) return release;
-  if (Array.isArray(delivery)) return delivery;
-  return Array.isArray(data?.nav) ? data.nav : [];
+  return Array.isArray(data?.navigation_v1?.nav) ? data.navigation_v1.nav : [];
 }
 
 export function findReleasedNavigationTarget(nav, actionXmlid) {

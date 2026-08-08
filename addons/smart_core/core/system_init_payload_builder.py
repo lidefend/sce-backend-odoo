@@ -12,9 +12,7 @@ class SystemInitPayloadBuilder:
     SOURCE_KIND = "system_init_startup_payload_projection"
     SOURCE_AUTHORITIES = (
         "system_init_runtime_payload",
-        "delivery_engine_v1",
-        "route_authority_v1",
-        "release_navigation_v1",
+        "navigation_v1",
         "scene_ready_contract_v1",
         "page_contracts",
         "sc.entitlement",
@@ -25,8 +23,6 @@ class SystemInitPayloadBuilder:
     BUILD_MODE_PRELOAD = "preload"
     BUILD_MODE_DEBUG = "debug"
     MINIMAL_ALLOWED_KEYS = {
-        "delivery_engine_v1",
-        "route_authority_v1",
         "edition_runtime_v1",
         "user",
         "nav",
@@ -380,29 +376,8 @@ class SystemInitPayloadBuilder:
             minimal["ext_facts"] = minimal_ext_facts
         if isinstance(row.get("scene_action_surface_strategy"), dict):
             minimal["scene_action_surface_strategy"] = row.get("scene_action_surface_strategy")
-        if isinstance(row.get("delivery_engine_v1"), dict):
-            minimal["delivery_engine_v1"] = row.get("delivery_engine_v1")
-        if isinstance(row.get("route_authority_v1"), dict):
-            minimal["route_authority_v1"] = row.get("route_authority_v1")
         if isinstance(row.get("edition_runtime_v1"), dict):
             minimal["edition_runtime_v1"] = row.get("edition_runtime_v1")
-        if isinstance(row.get("release_navigation_v1"), dict):
-            minimal["release_navigation_v1"] = row.get("release_navigation_v1")
-            release = minimal["release_navigation_v1"]
-            delivery = minimal.get("delivery_engine_v1")
-            if (
-                isinstance(release, dict)
-                and isinstance(delivery, dict)
-                and isinstance(delivery.get("nav"), list)
-                and delivery.get("nav")
-                and (not isinstance(release.get("nav"), list) or not release.get("nav"))
-            ):
-                # Delivery is the already-authorized projection.  An empty
-                # release payload here is a serialization gap, not an
-                # intentional permission-censored result.
-                release = dict(release)
-                release["nav"] = delivery["nav"]
-                minimal["release_navigation_v1"] = release
         if isinstance(row.get("semantic_runtime"), dict):
             minimal["semantic_runtime"] = cls._build_minimal_semantic_runtime(
                 row.get("semantic_runtime")

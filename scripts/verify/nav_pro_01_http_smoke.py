@@ -121,32 +121,23 @@ def main() -> int:
         raise RuntimeError("NAV_PRO_PASSWORD is required")
     report = {"database": DB_NAME, "roles": {}, "direct_actions": {}}
     policies = role_policy()
-    all_release = set()
-    all_delivery = set()
+    all_navigation = set()
     for role in ROLE_KEYS:
         status, payload = intent("login", {"db": DB_NAME, "login": f"nav_pro_{role}", "password": PASSWORD})
         require_ok(status, payload, f"{role}.login")
         token = extract_login_token(payload)
         status, payload = intent("system.init", {"contract_mode": "user", "with_preload": False}, token)
         data = require_ok(status, payload, f"{role}.system.init")
-        release = flatten_xmlids(((data.get("release_navigation_v1") or {}).get("nav") or []))
-        delivery_role = data.get("delivery_engine_v1") if isinstance(data.get("delivery_engine_v1"), dict) else {}
-        delivery = flatten_xmlids((delivery_role.get("nav") or []))
-        if release != delivery:
-            raise RuntimeError(f"{role}: release/delivery leaf mismatch: {sorted(release ^ delivery)}")
+        navigation = data.get("navigation_v1") if isinstance(data.get("navigation_v1"), dict) else {}
+        delivery = flatten_xmlids(navigation.get("nav") or [])
         expected = set(policies[role].get("primary_menu_xmlids") or []) | set(policies[role].get("role_home_menu_xmlids") or [])
         if delivery != expected:
             role_surface = data.get("role_surface") if isinstance(data.get("role_surface"), dict) else {}
-            role_nav_xmlids = all_xmlids(data.get("nav_role_surface") or [])
             raise RuntimeError(
-                f"{role}: delivery/policy leaf mismatch: {sorted(delivery ^ expected)}; "
+                f"{role}: navigation/policy leaf mismatch: {sorted(delivery ^ expected)}; "
                 f"role_surface_keys={sorted(role_surface)}; "
                 f"declared={role_surface.get('exposure_policy_declared')!r}; "
                 f"surface_primary_count={len(role_surface.get('primary_menu_xmlids') or [])}; "
-                f"delivery_role={delivery_role.get('role_code')!r}; "
-                f"role_nav_xmlid_count={len(role_nav_xmlids)}; "
-                f"expected_in_role_nav={len(expected & role_nav_xmlids)}; "
-                f"role_nav_node_count={node_count(data.get('nav_role_surface') or [])}; "
                 f"nav_source={(data.get('nav_meta') or {}).get('nav_source')!r}"
             )
         if CONTEXT_XMLIDS[role] in delivery:
@@ -154,15 +145,14 @@ def main() -> int:
         expected_context = set(policies[role].get("contextual_menu_xmlids") or [])
         delivered_context = {
             str(row.get("menu_xmlid") or "").strip()
-            for row in delivery_role.get("contextual_routes") or []
+            for row in navigation.get("contextual_routes") or []
             if isinstance(row, dict) and str(row.get("menu_xmlid") or "").strip()
         }
         if delivered_context != expected_context:
             raise RuntimeError(f"{role}: contextual route authority differs from policy: {sorted(delivered_context ^ expected_context)}")
         if delivery & delivered_context:
             raise RuntimeError(f"{role}: primary/contextual route authority overlap")
-        all_release.update(release)
-        all_delivery.update(delivery)
+        all_navigation.update(delivery)
         context_name, context_model = CONTEXT_ACTIONS[role]
         context = find_action(token, context_name, context_model)
         status, payload = intent(
@@ -171,7 +161,7 @@ def main() -> int:
             token,
         )
         require_ok(status, payload, f"{role}.context.ui_contract")
-        report["roles"][role] = {"release_leaf_count": len(release), "delivery_leaf_count": len(delivery), "contextual_route_count": len(delivered_context), "context_route": "PASS"}
+        report["roles"][role] = {"navigation_leaf_count": len(delivery), "contextual_route_count": len(delivered_context), "context_route": "PASS"}
         print(f"{role.upper()}_PRIMARY_RUNTIME={len(delivery)}")
 
     status, login_payload = intent("login", {"db": DB_NAME, "login": "nav_pro_pm", "password": PASSWORD})
@@ -193,9 +183,9 @@ def main() -> int:
         require_ok(status, payload, f"{action_name}.api_data")
         report["direct_actions"][action_name] = "PASS"
 
-    report["release_delivery_leaf_diff"] = len(all_release ^ all_delivery)
+    report["navigation_leaf_count"] = len(all_navigation)
     print("NAV_PRO_01_HTTP_SMOKE=PASS")
-    print(f"RELEASE_DELIVERY_LEAF_DIFF={report['release_delivery_leaf_diff']}")
+    print(f"NAVIGATION_LEAF_COUNT={report['navigation_leaf_count']}")
     return 0
 
 
