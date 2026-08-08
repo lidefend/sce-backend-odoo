@@ -941,6 +941,73 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertTrue(lowcode_group.get("configurable"))
         self.assertEqual((lowcode_group.get("config_ref") or {}).get("id"), 861)
 
+    def test_legacy_config_center_policy_merges_into_product_configuration(self):
+        menu_xmlid = "smart_construction_core.menu_ui_menu_config_policy_business_config"
+        nav = menu_service.MenuService().build_nav(
+            policy={
+                "menu_groups": [
+                    {
+                        "group_key": "construction.config",
+                        "group_label": "配置中心",
+                        "menus": [
+                            {
+                                "menu_key": "menu_config",
+                                "label": "菜单配置",
+                                "menu_id": 419,
+                                "route": "/a/98?menu_id=419",
+                                "action_id": 98,
+                                "menu_xmlid": menu_xmlid,
+                                "res_model": "ui.menu.config.policy",
+                                "visible_menu_path": "智慧施工管理平台 / 配置中心 / 低代码系统配置 / 菜单配置",
+                                "entry_intent": "config",
+                                "release_state": "released",
+                                "enabled": True,
+                            }
+                        ],
+                    }
+                ]
+            },
+            role_surface={
+                "role_code": "business_config_admin",
+                "discover_installed_capabilities": True,
+            },
+            native_nav=[
+                {
+                    "label": "智慧施工管理平台",
+                    "menu_id": 291,
+                    "meta": {"menu_xmlid": "smart_construction_core.menu_sc_root"},
+                    "children": [
+                        {
+                            "label": "产品配置",
+                            "menu_id": 297,
+                            "meta": {"menu_xmlid": "smart_construction_core.menu_sc_business_config_center"},
+                            "children": [
+                                {
+                                    "label": "低代码系统配置",
+                                    "menu_id": 861,
+                                    "meta": {"menu_xmlid": "smart_construction_core.menu_sc_lowcode_system_config_group"},
+                                    "children": [
+                                        self._native_leaf(
+                                            label="菜单配置",
+                                            menu_xmlid=menu_xmlid,
+                                            menu_id=419,
+                                            route="/a/98?menu_id=419",
+                                            action_id=98,
+                                            model="ui.menu.config.policy",
+                                        )
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+
+        labels = [group.get("label") for group in (nav[0].get("children") or [])]
+        self.assertEqual(labels.count("产品配置"), 1)
+        self.assertNotIn("配置中心", labels)
+
 
 if __name__ == "__main__":
     unittest.main()

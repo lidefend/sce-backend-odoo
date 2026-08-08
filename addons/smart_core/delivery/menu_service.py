@@ -614,6 +614,7 @@ class MenuService:
         "基础资料": 5,
         "人事行政": 70,
         "资料证照": 80,
+        "产品配置": 980,
         "配置中心": 990,
         "配置": 990,
         "系统配置": 990,
@@ -622,6 +623,11 @@ class MenuService:
     def __init__(self, env=None):
         self.env = env
         self._business_group_display_order = self._resolve_business_group_display_order()
+
+    @staticmethod
+    def _canonical_group_label(label: str) -> str:
+        normalized = str(label or "").strip()
+        return "产品配置" if normalized == "配置中心" else normalized
 
     def _resolve_business_group_display_order(self) -> dict:
         order = dict(self.BUSINESS_GROUP_DISPLAY_ORDER)
@@ -1020,7 +1026,11 @@ class MenuService:
         path = str(menu.get("visible_menu_path") or "").strip()
         if not path:
             return []
-        return [part.strip() for part in re.split(r"\s+/\s+", path) if part.strip()]
+        return [
+            self._canonical_group_label(part)
+            for part in re.split(r"\s+/\s+", path)
+            if part.strip()
+        ]
 
     def _acceptance_menu_group_parts(self, menu: dict, group_label: str) -> list[str]:
         parts = self._policy_menu_path_parts(menu)
@@ -1530,7 +1540,9 @@ class MenuService:
                 if not isinstance(node, dict):
                     continue
                 meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-                label = str(node.get("label") or node.get("title") or node.get("name") or "").strip()
+                label = self._canonical_group_label(
+                    str(node.get("label") or node.get("title") or node.get("name") or "").strip()
+                )
                 try:
                     menu_id = int((node.get("menu_id") or meta.get("menu_id") or 0))
                 except Exception:
@@ -1587,7 +1599,7 @@ class MenuService:
         except Exception:
             return groups
         for menu in menus or []:
-            label = str(getattr(menu, "name", "") or "").strip()
+            label = self._canonical_group_label(str(getattr(menu, "name", "") or "").strip())
             try:
                 menu_id = int(getattr(menu, "id", 0) or 0)
             except Exception:
@@ -1611,7 +1623,7 @@ class MenuService:
         for group in groups:
             if not isinstance(group, dict):
                 continue
-            group_label = str(group.get("group_label") or "").strip() or "系统菜单"
+            group_label = self._canonical_group_label(str(group.get("group_label") or "").strip()) or "系统菜单"
             menus = []
             for menu in group.get("menus") or []:
                 if not isinstance(menu, dict):
@@ -1631,6 +1643,7 @@ class MenuService:
                     menus.append(menu)
             if menus:
                 next_group = dict(group)
+                next_group["group_label"] = group_label
                 next_group["menus"] = menus
                 out.append(next_group)
         return out
@@ -1723,7 +1736,9 @@ class MenuService:
             for group in policy.get("menu_groups") or []:
                 if not isinstance(group, dict):
                     continue
-                group_label = str(group.get("group_label") or group.get("label") or group.get("title") or "").strip()
+                group_label = self._canonical_group_label(
+                    str(group.get("group_label") or group.get("label") or group.get("title") or "").strip()
+                )
                 if not group_label:
                     continue
                 group_key = str(group.get("group_key") or group.get("key") or "").strip()
@@ -1745,7 +1760,7 @@ class MenuService:
             if not isinstance(group, dict):
                 continue
             group_key = str(group.get("group_key") or "").strip() or "system.ungrouped"
-            group_label = str(group.get("group_label") or "").strip() or "系统菜单"
+            group_label = self._canonical_group_label(str(group.get("group_label") or "").strip()) or "系统菜单"
             if group_key not in groups_by_key:
                 groups_by_key[group_key] = {
                     "group_key": group_key,
@@ -1818,7 +1833,7 @@ class MenuService:
         for menu in authorized_policy_rows:
             converged_menu = dict(menu)
             policy_group_key = str(menu.get("policy_group_key") or "").strip()
-            policy_group_label = str(menu.get("policy_group_label") or "").strip()
+            policy_group_label = self._canonical_group_label(str(menu.get("policy_group_label") or "").strip())
             preserve_policy_label = (
                 policy_group_key.startswith("catalog.acceptance.")
                 or policy_group_label in _CUSTOMER_ACCEPTANCE_GROUP_LABELS
@@ -1846,7 +1861,7 @@ class MenuService:
             if target_group_key not in groups_by_key:
                 groups_by_key[target_group_key] = {
                     "group_key": target_group_key,
-                    "group_label": str(menu.get("policy_group_label") or "").strip() or "产品发布面",
+                    "group_label": self._canonical_group_label(str(menu.get("policy_group_label") or "").strip()) or "产品发布面",
                     "config_menu_id": int(menu.get("policy_group_menu_id") or 0),
                     "menus": [],
                 }
