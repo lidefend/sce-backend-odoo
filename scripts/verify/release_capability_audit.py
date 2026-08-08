@@ -141,12 +141,7 @@ def _extract_data(body: dict) -> dict:
 
 
 def _extract_runtime_list(data: dict, key: str) -> list:
-    value = data.get(key) if isinstance(data.get(key), list) else []
-    if value:
-        return value
-    delivery_engine = data.get("delivery_engine_v1") if isinstance(data.get("delivery_engine_v1"), dict) else {}
-    nested = delivery_engine.get(key) if isinstance(delivery_engine.get(key), list) else []
-    return nested
+    return data.get(key) if isinstance(data.get(key), list) else []
 
 
 def _load_role_fixtures() -> list[RoleFixture]:

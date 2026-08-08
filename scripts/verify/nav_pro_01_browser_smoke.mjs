@@ -93,7 +93,7 @@ function attachCapture(page) {
     try {
       const body = JSON.parse(await response.text());
       const data = payloadData(body);
-      const nav = data?.delivery_engine_v1?.nav || data?.release_navigation_v1?.nav;
+      const nav = data?.navigation_v1?.nav;
       if (Array.isArray(nav)) state.navigation = nav;
     } catch {}
   });

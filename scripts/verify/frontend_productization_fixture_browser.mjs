@@ -147,11 +147,9 @@ async function main() {
       try {
         const body = await response.json();
         const data = body?.result || body?.data || body;
-        const d = data?.delivery_engine_v1?.nav;
-        const r = data?.release_navigation_v1?.nav;
-        if (Array.isArray(r)) financeNav = r;
-        else if (Array.isArray(d)) financeNav = d;
-        process.stderr.write(`[system-init-wire] status=${response.status()} delivery=${Array.isArray(d) ? d.length : 'missing'} release=${Array.isArray(r) ? r.length : 'missing'} result=${Array.isArray(data?.nav) ? data.nav.length : 'missing'}\n`);
+        const canonical = data?.navigation_v1?.nav;
+        if (Array.isArray(canonical)) financeNav = canonical;
+        process.stderr.write(`[system-init-wire] status=${response.status()} navigation_v1=${Array.isArray(canonical) ? canonical.length : 'missing'}\n`);
       } catch {}
     });
     finance.on('console', (msg) => { if (msg.type() === 'error') financeErrors.push(msg.text()); });
@@ -208,7 +206,7 @@ async function main() {
       try {
         const body = await response.json();
         const data = body?.result || body?.data || body;
-        const nav = data?.release_navigation_v1?.nav || data?.delivery_engine_v1?.nav;
+        const nav = data?.navigation_v1?.nav;
         if (Array.isArray(nav)) memberNav = nav;
       } catch {}
     });

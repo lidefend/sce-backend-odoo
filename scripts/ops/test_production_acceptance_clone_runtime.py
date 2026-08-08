@@ -144,6 +144,40 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         self.assertIn("com.docker.network.bridge.enable_ip_masquerade=false", create)
         self.assertIn("sc.production-acceptance-clone=true", create)
 
+    def test_replace_removes_only_verified_isolated_runtime(self) -> None:
+        network = "sc_restore_20260808t102000z_4d7e91a2_net"
+        with mock.patch.object(
+            RUNTIME,
+            "run",
+            side_effect=[
+                f"true|{network}",
+                "true|sc_restore_20260808t102000z_4d7e91a2_public_ingress",
+                "",
+                "",
+            ],
+        ) as runner:
+            self.assertTrue(
+                RUNTIME.remove_verified_runtime(
+                    "sc_restore_20260808t102000z_4d7e91a2", network
+                )
+            )
+        commands = [call.args[0] for call in runner.call_args_list]
+        self.assertEqual(
+            commands[-2:],
+            [
+                ["docker", "rm", "-f", "sc_restore_20260808t102000z_4d7e91a2_acceptance_web"],
+                ["docker", "rm", "-f", "sc_restore_20260808t102000z_4d7e91a2_acceptance_odoo"],
+            ],
+        )
+
+    def test_replace_rejects_unlabelled_backend(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="|foreign_network"):
+            with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "backend identity"):
+                RUNTIME.remove_verified_runtime(
+                    "sc_restore_20260808t102000z_4d7e91a2",
+                    "sc_restore_20260808t102000z_4d7e91a2_net",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
