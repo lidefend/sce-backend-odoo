@@ -65,6 +65,7 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
     def test_edge_starts_on_internal_network_before_public_connect(self) -> None:
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertIn('"--network", internal, "--publish"', source)
+        self.assertIn('"--user", "root"', source)
         self.assertIn('["docker", "network", "connect", public, web]', source)
 
     def test_runtime_secret_is_strong_private_and_stable(self) -> None:

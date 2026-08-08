@@ -330,6 +330,8 @@ def refresh_image(
     bindings = web_inspect.get("HostConfig", {}).get("PortBindings") or {}
     if bindings.get("80/tcp") != [{"HostIp": "0.0.0.0", "HostPort": str(port)}]:
         raise CloneRuntimeError("acceptance public port identity differs")
+    if web_state.get("Running") is True and web_inspect.get("Config", {}).get("User") != "root":
+        raise CloneRuntimeError("acceptance edge runtime user identity differs")
 
     old_tenant = next((
         Path(str(row.get("Source"))) for row in odoo_inspect.get("Mounts") or []
@@ -358,6 +360,7 @@ def refresh_image(
         web_command = [
             "docker", "run", "-d", "--name", web,
             "--network", internal, "--publish", f"0.0.0.0:{port}:80",
+            "--user", "root",
             "--label", "sc.production-acceptance-clone=true",
             "--env", f"ODOO_DB={database}",
         ]
