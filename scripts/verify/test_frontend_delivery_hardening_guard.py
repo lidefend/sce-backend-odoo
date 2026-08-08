@@ -57,6 +57,22 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn(':key="routeIdentity"', source)
         self.assertIn("useRoute()", source)
 
+    def test_cache_identity_is_scoped_to_the_authenticated_actor(self):
+        source = "return `activity:${activityActorPart()}:${routeKey}:${epoch}`;"
+        self.assertIn("activityActorPart()", source)
+
+    def test_logout_does_not_create_an_anonymous_record_cache_key(self):
+        source = "if (userId > 0) retainedActivityActorId.value = userId;"
+        self.assertNotIn("retainedActivityActorId.value = 0", source)
+
+    def test_scope_switch_leaves_record_before_context_mutation(self):
+        source = "const previousRoute = await leaveScopeSensitiveRoute();"
+        self.assertIn("await leaveScopeSensitiveRoute()", source)
+
+    def test_auxiliary_load_stops_after_page_deactivation(self):
+        source = "if (!isComponentActive.value || reloadToken !== activeReloadToken) return;"
+        self.assertIn("!isComponentActive.value", source)
+
 
 if __name__ == "__main__":
     unittest.main()

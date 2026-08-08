@@ -46,7 +46,7 @@ Generated from repository source files. This report is informational during the 
 | 1591 | Python source | `addons/smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py` |
 | 1586 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1546 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1525 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1544 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1523 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -103,9 +103,9 @@ Generated from repository source files. This report is informational during the 
 | 892 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
+| 872 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 870 | Python source | `scripts/release/test_release_publication.py` |
 | 867 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
-| 863 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 862 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 861 | Python source | `scripts/release/release_candidate.py` |
 | 858 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
@@ -166,7 +166,7 @@ Generated from repository source files. This report is informational during the 
 | 1591 | split_plan_required | Python source | `addons/smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py` |
 | 1586 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1546 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1525 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1544 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1523 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1479 | warning | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |

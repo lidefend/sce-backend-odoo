@@ -1663,7 +1663,7 @@ const {
   decodeContractV2Snapshot, dirtyFieldSet, fieldType,
   formData, formDataFieldNames,
   formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows,
-  initOne2manyRows, layoutNodes,
+  initOne2manyRows, isComponentActive, layoutNodes,
   loadActionContractRaw, loadError, loadModelContractRaw,
   loadNativeChatterTimeline, loadRelationOptions, menuId,
   mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeAttachments,

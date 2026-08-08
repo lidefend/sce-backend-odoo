@@ -889,6 +889,17 @@ async function selectRecordContext(option: RecordContextOption) {
   workspacePanelMode.value = 'navigation';
 }
 
+function scopeSensitiveRoute(): boolean {
+  return ['record', 'model-form', 'action', 'scene'].includes(String(route.name || ''));
+}
+
+async function leaveScopeSensitiveRoute(): Promise<string> {
+  if (!scopeSensitiveRoute()) return '';
+  const previousRoute = route.fullPath;
+  await router.replace('/my-work');
+  return previousRoute;
+}
+
 async function selectCompanyScope(companyIdValue: number) {
   cancelScheduledScopeRefresh();
   const companyId = Number(companyIdValue || 0) || null;
@@ -897,11 +908,15 @@ async function selectCompanyScope(companyIdValue: number) {
     return;
   }
   const previousRecordContextId = Number(selectedRecordContext.value?.id || 0) || 0;
+  const previousRoute = await leaveScopeSensitiveRoute();
   const applied = await session.selectBusinessScope({
     company_id: companyId,
     operation_strategy: selectedOperationStrategy.value,
   });
-  if (applied === false) return;
+  if (applied === false) {
+    if (previousRoute) await router.replace(previousRoute);
+    return;
+  }
   workspacePanelMode.value = 'navigation';
   await nextTick();
   scheduleScopeContextChanged(previousRecordContextId);
@@ -912,11 +927,15 @@ async function changeOperationScope(operationStrategy: string) {
   const normalized = String(operationStrategy || '').trim();
   if (normalized === selectedOperationStrategy.value) return;
   const previousRecordContextId = Number(selectedRecordContext.value?.id || 0) || 0;
+  const previousRoute = await leaveScopeSensitiveRoute();
   const applied = await session.selectBusinessScope({
     company_id: selectedCompanyId.value || null,
     operation_strategy: normalized,
   });
-  if (applied === false) return;
+  if (applied === false) {
+    if (previousRoute) await router.replace(previousRoute);
+    return;
+  }
   workspacePanelMode.value = 'navigation';
   await nextTick();
   scheduleScopeContextChanged(previousRecordContextId);

@@ -180,6 +180,24 @@ require(
     "frontend/apps/web/src/pages/ContractFormRoute.vue",
     "<ContractFormPage />",
 )
+require(
+    "frontend/apps/web/src/App.vue",
+    "function activityActorPart()",
+    "session.user?.id",
+    "retainedActivityActorId",
+    "if (userId > 0) retainedActivityActorId.value = userId;",
+    "activity:${activityActorPart()}:${routeKey}:${epoch}",
+)
+require(
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    "async function leaveScopeSensitiveRoute()",
+    "await router.replace('/my-work')",
+    "const previousRoute = await leaveScopeSensitiveRoute();",
+)
+require(
+    "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+    "if (!isComponentActive.value || reloadToken !== activeReloadToken) return;",
+)
 forbid(
     "frontend/apps/web/src/pages/ContractFormRoute.vue",
     ':key="routeIdentity"',

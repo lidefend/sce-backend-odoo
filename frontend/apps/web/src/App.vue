@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue';
+import { ref, watch } from 'vue';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import { PRODUCT_APP_TITLE } from './app/pageIdentity';
 import { usePageIdentityRuntime } from './app/pageIdentityRuntime';
@@ -28,6 +28,18 @@ import { useSessionStore } from './stores/session';
 
 const session = useSessionStore();
 const pageIdentity = usePageIdentityRuntime();
+const retainedActivityActorId = ref(0);
+
+watch(
+  () => positiveInteger(session.user?.id),
+  (userId) => {
+    // clearSession() runs before the router leaves a protected page. Retain
+    // the last authenticated actor through that short transition so logout
+    // cannot remount the current record under an anonymous cache key.
+    if (userId > 0) retainedActivityActorId.value = userId;
+  },
+  { immediate: true },
+);
 
 watch(
   [() => pageIdentity.identity.value.documentTitle, () => session.token],
@@ -51,6 +63,10 @@ function positiveInteger(value: unknown): number {
 function activityContextPart(): string {
   const selectedId = Number(session.recordContext?.selected?.id || 0) || 0;
   return selectedId > 0 ? `record-context:${selectedId}` : 'all';
+}
+
+function activityActorPart(): string {
+  return `user:${retainedActivityActorId.value || 0}`;
 }
 
 function activityRouteKey(route: RouteLocationNormalizedLoaded): string {
@@ -89,6 +105,6 @@ function activityCacheKey(route: RouteLocationNormalizedLoaded): string {
   const routeKey = activityRouteKey(route);
   if (!routeKey) return '';
   const epoch = Number(session.activityPageCacheEpochs[routeKey] || 0);
-  return `activity:${routeKey}:${epoch}`;
+  return `activity:${activityActorPart()}:${routeKey}:${epoch}`;
 }
 </script>

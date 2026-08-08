@@ -180,8 +180,17 @@ function capture(page) {
       state.network = state.network.slice(-30);
     }
     if (response.status() < 400 || !response.url().includes('/api/v1/')) return;
-    let intent = ''; try { intent = JSON.parse(response.request().postData() || '{}').intent || ''; } catch {}
-    const row = { status: response.status(), url: response.url(), intent };
+    let requestPayload = {};
+    try { requestPayload = JSON.parse(response.request().postData() || '{}'); } catch {}
+    const row = {
+      status: response.status(),
+      url: response.url(),
+      intent: requestPayload.intent || '',
+      op: requestPayload.params?.op || '',
+      model: requestPayload.params?.model || '',
+      res_id: Number(requestPayload.params?.res_id || 0) || 0,
+    };
+    const intent = row.intent;
     if (
       response.status() === 403
       && intent === 'ui.contract.v2'
