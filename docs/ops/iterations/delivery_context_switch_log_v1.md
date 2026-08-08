@@ -3147,3 +3147,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   The immutable candidate edge exposes an exact JSON `/healthz` liveness
   contract ahead of the SPA fallback, and the nginx container healthcheck
   validates its status and body rather than checking configuration syntax only.
+  The tenant-RC boundary build now passes an explicit `boundary_head` source
+  authority to repository preflight. It still requires a clean allowlisted
+  release branch and exact `SOURCE_SHA == HEAD`; ordinary candidates continue
+  to require the same SHA at `origin/main`.

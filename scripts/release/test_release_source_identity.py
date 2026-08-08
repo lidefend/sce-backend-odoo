@@ -119,6 +119,26 @@ class RepositoryIdentityTests(unittest.TestCase):
                 Path("."), SHA, runner=repository_runner(main="d" * 40)
             )
 
+    def test_explicit_boundary_head_accepts_remote_main_difference(self):
+        result = identity.validate_repository_identity(
+            Path("."),
+            SHA,
+            allow_boundary_head=True,
+            runner=repository_runner(main="d" * 40),
+        )
+        self.assertEqual(result["source_authority"], "boundary_head")
+        self.assertEqual(result["head_sha"], SHA)
+        self.assertEqual(result["remote_main_sha"], "d" * 40)
+
+    def test_boundary_head_still_rejects_source_head_difference(self):
+        with self.assertRaisesRegex(identity.ReleaseIdentityError, "release identity mismatch"):
+            identity.validate_repository_identity(
+                Path("."),
+                SHA,
+                allow_boundary_head=True,
+                runner=repository_runner(head="c" * 40, main="d" * 40),
+            )
+
 
 class ArtifactIdentityTests(unittest.TestCase):
     def test_all_artifact_identities_match(self):
