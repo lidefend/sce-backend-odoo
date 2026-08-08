@@ -37,7 +37,7 @@ BACKUP_ID = re.compile(r"^sc_production-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$")
 RESTORE_ID = re.compile(r"^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 ODOO_IMAGE_REF = re.compile(
-    r"^ghcr\.io/lidefend/sce-product@sha256:[0-9a-f]{64}$"
+    r"^(?:ghcr\.io/lidefend/sce-product@)?sha256:[0-9a-f]{64}$"
 )
 POSTGRES_IMAGE_REF = re.compile(
     r"^(?:docker\.io/library/)?postgres(?::15)?@sha256:[0-9a-f]{64}$"

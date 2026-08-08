@@ -301,6 +301,9 @@ class MetadataSafetyTests(unittest.TestCase):
 
 
 class RestoreIsolationTests(unittest.TestCase):
+    def test_offline_imported_odoo_config_digest_is_immutable(self):
+        self.assertIsNotNone(BACKUP.ODOO_IMAGE_REF.fullmatch("sha256:" + "a" * 64))
+
     def backup_fixture(self, root: Path) -> Path:
         directory = root / "sc_production-20260724T120000Z-a1b2c3d4"
         directory.mkdir(mode=0o700)
