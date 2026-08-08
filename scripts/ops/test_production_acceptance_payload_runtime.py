@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -17,27 +19,60 @@ class ProductionAcceptancePayloadRuntimeTests(unittest.TestCase):
     def test_accepts_scoped_plan_identity(self) -> None:
         RUNTIME.validate_identity(
             "sc_restore_20260808t105229z_d3e5bb8a",
-            "baosheng-fuel-20260808-v1",
+            "sample_tenant",
+            "sample-fuel-20260808-v1",
             "a" * 64,
             "plan",
         )
 
     def test_rejects_restore_path_escape(self) -> None:
         with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "restore identity"):
-            RUNTIME.validate_identity("../sc_production", "payload-v1", "a" * 64, "plan")
+            RUNTIME.validate_identity(
+                "../sc_production", "sample_tenant", "payload-v1", "a" * 64, "plan"
+            )
 
     def test_rejects_payload_path_escape(self) -> None:
         with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "payload identity"):
             RUNTIME.validate_identity(
-                "sc_restore_20260808t105229z_d3e5bb8a", "../payload", "a" * 64, "plan"
+                "sc_restore_20260808t105229z_d3e5bb8a",
+                "sample_tenant",
+                "../payload",
+                "a" * 64,
+                "plan",
             )
+
+    def test_rejects_invalid_tenant_identity(self) -> None:
+        with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "tenant identity"):
+            RUNTIME.validate_identity(
+                "sc_restore_20260808t105229z_d3e5bb8a",
+                "../tenant",
+                "payload-v1",
+                "a" * 64,
+                "plan",
+            )
+
+    def test_manifest_tenant_must_match_explicit_runtime_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            payload_root = Path(temporary)
+            (payload_root / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "tenant_key": "another_tenant",
+                        "payload_checksum": "a" * 64,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "tenant identity differs"):
+                RUNTIME._load_manifest(payload_root, "sample_tenant", "a" * 64)
 
     def test_import_requires_exact_confirmation_before_runtime_inspection(self) -> None:
         with mock.patch.dict(RUNTIME.os.environ, {}, clear=True):
             with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "exact isolated acceptance"):
                 RUNTIME.execute(
                     "sc_restore_20260808t105229z_d3e5bb8a",
-                    "baosheng-fuel-20260808-v1",
+                    "sample_tenant",
+                    "sample-fuel-20260808-v1",
                     "a" * 64,
                     "import",
                 )

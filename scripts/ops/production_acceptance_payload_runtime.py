@@ -14,9 +14,9 @@ from pathlib import Path
 
 RESTORE_ID = re.compile(r"^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$")
 PAYLOAD_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
+TENANT_KEY = re.compile(r"^[a-z0-9][a-z0-9_-]{1,63}$")
 CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
 CONFIRMATION = "IMPORT_SIGNED_PAYLOAD_INTO_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE"
-TENANT_KEY = "baosheng"
 OPERATOR_XMLID = "base.user_admin"
 IMPORTER_GROUP = "smart_core.group_smart_core_tenant_payload_importer"
 
@@ -48,12 +48,12 @@ def _conf_value(config: Path, key: str) -> str:
     return ""
 
 
-def _load_manifest(payload_root: Path, expected_checksum: str) -> dict:
+def _load_manifest(payload_root: Path, tenant_key: str, expected_checksum: str) -> dict:
     manifest_path = payload_root / "manifest.json"
     if manifest_path.is_symlink() or not manifest_path.is_file():
         raise PayloadRuntimeError("signed payload manifest is unavailable")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("tenant_key") != TENANT_KEY:
+    if manifest.get("tenant_key") != tenant_key:
         raise PayloadRuntimeError("payload tenant identity differs")
     if manifest.get("payload_checksum") != expected_checksum:
         raise PayloadRuntimeError("payload checksum differs")
@@ -62,11 +62,19 @@ def _load_manifest(payload_root: Path, expected_checksum: str) -> dict:
     return manifest
 
 
-def validate_identity(restore_id: str, payload_id: str, expected_checksum: str, action: str) -> None:
+def validate_identity(
+    restore_id: str,
+    tenant_key: str,
+    payload_id: str,
+    expected_checksum: str,
+    action: str,
+) -> None:
     if not RESTORE_ID.fullmatch(restore_id):
         raise PayloadRuntimeError("invalid isolated restore identity")
     if not PAYLOAD_ID.fullmatch(payload_id):
         raise PayloadRuntimeError("invalid payload identity")
+    if not TENANT_KEY.fullmatch(tenant_key):
+        raise PayloadRuntimeError("invalid tenant identity")
     if not CHECKSUM.fullmatch(expected_checksum):
         raise PayloadRuntimeError("invalid approved payload checksum")
     if action not in {"plan", "import", "verify"}:
@@ -82,8 +90,14 @@ def resume_failed_mode(action: str) -> str:
     return "1" if action == "import" else "0"
 
 
-def execute(restore_id: str, payload_id: str, expected_checksum: str, action: str) -> dict:
-    validate_identity(restore_id, payload_id, expected_checksum, action)
+def execute(
+    restore_id: str,
+    tenant_key: str,
+    payload_id: str,
+    expected_checksum: str,
+    action: str,
+) -> dict:
+    validate_identity(restore_id, tenant_key, payload_id, expected_checksum, action)
     if action == "import" and os.environ.get("CONFIRM_PRODUCTION_ACCEPTANCE_PAYLOAD_IMPORT") != CONFIRMATION:
         raise PayloadRuntimeError("exact isolated acceptance payload import confirmation is required")
 
@@ -104,7 +118,7 @@ def execute(restore_id: str, payload_id: str, expected_checksum: str, action: st
         raise PayloadRuntimeError("exact acceptance database filter is not locked")
 
     payload_root = Path(f"/data/backups/production_acceptance/payloads/{payload_id}")
-    manifest = _load_manifest(payload_root, expected_checksum)
+    manifest = _load_manifest(payload_root, tenant_key, expected_checksum)
     public_key = Path(f"/data/backups/production_acceptance/rehearsal-keys/{payload_id}/public.pem")
     if public_key.is_symlink() or not public_key.is_file():
         raise PayloadRuntimeError("payload verification key is unavailable")
@@ -149,7 +163,7 @@ def execute(restore_id: str, payload_id: str, expected_checksum: str, action: st
         "--mount", f"type=bind,src={payload_root},dst=/mnt/tenant-payload,readonly",
         "--mount", f"type=bind,src={public_key},dst=/mnt/tenant-payload-public-key,readonly",
         "-e", f"SC_TENANT_PAYLOAD_ACTION={action}",
-        "-e", f"SC_TENANT_PAYLOAD_TENANT_KEY={TENANT_KEY}",
+        "-e", f"SC_TENANT_PAYLOAD_TENANT_KEY={tenant_key}",
         "-e", "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_TYPE=external_xmlid",
         "-e", f"SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY={OPERATOR_XMLID}",
         "-e", f'SC_TENANT_PAYLOAD_DIRECT_GRANT_TARGETS=["{IMPORTER_GROUP}"]',
@@ -185,12 +199,19 @@ def execute(restore_id: str, payload_id: str, expected_checksum: str, action: st
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--restore-id", required=True)
+    parser.add_argument("--tenant-key", required=True)
     parser.add_argument("--payload-id", required=True)
     parser.add_argument("--expected-checksum", required=True)
     parser.add_argument("--action", required=True)
     args = parser.parse_args()
     try:
-        result = execute(args.restore_id, args.payload_id, args.expected_checksum, args.action)
+        result = execute(
+            args.restore_id,
+            args.tenant_key,
+            args.payload_id,
+            args.expected_checksum,
+            args.action,
+        )
     except (PayloadRuntimeError, OSError, json.JSONDecodeError) as exc:
         raise SystemExit(f"[production.acceptance.payload] BLOCKED: {exc}") from exc
     print(json.dumps(result, sort_keys=True))

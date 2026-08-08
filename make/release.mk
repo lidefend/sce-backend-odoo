@@ -293,9 +293,10 @@ verify.production.acceptance.payload: guard.prod.forbid
 
 define run_production_acceptance_payload
 	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }
+	@[[ "$(PRODUCTION_ACCEPTANCE_TENANT_KEY)" =~ ^[a-z0-9][a-z0-9_-]{1,63}$$ ]] || { echo "valid production acceptance tenant key is required" >&2; exit 2; }
 	@test -n "$(PRODUCTION_ACCEPTANCE_PAYLOAD_ID)" || { echo "production acceptance payload ID is required" >&2; exit 2; }
 	@[[ "$(PRODUCTION_ACCEPTANCE_PAYLOAD_CHECKSUM)" =~ ^[0-9a-f]{64}$$ ]] || { echo "approved payload checksum is required" >&2; exit 2; }
-	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_PAYLOAD_IMPORT="$(if $(filter import,$(1)),IMPORT_SIGNED_PAYLOAD_INTO_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE,)" python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_payload_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --payload-id "$(PRODUCTION_ACCEPTANCE_PAYLOAD_ID)" --expected-checksum "$(PRODUCTION_ACCEPTANCE_PAYLOAD_CHECKSUM)" --action "$(1)"'
+	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_PAYLOAD_IMPORT="$(if $(filter import,$(1)),IMPORT_SIGNED_PAYLOAD_INTO_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE,)" python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_payload_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --tenant-key "$(PRODUCTION_ACCEPTANCE_TENANT_KEY)" --payload-id "$(PRODUCTION_ACCEPTANCE_PAYLOAD_ID)" --expected-checksum "$(PRODUCTION_ACCEPTANCE_PAYLOAD_CHECKSUM)" --action "$(1)"'
 endef
 
 production.acceptance.payload.remote.plan: production.acceptance.backup.remote_install verify.production.acceptance.payload

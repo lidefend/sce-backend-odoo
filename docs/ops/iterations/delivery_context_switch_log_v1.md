@@ -3108,9 +3108,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 
 ## 2026-08-09 — ISOLATED-PRODUCTION-ACCEPTANCE-PAYLOAD-CLOSURE
 
-- Branch / anchor: `release/tenant-rc-baosheng-fuel-v1` from
+- Branch / anchor: governed `release/tenant-rc-<tenant-key>-v1` branch from
   `c3806823ae07c5b23b9d2dde0508382a0287d81b`.
-- Formal Product Layer / Layer Target / Module: P2 Baosheng signed customer
+- Formal Product Layer / Layer Target / Module: P2 signed customer
   history baseline executed by a P4 delivery tool; `scripts/ops`,
   `scripts/tenant_payload`, and `make/release.mk`.
 - Reason / Why Here: the isolated production restore and immutable P2 module
@@ -3123,7 +3123,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   data carrier. The tool refuses production-connected resources and binds the
   exact restore, database filter, internal network, filestore, tenant addon,
   signature key, payload checksum, operator XMLID, and importer group.
-- Blast Radius / validation: only the named Baosheng isolated acceptance clone
+- Blast Radius / validation: only the explicitly named isolated tenant acceptance clone
   may receive writes. Unit/compile guards, immutable remote-tool installation,
   signed payload plan, explicit-confirmation import, post-import verification,
   exact 8/32/501 archive counts, identity consistency, read-only behavior,
@@ -3138,6 +3138,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   filestore, and restores the previous tenant mount if startup fails.
   Retrying a failed batch is enabled only by the same explicitly confirmed
   import action; plan and verify remain non-resuming read paths.
+- Product-boundary correction: the P4 runtime now requires the tenant key as an
+  explicit invocation parameter and compares it with the signed manifest. Public
+  product code, tests, and audit prose retain no fixed customer identity.
   Immutable tool reinstall remains idempotent while consuming the complete
   archive stream before validating the existing SHA, preventing a false
   `SIGPIPE` failure on repeated verify calls.

@@ -26,7 +26,7 @@ class DailyAcceptanceCandidateImportTests(unittest.TestCase):
     def test_boundary_preflight_requires_exact_tenant_rc_head(self):
         with mock.patch.object(module, "git") as git:
             git.side_effect = lambda *args: {
-                ("branch", "--show-current"): "release/tenant-rc-baosheng-fuel-v1",
+                ("branch", "--show-current"): "release/tenant-rc-sample-v1",
                 ("rev-parse", "HEAD"): "a" * 40,
                 ("status", "--porcelain", "--untracked-files=all"): "",
             }[args]
