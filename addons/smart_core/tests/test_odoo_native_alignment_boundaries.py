@@ -23,7 +23,7 @@ from odoo.addons.smart_core.handlers.login import LoginHandler, LogoutHandler
 from odoo.addons.smart_core.handlers.meta_describe import MetaDescribeHandler
 from odoo.addons.smart_core.handlers.meta_intent_catalog import MetaIntentCatalogHandler
 from odoo.addons.smart_core.handlers.permission_check import PermissionCheckHandler
-from odoo.addons.smart_core.handlers.project_context import ProjectContextSearchHandler
+from odoo.addons.smart_core.handlers.project_context import RecordContextSearchHandler
 from odoo.addons.smart_core.handlers.scene_health import SceneHealthHandler
 from odoo.addons.smart_core.handlers.scene_packages_installed import ScenePackagesInstalledHandler
 from odoo.addons.smart_core.handlers.app_shell import AppCatalogHandler, AppNavHandler, AppOpenHandler
@@ -1224,8 +1224,8 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(delivery_menu_source.get("kind"), "delivery_menu_projection")
         self.assertIn("odoo_menu_fact_projection", delivery_menu_source.get("authorities") or [])
         self.assertTrue(delivery_menu_source.get("no_business_fact_authority"))
-        self.assertEqual(ProjectContextSearchHandler.SOURCE_KIND, "record_context_projection")
-        self.assertIn("record_context_model", ProjectContextSearchHandler.SOURCE_AUTHORITIES)
+        self.assertEqual(RecordContextSearchHandler.SOURCE_KIND, "record_context_projection")
+        self.assertIn("record_context_model", RecordContextSearchHandler.SOURCE_AUTHORITIES)
         project_context_source = project_context.source_authority_contract()
         self.assertEqual(project_context_source.get("kind"), "record_context_projection")
         self.assertTrue(project_context_source.get("no_business_fact_authority"))

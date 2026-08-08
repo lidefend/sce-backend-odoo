@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import ast
 import copy
 import hashlib
 import importlib.util
@@ -26,6 +27,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             ROOT
             / "addons/smart_construction_core/views/core/fund_legacy_readonly_archive_views.xml"
         )
+        self.module_manifest = ROOT / "addons/smart_construction_core/__manifest__.py"
 
     def test_action_only_targets_use_stable_external_ids(self):
         self.assertEqual(
@@ -62,6 +64,14 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertIn("direct_acceptance:充值登记", xml)
         self.assertIn('create="false" edit="false" delete="false" duplicate="false"', xml)
 
+    def test_fund_archive_menu_loads_after_organization_parent_definition(self):
+        manifest = ast.literal_eval(self.module_manifest.read_text(encoding="utf-8"))
+        data_files = manifest["data"]
+        self.assertLess(
+            data_files.index("views/core/office_admin_document_views.xml"),
+            data_files.index("views/core/fund_legacy_readonly_archive_views.xml"),
+        )
+
     def test_tax_certificate_target_is_resolved_as_installed_menu(self):
         menu_xmlid = "smart_construction_core.menu_sc_tax_certificate_registration_user"
         action_xmlid = "smart_construction_core.action_sc_tax_certificate_registration_user"
@@ -82,7 +92,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         self.assertEqual(
             contract["sha256"],
-            "0802344b1333564624f77139ff73b845d1b02e9374114ebc05bf455e9227e6bc",
+            "45ee21ab5693149d0a770133642270a8b0d10f6e234b0b4d2896fdda0686f550",
         )
         for product_key in CONTRACT.REQUIRED_PRODUCT_KEYS:
             rows = CONTRACT.baseline_rows(contract, product_key)
