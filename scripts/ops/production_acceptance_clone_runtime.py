@@ -294,7 +294,52 @@ def wait_frontend(web_container: str, database: str, port: int) -> tuple[str, bo
     raise CloneRuntimeError("acceptance frontend did not become ready")
 
 
-def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, port: int) -> dict[str, object]:
+def remove_verified_runtime(restore_id: str, network: str) -> bool:
+    backend = f"{restore_id}_acceptance_odoo"
+    frontend = f"{restore_id}_acceptance_web"
+    backend_identity = run(
+        [
+            "docker",
+            "inspect",
+            backend,
+            "--format",
+            '{{index .Config.Labels "sc.production-acceptance-clone"}}|{{.HostConfig.NetworkMode}}',
+        ],
+        False,
+    )
+    if not backend_identity:
+        return False
+    if backend_identity != f"true|{network}":
+        raise CloneRuntimeError("existing acceptance backend identity differs")
+    frontend_identity = run(
+        [
+            "docker",
+            "inspect",
+            frontend,
+            "--format",
+            '{{index .Config.Labels "sc.production-acceptance-clone"}}|{{.HostConfig.NetworkMode}}',
+        ],
+        False,
+    )
+    allowed_frontend_networks = {network, f"{restore_id}_public_ingress"}
+    if frontend_identity:
+        label, separator, frontend_network = frontend_identity.partition("|")
+        if label != "true" or not separator or frontend_network not in allowed_frontend_networks:
+            raise CloneRuntimeError("existing acceptance frontend identity differs")
+        run(["docker", "rm", "-f", frontend])
+    run(["docker", "rm", "-f", backend])
+    return True
+
+
+def activate(
+    restore_id: str,
+    tenant_sha: str,
+    tenant_module: str,
+    image: str,
+    port: int,
+    *,
+    replace_existing: bool = False,
+) -> dict[str, object]:
     if os.environ.get("CONFIRM_PRODUCTION_ACCEPTANCE_CLONE_RUNTIME") != CONFIRMATION:
         raise CloneRuntimeError("exact acceptance clone activation confirmation is required")
     validate_identity(restore_id, tenant_sha, tenant_module, image, port)
@@ -324,7 +369,13 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
 
     database = f"r10e_{restore_id}"
     runtime_root = Path(f"/data/backups/sc_production/acceptance-runtimes/{restore_id}")
-    runtime_root.mkdir(mode=0o700, parents=True, exist_ok=False)
+    if replace_existing:
+        replaced = remove_verified_runtime(restore_id, str(network))
+        if not replaced:
+            raise CloneRuntimeError("replace requested but verified acceptance runtime is absent")
+    else:
+        replaced = False
+    runtime_root.mkdir(mode=0o700, parents=True, exist_ok=replace_existing)
     config = runtime_root / "odoo.conf"
     config.write_text(
         "[options]\n"
@@ -344,6 +395,8 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
     modules = (*product_modules(), tenant_module)
     before = database_snapshot(str(db_container), database)
     upgrade_container = f"{restore_id}_acceptance_upgrade"
+    if run(["docker", "inspect", upgrade_container, "--format", "{{.Name}}"], False):
+        raise CloneRuntimeError("stale acceptance upgrade container exists")
     upgrade_args = odoo_container_args(
         name=upgrade_container,
         network=str(network),
@@ -436,6 +489,7 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
         "pending_modules": 0,
         "http_health": 200,
         "external_egress": False,
+        "replaced_existing_runtime": replaced,
     }
 
 
@@ -516,11 +570,19 @@ def main() -> None:
     parser.add_argument("--image", required=True)
     parser.add_argument("--port", required=True, type=int)
     parser.add_argument("--publish-existing", action="store_true")
+    parser.add_argument("--replace-existing", action="store_true")
     args = parser.parse_args()
     result = (
         publish_existing(args.restore_id, args.image, args.port)
         if args.publish_existing
-        else activate(args.restore_id, args.tenant_sha, args.tenant_module, args.image, args.port)
+        else activate(
+            args.restore_id,
+            args.tenant_sha,
+            args.tenant_module,
+            args.image,
+            args.port,
+            replace_existing=args.replace_existing,
+        )
     )
     print(
         json.dumps(
