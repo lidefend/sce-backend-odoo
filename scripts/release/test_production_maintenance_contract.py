@@ -123,6 +123,13 @@ class MaintenanceConfigTest(unittest.TestCase):
         self.assertNotIn('search([("login"', provision)
         self.assertNotIn("CREATE_OPERATOR", provision)
 
+    def test_acceptance_tool_reinstall_consumes_archive_before_idempotent_exit(self):
+        makefile = (ROOT / "make/release.mk").read_text()
+        install = makefile.split(
+            "production.acceptance.backup.remote_install:", 1
+        )[1].split("production.acceptance.backup.remote_sync:", 1)[0]
+        self.assertIn("if test -d \"$$final\"; then tar -tf - >/dev/null", install)
+
 
 if __name__ == "__main__":
     unittest.main()

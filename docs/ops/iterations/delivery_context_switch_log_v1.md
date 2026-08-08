@@ -3138,3 +3138,6 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   filestore, and restores the previous tenant mount if startup fails.
   Retrying a failed batch is enabled only by the same explicitly confirmed
   import action; plan and verify remain non-resuming read paths.
+  Immutable tool reinstall remains idempotent while consuming the complete
+  archive stream before validating the existing SHA, preventing a false
+  `SIGPIPE` failure on repeated verify calls.
