@@ -77,6 +77,11 @@ def container_exists(name: str) -> bool:
     return bool(run(["docker", "inspect", "--format", "{{.Id}}", name], check=False))
 
 
+def resume_failed_mode(action: str) -> str:
+    """Permit recovery only on the already-confirmed import path."""
+    return "1" if action == "import" else "0"
+
+
 def execute(restore_id: str, payload_id: str, expected_checksum: str, action: str) -> dict:
     validate_identity(restore_id, payload_id, expected_checksum, action)
     if action == "import" and os.environ.get("CONFIRM_PRODUCTION_ACCEPTANCE_PAYLOAD_IMPORT") != CONFIRMATION:
@@ -151,6 +156,7 @@ def execute(restore_id: str, payload_id: str, expected_checksum: str, action: st
         "-e", f"SC_TENANT_PAYLOAD_DB_ALLOWLIST={database}",
         "-e", f"SC_TENANT_PAYLOAD_APPROVED_CHECKSUM={expected_checksum}",
         "-e", "SC_TENANT_PAYLOAD_CHUNK_SIZE=100",
+        "-e", f"SC_TENANT_PAYLOAD_RESUME_FAILED={resume_failed_mode(action)}",
         "-e", "SC_TENANT_PAYLOAD_PUBLIC_KEY=/mnt/tenant-payload-public-key",
         "-e", f"SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY={secrets.token_hex(32)}",
         "--entrypoint", "odoo", image,

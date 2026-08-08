@@ -51,6 +51,11 @@ class ProductionAcceptancePayloadRuntimeTests(unittest.TestCase):
         with mock.patch.object(RUNTIME, "run", return_value="a" * 64):
             self.assertTrue(RUNTIME.container_exists("sc_restore_example_payload_plan"))
 
+    def test_failed_batch_resume_is_confined_to_confirmed_import(self) -> None:
+        self.assertEqual(RUNTIME.resume_failed_mode("import"), "1")
+        self.assertEqual(RUNTIME.resume_failed_mode("plan"), "0")
+        self.assertEqual(RUNTIME.resume_failed_mode("verify"), "0")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3136,3 +3136,5 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   refresh replaces only the isolated clone's Odoo container and immutable
   tenant mount; it preserves the exact database, internal network and
   filestore, and restores the previous tenant mount if startup fails.
+  Retrying a failed batch is enabled only by the same explicitly confirmed
+  import action; plan and verify remain non-resuming read paths.
