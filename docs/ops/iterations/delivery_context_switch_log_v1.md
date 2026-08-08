@@ -3151,3 +3151,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   authority to repository preflight. It still requires a clean allowlisted
   release branch and exact `SOURCE_SHA == HEAD`; ordinary candidates continue
   to require the same SHA at `origin/main`.
+  Candidate builds isolate workspace manifests and the frozen pnpm install
+  ahead of frontend source, and use named BuildKit caches for pnpm, apt and
+  pip downloads. Incremental source changes therefore rebuild application
+  output without reinstalling 623 frontend packages or refetching package
+  indexes; dependency changes remain locked by `pnpm-lock.yaml`.

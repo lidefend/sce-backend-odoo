@@ -3,7 +3,10 @@ FROM odoo:17.0@sha256:f88f646a0f5fc0b225995ee28953d9ce7367cc731b1756765114691fb9
 USER root
 
 COPY requirements-odoo.txt /tmp/requirements-odoo.txt
-RUN apt-get update \
+RUN --mount=type=cache,id=sce-runtime-apt-lists,target=/var/lib/apt/lists,sharing=locked \
+    --mount=type=cache,id=sce-runtime-apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=sce-runtime-pip-cache,target=/root/.cache/pip,sharing=locked \
+    apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gettext-base nginx \
     && apt-get purge -y nodejs npm node-less libnode-dev libnode72 \
     && apt-get autoremove -y --purge \
@@ -15,8 +18,8 @@ RUN apt-get update \
     && ! find /usr/share/java -type f -name '*.jar' -print -quit | grep -q . \
     && ! dpkg-query -W -f='${binary:Package}\t${db:Status-Status}\n' 'node-*' 'libnode*' 2>/dev/null \
         | awk '$2 == "installed" { found=1 } END { exit(found ? 0 : 1) }' \
-    && pip3 install --no-cache-dir -r /tmp/requirements-odoo.txt \
-    && rm -rf /var/lib/apt/lists/* /tmp/requirements-odoo.txt
+    && pip3 install -r /tmp/requirements-odoo.txt \
+    && rm -f /tmp/requirements-odoo.txt
 
 RUN mkdir -p /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons \
         /opt/sce-runtime/filestore /opt/sce-runtime/sessions /opt/sce-runtime/tmp \

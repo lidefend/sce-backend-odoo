@@ -152,6 +152,9 @@ class StaticContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dockerfile = (ROOT / "Dockerfile.production-candidate").read_text()
+        cls.frontend_dockerfile = (
+            ROOT / "Dockerfile.production-frontend-builder"
+        ).read_text()
         cls.entrypoint = (ROOT / "scripts/release/production_odoo_entrypoint.sh").read_text()
         cls.manager = (ROOT / "scripts/release/production_db_manage.sh").read_text()
         cls.compose = (ROOT / "docker-compose.production-candidate.yml").read_text()
@@ -203,6 +206,20 @@ class StaticContractTests(unittest.TestCase):
 
     def test_base_image_has_digest(self): self.assertRegex(self.dockerfile.splitlines()[0], r"^FROM odoo:17\.0@sha256:[0-9a-f]{64}$")
     def test_no_distribution_upgrade(self): self.assertNotRegex(self.dockerfile, r"apt(?:-get)?\s+(?:dist-upgrade|full-upgrade|upgrade)")
+    def test_candidate_build_uses_stable_dependency_cache_layers(self):
+        dependency_copy = self.frontend_dockerfile.index(
+            "COPY frontend/package.json frontend/pnpm-lock.yaml"
+        )
+        dependency_install = self.frontend_dockerfile.index(
+            "pnpm install --frozen-lockfile"
+        )
+        source_copy = self.frontend_dockerfile.index("COPY frontend/ ./")
+        self.assertLess(dependency_copy, dependency_install)
+        self.assertLess(dependency_install, source_copy)
+        self.assertIn("id=sce-frontend-pnpm-store", self.frontend_dockerfile)
+        self.assertIn("id=sce-frontend-apt-lists", self.frontend_dockerfile)
+        self.assertIn("id=sce-runtime-apt-lists", self.dockerfile)
+        self.assertIn("id=sce-runtime-pip-cache", self.dockerfile)
     def test_empty_addon_directories_created(self):
         for path in ("/mnt/customer-addons", "/mnt/test-addons", "/mnt/source-addons"): self.assertIn(path, self.dockerfile)
     def test_candidate_image_copies_versioned_locked_menu_contract(self):
