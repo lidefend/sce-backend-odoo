@@ -79,6 +79,13 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         )[1].split("production.acceptance.clone.remote_activate:", 1)[0]
         self.assertIn("cat >/dev/null; exit 0", tenant_target)
 
+    def test_existing_tool_package_still_consumes_archive_stream(self) -> None:
+        source = RELEASE_MAKE.read_text(encoding="utf-8")
+        tool_target = source.split(
+            "production.acceptance.backup.remote_install:", 1
+        )[1].split("production.acceptance.backup.remote_sync:", 1)[0]
+        self.assertIn("cat >/dev/null; exit 0", tool_target)
+
     def test_clone_runtime_includes_formal_external_dependencies(self) -> None:
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertIn("/mnt/addons_external/oca_server_ux", source)
@@ -87,7 +94,9 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         with mock.patch.object(RUNTIME, "url_ready", side_effect=[False, True]), mock.patch.object(
             RUNTIME, "run", return_value="172.27.0.3"
         ):
-            url, loopback_bound = RUNTIME.health_endpoint("acceptance", 18098)
+            url, loopback_bound = RUNTIME.container_endpoint(
+                "acceptance", 8069, "/web/health", loopback_port=18098
+            )
         self.assertEqual(url, "http://172.27.0.3:8069/web/health")
         self.assertFalse(loopback_bound)
 
@@ -95,7 +104,17 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         with mock.patch.object(RUNTIME, "url_ready", return_value=False), mock.patch.object(
             RUNTIME, "run", return_value="8.8.8.8"
         ):
-            self.assertEqual(RUNTIME.health_endpoint("acceptance", 18098), ("", False))
+            self.assertEqual(
+                RUNTIME.container_endpoint(
+                    "acceptance", 8069, "/web/health", loopback_port=18098
+                ),
+                ("", False),
+            )
+
+    def test_frontend_runtime_uses_root_only_for_nginx_bootstrap(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        frontend = source.split('web_container = f"{restore_id}_acceptance_web"', 1)[1]
+        self.assertIn('"--user",\n            "root",', frontend)
 
 
 if __name__ == "__main__":

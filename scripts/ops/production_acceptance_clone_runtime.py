@@ -157,18 +157,27 @@ def odoo_container_args(
     ]
 
 
-def url_ready(url: str) -> bool:
+def url_ready(url: str, expected: str = "") -> bool:
     try:
         with urllib.request.urlopen(url, timeout=2) as response:
-            return response.status == 200
+            body = response.read().decode("utf-8", errors="replace")
+            return response.status == 200 and (not expected or expected in body)
     except (urllib.error.URLError, TimeoutError):
         return False
 
 
-def health_endpoint(container: str, port: int) -> tuple[str, bool]:
-    loopback = f"http://127.0.0.1:{port}/web/health"
-    if url_ready(loopback):
-        return loopback, True
+def container_endpoint(
+    container: str,
+    container_port: int,
+    path: str,
+    *,
+    loopback_port: int | None = None,
+    expected: str = "",
+) -> tuple[str, bool]:
+    if loopback_port is not None:
+        loopback = f"http://127.0.0.1:{loopback_port}{path}"
+        if url_ready(loopback, expected):
+            return loopback, True
     address = run(
         [
             "docker",
@@ -185,8 +194,8 @@ def health_endpoint(container: str, port: int) -> tuple[str, bool]:
         return "", False
     if not parsed.is_private:
         return "", False
-    internal = f"http://{address}:8069/web/health"
-    return (internal, False) if url_ready(internal) else ("", False)
+    internal = f"http://{address}:{container_port}{path}"
+    return (internal, False) if url_ready(internal, expected) else ("", False)
 
 
 def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, port: int) -> dict[str, object]:
@@ -284,8 +293,8 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
             *runtime_args[:2],
             "-d",
             *runtime_args[2:8],
-            "--publish",
-            f"127.0.0.1:{port}:8069",
+            "--network-alias",
+            "odoo",
             "--label",
             "sc.production-acceptance-clone=true",
             *runtime_args[8:],
@@ -295,28 +304,78 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
     )
     for _ in range(120):
         state = run(["docker", "inspect", container, "--format", "{{.State.Running}}|{{.State.ExitCode}}"], False)
-        health_url, loopback_bound = health_endpoint(container, port)
+        health_url, _unused = container_endpoint(container, 8069, "/web/health")
         if state.startswith("true|") and health_url:
-            return {
-                "status": "PASS",
-                "database": database,
-                "container": container,
-                "loopback_port": port if loopback_bound else None,
-                "host_private_health_url": health_url,
-                "exact_dbfilter": True,
-                "tenant_sha": tenant_sha,
-                "tenant_module": tenant_module,
-                "upgraded_modules": list(modules),
-                "protected_counts_before": before,
-                "protected_counts_after": after,
-                "pending_modules": 0,
-                "http_health": 200,
-                "external_egress": False,
-            }
+            break
         if state and not state.startswith("true|"):
             raise CloneRuntimeError("acceptance clone exited before HTTP readiness")
         time.sleep(1)
-    raise CloneRuntimeError("acceptance clone did not remain running")
+    else:
+        raise CloneRuntimeError("acceptance clone did not remain running")
+
+    web_container = f"{restore_id}_acceptance_web"
+    run(
+        [
+            "docker",
+            "run",
+            "-d",
+            "--name",
+            web_container,
+            "--network",
+            str(network),
+            "--user",
+            "root",
+            "--publish",
+            f"127.0.0.1:{port}:80",
+            "--label",
+            "sc.production-acceptance-clone=true",
+            "-e",
+            f"ODOO_DB={database}",
+            "--entrypoint",
+            "/usr/local/bin/render_nginx_conf.sh",
+            image,
+        ]
+    )
+    frontend_url = ""
+    loopback_bound = False
+    for _ in range(60):
+        state = run(
+            ["docker", "inspect", web_container, "--format", "{{.State.Running}}|{{.State.ExitCode}}"],
+            False,
+        )
+        endpoint, loopback_bound = container_endpoint(
+            web_container,
+            80,
+            "/runtime-config.js",
+            loopback_port=port,
+            expected=database,
+        )
+        if state.startswith("true|") and endpoint:
+            frontend_url = endpoint.removesuffix("/runtime-config.js")
+            break
+        if state and not state.startswith("true|"):
+            raise CloneRuntimeError("acceptance frontend exited before readiness")
+        time.sleep(1)
+    if not frontend_url:
+        raise CloneRuntimeError("acceptance frontend did not become ready")
+    return {
+        "status": "PASS",
+        "database": database,
+        "container": container,
+        "web_container": web_container,
+        "loopback_port": port if loopback_bound else None,
+        "frontend_url": frontend_url,
+        "host_private_health_url": health_url,
+        "exact_dbfilter": True,
+        "tenant_sha": tenant_sha,
+        "tenant_module": tenant_module,
+        "upgraded_modules": list(modules),
+        "protected_counts_before": before,
+        "protected_counts_after": after,
+        "pending_modules": 0,
+        "http_health": 200,
+        "external_egress": False,
+    }
 
 
 def main() -> None:

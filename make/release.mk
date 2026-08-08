@@ -222,7 +222,7 @@ production.acceptance.backup.remote_install: guard.prod.forbid
 		scripts/ops/production_acceptance_clone_runtime.py \
 		scripts/release/production_backup_restore.py | \
 		ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" \
-		'set -eu; root="/opt/sce/deployment-tools"; final="$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)"; staging="$$root/.incomplete-$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/DEPLOYMENT_TOOL_SHA")" = "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; exit 0; fi; test ! -e "$$staging"; install -d -m 0700 "$$staging"; tar -xf - -C "$$staging"; printf "%s\n" "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" > "$$staging/DEPLOYMENT_TOOL_SHA"; chmod 0600 "$$staging/DEPLOYMENT_TOOL_SHA"; mv "$$staging" "$$final"'
+		'set -eu; root="/opt/sce/deployment-tools"; final="$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)"; staging="$$root/.incomplete-$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/DEPLOYMENT_TOOL_SHA")" = "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; cat >/dev/null; exit 0; fi; test ! -e "$$staging"; install -d -m 0700 "$$staging"; tar -xf - -C "$$staging"; printf "%s\n" "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" > "$$staging/DEPLOYMENT_TOOL_SHA"; chmod 0600 "$$staging/DEPLOYMENT_TOOL_SHA"; mv "$$staging" "$$final"'
 
 production.acceptance.backup.remote_sync: production.acceptance.backup.remote_install
 	@[[ "$(PRODUCTION_ACCEPTANCE_BACKUP_SET_ID)" =~ ^sc_production-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid production backup set ID" >&2; exit 2; }
