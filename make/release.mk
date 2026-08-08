@@ -204,6 +204,8 @@ PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY ?=
 PRODUCTION_ACCEPTANCE_TENANT_SHA ?=
 PRODUCTION_ACCEPTANCE_TENANT_MODULE ?=
 PRODUCTION_ACCEPTANCE_PORT ?= 18095
+PRODUCTION_ACCEPTANCE_PAYLOAD_ID ?=
+PRODUCTION_ACCEPTANCE_PAYLOAD_CHECKSUM ?=
 DAILY_ACCEPTANCE_CANDIDATE_ARCHIVE ?=
 DAILY_ACCEPTANCE_CANDIDATE_ARCHIVE_SHA256 ?=
 DAILY_ACCEPTANCE_CANDIDATE_IMAGE_REF ?=
@@ -219,6 +221,8 @@ production.acceptance.backup.remote_install: guard.prod.forbid
 	@git archive --format=tar "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" \
 		scripts/ops/production_acceptance_backup_sync.py \
 		scripts/ops/production_acceptance_clone_runtime.py \
+		scripts/ops/production_acceptance_payload_runtime.py \
+		scripts/tenant_payload/odoo_action.py \
 		scripts/release/production_backup_restore.py | \
 		ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" \
 		'set -eu; root="/opt/sce/deployment-tools"; final="$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)"; staging="$$root/.incomplete-$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/DEPLOYMENT_TOOL_SHA")" = "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; exit 0; fi; test ! -e "$$staging"; install -d -m 0700 "$$staging"; tar -xf - -C "$$staging"; printf "%s\n" "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" > "$$staging/DEPLOYMENT_TOOL_SHA"; chmod 0600 "$$staging/DEPLOYMENT_TOOL_SHA"; mv "$$staging" "$$final"'
@@ -267,6 +271,29 @@ production.acceptance.clone.remote_activate: production.acceptance.backup.remote
 	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }
 	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_CLONE_RUNTIME:-}" = "ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE" || { echo "exact clone activation confirmation is required" >&2; exit 2; }
 	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_CLONE_RUNTIME=ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_clone_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --tenant-sha "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" --tenant-module "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" --image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --port "$(PRODUCTION_ACCEPTANCE_PORT)"'
+
+.PHONY: verify.production.acceptance.payload production.acceptance.payload.remote.plan production.acceptance.payload.remote.import production.acceptance.payload.remote.verify
+
+verify.production.acceptance.payload: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/production_acceptance_payload_runtime.py scripts/ops/test_production_acceptance_payload_runtime.py scripts/tenant_payload/odoo_action.py
+	@python3 -m unittest scripts/ops/test_production_acceptance_payload_runtime.py
+
+define run_production_acceptance_payload
+	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }
+	@test -n "$(PRODUCTION_ACCEPTANCE_PAYLOAD_ID)" || { echo "production acceptance payload ID is required" >&2; exit 2; }
+	@[[ "$(PRODUCTION_ACCEPTANCE_PAYLOAD_CHECKSUM)" =~ ^[0-9a-f]{64}$$ ]] || { echo "approved payload checksum is required" >&2; exit 2; }
+	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_PAYLOAD_IMPORT="$${CONFIRM_PRODUCTION_ACCEPTANCE_PAYLOAD_IMPORT:-}" python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_payload_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --payload-id "$(PRODUCTION_ACCEPTANCE_PAYLOAD_ID)" --expected-checksum "$(PRODUCTION_ACCEPTANCE_PAYLOAD_CHECKSUM)" --action "$(1)"'
+endef
+
+production.acceptance.payload.remote.plan: production.acceptance.backup.remote_install verify.production.acceptance.payload
+	$(call run_production_acceptance_payload,plan)
+
+production.acceptance.payload.remote.import: production.acceptance.backup.remote_install verify.production.acceptance.payload
+	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_PAYLOAD_IMPORT:-}" = "IMPORT_SIGNED_PAYLOAD_INTO_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE" || { echo "exact isolated acceptance payload import confirmation is required" >&2; exit 2; }
+	$(call run_production_acceptance_payload,import)
+
+production.acceptance.payload.remote.verify: production.acceptance.backup.remote_install verify.production.acceptance.payload
+	$(call run_production_acceptance_payload,verify)
 
 production.backup.install.preflight:
 	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)

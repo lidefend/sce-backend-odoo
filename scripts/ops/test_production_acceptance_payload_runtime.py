@@ -1,0 +1,47 @@
+from __future__ import annotations
+
+import importlib.util
+import unittest
+from pathlib import Path
+from unittest import mock
+
+
+SCRIPT = Path(__file__).with_name("production_acceptance_payload_runtime.py")
+SPEC = importlib.util.spec_from_file_location("production_acceptance_payload_runtime", SCRIPT)
+assert SPEC and SPEC.loader
+RUNTIME = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(RUNTIME)
+
+
+class ProductionAcceptancePayloadRuntimeTests(unittest.TestCase):
+    def test_accepts_scoped_plan_identity(self) -> None:
+        RUNTIME.validate_identity(
+            "sc_restore_20260808t105229z_d3e5bb8a",
+            "baosheng-fuel-20260808-v1",
+            "a" * 64,
+            "plan",
+        )
+
+    def test_rejects_restore_path_escape(self) -> None:
+        with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "restore identity"):
+            RUNTIME.validate_identity("../sc_production", "payload-v1", "a" * 64, "plan")
+
+    def test_rejects_payload_path_escape(self) -> None:
+        with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "payload identity"):
+            RUNTIME.validate_identity(
+                "sc_restore_20260808t105229z_d3e5bb8a", "../payload", "a" * 64, "plan"
+            )
+
+    def test_import_requires_exact_confirmation_before_runtime_inspection(self) -> None:
+        with mock.patch.dict(RUNTIME.os.environ, {}, clear=True):
+            with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "exact isolated acceptance"):
+                RUNTIME.execute(
+                    "sc_restore_20260808t105229z_d3e5bb8a",
+                    "baosheng-fuel-20260808-v1",
+                    "a" * 64,
+                    "import",
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()

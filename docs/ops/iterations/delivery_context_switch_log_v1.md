@@ -3105,3 +3105,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   daily write entry; it is fixed to dev/sc_demo, requires an explicit
   confirmation, derives the exact HEAD version and reuses the formal snapshot
   service plus locked-contract assertions.
+
+## 2026-08-09 — ISOLATED-PRODUCTION-ACCEPTANCE-PAYLOAD-CLOSURE
+
+- Branch / anchor: `release/tenant-rc-baosheng-fuel-v1` from
+  `c3806823ae07c5b23b9d2dde0508382a0287d81b`.
+- Formal Product Layer / Layer Target / Module: P2 Baosheng signed customer
+  history baseline executed by a P4 delivery tool; `scripts/ops`,
+  `scripts/tenant_payload`, and `make/release.mk`.
+- Reason / Why Here: the isolated production restore and immutable P2 module
+  were activated on the daily server, but the signed supplemental fuel payload
+  had no governed plan/import/verify entry for that persistent clone. The P4
+  tool owns the one-time replay and audit boundary while the signed P2 payload
+  remains the customer-data authority.
+- Why Not Elsewhere: no customer records enter P0/P1 source, no platform or
+  industry default is changed, and no P3 runtime configuration is used as a
+  data carrier. The tool refuses production-connected resources and binds the
+  exact restore, database filter, internal network, filestore, tenant addon,
+  signature key, payload checksum, operator XMLID, and importer group.
+- Blast Radius / validation: only the named Baosheng isolated acceptance clone
+  may receive writes. Unit/compile guards, immutable remote-tool installation,
+  signed payload plan, explicit-confirmation import, post-import verification,
+  exact 8/32/501 archive counts, identity consistency, read-only behavior,
+  frontend contract/data probes, and zero production connections prove
+  containment and closure.
