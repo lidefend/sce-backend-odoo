@@ -43,6 +43,13 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
                 8069,
             )
 
+    def test_tenant_refresh_has_a_distinct_confirmation(self) -> None:
+        self.assertNotEqual(RUNTIME.CONFIRMATION, RUNTIME.REFRESH_CONFIRMATION)
+        self.assertEqual(
+            RUNTIME.REFRESH_CONFIRMATION,
+            "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_TENANT_RUNTIME",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

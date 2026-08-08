@@ -3129,3 +3129,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   exact 8/32/501 archive counts, identity consistency, read-only behavior,
   frontend contract/data probes, and zero production connections prove
   containment and closure.
+- Runtime correction: supplemental archives may retain a relationship to an
+  inactive historical project. The P2 customer adapter admits that lookup only
+  inside the signed narrow-import context, still requires importer authority
+  and an allowed company, and never uses `sudo`. A distinct confirmed P4
+  refresh replaces only the isolated clone's Odoo container and immutable
+  tenant mount; it preserves the exact database, internal network and
+  filestore, and restores the previous tenant mount if startup fails.
