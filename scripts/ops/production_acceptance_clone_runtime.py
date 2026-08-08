@@ -312,9 +312,14 @@ def refresh_image(
     old_image = str(odoo_inspect.get("Image") or "")
     if old_image != str(web_inspect.get("Image") or "") or not IMAGE.fullmatch(old_image):
         raise CloneRuntimeError("current acceptance image identity differs across containers")
+    if odoo_inspect.get("State", {}).get("Running") is not True:
+        raise CloneRuntimeError("current acceptance application is not running")
+    web_state = web_inspect.get("State", {})
+    if web_state.get("Running") is not True and not (
+        web_state.get("Status") == "exited" and web_state.get("ExitCode") == 1
+    ):
+        raise CloneRuntimeError("current acceptance edge state is not recoverable")
     for row in (odoo_inspect, web_inspect):
-        if row.get("State", {}).get("Running") is not True:
-            raise CloneRuntimeError("current acceptance runtime is not running")
         labels = row.get("Config", {}).get("Labels") or {}
         if labels.get("sc.production-acceptance-clone") != "true":
             raise CloneRuntimeError("target container is not an acceptance clone")
@@ -352,7 +357,7 @@ def refresh_image(
         ])
         web_command = [
             "docker", "run", "-d", "--name", web,
-            "--network", public, "--publish", f"0.0.0.0:{port}:80",
+            "--network", internal, "--publish", f"0.0.0.0:{port}:80",
             "--label", "sc.production-acceptance-clone=true",
             "--env", f"ODOO_DB={database}",
         ]
@@ -365,7 +370,7 @@ def refresh_image(
             "--entrypoint", "/usr/local/bin/render_nginx_conf.sh", runtime_image,
         ])
         run(web_command)
-        run(["docker", "network", "connect", internal, web])
+        run(["docker", "network", "connect", public, web])
 
     def wait_ready(exact_healthz: bool) -> None:
         probe = (

@@ -62,6 +62,11 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_IMAGE_RUNTIME",
         )
 
+    def test_edge_starts_on_internal_network_before_public_connect(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('"--network", internal, "--publish"', source)
+        self.assertIn('["docker", "network", "connect", public, web]', source)
+
     def test_runtime_secret_is_strong_private_and_stable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = RUNTIME.ensure_runtime_secret(Path(directory))
