@@ -26,33 +26,6 @@ PRODUCT_NAVIGATION_V2_GROUP_ALIASES = {
     "人事行政": "组织行政",
     "资料证照": "组织行政",
 }
-PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES = {
-    ("合同中心", "履约与预警（后续上线）", "smart_construction_core.menu_sc_contract_performance_roadmap_v2"),
-    ("成本中心", "成本预测（后续上线）", "smart_construction_core.menu_sc_cost_forecast_roadmap_v2"),
-    ("成本中心", "现金流预测（后续上线）", "smart_construction_core.menu_sc_cost_cashflow_roadmap_v2"),
-    ("物资与分包", "供应链协同（后续上线）", "smart_construction_core.menu_sc_supply_collaboration_roadmap_v2"),
-    ("施工管理", "现场移动（后续上线）", "smart_construction_core.menu_sc_field_mobile_roadmap_v2"),
-    ("施工管理", "BIM协同（后续上线）", "smart_construction_core.menu_sc_bim_collaboration_roadmap_v2"),
-    ("财务中心", "资金预测（后续上线）", "smart_construction_core.menu_sc_fund_forecast_roadmap_v2"),
-    ("税务中心", "税务申报（后续上线）", "smart_construction_core.menu_sc_tax_filing_roadmap_v2"),
-    ("税务中心", "发票查验（后续上线）", "smart_construction_core.menu_sc_invoice_verification_roadmap_v2"),
-    ("报表中心", "预测预警（后续上线）", "smart_construction_core.menu_sc_report_prediction_roadmap_v2"),
-    ("组织行政", "人员生命周期（后续上线）", "smart_construction_core.menu_sc_people_lifecycle_roadmap_v2"),
-    ("组织行政", "资源能力（后续上线）", "smart_construction_core.menu_sc_resource_capacity_roadmap_v2"),
-    ("项目中心", "项目组织（后续上线）", "smart_construction_core.menu_sc_project_organization_group_v2"),
-    ("项目中心", "里程碑管理（后续上线）", "smart_construction_core.menu_sc_project_milestone_group_v2"),
-    ("项目中心", "项目协同（后续上线）", "smart_construction_core.menu_sc_project_collaboration_group_v2"),
-    ("项目中心", "风险与问题（后续上线）", "smart_construction_core.menu_sc_project_risk_group_v2"),
-    ("项目中心", "项目收尾（后续上线）", "smart_construction_core.menu_sc_project_closeout_group_v2"),
-    ("报表中心", "项目经营统计表", "smart_construction_core.menu_sc_project_operation_statistics_report"),
-    ("报表中心", "公司经营情况表", "smart_construction_core.menu_sc_company_operation_summary_report"),
-    ("成本中心", "目标成本", "smart_construction_core.menu_sc_project_budget"),
-    ("成本中心", "预算清单分摊", "smart_construction_core.menu_sc_budget_alloc"),
-    ("成本中心", "进度计量", "smart_construction_core.menu_sc_project_progress"),
-    ("成本中心", "成本台账", "smart_construction_core.menu_sc_project_cost_ledger"),
-    ("成本中心", "成本汇总", "smart_construction_core.menu_sc_cost_reports"),
-    ("成本中心", "经营利润", "smart_construction_core.menu_sc_profit_reports"),
-}
 
 # These locked entries are intentionally delivered as action-only navigation
 # surfaces. Their policy identity remains the versioned menu XMLID, while the
@@ -272,11 +245,11 @@ def assert_policy_matches_locked_contract(contract: dict, product_key: str, menu
     actual_set = set(actual)
     missing = expected_set - actual_set
     additions = actual_set - expected_set
-    if missing or not additions.issubset(PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES):
+    if missing or additions or len(actual) != len(actual_set):
         raise LockedMenuPolicyContractError(
             "LOCKED_MENU_POLICY_SYNCHRONIZATION_MISMATCH",
             f"{product_key} expected={len(expected)} actual={len(actual)} "
-            f"missing={len(missing)} unauthorized_additions={len(additions - PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES)}",
+            f"missing={len(missing)} additions={len(additions)} duplicates={len(actual) - len(actual_set)}",
         )
     digest = hashlib.sha256(
         json.dumps(actual, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -285,7 +258,7 @@ def assert_policy_matches_locked_contract(contract: dict, product_key: str, menu
         "product_key": product_key,
         "menu_count": len(actual),
         "locked_menu_count": len(expected),
-        "authorized_addition_count": len(additions),
+        "exact_match": True,
         "normalized_sha256": digest,
     }
 
@@ -307,19 +280,15 @@ def assert_snapshot_matches_locked_contract(contract: dict, product_key: str, pa
             )
         )
     expected_projection = [(label, menu_xmlid) for _group, label, menu_xmlid in expected]
-    allowed_additions = {
-        (label, menu_xmlid)
-        for _group, label, menu_xmlid in PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES
-    }
     expected_set = set(expected_projection)
     actual_set = set(actual)
     missing = expected_set - actual_set
     additions = actual_set - expected_set
-    if missing or not additions.issubset(allowed_additions) or len(actual) != len(actual_set):
+    if missing or additions or len(actual) != len(actual_set):
         raise LockedMenuPolicyContractError(
             "LOCKED_MENU_SNAPSHOT_MISMATCH",
             f"{product_key} expected={len(expected_projection)} actual={len(actual)} "
-            f"missing={len(missing)} unauthorized_additions={len(additions - allowed_additions)}",
+            f"missing={len(missing)} additions={len(additions)} duplicates={len(actual) - len(actual_set)}",
         )
     digest = hashlib.sha256(
         json.dumps(actual, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -328,6 +297,6 @@ def assert_snapshot_matches_locked_contract(contract: dict, product_key: str, pa
         "product_key": product_key,
         "menu_count": len(actual),
         "locked_menu_count": len(expected_projection),
-        "authorized_addition_count": len(additions),
+        "exact_match": True,
         "normalized_sha256": digest,
     }

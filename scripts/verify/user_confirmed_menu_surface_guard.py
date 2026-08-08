@@ -26,16 +26,17 @@ PRODUCT_KEYS = ("construction.standard", "construction.preview")
 CHECK_LOGIN = "wutao"
 FORBIDDEN_USER_VISIBLE_GROUPS = {"用户数据验收", "用户核对菜单", "产品发布面", "正式业务菜单"}
 EXPECTED_GROUP_COUNTS = {
-    "基础资料": 2,
-    "项目中心": 3,
-    "合同中心": 6,
-    "施工管理": 3,
-    "物资与分包": 23,
-    "财务中心": 42,
-    "人事行政": 8,
-    "资料证照": 3,
+    "工作台": 2,
+    "项目中心": 8,
+    "合同中心": 7,
+    "成本中心": 8,
+    "物资与分包": 24,
+    "施工管理": 19,
+    "财务中心": 44,
+    "税务中心": 8,
+    "报表中心": 14,
+    "组织行政": 15,
     "配置中心": 1,
-    "税务中心": 6,
 }
 FINANCE_INTERFUND_ANALYSIS_PRODUCT_MENU_XMLIDS = {
     "smart_construction_core.menu_sc_finance_project_capital_position",

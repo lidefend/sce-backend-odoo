@@ -9,6 +9,7 @@ from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/product_menu_release_manifest_v2.json"
+LOCKED_BASELINE = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
 MENU_XML = ROOT / "addons/smart_construction_core/views/menu_product_navigation_v2.xml"
 BASE_MENU_XML = ROOT / "addons/smart_construction_core/views/menu.xml"
 NATIVE_MENU_LOAD_ORDER = [
@@ -62,6 +63,7 @@ EXPECTED_FOLLOWUP_BY_CENTER = {
 def main() -> int:
     errors: list[str] = []
     payload = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    locked_baseline = json.loads(LOCKED_BASELINE.read_text(encoding="utf-8"))
     rules = payload.get("navigation_rules") or {}
     centers = rules.get("primary_centers") or []
     if payload.get("schema") != "sce.product_menu_release_manifest.v2":
@@ -70,6 +72,45 @@ def main() -> int:
         errors.append("primary center order/count mismatch")
     if rules.get("maximum_business_depth") != 3:
         errors.append("business menu depth must be exactly 3")
+    strategy = locked_baseline.get("policy_strategy") or {}
+    if strategy.get("mode") != "FULL_FORMAL_PRODUCT_SCOPE":
+        errors.append("locked product policy must declare full formal product scope")
+    if strategy.get("effective_menu_count_per_product") != 150:
+        errors.append("locked product policy must record the exact full menu count")
+    if strategy.get("effective_capability_count_per_product") != 150:
+        errors.append("locked product policy must record the exact full capability count")
+    required_full_scope_xmlids = {
+        "smart_construction_core.menu_sc_workbench_my_todo_fact",
+        "smart_construction_core.menu_sc_workbench_my_approval_fact",
+        "smart_construction_core.menu_sc_construction_progress",
+        "smart_construction_core.menu_sc_quality_standard_v2",
+        "smart_construction_core.menu_sc_quality_issue",
+        "smart_construction_core.menu_sc_quality_rectification",
+        "smart_construction_core.menu_sc_quality_recheck",
+        "smart_construction_core.menu_sc_quality_site_photo_v2",
+        "smart_construction_core.menu_sc_safety_plan_v2",
+        "smart_construction_core.menu_sc_safety_disclosure_v2",
+        "smart_construction_core.menu_sc_safety_risk_library_v2",
+        "smart_construction_core.menu_sc_safety_hazard_source_v2",
+        "smart_construction_core.menu_sc_safety_patrol_v2",
+        "smart_construction_core.menu_sc_safety_issue",
+        "smart_construction_core.menu_sc_safety_rectification",
+        "smart_construction_core.menu_sc_safety_recheck",
+    }
+    full_baseline_xmlids = set()
+    for product in locked_baseline.get("products") or []:
+        rows = [menu for group in product.get("menu_groups") or [] for menu in group.get("menus") or []]
+        xmlids = {menu.get("menu_xmlid") for menu in rows}
+        full_baseline_xmlids.update(xmlids)
+        if len(rows) != 150 or len(xmlids) != 150:
+            errors.append(f"{product.get('product_key')} full baseline must contain 150 unique menus")
+        capabilities = product.get("capabilities") or []
+        capability_xmlids = {row.get("menu_xmlid") for row in capabilities}
+        if len(capabilities) != 150 or capability_xmlids != xmlids:
+            errors.append(f"{product.get('product_key')} capabilities must exactly match the full menu baseline")
+        missing_xmlids = sorted(required_full_scope_xmlids - xmlids)
+        if missing_xmlids:
+            errors.append(f"{product.get('product_key')} missing full construction scope: {missing_xmlids}")
 
     project_ia = payload.get("project_center_information_architecture") or {}
     project_level_two = project_ia.get("level_two_order") or []
@@ -158,12 +199,10 @@ def main() -> int:
     if center_sequence.get("menu_sc_contract_center") + 10 != center_sequence.get("menu_sc_cost_center"):
         errors.append("cost center must be sequenced immediately after contract center")
     for xmlid in REQUIRED_COST_XMLIDS:
-        token = f'"smart_construction_core.{xmlid}"'
-        if token not in policy:
+        if f"smart_construction_core.{xmlid}" not in full_baseline_xmlids:
             errors.append(f"released cost capability missing from policy: {xmlid}")
     for xmlid in REQUIRED_REPORT_XMLIDS:
-        token = f'"smart_construction_core.{xmlid}"'
-        if token not in policy:
+        if f"smart_construction_core.{xmlid}" not in full_baseline_xmlids:
             errors.append(f"released reporting capability missing from policy: {xmlid}")
     for token in (
         '"smart_construction_core.menu_sc_project_project": "项目台账"',
@@ -210,6 +249,20 @@ def main() -> int:
         "menu_sc_general_contract": "menu_sc_expense_contract_group",
         "menu_sc_project_budget": "menu_sc_cost_target_budget_group",
         "menu_sc_construction_diary": "menu_sc_schedule_delivery_group_v2",
+        "menu_sc_construction_progress": "menu_sc_schedule_delivery_group_v2",
+        "menu_sc_quality_standard_v2": "menu_sc_quality_delivery_group_v2",
+        "menu_sc_quality_issue": "menu_sc_quality_delivery_group_v2",
+        "menu_sc_quality_rectification": "menu_sc_quality_delivery_group_v2",
+        "menu_sc_quality_recheck": "menu_sc_quality_delivery_group_v2",
+        "menu_sc_quality_site_photo_v2": "menu_sc_quality_delivery_group_v2",
+        "menu_sc_safety_plan_v2": "menu_sc_safety_delivery_group_v2",
+        "menu_sc_safety_disclosure_v2": "menu_sc_safety_delivery_group_v2",
+        "menu_sc_safety_risk_library_v2": "menu_sc_safety_delivery_group_v2",
+        "menu_sc_safety_hazard_source_v2": "menu_sc_safety_delivery_group_v2",
+        "menu_sc_safety_patrol_v2": "menu_sc_safety_delivery_group_v2",
+        "menu_sc_safety_issue": "menu_sc_safety_delivery_group_v2",
+        "menu_sc_safety_rectification": "menu_sc_safety_delivery_group_v2",
+        "menu_sc_safety_recheck": "menu_sc_safety_delivery_group_v2",
         "menu_sc_user_payment_apply_acceptance": "menu_sc_payment_user_group",
         "menu_sc_fund_daily_user_report": "menu_sc_fund_account_group",
         "menu_sc_invoice_input": "menu_sc_invoice_tax_user_group",
@@ -232,6 +285,19 @@ def main() -> int:
             errors.append(f"native menu name mismatch: {menu_id} must be {name}")
     if "path_authority" in policy or "NATIVE_MENU_PATH_AUTHORITY_XMLIDS" in policy:
         errors.append("per-menu path authority forks are forbidden")
+    locked_contract = (ROOT / "addons/smart_construction_core/services/locked_menu_policy_contract.py").read_text(encoding="utf-8")
+    for forbidden in (
+        "PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES",
+        "_append_native_modeled_product_capability_menus",
+        "_append_finance_interfund_analysis_product_menus",
+        "_sync_user_confirmed_locked_construction_product_policies",
+        "_release_all_construction_product_menus",
+        "ProductPolicyCatalogSyncService",
+    ):
+        if forbidden in policy or forbidden in locked_contract:
+            errors.append(f"dual-track product policy mechanism is forbidden: {forbidden}")
+    if 'self.synchronize_locked_formal_menu_policy(product_key)' not in policy:
+        errors.append("construction product policy sync must use the single locked baseline path")
     for token in (
         'native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)',
         'native_group_label = native_path_parts[1]',
