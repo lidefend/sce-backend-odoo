@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import importlib.util
+import stat
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -49,6 +51,15 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             RUNTIME.REFRESH_CONFIRMATION,
             "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_TENANT_RUNTIME",
         )
+
+    def test_runtime_secret_is_strong_private_and_stable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = RUNTIME.ensure_runtime_secret(Path(directory))
+            first = path.read_text(encoding="utf-8")
+            self.assertGreaterEqual(len(first.split("=", 1)[1].strip()), 48)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+            self.assertEqual(RUNTIME.ensure_runtime_secret(Path(directory)), path)
+            self.assertEqual(path.read_text(encoding="utf-8"), first)
 
 
 if __name__ == "__main__":

@@ -3141,3 +3141,6 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Immutable tool reinstall remains idempotent while consuming the complete
   archive stream before validating the existing SHA, preventing a false
   `SIGPIPE` failure on repeated verify calls.
+  Clone activation and tenant refresh create or reuse a private stable runtime
+  JWT secret and inject it without printing the value; the image's weak
+  missing-secret fallback is therefore not exercised by this acceptance clone.

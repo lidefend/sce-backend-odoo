@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import re
+import secrets
 import subprocess
 import time
 from pathlib import Path
@@ -45,6 +46,22 @@ def validate_identity(restore_id: str, tenant_sha: str, tenant_module: str, imag
         raise CloneRuntimeError("invalid tenant module identity")
     if not IMAGE.fullmatch(image) or not 18095 <= port <= 18120:
         raise CloneRuntimeError("invalid immutable image or loopback port")
+
+
+def ensure_runtime_secret(runtime_root: Path) -> Path:
+    secret_file = runtime_root / "runtime.env"
+    if secret_file.exists() or secret_file.is_symlink():
+        if secret_file.is_symlink() or not secret_file.is_file():
+            raise CloneRuntimeError("acceptance runtime secret file is invalid")
+        rows = secret_file.read_text(encoding="utf-8").splitlines()
+        values = [row.split("=", 1)[1] for row in rows if row.startswith("JWT_SECRET=")]
+        if len(values) != 1 or len(values[0]) < 48:
+            raise CloneRuntimeError("acceptance JWT secret is invalid")
+        return secret_file
+    descriptor = os.open(secret_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        stream.write(f"JWT_SECRET={secrets.token_urlsafe(48)}\n")
+    return secret_file
 
 
 def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, port: int) -> dict[str, object]:
@@ -94,6 +111,7 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
         encoding="utf-8",
     )
     config.chmod(0o640)
+    secret_file = ensure_runtime_secret(runtime_root)
     container = f"{restore_id}_acceptance_odoo"
     run(
         [
@@ -110,6 +128,8 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
             "0",
             "--label",
             "sc.production-acceptance-clone=true",
+            "--env-file",
+            str(secret_file),
             "-v",
             f"{filestore}:/var/lib/odoo/filestore",
             "-v",
@@ -137,6 +157,7 @@ def activate(restore_id: str, tenant_sha: str, tenant_module: str, image: str, p
                 "tenant_sha": tenant_sha,
                 "tenant_module": tenant_module,
                 "external_egress": False,
+                "jwt_secret_configured": True,
             }
         time.sleep(1)
     raise CloneRuntimeError("acceptance clone did not remain running")
@@ -162,6 +183,7 @@ def refresh_tenant(restore_id: str, tenant_sha: str, tenant_module: str, image: 
     if not (tenant_root / tenant_module / "__manifest__.py").is_file():
         raise CloneRuntimeError("immutable tenant addon is unavailable")
     config = Path(f"/data/backups/sc_production/acceptance-runtimes/{restore_id}/odoo.conf")
+    secret_file = ensure_runtime_secret(config.parent)
     database = f"r10e_{restore_id}"
     config_text = config.read_text(encoding="utf-8")
     if f"dbfilter = ^{database}$" not in config_text or "list_db = False" not in config_text:
@@ -201,6 +223,7 @@ def refresh_tenant(restore_id: str, tenant_sha: str, tenant_module: str, image: 
                 "--network", network, "--network-alias", "odoo",
                 "--group-add", "0",
                 "--label", "sc.production-acceptance-clone=true",
+                "--env-file", str(secret_file),
                 "--mount", f"type=volume,src={filestore},dst=/var/lib/odoo/filestore",
                 "--mount", f"type=bind,src={root},dst=/mnt/tenant-addons,readonly",
                 "--mount", f"type=bind,src={config},dst=/etc/odoo/odoo.conf,readonly",
@@ -224,6 +247,7 @@ def refresh_tenant(restore_id: str, tenant_sha: str, tenant_module: str, image: 
                     "previous_tenant_sha": old_tenant_root.name,
                     "exact_dbfilter": True,
                     "external_egress": False,
+                    "jwt_secret_configured": True,
                 }
             time.sleep(1)
         raise CloneRuntimeError("refreshed acceptance application did not remain running")
