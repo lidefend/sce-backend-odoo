@@ -381,8 +381,14 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
   async function preloadFormAuxiliaryData(reloadToken: number) {
     try {
       if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
-      await loadRelationOptions();
-      if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
+      // Persisted records already carry selected relation identities in the
+      // contract/record payload. Enumerating every writable relation eagerly
+      // is create-form data, and can leave large candidate requests in flight
+      // while the user changes role or scope.
+      if (!recordId.value) {
+        await loadRelationOptions();
+        if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
+      }
       if (renderProfile.value !== 'readonly') {
         await hydrateSelectedRelationOptions();
         if (!isComponentActive.value || reloadToken !== activeReloadToken) return;

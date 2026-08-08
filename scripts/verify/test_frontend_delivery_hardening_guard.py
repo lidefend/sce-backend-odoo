@@ -73,18 +73,30 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         source = "if (!isComponentActive.value || reloadToken !== activeReloadToken) return;"
         self.assertIn("!isComponentActive.value", source)
 
-    def test_inactive_action_page_ignores_record_context_events(self):
+    def test_persisted_record_does_not_eagerly_enumerate_relation_candidates(self):
         source = """
-        function refreshForRecordContextChange(): void {
-          if (!isComponentActive.value) return;
-          void requestLoadPage();
+        if (!recordId.value) {
+          await loadRelationOptions();
         }
         """
-        self.assertLess(source.index("!isComponentActive.value"), source.index("requestLoadPage()"))
+        self.assertLess(source.index("if (!recordId.value)"), source.index("loadRelationOptions()"))
+
+    def test_inactive_action_page_ignores_record_context_events(self):
+        source = """
+        function handleRecordContextChanged(): void {
+          if (!isComponentActive.value) return;
+          refreshForRecordContextChange();
+        }
+        """
+        self.assertLess(source.index("!isComponentActive.value"), source.index("refreshForRecordContextChange()"))
 
     def test_later_functional_failure_preserves_isolated_performance_pass(self):
         source = "if (performanceReport.result !== 'PASS') performanceReport.result = 'FAIL';"
         self.assertIn("result !== 'PASS'", source)
+
+    def test_browser_matrix_rejects_persisted_relation_candidate_preload(self):
+        source = "persisted contract detail eagerly enumerated construction.contract relation candidates"
+        self.assertIn("persisted contract detail", source)
 
 
 if __name__ == "__main__":

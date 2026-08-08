@@ -133,6 +133,7 @@ function capture(page) {
   const state = {
     console: [], pageerror: [], unhandled: [], http: [], expectedHttp: [], expectedConsole: [],
     network: [], expectForbidden: false, expectedConsoleAllowance: 0, pendingExpectedForbiddenResponses: 0,
+    requestCounts: {},
   };
   runtimeByPage.set(page, state);
   page.on('request', (request) => {
@@ -145,6 +146,8 @@ function capture(page) {
         op: payload.params?.op || '',
         model: payload.params?.model || '',
       });
+      const requestKey = `${payload.intent || ''}:${payload.params?.op || ''}:${payload.params?.model || ''}`;
+      state.requestCounts[requestKey] = Number(state.requestCounts[requestKey] || 0) + 1;
       state.network = state.network.slice(-30);
     }
     if (!state.expectForbidden || !request.url().includes('/api/v1/intent')) return;
@@ -580,6 +583,8 @@ async function main() {
       for (const surface of surfaces) {
         let removeFault = null;
         let faultSnapshot = null;
+        const persistedContractCandidateKey = 'api.data:list:construction.contract';
+        const persistedContractCandidateCount = Number(runtime.requestCounts[persistedContractCandidateKey] || 0);
         if (!surface.role) {
           await gotoLogin(page);
           currentRole = '';
@@ -630,6 +635,13 @@ async function main() {
         if (viewport.width === 1440) {
           const scan = await axe(page, surface.name);
           accessibility.scans.push(scan); accessibility.blocking += scan.blocking;
+        }
+        if (surface.name === 'contract-detail') {
+          await page.waitForTimeout(250);
+          check(
+            Number(runtime.requestCounts[persistedContractCandidateKey] || 0) === persistedContractCandidateCount,
+            'persisted contract detail eagerly enumerated construction.contract relation candidates',
+          );
         }
         if (surface.mode === 'dialog') await page.keyboard.press('Escape');
         if (surface.name === 'not-found' && faultSnapshot) {
