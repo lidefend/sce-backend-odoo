@@ -56,6 +56,20 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         self.assertIn("WORKFLOW_FORBIDDEN:continue-on-error:", errors)
         self.assertIn("WORKFLOW_FORBIDDEN:actions/download-artifact", errors)
 
+    def test_release_browser_url_alias_alignment_is_required(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        runtime_make = root / "make/runtime_ops.mk"
+        runtime_make.write_text(
+            runtime_make.read_text(encoding="utf-8").replace(
+                "verify.frontend.delivery_hardening.release.browser: "
+                "ACCEPTANCE_BASE_URL := $(FRONTEND_ACCEPTANCE_BASE_URL)\n",
+                "",
+            ),
+            encoding="utf-8",
+        )
+        self.assertIn("FRONTEND_ACCEPTANCE_URL_ALIASES_NOT_ALIGNED", findings(root))
+
 
 if __name__ == "__main__":
     unittest.main()

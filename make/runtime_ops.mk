@@ -1917,6 +1917,7 @@ verify.frontend.delivery_hardening.browser: guard.prod.forbid check-compose-proj
 	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs
 
+verify.frontend.delivery_hardening.release.browser: ACCEPTANCE_BASE_URL := $(FRONTEND_ACCEPTANCE_BASE_URL)
 verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
 	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \

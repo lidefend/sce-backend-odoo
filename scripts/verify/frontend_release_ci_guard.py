@@ -76,6 +76,12 @@ def findings(root: Path = ROOT) -> list[str]:
         or "VITE_APP_ENV: ${VITE_APP_ENV:-production}" not in compose_text
     ):
         errors.append("FRONTEND_BUILD_ENVIRONMENT_NOT_ALIGNED")
+    if (
+        "verify.frontend.delivery_hardening.release.browser: "
+        "ACCEPTANCE_BASE_URL := $(FRONTEND_ACCEPTANCE_BASE_URL)"
+        not in runtime_text
+    ):
+        errors.append("FRONTEND_ACCEPTANCE_URL_ALIASES_NOT_ALIGNED")
     if policy.get("check_name") != "frontend_release_gate":
         errors.append("CHECK_NAME_DRIFT")
     after = policy.get("required_checks_after") or []
