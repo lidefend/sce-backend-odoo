@@ -20,16 +20,18 @@ def main() -> int:
         "showAdminShortcuts": "配置工作台入口必须来自后端菜单树，不允许前端按权限合成",
         "openBusinessConfigWorkbench": "配置工作台跳转不能绕过后端菜单节点",
         "@click=\"router.push('/admin/business-config')\"": "配置中心快捷入口不能硬编码前端路由",
+        "businessConfigWorkbenchNode": "产品配置只能由主菜单树发布，不允许重复投影快捷入口",
+        "workspace-activity-settings": "活动栏不得重复发布配置中心入口",
+        "aria-label=\"配置中心\"": "活动栏不得以旧名称重复发布产品配置入口",
     }
     for token, message in forbidden.items():
         if token in text:
             errors.append(f"{APP_SHELL.relative_to(ROOT)}: {message}: {token}")
 
     required = {
-        "function businessConfigWorkbenchRoute": "前端仍需保留后端菜单节点到配置工作台路由的解释能力",
-        "function isBusinessConfigWorkbenchNode": "前端必须只识别后端返回的配置工作台菜单节点",
-        "v-if=\"businessConfigWorkbenchNode\"": "配置中心快捷入口必须由后端菜单节点控制可见性",
-        "@click=\"handleSelect(businessConfigWorkbenchNode)\"": "配置中心快捷入口必须复用统一菜单选择与权限快照链路",
+        "<PrimaryNavigation": "产品配置必须随统一主导航发布",
+        ':nodes="filteredMenu"': "主导航必须使用后端菜单树的统一过滤结果",
+        '@select="handleSelect"': "产品配置必须复用统一菜单选择与权限快照链路",
     }
     for token, message in required.items():
         if token not in text:
