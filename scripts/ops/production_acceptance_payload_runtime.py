@@ -73,6 +73,10 @@ def validate_identity(restore_id: str, payload_id: str, expected_checksum: str, 
         raise PayloadRuntimeError("unsupported payload action")
 
 
+def container_exists(name: str) -> bool:
+    return bool(run(["docker", "inspect", "--format", "{{.Id}}", name], check=False))
+
+
 def execute(restore_id: str, payload_id: str, expected_checksum: str, action: str) -> dict:
     validate_identity(restore_id, payload_id, expected_checksum, action)
     if action == "import" and os.environ.get("CONFIRM_PRODUCTION_ACCEPTANCE_PAYLOAD_IMPORT") != CONFIRMATION:
@@ -127,7 +131,7 @@ def execute(restore_id: str, payload_id: str, expected_checksum: str, action: st
         raise PayloadRuntimeError("immutable tenant payload action is unavailable")
 
     maintenance_name = f"{restore_id}_payload_{action}"
-    if run(["docker", "inspect", maintenance_name], check=False):
+    if container_exists(maintenance_name):
         raise PayloadRuntimeError("scoped payload maintenance container already exists")
     command = [
         "docker", "run", "--rm", "-i", "--name", maintenance_name,

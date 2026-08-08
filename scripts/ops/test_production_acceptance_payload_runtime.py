@@ -42,6 +42,15 @@ class ProductionAcceptancePayloadRuntimeTests(unittest.TestCase):
                     "import",
                 )
 
+    def test_missing_container_empty_id_is_not_present(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="") as command:
+            self.assertFalse(RUNTIME.container_exists("sc_restore_example_payload_plan"))
+        self.assertIn("--format", command.call_args.args[0])
+
+    def test_existing_container_exact_id_is_present(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="a" * 64):
+            self.assertTrue(RUNTIME.container_exists("sc_restore_example_payload_plan"))
+
 
 if __name__ == "__main__":
     unittest.main()
