@@ -733,22 +733,27 @@ class MenuService:
                 directory.get("config_menu_id") or directory_meta.get("config_menu_id")
             )
             label = str(directory.get("label") or "").strip()
-            if not config_menu_id or not label:
+            explicit_path_group = bool(directory_meta.get("explicit_menu_path_group"))
+            if not label or (not config_menu_id and not explicit_path_group):
                 continue
-            entry_index = next((
+            entry_indexes = [
                 index
                 for index, entry in enumerate(normalized)
                 if index != directory_index
                 and index not in removed
                 and str(entry.get("label") or "").strip() == label
                 and not (entry.get("children") if isinstance(entry.get("children"), list) else [])
-                and self._positive_int(entry.get("menu_id")) == config_menu_id
+                and (not config_menu_id or self._positive_int(entry.get("menu_id")) == config_menu_id)
                 and self._node_has_target(entry)
-            ), None)
-            if entry_index is None:
+            ]
+            if len(entry_indexes) != 1:
                 continue
+            entry_index = entry_indexes[0]
             entry = normalized[entry_index]
             entry_meta = entry.get("meta") if isinstance(entry.get("meta"), dict) else {}
+            config_menu_id = config_menu_id or self._positive_int(entry.get("menu_id"))
+            if not config_menu_id:
+                continue
             merged_meta = dict(directory_meta)
             merged_meta["explicit_group_entry_target"] = True
             merged_meta["merged_native_entry_key"] = str(entry.get("key") or "")

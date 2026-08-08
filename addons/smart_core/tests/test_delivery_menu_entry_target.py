@@ -738,9 +738,8 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                 "key": "group:construction.config.norm",
                 "label": "定额引擎",
                 "menu_id": 882860817,
-                "config_menu_id": 616,
                 "children": [{"label": "定额子目", "menu_id": 619, "children": []}],
-                "meta": {"config_menu_id": 616, "explicit_menu_path_group": True},
+                "meta": {"explicit_menu_path_group": True},
             },
         ])
 
@@ -750,6 +749,24 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(nodes[0].get("route"), "/a/829?menu_id=616")
         self.assertEqual(len(nodes[0].get("children") or []), 1)
         self.assertTrue((nodes[0].get("meta") or {}).get("explicit_group_entry_target"))
+
+    def test_ambiguous_same_label_entries_do_not_merge_into_policy_directory(self):
+        service = menu_service.MenuService()
+        entries = [
+            {"key": f"entry.{menu_id}", "label": "同名入口", "menu_id": menu_id,
+             "action_id": action_id, "children": []}
+            for menu_id, action_id in ((101, 201), (102, 202))
+        ]
+        nodes = service._merge_explicit_entry_with_directory(entries + [{
+            "key": "group:directory",
+            "label": "同名入口",
+            "children": [{"label": "子项", "menu_id": 103, "children": []}],
+            "meta": {"explicit_menu_path_group": True},
+        }])
+
+        self.assertEqual(len(nodes), 3)
+        directory = next(node for node in nodes if node.get("children"))
+        self.assertNotIn("action_id", directory)
 
     def test_user_acceptance_policy_menu_keeps_legacy_subgroups(self):
         self._register_acceptance_menu_labels()
