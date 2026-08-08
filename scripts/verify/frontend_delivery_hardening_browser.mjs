@@ -133,7 +133,7 @@ function capture(page) {
   const state = {
     console: [], pageerror: [], unhandled: [], http: [], expectedHttp: [], expectedConsole: [],
     network: [], expectForbidden: false, expectedConsoleAllowance: 0, pendingExpectedForbiddenResponses: 0,
-    requestCounts: {},
+    requestCounts: {}, relationCandidateCounts: {},
   };
   runtimeByPage.set(page, state);
   page.on('request', (request) => {
@@ -148,6 +148,16 @@ function capture(page) {
       });
       const requestKey = `${payload.intent || ''}:${payload.params?.op || ''}:${payload.params?.model || ''}`;
       state.requestCounts[requestKey] = Number(state.requestCounts[requestKey] || 0) + 1;
+      const fields = Array.isArray(payload.params?.fields) ? payload.params.fields : [];
+      const isRelationCandidateEnumeration = payload.intent === 'api.data'
+        && payload.params?.op === 'list'
+        && Number(payload.params?.limit || 0) >= 80
+        && fields.length > 0
+        && fields.every((field) => ['id', 'name', 'display_name'].includes(String(field)));
+      if (isRelationCandidateEnumeration) {
+        const candidateKey = String(payload.params?.model || '');
+        state.relationCandidateCounts[candidateKey] = Number(state.relationCandidateCounts[candidateKey] || 0) + 1;
+      }
       state.network = state.network.slice(-30);
     }
     if (!state.expectForbidden || !request.url().includes('/api/v1/intent')) return;
@@ -575,6 +585,9 @@ async function main() {
       { name: 'not-found', route: `/r/payment.request/999999?action_id=${TARGETS.payment_request.action_id}&menu_id=${TARGETS.payment_request.menu_id}`, role: FINANCE_LOGIN },
       { name: 'network-error', route: recordRoute(TARGETS.payment_request), role: FINANCE_LOGIN, mode: 'network' },
     ];
+    const noEagerCandidateSurfaces = new Set([
+      'contract-detail', 'settlement-detail', 'payment-detail', 'payment-form', 'execution-detail',
+    ]);
     for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
       responsive.viewports.push(viewport);
       await page.setViewportSize(viewport);
@@ -583,8 +596,7 @@ async function main() {
       for (const surface of surfaces) {
         let removeFault = null;
         let faultSnapshot = null;
-        const persistedContractCandidateKey = 'api.data:list:construction.contract';
-        const persistedContractCandidateCount = Number(runtime.requestCounts[persistedContractCandidateKey] || 0);
+        const constructionContractCandidateCount = Number(runtime.relationCandidateCounts['construction.contract'] || 0);
         if (!surface.role) {
           await gotoLogin(page);
           currentRole = '';
@@ -636,11 +648,11 @@ async function main() {
           const scan = await axe(page, surface.name);
           accessibility.scans.push(scan); accessibility.blocking += scan.blocking;
         }
-        if (surface.name === 'contract-detail') {
+        if (noEagerCandidateSurfaces.has(surface.name)) {
           await page.waitForTimeout(250);
           check(
-            Number(runtime.requestCounts[persistedContractCandidateKey] || 0) === persistedContractCandidateCount,
-            'persisted contract detail eagerly enumerated construction.contract relation candidates',
+            Number(runtime.relationCandidateCounts['construction.contract'] || 0) === constructionContractCandidateCount,
+            `${surface.name}: surface eagerly enumerated construction.contract relation candidates`,
           );
         }
         if (surface.mode === 'dialog') await page.keyboard.press('Escape');

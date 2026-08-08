@@ -99,9 +99,9 @@ Generated from repository source files. This report is informational during the 
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
+| 899 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 895 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 892 | Python source | `scripts/verify/release_capability_audit.py` |
-| 887 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 870 | Python source | `scripts/release/test_release_publication.py` |

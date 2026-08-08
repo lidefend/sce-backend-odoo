@@ -198,7 +198,17 @@ require(
     "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
     "if (!isComponentActive.value || reloadToken !== activeReloadToken) return;",
     "if (!recordId.value) {",
+    "await hydrateSelectedRelationOptions();",
+)
+forbid(
+    "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
     "await loadRelationOptions();",
+)
+require(
+    "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+    "const entry = relationEntry(contract.value?.fields?.[name]);",
+    "if (entry?.canRead === false)",
+    "if (deniedRelationModels.has(relation)) return;",
 )
 require(
     "frontend/apps/web/src/views/ActionView.vue",
@@ -219,7 +229,8 @@ delivery_hardening_browser = require(
     "scripts/verify/frontend_delivery_hardening_browser.mjs",
     "performanceReport.scenarios.company_switch = stats(switchSamples);",
     "[verify.frontend.delivery_hardening.performance_baseline] CAPTURED",
-    "persisted contract detail eagerly enumerated construction.contract relation candidates",
+    "noEagerCandidateSurfaces.has(surface.name)",
+    "surface eagerly enumerated construction.contract relation candidates",
 )
 if delivery_hardening_browser.index("performanceReport.scenarios.company_switch = stats(switchSamples);") > delivery_hardening_browser.index("[verify.frontend.delivery_hardening.performance_baseline] CAPTURED"):
     raise SystemExit("[frontend_delivery_hardening_guard] FAIL baseline capture must include company-switch samples")

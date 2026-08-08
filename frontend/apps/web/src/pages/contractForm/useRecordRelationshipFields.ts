@@ -7,7 +7,7 @@ import type { One2ManyColumn, One2ManyInlineRow, RelationOption } from './types'
 type FieldDependencies = Record<string, any>;
 
 export function useRecordRelationshipFields(dependencies: FieldDependencies) {
-  const { ApiError, contract, contractFieldLabel, deniedRelationModels, ensureOne2manyRows, fieldType, findNativeFieldNodeInTree, formData, isWritableFieldVisible, mergeHydratedOne2manyRecords, mergeRelationOptions, nativeFieldSubviewFromTree, nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeRelationIds, one2manyCanCreateFromPolicies, one2manyColumnsFromSubview, one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows, one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation, rawNativeFormLayoutNodes, readContractFormRecord, relationFieldDescriptors, relationModel, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationReadFields, selectOne2manySubview, selectedRelationOptionsFromRuntime } = dependencies;
+  const { ApiError, contract, contractFieldLabel, deniedRelationModels, ensureOne2manyRows, fieldType, findNativeFieldNodeInTree, formData, isWritableFieldVisible, mergeHydratedOne2manyRecords, mergeRelationOptions, nativeFieldSubviewFromTree, nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeRelationIds, one2manyCanCreateFromPolicies, one2manyColumnsFromSubview, one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows, one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation, rawNativeFormLayoutNodes, readContractFormRecord, relationEntry, relationFieldDescriptors, relationModel, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationReadFields, selectOne2manySubview, selectedRelationOptionsFromRuntime } = dependencies;
   function relationIds(name: string): number[] {
     return normalizeRelationIds(formData[name]);
   }
@@ -161,6 +161,12 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   async function hydrateOne2manyRows(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
+    const entry = relationEntry(contract.value?.fields?.[name]);
+    if (entry?.canRead === false) {
+      deniedRelationModels.add(relation);
+      return;
+    }
+    if (deniedRelationModels.has(relation)) return;
     const rows = ensureOne2manyRows(name).filter((row) => row.id && !row.isNew);
     if (!rows.length) return;
     const columns = one2manyColumns(name);

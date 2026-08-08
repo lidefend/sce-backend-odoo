@@ -73,13 +73,22 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         source = "if (!isComponentActive.value || reloadToken !== activeReloadToken) return;"
         self.assertIn("!isComponentActive.value", source)
 
-    def test_persisted_record_does_not_eagerly_enumerate_relation_candidates(self):
+    def test_auxiliary_preload_only_hydrates_selected_create_defaults(self):
         source = """
         if (!recordId.value) {
-          await loadRelationOptions();
+          await hydrateSelectedRelationOptions();
         }
         """
-        self.assertLess(source.index("if (!recordId.value)"), source.index("loadRelationOptions()"))
+        self.assertNotIn("loadRelationOptions()", source)
+        self.assertLess(source.index("if (!recordId.value)"), source.index("hydrateSelectedRelationOptions()"))
+
+    def test_one2many_hydration_honors_relation_read_contract(self):
+        source = """
+        const entry = relationEntry(contract.value?.fields?.[name]);
+        if (entry?.canRead === false) return;
+        await readContractFormRecord();
+        """
+        self.assertLess(source.index("canRead === false"), source.index("readContractFormRecord()"))
 
     def test_inactive_action_page_ignores_record_context_events(self):
         source = """
@@ -95,8 +104,8 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn("result !== 'PASS'", source)
 
     def test_browser_matrix_rejects_persisted_relation_candidate_preload(self):
-        source = "persisted contract detail eagerly enumerated construction.contract relation candidates"
-        self.assertIn("persisted contract detail", source)
+        source = "noEagerCandidateSurfaces.has(surface.name)"
+        self.assertIn("noEagerCandidateSurfaces", source)
 
 
 if __name__ == "__main__":

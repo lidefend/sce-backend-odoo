@@ -7,7 +7,7 @@ type LifecycleDependencies = Record<string, any>;
 
 /** Owns authoritative contract loading, record hydration, and stale-response isolation. */
 export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
-  const { ApiError, ContractAccessPolicyError, ContractV2DecodeError, ErrorCodes, actionId, advancedExpanded, analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent, applyRouteRelationLabel, buildRouteContractContext, changedFieldCount, changedFieldSet, clearNativeAttachmentError, clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments, closeNativeChatterComposer, contract, contractAccessPolicy, contractActions, contractMeta, contractModelName, contractReadiness, coreFieldNames, createContractV2Store, decodeContractV2Snapshot, dirtyFieldSet, fieldType, formData, formDataFieldNames, formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows, initOne2manyRows, isComponentActive, layoutNodes, loadActionContractRaw, loadError, loadModelContractRaw, loadRelationOptions, menuId, mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision, onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer, setOnchangeTimer, onchangeWarnings, originalValues, pickContractNavQuery, readContractFormRecord, recordId, recordIdDisplay, recordMissing, recordVersionPolicy, recordVersionToken, relationKeywords, relationOptions, renderErrorMessage, renderProfile, requestedSourceMode, requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState, resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData, restoreIntakeAutosave, retainedRouteIdentity, rights, route, router, setStatusbarValue, showHud, showOne2manyErrors, snapshotOriginalFormValues, status, toPositiveInt, upsertRelationOption, v2ContractDecodeError, v2ContractStore, v2ShadowActionCount, v2ShadowButtonStatusCount, v2ShadowFieldCodeCount, v2ShadowGlobalSourceKind, v2ShadowLayoutSourceKind, v2ShadowLegacyFieldMissingPreview, v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount, v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady, v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount, validateSurfaceMarkers, validationErrors, writableFieldCount } = dependencies;
+  const { ApiError, ContractAccessPolicyError, ContractV2DecodeError, ErrorCodes, actionId, advancedExpanded, analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent, applyRouteRelationLabel, buildRouteContractContext, changedFieldCount, changedFieldSet, clearNativeAttachmentError, clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments, closeNativeChatterComposer, contract, contractAccessPolicy, contractActions, contractMeta, contractModelName, contractReadiness, coreFieldNames, createContractV2Store, decodeContractV2Snapshot, dirtyFieldSet, fieldType, formData, formDataFieldNames, formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows, initOne2manyRows, isComponentActive, layoutNodes, loadActionContractRaw, loadError, loadModelContractRaw, menuId, mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision, onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer, setOnchangeTimer, onchangeWarnings, originalValues, pickContractNavQuery, readContractFormRecord, recordId, recordIdDisplay, recordMissing, recordVersionPolicy, recordVersionToken, relationKeywords, relationOptions, renderErrorMessage, renderProfile, requestedSourceMode, requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState, resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData, restoreIntakeAutosave, retainedRouteIdentity, rights, route, router, setStatusbarValue, showHud, showOne2manyErrors, snapshotOriginalFormValues, status, toPositiveInt, upsertRelationOption, v2ContractDecodeError, v2ContractStore, v2ShadowActionCount, v2ShadowButtonStatusCount, v2ShadowFieldCodeCount, v2ShadowGlobalSourceKind, v2ShadowLayoutSourceKind, v2ShadowLegacyFieldMissingPreview, v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount, v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady, v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount, validateSurfaceMarkers, validationErrors, writableFieldCount } = dependencies;
   let activeReloadToken = 0;
   let activeReloadIdentity = '';
   let activeReloadPromise: Promise<void> | null = null;
@@ -381,17 +381,15 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
   async function preloadFormAuxiliaryData(reloadToken: number) {
     try {
       if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
-      // Persisted records already carry selected relation identities in the
-      // contract/record payload. Enumerating every writable relation eagerly
-      // is create-form data, and can leave large candidate requests in flight
-      // while the user changes role or scope.
+      // Relation candidates are interaction-time data. Eagerly enumerating all
+      // writable relations here leaves requests in flight across route/actor
+      // changes and probes models the user never opened. Create defaults only
+      // need their already-selected identities hydrated.
       if (!recordId.value) {
-        await loadRelationOptions();
-        if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
-      }
-      if (renderProfile.value !== 'readonly') {
-        await hydrateSelectedRelationOptions();
-        if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
+        if (renderProfile.value !== 'readonly') {
+          await hydrateSelectedRelationOptions();
+          if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
+        }
       }
       await hydrateVisibleOne2manyRows();
     } catch {

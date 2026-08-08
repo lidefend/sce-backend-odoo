@@ -1516,7 +1516,7 @@ const {
   loadRelationSearchColumns, fetchRelationSearchRows, onRelationDialogDocumentKeydown, openRelationSearchDialog, runRelationSearch,
   confirmRelationSearchSelection, selectRelationSearchOption, setMany2oneOption, switchFormByRelationOption, createRelationFromSearchDialog,
   ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecordForm, openRelationRecordForm,
-  quickCreateRelation, loadRelationOptions,
+  quickCreateRelation,
 } = useRecordRelationships({
   ApiError, actionId, clearedDynamicRelationFields,
   closeRelationSearchDialog, confirmRelationSearchSelectionFromRuntime, contract,
@@ -1665,7 +1665,7 @@ const {
   formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows,
   initOne2manyRows, isComponentActive, layoutNodes,
   loadActionContractRaw, loadError, loadModelContractRaw,
-  loadNativeChatterTimeline, loadRelationOptions, menuId,
+  loadNativeChatterTimeline, menuId,
   mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeAttachments,
   nativeChatterActions, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision,
   onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer: () => onchangeTimer,

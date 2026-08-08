@@ -1,11 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
-import type { RelationOption } from './types';
 
 type NavigationDependencies = Record<string, any>;
 
 export function useRecordRelationshipNavigation(dependencies: NavigationDependencies) {
-  const { ApiError, actionId, contract, createContractFormRecord, deniedRelationModels, fetchRelationOptions, fieldType, formData, isWritableFieldVisible, layoutNodes, listContractFormRecords, loadModelContractRaw, mergeRelationOptions, mergedRelationDomain, model, normalizeFieldValue, one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationOptionsFromRecords, relationOrder, relationReadFields, relationUiLabel, renderProfile, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
+  const { actionId, createContractFormRecord, fetchRelationOptions, formData, loadModelContractRaw, model, normalizeFieldValue, one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
   async function ensureRelationFieldDescriptors(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
@@ -166,68 +165,5 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     }
   }
 
-  async function loadRelationOptions() {
-    // Read-only records already carry their selected relation identities in
-    // the record/contract payload. Candidate lists are edit-time data: eager
-    // loading here adds avoidable requests and can probe models that the user
-    // may reference through the record but may not enumerate.
-    if (String(renderProfile?.value || '').trim() === 'readonly') return;
-    const fields = contract.value?.fields || {};
-    const visibleRelationFields = new Set(
-      layoutNodes.value
-        .filter((node) => node.kind === 'field' && isWritableFieldVisible(node.name))
-        .map((node) => node.name),
-    );
-    const entries = Object.entries(fields).filter(([name]) => {
-      if (!visibleRelationFields.size) return relationIds(name).length > 0;
-      if (visibleRelationFields.has(name)) return true;
-      return relationIds(name).length > 0;
-    });
-    const one2manyNames = entries
-      .filter(([, descriptor]) => fieldType(descriptor) === 'one2many')
-      .map(([name]) => name);
-    await Promise.all(one2manyNames.map((name) => ensureRelationFieldDescriptors(name)));
-    const next: Record<string, RelationOption[]> = {};
-    await Promise.all(entries.map(async ([name, descriptor]) => {
-      if (!descriptor || typeof descriptor !== 'object') return;
-      const type = fieldType(descriptor);
-      if (!['many2one', 'many2many', 'one2many'].includes(type)) return;
-      const relation = String((descriptor as Record<string, unknown>).relation || '').trim();
-      if (!relation) return;
-      const entry = relationEntry(descriptor as FieldDescriptor);
-      if (entry && entry.canRead === false) {
-        deniedRelationModels.add(relation);
-        next[name] = [];
-        return;
-      }
-      if (deniedRelationModels.has(relation)) {
-        next[name] = [];
-        return;
-      }
-      const domain = mergedRelationDomain(name, descriptor as FieldDescriptor);
-      try {
-        const listed = await listContractFormRecords({
-          model: relation,
-          fields: relationReadFields(descriptor as FieldDescriptor),
-          limit: 80,
-          order: relationOrder(descriptor as FieldDescriptor),
-          domain,
-          silentErrors: true,
-        });
-        next[name] = relationOptionsFromRecords(listed?.records, descriptor as FieldDescriptor);
-      } catch (err) {
-        if (err instanceof ApiError) {
-          const denied = err.status === 403 || String(err.reasonCode || '').toUpperCase() === 'PERMISSION_DENIED';
-          if (denied) deniedRelationModels.add(relation);
-        }
-        next[name] = [];
-      }
-    }));
-    Object.entries(next).forEach(([fieldName, options]) => {
-      mergeRelationOptions(fieldName, options);
-    });
-  }
-
-
-  return { ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecordForm, openRelationRecordForm, quickCreateRelation, loadRelationOptions };
+  return { ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecordForm, openRelationRecordForm, quickCreateRelation };
 }
