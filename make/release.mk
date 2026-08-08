@@ -21,7 +21,7 @@ RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RE
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
 .PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.public_signup.close.plan release.production.public_signup.close.apply release.production.public_signup.close.verify release.production.user_activation.readiness release.production.user_activation.predeploy.plan release.production.user_activation.predeploy.apply release.production.user_activation.predeploy.verify release.production.single_user_activation.plan release.production.single_user_activation.apply release.production.single_user_activation.verify release.production.formal_modules.install_missing ops.user.password-reset ops.user.password-verify
-.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore production.acceptance.backup.remote_install production.acceptance.backup.remote_sync verify.production.backup_restore_contract
+.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore production.acceptance.backup.remote_install production.acceptance.backup.remote_sync production.acceptance.image.remote_import production.acceptance.restore.remote_verify verify.production.backup_restore_contract
 .PHONY: verify.production.acceptance.harness acceptance.package.verify verify.production.promotion.config.preflight release.daily_dev.production_acceptance.harness release.production.acceptance.harness release.daily_dev.promotion.config.preflight release.production.promotion.config.preflight
 
 verify.release.guard: verify.repository.release_hygiene
@@ -195,6 +195,11 @@ PRODUCTION_ACCEPTANCE_BACKUP_SET_ID ?=
 PRODUCTION_ACCEPTANCE_DAILY_HOST ?=
 PRODUCTION_ACCEPTANCE_TOOL_SHA ?= $(shell git rev-parse HEAD)
 PRODUCTION_ACCEPTANCE_REMOTE_ROOT ?= /opt/sce/deployment-tools/$(PRODUCTION_ACCEPTANCE_TOOL_SHA)
+PRODUCTION_ACCEPTANCE_SOURCE_IMAGE ?= ghcr.io/lidefend/sce-product@sha256:cecdeb03ea68a1d2ddead0cf3f3ffb7a391948ba7de92e3919b752b7635d3a1d
+PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID ?= sha256:ab646cc224eb08df3605e5aa3dc5ff2dc06064a7b06a1ed8eebfa7569f49edcf
+PRODUCTION_ACCEPTANCE_SOURCE_REVISION ?= 3fb17948feacb34c2574668eaba7ddb2ad4bef26
+PRODUCTION_ACCEPTANCE_POSTGRES_IMAGE ?= postgres:15@sha256:29342cb52157b098821961d2c14eec3c019071f56a5d559e990cf07cf541ea9b
+PRODUCTION_ACCEPTANCE_RESTORE_ID ?=
 
 production.acceptance.backup.remote_install: guard.prod.forbid
 	@test -n "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" || { echo "PRODUCTION_ACCEPTANCE_DAILY_HOST is required" >&2; exit 2; }
@@ -212,6 +217,19 @@ production.acceptance.backup.remote_sync: production.acceptance.backup.remote_in
 	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_BACKUP_SYNC:-}" = "SYNC_VERIFIED_PRODUCTION_PAIR_TO_DAILY_ACCEPTANCE" || { echo "exact production acceptance backup sync confirmation is required" >&2; exit 2; }
 	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" \
 		'PYTHONPATH="$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/release" CONFIRM_PRODUCTION_ACCEPTANCE_BACKUP_SYNC=SYNC_VERIFIED_PRODUCTION_PAIR_TO_DAILY_ACCEPTANCE python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_backup_sync.py" --backup-set-id "$(PRODUCTION_ACCEPTANCE_BACKUP_SET_ID)"'
+
+production.acceptance.image.remote_import: guard.prod.forbid
+	@test -n "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" || { echo "PRODUCTION_ACCEPTANCE_DAILY_HOST is required" >&2; exit 2; }
+	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_IMAGE_IMPORT:-}" = "IMPORT_EXACT_PRODUCTION_IMAGE_TO_DAILY_ACCEPTANCE" || { echo "exact production acceptance image import confirmation is required" >&2; exit 2; }
+	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" \
+		'set -eu; if docker image inspect "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE)" >/dev/null 2>&1; then :; else ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i /root/.ssh/id_ed25519 root@172.31.4.192 docker image save "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE)" | docker image load >/dev/null; fi; test "$$(docker image inspect "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE)" --format "{{.Id}}")" = "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)"; test "$$(docker image inspect "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE)" --format "{{index .Config.Labels \"org.opencontainers.image.revision\"}}")" = "$(PRODUCTION_ACCEPTANCE_SOURCE_REVISION)"; echo "[production.acceptance.image] PASS exact immutable image identity"'
+
+production.acceptance.restore.remote_verify: production.acceptance.backup.remote_install
+	@[[ "$(PRODUCTION_ACCEPTANCE_BACKUP_SET_ID)" =~ ^sc_production-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid production backup set ID" >&2; exit 2; }
+	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }
+	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_RESTORE_VERIFY:-}" = "RESTORE_VERIFIED_PAIR_IN_ISOLATED_DAILY_RESOURCES" || { echo "exact isolated restore confirmation is required" >&2; exit 2; }
+	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" \
+		'python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/release/production_backup_restore.py" restore-rehearsal --backup-dir "/data/backups/sc_production/$(PRODUCTION_ACCEPTANCE_BACKUP_SET_ID)" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --odoo-image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE)" --postgres-image "$(PRODUCTION_ACCEPTANCE_POSTGRES_IMAGE)" --report "/data/backups/sc_production/restore-rehearsals/$(PRODUCTION_ACCEPTANCE_RESTORE_ID).json"'
 
 production.backup.install.preflight:
 	@test "$(ENV)" = "prod" || (echo "ENV=prod is required"; exit 2)
