@@ -724,6 +724,13 @@ async function main() {
           samples.push(await time(() => navigateSpa(page, route, readySelector)));
           requestSamples.push(performanceRequests.slice(requestOffset));
         }
+        if (name.endsWith('_detail')) {
+          const repeatedContractLoads = requestSamples.flat().filter((row) => row.startsWith('ui.contract.v2:'));
+          check(
+            repeatedContractLoads.length === 0,
+            `${name}: warmed retained detail page reloaded its primary contract ${repeatedContractLoads.length} time(s)`,
+          );
+        }
         performanceReport.scenarios[name] = { ...stats(samples), request_samples: requestSamples };
       }
       const formSamples = [];

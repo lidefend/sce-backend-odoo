@@ -109,6 +109,7 @@ require(
     "company_switch_warmup_runs",
     "governed company-switch warm-up count",
     "isolated performance evidence SHA mismatch",
+    "warmed retained detail page reloaded its primary contract",
     "fs.writeFileSync(path.join(OUT, 'performance.json')",
 )
 performance_policy = json.loads(
@@ -174,6 +175,15 @@ require(
     "currentContextEpoch()",
     "options?.renderProfile === 'create'",
     "!Number(options?.recordId || 0)",
+)
+require(
+    "frontend/apps/web/src/pages/ContractFormRoute.vue",
+    "<ContractFormPage />",
+)
+forbid(
+    "frontend/apps/web/src/pages/ContractFormRoute.vue",
+    ':key="routeIdentity"',
+    "useRoute()",
 )
 
 delivery_hardening_browser = require(

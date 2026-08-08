@@ -190,7 +190,12 @@ REQUIRED_ROUTE_TOKENS: tuple[str, ...] = (
 
 REQUIRED_CONTRACT_FORM_ROUTE_TOKENS: tuple[str, ...] = (
     "import ContractFormPage from './ContractFormPage.vue'",
-    '<ContractFormPage :key="routeIdentity" />',
+    "<ContractFormPage />",
+)
+
+FORBIDDEN_CONTRACT_FORM_ROUTE_TOKENS: tuple[str, ...] = (
+    ':key="routeIdentity"',
+    "useRoute()",
 )
 
 FORBIDDEN_ROUTE_TOKENS: tuple[str, ...] = (
@@ -373,6 +378,9 @@ def validate_router() -> list[str]:
     for token in REQUIRED_CONTRACT_FORM_ROUTE_TOKENS:
         if token not in contract_form_route:
             errors.append(f"ContractFormRoute missing formal page assembly token: {token}")
+    for token in FORBIDDEN_CONTRACT_FORM_ROUTE_TOKENS:
+        if token in contract_form_route:
+            errors.append(f"ContractFormRoute owns forbidden nested cache identity token: {token}")
     return errors
 
 

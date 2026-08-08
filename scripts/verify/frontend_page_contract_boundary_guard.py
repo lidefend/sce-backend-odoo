@@ -97,7 +97,16 @@ def main() -> int:
             _read(CONTRACT_FORM_ROUTE),
             [
                 "import ContractFormPage from './ContractFormPage.vue'",
-                '<ContractFormPage :key="routeIdentity" />',
+                "<ContractFormPage />",
+            ],
+            "pages/ContractFormRoute.vue",
+            errors,
+        )
+        _check_forbidden(
+            _read(CONTRACT_FORM_ROUTE),
+            [
+                ':key="routeIdentity"',
+                "useRoute()",
             ],
             "pages/ContractFormRoute.vue",
             errors,
