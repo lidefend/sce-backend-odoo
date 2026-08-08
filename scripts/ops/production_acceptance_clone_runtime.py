@@ -424,8 +424,8 @@ def upgrade_module(
     """Upgrade one allowlisted product module in the isolated acceptance clone."""
     if os.environ.get("CONFIRM_PRODUCTION_ACCEPTANCE_MODULE_UPGRADE") != MODULE_UPGRADE_CONFIRMATION:
         raise CloneRuntimeError("exact acceptance module upgrade confirmation is required")
-    validate_identity(restore_id, tenant_sha, tenant_module, image, port)
-    if not SHA.fullmatch(source_sha) or module not in UPGRADE_MODULES:
+    validate_identity(restore_id, tenant_sha, tenant_module, image, 18095)
+    if not SHA.fullmatch(source_sha) or module not in UPGRADE_MODULES or not 18080 <= port <= 18120:
         raise CloneRuntimeError("invalid acceptance module upgrade identity")
 
     report_path = Path(f"/data/backups/sc_production/restore-rehearsals/{restore_id}.json")

@@ -67,6 +67,7 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertIn('"-u", module, "--without-demo=all", "--stop-after-init"', source)
         self.assertIn('["docker", "stop", "--time", "30", odoo]', source)
+        self.assertIn("not 18080 <= port <= 18120", source)
         self.assertEqual(
             RUNTIME.IMAGE_REFRESH_CONFIRMATION,
             "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_IMAGE_RUNTIME",
