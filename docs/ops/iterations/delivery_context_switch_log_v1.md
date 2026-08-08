@@ -3177,3 +3177,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   target; ordinary targetless groups retain expand/collapse behavior. Static XML,
   delivery-menu regression, module upgrade, runtime system-init projection, and
   real browser navigation must pass.
+- P4 acceptance orchestration: the persistent isolated restore gains an exact,
+  confirmation-gated `sc_norm_engine` upgrade entry. It validates restore,
+  database filter, image revision, tenant mount, network and container labels,
+  stops only the clone Odoo process, runs `--stop-after-init`, and restarts the
+  same clone; production resources and arbitrary modules remain inadmissible.

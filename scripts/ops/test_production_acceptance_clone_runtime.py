@@ -57,6 +57,16 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             RUNTIME.IMAGE_REFRESH_CONFIRMATION,
             {RUNTIME.CONFIRMATION, RUNTIME.REFRESH_CONFIRMATION},
         )
+
+    def test_module_upgrade_is_narrow_and_stop_after_init(self) -> None:
+        self.assertEqual(RUNTIME.UPGRADE_MODULES, frozenset({"sc_norm_engine"}))
+        self.assertNotIn(
+            RUNTIME.MODULE_UPGRADE_CONFIRMATION,
+            {RUNTIME.CONFIRMATION, RUNTIME.REFRESH_CONFIRMATION, RUNTIME.IMAGE_REFRESH_CONFIRMATION},
+        )
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('"-u", module, "--without-demo=all", "--stop-after-init"', source)
+        self.assertIn('["docker", "stop", "--time", "30", odoo]', source)
         self.assertEqual(
             RUNTIME.IMAGE_REFRESH_CONFIRMATION,
             "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_IMAGE_RUNTIME",

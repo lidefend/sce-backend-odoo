@@ -20,6 +20,8 @@ MODULE = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
 CONFIRMATION = "ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE"
 REFRESH_CONFIRMATION = "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_TENANT_RUNTIME"
 IMAGE_REFRESH_CONFIRMATION = "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_IMAGE_RUNTIME"
+MODULE_UPGRADE_CONFIRMATION = "UPGRADE_NORM_ENGINE_IN_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE"
+UPGRADE_MODULES = frozenset({"sc_norm_engine"})
 
 
 class CloneRuntimeError(RuntimeError):
@@ -415,6 +417,91 @@ def refresh_image(
     }
 
 
+def upgrade_module(
+    restore_id: str, tenant_sha: str, tenant_module: str, image: str,
+    source_sha: str, module: str, port: int,
+) -> dict[str, object]:
+    """Upgrade one allowlisted product module in the isolated acceptance clone."""
+    if os.environ.get("CONFIRM_PRODUCTION_ACCEPTANCE_MODULE_UPGRADE") != MODULE_UPGRADE_CONFIRMATION:
+        raise CloneRuntimeError("exact acceptance module upgrade confirmation is required")
+    validate_identity(restore_id, tenant_sha, tenant_module, image, port)
+    if not SHA.fullmatch(source_sha) or module not in UPGRADE_MODULES:
+        raise CloneRuntimeError("invalid acceptance module upgrade identity")
+
+    report_path = Path(f"/data/backups/sc_production/restore-rehearsals/{restore_id}.json")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if report.get("status") != "PASS" or report.get("production_database_connected") is not False:
+        raise CloneRuntimeError("verified isolated restore report is required")
+    resources = report.get("resources") or {}
+    network = str(resources.get("network") or "")
+    filestore = str(resources.get("filestore_volume") or "")
+    if network != f"{restore_id}_internal" or filestore != f"{restore_id}_filestore":
+        raise CloneRuntimeError("acceptance resources escaped the isolated namespace")
+    image_identity = run([
+        "docker", "image", "inspect", image, "--format",
+        '{{.Id}}|{{index .Config.Labels "org.opencontainers.image.revision"}}',
+    ])
+    if image_identity != f"{image}|{source_sha}":
+        raise CloneRuntimeError("acceptance upgrade image identity differs")
+
+    tenant_root = Path(f"/opt/sce/tenant-addons/acceptance/{tenant_sha}")
+    if not (tenant_root / tenant_module / "__manifest__.py").is_file():
+        raise CloneRuntimeError("immutable tenant addon is unavailable")
+    runtime_root = Path(f"/data/backups/sc_production/acceptance-runtimes/{restore_id}")
+    config = runtime_root / "odoo.conf"
+    secret_file = ensure_runtime_secret(runtime_root)
+    database = f"r10e_{restore_id}"
+    config_text = config.read_text(encoding="utf-8")
+    if f"dbfilter = ^{database}$" not in config_text or "list_db = False" not in config_text:
+        raise CloneRuntimeError("exact acceptance database filter is not locked")
+
+    odoo = f"{restore_id}_acceptance_odoo"
+    inspect = json.loads(run(["docker", "inspect", odoo]))[0]
+    labels = inspect.get("Config", {}).get("Labels") or {}
+    if (
+        inspect.get("Image") != image
+        or inspect.get("State", {}).get("Running") is not True
+        or labels.get("sc.production-acceptance-clone") != "true"
+        or set((inspect.get("NetworkSettings", {}).get("Networks") or {})) != {network}
+    ):
+        raise CloneRuntimeError("acceptance application identity differs")
+
+    upgrade = f"{restore_id}_acceptance_upgrade_{module}"
+    if succeeds(["docker", "inspect", upgrade]):
+        raise CloneRuntimeError("acceptance upgrade container already exists")
+    command = [
+        "docker", "run", "--rm", "--name", upgrade,
+        "--network", network, "--group-add", "0",
+        "--label", "sc.production-acceptance-clone=true",
+        "--env-file", str(secret_file),
+        "--mount", f"type=volume,src={filestore},dst=/var/lib/odoo/filestore",
+        "--mount", f"type=bind,src={tenant_root},dst=/mnt/tenant-addons,readonly",
+        "--mount", f"type=bind,src={config},dst=/etc/odoo/odoo.conf,readonly",
+        "--entrypoint", "odoo", image,
+        "-c", "/etc/odoo/odoo.conf", "-d", database,
+        "-u", module, "--without-demo=all", "--stop-after-init",
+    ]
+    run(["docker", "stop", "--time", "30", odoo])
+    try:
+        run(command)
+    finally:
+        run(["docker", "start", odoo], check=False)
+    for _ in range(60):
+        state = run(["docker", "inspect", odoo, "--format", "{{.State.Running}}|{{.State.ExitCode}}"], False)
+        if state.startswith("true|") and succeeds([
+            "python3", "-c",
+            "import sys,urllib.request; assert urllib.request.urlopen(sys.argv[1],timeout=3).status == 200",
+            f"http://127.0.0.1:{port}/web/login?db={database}",
+        ]):
+            return {
+                "status": "PASS", "database": database, "module": module,
+                "image": image, "source_sha": source_sha, "tenant_sha": tenant_sha,
+                "exact_dbfilter": True, "external_egress": False,
+            }
+        time.sleep(1)
+    raise CloneRuntimeError("upgraded acceptance application did not become ready")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--restore-id", required=True)
@@ -424,11 +511,17 @@ def main() -> None:
     parser.add_argument("--port", required=True, type=int)
     parser.add_argument("--refresh-tenant", action="store_true")
     parser.add_argument("--refresh-image", action="store_true")
+    parser.add_argument("--upgrade-module")
     parser.add_argument("--source-sha")
     args = parser.parse_args()
-    if args.refresh_tenant and args.refresh_image:
+    if sum(bool(value) for value in (args.refresh_tenant, args.refresh_image, args.upgrade_module)) > 1:
         raise CloneRuntimeError("select exactly one acceptance refresh mode")
-    if args.refresh_image:
+    if args.upgrade_module:
+        result = upgrade_module(
+            args.restore_id, args.tenant_sha, args.tenant_module, args.image,
+            args.source_sha or "", args.upgrade_module, args.port,
+        )
+    elif args.refresh_image:
         result = refresh_image(
             args.restore_id, args.tenant_sha, args.tenant_module, args.image,
             args.source_sha or "", args.port,
