@@ -29,7 +29,7 @@ const resolvedContentLayout = computed(() => normalizeContentLayoutMode(props.co
 <style scoped>
 .template-layout-shell {
   display: grid;
-  gap: 8px;
-  padding-bottom: calc(var(--sc-page-padding) + var(--sc-product-space-3));
+  gap: var(--sc-space-xs);
+  padding-bottom: var(--sc-page-section-gap);
 }
 </style>

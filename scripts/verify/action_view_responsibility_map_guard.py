@@ -11,7 +11,7 @@ CONTRACT_ACTION_RUNTIME = ROOT / "frontend/apps/web/src/app/runtime/actionViewCo
 NAVIGATION_CONTEXT = ROOT / "frontend/apps/web/src/app/navigationContext.ts"
 CI = ROOT / "make/ci.mk"
 
-LINE_BUDGET = 3684
+LINE_BUDGET = 3673
 
 
 def _read(path: Path) -> str:
@@ -44,7 +44,7 @@ def main() -> int:
 
     for token in [
         "Action View Responsibility Map",
-        "Current size: 3,684 lines",
+        "Current size: 3,673 lines",
         "Phase: Stage 6 business category create nav query split",
         "## Purpose",
         "## Route Entry",
@@ -59,7 +59,7 @@ def main() -> int:
         "## Stage 6 Target",
         "## Verification Gaps",
         "## Invariants",
-        "`ActionView.vue` is locked at `<=3684` lines",
+        "`ActionView.vue` is locked at `<=3673` lines",
         "`usePageContract('action')`",
         "`useActionPageModel`",
         "`useActionViewActionRuntime`",
@@ -73,7 +73,7 @@ def main() -> int:
         "loadListColumnPreference",
         "handleToggleRecordFavorite",
         "redirectMenuOnlyRouteIfNeeded",
-        "PROJECT_CONTEXT_CHANGED_EVENT",
+        "RECORD_CONTEXT_CHANGED_EVENT",
         "router.push",
         "router.replace",
         "window.open",
@@ -103,8 +103,8 @@ def main() -> int:
             "async function loadListColumnPreference",
             "async function handleToggleRecordFavorite",
             "async function redirectMenuOnlyRouteIfNeeded",
-            "window.addEventListener(PROJECT_CONTEXT_CHANGED_EVENT",
-            "window.removeEventListener(PROJECT_CONTEXT_CHANGED_EVENT",
+            "window.addEventListener(RECORD_CONTEXT_CHANGED_EVENT",
+            "window.removeEventListener(RECORD_CONTEXT_CHANGED_EVENT",
             "router.push",
             "router.replace",
             "window.open",

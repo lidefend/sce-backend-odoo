@@ -1,9 +1,9 @@
 # UI Contract V2 Responsibility Map
 
-Date: 2026-07-14
+Date: 2026-08-08
 Owner: Platform owner
 Target file: `addons/smart_core/handlers/ui_contract_v2.py`
-Current size: 3,518 lines
+Current size: 3,440 lines
 Phase: Stage 3 form layout governance helper split
 
 ## Purpose
@@ -35,7 +35,7 @@ permission truth, persistence rules, or industry-owned policy.
 | V2 contract mutation helpers | Set container tree, widget status, data meta, governance patch, and content replacement. | Small pure helper module. |
 | Policy projection | Delete/surface/list profile projection, source authority envelopes, field status projection, native widget visibility. | Projection helper module with no ORM access. |
 | Business config form layout | Business config group movement, form layout governance, relation entry policy injection, business category form policy, form structure contract creation. | Split only after tests cover form policy and configured group order. |
-| List and kanban projection | Legacy visible labels, business list profile merge, kanban field merge, action-scoped visible columns, LEGACY_55 legacy overrides. | Read-side list projection module; keep action/view ORM boundaries explicit. |
+| List and kanban projection | Formal legacy-archive labels, business list profile merge, and kanban field merge. | Read-side list projection module; keep action/view ORM boundaries explicit. |
 | Collaboration and header actions | Chatter/attachment contract, standard submit button, file hook allowlists. | Collaboration projection module; hook reads allowed, no writes. |
 | Record and view hydration | Record snapshot read, attachment display values, native group column extraction from `ir.ui.view` XML. | Read-side hydration module with strict field-count limits and tests. |
 | Scene contract projection | Scene contract source loading and scene v2 assembly path. | Scene projection helper once scene behavior tests exist. |
@@ -56,8 +56,6 @@ as a batch:
 | `_merge_user_list_preference_columns` | Reads `sc.user.view.preference` for user list column preferences. |
 | `_form_structure_governance` | Reads `ui.business.config.contract` view orchestration contracts and composes governance metadata. |
 | `_merge_business_list_profile` | Reads business config contracts and action/view-specific list configuration. |
-| `_action_scoped_visible_list_columns` | Reads `ir.actions.act_window` and parses tree/list view XML. |
-| `_legacy_55_legacy_visible_list_override` | Reads LEGACY_55 legacy priority menu plans to project old-system visible fields. |
 | `_inject_record_business_category_context` | Reads the target record business category and merges request context. |
 | `_hydrate_record_snapshot` | Reads selected target record fields for form snapshots. |
 | `_hydrate_attachment_display_values` | Reads `ir.attachment` display values for attachment fields. |
@@ -75,7 +73,6 @@ Do not move these responsibilities before behavior coverage exists:
 - user preference merge;
 - record snapshot hydration;
 - view XML parsing;
-- LEGACY_55 legacy-visible projection;
 - scene contract source loading.
 
 ## Stage 1 Target
@@ -122,7 +119,7 @@ Stage 3 is complete:
   `_apply_form_layout_governance_to_group`;
 - `ui_contract_v2.py` keeps compatibility methods and delegates to the
   projection module;
-- `ui_contract_v2.py` is locked at `<=3518` lines for this stage.
+- `ui_contract_v2.py` is locked at `<=3440` lines for this stage.
 
 ## Stage 4 Candidate
 
@@ -143,7 +140,6 @@ Before moving transaction-heavy methods, add or confirm behavior coverage for:
 - action context/domain injection;
 - business config form groups and field order;
 - list column preference merge;
-- LEGACY_55 legacy-visible list override;
 - record snapshot hydration fallback;
 - attachment display value hydration;
 - native group column XML parsing;

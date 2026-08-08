@@ -6,6 +6,7 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.smart_construction_core import core_extension
+from odoo.addons.smart_core.utils import contract_governance
 
 
 @tagged("core_extension_v2_finalize")
@@ -184,6 +185,39 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         projected = core_extension.smart_core_finalize_projected_contract_data(self.env, data, {"view_type": "tree"})
 
         self.assertIsNone(projected)
+
+    def test_project_list_profile_keeps_native_optional_manager_column_hidden(self):
+        data = {
+            "model": "project.project",
+            "view_type": "tree",
+            "fields": {
+                "name": {"type": "char", "string": "项目名称"},
+                "project_code": {"type": "char", "string": "项目编号"},
+                "user_id": {"type": "many2one", "string": "项目负责人"},
+                "manager_id": {"type": "many2one", "string": "项目经理"},
+            },
+            "views": {
+                "tree": {
+                    "columns": ["name", "project_code", "user_id", "manager_id"],
+                    "columns_schema": [
+                        {"name": "name", "label": "项目名称", "optional": "show"},
+                        {"name": "project_code", "label": "项目编号", "optional": "show"},
+                        {"name": "user_id", "label": "项目负责人", "optional": "show"},
+                        {"name": "manager_id", "label": "项目经理", "optional": "hide"},
+                    ],
+                }
+            },
+        }
+
+        contract_governance.apply_project_form_domain_override(data, "user")
+
+        profile = data["list_profile"]
+        self.assertIn("user_id", profile["columns"])
+        self.assertIn("manager_id", profile["columns"])
+        self.assertEqual(profile["column_labels"]["user_id"], "项目负责人")
+        self.assertEqual(profile["column_labels"]["manager_id"], "项目经理")
+        manager_schema = next(row for row in data["views"]["tree"]["columns_schema"] if row["name"] == "manager_id")
+        self.assertEqual(manager_schema["optional"], "hide")
 
     def test_partner_trace_columns_have_business_labels(self):
         labels = core_extension.smart_core_legacy_visible_business_column_labels(self.env)

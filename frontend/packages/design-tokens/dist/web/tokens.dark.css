@@ -132,11 +132,12 @@
   --sc-component-toolbar-radius: 8;
   --sc-platform-density-touch-target-min: 32;
   --sc-semantic-border-default: rgba(148, 163, 184, 0.24);
-  --sc-semantic-border-interactive: rgba(0, 182, 254, 0.42);
+  --sc-semantic-border-interactive: #00b6fe;
+  --sc-semantic-border-selected: #00b6fe;
   --sc-semantic-border-strong: rgba(148, 163, 184, 0.38);
   --sc-semantic-border-subtle: rgba(148, 163, 184, 0.18);
   --sc-semantic-border-table: rgba(148, 163, 184, 0.22);
-  --sc-semantic-focus-ring: rgba(0, 182, 254, 0.24);
+  --sc-semantic-focus-ring: #00b6fe;
   --sc-semantic-shadow-modal: 0 24px 70px rgba(0, 0, 0, 0.42);
   --sc-semantic-shadow-panel: 0 16px 36px rgba(0, 0, 0, 0.28);
   --sc-semantic-shadow-popover: 0 18px 44px rgba(0, 0, 0, 0.34);
@@ -144,10 +145,10 @@
   --sc-semantic-state-danger-bg: rgba(127, 29, 29, 0.24);
   --sc-semantic-state-danger-border: rgba(248, 113, 113, 0.42);
   --sc-semantic-state-danger-text: #fca5a5;
-  --sc-semantic-state-info: #00b6fe;
-  --sc-semantic-state-info-bg: rgba(0, 127, 174, 0.24);
-  --sc-semantic-state-info-border: rgba(0, 182, 254, 0.42);
-  --sc-semantic-state-info-text: #67d8ff;
+  --sc-semantic-state-info: #2563eb;
+  --sc-semantic-state-info-bg: rgba(37, 99, 235, 0.18);
+  --sc-semantic-state-info-border: #2563eb;
+  --sc-semantic-state-info-text: #bfdbfe;
   --sc-semantic-state-success: #22c55e;
   --sc-semantic-state-success-bg: rgba(20, 83, 45, 0.24);
   --sc-semantic-state-success-border: rgba(74, 222, 128, 0.38);
@@ -166,6 +167,7 @@
   --sc-semantic-surface-page: #0b1220;
   --sc-semantic-surface-panel: #111827;
   --sc-semantic-surface-panel-muted: #0f172a;
+  --sc-semantic-surface-selected: rgba(0, 182, 254, 0.16);
   --sc-semantic-surface-subtle: #172033;
   --sc-semantic-surface-table-header: #172033;
   --sc-semantic-text-inverse: #111827;
@@ -174,4 +176,5 @@
   --sc-semantic-text-on-interactive: #111827;
   --sc-semantic-text-primary: #f9fafb;
   --sc-semantic-text-secondary: #cbd5e1;
+  --sc-semantic-text-selected: #67d8ff;
 }

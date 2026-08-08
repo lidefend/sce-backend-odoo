@@ -394,6 +394,11 @@ export function fallbackRelationSearchColumns(descriptor?: FieldDescriptor): Rel
   }];
 }
 
+function hasChineseBusinessLabel(value: unknown) {
+  const label = String(value || '').trim();
+  return /[\u3400-\u9fff]/u.test(label) && !/^(?:p1_visible|uc_formal|legacy_visible|x_)[\w.-]*$/i.test(label);
+}
+
 export function relationSearchColumnsFromContract(dialog: Record<string, unknown>): RelationSearchColumn[] {
   const columns = Array.isArray(dialog.columns) ? dialog.columns : [];
   const out: RelationSearchColumn[] = [];
@@ -402,6 +407,7 @@ export function relationSearchColumnsFromContract(dialog: Record<string, unknown
     const name = String(row.name || row.field || '').trim();
     if (!name || name === 'id') continue;
     const label = String(row.label || row.string || name).trim() || name;
+    if (!hasChineseBusinessLabel(label)) continue;
     out.push({ name, label });
     if (out.length >= 8) break;
   }
@@ -433,6 +439,7 @@ export function normalizeRelationSearchColumns(
     if (!name || name === 'id') continue;
     const field = fields[name];
     const label = String(row?.label || row?.string || field?.string || name).trim();
+    if (!hasChineseBusinessLabel(label)) continue;
     out.push({ name, label });
     if (out.length >= 6) break;
   }

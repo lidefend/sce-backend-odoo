@@ -164,7 +164,6 @@ BUSINESS_FORM_STRUCTURE_INTERNAL_SUFFIXES = (
     "_count",
     "_rate",
 )
-LEGACY_55_SOURCE_DOCUMENT = "/home/odoo/workspace/partner_import_source/5.6优化（老系统菜单，字段列表展示）1.docx"
 LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
     "project.material.plan": {
         "legacy_visible_01": "单据状态",

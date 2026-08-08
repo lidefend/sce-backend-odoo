@@ -5,19 +5,21 @@
     "panel_muted": "#f7f9fb",
     "subtle": "#eef4fa",
     "input": "{color.white}",
-    "hover": "{color.cyan_50}",
+    "hover": "{color.slate_100}",
+    "selected": "{color.blue_50}",
     "overlay": "rgba(15, 23, 42, 0.38)",
     "interactive": "{color.blue_500}",
     "interactive_hover": "{color.blue_600}",
     "navigation": "{color.white}",
-    "navigation_active": "{color.cyan_50}",
+    "navigation_active": "{color.blue_50}",
     "table_header": "#f5f8fa"
   },
   "border": {
     "default": "{color.slate_200}",
     "strong": "{color.slate_300}",
     "subtle": "{color.gray_200}",
-    "interactive": "{color.cyan_200}",
+    "interactive": "{color.blue_500}",
+    "selected": "{color.blue_500}",
     "table": "#e8edf2"
   },
   "text": {
@@ -26,10 +28,11 @@
     "muted": "{color.slate_400}",
     "inverse": "{color.white}",
     "on_interactive": "{color.white}",
-    "link": "{color.blue_600}"
+    "link": "{color.blue_600}",
+    "selected": "{color.blue_700}"
   },
   "focus": {
-    "ring": "rgba(0, 182, 254, 0.18)"
+    "ring": "{color.blue_700}"
   },
   "shadow": {
     "panel": "{shadow.panel}",
@@ -49,9 +52,9 @@
     "danger_bg": "{color.red_50}",
     "danger_border": "{color.red_100}",
     "danger_text": "{color.red_700}",
-    "info": "{color.blue_500}",
+    "info": "{color.cyan_700}",
     "info_bg": "{color.cyan_50}",
-    "info_border": "{color.cyan_200}",
-    "info_text": "{color.blue_600}"
+    "info_border": "{color.cyan_700}",
+    "info_text": "{color.slate_800}"
   }
 }

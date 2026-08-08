@@ -96,7 +96,7 @@
 
 .workspace-activity-rail button.active {
   background: var(--sc-navigation-active-bg);
-  color: var(--sc-app-info-text);
+  color: var(--sc-app-selected-text);
   box-shadow: inset 3px 0 0 var(--sc-app-accent);
 }
 
@@ -123,8 +123,8 @@
   min-height: 58px;
   margin: -10px -10px 2px;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
+  border-bottom: 1px solid var(--sc-app-border);
+  background: var(--sc-navigation-bg);
 }
 
 .workspace-sidebar-panel :deep(.brand)::before {
@@ -136,7 +136,7 @@
 }
 
 .workspace-sidebar-panel :deep(.brand .title) {
-  color: var(--sc-app-info-text);
+  color: var(--sc-app-text-primary);
   font-size: 16px;
 }
 
@@ -220,11 +220,16 @@
   cursor: pointer;
 }
 
-.workspace-scope-options > button:hover,
+.workspace-scope-options > button:hover {
+  border-color: var(--sc-app-border);
+  background: var(--sc-app-hover-bg);
+  color: var(--sc-app-text-primary);
+}
+
 .workspace-scope-options > button.active {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
+  border-color: var(--sc-app-selected-border);
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
 }
 
 .workspace-scope-options > button span,
@@ -355,9 +360,9 @@
 }
 
 .business-scope-segments button.active {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
+  border-color: var(--sc-app-selected-border);
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
 }
 
 .business-scope-segments button:disabled {
@@ -423,11 +428,16 @@
   cursor: pointer;
 }
 
-.published-app:hover,
+.published-app:hover {
+  border-color: var(--sc-app-border);
+  background: var(--sc-app-hover-bg);
+  color: var(--sc-app-text-primary);
+}
+
 .published-app.active {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
+  border-color: var(--sc-app-selected-border);
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
 }
 
 .published-app:disabled {
@@ -448,10 +458,14 @@
   font-weight: 700;
 }
 
-.published-app.active .published-app__mark,
 .published-app:hover .published-app__mark {
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
+  background: var(--sc-app-hover-bg);
+  color: var(--sc-app-text-primary);
+}
+
+.published-app.active .published-app__mark {
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
 }
 
 .published-app__label {
@@ -620,7 +634,7 @@
   border-radius: 0;
   border: 0;
   border-bottom: 1px solid var(--sc-app-border);
-  box-shadow: inset 0 3px 0 var(--sc-semantic-surface-interactive);
+  box-shadow: inset 0 3px 0 var(--sc-app-border);
   width: 100%;
   margin-inline-start: 0;
   padding: var(--sc-space-xs) var(--sc-page-inline-padding);
@@ -710,9 +724,9 @@
 }
 
 .crumb.active {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
+  border-color: var(--sc-app-selected-border);
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
   font-weight: 700;
 }
 
@@ -934,7 +948,7 @@
 }
 
 .activity-tab.active {
-  color: var(--sc-app-info-text);
+  color: var(--sc-app-selected-text);
 }
 
 .activity-tab.active::after {
@@ -1188,7 +1202,7 @@
     display: flex !important;
     padding: 12px 6px;
     border-right-color: var(--sc-app-border);
-    background: color-mix(in srgb, var(--sc-app-info-bg) 68%, var(--sc-navigation-bg));
+    background: var(--sc-navigation-bg);
   }
 
   .workspace-activity-rail button {
@@ -1223,7 +1237,7 @@
   }
 
   .workspace-sidebar-panel :deep(.brand .title) {
-    color: var(--sc-app-info-text);
+    color: var(--sc-app-text-primary);
     font-size: 17px;
     font-weight: 750;
     letter-spacing: -0.02em;
@@ -1250,7 +1264,7 @@
     padding: var(--sc-space-2xs) var(--sc-page-inline-padding);
     border-bottom: 1px solid var(--sc-app-border);
     background: color-mix(in srgb, var(--sc-app-panel) 96%, transparent);
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--sc-app-shadow) 10%, transparent), inset 0 3px 0 var(--sc-semantic-surface-interactive);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--sc-app-shadow) 10%, transparent), inset 0 3px 0 var(--sc-app-border);
     backdrop-filter: blur(12px);
   }
 
@@ -1311,7 +1325,7 @@
 
   .topbar--minimal :is(.sidebar-toggle, .theme-switch):hover {
     background: var(--sc-app-hover-bg);
-    color: var(--sc-app-info-text);
+    color: var(--sc-app-text-primary);
   }
 
   .topbar--minimal .topbar-tool-label {
@@ -1356,7 +1370,7 @@
     border-color: var(--sc-app-border);
     border-bottom-color: var(--sc-app-panel);
     background: var(--sc-app-panel);
-    color: var(--sc-app-info-text);
+    color: var(--sc-app-selected-text);
     box-shadow: 0 -3px 12px color-mix(in srgb, var(--sc-app-shadow) 12%, transparent);
   }
 

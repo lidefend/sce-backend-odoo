@@ -51,7 +51,6 @@ REQUESTED_DB_ORIGIN := $(origin DB)
 REQUESTED_BD_ORIGIN := $(origin BD)
 REQUESTED_ENV_FILE := $(ENV_FILE)
 REQUESTED_ENV_FILE_ORIGIN := $(origin ENV_FILE)
-
 # ======================================================
 # ==================== Codex SOP =======================
 # ======================================================
@@ -70,7 +69,6 @@ CODEX_MODE        ?= fast
 CODEX_NEED_UPGRADE ?= 0
 CODEX_MODULES     ?= $(MODULE)
 CODEX_DB          ?= $(DB_NAME)
-
 # Load env file (repo-level)
 ENV ?= dev
 ENV_FILE ?=
@@ -83,7 +81,6 @@ else ifneq (,$(wildcard .env))
 ENV_FILE_RESOLVED := .env
 endif
 ENV_FILE := $(ENV_FILE_RESOLVED)
-
 ifneq ($(strip $(ENV_FILE_RESOLVED)),)
 include $(ENV_FILE_RESOLVED)
 export
@@ -91,14 +88,12 @@ endif
 ifneq (,$(filter command line environment environment\ override,$(REQUESTED_ENV_FILE_ORIGIN)))
 ENV_FILE := $(REQUESTED_ENV_FILE)
 endif
-
 # ------------------ Compose ------------------
 # Prefer v2 `docker compose` if subcommand exists, otherwise fallback to `docker-compose`
 COMPOSE_BIN ?= $(shell \
   if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then echo "docker compose"; \
-  elif command -v docker-compose >/dev/null 2>&1 && docker-compose version >/dev/null 2>&1; then echo "docker-compose"; \
-  else echo "docker compose"; fi)
-
+	  elif command -v docker-compose >/dev/null 2>&1 && docker-compose version >/dev/null 2>&1; then echo "docker-compose"; \
+	  else echo "docker compose"; fi)
 PROJECT              ?= $(COMPOSE_PROJECT_NAME)
 
 # Compose files / overlays

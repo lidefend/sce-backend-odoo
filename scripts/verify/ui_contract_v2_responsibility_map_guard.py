@@ -19,8 +19,6 @@ REQUIRED_METHODS = [
     "_merge_user_list_preference_columns",
     "_form_structure_governance",
     "_merge_business_list_profile",
-    "_action_scoped_visible_list_columns",
-    "_legacy_55_legacy_visible_list_override",
     "_hydrate_record_snapshot",
     "_inject_native_group_layout_columns",
     "_handle_scene_contract",
@@ -62,7 +60,7 @@ def main() -> int:
 
     for token in [
         "UI Contract V2 Responsibility Map",
-        "Current size: 3,518 lines",
+        "Current size: 3,440 lines",
         "Stage 3 form layout governance helper split",
         "## Public Entry Points",
         "## Responsibility Bands",
@@ -75,7 +73,7 @@ def main() -> int:
         "## Verification Gaps",
         "## Invariants",
         "`UiContractV2Handler.handle`",
-        "`ui_contract_v2.py` is locked at `<=3518` lines",
+        "`ui_contract_v2.py` is locked at `<=3440` lines",
         "`ui_contract_v2_adapters.py` owns request/result adapters",
         "`ui_contract_v2_adapters.py` also owns pure value builders",
         "`ui_contract_v2_projection.py` owns pure v2 mutation helpers",
@@ -84,7 +82,6 @@ def main() -> int:
         "Do not move these responsibilities before behavior coverage exists",
         "UiContractHandler",
         "PageAssembler",
-        "LEGACY_55 legacy-visible projection",
         "record snapshot hydration",
         "view XML parsing",
         "scene contract source loading",
@@ -96,8 +93,8 @@ def main() -> int:
 
     if handler:
         line_count = handler.count("\n") + (0 if handler.endswith("\n") else 1)
-        if line_count > 3518:
-            errors.append(f"ui_contract_v2.py line budget exceeded: {line_count} > 3518")
+        if line_count > 3440:
+            errors.append(f"ui_contract_v2.py line budget exceeded: {line_count} > 3440")
         methods = _class_method_names(handler)
         for name in REQUIRED_METHODS:
             if name not in methods:

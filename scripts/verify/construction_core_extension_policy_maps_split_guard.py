@@ -79,7 +79,15 @@ def main() -> int:
 
     if not errors:
         policy_maps = _load(POLICY_MAPS, "construction_core_extension_policy_maps_under_guard")
-        if policy_maps.ROLE_PRECEDENCE != ("system_admin", "business_config_admin", "executive", "owner", "pm", "finance"):
+        if policy_maps.ROLE_PRECEDENCE != (
+            "system_admin",
+            "business_full",
+            "business_config_admin",
+            "executive",
+            "owner",
+            "pm",
+            "finance",
+        ):
             errors.append("policy maps must preserve role precedence")
         if not policy_maps.ROLE_SURFACE_OVERRIDES.get("business_config_admin", {}).get("discover_installed_capabilities"):
             errors.append("business config admin must compose ACL-visible formal product capabilities")

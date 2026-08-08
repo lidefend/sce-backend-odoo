@@ -245,12 +245,48 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
   const activeTab = await page.locator('.activity-tab.active').allInnerTexts().catch(() => []);
   const visibleActions = await page.locator('#main-content button:visible:not(:disabled), #main-content a:visible[href]').count().catch(() => 0);
   const mobileToolbar = await page.evaluate(() => {
-    if (document.documentElement.clientWidth > 520) return { applicable: false, search_width: 0 };
+    if (document.documentElement.clientWidth > 520) return { applicable: false };
     const toolbar = document.querySelector('.product-list-header__tools .action-toolbar:not(.action-toolbar--without-view)');
     const search = toolbar?.querySelector('.native-search');
-    if (!(toolbar instanceof HTMLElement) || !(search instanceof HTMLElement)) return { applicable: false, search_width: 0 };
-    return { applicable: true, search_width: Math.round(search.getBoundingClientRect().width) };
-  }).catch(() => ({ applicable: false, search_width: 0 }));
+    if (!(toolbar instanceof HTMLElement) || !(search instanceof HTMLElement)) return { applicable: false };
+    const visible = (element) => {
+      if (!(element instanceof HTMLElement)) return false;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 1 && rect.height > 1 && style.display !== 'none' && style.visibility !== 'hidden';
+    };
+    const controls = Array.from(toolbar.querySelectorAll('input, button, select')).filter((element) => (
+      visible(element) && !element.closest('.search-dropdown, .list-surface-column-menu, .toolbar-overflow-menu')
+    ));
+    const rects = controls.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { tag: element.tagName.toLowerCase(), left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+    });
+    const rowCenters = [];
+    for (const rect of rects) {
+      const center = rect.top + rect.height / 2;
+      if (!rowCenters.some((value) => Math.abs(value - center) <= 6)) rowCenters.push(center);
+    }
+    const searchInput = search.querySelector('input[type="search"]');
+    const searchInputRect = visible(searchInput) ? searchInput.getBoundingClientRect() : null;
+    const toolbarRect = toolbar.getBoundingClientRect();
+    const overlaps = rects.some((left, index) => rects.slice(index + 1).some((right) => (
+      Math.min(left.right, right.right) - Math.max(left.left, right.left) > 1
+      && Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top) > 1
+    )));
+    return {
+      applicable: true,
+      search_width: Math.round(search.getBoundingClientRect().width),
+      search_input_width: Math.round(searchInputRect?.width || 0),
+      visual_row_count: rowCenters.length,
+      toolbar_client_width: toolbar.clientWidth,
+      toolbar_scroll_width: toolbar.scrollWidth,
+      controls_in_viewport: rects.every((rect) => rect.left >= -1 && rect.right <= document.documentElement.clientWidth + 1),
+      controls_not_overlapping: !overlaps,
+      touch_targets: rects.filter((rect) => rect.tag === 'button').every((rect) => rect.width >= 44 && rect.height >= 44),
+      toolbar_in_viewport: toolbarRect.top >= -1 && toolbarRect.bottom <= window.innerHeight + 1,
+    };
+  }).catch(() => ({ applicable: false }));
   const expectedPath = new URL(`${BASE_URL}${leaf.route}`).pathname;
   const actualUrl = new URL(page.url());
   const checks = {
@@ -267,7 +303,15 @@ async function inspectRoute(page, capture, role, viewport, leaf, options = {}) {
     active_menu_correct: leaf.menu_id <= 0 || activeMenu.some((text) => text.includes(leaf.label)),
     active_tab_correct: leaf.route === '/' ? activeTab.length === 0 : viewport.width < 760 || activeTab.length === 1,
     primary_action_reachable: visibleActions > 0 || ['workspace', 'home'].includes(mode),
-    mobile_list_toolbar_usable: !mobileToolbar.applicable || mobileToolbar.search_width >= 240,
+    mobile_list_toolbar_usable: !mobileToolbar.applicable || (
+      mobileToolbar.search_input_width >= 96
+      && mobileToolbar.visual_row_count === 1
+      && mobileToolbar.toolbar_scroll_width <= mobileToolbar.toolbar_client_width + 1
+      && mobileToolbar.controls_in_viewport
+      && mobileToolbar.controls_not_overlapping
+      && mobileToolbar.touch_targets
+      && mobileToolbar.toolbar_in_viewport
+    ),
     no_auth_or_permission_redirect: !actualUrl.pathname.includes('/login') && !FAILURE_TEXT.test(mainText),
   };
   const failures = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);

@@ -5,7 +5,7 @@
 @media (max-width: 768px) {
   .list-toolbar {
     position: static;
-    padding: 6px 0 8px;
+    padding: var(--sc-space-2xs) 0 var(--sc-space-xs);
     min-height: 0;
     border: 0;
     border-bottom: 1px solid var(--sc-app-border);
@@ -36,7 +36,7 @@
   .mobile-record-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-    gap: 10px;
+    gap: var(--sc-space-xs);
   }
 
   .mobile-record-card {
@@ -49,7 +49,7 @@
     border-radius: 10px;
     background: var(--sc-app-panel);
     color: var(--sc-app-text-primary);
-    padding: 14px;
+    padding: var(--sc-space-sm);
     text-align: left;
     box-shadow: 0 4px 12px var(--sc-app-shadow);
     cursor: pointer;
@@ -84,12 +84,12 @@
   .mobile-record-card__facts {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px 14px;
+    gap: var(--sc-space-xs) var(--sc-space-sm);
   }
 
   .mobile-record-fact {
     display: grid;
-    gap: 3px;
+    gap: var(--sc-space-2xs);
     min-width: 0;
   }
 
@@ -115,14 +115,14 @@
   .pagination-footer {
     position: static;
     justify-content: flex-end;
-    padding: 8px 10px;
+    padding: var(--sc-space-xs);
   }
 
   .pagination-actions--bottom {
     width: auto;
     max-width: 100%;
     justify-content: flex-end;
-    gap: 6px;
+    gap: var(--sc-space-xs);
   }
 }
 

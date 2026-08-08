@@ -51,10 +51,8 @@ def main() -> int:
         "MenuView.vue",
         "MyWorkView.vue",
         "NotFoundView.vue",
-        "ProjectsIntakeView.vue",
         "PlaceholderView.vue",
         "PasswordRecoveryView.vue",
-        "ProjectManagementDashboardView.vue",
         "ReleaseOperatorView.vue",
         "SceneContractBlockGridView.vue",
         "SceneHealthView.vue",
@@ -122,9 +120,7 @@ def main() -> int:
         "HomeView.vue",
         "NotFoundView.vue",
         "PasswordRecoveryView.vue",
-        "ProjectManagementDashboardView.vue",
         "ActionViewShell.vue",
-        "ProjectsIntakeView.vue",
         "MyWorkView.vue",
     }
 
@@ -152,8 +148,8 @@ def main() -> int:
             "pageSectionEnabled('form', true)",
         ],
         "HomeView.vue": [
-            "import ContractRoleHome from '../components/role-home/ContractRoleHome.vue';",
-            "<ContractRoleHome />",
+            "import WorkspaceHome from '../components/role-home/WorkspaceHome.vue';",
+            "<WorkspaceHome />",
         ],
         "MenuView.vue": [
             "resolveMenuAction(",
@@ -239,11 +235,6 @@ def main() -> int:
             "pageSectionEnabled('header', true)",
             "pageSectionEnabled('tables_top', true)",
             "pageSectionEnabled('tables_role_user', true)",
-        ],
-        "ProjectManagementDashboardView.vue": [
-            "intentRequest<DashboardResponse>",
-            "executePageContractAction",
-            "PageRenderer",
         ],
     }
     per_view_forbidden = {

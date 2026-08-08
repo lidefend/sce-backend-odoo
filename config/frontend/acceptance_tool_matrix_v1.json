@@ -5,6 +5,7 @@
     "full-product-audit": {"profiles": ["local", "test", "daily"], "operations": ["readonly"]},
     "form-system-audit": {"profiles": ["local", "test"], "operations": ["isolated-write"], "fixture_required": true},
     "geometry-scroll-audit": {"profiles": ["local", "test", "daily"], "operations": ["readonly"]},
+    "color-role-audit": {"profiles": ["local", "test", "daily"], "operations": ["readonly"]},
     "dynamic-list-optional-columns": {"profiles": ["local", "test", "daily"], "operations": ["readonly"]},
     "daily-release-probe": {"profiles": ["daily"], "operations": ["readonly"], "target_identity_required": true},
     "production-safe-smoke": {"profiles": ["production"], "operations": ["production-safe-smoke"], "target_identity_required": true, "redaction_required": true},

@@ -17,7 +17,7 @@ PLACEHOLDER_VIEW = ROOT / "frontend/apps/web/src/views/PlaceholderView.vue"
 SCENE_HEALTH_VIEW = ROOT / "frontend/apps/web/src/views/SceneHealthView.vue"
 USAGE_ANALYTICS_VIEW = ROOT / "frontend/apps/web/src/views/UsageAnalyticsView.vue"
 HOME_VIEW = ROOT / "frontend/apps/web/src/views/HomeView.vue"
-HOME_RUNTIME = ROOT / "frontend/apps/web/src/composables/shared-surface/useContractRoleHome.ts"
+HOME_RUNTIME = ROOT / "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts"
 MY_WORK_VIEW = ROOT / "frontend/apps/web/src/views/MyWorkView.vue"
 SCENE_PACKAGES_VIEW = ROOT / "frontend/apps/web/src/views/ScenePackagesView.vue"
 PAGE_ACTION_RUNTIME = ROOT / "frontend/apps/web/src/app/pageContractActionRuntime.ts"
@@ -295,14 +295,14 @@ def main() -> int:
         home_text,
         "HomeView.vue",
         [
-            "import ContractRoleHome from '../components/role-home/ContractRoleHome.vue';",
-            "<ContractRoleHome />",
+            "import WorkspaceHome from '../components/role-home/WorkspaceHome.vue';",
+            "<WorkspaceHome />",
         ],
         errors,
     )
     _expect(
         home_runtime_text,
-        "useContractRoleHome.ts",
+        "useWorkspaceHome.ts",
         [
             "const pageContract = usePageContract('home');",
             "fetchMyWorkSummary(",

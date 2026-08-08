@@ -1,9 +1,9 @@
 # Action View Responsibility Map
 
-Date: 2026-07-14
+Date: 2026-08-08
 Owner: Frontend owner
 Target file: `frontend/apps/web/src/views/ActionView.vue`
-Current size: 3,684 lines
+Current size: 3,673 lines
 Phase: Stage 6 business category create nav query split
 
 ## Purpose
@@ -38,7 +38,7 @@ or industry-owned business rules.
 | Selection and batch actions | Selected IDs, if-match/idempotency maps, archive/activate/delete policy, batch feedback, and refresh. | Do not move mutation transaction yet. Extract pure guard/request builders only. |
 | Contract actions and navigation | Header actions, focus actions, create record flow, business category picker, internal route navigation, external URL navigation. | Keep navigation side effects at current boundary. |
 | List preferences | Visibility/order/width load, save, optimistic status, timer cleanup, and preference policy application. | Extract pure normalization and scope builders before moving API calls. |
-| Lifecycle and error state | Mounted load, menu-only redirect, project context event listener, route watches, retained route full path, render error state. | Keep watch/reload chain in page until regression coverage exists. |
+| Lifecycle and error state | Mounted load, menu-only redirect, generic record-context event listener, route watches, retained route full path, render error state. | Keep watch/reload chain in page until regression coverage exists. |
 | Activity runtime query normalization | `normalizeActivityRuntimeRouteQuery` whitelists route query keys and normalizes activity runtime query state. | Pure helper in `actionViewRouteRuntime.ts`; no router, API, session, or notification access. |
 | Activity runtime route state builder | `buildActivityRuntimeRouteState` merges current route query, local list state, and route-sync extras before normalization. | Pure helper in `actionViewRouteRuntime.ts`; page remains responsible for session writes. |
 | Activity route key builder | `buildActionActivityRouteKey` builds the action/menu activity runtime key from route params and query values. | Pure helper in `actionViewRouteRuntime.ts`; page remains responsible for reading route state. |
@@ -65,11 +65,11 @@ These functions own side effects today and should not be moved as a batch:
 | `handleListColumnWidthsChange` | Saves column width preference changes and updates timer-backed status. |
 | `handleToggleRecordFavorite` | Writes record-level favorite field state and rolls back on error. |
 | `redirectMenuOnlyRouteIfNeeded` | Resolves menu-only routes and performs canonical `router.replace` navigation. |
-| `onMounted` and route watches | Own initial load, project context listener, route reloads, and cleanup. |
+| `onMounted` and route watches | Own initial load, record-context listener, route reloads, and cleanup. |
 
 Side-effect tokens intentionally tracked by the guard include `router.push`,
 `router.replace`, `window.open`, `window.location.assign`, and
-`PROJECT_CONTEXT_CHANGED_EVENT`.
+`RECORD_CONTEXT_CHANGED_EVENT`.
 
 ## Do Not Move Yet
 
@@ -79,7 +79,7 @@ Do not move these responsibilities before behavior coverage exists:
 - batch mutation transactions;
 - list preference load/save transactions;
 - record favorite mutation;
-- lifecycle/watch project-context reload chain;
+- lifecycle/watch record-context reload chain;
 - external navigation with `window.open` and `window.location.assign`;
 - menu-only redirect and canonical route replacement;
 - action runtime execution through `useActionViewActionRuntime`.
@@ -150,7 +150,7 @@ Stage 6 is complete:
   `buildBusinessCategoryCreateNavQuery` helper;
 - `ActionView.vue` keeps `createRouteQueryForBusinessCategory` as carry-query
   orchestration only;
-- `ActionView.vue` is locked at `<=3684` lines; the three-line increase records the responsive width containment added in PR `#1081` and must not become a new growth allowance;
+- `ActionView.vue` is locked at `<=3673` lines; the generic record-context convergence is the current no-growth baseline;
 - no router, API, session, lifecycle, window, or notification side effects were
   moved.
 
@@ -167,7 +167,7 @@ Before moving transaction-heavy methods, add or confirm behavior coverage for:
 - batch action busy/success/error cleanup;
 - list preference load/save/error behavior and timer cleanup;
 - menu-only redirect and fallback label resolution;
-- project context event reload behavior;
+- record-context event reload behavior;
 - create-with-business-category query preservation;
 - action external navigation with `window.open`;
 - action external replacement with `window.location.assign`;

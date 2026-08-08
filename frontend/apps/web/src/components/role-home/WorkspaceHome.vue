@@ -175,10 +175,15 @@ const {
   cursor: pointer;
 }
 
-.role-home-surface button:hover,
+.role-home-surface button:hover {
+  border-color: var(--sc-app-border-strong);
+  background: var(--sc-app-hover-bg);
+  color: var(--sc-app-text-primary);
+}
+
 .role-home-surface button:focus-visible {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-app-info-bg);
+  outline: 2px solid var(--sc-app-focus-ring);
+  outline-offset: 2px;
 }
 
 .role-home-surface__task-list {
@@ -218,7 +223,7 @@ const {
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-product-radius-control);
   border-color: var(--sc-app-border);
-  border-left: 3px solid var(--sc-semantic-surface-interactive);
+  border-left: 3px solid var(--sc-app-border);
   background: var(--sc-app-panel);
   box-shadow: none;
 }
@@ -230,10 +235,10 @@ const {
   color: var(--sc-app-text-secondary);
 }
 
-.role-home-surface__summary-label .sc-icon { color: var(--sc-app-info-text); }
+.role-home-surface__summary-label .sc-icon { color: var(--sc-app-text-secondary); }
 
 .role-home-surface__summary-list strong {
-  color: var(--sc-app-info-text);
+  color: var(--sc-app-text-primary);
   font-size: 22px;
 }
 
@@ -257,7 +262,7 @@ const {
   width: 100%;
   padding: var(--sc-space-3, 12px);
   text-align: left;
-  border-left: 3px solid var(--sc-app-info-border);
+  border-left: 3px solid var(--sc-app-border);
   transition: transform var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
 }
 
@@ -266,8 +271,8 @@ const {
   height: 32px;
   padding: 7px;
   border-radius: 8px;
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
+  background: var(--sc-app-subtle-bg);
+  color: var(--sc-text-link);
 }
 
 .role-home-surface__link-list--quick button > span {
@@ -293,7 +298,7 @@ const {
 
 .role-home-surface__link-list button:hover {
   transform: translateY(-1px);
-  border-left-color: var(--sc-semantic-surface-interactive);
+  border-left-color: var(--sc-app-border-strong);
 }
 
 .role-home-surface__state {

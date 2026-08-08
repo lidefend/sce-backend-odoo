@@ -367,8 +367,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: var(--sc-touch-target-min);
+    height: var(--sc-touch-target-min);
     cursor: pointer;
   }
 
@@ -386,7 +386,7 @@
   }
 
   .mobile-record-list .mobile-record-row:has(.mobile-record-select) .mobile-record-card {
-    padding-right: calc(44px + var(--sc-space-xs));
+    padding-right: calc(var(--sc-touch-target-min) + var(--sc-space-xs));
   }
 }
 
@@ -696,7 +696,7 @@
   min-height: var(--sc-table-row-height, 44px);
   border-top: 1px solid var(--sc-app-border);
   background: var(--sc-app-panel);
-  padding: 6px 12px;
+  padding: var(--sc-space-2xs) var(--sc-space-sm);
 }
 
 .summary-strip,
