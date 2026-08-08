@@ -19,6 +19,7 @@ IMAGE = re.compile(r"^sha256:[0-9a-f]{64}$")
 MODULE = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
 CONFIRMATION = "ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE"
 REFRESH_CONFIRMATION = "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_TENANT_RUNTIME"
+IMAGE_REFRESH_CONFIRMATION = "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_IMAGE_RUNTIME"
 
 
 class CloneRuntimeError(RuntimeError):
@@ -37,6 +38,12 @@ def run(args: list[str], check: bool = True) -> str:
         detail = completed.stderr.strip().splitlines() or ["command failed"]
         raise CloneRuntimeError(detail[-1][:300])
     return completed.stdout.strip()
+
+
+def succeeds(args: list[str]) -> bool:
+    return subprocess.run(
+        args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+    ).returncode == 0
 
 
 def validate_identity(restore_id: str, tenant_sha: str, tenant_module: str, image: str, port: int) -> None:
@@ -257,6 +264,149 @@ def refresh_tenant(restore_id: str, tenant_sha: str, tenant_module: str, image: 
         raise
 
 
+def refresh_image(
+    restore_id: str, tenant_sha: str, tenant_module: str, image: str,
+    source_sha: str, port: int,
+) -> dict[str, object]:
+    """Replace the acceptance Odoo and edge containers with one verified image."""
+    if os.environ.get("CONFIRM_PRODUCTION_ACCEPTANCE_IMAGE_REFRESH") != IMAGE_REFRESH_CONFIRMATION:
+        raise CloneRuntimeError("exact acceptance image refresh confirmation is required")
+    validate_identity(restore_id, tenant_sha, tenant_module, image, 18095)
+    if not SHA.fullmatch(source_sha) or not 18080 <= port <= 18120:
+        raise CloneRuntimeError("invalid source revision or public acceptance port")
+
+    report_path = Path(f"/data/backups/sc_production/restore-rehearsals/{restore_id}.json")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if report.get("status") != "PASS" or report.get("production_database_connected") is not False:
+        raise CloneRuntimeError("verified isolated restore report is required")
+    resources = report.get("resources") or {}
+    internal = str(resources.get("network") or "")
+    filestore = str(resources.get("filestore_volume") or "")
+    public = f"{restore_id}_public_ingress"
+    if internal != f"{restore_id}_internal" or filestore != f"{restore_id}_filestore":
+        raise CloneRuntimeError("acceptance resources escaped the isolated namespace")
+
+    tenant_root = Path(f"/opt/sce/tenant-addons/acceptance/{tenant_sha}")
+    if not (tenant_root / tenant_module / "__manifest__.py").is_file():
+        raise CloneRuntimeError("immutable tenant addon is unavailable")
+    runtime_root = Path(f"/data/backups/sc_production/acceptance-runtimes/{restore_id}")
+    config = runtime_root / "odoo.conf"
+    secret_file = ensure_runtime_secret(runtime_root)
+    database = f"r10e_{restore_id}"
+    config_text = config.read_text(encoding="utf-8")
+    if f"dbfilter = ^{database}$" not in config_text or "list_db = False" not in config_text:
+        raise CloneRuntimeError("exact acceptance database filter is not locked")
+
+    image_identity = run([
+        "docker", "image", "inspect", image, "--format",
+        '{{.Id}}|{{index .Config.Labels "org.opencontainers.image.revision"}}',
+    ])
+    if image_identity != f"{image}|{source_sha}":
+        raise CloneRuntimeError("replacement image identity differs")
+
+    odoo = f"{restore_id}_acceptance_odoo"
+    web = f"{restore_id}_acceptance_web"
+    odoo_inspect, web_inspect = (
+        json.loads(run(["docker", "inspect", name]))[0] for name in (odoo, web)
+    )
+    old_image = str(odoo_inspect.get("Image") or "")
+    if old_image != str(web_inspect.get("Image") or "") or not IMAGE.fullmatch(old_image):
+        raise CloneRuntimeError("current acceptance image identity differs across containers")
+    for row in (odoo_inspect, web_inspect):
+        if row.get("State", {}).get("Running") is not True:
+            raise CloneRuntimeError("current acceptance runtime is not running")
+        labels = row.get("Config", {}).get("Labels") or {}
+        if labels.get("sc.production-acceptance-clone") != "true":
+            raise CloneRuntimeError("target container is not an acceptance clone")
+    if set((odoo_inspect.get("NetworkSettings", {}).get("Networks") or {})) != {internal}:
+        raise CloneRuntimeError("acceptance application network identity differs")
+    if set((web_inspect.get("NetworkSettings", {}).get("Networks") or {})) != {internal, public}:
+        raise CloneRuntimeError("acceptance edge network identity differs")
+    bindings = web_inspect.get("HostConfig", {}).get("PortBindings") or {}
+    if bindings.get("80/tcp") != [{"HostIp": "0.0.0.0", "HostPort": str(port)}]:
+        raise CloneRuntimeError("acceptance public port identity differs")
+
+    old_tenant = next((
+        Path(str(row.get("Source"))) for row in odoo_inspect.get("Mounts") or []
+        if row.get("Destination") == "/mnt/tenant-addons" and row.get("RW") is False
+    ), None)
+    old_filestore = [
+        row for row in odoo_inspect.get("Mounts") or []
+        if row.get("Destination") == "/var/lib/odoo/filestore"
+        and row.get("Type") == "volume" and row.get("Name") == filestore
+    ]
+    if old_tenant is None or len(old_filestore) != 1:
+        raise CloneRuntimeError("acceptance immutable mounts differ")
+
+    def start(runtime_image: str, tenant: Path, exact_healthz: bool) -> None:
+        run([
+            "docker", "run", "-d", "--name", odoo,
+            "--network", internal, "--network-alias", "odoo",
+            "--group-add", "0", "--label", "sc.production-acceptance-clone=true",
+            "--env-file", str(secret_file),
+            "--mount", f"type=volume,src={filestore},dst=/var/lib/odoo/filestore",
+            "--mount", f"type=bind,src={tenant},dst=/mnt/tenant-addons,readonly",
+            "--mount", f"type=bind,src={config},dst=/etc/odoo/odoo.conf,readonly",
+            "--entrypoint", "odoo", runtime_image,
+            "-c", "/etc/odoo/odoo.conf", "-d", database,
+        ])
+        web_command = [
+            "docker", "run", "-d", "--name", web,
+            "--network", public, "--publish", f"0.0.0.0:{port}:80",
+            "--label", "sc.production-acceptance-clone=true",
+            "--env", f"ODOO_DB={database}",
+        ]
+        if exact_healthz:
+            web_command.extend([
+                "--health-cmd", "python3 -c 'import json,urllib.request; r=urllib.request.urlopen(\"http://127.0.0.1/healthz\"); assert r.status == 200 and json.load(r)[\"status\"] == \"ok\"'",
+                "--health-interval", "5s", "--health-timeout", "3s", "--health-retries", "12",
+            ])
+        web_command.extend([
+            "--entrypoint", "/usr/local/bin/render_nginx_conf.sh", runtime_image,
+        ])
+        run(web_command)
+        run(["docker", "network", "connect", internal, web])
+
+    def wait_ready(exact_healthz: bool) -> None:
+        probe = (
+            "import json,sys,urllib.request; "
+            "base=sys.argv[1]; db=sys.argv[2]; "
+            + (
+                "health=urllib.request.urlopen(base+'/healthz',timeout=3); "
+                "assert health.status==200 and json.load(health)=={'status':'ok','service':'sce-web'}; "
+                if exact_healthz else ""
+            )
+            + "app=urllib.request.urlopen(base+'/web/login?db='+db,timeout=10); assert app.status==200"
+        )
+        for _ in range(60):
+            state = run(["docker", "inspect", odoo, web, "--format", "{{.State.Running}}"], check=False)
+            ready = succeeds(["python3", "-c", probe, f"http://127.0.0.1:{port}", database])
+            if state.splitlines() == ["true", "true"] and ready:
+                return
+            time.sleep(1)
+        raise CloneRuntimeError("refreshed acceptance image runtime did not become ready")
+
+    for name in (web, odoo):
+        run(["docker", "stop", "--time", "30", name])
+        run(["docker", "rm", name])
+    try:
+        start(image, tenant_root, True)
+        wait_ready(True)
+    except Exception:
+        for name in (web, odoo):
+            run(["docker", "rm", "-f", name], check=False)
+        start(old_image, old_tenant, False)
+        wait_ready(False)
+        raise
+    return {
+        "status": "PASS", "database": database, "odoo_container": odoo,
+        "web_container": web, "image": image, "previous_image": old_image,
+        "source_sha": source_sha, "tenant_sha": tenant_sha, "public_port": port,
+        "exact_dbfilter": True, "external_egress": False, "healthz": True,
+        "jwt_secret_configured": True,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--restore-id", required=True)
@@ -265,12 +415,20 @@ def main() -> None:
     parser.add_argument("--image", required=True)
     parser.add_argument("--port", required=True, type=int)
     parser.add_argument("--refresh-tenant", action="store_true")
+    parser.add_argument("--refresh-image", action="store_true")
+    parser.add_argument("--source-sha")
     args = parser.parse_args()
-    result = (
-        refresh_tenant(args.restore_id, args.tenant_sha, args.tenant_module, args.image)
-        if args.refresh_tenant
-        else activate(args.restore_id, args.tenant_sha, args.tenant_module, args.image, args.port)
-    )
+    if args.refresh_tenant and args.refresh_image:
+        raise CloneRuntimeError("select exactly one acceptance refresh mode")
+    if args.refresh_image:
+        result = refresh_image(
+            args.restore_id, args.tenant_sha, args.tenant_module, args.image,
+            args.source_sha or "", args.port,
+        )
+    elif args.refresh_tenant:
+        result = refresh_tenant(args.restore_id, args.tenant_sha, args.tenant_module, args.image)
+    else:
+        result = activate(args.restore_id, args.tenant_sha, args.tenant_module, args.image, args.port)
     print(json.dumps(result, sort_keys=True))
 
 

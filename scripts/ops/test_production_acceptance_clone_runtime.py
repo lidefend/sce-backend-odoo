@@ -52,6 +52,16 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_TENANT_RUNTIME",
         )
 
+    def test_image_refresh_has_a_distinct_confirmation(self) -> None:
+        self.assertNotIn(
+            RUNTIME.IMAGE_REFRESH_CONFIRMATION,
+            {RUNTIME.CONFIRMATION, RUNTIME.REFRESH_CONFIRMATION},
+        )
+        self.assertEqual(
+            RUNTIME.IMAGE_REFRESH_CONFIRMATION,
+            "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_IMAGE_RUNTIME",
+        )
+
     def test_runtime_secret_is_strong_private_and_stable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = RUNTIME.ensure_runtime_secret(Path(directory))

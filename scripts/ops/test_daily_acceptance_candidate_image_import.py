@@ -19,6 +19,25 @@ class DailyAcceptanceCandidateImportTests(unittest.TestCase):
         with self.assertRaisesRegex(module.ImportError, "restricted to sc-root"):
             module.preflight("a" * 40, "sc-prod")
 
+    def test_boundary_preflight_requires_exact_tenant_rc_head(self):
+        with mock.patch.object(module, "git") as git:
+            git.side_effect = lambda *args: {
+                ("branch", "--show-current"): "release/tenant-rc-baosheng-fuel-v1",
+                ("rev-parse", "HEAD"): "a" * 40,
+                ("status", "--porcelain", "--untracked-files=all"): "",
+            }[args]
+            module.preflight("a" * 40, "sc-root", allow_boundary_head=True)
+
+    def test_boundary_preflight_rejects_feature_branch(self):
+        with mock.patch.object(module, "git") as git:
+            git.side_effect = lambda *args: {
+                ("branch", "--show-current"): "feature/unsafe",
+                ("rev-parse", "HEAD"): "a" * 40,
+                ("status", "--porcelain", "--untracked-files=all"): "",
+            }[args]
+            with self.assertRaisesRegex(module.ImportError, "tenant RC"):
+                module.preflight("a" * 40, "sc-root", allow_boundary_head=True)
+
     def test_archive_must_stay_under_governed_candidate_root(self):
         with tempfile.TemporaryDirectory() as temporary:
             archive = Path(temporary) / "candidate.tar"

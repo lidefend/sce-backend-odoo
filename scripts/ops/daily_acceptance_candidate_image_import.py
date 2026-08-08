@@ -48,19 +48,26 @@ def git(*arguments: str) -> str:
     return run(["git", *arguments])
 
 
-def preflight(expected_sha: str, host: str) -> None:
+def preflight(expected_sha: str, host: str, allow_boundary_head: bool = False) -> None:
     if not FULL_SHA.fullmatch(expected_sha):
         raise ImportError("expected main SHA must be a full lowercase SHA")
     if host != DAILY_HOST:
         raise ImportError("daily acceptance import is restricted to sc-root")
-    if git("branch", "--show-current") != "main" or git("rev-parse", "HEAD") != expected_sha:
+    branch = git("branch", "--show-current")
+    if git("rev-parse", "HEAD") != expected_sha:
+        raise ImportError("import must run from the exact approved source SHA")
+    if allow_boundary_head:
+        if not re.fullmatch(r"release/tenant-rc-[a-z0-9][a-z0-9-]*", branch):
+            raise ImportError("boundary import requires an exact tenant RC release branch")
+    elif branch != "main":
         raise ImportError("import must run from the approved main SHA")
     if git("status", "--porcelain", "--untracked-files=all"):
         raise ImportError("import worktree must be clean")
-    for remote in ("origin", "gitee-mirror"):
-        rows = git("ls-remote", remote, "refs/heads/main").splitlines()
-        if len(rows) != 1 or rows[0].split()[0] != expected_sha:
-            raise ImportError(f"{remote} main identity differs")
+    if not allow_boundary_head:
+        for remote in ("origin", "gitee-mirror"):
+            rows = git("ls-remote", remote, "refs/heads/main").splitlines()
+            if len(rows) != 1 or rows[0].split()[0] != expected_sha:
+                raise ImportError(f"{remote} main identity differs")
 
 
 def sha256_file(path: Path) -> str:
@@ -160,12 +167,13 @@ def stream_load(host: str, archive: Path) -> None:
 def import_candidate(
     *, expected_sha: str, archive: Path, archive_sha256: str, image_ref: str,
     local_content_id: str, remote_config_id: str, host: str,
+    allow_boundary_head: bool = False,
 ) -> str:
     if os.environ.get("CONFIRM_DAILY_ACCEPTANCE_CANDIDATE_IMPORT") != CONFIRMATION:
         raise ImportError("exact daily acceptance candidate import confirmation is required")
     if not CONTENT_ID.fullmatch(remote_config_id):
         raise ImportError("remote config identity is invalid")
-    preflight(expected_sha, host)
+    preflight(expected_sha, host, allow_boundary_head)
     verified_archive, archive_config_id = validate_archive(archive, archive_sha256, image_ref)
     if archive_config_id != remote_config_id:
         raise ImportError("declared remote config identity differs from archive")
@@ -189,6 +197,7 @@ def main() -> int:
     parser.add_argument("--local-content-id", required=True)
     parser.add_argument("--remote-config-id", required=True)
     parser.add_argument("--host", required=True)
+    parser.add_argument("--allow-boundary-head", action="store_true")
     args = parser.parse_args()
     try:
         identity = import_candidate(
@@ -199,6 +208,7 @@ def main() -> int:
             local_content_id=args.local_content_id,
             remote_config_id=args.remote_config_id,
             host=args.host,
+            allow_boundary_head=args.allow_boundary_head,
         )
     except ImportError as exc:
         raise SystemExit(f"[daily.acceptance.candidate.import] BLOCKED: {exc}") from exc
