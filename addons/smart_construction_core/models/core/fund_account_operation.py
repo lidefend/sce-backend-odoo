@@ -46,6 +46,7 @@ class ScFundAccountOperation(models.Model):
             ("transfer_between", "资金调拨"),
             ("balance_adjustment", "余额调整"),
             ("fund_daily_report", "资金日报表"),
+            ("legacy_archive", "历史只读归档"),
         ],
         string="业务类型",
         required=True,
@@ -392,6 +393,8 @@ class ScFundAccountOperation(models.Model):
     )
     def _check_operation_values(self):
         for record in self:
+            if record.operation_type == "legacy_archive" and not record._is_readonly_legacy_archive():
+                raise ValidationError(_("历史归档类型只允许承载已声明的只读历史来源。"))
             if record.operation_type in ("transfer_out", "transfer_between"):
                 if not record.source_account_id or not record.target_account_id:
                     raise ValidationError(_("资金划拨/调拨必须填写转出账户和转入账户。"))
@@ -414,8 +417,11 @@ class ScFundAccountOperation(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(self._is_readonly_legacy_archive_values(vals) for vals in vals_list):
-            raise AccessError(_("油卡登记和充值登记是历史只读归档，不允许通过运行时接口新建。"))
+        archive_values = [vals for vals in vals_list if self._is_readonly_legacy_archive_values(vals)]
+        if archive_values:
+            if not self.env.context.get("sc_tenant_payload_import"):
+                raise AccessError(_("油卡登记和充值登记是历史只读归档，不允许通过运行时接口新建。"))
+            self.env["sc.tenant.payload.adapter"].assert_import_operator()
         seq = self.env["ir.sequence"].sudo()
         for vals in vals_list:
             project_id = self._context_project_id()

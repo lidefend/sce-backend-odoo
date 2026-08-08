@@ -126,6 +126,7 @@ class TestFundLegacyReadonlyArchive(TransactionCase):
         self.assertEqual(recharge_menu.parent_id, oil_menu.parent_id)
         self.assertEqual(oil_action.res_model, "sc.fund.account.operation")
         self.assertEqual(recharge_action.res_model, "sc.fund.account.operation")
+
         self.assertEqual(
             self._domain(oil_action),
             [("legacy_source_model", "=", SOURCE_MODEL), ("legacy_source_table", "=", OIL_TABLE)],
@@ -163,6 +164,22 @@ class TestFundLegacyReadonlyArchive(TransactionCase):
                     )
                 if arch.tag == "form":
                     self.assertIn("attachment_ids", set(arch.xpath(".//field/@name")))
+
+    def test_archive_create_context_alone_does_not_bypass_signed_import_boundary(self):
+        with self.assertRaises(AccessError):
+            self.env["sc.fund.account.operation"].with_context(
+                sc_tenant_payload_import=True
+            ).create(
+                {
+                    "name": "Unsigned archive",
+                    "operation_type": "legacy_archive",
+                    "operation_reason": "must fail",
+                    "company_id": self.company.id,
+                    "legacy_source_model": SOURCE_MODEL,
+                    "legacy_source_table": OIL_TABLE,
+                    "legacy_record_id": "unsigned-1",
+                }
+            )
 
     def test_source_domains_are_isolated(self):
         Model = self.env["sc.fund.account.operation"]
