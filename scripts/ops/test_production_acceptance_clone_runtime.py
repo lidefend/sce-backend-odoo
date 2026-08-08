@@ -120,11 +120,29 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
                 database="r10e_acceptance",
                 host="0.0.0.0",
                 port=18081,
+                ingress_network="acceptance_public_ingress",
             )
-        command = runner.call_args.args[0]
+        commands = [call.args[0] for call in runner.call_args_list]
+        command = commands[0]
+        self.assertEqual(command[:2], ["docker", "create"])
         self.assertIn("0.0.0.0:18081:80", command)
         self.assertIn("sc.production-acceptance-clone=true", command)
         self.assertEqual(command[command.index("--user") + 1], "root")
+        self.assertIn(
+            ["docker", "network", "connect", "acceptance_internal", "acceptance_web"],
+            commands,
+        )
+        self.assertEqual(commands[-1], ["docker", "start", "acceptance_web"])
+
+    def test_public_ingress_disables_ip_masquerade(self) -> None:
+        with mock.patch.object(RUNTIME, "run", side_effect=["", "network-id"]) as runner:
+            network = RUNTIME.ensure_public_ingress_network(
+                "sc_restore_20260808t102000z_4d7e91a2"
+            )
+        self.assertEqual(network, "sc_restore_20260808t102000z_4d7e91a2_public_ingress")
+        create = runner.call_args_list[1].args[0]
+        self.assertIn("com.docker.network.bridge.enable_ip_masquerade=false", create)
+        self.assertIn("sc.production-acceptance-clone=true", create)
 
 
 if __name__ == "__main__":

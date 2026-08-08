@@ -207,16 +207,19 @@ def start_frontend(
     database: str,
     host: str,
     port: int,
+    ingress_network: str = "",
 ) -> None:
+    action = "create" if ingress_network else "run"
+    primary_network = ingress_network or network
     run(
         [
             "docker",
-            "run",
-            "-d",
+            action,
+            *([] if ingress_network else ["-d"]),
             "--name",
             web_container,
             "--network",
-            network,
+            primary_network,
             "--user",
             "root",
             "--publish",
@@ -230,6 +233,44 @@ def start_frontend(
             image,
         ]
     )
+    if ingress_network:
+        run(["docker", "network", "connect", network, web_container])
+        run(["docker", "start", web_container])
+
+
+def ensure_public_ingress_network(restore_id: str) -> str:
+    network = f"{restore_id}_public_ingress"
+    observed = run(
+        [
+            "docker",
+            "network",
+            "inspect",
+            network,
+            "--format",
+            '{{.Internal}}|{{index .Options "com.docker.network.bridge.enable_ip_masquerade"}}|'
+            '{{index .Labels "sc.production-acceptance-clone"}}',
+        ],
+        False,
+    )
+    if observed:
+        if observed != "false|false|true":
+            raise CloneRuntimeError("public ingress network identity differs")
+        return network
+    run(
+        [
+            "docker",
+            "network",
+            "create",
+            "--driver",
+            "bridge",
+            "--opt",
+            "com.docker.network.bridge.enable_ip_masquerade=false",
+            "--label",
+            "sc.production-acceptance-clone=true",
+            network,
+        ]
+    )
+    return network
 
 
 def wait_frontend(web_container: str, database: str, port: int) -> tuple[str, bool]:
@@ -428,6 +469,7 @@ def publish_existing(restore_id: str, image: str, port: int) -> dict[str, object
     )
     if observed != f"true|true|{network}|{image}":
         raise CloneRuntimeError("running isolated acceptance backend identity differs")
+    ingress_network = ensure_public_ingress_network(restore_id)
     web_container = f"{restore_id}_acceptance_web"
     existing = run(
         [
@@ -440,7 +482,7 @@ def publish_existing(restore_id: str, image: str, port: int) -> dict[str, object
         False,
     )
     if existing:
-        if existing != f"true|{network}":
+        if existing not in (f"true|{network}", f"true|{ingress_network}"):
             raise CloneRuntimeError("existing acceptance frontend identity differs")
         run(["docker", "rm", "-f", web_container])
     start_frontend(
@@ -450,6 +492,7 @@ def publish_existing(restore_id: str, image: str, port: int) -> dict[str, object
         database=database,
         host="0.0.0.0",
         port=port,
+        ingress_network=ingress_network,
     )
     frontend_url, loopback_bound = wait_frontend(web_container, database, port)
     if not loopback_bound:
