@@ -2308,7 +2308,22 @@ class SystemInitHandler(BaseIntentHandler):
         # re-key legitimate menu/action pairs after DeliveryEngine.build().
         # A visible route and its authority must be emitted from the same
         # finalized tree or the SPA will expose a menu that it then denies.
-        _final_navigation = data.get("nav") if isinstance(data.get("nav"), list) else []
+        # The SPA consumes release_navigation_v1 first, then delivery_engine_v1,
+        # and only uses the legacy top-level nav as a final fallback. Route
+        # authority must bind to that exact same source order. Late delivery
+        # projection can legitimately replace the release/delivery trees while
+        # leaving data.nav as an older compatibility carrier.
+        _release_navigation = (data.get("release_navigation_v1") or {}).get("nav")
+        _delivery_navigation = (data.get("delivery_engine_v1") or {}).get("nav")
+        _final_navigation = (
+            _release_navigation
+            if isinstance(_release_navigation, list)
+            else _delivery_navigation
+            if isinstance(_delivery_navigation, list)
+            else data.get("nav")
+            if isinstance(data.get("nav"), list)
+            else []
+        )
         _final_route_authority = delivery_engine.menu_service.build_route_authority(
             role_surface,
             nav=_final_navigation,

@@ -3183,3 +3183,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   database filter, image revision, tenant mount, network and container labels,
   stops only the clone Odoo process, runs `--stop-after-init`, and restarts the
   same clone; production resources and arbitrary modules remain inadmissible.
+
+## 2026-08-09 — FINAL-NAVIGATION-AUTHORITY-SOURCE-CLOSURE
+
+- Branch / anchor: governed `release/tenant-rc-<tenant-key>-v1` at `6a09245`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel; final
+  `system.init` navigation and route-authority assembly in `smart_core`.
+- Reason / Why Here: the SPA consumes `release_navigation_v1.nav` before the
+  delivery and legacy carriers, but final route authority was rebuilt from the
+  legacy `data.nav`. A late, valid directory/action merge could therefore be
+  visible yet fail closed on click. The platform assembler now uses the same
+  release/delivery/legacy priority as its consumer.
+- Why Not Elsewhere: no construction or customer semantics belong in this
+  rule, and neither frontend fallback nor low-code configuration may infer or
+  weaken route authority.
+- Blast Radius / validation: only menu/action pairs emitted by the authoritative
+  final navigation projection can be admitted. Static source-order regression,
+  focused backend tests, final `system.init` pair consistency, and a real
+  `wutao` browser click on the isolated rehearsal clone prove containment.
