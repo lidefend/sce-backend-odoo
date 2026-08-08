@@ -119,6 +119,11 @@ class TestFundLegacyReadonlyArchive(TransactionCase):
         self.assertNotEqual(oil_menu, recharge_menu)
         self.assertEqual(oil_menu.action, oil_action)
         self.assertEqual(recharge_menu.action, recharge_action)
+        self.assertEqual(
+            oil_menu.parent_id.parent_id,
+            self.env.ref("smart_construction_core.menu_sc_hr_admin_center"),
+        )
+        self.assertEqual(recharge_menu.parent_id, oil_menu.parent_id)
         self.assertEqual(oil_action.res_model, "sc.fund.account.operation")
         self.assertEqual(recharge_action.res_model, "sc.fund.account.operation")
         self.assertEqual(

@@ -75,7 +75,7 @@
       {"name": "财务分析", "release_status": "RELEASED"}, {"name": "预测预警", "release_status": "FOLLOWUP", "launch_note": "待组合预测、预警准确性和明细钻取一致性通过验收后上线"}
     ]},
     "组织行政": {"locked": true, "level_two_order": [
-      {"name": "行政审批", "release_status": "RELEASED"}, {"name": "人事薪酬", "release_status": "RELEASED"}, {"name": "资料证照", "release_status": "RELEASED"}, {"name": "基础资料", "release_status": "RELEASED"},
+      {"name": "行政审批", "release_status": "RELEASED"}, {"name": "人事薪酬", "release_status": "RELEASED"}, {"name": "资料证照", "release_status": "RELEASED"}, {"name": "基础资料", "release_status": "RELEASED"}, {"name": "油卡管理", "release_status": "RELEASED", "data_access": "finance_read"},
       {"name": "人员生命周期", "release_status": "FOLLOWUP", "launch_note": "待入转调离、权限回收和档案留存形成闭环后上线"},
       {"name": "资源能力", "release_status": "FOLLOWUP", "launch_note": "待技能资质、人员负荷和项目调度场景通过验收后上线"}
     ]}

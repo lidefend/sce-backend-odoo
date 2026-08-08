@@ -18,6 +18,7 @@ NATIVE_MENU_LOAD_ORDER = [
     ROOT / "addons/smart_construction_core/views/support/menu_config_policy_views.xml",
     ROOT / "addons/smart_construction_core/views/menu_business_taxonomy.xml",
     ROOT / "addons/smart_construction_core/views/menu_user_acceptance_cleanup.xml",
+    ROOT / "addons/smart_construction_core/views/core/fund_legacy_readonly_archive_views.xml",
     MENU_XML,
 ]
 POLICY_SYNC = ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py"
@@ -83,6 +84,8 @@ def main() -> int:
         errors.append("locked product policy must record the exact full menu count")
     if strategy.get("effective_capability_count_per_product") != 150:
         errors.append("locked product policy must record the exact full capability count")
+    if "油卡管理：财务中心 -> 组织行政" not in strategy.get("responsibility_boundary_updates", []):
+        errors.append("locked product policy must record the oil-card responsibility boundary move")
     required_full_scope_xmlids = {
         "smart_construction_core.menu_sc_workbench_my_todo_fact",
         "smart_construction_core.menu_sc_workbench_my_approval_fact",
@@ -115,6 +118,22 @@ def main() -> int:
         missing_xmlids = sorted(required_full_scope_xmlids - xmlids)
         if missing_xmlids:
             errors.append(f"{product.get('product_key')} missing full construction scope: {missing_xmlids}")
+        oil_card_rows = [
+            menu
+            for group in product.get("menu_groups") or []
+            if group.get("group_label") == "组织行政"
+            for menu in group.get("menus") or []
+            if menu.get("menu_xmlid") in {
+                "smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance",
+                "smart_construction_core.menu_sc_legacy_fuel_card_recharge_fact_acceptance",
+            }
+        ]
+        if len(oil_card_rows) != 2 or any(
+            " / 组织行政 / 油卡管理 / " not in str(menu.get("visible_menu_path") or "")
+            or menu.get("product_domain") != "organization_fuel_card"
+            for menu in oil_card_rows
+        ):
+            errors.append(f"{product.get('product_key')} oil-card domain must belong to organization administration")
     daily_navigation = (
         ((acceptance_environments.get("profiles") or {}).get("daily") or {}).get("navigation_policy") or {}
     )
@@ -127,6 +146,8 @@ def main() -> int:
         "系统菜单 / 施工管理 / 安全管理 / 安全方案",
         "系统菜单 / 施工管理 / 安全管理 / 安全巡检",
         "系统菜单 / 施工管理 / 安全管理 / 安全复验",
+        "系统菜单 / 组织行政 / 油卡管理 / 油卡登记",
+        "系统菜单 / 组织行政 / 油卡管理 / 充值登记",
     ):
         if path not in daily_required_paths:
             errors.append(f"daily acceptance missing full construction path: {path}")
@@ -285,6 +306,9 @@ def main() -> int:
         "menu_sc_user_payment_apply_acceptance": "menu_sc_payment_user_group",
         "menu_sc_fund_daily_user_report": "menu_sc_fund_account_group",
         "menu_sc_invoice_input": "menu_sc_invoice_tax_user_group",
+        "menu_sc_fuel_card_archive_group": "menu_sc_hr_admin_center",
+        "menu_sc_legacy_fuel_card_fact_acceptance": "menu_sc_fuel_card_archive_group",
+        "menu_sc_legacy_fuel_card_recharge_fact_acceptance": "menu_sc_fuel_card_archive_group",
         "menu_ui_menu_config_policy_business_config": "menu_sc_lowcode_system_config_group",
     }
     for menu_id, parent_id in required_native_parents.items():

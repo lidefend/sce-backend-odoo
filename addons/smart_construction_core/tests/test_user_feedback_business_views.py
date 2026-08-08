@@ -2394,7 +2394,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             "smart_construction_core.menu_sc_user_payment_apply_acceptance": "智慧施工管理平台 / 财务中心 / 付款管理 / 支付申请",
             "smart_construction_core.menu_sc_contractor_project_borrow": "智慧施工管理平台 / 财务中心 / 借还款 / 承包人借项目款",
             "smart_construction_core.menu_sc_fund_account_between_user": "智慧施工管理平台 / 财务中心 / 账户资金 / 账户间资金往来",
-            "smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance": "智慧施工管理平台 / 财务中心 / 油卡管理 / 油卡登记",
+            "smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance": "智慧施工管理平台 / 组织行政 / 油卡管理 / 油卡登记",
             "smart_construction_core.menu_sc_self_funding_advance_refund": "智慧施工管理平台 / 财务中心 / 自筹资金 / 自筹退回",
         }
         expected_targets = {
