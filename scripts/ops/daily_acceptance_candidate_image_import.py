@@ -206,35 +206,12 @@ def remote_cache_has_latest(host: str) -> bool:
     return completed.returncode == 0
 
 
-def seed_remote_cache_from_daemon(host: str) -> bool:
-    """Bootstrap the blob cache from the newest already verified candidate locally."""
-    script = (
-        f"set -euo pipefail; root={shlex.quote(REMOTE_CACHE_ROOT)}; install -d -m 0700 \"$root\"; "
-        "image=$(docker image ls ghcr.io/lidefend/sce-product --format '{{.Repository}}:{{.Tag}}' "
-        "| grep -E '^ghcr.io/lidefend/sce-product:sha-[0-9a-f]{12}$' | head -n 1 || true); "
-        "test -n \"$image\" || exit 3; digest=$(docker image inspect \"$image\" --format '{{.Id}}'); "
-        "digest=${digest#sha256:}; [[ \"$digest\" =~ ^[0-9a-f]{64}$ ]]; target=\"$root/$digest\"; "
-        "install -d -m 0700 \"$target\"; docker image save \"$image\" | tar -xf - -C \"$target\"; "
-        "link=\"$root/latest.next\"; rm -f \"$link\"; ln -s \"$digest\" \"$link\"; mv -Tf \"$link\" \"$root/latest\""
-    )
-    completed = subprocess.run(
-        ["ssh", "-o", "BatchMode=yes", host, f"bash -c {shlex.quote(script)}"],
-        cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False,
-    )
-    if completed.returncode not in (0, 3):
-        detail = completed.stderr.strip() or completed.stdout.strip()
-        raise ImportError(f"remote candidate cache bootstrap failed: {detail[:500]}")
-    return completed.returncode == 0
-
-
 def stream_load(host: str, archive: Path, remote_config_id: str) -> dict[str, int]:
     """Transfer an OCI layout by digest, reusing unchanged remote blobs."""
     config_digest = remote_config_id.removeprefix("sha256:")
     if not CHECKSUM.fullmatch(config_digest):
         raise ImportError("incremental cache config identity is invalid")
     remote_directory = f"{REMOTE_CACHE_ROOT}/{config_digest}"
-    if not remote_cache_has_latest(host):
-        seed_remote_cache_from_daemon(host)
     with tempfile.TemporaryDirectory(prefix="sce-candidate-oci-") as temporary:
         layout = Path(temporary)
         blob_count, layout_bytes = extract_oci_layout(archive, layout)

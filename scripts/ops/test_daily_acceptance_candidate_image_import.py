@@ -164,17 +164,6 @@ class DailyAcceptanceCandidateImportTests(unittest.TestCase):
         self.assertEqual(len(command), 5)
         self.assertIn("'{{.Id}}|{{index .Config.Labels", command[4])
 
-    def test_remote_cache_bootstrap_accepts_no_prior_candidate(self):
-        completed = mock.Mock(returncode=3, stdout="", stderr="")
-        with mock.patch.object(module.subprocess, "run", return_value=completed):
-            self.assertFalse(module.seed_remote_cache_from_daemon("sc-root"))
-
-    def test_remote_cache_bootstrap_fails_closed_on_other_errors(self):
-        completed = mock.Mock(returncode=1, stdout="", stderr="denied")
-        with mock.patch.object(module.subprocess, "run", return_value=completed):
-            with self.assertRaisesRegex(module.ImportError, "bootstrap failed"):
-                module.seed_remote_cache_from_daemon("sc-root")
-
 
 if __name__ == "__main__":
     unittest.main()
