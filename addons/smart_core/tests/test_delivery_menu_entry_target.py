@@ -669,6 +669,59 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(meta["stable_leaf_count"], 0)
         self.assertEqual(meta["native_preview_leaf_count"], 1)
 
+    def test_native_preview_group_preserves_explicit_parent_action_target(self):
+        nav = menu_service.MenuService().build_nav(
+            policy={},
+            role_surface={
+                "role_code": "business_config_admin",
+                "exposure_policy_declared": True,
+                "primary_menu_xmlids": ["sc_norm_engine.menu_sc_norm_item"],
+            },
+            native_nav=[
+                {
+                    "label": "定额引擎",
+                    "menu_id": 616,
+                    "action_id": 829,
+                    "meta": {
+                        "menu_id": 616,
+                        "menu_xmlid": "sc_norm_engine.menu_sc_norm_root",
+                        "action_id": 829,
+                        "action_xmlid": "sc_norm_engine.action_sc_norm_item",
+                        "model": "sc.norm.item",
+                    },
+                    "children": [
+                        self._native_leaf(
+                            label="定额子目",
+                            menu_id=619,
+                            route="/a/829?menu_id=619",
+                            action_id=829,
+                            model="sc.norm.item",
+                            menu_xmlid="sc_norm_engine.menu_sc_norm_item",
+                        )
+                    ],
+                }
+            ],
+        )
+
+        group = next(row for row in nav[0]["children"] if row.get("label") == "定额引擎")
+        self.assertEqual(group.get("menu_id"), 616)
+        self.assertEqual(group.get("action_id"), 829)
+        self.assertEqual(group.get("action_xmlid"), "sc_norm_engine.action_sc_norm_item")
+        self.assertEqual(group.get("model"), "sc.norm.item")
+        self.assertTrue((group.get("meta") or {}).get("explicit_group_entry_target"))
+
+    def test_targetless_group_remains_expand_only(self):
+        group = delivery_menu_defaults.build_delivery_menu_group(
+            "construction.directory",
+            "普通目录",
+            [{"label": "子菜单", "menu_id": 1001, "children": []}],
+            config_menu_id=1000,
+        )
+
+        self.assertNotIn("action_id", group)
+        self.assertNotIn("route", group)
+        self.assertFalse((group.get("meta") or {}).get("explicit_group_entry_target", False))
+
     def test_user_acceptance_policy_menu_keeps_legacy_subgroups(self):
         self._register_acceptance_menu_labels()
 

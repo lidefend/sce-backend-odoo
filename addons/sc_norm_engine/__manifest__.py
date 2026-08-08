@@ -1,6 +1,6 @@
 {
     "name": "SC Norm Engine (Sichuan 2015)",
-    "version": "17.0.1.0.0",
+    "version": "17.0.1.0.1",
     "summary": "Sichuan 2015 construction norm engine with import wizard",
     "category": "Construction",
     "author": "lidefend",

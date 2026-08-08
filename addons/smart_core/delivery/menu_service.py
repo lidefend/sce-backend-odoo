@@ -1496,6 +1496,30 @@ class MenuService:
                 continue
             emitted_menu_ids.add(normalized_menu_id)
             anchor_key, anchor_label, anchor_menu_id = self._resolve_preview_group_anchor(ancestors)
+            anchor_target = {}
+            for ancestor in ancestors:
+                if not isinstance(ancestor, dict):
+                    continue
+                ancestor_meta = ancestor.get("meta") if isinstance(ancestor.get("meta"), dict) else {}
+                try:
+                    ancestor_menu_id = int(ancestor.get("menu_id") or ancestor_meta.get("menu_id") or 0)
+                except Exception:
+                    ancestor_menu_id = 0
+                if ancestor_menu_id != anchor_menu_id or not self._node_has_target(ancestor):
+                    continue
+                for field in (
+                    "route",
+                    "scene_key",
+                    "action_id",
+                    "action_xmlid",
+                    "model",
+                    "view_modes",
+                    "entry_target",
+                ):
+                    value = ancestor.get(field) if ancestor.get(field) not in (None, "", []) else ancestor_meta.get(field)
+                    if value not in (None, "", []):
+                        anchor_target[field] = value
+                break
             group_key = f"system.{anchor_key}"
             if group_key not in preview_menus_by_group:
                 preview_menus_by_group[group_key] = {
@@ -1503,9 +1527,12 @@ class MenuService:
                     "group_label": anchor_label,
                     "config_menu_id": anchor_menu_id,
                     "native_preview": True,
+                    "group_target": anchor_target,
                     "menus": [],
                 }
                 group_order.append(group_key)
+            elif anchor_target and not preview_menus_by_group[group_key].get("group_target"):
+                preview_menus_by_group[group_key]["group_target"] = anchor_target
             preview_menus_by_group[group_key]["menus"].append(
                 {
                     "menu_key": f"system.menu_{normalized_menu_id}",
@@ -1767,11 +1794,14 @@ class MenuService:
                     "group_label": group_label,
                     "config_menu_id": int(group.get("config_menu_id") or native_group_config_ids_by_label.get(group_label) or 0),
                     "native_preview": bool(group.get("native_preview")),
+                    "group_target": dict(group.get("group_target") or {}),
                     "menus": [],
                 }
                 group_order.append(group_key)
             elif group.get("native_preview"):
                 groups_by_key[group_key]["native_preview"] = True
+            if group.get("group_target") and not groups_by_key[group_key].get("group_target"):
+                groups_by_key[group_key]["group_target"] = dict(group.get("group_target") or {})
             if int(group.get("config_menu_id") or 0):
                 groups_by_key[group_key]["config_menu_id"] = int(group.get("config_menu_id") or 0)
             elif native_group_config_ids_by_label.get(group_label):
@@ -1894,11 +1924,14 @@ class MenuService:
                     "group_label": str(canonical_row.get("group_label") or group_label or "系统菜单"),
                     "config_menu_id": int(canonical_row.get("config_menu_id") or 0),
                     "native_preview": bool(canonical_row.get("native_preview")),
+                    "group_target": dict(canonical_row.get("group_target") or {}),
                     "menus": [],
                 }
                 merged_group_order.append(canonical_key)
             if row.get("native_preview"):
                 merged_groups_by_key[canonical_key]["native_preview"] = True
+            if row.get("group_target") and not merged_groups_by_key[canonical_key].get("group_target"):
+                merged_groups_by_key[canonical_key]["group_target"] = dict(row.get("group_target") or {})
             if int(row.get("config_menu_id") or 0):
                 merged_groups_by_key[canonical_key]["config_menu_id"] = int(row.get("config_menu_id") or 0)
             merged_groups_by_key[canonical_key]["menus"].extend(row.get("menus") if isinstance(row.get("menus"), list) else [])
@@ -1952,6 +1985,7 @@ class MenuService:
                 group_label,
                 children,
                 config_menu_id=int(row.get("config_menu_id") or 0),
+                target=row.get("group_target") if isinstance(row.get("group_target"), dict) else {},
             )
             if row.get("native_preview"):
                 group_meta = dict(group_node.get("meta") if isinstance(group_node.get("meta"), dict) else {})
