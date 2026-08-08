@@ -3144,3 +3144,6 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Clone activation and tenant refresh create or reuse a private stable runtime
   JWT secret and inject it without printing the value; the image's weak
   missing-secret fallback is therefore not exercised by this acceptance clone.
+  The immutable candidate edge exposes an exact JSON `/healthz` liveness
+  contract ahead of the SPA fallback, and the nginx container healthcheck
+  validates its status and body rather than checking configuration syntax only.
