@@ -63,6 +63,69 @@ class ControlledMainCutoverTests(unittest.TestCase):
             f"{target}:refs/heads/main",
         )
 
+    def test_required_checks_bind_unique_successful_run_ids(self) -> None:
+        target = "a" * 40
+        runs = []
+        for index, name in enumerate(cutover.REQUIRED_CHECKS, start=101):
+            runs.append(
+                {
+                    "id": index,
+                    "name": name,
+                    "status": "completed",
+                    "conclusion": "success",
+                    "head_sha": target,
+                    "details_url": f"https://checks.example/{index}",
+                }
+            )
+        with mock.patch.object(cutover, "gh_json", return_value={"check_runs": runs}):
+            evidence = cutover.verify_required_checks(target)
+        self.assertEqual(101, evidence[cutover.REQUIRED_CHECKS[0]]["check_run_id"])
+        self.assertEqual("PASS", evidence[cutover.REQUIRED_CHECKS[0]]["result"])
+
+    def test_post_cutover_revalidates_bound_ids_despite_new_duplicate(self) -> None:
+        target = "a" * 40
+        bound = {
+            name: {
+                "result": "PASS",
+                "check_run_id": index,
+                "details_url": f"https://checks.example/{index}",
+            }
+            for index, name in enumerate(cutover.REQUIRED_CHECKS, start=201)
+        }
+
+        def exact_check(path: str) -> dict[str, object]:
+            check_id = int(path.rsplit("/", 1)[-1])
+            name = cutover.REQUIRED_CHECKS[check_id - 201]
+            return {
+                "id": check_id,
+                "name": name,
+                "status": "completed",
+                "conclusion": "success",
+                "head_sha": target,
+                "details_url": f"https://checks.example/{check_id}",
+            }
+
+        with mock.patch.object(cutover, "gh_json", side_effect=exact_check) as api:
+            verified = cutover.verify_bound_required_checks(target, bound)
+        self.assertEqual(bound, verified)
+        self.assertEqual(len(cutover.REQUIRED_CHECKS), api.call_count)
+
+    def test_post_cutover_bound_check_fails_closed_on_sha_change(self) -> None:
+        bound = {
+            name: {"result": "PASS", "check_run_id": index, "details_url": ""}
+            for index, name in enumerate(cutover.REQUIRED_CHECKS, start=301)
+        }
+        item = {
+            "id": 301,
+            "name": cutover.REQUIRED_CHECKS[0],
+            "status": "completed",
+            "conclusion": "success",
+            "head_sha": "b" * 40,
+        }
+        with mock.patch.object(cutover, "gh_json", return_value=item):
+            with self.assertRaisesRegex(cutover.CutoverError, "SHA mismatch"):
+                cutover.verify_bound_required_checks("a" * 40, bound)
+
     def test_recovery_root_must_be_outside_repository(self) -> None:
         pre = cutover.Preflight(
             branch="fix/example",
