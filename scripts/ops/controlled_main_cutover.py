@@ -156,12 +156,12 @@ def ruleset_payload(ruleset: dict[str, Any], enforcement: str) -> dict[str, Any]
     }
 
 
-def verify_required_checks(target_sha: str) -> dict[str, str]:
+def verify_required_checks(target_sha: str) -> dict[str, dict[str, Any]]:
     response = gh_json(
         f"repos/{GITHUB_REPOSITORY}/commits/{target_sha}/check-runs?per_page=100"
     )
     runs = response.get("check_runs", [])
-    results: dict[str, str] = {}
+    results: dict[str, dict[str, Any]] = {}
     for name in REQUIRED_CHECKS:
         matches = [
             item
@@ -176,8 +176,41 @@ def verify_required_checks(target_sha: str) -> dict[str, str]:
             )
         if matches[0].get("head_sha") != target_sha:
             raise CutoverError(f"required check SHA mismatch: {name}")
-        results[name] = "PASS"
+        check_id = matches[0].get("id")
+        if not isinstance(check_id, int):
+            raise CutoverError(f"required check ID is invalid: {name}")
+        results[name] = {
+            "result": "PASS",
+            "check_run_id": check_id,
+            "details_url": str(matches[0].get("details_url") or ""),
+        }
     return results
+
+
+def verify_bound_required_checks(
+    target_sha: str, bound_checks: dict[str, dict[str, Any]]
+) -> dict[str, dict[str, Any]]:
+    """Revalidate the exact preflight evidence, ignoring later same-name runs."""
+    if set(bound_checks) != set(REQUIRED_CHECKS):
+        raise CutoverError("bound required check names do not match policy")
+    verified: dict[str, dict[str, Any]] = {}
+    for name in REQUIRED_CHECKS:
+        check_id = bound_checks[name].get("check_run_id")
+        if not isinstance(check_id, int):
+            raise CutoverError(f"bound required check ID is invalid: {name}")
+        item = gh_json(f"repos/{GITHUB_REPOSITORY}/check-runs/{check_id}")
+        if item.get("id") != check_id or item.get("name") != name:
+            raise CutoverError(f"bound required check identity mismatch: {name}")
+        if item.get("head_sha") != target_sha:
+            raise CutoverError(f"bound required check SHA mismatch: {name}")
+        if item.get("status") != "completed" or item.get("conclusion") != "success":
+            raise CutoverError(f"bound required check is no longer successful: {name}")
+        verified[name] = {
+            "result": "PASS",
+            "check_run_id": check_id,
+            "details_url": str(item.get("details_url") or ""),
+        }
+    return verified
 
 
 @dataclass(frozen=True)
@@ -190,7 +223,7 @@ class Preflight:
     github_ruleset_id: int
     github_ruleset: dict[str, Any]
     gitee_protected: bool
-    required_checks: dict[str, str]
+    required_checks: dict[str, dict[str, Any]]
 
 
 def preflight(args: argparse.Namespace, token: str) -> Preflight:
@@ -423,7 +456,7 @@ def execute(
     gitee_main = remote_sha(GITEE_REMOTE, "refs/heads/main")
     if github_main != pre.target_sha or gitee_main != pre.target_sha:
         raise CutoverError("paired post-cutover SHA mismatch")
-    checks = verify_required_checks(pre.target_sha)
+    checks = verify_bound_required_checks(pre.target_sha, pre.required_checks)
     ruleset = gh_json(
         f"repos/{GITHUB_REPOSITORY}/rulesets/{pre.github_ruleset_id}"
     )
