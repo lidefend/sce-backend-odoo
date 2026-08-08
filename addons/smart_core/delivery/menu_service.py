@@ -791,6 +791,20 @@ class MenuService:
         ]
         return min(child_sequences) if child_sequences else 0
 
+    def _node_followup_rank(self, node: dict) -> int:
+        """Keep policy-declared follow-up entries behind released siblings."""
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        domain = str(meta.get("product_domain") or node.get("product_domain") or "").strip().lower()
+        domain_label = str(
+            meta.get("product_domain_label") or node.get("product_domain_label") or ""
+        ).strip()
+        if domain_label == "后续上线" or domain.endswith("_roadmap"):
+            return 1
+        children = node.get("children") if isinstance(node.get("children"), list) else []
+        if children and all(self._node_followup_rank(child) == 1 for child in children if isinstance(child, dict)):
+            return 1
+        return 0
+
     def _sort_delivery_nodes(self, nodes: list[dict], *, top_level: bool = False) -> list[dict]:
         decorated = []
         for index, node in enumerate(nodes or []):
@@ -808,7 +822,7 @@ class MenuService:
             if top_level:
                 group_rank = self._business_group_display_order.get(label, 500)
                 return (group_rank, self._node_sequence(node) or 9999, index)
-            return (self._node_sequence(node) or 9999, index)
+            return (self._node_followup_rank(node), self._node_sequence(node) or 9999, index)
 
         return [node for _index, node in sorted(decorated, key=sort_key)]
 

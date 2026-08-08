@@ -66,6 +66,38 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         }
         return row
 
+    def test_followup_nodes_are_last_within_each_sibling_group(self):
+        service = menu_service.MenuService()
+        nodes = [
+            {"label": "后续能力", "sequence": 10, "meta": {"product_domain_label": "后续上线"}},
+            {"label": "已上线能力二", "sequence": 30, "meta": {"product_domain_label": "正式能力"}},
+            {"label": "已上线能力一", "sequence": 20, "meta": {"product_domain_label": "正式能力"}},
+        ]
+
+        sorted_nodes = service._sort_delivery_nodes(nodes)
+
+        self.assertEqual(
+            [node["label"] for node in sorted_nodes],
+            ["已上线能力一", "已上线能力二", "后续能力"],
+        )
+
+    def test_followup_only_directory_is_last_within_siblings(self):
+        service = menu_service.MenuService()
+        nodes = [
+            {
+                "label": "待上线目录",
+                "sequence": 5,
+                "children": [
+                    {"label": "待上线页面", "sequence": 5, "meta": {"product_domain": "quality_roadmap"}},
+                ],
+            },
+            {"label": "正式目录", "sequence": 20, "children": [{"label": "正式页面", "sequence": 20}]},
+        ]
+
+        sorted_nodes = service._sort_delivery_nodes(nodes)
+
+        self.assertEqual([node["label"] for node in sorted_nodes], ["正式目录", "待上线目录"])
+
     def test_admin_capability_discovery_keeps_installed_business_and_config_entries(self):
         project_xmlid = "smart_construction_core.menu_sc_project_project"
         config_xmlid = "smart_construction_core.menu_ui_menu_config_policy_business_config"

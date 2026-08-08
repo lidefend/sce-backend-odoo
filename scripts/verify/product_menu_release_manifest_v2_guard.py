@@ -74,6 +74,8 @@ def main() -> int:
         errors.append("primary center order/count mismatch")
     if rules.get("maximum_business_depth") != 3:
         errors.append("business menu depth must be exactly 3")
+    if rules.get("followup_menu_sibling_position") != "last":
+        errors.append("follow-up menus must be placed last within each sibling group")
     strategy = locked_baseline.get("policy_strategy") or {}
     if strategy.get("mode") != "FULL_FORMAL_PRODUCT_SCOPE":
         errors.append("locked product policy must declare full formal product scope")
@@ -319,6 +321,8 @@ def main() -> int:
         'native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)',
         'native_group_label = native_path_parts[1]',
         '"visible_menu_path": native_visible_menu_path or',
+        'def _node_followup_rank(self, node: dict) -> int:',
+        'return (self._node_followup_rank(node), self._node_sequence(node) or 9999, index)',
     ):
         if token not in menu_service:
             errors.append(f"native menu runtime authority missing: {token}")

@@ -5,6 +5,7 @@
   "module": "smart_construction_core",
   "navigation_rules": {
     "application_root_is_business_level": false,
+    "followup_menu_sibling_position": "last",
     "maximum_business_depth": 3,
     "primary_center_count": 10,
     "primary_centers": [
