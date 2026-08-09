@@ -98,6 +98,12 @@ class ProjectCostPlan(models.Model):
                             "boq_line_id": analysis.boq_line_id.id,
                             "analysis_id": analysis.id,
                             "cost_type": resource.resource_type,
+                            "line_role": (
+                                "deduction"
+                                if resource.budget_consumption < 0
+                                or resource.budget_unit_price < 0
+                                else "cost"
+                            ),
                             "name": resource.name,
                             "unit_raw": resource.unit_raw,
                             "boq_quantity": boq_qty,
@@ -117,6 +123,7 @@ class ProjectCostPlan(models.Model):
                             "boq_line_id": analysis.boq_line_id.id,
                             "analysis_id": analysis.id,
                             "cost_type": "material",
+                            "line_role": "adjustment",
                             "name": _("其他材料费（分析差额）"),
                             "unit_raw": analysis.uom_raw,
                             "boq_quantity": boq_qty,
@@ -140,6 +147,7 @@ class ProjectCostPlan(models.Model):
                                 "boq_line_id": analysis.boq_line_id.id,
                                 "analysis_id": analysis.id,
                                 "cost_type": cost_type,
+                                "line_role": "adjustment" if amount < 0 else "cost",
                                 "name": label,
                                 "unit_raw": analysis.uom_raw,
                                 "boq_quantity": boq_qty,
@@ -171,6 +179,7 @@ class ProjectCostPlan(models.Model):
                         "plan_id": plan.id,
                         "boq_line_id": source.id,
                         "cost_type": cost_type,
+                        "line_role": "deduction" if source_amount < 0 else "cost",
                         "name": source.name,
                         "unit_raw": source.uom_id.name,
                         "boq_quantity": 1.0,
@@ -193,6 +202,7 @@ class ProjectCostPlan(models.Model):
                         "plan_id": plan.id,
                         "source_summary_component_id": source.id,
                         "cost_type": source.component_type,
+                        "line_role": "deduction" if source.amount < 0 else "cost",
                         "name": source.name,
                         "unit_raw": "项",
                         "boq_quantity": 1.0,
@@ -236,12 +246,27 @@ class ProjectCostPlan(models.Model):
                 raise UserError(_("只有草稿或调整中的成本计划可以校验。"))
             if not plan.line_ids:
                 raise UserError(_("成本计划没有明细。"))
-            if plan.line_ids.filtered(lambda line: line.target_unit_consumption < 0 or line.target_unit_price < 0):
-                raise UserError(_("目标单耗和目标单价不能为负数。"))
-            if plan.line_ids.filtered(
-                lambda line: line.calculation_mode == "rate" and line.target_rate < 0
-            ):
-                raise UserError(_("目标费率不能为负数。"))
+            invalid_cost_lines = plan.line_ids.filtered(
+                lambda line: line.line_role == "cost"
+                and (
+                    line.target_unit_consumption < 0
+                    or line.target_unit_price < 0
+                    or line.adjustment_ratio < 0
+                    or (line.calculation_mode == "rate" and line.target_rate < 0)
+                )
+            )
+            if invalid_cost_lines:
+                sample = "、".join(invalid_cost_lines[:3].mapped("name"))
+                raise UserError(
+                    _("普通成本项不能使用负单耗、负单价、负费率或负调整比例。请检查：%s")
+                    % sample
+                )
+            invalid_deductions = plan.line_ids.filtered(
+                lambda line: line.line_role == "deduction" and line.target_amount > 0.000001
+            )
+            if invalid_deductions:
+                sample = "、".join(invalid_deductions[:3].mapped("name"))
+                raise UserError(_("扣减项的目标金额不能为正数。请检查：%s") % sample)
             plan.write(
                 {
                     "state": "validated",
@@ -286,6 +311,7 @@ class ProjectCostPlan(models.Model):
             "source_resource_line_id",
             "source_summary_component_id",
             "cost_type",
+            "line_role",
             "name",
             "calculation_mode",
             "source_calc_base",
@@ -373,6 +399,19 @@ class ProjectCostPlanLine(models.Model):
         string="成本口径",
         required=True,
         index=True,
+    )
+    line_role = fields.Selection(
+        [
+            ("cost", "普通成本"),
+            ("deduction", "扣减项"),
+            ("adjustment", "差额调整"),
+        ],
+        string="明细性质",
+        required=True,
+        default="cost",
+        readonly=True,
+        index=True,
+        help="由来源业务事实确定。普通成本禁止负数；扣减项和差额调整保留来源的正负语义。",
     )
     name = fields.Char("成本资源/费用", required=True)
     calculation_mode = fields.Selection(

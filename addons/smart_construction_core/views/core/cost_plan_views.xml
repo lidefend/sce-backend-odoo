@@ -68,6 +68,7 @@
                 <field name="project_id" optional="hide"/>
                 <field name="boq_line_id"/>
                 <field name="cost_type"/>
+                <field name="line_role" widget="badge"/>
                 <field name="name"/>
                 <field name="calculation_mode"/>
                 <field name="unit_raw"/>
@@ -102,6 +103,7 @@
                             <field name="boq_line_id" readonly="true"/>
                             <field name="analysis_id" readonly="true"/>
                             <field name="cost_type" readonly="true"/>
+                            <field name="line_role" readonly="true" widget="badge"/>
                             <field name="calculation_mode" readonly="true"/>
                             <field name="unit_raw" readonly="true"/>
                         </group>

@@ -9,6 +9,7 @@ const database = process.env.DB_NAME || 'sc_clean';
 const loginName = process.env.E2E_LOGIN || 'sc_clean_acceptance';
 const password = String(process.env.E2E_PASSWORD || '');
 const outputDir = process.env.ARTIFACTS_DIR || 'artifacts/target-cost-entry-browser';
+const validatePlan = String(process.env.TARGET_COST_VALIDATE || '') === '1';
 const entryRoute = process.env.TARGET_COST_ENTRY_ROUTE || [
   '/a/520?product_domain=cost_budget',
   'entry_intent=handling',
@@ -109,6 +110,16 @@ async function main() {
     check(formText.includes('29,922,323.10'), 'TARGET_COST_FORM_AMOUNT_MISSING');
     check(page.url().includes('/project.cost.plan/21'), `TARGET_COST_FORM_MODEL_INVALID:${page.url()}`);
 
+    let validation = null;
+    if (validatePlan) {
+      await page.getByRole('button', { name: '校验', exact: true }).click();
+      const activeStatus = page.locator('.native-statusbar-step--active');
+      await activeStatus.filter({ hasText: '已校验' }).waitFor({ timeout: 45_000 });
+      const validationScreenshot = path.join(outputDir, '03-target-cost-plan-v5-validated.png');
+      await page.screenshot({ path: validationScreenshot, fullPage: true, animations: 'disabled' });
+      validation = { state: 'validated', screenshot: validationScreenshot };
+    }
+
     check(runtime.pageErrors.length === 0, `PAGE_ERRORS:${JSON.stringify(runtime.pageErrors)}`);
     check(runtime.consoleErrors.length === 0, `CONSOLE_ERRORS:${JSON.stringify(runtime.consoleErrors)}`);
     check(runtime.httpErrors.length === 0, `HTTP_ERRORS:${JSON.stringify(runtime.httpErrors)}`);
@@ -119,6 +130,7 @@ async function main() {
       login: loginName,
       entry: { actionId: 520, menuId: 396, model: 'project.cost.plan' },
       plan: { id: 21, versionCode: formFacts.versionCode, lineCount: Number(formFacts.lineCount.replace(/\D/g, '')), targetAmount: 29922323.10 },
+      validation,
       screenshots: { list: listScreenshot, form: formScreenshot },
       runtime,
     };

@@ -587,6 +587,136 @@ class TestBoqVersionContract(TransactionCase):
         measure.target_rate = 2.7
         self.assertAlmostEqual(measure.target_amount, 270.0)
 
+    def test_cost_plan_line_roles_preserve_deductions_and_reject_negative_costs(self):
+        version = self._version("COST-LINE-ROLES")
+        line = self._line(version, code="010101009901")
+        self.env["project.boq.analysis"].create(
+            {
+                "name": line.name,
+                "boq_line_id": line.id,
+                "uom_raw": "m2",
+                "source_quantity": 2.0,
+                "source_unit_price": 5.0,
+                "norm_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "norm_code": "ROLE-001",
+                            "name": "成本性质测试定额",
+                            "unit_raw": "m2",
+                            "budget_consumption": 1.0,
+                            "amount_material": 5.0,
+                        },
+                    )
+                ],
+                "resource_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "resource_type": "material",
+                            "name": "普通材料",
+                            "unit_raw": "kg",
+                            "budget_consumption": 1.0,
+                            "budget_unit_price": 6.0,
+                            "budget_unit_amount": 6.0,
+                        },
+                    ),
+                    (
+                        0,
+                        0,
+                        {
+                            "resource_type": "material",
+                            "name": "来源扣减材料",
+                            "unit_raw": "kg",
+                            "budget_consumption": -1.0,
+                            "budget_unit_price": 1.0,
+                            "budget_unit_amount": -1.0,
+                        },
+                    ),
+                ],
+            }
+        )
+        version.action_validate()
+        version.action_publish()
+        plan = self.env["project.cost.plan"].create(
+            {
+                "name": "成本明细性质计划",
+                "project_id": self.project.id,
+                "boq_version_id": version.id,
+                "version_code": "ROLE-V1",
+            }
+        )
+        plan.action_generate_from_boq()
+        regular = plan.line_ids.filtered(lambda row: row.name == "普通材料")
+        deduction = plan.line_ids.filtered(lambda row: row.name == "来源扣减材料")
+        self.assertEqual(regular.line_role, "cost")
+        self.assertEqual(deduction.line_role, "deduction")
+        self.assertLess(deduction.target_amount, 0)
+        plan.action_validate()
+
+        plan.state = "draft"
+        regular.target_unit_price = -1.0
+        with self.assertRaisesRegex(UserError, "普通成本项不能使用负"):
+            plan.action_validate()
+
+    def test_cost_plan_material_reconciliation_is_an_adjustment(self):
+        version = self._version("COST-RECONCILIATION")
+        line = self._line(version, code="010101009902")
+        self.env["project.boq.analysis"].create(
+            {
+                "name": line.name,
+                "boq_line_id": line.id,
+                "uom_raw": "m2",
+                "source_quantity": 2.0,
+                "source_unit_price": 5.0,
+                "norm_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "norm_code": "ROLE-002",
+                            "name": "材料差额测试定额",
+                            "unit_raw": "m2",
+                            "budget_consumption": 1.0,
+                            "amount_material": 5.0,
+                        },
+                    )
+                ],
+                "resource_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "resource_type": "material",
+                            "name": "材料明细",
+                            "unit_raw": "kg",
+                            "budget_consumption": 1.0,
+                            "budget_unit_price": 6.0,
+                            "budget_unit_amount": 6.0,
+                        },
+                    )
+                ],
+            }
+        )
+        version.action_validate()
+        version.action_publish()
+        plan = self.env["project.cost.plan"].create(
+            {
+                "name": "材料差额计划",
+                "project_id": self.project.id,
+                "boq_version_id": version.id,
+                "version_code": "RECON-V1",
+            }
+        )
+        plan.action_generate_from_boq()
+        adjustment = plan.line_ids.filtered(lambda row: row.line_role == "adjustment")
+        self.assertEqual(len(adjustment), 1)
+        self.assertEqual(adjustment.target_unit_price, -1.0)
+        plan.action_validate()
+        self.assertEqual(plan.state, "validated")
+
     def test_unit_project_summary_parser_keeps_fee_and_tax_outside_boq_rows(self):
         wizard = self.env["project.boq.import.wizard"].create(
             {"project_id": self.project.id, "version_code": "E3-SUMMARY"}
