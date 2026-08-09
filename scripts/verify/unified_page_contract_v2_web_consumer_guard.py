@@ -36,6 +36,7 @@ def main() -> int:
 
     contract_source = read("app/contracts/unifiedPageContractV2.ts")
     action_view_source = read("views/ActionView.vue")
+    action_status_runtime_source = read("app/runtime/actionViewContractActionRuntime.ts")
     record_runtime_source = read("app/contractRecordRuntime.ts")
     action_runtime_source = read("app/contractActionRuntime.ts")
     action_presentation_source = read("app/action_runtime/useActionViewActionPresentationRuntime.ts")
@@ -98,8 +99,12 @@ def main() -> int:
     ))
     require_tokens(errors, action_view_source, "web ActionView v2 status bridge", (
         "collectUnifiedPageContractV2ButtonStatus",
-        "resolveActionViewV2ButtonStatus",
         "applyActionViewV2ButtonStatus",
+        "toContractActionButton: (row, dedup) => applyActionViewV2ButtonStatus(",
+    ))
+    require_tokens(errors, action_status_runtime_source, "web ActionView v2 status runtime", (
+        "export function resolveActionViewV2ButtonStatus",
+        "export function applyActionViewV2ButtonStatus",
         "status?.visible === false",
         "disabled_by_status_contract",
     ))
