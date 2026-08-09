@@ -163,6 +163,7 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
             result={
                 "type": "ir.actions.act_window",
                 "id": 44,
+                "menu_id": 389,
                 "res_model": "x.model",
                 "view_mode": "tree,form",
             },
@@ -176,6 +177,7 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
         raw_action = result["data"]["result"]["raw_action"]
         self.assertEqual(raw_action["entry_target"]["type"], "compatibility")
         self.assertEqual(raw_action["entry_target"]["route"], "/a/44")
+        self.assertEqual(raw_action["entry_target"]["compatibility_refs"]["menu_id"], 389)
         self.assertEqual(result["data"]["result"]["entry_target"], raw_action["entry_target"])
         self.assertEqual(result["data"]["effect"]["target"]["kind"], "entry_target")
 

@@ -642,6 +642,12 @@ class _TreeFormParserMixin:
                 "label": label,
                 "kind": "object",
                 "level": lvl,
+                # The form command bar only consumes actions whose placement
+                # authority is explicit.  Native <header> buttons are already
+                # authoritative page-header actions; preserve that fact in the
+                # legacy projection so the V2 projection and renderer do not
+                # have to infer it from a model or action name.
+                "source_widget_id": "page.header" if level == "header" else "",
                 "selection": selection,
                 "visible_profiles": visible_profiles,
                 "groups": [],
@@ -657,6 +663,9 @@ class _TreeFormParserMixin:
                     confirm=confirm,
                     level=level,
                 ),
+                "presentation": {
+                    "tier": "primary" if ("btn-primary" in classes or "oe_highlight" in classes) else "overflow",
+                },
                 "badge": badge or None,
                 "payload": {
                     "method": None,

@@ -889,6 +889,10 @@ import {
   resolveActionViewAdvancedTitle,
 } from '../app/contracts/actionViewAdvancedContract';
 import { useActionPageModel } from '../app/assemblers/action/useActionPageModel';
+import {
+  isActionViewLoadLeaseCurrent,
+  shouldCaptureActionViewRouteLease,
+} from '../app/actionViewRouteLeaseCore.js';
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
@@ -901,13 +905,22 @@ const pageText = pageContract.text;
 const pageSectionEnabled = pageContract.sectionEnabled;
 const pageSectionStyle = pageContract.sectionStyle;
 const pageSectionTagIs = pageContract.sectionTagIs;
-let loadPageInvoker: () => Promise<void> = async () => {};
+let latestLoadGeneration = 0;
+let loadPageInvoker: (loadGeneration: number) => Promise<void> = async () => {};
 function requestLoadPage(): Promise<void> {
-  return loadPageInvoker();
+  latestLoadGeneration += 1;
+  return loadPageInvoker(latestLoadGeneration);
 }
 
 function currentActionActivityRouteKey(): string {
   return buildActionActivityRouteKey({ actionId: route.params.actionId, queryActionId: route.query.action_id, menuId: route.query.menu_id });
+}
+
+function resolveCurrentRouteActionId(): number {
+  const fromParam = Number(route.params.actionId || 0);
+  if (Number.isFinite(fromParam) && fromParam > 0) return fromParam;
+  const fromQuery = Number(route.query.action_id || 0);
+  return Number.isFinite(fromQuery) && fromQuery > 0 ? fromQuery : 0;
 }
 
 let clearSelectionInvoker: () => void = () => {};
@@ -927,11 +940,13 @@ const {
   pageSectionTagIs,
   pageSectionStyle,
 });
-const routeQueryMap = computed<Record<string, unknown>>(() => normalizeActionViewRouteQuery(route.query));
-
 const status = ref<'idle' | 'loading' | 'ok' | 'empty' | 'error'>('idle');
 const isComponentActive = ref(true);
-const instanceActivityRouteKey = ref('');
+const instanceActivityRouteKey = ref(currentActionActivityRouteKey());
+const instanceRouteActionId = ref(resolveCurrentRouteActionId());
+const instanceRouteMenuId = ref(Number(route.query.menu_id || 0));
+const instanceRouteQueryMap = ref<Record<string, unknown>>(normalizeActionViewRouteQuery(route.query));
+const routeQueryMap = computed<Record<string, unknown>>(() => instanceRouteQueryMap.value);
 const retainedRouteFullPath = ref('');
 const renderErrorMessage = ref('');
 const traceId = ref('');
@@ -966,6 +981,14 @@ const selectedAssigneeId = ref<number | null>(null);
 const selectedIds = ref<number[]>([]);
 const batchMessage = ref('');
 const groupRuntimeCapsule = createActionViewGroupRuntimeCapsule();
+
+function captureInstanceRouteSnapshot(): boolean {
+  if (!shouldCaptureActionViewRouteLease(instanceActivityRouteKey.value, currentActionActivityRouteKey())) return false;
+  instanceRouteActionId.value = resolveCurrentRouteActionId();
+  instanceRouteMenuId.value = Number(route.query.menu_id || 0);
+  instanceRouteQueryMap.value = normalizeActionViewRouteQuery(route.query);
+  return true;
+}
 const { state: groupRuntimeState } = groupRuntimeCapsule;
 const {
   groupSummaryItems,
@@ -1121,12 +1144,7 @@ type BusinessCategoryCreateOption = {
   categoryId?: number;
   defaultValues: Record<string, unknown>;
 };
-const actionId = computed(() => {
-  const fromParam = Number(route.params.actionId || 0);
-  if (Number.isFinite(fromParam) && fromParam > 0) return fromParam;
-  const fromQuery = Number(route.query.action_id || 0);
-  return Number.isFinite(fromQuery) && fromQuery > 0 ? fromQuery : 0;
-});
+const actionId = computed(() => instanceRouteActionId.value);
 const actionMeta = computed(() => session.currentAction);
 function resolveActionCollectionScopeContext(): Record<string, unknown> {
   const meta = actionMeta.value as Record<string, unknown> | null;
@@ -1137,7 +1155,7 @@ function resolveActionCollectionScopeContext(): Record<string, unknown> {
 }
 const businessCategoryCreatePickerVisible = ref(false);
 const routeSceneLabel = computed(() => String(route.query.scene_label || '').trim());
-const menuId = computed(() => Number(route.query.menu_id ?? 0));
+const menuId = computed(() => instanceRouteMenuId.value);
 const keepSceneRoute = computed(() => String(route.name || '').toLowerCase() === 'scene');
 const sceneKey = computed(() => {
   const metaKey = route.meta?.sceneKey as string | undefined;
@@ -1313,14 +1331,27 @@ const {
 });
 
 function resolveCreateRight(contract: ActionViewRuntimeContract | null): boolean {
-  const globalStatus = resolveUnifiedPageContractV2GlobalStatus(contract?.__unified_page_contract_v2);
-  if (String(globalStatus?.pageAuth || '').trim().toLowerCase() === 'read') return false;
   const head = contract?.head?.permissions?.create;
   if (typeof head === 'boolean') return head;
   const effective = contract?.permissions?.effective?.rights?.create;
   if (typeof effective === 'boolean') return effective;
+  const globalStatus = resolveUnifiedPageContractV2GlobalStatus(contract?.__unified_page_contract_v2);
+  const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
+  if (pageAuth === 'read') return false;
   return true;
 }
+
+function resolveWriteRight(contract: ActionViewRuntimeContract | null): boolean {
+  const head = contract?.head?.permissions?.write;
+  if (typeof head === 'boolean') return head;
+  const effective = contract?.permissions?.effective?.rights?.write;
+  if (typeof effective === 'boolean') return effective;
+  const globalStatus = resolveUnifiedPageContractV2GlobalStatus(contract?.__unified_page_contract_v2);
+  const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
+  return ['edit', 'write', 'manage'].includes(pageAuth);
+}
+
+const canEditRecord = computed(() => resolveWriteRight(actionContract.value));
 
 const canCreateRecord = computed(() => {
   const targetModel = (resolvedModelRef.value || model.value || '').trim();
@@ -2001,6 +2032,7 @@ const {
   menuId,
   actionId,
   actionContract,
+  canEditRecord,
   collectionSemantic: computed(() => collectionPresentation.value.semantic),
   resolvedModelRef,
   modelRef: model,
@@ -2220,10 +2252,10 @@ const {
   mergeContext,
   mergeActiveFilterDomain,
 } = useActionViewRequestContextRuntime({
-  routeDomainRaw: () => String(route.query.domain_raw || '').trim(),
-  routeContextRaw: () => String(route.query.context_raw || '').trim(),
+  routeDomainRaw: () => String(routeQueryMap.value.domain_raw || '').trim(),
+  routeContextRaw: () => String(routeQueryMap.value.context_raw || '').trim(),
   routeContext: () => ({
-    ...buildBusinessEntryRequestContext(route.query as Record<string, unknown>),
+    ...buildBusinessEntryRequestContext(routeQueryMap.value),
     ...resolveActionCollectionScopeContext(),
   }),
   menuId,
@@ -2582,12 +2614,12 @@ const {
 } = useActionViewLoadPreflightInputRuntime({
   staticInput: () => ({
     sessionMenuTree: session.menuTree,
-    routeViewModeRaw: route.query.view_mode,
-    routeFilterRaw: route.query.preset_filter,
-    routeSavedFilterRaw: route.query.saved_filter,
-    routeGroupByRaw: route.query.group_by,
-    routeGroupClearedRaw: route.query.group_by_cleared,
-    routeGroupValueRaw: route.query.group_value,
+    routeViewModeRaw: routeQueryMap.value.view_mode,
+    routeFilterRaw: routeQueryMap.value.preset_filter,
+    routeSavedFilterRaw: routeQueryMap.value.saved_filter,
+    routeGroupByRaw: routeQueryMap.value.group_by,
+    routeGroupClearedRaw: routeQueryMap.value.group_by_cleared,
+    routeGroupValueRaw: routeQueryMap.value.group_value,
     sceneReadyDefaultSortRaw: '',
     sceneDefaultSortRaw: '',
     sessionCapabilities: session.capabilities,
@@ -2609,9 +2641,10 @@ const {
       { ...(currentAction || {}), menu_id: menuId.value || currentAction?.menu_id },
       {
         menuId: menuId.value || currentAction?.menu_id,
-        viewType: String(route.query.view_mode || '').trim() || undefined,
-        previewToken: String(route.query.preview_token || '').trim() || undefined,
-        previewRoleKey: String(route.query.preview_role_key || '').trim() || undefined,
+        viewType: String(routeQueryMap.value.view_mode || '').trim() || undefined,
+        contextRaw: String(routeQueryMap.value.context_raw || '').trim() || undefined,
+        previewToken: String(routeQueryMap.value.preview_token || '').trim() || undefined,
+        previewRoleKey: String(routeQueryMap.value.preview_role_key || '').trim() || undefined,
       },
     ),
     setActionMeta: (meta: Record<string, unknown>) => session.setActionMeta(meta),
@@ -2716,6 +2749,13 @@ const {
   buildLoadMainPhaseInput,
 } = useActionViewLoadMainPhaseInputRuntime({
   staticInput: () => ({
+    isLoadCurrent: (loadGeneration: number) => isActionViewLoadLeaseCurrent({
+      loadGeneration,
+      latestLoadGeneration,
+      isComponentActive: isComponentActive.value,
+      instanceActivityRouteKey: instanceActivityRouteKey.value,
+      currentActivityRouteKey: currentActionActivityRouteKey(),
+    }),
     actionId: actionId.value,
     actionMeta: actionMeta.value as Record<string, unknown> | null,
     routeQueryMap: routeQueryMap.value,
@@ -2806,7 +2846,7 @@ const {
 } = useActionViewLoadSuccessDynamicInputRuntime({
   staticInput: () => ({
     routeQueryMap: routeQueryMap.value,
-    routeGroupValueRaw: route.query.group_value,
+    routeGroupValueRaw: routeQueryMap.value.group_value,
     activeGroupByField: activeGroupByField.value,
     groupSampleLimit: groupSampleLimit.value,
     searchTerm: searchTerm.value,
@@ -3208,14 +3248,15 @@ async function redirectMenuOnlyRouteIfNeeded(): Promise<boolean> {
 }
 
 onMounted(async () => {
-  instanceActivityRouteKey.value = currentActionActivityRouteKey();
+  const requestedRouteFullPath = route.fullPath;
+  captureInstanceRouteSnapshot();
   renderErrorMessage.value = '';
   applyRoutePreset();
   if (await redirectMenuOnlyRouteIfNeeded()) {
     return;
   }
   await requestLoadPage();
-  retainedRouteFullPath.value = route.fullPath;
+  retainedRouteFullPath.value = requestedRouteFullPath;
   restoreCollectionScroll();
   if (typeof window !== 'undefined') {
     window.addEventListener(RECORD_CONTEXT_CHANGED_EVENT, handleRecordContextChanged);
@@ -3224,7 +3265,22 @@ onMounted(async () => {
 
 onActivated(() => {
   isComponentActive.value = true;
+  if (!captureInstanceRouteSnapshot()) return;
   restoreCollectionScroll();
+  // A kept-alive action tab can be reopened with a different domain/context
+  // (for example from a record-level object action).  Its route watcher runs
+  // while deactivated and intentionally does no work, so refresh the contract
+  // on activation when the authoritative route changed.
+  if (instanceActivityRouteKey.value && retainedRouteFullPath.value !== route.fullPath) {
+    const requestedRouteFullPath = route.fullPath;
+    renderErrorMessage.value = '';
+    clearSelection();
+    applyRoutePreset();
+    updateActivityRuntimeQueryFromRoute();
+    void Promise.resolve(requestLoadPage()).then(() => {
+      retainedRouteFullPath.value = requestedRouteFullPath;
+    });
+  }
 });
 
 onDeactivated(() => {
@@ -3251,17 +3307,19 @@ onErrorCaptured((err) => {
 watch(
   () => route.fullPath,
   async () => {
+    const requestedRouteFullPath = route.fullPath;
     const currentKey = currentActionActivityRouteKey();
     if (instanceActivityRouteKey.value && currentKey !== instanceActivityRouteKey.value) return;
     if (!isComponentActive.value) return;
+    captureInstanceRouteSnapshot();
     if (suppressNextRouteReload.value) {
       suppressNextRouteReload.value = false;
       applyRoutePreset();
       updateActivityRuntimeQueryFromRoute();
-      retainedRouteFullPath.value = route.fullPath;
+      retainedRouteFullPath.value = requestedRouteFullPath;
       return;
     }
-    if (retainedRouteFullPath.value === route.fullPath && status.value !== 'idle' && status.value !== 'loading') {
+    if (retainedRouteFullPath.value === requestedRouteFullPath && status.value !== 'idle' && status.value !== 'loading') {
       applyRoutePreset();
       updateActivityRuntimeQueryFromRoute();
       return;
@@ -3275,7 +3333,7 @@ watch(
       return;
     }
     void Promise.resolve(requestLoadPage()).then(() => {
-      retainedRouteFullPath.value = route.fullPath;
+      retainedRouteFullPath.value = requestedRouteFullPath;
     });
   },
 );
@@ -3286,6 +3344,7 @@ watch(
     const currentKey = currentActionActivityRouteKey();
     if (instanceActivityRouteKey.value && currentKey !== instanceActivityRouteKey.value) return;
     if (!isComponentActive.value) return;
+    captureInstanceRouteSnapshot();
     updateActivityRuntimeQueryFromRoute();
   },
   { deep: true, immediate: true },

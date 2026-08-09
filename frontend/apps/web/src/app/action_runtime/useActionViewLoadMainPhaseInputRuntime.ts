@@ -5,13 +5,14 @@ type UseActionViewLoadMainPhaseInputRuntimeOptions = {
 };
 
 export function useActionViewLoadMainPhaseInputRuntime(options: UseActionViewLoadMainPhaseInputRuntimeOptions) {
-  function buildLoadMainPhaseInput(input: { startedAt: number }): Dict {
+  function buildLoadMainPhaseInput(input: { startedAt: number; loadGeneration: number }): Dict {
     const staticInput = typeof options.staticInput === 'function'
       ? options.staticInput()
       : options.staticInput;
     return {
       ...staticInput,
       startedAt: input.startedAt,
+      loadGeneration: input.loadGeneration,
     };
   }
 
@@ -19,4 +20,3 @@ export function useActionViewLoadMainPhaseInputRuntime(options: UseActionViewLoa
     buildLoadMainPhaseInput,
   };
 }
-

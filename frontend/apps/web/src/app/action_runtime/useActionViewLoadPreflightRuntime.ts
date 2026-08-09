@@ -56,6 +56,7 @@ function sanitizeOrderValue(order: unknown, allowedFields: Set<string>): string 
 }
 
 type ExecuteLoadPreflightOptions = {
+  isLoadCurrent?: () => boolean;
   sessionMenuTree: unknown;
   actionId: number;
   actionMeta: Dict | null;
@@ -223,6 +224,9 @@ function deriveGroupByChipsFromContract(contract: Dict): GroupByChip[] {
 export function useActionViewLoadPreflightRuntime() {
   async function executeLoadPreflight(options: ExecuteLoadPreflightOptions): Promise<ExecuteLoadPreflightResult> {
     const { contract, meta } = await options.resolveAction(options.sessionMenuTree, options.actionId, options.actionMeta);
+    if (options.isLoadCurrent && !options.isLoadCurrent()) {
+      return { kind: 'handled' };
+    }
     const nextMeta = (meta || null) as Dict | null;
     if (nextMeta) {
       options.setActionMeta(nextMeta);

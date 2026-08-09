@@ -12,12 +12,13 @@ export function buildActionViewRowClickTarget(options: {
   menuId: number;
   actionId: number;
   carryQuery: Dict;
+  editable: boolean;
 }): { path: string; query: Dict } | null {
   if (!options.targetModel) return null;
   const recordId = resolveActionViewRecordId(options.rawId);
   if (recordId === null) return null;
   return {
-    path: `/${recordId === 'new' ? 'f' : 'r'}/${options.targetModel}/${recordId}`,
+    path: `/${recordId === 'new' || options.editable ? 'f' : 'r'}/${options.targetModel}/${recordId}`,
     query: {
       menu_id: options.menuId || undefined,
       action_id: options.actionId || undefined,
