@@ -18,7 +18,7 @@ def main() -> int:
     v2_schema = V2_SCHEMA.read_text(encoding="utf-8")
     v2_assembler = V2_ASSEMBLER.read_text(encoding="utf-8")
     errors: list[str] = []
-    for semantic in ("table", "card", "workflow_board", "hierarchy_browser", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"):
+    for semantic in ("table", "card", "workflow_board", "hierarchy_browser", "hierarchy_planner", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"):
         if f"semantic: '{semantic}'" not in registry:
             errors.append(f"missing renderer registration: {semantic}")
     for semantic in ("pivot", "graph", "calendar", "gantt", "activity", "dashboard"):

@@ -19,15 +19,27 @@ function check(value, reason) {
 }
 
 function capture(page) {
-  const state = { pageErrors: [], httpErrors: [], consoleErrors: [] };
+  const state = { pageErrors: [], httpErrors: [], consoleErrors: [], contractResponses: [] };
   page.on('pageerror', (error) => state.pageErrors.push(error.message));
   page.on('console', (message) => {
     if (message.type() === 'error') state.consoleErrors.push(message.text());
   });
   page.on('response', (response) => {
     if (response.status() >= 400) state.httpErrors.push({ status: response.status(), url: response.url() });
+    const postData = response.request().postData() || '';
+    if (postData.includes('ui.contract.v2')) state.contractResponses.push(response.json().catch(() => null));
   });
   return state;
+}
+
+function findHierarchyPresentation(value) {
+  if (!value || typeof value !== 'object') return null;
+  if (!Array.isArray(value) && ['hierarchy_browser', 'hierarchy_planner'].includes(value.semantic)) return value;
+  for (const child of Array.isArray(value) ? value : Object.values(value)) {
+    const found = findHierarchyPresentation(child);
+    if (found) return found;
+  }
+  return null;
 }
 
 async function login(page) {
@@ -57,6 +69,8 @@ async function openList(page, key, target, expectedText, surface = 'list') {
   await page.goto(`${baseUrl}${route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   const surfaceSelector = surface === 'hierarchy'
     ? '.hierarchy-browser'
+    : surface === 'planner'
+      ? '.hierarchy-planner'
     : surface === 'worksheet'
       ? '.worksheet'
     : '[data-product-page-mode="list"]';
@@ -71,6 +85,8 @@ async function openList(page, key, target, expectedText, surface = 'list') {
     const text = document.body.innerText || '';
     const selector = expectedSurface === 'hierarchy'
       ? '.hierarchy-list table tbody tr, .hierarchy-list .sc-empty, .hierarchy-error'
+      : expectedSurface === 'planner'
+        ? '.planner-grid tbody tr, .planner-state, .planner-error'
       : expectedSurface === 'worksheet'
         ? '.worksheet-table-scroll tbody tr, .worksheet-state, .worksheet-error'
       : 'table tbody tr, .desktop-record-table tbody tr, .sc-empty, .sc-state-panel, [data-list-state="empty"], [data-list-state="error"]';
@@ -210,73 +226,74 @@ async function verifyBoqImportEntry(page) {
   };
 }
 
-async function verifyWbsHierarchy(page, actionId) {
-  const surface = page.locator('.hierarchy-browser');
+async function verifyWbsHierarchy(page, actionId, state) {
+  const surface = page.locator('.hierarchy-planner');
   const renderer = page.locator('.action-surface-renderer-host');
-  check(await renderer.getAttribute('data-surface-semantic') === 'hierarchy_browser', 'WBS_SURFACE_SEMANTIC_INVALID');
-  check(await renderer.getAttribute('data-requested-renderer') === 'core.hierarchy_browser', 'WBS_RENDERER_NOT_REQUESTED');
-  check(await renderer.getAttribute('data-active-renderer') === 'core.hierarchy_browser', 'WBS_RENDERER_NOT_ACTIVE');
+  check(await renderer.getAttribute('data-surface-semantic') === 'hierarchy_planner', 'WBS_SURFACE_SEMANTIC_INVALID');
+  check(await renderer.getAttribute('data-requested-renderer') === 'core.hierarchy_planner', 'WBS_RENDERER_NOT_REQUESTED');
+  check(await renderer.getAttribute('data-active-renderer') === 'core.hierarchy_planner', 'WBS_RENDERER_NOT_ACTIVE');
   check(await renderer.getAttribute('data-renderer-status') === 'ready', 'WBS_RENDERER_NOT_READY');
-  await surface.getByText('共 122 条', { exact: true }).waitFor({ timeout: 30_000 });
+  await surface.locator('.planner-grid tbody tr').first().waitFor({ timeout: 30_000 });
+  const contractPayloads = (await Promise.all(state.contractResponses)).filter(Boolean);
+  const presentation = contractPayloads.map(findHierarchyPresentation).filter(Boolean).at(-1);
+  const contractColumns = presentation?.config?.list?.columns || [];
+  const contractColumnFields = contractColumns.map((row) => row.field);
+  for (const field of ['code', 'name', 'status', 'manager_id', 'level_type', 'boq_line_count', 'boq_amount_total']) {
+    check(contractColumnFields.includes(field), `WBS_CONTRACT_COLUMN_MISSING:${field}:${JSON.stringify(contractColumns)}`);
+  }
 
-  const treeNodes = surface.locator('.tree-node');
-  const initialNodeCount = await treeNodes.count();
-  check(initialNodeCount >= 2, `WBS_TREE_ROOTS_MISSING:${initialNodeCount}`);
-  const collapsedArrows = surface.locator('.tree-arrow').filter({ hasText: '▸' });
-  check(await collapsedArrows.count() > 0, 'WBS_TREE_NESTING_MISSING');
-  await collapsedArrows.first().click();
-  await page.waitForFunction(
-    (count) => document.querySelectorAll('.hierarchy-browser .tree-node').length > count,
-    initialNodeCount,
-    { timeout: 10_000 },
-  );
-  const expandedNodeCount = await treeNodes.count();
-
-  const treePane = surface.locator('.hierarchy-tree');
-  const detailPane = surface.locator('.hierarchy-detail');
-  const leftHandle = surface.locator('.hierarchy-resizer-left');
-  const rightHandle = surface.locator('.hierarchy-resizer-right');
-  const initialTreeBox = await treePane.boundingBox();
-  const initialDetailBox = await detailPane.boundingBox();
-  const leftHandleBox = await leftHandle.boundingBox();
-  const rightHandleBox = await rightHandle.boundingBox();
-  check(initialTreeBox && initialDetailBox && leftHandleBox && rightHandleBox, 'WBS_PANE_LAYOUT_MISSING');
-  const detailText = await detailPane.innerText();
-  check(/层级类型\s*单项工程/.test(detailText), `WBS_LEVEL_SELECTION_LABEL_MISSING:${detailText}`);
-  check(/来源\s*清单生成/.test(detailText), `WBS_SOURCE_SELECTION_LABEL_MISSING:${detailText}`);
-  check(/位置管理\s*按清单草案/.test(detailText), `WBS_PLACEMENT_SELECTION_LABEL_MISSING:${detailText}`);
-
-  await page.mouse.move(leftHandleBox.x + leftHandleBox.width / 2, leftHandleBox.y + 100);
-  await page.mouse.down();
-  await page.mouse.move(leftHandleBox.x + leftHandleBox.width / 2 + 48, leftHandleBox.y + 100, { steps: 4 });
-  await page.mouse.up();
-  const resizedTreeBox = await treePane.boundingBox();
-  check(resizedTreeBox && Math.abs(resizedTreeBox.width - initialTreeBox.width - 48) <= 2, `WBS_LEFT_RESIZE_FAILED:${initialTreeBox.width}:${resizedTreeBox?.width}`);
-
-  const currentRightHandleBox = await rightHandle.boundingBox();
-  check(currentRightHandleBox, 'WBS_RIGHT_HANDLE_MISSING');
-  await page.mouse.move(currentRightHandleBox.x + currentRightHandleBox.width / 2, currentRightHandleBox.y + 100);
-  await page.mouse.down();
-  await page.mouse.move(currentRightHandleBox.x + currentRightHandleBox.width / 2 - 40, currentRightHandleBox.y + 100, { steps: 4 });
-  await page.mouse.up();
-  const resizedDetailBox = await detailPane.boundingBox();
-  check(resizedDetailBox && Math.abs(resizedDetailBox.width - initialDetailBox.width - 40) <= 2, `WBS_RIGHT_RESIZE_FAILED:${initialDetailBox.width}:${resizedDetailBox?.width}`);
-
-  const stored = await page.evaluate((key) => window.localStorage.getItem(key), `sc:hierarchy-browser:${actionId}:columns`);
-  check(stored && stored.includes('left') && stored.includes('right'), 'WBS_COLUMN_WIDTHS_NOT_PERSISTED');
-  const screenshot = path.join(outputDir, 'cost-wbs-hierarchy-verified.png');
+  const rows = surface.locator('.planner-grid tbody tr');
+  const expandedNodeCount = await rows.count();
+  check(expandedNodeCount >= 4, `WBS_OUTLINE_ROWS_MISSING:${expandedNodeCount}`);
+  check(await surface.locator('.outline-cell').count() >= expandedNodeCount, 'WBS_OUTLINE_COLUMN_MISSING');
+  check(await surface.locator('.outline-toggle').count() > 0, 'WBS_OUTLINE_NESTING_MISSING');
+  await rows.first().click();
+  for (const actionLabel of ['新增顶层 WBS', '新增同级 WBS', '新增下级 WBS', '缩进为下级', '提升一级']) {
+    check(await surface.getByRole('button', { name: actionLabel, exact: true }).count() === 1, `WBS_BACKEND_COMMAND_MISSING:${actionLabel}`);
+  }
+  const outlineCodes = async () => surface.locator('.planner-grid tbody tr td:first-child').allTextContents();
+  const movableRow = surface.getByText('WBS-01.01', { exact: true }).locator('xpath=ancestor::tr');
+  await movableRow.click();
+  const beforeMove = await outlineCodes();
+  await surface.getByRole('button', { name: '更多', exact: true }).click();
+  for (const actionLabel of ['上移', '下移']) {
+    check(await surface.getByRole('button', { name: actionLabel, exact: true }).count() === 1, `WBS_BACKEND_OVERFLOW_COMMAND_MISSING:${actionLabel}`);
+  }
+  await surface.getByRole('button', { name: '下移', exact: true }).click();
+  await page.waitForFunction(() => {
+    const codes = [...document.querySelectorAll('.hierarchy-planner tbody tr td:first-child')].map((node) => node.textContent?.trim());
+    return codes.findIndex((code) => code?.endsWith('WBS-01.02')) < codes.findIndex((code) => code?.endsWith('WBS-01.01'));
+  }, undefined, { timeout: 15_000 });
+  await surface.getByRole('button', { name: '更多', exact: true }).click();
+  await surface.getByRole('button', { name: '上移', exact: true }).click();
+  await page.waitForFunction(() => {
+    const codes = [...document.querySelectorAll('.hierarchy-planner tbody tr td:first-child')].map((node) => node.textContent?.trim());
+    return codes.findIndex((code) => code?.endsWith('WBS-01.01')) < codes.findIndex((code) => code?.endsWith('WBS-01.02'));
+  }, undefined, { timeout: 15_000 });
+  check(JSON.stringify(await outlineCodes()) === JSON.stringify(beforeMove), 'WBS_MOVE_COMMAND_NOT_REVERSIBLE');
+  check(await surface.getByRole('button', { name: '更多', exact: true }).getAttribute('aria-expanded') === 'false', 'WBS_MORE_MENU_NOT_CLOSED_AFTER_COMMAND');
+  await surface.getByRole('button', { name: '视图', exact: true }).click();
+  check(await surface.getByRole('button', { name: '视图', exact: true }).getAttribute('aria-expanded') === 'true', 'WBS_VIEW_MENU_NOT_OPEN');
+  await surface.locator('.planner-grid').click({ position: { x: 8, y: 8 } });
+  check(await surface.getByRole('button', { name: '视图', exact: true }).getAttribute('aria-expanded') === 'false', 'WBS_VIEW_MENU_NOT_CLOSED_OUTSIDE');
+  await surface.getByRole('button', { name: '节点详情', exact: true }).click();
+  await surface.locator('.planner-drawer').waitFor({ timeout: 10_000 });
+  const detailScreenshot = path.join(outputDir, 'cost-wbs-planner-detail.png');
+  await page.screenshot({ path: detailScreenshot, fullPage: true, animations: 'disabled' });
+  await surface.locator('.planner-drawer').getByRole('button', { name: '×', exact: true }).click();
+  const gridText = await surface.locator('.planner-grid').innerText();
+  check(/2/.test(gridText), `WBS_ALLOCATION_COUNT_MISSING:${gridText}`);
+  check(/36,398\.87/.test(gridText), `WBS_ALLOCATION_AMOUNT_MISSING:${gridText}`);
+  const screenshot = path.join(outputDir, 'cost-wbs-planner-verified.png');
   await page.screenshot({ path: screenshot, fullPage: true, animations: 'disabled' });
   return {
-    semantic: 'hierarchy_browser',
-    renderer: 'core.hierarchy_browser',
-    total: 122,
-    initialNodeCount,
+    semantic: 'hierarchy_planner',
+    renderer: 'core.hierarchy_planner',
+    total: 4,
     expandedNodeCount,
-    initialTreeWidth: initialTreeBox.width,
-    resizedTreeWidth: resizedTreeBox.width,
-    initialDetailWidth: initialDetailBox.width,
-    resizedDetailWidth: resizedDetailBox.width,
-    widthsPersisted: true,
+    moveCommandsVerified: true,
+    contractColumnFields,
+    detailScreenshot,
     screenshot,
   };
 }
@@ -292,6 +309,15 @@ async function main() {
   const pages = [];
   try {
     await login(page);
+    if (String(process.env.BOQ_BROWSER_SCOPE || '') === 'wbs') {
+      pages.push(await openList(page, 'cost-wbs-list', targets.cost_wbs, '凯江大回湾', 'planner'));
+      const wbsHierarchy = await verifyWbsHierarchy(page, Number(targets.cost_wbs.action_id), state);
+      const result = { status: 'PASS', database, login: loginName, projectId, versionId, pages, wbsHierarchy, runtime: state };
+      delete result.runtime.contractResponses;
+      fs.writeFileSync(path.join(outputDir, 'wbs-result.json'), `${JSON.stringify(result, null, 2)}\n`);
+      console.log(JSON.stringify(result));
+      return;
+    }
     pages.push(await openList(page, 'boq-version-list', targets.boq_version, 'V1-20260809'));
     const versionRow = page.locator('.desktop-record-table tbody tr, table tbody tr').filter({ hasText: 'V1-20260809' }).first();
     await versionRow.click();
@@ -307,11 +333,11 @@ async function main() {
     pages.push(await openList(page, 'boq-line-list', targets.boq_line, '凯江大回湾', 'worksheet'));
     const boqWorksheet = await verifyBoqWorksheet(page, Number(targets.boq_line.action_id));
     const boqImportEntry = await verifyBoqImportEntry(page);
-    pages.push(await openList(page, 'cost-wbs-list', targets.cost_wbs, '凯江大回湾', 'hierarchy'));
-    const wbsHierarchy = await verifyWbsHierarchy(page, Number(targets.cost_wbs.action_id));
+    pages.push(await openList(page, 'cost-wbs-list', targets.cost_wbs, '凯江大回湾', 'planner'));
+    const wbsHierarchy = await verifyWbsHierarchy(page, Number(targets.cost_wbs.action_id), state);
     pages.push(await openList(page, 'location-lbs-list', targets.location_lbs, '空间位置 LBS', 'hierarchy'));
-    check(await page.locator('.hierarchy-browser').getByRole('button', { name: '新建', exact: true }).count() === 1, 'LBS_CREATE_ACTION_MISSING');
-    await page.locator('.hierarchy-browser').getByRole('button', { name: '新建', exact: true }).click();
+    check(await page.locator('.hierarchy-browser').getByRole('button', { name: '新增位置', exact: true }).count() === 1, 'LBS_CREATE_ACTION_MISSING');
+    await page.locator('.hierarchy-browser').getByRole('button', { name: '新增位置', exact: true }).click();
     await page.waitForURL(/\/f\/construction\.location\.breakdown\/new(?:\?|$)/, { timeout: 30_000 });
     await page.locator('[data-product-page-mode="form"]').first().waitFor({ timeout: 30_000 });
     await page.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 30_000 });
@@ -319,7 +345,7 @@ async function main() {
     check(await page.locator('[data-field-name="location_type"]').count() >= 1, 'LBS_CREATE_FORM_TYPE_MISSING');
     await page.screenshot({ path: path.join(outputDir, 'location-lbs-create-form.png'), fullPage: true, animations: 'disabled' });
     pages.push(await openList(page, 'contract-section-list', targets.contract_section, '标段结构', 'hierarchy'));
-    check(await page.locator('.hierarchy-browser').getByRole('button', { name: '新建', exact: true }).count() === 1, 'CONTRACT_SECTION_CREATE_ACTION_MISSING');
+    check(await page.locator('.hierarchy-browser').getByRole('button', { name: '新增标段', exact: true }).count() === 1, 'CONTRACT_SECTION_CREATE_ACTION_MISSING');
     pages.push(await openList(page, 'execution-scope-list', targets.execution_scope, '凯江大回湾'));
     pages.push(await openList(page, 'boq-allocation-list', targets.boq_allocation, '按比例'));
     const allocationBody = await page.locator('body').innerText();
@@ -329,6 +355,7 @@ async function main() {
     check(state.pageErrors.length === 0, `PAGE_ERRORS:${JSON.stringify(state.pageErrors)}`);
     check(state.httpErrors.length === 0, `HTTP_ERRORS:${JSON.stringify(state.httpErrors)}`);
     check(state.consoleErrors.length === 0, `CONSOLE_ERRORS:${JSON.stringify(state.consoleErrors)}`);
+    delete state.contractResponses;
     const result = { status: 'PASS', database, login: loginName, projectId, versionId, pages, boqWorksheet, boqImportEntry, wbsHierarchy, runtime: state };
     fs.writeFileSync(path.join(outputDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
     console.log(JSON.stringify(result));

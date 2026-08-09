@@ -1,0 +1,39 @@
+{
+  "baseline_id": "wbs-v1-ui-interaction-20260809",
+  "decision": "feature_baseline_frozen",
+  "release_baseline": false,
+  "source_head_before_freeze": "5b38dd4d4a4cd4792a201c8490c0c7d9d96e6b23",
+  "database": "sc_clean",
+  "surface_semantic": "hierarchy_planner",
+  "renderer": "core.hierarchy_planner",
+  "native_view_js_class": "smart_hierarchy_planner",
+  "frozen_invariants": [
+    "single_outline_tree_grid",
+    "contract_driven_columns_and_commands",
+    "code_and_name_depth_alignment",
+    "stable_structural_order",
+    "selected_node_context",
+    "grouped_toolbar_and_controlled_menus",
+    "optional_detail_drawer",
+    "frontend_has_no_business_logic"
+  ],
+  "allowed_incremental_scopes": [
+    "node_semantics",
+    "operation_state_and_feedback",
+    "wbs_version_governance",
+    "exception_scale_and_viewport_acceptance"
+  ],
+  "release_blockers": [
+    "node_type_semantics_not_closed",
+    "operation_availability_matrix_not_closed",
+    "wbs_version_lifecycle_not_implemented",
+    "exception_scale_viewport_matrix_not_passed"
+  ],
+  "browser_evidence": {
+    "result": "artifacts/boq-wbs-planner-browser/wbs-result.json",
+    "main_screenshot": "artifacts/boq-wbs-planner-browser/cost-wbs-planner-verified.png",
+    "main_screenshot_sha256": "57fd41c1fe603ec16efe9c5e03c9cfca7a07908a6440db79ddcfb3f3f70353ed",
+    "detail_screenshot": "artifacts/boq-wbs-planner-browser/cost-wbs-planner-detail.png",
+    "detail_screenshot_sha256": "4d97a3918a1e8df435bc21ffa6cd57bec1f3045982d2e1a1902411381470ad45"
+  }
+}
