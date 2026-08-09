@@ -40,11 +40,12 @@ CHECKS = [
         ],
     },
     {
-        "id": "project_generation_entrypoints",
+        "id": "project_wbs_planning_boundary",
         "path": "addons/smart_construction_core/models/core/project_core.py",
         "needles": [
-            "def action_generate_structure_from_boq",
+            "def action_open_wbs_planning",
             "def action_generate_wbs_from_boq",
+            "no WBS generation occurs",
             "wbs_ready",
             "wbs_count",
             "project.boq.line",
@@ -76,11 +77,11 @@ def main() -> int:
     results = [run_check(check) for check in CHECKS]
     failed = [item for item in results if not item["ok"]]
     report = {
-        "journey": "E2E-03 BOQ to WBS/task generation",
+        "journey": "E2E-03 BOQ task projection and independent WBS planning",
         "status": "preflight_passed" if not failed else "preflight_failed",
         "acceptance_points": [
-            "Wizard can derive generated project tasks from project.boq.line rows.",
-            "Project entrypoints expose BOQ-to-structure generation.",
+            "Wizard can derive execution tasks from published project.boq.line rows.",
+            "Project entrypoints open user-owned WBS planning without deriving WBS nodes from BOQ.",
             "Generated tasks keep BOQ group, quantity, amount, and linked line evidence.",
             "WBS/work breakdown views are loaded for user verification.",
         ],

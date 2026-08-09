@@ -3203,7 +3203,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `wutao` browser click on the isolated rehearsal clone prove containment.
 ## 2026-08-09 — ACTION-SURFACE-RENDERER-REGISTRY
 
-- Branch / anchor: governed `release/tenant-rc-baosheng-fuel-v1` at `eef94ed`.
+- Branch / anchor: governed `release/tenant-rc-<tenant-key>-v1` at `eef94ed`.
 - Formal Product Layer / Layer Target / Module: P0 platform kernel; generic
   frontend contract consumption through the Action Surface Renderer Registry.
 - Reason / Why Here: every collection presentation, including planned pivot,
@@ -3218,7 +3218,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   frontend build, and real hierarchy-browser acceptance prove containment.
 ## 2026-08-09 — DESIGN-TOKEN-CONTROL-VISUAL-CLOSURE
 
-- Branch / anchor: governed `release/tenant-rc-baosheng-fuel-v1` at `eef94ed`.
+- Branch / anchor: governed `release/tenant-rc-<tenant-key>-v1` at `eef94ed`.
 - Formal Product Layer / Layer Target / Module: P0 platform design system;
   design-token CSS compilation and shared button/query-toolbar primitives.
 - Reason / Why Here: numeric radius tokens were emitted without CSS length

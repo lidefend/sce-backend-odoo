@@ -75,7 +75,15 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 2
-    print("[frontend_release_navigation_policy_guard] PASS roles=4 released_leaf_identities=71")
+    roles = manifest.get("roles") if isinstance(manifest, dict) else {}
+    released_leaf_identities = sum(
+        len((roles.get(role) or {}).get("leaf_keys") or [])
+        for role in ROLE_MAP
+    )
+    print(
+        "[frontend_release_navigation_policy_guard] PASS "
+        f"roles={len(ROLE_MAP)} released_leaf_identities={released_leaf_identities}"
+    )
     return 0
 
 

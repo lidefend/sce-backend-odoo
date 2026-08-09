@@ -638,7 +638,7 @@ onBeforeUnmount(() => {
   gap: 4px;
 }
 
-.view-switch .contract-chip {
+.view-switch button {
   min-height: calc(var(--sc-component-button-height-md) * 1px);
   border-radius: var(--sc-component-button-radius);
   padding-inline: calc(var(--sc-component-button-padding-x) * 1px);

@@ -75,7 +75,7 @@
           >
             <td v-for="column in columns" :key="column.field" :class="{ 'code-column': column.field === codeField }">
               <div v-if="column.field === codeField" class="code-cell" :style="{ paddingInlineStart: `${entry.depth * indentSize}px` }">
-                <span v-if="entry.depth" class="tree-elbow">└─</span><span>{{ displayValue(entry.record[column.field], column) }}</span>
+                <span v-if="entry.depth" class="tree-elbow" aria-hidden="true" /><span>{{ displayValue(entry.record[column.field], column) }}</span>
               </div>
               <div v-if="column.field === outlineField" class="outline-cell" :style="{ paddingInlineStart: `${entry.depth * indentSize}px` }">
                 <button
@@ -83,7 +83,7 @@
                   class="outline-toggle"
                   :aria-label="entry.node.label"
                   @click.stop="toggle(entry.node)"
-                >{{ expandedKeys.has(entry.node.key) ? '▾' : '▸' }}</button>
+                ><ScIcon name="chevron-right" :size="14" :class="{ 'is-expanded': expandedKeys.has(entry.node.key) }" /></button>
                 <span v-else class="outline-toggle-spacer" />
                 <span>{{ displayValue(entry.record[column.field], column) }}</span>
               </div>
@@ -93,7 +93,7 @@
         </tbody>
       </ScDataTable>
       <aside v-if="showDetail && selectedRecord" class="planner-drawer" :aria-label="labels.details">
-        <header><strong>{{ selectedEntry?.node.code }} {{ selectedEntry?.node.label }}</strong><ScButton variant="ghost" @click="showDetail = false">×</ScButton></header>
+        <header><strong>{{ selectedEntry?.node.code }} {{ selectedEntry?.node.label }}</strong><ScIconButton :label="labels.close_details" @click="showDetail = false"><ScIcon name="close" :size="16" /></ScIconButton></header>
         <div class="planner-drawer-body">
           <section v-for="section in detailSections" :key="section.title">
             <h3>{{ section.title }}</h3>
@@ -119,6 +119,8 @@ import { formatDisplayValue } from '../../utils/display';
 import ScButton from '../design-system/ScButton.vue';
 import ScDataTable from '../design-system/ScDataTable.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
+import ScIcon from '../design-system/ScIcon.vue';
+import ScIconButton from '../design-system/ScIconButton.vue';
 import ProductListHeader from '../product-list/ProductListHeader.vue';
 
 type Dict = Record<string, unknown>;
@@ -132,7 +134,7 @@ const props = withDefaults(defineProps<{ config: Dict; preferenceScope?: string 
 const emit = defineEmits<{ 'open-record': [row: Dict]; 'open-action': [action: SurfaceAction] }>();
 const defaultLabels: Record<string, string> = {
   surface_aria: 'hierarchy planner', search_label: 'Search', search_placeholder: '', total_prefix: '', total_suffix: '',
-  loading: 'Loading…', refresh: 'Refresh', load_error: 'Unable to load data', open: 'Open', expand_all: 'Expand all', collapse_all: 'Collapse all', more: 'More', view: 'View', details: 'Details', selected_prefix: 'Selected', select_hint: 'Select a record', operation_success: 'Completed',
+  loading: 'Loading…', refresh: 'Refresh', load_error: 'Unable to load data', open: 'Open', expand_all: 'Expand all', collapse_all: 'Collapse all', more: 'More', view: 'View', details: 'Details', close_details: 'Close details', selected_prefix: 'Selected', select_hint: 'Select a record', operation_success: 'Completed',
 };
 const labels = computed(() => ({ ...defaultLabels, ...(props.config.labels && typeof props.config.labels === 'object' ? props.config.labels as Dict : {}) }) as Record<string, string>);
 const title = computed(() => String(props.config.title || labels.value.surface_aria));
@@ -325,9 +327,11 @@ onBeforeUnmount(() => { document.removeEventListener('click', closeMenusFromOuts
 .planner-grid :deep(tbody tr.selected) { background: var(--sc-app-selected-bg); }
 .planner-grid :deep(tbody tr.parent td) { font-weight: 600; }
 .outline-cell, .code-cell { display: flex; align-items: center; min-width: 0; }
-.tree-elbow { margin-inline-end: var(--sc-space-xs); color: var(--sc-app-border-strong); font-weight: 400; }
+.tree-elbow { align-self: stretch; width: var(--sc-space-sm); margin-inline-end: var(--sc-space-xs); border-bottom: 1px solid var(--sc-app-border-strong); border-left: 1px solid var(--sc-app-border-strong); }
 .outline-toggle, .outline-toggle-spacer { flex: 0 0 var(--sc-touch-target-min); width: var(--sc-touch-target-min); min-height: var(--sc-touch-target-min); }
-.outline-toggle { border: 0; background: transparent; color: var(--sc-app-text-secondary); cursor: pointer; }
+.outline-toggle { display: inline-grid; border: 0; background: transparent; color: var(--sc-app-text-secondary); cursor: pointer; place-items: center; }
+.outline-toggle :deep(.sc-icon) { transition: transform var(--sc-motion-fast, 120ms) ease; }
+.outline-toggle :deep(.sc-icon.is-expanded) { transform: rotate(90deg); }
 .planner-state { display: grid; min-height: 420px; place-content: center; color: var(--sc-app-text-secondary); }
 .planner-error { padding: var(--sc-space-xs) var(--sc-space-sm); border: 1px solid var(--sc-app-danger-border); background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }
 .planner-success { padding: var(--sc-space-xs) var(--sc-space-sm); border: 1px solid var(--sc-app-success-border); background: var(--sc-app-success-bg); color: var(--sc-app-success-text); }

@@ -1,6 +1,6 @@
 # Local development two-lane environment batch — 2026-08-09
 
-- Branch: `release/tenant-rc-baosheng-fuel-v1`
+- Branch pattern: `release/tenant-rc-<tenant-key>-v1`
 - Baseline SHA: `eef94ed`
 - Formal Product Layer: P4 ops delivery / development tooling
 - Layer Target: local Compose lifecycle, snapshot, clean-install regression
