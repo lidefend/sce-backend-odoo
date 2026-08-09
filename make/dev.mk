@@ -1,7 +1,7 @@
 # ======================================================
 # ==================== Dev =============================
 # ======================================================
-.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish release.daily_product_navigation.snapshot
+.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish release.daily_product_navigation.snapshot local.dev.snapshot local.dev.health local.clean.prepare local.clean.up local.clean.frontend local.clean.install local.clean.rebuild local.clean.health local.env.status
 up: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/up.sh
 down: check-compose-project check-compose-env
@@ -14,6 +14,58 @@ ps: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/ps.sh
 odoo-shell: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/shell.sh
+
+# Local development uses two deliberately separate lifecycle units:
+# - sc_demo: persistent, realistic iteration data; never rebuilt here.
+# - sc_clean: disposable clean-install regression; destructive rebuild requires
+#   an exact confirmation phrase and is guarded inside the script as well.
+LOCAL_DEV_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.dev
+LOCAL_CLEAN_ENV_FILE ?= .env.local.clean
+LOCAL_CLEAN_MODULES ?= sc_norm_engine
+
+local.dev.snapshot: guard.prod.forbid
+	@ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_dev_snapshot.sh
+
+local.dev.health: guard.prod.forbid
+	@ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_environment_health.sh persistent
+
+local.clean.prepare: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  TARGET_ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" bash scripts/dev/local_clean_env_prepare.sh
+
+local.clean.up: guard.prod.forbid local.clean.prepare
+	@$(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" up
+
+local.clean.frontend: guard.prod.forbid local.clean.prepare
+	@ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/frontend_static_build.sh
+
+local.clean.install: guard.prod.forbid local.clean.up
+	@$(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
+	  MODULE="$(LOCAL_CLEAN_MODULES)" WITHOUT_DEMO=--without-demo=all mod.install
+	@$(MAKE) --no-print-directory local.clean.frontend
+	@$(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
+
+local.clean.rebuild: guard.prod.forbid local.clean.prepare
+	@ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  CONFIRM_LOCAL_CLEAN_REBUILD="$${CONFIRM_LOCAL_CLEAN_REBUILD:-}" \
+	  LOCAL_CLEAN_MODULES="$(LOCAL_CLEAN_MODULES)" bash scripts/dev/local_clean_rebuild.sh
+
+local.clean.health: guard.prod.forbid local.clean.prepare
+	@ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_environment_health.sh clean
+
+local.env.status: guard.prod.forbid
+	@ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_environment_health.sh persistent
+	@if [ -f "$(LOCAL_CLEAN_ENV_FILE)" ]; then \
+	  ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	    bash scripts/dev/local_environment_health.sh clean; \
+	else \
+	  echo "[local.env.status] clean environment is not prepared"; \
+	fi
 
 FRONTEND_DEV_LOG ?= /tmp/sc-frontend-dev.log
 FRONTEND_DEV_PID ?= /tmp/sc-frontend-dev.pid
