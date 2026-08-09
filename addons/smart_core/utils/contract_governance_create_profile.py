@@ -43,6 +43,12 @@ def mark_record_dependent_native_buttons_hidden_on_create(
 ) -> None:
     if not is_form_contract(data) or not is_create_render_profile(data):
         return
+    head = _as_dict(data.get("head"))
+    # A native Odoo wizard intentionally exposes object buttons before the
+    # transient record exists. The product runtime saves the TransientModel
+    # first and then executes the selected button, matching native semantics.
+    if _safe_lower(head.get("interaction_mode")) == "wizard":
+        return
     views = _as_dict(data.get("views"))
     form = _as_dict(views.get("form"))
     layout = form.get("layout")

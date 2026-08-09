@@ -489,6 +489,14 @@ class PageAssembler:
             "model": model,
             "view_type": ",".join(view_types),
             "action_id": action.get('id') if isinstance(action, dict) else None,
+            "action_target": action.get('target') if isinstance(action, dict) else None,
+            "interaction_mode": (
+                "wizard"
+                if isinstance(action, dict)
+                and action.get('target') == 'new'
+                and bool(getattr(env[model], '_transient', False))
+                else "page"
+            ),
             "domain": action_domain,
             "domain_raw": action_domain_raw,
             "context": effective_context,
@@ -509,6 +517,7 @@ class PageAssembler:
         data["domain_raw"] = action_domain_raw
         data["context"] = effective_context
         data["context_raw"] = action_context_raw
+        self._inject_native_collection_presentation(data, effective_context)
         self._inject_create_defaults(
             data,
             model_name=model,
@@ -563,6 +572,234 @@ class PageAssembler:
             data["warnings"] = warnings
         data["source_authority"] = self.source_authority_contract()
         return data, versions
+
+    @staticmethod
+    def _native_form_detail_sections(form_contract: dict, fields_map: dict) -> list[dict]:
+        """Project native form groups into read-only detail sections.
+
+        The method preserves group labels and field order from the parsed form
+        layout. It never introduces model-specific labels or field mappings.
+        """
+        layout = form_contract.get("layout") if isinstance(form_contract, dict) else []
+        sections: list[dict] = []
+        seen: set[str] = set()
+
+        def collect_fields(node) -> list[dict]:
+            out: list[dict] = []
+            if isinstance(node, list):
+                for child in node:
+                    out.extend(collect_fields(child))
+                return out
+            if not isinstance(node, dict):
+                return out
+            if str(node.get("type") or "").strip() == "field":
+                name = str(node.get("name") or "").strip()
+                if not name or name in seen or name not in fields_map:
+                    return out
+                info = node.get("fieldInfo") if isinstance(node.get("fieldInfo"), dict) else {}
+                descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
+                seen.add(name)
+                return [{
+                    "field": name,
+                    "label": str(info.get("label") or descriptor.get("string") or name).strip(),
+                }]
+            for child in node.get("children") or []:
+                out.extend(collect_fields(child))
+            return out
+
+        roots = layout if isinstance(layout, list) else []
+        sheet_children = roots
+        if len(roots) == 1 and isinstance(roots[0], dict) and roots[0].get("type") == "sheet":
+            sheet_children = roots[0].get("children") or []
+        unlabeled: list[dict] = []
+        for node in sheet_children:
+            if not isinstance(node, dict):
+                continue
+            fields = collect_fields(node)
+            if not fields:
+                continue
+            title = str(node.get("label") or (node.get("attributes") or {}).get("string") or "").strip()
+            if title:
+                if unlabeled:
+                    sections.append({"title": "", "fields": unlabeled})
+                    unlabeled = []
+                sections.append({"title": title, "fields": fields})
+            else:
+                unlabeled.extend(fields)
+        if unlabeled:
+            sections.insert(0, {"title": "", "fields": unlabeled})
+        return sections
+
+    def _inject_native_collection_presentation(self, data: dict, effective_context: dict) -> None:
+        """Complete a native-view-declared collection presentation.
+
+        The native tree supplies the adapter marker, columns and toolbar; the
+        native form supplies detail sections. Action context may only bind
+        hierarchy relation fields. This keeps the product frontend independent
+        of action tags, model names and business copy.
+        """
+        views = data.get("views") if isinstance(data.get("views"), dict) else {}
+        tree = views.get("tree") if isinstance(views.get("tree"), dict) else {}
+        presentation = tree.get("collection_presentation") if isinstance(tree.get("collection_presentation"), dict) else {}
+        if str(presentation.get("semantic") or "").strip() != "hierarchy_browser":
+            return
+        raw_levels = effective_context.get("hierarchy_levels") if isinstance(effective_context, dict) else []
+        if not isinstance(raw_levels, list) or not raw_levels:
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "HIERARCHY_LEVELS_MISSING",
+            }
+            return
+        fields_map = data.get("fields") if isinstance(data.get("fields"), dict) else {}
+        levels: list[dict] = []
+        bindings: dict[str, str] = {}
+        hierarchy_titles: list[str] = []
+        for index, raw in enumerate(raw_levels):
+            spec = raw if isinstance(raw, dict) else {}
+            field_name = str(spec.get("field") or "").strip()
+            descriptor = fields_map.get(field_name) if isinstance(fields_map.get(field_name), dict) else {}
+            relation_model = str(descriptor.get("relation") or "").strip()
+            if not field_name or descriptor.get("type") != "many2one" or not relation_model:
+                continue
+            relation_entry = descriptor.get("relation_entry") if isinstance(descriptor.get("relation_entry"), dict) else {}
+            dialog = relation_entry.get("search_dialog") if isinstance(relation_entry.get("search_dialog"), dict) else {}
+            readable = {str(value).strip() for value in dialog.get("read_fields") or [] if str(value).strip()}
+            code_field = str(spec.get("code_field") or "").strip()
+            label_field = str(spec.get("label_field") or "display_name").strip() or "display_name"
+            parent_field = str(spec.get("parent_field") or "").strip()
+            self_parent_field = str(spec.get("self_parent_field") or "").strip()
+            domain_operator = str(spec.get("domain_operator") or "=").strip()
+            if domain_operator not in {"=", "child_of"}:
+                continue
+            required_fields = ["id", label_field]
+            if code_field:
+                required_fields.append(code_field)
+            if parent_field:
+                required_fields.append(parent_field)
+            if self_parent_field:
+                required_fields.append(self_parent_field)
+            if readable and any(name not in readable and name != "id" for name in required_fields):
+                continue
+            key = field_name
+            level = {
+                "key": key,
+                "model": relation_model,
+                "fields": list(dict.fromkeys(required_fields)),
+                "label_field": label_field,
+                "code_field": code_field,
+                "order": str(dialog.get("order") or "id asc").strip(),
+            }
+            if levels:
+                level["parent_key"] = levels[-1]["key"]
+                level["parent_field"] = parent_field
+            if self_parent_field:
+                level["self_parent_field"] = self_parent_field
+            levels.append(level)
+            bindings[key] = (
+                field_name
+                if domain_operator == "="
+                else {"field": field_name, "operator": domain_operator}
+            )
+            hierarchy_titles.append(str(descriptor.get("string") or field_name).strip())
+        if len(levels) != len(raw_levels):
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "HIERARCHY_LEVEL_CONTRACT_INVALID",
+            }
+            return
+
+        columns_schema = tree.get("columns_schema") if isinstance(tree.get("columns_schema"), list) else []
+        columns = [
+            {
+                "field": str(row.get("name") or "").strip(),
+                "label": str(row.get("label") or row.get("string") or row.get("name") or "").strip(),
+            }
+            for row in columns_schema
+            if isinstance(row, dict) and str(row.get("name") or "").strip()
+        ]
+        form = views.get("form") if isinstance(views.get("form"), dict) else {}
+        sections = self._native_form_detail_sections(form, fields_map)
+        read_fields = ["id"]
+        binding_fields = [
+            str(value.get("field") or "").strip()
+            if isinstance(value, dict)
+            else str(value or "").strip()
+            for value in bindings.values()
+        ]
+        for name in [
+            *(column["field"] for column in columns),
+            *binding_fields,
+            *(field["field"] for section in sections for field in section.get("fields") or []),
+        ]:
+            if name in fields_map and name not in read_fields:
+                read_fields.append(name)
+        native_toolbar = tree.get("toolbar") if isinstance(tree.get("toolbar"), dict) else {}
+        actions = [dict(row) for row in native_toolbar.get("header") or [] if isinstance(row, dict)]
+        try:
+            visible_menu_ids = {int(value) for value in self.env["ir.ui.menu"]._visible_menu_ids()}
+        except Exception:
+            visible_menu_ids = set()
+        for action_row in actions:
+            try:
+                target_action_id = int(action_row.get("action_id") or 0)
+            except (TypeError, ValueError):
+                target_action_id = 0
+            if target_action_id <= 0 or not visible_menu_ids:
+                continue
+            target_menu = self.env["ir.ui.menu"].search(
+                [
+                    ("id", "in", sorted(visible_menu_ids)),
+                    ("action", "=", "ir.actions.act_window,%s" % target_action_id),
+                ],
+                order="sequence,id",
+                limit=1,
+            )
+            if target_menu:
+                action_row["menu_id"] = int(target_menu.id)
+                action_row["route"] = "/a/%s?menu_id=%s" % (target_action_id, int(target_menu.id))
+        native_toolbar["header"] = actions
+        tree["toolbar"] = native_toolbar
+        head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        tree["collection_presentation"] = {
+            **presentation,
+            "enabled": True,
+            "config": {
+                "title": str(head.get("title") or "").strip(),
+                "tree_title": " / ".join(hierarchy_titles),
+                "actions": actions,
+                "tree": {"levels": levels},
+                "list": {
+                    "model": str(head.get("model") or "").strip(),
+                    "fields": read_fields,
+                    "columns": columns,
+                    "bindings": bindings,
+                    "order": str(tree.get("order") or tree.get("default_order") or "id asc").strip(),
+                    "page_size": int(tree.get("page_size") or 50),
+                },
+                "detail": {"title": "", "sections": sections},
+                "labels": {
+                    "surface_aria": "层级数据浏览",
+                    "subtitle": "",
+                    "search_label": "搜索",
+                    "search_placeholder": "请输入关键词",
+                    "all": "全部",
+                    "empty_children": "暂无下级数据",
+                    "total_prefix": "共",
+                    "total_suffix": "条",
+                    "loading": "正在加载…",
+                    "refresh": "刷新",
+                    "previous": "上一页",
+                    "next": "下一页",
+                    "page_prefix": "第",
+                    "page_suffix": "页",
+                    "load_error": "数据加载失败",
+                    "open": "打开",
+                    "select_hint": "请选择一条记录查看详情",
+                },
+            },
+        }
 
     def _native_action_needs_existing_record(self, action: dict) -> bool:
         if not isinstance(action, dict):
@@ -647,27 +884,30 @@ class PageAssembler:
             profile = "readonly"
         if profile != "create" or record_id:
             return
-        data["buttons"] = self._filter_render_profile_actions(data.get("buttons"), profile=profile, record_id=record_id)
-        toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
-        for key in ("header", "sidebar", "footer"):
-            toolbar[key] = self._filter_render_profile_actions(toolbar.get(key), profile=profile, record_id=record_id)
-        data["toolbar"] = toolbar if isinstance(toolbar, dict) else {"header": [], "sidebar": [], "footer": []}
-        views = data.get("views") if isinstance(data.get("views"), dict) else {}
-        form = views.get("form") if isinstance(views.get("form"), dict) else {}
         model_name = str(
             data.get("model")
             or ((data.get("head") or {}).get("model") if isinstance(data.get("head"), dict) else "")
             or ""
         ).strip()
         try:
-            preserve_transient_header = bool(model_name and getattr(self.env[model_name], "_transient", False))
+            preserve_transient_actions = bool(model_name and getattr(self.env[model_name], "_transient", False))
         except Exception:
-            preserve_transient_header = False
+            preserve_transient_actions = False
+        if not preserve_transient_actions:
+            data["buttons"] = self._filter_render_profile_actions(data.get("buttons"), profile=profile, record_id=record_id)
+        toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
+        for key in ("header", "sidebar", "footer"):
+            if not preserve_transient_actions:
+                toolbar[key] = self._filter_render_profile_actions(toolbar.get(key), profile=profile, record_id=record_id)
+        data["toolbar"] = toolbar if isinstance(toolbar, dict) else {"header": [], "sidebar": [], "footer": []}
+        views = data.get("views") if isinstance(data.get("views"), dict) else {}
+        form = views.get("form") if isinstance(views.get("form"), dict) else {}
         for key in ("header_buttons", "button_box", "stat_buttons", "business_actions"):
-            if key == "header_buttons" and preserve_transient_header:
+            if key == "header_buttons" and preserve_transient_actions:
                 continue
             form[key] = self._filter_render_profile_actions(form.get(key), profile=profile, record_id=record_id)
-        form["layout"] = self._filter_render_profile_layout_nodes(form.get("layout"), profile=profile, record_id=record_id)
+        if not preserve_transient_actions:
+            form["layout"] = self._filter_render_profile_layout_nodes(form.get("layout"), profile=profile, record_id=record_id)
         views["form"] = form
         data["views"] = views
 
@@ -1155,12 +1395,34 @@ class PageAssembler:
     def _include_configured_orchestrated_view_types(self, view_types, *, model_name="", action_id=None):
         normalized = self.normalize_view_types(view_types)
         model = str(model_name or "").strip()
-        if not model or "ui.business.config.contract" not in self.env:
+        if not model:
             return normalized
         try:
             action_id_int = int(action_id or 0)
         except Exception:
             action_id_int = 0
+        # The act_window is the native authority for the view family.  A list
+        # request may choose tree as its active view while the same action's
+        # form view still supplies generic record-detail structure.
+        allowed = {"tree", "form", "kanban", "search", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"}
+        if action_id_int > 0 and "ir.actions.act_window" in self.env:
+            try:
+                native_action = self.su_env["ir.actions.act_window"].browse(action_id_int)
+                if native_action.exists() and str(native_action.res_model or "").strip() == model:
+                    native_types = [
+                        str(spec[1] or "").strip()
+                        for spec in (native_action.views or [])
+                        if spec and len(spec) >= 2
+                    ]
+                    native_types.extend(str(native_action.view_mode or "").split(","))
+                    for view_type in native_types:
+                        view_type = "tree" if view_type == "list" else view_type
+                        if view_type in allowed and view_type not in normalized:
+                            normalized.append(view_type)
+            except Exception:
+                _logger.exception("include native action view types failed for model=%s action_id=%s", model, action_id_int)
+        if "ui.business.config.contract" not in self.env:
+            return normalized
         domain = [("model", "=", model), ("status", "=", "published")]
         if action_id_int > 0:
             domain.append(("action_id", "in", [False, action_id_int]))
@@ -1171,7 +1433,6 @@ class PageAssembler:
         except Exception:
             _logger.exception("include configured orchestrated view types failed for model=%s action_id=%s", model, action_id_int)
             return normalized
-        allowed = {"tree", "form", "kanban", "search", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"}
         out = list(normalized)
         for row in rows:
             view_type = str(getattr(row, "view_type", "") or "").strip()
@@ -1227,6 +1488,7 @@ class PageAssembler:
             "name": action.name or "",
             "context": action.context or "{}",
             "domain": action.domain or "[]",
+            "target": action.target or "current",
         }
 
     def _resolve_page_title(self, model, action=None):

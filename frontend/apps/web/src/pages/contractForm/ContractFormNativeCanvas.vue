@@ -171,7 +171,7 @@ function refreshSectionNavigation() {
   const seen = new Set<string>();
   const next = elements.reduce<SectionItem[]>((items, element) => {
     const title = String(element.dataset.groupTitle || '').trim();
-    if (!title || seen.has(title)) return items;
+    if (!title || /^默认分组\s+\d+$/.test(title) || ['header', 'footer'].includes(title.toLowerCase()) || seen.has(title)) return items;
     seen.add(title);
     items.push({ title, hasError: Boolean(element.querySelector('[aria-invalid="true"], .field-error-text')) });
     return items;

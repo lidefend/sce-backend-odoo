@@ -33,10 +33,15 @@ export function useActionResponseNavigation(params: {
       && !entryTarget
     ) return false;
     if (entryTarget) {
-      await params.router.push(routeTarget(buildEntryTargetRouteTarget(entryTarget, {
+      const target = routeTarget(buildEntryTargetRouteTarget(entryTarget, {
         query: navQuery(resultRecord),
         actionId: resultRecord.action_id,
-      }), resultRecord) as never);
+      }), resultRecord);
+      // Native wizards commonly return an act_window reopening the same
+      // transient record after an object button. Vue Router treats that as a
+      // no-op, so let the caller refresh the current contract and record.
+      if (params.router.resolve(target as never).fullPath === params.router.currentRoute.value.fullPath) return false;
+      await params.router.push(target as never);
       return true;
     }
     const nextActionId = toPositiveInt(resultRecord?.action_id);

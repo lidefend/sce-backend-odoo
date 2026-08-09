@@ -9,6 +9,7 @@ export { default as ScEmptyState } from './ScEmptyState.vue';
 export { default as ScErrorState } from './ScErrorState.vue';
 export { default as ScErrorSummary } from './ScErrorSummary.vue';
 export { default as ScField } from './ScField.vue';
+export { default as ScFileField } from './ScFileField.vue';
 export { default as ScIconButton } from './ScIconButton.vue';
 export { default as ScIcon } from './ScIcon.vue';
 export { default as ScMobileRecordCard } from './ScMobileRecordCard.vue';

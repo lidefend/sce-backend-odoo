@@ -789,6 +789,7 @@ export interface FieldDescriptor {
   relation?: string;
   relation_field?: string;
   editable?: boolean;
+  filename?: string;
 }
 
 export interface FormLayout {

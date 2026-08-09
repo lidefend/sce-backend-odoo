@@ -108,6 +108,11 @@ def _subtree_menu_ids(root) -> set[int]:
 
 def _action_payload(menu: Any) -> dict[str, Any]:
     action = getattr(menu, "action", None)
+    # The menu has already passed current-user visibility filtering. Action
+    # metadata is projection input, so reading a concrete subtype must not
+    # require its technical model ACL (notably ``ir.actions.client``).
+    if action:
+        action = action.sudo()
     action_id = int(getattr(action, "id", 0) or 0) if action else 0
     menu_id = int(getattr(menu, "id", 0) or 0)
     route = f"/a/{action_id}?menu_id={menu_id}" if action_id and menu_id else (f"/m/{menu_id}" if menu_id else "")

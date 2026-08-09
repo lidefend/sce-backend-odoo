@@ -69,6 +69,12 @@ SUPPORTED_CUSTOM_ACTION_VIEW_MODES = {
     "list",
     "form",
     "kanban",
+    "pivot",
+    "graph",
+    "calendar",
+    "gantt",
+    "activity",
+    "dashboard",
 }
 
 NATIVE_BRIDGE_ACTION_TYPES = {

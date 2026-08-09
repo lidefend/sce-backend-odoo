@@ -961,8 +961,10 @@ export function nativeModifierValue(nodeRaw: NativeLayoutLikeNode, key: 'invisib
   if (key in actionVisibleAttrs) return actionVisibleAttrs[key];
   if (key in fieldInfoModifiers) return fieldInfoModifiers[key];
   if (key in fieldInfo) return fieldInfo[key];
-  if (key in attributes) return attributes[key];
+  // The normalized top-level value is the formal product modifier AST. Raw
+  // XML attributes are retained for traceability and are only a fallback.
   if (key in node) return node[key];
+  if (key in attributes) return attributes[key];
   return undefined;
 }
 
@@ -1053,6 +1055,7 @@ export function nativeNodeFieldDescriptor(
       ? fieldInfo.options
       : ((fallback as Record<string, unknown> | undefined)?.widget_options
         ?? (fallback as Record<string, unknown> | undefined)?.options));
+  const filename = String(fieldInfo.filename || node.filename || fallback?.filename || '').trim();
   return {
     ...(fallback || {}),
     ...(name ? { name } : {}),
@@ -1068,6 +1071,7 @@ export function nativeNodeFieldDescriptor(
     ...(context !== undefined ? { context } : {}),
     ...(relationEntry !== undefined ? { relation_entry: relationEntry } : {}),
     ...(widgetOptions !== undefined ? { widget_options: widgetOptions } : {}),
+    ...(filename ? { filename } : {}),
   } as FieldDescriptor;
 }
 

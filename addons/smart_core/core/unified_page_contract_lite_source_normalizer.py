@@ -26,7 +26,7 @@ def source_authority_contract() -> Dict[str, Any]:
         runtime_carrier=SOURCE_KIND,
     )
 
-SUPPORTED_VIEW_TYPES = {"form", "tree", "list", "kanban", "search", "gantt", "popup", "combine"}
+SUPPORTED_VIEW_TYPES = {"form", "tree", "list", "kanban", "search", "pivot", "graph", "calendar", "gantt", "activity", "dashboard", "popup", "combine"}
 SUPPORTED_RENDER_PROFILES = {"create", "edit", "readonly", "search", "list"}
 
 

@@ -250,8 +250,14 @@ class MenuService:
         # the current user's groups. Action groups are metadata used by the
         # native client and are not enforced by ui.contract.v2; model ACL is
         # the backend execution boundary and must agree with the declaration.
+        action_model = str(getattr(action, "_name", "") or "").strip()
+        # Product navigation never promotes Odoo Web Client actions into the
+        # contract-driven runtime. Client actions remain native-Odoo-only;
+        # product routes require a model-backed authority below.
+        if action_model == "ir.actions.client":
+            return False
         model_name = str(getattr(action, "res_model", "") or "").strip()
-        if not model_name and str(getattr(action, "_name", "") or "") == "ir.actions.server":
+        if not model_name and action_model == "ir.actions.server":
             # ir.model is configuration metadata. Read only the declared model
             # name with sudo, then enforce that model's ACL in the request
             # user's environment below; sudo never decides route success.
@@ -273,7 +279,10 @@ class MenuService:
         if not isinstance(menu_id, int) or menu_id <= 0 or not isinstance(action_id, int) or action_id <= 0:
             return None
         action_model = str(row.get("action_model") or "").strip()
-        action = self.env[action_model].browse(action_id).exists() if action_model in self.env else None
+        # The menu fact has already intersected current-user menu visibility.
+        # Read only native action metadata with sudo; product route admission
+        # and model ACL remain current-user decisions below.
+        action = self.env[action_model].sudo().browse(action_id).exists() if action_model in self.env else None
         if not action or not self._action_is_runtime_allowed(action, "read"):
             return None
         action_meta = row.get("action_meta") if isinstance(row.get("action_meta"), dict) else {}

@@ -224,3 +224,24 @@ AI 建议、风险预警、下一步动作等增强能力必须通过 zone/block
 行业产品语义必须由正式 product/page/navigation/work-item contract 提供。契约缺失时，共享层只能显示通用安全空状态并记录契约缺口；不得猜测补齐。
 
 上述规则由 `verify.frontend.shared_surface_semantic_boundary.guard` 强制检查，并进入 `ci.local.quick` 与完整 CI。门禁保护 Shell、Home、My Work、通用列表、任务组件、列表组件及其共享 API/composable；新增共享表面必须同步加入保护清单，不能等发生越界后再补。验收脚本和 fixture 可以引用固定角色或业务对象，但不得被生产运行时代码导入。
+
+## 15. 客户端动作边界（强制）
+
+`ir.actions.client` 属于 Odoo 原生 Web Client 的客户端扩展机制，不属于契约驱动产品前端的页面主线。
+
+硬约束：
+
+- 产品导航不得为 `ir.actions.client` 签发 route authority；
+- 产品页面不得按 client action tag、params 或 XML ID 选择业务组件；
+- 产品工作台必须使用模型化 `ir.actions.act_window`、正式 scene 或其他已治理的契约入口；
+- 自定义集合展示必须由原生 tree/search/form 与模型字段生成基础契约，再由后端输出明确 presentation；
+- 前端只能按 presentation 语义选择通用渲染器，禁止读取模型名、action tag 或中文菜单名推断页面类型；
+- `ir.actions.client` 可以继续服务 Odoo 原生后台，但不能经菜单投影或动作适配被提升为产品页面。
+
+一句话口径：客户端动作留在 Odoo，产品运行时只承接后端已经合成并授权的正式页面契约。
+
+## 16. 集合页面渲染器注册边界（强制）
+
+列表、卡片、流程看板、层级浏览、透视、图表、日历、甘特、活动和仪表板必须统一经过 `Action Surface Renderer Registry`。`ActionView` 只负责通用页面运行时与宿主，不得直接按专用语义选择组件。
+
+复杂视图尚未实现时也必须先登记正式 renderer key、当前 fallback、能力状态和稳定原因码；禁止以散落的 `v-if`、模型名、菜单名或自定义页面静默替代。未知语义失败关闭。详细规范见 `docs/architecture/action_surface_renderer_registry_v1.md`。

@@ -1139,6 +1139,38 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(profile["preference_policy"]["must_request_columns"], ["name", "source_created_by"])
         self.assertEqual(profile["sourceAuthority"]["source_key"], "list_profile.business_config_contract_authoritative")
 
+    def test_business_list_config_projection_preserves_native_collection_presentation(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        source_contract = {
+            "list_profile": {
+                "columns": ["code", "name"],
+                "fact_columns": ["code", "name"],
+                "column_policy": {
+                    "mode": "strict",
+                    "reason": "business_list_config_contract_authoritative",
+                },
+            }
+        }
+        presentation = {
+            "semantic": "hierarchy_browser",
+            "source": "native_view_derived",
+            "config": {"hierarchy": [{"field": "specialty_id"}]},
+        }
+        contract = {
+            "layoutContract": {
+                "listProfile": {
+                    "columns": ["code", "name", "governance_extra"],
+                    "collection_presentation": presentation,
+                }
+            }
+        }
+
+        handler._enforce_business_list_config_projection(contract, source_contract)
+
+        profile = contract["layoutContract"]["listProfile"]
+        self.assertEqual(profile["columns"], ["code", "name"])
+        self.assertEqual(profile["collection_presentation"], presentation)
+
     def test_business_list_config_projection_repairs_columns_from_fact_columns(self):
         handler = self.module.UiContractV2Handler(env=object())
         source_contract = {

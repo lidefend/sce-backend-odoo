@@ -123,6 +123,68 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertEqual(result["metric_slots"]["primary"], ["amount_total"])
         self.assertEqual(result["navigation_slots"]["next"], "project.dashboard.enter")
 
+    def test_native_hierarchy_contract_is_assembled_from_model_view_and_action_context(self):
+        class MenuModel:
+            @staticmethod
+            def _visible_menu_ids():
+                return []
+
+        class Env:
+            def __getitem__(self, name):
+                if name == "ir.ui.menu":
+                    return MenuModel()
+                raise KeyError(name)
+
+        self.assembler.env = Env()
+        data = {
+            "head": {"title": "定额库", "model": "sc.norm.item"},
+            "fields": {
+                "catalog_id": {
+                    "type": "many2one", "relation": "sc.norm.catalog", "string": "所属定额库",
+                    "relation_entry": {"search_dialog": {"read_fields": ["code", "name"], "order": "code asc"}},
+                },
+                "specialty_id": {
+                    "type": "many2one", "relation": "sc.norm.specialty", "string": "所属专业",
+                    "relation_entry": {"search_dialog": {"read_fields": ["code", "name", "catalog_id"], "order": "code asc"}},
+                },
+                "chapter_id": {
+                    "type": "many2one", "relation": "sc.norm.chapter", "string": "所属章节",
+                    "relation_entry": {"search_dialog": {"read_fields": ["code", "name", "specialty_id", "parent_id"], "order": "code asc"}},
+                },
+                "code": {"type": "char", "string": "定额编号"},
+                "name": {"type": "char", "string": "项目名称"},
+            },
+            "views": {
+                "tree": {
+                    "collection_presentation": {"semantic": "hierarchy_browser", "source": "native_view_derived"},
+                    "columns_schema": [{"name": "code", "label": "定额编号"}, {"name": "name", "label": "项目名称"}],
+                    "toolbar": {"header": [{"key": "action:856", "action_id": 856, "label": "导入定额", "source": "native_view_header"}]},
+                    "order": "code asc",
+                },
+                "form": {},
+            },
+        }
+        context = {
+            "hierarchy_levels": [
+                {"field": "catalog_id", "code_field": "code", "label_field": "name"},
+                {"field": "specialty_id", "code_field": "code", "label_field": "name", "parent_field": "catalog_id"},
+                {"field": "chapter_id", "code_field": "code", "label_field": "name", "parent_field": "specialty_id", "self_parent_field": "parent_id", "domain_operator": "child_of"},
+            ]
+        }
+
+        self.assembler._inject_native_collection_presentation(data, context)
+
+        presentation = data["views"]["tree"]["collection_presentation"]
+        self.assertTrue(presentation["enabled"])
+        self.assertEqual(presentation["source"], "native_view_derived")
+        config = presentation["config"]
+        self.assertEqual([row["model"] for row in config["tree"]["levels"]], ["sc.norm.catalog", "sc.norm.specialty", "sc.norm.chapter"])
+        self.assertEqual(config["tree"]["levels"][2]["self_parent_field"], "parent_id")
+        self.assertEqual(config["list"]["bindings"]["chapter_id"], {"field": "chapter_id", "operator": "child_of"})
+        self.assertEqual(config["list"]["columns"], [{"field": "code", "label": "定额编号"}, {"field": "name", "label": "项目名称"}])
+        self.assertEqual(config["actions"][0]["key"], "action:856")
+        self.assertEqual(config["tree_title"], "所属定额库 / 所属专业 / 所属章节")
+
 
 if __name__ == "__main__":
     unittest.main()

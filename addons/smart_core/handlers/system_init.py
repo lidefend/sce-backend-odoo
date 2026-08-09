@@ -1041,6 +1041,10 @@ def _filter_nav_for_user_data_acceptance_only(env, nav: list[dict], *, force: bo
             menu = None
         if not menu:
             return None
+        # Menu/action metadata is a read-only navigation projection.  Access
+        # to an otherwise visible menu must not depend on the technical ACL
+        # of its concrete action subtype (for example ir.actions.client).
+        menu = menu.sudo()
         try:
             action = menu.action
         except Exception:

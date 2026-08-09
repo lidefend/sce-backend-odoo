@@ -2,6 +2,7 @@
 from odoo import models, fields, api, _
 from odoo.tools.safe_eval import safe_eval
 import json, hashlib, logging
+from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
 
 _logger = logging.getLogger(__name__)
 
@@ -168,12 +169,15 @@ class AppActionConfig(models.Model):
             }
 
         in_header = False
+        in_footer = False
         host = ""
         p = btn_node.getparent()
         while p is not None:
             tag = getattr(p, 'tag', '')
             if tag == 'header':
                 in_header = True
+            if tag == 'footer':
+                in_footer = True
             if tag in ('tree', 'list'):
                 host = 'list'
                 break
@@ -199,7 +203,7 @@ class AppActionConfig(models.Model):
             }
 
         return {
-            "level": "header",
+            "level": "footer" if in_footer else "header",
             "selection": "none",
             "visible_profiles": ["create", "edit", "readonly"],
         }
@@ -344,6 +348,8 @@ class AppActionConfig(models.Model):
                 root = etree.fromstring(arch.encode('utf-8'))
                 # 找所有 button
                 for btn in root.xpath('.//button'):
+                    if btn.get('special'):
+                        continue
                     b_type = btn.get('type') or 'object'
                     name = btn.get('name') or ''
                     string = btn.get('string') or btn.get('title') or name
@@ -351,11 +357,16 @@ class AppActionConfig(models.Model):
                     groups_attr = btn.get('groups') or ''  # CSV xmlids
                     states = (btn.get('states') or '').split(',')
                     context_raw = btn.get('context') or None
+                    invisible = normalize_native_modifier(btn.get('invisible')) if btn.get('invisible') else None
 
                     scope = self._native_button_contract_scope(btn)
                     level = scope["level"]
                     selection = scope["selection"]
                     visible_profiles = scope["visible_profiles"]
+                    presentation = {
+                        "tier": "primary" if any(value in classes for value in ("btn-primary", "oe_highlight"))
+                        else "secondary" if "btn-secondary" in classes else "overflow",
+                    }
 
                     # 解析 groups
                     groups_ids, groups_xmlids = self._parse_groups_attr(groups_attr)
@@ -374,7 +385,8 @@ class AppActionConfig(models.Model):
                             "visible_profiles": visible_profiles,
                             "groups": groups_ids,
                             "groups_xmlids": groups_xmlids,
-                            "visible": {"domain": [], "states": [s for s in states if s]},
+                            "visible": {"domain": [], "states": [s for s in states if s], "attrs": {"invisible": invisible}},
+                            "presentation": presentation,
                             "intent": "execute",
                             "params": {"confirm": False},   # 可在 view.config 中细化
                             "payload": {
@@ -400,7 +412,8 @@ class AppActionConfig(models.Model):
                             "visible_profiles": visible_profiles,
                             "groups": groups_ids,
                             "groups_xmlids": groups_xmlids,
-                            "visible": {"domain": [], "states": [s for s in states if s]},
+                            "visible": {"domain": [], "states": [s for s in states if s], "attrs": {"invisible": invisible}},
+                            "presentation": presentation,
                             "intent": "open",
                             "params": {},
                             "payload": {

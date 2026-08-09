@@ -1,7 +1,7 @@
 # ======================================================
 # ==================== CI ==============================
 # ======================================================
-.PHONY: ci.preflight.contract ci.scene.delivery.readiness ci.gate ci.smoke ci.full ci.repro \
+.PHONY: ci.preflight.contract ci.scene.delivery.readiness ci.gate ci.smoke ci.full ci.repro verify.product.client_action_boundary.guard verify.frontend.hierarchy_browser.architecture.guard verify.frontend.action_surface_renderer.architecture.guard verify.frontend.table_primitive.guard \
 	test-install-gate test-upgrade-gate \
 	ci.clean ci.ps ci.logs gate.boundary
 
@@ -10,7 +10,19 @@ refresh.delivery.readiness.scoreboard: guard.prod.forbid
 	@python3 scripts/verify/delivery_readiness_scoreboard_refresh.py
 
 # CI preflight: fail-fast on contract drift before heavier test suites.
-ci.preflight.contract: guard.prod.forbid
+verify.product.client_action_boundary.guard: guard.prod.forbid
+	@python3 scripts/verify/product_client_action_boundary_guard.py
+
+verify.frontend.hierarchy_browser.architecture.guard: guard.prod.forbid
+	@python3 scripts/verify/hierarchy_browser_architecture_guard.py
+
+verify.frontend.action_surface_renderer.architecture.guard: guard.prod.forbid
+	@python3 scripts/verify/action_surface_renderer_architecture_guard.py
+
+verify.frontend.table_primitive.guard: guard.prod.forbid
+	@python3 scripts/verify/frontend_table_primitive_guard.py
+
+ci.preflight.contract: guard.prod.forbid verify.product.client_action_boundary.guard verify.frontend.hierarchy_browser.architecture.guard verify.frontend.action_surface_renderer.architecture.guard verify.frontend.table_primitive.guard
 	@$(MAKE) --no-print-directory verify.contract.preflight
 	@$(MAKE) --no-print-directory verify.frontend.home_suggestion_semantics.guard
 	@$(MAKE) --no-print-directory verify.frontend.page_contract_boundary.guard
@@ -782,6 +794,7 @@ ci.local.quick: guard.prod.forbid security.legacy_credential_guard verify.reposi
 	@python3 scripts/verify/frontend_page_contract_orchestration_consumption_guard.py
 	@python3 scripts/verify/frontend_contract_consumer_intrusion_guard.py
 	@python3 scripts/verify/frontend_shared_surface_semantic_boundary_guard.py
+	@python3 scripts/verify/product_client_action_boundary_guard.py
 	@python3 scripts/verify/test_frontend_release_evidence_bundle.py
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict

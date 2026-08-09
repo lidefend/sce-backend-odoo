@@ -59,7 +59,7 @@ assert.equal(resolveActionCollectionPresentation(cardContract, 'kanban').label, 
 
 // workflow_board_requires_group_semantics
 assert.deepEqual(resolveActionCollectionPresentation(workflowContract, 'kanban'), {
-  semantic: 'workflow_board', label: '流程看板', groupField: 'state', groupedLanes: true,
+  semantic: 'workflow_board', label: '流程看板', groupField: 'state', groupedLanes: true, config: {},
 });
 assert.equal(groupCollectionRecords([
   { id: 1, state: ['draft', '草稿'] }, { id: 2, state: ['done', '完成'] }, { id: 3, state: ['draft', '草稿'] },

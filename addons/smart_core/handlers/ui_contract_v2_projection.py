@@ -82,13 +82,24 @@ def project_v2_source_policies(
     if isinstance(source_contract.get("list_profile"), dict):
         list_profile = deepcopy(source_contract.get("list_profile") or {})
         layout_contract = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
-        layout_contract["listProfile"] = _adapters.v2_policy_projection(
+        existing_profile = (
+            deepcopy(layout_contract.get("listProfile"))
+            if isinstance(layout_contract.get("listProfile"), dict)
+            else {}
+        )
+        projected_profile = _adapters.v2_policy_projection(
             list_profile,
             source_kind=source_kind,
             no_business_fact_authority=no_business_fact_authority,
             runtime_carrier="ui.contract.v2.layoutContract.listProfile",
             source_key="list_profile",
         )
+        # The list policy is authoritative for the keys it projects, but it must
+        # not erase independent native-view semantics already assembled into the
+        # same profile (for example collection_presentation).  Those semantics
+        # still use the standard list data source and Odoo model authority.
+        existing_profile.update(projected_profile)
+        layout_contract["listProfile"] = existing_profile
         contract["layoutContract"] = layout_contract
 
 

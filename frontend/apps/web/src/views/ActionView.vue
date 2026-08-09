@@ -10,7 +10,15 @@
       variant="error"
       :on-retry="reload"
     />
-    <section v-else-if="vm.header.actions.length" class="page-actions">
+    <ActionSurfaceRendererHost
+      v-else
+      :descriptor="surfaceRendererDescriptor"
+      :preference-scope="String(actionId || 'default')"
+      @open-record="handleRowClick"
+      @open-action="openHierarchyAction"
+    >
+    <template #standard>
+    <section v-if="vm.header.actions.length" class="page-actions">
       <button v-for="action in vm.header.actions" :key="`header-${action.key}`" class="contract-chip ghost" @click="executeHeaderAction(action.key)">
         {{ action.label || action.key }}
       </button>
@@ -565,6 +573,8 @@
         </div>
       </section>
     </div>
+    </template>
+    </ActionSurfaceRendererHost>
   </ScPage>
 </template>
 <script setup lang="ts">
@@ -591,6 +601,8 @@ import DevContextPanel from '../components/DevContextPanel.vue';
 import GroupSummaryBar from '../components/GroupSummaryBar.vue';
 import SceneBlocksRenderer from '../components/scene/SceneBlocksRenderer.vue';
 import ActionSurfaceToolbar from '../components/action/ActionSurfaceToolbar.vue';
+import ActionSurfaceRendererHost from '../components/action/ActionSurfaceRendererHost.vue';
+import { resolveActionSurfaceRenderer } from '../app/renderers/actionSurfaceRendererRegistry';
 import { deriveListStatus } from '../app/view_state';
 import { isHudEnabled, isSceneBlocksDebugEnabled } from '../config/debug';
 import { ErrorCodes } from '../app/error_codes';
@@ -1524,6 +1536,7 @@ const viewMode = computed(() => {
 });
 const collectionPresentation = computed(() => resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(
   actionContract.value as Record<string, unknown> | null, viewMode.value), route.query.group_by));
+const surfaceRendererDescriptor = computed(() => resolveActionSurfaceRenderer(collectionPresentation.value, viewMode.value));
 const {
   viewModeLabel,
   switchViewMode,
@@ -2276,6 +2289,24 @@ const {
   pageActionIntent,
   pageActionTarget,
 });
+
+function openHierarchyAction(action: { key?: string; action_id?: number; menu_id?: number; route?: string }) {
+  const routePath = String(action.route || '').trim();
+  if (routePath) {
+    void router.push(routePath);
+    return;
+  }
+  const targetActionId = toPositiveInt(action.action_id);
+  if (targetActionId) {
+    void router.push({
+      name: 'action',
+      params: { actionId: targetActionId },
+      query: { ...resolveWorkspaceContextQuery(), menu_id: toPositiveInt(action.menu_id) || undefined },
+    });
+    return;
+  }
+  if (action.key) void executeHeaderAction(action.key);
+}
 
 const {
   fetchScopedTotal,
@@ -3560,114 +3591,11 @@ function refreshForRecordContextChange(): void {
 .ledger-overview-card.tone-info { background: var(--sc-app-info-bg); border-color: var(--sc-app-info-border); color: var(--sc-app-info-text); }
 .ledger-overview-card.tone-neutral { background: var(--sc-app-muted-bg); border-color: var(--sc-app-border); color: var(--sc-app-text-secondary); }
 
-.business-category-picker-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: var(--sc-app-overlay);
-}
-
-.business-category-picker {
-  width: min(560px, 100%);
-  max-height: min(720px, calc(100vh - 48px));
-  overflow: auto;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  background: var(--sc-app-panel);
-  box-shadow: var(--sc-semantic-shadow-modal);
-}
-
-.business-category-picker-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px 12px;
-  border-bottom: 1px solid var(--sc-app-border);
-}
-
-.business-category-picker-head h3,
-.business-category-picker-head p {
-  margin: 0;
-}
-
-.business-category-picker-head h3 {
-  color: var(--sc-app-text-primary);
-  font-size: 16px;
-  line-height: 1.35;
-}
-
-.business-category-picker-head p {
-  margin-top: 4px;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
-
-.business-category-picker-close {
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 999px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-secondary);
-  cursor: pointer;
-}
-
-.business-category-picker-list {
-  display: grid;
-  gap: 8px;
-  padding: 14px;
-}
-
-.business-category-picker-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 44px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-control-radius);
-  background: var(--sc-app-muted-bg);
-  color: var(--sc-app-text-primary);
-  padding: 10px 12px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.business-category-picker-option:hover {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-app-info-bg);
-}
-
-.business-category-picker-option span {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.business-category-picker-option small {
-  color: var(--sc-semantic-text-muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
 @media (max-width: 760px) {
   .focus-strip {
     flex-direction: column;
     align-items: flex-start;
   }
-
-  .business-category-picker-backdrop {
-    align-items: flex-end;
-    padding: 12px;
-  }
-
-  .business-category-picker-option {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 </style>
+<style scoped src="./actionView/businessCategoryPicker.css"></style>

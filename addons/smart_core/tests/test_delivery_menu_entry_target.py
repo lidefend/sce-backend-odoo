@@ -185,6 +185,28 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             ["已授权", "场景入口"],
         )
 
+    def test_client_action_is_native_odoo_only_and_not_product_runtime_allowed(self):
+        action = types.SimpleNamespace(
+            active=True,
+            _name="ir.actions.client",
+            res_model="",
+        )
+
+        self.assertFalse(
+            menu_service.MenuService(env={})._action_is_runtime_allowed(action, "read")
+        )
+
+    def test_model_less_window_action_is_not_runtime_allowed(self):
+        action = types.SimpleNamespace(
+            active=True,
+            _name="ir.actions.act_window",
+            res_model="",
+        )
+
+        self.assertFalse(
+            menu_service.MenuService(env={})._action_is_runtime_allowed(action, "read")
+        )
+
     def test_scene_menu_child_exposes_formal_entry_target_with_native_refs(self):
         node = delivery_menu_defaults.build_delivery_menu_child(
             {

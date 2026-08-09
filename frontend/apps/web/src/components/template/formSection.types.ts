@@ -72,6 +72,7 @@ export type FormSectionFieldSchema = {
   many2oneCreateLabel?: string;
   many2oneInlineCreateLabel?: string;
   descriptor?: FieldDescriptor;
+  fileName?: string;
 };
 
 export type FormSectionFieldChange = {
@@ -81,6 +82,7 @@ export type FormSectionFieldChange = {
   value: string | number | boolean | null;
   action?: 'change' | 'query' | 'commit';
   descriptor?: FieldDescriptor;
+  fileName?: string;
 };
 
 export type FormSectionFieldAction = {

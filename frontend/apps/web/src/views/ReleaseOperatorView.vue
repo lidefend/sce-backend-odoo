@@ -228,7 +228,7 @@
           </article>
         </div>
         <div v-if="controlledPages.length" class="release-operator__table-wrap release-operator__page-table">
-          <table class="release-operator__table">
+          <ScDataTable class="release-operator__table" label="受控页面">
             <thead>
               <tr>
                 <th>用户菜单</th>
@@ -290,7 +290,7 @@
                 </td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </div>
       </section>
 
@@ -300,7 +300,7 @@
           <p>{{ copy.hint_candidate || '仅展示当前产品下 candidate / approved 状态的候选快照。' }}</p>
         </div>
         <div v-if="candidateSnapshots.length" class="release-operator__table-wrap">
-          <table class="release-operator__table">
+          <ScDataTable class="release-operator__table" label="可发布候选">
             <thead>
               <tr>
                 <th>版本</th>
@@ -338,7 +338,7 @@
                 </td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </div>
         <p v-else class="release-operator__empty">{{ copy.empty_candidate || '当前没有可 Promote 的候选快照。' }}</p>
       </section>
@@ -349,7 +349,7 @@
           <p>{{ copy.hint_pending_count_prefix || '当前数量：' }}{{ pendingActions.length }}</p>
         </div>
         <div v-if="pendingActions.length" class="release-operator__table-wrap">
-          <table class="release-operator__table">
+          <ScDataTable class="release-operator__table" label="待审批动作">
             <thead>
               <tr>
                 <th>动作</th>
@@ -377,7 +377,7 @@
                 </td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </div>
         <p v-else class="release-operator__empty">{{ copy.empty_pending || '当前没有待审批动作。' }}</p>
       </section>
@@ -431,6 +431,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScDataTable from '../components/design-system/ScDataTable.vue';
 import { intentRequest } from '../api/intents';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
@@ -1143,20 +1144,19 @@ onMounted(() => {
   overflow-x: auto;
 }
 
-.release-operator__table {
+.release-operator__table :deep(table) {
   width: 100%;
-  border-collapse: collapse;
 }
 
-.release-operator__table th,
-.release-operator__table td {
+.release-operator__table :deep(th),
+.release-operator__table :deep(td) {
   border-top: 1px solid var(--sc-app-border);
   padding: 10px 8px;
   text-align: left;
   white-space: nowrap;
 }
 
-.release-operator__table th {
+.release-operator__table :deep(th) {
   color: var(--sc-semantic-text-muted);
   font-size: 12px;
   font-weight: 600;

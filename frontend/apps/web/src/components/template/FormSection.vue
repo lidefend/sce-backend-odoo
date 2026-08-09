@@ -131,14 +131,12 @@
                   type="checkbox"
                   @change="emitFieldChange(field, ($event.target as HTMLInputElement).checked)"
                 />
-                <input
+                <ScFileField
                   v-else-if="field.type === 'binary'"
                   :id="fieldControlId(field)"
-                  class="input input--file"
-                  :aria-required="field.required || undefined"
-                  :aria-invalid="field.invalid || undefined"
-                  :aria-describedby="fieldDescribedBy(field)"
-                  type="file"
+                  :required="field.required"
+                  :invalid="field.invalid"
+                  :described-by="fieldDescribedBy(field)"
                   @change="emitBinaryFieldChange(field, $event)"
                 />
                 <ScSelect
@@ -324,6 +322,7 @@
 <script setup lang="ts">
 import { computed, ref, useId, useSlots } from 'vue';
 import ScDateField from '../design-system/ScDateField.vue';
+import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import ScSelect from '../design-system/ScSelect.vue';
@@ -624,7 +623,14 @@ function emitBinaryFieldChange(field: FormSectionFieldSchema, event: Event) {
   reader.onload = () => {
     const result = String(reader.result || '');
     const separatorIndex = result.indexOf(',');
-    emitFieldChange(field, separatorIndex >= 0 ? result.slice(separatorIndex + 1) : result);
+    emit('field-change', {
+      name: field.name,
+      type: field.type,
+      widget: field.widget,
+      value: separatorIndex >= 0 ? result.slice(separatorIndex + 1) : result,
+      descriptor: field.descriptor,
+      fileName: file.name,
+    });
   };
   reader.onerror = () => emitFieldChange(field, null);
   reader.readAsDataURL(file);

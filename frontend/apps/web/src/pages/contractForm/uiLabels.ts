@@ -86,7 +86,7 @@ export function resolveSubmitButtonLabel(params: {
     return params.hasFooterAction ? '处理中...' : '提交中...';
   }
   if (params.hasFooterAction) return params.footerActionLabel;
-  if (params.hasPrimarySubmitAction) return '提交';
+  if (params.hasPrimarySubmitAction) return params.footerActionLabel || '提交';
   if (!params.recordId) return '提交';
   return params.saveLabel;
 }
