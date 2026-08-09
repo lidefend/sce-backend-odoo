@@ -345,7 +345,7 @@ def iter_group_rows(groups: Any) -> list[dict[str, Any]]:
 
 def nav_rows(system_init_data: dict[str, Any]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for key_path in (("release_navigation_v1", "nav"), ("delivery_engine_v1", "nav"), ("nav",)):
+    for key_path in (("navigation_v1", "nav"),):
         current: Any = system_init_data
         for key in key_path:
             current = current.get(key) if isinstance(current, dict) else None

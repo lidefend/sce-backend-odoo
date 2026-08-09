@@ -63,7 +63,6 @@ from odoo.addons.smart_core.core.workspace_home_contract_builder import build_wo
 from odoo.addons.smart_core.core.runtime_page_contract_builder import mirror_workspace_home_role_context
 from odoo.addons.smart_core.core.scene_governance_payload_builder import build_scene_governance_payload_v1
 from odoo.addons.smart_core.core.ui_base_contract_asset_event_queue import get_queue_metrics
-from odoo.addons.smart_core.core.release_navigation_contract_builder import build_release_navigation_contract
 from odoo.addons.smart_core.core.platform_database_contract import (
     PlatformDatabaseContractError,
     resolve_platform_database,
@@ -1041,10 +1040,6 @@ def _filter_nav_for_user_data_acceptance_only(env, nav: list[dict], *, force: bo
             menu = None
         if not menu:
             return None
-        # Menu/action metadata is a read-only navigation projection.  Access
-        # to an otherwise visible menu must not depend on the technical ACL
-        # of its concrete action subtype (for example ir.actions.client).
-        menu = menu.sudo()
         try:
             action = menu.action
         except Exception:
@@ -2025,10 +2020,7 @@ class SystemInitHandler(BaseIntentHandler):
         )
         release_snapshot_service = EditionReleaseSnapshotService(env)
         release_audit_service = ReleaseAuditTrailService(env)
-        data["delivery_engine_v1"] = delivery_payload
-        data["route_authority_v1"] = delivery_payload.get("route_authority_v1") or {}
         _delivery_authoritative_nav = list(delivery_payload.get("nav") or [])
-        delivery_release_navigation = build_release_navigation_contract({"delivery_engine_v1": delivery_payload})
         edition_diagnostics = (
             delivery_payload.get("product_policy", {}).get("edition_diagnostics")
             if isinstance(delivery_payload.get("product_policy"), dict)
@@ -2112,22 +2104,6 @@ class SystemInitHandler(BaseIntentHandler):
             },
             "diagnostics": runtime_diagnostics,
         }
-        data["release_navigation_v1"] = {
-            "contract_version": str(delivery_payload.get("contract_version") or "v1"),
-            "source": "delivery_engine_v1",
-            "role_code": str(delivery_payload.get("role_code") or ""),
-            "nav": delivery_payload.get("nav") if isinstance(delivery_payload.get("nav"), list) else [],
-            "meta": {
-                "product_key": str(delivery_payload.get("product_key") or ""),
-                "edition_key": str(delivery_payload.get("edition_key") or ""),
-                "delivery_engine_meta": delivery_payload.get("meta") if isinstance(delivery_payload.get("meta"), dict) else {},
-                "builder_source": str(delivery_release_navigation.get("source") or ""),
-                "builder_contract_version": str(delivery_release_navigation.get("contract_version") or ""),
-                "builder_source_authority": delivery_release_navigation.get("source_authority")
-                if isinstance(delivery_release_navigation.get("source_authority"), dict)
-                else {},
-            },
-        }
         delivery_nav = delivery_payload.get("nav") if isinstance(delivery_payload.get("nav"), list) else []
         if delivery_nav and not platform_minimum_surface_mode:
             # Delivery and user-menu overlays must remain inside the resolved
@@ -2163,35 +2139,27 @@ class SystemInitHandler(BaseIntentHandler):
                     "reason": "not_reported_by_delivery_pre_filter",
                 }
             )
+            delivery_meta["user_data_acceptance_only"] = user_data_acceptance_meta
+            delivery_meta["formal_product_menu_policy"] = formal_product_menu_meta
+            delivery_meta["user_menu_config"] = delivery_user_menu_config_meta
+            delivery_meta["system_init_nav_boundary"] = {
+                "authority": "navigation_v1",
+                "semantic_post_processing": False,
+                "allowed_runtime_filters": [
+                    "platform_release_gate",
+                    "explicit_user_data_acceptance_only",
+                    "explicit_user_menu_config_overlay",
+                ],
+            }
+            delivery_payload["meta"] = delivery_meta
             delivery_payload["nav"] = delivery_nav
-            if isinstance(data.get("delivery_engine_v1"), dict):
-                data["delivery_engine_v1"]["nav"] = delivery_nav
-            if isinstance(data.get("release_navigation_v1"), dict):
-                data["release_navigation_v1"]["nav"] = delivery_nav
-                release_meta = data["release_navigation_v1"].get("meta")
-                if not isinstance(release_meta, dict):
-                    release_meta = {}
-                    data["release_navigation_v1"]["meta"] = release_meta
-                release_meta["user_data_acceptance_only"] = user_data_acceptance_meta
-                release_meta["formal_product_menu_policy"] = formal_product_menu_meta
-                release_meta["user_menu_config"] = delivery_user_menu_config_meta
-                release_meta["system_init_nav_boundary"] = {
-                    "authority": "delivery_engine_v1",
-                    "semantic_post_processing": False,
-                    "allowed_runtime_filters": [
-                        "platform_release_gate",
-                        "explicit_user_data_acceptance_only",
-                        "explicit_user_menu_config_overlay",
-                    ],
-                }
             data["nav_role_surface"] = data.get("nav") if isinstance(data.get("nav"), list) else []
             data["nav"] = delivery_nav
             # Any later startup-surface restoration must use this fully
             # filtered projection, never the pre-role/pre-overlay snapshot.
             _delivery_authoritative_nav = list(delivery_nav)
             nav_meta = data.get("nav_meta") if isinstance(data.get("nav_meta"), dict) else {}
-            nav_meta["nav_source"] = "delivery_engine_v1"
-            nav_meta["primary_nav_promoted_from"] = "release_navigation_v1"
+            nav_meta["nav_source"] = "navigation_v1"
             nav_meta["role_surface_nav_preserved"] = True
             nav_meta["platform_release_gate"] = (
                 delivery_payload.get("meta", {}).get("platform_release_gate")
@@ -2202,7 +2170,7 @@ class SystemInitHandler(BaseIntentHandler):
             nav_meta["formal_product_menu_policy"] = formal_product_menu_meta
             nav_meta["user_menu_config"] = delivery_user_menu_config_meta
             nav_meta["system_init_nav_boundary"] = {
-                "authority": "delivery_engine_v1",
+                "authority": "navigation_v1",
                 "semantic_post_processing": False,
             }
             data["nav_meta"] = nav_meta
@@ -2267,16 +2235,6 @@ class SystemInitHandler(BaseIntentHandler):
             }
         if contract_mode == "hud" and isinstance(scene_diagnostics, dict):
             data["scene_diagnostics"] = scene_diagnostics
-        # Carry the already-authorized delivery projection into the startup
-        # contract at the final handler boundary.  This prevents an earlier
-        # minimal-surface/default pass from replacing a non-empty projection
-        # with an empty release payload.
-        _delivery_final = data.get("delivery_engine_v1") if isinstance(data.get("delivery_engine_v1"), dict) else {}
-        _release_final = data.get("release_navigation_v1") if isinstance(data.get("release_navigation_v1"), dict) else {}
-        if isinstance(_delivery_final.get("nav"), list) and _delivery_final.get("nav"):
-            _release_final = dict(_release_final)
-            _release_final["nav"] = _delivery_final["nav"]
-            data["release_navigation_v1"] = _release_final
         _delivery_policy_meta = delivery_payload.get("product_policy") if isinstance(delivery_payload, dict) else {}
         _can_restore_delivery_nav = (
             not platform_minimum_surface_mode
@@ -2293,10 +2251,7 @@ class SystemInitHandler(BaseIntentHandler):
             inspect_payload=startup_inspect,
         )
         if _delivery_authoritative:
-            data["delivery_engine_v1"] = dict(data.get("delivery_engine_v1") or {})
-            data["delivery_engine_v1"]["nav"] = _delivery_authoritative
-            data["release_navigation_v1"] = dict(data.get("release_navigation_v1") or {})
-            data["release_navigation_v1"]["nav"] = _delivery_authoritative
+            data["nav"] = _delivery_authoritative
         SystemInitPayloadBuilder.attach_layered_contract(data)
         try:
             data = apply_dictionary_startup_data(env, data)
@@ -2307,42 +2262,74 @@ class SystemInitHandler(BaseIntentHandler):
         # Compatibility carrier for clients released before the canonical
         # record-context contract. New consumers must use record_context.
         data["project_context"] = data["record_context"]
-        # Bind route authority to the final navigation projection. Customer
-        # acceptance overlays and late delivery normalization can add or
-        # re-key legitimate menu/action pairs after DeliveryEngine.build().
-        # A visible route and its authority must be emitted from the same
-        # finalized tree or the SPA will expose a menu that it then denies.
-        # The SPA consumes release_navigation_v1 first, then delivery_engine_v1,
-        # and only uses the legacy top-level nav as a final fallback. Route
-        # authority must bind to that exact same source order. Late delivery
-        # projection can legitimately replace the release/delivery trees while
-        # leaving data.nav as an older compatibility carrier.
-        _release_navigation = (data.get("release_navigation_v1") or {}).get("nav")
-        _delivery_navigation = (data.get("delivery_engine_v1") or {}).get("nav")
-        _final_navigation = (
-            _release_navigation
-            if isinstance(_release_navigation, list)
-            else _delivery_navigation
-            if isinstance(_delivery_navigation, list)
-            else data.get("nav")
-            if isinstance(data.get("nav"), list)
-            else []
-        )
+        # Product baseline: one navigation contract owns both the rendered
+        # tree and its route authority. No client-facing fallback carriers are
+        # allowed because independently selected trees and authorities can
+        # expose a menu that the SPA must then deny.
+        if not isinstance(data.get("nav"), list):
+            raise RuntimeError("canonical navigation is unavailable")
+        _final_navigation = data["nav"]
         _final_route_authority = delivery_engine.menu_service.build_route_authority(
             role_surface,
             nav=_final_navigation,
         )
-        data["route_authority_v1"] = _final_route_authority
-        data["delivery_engine_v1"] = dict(data.get("delivery_engine_v1") or {})
-        data["delivery_engine_v1"]["route_authority_v1"] = _final_route_authority
+        _visible_navigation_pairs = set(MenuService._walk_nav_action_refs(_final_navigation))
+        _authorized_navigation_pairs = {
+            (int(_entry.get("menu_id") or 0), int(_entry.get("action_id") or 0))
+            for _bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
+            for _entry in _final_route_authority.get(_bucket) or []
+            if isinstance(_entry, dict)
+        }
+        _missing_navigation_authority = sorted(
+            _visible_navigation_pairs - _authorized_navigation_pairs
+        )
+        if _missing_navigation_authority:
+            raise RuntimeError(
+                "canonical navigation contains unauthorized menu/action pairs: %s"
+                % _missing_navigation_authority[:20]
+            )
         _route_company_id = int((data.get("record_context") or {}).get("company_id") or env.company.id)
-        for _route_contract in (
-            data.get("route_authority_v1"),
-            (data.get("delivery_engine_v1") or {}).get("route_authority_v1"),
+        _final_route_authority["principal_scope"] = dict(
+            _final_route_authority.get("principal_scope") or {}
+        )
+        _final_route_authority["principal_scope"]["company_id"] = _route_company_id
+        _navigation_meta = dict(delivery_payload.get("meta") or {})
+        _navigation_meta.update({
+            "product_key": str(delivery_payload.get("product_key") or ""),
+            "edition_key": str(delivery_payload.get("edition_key") or ""),
+            "role_code": str(delivery_payload.get("role_code") or ""),
+            "system_init_nav_boundary": {
+                "authority": "navigation_v1",
+                "semantic_post_processing": False,
+            },
+        })
+        data["navigation_v1"] = {
+            "contract_version": "navigation.v1",
+            "source": "system_init.navigation_v1",
+            "nav": _final_navigation,
+            "route_authority_v1": _final_route_authority,
+            "contextual_routes": list(delivery_payload.get("contextual_routes") or []),
+            "integrity": {
+                "visible_action_count": len(_visible_navigation_pairs),
+                "authorized_action_count": len(_authorized_navigation_pairs),
+                "missing_authority_count": 0,
+            },
+            "meta": _navigation_meta,
+        }
+        for _removed_navigation_carrier in (
+            "nav",
+            "nav_role_surface",
+            "nav_legacy",
+            "release_navigation_v1",
+            "delivery_engine_v1",
+            "route_authority_v1",
         ):
-            if isinstance(_route_contract, dict):
-                _route_contract["principal_scope"] = dict(_route_contract.get("principal_scope") or {})
-                _route_contract["principal_scope"]["company_id"] = _route_company_id
+            data.pop(_removed_navigation_carrier, None)
+        for _section_contract_name in ("system_init_sections_v1", "init_contract_v1"):
+            _section_contract = data.get(_section_contract_name)
+            if isinstance(_section_contract, dict):
+                _section_contract.pop("nav", None)
+                _section_contract["navigation"] = {"contract_ref": "navigation_v1"}
         data["contract_mode"] = contract_mode
         if contract_mode == "user":
             data.pop("scene_diagnostics", None)

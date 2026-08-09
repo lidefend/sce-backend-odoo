@@ -18,7 +18,7 @@ FORBIDDEN_FINAL_NAV_POSTPROCESSORS = {
 }
 
 REQUIRED_BOUNDARY_MARKERS = {
-    '"authority": "delivery_engine_v1"',
+    '"authority": "navigation_v1"',
     '"semantic_post_processing": False',
 }
 
@@ -36,7 +36,7 @@ def main() -> None:
     missing = sorted(token for token in REQUIRED_BOUNDARY_MARKERS if token not in block)
     if missing:
         raise SystemExit("system.init delivery nav boundary metadata missing: %s" % missing)
-    print("OK system.init menu boundary: DeliveryEngine owns product nav semantics")
+    print("OK system.init menu boundary: navigation_v1 owns the final product navigation")
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RE
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
 .PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.public_signup.close.plan release.production.public_signup.close.apply release.production.public_signup.close.verify release.production.user_activation.readiness release.production.user_activation.predeploy.plan release.production.user_activation.predeploy.apply release.production.user_activation.predeploy.verify release.production.single_user_activation.plan release.production.single_user_activation.apply release.production.single_user_activation.verify release.production.formal_modules.install_missing ops.user.password-reset ops.user.password-verify
-.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore production.acceptance.backup.remote_install production.acceptance.backup.remote_sync production.acceptance.image.remote_import production.acceptance.candidate.remote_import production.acceptance.restore.remote_verify production.acceptance.tenant.remote_install production.acceptance.clone.remote_activate production.acceptance.clone.remote_refresh_tenant production.acceptance.clone.remote_refresh_image production.acceptance.clone.remote_upgrade_module verify.production.backup_restore_contract
+.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore production.acceptance.backup.remote_install production.acceptance.backup.remote_sync production.acceptance.image.remote_import production.acceptance.candidate.remote_import production.acceptance.restore.remote_verify production.acceptance.tenant.remote_install production.acceptance.clone.remote_activate production.acceptance.clone.remote_replace production.acceptance.clone.remote_publish verify.production.acceptance.payload production.acceptance.payload.remote.plan production.acceptance.payload.remote.import production.acceptance.payload.remote.verify verify.production.backup_restore_contract
 .PHONY: verify.production.acceptance.harness acceptance.package.verify verify.production.promotion.config.preflight release.daily_dev.production_acceptance.harness release.production.acceptance.harness release.daily_dev.promotion.config.preflight release.production.promotion.config.preflight
 
 verify.release.guard: verify.repository.release_hygiene
@@ -204,9 +204,6 @@ PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY ?=
 PRODUCTION_ACCEPTANCE_TENANT_SHA ?=
 PRODUCTION_ACCEPTANCE_TENANT_MODULE ?=
 PRODUCTION_ACCEPTANCE_PORT ?= 18095
-PRODUCTION_ACCEPTANCE_UPGRADE_MODULES ?= smart_core,smart_construction_core,sc_norm_engine
-PRODUCTION_ACCEPTANCE_PAYLOAD_ID ?=
-PRODUCTION_ACCEPTANCE_PAYLOAD_CHECKSUM ?=
 DAILY_ACCEPTANCE_CANDIDATE_ARCHIVE ?=
 DAILY_ACCEPTANCE_CANDIDATE_ARCHIVE_SHA256 ?=
 DAILY_ACCEPTANCE_CANDIDATE_IMAGE_REF ?=
@@ -214,6 +211,8 @@ DAILY_ACCEPTANCE_CANDIDATE_LOCAL_CONTENT_ID ?=
 DAILY_ACCEPTANCE_CANDIDATE_REMOTE_CONFIG_ID ?=
 DAILY_ACCEPTANCE_CANDIDATE_SOURCE_SHA ?=
 DAILY_ACCEPTANCE_CANDIDATE_ALLOW_BOUNDARY_HEAD ?= 0
+PRODUCTION_ACCEPTANCE_PAYLOAD_ID ?=
+PRODUCTION_ACCEPTANCE_PAYLOAD_CHECKSUM ?=
 
 production.acceptance.backup.remote_install: guard.prod.forbid
 	@test -n "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" || { echo "PRODUCTION_ACCEPTANCE_DAILY_HOST is required" >&2; exit 2; }
@@ -221,13 +220,14 @@ production.acceptance.backup.remote_install: guard.prod.forbid
 	@[[ "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" =~ ^[0-9a-f]{40}$$ ]] || { echo "invalid immutable tool SHA" >&2; exit 2; }
 	@test -z "$$(git status --porcelain)" || { echo "clean worktree is required for immutable tool install" >&2; exit 2; }
 	@git archive --format=tar "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" \
+		config/tenant/module_sets.v1.json \
 		scripts/ops/production_acceptance_backup_sync.py \
 		scripts/ops/production_acceptance_clone_runtime.py \
 		scripts/ops/production_acceptance_payload_runtime.py \
 		scripts/tenant_payload/odoo_action.py \
 		scripts/release/production_backup_restore.py | \
 		ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" \
-		'set -eu; root="/opt/sce/deployment-tools"; final="$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)"; staging="$$root/.incomplete-$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then tar -tf - >/dev/null; test "$$(cat "$$final/DEPLOYMENT_TOOL_SHA")" = "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; exit 0; fi; test ! -e "$$staging"; install -d -m 0700 "$$staging"; tar -xf - -C "$$staging"; printf "%s\n" "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" > "$$staging/DEPLOYMENT_TOOL_SHA"; chmod 0600 "$$staging/DEPLOYMENT_TOOL_SHA"; mv "$$staging" "$$final"'
+		'set -eu; root="/opt/sce/deployment-tools"; final="$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)"; staging="$$root/.incomplete-$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/DEPLOYMENT_TOOL_SHA")" = "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)"; cat >/dev/null; exit 0; fi; test ! -e "$$staging"; install -d -m 0700 "$$staging"; tar -xf - -C "$$staging"; printf "%s\n" "$(PRODUCTION_ACCEPTANCE_TOOL_SHA)" > "$$staging/DEPLOYMENT_TOOL_SHA"; chmod 0600 "$$staging/DEPLOYMENT_TOOL_SHA"; mv "$$staging" "$$final"'
 
 production.acceptance.backup.remote_sync: production.acceptance.backup.remote_install
 	@[[ "$(PRODUCTION_ACCEPTANCE_BACKUP_SET_ID)" =~ ^sc_production-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid production backup set ID" >&2; exit 2; }
@@ -268,33 +268,23 @@ production.acceptance.tenant.remote_install: guard.prod.forbid
 	@[[ "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" =~ ^[0-9a-f]{40}$$ ]] || { echo "immutable tenant SHA is required" >&2; exit 2; }
 	@[[ "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" =~ ^[a-z][a-z0-9_]{2,63}$$ ]] || { echo "valid tenant module is required" >&2; exit 2; }
 	@test -z "$$(git -C "$(PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY)" status --porcelain)" || { echo "clean tenant worktree is required" >&2; exit 2; }
-	@git -C "$(PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY)" archive --format=tar "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" "addons/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" | ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'set -eu; root="/opt/sce/tenant-addons/acceptance"; final="$$root/$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; staging="$$root/.incomplete-$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/TENANT_SHA")" = "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; test -f "$$final/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)/__manifest__.py"; exit 0; fi; test ! -e "$$staging"; install -d -m 0755 "$$staging"; tar -xf - --strip-components=1 -C "$$staging"; test -f "$$staging/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)/__manifest__.py"; printf "%s\n" "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" > "$$staging/TENANT_SHA"; chmod -R a-w "$$staging"; mv "$$staging" "$$final"'
+	@git -C "$(PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY)" archive --format=tar "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" addons | ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'set -eu; root="/opt/sce/tenant-addons/acceptance"; final="$$root/$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; staging="$$root/.incomplete-$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; install -d -m 0700 "$$root"; if test -d "$$final"; then test "$$(cat "$$final/TENANT_SHA")" = "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)"; test -f "$$final/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)/__manifest__.py"; cat >/dev/null; exit 0; fi; test ! -e "$$staging"; install -d -m 0755 "$$staging"; tar -xf - --strip-components=1 -C "$$staging"; test -f "$$staging/$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)/__manifest__.py"; printf "%s\n" "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" > "$$staging/TENANT_SHA"; chmod -R a-w "$$staging"; mv "$$staging" "$$final"'
 
 production.acceptance.clone.remote_activate: production.acceptance.backup.remote_install production.acceptance.tenant.remote_install
 	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }
 	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_CLONE_RUNTIME:-}" = "ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE" || { echo "exact clone activation confirmation is required" >&2; exit 2; }
 	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_CLONE_RUNTIME=ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_clone_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --tenant-sha "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" --tenant-module "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" --image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --port "$(PRODUCTION_ACCEPTANCE_PORT)"'
 
-production.acceptance.clone.remote_refresh_tenant: production.acceptance.backup.remote_install production.acceptance.tenant.remote_install
+production.acceptance.clone.remote_replace: production.acceptance.backup.remote_install production.acceptance.tenant.remote_install
 	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }
-	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_TENANT_REFRESH:-}" = "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_TENANT_RUNTIME" || { echo "exact acceptance tenant refresh confirmation is required" >&2; exit 2; }
-	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_TENANT_REFRESH=REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_TENANT_RUNTIME python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_clone_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --tenant-sha "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" --tenant-module "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" --image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --port "$(PRODUCTION_ACCEPTANCE_PORT)" --refresh-tenant'
+	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_CLONE_REPLACE:-}" = "REPLACE_VERIFIED_ISOLATED_ACCEPTANCE_RUNTIME" || { echo "exact clone replacement confirmation is required" >&2; exit 2; }
+	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_CLONE_RUNTIME=ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_clone_runtime.py" --replace-existing --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --tenant-sha "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" --tenant-module "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" --image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --port "$(PRODUCTION_ACCEPTANCE_PORT)"'
 
-production.acceptance.clone.remote_refresh_image: production.acceptance.backup.remote_install production.acceptance.tenant.remote_install
+production.acceptance.clone.remote_publish: production.acceptance.backup.remote_install
 	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }
-	@[[ "$(PRODUCTION_ACCEPTANCE_SOURCE_REVISION)" =~ ^[0-9a-f]{40}$$ ]] || { echo "invalid replacement source revision" >&2; exit 2; }
-	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_IMAGE_REFRESH:-}" = "REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_IMAGE_RUNTIME" || { echo "exact acceptance image refresh confirmation is required" >&2; exit 2; }
-	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_IMAGE_REFRESH=REFRESH_ISOLATED_PRODUCTION_ACCEPTANCE_IMAGE_RUNTIME python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_clone_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --tenant-sha "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" --tenant-module "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" --image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --source-sha "$(PRODUCTION_ACCEPTANCE_SOURCE_REVISION)" --port "$(PRODUCTION_ACCEPTANCE_PORT)" --refresh-image'
-
-production.acceptance.clone.remote_upgrade_module: guard.prod.forbid
-	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }
-	@test "$(PRODUCTION_ACCEPTANCE_UPGRADE_MODULES)" = "smart_core,smart_construction_core,sc_norm_engine" || { echo "only the ordered product module set is admitted" >&2; exit 2; }
-	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_MODULE_UPGRADE:-}" = "UPGRADE_PRODUCT_MODULE_SET_IN_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE" || { echo "exact acceptance module upgrade confirmation is required" >&2; exit 2; }
-	@$(MAKE) --no-print-directory production.acceptance.backup.remote_install
-	@$(MAKE) --no-print-directory production.acceptance.tenant.remote_install
-	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_MODULE_UPGRADE=UPGRADE_PRODUCT_MODULE_SET_IN_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_clone_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --tenant-sha "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" --tenant-module "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" --image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --source-sha "$(PRODUCTION_ACCEPTANCE_SOURCE_REVISION)" --port "$(PRODUCTION_ACCEPTANCE_PORT)" --upgrade-modules "$(PRODUCTION_ACCEPTANCE_UPGRADE_MODULES)"'
-
-.PHONY: verify.production.acceptance.payload production.acceptance.payload.remote.plan production.acceptance.payload.remote.import production.acceptance.payload.remote.verify
+	@test "$(PRODUCTION_ACCEPTANCE_PORT)" = "18081" || { echo "public acceptance port must be 18081" >&2; exit 2; }
+	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_PUBLIC_FRONTEND:-}" = "PUBLISH_ISOLATED_ACCEPTANCE_FRONTEND_TO_APPROVED_PORT" || { echo "exact public acceptance frontend confirmation is required" >&2; exit 2; }
+	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_PUBLIC_FRONTEND=PUBLISH_ISOLATED_ACCEPTANCE_FRONTEND_TO_APPROVED_PORT python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_clone_runtime.py" --publish-existing --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --port "$(PRODUCTION_ACCEPTANCE_PORT)"'
 
 verify.production.acceptance.payload: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/production_acceptance_payload_runtime.py scripts/ops/test_production_acceptance_payload_runtime.py scripts/tenant_payload/odoo_action.py

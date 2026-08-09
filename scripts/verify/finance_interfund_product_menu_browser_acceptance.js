@@ -167,14 +167,10 @@ async function runtimeProductMenus(page) {
   });
   writeJson('system_init_debug.json', {
     keys: Object.keys(nav || {}),
-    nav_sample: Array.isArray(nav?.nav) ? nav.nav.slice(0, 3) : null,
-    release_nav_sample: Array.isArray(nav?.release_navigation_v1?.nav) ? nav.release_navigation_v1.nav.slice(0, 3) : null,
-    delivery_nav_sample: Array.isArray(nav?.delivery_engine_v1?.nav) ? nav.delivery_engine_v1.nav.slice(0, 3) : null,
+    navigation_v1_sample: Array.isArray(nav?.navigation_v1?.nav) ? nav.navigation_v1.nav.slice(0, 3) : null,
   });
-  const candidates = [nav?.release_navigation_v1?.nav, nav?.delivery_engine_v1?.nav, nav?.nav];
-  const navRows = walkNav(candidates.find((entry) => Array.isArray(entry)) || []);
-  const groupRows = walkMenuGroups(nav?.menu_groups || nav?.nav?.menu_groups || []);
-  const rows = [...navRows, ...groupRows];
+  const navRows = walkNav(Array.isArray(nav?.navigation_v1?.nav) ? nav.navigation_v1.nav : []);
+  const rows = navRows;
   const byXmlid = rows.filter((row) => TARGET_MENU_XMLIDS.includes(row.menuXmlid));
   if (byXmlid.length) return byXmlid;
   const byLabel = rows.filter((row) => ['项目资金总览', '往来对象资金总览', '项目与对象资金往来', '公司-承包人资金责任余额', '公司-承包人资金责任明细'].includes(row.label));

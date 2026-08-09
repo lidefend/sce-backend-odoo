@@ -106,11 +106,7 @@ def iter_group_rows(groups: Any) -> list[dict[str, Any]]:
 
 def find_target_menu(system_init_data: dict[str, Any]) -> dict[str, Any] | None:
     candidates = []
-    for key_path in (
-        ("release_navigation_v1", "nav"),
-        ("delivery_engine_v1", "nav"),
-        ("nav",),
-    ):
+    for key_path in (("navigation_v1", "nav"),):
         current: Any = system_init_data
         for key in key_path:
             current = current.get(key) if isinstance(current, dict) else None

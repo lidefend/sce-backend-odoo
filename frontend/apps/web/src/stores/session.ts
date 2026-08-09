@@ -1315,18 +1315,18 @@ export const useSessionStore = defineStore('session', {
           console.log('2. Meta 字段: 不存在');
         }
 
-        // 检查 nav 字段
-        if (result.nav) {
-          console.log('3. Nav 字段存在，类型:', typeof result.nav, '是否为数组:', Array.isArray(result.nav));
-          if (Array.isArray(result.nav) && result.nav.length > 0) {
-            console.log('   菜单数量:', result.nav.length);
+        // 检查唯一导航契约
+        if (result.navigation_v1?.nav) {
+          console.log('3. navigation_v1.nav 存在，类型:', typeof result.navigation_v1.nav, '是否为数组:', Array.isArray(result.navigation_v1.nav));
+          if (Array.isArray(result.navigation_v1.nav) && result.navigation_v1.nav.length > 0) {
+            console.log('   菜单数量:', result.navigation_v1.nav.length);
             console.log('   前3个菜单:');
-            result.nav.slice(0, 3).forEach((item, index) => {
+            result.navigation_v1.nav.slice(0, 3).forEach((item, index) => {
               console.log(`     [${index}] name: "${item.name}", xmlid: "${item.xmlid || 'N/A'}", id: ${item.id || 'N/A'}`);
             });
           }
         } else {
-          console.log('3. Nav 字段: 不存在');
+          console.log('3. navigation_v1.nav: 不存在');
         }
         console.groupEnd();
       }
@@ -1544,16 +1544,34 @@ export const useSessionStore = defineStore('session', {
           menu_id: undefined,
         };
       }
-      const releaseNavigation = (result as AppInitResponse & {
-        release_navigation_v1?: { nav?: unknown };
-        delivery_engine_v1?: { nav?: unknown };
-      }).release_navigation_v1;
-      const deliveryEngine = (result as AppInitResponse & {
-        release_navigation_v1?: { nav?: unknown };
-        delivery_engine_v1?: { nav?: unknown; contextual_routes?: unknown };
-      }).delivery_engine_v1;
+      const navigation = (result as AppInitResponse & {
+        navigation_v1?: {
+          nav?: unknown;
+          route_authority_v1?: unknown;
+          integrity?: {
+            visible_action_count?: unknown;
+            authorized_action_count?: unknown;
+            missing_authority_count?: unknown;
+          };
+        };
+      }).navigation_v1;
+      const navigationIntegrity = navigation?.integrity;
+      const visibleActionCount = Number(navigationIntegrity?.visible_action_count);
+      const authorizedActionCount = Number(navigationIntegrity?.authorized_action_count);
+      if (
+        !navigationIntegrity
+        || Number(navigationIntegrity.missing_authority_count) !== 0
+        || !Number.isInteger(visibleActionCount)
+        || visibleActionCount < 0
+        || !Number.isInteger(authorizedActionCount)
+        || authorizedActionCount < visibleActionCount
+      ) {
+        this.initError = 'system.init navigation_v1 integrity check failed';
+        this.initStatus = 'error';
+        throw new Error(this.initError);
+      }
       this.routeAuthority = routeAuthorityForPrincipal(
-        (result as AppInitResponse & { route_authority_v1?: unknown }).route_authority_v1,
+        navigation?.route_authority_v1,
         {
           userId: Number(this.user?.id || 0),
           roleCode: String(this.roleSurface?.role_code || '').trim(),
@@ -1561,32 +1579,22 @@ export const useSessionStore = defineStore('session', {
         },
       );
       if (!this.routeAuthority) {
-        this.initError = 'system.init missing required route_authority_v1 contract';
+        this.initError = 'system.init missing required navigation_v1 route authority';
         this.initStatus = 'error';
         throw new Error(this.initError);
       }
-      const candidates = [releaseNavigation?.nav, deliveryEngine?.nav, result.nav];
       if (debugIntent) {
-        console.info('[debug] system.init candidates:', candidates.map(c => ({
-          type: typeof c,
-          isArray: Array.isArray(c),
-          length: Array.isArray(c) ? c.length : 'N/A'
-        })));
+        console.info('[debug] system.init navigation_v1:', {
+          type: typeof navigation?.nav,
+          isArray: Array.isArray(navigation?.nav),
+          length: Array.isArray(navigation?.nav) ? navigation.nav.length : 'N/A',
+        });
       }
-      // Preserve an explicitly empty authoritative projection: [] can mean
-      // policy-minimum or permission-censored navigation. Fallback is only
-      // allowed when the higher-priority field is genuinely absent/null.
-      const nav = (Array.isArray(releaseNavigation?.nav)
-        ? releaseNavigation.nav
-        : Array.isArray(deliveryEngine?.nav)
-          ? deliveryEngine.nav
-          : Array.isArray(result.nav)
-            ? result.nav
-            : null) as NavNode[] | null;
+      const nav = (Array.isArray(navigation?.nav) ? navigation.nav : null) as NavNode[] | null;
       if (!nav) {
-        this.initError = 'system.init missing required nav contract';
+        this.initError = 'system.init missing required navigation_v1 nav';
         this.initStatus = 'error';
-        throw new Error('system.init missing required nav contract');
+        throw new Error(this.initError);
       }
       if (debugIntent) {
         // eslint-disable-next-line no-console

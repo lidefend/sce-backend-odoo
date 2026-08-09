@@ -197,7 +197,19 @@ export interface AppInitResponse {
       display_name?: string;
     } | null;
   };
-  nav: NavNode[];
+  navigation_v1: {
+    contract_version: 'navigation.v1';
+    source: string;
+    nav: NavNode[];
+    route_authority_v1: Record<string, unknown>;
+    contextual_routes?: Array<Record<string, unknown>>;
+    integrity: {
+      visible_action_count: number;
+      authorized_action_count: number;
+      missing_authority_count: 0;
+    };
+    meta?: Record<string, unknown>;
+  };
   default_route?: {
     menu_id?: number;
     scene_key?: string | null;
