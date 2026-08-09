@@ -820,15 +820,30 @@ class PageAssembler:
             method = str(command.get("method") or "").strip()
             placement = str(command.get("placement") or "toolbar").strip()
             group = str(command.get("group") or "structure").strip()
+            availability_field = str(command.get("availability_field") or "").strip()
             if not key or not label or kind not in allowed_command_kinds:
                 continue
             if placement not in {"toolbar", "overflow"}:
                 continue
             if not re.fullmatch(r"[a-z][a-z0-9_]*", group):
                 continue
+            if availability_field:
+                availability_descriptor = fields_map.get(availability_field)
+                if not isinstance(availability_descriptor, dict) or availability_descriptor.get("type") != "boolean":
+                    continue
             if kind == "object" and not method:
                 continue
-            commands.append({"key": key, "label": label, "kind": kind, "method": method, "placement": placement, "group": group})
+            commands.append({
+                "key": key,
+                "label": label,
+                "kind": kind,
+                "method": method,
+                "placement": placement,
+                "group": group,
+                "availability_field": availability_field,
+            })
+            if availability_field not in read_fields:
+                read_fields.append(availability_field)
         try:
             visible_menu_ids = {int(value) for value in self.env["ir.ui.menu"]._visible_menu_ids()}
         except Exception:
@@ -878,6 +893,7 @@ class PageAssembler:
             "view": "视图",
             "details": "节点详情",
             "selected_prefix": "已选择",
+            "operation_success": "操作完成",
         }
         tree["collection_presentation"] = {
             **presentation,

@@ -34,6 +34,7 @@ export type HierarchyCommand = {
   method: string;
   placement?: 'toolbar' | 'overflow';
   group?: string;
+  availability_field?: string;
 };
 
 function normalizeRows(value: unknown): HierarchyDict[] {

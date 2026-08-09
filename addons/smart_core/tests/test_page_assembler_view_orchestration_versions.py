@@ -208,6 +208,7 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
                     "method": "action_add_child",
                     "placement": "toolbar",
                     "group": "structure",
+                    "availability_field": "",
                 }
             ],
         )

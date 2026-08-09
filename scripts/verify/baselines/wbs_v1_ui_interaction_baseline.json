@@ -32,8 +32,8 @@
   "browser_evidence": {
     "result": "artifacts/boq-wbs-planner-browser/wbs-result.json",
     "main_screenshot": "artifacts/boq-wbs-planner-browser/cost-wbs-planner-verified.png",
-    "main_screenshot_sha256": "57fd41c1fe603ec16efe9c5e03c9cfca7a07908a6440db79ddcfb3f3f70353ed",
+    "main_screenshot_sha256": "8810798a3990c137ebca04e796555a24a8fe44db3f34a89ab4e51de9ee6f4db8",
     "detail_screenshot": "artifacts/boq-wbs-planner-browser/cost-wbs-planner-detail.png",
-    "detail_screenshot_sha256": "4d97a3918a1e8df435bc21ffa6cd57bec1f3045982d2e1a1902411381470ad45"
+    "detail_screenshot_sha256": "9ab64269d8761d3075ffe5a5d116f68f8e5ee22fccad8c03ef75972d4e27fc86"
   }
 }

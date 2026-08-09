@@ -111,8 +111,16 @@ class TestBoqVersionContract(TransactionCase):
         self.assertEqual(second_package.parent_id, first_package)
         second_package.action_wbs_outdent()
         self.assertEqual(second_package.parent_id, planned_root)
+        self.assertFalse(first_package.can_move_up)
+        self.assertTrue(first_package.can_move_down)
+        self.assertFalse(first_package.can_indent)
+        self.assertTrue(first_package.can_outdent)
+        self.assertTrue(second_package.can_move_up)
+        self.assertFalse(second_package.can_move_down)
         second_package.action_wbs_move_up()
         self.assertEqual(planned_root.child_ids.sorted(lambda rec: (rec.sequence, rec.id))[:1], second_package)
+        self.assertFalse(second_package.can_move_up)
+        self.assertTrue(second_package.can_move_down)
 
         floor = self.env["construction.location.breakdown"].create(
             {

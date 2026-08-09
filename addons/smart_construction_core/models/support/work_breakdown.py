@@ -107,6 +107,10 @@ class ConstructionWorkBreakdown(models.Model):
         "res.users", string="责任经理", tracking=True, domain=[("share", "=", False)]
     )
     description = fields.Text("范围说明")
+    can_indent = fields.Boolean("可缩进", compute="_compute_structure_command_state")
+    can_outdent = fields.Boolean("可提升", compute="_compute_structure_command_state")
+    can_move_up = fields.Boolean("可上移", compute="_compute_structure_command_state")
+    can_move_down = fields.Boolean("可下移", compute="_compute_structure_command_state")
 
     boq_line_ids = fields.One2many(
         "project.boq.line", "work_id",
@@ -152,6 +156,27 @@ class ConstructionWorkBreakdown(models.Model):
         """父层级+1，根节点为0。"""
         for rec in self:
             rec.level = rec.parent_id.level + 1 if rec.parent_id else 0
+
+    def _compute_structure_command_state(self):
+        """Expose row-specific structure action authority without frontend inference."""
+        grouped = {}
+        for rec in self:
+            key = (rec.project_id.id, rec.parent_id.id or False)
+            grouped.setdefault(key, []).append(rec)
+        positions = {}
+        for project_id, parent_id in grouped:
+            siblings = self.search(
+                [("project_id", "=", project_id), ("parent_id", "=", parent_id)],
+                order="sequence,id",
+            )
+            for index, sibling in enumerate(siblings):
+                positions[sibling.id] = (index, len(siblings))
+        for rec in self:
+            index, count = positions.get(rec.id, (0, 1))
+            rec.can_indent = index > 0
+            rec.can_outdent = bool(rec.parent_id)
+            rec.can_move_up = index > 0
+            rec.can_move_down = index < count - 1
 
 
     @api.depends(

@@ -21,6 +21,7 @@
     </ProductListHeader>
 
     <div v-if="errorMessage" class="planner-error" role="alert">{{ errorMessage }}</div>
+    <div v-if="successMessage" class="planner-success" role="status">{{ successMessage }}</div>
     <main class="planner-canvas">
       <div class="planner-toolbar">
         <div class="planner-selection">
@@ -31,7 +32,7 @@
           <ScButton
             v-for="command in toolbarCommands"
             :key="command.key"
-            :disabled="!selectedRecord || commandBusy"
+            :disabled="!commandEnabled(command) || commandBusy"
             variant="secondary"
             @click="runCommand(command)"
           >{{ command.label }}</ScButton>
@@ -40,7 +41,7 @@
           <div class="planner-menu">
             <ScButton :aria-expanded="activeMenu === 'more'" @click="toggleMenu('more')">{{ labels.more }}</ScButton>
             <div v-if="activeMenu === 'more'" class="planner-menu-popover">
-              <ScButton v-for="command in overflowCommands" :key="command.key" :disabled="!selectedRecord || commandBusy" variant="ghost" @click="runCommand(command)">{{ command.label }}</ScButton>
+              <ScButton v-for="command in overflowCommands" :key="command.key" :disabled="!commandEnabled(command) || commandBusy" variant="ghost" @click="runCommand(command)">{{ command.label }}</ScButton>
             </div>
           </div>
           <div class="planner-menu">
@@ -127,7 +128,7 @@ const props = withDefaults(defineProps<{ config: Dict; preferenceScope?: string 
 const emit = defineEmits<{ 'open-record': [row: Dict]; 'open-action': [action: SurfaceAction] }>();
 const defaultLabels: Record<string, string> = {
   surface_aria: 'hierarchy planner', search_label: 'Search', search_placeholder: '', total_prefix: '', total_suffix: '',
-  loading: 'Loading…', refresh: 'Refresh', load_error: 'Unable to load data', open: 'Open', expand_all: 'Expand all', collapse_all: 'Collapse all', more: 'More', view: 'View', details: 'Details', selected_prefix: 'Selected', select_hint: 'Select a record',
+  loading: 'Loading…', refresh: 'Refresh', load_error: 'Unable to load data', open: 'Open', expand_all: 'Expand all', collapse_all: 'Collapse all', more: 'More', view: 'View', details: 'Details', selected_prefix: 'Selected', select_hint: 'Select a record', operation_success: 'Completed',
 };
 const labels = computed(() => ({ ...defaultLabels, ...(props.config.labels && typeof props.config.labels === 'object' ? props.config.labels as Dict : {}) }) as Record<string, string>);
 const title = computed(() => String(props.config.title || labels.value.surface_aria));
@@ -181,6 +182,7 @@ const keyword = ref('');
 const loading = ref(false);
 const commandBusy = ref(false);
 const errorMessage = ref('');
+const successMessage = ref('');
 const indentSize = 20;
 const allPlannerNodes = computed(() => {
   const output: HierarchyTreeNode[] = [];
@@ -215,6 +217,11 @@ function selectEntry(entry: OutlineEntry): void { selectedRecord.value = entry.r
 function openRecord(record: Dict): void { if (Number(record.id || 0)) emit('open-record', record); }
 function openSelected(): void { if (selectedRecord.value) openRecord(selectedRecord.value); }
 function createRecord(): void { emit('open-record', { id: 'new' }); }
+function commandEnabled(command: HierarchyCommand): boolean {
+  if (!selectedRecord.value) return false;
+  const field = String(command.availability_field || '');
+  return !field || selectedRecord.value[field] === true;
+}
 function toggleMenu(menu: 'more' | 'view'): void { activeMenu.value = activeMenu.value === menu ? '' : menu; }
 function closeMenus(): void { activeMenu.value = ''; }
 function closeMenusFromOutside(event: MouseEvent): void {
@@ -238,9 +245,15 @@ async function reload(): Promise<void> {
   finally { loading.value = false; }
 }
 async function runCommand(command: HierarchyCommand): Promise<void> {
-  if (!selectedRecord.value || commandBusy.value) return;
+  if (!commandEnabled(command) || !selectedRecord.value || commandBusy.value) return;
   commandBusy.value = true; errorMessage.value = '';
-  try { await executeHierarchyCommand({ model: listConfig.value.model, recordId: Number(selectedRecord.value.id), command }); closeMenus(); await reload(); }
+  successMessage.value = '';
+  try {
+    await executeHierarchyCommand({ model: listConfig.value.model, recordId: Number(selectedRecord.value.id), command });
+    closeMenus();
+    await reload();
+    successMessage.value = `${command.label}：${labels.value.operation_success}`;
+  }
   catch (error) { errorMessage.value = error instanceof Error ? error.message : labels.value.load_error; }
   finally { commandBusy.value = false; }
 }
@@ -277,6 +290,7 @@ onBeforeUnmount(() => { document.removeEventListener('click', closeMenusFromOuts
 .outline-toggle { border: 0; background: transparent; color: var(--sc-app-text-secondary); cursor: pointer; }
 .planner-state { display: grid; min-height: 420px; place-content: center; color: var(--sc-app-text-secondary); }
 .planner-error { padding: var(--sc-space-xs) var(--sc-space-sm); border: 1px solid var(--sc-app-danger-border); background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }
+.planner-success { padding: var(--sc-space-xs) var(--sc-space-sm); border: 1px solid var(--sc-app-success-border); background: var(--sc-app-success-bg); color: var(--sc-app-success-text); }
 .planner-drawer { position: absolute; z-index: 4; inset-block: 0; right: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); width: min(420px, 42vw); border-left: 1px solid var(--sc-app-border); background: var(--sc-app-panel); box-shadow: var(--sc-app-shadow-lg); }
 .planner-drawer header { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-space-sm); min-height: var(--sc-product-list-toolbar-height); padding: var(--sc-space-xs) var(--sc-surface-padding); border-bottom: 1px solid var(--sc-app-border); }
 .planner-drawer-body { overflow: auto; padding: var(--sc-surface-padding); }

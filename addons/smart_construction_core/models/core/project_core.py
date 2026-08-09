@@ -1502,10 +1502,10 @@ class ProjectProject(models.Model):
             "hierarchy_commands": [
                 {"key": "add_sibling", "label": "新增同级 WBS", "kind": "object", "method": "action_wbs_add_sibling", "placement": "toolbar", "group": "create"},
                 {"key": "add_child", "label": "新增下级 WBS", "kind": "object", "method": "action_wbs_add_child", "placement": "toolbar", "group": "create"},
-                {"key": "indent", "label": "缩进为下级", "kind": "object", "method": "action_wbs_indent", "placement": "toolbar", "group": "structure"},
-                {"key": "outdent", "label": "提升一级", "kind": "object", "method": "action_wbs_outdent", "placement": "toolbar", "group": "structure"},
-                {"key": "move_up", "label": "上移", "kind": "object", "method": "action_wbs_move_up", "placement": "overflow", "group": "order"},
-                {"key": "move_down", "label": "下移", "kind": "object", "method": "action_wbs_move_down", "placement": "overflow", "group": "order"},
+                {"key": "indent", "label": "缩进为下级", "kind": "object", "method": "action_wbs_indent", "placement": "toolbar", "group": "structure", "availability_field": "can_indent"},
+                {"key": "outdent", "label": "提升一级", "kind": "object", "method": "action_wbs_outdent", "placement": "toolbar", "group": "structure", "availability_field": "can_outdent"},
+                {"key": "move_up", "label": "上移", "kind": "object", "method": "action_wbs_move_up", "placement": "overflow", "group": "order", "availability_field": "can_move_up"},
+                {"key": "move_down", "label": "下移", "kind": "object", "method": "action_wbs_move_down", "placement": "overflow", "group": "order", "availability_field": "can_move_down"},
             ],
         }
         return action

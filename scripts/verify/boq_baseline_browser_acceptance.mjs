@@ -247,18 +247,27 @@ async function verifyWbsHierarchy(page, actionId, state) {
   check(expandedNodeCount >= 4, `WBS_OUTLINE_ROWS_MISSING:${expandedNodeCount}`);
   check(await surface.locator('.outline-cell').count() >= expandedNodeCount, 'WBS_OUTLINE_COLUMN_MISSING');
   check(await surface.locator('.outline-toggle').count() > 0, 'WBS_OUTLINE_NESTING_MISSING');
+  for (const actionLabel of ['新增同级 WBS', '新增下级 WBS', '缩进为下级', '提升一级', '打开', '节点详情']) {
+    check(await surface.getByRole('button', { name: actionLabel, exact: true }).isDisabled(), `WBS_UNSELECTED_COMMAND_NOT_DISABLED:${actionLabel}`);
+  }
   await rows.first().click();
   for (const actionLabel of ['新增顶层 WBS', '新增同级 WBS', '新增下级 WBS', '缩进为下级', '提升一级']) {
     check(await surface.getByRole('button', { name: actionLabel, exact: true }).count() === 1, `WBS_BACKEND_COMMAND_MISSING:${actionLabel}`);
   }
+  check(await surface.getByRole('button', { name: '缩进为下级', exact: true }).isDisabled(), 'WBS_ROOT_INDENT_NOT_DISABLED');
+  check(await surface.getByRole('button', { name: '提升一级', exact: true }).isDisabled(), 'WBS_ROOT_OUTDENT_NOT_DISABLED');
   const outlineCodes = async () => surface.locator('.planner-grid tbody tr td:first-child').allTextContents();
   const movableRow = surface.getByText('WBS-01.01', { exact: true }).locator('xpath=ancestor::tr');
   await movableRow.click();
+  check(await surface.getByRole('button', { name: '缩进为下级', exact: true }).isDisabled(), 'WBS_FIRST_SIBLING_INDENT_NOT_DISABLED');
+  check(!(await surface.getByRole('button', { name: '提升一级', exact: true }).isDisabled()), 'WBS_CHILD_OUTDENT_NOT_ENABLED');
   const beforeMove = await outlineCodes();
   await surface.getByRole('button', { name: '更多', exact: true }).click();
   for (const actionLabel of ['上移', '下移']) {
     check(await surface.getByRole('button', { name: actionLabel, exact: true }).count() === 1, `WBS_BACKEND_OVERFLOW_COMMAND_MISSING:${actionLabel}`);
   }
+  check(await surface.getByRole('button', { name: '上移', exact: true }).isDisabled(), 'WBS_FIRST_SIBLING_MOVE_UP_NOT_DISABLED');
+  check(!(await surface.getByRole('button', { name: '下移', exact: true }).isDisabled()), 'WBS_FIRST_SIBLING_MOVE_DOWN_NOT_ENABLED');
   await surface.getByRole('button', { name: '下移', exact: true }).click();
   await page.waitForFunction(() => {
     const codes = [...document.querySelectorAll('.hierarchy-planner tbody tr td:first-child')].map((node) => node.textContent?.trim());
@@ -270,6 +279,7 @@ async function verifyWbsHierarchy(page, actionId, state) {
     const codes = [...document.querySelectorAll('.hierarchy-planner tbody tr td:first-child')].map((node) => node.textContent?.trim());
     return codes.findIndex((code) => code?.endsWith('WBS-01.01')) < codes.findIndex((code) => code?.endsWith('WBS-01.02'));
   }, undefined, { timeout: 15_000 });
+  await surface.getByRole('status').filter({ hasText: '上移：操作完成' }).waitFor({ timeout: 10_000 });
   check(JSON.stringify(await outlineCodes()) === JSON.stringify(beforeMove), 'WBS_MOVE_COMMAND_NOT_REVERSIBLE');
   check(await surface.getByRole('button', { name: '更多', exact: true }).getAttribute('aria-expanded') === 'false', 'WBS_MORE_MENU_NOT_CLOSED_AFTER_COMMAND');
   await surface.getByRole('button', { name: '视图', exact: true }).click();
@@ -292,6 +302,8 @@ async function verifyWbsHierarchy(page, actionId, state) {
     total: 4,
     expandedNodeCount,
     moveCommandsVerified: true,
+    commandAvailabilityVerified: true,
+    operationFeedbackVerified: true,
     contractColumnFields,
     detailScreenshot,
     screenshot,
