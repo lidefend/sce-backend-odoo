@@ -19,6 +19,9 @@
         <ScButton v-for="action in actions" :key="action.key" :variant="action.variant === 'primary' ? 'primary' : 'secondary'" @click="emit('open-action', action)">{{ action.label }}</ScButton>
       </template>
     </ProductListHeader>
+    <dl v-if="governanceFacts.length" class="planner-governance" aria-label="governance status">
+      <div v-for="fact in governanceFacts" :key="fact.key"><dt>{{ fact.label }}</dt><dd>{{ fact.value }}</dd></div>
+    </dl>
 
     <div v-if="errorMessage" class="planner-error" role="alert">{{ errorMessage }}</div>
     <div v-if="successMessage" class="planner-success" role="status">{{ successMessage }}</div>
@@ -123,6 +126,7 @@ type Column = { field: string; label: string; type?: string; ttype?: string; sel
 type SurfaceAction = { key: string; label: string; action_id: number; menu_id: number; variant: string; route: string };
 type OutlineEntry = { node: HierarchyTreeNode; record: Dict; depth: number };
 type DetailSection = { title: string; fields: Column[] };
+type GovernanceFact = { key: string; label: string; value: string };
 
 const props = withDefaults(defineProps<{ config: Dict; preferenceScope?: string }>(), { preferenceScope: 'default' });
 const emit = defineEmits<{ 'open-record': [row: Dict]; 'open-action': [action: SurfaceAction] }>();
@@ -143,6 +147,10 @@ const overflowCommands = computed(() => commands.value.filter((command) => comma
 const detailSections = computed<DetailSection[]>(() => {
   const raw = props.config.detail && typeof props.config.detail === 'object' ? props.config.detail as Dict : {};
   return (Array.isArray(raw.sections) ? raw.sections : []).map((row) => row as DetailSection);
+});
+const governanceFacts = computed<GovernanceFact[]>(() => {
+  const raw = props.config.governance && typeof props.config.governance === 'object' ? props.config.governance as Dict : {};
+  return (Array.isArray(raw.facts) ? raw.facts : []).map((row) => row as GovernanceFact);
 });
 const levels = computed<HierarchyLevelConfig[]>(() => {
   const tree = props.config.tree && typeof props.config.tree === 'object' ? props.config.tree as Dict : {};
@@ -267,6 +275,9 @@ onBeforeUnmount(() => { document.removeEventListener('click', closeMenusFromOuts
 .planner-head :deep(.product-list-header__tools) { min-height: var(--sc-product-toolbar-height); }
 .planner-head :deep(.product-list-header__search) { padding-block: var(--sc-space-2xs); }
 .planner-head :deep(.product-list-header__actions) { padding: var(--sc-space-xs) var(--sc-surface-padding); }
+.planner-governance { display: flex; flex-wrap: wrap; gap: var(--sc-space-md); min-height: 38px; margin: 0; padding: var(--sc-space-xs) var(--sc-surface-padding); border-inline: 1px solid var(--sc-app-border); border-bottom: 1px solid var(--sc-app-border); background: var(--sc-app-panel); }
+.planner-governance div { display: flex; align-items: baseline; gap: var(--sc-space-xs); }
+.planner-governance dt { color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }.planner-governance dd { margin: 0; font-weight: 600; }
 .planner-title { display: flex; align-items: baseline; gap: var(--sc-space-sm); padding-inline: var(--sc-surface-padding); white-space: nowrap; }
 .planner-title span { color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .planner-canvas { position: relative; min-width: 0; min-height: calc(var(--sc-component-hierarchy-browser-min-height) * 1px); overflow: hidden; border: 1px solid var(--sc-app-border); border-top: 0; border-radius: 0 0 var(--sc-component-panel-radius) var(--sc-component-panel-radius); background: var(--sc-app-panel); }

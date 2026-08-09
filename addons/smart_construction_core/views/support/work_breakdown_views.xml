@@ -5,6 +5,7 @@
         <field name="arch" type="xml">
             <tree string="WBS 计划" js_class="smart_hierarchy_planner" default_order="project_id, parent_path, sequence">
                 <field name="project_id" column_invisible="1"/>
+                <field name="plan_id" column_invisible="1"/>
                 <field name="code"/>
                 <field name="name"/>
                 <field name="status"/>
@@ -27,6 +28,7 @@
                     <group>
                         <group>
                             <field name="project_id" required="1" domain="[]"/>
+                            <field name="plan_id" required="1" domain="[('project_id', '=', project_id)]"/>
                             <field name="company_id" invisible="1"/>
                             <field name="status"/>
                             <field name="level_type"/>
@@ -92,6 +94,7 @@
         <field name="arch" type="xml">
             <search string="WBS 计划">
                 <field name="project_id"/>
+                <field name="plan_id"/>
                 <field name="level_type"/>
                 <field name="parent_id"/>
                 <field name="source_type"/>
@@ -126,8 +129,8 @@
             ],
             'hierarchy_create': {'label': '新增顶层 WBS'},
             'hierarchy_commands': [
-                {'key': 'add_sibling', 'label': '新增同级 WBS', 'kind': 'object', 'method': 'action_wbs_add_sibling', 'placement': 'toolbar', 'group': 'create'},
-                {'key': 'add_child', 'label': '新增下级 WBS', 'kind': 'object', 'method': 'action_wbs_add_child', 'placement': 'toolbar', 'group': 'create'},
+                {'key': 'add_sibling', 'label': '新增同级 WBS', 'kind': 'object', 'method': 'action_wbs_add_sibling', 'placement': 'toolbar', 'group': 'create', 'availability_field': 'can_add_sibling'},
+                {'key': 'add_child', 'label': '新增下级 WBS', 'kind': 'object', 'method': 'action_wbs_add_child', 'placement': 'toolbar', 'group': 'create', 'availability_field': 'can_add_child'},
                 {'key': 'indent', 'label': '缩进为下级', 'kind': 'object', 'method': 'action_wbs_indent', 'placement': 'toolbar', 'group': 'structure', 'availability_field': 'can_indent'},
                 {'key': 'outdent', 'label': '提升一级', 'kind': 'object', 'method': 'action_wbs_outdent', 'placement': 'toolbar', 'group': 'structure', 'availability_field': 'can_outdent'},
                 {'key': 'move_up', 'label': '上移', 'kind': 'object', 'method': 'action_wbs_move_up', 'placement': 'overflow', 'group': 'order', 'availability_field': 'can_move_up'},

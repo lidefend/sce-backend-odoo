@@ -913,6 +913,7 @@ class PageAssembler:
                     "outline_field": levels[-1]["label_field"],
                     "code_field": levels[-1]["code_field"],
                 } if semantic == "hierarchy_planner" else {},
+                "governance": {"facts": []},
                 "list": {
                     "model": str(head.get("model") or "").strip(),
                     "fields": read_fields,

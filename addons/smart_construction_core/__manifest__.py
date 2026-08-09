@@ -101,6 +101,7 @@
         'views/core/project_views.xml',
         'views/core/task_boq_views.xml',
         'views/support/task_sc_state_views.xml',
+        'views/support/wbs_plan_views.xml',
         'views/support/work_breakdown_views.xml',
         'views/support/execution_breakdown_views.xml',
         'views/support/tender_views.xml',

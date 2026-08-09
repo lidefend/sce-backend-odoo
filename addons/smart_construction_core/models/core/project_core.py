@@ -1477,10 +1477,13 @@ class ProjectProject(models.Model):
     def action_open_wbs_planning(self):
         """Open the user-owned management WBS without deriving nodes from the BOQ."""
         self.ensure_one()
+        plan = self.env["construction.wbs.plan"]._ensure_initial_plan(self)
         action = self.env.ref("smart_construction_core.action_work_breakdown").read()[0]
-        action["domain"] = [("project_id", "=", self.id)]
+        action["menu_id"] = self.env.ref("smart_construction_core.menu_sc_project_work_breakdown").id
+        action["domain"] = [("plan_id", "=", plan.id)]
         action["context"] = {
             "default_project_id": self.id,
+            "default_plan_id": plan.id,
             "search_default_project_id": self.id,
             "hierarchy_levels": [
                 {
@@ -1500,8 +1503,8 @@ class ProjectProject(models.Model):
             ],
             "hierarchy_create": {"label": "新增顶层 WBS"},
             "hierarchy_commands": [
-                {"key": "add_sibling", "label": "新增同级 WBS", "kind": "object", "method": "action_wbs_add_sibling", "placement": "toolbar", "group": "create"},
-                {"key": "add_child", "label": "新增下级 WBS", "kind": "object", "method": "action_wbs_add_child", "placement": "toolbar", "group": "create"},
+                {"key": "add_sibling", "label": "新增同级 WBS", "kind": "object", "method": "action_wbs_add_sibling", "placement": "toolbar", "group": "create", "availability_field": "can_add_sibling"},
+                {"key": "add_child", "label": "新增下级 WBS", "kind": "object", "method": "action_wbs_add_child", "placement": "toolbar", "group": "create", "availability_field": "can_add_child"},
                 {"key": "indent", "label": "缩进为下级", "kind": "object", "method": "action_wbs_indent", "placement": "toolbar", "group": "structure", "availability_field": "can_indent"},
                 {"key": "outdent", "label": "提升一级", "kind": "object", "method": "action_wbs_outdent", "placement": "toolbar", "group": "structure", "availability_field": "can_outdent"},
                 {"key": "move_up", "label": "上移", "kind": "object", "method": "action_wbs_move_up", "placement": "overflow", "group": "order", "availability_field": "can_move_up"},

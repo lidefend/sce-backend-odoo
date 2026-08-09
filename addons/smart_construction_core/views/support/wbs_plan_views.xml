@@ -1,0 +1,96 @@
+<odoo>
+    <record id="view_construction_wbs_plan_tree" model="ir.ui.view">
+        <field name="name">construction.wbs.plan.tree</field>
+        <field name="model">construction.wbs.plan</field>
+        <field name="arch" type="xml">
+            <tree string="WBS 版本" default_order="project_id, id desc">
+                <field name="project_id"/>
+                <field name="version_code"/>
+                <field name="name"/>
+                <field name="state" widget="badge"/>
+                <field name="validation_state" widget="badge"/>
+                <field name="node_count"/>
+                <field name="write_uid" string="最近更新人"/>
+                <field name="write_date" string="最近更新时间"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_construction_wbs_plan_form" model="ir.ui.view">
+        <field name="name">construction.wbs.plan.form</field>
+        <field name="model">construction.wbs.plan</field>
+        <field name="arch" type="xml">
+            <form string="WBS 版本">
+                <header>
+                    <button name="action_open_structure" type="object" string="编制 WBS" class="btn-primary" invisible="state == 'archived'"/>
+                    <button name="action_validate_plan" type="object" string="完整性校验" invisible="state not in ('draft', 'adjusting', 'validated')"/>
+                    <button name="action_publish_plan" type="object" string="发布" class="btn-primary" invisible="state != 'validated' or validation_state != 'passed'"/>
+                    <button name="action_start_adjustment" type="object" string="发起调整" invisible="state != 'published'"/>
+                    <button name="action_archive_plan" type="object" string="归档" invisible="state in ('published', 'archived')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,validated,published,adjusting,archived"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="project_id" readonly="state not in ('draft', 'adjusting')"/>
+                            <field name="name" readonly="state in ('published', 'archived')"/>
+                            <field name="version_code" readonly="state != 'draft'"/>
+                            <field name="source_plan_id" invisible="not source_plan_id"/>
+                        </group>
+                        <group>
+                            <field name="validation_state" readonly="1"/>
+                            <field name="node_count" readonly="1"/>
+                            <field name="validated_by_id" readonly="1" invisible="not validated_by_id"/>
+                            <field name="validated_at" readonly="1" invisible="not validated_at"/>
+                            <field name="published_by_id" readonly="1" invisible="not published_by_id"/>
+                            <field name="published_at" readonly="1" invisible="not published_at"/>
+                        </group>
+                    </group>
+                    <field name="validation_message" readonly="1" placeholder="尚未执行完整性校验。"/>
+                    <notebook>
+                        <page string="WBS 节点">
+                            <field name="node_ids" readonly="state in ('published', 'archived')">
+                                <tree>
+                                    <field name="sequence"/>
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="parent_id"/>
+                                    <field name="level_type"/>
+                                    <field name="manager_id"/>
+                                    <field name="status"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_construction_wbs_plan_search" model="ir.ui.view">
+        <field name="name">construction.wbs.plan.search</field>
+        <field name="model">construction.wbs.plan</field>
+        <field name="arch" type="xml">
+            <search string="WBS 版本">
+                <field name="project_id"/>
+                <field name="version_code"/>
+                <field name="state"/>
+                <filter name="active_versions" string="当前版本" domain="[('state', '!=', 'archived')]"/>
+                <group expand="1" string="分组">
+                    <filter name="group_project" string="按项目" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_state" string="按状态" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_construction_wbs_plan" model="ir.actions.act_window">
+        <field name="name">WBS 版本</field>
+        <field name="res_model">construction.wbs.plan</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_construction_wbs_plan_search"/>
+        <field name="context">{'search_default_active_versions': 1}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+</odoo>

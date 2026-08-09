@@ -217,6 +217,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_boq_version",
             "smart_construction_core.menu_sc_project_boq_root",
             "smart_construction_core.menu_sc_project_work_breakdown",
+            "smart_construction_core.menu_sc_wbs_plan_version",
             "smart_construction_core.menu_sc_project_location_breakdown",
             "smart_construction_core.menu_sc_project_contract_section",
             "smart_construction_core.menu_sc_project_execution_scope",

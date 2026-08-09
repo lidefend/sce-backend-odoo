@@ -142,6 +142,11 @@
         <field name="sequence">10</field>
         <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
+    <record id="menu_sc_wbs_plan_version" model="ir.ui.menu">
+        <field name="parent_id" ref="smart_construction_core.menu_sc_project_planning_group_v2"/>
+        <field name="sequence">5</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
     <record id="menu_sc_project_budget_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_cost_center"/><field name="active">False</field></record>
     <record id="menu_sc_doc_center" model="ir.ui.menu"><field name="active">False</field></record>
 

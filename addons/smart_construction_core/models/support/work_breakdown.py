@@ -18,6 +18,34 @@ class ConstructionWorkBreakdown(models.Model):
     _parent_store = True
     _order = "project_id, parent_path, sequence, id"
 
+    def init(self):
+        """Idempotently attach pre-versioning nodes after plan_id exists."""
+        self.env.cr.execute("""
+            INSERT INTO construction_wbs_plan
+                (name, version_code, project_id, state, validation_state, active, create_uid, write_uid, create_date, write_date)
+            SELECT jsonb_build_object(
+                       'zh_CN', COALESCE(p.name->>'zh_CN', p.name->>'en_US', '项目') || ' WBS'
+                   ),
+                   'V1.0', p.id, 'draft', 'pending', TRUE, 1, 1, NOW(), NOW()
+              FROM project_project p
+             WHERE EXISTS (
+                       SELECT 1 FROM construction_work_breakdown w
+                        WHERE w.project_id = p.id AND w.plan_id IS NULL
+                   )
+               AND NOT EXISTS (
+                       SELECT 1 FROM construction_wbs_plan v
+                        WHERE v.project_id = p.id AND v.version_code = 'V1.0'
+                   )
+        """)
+        self.env.cr.execute("""
+            UPDATE construction_work_breakdown w
+               SET plan_id = v.id
+              FROM construction_wbs_plan v
+             WHERE w.plan_id IS NULL
+               AND v.project_id = w.project_id
+               AND v.version_code = 'V1.0'
+        """)
+
     name = fields.Char("WBS 名称", required=True, tracking=True)
     code = fields.Char("WBS 编码", tracking=True)
     active = fields.Boolean("有效", default=True)
@@ -30,6 +58,7 @@ class ConstructionWorkBreakdown(models.Model):
         domain=[],
         check_company=False,  # 避免自动生成 company_id 依赖域
     )
+    plan_id = fields.Many2one("construction.wbs.plan", string="WBS 版本", index=True, ondelete="cascade")
     company_id = fields.Many2one(
         "res.company",
         string="公司",
@@ -111,6 +140,8 @@ class ConstructionWorkBreakdown(models.Model):
     can_outdent = fields.Boolean("可提升", compute="_compute_structure_command_state")
     can_move_up = fields.Boolean("可上移", compute="_compute_structure_command_state")
     can_move_down = fields.Boolean("可下移", compute="_compute_structure_command_state")
+    can_add_sibling = fields.Boolean("可新增同级", compute="_compute_structure_command_state")
+    can_add_child = fields.Boolean("可新增下级", compute="_compute_structure_command_state")
 
     boq_line_ids = fields.One2many(
         "project.boq.line", "work_id",
@@ -173,10 +204,13 @@ class ConstructionWorkBreakdown(models.Model):
                 positions[sibling.id] = (index, len(siblings))
         for rec in self:
             index, count = positions.get(rec.id, (0, 1))
-            rec.can_indent = index > 0
-            rec.can_outdent = bool(rec.parent_id)
-            rec.can_move_up = index > 0
-            rec.can_move_down = index < count - 1
+            editable = not rec.plan_id or rec.plan_id.state in {"draft", "validated", "adjusting"}
+            rec.can_indent = editable and index > 0
+            rec.can_outdent = editable and bool(rec.parent_id)
+            rec.can_move_up = editable and index > 0
+            rec.can_move_down = editable and index < count - 1
+            rec.can_add_sibling = editable
+            rec.can_add_child = editable
 
 
     @api.depends(
@@ -197,12 +231,35 @@ class ConstructionWorkBreakdown(models.Model):
             rec.boq_amount_total = self_amt + child_amt
             rec.boq_line_count = len(allocations) + sum(rec.child_ids.mapped("boq_line_count"))
 
-    @api.constrains("parent_id", "project_id")
+    @api.constrains("parent_id", "project_id", "plan_id")
     def _check_parent_project(self):
         """父子节点必须同一项目，避免跨项目串树。"""
         for rec in self:
             if rec.parent_id and rec.parent_id.project_id != rec.project_id:
                 raise ValidationError("工程结构的父节点与子节点必须属于同一项目。")
+            if rec.plan_id and rec.plan_id.project_id != rec.project_id:
+                raise ValidationError("WBS 节点与 WBS 版本必须属于同一项目。")
+            if rec.parent_id and rec.parent_id.plan_id != rec.plan_id:
+                raise ValidationError("上级 WBS 与当前节点必须属于同一 WBS 版本。")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        values_list = []
+        for values in vals_list:
+            values = dict(values)
+            project_id = int(values.get("project_id") or self.env.context.get("default_project_id") or 0)
+            if project_id and not values.get("plan_id"):
+                project = self.env["project.project"].browse(project_id).exists()
+                if project:
+                    values["plan_id"] = self.env["construction.wbs.plan"]._ensure_initial_plan(project).id
+            values_list.append(values)
+        return super().create(values_list)
+
+    def write(self, vals):
+        structural_fields = {"project_id", "plan_id", "parent_id", "sequence", "code", "name", "level_type", "active"}
+        if structural_fields.intersection(vals) and self.filtered(lambda rec: rec.plan_id.state in {"published", "archived"}):
+            raise UserError("已发布或已归档的 WBS 版本不可修改，请先发起调整版本。")
+        return super().write(vals)
 
     def _ordered_siblings(self):
         self.ensure_one()
@@ -212,6 +269,8 @@ class ConstructionWorkBreakdown(models.Model):
 
     def _create_planned_wbs(self, parent):
         self.ensure_one()
+        if self.plan_id and self.plan_id.state not in {"draft", "validated", "adjusting"}:
+            raise UserError("当前 WBS 版本不可编辑，请先发起调整版本。")
         siblings = self.search(
             [
                 ("project_id", "=", self.project_id.id),
@@ -225,6 +284,7 @@ class ConstructionWorkBreakdown(models.Model):
         return self.create(
             {
                 "project_id": self.project_id.id,
+                "plan_id": self.plan_id.id,
                 "parent_id": parent.id or False,
                 "code": code,
                 "name": "新增 WBS",
@@ -290,6 +350,8 @@ class ConstructionWorkBreakdown(models.Model):
         return True
 
     def unlink(self):
+        if self.filtered(lambda rec: rec.plan_id.state in {"published", "archived"}):
+            raise UserError("已发布或已归档的 WBS 版本不可删除节点。")
         protected = self.filtered(
             lambda rec: rec.task_ids
             or rec.execution_scope_ids.mapped("allocation_ids").filtered("active")

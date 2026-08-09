@@ -155,6 +155,59 @@ class TestBoqVersionContract(TransactionCase):
         self.assertEqual(first_package.boq_line_count, 2)
         self.assertEqual(first_package.boq_amount_total, 40.0)
 
+    def test_wbs_plan_lifecycle_preserves_published_version(self):
+        Plan = self.env["construction.wbs.plan"]
+        Work = self.env["construction.work.breakdown"]
+        plan = Plan.create({
+            "name": "项目管理 WBS",
+            "version_code": "V9.0",
+            "project_id": self.project.id,
+        })
+        root = Work.create({
+            "project_id": self.project.id,
+            "plan_id": plan.id,
+            "name": "实施阶段",
+            "code": "WBS-9",
+            "level_type": "phase",
+        })
+        Work.create({
+            "project_id": self.project.id,
+            "plan_id": plan.id,
+            "parent_id": root.id,
+            "name": "施工工作包",
+            "code": "WBS-9.1",
+            "level_type": "work_package",
+        })
+
+        plan.action_validate_plan()
+        self.assertEqual((plan.state, plan.validation_state), ("validated", "passed"))
+        plan.action_publish_plan()
+        self.assertEqual(plan.state, "published")
+        with self.assertRaises(UserError):
+            root.write({"name": "禁止修改已发布节点"})
+
+        action = plan.action_start_adjustment()
+        revision = Plan.search([("source_plan_id", "=", plan.id)], limit=1)
+        self.assertTrue(revision)
+        self.assertEqual((revision.version_code, revision.state), ("V9.1", "adjusting"))
+        self.assertEqual(revision.node_count, 2)
+        self.assertEqual(plan.state, "published")
+        self.assertEqual(action["res_id"], revision.id)
+        revision.node_ids.filtered(lambda node: node.code == "WBS-9.1").write({"name": "调整后的工作包"})
+
+    def test_wbs_plan_failed_validation_remains_auditable(self):
+        plan = self.env["construction.wbs.plan"].create({
+            "name": "待完善 WBS",
+            "version_code": "V8.0",
+            "project_id": self.project.id,
+        })
+
+        self.assertFalse(plan.action_validate_plan())
+        self.assertEqual((plan.state, plan.validation_state), ("draft", "failed"))
+        self.assertIn("至少需要一个 WBS 节点", plan.validation_message)
+        self.assertEqual(plan.validated_by_id, self.env.user)
+        self.assertTrue(plan.validated_at)
+
     def test_boq_allocation_supports_quantity_amount_and_ratio_bases(self):
         version = self._version("ALLOCATION-BASES")
         line = self._line(version)

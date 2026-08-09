@@ -310,6 +310,38 @@ async function verifyWbsHierarchy(page, actionId, state) {
   };
 }
 
+async function verifyWbsVersionGovernance(page) {
+  const versionRow = page.locator('.desktop-record-table tbody tr, table tbody tr').filter({ hasText: 'V1.0' }).first();
+  await versionRow.click();
+  await page.waitForURL((url) => url.pathname.startsWith('/f/'), { timeout: 30_000 });
+  await page.locator('[data-product-page-mode="form"]').first().waitFor({ timeout: 30_000 });
+  await page.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 30_000 });
+  const formText = await page.locator('body').innerText();
+  check(await page.locator('[data-field-name="version_code"] input').inputValue() === 'V1.0', 'WBS_VERSION_FORM_VALUE_MISSING:V1.0');
+  for (const expected of ['草稿', '待校验', '4']) {
+    check(formText.includes(expected), `WBS_VERSION_FORM_FACT_MISSING:${expected}:${formText.replace(/\s+/g, ' ').slice(0, 1400)}`);
+  }
+  const formScreenshot = path.join(outputDir, 'wbs-version-v1-draft.png');
+  await page.screenshot({ path: formScreenshot, fullPage: true, animations: 'disabled' });
+  await page.getByRole('button', { name: '编制 WBS', exact: true }).click();
+  try {
+    await page.waitForURL((url) => url.pathname === `/a/${targets.cost_wbs.action_id}`, { timeout: 30_000 });
+    await page.locator('.hierarchy-planner').waitFor({ timeout: 30_000 });
+  } catch (error) {
+    await page.screenshot({ path: path.join(outputDir, 'wbs-version-open-structure-failed.png'), fullPage: true });
+    throw new Error(`WBS_VERSION_OPEN_STRUCTURE_FAILED:url=${page.url()}:body=${(await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 1800)}; ${error.message}`);
+  }
+  const governance = page.locator('.planner-governance');
+  await governance.waitFor({ timeout: 30_000 });
+  const governanceText = await governance.innerText();
+  for (const expected of ['版本', 'V1.0', '状态', '草稿', '完整性', '待校验', '最近更新']) {
+    check(governanceText.includes(expected), `WBS_GOVERNANCE_FACT_MISSING:${expected}:${governanceText}`);
+  }
+  const plannerScreenshot = path.join(outputDir, 'wbs-version-governed-planner.png');
+  await page.screenshot({ path: plannerScreenshot, fullPage: true, animations: 'disabled' });
+  return { version: 'V1.0', state: 'draft', validation: 'pending', nodeCount: 4, formScreenshot, plannerScreenshot };
+}
+
 async function main() {
   check(password, 'E2E_PASSWORD_REQUIRED');
   check(projectId > 0 && versionId > 0, 'BOQ_RECORD_IDS_REQUIRED');
@@ -322,9 +354,18 @@ async function main() {
   try {
     await login(page);
     if (String(process.env.BOQ_BROWSER_SCOPE || '') === 'wbs') {
-      pages.push(await openList(page, 'cost-wbs-list', targets.cost_wbs, '凯江大回湾', 'planner'));
+      let wbsVersionGovernance = null;
+      if (targets.wbs_plan) {
+        pages.push(await openList(page, 'wbs-version-list', targets.wbs_plan, 'V1.0'));
+        wbsVersionGovernance = await verifyWbsVersionGovernance(page);
+      } else {
+        pages.push(await openList(page, 'cost-wbs-list', targets.cost_wbs, '凯江大回湾', 'planner'));
+      }
       const wbsHierarchy = await verifyWbsHierarchy(page, Number(targets.cost_wbs.action_id), state);
-      const result = { status: 'PASS', database, login: loginName, projectId, versionId, pages, wbsHierarchy, runtime: state };
+      check(state.pageErrors.length === 0, `WBS_PAGE_ERRORS:${JSON.stringify(state.pageErrors)}`);
+      check(state.httpErrors.length === 0, `WBS_HTTP_ERRORS:${JSON.stringify(state.httpErrors)}`);
+      check(state.consoleErrors.length === 0, `WBS_CONSOLE_ERRORS:${JSON.stringify(state.consoleErrors)}`);
+      const result = { status: 'PASS', database, login: loginName, projectId, versionId, pages, wbsVersionGovernance, wbsHierarchy, runtime: state };
       delete result.runtime.contractResponses;
       fs.writeFileSync(path.join(outputDir, 'wbs-result.json'), `${JSON.stringify(result, null, 2)}\n`);
       console.log(JSON.stringify(result));
