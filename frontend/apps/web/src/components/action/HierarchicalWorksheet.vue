@@ -104,11 +104,12 @@ import ProductListHeader from '../product-list/ProductListHeader.vue';
 import HierarchyTreeNode from './HierarchyTreeNode.vue';
 
 type Dict = Record<string, unknown>;
-type Column = { field: string; label: string; type: string; selection: Array<[unknown, string]>; align: string; width: number; precision?: number };
-type DetailField = { field: string; label: string; type: string; selection: Array<[unknown, string]> };
+type Column = { field: string; label: string; type: string; selection: Array<[string, string]>; align: string; width: number; precision?: number };
+type DetailField = { field: string; label: string; type: string; selection: Array<[string, string]> };
 type DetailTab = { key: string; label: string; fields: DetailField[] };
 type SurfaceAction = { key: string; label: string; action_id: number; menu_id: number; route: string; variant: string };
 type VisibleEntry = { key: string; node: WorksheetNode; record: WorksheetDict | null; ordinal: number; rowKind: string };
+type NavigationTreeNode = { key: string; id: number; levelKey?: string; code: string; label: string; children: NavigationTreeNode[] };
 
 const props = withDefaults(defineProps<{ config: Dict; preferenceScope?: string }>(), { preferenceScope: 'default' });
 const emit = defineEmits<{ 'open-record': [row: WorksheetDict]; 'open-action': [action: SurfaceAction] }>();
@@ -218,7 +219,7 @@ function groupValue(node: WorksheetNode, field: string): unknown {
   const value = source ? node.raw[source] : '';
   return value === null || value === undefined || value === false ? '' : value;
 }
-function formatValue(value: unknown, field: { type: string; selection?: Array<[unknown, string]>; precision?: number }): string {
+function formatValue(value: unknown, field: { type: string; selection?: Array<[string, string]>; precision?: number }): string {
   if (
     typeof field.precision === 'number'
     && ['float', 'monetary'].includes(String(field.type || '').trim().toLowerCase())
@@ -250,7 +251,8 @@ function selectEntry(entry: VisibleEntry) {
   selectedNode.value = entry.node;
   selectedRecord.value = entry.record;
 }
-function selectNavigation(node: WorksheetNode | null) {
+function selectNavigation(rawNode: NavigationTreeNode | null) {
+  const node = rawNode as WorksheetNode | null;
   if (!node) { selectedNavigationNode.value = null; return; }
   const find = (items: WorksheetNode[]): WorksheetNode | null => {
     for (const item of items) {
@@ -262,7 +264,8 @@ function selectNavigation(node: WorksheetNode | null) {
   };
   selectedNavigationNode.value = find(roots.value) || node;
 }
-function toggleNavigation(node: WorksheetNode) {
+function toggleNavigation(rawNode: NavigationTreeNode) {
+  const node = rawNode as WorksheetNode;
   const next = new Set(navigationExpandedKeys.value);
   if (next.has(node.key)) next.delete(node.key); else next.add(node.key);
   navigationExpandedKeys.value = next;

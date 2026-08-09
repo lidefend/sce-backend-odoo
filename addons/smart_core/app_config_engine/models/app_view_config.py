@@ -656,6 +656,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                         order_default = root.get('default_order')
                     collection_semantics = {
                         'smart_hierarchy_browser': 'hierarchy_browser',
+                        'smart_hierarchy_planner': 'hierarchy_planner',
                         'smart_hierarchical_worksheet': 'hierarchical_worksheet',
                     }
                     collection_semantic = collection_semantics.get(root.get('js_class'))

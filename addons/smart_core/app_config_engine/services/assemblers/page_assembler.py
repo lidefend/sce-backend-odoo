@@ -679,7 +679,8 @@ class PageAssembler:
         if str(presentation.get("semantic") or "").strip() == "hierarchical_worksheet":
             self._inject_native_hierarchical_worksheet(data, effective_context)
             return
-        if str(presentation.get("semantic") or "").strip() != "hierarchy_browser":
+        semantic = str(presentation.get("semantic") or "").strip()
+        if semantic not in {"hierarchy_browser", "hierarchy_planner"}:
             return
         raw_levels = effective_context.get("hierarchy_levels") if isinstance(effective_context, dict) else []
         if not isinstance(raw_levels, list) or not raw_levels:
@@ -710,6 +711,12 @@ class PageAssembler:
             parent_field = str(spec.get("parent_field") or "").strip()
             self_parent_field = str(spec.get("self_parent_field") or "").strip()
             domain_operator = str(spec.get("domain_operator") or "=").strip()
+            requested_order = str(spec.get("order") or "").strip()
+            safe_order = requested_order if re.fullmatch(
+                r"[A-Za-z_][A-Za-z0-9_]*(?:\s+(?:asc|desc))?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s+(?:asc|desc))?)*",
+                requested_order,
+                flags=re.IGNORECASE,
+            ) else ""
             if domain_operator not in {"=", "child_of"}:
                 continue
             required_fields = ["id", label_field]
@@ -732,7 +739,7 @@ class PageAssembler:
                 "fields": list(dict.fromkeys(required_fields)),
                 "label_field": label_field,
                 "code_field": code_field,
-                "order": str(dialog.get("order") or "id asc").strip(),
+                "order": safe_order or str(dialog.get("order") or "id asc").strip(),
             }
             if levels:
                 level["parent_key"] = levels[-1]["key"]
@@ -762,6 +769,8 @@ class PageAssembler:
             name = str(row.get("name") or "").strip()
             if not name:
                 continue
+            if semantic == "hierarchy_planner" and str(row.get("optional") or "").strip() == "hide":
+                continue
             descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
             column = {
                 "field": name,
@@ -771,6 +780,14 @@ class PageAssembler:
             if isinstance(descriptor.get("selection"), (list, tuple)):
                 column["selection"] = descriptor["selection"]
             columns.append(column)
+        if semantic == "hierarchy_planner":
+            structural_fields = {
+                str(value.get("field") or "").strip()
+                if isinstance(value, dict)
+                else str(value or "").strip()
+                for value in bindings.values()
+            }
+            columns = [column for column in columns if column["field"] not in structural_fields]
         form = views.get("form") if isinstance(views.get("form"), dict) else {}
         sections = self._native_form_detail_sections(form, fields_map)
         read_fields = ["id"]
@@ -789,6 +806,29 @@ class PageAssembler:
                 read_fields.append(name)
         native_toolbar = tree.get("toolbar") if isinstance(tree.get("toolbar"), dict) else {}
         actions = [dict(row) for row in native_toolbar.get("header") or [] if isinstance(row, dict)]
+        raw_create = effective_context.get("hierarchy_create") if isinstance(effective_context, dict) else {}
+        raw_create = raw_create if isinstance(raw_create, dict) else {}
+        create_label = str(raw_create.get("label") or "").strip()
+        raw_commands = effective_context.get("hierarchy_commands") if isinstance(effective_context, dict) else []
+        allowed_command_kinds = {"object"}
+        commands = []
+        for raw_command in raw_commands if isinstance(raw_commands, list) else []:
+            command = raw_command if isinstance(raw_command, dict) else {}
+            key = str(command.get("key") or "").strip()
+            label = str(command.get("label") or "").strip()
+            kind = str(command.get("kind") or "").strip()
+            method = str(command.get("method") or "").strip()
+            placement = str(command.get("placement") or "toolbar").strip()
+            group = str(command.get("group") or "structure").strip()
+            if not key or not label or kind not in allowed_command_kinds:
+                continue
+            if placement not in {"toolbar", "overflow"}:
+                continue
+            if not re.fullmatch(r"[a-z][a-z0-9_]*", group):
+                continue
+            if kind == "object" and not method:
+                continue
+            commands.append({"key": key, "label": label, "kind": kind, "method": method, "placement": placement, "group": group})
         try:
             visible_menu_ids = {int(value) for value in self.env["ir.ui.menu"]._visible_menu_ids()}
         except Exception:
@@ -814,6 +854,31 @@ class PageAssembler:
         native_toolbar["header"] = actions
         tree["toolbar"] = native_toolbar
         head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        surface_labels = {
+            "surface_aria": "层级计划编制" if semantic == "hierarchy_planner" else "层级数据浏览",
+            "subtitle": "",
+            "search_label": "搜索",
+            "search_placeholder": "请输入关键词",
+            "all": "全部",
+            "empty_children": "暂无下级数据",
+            "total_prefix": "共",
+            "total_suffix": "条",
+            "loading": "正在加载…",
+            "refresh": "刷新",
+            "previous": "上一页",
+            "next": "下一页",
+            "page_prefix": "第",
+            "page_suffix": "页",
+            "load_error": "数据加载失败",
+            "open": "打开",
+            "select_hint": "请选择一条记录",
+            "expand_all": "全部展开",
+            "collapse_all": "全部折叠",
+            "more": "更多",
+            "view": "视图",
+            "details": "节点详情",
+            "selected_prefix": "已选择",
+        }
         tree["collection_presentation"] = {
             **presentation,
             "enabled": True,
@@ -821,11 +886,17 @@ class PageAssembler:
                 "title": str(head.get("title") or "").strip(),
                 "tree_title": " / ".join(hierarchy_titles),
                 "create": {
-                    "enabled": bool((head.get("permissions") or {}).get("create")),
-                    "label": "新建",
+                    "enabled": bool((head.get("permissions") or {}).get("create")) and bool(create_label),
+                    "label": create_label,
                 },
+                "commands": commands,
                 "actions": actions,
                 "tree": {"levels": levels},
+                "planner": {
+                    "node_level_key": levels[-1]["key"],
+                    "outline_field": levels[-1]["label_field"],
+                    "code_field": levels[-1]["code_field"],
+                } if semantic == "hierarchy_planner" else {},
                 "list": {
                     "model": str(head.get("model") or "").strip(),
                     "fields": read_fields,
@@ -835,25 +906,7 @@ class PageAssembler:
                     "page_size": int(tree.get("page_size") or 50),
                 },
                 "detail": {"title": "", "sections": sections},
-                "labels": {
-                    "surface_aria": "层级数据浏览",
-                    "subtitle": "",
-                    "search_label": "搜索",
-                    "search_placeholder": "请输入关键词",
-                    "all": "全部",
-                    "empty_children": "暂无下级数据",
-                    "total_prefix": "共",
-                    "total_suffix": "条",
-                    "loading": "正在加载…",
-                    "refresh": "刷新",
-                    "previous": "上一页",
-                    "next": "下一页",
-                    "page_prefix": "第",
-                    "page_suffix": "页",
-                    "load_error": "数据加载失败",
-                    "open": "打开",
-                    "select_hint": "请选择一条记录查看详情",
-                },
+                "labels": surface_labels,
             },
         }
 

@@ -12,7 +12,7 @@
 </template>
 <script setup lang="ts">
 defineOptions({ name: 'HierarchyTreeNode' });
-type TreeNode = { key: string; id: number; levelKey: string; code: string; label: string; children: TreeNode[] };
+type TreeNode = { key: string; id: number; levelKey?: string; code: string; label: string; children: TreeNode[] };
 defineProps<{ node: TreeNode; selectedKey: string; expandedKeys: Set<string>; emptyChildrenLabel: string }>();
 defineEmits<{ select: [node: TreeNode]; toggle: [node: TreeNode] }>();
 </script>

@@ -31,7 +31,7 @@ export function shouldUseCanonicalCollectionDetail(options: {
   collectionSemantic: unknown;
 }): boolean {
   const semantic = String(options.collectionSemantic || '').trim().toLowerCase();
-  if (semantic === 'hierarchy_browser' || semantic === 'hierarchical_worksheet') return true;
+  if (semantic === 'hierarchy_browser' || semantic === 'hierarchy_planner' || semantic === 'hierarchical_worksheet') return true;
   return String(options.viewMode || '').trim().toLowerCase() === 'kanban' && semantic === 'card';
 }
 

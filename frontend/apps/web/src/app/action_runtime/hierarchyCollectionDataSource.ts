@@ -1,4 +1,5 @@
 import { listRecords } from '../../api/data';
+import { executeButton } from '../../api/executeButton';
 
 export type HierarchyDict = Record<string, unknown>;
 export type HierarchyLevelConfig = {
@@ -26,6 +27,13 @@ export type HierarchyListConfig = {
   bindings: HierarchyDict;
   order: string;
   pageSize: number;
+};
+export type HierarchyCommand = {
+  key: string;
+  label: string;
+  method: string;
+  placement?: 'toolbar' | 'overflow';
+  group?: string;
 };
 
 function normalizeRows(value: unknown): HierarchyDict[] {
@@ -107,4 +115,17 @@ export async function loadHierarchyRows(options: {
   });
   const rows = normalizeRows(result);
   return { rows, total: Number((result as unknown as HierarchyDict).total ?? rows.length) };
+}
+
+export async function executeHierarchyCommand(options: {
+  model: string;
+  recordId: number;
+  command: HierarchyCommand;
+}): Promise<void> {
+  await executeButton({
+    model: options.model,
+    res_id: options.recordId,
+    button: { name: options.command.method, type: 'object' },
+    context: {},
+  });
 }

@@ -92,7 +92,7 @@ export function normalizeActionViewMode(raw: unknown): string {
 }
 
 export type ActionCollectionPresentation = {
-  semantic: 'table' | 'card' | 'workflow_board' | 'hierarchy_browser' | 'hierarchical_worksheet' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard';
+  semantic: 'table' | 'card' | 'workflow_board' | 'hierarchy_browser' | 'hierarchy_planner' | 'hierarchical_worksheet' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard';
   label: string;
   groupField: string;
   groupedLanes: boolean;
@@ -108,7 +108,7 @@ export function resolveActionCollectionPresentation(
     const listProfile = resolveUnifiedPageContractV2ListProfile(contract);
     const formalPresentation = asDict(listProfile.collection_presentation);
     const formalSemantic = String(formalPresentation.semantic || '').trim();
-    if (['hierarchy_browser', 'hierarchical_worksheet'].includes(formalSemantic)
+    if (['hierarchy_browser', 'hierarchy_planner', 'hierarchical_worksheet'].includes(formalSemantic)
       && formalPresentation.enabled === true) {
       return {
         semantic: formalSemantic as ActionCollectionPresentation['semantic'],

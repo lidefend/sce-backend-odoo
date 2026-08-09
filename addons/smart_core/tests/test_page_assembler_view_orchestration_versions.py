@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import copy
 import sys
 import types
 import unittest
@@ -165,10 +166,16 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
             },
         }
         context = {
+            "hierarchy_create": {"label": "新增定额项"},
+            "hierarchy_commands": [
+                {"key": "add_child", "label": "Add child", "kind": "object", "method": "action_add_child"},
+                {"key": "missing_method", "label": "Invalid", "kind": "object"},
+                {"key": "frontend_route", "label": "Invalid", "kind": "route", "method": "ignored"},
+            ],
             "hierarchy_levels": [
                 {"field": "catalog_id", "code_field": "code", "label_field": "name"},
                 {"field": "specialty_id", "code_field": "code", "label_field": "name", "parent_field": "catalog_id"},
-                {"field": "chapter_id", "code_field": "code", "label_field": "name", "parent_field": "specialty_id", "self_parent_field": "parent_id", "domain_operator": "child_of"},
+                {"field": "chapter_id", "code_field": "code", "label_field": "name", "parent_field": "specialty_id", "self_parent_field": "parent_id", "domain_operator": "child_of", "order": "sequence, id"},
             ]
         }
 
@@ -178,9 +185,10 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertTrue(presentation["enabled"])
         self.assertEqual(presentation["source"], "native_view_derived")
         config = presentation["config"]
-        self.assertEqual(config["create"], {"enabled": True, "label": "新建"})
+        self.assertEqual(config["create"], {"enabled": True, "label": "新增定额项"})
         self.assertEqual([row["model"] for row in config["tree"]["levels"]], ["sc.norm.catalog", "sc.norm.specialty", "sc.norm.chapter"])
         self.assertEqual(config["tree"]["levels"][2]["self_parent_field"], "parent_id")
+        self.assertEqual(config["tree"]["levels"][2]["order"], "sequence, id")
         self.assertEqual(config["list"]["bindings"]["chapter_id"], {"field": "chapter_id", "operator": "child_of"})
         self.assertEqual(
             config["list"]["columns"],
@@ -190,7 +198,40 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
             ],
         )
         self.assertEqual(config["actions"][0]["key"], "action:856")
+        self.assertEqual(
+            config["commands"],
+            [
+                {
+                    "key": "add_child",
+                    "label": "Add child",
+                    "kind": "object",
+                    "method": "action_add_child",
+                    "placement": "toolbar",
+                    "group": "structure",
+                }
+            ],
+        )
         self.assertEqual(config["tree_title"], "所属定额库 / 所属专业 / 所属章节")
+
+        planner_data = copy.deepcopy(data)
+        planner_data["views"]["tree"]["collection_presentation"]["semantic"] = "hierarchy_planner"
+        self.assembler._inject_native_collection_presentation(planner_data, context)
+        planner_presentation = planner_data["views"]["tree"]["collection_presentation"]
+        self.assertEqual(planner_presentation["semantic"], "hierarchy_planner")
+        self.assertTrue(planner_presentation["enabled"])
+        self.assertEqual(planner_presentation["config"]["planner"]["node_level_key"], "chapter_id")
+        self.assertEqual(planner_presentation["config"]["planner"]["outline_field"], "name")
+        self.assertEqual(planner_presentation["config"]["planner"]["code_field"], "code")
+
+        fail_closed_data = copy.deepcopy(data)
+        fail_closed_context = dict(context)
+        fail_closed_context.pop("hierarchy_create")
+        self.assembler._inject_native_collection_presentation(fail_closed_data, fail_closed_context)
+        self.assertEqual(
+            fail_closed_data["views"]["tree"]["collection_presentation"]["config"]["create"],
+            {"enabled": False, "label": ""},
+            "通用装配器不得补写任何新增业务文案",
+        )
 
     def test_hierarchy_structural_fields_can_extend_relation_dialog_columns(self):
         class RelationModel:

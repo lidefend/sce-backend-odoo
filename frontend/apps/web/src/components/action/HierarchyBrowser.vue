@@ -80,7 +80,13 @@
         @keydown="resizeWithKeyboard('right', $event)"
       />
       <aside class="hierarchy-detail">
-        <div class="detail-head"><h3>{{ detailConfig.title }}</h3><ScButton v-if="selectedRow" @click="openRow(selectedRow.id)">{{ labels.open }}</ScButton></div>
+        <div class="detail-head">
+          <h3>{{ detailConfig.title }}</h3>
+          <div class="detail-actions">
+            <ScButton v-for="command in commands" :key="command.key" :disabled="!selectedRow || commandBusy" variant="secondary" @click="runCommand(command)">{{ command.label }}</ScButton>
+            <ScButton v-if="selectedRow" @click="openRow(selectedRow.id)">{{ labels.open }}</ScButton>
+          </div>
+        </div>
         <div class="hierarchy-detail-scroll">
           <div v-if="!selectedRow" class="detail-empty">{{ labels.select_hint }}</div>
           <template v-else>
@@ -104,6 +110,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import {
   loadHierarchyRows,
   loadHierarchyTree,
+  executeHierarchyCommand,
+  type HierarchyCommand,
   type HierarchyLevelConfig,
   type HierarchyTreeNode as HierarchyNode,
 } from '../../app/action_runtime/hierarchyCollectionDataSource';
@@ -117,7 +125,7 @@ import HierarchyTreeNode from './HierarchyTreeNode.vue';
 type Dict = Record<string, unknown>;
 type LevelConfig = HierarchyLevelConfig;
 type TreeNode = HierarchyNode;
-type Column = { field: string; label: string; type?: string; ttype?: string; selection?: Array<[unknown, string]> };
+type Column = { field: string; label: string; type?: string; ttype?: string; selection?: Array<[string, string]> };
 type DetailSection = { title: string; fields: Column[] };
 type SurfaceAction = { key: string; label: string; action_id: number; menu_id: number; variant: string; route: string };
 const props = withDefaults(defineProps<{ config: Dict; preferenceScope?: string }>(), { preferenceScope: 'default' });
@@ -125,6 +133,7 @@ const emit = defineEmits<{ 'open-record': [row: Dict]; 'open-action': [action: S
 const rows = ref<Dict[]>([]); const total = ref(0); const offset = ref(0); const keyword = ref('');
 const selectedNode = ref<TreeNode | null>(null); const selectedRow = ref<Dict | null>(null); const expandedKeys = ref(new Set<string>());
 const rootNodes = ref<TreeNode[]>([]); const loading = ref(false); const errorMessage = ref('');
+const commandBusy = ref(false);
 const leftWidth = ref(280); const leftMinWidth = ref(180); const leftMaxWidth = ref(520);
 const rightWidth = ref(320); const rightMinWidth = ref(220); const rightMaxWidth = ref(560);
 const layoutElement = ref<HTMLElement | null>(null); const workspaceHeight = ref(560); const workspaceMinHeight = ref(560);
@@ -135,7 +144,7 @@ const defaultLabels: Dict = { surface_aria: 'hierarchy browser', subtitle: '', s
 const labels = computed(() => ({ ...defaultLabels, ...(props.config.labels && typeof props.config.labels === 'object' ? props.config.labels as Dict : {}) }) as Record<string, string>);
 const createConfig = computed(() => {
   const raw = props.config.create && typeof props.config.create === 'object' ? props.config.create as Dict : {};
-  return { enabled: raw.enabled === true, label: String(raw.label || '新建') };
+  return { enabled: raw.enabled === true && Boolean(String(raw.label || '').trim()), label: String(raw.label || '') };
 });
 const levels = computed<LevelConfig[]>(() => {
   const tree = props.config.tree && typeof props.config.tree === 'object' ? props.config.tree as Dict : {};
@@ -156,6 +165,10 @@ const actions = computed<SurfaceAction[]>(() => (Array.isArray(props.config.acti
   const row = value as Dict;
   return { key: String(row.key || row.action_id || ''), label: String(row.label || ''), action_id: Number(row.action_id || 0), menu_id: Number(row.menu_id || 0), variant: String(row.variant || ''), route: String(row.route || '') };
 }).filter((row) => row.key && row.label && row.action_id > 0));
+const commands = computed<HierarchyCommand[]>(() => (Array.isArray(props.config.commands) ? props.config.commands : []).map((value) => {
+  const row = value as Dict;
+  return { key: String(row.key || ''), label: String(row.label || ''), method: String(row.method || '') };
+}).filter((row) => row.key && row.label && row.method));
 const columnGridStyle = computed(() => ({ gridTemplateColumns: `${leftWidth.value}px calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) minmax(360px, 1fr) calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) ${rightWidth.value}px` }));
 const layoutGridStyle = computed(() => ({ ...columnGridStyle.value, height: `${workspaceHeight.value}px` }));
 const pageSize = computed(() => listConfig.value.pageSize);
@@ -232,6 +245,21 @@ function resizeWithKeyboard(side: 'left' | 'right', event: KeyboardEvent): void 
 }
 function openRow(id: unknown): void { const recordId = Number(id || 0); if (recordId) emit('open-record', { id: recordId }); }
 function createRecord(): void { emit('open-record', { id: 'new' }); }
+async function runCommand(command: HierarchyCommand): Promise<void> {
+  if (!selectedRow.value || commandBusy.value) return;
+  if (!command.method) return;
+  commandBusy.value = true;
+  errorMessage.value = '';
+  try {
+    await executeHierarchyCommand({ model: listConfig.value.model, recordId: Number(selectedRow.value.id), command });
+    await loadTree();
+    await loadRows(offset.value);
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : labels.value.load_error;
+  } finally {
+    commandBusy.value = false;
+  }
+}
 function openAction(action: SurfaceAction): void {
   if (action.key) emit('open-action', action);
 }
