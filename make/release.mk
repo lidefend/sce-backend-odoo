@@ -204,7 +204,7 @@ PRODUCTION_ACCEPTANCE_TENANT_REPOSITORY ?=
 PRODUCTION_ACCEPTANCE_TENANT_SHA ?=
 PRODUCTION_ACCEPTANCE_TENANT_MODULE ?=
 PRODUCTION_ACCEPTANCE_PORT ?= 18095
-PRODUCTION_ACCEPTANCE_UPGRADE_MODULE ?= sc_norm_engine
+PRODUCTION_ACCEPTANCE_UPGRADE_MODULES ?= smart_core,smart_construction_core,sc_norm_engine
 PRODUCTION_ACCEPTANCE_PAYLOAD_ID ?=
 PRODUCTION_ACCEPTANCE_PAYLOAD_CHECKSUM ?=
 DAILY_ACCEPTANCE_CANDIDATE_ARCHIVE ?=
@@ -288,11 +288,11 @@ production.acceptance.clone.remote_refresh_image: production.acceptance.backup.r
 
 production.acceptance.clone.remote_upgrade_module: guard.prod.forbid
 	@[[ "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" =~ ^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$$ ]] || { echo "invalid restore ID" >&2; exit 2; }
-	@test "$(PRODUCTION_ACCEPTANCE_UPGRADE_MODULE)" = "sc_norm_engine" || { echo "only sc_norm_engine is admitted" >&2; exit 2; }
-	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_MODULE_UPGRADE:-}" = "UPGRADE_NORM_ENGINE_IN_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE" || { echo "exact acceptance module upgrade confirmation is required" >&2; exit 2; }
+	@test "$(PRODUCTION_ACCEPTANCE_UPGRADE_MODULES)" = "smart_core,smart_construction_core,sc_norm_engine" || { echo "only the ordered product module set is admitted" >&2; exit 2; }
+	@test "$${CONFIRM_PRODUCTION_ACCEPTANCE_MODULE_UPGRADE:-}" = "UPGRADE_PRODUCT_MODULE_SET_IN_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE" || { echo "exact acceptance module upgrade confirmation is required" >&2; exit 2; }
 	@$(MAKE) --no-print-directory production.acceptance.backup.remote_install
 	@$(MAKE) --no-print-directory production.acceptance.tenant.remote_install
-	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_MODULE_UPGRADE=UPGRADE_NORM_ENGINE_IN_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_clone_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --tenant-sha "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" --tenant-module "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" --image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --source-sha "$(PRODUCTION_ACCEPTANCE_SOURCE_REVISION)" --port "$(PRODUCTION_ACCEPTANCE_PORT)" --upgrade-module "$(PRODUCTION_ACCEPTANCE_UPGRADE_MODULE)"'
+	@ssh "$(PRODUCTION_ACCEPTANCE_DAILY_HOST)" 'CONFIRM_PRODUCTION_ACCEPTANCE_MODULE_UPGRADE=UPGRADE_PRODUCT_MODULE_SET_IN_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE python3 "$(PRODUCTION_ACCEPTANCE_REMOTE_ROOT)/scripts/ops/production_acceptance_clone_runtime.py" --restore-id "$(PRODUCTION_ACCEPTANCE_RESTORE_ID)" --tenant-sha "$(PRODUCTION_ACCEPTANCE_TENANT_SHA)" --tenant-module "$(PRODUCTION_ACCEPTANCE_TENANT_MODULE)" --image "$(PRODUCTION_ACCEPTANCE_SOURCE_IMAGE_ID)" --source-sha "$(PRODUCTION_ACCEPTANCE_SOURCE_REVISION)" --port "$(PRODUCTION_ACCEPTANCE_PORT)" --upgrade-modules "$(PRODUCTION_ACCEPTANCE_UPGRADE_MODULES)"'
 
 .PHONY: verify.production.acceptance.payload production.acceptance.payload.remote.plan production.acceptance.payload.remote.import production.acceptance.payload.remote.verify
 

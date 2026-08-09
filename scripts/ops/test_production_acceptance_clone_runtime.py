@@ -58,14 +58,21 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             {RUNTIME.CONFIRMATION, RUNTIME.REFRESH_CONFIRMATION},
         )
 
-    def test_module_upgrade_is_narrow_and_stop_after_init(self) -> None:
-        self.assertEqual(RUNTIME.UPGRADE_MODULES, frozenset({"sc_norm_engine"}))
+    def test_module_upgrade_is_narrow_ordered_and_stop_after_init(self) -> None:
+        self.assertEqual(
+            RUNTIME.UPGRADE_MODULES,
+            ("smart_core", "smart_construction_core", "sc_norm_engine"),
+        )
+        self.assertEqual(
+            RUNTIME.UPGRADE_MODULE_SET,
+            "smart_core,smart_construction_core,sc_norm_engine",
+        )
         self.assertNotIn(
             RUNTIME.MODULE_UPGRADE_CONFIRMATION,
             {RUNTIME.CONFIRMATION, RUNTIME.REFRESH_CONFIRMATION, RUNTIME.IMAGE_REFRESH_CONFIRMATION},
         )
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn('"-u", module, "--without-demo=all", "--stop-after-init"', source)
+        self.assertIn('"-u", modules, "--without-demo=all", "--stop-after-init"', source)
         self.assertIn('["docker", "stop", "--time", "30", odoo]', source)
         self.assertIn("not 18080 <= port <= 18120", source)
         self.assertEqual(
