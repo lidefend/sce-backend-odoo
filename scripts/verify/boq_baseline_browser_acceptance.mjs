@@ -310,7 +310,16 @@ async function main() {
     pages.push(await openList(page, 'cost-wbs-list', targets.cost_wbs, '凯江大回湾', 'hierarchy'));
     const wbsHierarchy = await verifyWbsHierarchy(page, Number(targets.cost_wbs.action_id));
     pages.push(await openList(page, 'location-lbs-list', targets.location_lbs, '空间位置 LBS', 'hierarchy'));
+    check(await page.locator('.hierarchy-browser').getByRole('button', { name: '新建', exact: true }).count() === 1, 'LBS_CREATE_ACTION_MISSING');
+    await page.locator('.hierarchy-browser').getByRole('button', { name: '新建', exact: true }).click();
+    await page.waitForURL(/\/f\/construction\.location\.breakdown\/new(?:\?|$)/, { timeout: 30_000 });
+    await page.locator('[data-product-page-mode="form"]').first().waitFor({ timeout: 30_000 });
+    await page.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 30_000 });
+    check(await page.locator('[data-field-name="project_id"] input').count() === 1, 'LBS_CREATE_FORM_PROJECT_MISSING');
+    check(await page.locator('[data-field-name="location_type"]').count() >= 1, 'LBS_CREATE_FORM_TYPE_MISSING');
+    await page.screenshot({ path: path.join(outputDir, 'location-lbs-create-form.png'), fullPage: true, animations: 'disabled' });
     pages.push(await openList(page, 'contract-section-list', targets.contract_section, '标段结构', 'hierarchy'));
+    check(await page.locator('.hierarchy-browser').getByRole('button', { name: '新建', exact: true }).count() === 1, 'CONTRACT_SECTION_CREATE_ACTION_MISSING');
     pages.push(await openList(page, 'execution-scope-list', targets.execution_scope, '凯江大回湾'));
     pages.push(await openList(page, 'boq-allocation-list', targets.boq_allocation, '按比例'));
     const allocationBody = await page.locator('body').innerText();
