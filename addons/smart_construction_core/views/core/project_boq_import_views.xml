@@ -20,8 +20,13 @@
                         <field name="preview_row_count"/>
                         <field name="preview_item_count"/>
                         <field name="preview_heading_count"/>
+                        <field name="preview_calculation_detail_count"/>
                         <field name="preview_summary_count"/>
                         <field name="preview_skipped_count"/>
+                        <field name="preview_analysis_count"/>
+                        <field name="preview_norm_line_count"/>
+                        <field name="preview_resource_line_count"/>
+                        <field name="preview_summary_component_count"/>
                     </group>
                     <group>
                         <field name="preview_amount"/>

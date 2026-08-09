@@ -1,0 +1,171 @@
+<odoo>
+    <record id="view_project_boq_analysis_tree" model="ir.ui.view">
+        <field name="name">project.boq.analysis.tree</field>
+        <field name="model">project.boq.analysis</field>
+        <field name="arch" type="xml">
+            <tree string="综合单价分析" create="false" delete="false">
+                <field name="project_id"/>
+                <field name="version_id"/>
+                <field name="single_name" optional="show"/>
+                <field name="unit_name" optional="show"/>
+                <field name="major_name" optional="show"/>
+                <field name="boq_code"/>
+                <field name="name"/>
+                <field name="uom_raw"/>
+                <field name="source_quantity"/>
+                <field name="source_unit_price"/>
+                <field name="labor_unit_amount"/>
+                <field name="material_unit_amount"/>
+                <field name="machine_unit_amount"/>
+                <field name="overhead_unit_amount" optional="show"/>
+                <field name="profit_unit_amount" optional="show"/>
+                <field name="unit_price_variance" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_project_boq_analysis_form" model="ir.ui.view">
+        <field name="name">project.boq.analysis.form</field>
+        <field name="model">project.boq.analysis</field>
+        <field name="arch" type="xml">
+            <form string="综合单价分析" create="false" delete="false">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="project_id"/>
+                            <field name="version_id"/>
+                            <field name="boq_line_id"/>
+                            <field name="boq_code"/>
+                            <field name="uom_raw"/>
+                            <field name="source_quantity"/>
+                        </group>
+                        <group>
+                            <field name="source_unit_price"/>
+                            <field name="component_unit_total"/>
+                            <field name="unit_price_variance"/>
+                            <field name="single_name"/>
+                            <field name="unit_name"/>
+                            <field name="major_name"/>
+                        </group>
+                    </group>
+                    <group string="综合单价组成">
+                        <field name="labor_unit_amount"/>
+                        <field name="material_unit_amount"/>
+                        <field name="machine_unit_amount"/>
+                        <field name="overhead_unit_amount"/>
+                        <field name="profit_unit_amount"/>
+                    </group>
+                    <notebook>
+                        <page string="定额组成">
+                            <field name="norm_line_ids" readonly="1">
+                                <tree create="false" delete="false">
+                                    <field name="sequence"/>
+                                    <field name="norm_code"/>
+                                    <field name="name"/>
+                                    <field name="unit_raw"/>
+                                    <field name="budget_consumption"/>
+                                    <field name="amount_labor"/>
+                                    <field name="amount_material"/>
+                                    <field name="amount_machine"/>
+                                    <field name="amount_overhead"/>
+                                    <field name="amount_profit"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="材料消耗">
+                            <field name="resource_line_ids" readonly="1">
+                                <tree create="false" delete="false">
+                                    <field name="sequence"/>
+                                    <field name="resource_type"/>
+                                    <field name="name"/>
+                                    <field name="unit_raw"/>
+                                    <field name="budget_consumption"/>
+                                    <field name="budget_unit_price"/>
+                                    <field name="budget_unit_amount"/>
+                                    <field name="provisional_unit_price" optional="hide"/>
+                                    <field name="provisional_unit_amount" optional="hide"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_project_boq_analysis_search" model="ir.ui.view">
+        <field name="name">project.boq.analysis.search</field>
+        <field name="model">project.boq.analysis</field>
+        <field name="arch" type="xml">
+            <search string="综合单价分析">
+                <field name="project_id"/>
+                <field name="version_id"/>
+                <field name="boq_code"/>
+                <field name="name"/>
+                <field name="single_name"/>
+                <field name="unit_name"/>
+                <field name="major_name"/>
+                <group expand="0" string="分组">
+                    <filter string="项目" name="group_project" context="{'group_by': 'project_id'}"/>
+                    <filter string="单位工程" name="group_unit" context="{'group_by': 'unit_name'}"/>
+                    <filter string="专业" name="group_major" context="{'group_by': 'major_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_project_boq_analysis" model="ir.actions.act_window">
+        <field name="name">综合单价分析</field>
+        <field name="res_model">project.boq.analysis</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_project_boq_analysis_search"/>
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
+    </record>
+
+    <record id="view_project_boq_version_form_analysis" model="ir.ui.view">
+        <field name="name">project.boq.version.form.analysis</field>
+        <field name="model">project.boq.version</field>
+        <field name="inherit_id" ref="smart_construction_core.view_project_boq_version_form"/>
+        <field name="arch" type="xml">
+            <field name="item_count" position="after">
+                <field name="analysis_count"/>
+                <field name="summary_component_count"/>
+            </field>
+            <xpath expr="//notebook" position="inside">
+                <page string="综合单价分析">
+                    <field name="analysis_ids" readonly="1">
+                        <tree create="false" delete="false">
+                            <field name="boq_code"/>
+                            <field name="name"/>
+                            <field name="unit_name" optional="show"/>
+                            <field name="major_name" optional="show"/>
+                            <field name="source_unit_price"/>
+                            <field name="labor_unit_amount"/>
+                            <field name="material_unit_amount"/>
+                            <field name="machine_unit_amount"/>
+                            <field name="overhead_unit_amount"/>
+                            <field name="profit_unit_amount"/>
+                        </tree>
+                    </field>
+                </page>
+                <page string="单位工程汇总">
+                    <field name="summary_component_ids" readonly="1">
+                        <tree create="false" delete="false">
+                            <field name="source_sheet_index"/>
+                            <field name="unit_name"/>
+                            <field name="major_name"/>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="component_type" widget="badge"/>
+                            <field name="amount"/>
+                            <field name="calc_base" optional="hide"/>
+                            <field name="source_rate" optional="hide"/>
+                            <field name="provisional_amount" optional="hide"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

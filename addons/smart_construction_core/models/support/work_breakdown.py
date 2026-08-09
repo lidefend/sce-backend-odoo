@@ -188,6 +188,13 @@ class ConstructionWorkBreakdown(models.Model):
         for rec in self:
             rec.level = rec.parent_id.level + 1 if rec.parent_id else 0
 
+    @api.depends(
+        "project_id",
+        "parent_id",
+        "sequence",
+        "plan_id",
+        "plan_id.state",
+    )
     def _compute_structure_command_state(self):
         """Expose row-specific structure action authority without frontend inference."""
         grouped = {}

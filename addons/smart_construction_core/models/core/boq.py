@@ -358,6 +358,19 @@ class ProjectBoqLine(models.Model):
         store=True,
         group_operator=False,
     )
+    source_calc_base = fields.Char(
+        "来源计算基础",
+        readonly=True,
+        help="总价措施、规费和税金在源文件中声明的计算基础表达式。",
+    )
+    source_rate = fields.Float("来源费率(%)", readonly=True, digits=(16, 6))
+    has_source_rate = fields.Boolean("存在来源费率", readonly=True)
+    is_calculation_detail = fields.Boolean(
+        "计算明细行",
+        readonly=True,
+        index=True,
+        help="保留源文件计算明细但不重复计入清单版本总额。",
+    )
     calculation_scope_item_count = fields.Integer("计算范围清单项数", readonly=True)
     calculation_scope_start_sequence = fields.Integer("计算范围起始序号", readonly=True)
     calculation_scope_end_sequence = fields.Integer("计算范围结束序号", readonly=True)
@@ -489,10 +502,17 @@ class ProjectBoqLine(models.Model):
             else:
                 rec.amount = qty * price
 
-    @api.depends("line_type", "quantity", "price", "imported_amount", "has_imported_amount")
+    @api.depends(
+        "line_type",
+        "quantity",
+        "price",
+        "imported_amount",
+        "has_imported_amount",
+        "is_calculation_detail",
+    )
     def _compute_amount_leaf(self):
         for rec in self:
-            if rec.line_type == "item":
+            if rec.line_type == "item" and not rec.is_calculation_detail:
                 rec.amount_leaf = (
                     rec.imported_amount
                     if rec.has_imported_amount

@@ -97,12 +97,17 @@ class ProjectBoqImportWizard(models.TransientModel):
     preview_item_count = fields.Integer("清单项数", readonly=True)
     preview_summary_count = fields.Integer("保留汇总行", readonly=True)
     preview_heading_count = fields.Integer("保留结构标题行", readonly=True)
+    preview_calculation_detail_count = fields.Integer("保留费用计算明细", readonly=True)
     preview_skipped_count = fields.Integer(
         "忽略空白/辅助行",
         readonly=True,
         help="仅统计空白或无业务含义的辅助行；结构标题、页内小计和合计均完整保留。",
     )
     preview_warning_count = fields.Integer("警告数", readonly=True)
+    preview_analysis_count = fields.Integer("综合单价分析数", readonly=True)
+    preview_norm_line_count = fields.Integer("定额组成行数", readonly=True)
+    preview_resource_line_count = fields.Integer("资源消耗行数", readonly=True)
+    preview_summary_component_count = fields.Integer("单位工程汇总行数", readonly=True)
     parser_warning_log = fields.Text("源文件结构诊断", readonly=True)
     preview_amount = fields.Monetary(
         "预检合价", currency_field="currency_id", readonly=True
@@ -138,12 +143,16 @@ class ProjectBoqImportWizard(models.TransientModel):
         self.ensure_one()
         if not self.file:
             raise UserError("请先上传导入文件。")
-        rows, pending_uoms, skipped = self.with_context(boq_import_preflight=True)._parse_file()
+        rows, pending_uoms, skipped, detail_payload = self.with_context(
+            boq_import_preflight=True
+        )._parse_file(include_details=True)
         if not rows:
             raise UserError(
                 "未找到可导入的清单数据：请确认文件包含清单名称以及工程量、单价或金额。"
             )
-        item_rows = [row for row in rows if (row.get("line_type") or "item") == "item"]
+        all_item_rows = [row for row in rows if (row.get("line_type") or "item") == "item"]
+        calculation_detail_rows = [row for row in all_item_rows if row.get("is_calculation_detail")]
+        item_rows = [row for row in all_item_rows if not row.get("is_calculation_detail")]
         summary_rows = [
             row for row in rows if row.get("source_row_type") in ("subtotal", "total")
         ]
@@ -181,17 +190,40 @@ class ProjectBoqImportWizard(models.TransientModel):
                 "preview_item_count": len(item_rows),
                 "preview_summary_count": len(summary_rows),
                 "preview_heading_count": len(heading_rows),
+                "preview_calculation_detail_count": len(calculation_detail_rows),
                 "preview_skipped_count": skipped,
                 "preview_warning_count": len(warnings),
+                "preview_analysis_count": len(detail_payload["analyses"]),
+                "preview_norm_line_count": sum(
+                    len(item["norm_lines"]) for item in detail_payload["analyses"]
+                ),
+                "preview_resource_line_count": sum(
+                    len(item["resource_lines"]) for item in detail_payload["analyses"]
+                ),
+                "preview_summary_component_count": len(detail_payload["summary_components"]),
                 "preview_amount": amount,
                 **({"single_name": detected_single} if detected_single and not self.single_name else {}),
                 **({"unit_name": detected_unit} if detected_unit and not self.unit_name else {}),
                 **({"section_type": detected_section} if detected_section and not self.section_type else {}),
                 "preview_log": "\n".join(
                     [
-                        f"识别 {len(rows)} 行，其中清单项 {len(item_rows)} 行、结构标题 {len(heading_rows)} 行、页内小计/合计 {len(summary_rows)} 行。",
+                        (
+                            f"识别并保留 {len(rows)} 行，其中清单计价项 {len(item_rows)} 行、"
+                            f"费用计算明细 {len(calculation_detail_rows)} 行、结构标题 {len(heading_rows)} 行、"
+                            f"页内小计/合计 {len(summary_rows)} 行。"
+                        ),
                         f"另忽略 {skipped} 行空白或无业务含义的辅助行。",
                         f"预检合价 {amount:.2f}。",
+                        (
+                            "识别综合单价分析 %s 项、定额组成 %s 行、资源消耗 %s 行。"
+                            % (
+                                len(detail_payload["analyses"]),
+                                sum(len(item["norm_lines"]) for item in detail_payload["analyses"]),
+                                sum(len(item["resource_lines"]) for item in detail_payload["analyses"]),
+                            )
+                        ),
+                        "识别单位工程造价汇总 %s 行（与清单计价项分开保存）。"
+                        % len(detail_payload["summary_components"]),
                         *(warnings or ["未发现阻断性问题。"]),
                     ]
                 ),
@@ -225,7 +257,7 @@ class ProjectBoqImportWizard(models.TransientModel):
                 hints=["请先完成/撤销结算或付款流程后再导入新版本"],
             )
 
-        rows, created_uoms, skipped = self._parse_file()
+        rows, created_uoms, skipped, detail_payload = self._parse_file(include_details=True)
         if not rows:
             raise UserError(
                 "未找到可导入的清单数据：\n"
@@ -245,14 +277,7 @@ class ProjectBoqImportWizard(models.TransientModel):
             ]
         ):
             raise UserError("同一项目和清单来源下已存在该版本号，请使用新的版本号。")
-        version = Version.create(
-            {
-                "name": f"{self.project_id.display_name} {version_code}",
-                "code": version_code,
-                "project_id": self.project_id.id,
-                "source_type": self.source_type,
-            }
-        )
+        version = Version.create(self._prepare_version_values(version_code))
         batch = self.env["project.boq.import.batch"].create(
             {
                 "name": f"{version_code} · {self.filename or '清单导入'}",
@@ -270,10 +295,19 @@ class ProjectBoqImportWizard(models.TransientModel):
                     "item_count": self.preview_item_count,
                     "summary_count": self.preview_summary_count,
                     "heading_count": self.preview_heading_count,
+                    "calculation_detail_count": self.preview_calculation_detail_count,
                     "skipped_count": skipped,
                     "warning_count": self.preview_warning_count,
                     "amount": self.preview_amount,
-                    "source_diagnostics": self.parser_warning_log.splitlines(),
+                    "source_diagnostics": (self.parser_warning_log or "").splitlines(),
+                    "analysis_count": len(detail_payload["analyses"]),
+                    "norm_line_count": sum(
+                        len(item["norm_lines"]) for item in detail_payload["analyses"]
+                    ),
+                    "resource_line_count": sum(
+                        len(item["resource_lines"]) for item in detail_payload["analyses"]
+                    ),
+                    "summary_component_count": len(detail_payload["summary_components"]),
                 },
             }
         )
@@ -301,10 +335,23 @@ class ProjectBoqImportWizard(models.TransientModel):
             return created
 
         created_count = _create_rows(rows)
+        analysis_count = self._create_analysis_snapshot(version, detail_payload)
+        summary_component_count = self._create_summary_snapshot(version, detail_payload)
         self._finalize_source_summary_calculations(version.line_ids)
 
         log_lines = []
         log_lines.append(f"成功导入 {created_count} 条到清单版本 {version_code}。")
+        if analysis_count:
+            log_lines.append(
+                "关联综合单价分析 %s 项、定额组成 %s 行、资源消耗 %s 行。"
+                % (
+                    analysis_count,
+                    sum(len(item["norm_lines"]) for item in detail_payload["analyses"]),
+                    sum(len(item["resource_lines"]) for item in detail_payload["analyses"]),
+                )
+            )
+        if summary_component_count:
+            log_lines.append("保留单位工程造价汇总 %s 行。" % summary_component_count)
         if skipped:
             log_lines.append(f"跳过 {skipped} 行（空行/小计行/无数值行）。")
         if created_uoms:
@@ -333,12 +380,98 @@ class ProjectBoqImportWizard(models.TransientModel):
     # -------------------------------------------------------------------------
     # 文件解析入口
     # -------------------------------------------------------------------------
-    def _parse_file(self):
+    def _parse_file(self, include_details=False):
         """Parse CSV/XLS/XLSX into vals list for project.boq.line."""
         data = base64.b64decode(self.file)
         filename = (self.filename or "").lower()
         parser = BoqParser(self)
-        return parser.parse_file(data, filename)
+        return parser.parse_file(data, filename, include_details=include_details)
+
+    def _prepare_version_values(self, version_code):
+        """Stable extension hook for optional industry-support modules."""
+        return {
+            "name": f"{self.project_id.display_name} {version_code}",
+            "code": version_code,
+            "project_id": self.project_id.id,
+            "source_type": self.source_type,
+        }
+
+    @staticmethod
+    def _analysis_match_key(values):
+        def norm(value):
+            return re.sub(r"\s+", "", str(value or "")).lower()
+
+        return (
+            norm(values.get("single_name")),
+            norm(values.get("unit_name")),
+            norm(values.get("major_name")),
+            norm(values.get("boq_code") or values.get("source_code") or values.get("code")),
+        )
+
+    def _create_analysis_snapshot(self, version, detail_payload):
+        analyses = detail_payload.get("analyses") or []
+        if not analyses:
+            return 0
+        line_pool = {}
+        item_lines = version.line_ids.filtered(lambda line: line.line_type == "item")
+        for line in item_lines.sorted(lambda row: (row.sheet_index or 0, row.sequence or 0, row.id)):
+            key = self._analysis_match_key(
+                {
+                    "single_name": line.single_name,
+                    "unit_name": line.unit_name,
+                    "major_name": line.major_name,
+                    "boq_code": line.source_code or line.code,
+                }
+            )
+            line_pool.setdefault(key, []).append(line)
+
+        Analysis = self.env["project.boq.analysis"]
+        created = Analysis.browse()
+        unmatched = []
+        for payload in analyses:
+            candidates = line_pool.get(self._analysis_match_key(payload), [])
+            if not candidates:
+                unmatched.append(
+                    "%s / %s / %s"
+                    % (payload.get("unit_name") or "-", payload.get("major_name") or "-", payload["boq_code"])
+                )
+                continue
+            boq_line = candidates.pop(0)
+            created |= Analysis.create(
+                {
+                    "name": payload.get("name") or boq_line.name,
+                    "boq_line_id": boq_line.id,
+                    "uom_raw": payload.get("uom_raw"),
+                    "source_quantity": payload.get("source_quantity", 0.0),
+                    "source_unit_price": payload.get("source_unit_price", 0.0),
+                    "source_sheet_index": payload.get("source_sheet_index"),
+                    "source_sheet_name": payload.get("source_sheet_name"),
+                    "source_sequence": payload.get("source_sequence"),
+                    "single_name": payload.get("single_name"),
+                    "unit_name": payload.get("unit_name"),
+                    "major_name": payload.get("major_name"),
+                    "norm_line_ids": [(0, 0, vals) for vals in payload.get("norm_lines", [])],
+                    "resource_line_ids": [
+                        (0, 0, vals) for vals in payload.get("resource_lines", [])
+                    ],
+                }
+            )
+        if unmatched:
+            raise UserError(
+                "有 %s 项综合单价分析无法与清单项关联，请核对单项工程、单位工程、专业和清单编码。\n%s"
+                % (len(unmatched), "\n".join(unmatched[:20]))
+            )
+        created._resolve_norm_links()
+        return len(created)
+
+    def _create_summary_snapshot(self, version, detail_payload):
+        values = detail_payload.get("summary_components") or []
+        if not values:
+            return 0
+        self.env["project.boq.summary.component"].create(
+            [dict(row, version_id=version.id) for row in values]
+        )
+        return len(values)
 
     def _parse_csv_content(self, content):
         reader = csv.reader(io.StringIO(content))
@@ -368,12 +501,17 @@ class ProjectBoqImportWizard(models.TransientModel):
             )
         return rows, created_uoms, skipped
 
-    def _parse_excel(self, data, filename):
+    def _parse_excel(self, data, filename, include_details=False):
         """解析 XLS/XLSX 为 project.boq.line 的 vals 列表。"""
         col_map_cfg = self._col_map_cfg()
         rows_all = []
         created_uoms_all = set()
         skipped_all = 0
+        detail_payload = {
+            "schema": "sc.boq.full_import.v1",
+            "analyses": [],
+            "summary_components": [],
+        }
 
         # ---------------- XLSX ----------------
         if filename.endswith(".xlsx"):
@@ -389,6 +527,38 @@ class ProjectBoqImportWizard(models.TransientModel):
                     continue
 
                 if not self._is_supported_sheet(title):
+                    continue
+
+                if sheet_type in ("boq_analysis", "measure_analysis"):
+                    parsed_single, parsed_unit, parsed_major = self._parse_engineering_header_excel(
+                        sheet, limit=6
+                    )
+                    detail_payload["analyses"].extend(
+                        self._parse_analysis_rows(
+                            [list(row) for row in sheet.iter_rows(values_only=True)],
+                            source_sheet_index=idx,
+                            source_sheet_name=title,
+                            single_name=self.single_name or parsed_single,
+                            unit_name=self.unit_name or parsed_unit,
+                            major_name=parsed_major,
+                        )
+                    )
+                    continue
+
+                if sheet_type == "unit_summary":
+                    parsed_single, parsed_unit, parsed_major = self._parse_engineering_header_excel(
+                        sheet, limit=6
+                    )
+                    detail_payload["summary_components"].extend(
+                        self._parse_unit_summary_rows(
+                            [list(row) for row in sheet.iter_rows(values_only=True)],
+                            source_sheet_index=idx,
+                            source_sheet_name=title,
+                            single_name=self.single_name or parsed_single,
+                            unit_name=self.unit_name or parsed_unit,
+                            major_name=parsed_major,
+                        )
+                    )
                     continue
 
                 # 表头行数按表类型区分：总价/规费/税金等通常只有 1 行列标题
@@ -455,7 +625,8 @@ class ProjectBoqImportWizard(models.TransientModel):
                 created_uoms_all.update(created_uoms)
                 skipped_all += skipped
 
-            return rows_all, created_uoms_all, skipped_all
+            result = (rows_all, created_uoms_all, skipped_all)
+            return (*result, detail_payload) if include_details else result
 
         # ---------------- XLS ----------------
         if filename.endswith(".xls"):
@@ -476,6 +647,44 @@ class ProjectBoqImportWizard(models.TransientModel):
                     continue
 
                 if not self._is_supported_sheet(title):
+                    continue
+
+                if sheet_type in ("boq_analysis", "measure_analysis"):
+                    parsed_single, parsed_unit, parsed_major = self._parse_engineering_header_xls(
+                        sheet, limit=6
+                    )
+                    detail_payload["analyses"].extend(
+                        self._parse_analysis_rows(
+                            [
+                                [sheet.cell_value(r, c) for c in range(sheet.ncols)]
+                                for r in range(sheet.nrows)
+                            ],
+                            source_sheet_index=idx,
+                            source_sheet_name=title,
+                            single_name=self.single_name or parsed_single,
+                            unit_name=self.unit_name or parsed_unit,
+                            major_name=parsed_major,
+                        )
+                    )
+                    continue
+
+                if sheet_type == "unit_summary":
+                    parsed_single, parsed_unit, parsed_major = self._parse_engineering_header_xls(
+                        sheet, limit=6
+                    )
+                    detail_payload["summary_components"].extend(
+                        self._parse_unit_summary_rows(
+                            [
+                                [sheet.cell_value(r, c) for c in range(sheet.ncols)]
+                                for r in range(sheet.nrows)
+                            ],
+                            source_sheet_index=idx,
+                            source_sheet_name=title,
+                            single_name=self.single_name or parsed_single,
+                            unit_name=self.unit_name or parsed_unit,
+                            major_name=parsed_major,
+                        )
+                    )
                     continue
 
                 if sheet_type in ("total_measure", "fee", "tax", "other_item"):
@@ -536,10 +745,217 @@ class ProjectBoqImportWizard(models.TransientModel):
                 created_uoms_all.update(created_uoms)
                 skipped_all += skipped
 
-            return rows_all, created_uoms_all, skipped_all
+            result = (rows_all, created_uoms_all, skipped_all)
+            return (*result, detail_payload) if include_details else result
 
         # ---------------- Fallback: 按 CSV 解析 ----------------
-        return self._parse_csv_bytes(data), set(), 0
+        result = (self._parse_csv_bytes(data), set(), 0)
+        return (*result, detail_payload) if include_details else result
+
+    def _parse_analysis_rows(
+        self,
+        rows,
+        source_sheet_index,
+        source_sheet_name,
+        single_name=None,
+        unit_name=None,
+        major_name=None,
+    ):
+        """Parse standard 表-09 blocks without leaking workbook layout into models."""
+        analyses = []
+        current = None
+        mode = None
+
+        def cell(row, index):
+            return row[index] if index < len(row) else ""
+
+        def text(value):
+            return str(value or "").strip()
+
+        def compact(value):
+            return re.sub(r"\s+", "", text(value))
+
+        def finish():
+            nonlocal current
+            if not current:
+                return
+            if not current["source_unit_price"]:
+                current["source_unit_price"] = sum(
+                    line["amount_labor"]
+                    + line["amount_material"]
+                    + line["amount_machine"]
+                    + line["amount_overhead"]
+                    + line["amount_profit"]
+                    for line in current["norm_lines"]
+                )
+            analyses.append(current)
+            current = None
+
+        for row_number, row in enumerate(rows, start=1):
+            first = compact(cell(row, 0))
+            if first == "项目编码":
+                finish()
+                raw_code = text(cell(row, 1))
+                matches = re.findall(r"\d{12}", raw_code)
+                if not matches:
+                    mode = None
+                    continue
+                current = {
+                    "boq_code": matches[-1],
+                    "name": text(cell(row, 5)) or text(cell(row, 3)),
+                    "uom_raw": text(cell(row, 9)) or text(cell(row, 8)),
+                    "source_quantity": self._to_float(cell(row, 13)),
+                    "source_unit_price": 0.0,
+                    "source_sheet_index": source_sheet_index,
+                    "source_sheet_name": source_sheet_name,
+                    "source_sequence": len(analyses) + 1,
+                    "single_name": single_name or False,
+                    "unit_name": unit_name or False,
+                    "major_name": major_name or False,
+                    "norm_lines": [],
+                    "resource_lines": [],
+                }
+                mode = None
+                continue
+            if not current:
+                continue
+            if first == "定额编号":
+                mode = "norm"
+                continue
+            if "材料费明细" in first:
+                mode = "material"
+                continue
+            if "清单项目综合单价" in first:
+                current["source_unit_price"] = self._to_float(cell(row, 9))
+                mode = None
+                continue
+            if first in ("小计", "未计价材料费"):
+                mode = None
+                continue
+            if mode == "norm":
+                code = text(cell(row, 0))
+                name = text(cell(row, 1))
+                if code and name and self._is_number(cell(row, 3)):
+                    current["norm_lines"].append(
+                        {
+                            "sequence": len(current["norm_lines"]) + 1,
+                            "norm_code": code,
+                            "name": name,
+                            "unit_raw": text(cell(row, 2)),
+                            "budget_consumption": self._to_float(cell(row, 3)),
+                            "unit_labor": self._to_float(cell(row, 4)),
+                            "unit_material": self._to_float(cell(row, 5)),
+                            "unit_machine": self._to_float(cell(row, 6)),
+                            "unit_overhead": self._to_float(cell(row, 7)),
+                            "unit_profit": self._to_float(cell(row, 8)),
+                            "amount_labor": self._to_float(cell(row, 9)),
+                            "amount_material": self._to_float(cell(row, 10)),
+                            "amount_machine": self._to_float(cell(row, 11)),
+                            "amount_overhead": self._to_float(cell(row, 12)),
+                            "amount_profit": self._to_float(cell(row, 13)),
+                            "source_row": row_number,
+                        }
+                    )
+                continue
+            if mode == "material":
+                name = text(cell(row, 1))
+                if "材料费小计" in name:
+                    mode = None
+                    continue
+                if not name or "主要材料名称" in name:
+                    continue
+                unit = text(cell(row, 7))
+                consumption = self._to_float(cell(row, 8))
+                price = self._to_float(cell(row, 9))
+                source_amount = self._to_float(cell(row, 10))
+                if not (unit or consumption or price or source_amount):
+                    continue
+                if not consumption and source_amount:
+                    consumption = 1.0
+                    price = source_amount
+                current["resource_lines"].append(
+                    {
+                        "sequence": len(current["resource_lines"]) + 1,
+                        "resource_type": "material",
+                        "name": name,
+                        "unit_raw": unit,
+                        "budget_consumption": consumption,
+                        "budget_unit_price": price,
+                        "budget_unit_amount": source_amount,
+                        "provisional_unit_price": self._to_float(cell(row, 11)),
+                        "provisional_unit_amount": self._to_float(cell(row, 13)),
+                        "source_row": row_number,
+                    }
+                )
+        finish()
+        return analyses
+
+    def _parse_unit_summary_rows(
+        self,
+        rows,
+        source_sheet_index,
+        source_sheet_name,
+        single_name=None,
+        unit_name=None,
+        major_name=None,
+    ):
+        """Keep E.3 unit-project summaries separate from BOQ leaves."""
+        result = []
+        for row_number, row in enumerate(rows, start=1):
+            code = str((row[0] if len(row) > 0 else "") or "").strip()
+            name = str((row[1] if len(row) > 1 else "") or "").strip()
+            amount_raw = row[2] if len(row) > 2 else ""
+            provisional_raw = row[3] if len(row) > 3 else ""
+            if "总价合计" in code:
+                name = code
+                code = ""
+                if not self._is_number(amount_raw):
+                    amount_raw = row[1] if len(row) > 1 else ""
+                    provisional_raw = row[2] if len(row) > 2 else ""
+            if not name or not self._is_number(amount_raw):
+                continue
+            if code == "1":
+                component_type = "direct"
+            elif code == "2":
+                component_type = "measure"
+            elif code == "3":
+                component_type = "other"
+            elif code == "4":
+                component_type = "fee"
+            elif code == "6":
+                component_type = "pre_tax"
+            elif code in {"7", "8"}:
+                component_type = "tax"
+            elif not code and "总价合计" in name:
+                component_type = "total"
+            else:
+                component_type = "detail"
+            result.append(
+                {
+                    "sequence": len(result) + 1,
+                    "code": code or False,
+                    "name": name,
+                    "component_type": component_type,
+                    "amount": self._to_float(amount_raw),
+                    "provisional_amount": self._to_float(provisional_raw),
+                    "single_name": single_name or False,
+                    "unit_name": unit_name or False,
+                    "major_name": major_name or False,
+                    "source_sheet_index": source_sheet_index,
+                    "source_sheet_name": source_sheet_name,
+                    "source_row": row_number,
+                }
+            )
+        pre_tax = next(
+            (row["amount"] for row in result if row["component_type"] == "pre_tax"),
+            0.0,
+        )
+        if pre_tax:
+            for row in result:
+                if row["component_type"] == "tax":
+                    row["calc_base"] = "税前不含税工程造价"
+                    row["source_rate"] = row["amount"] / pre_tax * 100.0
+        return result
 
     # -------------------------------------------------------------------------
     # Sheet 名称分类（核心升级点）
@@ -556,6 +972,15 @@ class ProjectBoqImportWizard(models.TransientModel):
         title_raw = sheet_title or ""
         # 去掉空格/全角空格，全部小写方便匹配
         text = title_raw.replace(" ", "").replace("\u3000", "").lower()
+
+        # 综合单价分析必须先于普通清单匹配，否则定额行会被污染为 BOQ 行。
+        if "综合单价分析表" in text:
+            if "措施项目" in text:
+                return "measure_analysis", "unit_measure"
+            return "boq_analysis", "boq"
+
+        if "单位工程招标控制价投标报价汇总表" in text or "单位工程投标报价汇总表" in text:
+            return "unit_summary", None
 
         # 1) 总价措施项目清单计价表（优先匹配，避免被“措施”二字误判成单价措施）
         if "总价措施项目清单计价表" in text or "总价措施项目清单" in text:
@@ -942,10 +1367,12 @@ class ProjectBoqImportWizard(models.TransientModel):
             # ---- 总价措施 / 规费 / 税金 专用规则 ----
             if eff_boq_category in ("total_measure", "fee", "tax"):
                 lower_name = (name or "").lower()
-                # 子目行：逻辑上无有效项目编码 + 有金额，当前版本不导入，避免重复计入总价
-                #    例如 ① / ② / ③ / ④ 这些序号会被视为无效编码
+                # 子目计算行也是源文件事实：完整保留，但标记为计算明细，
+                # 避免与其上级费用项重复计入清单版本总额。
                 if not is_summary and not logical_code_digits and self._is_number(amount_val):
-                    continue
+                    code = f"DETAIL-{sheet_index or 0:02d}-{len(rows) + 1:04d}"
+                    vals["code"] = code
+                    vals["is_calculation_detail"] = True
 
                 # 3) 只有金额，没有工程量/单价 → 用金额补齐 qty/price
                 if (not self._is_number(qty)) and (not self._is_number(price)) and self._is_number(amount_val):
@@ -974,6 +1401,9 @@ class ProjectBoqImportWizard(models.TransientModel):
             vals["calculated_amount"] = (
                 0.0 if is_summary else vals["quantity"] * vals["price"]
             )
+            vals["source_calc_base"] = calc_base or False
+            vals["has_source_rate"] = self._is_number(rate_val)
+            vals["source_rate"] = self._to_float(rate_val)
 
             # 若数量/单价/合价均为0，则视为标题/小计行跳过
             if strict_numeric and not is_heading:
@@ -1135,6 +1565,11 @@ class ProjectBoqImportWizard(models.TransientModel):
                 level = 1
 
             amount = self._to_float(amount_raw)
+            has_source_amount = self._is_number(amount_raw)
+            if has_source_amount:
+                # G.1 中的一级序号可能是“暂列金额”等真实计价项，
+                # 有明确来源金额时不得因序号层级被降级为标题。
+                line_type = "item"
             qty = 1.0
             price = amount
 
@@ -1144,7 +1579,9 @@ class ProjectBoqImportWizard(models.TransientModel):
                 "code": code,
                 "quantity": qty,
                 "price": price,
-                "amount": amount,
+                "has_imported_amount": has_source_amount,
+                "imported_amount": amount,
+                "calculated_amount": amount,
                 "boq_category": "other",
                 "division_name": "其他项目",
                 "line_type": line_type,
@@ -1481,6 +1918,8 @@ class ProjectBoqImportWizard(models.TransientModel):
                 o_line_type, o_level = ProjectBoqImportWizard._parse_other_line_level(rec.code)
                 if not o_line_type or o_level is None:
                     o_line_type, o_level = "group", 1
+                if rec.source_row_type == "item":
+                    o_line_type = "item"
                 rec.line_type = o_line_type
                 if o_level <= 0:
                     rec.parent_id = False
@@ -1504,8 +1943,9 @@ class ProjectBoqImportWizard(models.TransientModel):
                 boq_category=rec.boq_category,
             )
 
-            # 写入行类型
-            rec.line_type = line_type
+            # 行的业务类型以解析契约为准；编码长度只用于定位层级。
+            # 否则 6 位补充项编码会被误判为分组并从金额汇总中丢失。
+            rec.line_type = "item" if rec.source_row_type == "item" else line_type
 
             # 处理 parent_id
             if level <= 0:
@@ -1656,14 +2096,24 @@ class BoqParser:
         # 章节池：收集标题/章节文本，仅收集候选，不做层级推断。
         self.chapter_pool = []
 
-    def parse_file(self, data, filename):
+    def parse_file(self, data, filename, include_details=False):
         """按文件类型分发，返回 rows/created_uoms/skipped。"""
         fname = (filename or "").lower()
         if fname.endswith((".xlsx", ".xls")):
-            return self.wizard._parse_excel(data, fname)
+            return self.wizard._parse_excel(data, fname, include_details=include_details)
         # CSV 默认解析
         content = self.wizard._read_as_csv(data)
-        return self.wizard._parse_csv_content(content)
+        result = self.wizard._parse_csv_content(content)
+        if include_details:
+            return (
+                *result,
+                {
+                    "schema": "sc.boq.full_import.v1",
+                    "analyses": [],
+                    "summary_components": [],
+                },
+            )
+        return result
 
     def parse_sheet(self, sheet, sheet_index):
         """

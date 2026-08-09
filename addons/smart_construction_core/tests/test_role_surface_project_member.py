@@ -138,6 +138,17 @@ class TestProjectMemberRoleSurface(TransactionCase):
             ROLE_SURFACE_OVERRIDES["project_member"]["primary_menu_xmlids"],
         )
 
+    def test_pm_cost_surface_exposes_full_boq_to_plan_chain(self):
+        primary_menu_xmlids = set(ROLE_SURFACE_OVERRIDES["pm"]["primary_menu_xmlids"])
+        self.assertTrue(
+            {
+                "smart_construction_core.menu_sc_boq_version",
+                "smart_construction_core.menu_sc_project_boq_root",
+                "smart_construction_core.menu_sc_boq_analysis",
+                "smart_construction_core.menu_sc_cost_plan",
+            }.issubset(primary_menu_xmlids)
+        )
+
     def test_business_config_admin_composes_acl_visible_formal_capabilities(self):
         resolver = self._resolver()
         surface = resolver.build_role_surface(
@@ -561,10 +572,22 @@ class TestProjectMemberRoleSurface(TransactionCase):
             row for row in pm_contract["contextual_actions"]
             if row["action_xmlid"] == "smart_construction_core.action_project_boq_import_wizard"
         )
+        cost_plan_lines = next(
+            row for row in pm_contract["contextual_actions"]
+            if row["action_xmlid"] == "smart_construction_core.action_project_cost_plan_line"
+        )
         self.assertEqual(boq_import["route_kind"], "CONTEXTUAL_ROUTE")
         self.assertEqual(boq_import["allowed_operation"], "create")
         self.assertEqual(boq_import["menu_id"], 0)
         self.assertEqual(boq_import["context_requirements"], {})
+        self.assertEqual(cost_plan_lines["route_kind"], "CONTEXTUAL_ROUTE")
+        self.assertEqual(cost_plan_lines["allowed_operation"], "read")
+        self.assertEqual(
+            cost_plan_lines["menu_xmlid"],
+            "smart_construction_core.menu_sc_cost_plan",
+        )
+        self.assertGreater(cost_plan_lines["menu_id"], 0)
+        self.assertEqual(cost_plan_lines["model"], "project.cost.plan.line")
         self.assertEqual(execution["route_kind"], "CONTEXTUAL_ROUTE")
         self.assertEqual(
             execution["context_requirements"]["required_query"],

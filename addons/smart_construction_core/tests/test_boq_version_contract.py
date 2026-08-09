@@ -419,3 +419,237 @@ class TestBoqVersionContract(TransactionCase):
         self.assertAlmostEqual(subtotal.calculated_amount, 20.01, places=2)
         self.assertAlmostEqual(subtotal.amount_variance, 0.01, places=2)
         self.assertEqual(subtotal.calculation_scope_item_count, 1)
+
+    def test_standard_unit_price_analysis_parser_keeps_norm_and_resource_facts(self):
+        wizard = self.env["project.boq.import.wizard"].create(
+            {"project_id": self.project.id, "version_code": "ANALYSIS-PARSER"}
+        )
+        rows = [
+            ["项目编码", "(1) 010101001001", "", "项目名称", "", "基底钎探", "", "计量单位", "", "㎡", "", "工程量", "", 1294.84],
+            ["定额编号", "定额项目名称", "定额单位", "数量", "单价", "", "", "", "", "合价", "", "", "", ""],
+            ["", "", "", "", "人工费", "材料费", "机械费", "管理费", "利润", "人工费", "材料费", "机械费", "管理费", "利润"],
+            ["AA0096换", "基底钎探", "100㎡", 0.01, 363.45, 91.42, 0, 15.74, 35.02, 3.63, 0.91, 0, 0.16, 0.35],
+            ["清单项目综合单价", "", "", "", "", "", "", "", "", 5.06, "", "", "", ""],
+            ["材\n料\n费\n明\n细", "主要材料名称、规格、型号", "", "", "", "", "", "单位", "数量", "单价（元）", "合价（元）", "暂估单价（元）", "", "暂估合价（元）"],
+            ["", "钢钎 φ22～25", "", "", "", "", "", "kg", 0.082, 3.99, 0.33, "", "", ""],
+            ["", "其他材料费", "", "", "", "", "", "", "", "-", 0.58, "-", "", ""],
+            ["", "材料费小计", "", "", "", "", "", "", "-", "-", 0.91, "-", "", ""],
+        ]
+        analyses = wizard._parse_analysis_rows(
+            rows,
+            source_sheet_index=7,
+            source_sheet_name="F.2.1 分部分项工程清单综合单价分析表",
+            single_name="消防站项目",
+            unit_name="消防站",
+            major_name="建筑与装饰工程",
+        )
+        self.assertEqual(len(analyses), 1)
+        analysis = analyses[0]
+        self.assertEqual(analysis["boq_code"], "010101001001")
+        self.assertEqual(analysis["source_unit_price"], 5.06)
+        self.assertEqual(len(analysis["norm_lines"]), 1)
+        self.assertEqual(analysis["norm_lines"][0]["norm_code"], "AA0096换")
+        self.assertEqual(len(analysis["resource_lines"]), 2)
+        self.assertEqual(analysis["resource_lines"][0]["budget_consumption"], 0.082)
+        self.assertEqual(analysis["resource_lines"][1]["budget_unit_price"], 0.58)
+
+    def test_published_analysis_generates_editable_versioned_cost_plan(self):
+        version = self._version("COST-PLAN-SOURCE")
+        line = self._line(version)
+        analysis = self.env["project.boq.analysis"].create(
+            {
+                "name": line.name,
+                "boq_line_id": line.id,
+                "uom_raw": "m2",
+                "source_quantity": 2.0,
+                "source_unit_price": 10.0,
+                "norm_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "norm_code": "AA0001",
+                            "name": "测试定额",
+                            "unit_raw": "100m2",
+                            "budget_consumption": 0.01,
+                            "amount_labor": 3.0,
+                            "amount_material": 2.0,
+                            "amount_machine": 2.0,
+                            "amount_overhead": 0.5,
+                            "amount_profit": 0.5,
+                        },
+                    )
+                ],
+                "resource_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "resource_type": "material",
+                            "name": "测试材料",
+                            "unit_raw": "kg",
+                            "budget_consumption": 0.5,
+                            "budget_unit_price": 4.0,
+                            "budget_unit_amount": 2.0,
+                        },
+                    )
+                ],
+            }
+        )
+        version.action_validate()
+        version.action_publish()
+        with self.assertRaises(UserError):
+            analysis.write({"source_unit_price": 11.0})
+
+        plan = self.env["project.cost.plan"].create(
+            {
+                "name": "首版目标成本",
+                "project_id": self.project.id,
+                "boq_version_id": version.id,
+                "version_code": "V1",
+            }
+        )
+        plan.action_generate_from_boq()
+        self.assertEqual(plan.line_count, 4)
+        material = plan.line_ids.filtered(lambda rec: rec.cost_type == "material")
+        self.assertEqual(material.budget_quantity, 1.0)
+        self.assertEqual(material.budget_amount, 4.0)
+        material.write({"target_unit_consumption": 0.4, "target_unit_price": 3.5})
+        self.assertEqual(material.target_quantity, 0.8)
+        self.assertAlmostEqual(material.target_amount, 2.8)
+        line_action = plan.action_open_lines()
+        self.assertEqual(line_action["res_model"], "project.cost.plan.line")
+        self.assertEqual(line_action["domain"], [("plan_id", "=", plan.id)])
+        self.assertEqual(line_action["context"]["default_plan_id"], plan.id)
+        plan.action_validate()
+        plan.action_publish()
+        self.assertEqual(plan.state, "published")
+        with self.assertRaises(UserError):
+            material.write({"target_unit_price": 3.0})
+        action = plan.action_start_adjustment()
+        revision = self.env["project.cost.plan"].browse(action["res_id"])
+        self.assertEqual(revision.state, "adjusting")
+        self.assertEqual(revision.source_plan_id, plan)
+        self.assertEqual(revision.line_count, plan.line_count)
+        revision.line_ids.filtered(lambda rec: rec.cost_type == "material").target_unit_price = 3.0
+
+    def test_fee_detail_is_preserved_without_double_count_and_enters_cost_plan(self):
+        wizard = self.env["project.boq.import.wizard"].create(
+            {"project_id": self.project.id, "version_code": "FEE-SOURCE"}
+        )
+        rows, _created_uoms, skipped = wizard._build_rows_from_iter(
+            [
+                ["1", "安全文明施工费", "分部分项人工费", 3.0, 300.0],
+                ["①", "环境保护费", "分部分项人工费", 0.5, 50.0],
+            ],
+            {"code": 0, "name": 1, "calc_base": 2, "rate": 3, "amount": 4},
+            boq_category="total_measure",
+            sheet_index=9,
+        )
+        self.assertEqual(skipped, 0)
+        self.assertEqual(len(rows), 2)
+        self.assertFalse(rows[0].get("is_calculation_detail"))
+        self.assertTrue(rows[1]["is_calculation_detail"])
+        self.assertEqual(rows[1]["source_calc_base"], "分部分项人工费")
+        self.assertEqual(rows[1]["source_rate"], 0.5)
+
+        version = self._version("FEE-COST-PLAN")
+        for values in rows:
+            values.update({"version_id": version.id})
+        source_lines = self.env["project.boq.line"].create(rows)
+        self.assertEqual(sum(source_lines.mapped("amount_leaf")), 300.0)
+        self.env["project.boq.summary.component"].create(
+            {
+                "version_id": version.id,
+                "code": "7",
+                "name": "销项增值税额",
+                "component_type": "tax",
+                "amount": 27.0,
+                "source_sheet_name": "E.3 单位工程汇总表",
+            }
+        )
+        version.action_validate()
+        version.action_publish()
+        plan = self.env["project.cost.plan"].create(
+            {
+                "name": "费用目标成本",
+                "project_id": self.project.id,
+                "boq_version_id": version.id,
+                "version_code": "FEE-V1",
+            }
+        )
+        plan.action_generate_from_boq()
+        self.assertEqual(plan.line_count, 2)
+        measure = plan.line_ids.filtered(lambda line: line.cost_type == "measure")
+        tax = plan.line_ids.filtered(lambda line: line.cost_type == "tax")
+        self.assertEqual(measure.calculation_mode, "rate")
+        self.assertEqual(tax.budget_amount, 27.0)
+        measure.target_rate = 2.7
+        self.assertAlmostEqual(measure.target_amount, 270.0)
+
+    def test_unit_project_summary_parser_keeps_fee_and_tax_outside_boq_rows(self):
+        wizard = self.env["project.boq.import.wizard"].create(
+            {"project_id": self.project.id, "version_code": "E3-SUMMARY"}
+        )
+        rows = [
+            ["序号", "汇总内容", "金额（元）", "其中暂估价"],
+            ["4", "规费", 480693.75, "-"],
+            ["6", "税前不含税工程造价", 24781859.36, "-"],
+            ["7", "销项增值税额", 2230367.34, "-"],
+            ["8", "附加税", 77567.22, "-"],
+            ["招标控制价/投标报价总价合计=税前不含税工程造价+销项增值税额+附加税", 27089793.92],
+        ]
+        parsed = wizard._parse_unit_summary_rows(
+            rows,
+            source_sheet_index=3,
+            source_sheet_name="E.3 单位工程招标控制价投标报价汇总表",
+            single_name="消防站项目",
+            unit_name="消防站",
+            major_name="建筑与装饰工程",
+        )
+        self.assertEqual(
+            [row["component_type"] for row in parsed],
+            ["fee", "pre_tax", "tax", "tax", "total"],
+        )
+        self.assertAlmostEqual(parsed[-1]["amount"], 27089793.92)
+        self.assertAlmostEqual(parsed[2]["source_rate"], 9.0, places=4)
+
+    def test_short_numeric_source_code_remains_a_priced_item(self):
+        wizard = self.env["project.boq.import.wizard"].create(
+            {"project_id": self.project.id, "version_code": "SHORT-CODE"}
+        )
+        version = self._version("SHORT-CODE")
+        values = {
+            "project_id": self.project.id,
+            "version_id": version.id,
+            "code": "001196",
+            "source_code": "001196",
+            "name": "车泵增加费",
+            "uom_id": self.uom.id,
+            "quantity": 1.0,
+            "price": 12.0,
+            "has_imported_amount": True,
+            "imported_amount": 12.0,
+            "source_row_type": "item",
+            "boq_category": "boq",
+        }
+        wizard._create_with_hierarchy(self.env["project.boq.line"], [values])
+        line = version.line_ids
+        self.assertEqual(line.line_type, "item")
+        self.assertEqual(line.amount_leaf, 12.0)
+
+    def test_other_project_level_one_amount_is_a_cost_item_not_a_heading(self):
+        wizard = self.env["project.boq.import.wizard"].create(
+            {"project_id": self.project.id, "version_code": "OTHER-AMOUNT"}
+        )
+        rows, skipped = wizard._build_rows_other(
+            [["1", "暂列金额", 1157198.36], ["2", "暂估价", ""]],
+            sheet_index=10,
+            sheet_name="G.1 其他项目清单与计价汇总表",
+        )
+        self.assertEqual(skipped, 0)
+        self.assertEqual(rows[0]["line_type"], "item")
+        self.assertEqual(rows[0]["source_row_type"], "item")
+        self.assertTrue(rows[0]["has_imported_amount"])
+        self.assertEqual(rows[0]["imported_amount"], 1157198.36)
+        self.assertEqual(rows[1]["line_type"], "group")

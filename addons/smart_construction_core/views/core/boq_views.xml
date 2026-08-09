@@ -154,6 +154,9 @@
                 <field name="price" string="综合单价"/>
                 <field name="imported_amount" string="源文件合价"/>
                 <field name="calculated_amount" string="系统计算合价"/>
+                <field name="source_calc_base" optional="hide"/>
+                <field name="source_rate" optional="hide"/>
+                <field name="is_calculation_detail" optional="hide"/>
             </tree>
         </field>
     </record>
@@ -205,6 +208,9 @@
                             <field name="source_type"/>
                             <field name="version_id" readonly="1"/>
                             <field name="import_batch_id" readonly="1"/>
+                            <field name="source_calc_base" readonly="1"/>
+                            <field name="source_rate" readonly="1"/>
+                            <field name="is_calculation_detail" readonly="1"/>
                             <field name="work_id" readonly="1"/>
                             <field name="task_id" readonly="1"/>
                         </group>

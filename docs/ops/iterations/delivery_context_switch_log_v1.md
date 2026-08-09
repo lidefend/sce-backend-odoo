@@ -3282,3 +3282,37 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   7 tests; strict Vue typecheck, local incremental frontend build, XML/Python
   syntax, `git diff --check`, browser runtime errors, HTTP errors, console errors,
   and captured OLE warning-log checks all passed.
+
+## 2026-08-09 — FULL-BOQ-ANALYSIS-AND-TARGET-COST-PLAN-BASELINE
+
+- Branch / anchor: `feature/boq-versioned-import-wbs` at `aa0c208`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product; L2 cost-domain facts, import service, native views, and
+  permissions in `smart_construction_core`.
+- Reason / Why Here: statutory BOQ workbooks contain BOQ facts, unit-price
+  analyses, norm composition, resource consumption, measures, fees, and taxes.
+  A target cost plan must be generated from an immutable published snapshot of
+  those facts and remain a separate management baseline.
+- Why Not Elsewhere: generic contract infrastructure stays in `smart_core`;
+  frontend renders the backend contract and performs no cost calculations;
+  WBS remains a management dimension rather than the owner of BOQ or target
+  cost facts; sample-specific probes remain P4 evidence only.
+- Blast Radius / validation: BOQ import parsing and preview, BOQ version and
+  analysis records, target cost plan lifecycle, cost permissions/actions/views,
+  and existing WBS/BOQ consumers. Both supplied real workbooks, component and
+  amount conservation tests, isolated `sc_clean` module rehearsal, contract
+  guards, and authenticated browser acceptance must pass before baseline
+  closure.
+- Final real-data evidence: published `V6-FULL-20260810` preserves 1,658 BOQ
+  rows, 1,414 priced items, 1,138 unit-price analyses, 1,622 norm composition
+  rows, and 225 unit-project summary facts. `CN-SC-2015-BUDGET` resolves 1,541
+  norm rows (95.01%); 81 source-specific or supplemental rows remain explicit
+  unmatched facts rather than being guessed. The generated `V5-20260810`
+  target plan contains 7,441 lines and a `29,922,323.10` budget baseline.
+- Scale closure: the plan form no longer embeds and hydrates all 7,441
+  one-to-many lines. A native contextual action opens the separately secured
+  target-cost ledger at 20 rows per page (373 pages), while the plan form owns
+  summary, version, validation, publication, adjustment, and archive state.
+  The project-manager delivery contract explicitly exposes BOQ analysis and
+  cost plan menus and binds the ledger action to the cost-plan context; no SPA
+  business rule or client action is introduced.
