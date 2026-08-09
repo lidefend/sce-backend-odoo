@@ -3201,3 +3201,33 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   final navigation projection can be admitted. Static source-order regression,
   focused backend tests, final `system.init` pair consistency, and a real
   `wutao` browser click on the isolated rehearsal clone prove containment.
+## 2026-08-09 — ACTION-SURFACE-RENDERER-REGISTRY
+
+- Branch / anchor: governed `release/tenant-rc-baosheng-fuel-v1` at `eef94ed`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel; generic
+  frontend contract consumption through the Action Surface Renderer Registry.
+- Reason / Why Here: every collection presentation, including planned pivot,
+  graph, calendar, gantt, activity, and dashboard views, needs one governed
+  dispatch boundary instead of page-local component branches.
+- Why Not Elsewhere: no construction, quota, tenant, low-code, or operations
+  semantics belong in renderer selection; the frontend consumes only the
+  backend presentation semantic.
+- Blast Radius / validation: ActionView surface dispatch, registered collection
+  semantics, explicit readable fallbacks, and unsupported fail-closed behavior.
+  Registry unit tests, architecture guards, existing collection semantics,
+  frontend build, and real hierarchy-browser acceptance prove containment.
+## 2026-08-09 — DESIGN-TOKEN-CONTROL-VISUAL-CLOSURE
+
+- Branch / anchor: governed `release/tenant-rc-baosheng-fuel-v1` at `eef94ed`.
+- Formal Product Layer / Layer Target / Module: P0 platform design system;
+  design-token CSS compilation and shared button/query-toolbar primitives.
+- Reason / Why Here: numeric radius tokens were emitted without CSS length
+  units, so browsers discarded the shared radii and controls rendered square.
+  Shared button hierarchy also needed one consistent hover, border, focus,
+  alignment, and motion policy.
+- Why Not Elsewhere: quota, construction, customer, and page-local styles must
+  not compensate for a platform token compiler defect.
+- Blast Radius / validation: all consumers of component radius tokens and
+  `.sc-btn`, plus search-toolbar button height. Token unit tests, token verify,
+  strict typecheck, frontend build, computed-style browser assertions, and the
+  real hierarchy workbench screenshot prove containment.

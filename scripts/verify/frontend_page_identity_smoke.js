@@ -58,8 +58,8 @@ function main() {
   equal(resolve({ kind: 'detail', actionName: '付款申请' }).title, '付款申请详情', 'detail action fallback');
   equal(resolve({ kind: 'create', actionName: '付款申请' }).title, '新建付款申请', 'create title');
   equal(resolve({ kind: 'edit', actionName: '付款申请', record: { display_name: 'FE-A-PR-001' } }).title, 'FE-A-PR-001', 'edit keeps stable record identity');
-  equal(resolve({ kind: 'list', actionName: '付款申请', state: 'loading' }).title, '付款申请 · 加载中', 'loading title');
-  equal(resolve({ kind: 'list', actionName: '付款申请', state: 'empty' }).title, '付款申请 · 暂无数据', 'empty title');
+  equal(resolve({ kind: 'list', actionName: '付款申请', state: 'loading' }).title, '付款申请', 'loading keeps stable list title');
+  equal(resolve({ kind: 'list', actionName: '付款申请', state: 'empty' }).title, '付款申请', 'empty keeps stable list title');
   equal(resolve({ kind: 'list', actionName: '付款申请', state: 'denied' }).title, '付款申请 · 无权访问', 'denied title');
   equal(resolve({ kind: 'detail', state: 'not-found' }).title, '记录不存在', 'not-found title');
   equal(resolve({ kind: 'detail', actionName: '付款申请', recordDisplayName: 'SECRET-PR-001', state: 'denied' }).title, '付款申请 · 无权访问', 'denied identity never leaks record name');

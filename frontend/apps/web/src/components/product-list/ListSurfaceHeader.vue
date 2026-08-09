@@ -25,8 +25,9 @@
           {{ createLabel }}
         </ScButton>
         <div v-if="columns.length" ref="pickerRoot" class="list-surface-column-manager">
-          <button
+          <ScButton
             type="button"
+            variant="secondary"
             class="list-surface-column-button"
             :aria-expanded="pickerOpen"
             :aria-label="settingsDescription"
@@ -36,7 +37,7 @@
           >
             <ScIcon name="columns" :size="16" />
             <span class="list-surface-column-label">列设置</span>
-          </button>
+          </ScButton>
           <span v-if="saveStatusText" class="list-surface-save-badge" :class="`is-${saveStatus}`">{{ saveStatusText }}</span>
           <div v-if="pickerOpen" class="list-surface-column-menu" aria-label="列设置">
             <p class="list-surface-column-summary">已启用 {{ enabledCount }} 列，共 {{ columns.length }} 列</p>
@@ -119,7 +120,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
 <style scoped>
 .list-surface-utilities { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--sc-toolbar-gap); min-width: 0; }
 .list-surface-column-manager { position: relative; display: inline-flex; align-items: center; gap: var(--sc-toolbar-gap); }
-.list-surface-column-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--sc-toolbar-gap); min-height: 44px; padding: var(--sc-space-2xs) var(--sc-space-sm); border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-control); background: var(--sc-app-input-bg); color: var(--sc-app-text-secondary); font-size: 12px; cursor: pointer; }
+.list-surface-column-button { color: var(--sc-app-text-secondary); font-size: 12px; }
 .list-surface-column-button:focus-visible { outline: 3px solid var(--sc-app-focus-ring); outline-offset: 2px; }
 .list-surface-column-button:disabled { opacity: .6; cursor: not-allowed; }
 .list-surface-column-summary { margin: 0; color: var(--sc-app-text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }

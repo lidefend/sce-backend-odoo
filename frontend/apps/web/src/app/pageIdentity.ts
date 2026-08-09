@@ -159,7 +159,10 @@ export function resolveProductPageIdentity(input: PageIdentityInput): ProductPag
     if (!object.label && record) source = 'record';
   }
 
-  const suffix = stateLabel(state);
+  // List identity stays stable while data loads or resolves empty. Those states
+  // belong to the main surface; putting them in the activity tab makes the
+  // product shell jump and duplicates the feedback already rendered below.
+  const suffix = kind === 'list' && (state === 'loading' || state === 'empty') ? '' : stateLabel(state);
   if (suffix) {
     if (state === 'not-found') {
       title = suffix;
