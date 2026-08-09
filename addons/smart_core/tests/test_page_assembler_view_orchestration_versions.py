@@ -137,7 +137,7 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
 
         self.assembler.env = Env()
         data = {
-            "head": {"title": "定额库", "model": "sc.norm.item"},
+            "head": {"title": "定额库", "model": "sc.norm.item", "permissions": {"create": True}},
             "fields": {
                 "catalog_id": {
                     "type": "many2one", "relation": "sc.norm.catalog", "string": "所属定额库",
@@ -178,6 +178,7 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertTrue(presentation["enabled"])
         self.assertEqual(presentation["source"], "native_view_derived")
         config = presentation["config"]
+        self.assertEqual(config["create"], {"enabled": True, "label": "新建"})
         self.assertEqual([row["model"] for row in config["tree"]["levels"]], ["sc.norm.catalog", "sc.norm.specialty", "sc.norm.chapter"])
         self.assertEqual(config["tree"]["levels"][2]["self_parent_field"], "parent_id")
         self.assertEqual(config["list"]["bindings"]["chapter_id"], {"field": "chapter_id", "operator": "child_of"})

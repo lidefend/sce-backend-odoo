@@ -17,7 +17,7 @@ export function buildActionViewRowClickTarget(options: {
   const recordId = resolveActionViewRecordId(options.rawId);
   if (recordId === null) return null;
   return {
-    path: `/r/${options.targetModel}/${recordId}`,
+    path: `/${recordId === 'new' ? 'f' : 'r'}/${options.targetModel}/${recordId}`,
     query: {
       menu_id: options.menuId || undefined,
       action_id: options.actionId || undefined,
@@ -30,8 +30,9 @@ export function shouldUseCanonicalCollectionDetail(options: {
   viewMode: unknown;
   collectionSemantic: unknown;
 }): boolean {
-  return String(options.viewMode || '').trim().toLowerCase() === 'kanban'
-    && String(options.collectionSemantic || '').trim().toLowerCase() === 'card';
+  const semantic = String(options.collectionSemantic || '').trim().toLowerCase();
+  if (semantic === 'hierarchy_browser' || semantic === 'hierarchical_worksheet') return true;
+  return String(options.viewMode || '').trim().toLowerCase() === 'kanban' && semantic === 'card';
 }
 
 export function resolveListControlTransition(options: {

@@ -820,6 +820,10 @@ class PageAssembler:
             "config": {
                 "title": str(head.get("title") or "").strip(),
                 "tree_title": " / ".join(hierarchy_titles),
+                "create": {
+                    "enabled": bool((head.get("permissions") or {}).get("create")),
+                    "label": "新建",
+                },
                 "actions": actions,
                 "tree": {"levels": levels},
                 "list": {

@@ -14,6 +14,7 @@
       @search-clear="clearSearch"
     >
       <template #actions>
+        <ScButton v-if="createConfig.enabled" variant="primary" @click="createRecord">{{ createConfig.label }}</ScButton>
         <ScButton v-for="action in actions" :key="action.key" :variant="action.variant === 'primary' ? 'primary' : 'secondary'" @click="openAction(action)">{{ action.label }}</ScButton>
       </template>
     </ProductListHeader>
@@ -132,6 +133,10 @@ let rowsRequestEpoch = 0;
 let resizeStartX = 0; let resizeStartWidth = 0;
 const defaultLabels: Dict = { surface_aria: 'hierarchy browser', subtitle: '', search_label: 'Search', search_placeholder: '', all: 'All', empty_children: 'No child nodes', total_prefix: '', total_suffix: '', loading: 'Loading…', refresh: 'Refresh', previous: 'Previous', next: 'Next', page_prefix: '', page_suffix: '', load_error: 'Unable to load data', open: 'Open', select_hint: 'Select a row to view details', resize_left: 'Resize navigation column', resize_right: 'Resize detail column' };
 const labels = computed(() => ({ ...defaultLabels, ...(props.config.labels && typeof props.config.labels === 'object' ? props.config.labels as Dict : {}) }) as Record<string, string>);
+const createConfig = computed(() => {
+  const raw = props.config.create && typeof props.config.create === 'object' ? props.config.create as Dict : {};
+  return { enabled: raw.enabled === true, label: String(raw.label || '新建') };
+});
 const levels = computed<LevelConfig[]>(() => {
   const tree = props.config.tree && typeof props.config.tree === 'object' ? props.config.tree as Dict : {};
   return (Array.isArray(tree.levels) ? tree.levels : []).map((value) => {
@@ -226,6 +231,7 @@ function resizeWithKeyboard(side: 'left' | 'right', event: KeyboardEvent): void 
   applyResize(side, side === 'left' ? direction * 16 : direction * -16); persistColumnWidths();
 }
 function openRow(id: unknown): void { const recordId = Number(id || 0); if (recordId) emit('open-record', { id: recordId }); }
+function createRecord(): void { emit('open-record', { id: 'new' }); }
 function openAction(action: SurfaceAction): void {
   if (action.key) emit('open-action', action);
 }
