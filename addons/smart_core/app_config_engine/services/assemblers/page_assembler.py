@@ -691,6 +691,18 @@ class PageAssembler:
             }
             return
         fields_map = data.get("fields") if isinstance(data.get("fields"), dict) else {}
+        head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        action_domain = data.get("domain") if isinstance(data.get("domain"), list) else []
+        context_domain = effective_context.get("hierarchy_domain") if isinstance(effective_context, dict) else []
+        collection_domain = context_domain if isinstance(context_domain, list) and context_domain else action_domain
+        raw_scope = effective_context.get("hierarchy_scope") if isinstance(effective_context, dict) else {}
+        raw_scope = raw_scope if isinstance(raw_scope, dict) else {}
+        scope_field = str(raw_scope.get("field") or "").strip()
+        scope_context_field = str(raw_scope.get("context_field") or "").strip()
+        scope_descriptor = fields_map.get(scope_field) if isinstance(fields_map.get(scope_field), dict) else {}
+        scope_value = effective_context.get(scope_context_field) if scope_context_field.startswith("default_") else None
+        if scope_field and scope_descriptor and scope_value not in (None, False, ""):
+            collection_domain = [(scope_field, "=", scope_value)]
         levels: list[dict] = []
         bindings: dict[str, str] = {}
         hierarchy_titles: list[str] = []
@@ -741,6 +753,8 @@ class PageAssembler:
                 "code_field": code_field,
                 "order": safe_order or str(dialog.get("order") or "id asc").strip(),
             }
+            if relation_model == str(head.get("model") or "").strip() and collection_domain:
+                level["domain"] = collection_domain
             if levels:
                 level["parent_key"] = levels[-1]["key"]
                 level["parent_field"] = parent_field
@@ -868,7 +882,16 @@ class PageAssembler:
                 action_row["route"] = "/a/%s?menu_id=%s" % (target_action_id, int(target_menu.id))
         native_toolbar["header"] = actions
         tree["toolbar"] = native_toolbar
-        head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        try:
+            hierarchy_page_size = int(effective_context.get("hierarchy_page_size") or tree.get("page_size") or 50)
+        except (TypeError, ValueError):
+            hierarchy_page_size = 50
+        hierarchy_page_size = max(1, min(20000, hierarchy_page_size))
+        raw_expand_depth = effective_context.get("hierarchy_default_expand_depth")
+        try:
+            default_expand_depth = max(0, min(20, int(raw_expand_depth))) if raw_expand_depth is not None else None
+        except (TypeError, ValueError):
+            default_expand_depth = None
         surface_labels = {
             "surface_aria": "层级计划编制" if semantic == "hierarchy_planner" else "层级数据浏览",
             "subtitle": "",
@@ -912,6 +935,7 @@ class PageAssembler:
                     "node_level_key": levels[-1]["key"],
                     "outline_field": levels[-1]["label_field"],
                     "code_field": levels[-1]["code_field"],
+                    "default_expand_depth": default_expand_depth,
                 } if semantic == "hierarchy_planner" else {},
                 "governance": {"facts": []},
                 "list": {
@@ -920,7 +944,8 @@ class PageAssembler:
                     "columns": columns,
                     "bindings": bindings,
                     "order": str(tree.get("order") or tree.get("default_order") or "id asc").strip(),
-                    "page_size": int(tree.get("page_size") or 50),
+                    "page_size": hierarchy_page_size,
+                    "domain": collection_domain,
                 },
                 "detail": {"title": "", "sections": sections},
                 "labels": surface_labels,

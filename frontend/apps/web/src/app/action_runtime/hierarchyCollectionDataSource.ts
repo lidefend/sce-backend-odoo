@@ -12,6 +12,7 @@ export type HierarchyLevelConfig = {
   parent_field?: string;
   self_parent_field?: string;
   order?: string;
+  domain?: unknown[];
 };
 export type HierarchyTreeNode = {
   key: string;
@@ -27,6 +28,7 @@ export type HierarchyListConfig = {
   bindings: HierarchyDict;
   order: string;
   pageSize: number;
+  domain?: unknown[];
 };
 export type HierarchyCommand = {
   key: string;
@@ -53,7 +55,7 @@ export async function loadHierarchyTree(levels: HierarchyLevelConfig[]): Promise
     const levelRows: HierarchyDict[] = [];
     const batchSize = 5000;
     for (let offset = 0; ; offset += batchSize) {
-      const result = await listRecords({ model: level.model, fields: level.fields, offset, limit: batchSize, order: level.order });
+      const result = await listRecords({ model: level.model, fields: level.fields, domain: level.domain || [], offset, limit: batchSize, order: level.order });
       const batch = normalizeRows(result);
       levelRows.push(...batch);
       if (batch.length < batchSize) break;
@@ -75,7 +77,7 @@ export async function loadHierarchyTree(levels: HierarchyLevelConfig[]): Promise
         }
       });
     }
-    if (!level.parent_key) roots = [...nodes.values()];
+    if (!level.parent_key) roots = [...nodes.values()].filter((node) => !nestedNodeIds.has(node.id));
     else {
       const parents = nodeMaps.get(level.parent_key);
       levelRows.forEach((row) => {
@@ -94,7 +96,7 @@ export async function loadHierarchyRows(options: {
   keyword: string;
   offset: number;
 }): Promise<{ rows: HierarchyDict[]; total: number }> {
-  const domain: unknown[] = [];
+  const domain: unknown[] = [...(options.config.domain || [])];
   if (options.selectedNode) {
     const rawBinding = options.config.bindings[options.selectedNode.levelKey];
     const binding = rawBinding && typeof rawBinding === 'object'

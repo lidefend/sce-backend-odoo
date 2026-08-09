@@ -279,6 +279,14 @@ ROLE_SURFACE_OVERRIDES = {
                 "source": "nav_policy_01.pm.cost_plan_detail_ledger_action",
             },
             {
+                "menu_xmlid": "smart_construction_core.menu_sc_project_budget",
+                "action_xmlid": "smart_construction_core.action_project_cost_plan_node",
+                "allowed_operation": "read",
+                "required_capability": "cost_plan_line_read",
+                "context_requirements": {},
+                "source": "nav_policy_01.pm.cost_plan_compilation_tree_action",
+            },
+            {
                 "action_xmlid": "smart_construction_core.action_construction_contract_income_execution",
                 "allowed_operation": "read",
                 "required_capability": "contract_read",

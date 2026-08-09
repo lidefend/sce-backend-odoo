@@ -268,6 +268,60 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
             )
         )
 
+    def test_hierarchy_planner_scope_is_derived_from_declared_default_context(self):
+        class MenuModel:
+            @staticmethod
+            def _visible_menu_ids():
+                return []
+
+        class Env:
+            def __getitem__(self, name):
+                if name == "ir.ui.menu":
+                    return MenuModel()
+                raise KeyError(name)
+
+        self.assembler.env = Env()
+        data = {
+            "head": {"title": "Cost plan", "model": "project.cost.plan.node", "permissions": {"create": False}},
+            "domain": [],
+            "fields": {
+                "plan_id": {"type": "many2one", "relation": "project.cost.plan", "string": "Plan"},
+                "parent_id": {
+                    "type": "many2one", "relation": "project.cost.plan.node", "string": "Parent",
+                    "relation_entry": {"search_dialog": {"read_fields": ["code", "name", "parent_id"]}},
+                },
+                "code": {"type": "char", "string": "Code"},
+                "name": {"type": "char", "string": "Name"},
+            },
+            "views": {
+                "tree": {
+                    "collection_presentation": {"semantic": "hierarchy_planner"},
+                    "columns_schema": [{"name": "code", "label": "Code"}, {"name": "name", "label": "Name"}],
+                    "toolbar": {"header": []},
+                    "order": "parent_path, sequence, id",
+                },
+                "form": {},
+            },
+        }
+        context = {
+            "default_plan_id": 21,
+            "hierarchy_scope": {"field": "plan_id", "context_field": "default_plan_id"},
+            "hierarchy_default_expand_depth": 0,
+            "hierarchy_page_size": 12000,
+            "hierarchy_levels": [{
+                "field": "parent_id", "code_field": "code", "label_field": "name",
+                "self_parent_field": "parent_id", "domain_operator": "child_of",
+            }],
+        }
+
+        self.assembler._inject_native_collection_presentation(data, context)
+
+        config = data["views"]["tree"]["collection_presentation"]["config"]
+        self.assertEqual(config["tree"]["levels"][0]["domain"], [("plan_id", "=", 21)])
+        self.assertEqual(config["list"]["domain"], [("plan_id", "=", 21)])
+        self.assertEqual(config["list"]["page_size"], 12000)
+        self.assertEqual(config["planner"]["default_expand_depth"], 0)
+
     def test_native_hierarchical_worksheet_is_assembled_from_relation_contract(self):
         class HierarchyModel:
             @staticmethod

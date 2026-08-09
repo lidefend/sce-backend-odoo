@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from collections import defaultdict
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
@@ -219,26 +221,177 @@ class ProjectCostPlan(models.Model):
                 )
             if not vals_list:
                 raise UserError(_("来源清单没有可用于成本计划的综合单价分析。"))
-            self.env["project.cost.plan.line"].create(vals_list)
+            self.env["project.cost.plan.line"].with_context(skip_cost_tree_sync=True).create(vals_list)
+            plan._rebuild_cost_tree()
         return True
 
     def action_open_lines(self):
-        """Open the scalable, paged compilation ledger for this plan."""
+        """Open the cost-dimension compilation tree for this plan."""
         self.ensure_one()
+        if not self.node_ids:
+            self._rebuild_cost_tree()
         action = self.env.ref(
-            "smart_construction_core.action_project_cost_plan_line"
+            "smart_construction_core.action_project_cost_plan_node"
         ).read()[0]
         action.update(
             {
-                "name": _("%s · 成本明细") % self.display_name,
+                "name": _("%s · 成本编制") % self.display_name,
                 "domain": [("plan_id", "=", self.id)],
                 "context": {
                     "default_plan_id": self.id,
                     "default_project_id": self.project_id.id,
+                    "hierarchy_levels": [
+                        {
+                            "field": "parent_id",
+                            "code_field": "code",
+                            "label_field": "name",
+                            "self_parent_field": "parent_id",
+                            "domain_operator": "child_of",
+                            "order": "plan_id, parent_path, sequence, id",
+                        }
+                    ],
+                    "hierarchy_default_expand_depth": 0,
+                    "hierarchy_page_size": 12000,
+                    "hierarchy_scope": {"field": "plan_id", "context_field": "default_plan_id"},
                 },
             }
         )
         return action
+
+    node_ids = fields.One2many("project.cost.plan.node", "plan_id", string="成本树节点", readonly=True)
+
+    def _rebuild_cost_tree(self):
+        """Materialize a read-optimized cost tree without changing source facts."""
+        Node = self.env["project.cost.plan.node"].sudo().with_context(cost_tree_projection_write=True)
+        dimension_specs = [
+            ("labor", "C01", _("人工费")),
+            ("material", "C02", _("材料费")),
+            ("machine", "C03", _("机械费")),
+            ("overhead", "C04", _("管理费")),
+            ("profit", "C05", _("利润")),
+            ("measure", "C06", _("措施费")),
+            ("fee", "C07", _("规费")),
+            ("tax", "C08", _("税金")),
+            ("other", "C09", _("其他成本")),
+        ]
+        for plan in self:
+            Node.search([("plan_id", "=", plan.id)]).unlink()
+            lines = plan.line_ids.sorted(lambda row: (row.cost_type, row.boq_line_id.sequence, row.sequence, row.id))
+            if not lines:
+                continue
+            present_types = set(lines.mapped("cost_type"))
+            dimension_rows = Node.create([
+                {
+                    "plan_id": plan.id,
+                    "sequence": index * 10,
+                    "code": code,
+                    "name": label,
+                    "node_type": "dimension",
+                    "cost_type": cost_type,
+                    "line_count": len(lines.filtered(lambda row, key=cost_type: row.cost_type == key)),
+                    "budget_amount": sum(lines.filtered(lambda row, key=cost_type: row.cost_type == key).mapped("budget_amount")),
+                    "target_amount": sum(lines.filtered(lambda row, key=cost_type: row.cost_type == key).mapped("target_amount")),
+                }
+                for index, (cost_type, code, label) in enumerate(dimension_specs, start=1)
+                if cost_type in present_types
+            ])
+            dimensions = {row.cost_type: row for row in dimension_rows}
+            grouped = defaultdict(list)
+            for line in lines:
+                if line.boq_line_id:
+                    grouped[(line.cost_type, line.boq_line_id.id)].append(line)
+            group_vals = []
+            group_keys = []
+            for (cost_type, boq_id), group_lines in grouped.items():
+                source = group_lines[0].boq_line_id
+                group_keys.append((cost_type, boq_id))
+                group_vals.append(
+                    {
+                        "plan_id": plan.id,
+                        "parent_id": dimensions[cost_type].id,
+                        "sequence": source.sequence or 10,
+                        "code": source.source_code or source.code or "",
+                        "name": source.name,
+                        "node_type": "boq",
+                        "cost_type": cost_type,
+                        "boq_line_id": source.id,
+                        "line_count": len(group_lines),
+                        "budget_amount": sum(row.budget_amount for row in group_lines),
+                        "target_amount": sum(row.target_amount for row in group_lines),
+                    }
+                )
+            group_rows = Node.create(group_vals) if group_vals else Node.browse()
+            groups = {key: row for key, row in zip(group_keys, group_rows)}
+            leaf_vals = []
+            for line in lines:
+                parent = groups.get((line.cost_type, line.boq_line_id.id)) if line.boq_line_id else dimensions[line.cost_type]
+                leaf_vals.append(
+                    {
+                        "plan_id": plan.id,
+                        "parent_id": parent.id,
+                        "sequence": line.sequence or 10,
+                        "code": "",
+                        "name": line.name,
+                        "node_type": "resource",
+                        "cost_type": line.cost_type,
+                        "line_role": line.line_role,
+                        "boq_line_id": line.boq_line_id.id,
+                        "cost_line_id": line.id,
+                        "unit_raw": line.unit_raw,
+                        "budget_quantity": line.budget_quantity,
+                        "target_quantity": line.target_quantity,
+                        "budget_amount": line.budget_amount,
+                        "target_amount": line.target_amount,
+                        "line_count": 1,
+                    }
+                )
+            Node.create(leaf_vals)
+        return True
+
+    def _sync_cost_tree_lines(self, lines):
+        """Refresh edited leaves and their two aggregate levels in place."""
+        Node = self.env["project.cost.plan.node"].sudo().with_context(cost_tree_projection_write=True)
+        for plan in self:
+            plan_lines = lines.filtered(lambda row: row.plan_id == plan)
+            nodes = Node.search([("cost_line_id", "in", plan_lines.ids)])
+            if len(nodes) != len(plan_lines):
+                plan._rebuild_cost_tree()
+                continue
+            by_line = {node.cost_line_id.id: node for node in nodes}
+            for line in plan_lines:
+                by_line[line.id].write(
+                    {
+                        "line_role": line.line_role,
+                        "unit_raw": line.unit_raw,
+                        "budget_quantity": line.budget_quantity,
+                        "target_quantity": line.target_quantity,
+                        "budget_amount": line.budget_amount,
+                        "target_amount": line.target_amount,
+                    }
+                )
+            parents = nodes.mapped("parent_id")
+            for parent in parents:
+                leaves = parent.child_ids.filtered(lambda row: row.node_type == "resource")
+                parent.write(
+                    {
+                        "line_count": len(leaves),
+                        "budget_amount": sum(leaves.mapped("budget_amount")),
+                        "target_amount": sum(leaves.mapped("target_amount")),
+                    }
+                )
+            dimensions = (parents.filtered(lambda row: row.node_type == "dimension") | parents.mapped("parent_id")).filtered(
+                lambda row: row.node_type == "dimension"
+            )
+            for dimension in dimensions:
+                children = dimension.child_ids
+                dimension.write(
+                    {
+                        "line_count": sum(children.mapped("line_count")),
+                        "budget_amount": sum(children.mapped("budget_amount")),
+                        "target_amount": sum(children.mapped("target_amount")),
+                    }
+                )
+        return True
 
     def action_validate(self):
         for plan in self:
@@ -331,7 +484,7 @@ class ProjectCostPlan(models.Model):
                 value = line[field_name]
                 values[field_name] = value.id if line._fields[field_name].type == "many2one" else value
             line_commands.append((0, 0, values))
-        revision = self.create(
+        revision = self.with_context(skip_cost_tree_sync=True).create(
             {
                 "name": _("%s 调整") % self.name,
                 "project_id": self.project_id.id,
@@ -343,6 +496,7 @@ class ProjectCostPlan(models.Model):
                 "line_ids": line_commands,
             }
         )
+        revision._rebuild_cost_tree()
         return {
             "type": "ir.actions.act_window",
             "res_model": self._name,
@@ -493,8 +647,106 @@ class ProjectCostPlanLine(models.Model):
 
     def write(self, vals):
         self._assert_editable()
-        return super().write(vals)
+        result = super().write(vals)
+        if not self.env.context.get("skip_cost_tree_sync") and {
+            "target_unit_consumption", "target_unit_price", "adjustment_ratio", "target_rate"
+        }.intersection(vals):
+            self.mapped("plan_id")._sync_cost_tree_lines(self)
+        return result
 
     def unlink(self):
         self._assert_editable()
+        plans = self.mapped("plan_id")
+        result = super().unlink()
+        if not self.env.context.get("skip_cost_tree_sync"):
+            plans._rebuild_cost_tree()
+        return result
+
+
+class ProjectCostPlanNode(models.Model):
+    """System-managed presentation projection of cost-plan facts."""
+
+    _name = "project.cost.plan.node"
+    _description = "目标成本编制树节点"
+    _parent_name = "parent_id"
+    _parent_store = True
+    _order = "plan_id, parent_path, sequence, id"
+
+    plan_id = fields.Many2one("project.cost.plan", string="成本计划", required=True, ondelete="cascade", index=True)
+    project_id = fields.Many2one("project.project", related="plan_id.project_id", store=True, readonly=True, index=True)
+    plan_state = fields.Selection(related="plan_id.state", string="计划状态", store=True, readonly=True)
+    parent_id = fields.Many2one("project.cost.plan.node", string="上级节点", ondelete="cascade", index=True)
+    parent_path = fields.Char(index=True)
+    child_ids = fields.One2many("project.cost.plan.node", "parent_id", string="下级节点", readonly=True)
+    sequence = fields.Integer("序号", default=10, readonly=True)
+    code = fields.Char("编码", readonly=True)
+    name = fields.Char("成本构成", required=True, readonly=True)
+    node_type = fields.Selection(
+        [("dimension", "成本维度"), ("boq", "清单项目"), ("resource", "资源/费用明细")],
+        string="节点层级", required=True, readonly=True, index=True,
+    )
+    cost_type = fields.Selection(
+        [("labor", "人工"), ("material", "材料"), ("machine", "机械"), ("overhead", "管理费"),
+         ("profit", "利润"), ("measure", "措施费"), ("fee", "规费"), ("tax", "税金"), ("other", "其他")],
+        string="成本口径", required=True, readonly=True, index=True,
+    )
+    line_role = fields.Selection(
+        [("cost", "普通成本"), ("deduction", "扣减项"), ("adjustment", "差额调整")],
+        string="明细性质", readonly=True,
+    )
+    boq_line_id = fields.Many2one("project.boq.line", string="来源清单项", readonly=True, index=True)
+    cost_line_id = fields.Many2one("project.cost.plan.line", string="成本事实明细", readonly=True, ondelete="cascade", index=True)
+    unit_raw = fields.Char("单位", readonly=True)
+    budget_quantity = fields.Float("预算数量", readonly=True, digits=(16, 8))
+    target_quantity = fields.Float("目标数量", readonly=True, digits=(16, 8))
+    currency_id = fields.Many2one("res.currency", related="plan_id.currency_id", store=True, readonly=True)
+    budget_amount = fields.Monetary("预算金额", currency_field="currency_id", readonly=True)
+    target_amount = fields.Monetary("目标金额", currency_field="currency_id", readonly=True)
+    variance_amount = fields.Monetary("目标差异", compute="_compute_variance", currency_field="currency_id")
+    line_count = fields.Integer("明细数", readonly=True)
+    calculation_mode = fields.Selection(related="cost_line_id.calculation_mode", string="编制方式", readonly=True)
+    target_unit_consumption = fields.Float(related="cost_line_id.target_unit_consumption", string="目标单耗", readonly=False)
+    target_unit_price = fields.Float(related="cost_line_id.target_unit_price", string="目标单价", readonly=False)
+    adjustment_ratio = fields.Float(related="cost_line_id.adjustment_ratio", string="调整比例(%)", readonly=False)
+    target_rate = fields.Float(related="cost_line_id.target_rate", string="目标费率(%)", readonly=False)
+
+    _sql_constraints = [
+        ("cost_line_unique", "unique(cost_line_id)", "同一成本事实明细只能对应一个成本树叶子节点。"),
+    ]
+
+    @api.depends("budget_amount", "target_amount")
+    def _compute_variance(self):
+        for rec in self:
+            rec.variance_amount = rec.target_amount - rec.budget_amount
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.context.get("cost_tree_projection_write"):
+            raise UserError(_("成本树由系统根据成本事实生成，不能手工创建节点。"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        editable = {"target_unit_consumption", "target_unit_price", "adjustment_ratio", "target_rate"}
+        if not self.env.context.get("cost_tree_projection_write") and set(vals) - editable:
+            raise UserError(_("成本树结构由系统维护，只能编制资源叶子的目标参数。"))
+        if editable.intersection(vals) and self.filtered(lambda rec: rec.node_type != "resource"):
+            raise UserError(_("汇总节点不能直接编制，请下钻到资源/费用明细。"))
+        return super().write(vals)
+
+    def unlink(self):
+        if not self.env.context.get("cost_tree_projection_write"):
+            raise UserError(_("成本树由系统维护，不能手工删除节点。"))
         return super().unlink()
+
+    def action_open_cost_line(self):
+        self.ensure_one()
+        if not self.cost_line_id:
+            raise UserError(_("请选择资源/费用明细节点后再编制。"))
+        return {
+            "type": "ir.actions.act_window",
+            "name": self.cost_line_id.display_name,
+            "res_model": "project.cost.plan.line",
+            "res_id": self.cost_line_id.id,
+            "view_mode": "form",
+            "target": "current",
+        }

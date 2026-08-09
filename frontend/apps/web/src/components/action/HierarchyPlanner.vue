@@ -13,7 +13,7 @@
       @search-submit="keyword = keyword.trim()"
       @search-clear="keyword = ''"
     >
-      <template #leading><div class="planner-title"><strong>{{ title }}</strong><span>{{ labels.total_prefix }} {{ visibleEntries.length }} {{ labels.total_suffix }}</span></div></template>
+      <template #leading><div class="planner-title"><strong>{{ title }}</strong><span>{{ labels.total_prefix }} {{ displayedTotal }} {{ labels.total_suffix }}</span></div></template>
       <template #actions>
         <ScButton v-if="createConfig.enabled" variant="primary" @click="createRecord">{{ createConfig.label }}</ScButton>
         <ScButton v-for="action in actions" :key="action.key" :variant="action.variant === 'primary' ? 'primary' : 'secondary'" @click="emit('open-action', action)">{{ action.label }}</ScButton>
@@ -160,14 +160,18 @@ const levels = computed<HierarchyLevelConfig[]>(() => {
       key: String(row.key || ''), model: String(row.model || ''), fields: Array.isArray(row.fields) ? row.fields.map(String) : [],
       label_field: String(row.label_field || ''), code_field: String(row.code_field || ''), parent_key: String(row.parent_key || ''),
       parent_field: String(row.parent_field || ''), self_parent_field: String(row.self_parent_field || ''), order: String(row.order || 'id asc'),
+      domain: Array.isArray(row.domain) ? row.domain : [],
     };
   });
 });
 const listConfig = computed(() => {
   const raw = props.config.list && typeof props.config.list === 'object' ? props.config.list as Dict : {};
+  const requestedPageSize = Number(raw.page_size || 5000);
   return {
     model: String(raw.model || ''), fields: Array.isArray(raw.fields) ? raw.fields.map(String) : [], bindings: raw.bindings && typeof raw.bindings === 'object' ? raw.bindings as Dict : {},
-    order: String(raw.order || 'id asc'), pageSize: 5000,
+    order: String(raw.order || 'id asc'),
+    pageSize: Number.isFinite(requestedPageSize) ? Math.max(1, Math.min(20000, requestedPageSize)) : 5000,
+    domain: Array.isArray(raw.domain) ? raw.domain : [],
   };
 });
 const columns = computed<Column[]>(() => {
@@ -175,6 +179,10 @@ const columns = computed<Column[]>(() => {
   return (Array.isArray(raw.columns) ? raw.columns : []).map((row) => row as Column);
 });
 const planner = computed(() => props.config.planner && typeof props.config.planner === 'object' ? props.config.planner as Dict : {});
+const defaultExpandDepth = computed(() => {
+  const value = Number(planner.value.default_expand_depth);
+  return Number.isFinite(value) ? Math.max(0, Math.min(20, value)) : null;
+});
 const nodeLevelKey = computed(() => String(planner.value.node_level_key || ''));
 const outlineField = computed(() => String(planner.value.outline_field || columns.value[0]?.field || ''));
 const codeField = computed(() => String(planner.value.code_field || ''));
@@ -194,11 +202,21 @@ const successMessage = ref('');
 const indentSize = 20;
 const allPlannerNodes = computed(() => {
   const output: HierarchyTreeNode[] = [];
-  const visit = (node: HierarchyTreeNode) => { if (node.levelKey === nodeLevelKey.value) output.push(node); node.children.forEach(visit); };
+  const visited = new Set<string>();
+  const visit = (node: HierarchyTreeNode) => {
+    if (visited.has(node.key)) return;
+    visited.add(node.key);
+    if (node.levelKey === nodeLevelKey.value) output.push(node);
+    node.children.forEach(visit);
+  };
   roots.value.forEach(visit);
   return output;
 });
-const plannerRoots = computed(() => allPlannerNodes.value.filter((node) => !allPlannerNodes.value.some((candidate) => candidate.children.includes(node))));
+const plannerRoots = computed(() => {
+  const childKeys = new Set<string>();
+  allPlannerNodes.value.forEach((node) => node.children.forEach((child) => childKeys.add(child.key)));
+  return allPlannerNodes.value.filter((node) => !childKeys.has(node.key));
+});
 const visibleEntries = computed<OutlineEntry[]>(() => {
   const output: OutlineEntry[] = [];
   const term = keyword.value.trim().toLowerCase();
@@ -215,6 +233,7 @@ const visibleEntries = computed<OutlineEntry[]>(() => {
   plannerRoots.value.forEach((node) => visit(node, 0));
   return output;
 });
+const displayedTotal = computed(() => keyword.value.trim() ? visibleEntries.value.length : allPlannerNodes.value.length);
 const tableStyle = computed(() => ({ minWidth: `${Math.max(900, columns.value.length * 150)}px` }));
 const headerLayoutStyle = computed(() => ({ gridTemplateColumns: 'minmax(240px, auto) 0 minmax(320px, 1fr) 0 max-content' }));
 
@@ -240,6 +259,16 @@ function closeMenusFromKeyboard(event: KeyboardEvent): void { if (event.key === 
 function toggle(node: HierarchyTreeNode): void { const next = new Set(expandedKeys.value); if (next.has(node.key)) next.delete(node.key); else next.add(node.key); expandedKeys.value = next; }
 function expandAll(): void { expandedKeys.value = new Set(allPlannerNodes.value.map((node) => node.key)); }
 function collapseAll(): void { expandedKeys.value = new Set(); }
+function defaultExpandedNodeKeys(): Set<string> {
+  if (defaultExpandDepth.value === null) return new Set(allPlannerNodes.value.map((node) => node.key));
+  const keys = new Set<string>();
+  const visit = (node: HierarchyTreeNode, depth: number) => {
+    if (depth < defaultExpandDepth.value!) keys.add(node.key);
+    node.children.forEach((child) => visit(child, depth + 1));
+  };
+  plannerRoots.value.forEach((node) => visit(node, 0));
+  return keys;
+}
 async function reload(): Promise<void> {
   loading.value = true; errorMessage.value = '';
   try {
@@ -247,7 +276,7 @@ async function reload(): Promise<void> {
     const result = await loadHierarchyRows({ config: listConfig.value, selectedNode: null, keyword: '', offset: 0 });
     records.value = new Map(result.rows.map((row) => [Number(row.id), row]));
     const nodeKeys = new Set(allPlannerNodes.value.map((node) => node.key));
-    expandedKeys.value = expandedKeys.value.size ? new Set([...expandedKeys.value].filter((key) => nodeKeys.has(key))) : nodeKeys;
+    expandedKeys.value = expandedKeys.value.size ? new Set([...expandedKeys.value].filter((key) => nodeKeys.has(key))) : defaultExpandedNodeKeys();
     if (selectedRecord.value) selectedRecord.value = records.value.get(Number(selectedRecord.value.id)) || null;
   } catch (error) { errorMessage.value = error instanceof Error ? error.message : labels.value.load_error; }
   finally { loading.value = false; }

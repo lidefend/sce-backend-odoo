@@ -28,7 +28,7 @@
                     <button name="action_validate" string="校验" type="object" class="oe_highlight" invisible="state not in ('draft', 'adjusting') or line_count == 0"/>
                     <button name="action_publish" string="发布" type="object" class="oe_highlight" invisible="state != 'validated'"/>
                     <button name="action_start_adjustment" string="发起调整" type="object" invisible="state != 'published'"/>
-                    <button name="action_open_lines" string="成本明细" type="object" invisible="line_count == 0"/>
+                    <button name="action_open_lines" string="成本编制" type="object" invisible="line_count == 0"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,validated,published,adjusting,archived"/>
                 </header>
                 <sheet>
@@ -162,6 +162,104 @@
         <field name="res_model">project.cost.plan.line</field>
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_project_cost_plan_line_search"/>
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
+    </record>
+
+    <record id="view_project_cost_plan_node_tree" model="ir.ui.view">
+        <field name="name">project.cost.plan.node.tree</field>
+        <field name="model">project.cost.plan.node</field>
+        <field name="arch" type="xml">
+            <tree string="成本构成树" js_class="smart_hierarchy_planner" create="false" delete="false"
+                  default_order="plan_id, parent_path, sequence, id">
+                <field name="parent_id" optional="hide"/>
+                <field name="code" string="编码"/>
+                <field name="name" string="成本构成"/>
+                <field name="node_type" widget="badge" string="层级"/>
+                <field name="cost_type" widget="badge" string="成本口径"/>
+                <field name="line_role" widget="badge" optional="hide"/>
+                <field name="unit_raw"/>
+                <field name="budget_quantity" optional="hide"/>
+                <field name="target_quantity" optional="hide"/>
+                <field name="line_count" string="资源明细数"/>
+                <field name="budget_amount"/>
+                <field name="target_amount"/>
+                <field name="variance_amount"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_project_cost_plan_node_form" model="ir.ui.view">
+        <field name="name">project.cost.plan.node.form</field>
+        <field name="model">project.cost.plan.node</field>
+        <field name="arch" type="xml">
+            <form string="成本构成节点" create="false" delete="false">
+                <header>
+                    <button name="action_open_cost_line" string="编制资源明细" type="object" class="oe_highlight"
+                            invisible="node_type != 'resource'"/>
+                    <field name="plan_state" widget="statusbar" statusbar_visible="draft,validated,published,adjusting,archived"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="true"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="plan_id" readonly="true"/>
+                            <field name="parent_id" readonly="true"/>
+                            <field name="code" readonly="true"/>
+                            <field name="node_type" readonly="true" widget="badge"/>
+                            <field name="cost_type" readonly="true" widget="badge"/>
+                            <field name="line_role" readonly="true" widget="badge" invisible="node_type != 'resource'"/>
+                        </group>
+                        <group>
+                            <field name="line_count" readonly="true"/>
+                            <field name="budget_amount" readonly="true"/>
+                            <field name="target_amount" readonly="true"/>
+                            <field name="variance_amount" readonly="true"/>
+                        </group>
+                    </group>
+                    <group string="资源目标编制" invisible="node_type != 'resource'">
+                        <group>
+                            <field name="unit_raw" readonly="true"/>
+                            <field name="budget_quantity" readonly="true"/>
+                            <field name="target_quantity" readonly="true"/>
+                            <field name="calculation_mode" readonly="true"/>
+                        </group>
+                        <group>
+                            <field name="target_unit_consumption" readonly="plan_state not in ('draft', 'adjusting')"/>
+                            <field name="target_unit_price" readonly="plan_state not in ('draft', 'adjusting')"/>
+                            <field name="adjustment_ratio" readonly="plan_state not in ('draft', 'adjusting')"/>
+                            <field name="target_rate" readonly="plan_state not in ('draft', 'adjusting') or calculation_mode != 'rate'"/>
+                        </group>
+                    </group>
+                    <group string="来源追溯">
+                        <field name="boq_line_id" readonly="true"/>
+                        <field name="cost_line_id" readonly="true"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_project_cost_plan_node_search" model="ir.ui.view">
+        <field name="name">project.cost.plan.node.search</field>
+        <field name="model">project.cost.plan.node</field>
+        <field name="arch" type="xml">
+            <search string="成本构成">
+                <field name="plan_id"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="cost_type"/>
+                <field name="boq_line_id"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_project_cost_plan_node" model="ir.actions.act_window">
+        <field name="name">成本编制</field>
+        <field name="res_model">project.cost.plan.node</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_project_cost_plan_node_tree"/>
+        <field name="search_view_id" ref="view_project_cost_plan_node_search"/>
+        <field name="context">{'hierarchy_levels': [{'field': 'parent_id', 'code_field': 'code', 'label_field': 'name', 'self_parent_field': 'parent_id', 'domain_operator': 'child_of', 'order': 'plan_id, parent_path, sequence, id'}], 'hierarchy_scope': {'field': 'plan_id', 'context_field': 'default_plan_id'}, 'hierarchy_default_expand_depth': 0, 'hierarchy_page_size': 12000}</field>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>
 
