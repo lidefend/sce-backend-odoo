@@ -309,7 +309,7 @@ class ProjectBoqImportWizard(models.TransientModel):
             log_lines.append(f"跳过 {skipped} 行（空行/小计行/无数值行）。")
         if created_uoms:
             log_lines.append("自动创建计量单位：\n- " + "\n- ".join(sorted(created_uoms)))
-        log_lines.append("版本已校验；发布后才能生成正式成本 WBS。")
+        log_lines.append("版本已校验；发布后可在 WBS 计划中按管理目标分配清单来源。")
         self.log = "\n".join(log_lines)
         batch.write(
             {

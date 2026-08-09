@@ -55,7 +55,7 @@
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_construction_location_breakdown_tree"/>
         <field name="search_view_id" ref="view_construction_location_breakdown_search"/>
-        <field name="context" eval="{'hierarchy_levels': [{'field': 'project_id', 'code_field': 'code', 'label_field': 'name'}, {'field': 'parent_id', 'code_field': 'code', 'label_field': 'name', 'parent_field': 'project_id', 'self_parent_field': 'parent_id', 'domain_operator': 'child_of'}]}"/>
+        <field name="context" eval="{'hierarchy_create': {'label': '新增位置'}, 'hierarchy_levels': [{'field': 'project_id', 'code_field': 'code', 'label_field': 'name'}, {'field': 'parent_id', 'code_field': 'code', 'label_field': 'name', 'parent_field': 'project_id', 'self_parent_field': 'parent_id', 'domain_operator': 'child_of'}]}"/>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>
 
@@ -82,7 +82,7 @@
         <field name="res_model">construction.contract.section</field>
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_construction_contract_section_tree"/>
-        <field name="context" eval="{'hierarchy_levels': [{'field': 'project_id', 'code_field': 'code', 'label_field': 'name'}, {'field': 'parent_id', 'code_field': 'code', 'label_field': 'name', 'parent_field': 'project_id', 'self_parent_field': 'parent_id', 'domain_operator': 'child_of'}]}"/>
+        <field name="context" eval="{'hierarchy_create': {'label': '新增标段'}, 'hierarchy_levels': [{'field': 'project_id', 'code_field': 'code', 'label_field': 'name'}, {'field': 'parent_id', 'code_field': 'code', 'label_field': 'name', 'parent_field': 'project_id', 'self_parent_field': 'parent_id', 'domain_operator': 'child_of'}]}"/>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>
 

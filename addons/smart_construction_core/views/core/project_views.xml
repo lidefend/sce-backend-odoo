@@ -205,7 +205,7 @@
                         <group string="清单操作">
                             <button string="导入清单" type="object" class="oe_highlight" name="action_open_boq_import" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager" />
                             <button string="查看清单版本" type="object" class="btn-secondary" name="action_open_boq_versions" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager" />
-                            <button string="形成/更新 WBS 草案" type="object" class="btn-secondary" name="action_generate_wbs_from_boq" groups="smart_construction_core.group_sc_cap_cost_manager" />
+                            <button string="进入 WBS 计划" type="object" class="btn-secondary" name="action_open_wbs_planning" groups="smart_construction_core.group_sc_cap_project_manager" />
                             <button string="生成施工任务" type="action" class="btn-secondary" name="%(smart_construction_core.action_project_task_from_boq_wizard)d" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager" />
                             <button string="工程量清单分析" type="action" class="btn-secondary" name="%(smart_construction_core.action_project_boq_line_analysis)d" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager" context="{'search_default_project_id': [id]}" />
                         </group>

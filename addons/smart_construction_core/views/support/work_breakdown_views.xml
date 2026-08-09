@@ -3,16 +3,16 @@
         <field name="name">construction.work.breakdown.tree</field>
         <field name="model">construction.work.breakdown</field>
         <field name="arch" type="xml">
-            <tree string="成本 WBS" js_class="smart_hierarchy_browser" default_order="project_id, parent_path, sequence">
+            <tree string="WBS 计划" js_class="smart_hierarchy_planner" default_order="project_id, parent_path, sequence">
                 <field name="project_id" column_invisible="1"/>
                 <field name="code"/>
                 <field name="name"/>
-                <field name="level_type"/>
+                <field name="status"/>
+                <field name="manager_id" optional="show"/>
+                <field name="level_type" optional="show"/>
                 <field name="source_type" optional="hide"/>
-                <field name="placement_mode" optional="show"/>
-                <field name="boq_version_id" optional="hide"/>
                 <field name="parent_id" column_invisible="1"/>
-                <field name="boq_quantity_total"/>
+                <field name="boq_line_count"/>
                 <field name="boq_amount_total"/>
             </tree>
         </field>
@@ -22,53 +22,41 @@
         <field name="name">construction.work.breakdown.form</field>
         <field name="model">construction.work.breakdown</field>
         <field name="arch" type="xml">
-            <form string="成本 WBS">
+            <form string="WBS 节点">
                 <sheet>
                     <group>
                         <group>
                             <field name="project_id" required="1" domain="[]"/>
                             <field name="company_id" invisible="1"/>
-                            <field name="level_type" required="1"/>
-                            <field name="source_type" readonly="source_type == 'boq'"/>
-                            <field name="placement_mode" readonly="source_type != 'boq'"/>
-                            <field name="boq_version_id" readonly="1" invisible="source_type != 'boq'"/>
+                            <field name="status"/>
+                            <field name="level_type"/>
+                            <field name="manager_id"/>
+                            <field name="source_type" readonly="source_type == 'template'"/>
                             <field name="parent_id"/>
                             <field name="sequence"/>
                         </group>
                     <group>
                         <field name="code"/>
                         <field name="name" required="1"/>
-                        <field name="boq_quantity_total" readonly="1"/>
+                        <field name="boq_line_count" readonly="1"/>
                         <field name="boq_amount_total" readonly="1"/>
                         <field name="currency_id" invisible="1"/>
                     </group>
                 </group>
+                <field name="description" placeholder="描述本 WBS 节点包含的交付范围和管理边界……"/>
                 <notebook>
-                    <page string="下级节点">
+                    <page string="下级 WBS">
                         <field name="child_ids">
                                 <tree editable="bottom">
                                     <field name="sequence"/>
-                                    <field name="level_type"/>
+                                    <field name="status"/>
+                                    <field name="level_type" optional="hide"/>
                                     <field name="code"/>
                                     <field name="name"/>
                                 </tree>
                             </field>
                         </page>
-                        <page string="清单">
-                            <field name="boq_line_ids">
-                                <tree string="关联BOQ" editable="bottom">
-                                    <field name="code"/>
-                                    <field name="name"/>
-                                    <field name="spec"/>
-                                    <field name="quantity"/>
-                                    <field name="uom_id"/>
-                                    <field name="price"/>
-                                    <field name="amount"/>
-                                    <field name="task_id"/>
-                                </tree>
-                            </field>
-                        </page>
-                        <page string="任务">
+                        <page string="计划作业">
                             <field name="task_ids" context="{'default_work_id': context.get('active_id')}">
                                 <tree string="关联任务">
                                     <field name="name"/>
@@ -102,12 +90,11 @@
         <field name="name">construction.work.breakdown.search</field>
         <field name="model">construction.work.breakdown</field>
         <field name="arch" type="xml">
-            <search string="成本 WBS">
+            <search string="WBS 计划">
                 <field name="project_id"/>
                 <field name="level_type"/>
                 <field name="parent_id"/>
                 <field name="source_type"/>
-                <field name="boq_version_id"/>
                 <group expand="1" string="分组">
                     <filter string="按项目" name="group_project" context="{'group_by':'project_id'}"/>
                     <filter string="按层级" name="group_level" context="{'group_by':'level_type'}"/>
@@ -118,7 +105,7 @@
     </record>
 
     <record id="action_work_breakdown" model="ir.actions.act_window">
-        <field name="name">成本 WBS</field>
+        <field name="name">WBS 计划</field>
         <field name="res_model">construction.work.breakdown</field>
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_work_breakdown_tree"/>
@@ -134,9 +121,19 @@
                     'parent_field': 'project_id',
                     'self_parent_field': 'parent_id',
                     'domain_operator': 'child_of',
+                    'order': 'project_id, sequence, id',
                 },
             ],
+            'hierarchy_create': {'label': '新增顶层 WBS'},
+            'hierarchy_commands': [
+                {'key': 'add_sibling', 'label': '新增同级 WBS', 'kind': 'object', 'method': 'action_wbs_add_sibling', 'placement': 'toolbar', 'group': 'create'},
+                {'key': 'add_child', 'label': '新增下级 WBS', 'kind': 'object', 'method': 'action_wbs_add_child', 'placement': 'toolbar', 'group': 'create'},
+                {'key': 'indent', 'label': '缩进为下级', 'kind': 'object', 'method': 'action_wbs_indent', 'placement': 'toolbar', 'group': 'structure'},
+                {'key': 'outdent', 'label': '提升一级', 'kind': 'object', 'method': 'action_wbs_outdent', 'placement': 'toolbar', 'group': 'structure'},
+                {'key': 'move_up', 'label': '上移', 'kind': 'object', 'method': 'action_wbs_move_up', 'placement': 'overflow', 'group': 'order'},
+                {'key': 'move_down', 'label': '下移', 'kind': 'object', 'method': 'action_wbs_move_down', 'placement': 'overflow', 'group': 'order'},
+            ],
         }"/>
-        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_user')), (4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
 </odoo>

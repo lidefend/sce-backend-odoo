@@ -17,7 +17,7 @@
         <field name="name">1# 产教融合主楼</field>
         <field name="code">U01</field>
         <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-        <field name="level_type">unit</field>
+        <field name="level_type">control_account</field>
         <field name="sequence">10</field>
     </record>
 
@@ -26,7 +26,7 @@
         <field name="code">U01-01</field>
         <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
         <field name="parent_id" ref="smart_construction_demo.sc_demo_wbs_060_unit_001"/>
-        <field name="level_type">sub_section</field>
+        <field name="level_type">work_package</field>
         <field name="sequence">20</field>
     </record>
 

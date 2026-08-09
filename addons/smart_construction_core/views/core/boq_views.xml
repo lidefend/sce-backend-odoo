@@ -26,7 +26,7 @@
                 <header>
                     <button name="action_validate" string="校验" type="object" class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_publish" string="发布" type="object" class="oe_highlight" invisible="state != 'validated'"/>
-                    <button name="action_generate_wbs_draft" string="形成/更新 WBS 草案" type="object" class="btn-secondary" invisible="state != 'published'" groups="smart_construction_core.group_sc_cap_cost_manager"/>
+                    <button name="action_open_wbs_planning" string="进入 WBS 计划" type="object" class="btn-secondary" groups="smart_construction_core.group_sc_cap_project_manager"/>
                     <button name="action_restore" string="恢复此版本" type="object" class="btn-secondary" invisible="state != 'superseded'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,validated,published,superseded"/>
                 </header>

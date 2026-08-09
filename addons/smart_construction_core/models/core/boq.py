@@ -119,12 +119,14 @@ class ProjectBoqVersion(models.Model):
             version.batch_ids.filtered(lambda batch: batch.state == "imported").write({"state": "published"})
         return True
 
-    def action_generate_wbs_draft(self):
-        """Explicitly derive an editable management draft from this BOQ snapshot."""
+    def action_open_wbs_planning(self):
+        """Open user-owned WBS planning; the BOQ remains an independent source structure."""
         self.ensure_one()
-        if self.state != "published":
-            raise UserError(_("只有当前已发布的清单版本可以形成 WBS 草案。"))
-        return self.project_id.with_context(boq_version_id=self.id).action_generate_wbs_from_boq()
+        return self.project_id.with_context(boq_version_id=self.id).action_open_wbs_planning()
+
+    def action_generate_wbs_draft(self):
+        """Backward-compatible alias; no BOQ-derived WBS nodes are generated."""
+        return self.action_open_wbs_planning()
 
     def action_restore(self):
         self.ensure_one()
@@ -607,7 +609,7 @@ class ProjectBoqLine(models.Model):
             if rec.import_batch_id and rec.import_batch_id.version_id != rec.version_id:
                 raise ValidationError(_("清单行与导入批次必须属于同一清单版本。"))
             if rec.work_id and rec.work_id.project_id != rec.project_id:
-                raise ValidationError(_("成本 WBS 与清单行必须属于同一项目。"))
+                raise ValidationError(_("WBS 与清单行必须属于同一项目。"))
 
     def unlink(self):
         if self.filtered(lambda line: line.version_id.state in ("published", "superseded")):

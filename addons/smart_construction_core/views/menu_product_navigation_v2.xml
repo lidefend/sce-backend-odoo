@@ -97,6 +97,7 @@
         <field name="sequence">30</field>
     </record>
     <menuitem id="menu_sc_project_ledger_group_v2" name="项目台账" parent="smart_construction_core.menu_sc_project_center" sequence="40"/>
+    <menuitem id="menu_sc_project_planning_group_v2" name="项目计划" parent="smart_construction_core.menu_sc_project_center" sequence="45" groups="smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
     <menuitem id="menu_sc_project_organization_group_v2" name="项目组织（后续上线）" parent="smart_construction_core.menu_sc_project_center" sequence="50"/>
     <menuitem id="menu_sc_project_milestone_group_v2" name="里程碑管理（后续上线）" parent="smart_construction_core.menu_sc_project_center" sequence="60"/>
     <menuitem id="menu_sc_project_collaboration_group_v2" name="项目协同（后续上线）" parent="smart_construction_core.menu_sc_project_center" sequence="70"/>
@@ -135,7 +136,12 @@
     <record id="menu_sc_project_wbs" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_internal_group_v2"/></record>
     <record id="menu_sc_boq_version" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_cost_target_budget_group"/><field name="sequence">10</field></record>
     <record id="menu_sc_project_boq_root" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_cost_target_budget_group"/><field name="sequence">20</field></record>
-    <record id="menu_sc_project_work_breakdown" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_cost_target_budget_group"/><field name="sequence">30</field></record>
+    <record id="menu_sc_project_work_breakdown" model="ir.ui.menu">
+        <field name="name">WBS 计划</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_project_planning_group_v2"/>
+        <field name="sequence">10</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
     <record id="menu_sc_project_budget_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_cost_center"/><field name="active">False</field></record>
     <record id="menu_sc_doc_center" model="ir.ui.menu"><field name="active">False</field></record>
 

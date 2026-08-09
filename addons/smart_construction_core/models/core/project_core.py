@@ -1474,178 +1474,45 @@ class ProjectProject(models.Model):
         }
         return action
 
+    def action_open_wbs_planning(self):
+        """Open the user-owned management WBS without deriving nodes from the BOQ."""
+        self.ensure_one()
+        action = self.env.ref("smart_construction_core.action_work_breakdown").read()[0]
+        action["domain"] = [("project_id", "=", self.id)]
+        action["context"] = {
+            "default_project_id": self.id,
+            "search_default_project_id": self.id,
+            "hierarchy_levels": [
+                {
+                    "field": "project_id",
+                    "code_field": "code",
+                    "label_field": "name",
+                },
+                {
+                    "field": "parent_id",
+                    "code_field": "code",
+                    "label_field": "name",
+                    "parent_field": "project_id",
+                    "self_parent_field": "parent_id",
+                    "domain_operator": "child_of",
+                    "order": "project_id, sequence, id",
+                },
+            ],
+            "hierarchy_create": {"label": "新增顶层 WBS"},
+            "hierarchy_commands": [
+                {"key": "add_sibling", "label": "新增同级 WBS", "kind": "object", "method": "action_wbs_add_sibling", "placement": "toolbar", "group": "create"},
+                {"key": "add_child", "label": "新增下级 WBS", "kind": "object", "method": "action_wbs_add_child", "placement": "toolbar", "group": "create"},
+                {"key": "indent", "label": "缩进为下级", "kind": "object", "method": "action_wbs_indent", "placement": "toolbar", "group": "structure"},
+                {"key": "outdent", "label": "提升一级", "kind": "object", "method": "action_wbs_outdent", "placement": "toolbar", "group": "structure"},
+                {"key": "move_up", "label": "上移", "kind": "object", "method": "action_wbs_move_up", "placement": "overflow", "group": "order"},
+                {"key": "move_down", "label": "下移", "kind": "object", "method": "action_wbs_move_down", "placement": "overflow", "group": "order"},
+            ],
+        }
+        return action
+
     def action_generate_wbs_from_boq(self):
-        """Build an editable WBS draft through sub-section; keep every BOQ line linked."""
-        Work = self.env['construction.work.breakdown']
-        Version = self.env['project.boq.version']
-        Scope = self.env['construction.execution.scope']
-        Allocation = self.env['project.boq.allocation']
-
-        def _clean(value, fallback):
-            return ' '.join(str(value or '').split()) or fallback
-
-        for project in self:
-            requested_version_id = self.env.context.get('boq_version_id')
-            domain = [('project_id', '=', project.id), ('state', '=', 'published')]
-            if requested_version_id:
-                domain.append(('id', '=', requested_version_id))
-            versions = Version.search(domain, order='published_at desc, id desc')
-            version = versions.filtered(lambda rec: rec.source_type == 'contract')[:1] or versions[:1]
-            if not version:
-                raise UserError('项目没有已发布的清单版本，不能生成成本 WBS。')
-
-            lines = version.line_ids.filtered(lambda line: line.line_type == 'item')
-            if not lines:
-                raise UserError('已发布清单版本没有可形成 WBS 的清单项。')
-
-            existing = Work.with_context(active_test=False).search(
-                [('project_id', '=', project.id), ('source_type', '=', 'boq')]
-            )
-            previous_lines = project.boq_line_ids.filtered(
-                lambda line: line.version_id != version and line.work_id.source_type == 'boq'
-            )
-            if previous_lines:
-                previous_lines.write({'work_id': False})
-            Allocation.search(
-                [
-                    ('project_id', '=', project.id),
-                    ('version_id', '!=', version.id),
-                    ('source_type', '=', 'generated'),
-                    ('active', '=', True),
-                ]
-            ).write({'active': False})
-            node_by_key = {node.source_key: node for node in existing if node.source_key}
-            touched = Work.browse()
-            touched_scopes = Scope.browse()
-
-            def _node(level_type, name, code, parent, sequence):
-                nonlocal touched
-                label = _clean(name, '未分类')
-                identity = _clean(code, label).casefold()
-                parent_key = parent.source_key if parent else 'root'
-                source_key = f'boq|{level_type}|{parent_key}|{identity}'
-                node = node_by_key.get(source_key)
-                vals = {
-                    'name': label,
-                    'code': code or False,
-                    'project_id': project.id,
-                    'parent_id': parent.id if parent else False,
-                    'sequence': sequence,
-                    'level_type': level_type,
-                    'source_type': 'boq',
-                    'source_key': source_key,
-                    'boq_version_id': version.id,
-                    'placement_mode': 'generated',
-                    'active': True,
-                }
-                if node:
-                    if node in touched:
-                        return node
-                    changed = {}
-                    for key, value in vals.items():
-                        if key in ('project_id', 'source_key'):
-                            continue
-                        if key == 'parent_id' and node.placement_mode == 'planned':
-                            continue
-                        if key == 'placement_mode' and node.placement_mode == 'planned':
-                            continue
-                        current = node[key]
-                        if node._fields[key].type == 'many2one':
-                            current = current.id
-                            value = value or False
-                        if current != value:
-                            changed[key] = value
-                    if changed:
-                        node.with_context(wbs_boq_draft_sync=True).write(changed)
-                else:
-                    node = Work.create(vals)
-                    node_by_key[source_key] = node
-                touched |= node
-                return node
-
-            for line in lines.sorted(lambda rec: (rec.sheet_index or 0, rec.sequence or 0, rec.id)):
-                single_name = _clean(line.single_name, project.display_name)
-                unit_name = _clean(line.unit_name, '未分类单位工程')
-                if line.boq_category in ('unit_measure', 'total_measure'):
-                    major_name = '措施项目'
-                elif line.boq_category == 'fee':
-                    major_name = '规费'
-                elif line.boq_category == 'tax':
-                    major_name = '税金'
-                elif line.boq_category == 'other':
-                    major_name = '其他项目'
-                else:
-                    major_fallback = (
-                        f'专业 {line.code_prof}'
-                        if line.code_prof
-                        else (line.section_type or '未分类专业')
-                    )
-                    major_name = _clean(line.major_name, major_fallback)
-                division_fallback = (
-                    f'分部 {line.code_division}'
-                    if line.code_division
-                    else major_name
-                )
-                division_name = _clean(line.division_name, division_fallback)
-
-                single = _node('single', single_name, False, False, 10)
-                unit = _node('unit', unit_name, False, single, 20)
-                major = _node('major', major_name, line.code_prof, unit, 30)
-                division = _node('sub_division', division_name, line.code_division, major, 40)
-                subsection_code = line.code_subdivision or f"{line.boq_category or 'other'}-unclassified"
-                subsection_name = line.name if line.code_subdivision else major_name
-                subsection = _node('sub_section', subsection_name, subsection_code, division, 50)
-                if line.work_id != subsection:
-                    line.work_id = subsection.id
-                scope_key = f"boq|execution_scope|{subsection.source_key}"
-                scope = Scope.search(
-                    [('project_id', '=', project.id), ('source_key', '=', scope_key)], limit=1
-                )
-                if not scope:
-                    scope = Scope.create(
-                        {
-                            'project_id': project.id,
-                            'wbs_id': subsection.id,
-                            'source_type': 'boq',
-                            'source_key': scope_key,
-                        }
-                    )
-                elif scope.wbs_id != subsection:
-                    scope.wbs_id = subsection.id
-                touched_scopes |= scope
-                active_allocations = line.allocation_ids.filtered('active')
-                if not active_allocations:
-                    Allocation.create(
-                        {
-                            'boq_line_id': line.id,
-                            'execution_scope_id': scope.id,
-                            'allocated_quantity': line.quantity or 0.0,
-                            'allocated_amount': line.amount_leaf or 0.0,
-                            'source_type': 'generated',
-                        }
-                    )
-
-            stale = existing - touched
-            if stale:
-                removable = stale.filtered(lambda node: not node.boq_line_ids and not node.task_ids)
-                if removable:
-                    removable.unlink()
-                (stale - removable).write({'active': False})
-
-            unbound = lines.filtered(lambda line: not line.work_id)
-            if unbound:
-                raise UserError(f'仍有 {len(unbound)} 条清单项未绑定成本 WBS，生成已中止。')
-            source_amount = sum(lines.mapped('amount_leaf'))
-            linked_amount = sum(
-                lines.mapped('allocation_ids').filtered('active').mapped('allocated_amount')
-            )
-            rounding = version.currency_id.rounding or 0.01
-            if float_compare(source_amount, linked_amount, precision_rounding=rounding) != 0:
-                raise ValidationError(
-                    f'清单到 WBS 金额不守恒：清单 {source_amount:.2f}，WBS {linked_amount:.2f}。'
-                )
-
-        return self.action_open_exec_wbs() if len(self) == 1 else True
+        """Compatibility alias retained for installed views; no WBS generation occurs."""
+        return self.action_open_wbs_planning()
 
     @api.model
     def _project_unlink_blocker_models(self):

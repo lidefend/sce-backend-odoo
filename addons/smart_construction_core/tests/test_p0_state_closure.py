@@ -2931,7 +2931,7 @@ class TestP0StateClosure(TransactionCase):
                 "name": "P0 Progress WBS",
                 "code": "P0-WBS",
                 "project_id": project.id,
-                "level_type": "sub_section",
+                "level_type": "work_package",
             }
         )
         entry = self.env["project.progress.entry"].create(
@@ -2957,7 +2957,7 @@ class TestP0StateClosure(TransactionCase):
                 "name": "P0 Progress Block WBS",
                 "code": "P0-WBS-BLOCK",
                 "project_id": project.id,
-                "level_type": "sub_section",
+                "level_type": "work_package",
             }
         )
         entry = self.env["project.progress.entry"].create(

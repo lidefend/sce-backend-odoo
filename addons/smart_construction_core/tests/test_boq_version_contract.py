@@ -54,9 +54,19 @@ class TestBoqVersionContract(TransactionCase):
         self.assertEqual(first.state, "published")
         self.assertEqual(first.total_amount, 20.0)
         self.assertFalse(first_line.work_id, "发布清单不得自动形成 WBS")
-        first.action_generate_wbs_draft()
-        first_work = first_line.work_id
-        self.assertEqual(first_work.level_type, "sub_section")
+        work_count = self.env["construction.work.breakdown"].search_count(
+            [("project_id", "=", self.project.id)]
+        )
+        action = first.action_open_wbs_planning()
+        self.assertEqual(action["res_model"], "construction.work.breakdown")
+        self.assertEqual(
+            self.env["construction.work.breakdown"].search_count(
+                [("project_id", "=", self.project.id)]
+            ),
+            work_count,
+            "进入 WBS 计划不得从清单派生任何管理节点",
+        )
+        self.assertFalse(first_line.work_id)
 
         second = self._version("V2")
         self._line(second, code="010101001002", price=12.0)
@@ -75,37 +85,34 @@ class TestBoqVersionContract(TransactionCase):
         self.assertEqual(first.state, "published")
         self.assertEqual(second.state, "superseded")
 
-    def test_wbs_draft_groups_boq_items_and_preserves_user_planning(self):
-        version = self._version("WBS-DRAFT")
+    def test_wbs_is_user_planned_and_can_group_independent_boq_items(self):
+        version = self._version("WBS-PLAN")
         first = self._line(version, code="010101003001")
-        second = self._line(version, code="010101003002")
+        second = self._line(version, code="020202004001")
         version.action_validate()
         version.action_publish()
         self.assertFalse(first.work_id | second.work_id)
-
-        version.action_generate_wbs_draft()
-        self.assertEqual(first.work_id, second.work_id)
-        self.assertEqual(first.work_id.level_type, "sub_section")
-        self.assertEqual(len(first.work_id.boq_line_ids.filtered(lambda line: line.version_id == version)), 2)
-        self.assertEqual(len(first.allocation_ids), 1)
-        self.assertEqual(len(second.allocation_ids), 1)
-        self.assertTrue(first.allocation_balanced)
-        self.assertTrue(second.allocation_balanced)
-
-        planned_parent = self.env["construction.work.breakdown"].create(
+        Work = self.env["construction.work.breakdown"]
+        planned_root = Work.create(
             {
                 "project_id": self.project.id,
-                "name": "现场确认的工作包分组",
+                "name": "一期实施计划",
                 "code": "PLAN-01",
-                "level_type": "other",
-                "source_type": "manual",
-                "placement_mode": "planned",
+                "level_type": "phase",
             }
         )
-        first.work_id.write({"parent_id": planned_parent.id})
-        self.assertEqual(first.work_id.placement_mode, "planned")
-        version.action_generate_wbs_draft()
-        self.assertEqual(first.work_id.parent_id, planned_parent, "同步不得覆盖用户规划位置")
+        planned_root.action_wbs_add_child()
+        first_package = planned_root.child_ids
+        first_package.write({"name": "公共区域提升工作包", "level_type": "work_package"})
+        first_package.action_wbs_add_sibling()
+        second_package = planned_root.child_ids - first_package
+        self.assertEqual(second_package.parent_id, planned_root)
+        second_package.action_wbs_indent()
+        self.assertEqual(second_package.parent_id, first_package)
+        second_package.action_wbs_outdent()
+        self.assertEqual(second_package.parent_id, planned_root)
+        second_package.action_wbs_move_up()
+        self.assertEqual(planned_root.child_ids.sorted(lambda rec: (rec.sequence, rec.id))[:1], second_package)
 
         floor = self.env["construction.location.breakdown"].create(
             {
@@ -118,23 +125,53 @@ class TestBoqVersionContract(TransactionCase):
         located_scope = self.env["construction.execution.scope"].create(
             {
                 "project_id": self.project.id,
-                "wbs_id": first.work_id.id,
+                "wbs_id": first_package.id,
                 "location_id": floor.id,
                 "source_type": "manual",
             }
         )
-        first.allocation_ids.write({"execution_scope_id": located_scope.id})
-        self.assertEqual(first.allocation_ids.execution_scope_id.location_id, floor)
-        self.assertEqual(first.allocation_ids.boq_line_id, first)
+        Allocation = self.env["project.boq.allocation"]
+        for line in first | second:
+            Allocation.create(
+                {
+                    "boq_line_id": line.id,
+                    "execution_scope_id": located_scope.id,
+                    "allocation_basis": "ratio",
+                    "allocation_ratio": 100.0,
+                }
+            )
+        self.assertEqual(located_scope.allocation_ids.mapped("boq_line_id"), first | second)
+        self.assertFalse(first.work_id | second.work_id, "BOQ 原结构不得被 WBS 管理结构改写")
         self.assertTrue(first.allocation_balanced)
+        self.assertTrue(second.allocation_balanced)
+        self.assertEqual(first_package.boq_line_count, 2)
+        self.assertEqual(first_package.boq_amount_total, 40.0)
 
     def test_boq_allocation_supports_quantity_amount_and_ratio_bases(self):
         version = self._version("ALLOCATION-BASES")
         line = self._line(version)
         version.action_validate()
         version.action_publish()
-        version.action_generate_wbs_draft()
-        generated = line.allocation_ids
+        work = self.env["construction.work.breakdown"].create(
+            {
+                "project_id": self.project.id,
+                "name": "计划工作包",
+                "code": "WP-01",
+                "level_type": "work_package",
+            }
+        )
+        initial_scope = self.env["construction.execution.scope"].create(
+            {"project_id": self.project.id, "wbs_id": work.id, "source_type": "manual"}
+        )
+        generated = self.env["project.boq.allocation"].create(
+            {
+                "boq_line_id": line.id,
+                "execution_scope_id": initial_scope.id,
+                "allocation_basis": "ratio",
+                "allocation_ratio": 100.0,
+                "source_type": "manual",
+            }
+        )
         generated.write({"allocation_basis": "ratio", "allocation_ratio": 50.0})
         self.assertEqual(generated.allocated_quantity, 1.0)
         self.assertEqual(generated.allocated_amount, 10.0)
@@ -150,7 +187,7 @@ class TestBoqVersionContract(TransactionCase):
         scope = self.env["construction.execution.scope"].create(
             {
                 "project_id": self.project.id,
-                "wbs_id": line.work_id.id,
+                "wbs_id": work.id,
                 "location_id": floor.id,
                 "source_type": "manual",
             }
