@@ -1,0 +1,20 @@
+<odoo noupdate="1">
+    <record id="region_cn_sc" model="sc.norm.region">
+        <field name="code">CN-SC</field>
+        <field name="name">四川省</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="sequence">510000</field>
+    </record>
+
+    <record id="catalog_sc_2015" model="sc.norm.catalog">
+        <field name="code">CN-SC-2015-BUDGET</field>
+        <field name="name">四川省2015版建设工程预算定额</field>
+        <field name="region_id" ref="region_cn_sc"/>
+        <field name="edition_year">2015</field>
+        <field name="version">2015版</field>
+        <field name="catalog_type">budget</field>
+        <field name="state">active</field>
+        <field name="currency_id" ref="base.CNY"/>
+        <field name="note">四川省2015版建设工程预算定额电子版汇编。</field>
+    </record>
+</odoo>

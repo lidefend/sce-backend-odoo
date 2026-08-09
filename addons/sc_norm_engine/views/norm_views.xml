@@ -1,10 +1,113 @@
 <odoo>
+    <!-- Region and catalog are first-class dimensions. A catalog version owns
+         specialties; specialties own the chapter hierarchy and norm facts. -->
+    <record id="view_sc_norm_region_tree" model="ir.ui.view">
+        <field name="name">sc.norm.region.tree</field>
+        <field name="model">sc.norm.region</field>
+        <field name="arch" type="xml">
+            <tree string="适用地区" default_order="sequence, code">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="parent_id"/>
+                <field name="country_id"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_sc_norm_region_form" model="ir.ui.view">
+        <field name="name">sc.norm.region.form</field>
+        <field name="model">sc.norm.region</field>
+        <field name="arch" type="xml">
+            <form string="适用地区">
+                <sheet><group>
+                    <field name="code"/><field name="name"/>
+                    <field name="country_id"/><field name="parent_id"/>
+                    <field name="sequence"/><field name="active"/>
+                </group></sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sc_norm_region" model="ir.actions.act_window">
+        <field name="name">适用地区</field>
+        <field name="res_model">sc.norm.region</field>
+        <field name="view_mode">tree,form</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+
+    <record id="view_sc_norm_catalog_master_tree" model="ir.ui.view">
+        <field name="name">sc.norm.catalog.master.tree</field>
+        <field name="model">sc.norm.catalog</field>
+        <field name="arch" type="xml">
+            <tree string="定额库版本" default_order="region_id, edition_year desc, version desc">
+                <field name="code"/><field name="name"/><field name="region_id"/>
+                <field name="edition_year"/><field name="version"/><field name="catalog_type"/>
+                <field name="state"/><field name="effective_date"/><field name="expiry_date"/>
+                <field name="specialty_count"/><field name="chapter_count"/><field name="item_count"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_sc_norm_catalog_master_form" model="ir.ui.view">
+        <field name="name">sc.norm.catalog.master.form</field>
+        <field name="model">sc.norm.catalog</field>
+        <field name="arch" type="xml">
+            <form string="定额库版本">
+                <header>
+                    <button name="action_activate" type="object" string="启用" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_archive" type="object" string="归档" class="btn-secondary" invisible="state != 'active'"/>
+                    <button name="action_reset_draft" type="object" string="恢复草稿" class="btn-secondary" invisible="state != 'archived'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,archived"/>
+                </header>
+                <sheet>
+                    <group string="基本信息">
+                        <group><field name="code"/><field name="name"/><field name="region_id"/><field name="catalog_type"/></group>
+                        <group><field name="edition_year"/><field name="version"/><field name="currency_id"/></group>
+                    </group>
+                    <group string="有效期"><field name="effective_date"/><field name="expiry_date"/></group>
+                    <group string="数据规模"><field name="specialty_count"/><field name="chapter_count"/><field name="item_count"/></group>
+                    <group string="说明"><field name="note" nolabel="1" colspan="4"/></group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sc_norm_catalog_master_search" model="ir.ui.view">
+        <field name="name">sc.norm.catalog.master.search</field>
+        <field name="model">sc.norm.catalog</field>
+        <field name="arch" type="xml">
+            <search string="搜索定额库版本">
+                <field name="code"/><field name="name"/><field name="region_id"/>
+                <field name="edition_year"/><field name="version"/><field name="catalog_type"/><field name="state"/>
+                <filter string="启用" name="active_catalog" domain="[('state', '=', 'active')]"/>
+                <filter string="草稿" name="draft_catalog" domain="[('state', '=', 'draft')]"/>
+                <filter string="归档" name="archived_catalog" domain="[('state', '=', 'archived')]"/>
+                <group expand="0" string="分组">
+                    <filter string="适用地区" name="group_region" context="{'group_by': 'region_id'}"/>
+                    <filter string="发布年份" name="group_year" context="{'group_by': 'edition_year'}"/>
+                    <filter string="定额类型" name="group_type" context="{'group_by': 'catalog_type'}"/>
+                    <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sc_norm_catalog_master" model="ir.actions.act_window">
+        <field name="name">定额库版本</field>
+        <field name="res_model">sc.norm.catalog</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_sc_norm_catalog_master_search"/>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+
     <!-- Specialty -->
     <record id="view_sc_norm_specialty_tree" model="ir.ui.view">
         <field name="name">sc.norm.specialty.tree</field>
         <field name="model">sc.norm.specialty</field>
         <field name="arch" type="xml">
             <tree string="专业">
+                <field name="catalog_id"/>
                 <field name="code"/>
                 <field name="name"/>
                 <field name="sequence"/>
@@ -20,6 +123,7 @@
             <form string="专业">
                 <sheet>
                     <group>
+                        <field name="catalog_id"/>
                         <field name="code"/>
                         <field name="name"/>
                         <field name="sequence"/>
@@ -66,8 +170,10 @@
         <field name="arch" type="xml">
             <tree string="章节">
                 <field name="specialty_id"/>
+                <field name="parent_id"/>
                 <field name="code"/>
                 <field name="name"/>
+                <field name="level"/>
                 <field name="sequence"/>
                 <field name="norm_code_start"/>
                 <field name="norm_code_end"/>
@@ -83,8 +189,10 @@
                 <sheet>
                     <group>
                         <field name="specialty_id"/>
+                        <field name="parent_id"/>
                         <field name="code"/>
                         <field name="name"/>
+                        <field name="level" readonly="1"/>
                         <field name="sequence"/>
                         <field name="norm_code_start"/>
                         <field name="norm_code_end"/>
@@ -107,6 +215,7 @@
         <field name="model">sc.norm.item</field>
         <field name="arch" type="xml">
             <tree string="定额子目">
+                <field name="catalog_id"/>
                 <field name="specialty_id"/>
                 <field name="chapter_id"/>
                 <field name="code"/>
@@ -130,13 +239,15 @@
             <form string="定额子目">
                 <sheet>
                     <group>
+                        <field name="catalog_id" readonly="1"/>
                         <field name="specialty_id"/>
                         <field name="chapter_id"/>
                     </group>
                     <group>
                         <field name="code"/>
                         <field name="name"/>
-                        <field name="uom_id"/>
+                        <field name="unit_raw" string="计量单位"/>
+                        <field name="uom_id" string="标准单位"/>
                     </group>
                     <group string="费用">
                         <group>
@@ -151,8 +262,19 @@
                             <field name="cost_misc"/>
                         </group>
                     </group>
+                    <group string="成本构成">
+                        <field name="direct_share" widget="percentage"/>
+                        <field name="labor_share" widget="percentage"/>
+                        <field name="material_share" widget="percentage"/>
+                        <field name="machine_share" widget="percentage"/>
+                        <field name="misc_share" widget="percentage"/>
+                    </group>
                     <group string="工作内容">
                         <field name="work_desc" nolabel="1" colspan="4"/>
+                    </group>
+                    <group string="数据来源">
+                        <field name="source_sheet" readonly="1"/>
+                        <field name="line_no" readonly="1"/>
                     </group>
                 </sheet>
             </form>
@@ -163,6 +285,73 @@
         <field name="name">定额子目</field>
         <field name="res_model">sc.norm.item</field>
         <field name="view_mode">tree,form</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+
+    <!-- Product workbench: the model-backed native view is the structure
+         authority. The adapter marker selects a generic presentation only. -->
+    <record id="view_sc_norm_catalog_tree" model="ir.ui.view">
+        <field name="name">sc.norm.catalog.tree</field>
+        <field name="model">sc.norm.item</field>
+        <field name="arch" type="xml">
+            <tree string="定额库" js_class="smart_hierarchy_browser" default_order="code asc" create="0" delete="0">
+                <header>
+                    <button name="%(action_sc_norm_import_wizard)d" type="action" string="导入定额" class="btn-primary"/>
+                </header>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="unit_raw" string="计量单位"/>
+                <field name="price_total"/>
+                <field name="cost_labor"/>
+                <field name="cost_material"/>
+                <field name="cost_machine"/>
+                <field name="catalog_id" column_invisible="1"/>
+                <field name="specialty_id" column_invisible="1"/>
+                <field name="chapter_id" column_invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_sc_norm_catalog_search" model="ir.ui.view">
+        <field name="name">sc.norm.catalog.search</field>
+        <field name="model">sc.norm.item</field>
+        <field name="arch" type="xml">
+            <search string="搜索定额库">
+                <field name="catalog_id"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="unit_raw"/>
+                <field name="source_sheet"/>
+                <searchpanel>
+                    <field name="catalog_id" enable_counters="1"/>
+                    <field name="specialty_id" enable_counters="1"/>
+                    <field name="chapter_id" enable_counters="1"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sc_norm_catalog_workbench" model="ir.actions.act_window">
+        <field name="name">定额库</field>
+        <field name="res_model">sc.norm.item</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_sc_norm_catalog_tree"/>
+        <field name="search_view_id" ref="view_sc_norm_catalog_search"/>
+        <field name="context" eval="{
+            'create': False,
+            'hierarchy_levels': [
+                {'field': 'catalog_id', 'code_field': 'code', 'label_field': 'name'},
+                {'field': 'specialty_id', 'code_field': 'code', 'label_field': 'name', 'parent_field': 'catalog_id'},
+                {
+                    'field': 'chapter_id',
+                    'code_field': 'code',
+                    'label_field': 'name',
+                    'parent_field': 'specialty_id',
+                    'self_parent_field': 'parent_id',
+                    'domain_operator': 'child_of',
+                },
+            ],
+        }"/>
         <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
     </record>
 </odoo>

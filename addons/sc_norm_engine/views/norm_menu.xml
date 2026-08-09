@@ -2,13 +2,16 @@
     <menuitem id="menu_sc_norm_root"
               name="定额引擎"
               parent="smart_construction_core.menu_sc_business_config_center"
-              action="action_sc_norm_item"
+              action="action_sc_norm_catalog_workbench"
               sequence="35"
               groups="smart_construction_core.group_sc_cap_business_config_admin"/>
 
-    <menuitem id="menu_sc_norm_specialty" name="专业" parent="menu_sc_norm_root" action="action_sc_norm_specialty" sequence="10" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
-    <menuitem id="menu_sc_norm_chapter" name="章节" parent="menu_sc_norm_root" action="action_sc_norm_chapter" sequence="20" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
-    <menuitem id="menu_sc_norm_item" name="定额子目" parent="menu_sc_norm_root" action="action_sc_norm_item" sequence="30" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_norm_catalog" name="定额库" parent="menu_sc_norm_root" action="action_sc_norm_catalog_workbench" sequence="10" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_norm_catalog_master" name="定额库版本维护" parent="menu_sc_norm_root" action="action_sc_norm_catalog_master" sequence="20" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_norm_region" name="适用地区维护" parent="menu_sc_norm_root" action="action_sc_norm_region" sequence="30" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_norm_specialty" name="专业维护" parent="menu_sc_norm_root" action="action_sc_norm_specialty" sequence="40" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_norm_chapter" name="章节维护" parent="menu_sc_norm_root" action="action_sc_norm_chapter" sequence="50" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_norm_item" name="定额项维护" parent="menu_sc_norm_root" action="action_sc_norm_item" sequence="60" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
 
-    <menuitem id="menu_sc_norm_import" name="导入定额" parent="menu_sc_norm_root" action="action_sc_norm_import_wizard" sequence="40" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_norm_import" name="导入定额" parent="menu_sc_norm_root" action="action_sc_norm_import_wizard" sequence="70" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
 </odoo>

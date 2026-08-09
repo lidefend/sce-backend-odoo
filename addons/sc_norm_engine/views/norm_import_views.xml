@@ -3,17 +3,39 @@
         <field name="name">sc.norm.import.wizard.form</field>
         <field name="model">sc.norm.import.wizard</field>
         <field name="arch" type="xml">
-            <form string="导入定额 (四川2015)">
-                <group>
-                    <field name="data_file" filename="filename"/>
+            <form string="导入定额">
+                <field name="state" invisible="1"/>
+                <field name="preview_digest" invisible="1"/>
+                <field name="preview_catalog_id" invisible="1"/>
+                <group string="1. 选择文件" invisible="state != 'upload'">
+                    <field name="catalog_id" options="{'no_create': True, 'no_open': False}"/>
+                    <field name="data_file" filename="filename" options="{'accepted_file_extensions': '.xls,.xlsx,.xlsm'}"/>
                     <field name="filename" invisible="1"/>
-                    <field name="clear_before"/>
+                    <field name="import_mode" widget="radio"/>
                 </group>
-                <group>
-                    <field name="log" nolabel="1" readonly="1" colspan="4"/>
+                <group string="2. 预检结果" invisible="state != 'preview'">
+                    <field name="catalog_id" readonly="1"/>
+                    <group>
+                        <field name="preview_specialty_count"/>
+                        <field name="preview_chapter_count"/>
+                        <field name="preview_item_count"/>
+                    </group>
+                    <group>
+                        <field name="preview_warning_count"/>
+                        <field name="preview_error_count"/>
+                        <field name="import_mode" readonly="1"/>
+                    </group>
+                    <field name="preview_log" nolabel="1" colspan="4"/>
+                    <field name="confirm_replace" invisible="import_mode != 'replace'" required="import_mode == 'replace'"/>
+                </group>
+                <group string="3. 导入结果" invisible="state != 'done'">
+                    <field name="catalog_id" readonly="1"/>
+                    <field name="log" nolabel="1" colspan="4"/>
                 </group>
                 <footer>
-                    <button string="导入" type="object" name="action_import" class="btn-primary"/>
+                    <button string="预检" type="object" name="action_preflight" class="btn-primary" invisible="state != 'upload'"/>
+                    <button string="返回修改" type="object" name="action_back" class="btn-secondary" invisible="state != 'preview'"/>
+                    <button string="确认导入" type="object" name="action_import" class="btn-primary" invisible="state != 'preview' or preview_error_count != 0"/>
                     <button string="关闭" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
