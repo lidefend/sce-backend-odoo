@@ -654,9 +654,14 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                     root = ET.fromstring(arch)
                     if root.get('default_order'):
                         order_default = root.get('default_order')
-                    if root.get('js_class') == 'smart_hierarchy_browser':
+                    collection_semantics = {
+                        'smart_hierarchy_browser': 'hierarchy_browser',
+                        'smart_hierarchical_worksheet': 'hierarchical_worksheet',
+                    }
+                    collection_semantic = collection_semantics.get(root.get('js_class'))
+                    if collection_semantic:
                         base['collection_presentation'] = {
-                            'semantic': 'hierarchy_browser',
+                            'semantic': collection_semantic,
                             'source': 'native_view_derived',
                         }
                     native_header_actions = []

@@ -181,9 +181,188 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertEqual([row["model"] for row in config["tree"]["levels"]], ["sc.norm.catalog", "sc.norm.specialty", "sc.norm.chapter"])
         self.assertEqual(config["tree"]["levels"][2]["self_parent_field"], "parent_id")
         self.assertEqual(config["list"]["bindings"]["chapter_id"], {"field": "chapter_id", "operator": "child_of"})
-        self.assertEqual(config["list"]["columns"], [{"field": "code", "label": "定额编号"}, {"field": "name", "label": "项目名称"}])
+        self.assertEqual(
+            config["list"]["columns"],
+            [
+                {"field": "code", "label": "定额编号", "type": "char"},
+                {"field": "name", "label": "项目名称", "type": "char"},
+            ],
+        )
         self.assertEqual(config["actions"][0]["key"], "action:856")
         self.assertEqual(config["tree_title"], "所属定额库 / 所属专业 / 所属章节")
+
+    def test_hierarchy_structural_fields_can_extend_relation_dialog_columns(self):
+        class RelationModel:
+            @staticmethod
+            def check_access_rights(_operation, raise_exception=False):
+                return not raise_exception
+
+            @staticmethod
+            def fields_get(names):
+                available = {"code", "name", "project_id", "parent_id"}
+                return {name: {"type": "many2one"} for name in names if name in available}
+
+        class Env:
+            def __getitem__(self, name):
+                if name == "construction.work.breakdown":
+                    return RelationModel()
+                raise KeyError(name)
+
+        self.assembler.env = Env()
+
+        self.assertTrue(
+            self.assembler._hierarchy_relation_fields_available(
+                "construction.work.breakdown",
+                ["id", "code", "name", "project_id", "parent_id"],
+                {"id", "display_name", "name"},
+            )
+        )
+        self.assertFalse(
+            self.assembler._hierarchy_relation_fields_available(
+                "construction.work.breakdown",
+                ["id", "code", "missing_parent_id"],
+                {"id", "display_name", "name"},
+            )
+        )
+
+    def test_native_hierarchical_worksheet_is_assembled_from_relation_contract(self):
+        class HierarchyModel:
+            @staticmethod
+            def check_access_rights(_operation, raise_exception=False):
+                return not raise_exception
+
+            @staticmethod
+            def fields_get(names):
+                available = {"parent_id", "project_id", "code", "name", "level_type", "amount_total"}
+                return {name: {"type": "char"} for name in names if name in available}
+
+        class MenuModel:
+            @staticmethod
+            def _visible_menu_ids():
+                return []
+
+        class Env:
+            def __getitem__(self, name):
+                if name == "generic.hierarchy":
+                    return HierarchyModel()
+                if name == "ir.ui.menu":
+                    return MenuModel()
+                raise KeyError(name)
+
+        self.assembler.env = Env()
+        data = {
+            "head": {"title": "Worksheet", "model": "generic.line"},
+            "fields": {
+                "binding_id": {"type": "many2one", "relation": "generic.hierarchy"},
+                "code": {"type": "char", "string": "Code"},
+                "name": {"type": "char", "string": "Name"},
+                "amount": {"type": "monetary", "string": "Amount"},
+                "description": {"type": "char", "string": "Description"},
+                "row_kind": {"type": "selection", "string": "Row kind"},
+            },
+            "views": {
+                "tree": {
+                    "collection_presentation": {"semantic": "hierarchical_worksheet", "source": "native_view_derived"},
+                    "columns_schema": [
+                        {"name": "code", "label": "Code"},
+                        {"name": "name", "label": "Name"},
+                        {"name": "amount", "label": "Amount"},
+                    ],
+                    "toolbar": {"header": []},
+                    "order": "code asc",
+                },
+            },
+        }
+        context = {
+            "hierarchical_worksheet": {
+                "binding_field": "binding_id",
+                "parent_field": "parent_id",
+                "project_field": "project_id",
+                "code_field": "code",
+                "label_field": "name",
+                "type_field": "level_type",
+                "leaf_values": ["item"],
+                "group_field_map": {"amount": "amount_total"},
+                "column_precisions": {"amount": 2},
+                "presentation_mode": "source_order",
+                "row_kind_field": "row_kind",
+                "item_values": ["item"],
+                "heading_values": ["heading"],
+                "summary_values": ["subtotal", "total"],
+                "variance_field": "amount",
+                "variance_tolerance": 0.005,
+                "sheet_order": "source_index, sequence, id",
+                "tabs": [{"key": "detail", "label": "Detail", "fields": ["description"]}],
+            },
+        }
+
+        self.assembler._inject_native_collection_presentation(data, context)
+
+        presentation = data["views"]["tree"]["collection_presentation"]
+        self.assertTrue(presentation["enabled"])
+        self.assertEqual(presentation["config"]["hierarchy"]["model"], "generic.hierarchy")
+        self.assertEqual(presentation["config"]["sheet"]["binding_field"], "binding_id")
+        self.assertEqual(presentation["config"]["sheet"]["columns"][2]["align"], "right")
+        self.assertEqual(presentation["config"]["sheet"]["columns"][2]["precision"], 2)
+        self.assertEqual(presentation["config"]["sheet"]["presentation_mode"], "source_order")
+        self.assertEqual(presentation["config"]["sheet"]["row_kind_field"], "row_kind")
+        self.assertIn("row_kind", presentation["config"]["sheet"]["fields"])
+        self.assertEqual(presentation["config"]["sheet"]["order"], "source_index, sequence, id")
+        self.assertEqual(presentation["config"]["sheet"]["variance_field"], "amount")
+        self.assertEqual(presentation["config"]["sheet"]["variance_tolerance"], 0.005)
+        self.assertEqual(presentation["config"]["detail"]["tabs"][0]["fields"][0]["field"], "description")
+
+    def test_source_order_worksheet_can_build_navigation_from_sheet_groups(self):
+        class MenuModel:
+            @staticmethod
+            def _visible_menu_ids():
+                return []
+
+        class Env:
+            def __getitem__(self, name):
+                if name == "ir.ui.menu":
+                    return MenuModel()
+                raise KeyError(name)
+
+        self.assembler.env = Env()
+        data = {
+            "head": {"title": "Source worksheet", "model": "source.line"},
+            "fields": {
+                "name": {"type": "char", "string": "Name"},
+                "single_name": {"type": "char", "string": "Single"},
+                "unit_name": {"type": "char", "string": "Unit"},
+                "row_kind": {"type": "selection", "string": "Row kind"},
+            },
+            "views": {
+                "tree": {
+                    "collection_presentation": {"semantic": "hierarchical_worksheet"},
+                    "columns_schema": [{"name": "name", "label": "Name"}],
+                    "toolbar": {"header": []},
+                    "order": "id asc",
+                },
+            },
+        }
+        context = {
+            "hierarchical_worksheet": {
+                "navigation_mode": "sheet_groups",
+                "navigation_groups": [
+                    {"field": "single_name", "label": "Single"},
+                    {"field": "unit_name", "label": "Unit"},
+                ],
+                "presentation_mode": "source_order",
+                "row_kind_field": "row_kind",
+                "item_values": ["item"],
+            },
+        }
+
+        self.assembler._inject_native_collection_presentation(data, context)
+
+        config = data["views"]["tree"]["collection_presentation"]["config"]
+        self.assertTrue(data["views"]["tree"]["collection_presentation"]["enabled"])
+        self.assertEqual(config["hierarchy"]["navigation_mode"], "sheet_groups")
+        self.assertEqual([row["field"] for row in config["hierarchy"]["navigation_groups"]], ["single_name", "unit_name"])
+        self.assertEqual(config["sheet"]["binding_field"], "")
+        self.assertIn("single_name", config["sheet"]["fields"])
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ const registrations: readonly ActionSurfaceRendererRegistration[] = [
   { semantic: 'card', requestedRendererKey: 'core.card', activeRendererKey: 'core.standard_collection', status: 'ready', outlet: 'standard', reasonCode: '' },
   { semantic: 'workflow_board', requestedRendererKey: 'core.workflow_board', activeRendererKey: 'core.standard_collection', status: 'ready', outlet: 'standard', reasonCode: '' },
   { semantic: 'hierarchy_browser', requestedRendererKey: 'core.hierarchy_browser', activeRendererKey: 'core.hierarchy_browser', status: 'ready', outlet: 'component', reasonCode: '' },
+  { semantic: 'hierarchical_worksheet', requestedRendererKey: 'core.hierarchical_worksheet', activeRendererKey: 'core.hierarchical_worksheet', status: 'ready', outlet: 'component', reasonCode: '' },
   { semantic: 'pivot', requestedRendererKey: 'core.pivot', activeRendererKey: 'core.readable_records', status: 'fallback', outlet: 'standard', reasonCode: 'RENDERER_PIVOT_PLANNED' },
   { semantic: 'graph', requestedRendererKey: 'core.graph', activeRendererKey: 'core.readable_records', status: 'fallback', outlet: 'standard', reasonCode: 'RENDERER_GRAPH_PLANNED' },
   { semantic: 'calendar', requestedRendererKey: 'core.calendar', activeRendererKey: 'core.readable_records', status: 'fallback', outlet: 'standard', reasonCode: 'RENDERER_CALENDAR_PLANNED' },

@@ -959,11 +959,11 @@ export function nativeModifierValue(nodeRaw: NativeLayoutLikeNode, key: 'invisib
   if (key in modifiers) return modifiers[key];
   if (key in attributeModifiers) return attributeModifiers[key];
   if (key in actionVisibleAttrs) return actionVisibleAttrs[key];
+  // The normalized top-level value is the formal modifier AST. It must win
+  // over raw field-info/XML strings such as `state != 'upload'`.
+  if (key in node) return node[key];
   if (key in fieldInfoModifiers) return fieldInfoModifiers[key];
   if (key in fieldInfo) return fieldInfo[key];
-  // The normalized top-level value is the formal product modifier AST. Raw
-  // XML attributes are retained for traceability and are only a fallback.
-  if (key in node) return node[key];
   if (key in attributes) return attributes[key];
   return undefined;
 }

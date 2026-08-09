@@ -56,7 +56,7 @@
             <thead><tr><th v-for="column in listConfig.columns" :key="column.field">{{ column.label }}</th></tr></thead>
             <tbody>
               <tr v-for="row in rows" :key="Number(row.id)" tabindex="0" :class="{ selected: Number(selectedRow?.id) === Number(row.id) }" @click="selectedRow = row" @dblclick="openRow(row.id)" @keyup.enter="selectedRow = row">
-                <td v-for="column in listConfig.columns" :key="column.field">{{ displayValue(row[column.field]) }}</td>
+                <td v-for="column in listConfig.columns" :key="column.field">{{ displayValue(row[column.field], column) }}</td>
               </tr>
             </tbody>
         </ScDataTable>
@@ -87,7 +87,7 @@
               <h4>{{ section.title }}</h4>
               <dl>
                 <template v-for="field in section.fields" :key="field.field">
-                  <dt>{{ field.label }}</dt><dd>{{ displayValue(selectedRow[field.field]) }}</dd>
+                  <dt>{{ field.label }}</dt><dd>{{ displayValue(selectedRow[field.field], field) }}</dd>
                 </template>
               </dl>
             </section>
@@ -116,7 +116,7 @@ import HierarchyTreeNode from './HierarchyTreeNode.vue';
 type Dict = Record<string, unknown>;
 type LevelConfig = HierarchyLevelConfig;
 type TreeNode = HierarchyNode;
-type Column = { field: string; label: string };
+type Column = { field: string; label: string; type?: string; ttype?: string; selection?: Array<[unknown, string]> };
 type DetailSection = { title: string; fields: Column[] };
 type SurfaceAction = { key: string; label: string; action_id: number; menu_id: number; variant: string; route: string };
 const props = withDefaults(defineProps<{ config: Dict; preferenceScope?: string }>(), { preferenceScope: 'default' });
@@ -155,7 +155,7 @@ const columnGridStyle = computed(() => ({ gridTemplateColumns: `${leftWidth.valu
 const layoutGridStyle = computed(() => ({ ...columnGridStyle.value, height: `${workspaceHeight.value}px` }));
 const pageSize = computed(() => listConfig.value.pageSize);
 const currentTitle = computed(() => selectedNode.value ? [selectedNode.value.code, selectedNode.value.label].filter(Boolean).join(' ') : labels.value.all);
-function displayValue(value: unknown): string { return formatDisplayValue(value); }
+function displayValue(value: unknown, field?: Column): string { return formatDisplayValue(value, field); }
 async function loadTree(): Promise<void> {
   rootNodes.value = await loadHierarchyTree(levels.value);
   expandedKeys.value = new Set(rootNodes.value.slice(0, 1).map((node) => node.key));

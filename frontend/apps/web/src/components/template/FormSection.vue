@@ -113,7 +113,12 @@
               </div>
               <template v-else-if="field.readonly">
                 <slot name="readonly" :field="field">
-                  <span class="readonly-value">{{ readonlyText(field) }}</span>
+                  <div
+                    v-if="field.type === 'html'"
+                    class="readonly-value readonly-value--html"
+                    v-html="readonlyHtml(field)"
+                  />
+                  <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </template>
               <template v-else-if="isRelationEditorField(field) && relationAdapter">
@@ -328,6 +333,7 @@ import ScRelationField from '../design-system/ScRelationField.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
+import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -589,6 +595,10 @@ function readonlyText(field: FormSectionFieldSchema) {
     { ...(field.descriptor || {}), type: fieldType || field.descriptor?.type },
     { emptyText: '-' },
   );
+}
+
+function readonlyHtml(field: FormSectionFieldSchema) {
+  return sanitizeReadonlyHtml(field.value);
 }
 
 function fieldActionsFor(field: FormSectionFieldSchema) {
@@ -1165,6 +1175,21 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   align-items: center;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.readonly-value--html {
+  display: block;
+  line-height: 1.65;
+}
+
+.readonly-value--html :deep(ul),
+.readonly-value--html :deep(ol) {
+  margin: 0;
+  padding-inline-start: 20px;
+}
+
+.readonly-value--html :deep(p) {
+  margin: 0 0 6px;
 }
 
 .template-form-section--readonly .readonly-value {

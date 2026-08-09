@@ -81,10 +81,15 @@
       @native-action="emit('native-action', $event)"
     >
       <template #readonly="{ field }">
-        <span class="form-readonly-value" :class="{ 'form-readonly-value--empty': isEmptyValue(field.value, field.type) }">
+        <div class="form-readonly-value" :class="{ 'form-readonly-value--empty': isEmptyValue(field.value, field.type) }">
           <span v-if="isEmptyValue(field.value, field.type)">未填写</span>
+          <div
+            v-else-if="field.type === 'html'"
+            class="form-readonly-html"
+            v-html="sanitizeReadonlyHtml(field.value)"
+          />
           <FieldValue v-else :value="field.value" :field="field.descriptor" />
-        </span>
+        </div>
       </template>
       <template #chatter>
         <NativeCollaborationPanel
@@ -108,6 +113,7 @@ import type {
   FormSectionFieldSchema,
 } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
+import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
 import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
   type NativeCollaborationPanelProps,
@@ -396,6 +402,21 @@ const emit = defineEmits<{
 .form-readonly-value--empty {
   color: var(--sc-app-text-muted);
   font-weight: 400;
+}
+
+.form-readonly-html {
+  width: 100%;
+  line-height: 1.65;
+}
+
+.form-readonly-html :deep(ul),
+.form-readonly-html :deep(ol) {
+  margin: 0;
+  padding-inline-start: 20px;
+}
+
+.form-readonly-html :deep(p) {
+  margin: 0 0 6px;
 }
 
 @media (max-width: 860px) {

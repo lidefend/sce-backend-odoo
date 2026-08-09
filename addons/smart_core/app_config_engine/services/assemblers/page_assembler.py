@@ -599,10 +599,14 @@ class PageAssembler:
                 info = node.get("fieldInfo") if isinstance(node.get("fieldInfo"), dict) else {}
                 descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
                 seen.add(name)
-                return [{
+                field_contract = {
                     "field": name,
                     "label": str(info.get("label") or descriptor.get("string") or name).strip(),
-                }]
+                    "type": str(descriptor.get("type") or descriptor.get("ttype") or "").strip(),
+                }
+                if isinstance(descriptor.get("selection"), (list, tuple)):
+                    field_contract["selection"] = descriptor["selection"]
+                return [field_contract]
             for child in node.get("children") or []:
                 out.extend(collect_fields(child))
             return out
@@ -630,6 +634,37 @@ class PageAssembler:
             sections.insert(0, {"title": "", "fields": unlabeled})
         return sections
 
+    def _hierarchy_relation_fields_available(
+        self,
+        relation_model: str,
+        required_fields: list[str],
+        dialog_read_fields: set[str],
+    ) -> bool:
+        """Validate hierarchy fields against the relation model contract.
+
+        A relation search dialog intentionally exposes only its own native tree
+        columns.  Hierarchy levels may need additional structural fields (for
+        example ``parent_id``) which are not dialog columns.  Treat the dialog
+        contract as the first source, then resolve only the explicitly declared
+        missing fields through ``fields_get`` so the backend remains the field
+        and access authority.
+        """
+        missing = [
+            name
+            for name in required_fields
+            if name != "id" and name not in dialog_read_fields
+        ]
+        if not missing:
+            return True
+        try:
+            relation = self.env[relation_model]
+            if not relation.check_access_rights("read", raise_exception=False):
+                return False
+            available = relation.fields_get(missing)
+        except Exception:
+            return False
+        return all(name in available for name in missing)
+
     def _inject_native_collection_presentation(self, data: dict, effective_context: dict) -> None:
         """Complete a native-view-declared collection presentation.
 
@@ -641,6 +676,9 @@ class PageAssembler:
         views = data.get("views") if isinstance(data.get("views"), dict) else {}
         tree = views.get("tree") if isinstance(views.get("tree"), dict) else {}
         presentation = tree.get("collection_presentation") if isinstance(tree.get("collection_presentation"), dict) else {}
+        if str(presentation.get("semantic") or "").strip() == "hierarchical_worksheet":
+            self._inject_native_hierarchical_worksheet(data, effective_context)
+            return
         if str(presentation.get("semantic") or "").strip() != "hierarchy_browser":
             return
         raw_levels = effective_context.get("hierarchy_levels") if isinstance(effective_context, dict) else []
@@ -663,6 +701,8 @@ class PageAssembler:
             if not field_name or descriptor.get("type") != "many2one" or not relation_model:
                 continue
             relation_entry = descriptor.get("relation_entry") if isinstance(descriptor.get("relation_entry"), dict) else {}
+            if relation_entry.get("can_read") is False:
+                continue
             dialog = relation_entry.get("search_dialog") if isinstance(relation_entry.get("search_dialog"), dict) else {}
             readable = {str(value).strip() for value in dialog.get("read_fields") or [] if str(value).strip()}
             code_field = str(spec.get("code_field") or "").strip()
@@ -679,7 +719,11 @@ class PageAssembler:
                 required_fields.append(parent_field)
             if self_parent_field:
                 required_fields.append(self_parent_field)
-            if readable and any(name not in readable and name != "id" for name in required_fields):
+            if not self._hierarchy_relation_fields_available(
+                relation_model,
+                required_fields,
+                readable,
+            ):
                 continue
             key = field_name
             level = {
@@ -711,14 +755,22 @@ class PageAssembler:
             return
 
         columns_schema = tree.get("columns_schema") if isinstance(tree.get("columns_schema"), list) else []
-        columns = [
-            {
-                "field": str(row.get("name") or "").strip(),
-                "label": str(row.get("label") or row.get("string") or row.get("name") or "").strip(),
+        columns = []
+        for row in columns_schema:
+            if not isinstance(row, dict):
+                continue
+            name = str(row.get("name") or "").strip()
+            if not name:
+                continue
+            descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
+            column = {
+                "field": name,
+                "label": str(row.get("label") or row.get("string") or name).strip(),
+                "type": str(descriptor.get("type") or descriptor.get("ttype") or "").strip(),
             }
-            for row in columns_schema
-            if isinstance(row, dict) and str(row.get("name") or "").strip()
-        ]
+            if isinstance(descriptor.get("selection"), (list, tuple)):
+                column["selection"] = descriptor["selection"]
+            columns.append(column)
         form = views.get("form") if isinstance(views.get("form"), dict) else {}
         sections = self._native_form_detail_sections(form, fields_map)
         read_fields = ["id"]
@@ -797,6 +849,239 @@ class PageAssembler:
                     "load_error": "数据加载失败",
                     "open": "打开",
                     "select_hint": "请选择一条记录查看详情",
+                },
+            },
+        }
+
+    def _inject_native_hierarchical_worksheet(self, data: dict, effective_context: dict) -> None:
+        """Assemble a generic hierarchy-backed worksheet from native facts."""
+        views = data.get("views") if isinstance(data.get("views"), dict) else {}
+        tree = views.get("tree") if isinstance(views.get("tree"), dict) else {}
+        presentation = tree.get("collection_presentation") if isinstance(tree.get("collection_presentation"), dict) else {}
+        raw = effective_context.get("hierarchical_worksheet") if isinstance(effective_context, dict) else {}
+        raw = raw if isinstance(raw, dict) else {}
+        fields_map = data.get("fields") if isinstance(data.get("fields"), dict) else {}
+        navigation_mode = str(raw.get("navigation_mode") or "relation").strip()
+        binding_field = str(raw.get("binding_field") or "").strip()
+        binding_descriptor = fields_map.get(binding_field) if isinstance(fields_map.get(binding_field), dict) else {}
+        hierarchy_model = str(binding_descriptor.get("relation") or "").strip()
+        if navigation_mode != "sheet_groups" and (binding_descriptor.get("type") != "many2one" or not hierarchy_model):
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "WORKSHEET_HIERARCHY_BINDING_INVALID",
+            }
+            return
+
+        hierarchy_field_keys = {
+            key: str(raw.get(key) or "").strip()
+            for key in ("parent_field", "project_field", "code_field", "label_field", "type_field")
+        }
+        if not hierarchy_field_keys["label_field"]:
+            hierarchy_field_keys["label_field"] = "display_name"
+        group_field_map = {
+            str(target or "").strip(): str(source or "").strip()
+            for target, source in (raw.get("group_field_map") or {}).items()
+            if str(target or "").strip() and str(source or "").strip()
+        } if isinstance(raw.get("group_field_map"), dict) else {}
+        hierarchy_fields = list(dict.fromkeys([
+            "id",
+            *hierarchy_field_keys.values(),
+            *group_field_map.values(),
+        ]))
+        hierarchy_fields = [name for name in hierarchy_fields if name]
+        hierarchy_meta = {}
+        if navigation_mode != "sheet_groups":
+            try:
+                hierarchy = self.env[hierarchy_model]
+                can_read = hierarchy.check_access_rights("read", raise_exception=False)
+                hierarchy_meta = hierarchy.fields_get(hierarchy_fields) if can_read else {}
+            except Exception:
+                hierarchy_meta = {}
+        if navigation_mode != "sheet_groups" and any(name != "id" and name not in hierarchy_meta for name in hierarchy_fields):
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "WORKSHEET_HIERARCHY_FIELDS_INVALID",
+            }
+            return
+
+        columns_schema = tree.get("columns_schema") if isinstance(tree.get("columns_schema"), list) else []
+        excluded_fields = {
+            str(value or "").strip()
+            for value in raw.get("exclude_fields") or []
+            if str(value or "").strip()
+        }
+        column_widths = raw.get("column_widths") if isinstance(raw.get("column_widths"), dict) else {}
+        column_precisions = raw.get("column_precisions") if isinstance(raw.get("column_precisions"), dict) else {}
+        columns = []
+        for row in columns_schema:
+            if not isinstance(row, dict):
+                continue
+            name = str(row.get("name") or "").strip()
+            descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
+            if not name or name in excluded_fields:
+                continue
+            try:
+                width = int(column_widths.get(name) or 120)
+            except (TypeError, ValueError):
+                width = 120
+            precision = column_precisions.get(name)
+            try:
+                precision = max(0, min(8, int(precision))) if precision is not None else None
+            except (TypeError, ValueError):
+                precision = None
+            columns.append({
+                "field": name,
+                "label": str(row.get("label") or row.get("string") or descriptor.get("string") or name).strip(),
+                "type": str(descriptor.get("type") or "").strip(),
+                "selection": descriptor.get("selection") if isinstance(descriptor.get("selection"), list) else [],
+                "align": "right" if descriptor.get("type") in {"integer", "float", "monetary"} else "left",
+                "width": max(44, min(480, width)),
+                **({"precision": precision} if precision is not None else {}),
+            })
+
+        raw_tabs = raw.get("tabs") if isinstance(raw.get("tabs"), list) else []
+        tabs = []
+        tab_fields = []
+        for index, raw_tab in enumerate(raw_tabs):
+            tab = raw_tab if isinstance(raw_tab, dict) else {}
+            rows = []
+            for field_name in tab.get("fields") or []:
+                name = str(field_name or "").strip()
+                descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
+                if not name or not descriptor:
+                    continue
+                rows.append({
+                    "field": name,
+                    "label": str(descriptor.get("string") or name).strip(),
+                    "type": str(descriptor.get("type") or "").strip(),
+                    "selection": descriptor.get("selection") if isinstance(descriptor.get("selection"), list) else [],
+                })
+                tab_fields.append(name)
+            if rows:
+                tabs.append({
+                    "key": str(tab.get("key") or "tab_%s" % index).strip(),
+                    "label": str(tab.get("label") or "").strip(),
+                    "fields": rows,
+                })
+
+        navigation_groups = []
+        for index, value in enumerate(raw.get("navigation_groups") or []):
+            group = value if isinstance(value, dict) else {}
+            field_name = str(group.get("field") or "").strip()
+            if not field_name or field_name not in fields_map:
+                continue
+            navigation_groups.append({
+                "field": field_name,
+                "label": str(group.get("label") or fields_map[field_name].get("string") or field_name).strip(),
+                "empty_label": str(group.get("empty_label") or _("未分类")).strip(),
+            })
+        if navigation_mode == "sheet_groups" and not navigation_groups:
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "WORKSHEET_NAVIGATION_GROUPS_INVALID",
+            }
+            return
+
+        read_fields = ["id"]
+        if binding_field and binding_field in fields_map:
+            read_fields.append(binding_field)
+        for name in [*(column["field"] for column in columns), *tab_fields, *(row["field"] for row in navigation_groups)]:
+            if name in fields_map and name not in read_fields:
+                read_fields.append(name)
+        row_kind_field = str(raw.get("row_kind_field") or "").strip()
+        if row_kind_field and row_kind_field in fields_map and row_kind_field not in read_fields:
+            read_fields.append(row_kind_field)
+
+        native_toolbar = tree.get("toolbar") if isinstance(tree.get("toolbar"), dict) else {}
+        actions = [dict(row) for row in native_toolbar.get("header") or [] if isinstance(row, dict)]
+        try:
+            visible_menu_ids = {int(value) for value in self.env["ir.ui.menu"]._visible_menu_ids()}
+        except Exception:
+            visible_menu_ids = set()
+        for action_row in actions:
+            try:
+                target_action_id = int(action_row.get("action_id") or 0)
+            except (TypeError, ValueError):
+                target_action_id = 0
+            if target_action_id <= 0 or not visible_menu_ids:
+                continue
+            target_menu = self.env["ir.ui.menu"].search(
+                [
+                    ("id", "in", sorted(visible_menu_ids)),
+                    ("action", "=", "ir.actions.act_window,%s" % target_action_id),
+                ],
+                order="sequence,id",
+                limit=1,
+            )
+            if target_menu:
+                action_row["menu_id"] = int(target_menu.id)
+                action_row["route"] = "/a/%s?menu_id=%s" % (target_action_id, int(target_menu.id))
+
+        head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        labels = raw.get("labels") if isinstance(raw.get("labels"), dict) else {}
+        try:
+            variance_tolerance = max(0.0, float(raw.get("variance_tolerance") or 0.0))
+        except (TypeError, ValueError):
+            variance_tolerance = 0.0
+        tree["collection_presentation"] = {
+            **presentation,
+            "enabled": True,
+            "config": {
+                "title": str(head.get("title") or "").strip(),
+                "actions": actions,
+                "hierarchy": {
+                    "navigation_mode": navigation_mode,
+                    "navigation_groups": navigation_groups,
+                    "model": hierarchy_model,
+                    "fields": hierarchy_fields,
+                    **hierarchy_field_keys,
+                    "tree_column": str(raw.get("tree_column") or "").strip(),
+                    "navigation_title": str(raw.get("navigation_title") or "").strip(),
+                    "leaf_values": [str(value) for value in raw.get("leaf_values") or []],
+                    "group_field_map": group_field_map,
+                    "domain": raw.get("hierarchy_domain") if isinstance(raw.get("hierarchy_domain"), list) else [],
+                    "order": str(raw.get("hierarchy_order") or "id asc").strip(),
+                    "navigation_depth": max(1, int(raw.get("navigation_depth") or 4)),
+                },
+                "sheet": {
+                    "model": str(head.get("model") or "").strip(),
+                    "fields": read_fields,
+                    "columns": columns,
+                    "binding_field": binding_field,
+                    "ordinal_field": str(raw.get("ordinal_field") or "").strip(),
+                    "presentation_mode": str(raw.get("presentation_mode") or "hierarchy").strip(),
+                    "row_kind_field": row_kind_field,
+                    "item_values": [str(value) for value in raw.get("item_values") or []],
+                    "heading_values": [str(value) for value in raw.get("heading_values") or []],
+                    "summary_values": [str(value) for value in raw.get("summary_values") or []],
+                    "variance_field": str(raw.get("variance_field") or "").strip(),
+                    "variance_tolerance": variance_tolerance,
+                    "blank_fields_by_kind": {
+                        str(kind): [str(field) for field in fields or []]
+                        for kind, fields in (raw.get("blank_fields_by_kind") or {}).items()
+                        if isinstance(fields, (list, tuple))
+                    } if isinstance(raw.get("blank_fields_by_kind"), dict) else {},
+                    "domain": raw.get("sheet_domain") if isinstance(raw.get("sheet_domain"), list) else [],
+                    "order": str(raw.get("sheet_order") or tree.get("order") or tree.get("default_order") or "id asc").strip(),
+                },
+                "detail": {"tabs": tabs},
+                "labels": {
+                    "surface_aria": str(labels.get("surface_aria") or head.get("title") or "worksheet").strip(),
+                    "search_placeholder": str(labels.get("search_placeholder") or _("请输入关键词")).strip(),
+                    "search": str(labels.get("search") or _("搜索")).strip(),
+                    "all": str(labels.get("all") or _("全部")).strip(),
+                    "empty": str(labels.get("empty") or _("暂无数据")).strip(),
+                    "loading": str(labels.get("loading") or _("正在加载…")).strip(),
+                    "total_prefix": str(labels.get("total_prefix") or _("共")).strip(),
+                    "total_suffix": str(labels.get("total_suffix") or _("条")).strip(),
+                    "select_hint": str(labels.get("select_hint") or _("请选择一行查看属性")).strip(),
+                    "expand_all": str(labels.get("expand_all") or _("全部展开")).strip(),
+                    "collapse_all": str(labels.get("collapse_all") or _("全部折叠")).strip(),
+                    "resize_navigation": str(labels.get("resize_navigation") or _("调整导航宽度")).strip(),
+                    "resize_detail": str(labels.get("resize_detail") or _("调整属性区高度")).strip(),
                 },
             },
         }
