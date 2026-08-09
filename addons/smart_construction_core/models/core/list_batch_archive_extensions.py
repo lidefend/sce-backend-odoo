@@ -202,11 +202,6 @@ class ScListBatchArchiveProjectDocument(models.Model):
     active = fields.Boolean(string="有效", default=True, index=True)
 
 
-class ScListBatchArchiveProjectStructure(models.Model):
-    _inherit = "sc.project.structure"
-    active = fields.Boolean(string="有效", default=True, index=True)
-
-
 class ScListBatchArchiveQualityIssue(models.Model):
     _inherit = "sc.quality.issue"
     active = fields.Boolean(string="有效", default=True, index=True)

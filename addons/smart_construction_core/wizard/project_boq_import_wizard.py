@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 import csv
+import hashlib
 import io
 import logging
 import re
@@ -28,13 +29,14 @@ _logger = logging.getLogger(__name__)
 class ProjectBoqImportWizard(models.TransientModel):
     _name = "project.boq.import.wizard"
     _description = "工程量清单导入"
+    _rec_name = "filename"
 
     BATCH_CREATE_SIZE = 500
 
     UOM_ALIAS_MAP = {
         "m2": ["㎡", "m²", "平米", "平方米", "平方"],
         "m3": ["立方", "立方米"],
-        "item": ["项", "项（包干）", "项(包干)", "item"],
+        "项": ["项", "项（包干）", "项(包干)", "item", "unit", "units"],
     }
 
     project_id = fields.Many2one(
@@ -48,6 +50,7 @@ class ProjectBoqImportWizard(models.TransientModel):
             ("installation", "安装/机电"),
             ("decoration", "装饰"),
             ("landscape", "景观"),
+            ("municipal", "市政"),
             ("other", "其他"),
         ],
         string="工程类别",
@@ -78,18 +81,41 @@ class ProjectBoqImportWizard(models.TransientModel):
         string="清单来源",
         default="contract",
     )
-    version = fields.Char("版本号/批次", default="V1")
-    clear_mode = fields.Selection(
-        [
-            ("append", "追加"),
-            ("replace_project", "清空当前项目后导入"),
-            ("replace_code", "按编码覆盖"),
-        ],
-        string="导入策略",
-        default="append",
+    version_code = fields.Char(
+        "版本号",
+        default=lambda self: "V1-%s" % fields.Date.context_today(self).strftime("%Y%m%d"),
         required=True,
     )
-    file = fields.Binary(string="导入文件", required=True)
+    state = fields.Selection(
+        [("upload", "上传"), ("preview", "预检"), ("done", "完成")],
+        default="upload",
+        required=True,
+        readonly=True,
+    )
+    preview_digest = fields.Char("文件摘要", readonly=True)
+    preview_row_count = fields.Integer("解析行数", readonly=True)
+    preview_item_count = fields.Integer("清单项数", readonly=True)
+    preview_summary_count = fields.Integer("保留汇总行", readonly=True)
+    preview_heading_count = fields.Integer("保留结构标题行", readonly=True)
+    preview_skipped_count = fields.Integer(
+        "忽略空白/辅助行",
+        readonly=True,
+        help="仅统计空白或无业务含义的辅助行；结构标题、页内小计和合计均完整保留。",
+    )
+    preview_warning_count = fields.Integer("警告数", readonly=True)
+    parser_warning_log = fields.Text("源文件结构诊断", readonly=True)
+    preview_amount = fields.Monetary(
+        "预检合价", currency_field="currency_id", readonly=True
+    )
+    currency_id = fields.Many2one(
+        "res.currency", related="project_id.company_id.currency_id", readonly=True
+    )
+    preview_log = fields.Text("预检结果", readonly=True)
+    file = fields.Binary(
+        string="导入文件",
+        required=True,
+        help="支持 XLS、XLSX、CSV；同一编码可形成多条清单行，导入生成独立草稿版本且不覆盖已发布清单。",
+    )
     filename = fields.Char("文件名")
     log = fields.Text("导入日志", readonly=True)
     note = fields.Html(
@@ -99,7 +125,7 @@ class ProjectBoqImportWizard(models.TransientModel):
             "<ul>"
             "<li>同一编码在表中多次出现，将导入为多条清单行，并在工程结构中归入同一清单子目节点。</li>"
             "<li>若单位不存在，将自动规范化并创建新的计量单位。</li>"
-            "<li>导入策略：追加 / 清空项目后导入 / 按编码覆盖。</li>"
+            "<li>导入按文件摘要形成独立草稿版本，不覆盖任何已发布清单。</li>"
             "</ul>"
         ),
     )
@@ -107,17 +133,96 @@ class ProjectBoqImportWizard(models.TransientModel):
     # -------------------------------------------------------------------------
     # 主入口
     # -------------------------------------------------------------------------
+    def action_preflight(self):
+        """Parse without business writes and freeze an exact file digest."""
+        self.ensure_one()
+        if not self.file:
+            raise UserError("请先上传导入文件。")
+        rows, pending_uoms, skipped = self.with_context(boq_import_preflight=True)._parse_file()
+        if not rows:
+            raise UserError(
+                "未找到可导入的清单数据：请确认文件包含清单名称以及工程量、单价或金额。"
+            )
+        item_rows = [row for row in rows if (row.get("line_type") or "item") == "item"]
+        summary_rows = [
+            row for row in rows if row.get("source_row_type") in ("subtotal", "total")
+        ]
+        heading_rows = [row for row in rows if row.get("source_row_type") == "heading"]
+        warnings = []
+        missing_code = sum(1 for row in item_rows if not row.get("code"))
+        missing_uom = sum(1 for row in item_rows if not row.get("uom_id"))
+        if missing_code:
+            warnings.append(f"{missing_code} 条清单项缺少编码")
+        if missing_uom:
+            warnings.append(f"{missing_uom} 条清单项的单位将在确认导入时创建或使用通用单位")
+        if pending_uoms:
+            warnings.append("待创建计量单位：" + "、".join(sorted(pending_uoms)))
+        if self.parser_warning_log:
+            warnings.append(
+                "源 XLS 容器存在兼容性提示，数据已稳定解析；建议归档前另存为标准 XLSX。"
+            )
+        raw = base64.b64decode(self.file)
+        amount = sum(
+            (
+                float(row.get("imported_amount") or 0.0)
+                if row.get("has_imported_amount")
+                else float(row.get("quantity") or 0.0) * float(row.get("price") or 0.0)
+            )
+            for row in item_rows
+        )
+        detected_single = next((row.get("single_name") for row in rows if row.get("single_name")), False)
+        detected_unit = next((row.get("unit_name") for row in rows if row.get("unit_name")), False)
+        detected_section = next((row.get("section_type") for row in rows if row.get("section_type")), False)
+        self.write(
+            {
+                "state": "preview",
+                "preview_digest": hashlib.sha256(raw).hexdigest(),
+                "preview_row_count": len(rows),
+                "preview_item_count": len(item_rows),
+                "preview_summary_count": len(summary_rows),
+                "preview_heading_count": len(heading_rows),
+                "preview_skipped_count": skipped,
+                "preview_warning_count": len(warnings),
+                "preview_amount": amount,
+                **({"single_name": detected_single} if detected_single and not self.single_name else {}),
+                **({"unit_name": detected_unit} if detected_unit and not self.unit_name else {}),
+                **({"section_type": detected_section} if detected_section and not self.section_type else {}),
+                "preview_log": "\n".join(
+                    [
+                        f"识别 {len(rows)} 行，其中清单项 {len(item_rows)} 行、结构标题 {len(heading_rows)} 行、页内小计/合计 {len(summary_rows)} 行。",
+                        f"另忽略 {skipped} 行空白或无业务含义的辅助行。",
+                        f"预检合价 {amount:.2f}。",
+                        *(warnings or ["未发现阻断性问题。"]),
+                    ]
+                ),
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": "工程量清单导入",
+            "res_model": self._name,
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
     def action_import(self):
         self.ensure_one()
         if not self.file:
             raise UserError("请先上传导入文件。")
-        if self.project_id and self.project_id.is_boq_frozen() and self.clear_mode in ("replace_project", "replace_code"):
+        if self.state != "preview" or not self.preview_digest:
+            raise UserError("请先执行预检，再确认导入。")
+        raw = base64.b64decode(self.file)
+        digest = hashlib.sha256(raw).hexdigest()
+        if digest != self.preview_digest:
+            raise UserError("文件已发生变化，请重新执行预检。")
+        if self.project_id and self.project_id.is_boq_frozen():
             raise_guard(
                 "P0_BOQ_FROZEN",
                 f"项目[{self.project_id.display_name}]",
-                "覆盖/清空导入 BOQ",
+                "导入新 BOQ 版本",
                 reasons=["项目已进入结算/支付关键节点"],
-                hints=["请先完成/撤销结算或付款流程后再进行覆盖导入"],
+                hints=["请先完成/撤销结算或付款流程后再导入新版本"],
             )
 
         rows, created_uoms, skipped = self._parse_file()
@@ -128,9 +233,54 @@ class ProjectBoqImportWizard(models.TransientModel):
                 "并且数量/单价/金额至少有一个为数字。"
             )
 
+        Version = self.env["project.boq.version"]
+        version_code = (self.version_code or "").strip()
+        if not version_code:
+            raise UserError("请填写版本号。")
+        if Version.search_count(
+            [
+                ("project_id", "=", self.project_id.id),
+                ("source_type", "=", self.source_type),
+                ("code", "=", version_code),
+            ]
+        ):
+            raise UserError("同一项目和清单来源下已存在该版本号，请使用新的版本号。")
+        version = Version.create(
+            {
+                "name": f"{self.project_id.display_name} {version_code}",
+                "code": version_code,
+                "project_id": self.project_id.id,
+                "source_type": self.source_type,
+            }
+        )
+        batch = self.env["project.boq.import.batch"].create(
+            {
+                "name": f"{version_code} · {self.filename or '清单导入'}",
+                "project_id": self.project_id.id,
+                "version_id": version.id,
+                "filename": self.filename or "未命名文件",
+                "file_digest": digest,
+                "row_count": len(rows),
+                "item_count": self.preview_item_count,
+                "skipped_count": skipped,
+                "warning_count": self.preview_warning_count,
+                "preview_payload": {
+                    "schema": "sc.boq.import.preview.v1",
+                    "row_count": len(rows),
+                    "item_count": self.preview_item_count,
+                    "summary_count": self.preview_summary_count,
+                    "heading_count": self.preview_heading_count,
+                    "skipped_count": skipped,
+                    "warning_count": self.preview_warning_count,
+                    "amount": self.preview_amount,
+                    "source_diagnostics": self.parser_warning_log.splitlines(),
+                },
+            }
+        )
+        for vals in rows:
+            vals.update({"version_id": version.id, "import_batch_id": batch.id})
+
         Boq = self.env["project.boq.line"]
-        created_count = 0
-        updated_count = 0
 
         def _create_rows(vals_list):
             """按行的 boq_category 决定是否启用层级导入。"""
@@ -150,53 +300,33 @@ class ProjectBoqImportWizard(models.TransientModel):
                     created += self._batch_create(Boq, chunk)
             return created
 
-        if self.clear_mode == "replace_project":
-            # 安全检查：若已有合同清单引用本项目清单，禁止整表清空，避免外键错误
-            linked_lines = self.env["construction.contract.line"].sudo().search_count(
-                [("boq_line_id.project_id", "=", self.project_id.id)]
-            )
-            if linked_lines:
-                raise UserError(
-                    "当前项目的清单已被合同引用，禁止“清空项目后导入”。\n"
-                    "请创建新预算版本或使用“按编码覆盖/追加”策略。"
-                )
-            Boq.search([("project_id", "=", self.project_id.id)]).unlink()
-            created_count = _create_rows(rows)
-        elif self.clear_mode == "replace_code":
-            for vals in rows:
-                domain = [
-                    ("project_id", "=", vals["project_id"]),
-                    ("code", "=", vals.get("code")),
-                    ("boq_category", "=", vals.get("boq_category", False)),
-                    ("source_type", "=", vals.get("source_type")),
-                    ("version", "=", vals.get("version")),
-                ]
-                existing = Boq.search(domain, limit=1)
-                if existing:
-                    existing.write(vals)
-                    updated_count += 1
-                else:
-                    Boq.create(vals)
-                    created_count += 1
-        else:
-            created_count = _create_rows(rows)
+        created_count = _create_rows(rows)
+        self._finalize_source_summary_calculations(version.line_ids)
 
         log_lines = []
-        log_lines.append(f"成功导入 {created_count} 条，更新 {updated_count} 条。")
+        log_lines.append(f"成功导入 {created_count} 条到清单版本 {version_code}。")
         if skipped:
             log_lines.append(f"跳过 {skipped} 行（空行/小计行/无数值行）。")
         if created_uoms:
             log_lines.append("自动创建计量单位：\n- " + "\n- ".join(sorted(created_uoms)))
-            self.project_id.message_post(body=log_lines[-1])
-        log_lines.append("如需刷新工程结构，请在项目中点击“生成工程结构”按钮。")
+        log_lines.append("版本已校验；发布后才能生成正式成本 WBS。")
         self.log = "\n".join(log_lines)
+        batch.write(
+            {
+                "state": "imported",
+                "log": self.log,
+                "imported_at": fields.Datetime.now(),
+                "imported_by": self.env.user.id,
+            }
+        )
+        version.action_validate()
+        self.state = "done"
 
         return {
             "type": "ir.actions.act_window",
-            "res_model": "project.boq.line",
-            "view_mode": "tree,form",
-            "domain": [("project_id", "=", self.project_id.id)],
-            "context": {"default_project_id": self.project_id.id},
+            "res_model": "project.boq.version",
+            "res_id": version.id,
+            "view_mode": "form",
             "target": "current",
         }
 
@@ -331,7 +461,10 @@ class ProjectBoqImportWizard(models.TransientModel):
         if filename.endswith(".xls"):
             if not xlrd:
                 raise UserError("服务器缺少 xlrd，无法解析 XLS，请安装依赖或改用 CSV。")
-            book = xlrd.open_workbook(file_contents=data)
+            diagnostic_stream = io.StringIO()
+            book = xlrd.open_workbook(file_contents=data, logfile=diagnostic_stream)
+            diagnostics = self._normalize_xls_diagnostics(diagnostic_stream.getvalue())
+            self.parser_warning_log = "\n".join(diagnostics) if diagnostics else False
 
             for idx, sheet in enumerate(book.sheets(), start=1):
                 if sheet.nrows < 1:
@@ -520,50 +653,51 @@ class ProjectBoqImportWizard(models.TransientModel):
         返回 (single_name, unit_name, major_name)
         """
         for row in sheet.iter_rows(min_row=1, max_row=limit, values_only=True):
-            for val in row:
+            values = list(row)
+            for index, val in enumerate(values):
                 if not val:
                     continue
                 text = str(val)
                 if "工程名称" not in text:
                     continue
-                text = text.split("工程名称", 1)[-1]
-                text = text.lstrip("：:").strip()
-                parts = text.split("\\")
-                single = parts[0].strip() if parts else ""
-                tail = parts[1].strip() if len(parts) >= 2 else ""
-                unit = tail
-                major = ""
-                if "【" in tail and "】" in tail:
-                    before = tail.split("【", 1)[0]
-                    inner = tail.split("【", 1)[1].split("】", 1)[0]
-                    unit = before.strip()
-                    major = inner.strip()
-                return single, unit, major
+                payload = self._engineering_header_payload(text, values[index + 1 :])
+                if payload:
+                    return self._split_engineering_header(payload)
         return "", "", ""
 
     def _parse_engineering_header_xls(self, sheet, limit=5):
         for r in range(min(limit, sheet.nrows)):
-            for c in range(sheet.ncols):
-                val = sheet.cell_value(r, c)
+            values = [sheet.cell_value(r, c) for c in range(sheet.ncols)]
+            for index, val in enumerate(values):
                 if not val:
                     continue
                 text = str(val)
                 if "工程名称" not in text:
                     continue
-                text = text.split("工程名称", 1)[-1]
-                text = text.lstrip("：:").strip()
-                parts = text.split("\\")
-                single = parts[0].strip() if parts else ""
-                tail = parts[1].strip() if len(parts) >= 2 else ""
-                unit = tail
-                major = ""
-                if "【" in tail and "】" in tail:
-                    before = tail.split("【", 1)[0]
-                    inner = tail.split("【", 1)[1].split("】", 1)[0]
-                    unit = before.strip()
-                    major = inner.strip()
-                return single, unit, major
+                payload = self._engineering_header_payload(text, values[index + 1 :])
+                if payload:
+                    return self._split_engineering_header(payload)
         return "", "", ""
+
+    @staticmethod
+    def _engineering_header_payload(label_cell, following_cells):
+        payload = str(label_cell or "").split("工程名称", 1)[-1].lstrip("：:").strip()
+        if payload:
+            return payload
+        return next((str(value).strip() for value in following_cells if str(value or "").strip()), "")
+
+    @staticmethod
+    def _split_engineering_header(payload):
+        parts = str(payload or "").split("\\", 1)
+        single = parts[0].strip() if parts else ""
+        tail = parts[1].strip() if len(parts) >= 2 else ""
+        unit = tail
+        major = ""
+        if "【" in tail and "】" in tail:
+            before, suffix = tail.split("【", 1)
+            unit = before.strip()
+            major = suffix.split("】", 1)[0].strip()
+        return single, unit, major
 
     def _extract_excel_header(self, sheet, header_rows=2, scan_rows=8):
         """处理多行表头+合并单元格，返回(扁平列名列表, 数据起始行号, 识别到的表头行号)"""
@@ -694,7 +828,10 @@ class ProjectBoqImportWizard(models.TransientModel):
         sheet_name=None,
         boq_category=None,
     ):
-        Uom = self.env["uom.uom"]
+        # Unit creation is an import-service responsibility.  Elevate only
+        # this bounded master-data lookup/create path instead of granting cost
+        # users Inventory Administrator rights.
+        Uom = self.env["uom.uom"].sudo()
         Dict, dict_domain_key = self._get_dictionary_model()
 
         rows = []
@@ -708,7 +845,7 @@ class ProjectBoqImportWizard(models.TransientModel):
             """选用通用“单位”类别，若缺失则取任一类别兜底。"""
             category = self.env.ref("uom.product_uom_categ_unit", raise_if_not_found=False)
             if not category:
-                category = self.env["uom.category"].search([], limit=1)
+                category = self.env["uom.category"].sudo().search([], limit=1)
             return category
 
         for row in row_iter:
@@ -722,17 +859,44 @@ class ProjectBoqImportWizard(models.TransientModel):
 
             name = str(get("name") or "").strip()
             code = str(get("code") or "").strip()
+            source_code = code or False
+            raw_summary_label = next(
+                (
+                    str(value or "").strip()
+                    for value in (row.values() if isinstance(row, dict) else row)
+                    if any(
+                        key in re.sub(r"\s+", "", str(value or "")).lower()
+                        for key in ("合计", "小计", "本页", "本表")
+                    )
+                ),
+                "",
+            )
+            if not (name or code) and raw_summary_label:
+                name = raw_summary_label
             if not (name or code):
                 skipped_rows += 1
                 continue
 
             eff_boq_category = boq_category or self.boq_category
+            source_label = re.sub(r"\s+", "", f"{code}{name}").lower()
+            is_summary = any(key in source_label for key in ("合计", "小计", "本页", "本表"))
+            summary_type = "total" if any(key in source_label for key in ("合计", "总计")) else "subtotal"
+            is_heading = False
+            if is_summary:
+                source_name = name or code
+                code = f"SUMMARY-{sheet_index or 0:02d}-{len(rows) + 1:04d}"
+                name = source_name
+            if eff_boq_category == "fee" and "税" in name:
+                eff_boq_category = "tax"
+
+            if eff_boq_category in ("fee", "tax") and not code:
+                code = f"{eff_boq_category.upper()}-{sheet_index or 0:02d}-{len(rows) + 1:03d}"
 
             # 逻辑上的“项目编码”：只保留阿拉伯数字，过滤掉序号/符号
             logical_code_digits = re.sub(r"\D", "", code or "")
 
             # 非分部分项清单：缺少编码直接跳过，避免必填校验失败
-            if eff_boq_category != "boq" and not code:
+            if eff_boq_category != "boq" and not code and not is_summary:
                 skipped_rows += 1
                 continue
 
@@ -742,17 +906,15 @@ class ProjectBoqImportWizard(models.TransientModel):
                 and not code
                 and name
                 and not self._is_number(name)
+                and not is_summary
             ):
-                # 小计/合计类行作为分部标题会污染分部名称，直接跳过
-                lower_name = name.lower()
-                if any(key in lower_name for key in ["合计", "小计", "本页", "本表"]):
-                    skipped_rows += 1
-                    continue
                 current_division = name
-                continue
+                is_heading = True
+                code = f"HEADING-{sheet_index or 0:02d}-{len(rows) + 1:04d}"
 
             vals = {
                 "project_id": self.project_id.id,
+                "sequence": len(rows) + 1,
                 "name": name,
                 "section_type": self.section_type or section_type or False,
                 "single_name": default_single or self.single_name or False,
@@ -760,11 +922,11 @@ class ProjectBoqImportWizard(models.TransientModel):
                 "major_name": major_name or False,
                 "sheet_index": sheet_index,
                 "sheet_name": sheet_name,
-                "source_type": self.source_type,
-                "version": self.version,
                 "boq_category": eff_boq_category or "boq",
                 # 默认认为都是清单项，由 _create_with_hierarchy 根据层级修正。
                 "line_type": "item",
+                "source_row_type": summary_type if is_summary else ("heading" if is_heading else "item"),
+                "source_code": source_code if not (is_summary or is_heading) else False,
             }
             if section_type and not vals["section_type"]:
                 vals["section_type"] = section_type
@@ -780,14 +942,9 @@ class ProjectBoqImportWizard(models.TransientModel):
             # ---- 总价措施 / 规费 / 税金 专用规则 ----
             if eff_boq_category in ("total_measure", "fee", "tax"):
                 lower_name = (name or "").lower()
-                # 1) 合计/本页/本表 行直接跳过
-                if any(k in lower_name for k in ("合计", "本页", "本表")):
-                    skipped_rows += 1
-                    continue
-
-                # 2) 子目行：逻辑上无有效项目编码 + 有金额，当前版本不导入，避免重复计入总价
+                # 子目行：逻辑上无有效项目编码 + 有金额，当前版本不导入，避免重复计入总价
                 #    例如 ① / ② / ③ / ④ 这些序号会被视为无效编码
-                if not logical_code_digits and self._is_number(amount_val):
+                if not is_summary and not logical_code_digits and self._is_number(amount_val):
                     continue
 
                 # 3) 只有金额，没有工程量/单价 → 用金额补齐 qty/price
@@ -796,7 +953,7 @@ class ProjectBoqImportWizard(models.TransientModel):
                     price = amount_val
 
                 # 4) 金额型费用行统一视为清单项
-                vals["line_type"] = "item"
+                vals["line_type"] = "group" if is_summary else "item"
 
             if code:
                 vals["code"] = code
@@ -812,12 +969,14 @@ class ProjectBoqImportWizard(models.TransientModel):
 
             vals["quantity"] = self._to_float(qty)
             vals["price"] = self._to_float(price)
-            # 注意：amount 字段是 compute+store，直接写值会被覆盖；
-            # 这里仍然填入，便于诊断和自定义逻辑读取。
-            vals["amount"] = self._to_float(amount_val)
+            vals["has_imported_amount"] = self._is_number(amount_val)
+            vals["imported_amount"] = self._to_float(amount_val)
+            vals["calculated_amount"] = (
+                0.0 if is_summary else vals["quantity"] * vals["price"]
+            )
 
             # 若数量/单价/合价均为0，则视为标题/小计行跳过
-            if strict_numeric:
+            if strict_numeric and not is_heading:
                 if not any(
                     [
                         self._is_number(qty),
@@ -828,11 +987,8 @@ class ProjectBoqImportWizard(models.TransientModel):
                     skipped_rows += 1
                     continue
 
-            # 常见小计/合计行过滤
-            lower_name = (name or "").lower()
-            if any(key in lower_name for key in ["合计", "小计", "本页", "本表"]):
-                skipped_rows += 1
-                continue
+            if is_summary or is_heading:
+                vals["line_type"] = "group"
 
             # ===== 计量单位处理 =====
             uom = False
@@ -881,38 +1037,20 @@ class ProjectBoqImportWizard(models.TransientModel):
                             uom_vals["factor_inv"] = 1.0
                         else:
                             uom_vals["uom_type"] = "reference"
-                        uom = Uom.create(uom_vals)
                         if create_name:
                             created_uoms.add(create_name)
+                        if not self.env.context.get("boq_import_preflight"):
+                            uom = Uom.create(uom_vals)
 
                 if uom:
                     uom_cache[search_key] = uom
 
-            # 若仍未找到单位，使用“单位”类别的参照单位兜底，避免必填校验失败
+            # 清单文件的总价措施、规费等行经常省略单位。此时必须落到
+            # 造价业务语义“项”，不能泄漏 Odoo 基础单位的技术名称 Units。
             if not uom:
-                category = _default_uom_category()
-                if category:
-                    uom = Uom.search(
-                        [
-                            ("category_id", "=", category.id),
-                            ("uom_type", "=", "reference"),
-                        ],
-                        limit=1,
-                    )
-                    if not uom:
-                        # 创建一个通用参照单位“项”作为兜底
-                        uom = Uom.create(
-                            {
-                                "name": "项",
-                                "category_id": category.id,
-                                "uom_type": "reference",
-                                "factor": 1.0,
-                                "factor_inv": 1.0,
-                                "rounding": 0.0001,
-                                "active": True,
-                            }
-                        )
-                        created_uoms.add("项")
+                uom = self._business_item_uom()
+                if not uom:
+                    created_uoms.add("项")
 
             vals["uom_id"] = uom.id if uom else False
 
@@ -969,30 +1107,8 @@ class ProjectBoqImportWizard(models.TransientModel):
         rows = []
         skipped = 0
 
-        Uom = self.env["uom.uom"]
-
         def _default_uom():
-            category = self.env.ref("uom.product_uom_categ_unit", raise_if_not_found=False)
-            if not category:
-                category = self.env["uom.category"].search([], limit=1)
-            ref_uom = False
-            if category:
-                ref_uom = Uom.search(
-                    [("category_id", "=", category.id), ("uom_type", "=", "reference")], limit=1
-                )
-                if not ref_uom:
-                    ref_uom = Uom.create(
-                        {
-                            "name": "项",
-                            "category_id": category.id,
-                            "uom_type": "reference",
-                            "factor": 1.0,
-                            "factor_inv": 1.0,
-                            "rounding": 0.0001,
-                            "active": True,
-                        }
-                    )
-            return ref_uom
+            return self._business_item_uom()
 
         default_uom = _default_uom()
 
@@ -1032,14 +1148,14 @@ class ProjectBoqImportWizard(models.TransientModel):
                 "boq_category": "other",
                 "division_name": "其他项目",
                 "line_type": line_type,
+                "source_row_type": "heading" if line_type == "group" else "item",
+                "source_code": code if line_type == "item" else False,
                 "sheet_index": sheet_index,
                 "sheet_name": sheet_name,
                 "section_type": self.section_type or section_type or False,
                 "single_name": default_single or self.single_name or False,
                 "unit_name": default_unit or self.unit_name or False,
                 "major_name": major_name or False,
-                "source_type": self.source_type,
-                "version": self.version,
             }
             if default_uom:
                 vals["uom_id"] = default_uom.id
@@ -1108,6 +1224,7 @@ class ProjectBoqImportWizard(models.TransientModel):
             "消防": "installation",
             "安装": "installation",
             "景观": "landscape",
+            "市政": "municipal",
         }
         for key, val in mapping.items():
             if key in text:
@@ -1197,6 +1314,48 @@ class ProjectBoqImportWizard(models.TransientModel):
         return cleaned
 
     # --- UoM helpers ---
+    @staticmethod
+    def _normalize_xls_diagnostics(raw):
+        """Deduplicate xlrd/OLE2 diagnostics for preflight evidence."""
+        diagnostics = []
+        seen = set()
+        for line in str(raw or "").splitlines():
+            normalized = re.sub(r"\s+", " ", line).strip()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            diagnostics.append(normalized)
+        return diagnostics
+
+    def _business_item_uom(self):
+        """Return/create the BOQ lump-sum unit without exposing Odoo's Units label."""
+        category = self.env.ref("uom.product_uom_categ_unit", raise_if_not_found=False)
+        if not category:
+            category = self.env["uom.category"].search([], limit=1)
+        if not category:
+            return self.env["uom.uom"]
+
+        Uom = self.env["uom.uom"]
+        item_uom = Uom.search(
+            [("category_id", "=", category.id), ("name", "=", "项")], limit=1
+        )
+        if item_uom or self.env.context.get("boq_import_preflight"):
+            return item_uom
+        ref_uom = Uom.search(
+            [("category_id", "=", category.id), ("uom_type", "=", "reference")], limit=1
+        )
+        return Uom.create(
+            {
+                "name": "项",
+                "category_id": category.id,
+                "uom_type": "smaller" if ref_uom else "reference",
+                "factor": 1.0,
+                "factor_inv": 1.0,
+                "rounding": 0.0001,
+                "active": True,
+            }
+        )
+
     def _normalize_uom_name(self, name):
         """基本规范化：去空格、全角转半角、小写。"""
         text = misc.ustr(name or "").strip()
@@ -1234,6 +1393,40 @@ class ProjectBoqImportWizard(models.TransientModel):
             model.create(chunk)
             created += len(chunk)
         return created
+
+    @staticmethod
+    def _summary_calculation_values(scope):
+        rows = list(scope)
+        return {
+            "calculated_amount": sum(
+                (row.quantity or 0.0) * (row.price or 0.0) for row in rows
+            ),
+            "calculation_scope_item_count": len(rows),
+            "calculation_scope_start_sequence": rows[0].sequence if rows else 0,
+            "calculation_scope_end_sequence": rows[-1].sequence if rows else 0,
+        }
+
+    def _finalize_source_summary_calculations(self, lines):
+        """Freeze an auditable source-vs-system comparison for each summary row."""
+        by_sheet = {}
+        for line in lines.sorted(lambda row: (row.sheet_index or 0, row.sequence or 0, row.id)):
+            by_sheet.setdefault(line.sheet_index or 0, []).append(line)
+        for sheet_lines in by_sheet.values():
+            all_items = []
+            subtotal_window = []
+            for line in sheet_lines:
+                if line.line_type == "item":
+                    all_items.append(line)
+                    subtotal_window.append(line)
+                    if not line.calculated_amount:
+                        line.calculated_amount = (line.quantity or 0.0) * (line.price or 0.0)
+                    continue
+                if line.source_row_type not in ("subtotal", "total"):
+                    continue
+                scope = all_items if line.source_row_type == "total" else subtotal_window
+                line.write(self._summary_calculation_values(scope))
+                if line.source_row_type == "subtotal":
+                    subtotal_window = []
 
     def _create_with_hierarchy(self, model, vals_list):
         """
@@ -1295,6 +1488,11 @@ class ProjectBoqImportWizard(models.TransientModel):
                     parent = stack.get(o_level - 1)
                     rec.parent_id = parent.id if parent else False
                 stack[o_level] = rec
+                continue
+
+            if rec.source_row_type in ("heading", "subtotal", "total"):
+                rec.line_type = "group"
+                rec.parent_id = False
                 continue
 
             line_type, level = self._classify_line(

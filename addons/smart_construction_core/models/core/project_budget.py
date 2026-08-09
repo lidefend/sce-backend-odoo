@@ -50,7 +50,7 @@ class ProjectBudgetLine(models.Model):
         readonly=True,
     )
     wbs_id = fields.Many2one(
-        "project.wbs",
+        "construction.work.breakdown",
         string="WBS",
         index=True,
     )

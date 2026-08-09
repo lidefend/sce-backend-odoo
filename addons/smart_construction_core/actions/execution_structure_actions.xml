@@ -6,7 +6,7 @@
     </record>
 
     <record id="action_exec_structure_structure" model="ir.actions.act_window" forcecreate="0">
-        <field name="view_id" ref="smart_construction_core.view_exec_structure_structure_tree"/>
-        <field name="search_view_id" ref="smart_construction_core.view_sc_project_structure_search"/>
+        <field name="view_id" ref="smart_construction_core.view_exec_structure_wbs_tree"/>
+        <field name="search_view_id" ref="smart_construction_core.view_project_wbs_search"/>
     </record>
 </odoo>

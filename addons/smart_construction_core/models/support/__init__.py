@@ -18,6 +18,7 @@ from . import system_default_mixin
 from . import project_extend_boq
 from . import task_extend
 from . import work_breakdown
+from . import execution_breakdown
 from . import tender
 from . import res_config_settings
 from . import tier_definition_ext

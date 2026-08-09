@@ -214,6 +214,13 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "primary_menu_xmlids": [
             "smart_construction_core.menu_sc_project_project",
+            "smart_construction_core.menu_sc_boq_version",
+            "smart_construction_core.menu_sc_project_boq_root",
+            "smart_construction_core.menu_sc_project_work_breakdown",
+            "smart_construction_core.menu_sc_project_location_breakdown",
+            "smart_construction_core.menu_sc_project_contract_section",
+            "smart_construction_core.menu_sc_project_execution_scope",
+            "smart_construction_core.menu_sc_project_boq_allocation",
             "smart_construction_core.menu_sc_general_contract",
             "smart_construction_core.menu_sc_construction_contract",
             "smart_construction_core.menu_sc_plan",
@@ -253,6 +260,13 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_tender_guarantee",
         ],
         "contextual_action_authorities": [
+            {
+                "action_xmlid": "smart_construction_core.action_project_boq_import_wizard",
+                "allowed_operation": "create",
+                "required_capability": "cost_boq_import",
+                "context_requirements": {},
+                "source": "nav_policy_01.pm.boq_import_workbench_action",
+            },
             {
                 "action_xmlid": "smart_construction_core.action_construction_contract_income_execution",
                 "allowed_operation": "read",

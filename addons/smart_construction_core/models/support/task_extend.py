@@ -54,6 +54,7 @@ class ProjectTask(models.Model):
             ("installation", "安装/机电"),
             ("decoration", "装饰"),
             ("landscape", "景观"),
+            ("municipal", "市政"),
             ("other", "其他"),
         ],
         string="工程类别",

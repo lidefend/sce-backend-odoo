@@ -557,6 +557,14 @@ class TestProjectMemberRoleSurface(TransactionCase):
             row for row in pm_contract["contextual_actions"]
             if row["action_xmlid"] == "smart_construction_core.action_construction_contract_income_execution"
         )
+        boq_import = next(
+            row for row in pm_contract["contextual_actions"]
+            if row["action_xmlid"] == "smart_construction_core.action_project_boq_import_wizard"
+        )
+        self.assertEqual(boq_import["route_kind"], "CONTEXTUAL_ROUTE")
+        self.assertEqual(boq_import["allowed_operation"], "create")
+        self.assertEqual(boq_import["menu_id"], 0)
+        self.assertEqual(boq_import["context_requirements"], {})
         self.assertEqual(execution["route_kind"], "CONTEXTUAL_ROUTE")
         self.assertEqual(
             execution["context_requirements"]["required_query"],

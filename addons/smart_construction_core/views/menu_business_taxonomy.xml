@@ -672,10 +672,6 @@
         <field name="parent_id" ref="smart_construction_core.menu_sc_project_management_group" />
         <field name="sequence">50</field>
     </record>
-    <record id="menu_sc_project_structure_wbs" model="ir.ui.menu">
-        <field name="parent_id" ref="smart_construction_core.menu_sc_project_management_group" />
-        <field name="sequence">60</field>
-    </record>
     <record id="menu_sc_project_manage" model="ir.ui.menu">
         <field name="parent_id" ref="smart_construction_core.menu_sc_config_center" />
         <field name="sequence">40</field>
@@ -699,7 +695,8 @@
         <field name="sequence">10</field>
     </record>
     <record id="menu_sc_project_boq_root" model="ir.ui.menu">
-        <field name="parent_id" ref="smart_construction_core.menu_sc_project_budget_group" />
+        <field name="name">清单明细</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_target_budget_group" />
         <field name="sequence">20</field>
     </record>
     <record id="menu_sc_doc_center" model="ir.ui.menu">

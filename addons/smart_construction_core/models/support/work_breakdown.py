@@ -57,15 +57,41 @@ class ConstructionWorkBreakdown(models.Model):
         [
             ("single", "单项工程"),
             ("unit", "单位工程"),
+            ("major", "专业工程"),
             ("sub_division", "分部工程"),
             ("sub_section", "分项工程"),
-            ("inspection_lot", "检验批"),
-            ("location", "施工部位"),
             ("other", "其他"),
         ],
         string="层级类型",
         required=True,
         default="sub_section",
+    )
+    source_type = fields.Selection(
+        [("manual", "人工维护"), ("boq", "清单生成")],
+        string="来源",
+        required=True,
+        default="manual",
+        index=True,
+    )
+    source_key = fields.Char(
+        "来源稳定键",
+        index=True,
+        readonly=True,
+        help="清单生成节点的稳定业务键，用于跨版本幂等同步。",
+    )
+    placement_mode = fields.Selection(
+        [("generated", "按清单草案"), ("planned", "人工规划")],
+        string="位置管理",
+        default="generated",
+        required=True,
+        help="人工调整清单草案节点的上级后，后续同步会保留该规划位置。",
+    )
+    boq_version_id = fields.Many2one(
+        "project.boq.version",
+        string="同步清单版本",
+        index=True,
+        ondelete="set null",
+        readonly=True,
     )
 
     boq_line_ids = fields.One2many(
@@ -75,6 +101,9 @@ class ConstructionWorkBreakdown(models.Model):
     task_ids = fields.One2many(
         "project.task", "work_id",
         string="关联任务"
+    )
+    execution_scope_ids = fields.One2many(
+        "construction.execution.scope", "wbs_id", string="执行范围"
     )
 
     boq_quantity_total = fields.Float(
@@ -104,6 +133,7 @@ class ConstructionWorkBreakdown(models.Model):
         for rec in self:
             rec.level = rec.parent_id.level + 1 if rec.parent_id else 0
 
+
     @api.depends(
         "boq_line_ids.quantity",
         "boq_line_ids.amount",
@@ -129,11 +159,21 @@ class ConstructionWorkBreakdown(models.Model):
 
     _sql_constraints = [
         (
-            "project_code_type_unique",
-            "unique(project_id, code, level_type)",
-            "同一项目下，工程结构的编码和层级类型不能重复。",
+            "project_source_key_unique",
+            "unique(project_id, source_key)",
+            "同一项目下，清单生成的 WBS 稳定键不能重复。",
         ),
     ]
+
+    def write(self, vals):
+        values = dict(vals)
+        if (
+            "parent_id" in values
+            and not self.env.context.get("wbs_boq_draft_sync")
+            and self.filtered(lambda rec: rec.source_type == "boq")
+        ):
+            values.setdefault("placement_mode", "planned")
+        return super().write(values)
 
     def action_build_hierarchy_from_code(self):
         """根据已有分项的编码自动补齐单位/分部层级，并设置父子关系。"""
@@ -200,7 +240,7 @@ class ConstructionWorkBreakdown(models.Model):
                 if node.parent_id != section:
                     node.parent_id = section.id
 
-    def _exec_structure_action(self, view_key):
+    def _exec_structure_action(self):
         ctx = dict(self.env.context or {})
         project_id = False
         if self and self[0].project_id:
@@ -230,27 +270,13 @@ class ConstructionWorkBreakdown(models.Model):
 
         ctx.setdefault("default_project_id", project_id)
         ctx.setdefault("search_default_project_id", project_id)
-        ctx["sc_exec_view"] = view_key
-        if view_key == "wbs":
-            view = self.env.ref("smart_construction_core.view_exec_structure_wbs_tree")
-            search_view = self.env.ref("smart_construction_core.view_project_wbs_search")
-            return {
-                "type": "ir.actions.act_window",
-                "name": "执行结构",
-                "res_model": "construction.work.breakdown",
-                "view_mode": "tree,form",
-                "views": [(view.id, "tree"), (False, "form")],
-                "search_view_id": search_view.id,
-                "domain": [("project_id", "=", project_id)],
-                "context": ctx,
-                "target": "current",
-            }
-        view = self.env.ref("smart_construction_core.view_exec_structure_structure_tree")
-        search_view = self.env.ref("smart_construction_core.view_sc_project_structure_search")
+        ctx["sc_exec_view"] = "wbs"
+        view = self.env.ref("smart_construction_core.view_exec_structure_wbs_tree")
+        search_view = self.env.ref("smart_construction_core.view_project_wbs_search")
         return {
             "type": "ir.actions.act_window",
             "name": "执行结构",
-            "res_model": "sc.project.structure",
+            "res_model": "construction.work.breakdown",
             "view_mode": "tree,form",
             "views": [(view.id, "tree"), (False, "form")],
             "search_view_id": search_view.id,
@@ -260,19 +286,4 @@ class ConstructionWorkBreakdown(models.Model):
         }
 
     def action_open_exec_wbs(self):
-        return self._exec_structure_action("wbs")
-
-    def action_open_exec_structure(self):
-        return self._exec_structure_action("structure")
-
-
-class ProjectWbs(models.Model):
-    """
-    历史模型门面：将 project.wbs 指向统一的工程结构表。
-    所有字段与逻辑复用 construction.work.breakdown，避免旧引用报错。
-    """
-
-    _name = "project.wbs"
-    _description = "工程结构历史模型门面"
-    _inherit = "construction.work.breakdown"
-    _table = "construction_work_breakdown"
+        return self._exec_structure_action()
