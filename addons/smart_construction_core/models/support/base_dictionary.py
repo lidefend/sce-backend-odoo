@@ -37,8 +37,17 @@ class ScDictionary(models.Model):
         ('contract_category', '合同类别'),
         ('expense_contract_category', '支出合同分类'),
         ('settlement_stage', '结算阶段'),
+        ('role_entry', '角色入口配置'),
+        ('home_block', '首页区块配置'),
     ], string='字典类型', required=True, index=True)
 
+    scope_type = fields.Selection([
+        ('global', '全局'),
+        ('company', '公司'),
+        ('role', '角色'),
+    ], string='作用范围', default='global', required=True, index=True)
+    scope_ref = fields.Char('范围标识', index=True)
+    value_json = fields.Json('配置值', default=dict)
     sequence = fields.Integer('排序', default=10)
     active = fields.Boolean('启用', default=True)
 

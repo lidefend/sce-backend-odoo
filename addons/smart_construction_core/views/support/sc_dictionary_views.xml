@@ -8,6 +8,8 @@
                 <field name="type"/>
                 <field name="code"/>
                 <field name="name"/>
+                <field name="scope_type" optional="hide"/>
+                <field name="scope_ref" optional="hide"/>
                 <field name="sequence"/>
                 <field name="active"/>
             </tree>
@@ -24,6 +26,9 @@
                         <field name="type"/>
                         <field name="code"/>
                         <field name="name"/>
+                        <field name="scope_type"/>
+                        <field name="scope_ref" invisible="scope_type == 'global'" required="scope_type != 'global'"/>
+                        <field name="value_json" widget="json" invisible="type not in ['role_entry', 'home_block']"/>
                         <field name="sequence"/>
                         <field name="active"/>
                     </group>

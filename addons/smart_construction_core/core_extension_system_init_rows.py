@@ -323,8 +323,8 @@ def build_project_action_rows(env, user) -> List[Dict[str, Any]]:
     return result
 
 def dictionary_fields(env) -> List[str]:
-    fields_to_read = ["code", "name", "value_json", "sequence"]
-    for field_name in ("scope_type", "scope_ref"):
+    fields_to_read = ["code", "name", "sequence"]
+    for field_name in ("scope_type", "scope_ref", "value_json"):
         if model_has_field(env, "sc.dictionary", field_name):
             fields_to_read.append(field_name)
     return fields_to_read
