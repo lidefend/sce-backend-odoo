@@ -83,6 +83,7 @@ class TestConstructionOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertIn("odoo.read_group", ProjectDashboardService.SOURCE_AUTHORITIES)
         self.assertEqual(DashboardContractBuilder.SOURCE_KIND, "company_dashboard_business_fact_projection")
         self.assertIn("payment.request", DashboardContractBuilder.SOURCE_AUTHORITIES)
+        self.assertIn("project.cost.plan", DashboardContractBuilder.SOURCE_AUTHORITIES)
         source = _ConcreteProjectBlockBuilder(self.env)._source_authority_contract()
         self.assertTrue(source.get("projection_only"))
         self.assertIn("odoo.orm", source.get("authorities") or [])

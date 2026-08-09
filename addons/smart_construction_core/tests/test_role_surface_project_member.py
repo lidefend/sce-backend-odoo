@@ -145,9 +145,25 @@ class TestProjectMemberRoleSurface(TransactionCase):
                 "smart_construction_core.menu_sc_boq_version",
                 "smart_construction_core.menu_sc_project_boq_root",
                 "smart_construction_core.menu_sc_boq_analysis",
-                "smart_construction_core.menu_sc_cost_plan",
+                "smart_construction_core.menu_sc_project_budget",
             }.issubset(primary_menu_xmlids)
         )
+
+    def test_target_cost_has_one_stable_product_entry(self):
+        action = self.env.ref(
+            "smart_construction_core.action_project_budget"
+        )
+        menu = self.env.ref(
+            "smart_construction_core.menu_sc_project_budget"
+        )
+        duplicate_menu = self.env.ref(
+            "smart_construction_core.menu_sc_cost_plan"
+        )
+
+        self.assertEqual(action.res_model, "project.cost.plan")
+        self.assertEqual(menu.action, action)
+        self.assertTrue(menu.active)
+        self.assertFalse(duplicate_menu.active)
 
     def test_business_config_admin_composes_acl_visible_formal_capabilities(self):
         resolver = self._resolver()
@@ -584,7 +600,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertEqual(cost_plan_lines["allowed_operation"], "read")
         self.assertEqual(
             cost_plan_lines["menu_xmlid"],
-            "smart_construction_core.menu_sc_cost_plan",
+            "smart_construction_core.menu_sc_project_budget",
         )
         self.assertGreater(cost_plan_lines["menu_id"], 0)
         self.assertEqual(cost_plan_lines["model"], "project.cost.plan.line")

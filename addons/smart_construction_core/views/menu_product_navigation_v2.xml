@@ -28,7 +28,7 @@
         <field name="parent_id" ref="smart_construction_core.menu_sc_root"/>
         <field name="sequence">40</field>
     </record>
-    <record id="menu_sc_project_budget" model="ir.ui.menu"><field name="name">目标成本</field></record>
+    <record id="menu_sc_project_budget" model="ir.ui.menu"><field name="name">目标成本计划</field></record>
     <record id="menu_sc_cost_reports" model="ir.ui.menu"><field name="name">成本汇总</field></record>
     <record id="menu_sc_material_center" model="ir.ui.menu">
         <field name="name">物资与分包</field>
@@ -138,7 +138,7 @@
     <record id="menu_sc_project_boq_root" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_cost_target_budget_group"/><field name="sequence">20</field></record>
     <record id="menu_sc_boq_analysis" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_cost_target_budget_group"/><field name="sequence">30</field></record>
     <record id="menu_sc_project_budget" model="ir.ui.menu"><field name="sequence">40</field></record>
-    <record id="menu_sc_cost_plan" model="ir.ui.menu"><field name="sequence">50</field></record>
+    <record id="menu_sc_cost_plan" model="ir.ui.menu"><field name="sequence">50</field><field name="active">False</field></record>
     <record id="menu_sc_project_work_breakdown" model="ir.ui.menu">
         <field name="name">WBS 计划</field>
         <field name="parent_id" ref="smart_construction_core.menu_sc_project_planning_group_v2"/>

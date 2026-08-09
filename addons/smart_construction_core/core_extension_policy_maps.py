@@ -217,7 +217,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_boq_version",
             "smart_construction_core.menu_sc_project_boq_root",
             "smart_construction_core.menu_sc_boq_analysis",
-            "smart_construction_core.menu_sc_cost_plan",
+            "smart_construction_core.menu_sc_project_budget",
             "smart_construction_core.menu_sc_project_work_breakdown",
             "smart_construction_core.menu_sc_wbs_plan_version",
             "smart_construction_core.menu_sc_project_location_breakdown",
@@ -271,7 +271,7 @@ ROLE_SURFACE_OVERRIDES = {
                 "source": "nav_policy_01.pm.boq_import_workbench_action",
             },
             {
-                "menu_xmlid": "smart_construction_core.menu_sc_cost_plan",
+                "menu_xmlid": "smart_construction_core.menu_sc_project_budget",
                 "action_xmlid": "smart_construction_core.action_project_cost_plan_line",
                 "allowed_operation": "read",
                 "required_capability": "cost_plan_line_read",

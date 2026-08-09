@@ -9,7 +9,7 @@ class DashboardContractBuilder:
     SOURCE_AUTHORITIES = (
         "project.project",
         "payment.request",
-        "project.budget",
+        "project.cost.plan",
         "project.cost.ledger",
         "odoo.orm",
     )
@@ -36,7 +36,7 @@ class DashboardContractBuilder:
     def build(self):
         projects = self._count("project.project", [])
         payments = self._count("payment.request", [])
-        budgets = self._count("project.budget", [("active", "=", True)])
+        cost_plans = self._count("project.cost.plan", [("state", "!=", "archived")])
         cost_rows = self._count("project.cost.ledger", [])
         warnings = []
         pending_payment = self._count("payment.request", [("state", "not in", ["done", "cancel"])])
@@ -68,10 +68,10 @@ class DashboardContractBuilder:
                 target=action_target(action_xmlid="smart_construction_core.action_payment_request_my"),
             ),
             metric_card(
-                "active_budgets",
-                "有效预算",
-                budgets,
-                subtitle="项目预算版本",
+                "active_cost_plans",
+                "目标成本计划",
+                cost_plans,
+                subtitle="有效计划版本",
                 target=action_target(action_xmlid="smart_construction_core.action_project_budget"),
             ),
             metric_card(
