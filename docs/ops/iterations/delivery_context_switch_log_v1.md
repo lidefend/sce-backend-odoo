@@ -3231,3 +3231,54 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `.sc-btn`, plus search-toolbar button height. Token unit tests, token verify,
   strict typecheck, frontend build, computed-style browser assertions, and the
   real hierarchy workbench screenshot prove containment.
+
+## 2026-08-09 — VERSIONED-BOQ-IMPORT-TO-COST-WBS-CLOSURE
+
+- Branch / anchor: `feature/boq-versioned-import-wbs` at `86d6ee8`.
+- Formal Product Layer / Layer Target / Module: P1 construction standard product;
+  L2 domain models and Odoo native model/view/security system in
+  `smart_construction_core`.
+- Reason / Why Here: BOQ source, version, publication state, import evidence,
+  amount conservation, and cost-WBS ownership are construction cost facts. The
+  contract must remain stable while file-specific parsing evolves incrementally.
+- Why Not Elsewhere: `smart_core` owns only generic runtime mechanisms; the SPA
+  renders backend contracts and must not invent BOQ state. Low-code and customer
+  modules cannot own statutory cost facts. P4 is limited to isolated fixtures,
+  real-file probes, browser acceptance, and release evidence.
+- Blast Radius / validation: `project.boq.line`, new version and import-batch
+  facts, `construction.work.breakdown`, project BOQ entry, downstream cost and
+  progress references, native views/security, and import wizard. Static guards,
+  focused ORM tests, isolated `sc_clean` install/upgrade, real XLS import with
+  row/amount reconciliation, WBS idempotency, and authenticated `sc_demo`
+  browser acceptance must pass before product-baseline closure resumes.
+
+## 2026-08-09 — SOURCE-ORDER-BOQ-RECONCILIATION-CLOSURE
+
+- Branch / source evidence: `feature/boq-versioned-import-wbs`; real XLS SHA-256
+  `08c05ba9a357453d95e552b0cdfc2f7a83b749d1d8b2d479a2a8250c5eae35a3`.
+- Formal Product Layer / Layer Target / Module: P0 generic contract-driven
+  `hierarchical_worksheet` source-order presentation in `smart_core` and the
+  SPA; P1 BOQ source facts, independent calculations, summary scopes, and
+  reconciliation rules in `smart_construction_core`.
+- Preserved source structure: the published `V1-20260809` snapshot (version id
+  21, project id 4) contains 135 source-order rows: 108 BOQ items, 13 structural
+  headings, and 14 source subtotal/total rows. Only 4 blank or semantically empty
+  helper rows are ignored. Source amount remains `3,478,851.81`; WBS remains 203
+  nodes and no `Units` alias survives.
+- Independent calculation evidence: every item freezes quantity × unit price;
+  each subtotal/total freezes its item scope, source amount, calculated amount,
+  variance, scope count, and boundary sequences. Real source differences include
+  `114,896.48 - 114,896.49 = -0.01` and
+  `3,031,841.76 - 3,031,841.74 = 0.02`.
+- Browser evidence: authenticated `wutao` acceptance at
+  `http://127.0.0.1:18083` passed with 108 items, 13 headings, 14 summaries,
+  exact nine-column standard contract with side-by-side source/system amounts,
+  audit variance kept outside the ordinary worksheet, resizable panes, real XLS
+  preflight, and 203-node WBS. Evidence is under
+  `artifacts/boq-baseline-browser/`, including
+  `boq-source-calculation-comparison.png`,
+  `boq-import-preflight-verified.png`, and `result.json`.
+- Gates: BOQ ORM tag passed 8 tests / 0 failures; isolated page assembler passed
+  7 tests; strict Vue typecheck, local incremental frontend build, XML/Python
+  syntax, `git diff --check`, browser runtime errors, HTTP errors, console errors,
+  and captured OLE warning-log checks all passed.
