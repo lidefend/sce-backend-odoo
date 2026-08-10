@@ -446,6 +446,31 @@ def verify_material_rental_order_customer_field_boundary() -> list[str]:
     return errors
 
 
+def verify_hr_payroll_document_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    if mixed_model.is_file():
+        errors.append("smart_construction_core: obsolete direct acceptance customer field module must be removed")
+    models_init = ADDONS / "smart_construction_core/models/__init__.py"
+    init_text = models_init.read_text(encoding="utf-8", errors="ignore") if models_init.is_file() else ""
+    if "direct_acceptance_formal_visible_fields" in init_text:
+        errors.append("smart_construction_core: models init must not import customer acceptance field module")
+    core_model = ADDONS / "smart_construction_core/models/core/hr_payroll_document.py"
+    core_text = core_model.read_text(encoding="utf-8", errors="ignore") if core_model.is_file() else ""
+    for field_name in ("gross_amount", "net_salary", "payment_state", "paid_amount", "unpaid_amount", "attachment_ids"):
+        if field_name not in core_text:
+            errors.append(f"smart_construction_core: payroll document missing canonical field {field_name}")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.123/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in (
+        "sc_hr_payroll_document", "legacy_visible_%02d",
+        "HR_PAYROLL_DOCUMENT_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError",
+    ):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: payroll document P2 extraction preflight missing {token}")
+    return errors
+
+
 def verify_guard_metadata_product_language() -> list[str]:
     text = Path(__file__).read_text(encoding="utf-8", errors="ignore")
     forbidden_tokens = ("compatibility " + "stub",)
@@ -1912,6 +1937,7 @@ def main() -> int:
     errors.extend(verify_equipment_usage_customer_field_boundary())
     errors.extend(verify_labor_usage_customer_field_boundary())
     errors.extend(verify_material_rental_order_customer_field_boundary())
+    errors.extend(verify_hr_payroll_document_customer_field_boundary())
     errors.extend(verify_guard_metadata_product_language())
     errors.extend(verify_production_token_boundary())
     errors.extend(verify_legacy_temporary_account_boundary())

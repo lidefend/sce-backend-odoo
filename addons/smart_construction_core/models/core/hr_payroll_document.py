@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 
@@ -37,6 +37,22 @@ class ScHrPayrollDocument(models.Model):
     gross_amount = fields.Monetary(string="应发工资", currency_field="currency_id")
     deduction_amount = fields.Monetary(string="扣款合计", currency_field="currency_id")
     net_salary = fields.Monetary(string="实发工资", currency_field="currency_id")
+    paid_amount = fields.Monetary(string="已付款金额", currency_field="currency_id", tracking=True)
+    unpaid_amount = fields.Monetary(
+        string="未付款金额",
+        currency_field="currency_id",
+        compute="_compute_payment_summary",
+        store=True,
+        readonly=True,
+    )
+    payment_state = fields.Selection(
+        [("unpaid", "未付款"), ("partial", "部分付款"), ("paid", "已付款")],
+        string="付款状态",
+        compute="_compute_payment_summary",
+        store=True,
+        readonly=True,
+        index=True,
+    )
     item_type = fields.Char(string="事项类型", tracking=True)
     amount = fields.Monetary(string="金额", currency_field="currency_id", tracking=True)
     certificate_fee = fields.Monetary(string="证书费用", currency_field="currency_id")
@@ -81,6 +97,9 @@ class ScHrPayrollDocument(models.Model):
             "gross_amount",
             "deduction_amount",
             "net_salary",
+            "paid_amount",
+            "unpaid_amount",
+            "payment_state",
             "item_type",
             "amount",
             "certificate_fee",
@@ -91,6 +110,19 @@ class ScHrPayrollDocument(models.Model):
             "legacy_source_table",
             "legacy_source_id",
         ]
+
+    @api.depends("net_salary", "paid_amount")
+    def _compute_payment_summary(self):
+        for record in self:
+            payable = max(record.net_salary or 0.0, 0.0)
+            paid = max(record.paid_amount or 0.0, 0.0)
+            record.unpaid_amount = max(payable - paid, 0.0)
+            if payable and paid >= payable:
+                record.payment_state = "paid"
+            elif paid:
+                record.payment_state = "partial"
+            else:
+                record.payment_state = "unpaid"
 
     def _check_submit_requirements(self):
         super()._check_submit_requirements()

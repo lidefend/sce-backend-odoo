@@ -156,6 +156,11 @@ EXPECTED_ACTION_CONTRACTS = {
         "name": "还租", "res_model": "sc.material.rental.order", "view_name": "sc.material.rental.order.return.user.confirmed.tree",
         "field_names": ["state", "project_id", "name", "actual_return_date", "supplier_id", "settlement_amount", "compensation_fee", "repair_fee", "transport_fee", "attachment_ids", "note", "owner_id", "create_date", "deposit_deduction", "use_unit_name"],
     },
+    "action_sc_salary_registration": {
+        "name": "项目管理人员工资登记", "res_model": "sc.hr.payroll.document",
+        "view_name": "sc.hr.payroll.document.formal.manager.salary.tree",
+        "field_names": ["state", "project_id", "document_no", "business_date", "period_year", "period_month", "net_salary", "gross_amount", "payment_state", "paid_amount", "unpaid_amount", "description", "attachment_ids", "requester_id", "create_date"],
+    },
     "action_sc_material_inbound": {
         "name": "入库",
         "res_model": "sc.material.inbound",

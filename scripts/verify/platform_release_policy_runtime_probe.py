@@ -383,6 +383,11 @@ def main():
     )
     if material_rental_order_customer_field_boundary["registered_fields"] or material_rental_order_customer_field_boundary["remaining_physical_columns"]:
         failures.append("sc.material.rental.order: P2 legacy-visible boundary remains registered or physical")
+    hr_payroll_document_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.hr.payroll.document", table_name="sc_hr_payroll_document"
+    )
+    if hr_payroll_document_customer_field_boundary["registered_fields"] or hr_payroll_document_customer_field_boundary["remaining_physical_columns"]:
+        failures.append("sc.hr.payroll.document: P2 legacy-visible boundary remains registered or physical")
     pass_through_customer_field_boundaries = {}
     for model_name, table_name in (
         ("sc.fund.account.operation", "sc_fund_account_operation"),
@@ -505,6 +510,7 @@ def main():
         "equipment_usage_customer_field_boundary": equipment_usage_customer_field_boundary,
         "labor_usage_customer_field_boundary": labor_usage_customer_field_boundary,
         "material_rental_order_customer_field_boundary": material_rental_order_customer_field_boundary,
+        "hr_payroll_document_customer_field_boundary": hr_payroll_document_customer_field_boundary,
         "pass_through_customer_field_boundaries": pass_through_customer_field_boundaries,
         "products": products,
         "failures": failures,
