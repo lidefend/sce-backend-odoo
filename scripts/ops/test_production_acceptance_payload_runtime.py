@@ -91,6 +91,22 @@ class ProductionAcceptancePayloadRuntimeTests(unittest.TestCase):
         self.assertEqual(RUNTIME.resume_failed_mode("plan"), "0")
         self.assertEqual(RUNTIME.resume_failed_mode("verify"), "0")
 
+    def test_database_fingerprint_ignores_pg_dump_restrict_nonce(self) -> None:
+        first = "\\restrict abc\nCREATE TABLE x();\n\\unrestrict abc\n"
+        second = "\\restrict xyz\nCREATE TABLE x();\n\\unrestrict xyz\n"
+        with mock.patch.object(RUNTIME, "run", side_effect=[first, second]):
+            self.assertEqual(
+                RUNTIME.database_fingerprint("restore_db", "isolated"),
+                RUNTIME.database_fingerprint("restore_db", "isolated"),
+            )
+
+    def test_protected_counts_require_exact_two_integer_rows(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="4\n9\n"):
+            self.assertEqual(RUNTIME.protected_counts("restore_db", "isolated"), (4, 9))
+        with mock.patch.object(RUNTIME, "run", return_value="4\ninvalid\n"):
+            with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "counts are invalid"):
+                RUNTIME.protected_counts("restore_db", "isolated")
+
 
 if __name__ == "__main__":
     unittest.main()

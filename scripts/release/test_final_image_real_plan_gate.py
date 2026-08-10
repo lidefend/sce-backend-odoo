@@ -59,6 +59,11 @@ class FinalImageRealPlanGateTest(unittest.TestCase):
     def test_complete_real_plan_with_zero_writes_passes(self):
         self.assertEqual(self.validate(self.evidence())["status"], "PASS")
 
+    def test_governed_restore_identity_passes(self):
+        payload = self.evidence()
+        payload["environment_id"] = "sc_restore_20260810t120000z_deadbeef"
+        self.assertEqual(self.validate(payload)["status"], "PASS")
+
     def test_preflight_only_or_database_write_fails(self):
         for field, value in (
             ("plan_computation_completed", False),
