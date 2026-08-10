@@ -64,7 +64,7 @@ jobs:
 
       - name: Pin frontend Node toolchain
         if: steps.risk.outputs.frontend_mode != 'skip'
-        uses: actions/setup-node@1e60f620b9541d119bece121f7f80470803c15b7
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22.17.0
 
