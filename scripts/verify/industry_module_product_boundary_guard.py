@@ -401,6 +401,25 @@ def verify_equipment_usage_customer_field_boundary() -> list[str]:
     return errors
 
 
+def verify_labor_usage_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.labor.usage"' in mixed_text:
+        errors.append("smart_construction_core: sc.labor.usage must not register P2 legacy-visible fields")
+    core_model = ADDONS / "smart_construction_core/models/core/labor_management.py"
+    core_text = core_model.read_text(encoding="utf-8", errors="ignore") if core_model.is_file() else ""
+    for field_name in ("usage_type", "work_type", "construction_part", "price_unit", "amount_total", "settlement_state"):
+        if field_name not in core_text:
+            errors.append(f"smart_construction_core: labor usage missing canonical field {field_name}")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.121/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in ("sc_labor_usage", "legacy_visible_%02d", "LABOR_USAGE_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: labor usage P2 extraction preflight missing {token}")
+    return errors
+
+
 def verify_guard_metadata_product_language() -> list[str]:
     text = Path(__file__).read_text(encoding="utf-8", errors="ignore")
     forbidden_tokens = ("compatibility " + "stub",)
@@ -1865,6 +1884,7 @@ def main() -> int:
     errors.extend(verify_construction_diary_customer_field_boundary())
     errors.extend(verify_settlement_order_customer_field_boundary())
     errors.extend(verify_equipment_usage_customer_field_boundary())
+    errors.extend(verify_labor_usage_customer_field_boundary())
     errors.extend(verify_guard_metadata_product_language())
     errors.extend(verify_production_token_boundary())
     errors.extend(verify_legacy_temporary_account_boundary())

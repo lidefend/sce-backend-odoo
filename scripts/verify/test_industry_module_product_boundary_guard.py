@@ -294,6 +294,23 @@ class IndustryModuleProductBoundaryGuardTests(unittest.TestCase):
             errors = guard.verify_equipment_usage_customer_field_boundary()
         self.assertTrue(any("must not register P2" in error for error in errors))
 
+    def test_labor_usage_customer_field_boundary_rejects_legacy_extension(self):
+        tmp = tempfile.TemporaryDirectory()
+        root = Path(tmp.name)
+        module = root / "addons" / "smart_construction_core"
+        model_dir = module / "models" / "support"
+        core_model_dir = module / "models" / "core"
+        migration_dir = module / "migrations" / "17.0.0.121"
+        model_dir.mkdir(parents=True)
+        core_model_dir.mkdir(parents=True)
+        migration_dir.mkdir(parents=True)
+        (model_dir / "direct_acceptance_formal_visible_fields.py").write_text('_inherit = "sc.labor.usage"', encoding="utf-8")
+        (core_model_dir / "labor_management.py").write_text("usage_type work_type construction_part price_unit amount_total settlement_state", encoding="utf-8")
+        (migration_dir / "pre-migration.py").write_text("sc_labor_usage legacy_visible_%02d LABOR_USAGE_P2_HISTORY_NOT_EXTRACTED raise RuntimeError", encoding="utf-8")
+        with tmp, patch.object(guard, "ADDONS", root / "addons"):
+            errors = guard.verify_labor_usage_customer_field_boundary()
+        self.assertTrue(any("must not register P2" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

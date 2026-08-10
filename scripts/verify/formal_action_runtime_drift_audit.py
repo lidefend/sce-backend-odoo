@@ -139,6 +139,18 @@ EXPECTED_ACTION_CONTRACTS = {
             "create_date",
         ],
     },
+    "action_sc_labor_usage_ticket": {
+        "name": "方单",
+        "res_model": "sc.labor.usage",
+        "view_name": "sc.labor.usage.ticket.user.confirmed.tree",
+        "field_names": ["state", "name", "project_id", "usage_date", "contractor_id", "construction_part", "work_content", "settlement_state", "amount_total", "note", "attachment_ids", "recorder_id", "create_date"],
+    },
+    "action_sc_labor_usage_casual": {
+        "name": "零星用工",
+        "res_model": "sc.labor.usage",
+        "view_name": "sc.labor.usage.casual.user.confirmed.tree",
+        "field_names": ["state", "name", "project_id", "usage_date", "contractor_id", "work_type", "worker_qty", "price_unit", "amount_total", "work_content", "attachment_ids", "settlement_state", "note", "recorder_id", "create_date"],
+    },
     "action_sc_material_inbound": {
         "name": "入库",
         "res_model": "sc.material.inbound",

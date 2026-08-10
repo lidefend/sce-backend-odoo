@@ -201,6 +201,18 @@ def main() -> int:
                 errors.append("equipment usage registered count mismatch")
             if equipment_boundary.get("remaining_physical_column_count") != len(physical or []):
                 errors.append("equipment usage physical count mismatch")
+        labor_boundary = payload.get("labor_usage_customer_field_boundary")
+        if not isinstance(labor_boundary, dict):
+            errors.append("labor_usage_customer_field_boundary must be object")
+        else:
+            registered = labor_boundary.get("registered_fields")
+            physical = labor_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("labor usage P2 boundary must be empty")
+            if labor_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("labor usage registered count mismatch")
+            if labor_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("labor usage physical count mismatch")
         expected_pass_through_models = {
             "sc.fund.account.operation",
             "sc.receipt.income",

@@ -94,20 +94,20 @@
         <field name="name">sc.labor.usage.ticket.user.confirmed.tree</field>
         <field name="model">sc.labor.usage</field>
         <field name="arch" type="xml">
-            <tree string="方单" create="false" edit="false" delete="false">
-                <field name="labor_usage_status_display" string="单据状态" />
-                <field name="labor_usage_document_no" string="单据编号" />
-                <field name="labor_usage_project_name" string="项目名称" />
-                <field name="labor_usage_document_date" string="单据日期" />
-                <field name="labor_usage_title" string="标题" />
-                <field name="labor_usage_labor_team_name" string="劳务单位" />
-                <field name="labor_usage_construction_part" string="施工部位" />
-                <field name="labor_usage_settlement_status" string="结算状态" />
-                <field name="labor_usage_amount" string="总金额" />
-                <field name="labor_usage_note" string="备注" />
-                <field name="labor_usage_attachment_text" string="附件" />
-                <field name="labor_usage_source_created_by" string="录入人" />
-                <field name="labor_usage_source_created_at" string="录入时间" />
+            <tree string="方单" default_order="usage_date desc, create_date asc, name asc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="project_id" string="项目名称" />
+                <field name="usage_date" string="单据日期" />
+                <field name="contractor_id" string="劳务单位" />
+                <field name="construction_part" string="施工部位" />
+                <field name="work_content" string="工作内容" />
+                <field name="settlement_state" string="结算状态" />
+                <field name="amount_total" string="总金额" />
+                <field name="note" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="recorder_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
@@ -115,22 +115,22 @@
         <field name="name">sc.labor.usage.casual.user.confirmed.tree</field>
         <field name="model">sc.labor.usage</field>
         <field name="arch" type="xml">
-            <tree string="零星用工" create="false" edit="false" delete="false" default_order="labor_usage_document_date desc, labor_usage_source_created_at asc, labor_usage_document_no asc, labor_usage_work_type asc">
-                <field name="labor_usage_status_display" string="单据状态" />
-                <field name="labor_usage_document_no" string="单据编号" />
-                <field name="labor_usage_project_name" string="项目名称" />
-                <field name="labor_usage_document_date" string="用工日期" />
-                <field name="labor_usage_labor_team_name" string="劳务单位" />
-                <field name="labor_usage_work_type" string="工种" />
-                <field name="labor_usage_quantity" string="数量" />
-                <field name="labor_usage_price_unit" string="单价" />
-                <field name="labor_usage_amount" string="金额" />
-                <field name="labor_usage_work_content" string="工作内容" />
-                <field name="labor_usage_attachment_text" string="附件" />
-                <field name="labor_usage_settlement_status" string="结算状态" />
-                <field name="labor_usage_note" string="备注" />
-                <field name="labor_usage_source_created_by" string="录入人" />
-                <field name="labor_usage_source_created_at" string="录入时间" />
+            <tree string="零星用工" default_order="usage_date desc, create_date asc, name asc, work_type asc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="project_id" string="项目名称" />
+                <field name="usage_date" string="用工日期" />
+                <field name="contractor_id" string="劳务单位" />
+                <field name="work_type" string="工种" />
+                <field name="worker_qty" string="数量" />
+                <field name="price_unit" string="单价" />
+                <field name="amount_total" string="金额" />
+                <field name="work_content" string="工作内容" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="settlement_state" string="结算状态" />
+                <field name="note" string="备注" />
+                <field name="recorder_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
@@ -460,12 +460,16 @@
         <field name="view_ids" eval="[(5, 0, 0)]" />
     </record>
     <record id="action_sc_labor_usage_ticket" model="ir.actions.act_window">
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0)]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_labor_usage_ticket_user_confirmed_tree" />
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_labor_usage_ticket_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_labor_usage_form')})]" />
+        <field name="domain">[('usage_type', '=', 'ticket')]</field>
+        <field name="context">{'default_usage_type': 'ticket', 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_labor_usage_casual" model="ir.actions.act_window">
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0)]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_labor_usage_casual_user_confirmed_tree" />
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_labor_usage_casual_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_labor_usage_form')})]" />
+        <field name="domain">[('usage_type', '=', 'casual')]</field>
+        <field name="context">{'default_usage_type': 'casual', 'search_default_group_project': 1}</field>
     </record>
     <record id="action_payment_request_user_payment_apply" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_payment_request_formal_payment_apply_tree" />
