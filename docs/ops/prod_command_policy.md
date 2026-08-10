@@ -135,10 +135,11 @@ Makefile guards and script-level guards.
 - `make release.production.customer_runtime.activate` (requires
   `CONFIRM_PRODUCTION_CUSTOMER_RUNTIME=YES_ACTIVATE_SIGNED_CUSTOMER_RUNTIME`,
   the locked production release set, the exact prepared customer addon set,
-  and the frozen `/data/odoo/legacy_attachments/raw_files` source; recreates
-  only the production Odoo/nginx runtime with the customer addons and
-  historical binary root mounted read-only, without copying binaries into the
-  product image or product filestore)
+  and the frozen `/data/odoo/legacy_attachments/raw_files` plus
+  `/data/odoo/legacy_attachments/online_mirror` sources; recreates only the
+  production Odoo/nginx runtime with the customer addons and both historical
+  binary roots mounted read-only, without copying binaries into the product
+  image or product filestore)
 - `make production.backup.run` (requires
   `CONFIRM_PRODUCTION_BACKUP=YES_CREATE_SC_PRODUCTION_TRIPLE_BACKUP`; creates
   one immutable database/filestore/sanitized-metadata backup set)

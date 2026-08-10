@@ -3402,3 +3402,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   from an immutable `/opt/sce/deployment-tools/<sha>` root, read-only and bound
   to `DEPLOYMENT_TOOL_SHA`. Normal Odoo/nginx runtime, product code, customer
   payloads, databases, filestore, and historical binaries are unchanged.
+
+## 2026-08-11 — CUSTOMER-HISTORY-DUAL-ATTACHMENT-ROOTS
+
+- Branch / anchor: `fix/legacy-attachment-dual-roots` from `c04a283`.
+- Formal Product Layer / Layer Target / Module: P0/P4 generic customer runtime
+  delivery mechanism in `docker-compose.production-customer.yml` and the
+  governed activation target in `make/release.mk`; customer attachment facts
+  and bindings remain in the external P2 customer package.
+- Reason / Why Here: the frozen tenant attachment corpus spans the authoritative
+  `raw_files` root and its prepared `online_mirror`, while the production
+  customer overlay exposed only the first root to the generic file resolver.
+- Why Not Elsewhere: the P1 product, frontend, product filestore, and customer
+  data module cannot provide host filesystem mounts; no business or rendering
+  contract changes are required.
+- Blast Radius / validation: only the explicitly confirmed production Odoo and
+  nginx runtime activation receives a second required read-only mount. Compose
+  rendering, maintenance contract tests, exact-root guards, customer payload
+  replay, authorized byte comparison, and anonymous 403 prove containment.
