@@ -86,6 +86,9 @@ image = json.loads((manifest_root / "image-manifest.json").read_text())
 release = json.loads((manifest_root / "product-release-manifest.json").read_text())
 if any(payload.get("source_sha") != next_source or payload.get("image_digest") != next_digest for payload in (image, release)):
     raise SystemExit("[production.release.config.promote] BLOCKED next manifest identity differs")
+frontend_digest = str(image.get("frontend_build_sha256") or "").strip()
+if not re.fullmatch(r"[0-9a-f]{64}", frontend_digest):
+    raise SystemExit("[production.release.config.promote] BLOCKED frontend build identity is invalid")
 checksum = (manifest_root / "product-release-manifest.sha256").read_text().split()[0]
 if checksum != hashlib.sha256((manifest_root / "product-release-manifest.json").read_bytes()).hexdigest():
     raise SystemExit("[production.release.config.promote] BLOCKED next manifest checksum differs")
@@ -96,6 +99,7 @@ runtime_updates = {
     "VERSION_TAG": "v" + version,
     "EXPECTED_RELEASE_SHA": next_source,
     "EXPECTED_IMAGE_DIGEST": next_digest,
+    "FRONTEND_BUILD_SHA256": frontend_digest,
     "ODOO_IMAGE_REF": image_ref,
     "NGINX_IMAGE_REF": image_ref,
     "CANDIDATE_IMAGE": image_ref,
@@ -103,6 +107,8 @@ runtime_updates = {
     "RELEASE_MANIFEST_PATH": str(manifest_root / "product-release-manifest.json"),
     "RELEASE_MANIFEST_CHECKSUM_PATH": str(manifest_root / "product-release-manifest.sha256"),
 }
+if "FRONTEND_BUILD_SHA256" not in runtime:
+    runtime_rows.append("FRONTEND_BUILD_SHA256=")
 promotion_updates = {
     "ACCEPTANCE_PRODUCT_KEY": "sce-product",
     "ACCEPTANCE_PACKAGE_DIGEST": acceptance_digest,
@@ -135,7 +141,7 @@ try:
     os.replace(promotion_temp, promotion_path)
     _, observed_runtime = env_read(runtime_path)
     _, observed_promotion = env_read(promotion_path)
-    if observed_runtime.get("EXPECTED_RELEASE_SHA") != next_source or observed_runtime.get("EXPECTED_IMAGE_DIGEST") != next_digest or observed_promotion.get("DEPLOYMENT_IMAGE_REF") != next_image_id or observed_promotion.get("ACCEPTANCE_PACKAGE_DIGEST") != acceptance_digest:
+    if observed_runtime.get("EXPECTED_RELEASE_SHA") != next_source or observed_runtime.get("EXPECTED_IMAGE_DIGEST") != next_digest or observed_runtime.get("FRONTEND_BUILD_SHA256") != frontend_digest or observed_promotion.get("DEPLOYMENT_IMAGE_REF") != next_image_id or observed_promotion.get("ACCEPTANCE_PACKAGE_DIGEST") != acceptance_digest:
         raise RuntimeError("post-promote identity mismatch")
 except Exception:
     shutil.copy2(runtime_backup, runtime_path)
@@ -145,7 +151,7 @@ finally:
     runtime_temp.unlink(missing_ok=True)
     promotion_temp.unlink(missing_ok=True)
 print(json.dumps({"status":"PASS","source_sha":next_source,"image_digest":next_digest,
-                  "image_id":next_image_id,"acceptance_package_digest":acceptance_digest,"runtime_backup":str(runtime_backup),
+                  "image_id":next_image_id,"frontend_build_sha256":frontend_digest,"acceptance_package_digest":acceptance_digest,"runtime_backup":str(runtime_backup),
                   "promotion_backup":str(promotion_backup)}))
 '''
 

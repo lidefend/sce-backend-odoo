@@ -255,6 +255,12 @@ class StaticContractTests(unittest.TestCase):
         self.assertNotIn("image: ${CANDIDATE_IMAGE", self.compose)
         self.assertIn("PRODUCTION_COMPOSE_PROJECT:?PRODUCTION_COMPOSE_PROJECT is required", self.compose)
 
+    def test_runtime_receives_frontend_build_identity(self):
+        self.assertIn(
+            "FRONTEND_BUILD_SHA256: ${FRONTEND_BUILD_SHA256:?FRONTEND_BUILD_SHA256 is required}",
+            self.compose,
+        )
+
     def test_candidate_edge_health_is_json_and_drives_container_health(self):
         self.assertIn("location = /healthz", self.nginx_candidate)
         self.assertIn('default_type application/json', self.nginx_candidate)

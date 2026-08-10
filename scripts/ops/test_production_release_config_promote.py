@@ -23,6 +23,8 @@ class ProductionReleaseConfigPromoteTests(unittest.TestCase):
         self.assertIn('os.replace(runtime_temp, runtime_path)', source)
         self.assertIn('"ACCEPTANCE_PACKAGE_DIGEST": acceptance_digest', source)
         self.assertIn('observed_promotion.get("ACCEPTANCE_PACKAGE_DIGEST") != acceptance_digest', source)
+        self.assertIn('"FRONTEND_BUILD_SHA256": frontend_digest', source)
+        self.assertIn('runtime_rows.append("FRONTEND_BUILD_SHA256=")', source)
         self.assertNotIn('systemctl', source)
         self.assertNotIn('docker compose', source)
         self.assertNotIn('DB_PASSWORD', source)
