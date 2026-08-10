@@ -19,6 +19,7 @@ REPORT_JSON = ROOT / "artifacts" / "backend" / "delivery_business_report.json"
 def _candidate_accounts() -> list[tuple[str, str]]:
     return [
         (env_value("ROLE_FINANCE_LOGIN"), env_value("ROLE_FINANCE_PASSWORD")),
+        (env_value("ROLE_EXECUTIVE_LOGIN"), env_value("ROLE_EXECUTIVE_PASSWORD")),
         (env_value("E2E_LOGIN"), env_value("E2E_PASSWORD")),
     ]
 
@@ -430,6 +431,10 @@ def main() -> int:
 
     payload = {
         "ok": len(errors) == 0,
+        "scope": {
+            "database": db_name,
+            "fixture_layer": "P4",
+        },
         "summary": {
             "steps": len(timeline),
             "error_count": len(errors),

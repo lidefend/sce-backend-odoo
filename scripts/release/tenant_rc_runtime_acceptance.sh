@@ -82,6 +82,18 @@ GIT_SHA="$source_sha" ARTIFACTS_DIR="$artifacts/j09-j11" node scripts/verify/fro
 
 ARTIFACTS_DIR="$artifacts/j12-j13" node scripts/verify/frontend_core_record_form_journeys.mjs
 
+# Business-success writes are deliberately restricted to the disposable P4
+# acceptance fixture. Product/clean databases never receive fixture users or
+# role assignments from the P1 industry module.
+odoo_shell scripts/release/tenant_rc_acceptance_fixture_init.py \
+  > "$artifacts/business-success-fixture-reset.json"
+ROLE_FINANCE_LOGIN=fixture_role_finance ROLE_FINANCE_PASSWORD="$password" \
+ROLE_EXECUTIVE_LOGIN=fixture_role_executive ROLE_EXECUTIVE_PASSWORD="$password" \
+E2E_LOGIN=fixture_role_finance E2E_PASSWORD="$password" \
+SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 \
+  make --no-print-directory verify.product.acceptance.ready DB_NAME="$database"
+cp artifacts/backend/delivery_business_report.json "$artifacts/delivery-business-report.json"
+
 contract_action="$(python3 -c 'import json,os; print(json.loads(os.environ["FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON"])["contract"]["action_id"])')"
 contract_menu="$(python3 -c 'import json,os; print(json.loads(os.environ["FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON"])["contract"]["menu_id"])')"
 E2E_LOGIN=fixture_role_config_admin E2E_PASSWORD="$password" \

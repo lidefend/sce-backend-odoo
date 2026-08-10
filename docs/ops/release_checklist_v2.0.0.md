@@ -50,6 +50,10 @@ make verify.release.v2_0_0.evidence_manifest.guard
 
 This target expands to `make verify.product.release.ready` and must be green
 before the final tag.
+The product readiness target runs against the clean product database and never
+creates fixture users or assigns business roles. `make verify.product.acceptance.ready`
+must pass separately in the disposable P4 `sc_frontend_acceptance` environment;
+the immutable candidate runtime workflow records that evidence before promotion.
 The readiness chain includes `make verify.docs.product_boundary`, so new addon
 modules and product-boundary edits must keep the formal product boundary
 catalog complete before release.
@@ -74,8 +78,6 @@ The product readiness target expands to:
   - `verify.docs.product_boundary`
   - `verify.industry_module.product_boundary`
   - `verify.user_module.product_boundary`
-  - `verify.lowcode_config.customer_module_asset.pipeline`
-  - `verify.lowcode_config.customer_module_asset.release_hardening.guard`
   - `verify.product.surface.clean`
   - `verify.product.menu.release.ready`
   - `verify.product.complexity.bound`
@@ -84,8 +86,11 @@ The product readiness target expands to:
   - `verify.product.delivery.productization.readiness.strict`
   - `verify.frontend.widget_richness.post_ga.guard`
   - `verify.ui.product.stability`
-  - `verify.delivery.reproducible`
   - `verify.product.sla.baseline`
+
+The role-based business-success gate is intentionally not a prerequisite of the
+clean product target. It is `verify.product.acceptance.ready`, restricted to the
+P4 acceptance fixture and required by the candidate runtime acceptance workflow.
 
 ## Contract And Startup Gate
 
