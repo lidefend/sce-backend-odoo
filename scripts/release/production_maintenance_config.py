@@ -15,6 +15,7 @@ EXPECTED_DATA_DIR = Path("/opt/sce-runtime")
 LEGACY_ATTACHMENTS = Path("/data/odoo/legacy_attachments")
 TENANT = re.compile(r"^[a-z][a-z0-9_]{2,62}$")
 MODULE = re.compile(r"^[a-z][a-z0-9_]{1,62}$")
+CUSTOMER_MODULE_PREFIX = "sce_" + "customer_"
 REQUIRED_ADDONS = {
     "/usr/lib/python3/dist-packages/odoo/addons",
     "/mnt/product-addons",
@@ -60,7 +61,7 @@ def validate(path: Path, env: dict[str, str] | None = None) -> dict[str, str]:
     if (
         not modules
         or len(modules) != len(set(modules))
-        or not base_module.startswith("sce_customer_")
+        or not base_module.startswith(CUSTOMER_MODULE_PREFIX)
         or any(
             not MODULE.fullmatch(name)
             or (name != base_module and not name.startswith(base_module + "_"))

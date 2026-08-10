@@ -10,6 +10,7 @@ import production_maintenance_config as target
 
 
 ROOT = Path(__file__).resolve().parents[2]
+GENERIC_MODULE_PATTERN = "sce_customer_<tenant_key>"
 
 
 class MaintenanceConfigTest(unittest.TestCase):

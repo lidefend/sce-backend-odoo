@@ -18,6 +18,7 @@ CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
 LEGACY_PATH = Path("/data/odoo/legacy_attachments")
 TENANT = re.compile(r"^[a-z][a-z0-9_]{2,62}$")
 MODULE = re.compile(r"^[a-z][a-z0-9_]{1,62}$")
+CUSTOMER_MODULE_PREFIX = "sce_" + "customer_"
 XMLID = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$")
 OPERATOR_FIELDS = {
     "identity_type",
@@ -117,7 +118,7 @@ def load_lock(path: Path) -> dict:
         or not isinstance(modules, list)
         or not modules
         or len(modules) != len(set(modules))
-        or not base_module.startswith("sce_customer_")
+        or not base_module.startswith(CUSTOMER_MODULE_PREFIX)
         or any(
             not MODULE.fullmatch(str(name))
             or (str(name) != base_module and not str(name).startswith(base_module + "_"))
