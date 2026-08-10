@@ -67,13 +67,14 @@ def extract_login_token(payload: dict[str, Any]) -> str:
 
 
 def obtain_runtime_probe_token(intent_url: str, db_name: str) -> tuple[bool, str, str]:
+    db_headers = {"X-Odoo-DB": db_name} if db_name else {}
     login = env_value("E2E_LOGIN")
     password = env_value("E2E_PASSWORD")
     if login and password:
         status, payload = http_post_json(
             intent_url,
             {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-            headers={"X-Anonymous-Intent": "1"},
+            headers={"X-Anonymous-Intent": "1", **db_headers},
         )
         token = extract_login_token(payload) if status < 400 and payload.get("ok") is True else ""
         return bool(token), token, "e2e_login"
@@ -87,7 +88,11 @@ def obtain_runtime_probe_token(intent_url: str, db_name: str) -> tuple[bool, str
                 "intent": "session.bootstrap",
                 "params": {"db": db_name, "login": bootstrap_login},
             },
-            headers={"X-Anonymous-Intent": "1", "X-Bootstrap-Secret": bootstrap_secret},
+            headers={
+                "X-Anonymous-Intent": "1",
+                "X-Bootstrap-Secret": bootstrap_secret,
+                **db_headers,
+            },
         )
         token = extract_login_token(payload) if status < 400 and payload.get("ok") is True else ""
         return bool(token), token, "dev_test_bootstrap"

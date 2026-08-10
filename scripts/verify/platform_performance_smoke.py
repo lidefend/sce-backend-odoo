@@ -33,18 +33,21 @@ def _p95(values: list[float]) -> float:
     return float(arr[idx])
 
 
-def _intent_call(intent_url: str, token: str, intent: str, params: dict) -> tuple[int, dict, float]:
+def _intent_call(intent_url: str, token: str, intent: str, params: dict, db_name: str = "") -> tuple[int, dict, float]:
     ts0 = time.perf_counter()
+    headers = {"Authorization": f"Bearer {token}"}
+    if db_name:
+        headers["X-Odoo-DB"] = db_name
     status, payload = http_post_json(
         intent_url,
         {"intent": intent, "params": params},
-        headers={"Authorization": f"Bearer {token}"},
+        headers=headers,
     )
     elapsed_ms = (time.perf_counter() - ts0) * 1000.0
     return status, payload if isinstance(payload, dict) else {}, elapsed_ms
 
 
-def _first_project_id(intent_url: str, token: str) -> int:
+def _first_project_id(intent_url: str, token: str, db_name: str) -> int:
     status, payload, _elapsed_ms = _intent_call(
         intent_url,
         token,
@@ -57,6 +60,7 @@ def _first_project_id(intent_url: str, token: str) -> int:
             "limit": 1,
             "order": "id asc",
         },
+        db_name,
     )
     if not 200 <= status < 300 or payload.get("ok") is not True:
         return 0
@@ -87,7 +91,7 @@ def main() -> int:
         errors.append("runtime probe authentication failed for performance smoke")
         token = ""
 
-    project_id = _first_project_id(intent_url, token) if token else 0
+    project_id = _first_project_id(intent_url, token, db_name) if token else 0
     if token and project_id <= 0:
         errors.append("performance smoke requires an accessible project.project record")
 
@@ -123,7 +127,9 @@ def main() -> int:
             payload_sizes: list[int] = []
             invalid_responses: list[str] = []
             for _ in range(iterations):
-                status, payload, elapsed_ms = _intent_call(intent_url, token, intent, params)
+                status, payload, elapsed_ms = _intent_call(
+                    intent_url, token, intent, params, db_name
+                )
                 times.append(elapsed_ms)
                 statuses.append(int(status))
                 payload_sizes.append(len(json.dumps(payload, ensure_ascii=False).encode("utf-8")))

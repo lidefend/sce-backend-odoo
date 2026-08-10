@@ -14,11 +14,21 @@ REPORT_MD = ROOT / "docs" / "ops" / "audit" / "ui_surface_stability_report.md"
 REPORT_JSON = ROOT / "artifacts" / "backend" / "ui_surface_stability_report.json"
 
 
-def _intent(intent_url: str, token: str, intent: str, params: dict, context: dict | None = None) -> tuple[int, dict]:
+def _intent(
+    intent_url: str,
+    token: str,
+    intent: str,
+    params: dict,
+    context: dict | None = None,
+    db_name: str = "",
+) -> tuple[int, dict]:
     payload = {"intent": intent, "params": params}
     if isinstance(context, dict):
         payload["context"] = context
-    return http_post_json(payload=payload, url=intent_url, headers={"Authorization": f"Bearer {token}"})
+    headers = {"Authorization": f"Bearer {token}"}
+    if db_name:
+        headers["X-Odoo-DB"] = db_name
+    return http_post_json(payload=payload, url=intent_url, headers=headers)
 
 
 def _shape(data: dict) -> list[str]:
@@ -61,7 +71,14 @@ def main() -> int:
 
     if token:
         for mode, context in modes.items():
-            status, payload = _intent(intent_url, token, "system.init", {"contract_mode": "user"}, context=context)
+            status, payload = _intent(
+                intent_url,
+                token,
+                "system.init",
+                {"contract_mode": "user"},
+                context=context,
+                db_name=db_name,
+            )
             if status >= 400 or not isinstance(payload, dict) or payload.get("ok") is not True:
                 errors.append(f"system.init failed in mode={mode}")
                 continue

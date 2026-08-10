@@ -28,16 +28,19 @@ def _load_policy() -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
-def _intent(intent_url: str, token: str, intent: str, params: dict | None = None) -> tuple[int, dict]:
+def _intent(intent_url: str, token: str, intent: str, params: dict | None = None, db_name: str = "") -> tuple[int, dict]:
+    headers = {"Authorization": f"Bearer {token}"}
+    if db_name:
+        headers["X-Odoo-DB"] = db_name
     status, payload = http_post_json(
         intent_url,
         {"intent": intent, "params": params or {}},
-        headers={"Authorization": f"Bearer {token}"},
+        headers=headers,
     )
     return status, payload if isinstance(payload, dict) else {}
 
 
-def _read_config_param(intent_url: str, token: str, key: str) -> tuple[int, str]:
+def _read_config_param(intent_url: str, token: str, key: str, db_name: str = "") -> tuple[int, str]:
     status, payload = _intent(
         intent_url,
         token,
@@ -49,6 +52,7 @@ def _read_config_param(intent_url: str, token: str, key: str) -> tuple[int, str]
             "domain": [["key", "=", key]],
             "limit": 1,
         },
+        db_name,
     )
     if status >= 400 or payload.get("ok") is not True:
         return 0, ""
@@ -63,8 +67,8 @@ def _read_config_param(intent_url: str, token: str, key: str) -> tuple[int, str]
     return rec_id, str(row.get("value") or "")
 
 
-def _set_config_param(intent_url: str, token: str, key: str, value: str) -> bool:
-    rec_id, _ = _read_config_param(intent_url, token, key)
+def _set_config_param(intent_url: str, token: str, key: str, value: str, db_name: str = "") -> bool:
+    rec_id, _ = _read_config_param(intent_url, token, key, db_name)
     if rec_id > 0:
         status, payload = _intent(
             intent_url,
@@ -76,6 +80,7 @@ def _set_config_param(intent_url: str, token: str, key: str, value: str) -> bool
                 "ids": [rec_id],
                 "vals": {"value": value},
             },
+            db_name,
         )
         return status < 400 and payload.get("ok") is True
     status, payload = _intent(
@@ -87,6 +92,7 @@ def _set_config_param(intent_url: str, token: str, key: str, value: str) -> bool
             "model": "ir.config_parameter",
             "vals": {"key": key, "value": value},
         },
+        db_name,
     )
     return status < 400 and payload.get("ok") is True
 
@@ -161,7 +167,7 @@ def main() -> int:
     original_value = ""
     original_id = 0
     if token:
-        original_id, original_value = _read_config_param(intent_url, token, license_key)
+        original_id, original_value = _read_config_param(intent_url, token, license_key, db_name)
 
     runtime_visible_by_tier: dict[str, int] = {}
     runtime_keys_by_tier: dict[str, set[str]] = {}
@@ -169,11 +175,13 @@ def main() -> int:
     capability_total = 0
     if token:
         for tier in TIERS:
-            if not _set_config_param(intent_url, token, license_key, tier):
+            if not _set_config_param(intent_url, token, license_key, tier, db_name):
                 warnings.append(f"runtime tier probe skipped for {tier}: failed to set {license_key}={tier}")
                 continue
             runtime_probe_available = True
-            status, payload = _intent(intent_url, token, "system.init", {"contract_mode": "user"})
+            status, payload = _intent(
+                intent_url, token, "system.init", {"contract_mode": "user"}, db_name
+            )
             if status >= 400 or payload.get("ok") is not True:
                 warnings.append(f"runtime tier probe skipped for {tier}: system.init failed")
                 continue
@@ -185,7 +193,7 @@ def main() -> int:
         # restore original config
         if runtime_probe_available:
             restore_val = original_value if original_id > 0 else "enterprise"
-            if not _set_config_param(intent_url, token, license_key, restore_val):
+            if not _set_config_param(intent_url, token, license_key, restore_val, db_name):
                 warnings.append(f"failed to restore {license_key} to {restore_val}")
 
     static_keys = _collect_static_capability_keys()

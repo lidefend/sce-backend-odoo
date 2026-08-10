@@ -1180,6 +1180,7 @@ verify.phasex.operating.summary: guard.prod.forbid
 	@python3 scripts/verify/phasex_operating_summary_report.py
 
 verify.bundle.installation.ready: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_python_http_smoke_db_routing.py
 	@python3 scripts/verify/bundle_installation_ready.py
 	@python3 scripts/verify/product_hardening_schema_guard.py --report bundle
 
@@ -1192,6 +1193,7 @@ verify.product.tier.ready: guard.prod.forbid
 	@python3 scripts/verify/product_tier_ready.py
 
 verify.ui.surface.stability.ready: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_ui_surface_stability_db_routing.py
 	@python3 scripts/verify/ui_surface_stability_ready.py
 
 verify.delivery.simulation.ready: guard.prod.forbid
@@ -1695,6 +1697,7 @@ export.product.documentation: guard.prod.forbid
 	@python3 scripts/verify/export_product_documentation.py
 
 verify.product.tier.coverage: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_product_tier_db_routing.py
 	@python3 scripts/verify/product_tier_coverage.py
 
 seed.delivery.minimum: guard.prod.forbid
@@ -1906,6 +1909,7 @@ verify.contract.compat: guard.prod.forbid
 	@python3 scripts/verify/contract_compat_report.py
 
 verify.platform.performance.smoke: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_platform_performance_db_routing.py
 	@python3 scripts/verify/platform_performance_smoke.py
 	@python3 scripts/verify/product_hardening_schema_guard.py --report performance
 
