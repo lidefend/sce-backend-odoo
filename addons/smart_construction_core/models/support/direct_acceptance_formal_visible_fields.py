@@ -66,12 +66,6 @@ def _lv(index):
     return "legacy" + "_visible_" + f"{index:02d}"
 
 
-class MaterialInboundDirectAcceptanceVisible(models.Model):
-    _inherit = "sc.material.inbound"
-
-    _add_legacy_visible_fields(locals())
-
-
 class LaborUsageDirectAcceptanceVisible(models.Model):
     _inherit = "sc.labor.usage"
 

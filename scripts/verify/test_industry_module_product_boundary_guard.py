@@ -136,6 +136,32 @@ class IndustryModuleProductBoundaryGuardTests(unittest.TestCase):
         self.assertTrue(any("must not register P2" in error for error in errors))
         self.assertTrue(any("quote_status_display" in error for error in errors))
 
+    def test_material_inbound_customer_field_boundary_rejects_legacy_extension(self):
+        tmp = tempfile.TemporaryDirectory()
+        root = Path(tmp.name)
+        module = root / "addons" / "smart_construction_core"
+        model_dir = module / "models" / "support"
+        view_dir = module / "views" / "support"
+        migration_dir = module / "migrations" / "17.0.0.115"
+        model_dir.mkdir(parents=True)
+        view_dir.mkdir(parents=True)
+        migration_dir.mkdir(parents=True)
+        (model_dir / "direct_acceptance_formal_visible_fields.py").write_text(
+            '_inherit = "sc.material.inbound"', encoding="utf-8"
+        )
+        (view_dir / "user_confirmed_formal_list_views.xml").write_text(
+            '<field name="document_status"/><field name="name"/><field name="inbound_date"/>'
+            '<field name="supplier_id"/><field name="material_name_summary"/>'
+            '<field name="project_name_display"/>', encoding="utf-8"
+        )
+        (migration_dir / "pre-migration.py").write_text(
+            "sc_material_inbound information_schema.columns legacy_visible_%02d "
+            "MATERIAL_INBOUND_P2_HISTORY_NOT_EXTRACTED raise RuntimeError", encoding="utf-8"
+        )
+        with tmp, patch.object(guard, "ADDONS", root / "addons"):
+            errors = guard.verify_material_inbound_customer_field_boundary()
+        self.assertTrue(any("must not register P2" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

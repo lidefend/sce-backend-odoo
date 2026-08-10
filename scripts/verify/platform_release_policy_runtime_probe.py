@@ -332,6 +332,19 @@ def main():
             "sc.material.rfq: P2 legacy-visible physical columns remain after guarded extraction: %s"
             % ",".join(material_rfq_customer_field_boundary["remaining_physical_columns"])
         )
+    material_inbound_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.material.inbound", table_name="sc_material_inbound"
+    )
+    if material_inbound_customer_field_boundary["registered_fields"]:
+        failures.append(
+            "sc.material.inbound: P2 legacy-visible fields remain registered in P1: %s"
+            % ",".join(material_inbound_customer_field_boundary["registered_fields"])
+        )
+    if material_inbound_customer_field_boundary["remaining_physical_columns"]:
+        failures.append(
+            "sc.material.inbound: P2 legacy-visible physical columns remain after guarded extraction: %s"
+            % ",".join(material_inbound_customer_field_boundary["remaining_physical_columns"])
+        )
 
     products = []
     allowed_policy_sources = {
@@ -433,6 +446,7 @@ def main():
         "customer_specific_product_view_xmlids": customer_specific_product_views,
         "material_plan_customer_field_boundary": material_plan_customer_field_boundary,
         "material_rfq_customer_field_boundary": material_rfq_customer_field_boundary,
+        "material_inbound_customer_field_boundary": material_inbound_customer_field_boundary,
         "products": products,
         "failures": failures,
         "artifacts": {
