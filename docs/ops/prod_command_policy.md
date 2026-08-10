@@ -175,6 +175,12 @@ Makefile guards and script-level guards.
   `CONFIRM_PRODUCTION_DEPLOYMENT_TOOL_SYNC=YES_SYNC_IMMUTABLE_DEPLOYMENT_TOOLING`;
   streams the exact clean dual-remote-approved main Git archive into one new
   atomic `/opt/sce/deployment-tools/<sha>` directory without runtime changes)
+- `make production.attachment_preview.csp.apply` (requires
+  `CONFIRM_PRODUCTION_ATTACHMENT_PREVIEW_CSP=YES_ADMIT_SAME_ORIGIN_BLOB_ATTACHMENT_PREVIEWS`,
+  an immutable deployment-tool SHA, a new root-only evidence directory, and
+  the production HTTPS base URL; changes only the exact frozen edge CSP by
+  adding `frame-src 'self' blob:`, validates and reloads nginx, verifies the
+  public response header, and restores the captured config on any failure)
 - `make production.tenant.delivery.artifacts.sync` (requires
   `CONFIRM_PRODUCTION_TENANT_ARTIFACT_SYNC=YES_SYNC_SIGNED_TENANT_DELIVERY_ARTIFACTS`;
   from a clean dual-remote-approved `main`, validates and incrementally

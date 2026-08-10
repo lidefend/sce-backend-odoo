@@ -3444,3 +3444,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   action. It does not broaden product, frontend, image, or tenant scope.
 - Validation: maintenance contract tests, release-set allowlist checks,
   production DB contract tests, and `git diff --check`.
+
+## 2026-08-11 — PRODUCTION-ATTACHMENT-PREVIEW-CSP
+
+- Branch / anchor: `fix/production-attachment-preview-csp` from `14641e9`.
+- Formal Product Layer / Layer Target / Module: P4 governed production edge
+  policy in `scripts/ops/production_attachment_preview_csp.py`.
+- Reason / Boundary: authenticated historical attachment bytes download
+  correctly, but the edge CSP inherits `default-src 'self'` for frames and
+  blocks the frontend's in-memory image/PDF preview URL. The change adds only
+  `frame-src 'self' blob:`; script, connect, object, origin, and frame-ancestor
+  policies remain unchanged.
+- Blast Radius / validation: one exact nginx snippet and one nginx reload. The
+  tool is immutable-SHA bound, captures a rollback copy, fails closed on policy
+  drift, validates nginx before reload, verifies the public header, and rolls
+  back on failure. Unit tests and real wutao browser preview/download prove it.
