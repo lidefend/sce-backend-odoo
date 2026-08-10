@@ -132,6 +132,13 @@ Makefile guards and script-level guards.
   atomically installs only the versioned backup/rehearsal tools and units,
   preserves a rollback manifest, validates units before daemon-reload, and
   leaves the timer disabled until backup and restore evidence pass)
+- `make release.production.customer_runtime.activate` (requires
+  `CONFIRM_PRODUCTION_CUSTOMER_RUNTIME=YES_ACTIVATE_SIGNED_CUSTOMER_RUNTIME`,
+  the locked production release set, the exact prepared customer addon set,
+  and the frozen `/data/odoo/legacy_attachments/raw_files` source; recreates
+  only the production Odoo/nginx runtime with the customer addons and
+  historical binary root mounted read-only, without copying binaries into the
+  product image or product filestore)
 - `make production.backup.run` (requires
   `CONFIRM_PRODUCTION_BACKUP=YES_CREATE_SC_PRODUCTION_TRIPLE_BACKUP`; creates
   one immutable database/filestore/sanitized-metadata backup set)

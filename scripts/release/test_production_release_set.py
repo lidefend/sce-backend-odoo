@@ -101,10 +101,20 @@ class ReleaseSetTest(unittest.TestCase):
             payload = target.load_lock(lock)
             target.verify_bound_files(payload)
 
-    def test_legacy_module_rejected(self):
+    def test_signed_tenant_history_module_is_allowed(self):
         with tempfile.TemporaryDirectory() as temporary:
             lock, data = self.fixture(Path(temporary))
             data["customer_modules"].append("sce_customer_sample_legacy")
+            lock.write_text(json.dumps(data))
+            self.assertEqual(
+                target.load_lock(lock)["customer_modules"],
+                ["sce_customer_sample", "sce_customer_sample_legacy"],
+            )
+
+    def test_cross_tenant_customer_extension_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, data = self.fixture(Path(temporary))
+            data["customer_modules"].append("sce_customer_other_legacy")
             lock.write_text(json.dumps(data))
             with self.assertRaises(target.ReleaseSetError):
                 target.load_lock(lock)
@@ -326,7 +336,7 @@ class ReleaseSetTest(unittest.TestCase):
             ):
                 target.load_lock(lock)
 
-    def test_customer_archive_rejects_legacy_module(self):
+    def test_customer_archive_accepts_signed_history_module(self):
         with tempfile.TemporaryDirectory() as temporary:
             archive = Path(temporary) / "package.tar.gz"
             content = b"{}"
@@ -340,8 +350,7 @@ class ReleaseSetTest(unittest.TestCase):
                 "sha256": hashlib.sha256(content).hexdigest(),
                 "size": len(content),
             }]
-            with self.assertRaises(ValueError):
-                customer_package.inspect_archive(archive, expected)
+            customer_package.inspect_archive(archive, expected)
 
 
 if __name__ == "__main__":

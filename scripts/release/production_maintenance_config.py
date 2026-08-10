@@ -56,10 +56,16 @@ def validate(path: Path, env: dict[str, str] | None = None) -> dict[str, str]:
         raise MaintenanceConfigError("MAINTENANCE_PLATFORM_DATABASE_MISMATCH")
     if not TENANT.fullmatch(tenant):
         raise MaintenanceConfigError("MAINTENANCE_TENANT_MISMATCH")
+    base_module = modules[0] if modules else ""
     if (
         not modules
         or len(modules) != len(set(modules))
-        or any(not MODULE.fullmatch(name) or name.endswith("_legacy") for name in modules)
+        or not base_module.startswith("sce_customer_")
+        or any(
+            not MODULE.fullmatch(name)
+            or (name != base_module and not name.startswith(base_module + "_"))
+            for name in modules
+        )
     ):
         raise MaintenanceConfigError("MAINTENANCE_CUSTOMER_MODULE_CONTRACT_INVALID")
     if values.get("dbfilter") != r"^sc_production$":

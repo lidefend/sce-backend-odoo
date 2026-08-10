@@ -504,6 +504,19 @@ release.production.customer_module.install: guard.prod.danger release.production
 	@$(COMPOSE_BIN) -p "$(PRODUCTION_COMPOSE_PROJECT)" -f docker-compose.production-candidate.yml -f docker-compose.production-customer.yml \
 		run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo install
 
+release.production.customer_runtime.activate: guard.prod.danger release.production.compose.preflight release.production.release_set.preflight
+	@test "$(CONFIRM_PRODUCTION_CUSTOMER_RUNTIME)" = "YES_ACTIVATE_SIGNED_CUSTOMER_RUNTIME" || (echo "exact customer runtime confirmation is required"; exit 2)
+	@test "$(SC_LEGACY_ATTACHMENTS_ROOT)" = "/data/odoo/legacy_attachments/raw_files" || (echo "SC_LEGACY_ATTACHMENTS_ROOT must be the frozen production raw-files root"; exit 2)
+	@test -d "$(SC_LEGACY_ATTACHMENTS_ROOT)" -a ! -L "$(SC_LEGACY_ATTACHMENTS_ROOT)" || (echo "historical attachment root is invalid"; exit 2)
+	@test -d "$(SC_CUSTOMER_ADDONS_ROOT)" -a ! -L "$(SC_CUSTOMER_ADDONS_ROOT)" || (echo "prepared customer addons root is invalid"; exit 2)
+	@locked_modules="$$(python3 scripts/release/production_release_set.py modules --lock "$(PRODUCTION_RELEASE_SET_LOCK)")"; \
+		for module in $${locked_modules//,/ }; do \
+			test -f "$(SC_CUSTOMER_ADDONS_ROOT)/$$module/__manifest__.py" || { echo "locked customer module is missing: $$module"; exit 2; }; \
+		done
+	@SC_LEGACY_ATTACHMENTS_ROOT="$(SC_LEGACY_ATTACHMENTS_ROOT)" \
+		$(COMPOSE_BIN) -p "$(PRODUCTION_COMPOSE_PROJECT)" -f docker-compose.production-candidate.yml -f docker-compose.production-customer.yml \
+		up -d --no-build --wait odoo nginx
+
 release.production.tenant_payload.operator.grant: guard.prod.danger release.production.compose.preflight release.production.release_set.preflight
 	@test "$(CONFIRM_PRODUCTION_IMPORT_OPERATOR_GRANT)" = "YES_GRANT_LOCKED_PAYLOAD_IMPORT_OPERATOR" || (echo "exact import operator confirmation is required"; exit 2)
 	@test "$(TENANT_PAYLOAD_DB_ALLOWLIST)" = "sc_production" || (echo "TENANT_PAYLOAD_DB_ALLOWLIST must be sc_production"; exit 2)

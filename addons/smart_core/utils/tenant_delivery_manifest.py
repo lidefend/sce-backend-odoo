@@ -87,8 +87,16 @@ def validate_customer_module_manifest(payload: dict[str, Any]) -> None:
         raise TenantDeliveryManifestError("invalid tenant_key")
     if not MODULE_NAME_RE.fullmatch(module_name):
         raise TenantDeliveryManifestError("invalid customer module_name")
-    if module_name != f"sce_customer_{tenant_key}":
-        raise TenantDeliveryManifestError("module_name must match tenant_key")
+    base_module = f"sce_customer_{tenant_key}"
+    if module_name != base_module:
+        if (
+            not module_name.startswith(base_module + "_")
+            or payload.get("parent_module") != base_module
+            or payload.get("module_role") != "customer_history_carrier"
+        ):
+            raise TenantDeliveryManifestError(
+                "customer extension module must declare its tenant parent and role"
+            )
     if payload.get("customer_key") != tenant_key:
         raise TenantDeliveryManifestError("customer_key must match tenant_key")
     if payload.get("module_key") != module_name:

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 class MaintenanceConfigTest(unittest.TestCase):
     def fixture(self, root: Path) -> tuple[Path, dict[str, str], Path]:
         config = root / "odoo.conf"
-        customer = root / "customer" / "customer_module_alpha"
+        customer = root / "customer" / "sce_customer_tenant_alpha"
         customer.mkdir(parents=True)
         (customer / "__manifest__.py").write_text("{}")
         config.write_text(
@@ -37,7 +37,7 @@ class MaintenanceConfigTest(unittest.TestCase):
             "TARGET_DB": "sc_production",
             "PLATFORM_RELEASE_DB": "sc_production",
             "SC_TENANT_PAYLOAD_TENANT_KEY": "tenant_alpha",
-            "SC_PRODUCTION_CUSTOMER_MODULES": "customer_module_alpha",
+            "SC_PRODUCTION_CUSTOMER_MODULES": "sce_customer_tenant_alpha",
             "SC_MAINTENANCE_HTTP_DISABLED": "1",
         }
         return config, env, customer
@@ -67,7 +67,7 @@ class MaintenanceConfigTest(unittest.TestCase):
                 with self.assertRaisesRegex(target.MaintenanceConfigError, code):
                     self.validate_fixture(config, env, customer)
 
-    def test_missing_customer_and_legacy_customer_are_rejected(self):
+    def test_missing_customer_and_undeclared_history_module_are_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             config, env, customer = self.fixture(Path(temporary))
             customer.rename(customer.with_name("missing"))
@@ -75,11 +75,23 @@ class MaintenanceConfigTest(unittest.TestCase):
                 self.validate_fixture(config, env, customer)
         with tempfile.TemporaryDirectory() as temporary:
             config, env, customer = self.fixture(Path(temporary))
-            legacy = customer.parent / "customer_module_alpha_legacy"
+            legacy = customer.parent / "sce_customer_tenant_alpha_legacy"
             legacy.mkdir()
             (legacy / "__manifest__.py").write_text("{}")
             with self.assertRaisesRegex(target.MaintenanceConfigError, "MODULE_SET"):
                 self.validate_fixture(config, env, customer)
+
+    def test_declared_tenant_history_module_is_allowed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config, env, customer = self.fixture(Path(temporary))
+            history = customer.parent / "sce_customer_tenant_alpha_legacy"
+            history.mkdir()
+            (history / "__manifest__.py").write_text("{}")
+            env["SC_PRODUCTION_CUSTOMER_MODULES"] += ",sce_customer_tenant_alpha_legacy"
+            self.assertEqual(
+                self.validate_fixture(config, env, customer)["db_name"],
+                "sc_production",
+            )
 
     def test_incomplete_addons_and_legacy_data_dir_are_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -106,6 +118,16 @@ class MaintenanceConfigTest(unittest.TestCase):
         self.assertIn("/usr/local/bin/production-maintenance", operator)
         self.assertIn("/usr/local/bin/production-maintenance", payload)
         self.assertIn("run_production_operator_grant.sh", makefile)
+
+    def test_customer_runtime_mounts_external_history_read_only(self):
+        compose = (ROOT / "docker-compose.production-customer.yml").read_text()
+        makefile = (ROOT / "make/release.mk").read_text()
+        policy = (ROOT / "docs/ops/prod_command_policy.md").read_text()
+        self.assertIn("SC_LEGACY_FILE_ROOTS: /mnt/legacy-files", compose)
+        self.assertIn(":/mnt/legacy-files:ro", compose)
+        self.assertIn("release.production.customer_runtime.activate", makefile)
+        self.assertIn("YES_ACTIVATE_SIGNED_CUSTOMER_RUNTIME", makefile)
+        self.assertIn("release.production.customer_runtime.activate", policy)
 
     def test_operator_contract_is_external_identity_and_single_group_only(self):
         provision = (ROOT / "scripts/tenant_payload/provision_operator.py").read_text()

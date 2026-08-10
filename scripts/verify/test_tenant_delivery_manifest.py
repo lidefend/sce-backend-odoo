@@ -49,6 +49,26 @@ class TenantDeliveryManifestTest(unittest.TestCase):
         ):
             manifest.validate_customer_module_manifest(payload)
 
+    def test_customer_history_carrier_declares_parent_and_role(self):
+        payload = json.loads(
+            (ROOT / "customer_addons/sce_customer_sample/customer_module_manifest.json").read_text()
+        )
+        payload.update(
+            {
+                "module_name": "sce_customer_sample_legacy",
+                "module_key": "sce_customer_sample_legacy",
+                "parent_module": "sce_customer_sample",
+                "module_role": "customer_history_carrier",
+            }
+        )
+        manifest.validate_customer_module_manifest(payload)
+        payload["parent_module"] = "sce_customer_other"
+        with self.assertRaisesRegex(
+            manifest.TenantDeliveryManifestError,
+            "tenant parent and role",
+        ):
+            manifest.validate_customer_module_manifest(payload)
+
 
 if __name__ == "__main__":
     unittest.main()
