@@ -3424,3 +3424,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   capability contract requires mutual exclusivity, direction, company,
   project, counterparty, currency, approval, payment, invoice, audit and
   historical compatibility checks before the menu may be visible.
+
+## 2026-08-10 — P1-COST-CENTER-NAVIGATION-WAVE-ONE
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `2983fd6`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native navigation /
+  `smart_construction_core`.
+- Reason / Why Here: project budget, cost plan, cost ledger and profit
+  comparison already have construction-industry models and secured actions.
+  They can converge to the locked cost-center second-level vocabulary.
+- Why Not Elsewhere: no cost calculation enters the frontend or P0; no
+  customer ordering/visibility is encoded; no legacy action identity is
+  repurposed; P3 remains the only tenant runtime override carrier.
+- Blast Radius / validation: visible parentage for existing cost actions only.
+  Legacy process groups become inactive, existing XMLIDs/actions remain
+  addressable, and static action/permission/depth guards must pass before a
+  controlled dev/test module upgrade.
