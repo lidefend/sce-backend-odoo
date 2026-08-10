@@ -124,8 +124,14 @@ class MaintenanceConfigTest(unittest.TestCase):
         compose = (ROOT / "docker-compose.production-customer.yml").read_text()
         makefile = (ROOT / "make/release.mk").read_text()
         policy = (ROOT / "docs/ops/prod_command_policy.md").read_text()
-        self.assertIn("SC_LEGACY_FILE_ROOTS: /mnt/legacy-files", compose)
+        self.assertIn(
+            "SC_LEGACY_FILE_ROOTS: /mnt/legacy-files:/mnt/legacy-online-mirror",
+            compose,
+        )
         self.assertIn(":/mnt/legacy-files:ro", compose)
+        self.assertIn(":/mnt/legacy-online-mirror:ro", compose)
+        self.assertIn("SC_LEGACY_ONLINE_MIRROR_ROOT", makefile)
+        self.assertIn("/data/odoo/legacy_attachments/online_mirror", makefile)
         self.assertIn("release.production.customer_runtime.activate", makefile)
         self.assertIn("YES_ACTIVATE_SIGNED_CUSTOMER_RUNTIME", makefile)
         self.assertIn("release.production.customer_runtime.activate", policy)
