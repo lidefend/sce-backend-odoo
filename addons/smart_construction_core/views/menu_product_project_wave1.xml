@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- P1 project-center wave one: the only product center allowed to expose L3. -->
+    <data>
+        <!-- Retire superseded project groupings and incomplete capability groups. -->
+        <record id="menu_sc_project_overview_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_project_ledger_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_project_planning_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_project_organization_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_project_milestone_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_project_collaboration_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_project_document_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_project_risk_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_project_closeout_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_project_quick_create" model="ir.ui.menu"><field name="active">False</field></record>
+
+        <record id="menu_sc_tender_prepare" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_tender_registration" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_tender_registration_fee" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_tender_opening" model="ir.ui.menu"><field name="active">False</field></record>
+
+        <record id="menu_sc_schedule_delivery_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_quality_delivery_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_safety_delivery_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+
+        <record id="menu_sc_material_management_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_labor_management_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_equipment_management_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_material_rental_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_subcontract_management_group" model="ir.ui.menu"><field name="active">False</field></record>
+
+        <!-- Locked level-two project domains. -->
+        <record id="menu_sc_project_management_group" model="ir.ui.menu">
+            <field name="name">项目创建</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/>
+            <field name="sequence">10</field>
+            <field name="active">True</field>
+        </record>
+        <menuitem id="menu_sc_project_partner_group_wave1"
+                  name="客商管理"
+                  parent="smart_construction_core.menu_sc_project_center"
+                  sequence="20"/>
+        <record id="menu_sc_tender_management_group" model="ir.ui.menu">
+            <field name="name">招投标管理</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/>
+            <field name="sequence">30</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_sc_construction_management_center" model="ir.ui.menu">
+            <field name="name">施工管理</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/>
+            <field name="sequence">40</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_sc_material_center" model="ir.ui.menu">
+            <field name="name">材料成本</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/>
+            <field name="sequence">60</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- Released level-three pages. Existing XMLIDs/actions stay authoritative. -->
+        <record id="menu_sc_project_initiation" model="ir.ui.menu">
+            <field name="name">新项目立项</field><field name="parent_id" ref="smart_construction_core.menu_sc_project_management_group"/><field name="sequence">10</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_customer_partner" model="ir.ui.menu">
+            <field name="name">客户档案</field><field name="parent_id" ref="smart_construction_core.menu_sc_project_partner_group_wave1"/><field name="sequence">10</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_supplier_partner" model="ir.ui.menu">
+            <field name="name">供应商档案</field><field name="parent_id" ref="smart_construction_core.menu_sc_project_partner_group_wave1"/><field name="sequence">20</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_project_tender" model="ir.ui.menu">
+            <field name="name">投标项目</field><field name="parent_id" ref="smart_construction_core.menu_sc_tender_management_group"/><field name="sequence">20</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_tender_guarantee" model="ir.ui.menu">
+            <field name="name">投标保证金</field><field name="parent_id" ref="smart_construction_core.menu_sc_tender_management_group"/><field name="sequence">40</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_tender_won" model="ir.ui.menu">
+            <field name="name">中标管理</field><field name="parent_id" ref="smart_construction_core.menu_sc_tender_management_group"/><field name="sequence">50</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_safety_issue" model="ir.ui.menu">
+            <field name="name">安全检查</field><field name="parent_id" ref="smart_construction_core.menu_sc_construction_management_center"/><field name="sequence">10</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_project_documents" model="ir.ui.menu">
+            <field name="name">工程资料</field><field name="parent_id" ref="smart_construction_core.menu_sc_construction_management_center"/><field name="sequence">30</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_construction_diary" model="ir.ui.menu">
+            <field name="name">施工日志</field><field name="parent_id" ref="smart_construction_core.menu_sc_construction_management_center"/><field name="sequence">40</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_construction_progress" model="ir.ui.menu">
+            <field name="name">施工进度</field><field name="parent_id" ref="smart_construction_core.menu_sc_construction_management_center"/><field name="sequence">50</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_material_inbound" model="ir.ui.menu">
+            <field name="name">材料入库</field><field name="parent_id" ref="smart_construction_core.menu_sc_material_center"/><field name="sequence">10</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_material_outbound" model="ir.ui.menu">
+            <field name="name">材料出库</field><field name="parent_id" ref="smart_construction_core.menu_sc_material_center"/><field name="sequence">20</field><field name="active">True</field>
+        </record>
+    </data>
+</odoo>

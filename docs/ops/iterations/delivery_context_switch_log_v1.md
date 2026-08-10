@@ -3525,3 +3525,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   reparented. Legacy configuration groups and the standalone custom-field
   operation menu become inactive. Static authority, identity, direct-L2 and
   syntax guards precede controlled runtime upgrade.
+
+## 2026-08-10 — P1-PROJECT-CENTER-NAVIGATION-WAVE-ONE
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `6d66aff`.
+- Formal Product Layer / Layer Target / Module: P1 / sole L2-L3 product
+  navigation domain / `smart_construction_core`.
+- Reason / Why Here: project creation, partner files, tender facts,
+  construction execution and material movements already have secured actions
+  and industry fact authorities. The construction and material roots must
+  become project L2 domains so the locked ten-center product has no duplicate
+  primary center.
+- Why Not Elsewhere: customer-specific project terminology remains P2/P3 and
+  cross-center salary, contract variation and team finance facts keep their
+  authoritative owners. Incomplete labor, machinery and subcontract adapters
+  are not exposed as renamed legacy pages.
+- Blast Radius / validation: selected existing menu XMLIDs are reparented and
+  renamed; no action or business model changes. Superseded group containers are
+  inactive, and a static guard enforces the only permitted three-level product
+  hierarchy before controlled runtime upgrade.
