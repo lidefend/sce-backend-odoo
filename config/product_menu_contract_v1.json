@@ -16,7 +16,7 @@
   },
   "centers": [
     {"key": "workbench", "name": "工作台", "sequence": 10, "level_two": [
-      {"name": "数据总览", "delivery": "ADAPTATION_REQUIRED"},
+      {"name": "数据总览", "delivery": "RELEASED_FOUNDATION"},
       {"name": "项目看板", "delivery": "RELEASED_FOUNDATION"},
       {"name": "待办事项", "delivery": "RELEASED_FOUNDATION"},
       {"name": "消息通知", "delivery": "ADAPTATION_REQUIRED"}

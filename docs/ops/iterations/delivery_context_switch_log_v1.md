@@ -3544,3 +3544,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   renamed; no action or business model changes. Superseded group containers are
   inactive, and a static guard enforces the only permitted three-level product
   hierarchy before controlled runtime upgrade.
+
+## 2026-08-10 — P1-WORKBENCH-NAVIGATION-WAVE-ONE
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `30f90da`.
+- Formal Product Layer / Layer Target / Module: P1 / direct L2 personal and
+  management work surfaces / `smart_construction_core`.
+- Reason / Why Here: operating metrics, project dashboard and personal task
+  facts already have secured actions and can converge into the locked
+  workbench vocabulary without duplicating business records.
+- Why Not Elsewhere: the global message panel remains a P0 interaction surface
+  and is not misrepresented as a routable P1 notification workspace. Approval
+  items must converge with tasks rather than remain a duplicate menu.
+- Blast Radius / validation: three existing menu/action identities are
+  reparented/renamed and duplicate project/approval entries become inactive.
+  Static direct-L2 and identity guards precede controlled runtime upgrade.
