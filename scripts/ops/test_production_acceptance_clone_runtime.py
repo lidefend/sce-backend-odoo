@@ -84,7 +84,7 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         tool_target = source.split(
             "production.acceptance.backup.remote_install:", 1
         )[1].split("production.acceptance.backup.remote_sync:", 1)[0]
-        self.assertIn("cat >/dev/null; exit 0", tool_target)
+        self.assertIn("tar -tf - >/dev/null", tool_target)
 
     def test_clone_runtime_includes_formal_external_dependencies(self) -> None:
         source = SCRIPT.read_text(encoding="utf-8")
