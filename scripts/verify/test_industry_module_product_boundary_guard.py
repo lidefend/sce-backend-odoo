@@ -57,6 +57,24 @@ class IndustryModuleProductBoundaryGuardTests(unittest.TestCase):
             errors = guard.verify_manifest_shape()
         self.assertEqual(errors, ["smart_construction_core: production manifest must not declare demo data entries"])
 
+    def test_customer_specific_runtime_view_boundary_rejects_loaded_user_confirmation_section(self):
+        tmp = tempfile.TemporaryDirectory()
+        root = Path(tmp.name)
+        module = root / "addons" / "smart_construction_core"
+        (module / "views").mkdir(parents=True)
+        (module / "__manifest__.py").write_text(
+            "{'data': ['views/customer_form.xml']}",
+            encoding="utf-8",
+        )
+        (module / "views" / "customer_form.xml").write_text(
+            '<odoo><group string="用户确认数据"/></odoo>',
+            encoding="utf-8",
+        )
+        with tmp, patch.object(guard, "ROOT", root), patch.object(guard, "ADDONS", root / "addons"):
+            errors = guard.verify_customer_specific_runtime_view_boundary()
+        self.assertEqual(len(errors), 1)
+        self.assertIn("customer-specific runtime view token", errors[0])
+
 
 if __name__ == "__main__":
     unittest.main()

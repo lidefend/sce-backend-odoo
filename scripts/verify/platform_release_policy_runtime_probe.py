@@ -191,6 +191,24 @@ def _find_probe_user():
     return env.user
 
 
+def _customer_specific_product_views(env):
+    xmlids = env["ir.model.data"].sudo().search(
+        [
+            ("module", "=", "smart_construction_core"),
+            ("model", "=", "ir.ui.view"),
+        ]
+    )
+    views = env["ir.ui.view"].sudo().with_context(active_test=False).browse(xmlids.mapped("res_id")).exists()
+    forbidden_tokens = ("用户确认数据",)
+    contaminated = []
+    external_ids = views.get_external_id()
+    for view in views:
+        arch = _text(getattr(view, "arch_db", ""))
+        if any(token in arch for token in forbidden_tokens):
+            contaminated.append(_text(external_ids.get(view.id)) or "ir.ui.view:%s" % view.id)
+    return sorted(set(contaminated))
+
+
 def _write_report(payload: dict):
     REPORT_JSON.parent.mkdir(parents=True, exist_ok=True)
     REPORT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
@@ -257,6 +275,12 @@ def main():
             RUNTIME_USER_ROLE_SURFACE,
         )
     )
+    customer_specific_product_views = _customer_specific_product_views(env)
+    if customer_specific_product_views:
+        failures.append(
+            "smart_construction_core: customer-specific form views remain active in P1: %s"
+            % ",".join(customer_specific_product_views)
+        )
 
     products = []
     allowed_policy_sources = {
@@ -354,6 +378,8 @@ def main():
         "probe_user_login": _text(probe_user.login),
         "native_authorized_leaf_count": native_leaf_count,
         "native_navigation_authoritative": native_navigation_authoritative,
+        "customer_specific_product_view_count": len(customer_specific_product_views),
+        "customer_specific_product_view_xmlids": customer_specific_product_views,
         "products": products,
         "failures": failures,
         "artifacts": {

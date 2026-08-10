@@ -33,12 +33,17 @@ FORBIDDEN_MANIFEST_XML = {
     "smart_construction_core": {
         "views/res_users_views.xml",
         "views/support/partner_acceptance_product_menu_policy.xml",
+        "views/support/user_confirmed_formal_form_views.xml",
     },
     "smart_construction_seed": {
         "data/sc_seed_login_env.xml",
         "data/sc_seed_partner.xml",
     },
 }
+
+CUSTOMER_SPECIFIC_RUNTIME_VIEW_TOKENS = (
+    "用户确认数据",
+)
 
 FORBIDDEN_PRODUCTION_TOKENS = {
     "smart_construction_core": ("smart_construction_demo.", "sc_demo", "Demo-", "演示项目"),
@@ -112,6 +117,24 @@ def verify_manifest_shape() -> list[str]:
         for item in sorted(FORBIDDEN_MANIFEST_XML.get(module, set()) & data_set):
             errors.append(f"{module}: forbidden production manifest asset is loaded: {item}")
 
+    return errors
+
+
+def verify_customer_specific_runtime_view_boundary() -> list[str]:
+    """P1 manifests must not publish P2 customer-confirmation form sections."""
+    errors: list[str] = []
+    module = "smart_construction_core"
+    base = ADDONS / module
+    for item in _manifest_data(module):
+        path = base / item
+        if not path.is_file() or path.suffix != ".xml":
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for token in CUSTOMER_SPECIFIC_RUNTIME_VIEW_TOKENS:
+            if token in text:
+                errors.append(
+                    f"{module}: customer-specific runtime view token {token!r} is loaded: {item}"
+                )
     return errors
 
 
@@ -1570,6 +1593,7 @@ def verify_industry_contract_migration_scope() -> list[str]:
 def main() -> int:
     errors: list[str] = []
     errors.extend(verify_manifest_shape())
+    errors.extend(verify_customer_specific_runtime_view_boundary())
     errors.extend(verify_guard_metadata_product_language())
     errors.extend(verify_production_token_boundary())
     errors.extend(verify_legacy_temporary_account_boundary())

@@ -75,6 +75,18 @@ def main() -> int:
                 errors.append(f"{key} must be non-empty string")
         if not isinstance(payload.get("native_authorized_leaf_count"), int):
             errors.append("native_authorized_leaf_count must be int")
+        if not isinstance(payload.get("customer_specific_product_view_count"), int):
+            errors.append("customer_specific_product_view_count must be int")
+        customer_view_xmlids = payload.get("customer_specific_product_view_xmlids")
+        if not isinstance(customer_view_xmlids, list) or not all(
+            isinstance(item, str) for item in customer_view_xmlids
+        ):
+            errors.append("customer_specific_product_view_xmlids must be string list")
+            customer_view_xmlids = []
+        if payload.get("customer_specific_product_view_count") != len(customer_view_xmlids):
+            errors.append("customer-specific product view count must match XML-ID list")
+        if customer_view_xmlids:
+            errors.append("customer-specific product view XML-ID list must be empty")
         failures = payload.get("failures")
         if not isinstance(failures, list) or not all(isinstance(item, str) for item in failures):
             errors.append("failures must be string list")
