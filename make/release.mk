@@ -527,6 +527,13 @@ release.production.customer_module.install: guard.prod.danger release.production
 	@$(COMPOSE_BIN) -p "$(PRODUCTION_COMPOSE_PROJECT)" -f docker-compose.production-candidate.yml -f docker-compose.production-customer.yml \
 		run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo install
 
+release.production.customer_module.upgrade: guard.prod.danger release.production.compose.preflight release.production.release_set.preflight
+	@test "$(CONFIRM_PRODUCTION_CUSTOMER_MODULE_UPGRADE)" = "YES_UPGRADE_SIGNED_CUSTOMER_MODULE" || (echo "exact customer module upgrade confirmation is required"; exit 2)
+	@python3 scripts/release/production_release_set.py module --lock "$(PRODUCTION_RELEASE_SET_LOCK)" --module "$(TARGET_MODULE)" >/dev/null
+	@test -d "$(SC_CUSTOMER_ADDONS_ROOT)/$(TARGET_MODULE)" || (echo "prepared customer module missing"; exit 2)
+	@$(COMPOSE_BIN) -p "$(PRODUCTION_COMPOSE_PROJECT)" -f docker-compose.production-candidate.yml -f docker-compose.production-customer.yml \
+		run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo upgrade
+
 release.production.customer_runtime.activate: guard.prod.danger release.production.compose.preflight release.production.release_set.preflight
 	@test "$(CONFIRM_PRODUCTION_CUSTOMER_RUNTIME)" = "YES_ACTIVATE_SIGNED_CUSTOMER_RUNTIME" || (echo "exact customer runtime confirmation is required"; exit 2)
 	@test "$(SC_LEGACY_ATTACHMENTS_ROOT)" = "/data/odoo/legacy_attachments/raw_files" || (echo "SC_LEGACY_ATTACHMENTS_ROOT must be the frozen production raw-files root"; exit 2)
