@@ -3440,3 +3440,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Legacy process groups become inactive, existing XMLIDs/actions remain
   addressable, and static action/permission/depth guards must pass before a
   controlled dev/test module upgrade.
+
+## 2026-08-10 — P1-FINANCE-CENTER-NAVIGATION-WAVE-ONE
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `9fe87a9`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native navigation /
+  `smart_construction_core`.
+- Reason / Why Here: receipt, payment request, actual payment, reimbursement,
+  company income/expense, deduction, advance fund and funding summary already
+  have secured industry actions and formal business-category semantics.
+- Why Not Elsewhere: no customer-specific ordering is required for these
+  standard finance capabilities; no frontend or P0 calculation is introduced;
+  tenant overrides remain P3. Receivable/payable registration and generalized
+  refund remain unpublished until one standard business definition exists.
+- Blast Radius / validation: existing menu XMLIDs are reparented and renamed
+  without action replacement. Superseded groups are inactive, and static
+  identity, depth, product-contract and syntax guards must pass before a
+  controlled dev/test module upgrade.
