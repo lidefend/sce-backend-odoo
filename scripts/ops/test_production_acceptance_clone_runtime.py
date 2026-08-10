@@ -65,6 +65,27 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             )
         self.assertEqual(result, {"installed": 2, "pending": 0})
 
+    def test_restore_rebinds_single_database_release_snapshot_authority(self) -> None:
+        database = "r10e_sc_restore_20260810t093000z_352c22d4"
+        with mock.patch.object(
+            RUNTIME, "run", return_value=f"1|{database}"
+        ) as runner:
+            RUNTIME.rebind_platform_release_database("restore_db", database)
+        command = runner.call_args.args[0]
+        self.assertEqual(command[:3], ["docker", "exec", "restore_db"])
+        self.assertIn("smart_core.platform_release_db", command[-1])
+        self.assertIn(database, command[-1])
+
+    def test_restore_release_snapshot_rebind_fails_closed(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="0|"):
+            with self.assertRaisesRegex(
+                RUNTIME.CloneRuntimeError, "was not rebound"
+            ):
+                RUNTIME.rebind_platform_release_database(
+                    "restore_db",
+                    "r10e_sc_restore_20260810t093000z_352c22d4",
+                )
+
     def test_runtime_has_one_authoritative_product_module_set(self) -> None:
         modules = RUNTIME.product_modules()
         self.assertIn("smart_construction_core", modules)

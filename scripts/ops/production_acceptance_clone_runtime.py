@@ -126,6 +126,36 @@ def module_state(db_container: str, database: str, modules: tuple[str, ...]) -> 
     return {"installed": installed, "pending": pending}
 
 
+def rebind_platform_release_database(db_container: str, database: str) -> None:
+    """Bind a renamed restore to its own single-database release snapshot."""
+    if not re.fullmatch(r"r10e_sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}", database):
+        raise CloneRuntimeError("acceptance platform database identity is invalid")
+    output = run(
+        [
+            "docker",
+            "exec",
+            db_container,
+            "psql",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-U",
+            "odoo",
+            "-d",
+            database,
+            "-At",
+            "-F",
+            "|",
+            "-c",
+            "WITH rebound AS ("
+            "UPDATE ir_config_parameter SET value='" + database + "', write_date=now() "
+            "WHERE key='smart_core.platform_release_db' RETURNING value"
+            ") SELECT count(*),coalesce(min(value),'') FROM rebound;",
+        ]
+    )
+    if output != f"1|{database}":
+        raise CloneRuntimeError("acceptance platform release database was not rebound")
+
+
 def odoo_container_args(
     *,
     name: str,
@@ -426,6 +456,7 @@ def activate(
     state = module_state(str(db_container), database, modules)
     if state != {"installed": len(modules), "pending": 0}:
         raise CloneRuntimeError("acceptance module upgrade did not converge")
+    rebind_platform_release_database(str(db_container), database)
     run(["docker", "rm", upgrade_container])
 
     container = f"{restore_id}_acceptance_odoo"
@@ -487,6 +518,7 @@ def activate(
         "protected_counts_before": before,
         "protected_counts_after": after,
         "pending_modules": 0,
+        "platform_release_db_rebound": True,
         "http_health": 200,
         "external_egress": False,
         "replaced_existing_runtime": replaced,
