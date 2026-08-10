@@ -140,6 +140,11 @@ Makefile guards and script-level guards.
   production Odoo/nginx runtime with the customer addons and both historical
   binary roots mounted read-only, without copying binaries into the product
   image or product filestore)
+- `make release.production.customer_module.upgrade` (requires
+  `CONFIRM_PRODUCTION_CUSTOMER_MODULE_UPGRADE=YES_UPGRADE_SIGNED_CUSTOMER_MODULE`,
+  the locked production release set, and a target module declared by that
+  release set; upgrades only the selected prepared P2 customer module through
+  the immutable production database-management entrypoint)
 - `make production.backup.run` (requires
   `CONFIRM_PRODUCTION_BACKUP=YES_CREATE_SC_PRODUCTION_TRIPLE_BACKUP`; creates
   one immutable database/filestore/sanitized-metadata backup set)

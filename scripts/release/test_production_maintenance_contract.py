@@ -135,6 +135,10 @@ class MaintenanceConfigTest(unittest.TestCase):
         self.assertIn("release.production.customer_runtime.activate", makefile)
         self.assertIn("YES_ACTIVATE_SIGNED_CUSTOMER_RUNTIME", makefile)
         self.assertIn("release.production.customer_runtime.activate", policy)
+        self.assertIn("release.production.customer_module.upgrade", makefile)
+        self.assertIn("YES_UPGRADE_SIGNED_CUSTOMER_MODULE", makefile)
+        self.assertIn("production-db-manage odoo upgrade", makefile)
+        self.assertIn("release.production.customer_module.upgrade", policy)
 
     def test_payload_runner_mounts_only_immutable_maintenance_validator(self):
         source = (ROOT / "scripts/release/run_production_tenant_payload.sh").read_text()

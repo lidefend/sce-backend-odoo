@@ -3431,3 +3431,16 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   nginx runtime activation receives a second required read-only mount. Compose
   rendering, maintenance contract tests, exact-root guards, customer payload
   replay, authorized byte comparison, and anonymous 403 prove containment.
+
+## 2026-08-11 — SIGNED-CUSTOMER-MODULE-UPGRADE
+
+- Branch / anchor: `fix/production-customer-module-upgrade` from `6fc02ae`.
+- Formal Product Layer / Layer Target / Module: P4 governed production customer
+  delivery tooling in `make/release.mk`.
+- Reason / Boundary: a signed P2 customer module already installed in production
+  needs an explicit upgrade path; the existing target covered first install
+  only. The new target admits only a module named by the signed release set and
+  delegates to the immutable production DB contract's existing `upgrade`
+  action. It does not broaden product, frontend, image, or tenant scope.
+- Validation: maintenance contract tests, release-set allowlist checks,
+  production DB contract tests, and `git diff --check`.
