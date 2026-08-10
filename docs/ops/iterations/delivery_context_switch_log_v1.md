@@ -3472,3 +3472,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast Radius / validation: only existing tax menu parent/name/sequence and
   visibility. Existing actions and XMLIDs remain unchanged; identity, depth,
   product-contract and syntax guards precede controlled runtime upgrade.
+
+## 2026-08-10 — P1-REPORTING-CENTER-NAVIGATION-WAVE-ONE
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `4e04283`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native navigation /
+  `smart_construction_core`.
+- Reason / Why Here: project operation, comprehensive cost and daily funding
+  summaries already have unified, secured and drillable report actions. They
+  can converge to the locked reporting-center vocabulary without creating a
+  second calculation path.
+- Why Not Elsewhere: report aggregation remains server-authoritative; no P0
+  frontend formula or P2 customer-specific metric is introduced. Tax and labor
+  subcontracting reports remain unpublished until stable metric, dimension,
+  permission and drill-down contracts exist.
+- Blast Radius / validation: existing report menu XMLIDs are reparented and
+  renamed only; legacy report group containers become inactive. Static action
+  identity, direct-L2, menu-contract and syntax guards must pass before any
+  controlled runtime module upgrade.
