@@ -417,6 +417,7 @@ production.release.config.promote: guard.prod.danger
 			--next-source-sha "$(NEXT_RELEASE_SOURCE_SHA)" \
 			--next-image-digest "$(NEXT_RELEASE_IMAGE_DIGEST)" \
 			--next-image-id "$(NEXT_RELEASE_IMAGE_ID)" \
+			--acceptance-package-digest "$(PRODUCTION_ACCEPTANCE_PACKAGE_DIGEST)" \
 			--version "$(CANDIDATE_VERSION)"
 
 production.restore.rehearsal: guard.prod.danger

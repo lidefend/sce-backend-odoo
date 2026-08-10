@@ -21,6 +21,8 @@ class ProductionReleaseConfigPromoteTests(unittest.TestCase):
         self.assertIn('sc_production-odoo-1', source)
         self.assertIn('shutil.copy2(runtime_backup, runtime_path)', source)
         self.assertIn('os.replace(runtime_temp, runtime_path)', source)
+        self.assertIn('"ACCEPTANCE_PACKAGE_DIGEST": acceptance_digest', source)
+        self.assertIn('observed_promotion.get("ACCEPTANCE_PACKAGE_DIGEST") != acceptance_digest', source)
         self.assertNotIn('systemctl', source)
         self.assertNotIn('docker compose', source)
         self.assertNotIn('DB_PASSWORD', source)
