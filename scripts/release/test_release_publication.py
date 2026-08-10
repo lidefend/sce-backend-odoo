@@ -334,6 +334,35 @@ class PublicationContractTests(unittest.TestCase):
                 )
             )
 
+    def test_temporary_registry_candidate_is_tagged_from_exact_local_image(self):
+        backend = publication.ExternalBackend()
+        reference = "ghcr.io/lidefend/sce-product:candidate-attempt"
+        commands = []
+
+        def record(command, **_kwargs):
+            commands.append(command)
+            return ""
+
+        with (
+            mock.patch.object(backend, "run", side_effect=record),
+            mock.patch.object(
+                backend, "registry_digest", side_effect=[None, REMOTE_DIGEST]
+            ),
+            mock.patch.object(backend, "verify_registry_content", return_value=True),
+        ):
+            self.assertEqual(
+                backend.validate_registry_candidate(reference, IMAGE_ID),
+                REMOTE_DIGEST,
+            )
+
+        self.assertEqual(
+            commands,
+            [
+                ["docker", "tag", IMAGE_ID, reference],
+                ["docker", "push", reference],
+            ],
+        )
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)

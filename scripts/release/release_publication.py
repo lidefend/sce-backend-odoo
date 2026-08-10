@@ -505,6 +505,7 @@ class ExternalBackend:
     ) -> str:
         digest = self.registry_digest(reference)
         if digest is None:
+            self.run(["docker", "tag", expected_local_image_id, reference])
             digest = self.push_registry([reference])
         if not self.verify_registry_content(
             REGISTRY_REPOSITORY,
