@@ -180,6 +180,7 @@ CANDIDATE_IMAGE_ARCHIVE ?=
 CANDIDATE_IMAGE_ARCHIVE_SHA256 ?=
 CANDIDATE_IMAGE_REF ?=
 CANDIDATE_IMAGE_CONTENT_ID ?=
+CANDIDATE_IMAGE_DIGEST ?=
 PRODUCTION_CANDIDATE_MANIFEST_SYNC_SHA ?=
 CANDIDATE_MANIFEST_DIR ?=
 PRODUCTION_MANIFEST_SOURCE_SHA ?=
@@ -371,7 +372,7 @@ production.restore.tool.sync: guard.prod.danger
 production.candidate.image.sync: guard.prod.danger
 	@test "$(CONFIRM_PRODUCTION_IMAGE_SYNC)" = "YES_SYNC_VERIFIED_CANDIDATE_IMAGE" || (echo "exact production image synchronization acknowledgement is required"; exit 2)
 	@test -n "$(PRODUCTION_IMAGE_SYNC_SHA)" -a -n "$(CANDIDATE_IMAGE_ARCHIVE)" -a -n "$(CANDIDATE_IMAGE_ARCHIVE_SHA256)" || (echo "production main SHA and candidate archive identity are required"; exit 2)
-	@test -n "$(CANDIDATE_IMAGE_REF)" -a -n "$(CANDIDATE_IMAGE_CONTENT_ID)" || (echo "candidate image reference and content ID are required"; exit 2)
+	@test -n "$(CANDIDATE_IMAGE_REF)" -a -n "$(CANDIDATE_IMAGE_CONTENT_ID)" -a -n "$(CANDIDATE_IMAGE_DIGEST)" || (echo "candidate image reference, content ID, and registry digest are required"; exit 2)
 	@ENV="$(ENV)" PROD_DANGER="$${PROD_DANGER:-}" \
 		CONFIRM_PRODUCTION_IMAGE_SYNC="$(CONFIRM_PRODUCTION_IMAGE_SYNC)" \
 		python3 scripts/ops/production_candidate_image_sync.py \
@@ -379,7 +380,8 @@ production.candidate.image.sync: guard.prod.danger
 			--archive "$(CANDIDATE_IMAGE_ARCHIVE)" \
 			--archive-sha256 "$(CANDIDATE_IMAGE_ARCHIVE_SHA256)" \
 			--image-ref "$(CANDIDATE_IMAGE_REF)" \
-			--content-id "$(CANDIDATE_IMAGE_CONTENT_ID)"
+			--content-id "$(CANDIDATE_IMAGE_CONTENT_ID)" \
+			--image-digest "$(CANDIDATE_IMAGE_DIGEST)"
 
 production.candidate.manifest.sync: guard.prod.danger
 	@test "$(CONFIRM_PRODUCTION_CANDIDATE_MANIFEST_SYNC)" = "YES_SYNC_VERIFIED_CANDIDATE_MANIFESTS" || (echo "exact candidate manifest synchronization acknowledgement is required"; exit 2)

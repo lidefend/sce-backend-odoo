@@ -145,9 +145,11 @@ Makefile guards and script-level guards.
 - `make production.candidate.image.sync` (requires
   `CONFIRM_PRODUCTION_IMAGE_SYNC=YES_SYNC_VERIFIED_CANDIDATE_IMAGE`; from a
   clean dual-remote-approved `main`, verifies the governed candidate archive
-  SHA-256, local OCI manifest ID, and archive config digest; it streams through
-  SSH stdin to the fixed `sc-prod` Docker cache only when the verified archive
-  config ID is absent, then verifies that exact backend-portable remote ID;
+  SHA-256, local OCI manifest ID, and every archive blob digest; it incrementally
+  synchronizes only changed OCI blobs to the fixed `sc-prod` digest cache using
+  checksum comparison and a previous-layout link base, resolves the published registry digest, and verifies
+  that both the archive tag and immutable digest reference map to the exact
+  backend-portable remote config ID;
   it creates no remote staging file and does not change services, containers,
   volumes, systemd, or databases)
 - `make production.candidate.manifest.sync` (requires

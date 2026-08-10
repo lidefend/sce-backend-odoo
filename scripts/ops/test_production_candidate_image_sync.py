@@ -57,9 +57,11 @@ class CandidateImageSyncTests(unittest.TestCase):
             with self.assertRaises(sync.SyncError):
                 sync.validate_image_identity(f"ghcr.io/lidefend/sce-product:{unsafe}", content_id)
 
-    def test_stream_command_has_fixed_remote_and_docker_load_only(self):
+    def test_incremental_transfer_has_fixed_remote_and_digest_cache(self):
         source = SCRIPT.read_text()
-        self.assertIn('["ssh", "-o", "BatchMode=yes", SSH_TARGET, "docker", "load"]', source)
+        self.assertIn('"--link-dest=', source)
+        self.assertIn('"rsync", "--archive", "--checksum", "--partial", "--delete"', source)
+        self.assertIn('sha256sum -c', source)
         self.assertEqual(sync.SSH_TARGET, "sc-prod")
         self.assertNotIn("scp", source)
         self.assertNotIn("systemctl", source)
@@ -73,14 +75,51 @@ class CandidateImageSyncTests(unittest.TestCase):
             mock.patch.object(sync, "validate_image_identity"),
             mock.patch.object(sync, "remote_image_id", return_value=archive_config),
             mock.patch.object(sync, "stream_load") as loader,
+            mock.patch.object(sync, "pull_remote_digest") as puller,
             mock.patch.dict(
                 sync.os.environ,
                 {"ENV": "prod", "PROD_DANGER": "1", "CONFIRM_PRODUCTION_IMAGE_SYNC": sync.CONFIRMATION},
                 clear=True,
             ),
         ):
-            sync.synchronize("a" * 40, Path("candidate.tar"), "c" * 64, "ghcr.io/lidefend/sce-product:1.0.0-rc.12", "sha256:" + "d" * 64)
+            sync.synchronize(
+                "a" * 40,
+                Path("candidate.tar"),
+                "c" * 64,
+                "ghcr.io/lidefend/sce-product:1.0.0-rc.12",
+                "sha256:" + "d" * 64,
+                "sha256:" + "e" * 64,
+            )
         loader.assert_not_called()
+        puller.assert_not_called()
+
+    def test_missing_digest_reference_is_pulled_and_must_match_archive(self):
+        archive_config = "sha256:" + "b" * 64
+        with (
+            mock.patch.object(sync, "preflight"),
+            mock.patch.object(sync, "validate_archive", return_value=(Path("candidate.tar"), archive_config)),
+            mock.patch.object(sync, "validate_image_identity"),
+            mock.patch.object(sync, "remote_image_id", side_effect=[archive_config, None, archive_config]),
+            mock.patch.object(sync, "stream_load") as loader,
+            mock.patch.object(sync, "pull_remote_digest") as puller,
+            mock.patch.dict(
+                sync.os.environ,
+                {"ENV": "prod", "PROD_DANGER": "1", "CONFIRM_PRODUCTION_IMAGE_SYNC": sync.CONFIRMATION},
+                clear=True,
+            ),
+        ):
+            sync.synchronize(
+                "a" * 40,
+                Path("candidate.tar"),
+                "c" * 64,
+                "ghcr.io/lidefend/sce-product:1.0.0-rc.12",
+                "sha256:" + "d" * 64,
+                "sha256:" + "e" * 64,
+            )
+        loader.assert_not_called()
+        puller.assert_called_once_with(
+            "ghcr.io/lidefend/sce-product@sha256:" + "e" * 64
+        )
 
 
 if __name__ == "__main__":

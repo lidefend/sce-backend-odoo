@@ -3332,3 +3332,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   relax the zero-write publication gate.
 - Validation: runtime and evidence unit tests, governed restore-ID acceptance,
   publication contract regression, Python compilation, and `git diff --check`.
+
+## 2026-08-10 — PRODUCTION-CANDIDATE-INCREMENTAL-DIGEST-SYNC
+
+- Branch / anchor: `fix/production-candidate-digest-reference` from `1f5fc43`.
+- Formal Product Layer / Layer Target / Module: P4 governed release delivery
+  tooling in `scripts/ops/production_candidate_image_sync.py` and
+  `make/release.mk`.
+- Reason / Why Here: the production archive importer created only a version-tag
+  cache entry while configuration promotion required the published registry
+  digest reference. It also retransmitted the full OCI archive even when most
+  layers already existed remotely.
+- Why Not Elsewhere: product images, P0/P1 modules, frontend contracts, tenant
+  payloads, and production data do not own transport or registry identity.
+- Blast Radius / validation: only the explicitly confirmed production image
+  cache sync changes. Every OCI blob is hash-verified, unchanged blobs are
+  reused through a digest-addressed `rsync --link-dest` cache, the published
+  digest is resolved after import, and both tag and digest must map to the
+  archive config ID. Focused tests, the complete backup/restore tooling
+  contract, Python compilation, and a real idempotent production sync prove
+  containment; no service, container, volume, or database is changed.
