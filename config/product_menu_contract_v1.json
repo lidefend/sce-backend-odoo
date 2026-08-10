@@ -1,6 +1,6 @@
 {
   "schema": "sce.product_menu_contract.v1",
-  "contract_id": "baosheng-construction-product-menu-20260810",
+  "contract_id": "construction-industry-product-menu-20260810",
   "status": "LOCKED",
   "decision_date": "2026-08-10",
   "product_layer": "P1",
@@ -11,7 +11,8 @@
     "project_center_is_only_center_with_level_three": true,
     "all_non_project_centers_maximum_depth": 2,
     "handling_is_page_action_not_menu_level": true,
-    "runtime_menu_claim": "TARGET_CONTRACT_ONLY"
+    "runtime_menu_claim": "TARGET_CONTRACT_ONLY",
+    "seed_customer_input": "VALIDATES_PRIORITY_AND_CONFIGURABILITY_ONLY"
   },
   "centers": [
     {"key": "workbench", "name": "工作台", "sequence": 10, "level_two": [

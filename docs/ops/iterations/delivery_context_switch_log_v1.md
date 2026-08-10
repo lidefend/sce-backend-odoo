@@ -3370,3 +3370,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   current runtime menu, XMLID, action, route, permission, database, and
   deployed environment remain untouched and are explicitly marked
   `MIGRATION_PENDING`.
+
+## 2026-08-10 — P1-PRODUCT-EVOLUTION-WITH-SEED-CUSTOMER-VALIDATION
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `784d2b2`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 /
+  `smart_construction_core` product-navigation contract; P2 and P3 are
+  explicitly downstream overlays, not implementation targets of this change.
+- Reason / Why Here: the released product baseline remains below the intended
+  industry benchmark. The immediate objective is therefore reusable P1
+  product evolution; seed-customer requirements validate priority and
+  configurability without becoming construction-industry facts by default.
+- Why Not Elsewhere: customer names, organization, role-visible ordering,
+  local layout and data baseline remain P2 private-module facts; administrator
+  adjustments remain P3 versioned runtime configuration; migration and
+  acceptance evidence remain P4.
+- Blast Radius / validation: product menu contract classification and its
+  guard only. The guard fails if seed-customer delivery becomes the primary
+  product goal. No menu XML, action, permission, database, deployed runtime,
+  P2 data or P3 configuration is changed.

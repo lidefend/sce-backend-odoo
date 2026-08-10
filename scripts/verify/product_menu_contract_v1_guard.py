@@ -11,6 +11,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_PATH = REPO_ROOT / "config/product_menu_contract_v1.json"
 BASELINE_PATH = REPO_ROOT / "config/product_primary_center_baseline_v1.json"
+EVOLUTION_POLICY_PATH = REPO_ROOT / "config/product_evolution_policy_v1.json"
 
 EXPECTED_CENTERS = (
     ("workbench", 10, "工作台"), ("project", 20, "项目中心"),
@@ -27,7 +28,7 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def validate(contract: dict, baseline: dict) -> list[str]:
+def validate(contract: dict, baseline: dict, evolution_policy: dict | None = None) -> list[str]:
     errors: list[str] = []
     for key, expected in {
         "schema": "sce.product_menu_contract.v1", "status": "LOCKED",
@@ -73,12 +74,19 @@ def validate(contract: dict, baseline: dict) -> list[str]:
         errors.append("customer-facing contract menus must use 日常合同 and 日常合同结算")
     if contract.get("runtime_migration_status") != baseline.get("runtime_migration_status"):
         errors.append("menu contract and primary-center baseline runtime migration status must match")
+    if rules.get("seed_customer_input") != "VALIDATES_PRIORITY_AND_CONFIGURABILITY_ONLY":
+        errors.append("seed-customer input must validate P1 priority/configurability only")
+    if evolution_policy is not None:
+        if evolution_policy.get("primary_goal") != "P1_INDUSTRY_BENCHMARK_EVOLUTION":
+            errors.append("product evolution primary goal must remain P1 industry-benchmark evolution")
+        if evolution_policy.get("secondary_goal") != "P2_SEED_CUSTOMER_DELIVERY_COMPATIBILITY":
+            errors.append("seed-customer delivery must remain secondary to P1 evolution")
     return errors
 
 
 def main() -> int:
     try:
-        errors = validate(load_json(CONTRACT_PATH), load_json(BASELINE_PATH))
+        errors = validate(load_json(CONTRACT_PATH), load_json(BASELINE_PATH), load_json(EVOLUTION_POLICY_PATH))
     except (OSError, json.JSONDecodeError) as exc:
         print(f"[FAIL] product menu contract guard: {exc}")
         return 1

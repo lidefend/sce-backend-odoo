@@ -5,6 +5,11 @@
 本文件说明已经锁定的产品目标菜单。机器可读的唯一事实是
 [`config/product_menu_contract_v1.json`](../../config/product_menu_contract_v1.json)。
 
+本菜单首先是 P1 施工行业标准产品的演进目标。种子客户只用于验证优先级、
+可配置性与交付闭环；客户专属名称、可见性、顺序、角色偏好和数据基线不得写入
+本契约，而应进入私有 P2 客户模块或 P3 运行时配置。完整决策见
+[`config/product_evolution_policy_v1.json`](../../config/product_evolution_policy_v1.json)。
+
 - 状态：`LOCKED`
 - 运行时迁移：`NOT_STARTED`
 - 正式业务菜单最多三级；仅项目中心使用三级。
