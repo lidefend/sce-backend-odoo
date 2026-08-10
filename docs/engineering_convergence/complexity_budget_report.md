@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3599`
+- Scanned files: `3601`
 - Files requiring split plan: `39`
 - Files above warning threshold: `70`
 
@@ -42,8 +42,8 @@ Generated from repository source files. This report is informational during the 
 | 1672 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 1656 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1634 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
+| 1633 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1632 | Python source | `addons/smart_construction_core/core_extension.py` |
-| 1628 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1591 | Python source | `addons/smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py` |
 | 1517 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
@@ -68,7 +68,7 @@ Generated from repository source files. This report is informational during the 
 | 1392 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1374 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1365 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
-| 1336 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
+| 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1315 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1260 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
@@ -162,8 +162,8 @@ Generated from repository source files. This report is informational during the 
 | 1672 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 1656 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1634 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
+| 1633 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1632 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
-| 1628 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1591 | split_plan_required | Python source | `addons/smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py` |
 | 1517 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
@@ -180,7 +180,7 @@ Generated from repository source files. This report is informational during the 
 | 1392 | warning | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1374 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1365 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
-| 1336 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
+| 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1315 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1260 | warning | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
