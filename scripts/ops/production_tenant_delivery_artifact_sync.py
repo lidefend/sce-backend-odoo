@@ -155,6 +155,19 @@ def synchronize(args: argparse.Namespace) -> dict:
     remote_script = r'''set -eu
 tool="$1"; staging="$2"; final="$3"; archive_name="$4"; shift 4
 test -d "$tool" && test "$(cat "$tool/DEPLOYMENT_TOOL_SHA")" = "${tool##*/}"
+normalize_reader_modes() {
+  python3 - "$1" "$2" <<'PY'
+import pathlib, sys
+payload=pathlib.Path(sys.argv[1]); public_key=pathlib.Path(sys.argv[2]); changed=0
+targets=[payload, *payload.rglob('*'), public_key]
+for path in targets:
+    if path.is_symlink(): raise SystemExit('REMOTE_ARTIFACT_SYMLINK_FORBIDDEN')
+    expected=0o750 if path.is_dir() else 0o640
+    if path.stat().st_mode & 0o777 != expected:
+        path.chmod(expected); changed += 1
+print(changed)
+PY
+}
 if test -e "$final"; then
   test -f "$final/production-release-set.json" || { echo EXISTING_DELIVERY_INCOMPLETE >&2; exit 2; }
   PYTHONPATH="$tool/scripts/release" python3 - "$final/production-release-set.json" <<'PY'
@@ -162,8 +175,10 @@ import pathlib, production_release_set, sys
 lock=production_release_set.load_lock(pathlib.Path(sys.argv[1]))
 production_release_set.verify_bound_files(lock)
 PY
+  mode_changes="$(normalize_reader_modes "$final/payload" "$final/tenant-payload-public-key.pem")"
   rm -rf "$staging"
-  printf '{"status":"PASS","changed":false,"root":"%s"}\n' "$final"
+  if test "$mode_changes" = 0; then changed=false; else changed=true; fi
+  printf '{"status":"PASS","changed":%s,"mode_changes":%s,"root":"%s"}\n' "$changed" "$mode_changes" "$final"
   exit 0
 fi
 python3 - "$staging" <<'PY'
@@ -188,6 +203,7 @@ python3 "$tool/scripts/release/build_production_release_set.py" \
   --customer-package-manifest "$final/customer-package/package-manifest.json" \
   --payload-root "$final/payload"
 chmod 0600 "$final/production-release-set.json" "$final/tenant-payload-public-key.pem"
+normalize_reader_modes "$final/payload" "$final/tenant-payload-public-key.pem" >/dev/null
 rollback=0
 trap - EXIT
 printf '{"status":"PASS","changed":true,"root":"%s"}\n' "$final"

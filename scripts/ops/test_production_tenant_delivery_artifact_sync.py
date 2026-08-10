@@ -45,6 +45,12 @@ class ArtifactTreeTest(unittest.TestCase):
             with self.assertRaises(MODULE.SyncError):
                 MODULE.validate_checksum_tree(root, extra_files={"manifest.json", "signature"})
 
+    def test_remote_reader_modes_are_private_group_readable(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("normalize_reader_modes", source)
+        self.assertIn("0o750 if path.is_dir() else 0o640", source)
+        self.assertIn("tenant-payload-public-key.pem", source)
+
 
 if __name__ == "__main__":
     unittest.main()

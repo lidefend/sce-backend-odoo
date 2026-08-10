@@ -3402,3 +3402,14 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   from an immutable `/opt/sce/deployment-tools/<sha>` root, read-only and bound
   to `DEPLOYMENT_TOOL_SHA`. Normal Odoo/nginx runtime, product code, customer
   payloads, databases, filestore, and historical binaries are unchanged.
+
+## 2026-08-10 — PRODUCTION-TENANT-ARTIFACT-READER-MODES
+
+- Branch / anchor: `fix/production-tenant-artifact-modes` from `c04a283`.
+- Formal Product Layer / Layer Target: P4 production custody permissions.
+- Reason / Boundary: signed payloads remain root-owned, but the short-lived
+  non-root maintenance container must read the bind-mounted payload and public
+  key. The governed sync now normalizes only that payload subtree to `0750`
+  directories and `0640` files, verifies all checksums first, and reports the
+  metadata changes. Customer packages, databases, services, product filestore,
+  and 70GB historical binary custody remain untouched.
