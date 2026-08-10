@@ -217,6 +217,9 @@
         # Productized visible navigation authority. Keep this after all native
         # menu declarations and before the product-policy synchronization.
         'views/menu_product_navigation_v2.xml',
+        # P1 wave-one contract navigation. Existing action XMLIDs are reused;
+        # legacy grouping menus remain inactive for rollback-safe migration.
+        'views/menu_product_contract_wave1.xml',
         'data/hr_payroll_form_productization_contract.xml',
         'data/office_admin_form_productization_contract.xml',
         'data/document_admin_form_productization_contract.xml',

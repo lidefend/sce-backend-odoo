@@ -7,7 +7,7 @@
   "layer_target": "L2",
   "module": "smart_construction_core",
   "scope": "TARGET_INFORMATION_ARCHITECTURE",
-  "runtime_migration_status": "NOT_STARTED",
+  "runtime_migration_status": "IN_PROGRESS",
   "menu_contract": {
     "ref": "config/product_menu_contract_v1.json",
     "status": "LOCKED",

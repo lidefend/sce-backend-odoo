@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      P1 industry-standard contract-center wave one.
+
+      Formal Product Layer: P1. Layer Target: L2 native navigation in
+      smart_construction_core. This reuses existing standard actions and
+      groups, creates no business facts, and deliberately does not publish
+      incomplete contract-change or daily-contract-settlement entry points.
+    -->
+    <data>
+        <!-- Hide superseded process groups without repurposing their XMLIDs or actions. -->
+        <record id="menu_sc_construction_contract" model="ir.ui.menu">
+            <field name="active">False</field>
+        </record>
+        <record id="menu_sc_income_contract_group" model="ir.ui.menu">
+            <field name="active">False</field>
+        </record>
+        <record id="menu_sc_expense_contract_group" model="ir.ui.menu">
+            <field name="active">False</field>
+        </record>
+
+        <!-- Direct L2 workspaces: the page toolbar owns create/handle actions. -->
+        <menuitem id="menu_sc_p1_income_contract"
+                  name="收入合同"
+                  parent="smart_construction_core.menu_sc_contract_center"
+                  action="smart_construction_core.action_construction_contract_income"
+                  sequence="10"
+                  groups="smart_construction_core.group_sc_cap_contract_read"/>
+        <menuitem id="menu_sc_p1_expense_contract"
+                  name="支出合同"
+                  parent="smart_construction_core.menu_sc_contract_center"
+                  action="smart_construction_core.action_construction_contract_expense"
+                  sequence="20"
+                  groups="smart_construction_core.group_sc_cap_contract_read"/>
+        <menuitem id="menu_sc_p1_contract_change"
+                  name="合同变更"
+                  parent="smart_construction_core.menu_sc_contract_center"
+                  action="smart_construction_core.action_sc_settlement_adjustment"
+                  sequence="25"
+                  groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_settlement_read,smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_cost_read,smart_construction_core.group_sc_cap_finance_read"/>
+        <menuitem id="menu_sc_p1_daily_contract"
+                  name="日常合同"
+                  parent="smart_construction_core.menu_sc_contract_center"
+                  action="smart_construction_core.action_sc_general_contract"
+                  sequence="30"
+                  groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_contract_read,smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager"/>
+        <menuitem id="menu_sc_p1_income_settlement"
+                  name="收入结算"
+                  parent="smart_construction_core.menu_sc_contract_center"
+                  action="smart_construction_core.action_sc_settlement_order_income"
+                  sequence="50"
+                  groups="smart_construction_core.group_sc_cap_settlement_read"/>
+        <menuitem id="menu_sc_p1_expense_settlement"
+                  name="支出结算"
+                  parent="smart_construction_core.menu_sc_contract_center"
+                  action="smart_construction_core.action_sc_settlement_order_expense"
+                  sequence="60"
+                  groups="smart_construction_core.group_sc_cap_settlement_read"/>
+    </data>
+</odoo>

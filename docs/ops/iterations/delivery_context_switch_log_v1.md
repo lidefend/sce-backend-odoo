@@ -3389,3 +3389,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   guard only. The guard fails if seed-customer delivery becomes the primary
   product goal. No menu XML, action, permission, database, deployed runtime,
   P2 data or P3 configuration is changed.
+
+## 2026-08-10 — P1-CONTRACT-CENTER-NAVIGATION-WAVE-ONE
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `d412bc8`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native menu baseline /
+  `smart_construction_core`.
+- Reason / Why Here: five contract capabilities already have standard actions,
+  permissions and industry models. They can be exposed as direct two-level
+  workspaces without creating a customer-specific flow or a duplicate business
+  object.
+- Why Not Elsewhere: no P0 platform navigation mechanism is changed; no P2
+  customer menu preference is encoded; no P3 policy is written; no P4 script
+  becomes menu authority. Contract change and daily-contract settlement remain
+  hidden because their standard direction/source adapters are incomplete.
+- Blast Radius / validation: contract-center menu parentage and visibility
+  only. Existing actions and legacy XMLIDs retain their identities; legacy
+  groups are deactivated rather than repurposed. Static XML, action binding,
+  menu-depth, primary-center, menu-contract and `git diff --check` guards
+  must pass before a controlled dev/test module upgrade.
