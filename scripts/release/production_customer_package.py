@@ -65,8 +65,7 @@ def inspect_archive(archive: Path, expected_files: list[dict]) -> None:
             if path.is_absolute() or ".." in path.parts or member.issym() or member.islnk() or member.isdev():
                 raise ValueError("CUSTOMER_PACKAGE_UNSAFE_MEMBER")
         manifests = [m for m in members if "/addons/" in m.name and m.name.endswith("/__manifest__.py")]
-        legacy = [m for m in members if "_legacy" in m.name]
-        if not manifests or legacy:
+        if not manifests:
             raise ValueError("CUSTOMER_PACKAGE_MODULE_SET_INVALID")
         observed = []
         for member in members:
@@ -170,7 +169,9 @@ def main() -> int:
             {row["product_bundle"] for row in runtime_contracts.values()}
         ),
         "modules": manifest["modules"],
-        "legacy_module_included": False,
+        "legacy_module_included": any(
+            name.endswith("_legacy") for name in manifest["modules"]
+        ),
         "destination": str(destination),
         "database_write_count": 0,
     }

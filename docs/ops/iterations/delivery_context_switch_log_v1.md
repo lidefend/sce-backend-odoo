@@ -3352,3 +3352,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   archive config ID. Focused tests, the complete backup/restore tooling
   contract, Python compilation, and a real idempotent production sync prove
   containment; no service, container, volume, or database is changed.
+
+## 2026-08-10 — CUSTOMER-HISTORY-ATTACHMENT-DELIVERY
+
+- Branch / anchor: `fix/customer-history-attachment-delivery` from `60c3693`.
+- Formal Product Layer / Layer Target / Module: P0 tenant delivery manifest
+  admission and P4 governed production release tooling; customer facts remain
+  in the external P2 `sce_customer_<tenant>_legacy` carrier.
+- Reason / Why Here: the product baseline must contain no customer history,
+  while a signed customer package may install a declared same-tenant history
+  carrier and resolve its binaries from a tenant-owned read-only root.
+- Why Not Elsewhere: no customer record, attachment index, binary, path, or
+  business meaning enters the product image, P1 industry module, or frontend.
+- Blast Radius / validation: signed customer-package admission, short-lived
+  maintenance module sets, and the explicitly confirmed production Odoo/nginx
+  runtime overlay. The external binary root is mounted read-only; release
+  tooling tests, manifest tests, isolated signed-payload verification, product
+  zero-history verification, authorized byte comparison, and unauthorized 403
+  prove containment.

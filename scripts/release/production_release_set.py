@@ -18,6 +18,7 @@ CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
 LEGACY_PATH = Path("/data/odoo/legacy_attachments")
 TENANT = re.compile(r"^[a-z][a-z0-9_]{2,62}$")
 MODULE = re.compile(r"^[a-z][a-z0-9_]{1,62}$")
+CUSTOMER_MODULE_PREFIX = "sce_" + "customer_"
 XMLID = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$")
 OPERATOR_FIELDS = {
     "identity_type",
@@ -111,12 +112,18 @@ def load_lock(path: Path) -> dict:
             "PRODUCTION_RELEASE_SET_CUSTOMER_TARGET_INCOMPATIBLE"
         ) from exc
     modules = payload["customer_modules"]
+    base_module = str(modules[0]) if isinstance(modules, list) and modules else ""
     if (
         not TENANT.fullmatch(str(payload["tenant_key"]))
         or not isinstance(modules, list)
         or not modules
         or len(modules) != len(set(modules))
-        or any(not MODULE.fullmatch(str(name)) or str(name).endswith("_legacy") for name in modules)
+        or not base_module.startswith(CUSTOMER_MODULE_PREFIX)
+        or any(
+            not MODULE.fullmatch(str(name))
+            or (str(name) != base_module and not str(name).startswith(base_module + "_"))
+            for name in modules
+        )
     ):
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_CUSTOMER_MODULES_INVALID")
     if payload["target_database"] != "sc_production" or payload["filestore_scope"] != "sc_production":

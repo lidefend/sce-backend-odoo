@@ -1,4 +1,7 @@
 services:
   odoo:
+    environment:
+      SC_LEGACY_FILE_ROOTS: /mnt/legacy-files
     volumes:
       - ${SC_CUSTOMER_ADDONS_ROOT:?SC_CUSTOMER_ADDONS_ROOT is required}:/mnt/customer-addons:ro
+      - ${SC_LEGACY_ATTACHMENTS_ROOT:?SC_LEGACY_ATTACHMENTS_ROOT is required}:/mnt/legacy-files:ro
