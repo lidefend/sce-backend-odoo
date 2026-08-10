@@ -3388,3 +3388,17 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   delivery directory, and generates a bound release-set lock. It performs zero
   database, service, container, product-image, filestore, or legacy-binary
   writes. Focused inventory tests and the release-tooling suite prove scope.
+
+## 2026-08-10 — PRODUCTION-MAINTENANCE-CONFIG-OVERRIDE
+
+- Branch / anchor: `fix/production-maintenance-config-override` from `f0f82e0`.
+- Formal Product Layer / Layer Target / Module: P4 short-lived production
+  tenant-payload maintenance runtime.
+- Reason: the locked rc.17 product runtime remains valid, but its embedded
+  maintenance validator predates the generic same-tenant history-extension
+  protocol. Rebuilding the whole product image is unnecessary for one
+  short-lived validation script.
+- Boundary: only tenant-payload maintenance containers may mount the validator
+  from an immutable `/opt/sce/deployment-tools/<sha>` root, read-only and bound
+  to `DEPLOYMENT_TOOL_SHA`. Normal Odoo/nginx runtime, product code, customer
+  payloads, databases, filestore, and historical binaries are unchanged.

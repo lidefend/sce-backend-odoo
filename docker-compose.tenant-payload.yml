@@ -2,3 +2,5 @@ services:
   odoo:
     group_add:
       - "${SC_TENANT_PAYLOAD_HOST_GID:?SC_TENANT_PAYLOAD_HOST_GID is required}"
+    volumes:
+      - ${SC_PRODUCTION_MAINTENANCE_CONFIG_OVERRIDE:?SC_PRODUCTION_MAINTENANCE_CONFIG_OVERRIDE is required}:/usr/local/bin/production_maintenance_config.py:ro
