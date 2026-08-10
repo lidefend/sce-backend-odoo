@@ -2134,6 +2134,7 @@ verify.docs.product_boundary: guard.prod.forbid
 verify.industry_module.product_boundary: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/industry_module_product_boundary_guard.py
 	@python3 scripts/verify/test_industry_module_product_boundary_guard.py
+	@python3 scripts/verify/test_material_plan_p2_extraction_migration.py
 	@python3 scripts/verify/industry_module_product_boundary_guard.py
 
 .PHONY: verify.user_module.product_boundary

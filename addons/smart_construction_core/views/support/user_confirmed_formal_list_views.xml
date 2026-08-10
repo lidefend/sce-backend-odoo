@@ -1,23 +1,22 @@
 <odoo>
     <record id="view_project_material_plan_user_confirmed_tree" model="ir.ui.view">
-        <field name="name">project.material.plan.user.confirmed.tree</field>
+        <!-- XML-ID retained for upgrade compatibility; runtime semantics are pure P1. -->
+        <field name="name">project.material.plan.product.tree</field>
         <field name="model">project.material.plan</field>
         <field name="arch" type="xml">
-            <tree string="材料计划" create="false" edit="false" delete="false" default_order="material_plan_document_date desc, material_plan_source_created_at asc, material_plan_document_no asc">
-                <field name="material_plan_status_display" string="单据状态" />
-                <field name="material_plan_document_no" string="单据编号" />
-                <field name="material_plan_document_date" string="单据日期" />
-                <field name="material_plan_arrival_date" string="到货时间" />
-                <field name="material_plan_material_name" string="采购材料名称" />
-                <field name="material_plan_specification" string="规格型号" />
-                <field name="material_plan_unit" string="单位" />
-                <field name="material_plan_quantity" string="数量" />
-                <field name="material_plan_material_alias" string="材料别名(设计/清单)" />
-                <field name="material_plan_note" string="备注" />
-                <field name="material_plan_attachment_text" string="附件" />
-                <field name="material_plan_project_name" string="项目名称" />
-                <field name="material_plan_source_created_by" string="录入人" />
-                <field name="material_plan_source_created_at" string="录入时间" />
+            <tree string="材料计划" create="false" edit="false" delete="false" default_order="date_plan desc, id desc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="date_plan" string="需用日期" />
+                <field name="material_name_summary" string="采购材料名称" />
+                <field name="material_spec_summary" string="规格型号" />
+                <field name="material_uom_summary" string="单位" />
+                <field name="total_plan_qty" string="计划数量" />
+                <field name="line_note_summary" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="project_id" string="项目名称" />
+                <field name="create_uid" string="创建人" />
+                <field name="create_date" string="创建时间" />
             </tree>
         </field>
     </record>

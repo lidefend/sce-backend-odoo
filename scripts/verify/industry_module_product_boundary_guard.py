@@ -138,6 +138,71 @@ def verify_customer_specific_runtime_view_boundary() -> list[str]:
     return errors
 
 
+def verify_material_plan_customer_field_boundary() -> list[str]:
+    """The P1 material-plan page must use canonical fields only."""
+    errors: list[str] = []
+    mixed_model = (
+        ADDONS
+        / "smart_construction_core"
+        / "models"
+        / "support"
+        / "direct_acceptance_formal_visible_fields.py"
+    )
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "project.material.plan"' in mixed_text:
+        errors.append(
+            "smart_construction_core: project.material.plan must not register P2 legacy-visible fields"
+        )
+
+    list_views = (
+        ADDONS
+        / "smart_construction_core"
+        / "views"
+        / "support"
+        / "user_confirmed_formal_list_views.xml"
+    )
+    list_text = list_views.read_text(encoding="utf-8", errors="ignore") if list_views.is_file() else ""
+    forbidden_fields = (
+        "material_plan_status_display",
+        "material_plan_document_no",
+        "material_plan_document_date",
+        "material_plan_arrival_date",
+        "material_plan_material_alias",
+        "material_plan_source_created_by",
+        "material_plan_source_created_at",
+    )
+    for field_name in forbidden_fields:
+        if field_name in list_text:
+            errors.append(
+                f"smart_construction_core: material-plan product list uses customer projection field {field_name}"
+            )
+    for field_name in ("state", "name", "date_plan", "material_name_summary", "project_id"):
+        if f'<field name="{field_name}"' not in list_text:
+            errors.append(
+                f"smart_construction_core: material-plan product list missing canonical field {field_name}"
+            )
+    migration = (
+        ADDONS
+        / "smart_construction_core"
+        / "migrations"
+        / "17.0.0.113"
+        / "pre-migration.py"
+    )
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in (
+        "project_material_plan",
+        "information_schema.columns",
+        "legacy_visible_%02d",
+        "MATERIAL_PLAN_P2_HISTORY_NOT_EXTRACTED",
+        "raise RuntimeError",
+    ):
+        if token not in migration_text:
+            errors.append(
+                f"smart_construction_core: material-plan P2 extraction preflight missing {token}"
+            )
+    return errors
+
+
 def verify_guard_metadata_product_language() -> list[str]:
     text = Path(__file__).read_text(encoding="utf-8", errors="ignore")
     forbidden_tokens = ("compatibility " + "stub",)
@@ -1594,6 +1659,7 @@ def main() -> int:
     errors: list[str] = []
     errors.extend(verify_manifest_shape())
     errors.extend(verify_customer_specific_runtime_view_boundary())
+    errors.extend(verify_material_plan_customer_field_boundary())
     errors.extend(verify_guard_metadata_product_language())
     errors.extend(verify_production_token_boundary())
     errors.extend(verify_legacy_temporary_account_boundary())

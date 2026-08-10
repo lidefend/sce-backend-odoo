@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_product_center`
-- generated_at: `2026-08-10T15:23:50.556404+00:00`
+- generated_at: `2026-08-10T15:37:53.084554+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin, wutao`
 

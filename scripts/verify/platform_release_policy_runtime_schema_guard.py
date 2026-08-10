@@ -87,6 +87,29 @@ def main() -> int:
             errors.append("customer-specific product view count must match XML-ID list")
         if customer_view_xmlids:
             errors.append("customer-specific product view XML-ID list must be empty")
+        material_plan_boundary = payload.get("material_plan_customer_field_boundary")
+        if not isinstance(material_plan_boundary, dict):
+            errors.append("material_plan_customer_field_boundary must be object")
+        else:
+            for key in ("registered_field_count", "remaining_physical_column_count"):
+                if not isinstance(material_plan_boundary.get(key), int):
+                    errors.append(f"material_plan_customer_field_boundary.{key} must be int")
+            for key in ("registered_fields", "remaining_physical_columns"):
+                value = material_plan_boundary.get(key)
+                if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+                    errors.append(f"material_plan_customer_field_boundary.{key} must be string list")
+            if material_plan_boundary.get("registered_field_count") != len(
+                material_plan_boundary.get("registered_fields") or []
+            ):
+                errors.append("material-plan registered field count must match field list")
+            if material_plan_boundary.get("remaining_physical_column_count") != len(
+                material_plan_boundary.get("remaining_physical_columns") or []
+            ):
+                errors.append("material-plan remaining column count must match column list")
+            if material_plan_boundary.get("registered_fields"):
+                errors.append("material-plan P2 legacy-visible registered field list must be empty")
+            if material_plan_boundary.get("remaining_physical_columns"):
+                errors.append("material-plan P2 legacy-visible physical column list must be empty")
         failures = payload.get("failures")
         if not isinstance(failures, list) or not all(isinstance(item, str) for item in failures):
             errors.append("failures must be string list")
