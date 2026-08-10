@@ -33,6 +33,7 @@ EXPECTED_CENTERS = [
     "施工管理", "财务中心", "税务中心", "报表中心", "组织行政",
 ]
 ALLOWED_MATURITY = {"GA", "PILOT", "ROADMAP", "INTERNAL"}
+EXPECTED_FORMAL_MENU_COUNT = 159
 REQUIRED_COST_XMLIDS = {
     "menu_sc_project_budget",
     "menu_sc_budget_alloc",
@@ -80,9 +81,9 @@ def main() -> int:
     strategy = locked_baseline.get("policy_strategy") or {}
     if strategy.get("mode") != "FULL_FORMAL_PRODUCT_SCOPE":
         errors.append("locked product policy must declare full formal product scope")
-    if strategy.get("effective_menu_count_per_product") != 150:
+    if strategy.get("effective_menu_count_per_product") != EXPECTED_FORMAL_MENU_COUNT:
         errors.append("locked product policy must record the exact full menu count")
-    if strategy.get("effective_capability_count_per_product") != 150:
+    if strategy.get("effective_capability_count_per_product") != EXPECTED_FORMAL_MENU_COUNT:
         errors.append("locked product policy must record the exact full capability count")
     if "油卡管理：财务中心 -> 组织行政" not in strategy.get("responsibility_boundary_updates", []):
         errors.append("locked product policy must record the oil-card responsibility boundary move")
@@ -103,17 +104,29 @@ def main() -> int:
         "smart_construction_core.menu_sc_safety_issue",
         "smart_construction_core.menu_sc_safety_rectification",
         "smart_construction_core.menu_sc_safety_recheck",
+        "smart_construction_core.menu_sc_boq_version",
+        "smart_construction_core.menu_sc_project_boq_root",
+        "smart_construction_core.menu_sc_boq_analysis",
+        "smart_construction_core.menu_sc_project_work_breakdown",
+        "smart_construction_core.menu_sc_wbs_plan_version",
+        "smart_construction_core.menu_sc_project_location_breakdown",
+        "smart_construction_core.menu_sc_project_contract_section",
+        "smart_construction_core.menu_sc_project_execution_scope",
+        "smart_construction_core.menu_sc_project_boq_allocation",
     }
     full_baseline_xmlids = set()
     for product in locked_baseline.get("products") or []:
         rows = [menu for group in product.get("menu_groups") or [] for menu in group.get("menus") or []]
         xmlids = {menu.get("menu_xmlid") for menu in rows}
         full_baseline_xmlids.update(xmlids)
-        if len(rows) != 150 or len(xmlids) != 150:
-            errors.append(f"{product.get('product_key')} full baseline must contain 150 unique menus")
+        if len(rows) != EXPECTED_FORMAL_MENU_COUNT or len(xmlids) != EXPECTED_FORMAL_MENU_COUNT:
+            errors.append(
+                f"{product.get('product_key')} full baseline must contain "
+                f"{EXPECTED_FORMAL_MENU_COUNT} unique menus"
+            )
         capabilities = product.get("capabilities") or []
         capability_xmlids = {row.get("menu_xmlid") for row in capabilities}
-        if len(capabilities) != 150 or capability_xmlids != xmlids:
+        if len(capabilities) != EXPECTED_FORMAL_MENU_COUNT or capability_xmlids != xmlids:
             errors.append(f"{product.get('product_key')} capabilities must exactly match the full menu baseline")
         missing_xmlids = sorted(required_full_scope_xmlids - xmlids)
         if missing_xmlids:

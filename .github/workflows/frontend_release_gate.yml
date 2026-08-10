@@ -62,14 +62,20 @@ jobs:
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
 
+      - name: Pin frontend Node toolchain
+        if: steps.risk.outputs.frontend_mode != 'skip'
+        uses: actions/setup-node@1e60f620b9541d119bece121f7f80470803c15b7
+        with:
+          node-version: 22.17.0
+
       - name: Restore content-addressed pnpm store
         if: steps.risk.outputs.frontend_mode != 'skip'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ~/.local/share/pnpm/store
-          key: pnpm-${{ runner.os }}-node20-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          key: pnpm-${{ runner.os }}-node22.17.0-${{ hashFiles('frontend/pnpm-lock.yaml') }}
           restore-keys: |
-            pnpm-${{ runner.os }}-node20-
+            pnpm-${{ runner.os }}-node22.17.0-
 
       - name: Restore content-addressed Playwright browser
         id: playwright-cache

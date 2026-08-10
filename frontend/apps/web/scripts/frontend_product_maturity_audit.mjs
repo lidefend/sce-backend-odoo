@@ -56,41 +56,46 @@ function pageType(url, mode, text) {
 function navigationFromPayload(payload) {
   const candidates = [payload, payload?.result, payload?.data, payload?.result?.data];
   for (const value of candidates) {
-    for (const key of ['release_navigation_v1', 'delivery_engine_v1']) {
-      const projection = value?.[key];
-      if (Array.isArray(projection?.nav)) return projection.nav;
-      if (Array.isArray(projection)) return projection;
-    }
+    const navigation = value?.navigation_v1;
+    if (Array.isArray(navigation?.nav)) return navigation.nav;
   }
   return null;
 }
 
 async function login(page, loginName) {
-  let navigation = [];
-  page.on('response', async (response) => {
+  let resolveNavigation;
+  const navigationReady = new Promise((resolve) => { resolveNavigation = resolve; });
+  const onIntentResponse = async (response) => {
     if (!response.url().includes('/api/v1/intent')) return;
     try {
       const requestPayload = JSON.parse(response.request().postData() || '{}');
       const payload = await response.json();
       const candidate = navigationFromPayload(payload);
       if (candidate) {
-        navigation = candidate;
         if (process.env.AUDIT_DEBUG_NAVIGATION === '1') {
           console.log(`[frontend-navigation-debug] login=${loginName} intent=${requestPayload.intent || ''} roots=${candidate.length} leaves=${flattenNavigation(candidate).filter((row) => row.category !== 'container').length}`);
         }
+        resolveNavigation(candidate);
       }
     } catch {}
-  });
-  await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const inputs = page.locator('input');
-  await inputs.nth(0).fill(loginName);
-  await inputs.nth(1).fill(password);
-  if (await inputs.nth(2).isEnabled()) await inputs.nth(2).fill(dbName);
-  await page.getByRole('button', { name: /^登录$/ }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
-  await page.locator('.layout-shell').waitFor({ timeout: 45000 });
-  if (!navigation.length) throw new Error(`NAVIGATION_MISSING:${loginName}`);
-  return navigation;
+  };
+  page.on('response', onIntentResponse);
+  try {
+    await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    const inputs = page.locator('input');
+    await inputs.nth(0).fill(loginName);
+    await inputs.nth(1).fill(password);
+    if (await inputs.nth(2).isEnabled()) await inputs.nth(2).fill(dbName);
+    await page.getByRole('button', { name: /^登录$/ }).click();
+    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
+    await page.locator('.layout-shell').waitFor({ timeout: 45000 });
+    return await Promise.race([
+      navigationReady,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`NAVIGATION_MISSING:${loginName}`)), 45000)),
+    ]);
+  } finally {
+    page.off('response', onIntentResponse);
+  }
 }
 
 function resolveNodeRoute(node) {

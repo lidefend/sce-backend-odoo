@@ -53,6 +53,19 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertNotIn("delivery_engine_v1", startup)
         self.assertNotIn("result.nav", startup)
 
+        audit = (
+            Path(__file__).resolve().parents[3]
+            / "frontend"
+            / "apps"
+            / "web"
+            / "scripts"
+            / "frontend_product_maturity_audit.mjs"
+        ).read_text(encoding="utf-8")
+        self.assertIn("value?.navigation_v1", audit)
+        self.assertIn("navigationReady", audit)
+        self.assertNotIn("value?.release_navigation_v1", audit)
+        self.assertNotIn("value?.delivery_engine_v1", audit)
+
 
 if __name__ == "__main__":
     unittest.main()
