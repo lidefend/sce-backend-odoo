@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- P1 administration-center wave one: publish only closed people/admin facts. -->
+    <data>
+        <record id="menu_sc_hr_admin_center" model="ir.ui.menu">
+            <field name="name">行政中心</field>
+            <field name="sequence">90</field>
+        </record>
+        <record id="menu_sc_admin_approval_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_people_payroll_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_document_admin_center" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_master_data_center" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_leave_request" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_seal_use_request" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_social_person_registration" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_social_registration" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_salary_registration" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_subsidy" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_bonus" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_company_document_archive" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_document_borrow" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_people_lifecycle_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_resource_capacity_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+
+        <record id="menu_sc_organization_department" model="ir.ui.menu">
+            <field name="name">部门管理</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_hr_admin_center"/>
+            <field name="sequence">10</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_sc_runtime_user_management" model="ir.ui.menu">
+            <field name="name">人员档案</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_hr_admin_center"/>
+            <field name="sequence">30</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_sc_certificate_registration" model="ir.ui.menu">
+            <field name="name">证书管理</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_hr_admin_center"/>
+            <field name="sequence">40</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="action_sc_payroll_management" model="ir.actions.act_window">
+            <field name="name">工资薪酬</field>
+            <field name="res_model">sc.hr.payroll.document</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="smart_construction_core.view_sc_hr_payroll_document_search"/>
+            <field name="domain">[('fact_type', 'in', ['salary_registration', 'subsidy', 'bonus'])]</field>
+            <field name="context">{}</field>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_initiator'), ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+        </record>
+        <menuitem id="menu_sc_payroll_management"
+                  name="工资薪酬"
+                  parent="smart_construction_core.menu_sc_hr_admin_center"
+                  action="smart_construction_core.action_sc_payroll_management"
+                  sequence="60"
+                  groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin"/>
+    </data>
+</odoo>

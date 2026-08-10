@@ -3490,3 +3490,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   renamed only; legacy report group containers become inactive. Static action
   identity, direct-L2, menu-contract and syntax guards must pass before any
   controlled runtime module upgrade.
+
+## 2026-08-10 — P1-ADMINISTRATION-CENTER-NAVIGATION-WAVE-ONE
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `d544273`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native navigation and
+  action adapter / `smart_construction_core`.
+- Reason / Why Here: department, internal personnel profile, certificate and
+  payroll facts already have secured industry models and views. One payroll
+  action aggregates salary, subsidy and bonus variants on their single source
+  model so the product exposes one standard second-level workspace.
+- Why Not Elsewhere: no customer-specific HR policy is encoded and no frontend
+  payroll calculation is introduced. Job, provident-fund, office-asset and
+  policy-document capabilities remain unpublished because their standard fact
+  or workspace boundary is incomplete.
+- Blast Radius / validation: existing department, personnel and certificate
+  XMLIDs are reparented/renamed; the new payroll action only filters existing
+  fact types. Superseded group and partial menus become inactive. Static
+  model/domain, direct-L2, menu-contract and syntax guards precede runtime use.
