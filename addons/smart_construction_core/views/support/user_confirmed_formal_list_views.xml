@@ -24,26 +24,17 @@
         <field name="name">sc.material.rfq.quote.formal.tree</field>
         <field name="model">sc.material.rfq</field>
         <field name="arch" type="xml">
-            <tree string="报价单" create="false" edit="false" delete="false">
-                <field name="quote_status_display" string="单据状态" />
-                <field name="quote_document_no" string="单据编号" />
-                <field name="quote_supplier_name" string="供应商名称" />
-                <field name="quote_inquiry_time" string="询价时间" />
-                <field name="quote_material_name" string="材料名称" />
-                <field name="quote_material_spec" string="规格型号" />
-                <field name="quote_quantity_display" string="数量" />
-                <field name="quote_tax_price_display" string="含税单价" />
-                <field name="quote_tax_amount_display" string="含税总金额" />
-                <field name="quote_total_quantity_display" string="总数量" />
-                <field name="quote_total_amount_display" string="总金额" />
-                <field name="quote_note_display" string="备注" />
-                <field name="quote_contact_name" string="联系人" />
-                <field name="quote_contact_phone" string="联系电话" />
-                <field name="quote_attachment_text" string="附件" />
-                <field name="quote_selected_text" string="是否中标" />
-                <field name="quote_project_name" string="项目名称" />
-                <field name="quote_source_created_by" string="录入人" />
-                <field name="quote_source_created_at" string="录入时间" />
+            <tree string="报价单" create="false" edit="false" delete="false" default_order="rfq_date desc, id desc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="selected_supplier_id" string="选定供应商" />
+                <field name="rfq_date" string="询价日期" />
+                <field name="due_date" string="报价截止日期" />
+                <field name="project_id" string="项目名称" />
+                <field name="owner_id" string="经办人" />
+                <field name="contact_name" string="联系人" optional="hide" />
+                <field name="contact_phone" string="联系电话" optional="hide" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" optional="hide" />
             </tree>
         </field>
     </record>

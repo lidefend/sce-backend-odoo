@@ -38,5 +38,6 @@
 
 ## 下一模型
 
-后续按相同方式审计 `sc.material.rfq`：先确认报价单 canonical 字段覆盖，再拆除
-`legacy_visible_*` 回退。不得一次性删除整个混合兼容文件。
+`sc.material.rfq` 已在下一批按相同模式完成。后续审计 `sc.material.inbound`：先核对
+入库核心事实、汇总字段与列表引用，再拆除 `legacy_visible_*` 回退。不得一次性删除整个
+混合兼容文件。

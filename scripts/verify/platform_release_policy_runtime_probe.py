@@ -209,21 +209,21 @@ def _customer_specific_product_views(env):
     return sorted(set(contaminated))
 
 
-def _material_plan_customer_field_boundary(env):
+def _customer_field_boundary(env, *, model_name, table_name):
     legacy_fields = ["legacy_acceptance_label", "legacy_acceptance_sort_id"] + [
         "legacy_visible_%02d" % index for index in range(1, 61)
     ]
-    registered = sorted(set(legacy_fields) & set(env["project.material.plan"]._fields))
+    registered = sorted(set(legacy_fields) & set(env[model_name]._fields))
     env.cr.execute(
         """
         SELECT column_name
           FROM information_schema.columns
          WHERE table_schema = 'public'
-           AND table_name = 'project_material_plan'
+           AND table_name = %s
            AND column_name = ANY(%s)
          ORDER BY column_name
         """,
-        [legacy_fields],
+        [table_name, legacy_fields],
     )
     retained_columns = [row[0] for row in env.cr.fetchall()]
     return {
@@ -306,7 +306,9 @@ def main():
             "smart_construction_core: customer-specific form views remain active in P1: %s"
             % ",".join(customer_specific_product_views)
         )
-    material_plan_customer_field_boundary = _material_plan_customer_field_boundary(env)
+    material_plan_customer_field_boundary = _customer_field_boundary(
+        env, model_name="project.material.plan", table_name="project_material_plan"
+    )
     if material_plan_customer_field_boundary["registered_fields"]:
         failures.append(
             "project.material.plan: P2 legacy-visible fields remain registered in P1: %s"
@@ -316,6 +318,19 @@ def main():
         failures.append(
             "project.material.plan: P2 legacy-visible physical columns remain after guarded extraction: %s"
             % ",".join(material_plan_customer_field_boundary["remaining_physical_columns"])
+        )
+    material_rfq_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.material.rfq", table_name="sc_material_rfq"
+    )
+    if material_rfq_customer_field_boundary["registered_fields"]:
+        failures.append(
+            "sc.material.rfq: P2 legacy-visible fields remain registered in P1: %s"
+            % ",".join(material_rfq_customer_field_boundary["registered_fields"])
+        )
+    if material_rfq_customer_field_boundary["remaining_physical_columns"]:
+        failures.append(
+            "sc.material.rfq: P2 legacy-visible physical columns remain after guarded extraction: %s"
+            % ",".join(material_rfq_customer_field_boundary["remaining_physical_columns"])
         )
 
     products = []
@@ -417,6 +432,7 @@ def main():
         "customer_specific_product_view_count": len(customer_specific_product_views),
         "customer_specific_product_view_xmlids": customer_specific_product_views,
         "material_plan_customer_field_boundary": material_plan_customer_field_boundary,
+        "material_rfq_customer_field_boundary": material_rfq_customer_field_boundary,
         "products": products,
         "failures": failures,
         "artifacts": {
