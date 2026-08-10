@@ -12,7 +12,8 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 IMAGE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
 SAFE_REHEARSAL_ENVIRONMENT = re.compile(
-    r"^(?:sc_)?(?:release|rc)[a-z0-9_]*rehearsal[a-z0-9_]*$"
+    r"^(?:(?:sc_)?(?:release|rc)[a-z0-9_]*rehearsal[a-z0-9_]*|"
+    r"sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8})$"
 )
 CONTRACT_VERSION = "final_image_real_plan.v2"
 COMMAND_CONTRACT = "release.production.tenant_payload.plan"

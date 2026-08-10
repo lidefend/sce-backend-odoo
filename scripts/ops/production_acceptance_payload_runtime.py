@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -90,6 +91,35 @@ def resume_failed_mode(action: str) -> str:
     return "1" if action == "import" else "0"
 
 
+def database_fingerprint(db_container: str, database: str) -> str:
+    dump = run(
+        [
+            "docker", "exec", db_container, "pg_dump", "-U", "odoo", "-d", database,
+            "--no-owner", "--no-privileges",
+        ]
+    )
+    normalized = "\n".join(
+        row for row in dump.splitlines()
+        if not row.startswith("\\restrict ") and not row.startswith("\\unrestrict ")
+    ) + "\n"
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def protected_counts(db_container: str, database: str) -> tuple[int, int]:
+    output = run(
+        [
+            "docker", "exec", db_container, "psql", "-U", "odoo", "-d", database,
+            "-Atc",
+            "select coalesce((select count(*) from sc_tenant_payload_import_batch),0); "
+            "select coalesce((select count(*) from sc_historical_payment_fact),0);",
+        ]
+    )
+    rows = [row.strip() for row in output.splitlines() if row.strip()]
+    if len(rows) != 2 or any(not row.isdigit() for row in rows):
+        raise PayloadRuntimeError("protected business counts are invalid")
+    return int(rows[0]), int(rows[1])
+
+
 def execute(
     restore_id: str,
     tenant_key: str,
@@ -108,8 +138,11 @@ def execute(
     resources = report.get("resources") or {}
     network = str(resources.get("network") or "")
     filestore = str(resources.get("filestore_volume") or "")
+    db_container = str(resources.get("db_container") or "")
     if not network.startswith(restore_id) or not filestore.startswith(restore_id):
         raise PayloadRuntimeError("acceptance resources escaped the restore namespace")
+    if not db_container.startswith(restore_id):
+        raise PayloadRuntimeError("acceptance database escaped the restore namespace")
 
     database = f"r10e_{restore_id}"
     runtime_root = Path(f"/data/backups/sc_production/acceptance-runtimes/{restore_id}")
@@ -152,6 +185,12 @@ def execute(
     maintenance_name = f"{restore_id}_payload_{action}"
     if container_exists(maintenance_name):
         raise PayloadRuntimeError("scoped payload maintenance container already exists")
+    before_digest = ""
+    before_batches = before_facts = 0
+    if action == "plan":
+        before_digest = database_fingerprint(db_container, database)
+        before_batches, before_facts = protected_counts(db_container, database)
+
     command = [
         "docker", "run", "--rm", "-i", "--name", maintenance_name,
         "--network", network,
@@ -193,6 +232,40 @@ def execute(
             "isolated_network": network,
         }
     )
+    if action == "plan":
+        after_digest = database_fingerprint(db_container, database)
+        after_batches, after_facts = protected_counts(db_container, database)
+        relationship_summaries = manifest.get("relationship_summaries") or {}
+        if not isinstance(relationship_summaries, dict) or any(
+            not isinstance(value, int) or value < 0
+            for value in relationship_summaries.values()
+        ):
+            raise PayloadRuntimeError("payload relationship summaries are invalid")
+        totals = result.get("totals") or {}
+        planned_records = sum(
+            int(totals.get(key) or 0) for key in ("create", "match", "update", "skip")
+        )
+        result.update(
+            {
+                "restore_id": restore_id,
+                "planned_records": planned_records,
+                "planned_relationships": sum(relationship_summaries.values()),
+                "payload_batches_before": before_batches,
+                "payload_batches_after": after_batches,
+                "historical_facts_before": before_facts,
+                "historical_facts_after": after_facts,
+                "business_state_digest_before": before_digest,
+                "business_state_digest_after": after_digest,
+            }
+        )
+        if (
+            result.get("database_write_count") != 0
+            or result.get("filestore_write_count") != 0
+            or before_digest != after_digest
+            or before_batches != after_batches
+            or before_facts != after_facts
+        ):
+            raise PayloadRuntimeError("payload plan changed isolated business state")
     return result
 
 

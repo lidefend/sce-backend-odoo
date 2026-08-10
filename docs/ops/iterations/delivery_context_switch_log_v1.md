@@ -3316,3 +3316,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   The project-manager delivery contract explicitly exposes BOQ analysis and
   cost plan menus and binds the ledger action to the cost-plan context; no SPA
   business rule or client action is introduced.
+
+## 2026-08-10 — FINAL-IMAGE-REAL-PLAN-EVIDENCE-PRODUCER
+
+- Branch / anchor: `release/rc16-final-plan-producer` from `bd97bd0`.
+- Formal Product Layer / Layer Target: P4 governed release delivery tooling.
+- Reason: candidate publication required `final-image-real-plan.json`, but the
+  repository only validated that evidence and had no governed producer; RC12
+  therefore depended on a repository-external one-off script.
+- Boundary: the new Make entry runs the existing read-only signed-payload plan
+  only against a production-disconnected restore namespace, fingerprints the
+  isolated database before and after, binds manifest relationship totals, and
+  atomically emits the exact candidate evidence contract. It does not import
+  payload data, connect to production, change frontend/business contracts, or
+  relax the zero-write publication gate.
+- Validation: runtime and evidence unit tests, governed restore-ID acceptance,
+  publication contract regression, Python compilation, and `git diff --check`.
