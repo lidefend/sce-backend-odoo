@@ -139,6 +139,11 @@ def walk_navigation(value: Any, path: tuple[str, ...] = ()) -> list[str]:
 
 
 def navigation_from_init(data: dict[str, Any]) -> list[str]:
+    navigation_v1 = data.get("navigation_v1")
+    if isinstance(navigation_v1, dict):
+        paths = walk_navigation(navigation_v1.get("nav"))
+        if paths:
+            return paths
     for key in ("nav", "menus", "navigation"):
         paths = walk_navigation(data.get(key))
         if paths:
