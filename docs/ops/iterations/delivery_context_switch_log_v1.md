@@ -3508,3 +3508,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   XMLIDs are reparented/renamed; the new payroll action only filters existing
   fact types. Superseded group and partial menus become inactive. Static
   model/domain, direct-L2, menu-contract and syntax guards precede runtime use.
+
+## 2026-08-10 — P1-PRODUCT-CONFIGURATION-NAVIGATION-WAVE-ONE
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `4d1fca0`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 governed configuration
+  navigation / `smart_construction_core` with `smart_core` authorities.
+- Reason / Why Here: form orchestration, approval policy and field policy have
+  stable runtime authorities, secured actions, version/audit boundaries and a
+  single product workbench. They can be exposed directly using the locked
+  product vocabulary without creating another configuration engine.
+- Why Not Elsewhere: tenant-specific values remain P3 and platform mechanics
+  remain P0. Data permission, system parameter and coding-rule menus stay
+  unpublished until dedicated, auditable product contracts exist.
+- Blast Radius / validation: existing menu/action XMLIDs are preserved and
+  reparented. Legacy configuration groups and the standalone custom-field
+  operation menu become inactive. Static authority, identity, direct-L2 and
+  syntax guards precede controlled runtime upgrade.
