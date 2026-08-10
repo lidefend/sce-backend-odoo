@@ -8,6 +8,7 @@
   ],
   "default_lane": "HIGH_RISK",
   "fast_paths": [
+    "VERSION",
     "*.md",
     "docs/**",
     ".github/ISSUE_TEMPLATE/**"
