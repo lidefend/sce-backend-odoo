@@ -311,6 +311,34 @@ class IndustryModuleProductBoundaryGuardTests(unittest.TestCase):
             errors = guard.verify_labor_usage_customer_field_boundary()
         self.assertTrue(any("must not register P2" in error for error in errors))
 
+    def test_material_rental_order_customer_field_boundary_rejects_legacy_extension(self):
+        tmp = tempfile.TemporaryDirectory()
+        root = Path(tmp.name)
+        module = root / "addons" / "smart_construction_core"
+        model_dir = module / "models" / "support"
+        core_model_dir = module / "models" / "core"
+        migration_dir = module / "migrations" / "17.0.0.122"
+        model_dir.mkdir(parents=True)
+        core_model_dir.mkdir(parents=True)
+        migration_dir.mkdir(parents=True)
+        (model_dir / "direct_acceptance_formal_visible_fields.py").write_text(
+            '_inherit = "sc.material.rental.order"', encoding="utf-8"
+        )
+        (core_model_dir / "material_rental.py").write_text(
+            "actual_return_date use_unit_name deposit_amount settlement_amount compensation_fee "
+            "repair_fee transport_fee deposit_deduction material_summary specification_summary "
+            "quantity_total attachment_ids",
+            encoding="utf-8",
+        )
+        (migration_dir / "pre-migration.py").write_text(
+            "sc_material_rental_order legacy_visible_%02d "
+            "MATERIAL_RENTAL_ORDER_P2_HISTORY_NOT_EXTRACTED raise RuntimeError",
+            encoding="utf-8",
+        )
+        with tmp, patch.object(guard, "ADDONS", root / "addons"):
+            errors = guard.verify_material_rental_order_customer_field_boundary()
+        self.assertTrue(any("must not register P2" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

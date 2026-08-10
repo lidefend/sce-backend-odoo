@@ -177,9 +177,33 @@ class ScMaterialRentalOrder(models.Model):
     bank_account = fields.Char(string="银行账号", related="supplier_id.sc_bank_account", store=True, readonly=True, index=True)
     rental_date = fields.Date(string="租赁日期", required=True, default=fields.Date.context_today, index=True)
     planned_return_date = fields.Date(string="计划退还日期", index=True)
+    actual_return_date = fields.Date(string="实际退还日期", index=True, tracking=True)
+    use_unit_name = fields.Char(string="使用单位")
     owner_id = fields.Many2one("res.users", string="经办人", default=lambda self: self.env.user, index=True)
     currency_id = fields.Many2one("res.currency", string="币种", required=True, default=lambda self: self.env.company.currency_id.id)
     amount_total = fields.Monetary(string="租赁金额", currency_field="currency_id", compute="_compute_amount_total", store=True)
+    deposit_amount = fields.Monetary(string="租赁押金", currency_field="currency_id")
+    compensation_fee = fields.Monetary(string="赔偿费", currency_field="currency_id")
+    repair_fee = fields.Monetary(string="维修费", currency_field="currency_id")
+    transport_fee = fields.Monetary(string="进出场费", currency_field="currency_id")
+    deposit_deduction = fields.Monetary(string="抵扣押金", currency_field="currency_id")
+    settlement_amount = fields.Monetary(
+        string="应结算金额",
+        currency_field="currency_id",
+        compute="_compute_settlement_amount",
+        store=True,
+        readonly=True,
+    )
+    material_summary = fields.Char(string="材料摘要", compute="_compute_line_summary", store=True, readonly=True)
+    specification_summary = fields.Char(string="规格摘要", compute="_compute_line_summary", store=True, readonly=True)
+    quantity_total = fields.Float(string="租赁数量", compute="_compute_line_summary", store=True, readonly=True)
+    attachment_ids = fields.Many2many(
+        "ir.attachment",
+        "sc_material_rental_order_attachment_rel",
+        "order_id",
+        "attachment_id",
+        string="附件",
+    )
     line_ids = fields.One2many("sc.material.rental.order.line", "order_id", string="租赁明细")
     state = fields.Selection(
         [("draft", "草稿"), ("active", "租赁中"), ("returned", "已退还"), ("settled", "已结算"), ("cancel", "已取消")],
@@ -198,6 +222,25 @@ class ScMaterialRentalOrder(models.Model):
     def _compute_amount_total(self):
         for record in self:
             record.amount_total = sum(record.line_ids.mapped("amount_total"))
+
+    @api.depends("amount_total", "compensation_fee", "repair_fee", "transport_fee", "deposit_deduction")
+    def _compute_settlement_amount(self):
+        for record in self:
+            record.settlement_amount = max(
+                (record.amount_total or 0.0)
+                + (record.compensation_fee or 0.0)
+                + (record.repair_fee or 0.0)
+                + (record.transport_fee or 0.0)
+                - (record.deposit_deduction or 0.0),
+                0.0,
+            )
+
+    @api.depends("line_ids.material_name", "line_ids.material_spec", "line_ids.qty")
+    def _compute_line_summary(self):
+        for record in self:
+            record.material_summary = "、".join(filter(None, record.line_ids.mapped("material_name")[:3])) or False
+            record.specification_summary = "、".join(filter(None, record.line_ids.mapped("material_spec")[:3])) or False
+            record.quantity_total = sum(record.line_ids.mapped("qty"))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -220,7 +263,7 @@ class ScMaterialRentalOrder(models.Model):
             if record.state != "active":
                 raise UserError(_("只有租赁中的租赁单可以退还。"))
             record._check_business_anchor()
-            record.write({"state": "returned"})
+            record.write({"state": "returned", "actual_return_date": record.actual_return_date or fields.Date.context_today(record)})
         return True
 
     def action_settle(self):

@@ -28,7 +28,7 @@
         <field name="name">租入</field>
         <field name="res_model">sc.material.rental.order</field>
         <field name="view_mode">tree,form</field>
-        <field name="domain">[('legacy_fact_type', '=', 'legacy_direct_lease_in')]</field>
+        <field name="domain">[('state', 'in', ['draft', 'active'])]</field>
         <field name="context">{'search_default_group_project': 1}</field>
         <field name="groups_id" eval="[(6, 0, [
             ref('smart_construction_core.group_sc_cap_material_read'),
@@ -41,7 +41,7 @@
         <field name="name">还租</field>
         <field name="res_model">sc.material.rental.order</field>
         <field name="view_mode">tree,form</field>
-        <field name="domain">[('legacy_fact_type', '=', 'legacy_direct_lease_return')]</field>
+        <field name="domain">[('state', 'in', ['returned', 'settled'])]</field>
         <field name="context">{'search_default_group_project': 1}</field>
         <field name="groups_id" eval="[(6, 0, [
             ref('smart_construction_core.group_sc_cap_material_read'),
@@ -172,10 +172,12 @@
                 <field name="project_id"/>
                 <field name="rental_date"/>
                 <field name="planned_return_date"/>
+                <field name="actual_return_date"/>
                 <field name="plan_id"/>
                 <field name="contract_id"/>
                 <field name="supplier_id"/>
                 <field name="amount_total" sum="租赁金额合计"/>
+                <field name="settlement_amount" sum="应结算金额合计"/>
                 <field name="currency_id" invisible="1"/>
                 <field name="owner_id"/>
                 <field name="state"/>
@@ -203,12 +205,16 @@
                             <field name="plan_id"/>
                             <field name="rental_date"/>
                             <field name="planned_return_date"/>
+                            <field name="actual_return_date" invisible="state not in ('returned', 'settled')"/>
+                            <field name="use_unit_name"/>
                         </group>
                         <group>
                             <field name="supplier_id"/>
                             <field name="contract_id"/>
                             <field name="owner_id"/>
                             <field name="amount_total" readonly="1"/>
+                            <field name="deposit_amount"/>
+                            <field name="settlement_amount" readonly="1"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
@@ -240,6 +246,18 @@
                         <page string="备注">
                             <field name="note" nolabel="1"/>
                         </page>
+                        <page string="退租结算">
+                            <group>
+                                <field name="compensation_fee"/>
+                                <field name="repair_fee"/>
+                                <field name="transport_fee"/>
+                                <field name="deposit_deduction"/>
+                                <field name="settlement_amount" readonly="1"/>
+                            </group>
+                        </page>
+                        <page string="附件">
+                            <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter/>
@@ -261,7 +279,6 @@
                 <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
                 <filter string="按供应商" name="group_supplier" context="{'group_by': 'supplier_id'}"/>
                 <filter string="按日期" name="group_rental_date" context="{'group_by': 'rental_date'}"/>
-                <filter string="按业务分类" name="group_legacy_acceptance_label" context="{'group_by': 'legacy_acceptance_label'}"/>
                 <filter string="按状态" name="group_state" context="{'group_by': 'state'}"/>
             </search>
         </field>

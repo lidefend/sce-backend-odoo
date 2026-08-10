@@ -162,22 +162,22 @@
         <field name="name">sc.material.rental.order.in.user.confirmed.tree</field>
         <field name="model">sc.material.rental.order</field>
         <field name="arch" type="xml">
-            <tree string="租入" create="false" edit="false" delete="false">
-                <field name="rental_order_status_display" string="单据状态" />
-                <field name="rental_order_document_no" string="单据编号" />
-                <field name="rental_order_document_date" string="单据日期" />
-                <field name="rental_order_partner_name" string="租赁单位" />
-                <field name="rental_order_use_unit_name" string="使用单位名称" />
-                <field name="rental_order_material_name" string="材料名称" />
-                <field name="rental_order_material_spec" string="规格型号" />
-                <field name="rental_order_quantity" string="数量" />
-                <field name="rental_order_unit_price" string="单价" />
-                <field name="rental_order_deposit_amount" string="租赁押金" />
-                <field name="rental_order_note" string="备注" />
-                <field name="rental_order_attachment_text" string="附件" />
-                <field name="rental_order_source_created_by" string="录入人" />
-                <field name="rental_order_source_created_at" string="录入时间" />
-                <field name="rental_order_project_name" string="项目名称" />
+            <tree string="租入" default_order="rental_date desc, create_date asc, name asc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="rental_date" string="单据日期" />
+                <field name="supplier_id" string="租赁单位" />
+                <field name="use_unit_name" string="使用单位名称" />
+                <field name="material_summary" string="材料名称" />
+                <field name="specification_summary" string="规格型号" />
+                <field name="quantity_total" string="数量" />
+                <field name="amount_total" string="租赁金额" />
+                <field name="deposit_amount" string="租赁押金" />
+                <field name="note" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="owner_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
+                <field name="project_id" string="项目名称" />
             </tree>
         </field>
     </record>
@@ -185,23 +185,22 @@
         <field name="name">sc.material.rental.order.return.user.confirmed.tree</field>
         <field name="model">sc.material.rental.order</field>
         <field name="arch" type="xml">
-            <tree string="还租" create="false" edit="false" delete="false">
-                <field name="rental_order_status_display" string="单据状态" />
-                <field name="rental_order_project_name" string="项目名称" />
-                <field name="rental_order_settlement_status" string="结算状态" />
-                <field name="rental_order_document_no" string="还租单号" />
-                <field name="rental_order_document_date" string="单据日期" />
-                <field name="rental_order_partner_name" string="租赁单位" />
-                <field name="rental_order_settlement_amount" string="单据结算金额" />
-                <field name="rental_order_compensation_fee" string="赔偿费" />
-                <field name="rental_order_repair_fee" string="维修费" />
-                <field name="rental_order_transport_fee" string="进出场费" />
-                <field name="rental_order_attachment_text" string="附件" />
-                <field name="rental_order_note" string="备注" />
-                <field name="rental_order_source_created_by" string="录入人" />
-                <field name="rental_order_source_created_at" string="录入时间" />
-                <field name="rental_order_deposit_deduction" string="抵扣押金" />
-                <field name="rental_order_use_unit_name" string="使用单位" />
+            <tree string="还租" default_order="actual_return_date desc, create_date asc, name asc">
+                <field name="state" string="单据状态" />
+                <field name="project_id" string="项目名称" />
+                <field name="name" string="还租单号" />
+                <field name="actual_return_date" string="退租日期" />
+                <field name="supplier_id" string="租赁单位" />
+                <field name="settlement_amount" string="单据结算金额" />
+                <field name="compensation_fee" string="赔偿费" />
+                <field name="repair_fee" string="维修费" />
+                <field name="transport_fee" string="进出场费" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="note" string="备注" />
+                <field name="owner_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
+                <field name="deposit_deduction" string="抵扣押金" />
+                <field name="use_unit_name" string="使用单位" />
             </tree>
         </field>
     </record>
@@ -501,15 +500,15 @@
     </record>
     <record id="action_sc_material_rental_in_acceptance" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_sc_material_rental_in_user_confirmed_tree" />
-        <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_in_user_confirmed_tree')})         ]" />
-        <field name="domain">[('legacy_acceptance_label', '=', '租入')]</field>
-        <field name="context">{'create': False, 'search_default_group_project': 1}</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_in_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_material_rental_order_form')})]" />
+        <field name="domain">[('state', 'in', ['draft', 'active'])]</field>
+        <field name="context">{'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_material_rental_return_acceptance" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_sc_material_rental_return_user_confirmed_tree" />
-        <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_return_user_confirmed_tree')})         ]" />
-        <field name="domain">[('legacy_acceptance_label', '=', '还租')]</field>
-        <field name="context">{'create': False, 'search_default_group_project': 1}</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_return_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_material_rental_order_form')})]" />
+        <field name="domain">[('state', 'in', ['returned', 'settled'])]</field>
+        <field name="context">{'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_salary_registration" model="ir.actions.act_window">
         <field name="name">项目管理人员工资登记</field>

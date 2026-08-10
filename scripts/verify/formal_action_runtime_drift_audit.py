@@ -52,10 +52,7 @@ EXPECTED_NON_EMPTY_ACTIONS = {
     "action_sc_settlement_order_income",
     "action_sc_settlement_order_expense",
 }
-FORMAL_ACCEPTANCE_LABEL_ACTIONS = {
-    "action_sc_material_rental_in_acceptance": "租入",
-    "action_sc_material_rental_return_acceptance": "还租",
-}
+FORMAL_ACCEPTANCE_LABEL_ACTIONS = {}
 EXPECTED_ACTION_CONTRACTS = {
     "action_sc_settlement_order_income": {
         "name": "收入合同结算",
@@ -150,6 +147,14 @@ EXPECTED_ACTION_CONTRACTS = {
         "res_model": "sc.labor.usage",
         "view_name": "sc.labor.usage.casual.user.confirmed.tree",
         "field_names": ["state", "name", "project_id", "usage_date", "contractor_id", "work_type", "worker_qty", "price_unit", "amount_total", "work_content", "attachment_ids", "settlement_state", "note", "recorder_id", "create_date"],
+    },
+    "action_sc_material_rental_in_acceptance": {
+        "name": "租入", "res_model": "sc.material.rental.order", "view_name": "sc.material.rental.order.in.user.confirmed.tree",
+        "field_names": ["state", "name", "rental_date", "supplier_id", "use_unit_name", "material_summary", "specification_summary", "quantity_total", "amount_total", "deposit_amount", "note", "attachment_ids", "owner_id", "create_date", "project_id"],
+    },
+    "action_sc_material_rental_return_acceptance": {
+        "name": "还租", "res_model": "sc.material.rental.order", "view_name": "sc.material.rental.order.return.user.confirmed.tree",
+        "field_names": ["state", "project_id", "name", "actual_return_date", "supplier_id", "settlement_amount", "compensation_fee", "repair_fee", "transport_fee", "attachment_ids", "note", "owner_id", "create_date", "deposit_deduction", "use_unit_name"],
     },
     "action_sc_material_inbound": {
         "name": "入库",
