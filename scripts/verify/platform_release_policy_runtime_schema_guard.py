@@ -189,6 +189,18 @@ def main() -> int:
                 errors.append("settlement order registered count mismatch")
             if settlement_boundary.get("remaining_physical_column_count") != len(physical or []):
                 errors.append("settlement order physical count mismatch")
+        equipment_boundary = payload.get("equipment_usage_customer_field_boundary")
+        if not isinstance(equipment_boundary, dict):
+            errors.append("equipment_usage_customer_field_boundary must be object")
+        else:
+            registered = equipment_boundary.get("registered_fields")
+            physical = equipment_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("equipment usage P2 boundary must be empty")
+            if equipment_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("equipment usage registered count mismatch")
+            if equipment_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("equipment usage physical count mismatch")
         expected_pass_through_models = {
             "sc.fund.account.operation",
             "sc.receipt.income",

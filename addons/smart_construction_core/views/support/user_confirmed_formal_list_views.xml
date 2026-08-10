@@ -138,23 +138,23 @@
         <field name="name">sc.equipment.usage.shift.formal.tree</field>
         <field name="model">sc.equipment.usage</field>
         <field name="arch" type="xml">
-            <tree string="机械台班记录" create="false" edit="false" delete="false" default_order="document_date desc, source_created_at asc, name asc">
+            <tree string="机械台班记录" default_order="usage_date desc, create_date asc, name asc">
                 <field name="state" string="单据状态" />
                 <field name="project_id" string="项目名称" />
                 <field name="name" string="单据编号" />
-                <field name="document_date" string="单据日期" />
+                <field name="usage_date" string="单据日期" />
                 <field name="supplier_id" string="租赁单位" />
-                <field name="former_supplier_name" string="曾用名单位" />
                 <field name="equipment_name" string="机械名称" />
                 <field name="specification" string="规格型号" />
                 <field name="uom_text" string="单位" />
-                <field name="work_hours" string="工作时间" />
+                <field name="usage_qty" string="使用台数" />
+                <field name="usage_hours" string="工作时间" />
                 <field name="price_unit" string="单价" />
                 <field name="amount" string="金额" />
                 <field name="attachment_ids" string="附件" widget="many2many_binary" />
                 <field name="note" string="备注" />
-                <field name="source_created_by" string="录入人" />
-                <field name="source_created_at" string="录入时间" />
+                <field name="recorder_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
