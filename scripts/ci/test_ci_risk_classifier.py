@@ -13,6 +13,12 @@ class CIRiskClassifierTests(unittest.TestCase):
     def test_documentation_is_fast(self) -> None:
         self.assertEqual(self.lane("docs/ops/runbook.md"), "FAST")
 
+    def test_version_only_change_is_fast_but_not_unclassified(self) -> None:
+        result = classify(["VERSION"], event_name="pull_request")
+        self.assertEqual(result.lane, "FAST")
+        self.assertEqual(result.professional_mode, "fast")
+        self.assertEqual(result.frontend_mode, "skip")
+
     def test_frontend_is_standard(self) -> None:
         result = classify(
             ["frontend/apps/web/src/pages/ProjectListPage.vue"],

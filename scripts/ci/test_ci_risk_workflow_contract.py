@@ -57,6 +57,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("steps.risk.outputs.backend_changed == 'true'", text)
         self.assertNotIn("pnpm -C frontend install", text)
         self.assertIn("make test.unit test.contract test.e2e.preflight", text)
+        self.assertIn("make verify.product.release.version", text)
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
 
