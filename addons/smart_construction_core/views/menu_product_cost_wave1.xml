@@ -2,6 +2,9 @@
 <odoo>
     <!-- P1 cost-center wave one: direct L2 workspaces backed by existing actions. -->
     <data>
+        <record id="menu_sc_project_wbs_cost" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_cost_forecast_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_cost_cashflow_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_cost_target_budget_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_cost_dynamic_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_cost_analysis_group_v2" model="ir.ui.menu"><field name="active">False</field></record>

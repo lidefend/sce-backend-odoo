@@ -57,6 +57,8 @@ def validate() -> list[str]:
     internal = records.get("menu_sc_config_center")
     if internal is None or (_fields(internal).get("name"), _fields(internal).get("sequence")) != ("系统管理（内部）", "990"):
         errors.append("system management must remain an explicitly internal non-primary entry")
+    if "menu_sc_user_acceptance_root" in records:
+        errors.append("customer acceptance belongs to the customer module and must not be declared by the product candidate")
     return errors
 
 

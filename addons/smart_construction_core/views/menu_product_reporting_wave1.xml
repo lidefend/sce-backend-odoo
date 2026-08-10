@@ -2,6 +2,8 @@
 <odoo>
     <!-- P1 report-center wave one: only unified, drillable report facts. -->
     <data>
+        <record id="menu_sc_business_entity" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_report_prediction_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_projection_root" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_business_analysis_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_cost_report_group" model="ir.ui.menu"><field name="active">False</field></record>

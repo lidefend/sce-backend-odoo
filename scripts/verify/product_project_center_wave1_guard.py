@@ -39,6 +39,9 @@ INCOMPLETE = {
     "menu_sc_labor_management_group",
     "menu_sc_equipment_management_group",
     "menu_sc_subcontract_management_group",
+    "menu_sc_field_mobile_roadmap_v2",
+    "menu_sc_bim_collaboration_roadmap_v2",
+    "menu_sc_supply_collaboration_roadmap_v2",
 }
 
 

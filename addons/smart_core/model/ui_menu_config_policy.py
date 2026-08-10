@@ -389,7 +389,25 @@ class UiMenuConfigPolicy(models.Model):
         policies_by_menu, runtime_source = self._runtime_menu_config_source_for_user(user=user)
         scene_target_resolver = MenuTargetInterpreterService(self.env)
 
+        def native_product_baseline_authoritative() -> bool:
+            tree = nav_fact.get("tree") if isinstance(nav_fact.get("tree"), list) else []
+            for node in tree:
+                if not isinstance(node, dict):
+                    continue
+                meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+                if str(meta.get("source") or "").strip() == "native_product_navigation_authority":
+                    return True
+            return False
+
+        product_baseline_authoritative = native_product_baseline_authoritative()
+
         def config_only_enabled() -> bool:
+            # P1 product navigation is established by the active ACL-visible
+            # native tree. P2 tenant/user configuration may explicitly
+            # customize a stable menu id, but absence of a P2 row must never
+            # delete a released P1 product menu.
+            if product_baseline_authoritative:
+                return False
             exempt_group_xmlids = call_extension_hook_first(
                 self.env,
                 "smart_core_menu_config_only_exempt_group_xmlids",
@@ -427,6 +445,7 @@ class UiMenuConfigPolicy(models.Model):
                 "moved_count": 0,
                 "parent_aligned_count": 0,
                 "config_only": config_only,
+                "product_baseline_authoritative": product_baseline_authoritative,
             }
             if not config_only:
                 return nav_fact, stats
@@ -482,6 +501,7 @@ class UiMenuConfigPolicy(models.Model):
             "moved_count": 0,
             "parent_aligned_count": 0,
             "config_only": config_only_enabled(),
+            "product_baseline_authoritative": product_baseline_authoritative,
         }
         move_targets = [
             {
@@ -720,7 +740,12 @@ class UiMenuConfigPolicy(models.Model):
             children = node.get("children")
             policy = policies_by_menu.get(normalized_menu_id)
             policy_matched_by_label = False
-            if not policy and not stats.get("config_only"):
+            # A native menu id is the stable product identity. Falling back to
+            # a label when that id has no policy lets an old tenant/user
+            # preference for a same-named legacy menu mutate a newly released
+            # product entry. Label matching is retained only for legacy facts
+            # that genuinely have no menu identity.
+            if not policy and not normalized_menu_id and not stats.get("config_only"):
                 labels = [
                     str(node.get("name") or "").strip(),
                     str(node.get("label") or "").strip(),
@@ -770,7 +795,7 @@ class UiMenuConfigPolicy(models.Model):
             policy = policies_by_menu.get(normalized_menu_id)
             if policy:
                 return policy
-            if stats.get("config_only"):
+            if stats.get("config_only") or normalized_menu_id:
                 return None
             labels = [
                 str(node.get("name") or "").strip(),

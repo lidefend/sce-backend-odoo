@@ -38,6 +38,24 @@ def validate() -> list[str]:
     approval = records.get("menu_sc_workbench_my_approval_fact")
     if approval is None or _fields(approval).get("active") != "False":
         errors.append("approval work must converge into the task surface instead of a duplicate menu")
+    action = records.get("action_sc_workbench_task_center")
+    action_data = _fields(action) if action is not None else {}
+    if action is None or action.attrib.get("model") != "ir.actions.act_window":
+        errors.append("workbench task center action is missing")
+    elif (
+        action_data.get("res_model") != "sc.workbench.item"
+        or action_data.get("view_mode") != "tree,form"
+        or "'my_todo'" not in action_data.get("domain", "")
+        or "'my_approval'" not in action_data.get("domain", "")
+    ):
+        errors.append("workbench task center must aggregate todo and approval facts")
+    todo = records.get("menu_sc_workbench_my_todo_fact")
+    todo_action = next(
+        (field.attrib.get("ref") for field in todo.findall("field") if field.attrib.get("name") == "action"),
+        None,
+    ) if todo is not None else None
+    if todo_action != "smart_construction_core.action_sc_workbench_task_center":
+        errors.append("待办事项 menu must bind the aggregate task-center action")
     return errors
 
 

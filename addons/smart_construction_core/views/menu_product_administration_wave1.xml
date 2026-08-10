@@ -21,6 +21,7 @@
         <record id="menu_sc_document_borrow" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_people_lifecycle_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_resource_capacity_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_fuel_card_archive_group" model="ir.ui.menu"><field name="active">False</field></record>
 
         <record id="menu_sc_organization_department" model="ir.ui.menu">
             <field name="name">部门管理</field>

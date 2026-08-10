@@ -1415,6 +1415,12 @@ def smart_core_business_root_menu_xmlid(env):
     return _hook_facts.business_root_menu_xmlid()
 
 
+def smart_core_native_navigation_authority(env, policy, role_surface):
+    """Keep the locked construction menu tree aligned with active Odoo facts."""
+    del env, policy, role_surface
+    return True
+
+
 def smart_core_relation_entry_policy(env, payload):
     payload = payload if isinstance(payload, dict) else {}
     model = _sc_text(payload.get("model"))

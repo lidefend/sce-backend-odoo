@@ -5,10 +5,11 @@
 
       Formal Product Layer: P1. Layer Target: L2 native navigation in
       smart_construction_core. This reuses existing standard actions and
-      groups, creates no business facts, and deliberately does not publish
-      incomplete contract-change or daily-contract-settlement entry points.
+      groups, creates no business facts, and publishes only the six verified
+      contract and settlement workspaces in the locked product baseline.
     -->
     <data>
+        <record id="menu_sc_contract_performance_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <!-- Hide superseded process groups without repurposing their XMLIDs or actions. -->
         <record id="menu_sc_construction_contract" model="ir.ui.menu">
             <field name="active">False</field>

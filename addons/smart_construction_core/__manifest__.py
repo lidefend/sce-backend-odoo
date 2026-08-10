@@ -2,7 +2,7 @@
 # pyright: reportUnusedExpression=false
 {
     'name': 'Smart Construction Core',
-    'version': '17.0.0.109',
+    'version': '17.0.0.110',
     'summary': 'Core module for construction enterprise management (Architecture 2.0)',
     'author': 'Leedefend',
     'depends': [
@@ -205,7 +205,6 @@
         'security/menu_tech_hide_patch.xml',
         'actions/project_native_action_overrides.xml',
         'views/menu_business_taxonomy.xml',
-        'views/menu_legacy_direct_project_acceptance.xml',
         'views/core/expense_business_fact_taxonomy_views.xml',
         'views/core/historical_payment_fact_views.xml',
         'views/menu_user_acceptance_cleanup.xml',

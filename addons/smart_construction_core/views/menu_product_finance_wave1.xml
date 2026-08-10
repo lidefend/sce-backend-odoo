@@ -2,6 +2,12 @@
 <odoo>
     <!-- P1 finance-center wave one: preserve existing menu/action identities. -->
     <data>
+        <record id="menu_project_funding_actual_event_allocation" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_noncash_business_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_historical_payment_fact" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_arrival_confirmation" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_finance_interfund_analysis" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_fund_forecast_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_receipt_payment_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_invoice_management_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_funding_plan_group" model="ir.ui.menu"><field name="active">False</field></record>

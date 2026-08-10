@@ -18,6 +18,9 @@
         <record id="menu_sc_tender_registration" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_tender_registration_fee" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_tender_opening" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_field_mobile_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_bim_collaboration_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_supply_collaboration_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
 
         <record id="menu_sc_schedule_delivery_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_quality_delivery_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
