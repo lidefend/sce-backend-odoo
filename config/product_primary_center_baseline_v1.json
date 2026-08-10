@@ -1,0 +1,46 @@
+{
+  "schema": "sce.product_primary_center_baseline.v1",
+  "baseline_id": "construction-product-primary-centers-20260810",
+  "status": "LOCKED",
+  "decision_date": "2026-08-10",
+  "formal_product_layer": "P1",
+  "layer_target": "L2",
+  "module": "smart_construction_core",
+  "scope": "TARGET_INFORMATION_ARCHITECTURE",
+  "runtime_migration_status": "NOT_STARTED",
+  "maximum_business_depth": 3,
+  "center_level_maturity_policy": "CAPABILITY_LEVEL_ONLY",
+  "primary_centers": [
+    {"key": "workbench", "sequence": 10, "name": "工作台", "responsibility": "个人任务、审批、提醒、预警与常用入口"},
+    {"key": "project", "sequence": 20, "name": "项目中心", "responsibility": "项目、WBS、施工、进度、质量、安全、物资与项目资料"},
+    {"key": "contract", "sequence": 30, "name": "合同中心", "responsibility": "收入与支出合同、分包、变更、计量、结算与履约"},
+    {"key": "cost", "sequence": 40, "name": "成本中心", "responsibility": "目标成本、预算、清单、实际成本、动态成本、预测与利润"},
+    {"key": "finance", "sequence": 50, "name": "财务中心", "responsibility": "收付款、资金计划、费用、保证金、资金与现金流"},
+    {"key": "tax", "sequence": 60, "name": "税务中心", "responsibility": "发票、预缴、抵扣、税务台账、申报与税务检查"},
+    {"key": "accounting", "sequence": 70, "name": "会计账务中心", "responsibility": "科目、凭证、账簿、期间结账、核算与报表底稿"},
+    {"key": "reporting", "sequence": 80, "name": "报表中心", "responsibility": "跨项目、合同、成本、资金、税务与经营分析"},
+    {"key": "administration", "sequence": 90, "name": "行政中心", "responsibility": "组织、人事、行政审批、证照、档案与行政主数据"},
+    {"key": "product_configuration", "sequence": 100, "name": "产品配置", "responsibility": "菜单、表单、字段、审批、权限、字典与功能开关配置"}
+  ],
+  "current_runtime_primary_centers": [
+    "工作台", "项目中心", "合同中心", "成本中心", "物资与分包",
+    "施工管理", "财务中心", "税务中心", "报表中心", "组织行政"
+  ],
+  "legacy_center_transitions": [
+    {"source": "物资与分包", "target": "项目中心", "rule": "执行类能力默认归入项目中心；合同、成本和付款结果分别投影到合同、成本与财务中心"},
+    {"source": "施工管理", "target": "项目中心", "rule": "施工执行能力作为项目全过程管理的二级能力归集"},
+    {"source": "组织行政", "target": "行政中心", "rule": "组织、人事与行政能力统一归集，权限治理边界保持不变"},
+    {"source": "产品配置", "target": "产品配置", "rule": "由独立治理入口提升为正式一级中心；系统管理继续保留为内部治理入口"},
+    {"source": "财务中心（会计核算能力）", "target": "会计账务中心", "rule": "完成能力清单和权限边界复核后，从资金财务职责中拆分会计核算能力"}
+  ],
+  "non_primary_centers": [
+    {"name": "系统管理", "classification": "INTERNAL_GOVERNANCE"}
+  ],
+  "constraints": [
+    "本基线锁定目标信息架构，不声明现有运行时菜单已经迁移",
+    "正式业务菜单最多三级，一级中心名称、顺序和数量不得由租户配置漂移",
+    "迁移默认保留 XMLID、action、权限和业务语义；任何破坏性变化必须另立 ADR",
+    "GA、PILOT 等成熟度只标注到二级或三级产品能力，不标注整个一级中心",
+    "在运行时迁移验收通过前，当前发布清单继续如实描述现网结构"
+  ]
+}

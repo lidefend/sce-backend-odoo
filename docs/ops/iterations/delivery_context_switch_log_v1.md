@@ -3352,3 +3352,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   archive config ID. Focused tests, the complete backup/restore tooling
   contract, Python compilation, and a real idempotent production sync prove
   containment; no service, container, volume, or database is changed.
+
+## 2026-08-10 — PRODUCT-PRIMARY-CENTER-BASELINE-V1
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `60c36937`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 /
+  `smart_construction_core`.
+- Reason / Why Here: the formal construction product needed one locked target
+  for its ten business primary centers before any menu migration could safely
+  proceed. The target is a product-information-architecture fact, not a
+  tenant configuration or a frontend-only convention.
+- Why Not Elsewhere: P0 must not own construction semantics; P2 must not set
+  the industry default; P3 must not alter the product center count or order;
+  P4 does not own long-lived product truth.
+- Blast Radius / validation: only the target contract, its fail-closed guard,
+  release-snapshot relationship, and product documentation are changed. The
+  current runtime menu, XMLID, action, route, permission, database, and
+  deployed environment remain untouched and are explicitly marked
+  `MIGRATION_PENDING`.
