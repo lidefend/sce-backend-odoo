@@ -26,10 +26,7 @@ ALLOWED_UNDECLARED_XML = {
         "views/res_users_views.xml": "legacy user-form experiment; enterprise/user module owns user profile surface",
         "views/support/partner_acceptance_product_menu_policy.xml": "historical acceptance policy; not part of formal runtime menu policy",
     },
-    "smart_construction_seed": {
-        "data/sc_seed_login_env.xml": "scenario login flag; seed hook gates scenario mode explicitly",
-        "data/sc_seed_partner.xml": "scenario partner seed; scenario steps must run through the guarded seed registry",
-    },
+    "smart_construction_seed": {},
 }
 
 FORBIDDEN_MANIFEST_XML = {
@@ -153,9 +150,7 @@ def verify_production_token_boundary() -> list[str]:
 
 
 def verify_legacy_temporary_account_boundary() -> list[str]:
-    allowed_hits = {
-        "addons/smart_construction_core/models/support/runtime_user_management.py": 1,
-    }
+    allowed_hits = {}
     errors: list[str] = []
     scan_roots = (
         ADDONS / "smart_construction_core",
@@ -289,12 +284,9 @@ def verify_business_category_alias_placeholder_boundary() -> list[str]:
 
 def verify_historical_verify_script_wording() -> list[str]:
     paths = (
-        ROOT / "scripts" / "verify" / "project_legacy_fact_browser_acceptance.js",
         ROOT / "scripts" / "verify" / "model_view_standardization_plan.py",
         ROOT / "scripts" / "verify" / "product_menu_catalog_runtime_audit.py",
         ROOT / "scripts" / "verify" / "business_fact_backfill_audit.py",
-        ROOT / "scripts" / "verify" / "legacy_direct_direct_project_acceptance_menu_probe.py",
-        ROOT / "scripts" / "verify" / "legacy_direct_current_user_menu_dump.py",
     )
     errors: list[str] = []
     for path in paths:
@@ -1241,35 +1233,32 @@ def verify_budget_historical_facade_boundary() -> list[str]:
     return errors
 
 
-def verify_work_breakdown_historical_facade_boundary() -> list[str]:
+def verify_work_breakdown_canonical_model_boundary() -> list[str]:
     path = ADDONS / "smart_construction_core" / "models" / "support" / "work_breakdown.py"
     if not path.is_file():
-        return ["smart_construction_core: work breakdown historical model facade missing"]
+        return ["smart_construction_core: canonical work breakdown model missing"]
     text = path.read_text(encoding="utf-8", errors="ignore")
     required_fragments = {
-        "class ProjectWbs(models.Model):",
-        "历史模型门面：将 project.wbs 指向统一的工程结构表。",
-        '_name = "project.wbs"',
-        '_description = "工程结构历史模型门面"',
-        '_inherit = "construction.work.breakdown"',
-        '_table = "construction_work_breakdown"',
+        "class ConstructionWorkBreakdown(models.Model):",
+        '_name = "construction.work.breakdown"',
+        '_description = "项目管理 WBS"',
+        '_parent_name = "parent_id"',
+        'plan_id = fields.Many2one("construction.wbs.plan"',
+        'parent_id = fields.Many2one(\n        "construction.work.breakdown",',
     }
     errors: list[str] = []
     for fragment in sorted(required_fragments):
         if text.count(fragment) != 1:
             errors.append(
-                "smart_construction_core: project.wbs historical facade anchor "
+                "smart_construction_core: canonical WBS model anchor "
                 f"must appear exactly once: {fragment!r}"
             )
-    forbidden_fragments = (
-        "兼容层：将历史的 project.wbs",
-        "工程结构兼容层",
-    )
+    forbidden_fragments = ('_name = "project.wbs"', "class ProjectWbs(models.Model):")
     for fragment in forbidden_fragments:
         if fragment in text:
             errors.append(
-                "smart_construction_core: project.wbs facade must use historical-model "
-                f"boundary wording, not generic compatibility wording {fragment!r}"
+                "smart_construction_core: removed project.wbs facade must not return: "
+                f"{fragment!r}"
             )
     return errors
 
@@ -1341,39 +1330,26 @@ def verify_sc_workflow_historical_runtime_boundary() -> list[str]:
     return errors
 
 
-def verify_legacy_purchase_contract_recovery_approval_boundary() -> list[str]:
-    path = ADDONS / "smart_construction_core" / "models" / "support" / "legacy_purchase_contract_fact.py"
+def verify_material_purchase_request_canonical_boundary() -> list[str]:
+    legacy_path = ADDONS / "smart_construction_core" / "models" / "support" / "legacy_purchase_contract_fact.py"
+    path = ADDONS / "smart_construction_core" / "models" / "core" / "material_acceptance.py"
     if not path.is_file():
-        return ["smart_construction_core: legacy purchase contract fact model missing"]
+        return ["smart_construction_core: canonical material purchase request model missing"]
     text = path.read_text(encoding="utf-8", errors="ignore")
     required_fragments = {
-        "allow_legacy_contract_workflow",
-        "历史采购/一般合同事实只作为旧库承载，不再发起新系统审批。",
-        "历史采购/一般合同事实尚未完成历史事实审批恢复流程。",
-        "历史采购/一般合同事实已启用历史事实审批恢复，但没有匹配的统一审批规则，请检查业务审批配置。",
-        "历史采购/一般合同事实已经在历史事实审批恢复流程中，请等待审批完成。",
+        'class ScMaterialPurchaseRequest(models.Model):',
+        '_name = "sc.material.purchase.request"',
+        'def action_submit(self):',
+        'def action_approve(self):',
     }
     errors: list[str] = []
+    if legacy_path.exists():
+        errors.append("smart_construction_core: removed legacy purchase contract fact model must not return")
     for fragment in sorted(required_fragments):
         if text.count(fragment) < 1:
             errors.append(
-                "smart_construction_core: legacy purchase contract approval recovery "
+                "smart_construction_core: canonical material purchase boundary "
                 f"boundary missing anchor {fragment!r}"
-            )
-    if text.count("历史采购/一般合同事实尚未完成历史事实审批恢复流程。") != 2:
-        errors.append(
-            "smart_construction_core: legacy purchase contract approval recovery "
-            "must guard both manual approval and tier callback paths"
-        )
-    forbidden_fragments = (
-        "兼容审批流程",
-        "兼容审批",
-    )
-    for fragment in forbidden_fragments:
-        if fragment in text:
-            errors.append(
-                "smart_construction_core: legacy purchase contract fact must use "
-                f"historical approval recovery wording, not generic compatibility wording {fragment!r}"
             )
     return errors
 
@@ -1563,6 +1539,34 @@ def verify_custom_security_policy_role_login_boundary() -> list[str]:
     return errors
 
 
+def verify_industry_contract_migration_scope() -> list[str]:
+    path = (
+        ADDONS
+        / "smart_construction_core"
+        / "migrations"
+        / "17.0.0.108"
+        / "post-migration.py"
+    )
+    if not path.is_file():
+        return ["smart_construction_core: missing scoped P1 contract source-status migration"]
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    required = (
+        '("module", "=", "smart_construction_core")',
+        '("model", "=", "ui.business.config.contract")',
+        '("id", "in", industry_contract_ids)',
+    )
+    errors = [
+        "smart_construction_core: P1 contract migration must scope writes through its own XML-ID namespace"
+        for token in required
+        if token not in text
+    ]
+    if 'env["res.users"]' in text or '"groups_id"' in text:
+        errors.append(
+            "smart_construction_core: P1 contract migration must not rewrite external user or role data"
+        )
+    return errors
+
+
 def main() -> int:
     errors: list[str] = []
     errors.extend(verify_manifest_shape())
@@ -1603,16 +1607,17 @@ def main() -> int:
     errors.extend(verify_core_runtime_demo_residual_allowlist())
     errors.extend(verify_project_execution_readiness_precheck_boundary())
     errors.extend(verify_budget_historical_facade_boundary())
-    errors.extend(verify_work_breakdown_historical_facade_boundary())
+    errors.extend(verify_work_breakdown_canonical_model_boundary())
     errors.extend(verify_state_machine_historical_alias_boundary())
     errors.extend(verify_sc_workflow_historical_runtime_boundary())
-    errors.extend(verify_legacy_purchase_contract_recovery_approval_boundary())
+    errors.extend(verify_material_purchase_request_canonical_boundary())
     errors.extend(verify_platform_admin_facade_boundary())
     errors.extend(verify_project_showcase_legacy_alias_boundary())
     errors.extend(verify_core_extension_historical_label_boundary())
     errors.extend(verify_seed_showcase_product_fields())
     errors.extend(verify_seed_product_language_boundary())
     errors.extend(verify_custom_security_policy_role_login_boundary())
+    errors.extend(verify_industry_contract_migration_scope())
 
     if errors:
         print("[industry_module_product_boundary_guard] FAIL", file=sys.stderr)

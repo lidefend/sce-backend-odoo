@@ -262,7 +262,7 @@ def native_config_delivery_groups(env) -> list[dict[str, Any]]:
             visit(child, [*ancestors, _text(node.get("label"))])
 
     for node in native_config_app_children(env):
-        visit(node, ["智慧施工管理平台", root_label])
+        visit(node, [root_label])
     if not menus:
         return []
     return [

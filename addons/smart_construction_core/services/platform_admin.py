@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from odoo.addons.smart_core.security.platform_admin import (
     BREAK_GLASS_TECHNICAL_ADMIN_GROUP,
-    LEGACY_PLATFORM_ADMIN_GROUP,
     PLATFORM_ADMIN_GROUP,
     PLATFORM_CONFIGURATION_ADMIN_GROUP,
     SECURITY_ADMIN_GROUP,
@@ -22,7 +21,6 @@ from odoo.addons.smart_core.security.platform_admin import (
 
 __all__ = [
     "BREAK_GLASS_TECHNICAL_ADMIN_GROUP",
-    "LEGACY_PLATFORM_ADMIN_GROUP",
     "PLATFORM_ADMIN_GROUP",
     "PLATFORM_CONFIGURATION_ADMIN_GROUP",
     "SECURITY_ADMIN_GROUP",

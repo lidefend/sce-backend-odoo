@@ -4,20 +4,20 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 HOME = ROOT / "frontend/apps/web/src/views/HomeView.vue"
-SURFACE = ROOT / "frontend/apps/web/src/components/role-home/ContractRoleHome.vue"
-RUNTIME = ROOT / "frontend/apps/web/src/composables/shared-surface/useContractRoleHome.ts"
+SURFACE = ROOT / "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+RUNTIME = ROOT / "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts"
 
 
 def main() -> int:
     sources = {
         "HomeView.vue": HOME.read_text(encoding="utf-8", errors="ignore") if HOME.is_file() else "",
-        "ContractRoleHome.vue": SURFACE.read_text(encoding="utf-8", errors="ignore") if SURFACE.is_file() else "",
-        "useContractRoleHome.ts": RUNTIME.read_text(encoding="utf-8", errors="ignore") if RUNTIME.is_file() else "",
+        "WorkspaceHome.vue": SURFACE.read_text(encoding="utf-8", errors="ignore") if SURFACE.is_file() else "",
+        "useWorkspaceHome.ts": RUNTIME.read_text(encoding="utf-8", errors="ignore") if RUNTIME.is_file() else "",
     }
     required = {
-        "HomeView.vue": ["<ContractRoleHome />"],
-        "ContractRoleHome.vue": ["tasks.length", "summaries.length", "quickLinks.length", "recentItems.length"],
-        "useContractRoleHome.ts": ["usePageContract('home')", "fetchMyWorkSummary(", "session.menuTree", "session.activityPages"],
+        "HomeView.vue": ["<WorkspaceHome />"],
+        "WorkspaceHome.vue": ["tasks.length", "summaries.length", "quickLinks.length", "recentItems.length"],
+        "useWorkspaceHome.ts": ["usePageContract('home')", "fetchMyWorkSummary(", "session.menuTree", "session.activityPages"],
     }
     errors = []
     for scope, tokens in required.items():

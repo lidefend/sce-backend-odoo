@@ -163,8 +163,14 @@ def _check_action_domain():
     action = env.ref("smart_construction_core.action_sc_runtime_user_management")
     system_group = env.ref("base.group_system")
     platform_group_records = env["res.groups"]
-    for group in platform_admin_groups(env, include_legacy=True):
+    for group in platform_admin_groups(env):
         platform_group_records |= group
+    industry_config_group = env.ref(
+        "smart_construction_core.group_sc_cap_config_admin",
+        raise_if_not_found=False,
+    )
+    if industry_config_group:
+        platform_group_records |= industry_config_group
     domain = safe_eval(action.domain or "[]") if isinstance(action.domain, str) else (action.domain or [])
     users = env["res.users"].sudo().with_context(active_test=False).search(domain)
     errors = []

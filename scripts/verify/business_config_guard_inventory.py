@@ -296,7 +296,7 @@ OBSERVABILITY_SOURCE_MARKER_REQUIREMENTS = {
         ),
         "frontend/apps/web/src/pages/contractForm/useFormConfigSaveRuntime.ts": (
             "lowCodePrecheckWarnings",
-            "saveResult?.precheck?.warnings",
+            "responsePrecheckWarnings(saveResult)",
         ),
         "addons/smart_core/tests/test_form_field_configuration_params.py": (
             "test_contract_reload_hint_normalizes_scope",

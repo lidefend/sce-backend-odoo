@@ -39,12 +39,6 @@ class TestPlatformAdminBoundary(unittest.TestCase):
     def setUp(self):
         self.module = _load_module()
 
-    def test_platform_admin_default_excludes_legacy_industry_config_group(self):
-        user = _FakeUser({self.module.LEGACY_PLATFORM_ADMIN_GROUP})
-
-        self.assertFalse(self.module.user_is_platform_admin(user))
-        self.assertTrue(self.module.user_is_platform_admin(user, include_legacy=True))
-
     def test_platform_admin_default_excludes_system_admin_group(self):
         user = _FakeUser({self.module.SYSTEM_ADMIN_GROUP})
 
@@ -63,12 +57,9 @@ class TestPlatformAdminBoundary(unittest.TestCase):
         self.assertTrue(self.module.can_manage_system_configuration(user))
         self.assertFalse(self.module.has_customer_business_data_scope(user))
 
-    def test_legacy_config_admin_is_not_promoted_to_capability_discovery_admin(self):
-        user = _FakeUser({self.module.LEGACY_PLATFORM_ADMIN_GROUP})
-
-        self.assertFalse(self.module.can_discover_platform_capabilities(user))
-        self.assertFalse(self.module.can_manage_system_configuration(user))
-        self.assertFalse(self.module.has_customer_business_data_scope(user))
+    def test_platform_admin_module_has_no_industry_group_reference(self):
+        source = (Path(__file__).resolve().parents[1] / "security" / "platform_admin.py").read_text(encoding="utf-8")
+        self.assertNotIn("smart_construction_core", source)
 
     def test_security_admin_identity_is_independent(self):
         user = _FakeUser({self.module.SECURITY_ADMIN_GROUP})

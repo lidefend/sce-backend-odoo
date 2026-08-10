@@ -5,7 +5,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 HOME = ROOT / "frontend/apps/web/src/views/HomeView.vue"
-RUNTIME = ROOT / "frontend/apps/web/src/composables/shared-surface/useContractRoleHome.ts"
+RUNTIME = ROOT / "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts"
 REPORT_JSON = ROOT / "artifacts/backend/frontend_home_suggestion_semantics_report.json"
 REPORT_MD = ROOT / "docs/ops/audit/frontend_home_suggestion_semantics_report.md"
 
@@ -13,7 +13,7 @@ REPORT_MD = ROOT / "docs/ops/audit/frontend_home_suggestion_semantics_report.md"
 def main() -> int:
     home = HOME.read_text(encoding="utf-8", errors="ignore") if HOME.is_file() else ""
     runtime = RUNTIME.read_text(encoding="utf-8", errors="ignore") if RUNTIME.is_file() else ""
-    required_home = ["<ContractRoleHome />", "components/role-home/ContractRoleHome.vue"]
+    required_home = ["<WorkspaceHome />", "components/role-home/WorkspaceHome.vue"]
     required_runtime = [
         "fetchMyWorkSummary(",
         "result.product_workspace",

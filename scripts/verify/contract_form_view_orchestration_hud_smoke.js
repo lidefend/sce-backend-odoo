@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const SOURCE = path.join(ROOT, 'frontend/apps/web/src/pages/ContractFormPage.vue');
+const SOURCE = path.join(ROOT, 'frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts');
 const source = fs.readFileSync(SOURCE, 'utf8');
 
 function assertContains(token, message) {
@@ -15,9 +15,10 @@ function assertContains(token, message) {
 }
 
 assertContains('const viewOrchestrationHudSummary = computed(', 'missing view orchestration HUD summary');
-assertContains("label: 'view_orchestration_applied'", 'HUD must show whether orchestration applied');
-assertContains("label: 'view_orchestration_contracts'", 'HUD must show applied orchestration contract count');
-assertContains("label: 'view_orchestration_names'", 'HUD must show applied orchestration contract names');
-assertContains("label: 'legacy_policy_overlay'", 'HUD must show legacy field policy overlay state');
+assertContains('current.business_config_contracts', 'HUD must consume applied orchestration contracts');
+assertContains("label: '页面编排已应用'", 'HUD must show whether orchestration applied');
+assertContains("label: '页面编排配置数'", 'HUD must show applied orchestration contract count');
+assertContains("label: '页面编排名称'", 'HUD must show applied orchestration contract names');
+assertContains("label: '历史策略覆盖'", 'HUD must show historical field policy overlay state');
 
 console.log('[contract_form_view_orchestration_hud_smoke] PASS');

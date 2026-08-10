@@ -8,26 +8,23 @@ PLATFORM_CONFIGURATION_ADMIN_GROUP = PLATFORM_ADMIN_GROUP
 SECURITY_ADMIN_GROUP = "smart_core.group_smart_core_security_admin"
 SYSTEM_ADMIN_GROUP = "base.group_system"
 BREAK_GLASS_TECHNICAL_ADMIN_GROUP = SYSTEM_ADMIN_GROUP
-LEGACY_PLATFORM_ADMIN_GROUP = "smart_construction_core.group_sc_cap_config_admin"
 
 CAPABILITY_DISCOVERY_ADMIN_GROUPS = (
     PLATFORM_CONFIGURATION_ADMIN_GROUP,
 )
 
 
-def platform_admin_group_xmlids(*, include_legacy: bool = False, include_system: bool = False) -> list[str]:
+def platform_admin_group_xmlids(*, include_system: bool = False) -> list[str]:
     xmlids = [PLATFORM_ADMIN_GROUP]
-    if include_legacy:
-        xmlids.append(LEGACY_PLATFORM_ADMIN_GROUP)
     if include_system:
         xmlids.append(SYSTEM_ADMIN_GROUP)
     return xmlids
 
 
-def user_is_platform_admin(user, *, include_system: bool = False, include_legacy: bool = False) -> bool:
+def user_is_platform_admin(user, *, include_system: bool = False) -> bool:
     if not user:
         return False
-    for xmlid in platform_admin_group_xmlids(include_legacy=include_legacy, include_system=include_system):
+    for xmlid in platform_admin_group_xmlids(include_system=include_system):
         try:
             if user.has_group(xmlid):
                 return True
@@ -36,9 +33,9 @@ def user_is_platform_admin(user, *, include_system: bool = False, include_legacy
     return False
 
 
-def platform_admin_groups(env, *, include_legacy: bool = False, include_system: bool = False):
+def platform_admin_groups(env, *, include_system: bool = False):
     groups = []
-    for xmlid in platform_admin_group_xmlids(include_legacy=include_legacy, include_system=include_system):
+    for xmlid in platform_admin_group_xmlids(include_system=include_system):
         group = env.ref(xmlid, raise_if_not_found=False)
         if group:
             groups.append(group)
