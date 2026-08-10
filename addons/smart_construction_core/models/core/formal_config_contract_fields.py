@@ -559,32 +559,6 @@ class SubcontractRegisterFormalConfigContractFields(models.Model):
             {field_name: sources for field_name, (_label, sources) in _SUBCONTRACTREGISTER_FORMAL_CONFIG_FIELDS.items()},
         )
 
-_SUBCONTRACTREQUEST_FORMAL_CONFIG_FIELDS = {
-    'subcontract_request_subcontract_content_display': ('分包内容', ('subcontract_scope',)),
-    'subcontract_request_subcontractor_display': ('分包商', ('suggested_subcontractor_id',)),
-    'subcontract_request_subcontract_type_display': ('分包类型', ('subcontract_type_text',)),
-    'subcontract_request_source_created_by_display': ('录入人', ('source_created_by',)),
-    'subcontract_request_source_created_at_display': ('录入时间', ('source_created_at',)),
-    'subcontract_request_title_display': ('标题', ('name',)),
-}
-
-class SubcontractRequestFormalConfigContractFields(models.Model):
-    _inherit = 'sc.subcontract.request'
-
-    for _field_name, (_field_label, _field_sources) in _SUBCONTRACTREQUEST_FORMAL_CONFIG_FIELDS.items():
-        locals()[_field_name] = fields.Char(
-            string=_field_label,
-            compute="_compute_formal_config_contract_fields",
-            readonly=True,
-        )
-
-    @api.depends()
-    def _compute_formal_config_contract_fields(self):
-        _compute_formal_config_contract_fields(
-            self,
-            {field_name: sources for field_name, (_label, sources) in _SUBCONTRACTREQUEST_FORMAL_CONFIG_FIELDS.items()},
-        )
-
 _SUBCONTRACTSETTLEMENT_FORMAL_CONFIG_FIELDS = {
     'subcontract_settlement_payment_status_display': ('付款状态', ('state',)),
     'subcontract_settlement_document_no_display': ('单据编号', ('name',)),

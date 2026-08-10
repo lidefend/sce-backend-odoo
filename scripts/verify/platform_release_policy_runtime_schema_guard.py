@@ -153,6 +153,18 @@ def main() -> int:
             if material_inbound_boundary.get("remaining_physical_columns"):
                 errors.append("inbound P2 legacy-visible physical column list must be empty")
         pass_through_boundaries = payload.get("pass_through_customer_field_boundaries")
+        subcontract_boundary = payload.get("subcontract_request_customer_field_boundary")
+        if not isinstance(subcontract_boundary, dict):
+            errors.append("subcontract_request_customer_field_boundary must be object")
+        else:
+            registered = subcontract_boundary.get("registered_fields")
+            physical = subcontract_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("subcontract request P2 boundary must be empty")
+            if subcontract_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("subcontract request registered count mismatch")
+            if subcontract_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("subcontract request physical count mismatch")
         expected_pass_through_models = {
             "sc.fund.account.operation",
             "sc.receipt.income",

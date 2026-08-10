@@ -152,7 +152,9 @@ class IndustryModuleProductBoundaryGuardTests(unittest.TestCase):
         (view_dir / "user_confirmed_formal_list_views.xml").write_text(
             '<field name="document_status"/><field name="name"/><field name="inbound_date"/>'
             '<field name="supplier_id"/><field name="material_name_summary"/>'
-            '<field name="project_name_display"/>', encoding="utf-8"
+            '<field name="project_name_display"/>'
+            "<field name=\"domain\">[('legacy_acceptance_label', '=', '入库')]</field>",
+            encoding="utf-8",
         )
         (migration_dir / "pre-migration.py").write_text(
             "sc_material_inbound information_schema.columns legacy_visible_%02d "
@@ -161,6 +163,7 @@ class IndustryModuleProductBoundaryGuardTests(unittest.TestCase):
         with tmp, patch.object(guard, "ADDONS", root / "addons"):
             errors = guard.verify_material_inbound_customer_field_boundary()
         self.assertTrue(any("must not register P2" in error for error in errors))
+        self.assertTrue(any("must not filter on removed P2 label" in error for error in errors))
 
     def test_pass_through_customer_field_boundary_rejects_legacy_extension(self):
         tmp = tempfile.TemporaryDirectory()
@@ -181,6 +184,39 @@ class IndustryModuleProductBoundaryGuardTests(unittest.TestCase):
         with tmp, patch.object(guard, "ADDONS", root / "addons"):
             errors = guard.verify_pass_through_customer_field_boundary()
         self.assertTrue(any("sc.receipt.income" in error for error in errors))
+
+    def test_subcontract_request_customer_field_boundary_rejects_legacy_extension(self):
+        tmp = tempfile.TemporaryDirectory()
+        root = Path(tmp.name)
+        module = root / "addons" / "smart_construction_core"
+        model_dir = module / "models" / "support"
+        core_model_dir = module / "models" / "core"
+        view_dir = module / "views" / "support"
+        migration_dir = module / "migrations" / "17.0.0.117"
+        model_dir.mkdir(parents=True)
+        core_model_dir.mkdir(parents=True)
+        view_dir.mkdir(parents=True)
+        migration_dir.mkdir(parents=True)
+        (model_dir / "direct_acceptance_formal_visible_fields.py").write_text(
+            '_inherit = "sc.subcontract.request"', encoding="utf-8"
+        )
+        (core_model_dir / "formal_config_contract_fields.py").write_text(
+            "class SubcontractRequestFormalConfigContractFields: pass", encoding="utf-8"
+        )
+        (view_dir / "user_confirmed_formal_list_views.xml").write_text(
+            '<field name="state"/><field name="name"/><field name="project_id"/>'
+            '<field name="subcontract_scope"/><field name="amount_total"/><field name="attachment_ids"/>',
+            encoding="utf-8",
+        )
+        (migration_dir / "pre-migration.py").write_text(
+            "sc_subcontract_request information_schema.columns legacy_visible_%02d "
+            "SUBCONTRACT_REQUEST_P2_HISTORY_NOT_EXTRACTED raise RuntimeError",
+            encoding="utf-8",
+        )
+        with tmp, patch.object(guard, "ADDONS", root / "addons"):
+            errors = guard.verify_subcontract_request_customer_field_boundary()
+        self.assertTrue(any("must not register P2" in error for error in errors))
+        self.assertTrue(any("without display aliases" in error for error in errors))
 
 
 if __name__ == "__main__":

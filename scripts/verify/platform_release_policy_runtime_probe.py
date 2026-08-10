@@ -345,6 +345,19 @@ def main():
             "sc.material.inbound: P2 legacy-visible physical columns remain after guarded extraction: %s"
             % ",".join(material_inbound_customer_field_boundary["remaining_physical_columns"])
         )
+    subcontract_request_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.subcontract.request", table_name="sc_subcontract_request"
+    )
+    if subcontract_request_customer_field_boundary["registered_fields"]:
+        failures.append(
+            "sc.subcontract.request: P2 legacy-visible fields remain registered in P1: %s"
+            % ",".join(subcontract_request_customer_field_boundary["registered_fields"])
+        )
+    if subcontract_request_customer_field_boundary["remaining_physical_columns"]:
+        failures.append(
+            "sc.subcontract.request: P2 legacy-visible physical columns remain after guarded extraction: %s"
+            % ",".join(subcontract_request_customer_field_boundary["remaining_physical_columns"])
+        )
     pass_through_customer_field_boundaries = {}
     for model_name, table_name in (
         ("sc.fund.account.operation", "sc_fund_account_operation"),
@@ -461,6 +474,7 @@ def main():
         "material_plan_customer_field_boundary": material_plan_customer_field_boundary,
         "material_rfq_customer_field_boundary": material_rfq_customer_field_boundary,
         "material_inbound_customer_field_boundary": material_inbound_customer_field_boundary,
+        "subcontract_request_customer_field_boundary": subcontract_request_customer_field_boundary,
         "pass_through_customer_field_boundaries": pass_through_customer_field_boundaries,
         "products": products,
         "failures": failures,

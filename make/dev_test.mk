@@ -2142,6 +2142,7 @@ verify.industry_module.product_boundary: guard.prod.forbid
 	@python3 scripts/verify/test_material_rfq_p2_extraction_migration.py
 	@python3 scripts/verify/test_material_inbound_p2_extraction_migration.py
 	@python3 scripts/verify/test_pass_through_p2_extraction_migration.py
+	@python3 scripts/verify/test_subcontract_request_p2_extraction_migration.py
 	@python3 scripts/verify/industry_module_product_boundary_guard.py
 
 .PHONY: verify.user_module.product_boundary

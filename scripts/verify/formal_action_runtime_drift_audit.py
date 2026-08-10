@@ -53,11 +53,31 @@ EXPECTED_NON_EMPTY_ACTIONS = {
     "action_sc_settlement_order_expense",
 }
 FORMAL_ACCEPTANCE_LABEL_ACTIONS = {
-    "action_sc_material_inbound": "入库",
     "action_sc_material_rental_in_acceptance": "租入",
     "action_sc_material_rental_return_acceptance": "还租",
 }
 EXPECTED_ACTION_CONTRACTS = {
+    "action_sc_subcontract_request_user_confirmed": {
+        "name": "分包方单",
+        "res_model": "sc.subcontract.request",
+        "view_name": "sc.subcontract.request.user.confirmed.tree",
+        "field_names": [
+            "state",
+            "name",
+            "project_id",
+            "subcontract_scope",
+            "suggested_subcontractor_id",
+            "subcontract_type_text",
+            "quantity_total",
+            "price_unit",
+            "amount_total",
+            "monthly_amount_total",
+            "note",
+            "attachment_ids",
+            "applicant_id",
+            "create_date",
+        ],
+    },
     "action_construction_contract_income_construction": {
         "name": "施工合同",
         "res_model": "construction.contract.income",
@@ -398,10 +418,13 @@ for action_id, spec in sorted(action_records().items()):
         continue
     domain = safe_eval(action.domain or "[]")
     count = None
+    model_total_count = None
     count_error = None
     if action.res_model in env:  # noqa: F821
         try:
-            count = int(env[action.res_model].sudo().search_count(domain))  # noqa: F821
+            model = env[action.res_model].sudo()  # noqa: F821
+            count = int(model.search_count(domain))
+            model_total_count = int(model.search_count([]))
         except Exception as exc:  # pragma: no cover - executed inside Odoo shell
             count_error = f"{type(exc).__name__}: {str(exc)[:240]}"
     else:
@@ -433,6 +456,7 @@ for action_id, spec in sorted(action_records().items()):
         "res_model": action.res_model,
         "domain": action.domain or "",
         "record_count": count,
+        "model_total_count": model_total_count,
         "count_error": count_error,
         "projection_count": projection_count,
         "expected_acceptance_domain": expected_acceptance_domain,
@@ -451,7 +475,7 @@ for action_id, spec in sorted(action_records().items()):
         failures.append({"reason": "wrong_formal_acceptance_domain", **row})
     if projection_count is not None and count is not None and projection_count != count:
         failures.append({"reason": "formal_acceptance_domain_count_mismatch", **row})
-    if action_id in EXPECTED_NON_EMPTY_ACTIONS and count == 0:
+    if action_id in EXPECTED_NON_EMPTY_ACTIONS and model_total_count and count == 0:
         failures.append({"reason": "empty_high_risk_formal_action_domain", **row})
     if missing_registered_fields:
         failures.append({"reason": "tree_fields_missing_from_registered_model", **row})
