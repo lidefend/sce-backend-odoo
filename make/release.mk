@@ -21,7 +21,7 @@ RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RE
 .PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
 .PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.public_signup.close.plan release.production.public_signup.close.apply release.production.public_signup.close.verify release.production.user_activation.readiness release.production.user_activation.predeploy.plan release.production.user_activation.predeploy.apply release.production.user_activation.predeploy.verify release.production.single_user_activation.plan release.production.single_user_activation.apply release.production.single_user_activation.verify release.production.formal_modules.install_missing ops.user.password-reset ops.user.password-verify
-.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore production.acceptance.backup.remote_install production.acceptance.backup.remote_sync production.acceptance.image.remote_import production.acceptance.candidate.remote_import production.acceptance.restore.remote_verify production.acceptance.tenant.remote_install production.acceptance.clone.remote_activate production.acceptance.clone.remote_replace production.acceptance.clone.remote_publish verify.production.acceptance.payload production.acceptance.payload.remote.plan production.acceptance.payload.remote.import production.acceptance.payload.remote.verify production.acceptance.final_image.real_plan verify.production.backup_restore_contract
+.PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.tenant.delivery.artifacts.sync production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore production.acceptance.backup.remote_install production.acceptance.backup.remote_sync production.acceptance.image.remote_import production.acceptance.candidate.remote_import production.acceptance.restore.remote_verify production.acceptance.tenant.remote_install production.acceptance.clone.remote_activate production.acceptance.clone.remote_replace production.acceptance.clone.remote_publish verify.production.acceptance.payload production.acceptance.payload.remote.plan production.acceptance.payload.remote.import production.acceptance.payload.remote.verify production.acceptance.final_image.real_plan verify.production.backup_restore_contract
 .PHONY: verify.production.acceptance.harness acceptance.package.verify verify.production.promotion.config.preflight release.daily_dev.production_acceptance.harness release.production.acceptance.harness release.daily_dev.promotion.config.preflight release.production.promotion.config.preflight
 
 verify.release.guard: verify.repository.release_hygiene
@@ -404,6 +404,28 @@ production.deployment.tool.sync: guard.prod.danger
 		python3 scripts/ops/production_deployment_tool_sync.py \
 			--expected-live-main-sha "$(PRODUCTION_DEPLOYMENT_TOOL_SYNC_SHA)"
 
+production.tenant.delivery.artifacts.sync: guard.prod.danger
+	@test "$(CONFIRM_PRODUCTION_TENANT_ARTIFACT_SYNC)" = "YES_SYNC_SIGNED_TENANT_DELIVERY_ARTIFACTS" || (echo "exact signed tenant delivery artifact synchronization acknowledgement is required"; exit 2)
+	@ENV="$(ENV)" PROD_DANGER="$${PROD_DANGER:-}" \
+		CONFIRM_PRODUCTION_TENANT_ARTIFACT_SYNC="$(CONFIRM_PRODUCTION_TENANT_ARTIFACT_SYNC)" \
+		python3 scripts/ops/production_tenant_delivery_artifact_sync.py \
+			--tool-sha "$(PRODUCTION_TENANT_ARTIFACT_TOOL_SHA)" \
+			--delivery-id "$(PRODUCTION_TENANT_DELIVERY_ID)" \
+			--customer-package-root "$(PRODUCTION_TENANT_CUSTOMER_PACKAGE_ROOT)" \
+			--payload-root "$(PRODUCTION_TENANT_PAYLOAD_ROOT)" \
+			--public-key "$(PRODUCTION_TENANT_PAYLOAD_PUBLIC_KEY)" \
+			--release-version "$(PRODUCTION_TENANT_RELEASE_VERSION)" \
+			--product-sha "$(PRODUCTION_TENANT_PRODUCT_SHA)" \
+			--product-tree "$(PRODUCTION_TENANT_PRODUCT_TREE)" \
+			--product-image "$(PRODUCTION_TENANT_PRODUCT_IMAGE)" \
+			--product-image-digest "$(PRODUCTION_TENANT_PRODUCT_IMAGE_DIGEST)" \
+			--customer-sha "$(PRODUCTION_TENANT_CUSTOMER_SHA)" \
+			--customer-tree "$(PRODUCTION_TENANT_CUSTOMER_TREE)" \
+			--tenant-key "$(PRODUCTION_TENANT_KEY)" \
+			$(foreach module,$(PRODUCTION_TENANT_CUSTOMER_MODULES),--customer-module "$(module)") \
+			--payload-version "$(PRODUCTION_TENANT_PAYLOAD_VERSION)" \
+			--payload-schema-version "$(PRODUCTION_TENANT_PAYLOAD_SCHEMA_VERSION)"
+
 production.release.config.promote: guard.prod.danger
 	@test "$(CONFIRM_PRODUCTION_RELEASE_CONFIG_PROMOTE)" = "YES_PROMOTE_VERIFIED_PRODUCTION_RELEASE_CONFIG" || (echo "exact production release config promotion acknowledgement is required"; exit 2)
 	@test -n "$(PRODUCTION_RELEASE_CONFIG_PROMOTE_SHA)" -a -n "$(CURRENT_RELEASE_SOURCE_SHA)" -a -n "$(CURRENT_RELEASE_IMAGE_DIGEST)" || (echo "current release identities are required"; exit 2)
@@ -456,7 +478,7 @@ production.backup.timer.restore: guard.prod.danger
 			--restore-report "$(RESTORE_REPORT)"
 
 verify.production.backup_restore_contract:
-	@python3 -m py_compile scripts/release/production_backup_restore.py scripts/ops/production_acceptance_backup_sync.py scripts/ops/production_acceptance_clone_runtime.py scripts/ops/daily_acceptance_candidate_image_import.py scripts/ops/test_production_acceptance_backup_sync.py scripts/ops/test_production_acceptance_clone_runtime.py scripts/ops/test_daily_acceptance_candidate_image_import.py scripts/ops/production_backup_install.py scripts/ops/production_restore_tool_sync.py scripts/ops/test_production_restore_tool_sync.py scripts/ops/production_candidate_image_sync.py scripts/ops/test_production_candidate_image_sync.py scripts/ops/production_candidate_manifest_sync.py scripts/ops/test_production_candidate_manifest_sync.py scripts/ops/production_deployment_tool_sync.py scripts/ops/test_production_deployment_tool_sync.py scripts/ops/production_release_config_promote.py scripts/ops/test_production_release_config_promote.py scripts/ops/production_restore_cancel.py scripts/ops/test_production_restore_cancel.py scripts/release/test_production_backup_restore_contract.py
+	@python3 -m py_compile scripts/release/production_backup_restore.py scripts/ops/production_acceptance_backup_sync.py scripts/ops/production_acceptance_clone_runtime.py scripts/ops/daily_acceptance_candidate_image_import.py scripts/ops/test_production_acceptance_backup_sync.py scripts/ops/test_production_acceptance_clone_runtime.py scripts/ops/test_daily_acceptance_candidate_image_import.py scripts/ops/production_backup_install.py scripts/ops/production_restore_tool_sync.py scripts/ops/test_production_restore_tool_sync.py scripts/ops/production_candidate_image_sync.py scripts/ops/test_production_candidate_image_sync.py scripts/ops/production_candidate_manifest_sync.py scripts/ops/test_production_candidate_manifest_sync.py scripts/ops/production_deployment_tool_sync.py scripts/ops/test_production_deployment_tool_sync.py scripts/ops/production_tenant_delivery_artifact_sync.py scripts/ops/test_production_tenant_delivery_artifact_sync.py scripts/ops/production_release_config_promote.py scripts/ops/test_production_release_config_promote.py scripts/ops/production_restore_cancel.py scripts/ops/test_production_restore_cancel.py scripts/release/test_production_backup_restore_contract.py
 	@PYTHONPATH=scripts/release python3 scripts/ops/test_production_acceptance_backup_sync.py
 	@python3 scripts/ops/test_production_acceptance_clone_runtime.py
 	@python3 -m unittest scripts/ops/test_daily_acceptance_candidate_image_import.py
@@ -465,6 +487,7 @@ verify.production.backup_restore_contract:
 	@python3 scripts/ops/test_production_candidate_image_sync.py
 	@python3 scripts/ops/test_production_candidate_manifest_sync.py
 	@python3 scripts/ops/test_production_deployment_tool_sync.py
+	@python3 scripts/ops/test_production_tenant_delivery_artifact_sync.py
 	@python3 scripts/ops/test_production_release_config_promote.py
 	@python3 scripts/ops/test_production_restore_cancel.py
 

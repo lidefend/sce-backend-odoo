@@ -3370,3 +3370,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   tooling tests, manifest tests, isolated signed-payload verification, product
   zero-history verification, authorized byte comparison, and unauthorized 403
   prove containment.
+
+## 2026-08-10 — PRODUCTION-TENANT-ARTIFACT-CUSTODY-SYNC
+
+- Branch / anchor: `fix/production-tenant-artifact-sync` from `0da2ecf`.
+- Formal Product Layer / Layer Target / Module: P4 governed tenant-delivery
+  transport in `scripts/ops/production_tenant_delivery_artifact_sync.py` and
+  `make/release.mk`.
+- Reason / Why Here: production already had fail-closed package preparation,
+  module install, payload import, and verification, but no governed route from
+  signed external artifacts into production custody; direct `scp` is forbidden.
+- Why Not Elsewhere: P0/P1 modules, the product image, frontend, product
+  filestore, and the P2 module must not own customer payload transport.
+- Blast Radius / validation: only an exact-confirmation production filesystem
+  target is added. It checks local and remote checksums, forbids symlinks,
+  incrementally resumes into one scoped staging root, atomically freezes one
+  delivery directory, and generates a bound release-set lock. It performs zero
+  database, service, container, product-image, filestore, or legacy-binary
+  writes. Focused inventory tests and the release-tooling suite prove scope.
