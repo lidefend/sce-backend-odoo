@@ -228,6 +228,7 @@
         'views/menu_product_configuration_wave1.xml',
         'views/menu_product_project_wave1.xml',
         'views/menu_product_workbench_wave1.xml',
+        'views/menu_product_primary_center_candidate_v1.xml',
         'data/hr_payroll_form_productization_contract.xml',
         'data/office_admin_form_productization_contract.xml',
         'data/document_admin_form_productization_contract.xml',

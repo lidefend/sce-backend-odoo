@@ -3559,3 +3559,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast Radius / validation: three existing menu/action identities are
   reparented/renamed and duplicate project/approval entries become inactive.
   Static direct-L2 and identity guards precede controlled runtime upgrade.
+
+## 2026-08-10 — P1-PRIMARY-CENTER-SOURCE-CANDIDATE-CLOSEOUT
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `75e8861`.
+- Formal Product Layer / Layer Target / Module: P1 / locked primary-center
+  source candidate / `smart_construction_core`.
+- Reason / Why Here: all navigation waves require one final load-order authority
+  for the exact ten-center names and sequences. Accounting needs a stable XMLID
+  without an invented action, while system management remains internal.
+- Why Not Elsewhere: P0 cannot own construction product information
+  architecture; P2/P3 cannot drift primary-center identity or order; P4 may
+  validate but cannot become runtime menu authority.
+- Blast Radius / validation: final menu metadata only. The accounting root is
+  actionless and childless, so it remains invisible until real capabilities
+  arrive. A candidate guard enforces load order and the locked baseline before
+  controlled module upgrade and browser evidence.
