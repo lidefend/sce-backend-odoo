@@ -73,24 +73,26 @@
           @keydown.enter.prevent="$emit('search-submit')"
           @keydown.esc="searchMenuOpen = false"
         />
-        <button
+        <ScButton
           class="toolbar-search-submit"
           type="button"
+          variant="secondary"
           :disabled="loading"
           @click="$emit('search-submit')"
         >
           <ScIcon name="search" :size="16" />
           {{ uiLabel('search_submit', '搜索') }}
-        </button>
-        <button
+        </ScButton>
+        <ScButton
           v-if="searchValue"
           class="toolbar-search-clear"
           type="button"
+          variant="ghost"
           :disabled="loading"
           @click="$emit('clear-search')"
         >
           {{ clearLabel }}
-        </button>
+        </ScButton>
         <button
           class="search-menu-toggle"
           type="button"
@@ -308,16 +310,17 @@
     </div>
 
     <div v-if="canCreateRecord" class="toolbar-actions">
-      <button class="contract-chip primary" type="button" :disabled="loading" @click="$emit('create')">
+      <ScButton variant="primary" type="button" :disabled="loading" @click="$emit('create')">
         <ScIcon name="plus" :size="16" />
         {{ createLabel }}
-      </button>
+      </ScButton>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 
 type SearchChip = { key: string; label: string };
@@ -635,6 +638,12 @@ onBeforeUnmount(() => {
   gap: 4px;
 }
 
+.view-switch button {
+  min-height: calc(var(--sc-component-button-height-md) * 1px);
+  border-radius: var(--sc-component-button-radius);
+  padding-inline: calc(var(--sc-component-button-padding-x) * 1px);
+}
+
 .group-switch {
   flex-wrap: wrap;
 }
@@ -702,9 +711,6 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
 }
 
 .search-facet {

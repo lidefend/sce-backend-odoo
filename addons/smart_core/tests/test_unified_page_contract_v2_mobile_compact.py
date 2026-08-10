@@ -37,6 +37,19 @@ client = _load_module(
 
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
+    def test_complex_view_types_remain_explicit_in_v2_contract(self):
+        for view_type in ("pivot", "graph", "calendar", "gantt", "activity", "dashboard"):
+            with self.subTest(view_type=view_type):
+                contract = assembler.assemble_unified_page_contract_v2(
+                    {"model": "x.report", "view_type": view_type, "fields": {}},
+                    source_type="ui.contract",
+                    client_type="web_pc",
+                    request_id=f"test.complex.{view_type}",
+                )
+                self.assertEqual(contract["pageInfo"]["viewType"], view_type)
+                self.assertEqual(contract["pageInfo"]["layoutType"], view_type)
+                self.assertEqual(contract["layoutContract"]["layoutType"], view_type)
+
     def test_mobile_compact_preserves_create_business_context_outside_compat(self):
         source = {
             "model": "project.project",
@@ -159,6 +172,88 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(header["children"][0]["type"], "button")
         self.assertEqual(header["children"][0]["name"], "action_submit")
         self.assertEqual(header["children"][0]["label"], "提交")
+
+        action_rule = full["actionContract"]["actionRuleList"][0]
+        self.assertEqual(action_rule["actionKey"], "action_submit")
+        self.assertEqual(action_rule["button"], {"name": "action_submit", "type": "object"})
+
+    def test_object_button_payload_method_is_preserved_in_v2_action_contract(self):
+        source = {
+            "model": "sc.norm.import.wizard",
+            "view_type": "form",
+            "head": {"title": "导入定额", "render_profile": "create"},
+            "fields": {
+                "data_file": {"name": "data_file", "type": "binary", "required": True},
+            },
+            "meta_fields": [
+                {"name": "data_file", "type": "binary", "required": True},
+            ],
+            "views": {
+                "form": {
+                    "layout": [
+                        {"type": "group", "children": [{"type": "field", "name": "data_file"}]},
+                    ],
+                    "header_buttons": [
+                        {
+                            "key": "obj_action_import_导入",
+                            "label": "导入",
+                            "kind": "object",
+                            "payload": {"method": "action_import", "type": "object"},
+                        }
+                    ],
+                }
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.form.binary.object.action",
+        )
+
+        component_registry = full["layoutContract"]["componentRegistry"]
+        self.assertIn("sc.input.binary", component_registry)
+        action_rule = full["actionContract"]["actionRuleList"][0]
+        self.assertEqual(action_rule["actionKey"], "obj_action_import_导入")
+        self.assertEqual(action_rule["button"], {"name": "action_import", "type": "object"})
+
+    def test_native_object_button_visibility_is_preserved_in_v2_action_contract(self):
+        visible = {
+            "states": [],
+            "attrs": {"invisible": ["state", "!=", "upload"]},
+        }
+        source = {
+            "model": "sc.norm.import.wizard",
+            "view_type": "form",
+            "head": {"title": "导入定额", "render_profile": "create"},
+            "fields": {
+                "state": {"name": "state", "type": "selection"},
+                "data_file": {"name": "data_file", "type": "binary", "required": True},
+            },
+            "views": {
+                "form": {
+                    "layout": [{"type": "group", "children": [{"type": "field", "name": "data_file"}]}],
+                    "header_buttons": [{
+                        "key": "obj_action_preflight_预检",
+                        "label": "预检",
+                        "kind": "object",
+                        "payload": {"method": "action_preflight", "type": "object"},
+                        "visible": visible,
+                    }],
+                }
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.form.native.button.visibility",
+        )
+
+        action_rule = full["actionContract"]["actionRuleList"][0]
+        self.assertEqual(action_rule["visible"], visible)
 
     def test_data_source_and_formal_metadata_projection_carry_source_authority(self):
         source = {

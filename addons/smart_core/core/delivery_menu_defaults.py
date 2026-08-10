@@ -216,8 +216,10 @@ def build_delivery_menu_group(
     children: list[dict],
     *,
     config_menu_id: int = 0,
+    target: dict | None = None,
 ) -> Dict[str, Any]:
     config_menu_id = int(config_menu_id or 0)
+    target = dict(target or {})
     meta = {
         "group_key": group_key,
         "source": "delivery_engine_v1",
@@ -239,6 +241,15 @@ def build_delivery_menu_group(
         "children": children,
         "meta": meta,
     }
+    if target:
+        meta["explicit_group_entry_target"] = True
+        if config_menu_id:
+            node["menu_id"] = config_menu_id
+        for field in ("route", "scene_key", "action_id", "action_xmlid", "model", "view_modes", "entry_target"):
+            value = target.get(field)
+            if value not in (None, "", []):
+                node[field] = value
+                meta[field] = value
     if config_menu_id:
         node["config_menu_id"] = config_menu_id
         node["configurable"] = True

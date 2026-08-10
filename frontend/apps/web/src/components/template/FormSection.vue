@@ -113,7 +113,12 @@
               </div>
               <template v-else-if="field.readonly">
                 <slot name="readonly" :field="field">
-                  <span class="readonly-value">{{ readonlyText(field) }}</span>
+                  <div
+                    v-if="field.type === 'html'"
+                    class="readonly-value readonly-value--html"
+                    v-html="readonlyHtml(field)"
+                  />
+                  <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </template>
               <template v-else-if="isRelationEditorField(field) && relationAdapter">
@@ -130,6 +135,14 @@
                   :aria-describedby="fieldDescribedBy(field)"
                   type="checkbox"
                   @change="emitFieldChange(field, ($event.target as HTMLInputElement).checked)"
+                />
+                <ScFileField
+                  v-else-if="field.type === 'binary'"
+                  :id="fieldControlId(field)"
+                  :required="field.required"
+                  :invalid="field.invalid"
+                  :described-by="fieldDescribedBy(field)"
+                  @change="emitBinaryFieldChange(field, $event)"
                 />
                 <ScSelect
                   v-else-if="field.type === 'selection'"
@@ -314,11 +327,13 @@
 <script setup lang="ts">
 import { computed, ref, useId, useSlots } from 'vue';
 import ScDateField from '../design-system/ScDateField.vue';
+import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
+import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -427,6 +442,7 @@ function isBaseFieldType(type: TemplateFieldType) {
     'selection',
     'many2one',
     'boolean',
+    'binary',
     'date',
     'datetime',
     'integer',
@@ -581,6 +597,10 @@ function readonlyText(field: FormSectionFieldSchema) {
   );
 }
 
+function readonlyHtml(field: FormSectionFieldSchema) {
+  return sanitizeReadonlyHtml(field.value);
+}
+
 function fieldActionsFor(field: FormSectionFieldSchema) {
   return props.fieldActions?.(field) || [];
 }
@@ -600,6 +620,30 @@ function emitFieldChange(field: FormSectionFieldSchema, value: string | number |
     value,
     descriptor: field.descriptor,
   });
+}
+
+function emitBinaryFieldChange(field: FormSectionFieldSchema, event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) {
+    emitFieldChange(field, null);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = String(reader.result || '');
+    const separatorIndex = result.indexOf(',');
+    emit('field-change', {
+      name: field.name,
+      type: field.type,
+      widget: field.widget,
+      value: separatorIndex >= 0 ? result.slice(separatorIndex + 1) : result,
+      descriptor: field.descriptor,
+      fileName: file.name,
+    });
+  };
+  reader.onerror = () => emitFieldChange(field, null);
+  reader.readAsDataURL(file);
 }
 
 function collapseMany2oneDropdown(event: Event) {
@@ -1131,6 +1175,21 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   align-items: center;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.readonly-value--html {
+  display: block;
+  line-height: 1.65;
+}
+
+.readonly-value--html :deep(ul),
+.readonly-value--html :deep(ol) {
+  margin: 0;
+  padding-inline-start: 20px;
+}
+
+.readonly-value--html :deep(p) {
+  margin: 0 0 6px;
 }
 
 .template-form-section--readonly .readonly-value {

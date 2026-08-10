@@ -12,6 +12,7 @@ import { evaluateFieldPolicy } from '../../app/contractPolicies';
 import { collectUnifiedPageContractV2FieldContainerStatus } from '../../app/contracts/unifiedPageContractV2';
 import {
   applyReadonlyFieldValues, buildLegacyLayoutNodes, buildNativeFieldSchemas, nativeFieldPresentation,
+  isStaticTruthyModifier,
   nativeNodeFieldDescriptor as nativeNodeFieldDescriptorFromNode, nativeNodeWidget, nativeNodeWidgetSemantics,
   type NativeLayoutLikeNode,
 } from './nativeLayoutUtils';
@@ -41,7 +42,11 @@ export function useRecordFormFieldSchemas(context: {
     const name=String(node?.name||'').trim(); if(!name||!context.isNativeFieldVisible(name,node))return null;
     const descriptor=nativeNodeFieldDescriptor(node,context.contract.value?.fields?.[name]); if(!descriptor)return null;
     const source=node as Record<string,unknown>; const state=context.runtimeState(name);
-    const nativeReadonly=Boolean(source.readonly); const nativeRequired=Boolean(source.required);
+    // Dynamic modifiers arrive as formal AST objects and must be evaluated by
+    // runtimeState. Treating the object itself as truthy makes every conditional
+    // readonly/required expression permanent.
+    const nativeReadonly=isStaticTruthyModifier(source.readonly);
+    const nativeRequired=isStaticTruthyModifier(source.required);
     const resolved=evaluateFieldPolicy(context.contract.value,name,{required:Boolean(descriptor.required),readonly:Boolean(descriptor.readonly)},context.evaluatePolicyContext.value);
     const presentation=nativeFieldPresentation({node:source,descriptor,resolveFieldLabel:context.contractFieldLabel,
       editable:context.isContractFieldOrderEditable.value,effectiveFieldSize:context.effectiveFieldSize});
@@ -59,7 +64,13 @@ export function useRecordFormFieldSchemas(context: {
     mapNode:(node,index)=>nativeLayoutNodeToFieldNode(node as NativeFormLayoutNode,index),
     buildSchemas:buildSectionFieldSchemas,
     applyReadonlyValues:(schemas)=>applyReadonlyFieldValues(schemas,v2FieldValue).map((field)=>{
-      if (!field.readonly || String(field.type||'').trim().toLowerCase()!=='many2one') return field;
+      const type=String(field.type||'').trim().toLowerCase();
+      if (field.readonly && type==='binary') {
+        const filenameField=String((field.descriptor as Record<string,unknown>|undefined)?.filename||'').trim();
+        const filename=filenameField?String(context.formData[filenameField]||'').trim():'';
+        if (filename) return {...field,value:filename};
+      }
+      if (!field.readonly || type!=='many2one') return field;
       const label=String(context.relationKeyword(field.name)||'').trim();
       const id=Number(context.formData[field.name]||0);
       if (!label||!Number.isFinite(id)||id<=0) return field;

@@ -144,17 +144,6 @@
             </xpath>
         </field>
     </record>
-    <record id="view_audit_fields_view_sc_project_structure_tree" model="ir.ui.view">
-        <field name="name">sc.project.structure.audit.fields.view_sc_project_structure_tree</field>
-        <field name="model">sc.project.structure</field>
-        <field name="inherit_id" ref="view_sc_project_structure_tree" />
-        <field name="arch" type="xml">
-            <xpath expr="//tree" position="inside">
-                <field name="create_uid" />
-                <field name="create_date" />
-            </xpath>
-        </field>
-    </record>
     <record id="view_audit_fields_view_project_budget_tree" model="ir.ui.view">
         <field name="name">project.budget.audit.fields.view_project_budget_tree</field>
         <field name="model">project.budget</field>
@@ -547,17 +536,6 @@
         <field name="name">construction.work.breakdown.audit.fields.view_exec_structure_wbs_tree</field>
         <field name="model">construction.work.breakdown</field>
         <field name="inherit_id" ref="view_exec_structure_wbs_tree" />
-        <field name="arch" type="xml">
-            <xpath expr="//tree" position="inside">
-                <field name="create_uid" />
-                <field name="create_date" />
-            </xpath>
-        </field>
-    </record>
-    <record id="view_audit_fields_view_exec_structure_structure_tree" model="ir.ui.view">
-        <field name="name">sc.project.structure.audit.fields.view_exec_structure_structure_tree</field>
-        <field name="model">sc.project.structure</field>
-        <field name="inherit_id" ref="view_exec_structure_structure_tree" />
         <field name="arch" type="xml">
             <xpath expr="//tree" position="inside">
                 <field name="create_uid" />

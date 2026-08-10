@@ -489,6 +489,14 @@ class PageAssembler:
             "model": model,
             "view_type": ",".join(view_types),
             "action_id": action.get('id') if isinstance(action, dict) else None,
+            "action_target": action.get('target') if isinstance(action, dict) else None,
+            "interaction_mode": (
+                "wizard"
+                if isinstance(action, dict)
+                and action.get('target') == 'new'
+                and bool(getattr(env[model], '_transient', False))
+                else "page"
+            ),
             "domain": action_domain,
             "domain_raw": action_domain_raw,
             "context": effective_context,
@@ -509,6 +517,7 @@ class PageAssembler:
         data["domain_raw"] = action_domain_raw
         data["context"] = effective_context
         data["context_raw"] = action_context_raw
+        self._inject_native_collection_presentation(data, effective_context)
         self._inject_create_defaults(
             data,
             model_name=model,
@@ -563,6 +572,618 @@ class PageAssembler:
             data["warnings"] = warnings
         data["source_authority"] = self.source_authority_contract()
         return data, versions
+
+    @staticmethod
+    def _native_form_detail_sections(form_contract: dict, fields_map: dict) -> list[dict]:
+        """Project native form groups into read-only detail sections.
+
+        The method preserves group labels and field order from the parsed form
+        layout. It never introduces model-specific labels or field mappings.
+        """
+        layout = form_contract.get("layout") if isinstance(form_contract, dict) else []
+        sections: list[dict] = []
+        seen: set[str] = set()
+
+        def collect_fields(node) -> list[dict]:
+            out: list[dict] = []
+            if isinstance(node, list):
+                for child in node:
+                    out.extend(collect_fields(child))
+                return out
+            if not isinstance(node, dict):
+                return out
+            if str(node.get("type") or "").strip() == "field":
+                name = str(node.get("name") or "").strip()
+                if not name or name in seen or name not in fields_map:
+                    return out
+                info = node.get("fieldInfo") if isinstance(node.get("fieldInfo"), dict) else {}
+                descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
+                seen.add(name)
+                field_contract = {
+                    "field": name,
+                    "label": str(info.get("label") or descriptor.get("string") or name).strip(),
+                    "type": str(descriptor.get("type") or descriptor.get("ttype") or "").strip(),
+                }
+                if isinstance(descriptor.get("selection"), (list, tuple)):
+                    field_contract["selection"] = descriptor["selection"]
+                return [field_contract]
+            for child in node.get("children") or []:
+                out.extend(collect_fields(child))
+            return out
+
+        roots = layout if isinstance(layout, list) else []
+        sheet_children = roots
+        if len(roots) == 1 and isinstance(roots[0], dict) and roots[0].get("type") == "sheet":
+            sheet_children = roots[0].get("children") or []
+        unlabeled: list[dict] = []
+        for node in sheet_children:
+            if not isinstance(node, dict):
+                continue
+            fields = collect_fields(node)
+            if not fields:
+                continue
+            title = str(node.get("label") or (node.get("attributes") or {}).get("string") or "").strip()
+            if title:
+                if unlabeled:
+                    sections.append({"title": "", "fields": unlabeled})
+                    unlabeled = []
+                sections.append({"title": title, "fields": fields})
+            else:
+                unlabeled.extend(fields)
+        if unlabeled:
+            sections.insert(0, {"title": "", "fields": unlabeled})
+        return sections
+
+    def _hierarchy_relation_fields_available(
+        self,
+        relation_model: str,
+        required_fields: list[str],
+        dialog_read_fields: set[str],
+    ) -> bool:
+        """Validate hierarchy fields against the relation model contract.
+
+        A relation search dialog intentionally exposes only its own native tree
+        columns.  Hierarchy levels may need additional structural fields (for
+        example ``parent_id``) which are not dialog columns.  Treat the dialog
+        contract as the first source, then resolve only the explicitly declared
+        missing fields through ``fields_get`` so the backend remains the field
+        and access authority.
+        """
+        missing = [
+            name
+            for name in required_fields
+            if name != "id" and name not in dialog_read_fields
+        ]
+        if not missing:
+            return True
+        try:
+            relation = self.env[relation_model]
+            if not relation.check_access_rights("read", raise_exception=False):
+                return False
+            available = relation.fields_get(missing)
+        except Exception:
+            return False
+        return all(name in available for name in missing)
+
+    def _inject_native_collection_presentation(self, data: dict, effective_context: dict) -> None:
+        """Complete a native-view-declared collection presentation.
+
+        The native tree supplies the adapter marker, columns and toolbar; the
+        native form supplies detail sections. Action context may only bind
+        hierarchy relation fields. This keeps the product frontend independent
+        of action tags, model names and business copy.
+        """
+        views = data.get("views") if isinstance(data.get("views"), dict) else {}
+        tree = views.get("tree") if isinstance(views.get("tree"), dict) else {}
+        presentation = tree.get("collection_presentation") if isinstance(tree.get("collection_presentation"), dict) else {}
+        if str(presentation.get("semantic") or "").strip() == "hierarchical_worksheet":
+            self._inject_native_hierarchical_worksheet(data, effective_context)
+            return
+        semantic = str(presentation.get("semantic") or "").strip()
+        if semantic not in {"hierarchy_browser", "hierarchy_planner"}:
+            return
+        raw_levels = effective_context.get("hierarchy_levels") if isinstance(effective_context, dict) else []
+        if not isinstance(raw_levels, list) or not raw_levels:
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "HIERARCHY_LEVELS_MISSING",
+            }
+            return
+        fields_map = data.get("fields") if isinstance(data.get("fields"), dict) else {}
+        head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        action_domain = data.get("domain") if isinstance(data.get("domain"), list) else []
+        context_domain = effective_context.get("hierarchy_domain") if isinstance(effective_context, dict) else []
+        collection_domain = context_domain if isinstance(context_domain, list) and context_domain else action_domain
+        raw_scope = effective_context.get("hierarchy_scope") if isinstance(effective_context, dict) else {}
+        raw_scope = raw_scope if isinstance(raw_scope, dict) else {}
+        scope_field = str(raw_scope.get("field") or "").strip()
+        scope_context_field = str(raw_scope.get("context_field") or "").strip()
+        scope_descriptor = fields_map.get(scope_field) if isinstance(fields_map.get(scope_field), dict) else {}
+        scope_value = effective_context.get(scope_context_field) if scope_context_field.startswith("default_") else None
+        if scope_field and scope_descriptor and scope_value not in (None, False, ""):
+            collection_domain = [(scope_field, "=", scope_value)]
+        levels: list[dict] = []
+        bindings: dict[str, str] = {}
+        hierarchy_titles: list[str] = []
+        for index, raw in enumerate(raw_levels):
+            spec = raw if isinstance(raw, dict) else {}
+            field_name = str(spec.get("field") or "").strip()
+            descriptor = fields_map.get(field_name) if isinstance(fields_map.get(field_name), dict) else {}
+            relation_model = str(descriptor.get("relation") or "").strip()
+            if not field_name or descriptor.get("type") != "many2one" or not relation_model:
+                continue
+            relation_entry = descriptor.get("relation_entry") if isinstance(descriptor.get("relation_entry"), dict) else {}
+            if relation_entry.get("can_read") is False:
+                continue
+            dialog = relation_entry.get("search_dialog") if isinstance(relation_entry.get("search_dialog"), dict) else {}
+            readable = {str(value).strip() for value in dialog.get("read_fields") or [] if str(value).strip()}
+            code_field = str(spec.get("code_field") or "").strip()
+            label_field = str(spec.get("label_field") or "display_name").strip() or "display_name"
+            parent_field = str(spec.get("parent_field") or "").strip()
+            self_parent_field = str(spec.get("self_parent_field") or "").strip()
+            domain_operator = str(spec.get("domain_operator") or "=").strip()
+            requested_order = str(spec.get("order") or "").strip()
+            safe_order = requested_order if re.fullmatch(
+                r"[A-Za-z_][A-Za-z0-9_]*(?:\s+(?:asc|desc))?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s+(?:asc|desc))?)*",
+                requested_order,
+                flags=re.IGNORECASE,
+            ) else ""
+            if domain_operator not in {"=", "child_of"}:
+                continue
+            required_fields = ["id", label_field]
+            if code_field:
+                required_fields.append(code_field)
+            if parent_field:
+                required_fields.append(parent_field)
+            if self_parent_field:
+                required_fields.append(self_parent_field)
+            if not self._hierarchy_relation_fields_available(
+                relation_model,
+                required_fields,
+                readable,
+            ):
+                continue
+            key = field_name
+            level = {
+                "key": key,
+                "model": relation_model,
+                "fields": list(dict.fromkeys(required_fields)),
+                "label_field": label_field,
+                "code_field": code_field,
+                "order": safe_order or str(dialog.get("order") or "id asc").strip(),
+            }
+            if relation_model == str(head.get("model") or "").strip() and collection_domain:
+                level["domain"] = collection_domain
+            if levels:
+                level["parent_key"] = levels[-1]["key"]
+                level["parent_field"] = parent_field
+            if self_parent_field:
+                level["self_parent_field"] = self_parent_field
+            levels.append(level)
+            bindings[key] = (
+                field_name
+                if domain_operator == "="
+                else {"field": field_name, "operator": domain_operator}
+            )
+            hierarchy_titles.append(str(descriptor.get("string") or field_name).strip())
+        if len(levels) != len(raw_levels):
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "HIERARCHY_LEVEL_CONTRACT_INVALID",
+            }
+            return
+
+        columns_schema = tree.get("columns_schema") if isinstance(tree.get("columns_schema"), list) else []
+        columns = []
+        for row in columns_schema:
+            if not isinstance(row, dict):
+                continue
+            name = str(row.get("name") or "").strip()
+            if not name:
+                continue
+            if semantic == "hierarchy_planner" and str(row.get("optional") or "").strip() == "hide":
+                continue
+            descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
+            column = {
+                "field": name,
+                "label": str(row.get("label") or row.get("string") or name).strip(),
+                "type": str(descriptor.get("type") or descriptor.get("ttype") or "").strip(),
+            }
+            if isinstance(descriptor.get("selection"), (list, tuple)):
+                column["selection"] = descriptor["selection"]
+            columns.append(column)
+        if semantic == "hierarchy_planner":
+            structural_fields = {
+                str(value.get("field") or "").strip()
+                if isinstance(value, dict)
+                else str(value or "").strip()
+                for value in bindings.values()
+            }
+            columns = [column for column in columns if column["field"] not in structural_fields]
+        form = views.get("form") if isinstance(views.get("form"), dict) else {}
+        sections = self._native_form_detail_sections(form, fields_map)
+        read_fields = ["id"]
+        binding_fields = [
+            str(value.get("field") or "").strip()
+            if isinstance(value, dict)
+            else str(value or "").strip()
+            for value in bindings.values()
+        ]
+        for name in [
+            *(column["field"] for column in columns),
+            *binding_fields,
+            *(field["field"] for section in sections for field in section.get("fields") or []),
+        ]:
+            if name in fields_map and name not in read_fields:
+                read_fields.append(name)
+        native_toolbar = tree.get("toolbar") if isinstance(tree.get("toolbar"), dict) else {}
+        actions = [dict(row) for row in native_toolbar.get("header") or [] if isinstance(row, dict)]
+        raw_create = effective_context.get("hierarchy_create") if isinstance(effective_context, dict) else {}
+        raw_create = raw_create if isinstance(raw_create, dict) else {}
+        create_label = str(raw_create.get("label") or "").strip()
+        raw_commands = effective_context.get("hierarchy_commands") if isinstance(effective_context, dict) else []
+        allowed_command_kinds = {"object"}
+        commands = []
+        for raw_command in raw_commands if isinstance(raw_commands, list) else []:
+            command = raw_command if isinstance(raw_command, dict) else {}
+            key = str(command.get("key") or "").strip()
+            label = str(command.get("label") or "").strip()
+            kind = str(command.get("kind") or "").strip()
+            method = str(command.get("method") or "").strip()
+            placement = str(command.get("placement") or "toolbar").strip()
+            group = str(command.get("group") or "structure").strip()
+            availability_field = str(command.get("availability_field") or "").strip()
+            if not key or not label or kind not in allowed_command_kinds:
+                continue
+            if placement not in {"toolbar", "overflow"}:
+                continue
+            if not re.fullmatch(r"[a-z][a-z0-9_]*", group):
+                continue
+            if availability_field:
+                availability_descriptor = fields_map.get(availability_field)
+                if not isinstance(availability_descriptor, dict) or availability_descriptor.get("type") != "boolean":
+                    continue
+            if kind == "object" and not method:
+                continue
+            commands.append({
+                "key": key,
+                "label": label,
+                "kind": kind,
+                "method": method,
+                "placement": placement,
+                "group": group,
+                "availability_field": availability_field,
+            })
+            if availability_field not in read_fields:
+                read_fields.append(availability_field)
+        try:
+            visible_menu_ids = {int(value) for value in self.env["ir.ui.menu"]._visible_menu_ids()}
+        except Exception:
+            visible_menu_ids = set()
+        for action_row in actions:
+            try:
+                target_action_id = int(action_row.get("action_id") or 0)
+            except (TypeError, ValueError):
+                target_action_id = 0
+            if target_action_id <= 0 or not visible_menu_ids:
+                continue
+            target_menu = self.env["ir.ui.menu"].search(
+                [
+                    ("id", "in", sorted(visible_menu_ids)),
+                    ("action", "=", "ir.actions.act_window,%s" % target_action_id),
+                ],
+                order="sequence,id",
+                limit=1,
+            )
+            if target_menu:
+                action_row["menu_id"] = int(target_menu.id)
+                action_row["route"] = "/a/%s?menu_id=%s" % (target_action_id, int(target_menu.id))
+        native_toolbar["header"] = actions
+        tree["toolbar"] = native_toolbar
+        try:
+            hierarchy_page_size = int(effective_context.get("hierarchy_page_size") or tree.get("page_size") or 50)
+        except (TypeError, ValueError):
+            hierarchy_page_size = 50
+        hierarchy_page_size = max(1, min(20000, hierarchy_page_size))
+        raw_expand_depth = effective_context.get("hierarchy_default_expand_depth")
+        try:
+            default_expand_depth = max(0, min(20, int(raw_expand_depth))) if raw_expand_depth is not None else None
+        except (TypeError, ValueError):
+            default_expand_depth = None
+        surface_labels = {
+            "surface_aria": "层级计划编制" if semantic == "hierarchy_planner" else "层级数据浏览",
+            "subtitle": "",
+            "search_label": "搜索",
+            "search_placeholder": "请输入关键词",
+            "all": "全部",
+            "empty_children": "暂无下级数据",
+            "total_prefix": "共",
+            "total_suffix": "条",
+            "loading": "正在加载…",
+            "refresh": "刷新",
+            "previous": "上一页",
+            "next": "下一页",
+            "page_prefix": "第",
+            "page_suffix": "页",
+            "load_error": "数据加载失败",
+            "open": "打开",
+            "select_hint": "请选择一条记录",
+            "expand_all": "全部展开",
+            "collapse_all": "全部折叠",
+            "more": "更多",
+            "view": "视图",
+            "details": "节点详情",
+            "selected_prefix": "已选择",
+            "operation_success": "操作完成",
+        }
+        tree["collection_presentation"] = {
+            **presentation,
+            "enabled": True,
+            "config": {
+                "title": str(head.get("title") or "").strip(),
+                "tree_title": " / ".join(hierarchy_titles),
+                "create": {
+                    "enabled": bool((head.get("permissions") or {}).get("create")) and bool(create_label),
+                    "label": create_label,
+                },
+                "commands": commands,
+                "actions": actions,
+                "tree": {"levels": levels},
+                "planner": {
+                    "node_level_key": levels[-1]["key"],
+                    "outline_field": levels[-1]["label_field"],
+                    "code_field": levels[-1]["code_field"],
+                    "default_expand_depth": default_expand_depth,
+                } if semantic == "hierarchy_planner" else {},
+                "governance": {"facts": []},
+                "list": {
+                    "model": str(head.get("model") or "").strip(),
+                    "fields": read_fields,
+                    "columns": columns,
+                    "bindings": bindings,
+                    "order": str(tree.get("order") or tree.get("default_order") or "id asc").strip(),
+                    "page_size": hierarchy_page_size,
+                    "domain": collection_domain,
+                },
+                "detail": {"title": "", "sections": sections},
+                "labels": surface_labels,
+            },
+        }
+
+    def _inject_native_hierarchical_worksheet(self, data: dict, effective_context: dict) -> None:
+        """Assemble a generic hierarchy-backed worksheet from native facts."""
+        views = data.get("views") if isinstance(data.get("views"), dict) else {}
+        tree = views.get("tree") if isinstance(views.get("tree"), dict) else {}
+        presentation = tree.get("collection_presentation") if isinstance(tree.get("collection_presentation"), dict) else {}
+        raw = effective_context.get("hierarchical_worksheet") if isinstance(effective_context, dict) else {}
+        raw = raw if isinstance(raw, dict) else {}
+        fields_map = data.get("fields") if isinstance(data.get("fields"), dict) else {}
+        navigation_mode = str(raw.get("navigation_mode") or "relation").strip()
+        binding_field = str(raw.get("binding_field") or "").strip()
+        binding_descriptor = fields_map.get(binding_field) if isinstance(fields_map.get(binding_field), dict) else {}
+        hierarchy_model = str(binding_descriptor.get("relation") or "").strip()
+        if navigation_mode != "sheet_groups" and (binding_descriptor.get("type") != "many2one" or not hierarchy_model):
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "WORKSHEET_HIERARCHY_BINDING_INVALID",
+            }
+            return
+
+        hierarchy_field_keys = {
+            key: str(raw.get(key) or "").strip()
+            for key in ("parent_field", "project_field", "code_field", "label_field", "type_field")
+        }
+        if not hierarchy_field_keys["label_field"]:
+            hierarchy_field_keys["label_field"] = "display_name"
+        group_field_map = {
+            str(target or "").strip(): str(source or "").strip()
+            for target, source in (raw.get("group_field_map") or {}).items()
+            if str(target or "").strip() and str(source or "").strip()
+        } if isinstance(raw.get("group_field_map"), dict) else {}
+        hierarchy_fields = list(dict.fromkeys([
+            "id",
+            *hierarchy_field_keys.values(),
+            *group_field_map.values(),
+        ]))
+        hierarchy_fields = [name for name in hierarchy_fields if name]
+        hierarchy_meta = {}
+        if navigation_mode != "sheet_groups":
+            try:
+                hierarchy = self.env[hierarchy_model]
+                can_read = hierarchy.check_access_rights("read", raise_exception=False)
+                hierarchy_meta = hierarchy.fields_get(hierarchy_fields) if can_read else {}
+            except Exception:
+                hierarchy_meta = {}
+        if navigation_mode != "sheet_groups" and any(name != "id" and name not in hierarchy_meta for name in hierarchy_fields):
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "WORKSHEET_HIERARCHY_FIELDS_INVALID",
+            }
+            return
+
+        columns_schema = tree.get("columns_schema") if isinstance(tree.get("columns_schema"), list) else []
+        excluded_fields = {
+            str(value or "").strip()
+            for value in raw.get("exclude_fields") or []
+            if str(value or "").strip()
+        }
+        column_widths = raw.get("column_widths") if isinstance(raw.get("column_widths"), dict) else {}
+        column_precisions = raw.get("column_precisions") if isinstance(raw.get("column_precisions"), dict) else {}
+        columns = []
+        for row in columns_schema:
+            if not isinstance(row, dict):
+                continue
+            name = str(row.get("name") or "").strip()
+            descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
+            if not name or name in excluded_fields:
+                continue
+            try:
+                width = int(column_widths.get(name) or 120)
+            except (TypeError, ValueError):
+                width = 120
+            precision = column_precisions.get(name)
+            try:
+                precision = max(0, min(8, int(precision))) if precision is not None else None
+            except (TypeError, ValueError):
+                precision = None
+            columns.append({
+                "field": name,
+                "label": str(row.get("label") or row.get("string") or descriptor.get("string") or name).strip(),
+                "type": str(descriptor.get("type") or "").strip(),
+                "selection": descriptor.get("selection") if isinstance(descriptor.get("selection"), list) else [],
+                "align": "right" if descriptor.get("type") in {"integer", "float", "monetary"} else "left",
+                "width": max(44, min(480, width)),
+                **({"precision": precision} if precision is not None else {}),
+            })
+
+        raw_tabs = raw.get("tabs") if isinstance(raw.get("tabs"), list) else []
+        tabs = []
+        tab_fields = []
+        for index, raw_tab in enumerate(raw_tabs):
+            tab = raw_tab if isinstance(raw_tab, dict) else {}
+            rows = []
+            for field_name in tab.get("fields") or []:
+                name = str(field_name or "").strip()
+                descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
+                if not name or not descriptor:
+                    continue
+                rows.append({
+                    "field": name,
+                    "label": str(descriptor.get("string") or name).strip(),
+                    "type": str(descriptor.get("type") or "").strip(),
+                    "selection": descriptor.get("selection") if isinstance(descriptor.get("selection"), list) else [],
+                })
+                tab_fields.append(name)
+            if rows:
+                tabs.append({
+                    "key": str(tab.get("key") or "tab_%s" % index).strip(),
+                    "label": str(tab.get("label") or "").strip(),
+                    "fields": rows,
+                })
+
+        navigation_groups = []
+        for index, value in enumerate(raw.get("navigation_groups") or []):
+            group = value if isinstance(value, dict) else {}
+            field_name = str(group.get("field") or "").strip()
+            if not field_name or field_name not in fields_map:
+                continue
+            navigation_groups.append({
+                "field": field_name,
+                "label": str(group.get("label") or fields_map[field_name].get("string") or field_name).strip(),
+                "empty_label": str(group.get("empty_label") or _("未分类")).strip(),
+            })
+        if navigation_mode == "sheet_groups" and not navigation_groups:
+            tree["collection_presentation"] = {
+                **presentation,
+                "enabled": False,
+                "reason_code": "WORKSHEET_NAVIGATION_GROUPS_INVALID",
+            }
+            return
+
+        read_fields = ["id"]
+        if binding_field and binding_field in fields_map:
+            read_fields.append(binding_field)
+        for name in [*(column["field"] for column in columns), *tab_fields, *(row["field"] for row in navigation_groups)]:
+            if name in fields_map and name not in read_fields:
+                read_fields.append(name)
+        row_kind_field = str(raw.get("row_kind_field") or "").strip()
+        if row_kind_field and row_kind_field in fields_map and row_kind_field not in read_fields:
+            read_fields.append(row_kind_field)
+
+        native_toolbar = tree.get("toolbar") if isinstance(tree.get("toolbar"), dict) else {}
+        actions = [dict(row) for row in native_toolbar.get("header") or [] if isinstance(row, dict)]
+        try:
+            visible_menu_ids = {int(value) for value in self.env["ir.ui.menu"]._visible_menu_ids()}
+        except Exception:
+            visible_menu_ids = set()
+        for action_row in actions:
+            try:
+                target_action_id = int(action_row.get("action_id") or 0)
+            except (TypeError, ValueError):
+                target_action_id = 0
+            if target_action_id <= 0 or not visible_menu_ids:
+                continue
+            target_menu = self.env["ir.ui.menu"].search(
+                [
+                    ("id", "in", sorted(visible_menu_ids)),
+                    ("action", "=", "ir.actions.act_window,%s" % target_action_id),
+                ],
+                order="sequence,id",
+                limit=1,
+            )
+            if target_menu:
+                action_row["menu_id"] = int(target_menu.id)
+                action_row["route"] = "/a/%s?menu_id=%s" % (target_action_id, int(target_menu.id))
+
+        head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        labels = raw.get("labels") if isinstance(raw.get("labels"), dict) else {}
+        try:
+            variance_tolerance = max(0.0, float(raw.get("variance_tolerance") or 0.0))
+        except (TypeError, ValueError):
+            variance_tolerance = 0.0
+        tree["collection_presentation"] = {
+            **presentation,
+            "enabled": True,
+            "config": {
+                "title": str(head.get("title") or "").strip(),
+                "actions": actions,
+                "hierarchy": {
+                    "navigation_mode": navigation_mode,
+                    "navigation_groups": navigation_groups,
+                    "model": hierarchy_model,
+                    "fields": hierarchy_fields,
+                    **hierarchy_field_keys,
+                    "tree_column": str(raw.get("tree_column") or "").strip(),
+                    "navigation_title": str(raw.get("navigation_title") or "").strip(),
+                    "leaf_values": [str(value) for value in raw.get("leaf_values") or []],
+                    "group_field_map": group_field_map,
+                    "domain": raw.get("hierarchy_domain") if isinstance(raw.get("hierarchy_domain"), list) else [],
+                    "order": str(raw.get("hierarchy_order") or "id asc").strip(),
+                    "navigation_depth": max(1, int(raw.get("navigation_depth") or 4)),
+                },
+                "sheet": {
+                    "model": str(head.get("model") or "").strip(),
+                    "fields": read_fields,
+                    "columns": columns,
+                    "binding_field": binding_field,
+                    "ordinal_field": str(raw.get("ordinal_field") or "").strip(),
+                    "presentation_mode": str(raw.get("presentation_mode") or "hierarchy").strip(),
+                    "row_kind_field": row_kind_field,
+                    "item_values": [str(value) for value in raw.get("item_values") or []],
+                    "heading_values": [str(value) for value in raw.get("heading_values") or []],
+                    "summary_values": [str(value) for value in raw.get("summary_values") or []],
+                    "variance_field": str(raw.get("variance_field") or "").strip(),
+                    "variance_tolerance": variance_tolerance,
+                    "blank_fields_by_kind": {
+                        str(kind): [str(field) for field in fields or []]
+                        for kind, fields in (raw.get("blank_fields_by_kind") or {}).items()
+                        if isinstance(fields, (list, tuple))
+                    } if isinstance(raw.get("blank_fields_by_kind"), dict) else {},
+                    "domain": raw.get("sheet_domain") if isinstance(raw.get("sheet_domain"), list) else [],
+                    "order": str(raw.get("sheet_order") or tree.get("order") or tree.get("default_order") or "id asc").strip(),
+                },
+                "detail": {"tabs": tabs},
+                "labels": {
+                    "surface_aria": str(labels.get("surface_aria") or head.get("title") or "worksheet").strip(),
+                    "search_placeholder": str(labels.get("search_placeholder") or _("请输入关键词")).strip(),
+                    "search": str(labels.get("search") or _("搜索")).strip(),
+                    "all": str(labels.get("all") or _("全部")).strip(),
+                    "empty": str(labels.get("empty") or _("暂无数据")).strip(),
+                    "loading": str(labels.get("loading") or _("正在加载…")).strip(),
+                    "total_prefix": str(labels.get("total_prefix") or _("共")).strip(),
+                    "total_suffix": str(labels.get("total_suffix") or _("条")).strip(),
+                    "select_hint": str(labels.get("select_hint") or _("请选择一行查看属性")).strip(),
+                    "expand_all": str(labels.get("expand_all") or _("全部展开")).strip(),
+                    "collapse_all": str(labels.get("collapse_all") or _("全部折叠")).strip(),
+                    "resize_navigation": str(labels.get("resize_navigation") or _("调整导航宽度")).strip(),
+                    "resize_detail": str(labels.get("resize_detail") or _("调整属性区高度")).strip(),
+                },
+            },
+        }
 
     def _native_action_needs_existing_record(self, action: dict) -> bool:
         if not isinstance(action, dict):
@@ -647,27 +1268,30 @@ class PageAssembler:
             profile = "readonly"
         if profile != "create" or record_id:
             return
-        data["buttons"] = self._filter_render_profile_actions(data.get("buttons"), profile=profile, record_id=record_id)
-        toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
-        for key in ("header", "sidebar", "footer"):
-            toolbar[key] = self._filter_render_profile_actions(toolbar.get(key), profile=profile, record_id=record_id)
-        data["toolbar"] = toolbar if isinstance(toolbar, dict) else {"header": [], "sidebar": [], "footer": []}
-        views = data.get("views") if isinstance(data.get("views"), dict) else {}
-        form = views.get("form") if isinstance(views.get("form"), dict) else {}
         model_name = str(
             data.get("model")
             or ((data.get("head") or {}).get("model") if isinstance(data.get("head"), dict) else "")
             or ""
         ).strip()
         try:
-            preserve_transient_header = bool(model_name and getattr(self.env[model_name], "_transient", False))
+            preserve_transient_actions = bool(model_name and getattr(self.env[model_name], "_transient", False))
         except Exception:
-            preserve_transient_header = False
+            preserve_transient_actions = False
+        if not preserve_transient_actions:
+            data["buttons"] = self._filter_render_profile_actions(data.get("buttons"), profile=profile, record_id=record_id)
+        toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
+        for key in ("header", "sidebar", "footer"):
+            if not preserve_transient_actions:
+                toolbar[key] = self._filter_render_profile_actions(toolbar.get(key), profile=profile, record_id=record_id)
+        data["toolbar"] = toolbar if isinstance(toolbar, dict) else {"header": [], "sidebar": [], "footer": []}
+        views = data.get("views") if isinstance(data.get("views"), dict) else {}
+        form = views.get("form") if isinstance(views.get("form"), dict) else {}
         for key in ("header_buttons", "button_box", "stat_buttons", "business_actions"):
-            if key == "header_buttons" and preserve_transient_header:
+            if key == "header_buttons" and preserve_transient_actions:
                 continue
             form[key] = self._filter_render_profile_actions(form.get(key), profile=profile, record_id=record_id)
-        form["layout"] = self._filter_render_profile_layout_nodes(form.get("layout"), profile=profile, record_id=record_id)
+        if not preserve_transient_actions:
+            form["layout"] = self._filter_render_profile_layout_nodes(form.get("layout"), profile=profile, record_id=record_id)
         views["form"] = form
         data["views"] = views
 
@@ -1155,12 +1779,34 @@ class PageAssembler:
     def _include_configured_orchestrated_view_types(self, view_types, *, model_name="", action_id=None):
         normalized = self.normalize_view_types(view_types)
         model = str(model_name or "").strip()
-        if not model or "ui.business.config.contract" not in self.env:
+        if not model:
             return normalized
         try:
             action_id_int = int(action_id or 0)
         except Exception:
             action_id_int = 0
+        # The act_window is the native authority for the view family.  A list
+        # request may choose tree as its active view while the same action's
+        # form view still supplies generic record-detail structure.
+        allowed = {"tree", "form", "kanban", "search", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"}
+        if action_id_int > 0 and "ir.actions.act_window" in self.env:
+            try:
+                native_action = self.su_env["ir.actions.act_window"].browse(action_id_int)
+                if native_action.exists() and str(native_action.res_model or "").strip() == model:
+                    native_types = [
+                        str(spec[1] or "").strip()
+                        for spec in (native_action.views or [])
+                        if spec and len(spec) >= 2
+                    ]
+                    native_types.extend(str(native_action.view_mode or "").split(","))
+                    for view_type in native_types:
+                        view_type = "tree" if view_type == "list" else view_type
+                        if view_type in allowed and view_type not in normalized:
+                            normalized.append(view_type)
+            except Exception:
+                _logger.exception("include native action view types failed for model=%s action_id=%s", model, action_id_int)
+        if "ui.business.config.contract" not in self.env:
+            return normalized
         domain = [("model", "=", model), ("status", "=", "published")]
         if action_id_int > 0:
             domain.append(("action_id", "in", [False, action_id_int]))
@@ -1171,7 +1817,6 @@ class PageAssembler:
         except Exception:
             _logger.exception("include configured orchestrated view types failed for model=%s action_id=%s", model, action_id_int)
             return normalized
-        allowed = {"tree", "form", "kanban", "search", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"}
         out = list(normalized)
         for row in rows:
             view_type = str(getattr(row, "view_type", "") or "").strip()
@@ -1227,6 +1872,7 @@ class PageAssembler:
             "name": action.name or "",
             "context": action.context or "{}",
             "domain": action.domain or "[]",
+            "target": action.target or "current",
         }
 
     def _resolve_page_title(self, model, action=None):

@@ -41,13 +41,37 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def authoritative_navigation_counts() -> dict[str, int]:
+    policy = read_json(ROOT / "config/frontend/authoritative_navigation_v1.json")
+    configured_roles = policy.get("roles") or {}
+    counts: dict[str, int] = {}
+    for role, row in configured_roles.items():
+        leaf_keys = (row or {}).get("leaf_keys") or []
+        count = int((row or {}).get("expected_count") or 0)
+        if count <= 0 or count != len(leaf_keys):
+            raise EvidenceError(f"AUTHORITATIVE_NAVIGATION_POLICY_INVALID:{role}")
+        counts[str(role)] = count
+    if not counts:
+        raise EvidenceError("AUTHORITATIVE_NAVIGATION_POLICY_EMPTY")
+    return counts
+
+
 def validate_navigation(report: dict[str, Any], expected_sha: str) -> dict[str, Any]:
     require_sha(report, expected_sha, "navigation")
     total = report.get("total") or {}
     roles = report.get("roles") or {}
-    if total.get("result") != "PASS" or int(total.get("expected_count") or 0) != 71:
-        raise EvidenceError("NAVIGATION_NOT_71_OF_71")
-    for role, count in {"finance": 43, "project_a_member": 9, "pm": 14, "owner": 5}.items():
+    expected_roles = authoritative_navigation_counts()
+    expected_total = sum(expected_roles.values())
+    if (
+        total.get("result") != "PASS"
+        or int(total.get("expected_count") or 0) != expected_total
+        or int(total.get("actual_count") or 0) != expected_total
+        or int(total.get("matched_count") or 0) != expected_total
+    ):
+        raise EvidenceError("NAVIGATION_NOT_AUTHORITATIVE_TOTAL")
+    if set(roles) != set(expected_roles):
+        raise EvidenceError("NAVIGATION_ROLE_SET_MISMATCH")
+    for role, count in expected_roles.items():
         row = roles.get(role) or {}
         if (
             int(row.get("expected_count") or 0) != count

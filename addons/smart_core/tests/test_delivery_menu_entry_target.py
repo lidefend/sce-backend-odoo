@@ -185,6 +185,28 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             ["已授权", "场景入口"],
         )
 
+    def test_client_action_is_native_odoo_only_and_not_product_runtime_allowed(self):
+        action = types.SimpleNamespace(
+            active=True,
+            _name="ir.actions.client",
+            res_model="",
+        )
+
+        self.assertFalse(
+            menu_service.MenuService(env={})._action_is_runtime_allowed(action, "read")
+        )
+
+    def test_model_less_window_action_is_not_runtime_allowed(self):
+        action = types.SimpleNamespace(
+            active=True,
+            _name="ir.actions.act_window",
+            res_model="",
+        )
+
+        self.assertFalse(
+            menu_service.MenuService(env={})._action_is_runtime_allowed(action, "read")
+        )
+
     def test_scene_menu_child_exposes_formal_entry_target_with_native_refs(self):
         node = delivery_menu_defaults.build_delivery_menu_child(
             {
@@ -669,6 +691,105 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(meta["stable_leaf_count"], 0)
         self.assertEqual(meta["native_preview_leaf_count"], 1)
 
+    def test_native_preview_group_preserves_explicit_parent_action_target(self):
+        nav = menu_service.MenuService().build_nav(
+            policy={},
+            role_surface={
+                "role_code": "business_config_admin",
+                "exposure_policy_declared": True,
+                "primary_menu_xmlids": ["sc_norm_engine.menu_sc_norm_item"],
+            },
+            native_nav=[
+                {
+                    "label": "定额引擎",
+                    "menu_id": 616,
+                    "action_id": 829,
+                    "meta": {
+                        "menu_id": 616,
+                        "menu_xmlid": "sc_norm_engine.menu_sc_norm_root",
+                        "action_id": 829,
+                        "action_xmlid": "sc_norm_engine.action_sc_norm_item",
+                        "model": "sc.norm.item",
+                    },
+                    "children": [
+                        self._native_leaf(
+                            label="定额子目",
+                            menu_id=619,
+                            route="/a/829?menu_id=619",
+                            action_id=829,
+                            model="sc.norm.item",
+                            menu_xmlid="sc_norm_engine.menu_sc_norm_item",
+                        )
+                    ],
+                }
+            ],
+        )
+
+        group = next(row for row in nav[0]["children"] if row.get("label") == "定额引擎")
+        self.assertEqual(group.get("menu_id"), 616)
+        self.assertEqual(group.get("action_id"), 829)
+        self.assertEqual(group.get("action_xmlid"), "sc_norm_engine.action_sc_norm_item")
+        self.assertEqual(group.get("model"), "sc.norm.item")
+        self.assertTrue((group.get("meta") or {}).get("explicit_group_entry_target"))
+
+    def test_targetless_group_remains_expand_only(self):
+        group = delivery_menu_defaults.build_delivery_menu_group(
+            "construction.directory",
+            "普通目录",
+            [{"label": "子菜单", "menu_id": 1001, "children": []}],
+            config_menu_id=1000,
+        )
+
+        self.assertNotIn("action_id", group)
+        self.assertNotIn("route", group)
+        self.assertFalse((group.get("meta") or {}).get("explicit_group_entry_target", False))
+
+    def test_same_native_entry_and_policy_directory_merge_into_one_clickable_node(self):
+        service = menu_service.MenuService()
+        nodes = service._merge_explicit_entry_with_directory([
+            {
+                "key": "system.menu_616",
+                "label": "定额引擎",
+                "menu_id": 616,
+                "action_id": 829,
+                "model": "sc.norm.item",
+                "route": "/a/829?menu_id=616",
+                "children": [],
+            },
+            {
+                "key": "group:construction.config.norm",
+                "label": "定额引擎",
+                "menu_id": 882860817,
+                "children": [{"label": "定额子目", "menu_id": 619, "children": []}],
+                "meta": {"explicit_menu_path_group": True},
+            },
+        ])
+
+        self.assertEqual(len(nodes), 1)
+        self.assertEqual(nodes[0].get("menu_id"), 616)
+        self.assertEqual(nodes[0].get("action_id"), 829)
+        self.assertEqual(nodes[0].get("route"), "/a/829?menu_id=616")
+        self.assertEqual(len(nodes[0].get("children") or []), 1)
+        self.assertTrue((nodes[0].get("meta") or {}).get("explicit_group_entry_target"))
+
+    def test_ambiguous_same_label_entries_do_not_merge_into_policy_directory(self):
+        service = menu_service.MenuService()
+        entries = [
+            {"key": f"entry.{menu_id}", "label": "同名入口", "menu_id": menu_id,
+             "action_id": action_id, "children": []}
+            for menu_id, action_id in ((101, 201), (102, 202))
+        ]
+        nodes = service._merge_explicit_entry_with_directory(entries + [{
+            "key": "group:directory",
+            "label": "同名入口",
+            "children": [{"label": "子项", "menu_id": 103, "children": []}],
+            "meta": {"explicit_menu_path_group": True},
+        }])
+
+        self.assertEqual(len(nodes), 3)
+        directory = next(node for node in nodes if node.get("children"))
+        self.assertNotIn("action_id", directory)
+
     def test_user_acceptance_policy_menu_keeps_legacy_subgroups(self):
         self._register_acceptance_menu_labels()
 
@@ -940,6 +1061,73 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(lowcode_group.get("config_menu_id"), 861)
         self.assertTrue(lowcode_group.get("configurable"))
         self.assertEqual((lowcode_group.get("config_ref") or {}).get("id"), 861)
+
+    def test_legacy_config_center_policy_merges_into_product_configuration(self):
+        menu_xmlid = "smart_construction_core.menu_ui_menu_config_policy_business_config"
+        nav = menu_service.MenuService().build_nav(
+            policy={
+                "menu_groups": [
+                    {
+                        "group_key": "construction.config",
+                        "group_label": "配置中心",
+                        "menus": [
+                            {
+                                "menu_key": "menu_config",
+                                "label": "菜单配置",
+                                "menu_id": 419,
+                                "route": "/a/98?menu_id=419",
+                                "action_id": 98,
+                                "menu_xmlid": menu_xmlid,
+                                "res_model": "ui.menu.config.policy",
+                                "visible_menu_path": "智慧施工管理平台 / 配置中心 / 低代码系统配置 / 菜单配置",
+                                "entry_intent": "config",
+                                "release_state": "released",
+                                "enabled": True,
+                            }
+                        ],
+                    }
+                ]
+            },
+            role_surface={
+                "role_code": "business_config_admin",
+                "discover_installed_capabilities": True,
+            },
+            native_nav=[
+                {
+                    "label": "智慧施工管理平台",
+                    "menu_id": 291,
+                    "meta": {"menu_xmlid": "smart_construction_core.menu_sc_root"},
+                    "children": [
+                        {
+                            "label": "产品配置",
+                            "menu_id": 297,
+                            "meta": {"menu_xmlid": "smart_construction_core.menu_sc_business_config_center"},
+                            "children": [
+                                {
+                                    "label": "低代码系统配置",
+                                    "menu_id": 861,
+                                    "meta": {"menu_xmlid": "smart_construction_core.menu_sc_lowcode_system_config_group"},
+                                    "children": [
+                                        self._native_leaf(
+                                            label="菜单配置",
+                                            menu_xmlid=menu_xmlid,
+                                            menu_id=419,
+                                            route="/a/98?menu_id=419",
+                                            action_id=98,
+                                            model="ui.menu.config.policy",
+                                        )
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+
+        labels = [group.get("label") for group in (nav[0].get("children") or [])]
+        self.assertEqual(labels.count("产品配置"), 1)
+        self.assertNotIn("配置中心", labels)
 
 
 if __name__ == "__main__":

@@ -32,6 +32,14 @@ def to_css_var_key(token_key: str) -> str:
     return "--sc-" + token_key.replace(".", "-").replace("_", "-")
 
 
+def to_css_value(token_key: str, value: Any) -> Any:
+    """Keep shared token data numeric while emitting valid CSS dimensions."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if token_key.startswith("base.radius.") or token_key.endswith(".radius"):
+            return f"{value}px"
+    return value
+
+
 def _lookup_ref_key(ref: str) -> str:
     if ref.startswith(("base.", "semantic.", "component.", "platform.")):
         return ref
@@ -88,7 +96,7 @@ def resolve_refs(tokens: dict[str, Any], *, strict: bool = True) -> dict[str, An
 def to_css_vars(mapping: dict[str, Any], selector: str = ":root") -> str:
     lines = [f"{selector} {{"]
     for key in sorted(mapping.keys()):
-        lines.append(f"  {to_css_var_key(key)}: {mapping[key]};")
+        lines.append(f"  {to_css_var_key(key)}: {to_css_value(key, mapping[key])};")
     lines.append("}")
     return "\n".join(lines) + "\n"
 

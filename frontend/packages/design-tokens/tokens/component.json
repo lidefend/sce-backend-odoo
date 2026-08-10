@@ -43,6 +43,16 @@
     "row_height": 44,
     "row_height_compact": 36
   },
+  "hierarchy_browser": {
+    "tree_width": 280,
+    "tree_min_width": 180,
+    "tree_max_width": 520,
+    "detail_width": 320,
+    "detail_min_width": 220,
+    "detail_max_width": 560,
+    "resizer_width": 1,
+    "min_height": 560
+  },
   "dialog": {
     "radius": "{radius.md}",
     "padding": "{space.md}"

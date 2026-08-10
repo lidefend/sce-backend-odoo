@@ -24,6 +24,7 @@ export function buildContractFormActions(params: {
   sceneReadyActions: Array<Record<string, unknown>>;
   v2ButtonStatus: Record<string, ContractV2ButtonStatus>;
   workflowActionRows: Array<Record<string, unknown>>;
+  v2ActionRuleList?: Array<Record<string, unknown>>;
   policyContext: Parameters<typeof evaluateActionPolicy>[2];
   evaluateNativeActionVisibility: (row: Record<string, unknown>) => boolean;
   isTierValidationActionHidden: (methodName: string) => boolean;
@@ -83,7 +84,9 @@ export function buildContractFormActions(params: {
   if (Array.isArray(params.contract?.toolbar?.header)) merged.push(...params.contract.toolbar.header as Array<Record<string, unknown>>);
   if (Array.isArray(params.contract?.toolbar?.sidebar)) merged.push(...params.contract.toolbar.sidebar as Array<Record<string, unknown>>);
   if (Array.isArray(params.contract?.toolbar?.footer)) merged.push(...params.contract.toolbar.footer as Array<Record<string, unknown>>);
-  const v2ActionRuleList = parseMaybeJsonRecord(resolveUnifiedPageContractV2(params.contract)?.actionContract).actionRuleList;
+  const v2ActionRuleList = params.v2ActionRuleList?.length
+    ? params.v2ActionRuleList
+    : parseMaybeJsonRecord(resolveUnifiedPageContractV2(params.contract)?.actionContract).actionRuleList;
   if (Array.isArray(v2ActionRuleList)) {
     v2ActionRuleList.forEach((raw) => {
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
@@ -122,7 +125,14 @@ export function buildContractFormActions(params: {
           domain_raw: target.domain_raw,
           context_raw: target.context_raw,
         },
-        visible_profiles: ['create', 'edit', 'readonly'],
+        visible: row.visible,
+        modifiers: row.modifiers,
+        invisible: row.invisible,
+        visible_profiles: Array.isArray(row.visible_profiles)
+          ? row.visible_profiles
+          : ['create', 'edit', 'readonly'],
+        presentation: row.presentation,
+        action_safety: row.action_safety,
       });
     });
   }

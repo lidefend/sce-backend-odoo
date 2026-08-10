@@ -3105,3 +3105,214 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   daily write entry; it is fixed to dev/sc_demo, requires an explicit
   confirmation, derives the exact HEAD version and reuses the formal snapshot
   service plus locked-contract assertions.
+
+## 2026-08-09 — ISOLATED-PRODUCTION-ACCEPTANCE-PAYLOAD-CLOSURE
+
+- Branch / anchor: governed `release/tenant-rc-<tenant-key>-v1` branch from
+  `c3806823ae07c5b23b9d2dde0508382a0287d81b`.
+- Formal Product Layer / Layer Target / Module: P2 signed customer
+  history baseline executed by a P4 delivery tool; `scripts/ops`,
+  `scripts/tenant_payload`, and `make/release.mk`.
+- Reason / Why Here: the isolated production restore and immutable P2 module
+  were activated on the daily server, but the signed supplemental fuel payload
+  had no governed plan/import/verify entry for that persistent clone. The P4
+  tool owns the one-time replay and audit boundary while the signed P2 payload
+  remains the customer-data authority.
+- Why Not Elsewhere: no customer records enter P0/P1 source, no platform or
+  industry default is changed, and no P3 runtime configuration is used as a
+  data carrier. The tool refuses production-connected resources and binds the
+  exact restore, database filter, internal network, filestore, tenant addon,
+  signature key, payload checksum, operator XMLID, and importer group.
+- Blast Radius / validation: only the explicitly named isolated tenant acceptance clone
+  may receive writes. Unit/compile guards, immutable remote-tool installation,
+  signed payload plan, explicit-confirmation import, post-import verification,
+  exact 8/32/501 archive counts, identity consistency, read-only behavior,
+  frontend contract/data probes, and zero production connections prove
+  containment and closure.
+- Runtime correction: supplemental archives may retain a relationship to an
+  inactive historical project. The P2 customer adapter admits that lookup only
+  inside the signed narrow-import context, still requires importer authority
+  and an allowed company, and never uses `sudo`. A distinct confirmed P4
+  refresh replaces only the isolated clone's Odoo container and immutable
+  tenant mount; it preserves the exact database, internal network and
+  filestore, and restores the previous tenant mount if startup fails.
+  Retrying a failed batch is enabled only by the same explicitly confirmed
+  import action; plan and verify remain non-resuming read paths.
+- Product-boundary correction: the P4 runtime now requires the tenant key as an
+  explicit invocation parameter and compares it with the signed manifest. Public
+  product code, tests, and audit prose retain no fixed customer identity.
+  Immutable tool reinstall remains idempotent while consuming the complete
+  archive stream before validating the existing SHA, preventing a false
+  `SIGPIPE` failure on repeated verify calls.
+
+  Clone activation and tenant refresh create or reuse a private stable runtime
+  JWT secret and inject it without printing the value; the image's weak
+  missing-secret fallback is therefore not exercised by this acceptance clone.
+  The immutable candidate edge exposes an exact JSON `/healthz` liveness
+  contract ahead of the SPA fallback, and the nginx container healthcheck
+  validates its status and body rather than checking configuration syntax only.
+  The tenant-RC boundary build now passes an explicit `boundary_head` source
+  authority to repository preflight. It still requires a clean allowlisted
+  release branch and exact `SOURCE_SHA == HEAD`; ordinary candidates continue
+  to require the same SHA at `origin/main`.
+  Candidate builds isolate workspace manifests and the frozen pnpm install
+  ahead of frontend source, and use named BuildKit caches for pnpm, apt and
+  pip downloads. Incremental source changes therefore rebuild application
+  output without reinstalling 623 frontend packages or refetching package
+  indexes; dependency changes remain locked by `pnpm-lock.yaml`.
+
+## 2026-08-09 — NORM-ENGINE-ENTRY-TARGET-CLOSURE
+
+- Branch / anchor: governed `release/tenant-rc-<tenant-key>-v1` at `78d10d0`.
+- Formal Product Layer / Layer Target / Module: P1 industry capability entry in
+  `sc_norm_engine`; P0 generic explicit-parent target projection in `smart_core`.
+- Reason / Why Here: the installed norm module exposed all four authorized child
+  actions, but its root had no action and the delivery projection rebuilt that
+  root as a targetless synthetic group. The root now explicitly opens the norm
+  item list. When native discovery and policy paths emit the same menu once as
+  an action and once as a directory, the platform merges them by exact native
+  menu identity, preserving both the declared target and directory children.
+- Why Not Elsewhere: no frontend label special case, low-code override, database
+  repair, or customer-module behavior is introduced.
+- Blast Radius / validation: explicit-action native groups can open their declared
+  target; ordinary targetless groups retain expand/collapse behavior. Static XML,
+  delivery-menu regression, module upgrade, runtime system-init projection, and
+  real browser navigation must pass.
+- P4 acceptance orchestration: the persistent isolated restore gains an exact,
+  confirmation-gated `sc_norm_engine` upgrade entry. It validates restore,
+  database filter, image revision, tenant mount, network and container labels,
+  stops only the clone Odoo process, runs `--stop-after-init`, and restarts the
+  same clone; production resources and arbitrary modules remain inadmissible.
+
+## 2026-08-09 — FINAL-NAVIGATION-AUTHORITY-SOURCE-CLOSURE
+
+- Branch / anchor: governed `release/tenant-rc-<tenant-key>-v1` at `6a09245`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel; final
+  `system.init` navigation and route-authority assembly in `smart_core`.
+- Reason / Why Here: the SPA consumes `release_navigation_v1.nav` before the
+  delivery and legacy carriers, but final route authority was rebuilt from the
+  legacy `data.nav`. A late, valid directory/action merge could therefore be
+  visible yet fail closed on click. The platform assembler now uses the same
+  release/delivery/legacy priority as its consumer.
+- Why Not Elsewhere: no construction or customer semantics belong in this
+  rule, and neither frontend fallback nor low-code configuration may infer or
+  weaken route authority.
+- Blast Radius / validation: only menu/action pairs emitted by the authoritative
+  final navigation projection can be admitted. Static source-order regression,
+  focused backend tests, final `system.init` pair consistency, and a real
+  `wutao` browser click on the isolated rehearsal clone prove containment.
+## 2026-08-09 — ACTION-SURFACE-RENDERER-REGISTRY
+
+- Branch / anchor: governed `release/tenant-rc-<tenant-key>-v1` at `eef94ed`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel; generic
+  frontend contract consumption through the Action Surface Renderer Registry.
+- Reason / Why Here: every collection presentation, including planned pivot,
+  graph, calendar, gantt, activity, and dashboard views, needs one governed
+  dispatch boundary instead of page-local component branches.
+- Why Not Elsewhere: no construction, quota, tenant, low-code, or operations
+  semantics belong in renderer selection; the frontend consumes only the
+  backend presentation semantic.
+- Blast Radius / validation: ActionView surface dispatch, registered collection
+  semantics, explicit readable fallbacks, and unsupported fail-closed behavior.
+  Registry unit tests, architecture guards, existing collection semantics,
+  frontend build, and real hierarchy-browser acceptance prove containment.
+## 2026-08-09 — DESIGN-TOKEN-CONTROL-VISUAL-CLOSURE
+
+- Branch / anchor: governed `release/tenant-rc-<tenant-key>-v1` at `eef94ed`.
+- Formal Product Layer / Layer Target / Module: P0 platform design system;
+  design-token CSS compilation and shared button/query-toolbar primitives.
+- Reason / Why Here: numeric radius tokens were emitted without CSS length
+  units, so browsers discarded the shared radii and controls rendered square.
+  Shared button hierarchy also needed one consistent hover, border, focus,
+  alignment, and motion policy.
+- Why Not Elsewhere: quota, construction, customer, and page-local styles must
+  not compensate for a platform token compiler defect.
+- Blast Radius / validation: all consumers of component radius tokens and
+  `.sc-btn`, plus search-toolbar button height. Token unit tests, token verify,
+  strict typecheck, frontend build, computed-style browser assertions, and the
+  real hierarchy workbench screenshot prove containment.
+
+## 2026-08-09 — VERSIONED-BOQ-IMPORT-TO-COST-WBS-CLOSURE
+
+- Branch / anchor: `feature/boq-versioned-import-wbs` at `86d6ee8`.
+- Formal Product Layer / Layer Target / Module: P1 construction standard product;
+  L2 domain models and Odoo native model/view/security system in
+  `smart_construction_core`.
+- Reason / Why Here: BOQ source, version, publication state, import evidence,
+  amount conservation, and cost-WBS ownership are construction cost facts. The
+  contract must remain stable while file-specific parsing evolves incrementally.
+- Why Not Elsewhere: `smart_core` owns only generic runtime mechanisms; the SPA
+  renders backend contracts and must not invent BOQ state. Low-code and customer
+  modules cannot own statutory cost facts. P4 is limited to isolated fixtures,
+  real-file probes, browser acceptance, and release evidence.
+- Blast Radius / validation: `project.boq.line`, new version and import-batch
+  facts, `construction.work.breakdown`, project BOQ entry, downstream cost and
+  progress references, native views/security, and import wizard. Static guards,
+  focused ORM tests, isolated `sc_clean` install/upgrade, real XLS import with
+  row/amount reconciliation, WBS idempotency, and authenticated `sc_demo`
+  browser acceptance must pass before product-baseline closure resumes.
+
+## 2026-08-09 — SOURCE-ORDER-BOQ-RECONCILIATION-CLOSURE
+
+- Branch / source evidence: `feature/boq-versioned-import-wbs`; real XLS SHA-256
+  `08c05ba9a357453d95e552b0cdfc2f7a83b749d1d8b2d479a2a8250c5eae35a3`.
+- Formal Product Layer / Layer Target / Module: P0 generic contract-driven
+  `hierarchical_worksheet` source-order presentation in `smart_core` and the
+  SPA; P1 BOQ source facts, independent calculations, summary scopes, and
+  reconciliation rules in `smart_construction_core`.
+- Preserved source structure: the published `V1-20260809` snapshot (version id
+  21, project id 4) contains 135 source-order rows: 108 BOQ items, 13 structural
+  headings, and 14 source subtotal/total rows. Only 4 blank or semantically empty
+  helper rows are ignored. Source amount remains `3,478,851.81`; WBS remains 203
+  nodes and no `Units` alias survives.
+- Independent calculation evidence: every item freezes quantity × unit price;
+  each subtotal/total freezes its item scope, source amount, calculated amount,
+  variance, scope count, and boundary sequences. Real source differences include
+  `114,896.48 - 114,896.49 = -0.01` and
+  `3,031,841.76 - 3,031,841.74 = 0.02`.
+- Browser evidence: authenticated `wutao` acceptance at
+  `http://127.0.0.1:18083` passed with 108 items, 13 headings, 14 summaries,
+  exact nine-column standard contract with side-by-side source/system amounts,
+  audit variance kept outside the ordinary worksheet, resizable panes, real XLS
+  preflight, and 203-node WBS. Evidence is under
+  `artifacts/boq-baseline-browser/`, including
+  `boq-source-calculation-comparison.png`,
+  `boq-import-preflight-verified.png`, and `result.json`.
+- Gates: BOQ ORM tag passed 8 tests / 0 failures; isolated page assembler passed
+  7 tests; strict Vue typecheck, local incremental frontend build, XML/Python
+  syntax, `git diff --check`, browser runtime errors, HTTP errors, console errors,
+  and captured OLE warning-log checks all passed.
+
+## 2026-08-09 — FULL-BOQ-ANALYSIS-AND-TARGET-COST-PLAN-BASELINE
+
+- Branch / anchor: `feature/boq-versioned-import-wbs` at `aa0c208`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product; L2 cost-domain facts, import service, native views, and
+  permissions in `smart_construction_core`.
+- Reason / Why Here: statutory BOQ workbooks contain BOQ facts, unit-price
+  analyses, norm composition, resource consumption, measures, fees, and taxes.
+  A target cost plan must be generated from an immutable published snapshot of
+  those facts and remain a separate management baseline.
+- Why Not Elsewhere: generic contract infrastructure stays in `smart_core`;
+  frontend renders the backend contract and performs no cost calculations;
+  WBS remains a management dimension rather than the owner of BOQ or target
+  cost facts; sample-specific probes remain P4 evidence only.
+- Blast Radius / validation: BOQ import parsing and preview, BOQ version and
+  analysis records, target cost plan lifecycle, cost permissions/actions/views,
+  and existing WBS/BOQ consumers. Both supplied real workbooks, component and
+  amount conservation tests, isolated `sc_clean` module rehearsal, contract
+  guards, and authenticated browser acceptance must pass before baseline
+  closure.
+- Final real-data evidence: published `V6-FULL-20260810` preserves 1,658 BOQ
+  rows, 1,414 priced items, 1,138 unit-price analyses, 1,622 norm composition
+  rows, and 225 unit-project summary facts. `CN-SC-2015-BUDGET` resolves 1,541
+  norm rows (95.01%); 81 source-specific or supplemental rows remain explicit
+  unmatched facts rather than being guessed. The generated `V5-20260810`
+  target plan contains 7,441 lines and a `29,922,323.10` budget baseline.
+- Scale closure: the plan form no longer embeds and hydrates all 7,441
+  one-to-many lines. A native contextual action opens the separately secured
+  target-cost ledger at 20 rows per page (373 pages), while the plan form owns
+  summary, version, validation, publication, adjustment, and archive state.
+  The project-manager delivery contract explicitly exposes BOQ analysis and
+  cost plan menus and binds the ledger action to the cost-plan context; no SPA
+  business rule or client action is introduced.

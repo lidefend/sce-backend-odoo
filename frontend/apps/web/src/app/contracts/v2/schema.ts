@@ -114,7 +114,7 @@ function decodeClientType(value: string, issues: DecodeIssue[]): ContractV2Clien
 }
 
 function decodeViewType(value: string, path: string, issues: DecodeIssue[]): ContractV2ViewType {
-  if (value === 'form' || value === 'list' || value === 'table' || value === 'kanban' || value === 'tree' || value === 'gantt' || value === 'combine') {
+  if (value === 'form' || value === 'list' || value === 'table' || value === 'kanban' || value === 'tree' || value === 'pivot' || value === 'graph' || value === 'calendar' || value === 'gantt' || value === 'activity' || value === 'dashboard' || value === 'combine') {
     return value;
   }
   issues.push({ path, message: `unsupported view type ${value || '<empty>'}` });
@@ -122,7 +122,7 @@ function decodeViewType(value: string, path: string, issues: DecodeIssue[]): Con
 }
 
 function decodeLayoutType(value: string, path: string, issues: DecodeIssue[]): ContractV2LayoutType {
-  if (value === 'form' || value === 'table' || value === 'kanban' || value === 'tree' || value === 'gantt' || value === 'combine') {
+  if (value === 'form' || value === 'table' || value === 'kanban' || value === 'tree' || value === 'pivot' || value === 'graph' || value === 'calendar' || value === 'gantt' || value === 'activity' || value === 'dashboard' || value === 'combine') {
     return value;
   }
   issues.push({ path, message: `unsupported layout type ${value || '<empty>'}` });
@@ -379,6 +379,10 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   if (!actionId) return null;
   const target = asRecord(raw.target);
   const button = asRecord(raw.button);
+  const visible = asRecord(raw.visible);
+  const modifiers = asRecord(raw.modifiers);
+  const presentation = asRecord(raw.presentation);
+  const actionSafety = asRecord(raw.action_safety || raw.actionSafety);
   const submitPolicy = asRecord(raw.submitPolicy);
   const tracePolicy = asRecord(raw.tracePolicy);
   return {
@@ -394,6 +398,12 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
     ...(optionalString(raw, 'intent') ? { intent: optionalString(raw, 'intent') } : {}),
     ...(Object.keys(target).length ? { target } : {}),
     ...(Object.keys(button).length ? { button } : {}),
+    ...(Object.keys(visible).length ? { visible } : {}),
+    ...(Object.keys(modifiers).length ? { modifiers } : {}),
+    ...(Object.prototype.hasOwnProperty.call(raw, 'invisible') ? { invisible: raw.invisible } : {}),
+    ...(asStringArray(raw.visible_profiles).length ? { visible_profiles: asStringArray(raw.visible_profiles) } : {}),
+    ...(Object.keys(presentation).length ? { presentation } : {}),
+    ...(Object.keys(actionSafety).length ? { action_safety: actionSafety } : {}),
     ...(Object.keys(submitPolicy).length ? { submitPolicy } : {}),
     ...(Object.keys(tracePolicy).length ? { tracePolicy } : {}),
   };
@@ -627,6 +637,8 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     ...(isRecord(source.tracePolicy) ? { tracePolicy: source.tracePolicy } : {}),
     ...(isRecord(source.complexityBudget) ? { complexityBudget: source.complexityBudget } : {}),
     ...(isRecord(source.aiEnvelope) ? { aiEnvelope: source.aiEnvelope } : {}),
+    ...(asString(source.interactionMode) ? { interactionMode: asString(source.interactionMode) } : {}),
+    ...(asString(source.actionTarget) ? { actionTarget: asString(source.actionTarget) } : {}),
   };
 }
 

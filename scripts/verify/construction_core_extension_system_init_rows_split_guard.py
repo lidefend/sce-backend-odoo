@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CORE_EXTENSION = ROOT / "addons/smart_construction_core/core_extension.py"
 ROWS = ROOT / "addons/smart_construction_core/core_extension_system_init_rows.py"
+DICTIONARY_MODEL = ROOT / "addons/smart_construction_core/models/support/base_dictionary.py"
 CI = ROOT / "make/ci.mk"
 
 MAX_CORE_EXTENSION_LINES = 1858
@@ -73,12 +74,15 @@ def main() -> int:
     errors: list[str] = []
     core_text = _read(CORE_EXTENSION)
     rows_text = _read(ROWS)
+    dictionary_model_text = _read(DICTIONARY_MODEL)
     ci_text = _read(CI)
 
     if not core_text:
         errors.append(f"missing core extension file: {CORE_EXTENSION.relative_to(ROOT)}")
     if not rows_text:
         errors.append(f"missing system init rows module: {ROWS.relative_to(ROOT)}")
+    if not dictionary_model_text:
+        errors.append(f"missing dictionary model: {DICTIONARY_MODEL.relative_to(ROOT)}")
 
     if core_text:
         line_count = len(core_text.splitlines())
@@ -131,6 +135,17 @@ def main() -> int:
             if forbidden in rows_text:
                 errors.append(f"system init rows module must remain read-side row assembly; forbidden token: {forbidden}")
 
+    if dictionary_model_text:
+        for token in (
+            "('role_entry', '角色入口配置')",
+            "('home_block', '首页区块配置')",
+            "scope_type = fields.Selection([",
+            "scope_ref = fields.Char('范围标识', index=True)",
+            "value_json = fields.Json('配置值', default=dict)",
+        ):
+            if token not in dictionary_model_text:
+                errors.append(f"dictionary contract model missing token: {token}")
+
     if "python3 scripts/verify/construction_core_extension_system_init_rows_split_guard.py" not in ci_text:
         errors.append("ci.local.quick must run construction_core_extension_system_init_rows_split_guard.py")
 
@@ -172,6 +187,16 @@ def main() -> int:
             errors.append("role entry rows must preserve role-scoped dictionary entries")
         if rows.build_home_block_contract_rows(env)[0].get("blocks") != ["home.block"]:
             errors.append("home block rows must preserve enabled global blocks")
+        legacy_env = _FakeEnv({
+            "sc.dictionary": _FakeModel(
+                {"code", "name", "sequence"},
+                [],
+            ),
+        })
+        if rows.dictionary_fields(legacy_env) != ["code", "name", "sequence"]:
+            errors.append("dictionary fields must remain compatible with a pre-contract dictionary registry")
+        if rows.build_role_entry_contract_rows(legacy_env) or rows.build_home_block_contract_rows(legacy_env):
+            errors.append("pre-contract dictionary registries must fail closed without synthetic role or home facts")
         data = rows.apply_system_init_profile_overrides({"ext_facts": {}})
         ext_facts = data.get("ext_facts") or {}
         workspace = ext_facts.get("workspace_keyword_overrides") or {}

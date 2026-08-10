@@ -12,7 +12,7 @@ class TestNativeActionSelectionAlignment(TransactionCase):
             b"""
             <form string="Demo">
               <header>
-                <button name="action_confirm" type="object" string="Confirm"/>
+                <button name="action_confirm" type="object" string="Confirm" class="btn-primary"/>
               </header>
             </form>
             """
@@ -22,6 +22,8 @@ class TestNativeActionSelectionAlignment(TransactionCase):
         row = parser._button_to_action(btn, level="header")
 
         self.assertEqual(row.get("level"), "header")
+        self.assertEqual(row.get("source_widget_id"), "page.header")
+        self.assertEqual((row.get("presentation") or {}).get("tier"), "primary")
         self.assertEqual(row.get("selection"), "none")
         self.assertEqual(row.get("visible_profiles"), ["create", "edit", "readonly"])
 

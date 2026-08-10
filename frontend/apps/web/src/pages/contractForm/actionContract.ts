@@ -346,6 +346,7 @@ export function actionResponseNavQuery(
     ? entryTarget.compatibility_refs as Record<string, unknown>
     : {};
   return pickContractNavQuery(currentQuery, {
+    menu_id: payload.menu_id || rawAction.menu_id || refs.menu_id,
     action_id: payload.action_id || rawAction.id || rawAction.action_id || refs.action_id,
     view_id: payload.view_id || rawAction.view_id || refs.view_id,
     domain_raw: payload.domain_raw || rawAction.domain_raw || refs.domain_raw,

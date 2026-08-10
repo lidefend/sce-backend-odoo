@@ -101,6 +101,7 @@ def _component_key(widget_type: str) -> str:
         return "sc.select.remote"
     mapping = {
         "input": "sc.input.text",
+        "binary": "sc.input.binary",
         "textarea": "sc.input.textarea",
         "number": "sc.input.number",
         "select": "sc.select.remote",
@@ -133,6 +134,8 @@ def _widget_type_from_field(field: dict[str, Any]) -> str:
         return "textarea"
     if ttype in {"boolean"}:
         return "checkbox"
+    if ttype == "binary":
+        return "binary"
     return "input"
 
 
@@ -442,7 +445,10 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     model = _text(source.get("model") or ui.get("model"))
     view_type = _text(source.get("view_type") or ui.get("view_type"), "form")
     record_id = _positive_int(source.get("record_id") or source.get("recordId") or ui.get("record_id") or ui.get("recordId"), 0)
-    layout_type = "table" if view_type in {"tree", "list"} else view_type if view_type in {"form", "kanban", "gantt"} else "form"
+    collection_layout_types = {
+        "form", "kanban", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"
+    }
+    layout_type = "table" if view_type in {"tree", "list"} else view_type if view_type in collection_layout_types else "form"
     page_id = _stable_id(f"{model}.{view_type}" if model else f"ui.{view_type}", "ui.contract")
     contract = _base_contract(
         page_id=page_id,
@@ -644,6 +650,24 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
         _apply_form_structure_columns_to_tree(container_tree, form_structure_contract)
     contract["layoutContract"]["containerTree"] = container_tree
     contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {"sc.display.text"})
+    collection_view_key = "tree" if view_type in {"tree", "list"} else view_type
+    collection_view = _dict(_dict(ui.get("views")).get(collection_view_key))
+    collection_presentation = _dict(collection_view.get("collection_presentation"))
+    if collection_presentation:
+        contract["layoutContract"]["listProfile"]["collection_presentation"] = deepcopy(
+            collection_presentation
+        )
+        contract["layoutContract"]["listProfile"]["sourceAuthority"] = {
+            "kind": "native_collection_presentation_projection",
+            "authorities": ["ir.ui.view", "ir.model.fields", "ir.actions.act_window"],
+            "projection_only": True,
+            "no_business_fact_authority": True,
+            "runtime_carrier": "ui.contract.v2.layoutContract.listProfile",
+        }
+    interaction_mode = _text(_dict(ui.get("head")).get("interaction_mode"))
+    if interaction_mode:
+        contract["runtimeContract"]["interactionMode"] = interaction_mode
+        contract["runtimeContract"]["actionTarget"] = _text(_dict(ui.get("head")).get("action_target"), "current")
     if form_structure_contract and form_structure_applied:
         contract["formStructureContract"] = deepcopy(form_structure_contract)
     contract["dataContract"]["dataMeta"]["fieldCount"] = len(fields)
@@ -2264,8 +2288,7 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
         label = _text(row.get("label") or row.get("name") or row.get("title"), key)
         intent = _text(row.get("intent"), "ui.contract")
         source_id = _text(row.get("sourceWidgetId") or row.get("source_widget_id"), source_widget_id)
-        contract["actionContract"]["actionRuleList"].append(
-            {
+        action_rule = {
                 "actionId": action_id,
                 "actionKey": key,
                 "label": label,
@@ -2279,7 +2302,20 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                 "targetScope": _text(row.get("target_scope") or row.get("level"), "page"),
                 "refreshMode": "partial",
             }
-        )
+        # Native visibility/safety remains declarative.  Preserve it so the
+        # product renderer can evaluate the same Odoo view conditions against
+        # current form data instead of inventing action-specific branches.
+        for source_key, target_key in (
+            ("visible", "visible"),
+            ("modifiers", "modifiers"),
+            ("invisible", "invisible"),
+            ("visible_profiles", "visible_profiles"),
+            ("presentation", "presentation"),
+            ("action_safety", "action_safety"),
+        ):
+            if row.get(source_key) is not None:
+                action_rule[target_key] = deepcopy(row.get(source_key))
+        contract["actionContract"]["actionRuleList"].append(action_rule)
         contract["actionContract"]["dependencyGraph"].setdefault(source_id, []).append(action_id)
         contract["statusContract"]["buttonStatus"].append({"btnId": f"btn.{key}", "visible": True, "disabled": False})
 
@@ -2317,13 +2353,23 @@ def _append_ui_contract_actions(
 ) -> None:
     rows: list[dict[str, Any]] = []
     form_view = _dict(_dict(ui.get("views")).get("form"))
-    for row in _list(form_view.get("header_buttons")):
-        if isinstance(row, dict):
-            rows.append({
-                **row,
-                "level": _text(row.get("level"), "header"),
-                "target_scope": _text(row.get("target_scope"), "header"),
-            })
+    for header_button_source in (form_view.get("header_buttons"), ui.get("header_buttons")):
+        for row in _list(header_button_source):
+            if isinstance(row, dict):
+                rows.append({
+                    **row,
+                    "level": _text(row.get("level"), "header"),
+                    "target_scope": _text(row.get("target_scope"), "header"),
+                })
+    active_view_type = _text(ui.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0]
+    if active_view_type == "list":
+        active_view_type = "tree"
+    active_view = _dict(_dict(ui.get("views")).get(active_view_type))
+    active_view_toolbar = _dict(active_view.get("toolbar"))
+    for slot in ("header", "sidebar", "footer"):
+        for row in _list(active_view_toolbar.get(slot)):
+            if isinstance(row, dict):
+                rows.append(row)
     for key in ("buttons", "business_actions"):
         for row in _list(ui.get(key)):
             if isinstance(row, dict):
@@ -2356,16 +2402,17 @@ def _append_ui_contract_actions(
             count = _badge_count(main_data.get(badge_field)) if badge_field else None
             if count is not None and badge_label:
                 display_label = f"{count}{badge_label}"
-        if kind == "open" or intent == "open":
+        if kind == "open" or intent == "open" or _positive_int(row.get("action_id"), 0):
             action_intent = "ui.contract"
             target = {
-                "action_id": payload.get("action_id"),
+                "action_id": payload.get("action_id") or row.get("action_id"),
+                "menu_id": payload.get("menu_id") or row.get("menu_id"),
                 "model": row.get("target_model") or row.get("model"),
                 "view_type": _text(payload.get("view_mode"), "tree").split(",")[0],
                 "domain_raw": payload.get("domain_raw"),
                 "context_raw": payload.get("context_raw"),
                 "url": payload.get("url"),
-                "route": payload.get("route"),
+                "route": payload.get("route") or row.get("route"),
                 "target": payload.get("target"),
             }
             button = {}
@@ -2382,8 +2429,19 @@ def _append_ui_contract_actions(
             action_intent = _text(row.get("intent"), "execute_button")
             target = deepcopy(_dict(row.get("target")))
             button = {
-                "name": _text(row.get("name") or row.get("button_name") or row.get("method_name"), key),
-                "type": _text(row.get("type") or row.get("button_type"), "object"),
+                "name": _text(
+                    row.get("name")
+                    or row.get("button_name")
+                    or row.get("method_name")
+                    or payload.get("method"),
+                    key,
+                ),
+                "type": _text(
+                    row.get("type")
+                    or row.get("button_type")
+                    or payload.get("type"),
+                    "object",
+                ),
             }
         normalized.append(
             {
@@ -2397,6 +2455,12 @@ def _append_ui_contract_actions(
                 "sourceWidgetId": _text(row.get("sourceWidgetId") or row.get("source_widget_id")),
                 "target_scope": _text(row.get("target_scope") or row.get("level"), "page"),
                 "trigger": _text(row.get("trigger"), "click"),
+                "visible": deepcopy(row.get("visible")),
+                "modifiers": deepcopy(row.get("modifiers")),
+                "invisible": deepcopy(row.get("invisible")),
+                "visible_profiles": deepcopy(row.get("visible_profiles")),
+                "presentation": deepcopy(row.get("presentation")),
+                "action_safety": deepcopy(row.get("action_safety")),
             }
         )
     _append_actions(contract, normalized, source_widget_id=source_widget_id)

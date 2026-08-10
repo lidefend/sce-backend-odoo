@@ -1,9 +1,9 @@
-import { chromium } from "playwright";
+import { launchChromium } from "../../../../scripts/verify/playwright_runtime.mjs";
 
 const BASE_URL = process.env.BASE_URL || "http://127.0.0.1:18081";
 const LOGIN = process.env.LOGIN || "admin";
 const PASSWORD = process.env.PASSWORD || "admin";
-const MENU_CONFIG_PATH = process.env.MENU_CONFIG_PATH || "/admin/menu-config?menu_id=646&action_id=841";
+const DB_NAME = process.env.DB_NAME || "";
 
 function assert(condition, message, details = {}) {
   if (!condition) {
@@ -23,8 +23,16 @@ async function login(page) {
   const inputs = page.locator("input.sc-input");
   await inputs.nth(0).fill(LOGIN);
   await inputs.nth(1).fill(PASSWORD);
+  if (DB_NAME && await inputs.nth(2).isEditable()) {
+    await inputs.nth(2).fill(DB_NAME);
+  }
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL((url) => !String(url).includes("/login"), { timeout: 30000 });
+  await Promise.race([
+    page.waitForURL((url) => !String(url).includes("/login"), { timeout: 30000 }),
+    page.locator("#login-error").waitFor({ state: "visible", timeout: 30000 }).then(async () => {
+      throw new Error(`login failed: ${String(await page.locator("#login-error").textContent() || "unknown error").trim()}`);
+    }),
+  ]);
   await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
 }
 
@@ -41,50 +49,110 @@ async function mainNavigationLabels(page) {
     .map((el) => String(el.textContent || "").trim().replace(/\s+/g, " ")));
 }
 
-async function menuConfigTopLabels(page) {
-  await page.goto(`${BASE_URL}${MENU_CONFIG_PATH}`, { waitUntil: "domcontentloaded" });
-  await page.waitForSelector(".tree-scroll .tree-node[data-menu-id]", { timeout: 30000 });
-  await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
-  return page.evaluate(() => {
-    const directNodes = Array.from(document.querySelectorAll(".tree-scroll > ul.config-tree-list > li > button.tree-node[data-menu-id]"));
-    return directNodes
-      .filter((el) => Boolean(el.offsetWidth || el.offsetHeight || el.getClientRects().length))
-      .map((button) => {
-        const labelSpan = button.querySelector("span:not(.branch-marker):not(.menu-origin-badge)");
-        return String(labelSpan?.textContent || button.textContent || "").trim().replace(/\s+/g, " ");
-      });
+async function openBusinessNavigation(page) {
+  const navigationButton = page.locator('.workspace-activity-rail button[aria-label="业务导航"]');
+  await navigationButton.waitFor({ state: "visible", timeout: 30000 });
+  await navigationButton.click();
+  try {
+    await page.locator(".nav-shell button.label").first().waitFor({ state: "visible", timeout: 30000 });
+  } catch {
+    throw Object.assign(new Error("业务导航未形成可操作菜单"), {
+      details: {
+        url: page.url(),
+        navigation_state: await page.locator(".nav-shell").getAttribute("data-navigation-state").catch(() => null),
+        navigation_text: String(await page.locator(".nav-shell").textContent().catch(() => "") || "").trim(),
+      },
+    });
+  }
+}
+
+async function visibleConfigurationEntries(page) {
+  return page.evaluate(() => Array.from(document.querySelectorAll(
+    ".nav-shell .label, .workspace-activity-rail button[aria-label]",
+  ))
+    .filter((el) => Boolean(el.offsetWidth || el.offsetHeight || el.getClientRects().length))
+    .map((el) => ({
+      label: String(el.textContent || el.getAttribute("aria-label") || "").trim().replace(/\s+/g, " "),
+      surface: el.closest(".workspace-activity-rail") ? "activity_rail" : "primary_navigation",
+    }))
+    .filter((entry) => entry.label === "产品配置" || entry.label === "配置中心"));
+}
+
+async function openMenuConfigurationFromProductEntry(page) {
+  const productEntry = page.locator(".nav-shell button.label").filter({ hasText: /^\s*产品配置\s*$/ });
+  assert(await productEntry.count() === 1, "产品配置运行态入口必须唯一", {
+    product_entry_count: await productEntry.count(),
+    visible_navigation_labels: await mainNavigationLabels(page),
   });
+  assert(await productEntry.isEnabled(), "产品配置运行态入口不可操作");
+  const productBranch = productEntry.locator("xpath=ancestor::li[1]");
+  const menuConfigurationEntry = productBranch.locator("button.label").filter({ hasText: /^\s*菜单配置\s*$/ });
+  const productToggle = productBranch.locator(":scope > .node > button.toggle");
+  if (await productToggle.getAttribute("aria-expanded") !== "true") {
+    await productToggle.click();
+  }
+  const lowCodeGroupEntry = productBranch.locator("button.label").filter({ hasText: /^\s*低代码系统配置\s*$/ });
+  await lowCodeGroupEntry.waitFor({ state: "visible", timeout: 30000 });
+  const lowCodeGroup = lowCodeGroupEntry.locator("xpath=ancestor::li[1]");
+  const lowCodeToggle = lowCodeGroup.locator(":scope > .node > button.toggle");
+  if (await lowCodeToggle.getAttribute("aria-expanded") !== "true") {
+    await lowCodeToggle.click();
+  }
+  try {
+    await menuConfigurationEntry.waitFor({ state: "visible", timeout: 30000 });
+  } catch {
+    throw Object.assign(new Error("产品配置分组无法展开菜单配置"), {
+      details: {
+        product_toggle_expanded: await productToggle.getAttribute("aria-expanded"),
+        low_code_toggle_expanded: await lowCodeToggle.getAttribute("aria-expanded"),
+        product_branch_text: String(await productBranch.textContent() || "").trim().replace(/\s+/g, " "),
+      },
+    });
+  }
+  const sourceUrl = page.url();
+  await menuConfigurationEntry.click();
+  await page.waitForURL((url) => String(url) !== sourceUrl, { timeout: 30000 });
+  return page.url();
+}
+
+async function menuConfigSurface(page) {
+  const resolvedMenuConfigurationUrl = await openMenuConfigurationFromProductEntry(page);
+  const menuConfigurationHeading = page.getByRole("heading", { name: "菜单配置", exact: true });
+  await menuConfigurationHeading.waitFor({ state: "visible", timeout: 30000 });
+  await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
+  return {
+    resolvedMenuConfigurationUrl,
+    heading: String(await menuConfigurationHeading.textContent() || "").trim(),
+  };
 }
 
 async function main() {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   try {
     await login(page);
+    await openBusinessNavigation(page);
     const labels = await mainNavigationLabels(page);
-    const menuConfigLabels = await menuConfigTopLabels(page);
+    const configurationEntries = await visibleConfigurationEntries(page);
+    const { heading: menuConfigHeading, resolvedMenuConfigurationUrl } = await menuConfigSurface(page);
     const normalizedMainLabels = labels.map(normalizeLabel);
-    const normalizedMenuConfigLabels = menuConfigLabels.map(normalizeLabel);
-    const expectedPrefix = normalizedMainLabels.slice(0, normalizedMenuConfigLabels.length);
-    const menuConfigAligned = normalizedMenuConfigLabels.length > 0
-      && normalizedMenuConfigLabels.every((label, index) => label === expectedPrefix[index]);
     const result = {
       url: page.url(),
+      resolved_menu_configuration_url: resolvedMenuConfigurationUrl,
       labels,
-      menu_config_top_labels: menuConfigLabels,
+      menu_config_heading: menuConfigHeading,
       has_lowcode_fact_spread: ["客户", "供应商", "一般合同", "材料合同"].every((label) => normalizedMainLabels.includes(label)),
-      menu_config_has_lowcode_fact_spread: ["客户", "供应商", "一般合同", "材料合同"].every((label) => normalizedMenuConfigLabels.includes(label)),
       has_legacy_base_settings_group: normalizedMainLabels.some((label) => label.includes("基础设置") || label.includes("系统设置")),
-      menu_config_has_legacy_base_settings_group: normalizedMenuConfigLabels.some((label) => label.includes("基础设置") || label.includes("系统设置")),
-      has_config_center_group: normalizedMainLabels.some((label) => label.includes("配置中心")),
-      menu_config_aligned_with_main_navigation: menuConfigAligned,
+      configuration_entries: configurationEntries,
+      product_configuration_entry_count: configurationEntries.filter((entry) => entry.label === "产品配置").length,
+      legacy_configuration_entry_count: configurationEntries.filter((entry) => entry.label === "配置中心").length,
     };
+    result.has_single_product_configuration_entry = result.product_configuration_entry_count === 1
+      && result.legacy_configuration_entry_count === 0;
     result.ok = !result.has_lowcode_fact_spread
-      && !result.menu_config_has_lowcode_fact_spread
       && !result.has_legacy_base_settings_group
-      && !result.menu_config_has_legacy_base_settings_group
-      && result.has_config_center_group
-      && result.menu_config_aligned_with_main_navigation;
+      && result.has_single_product_configuration_entry
+      && result.menu_config_heading === "菜单配置";
     console.log(JSON.stringify(result, null, 2));
     assert(result.ok, "产品发布主导航与菜单配置默认树边界漂移", result);
   } finally {

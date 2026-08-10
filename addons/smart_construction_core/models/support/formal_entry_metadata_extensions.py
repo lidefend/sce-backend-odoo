@@ -67,7 +67,6 @@ FORMAL_ENTRY_METADATA_MODELS = (
     "sc.plan.report",
     "sc.project.document",
     "sc.project.stage.requirement.item",
-    "sc.project.structure",
     "sc.quality.issue",
     "sc.quality.recheck",
     "sc.quality.rectification",

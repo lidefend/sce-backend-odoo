@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import io
+import json
+import hashlib
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +22,25 @@ class DailyAcceptanceCandidateImportTests(unittest.TestCase):
     def test_preflight_rejects_every_host_except_sc_root(self):
         with self.assertRaisesRegex(module.ImportError, "restricted to sc-root"):
             module.preflight("a" * 40, "sc-prod")
+
+    def test_boundary_preflight_requires_exact_tenant_rc_head(self):
+        with mock.patch.object(module, "git") as git:
+            git.side_effect = lambda *args: {
+                ("branch", "--show-current"): "release/tenant-rc-sample-v1",
+                ("rev-parse", "HEAD"): "a" * 40,
+                ("status", "--porcelain", "--untracked-files=all"): "",
+            }[args]
+            module.preflight("a" * 40, "sc-root", allow_boundary_head=True)
+
+    def test_boundary_preflight_rejects_feature_branch(self):
+        with mock.patch.object(module, "git") as git:
+            git.side_effect = lambda *args: {
+                ("branch", "--show-current"): "feature/unsafe",
+                ("rev-parse", "HEAD"): "a" * 40,
+                ("status", "--porcelain", "--untracked-files=all"): "",
+            }[args]
+            with self.assertRaisesRegex(module.ImportError, "tenant RC"):
+                module.preflight("a" * 40, "sc-root", allow_boundary_head=True)
 
     def test_archive_must_stay_under_governed_candidate_root(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -83,7 +106,7 @@ class DailyAcceptanceCandidateImportTests(unittest.TestCase):
                 "remote_identity",
                 side_effect=[None, f"{config_id}|{expected_sha}"],
             ),
-            mock.patch.object(module, "stream_load") as stream,
+            mock.patch.object(module, "stream_load", return_value={"blob_count": 1, "layout_bytes": 2, "transferred_bytes": 1}) as stream,
         ):
             module.import_candidate(
                 expected_sha=expected_sha,
@@ -96,20 +119,50 @@ class DailyAcceptanceCandidateImportTests(unittest.TestCase):
             )
         stream.assert_called_once()
 
-    def test_remote_inspection_is_one_shell_quoted_command(self):
-        completed = module.subprocess.CompletedProcess(
-            [], 0, "sha256:" + "d" * 64 + "|" + "a" * 40 + "\n", ""
-        )
-        with mock.patch.object(module.subprocess, "run", return_value=completed) as runner:
-            observed = module.remote_identity(
-                "sc-root", "ghcr.io/lidefend/sce-product:9.9.9-rc.99"
-            )
-        command = runner.call_args.args[0]
+    def test_extract_oci_layout_verifies_digest_addressed_blobs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / "candidate.tar"
+            payload = b"verified-layer"
+            digest = hashlib.sha256(payload).hexdigest()
+            with tarfile.open(archive, "w") as target:
+                for name, content in {
+                    f"blobs/sha256/{digest}": payload,
+                    "index.json": b"{}",
+                    "manifest.json": json.dumps([]).encode(),
+                    "oci-layout": b'{"imageLayoutVersion":"1.0.0"}',
+                }.items():
+                    info = tarfile.TarInfo(name)
+                    info.size = len(content)
+                    target.addfile(info, io.BytesIO(content))
+            destination = root / "layout"
+            destination.mkdir()
+            count, size = module.extract_oci_layout(archive, destination)
+            self.assertEqual(count, 1)
+            self.assertEqual(size, sum(len(x) for x in (payload, b"{}", b"[]", b'{"imageLayoutVersion":"1.0.0"}')))
+            self.assertEqual((destination / f"blobs/sha256/{digest}").read_bytes(), payload)
+
+    def test_extract_oci_layout_rejects_path_escape(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / "candidate.tar"
+            with tarfile.open(archive, "w") as target:
+                info = tarfile.TarInfo("../escape")
+                info.size = 1
+                target.addfile(info, io.BytesIO(b"x"))
+            destination = root / "layout"
+            destination.mkdir()
+            with self.assertRaisesRegex(module.ImportError, "unsafe OCI member"):
+                module.extract_oci_layout(archive, destination)
+
+    def test_remote_identity_quotes_the_format_as_one_remote_command(self):
+        completed = mock.Mock(returncode=0, stdout="sha256:" + "a" * 64 + "|" + "b" * 40 + "\n", stderr="")
+        with mock.patch.object(module.subprocess, "run", return_value=completed) as invoke:
+            module.remote_identity("sc-root", "ghcr.io/lidefend/sce-product:sha-" + "c" * 12)
+        command = invoke.call_args.args[0]
         self.assertEqual(command[:4], ["ssh", "-o", "BatchMode=yes", "sc-root"])
         self.assertEqual(len(command), 5)
-        self.assertIn("docker image inspect", command[4])
         self.assertIn("'{{.Id}}|{{index .Config.Labels", command[4])
-        self.assertEqual(observed, "sha256:" + "d" * 64 + "|" + "a" * 40)
 
 
 if __name__ == "__main__":

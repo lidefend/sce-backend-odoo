@@ -1,25 +1,53 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 
 class ConstructionWorkBreakdown(models.Model):
     """
-    工程结构树（WBS）：
-    - 按项目建立一棵树，承载单项/单位/分部/分项/检验批等层级；
-    - 供工程量清单、任务等对象挂接；
-    - 支持自底向上的工程量/金额汇总。
+    项目管理 WBS：
+    - 由用户按管理目标建立，不复制 BOQ/CBS 的分部分项层级；
+    - 清单通过执行范围分配到 WBS，可跨分部、分项组合为工作包；
+    - 任务、空间和标段围绕 WBS 工作包形成执行管理对象。
     """
 
     _name = "construction.work.breakdown"
-    _description = "工程结构"
+    _description = "项目管理 WBS"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _parent_name = "parent_id"
     _parent_store = True
     _order = "project_id, parent_path, sequence, id"
 
-    name = fields.Char("名称", required=True, tracking=True)
-    code = fields.Char("编码", tracking=True)
+    def init(self):
+        """Idempotently attach pre-versioning nodes after plan_id exists."""
+        self.env.cr.execute("""
+            INSERT INTO construction_wbs_plan
+                (name, version_code, project_id, state, validation_state, active, create_uid, write_uid, create_date, write_date)
+            SELECT jsonb_build_object(
+                       'zh_CN', COALESCE(p.name->>'zh_CN', p.name->>'en_US', '项目') || ' WBS'
+                   ),
+                   'V1.0', p.id, 'draft', 'pending', TRUE, 1, 1, NOW(), NOW()
+              FROM project_project p
+             WHERE EXISTS (
+                       SELECT 1 FROM construction_work_breakdown w
+                        WHERE w.project_id = p.id AND w.plan_id IS NULL
+                   )
+               AND NOT EXISTS (
+                       SELECT 1 FROM construction_wbs_plan v
+                        WHERE v.project_id = p.id AND v.version_code = 'V1.0'
+                   )
+        """)
+        self.env.cr.execute("""
+            UPDATE construction_work_breakdown w
+               SET plan_id = v.id
+              FROM construction_wbs_plan v
+             WHERE w.plan_id IS NULL
+               AND v.project_id = w.project_id
+               AND v.version_code = 'V1.0'
+        """)
+
+    name = fields.Char("WBS 名称", required=True, tracking=True)
+    code = fields.Char("WBS 编码", tracking=True)
     active = fields.Boolean("有效", default=True)
     project_id = fields.Many2one(
         "project.project",
@@ -30,6 +58,7 @@ class ConstructionWorkBreakdown(models.Model):
         domain=[],
         check_company=False,  # 避免自动生成 company_id 依赖域
     )
+    plan_id = fields.Many2one("construction.wbs.plan", string="WBS 版本", index=True, ondelete="cascade")
     company_id = fields.Many2one(
         "res.company",
         string="公司",
@@ -40,7 +69,7 @@ class ConstructionWorkBreakdown(models.Model):
 
     parent_id = fields.Many2one(
         "construction.work.breakdown",
-        string="上级节点",
+        string="上级 WBS",
         index=True,
         ondelete="cascade",
     )
@@ -48,25 +77,71 @@ class ConstructionWorkBreakdown(models.Model):
     child_ids = fields.One2many(
         "construction.work.breakdown",
         "parent_id",
-        string="下级节点",
+        string="下级 WBS",
     )
     sequence = fields.Integer("序号", default=10)
     # 便于调试/报表的层级深度，根=0
     level = fields.Integer("层级", compute="_compute_level", store=True, recursive=True)
     level_type = fields.Selection(
         [
-            ("single", "单项工程"),
-            ("unit", "单位工程"),
-            ("sub_division", "分部工程"),
-            ("sub_section", "分项工程"),
-            ("inspection_lot", "检验批"),
-            ("location", "施工部位"),
+            ("phase", "管理阶段"),
+            ("control_account", "控制账户"),
+            ("work_package", "工作包"),
+            ("summary", "汇总节点"),
             ("other", "其他"),
         ],
-        string="层级类型",
-        required=True,
-        default="sub_section",
+        string="节点角色",
+        help="可选管理属性，不决定 WBS 层级；层级由上级 WBS 和缩进操作形成。",
     )
+    source_type = fields.Selection(
+        [("manual", "用户规划"), ("template", "模板生成")],
+        string="来源",
+        required=True,
+        default="manual",
+        index=True,
+    )
+    source_key = fields.Char(
+        "来源稳定键",
+        index=True,
+        readonly=True,
+        help="清单生成节点的稳定业务键，用于跨版本幂等同步。",
+    )
+    placement_mode = fields.Selection(
+        [("planned", "用户规划")],
+        string="位置管理",
+        default="planned",
+        required=True,
+        help="WBS 的层级位置由用户管理，不受清单同步影响。",
+    )
+    boq_version_id = fields.Many2one(
+        "project.boq.version",
+        string="同步清单版本",
+        index=True,
+        ondelete="set null",
+        readonly=True,
+    )
+    status = fields.Selection(
+        [
+            ("planned", "规划中"),
+            ("active", "生效"),
+            ("inactive", "停用"),
+            ("what_if", "假设方案"),
+        ],
+        string="WBS 状态",
+        default="planned",
+        required=True,
+        tracking=True,
+    )
+    manager_id = fields.Many2one(
+        "res.users", string="责任经理", tracking=True, domain=[("share", "=", False)]
+    )
+    description = fields.Text("范围说明")
+    can_indent = fields.Boolean("可缩进", compute="_compute_structure_command_state")
+    can_outdent = fields.Boolean("可提升", compute="_compute_structure_command_state")
+    can_move_up = fields.Boolean("可上移", compute="_compute_structure_command_state")
+    can_move_down = fields.Boolean("可下移", compute="_compute_structure_command_state")
+    can_add_sibling = fields.Boolean("可新增同级", compute="_compute_structure_command_state")
+    can_add_child = fields.Boolean("可新增下级", compute="_compute_structure_command_state")
 
     boq_line_ids = fields.One2many(
         "project.boq.line", "work_id",
@@ -76,18 +151,27 @@ class ConstructionWorkBreakdown(models.Model):
         "project.task", "work_id",
         string="关联任务"
     )
+    execution_scope_ids = fields.One2many(
+        "construction.execution.scope", "wbs_id", string="执行范围"
+    )
 
     boq_quantity_total = fields.Float(
-        "清单工程量合计",
+        "兼容工程量合计",
         compute="_compute_totals",
         store=True,
         recursive=True,
     )
     boq_amount_total = fields.Monetary(
-        "清单合价合计",
+        "分配金额合计",
         compute="_compute_totals",
         store=True,
         currency_field="currency_id",
+        recursive=True,
+    )
+    boq_line_count = fields.Integer(
+        "分配清单项数",
+        compute="_compute_totals",
+        store=True,
         recursive=True,
     )
     currency_id = fields.Many2one(
@@ -105,102 +189,195 @@ class ConstructionWorkBreakdown(models.Model):
             rec.level = rec.parent_id.level + 1 if rec.parent_id else 0
 
     @api.depends(
-        "boq_line_ids.quantity",
-        "boq_line_ids.amount",
+        "project_id",
+        "parent_id",
+        "sequence",
+        "plan_id",
+        "plan_id.state",
+    )
+    def _compute_structure_command_state(self):
+        """Expose row-specific structure action authority without frontend inference."""
+        grouped = {}
+        for rec in self:
+            key = (rec.project_id.id, rec.parent_id.id or False)
+            grouped.setdefault(key, []).append(rec)
+        positions = {}
+        for project_id, parent_id in grouped:
+            siblings = self.search(
+                [("project_id", "=", project_id), ("parent_id", "=", parent_id)],
+                order="sequence,id",
+            )
+            for index, sibling in enumerate(siblings):
+                positions[sibling.id] = (index, len(siblings))
+        for rec in self:
+            index, count = positions.get(rec.id, (0, 1))
+            editable = not rec.plan_id or rec.plan_id.state in {"draft", "validated", "adjusting"}
+            rec.can_indent = editable and index > 0
+            rec.can_outdent = editable and bool(rec.parent_id)
+            rec.can_move_up = editable and index > 0
+            rec.can_move_down = editable and index < count - 1
+            rec.can_add_sibling = editable
+            rec.can_add_child = editable
+
+
+    @api.depends(
+        "execution_scope_ids.allocation_ids.active",
+        "execution_scope_ids.allocation_ids.boq_line_id",
+        "execution_scope_ids.allocation_ids.allocated_amount",
         "child_ids.boq_quantity_total",
         "child_ids.boq_amount_total",
+        "child_ids.boq_line_count",
     )
     def _compute_totals(self):
-        """自底向上汇总：本节点挂的清单 + 子节点汇总值。"""
+        """按执行分配自底向上汇总；不同计量单位不在 WBS 中相加。"""
         for rec in self:
-            self_qty = sum(rec.boq_line_ids.mapped("quantity"))
-            self_amt = sum(rec.boq_line_ids.mapped("amount"))
-            child_qty = sum(rec.child_ids.mapped("boq_quantity_total"))
+            allocations = rec.execution_scope_ids.mapped("allocation_ids").filtered("active")
+            self_amt = sum(allocations.mapped("allocated_amount"))
             child_amt = sum(rec.child_ids.mapped("boq_amount_total"))
-            rec.boq_quantity_total = self_qty + child_qty
+            rec.boq_quantity_total = 0.0
             rec.boq_amount_total = self_amt + child_amt
+            rec.boq_line_count = len(allocations) + sum(rec.child_ids.mapped("boq_line_count"))
 
-    @api.constrains("parent_id", "project_id")
+    @api.constrains("parent_id", "project_id", "plan_id")
     def _check_parent_project(self):
         """父子节点必须同一项目，避免跨项目串树。"""
         for rec in self:
             if rec.parent_id and rec.parent_id.project_id != rec.project_id:
                 raise ValidationError("工程结构的父节点与子节点必须属于同一项目。")
+            if rec.plan_id and rec.plan_id.project_id != rec.project_id:
+                raise ValidationError("WBS 节点与 WBS 版本必须属于同一项目。")
+            if rec.parent_id and rec.parent_id.plan_id != rec.plan_id:
+                raise ValidationError("上级 WBS 与当前节点必须属于同一 WBS 版本。")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        values_list = []
+        for values in vals_list:
+            values = dict(values)
+            project_id = int(values.get("project_id") or self.env.context.get("default_project_id") or 0)
+            if project_id and not values.get("plan_id"):
+                project = self.env["project.project"].browse(project_id).exists()
+                if project:
+                    values["plan_id"] = self.env["construction.wbs.plan"]._ensure_initial_plan(project).id
+            values_list.append(values)
+        return super().create(values_list)
+
+    def write(self, vals):
+        structural_fields = {"project_id", "plan_id", "parent_id", "sequence", "code", "name", "level_type", "active"}
+        if structural_fields.intersection(vals) and self.filtered(lambda rec: rec.plan_id.state in {"published", "archived"}):
+            raise UserError("已发布或已归档的 WBS 版本不可修改，请先发起调整版本。")
+        return super().write(vals)
+
+    def _ordered_siblings(self):
+        self.ensure_one()
+        domain = [("project_id", "=", self.project_id.id)]
+        domain.append(("parent_id", "=", self.parent_id.id or False))
+        return self.search(domain, order="sequence,id")
+
+    def _create_planned_wbs(self, parent):
+        self.ensure_one()
+        if self.plan_id and self.plan_id.state not in {"draft", "validated", "adjusting"}:
+            raise UserError("当前 WBS 版本不可编辑，请先发起调整版本。")
+        siblings = self.search(
+            [
+                ("project_id", "=", self.project_id.id),
+                ("parent_id", "=", parent.id or False),
+            ],
+            order="sequence,id",
+        )
+        ordinal = len(siblings) + 1
+        prefix = parent.code if parent and parent.code else self.project_id.code
+        code = f"{prefix}.{ordinal}" if prefix else False
+        return self.create(
+            {
+                "project_id": self.project_id.id,
+                "plan_id": self.plan_id.id,
+                "parent_id": parent.id or False,
+                "code": code,
+                "name": "新增 WBS",
+                "sequence": ordinal * 10,
+                "status": "planned",
+                "source_type": "manual",
+                "placement_mode": "planned",
+            }
+        )
+
+    def action_wbs_add_child(self):
+        for rec in self:
+            rec._create_planned_wbs(rec)
+        return True
+
+    def action_wbs_add_sibling(self):
+        for rec in self:
+            rec._create_planned_wbs(rec.parent_id)
+        return True
+
+    def action_wbs_move_up(self):
+        for rec in self:
+            siblings = rec._ordered_siblings()
+            index = siblings.ids.index(rec.id)
+            if index <= 0:
+                continue
+            previous = siblings[index - 1]
+            previous_sequence, current_sequence = previous.sequence, rec.sequence
+            if previous_sequence == current_sequence:
+                previous_sequence = index * 10
+                current_sequence = (index + 1) * 10
+            previous.sequence, rec.sequence = current_sequence, previous_sequence
+        return True
+
+    def action_wbs_move_down(self):
+        for rec in self:
+            siblings = rec._ordered_siblings()
+            index = siblings.ids.index(rec.id)
+            if index >= len(siblings) - 1:
+                continue
+            following = siblings[index + 1]
+            current_sequence, following_sequence = rec.sequence, following.sequence
+            if current_sequence == following_sequence:
+                current_sequence = (index + 1) * 10
+                following_sequence = (index + 2) * 10
+            rec.sequence, following.sequence = following_sequence, current_sequence
+        return True
+
+    def action_wbs_indent(self):
+        for rec in self:
+            siblings = rec._ordered_siblings()
+            index = siblings.ids.index(rec.id)
+            if index <= 0:
+                raise UserError("首个同级 WBS 无法缩进，请先将目标上级移动到它之前。")
+            rec.parent_id = siblings[index - 1].id
+        return True
+
+    def action_wbs_outdent(self):
+        for rec in self:
+            if not rec.parent_id:
+                raise UserError("顶层 WBS 无法继续提升。")
+            rec.parent_id = rec.parent_id.parent_id.id or False
+        return True
+
+    def unlink(self):
+        if self.filtered(lambda rec: rec.plan_id.state in {"published", "archived"}):
+            raise UserError("已发布或已归档的 WBS 版本不可删除节点。")
+        protected = self.filtered(
+            lambda rec: rec.task_ids
+            or rec.execution_scope_ids.mapped("allocation_ids").filtered("active")
+        )
+        if protected:
+            raise UserError("已关联计划作业或清单分配的 WBS 不可删除，请先完成重新分配。")
+        if self.mapped("child_ids") - self:
+            raise UserError("包含下级 WBS 的节点不可直接删除，请先提升或移动下级节点。")
+        return super().unlink()
 
     _sql_constraints = [
         (
-            "project_code_type_unique",
-            "unique(project_id, code, level_type)",
-            "同一项目下，工程结构的编码和层级类型不能重复。",
+            "project_source_key_unique",
+            "unique(project_id, source_key)",
+            "同一项目下的 WBS 模板节点稳定键不能重复。",
         ),
     ]
 
-    def action_build_hierarchy_from_code(self):
-        """根据已有分项的编码自动补齐单位/分部层级，并设置父子关系。"""
-        for project in self.mapped("project_id"):
-            nodes = self.search(
-                [
-                    ("project_id", "=", project.id),
-                    ("level_type", "=", "sub_section"),
-                    ("code", "!=", False),
-                ]
-            )
-            unit_map = {}
-            section_map = {}
-            for node in nodes:
-                code = (node.code or "").strip()
-                if len(code) < 4:
-                    continue
-                unit_code = code[:2]
-                section_code = code[:4]
-
-                unit = unit_map.get(unit_code)
-                if not unit:
-                    unit = self.search(
-                        [
-                            ("project_id", "=", project.id),
-                            ("level_type", "=", "unit"),
-                            ("code", "=", unit_code),
-                        ],
-                        limit=1,
-                    )
-                    if not unit:
-                        unit = self.create(
-                            {
-                                "project_id": project.id,
-                                "level_type": "unit",
-                                "code": unit_code,
-                                "name": f"单位工程 {unit_code}",
-                            }
-                        )
-                    unit_map[unit_code] = unit
-
-                section = section_map.get(section_code)
-                if not section:
-                    section = self.search(
-                        [
-                            ("project_id", "=", project.id),
-                            ("level_type", "=", "sub_division"),
-                            ("code", "=", section_code),
-                        ],
-                        limit=1,
-                    )
-                    if not section:
-                        section = self.create(
-                            {
-                                "project_id": project.id,
-                                "level_type": "sub_division",
-                                "code": section_code,
-                                "name": f"分部工程 {section_code}",
-                                "parent_id": unit.id,
-                            }
-                        )
-                    section_map[section_code] = section
-
-                if node.parent_id != section:
-                    node.parent_id = section.id
-
-    def _exec_structure_action(self, view_key):
+    def _exec_structure_action(self):
         ctx = dict(self.env.context or {})
         project_id = False
         if self and self[0].project_id:
@@ -230,27 +407,13 @@ class ConstructionWorkBreakdown(models.Model):
 
         ctx.setdefault("default_project_id", project_id)
         ctx.setdefault("search_default_project_id", project_id)
-        ctx["sc_exec_view"] = view_key
-        if view_key == "wbs":
-            view = self.env.ref("smart_construction_core.view_exec_structure_wbs_tree")
-            search_view = self.env.ref("smart_construction_core.view_project_wbs_search")
-            return {
-                "type": "ir.actions.act_window",
-                "name": "执行结构",
-                "res_model": "construction.work.breakdown",
-                "view_mode": "tree,form",
-                "views": [(view.id, "tree"), (False, "form")],
-                "search_view_id": search_view.id,
-                "domain": [("project_id", "=", project_id)],
-                "context": ctx,
-                "target": "current",
-            }
-        view = self.env.ref("smart_construction_core.view_exec_structure_structure_tree")
-        search_view = self.env.ref("smart_construction_core.view_sc_project_structure_search")
+        ctx["sc_exec_view"] = "wbs"
+        view = self.env.ref("smart_construction_core.view_exec_structure_wbs_tree")
+        search_view = self.env.ref("smart_construction_core.view_project_wbs_search")
         return {
             "type": "ir.actions.act_window",
             "name": "执行结构",
-            "res_model": "sc.project.structure",
+            "res_model": "construction.work.breakdown",
             "view_mode": "tree,form",
             "views": [(view.id, "tree"), (False, "form")],
             "search_view_id": search_view.id,
@@ -260,19 +423,4 @@ class ConstructionWorkBreakdown(models.Model):
         }
 
     def action_open_exec_wbs(self):
-        return self._exec_structure_action("wbs")
-
-    def action_open_exec_structure(self):
-        return self._exec_structure_action("structure")
-
-
-class ProjectWbs(models.Model):
-    """
-    历史模型门面：将 project.wbs 指向统一的工程结构表。
-    所有字段与逻辑复用 construction.work.breakdown，避免旧引用报错。
-    """
-
-    _name = "project.wbs"
-    _description = "工程结构历史模型门面"
-    _inherit = "construction.work.breakdown"
-    _table = "construction_work_breakdown"
+        return self._exec_structure_action()

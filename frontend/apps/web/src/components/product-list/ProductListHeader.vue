@@ -5,7 +5,13 @@
     data-list-query-action-bar
     aria-label="列表查询与操作"
   >
-    <ScActionBar class="product-list-header__tools" label="列表操作">
+    <ScActionBar
+      class="product-list-header__tools"
+      :class="{ 'product-list-header__tools--aligned': alignedLayout }"
+      :style="layoutStyle"
+      label="列表操作"
+    >
+      <div v-if="$slots.leading" class="product-list-header__leading"><slot name="leading" /></div>
       <form v-if="showSearch" class="product-list-header__search" role="search" @submit.prevent="$emit('search-submit')">
         <label>
           <span class="sc-visually-hidden">{{ searchLabel }}</span>
@@ -22,6 +28,7 @@
         <ScButton type="submit" :disabled="loading">{{ searchLabel }}</ScButton>
         <ScButton v-if="searchValue" variant="ghost" :disabled="loading" @click="$emit('search-clear')">清除</ScButton>
       </form>
+      <div v-if="$slots.actions" class="product-list-header__actions"><slot name="actions" /></div>
       <slot />
       <slot name="auxiliary" />
     </ScActionBar>
@@ -29,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import type { StyleValue } from 'vue';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
 
@@ -38,6 +46,8 @@ defineProps<{
   searchValue: string;
   searchLabel: string;
   searchPlaceholder: string;
+  alignedLayout?: boolean;
+  layoutStyle?: StyleValue;
 }>();
 
 defineEmits<{
@@ -107,12 +117,13 @@ defineEmits<{
 .product-list-header__tools :deep(.list-surface-utilities) { grid-area: utility; }
 .product-list-header__search { grid-area: main; display: flex; gap: var(--sc-toolbar-gap); align-items: center; min-width: 320px; }
 .product-list-header__search label { min-width: 0; flex: 1; }
+.product-list-header__search :deep(.sc-btn) { min-height: 40px; }
 .product-list-header__search input {
   width: 100%;
   min-height: 40px;
   padding: 0 var(--sc-space-sm);
   border: 1px solid var(--sc-app-border-strong);
-  border-radius: var(--sc-product-radius-control);
+  border-radius: var(--sc-component-input-radius);
   background: var(--sc-app-panel);
   color: var(--sc-app-text-primary);
 }
@@ -120,6 +131,19 @@ defineEmits<{
   border-color: var(--sc-semantic-surface-interactive);
   outline: 3px solid var(--sc-app-focus-ring);
   outline-offset: 0;
+}
+.product-list-header__tools--aligned {
+  grid-template-areas: 'leading divider-left search divider-right actions';
+}
+.product-list-header__tools--aligned .product-list-header__leading { grid-area: leading; min-width: 0; }
+.product-list-header__tools--aligned .product-list-header__search { grid-area: search; min-width: 0; }
+.product-list-header__tools--aligned .product-list-header__actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sc-toolbar-gap);
+  min-width: 0;
 }
 @media (max-width: 720px) {
   .product-list-query-bar {

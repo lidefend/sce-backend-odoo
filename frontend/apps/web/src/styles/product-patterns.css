@@ -242,6 +242,10 @@
 }
 
 .sc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sc-space-2xs);
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-component-button-radius);
   background: var(--sc-app-panel);
@@ -249,11 +253,15 @@
   min-height: calc(var(--sc-component-button-height-md) * 1px);
   padding: calc(var(--sc-component-button-padding-y) * 1px) calc(var(--sc-component-button-padding-x) * 1px);
   font-size: calc(var(--sc-component-button-font-size) * 1px);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  transition: background-color var(--sc-base-motion-fast) ease, border-color var(--sc-base-motion-fast) ease, color var(--sc-base-motion-fast) ease, box-shadow var(--sc-base-motion-fast) ease;
 }
 
 .sc-btn:hover:not(:disabled) {
+  border-color: var(--sc-app-border-strong);
   background: var(--sc-app-hover-bg);
 }
 
@@ -275,9 +283,15 @@
 }
 
 .sc-btn-secondary {
-  border-color: var(--sc-app-border-strong);
+  border-color: var(--sc-app-border);
   background: var(--sc-app-panel);
   color: var(--sc-app-text-primary);
+}
+
+.sc-btn-secondary:hover:not(:disabled) {
+  border-color: var(--sc-app-selected-border);
+  background: var(--sc-app-selected-bg);
+  color: var(--sc-app-selected-text);
 }
 
 .sc-btn-danger {
@@ -287,8 +301,15 @@
 }
 
 .sc-btn-ghost {
+  border-color: transparent;
   background: transparent;
   color: var(--sc-app-text-secondary);
+}
+
+.sc-btn-ghost:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--sc-app-hover-bg);
+  color: var(--sc-app-text-primary);
 }
 
 .sc-btn-sm {

@@ -768,6 +768,7 @@ import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../util
 import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
 import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, resolveListColumnBudgetWidth, type ListColumnLayoutRole } from './listPage/listColumnWidth';
 import {
+  resolveDesktopListCandidates,
   prioritizeExplicitlyEnabledListColumns,
   resolveEnabledListColumns,
   resolveResponsiveListColumns,
@@ -1797,20 +1798,18 @@ const desktopResponsiveCandidates = computed(() => {
   if (!surfaceWidth) return source;
   const fixedWidth = (showSelectionColumn.value ? 40 : 0) + (showRowNumberColumn.value ? 52 : 0) + 16;
   const availableWidth = Math.max(0, surfaceWidth - fixedWidth);
-  const selected: string[] = [];
-  let usedWidth = 0;
-  for (const field of prioritizedEnabledColumns.value) {
-    const requiredWidth = resolveListColumnBudgetWidth({
-      customWidth: effectiveColumnWidth(field),
-      derivedWidth: derivedColumnWidth(field),
-      role: columnLayoutRole(field),
-    });
-    if (selected.length >= DEFAULT_VISIBLE_COLUMN_BUDGET) break;
-    if (selected.length >= 3 && usedWidth + requiredWidth > availableWidth) continue;
-    selected.push(field);
-    usedWidth += requiredWidth;
-  }
-  return selected.length ? selected : source.slice(0, 1);
+  return resolveDesktopListCandidates({
+    fields: prioritizedEnabledColumns.value.map((field) => ({
+      field,
+      width: resolveListColumnBudgetWidth({
+        customWidth: effectiveColumnWidth(field),
+        derivedWidth: derivedColumnWidth(field),
+        role: columnLayoutRole(field),
+      }),
+    })),
+    availableWidth,
+    capacity: DEFAULT_VISIBLE_COLUMN_BUDGET,
+  });
 });
 const desktopColumnDecision = computed(() => resolveResponsiveListColumns({
   enabledColumns: enabledColumns.value,

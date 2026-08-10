@@ -24,9 +24,18 @@ class TestP0StateClosure(TransactionCase):
             }
         )
         if with_boq:
+            version = self.env["project.boq.version"].create(
+                {
+                    "name": f"{name} BOQ V1",
+                    "code": "V1",
+                    "project_id": project.id,
+                    "source_type": "contract",
+                }
+            )
             self.env["project.boq.line"].create(
                 {
                     "project_id": project.id,
+                    "version_id": version.id,
                     "code": "BOQ-001",
                     "name": "BOQ Item",
                     "uom_id": self.uom_unit.id,
@@ -34,6 +43,8 @@ class TestP0StateClosure(TransactionCase):
                     "price": 1.0,
                 }
             )
+            version.action_validate()
+            version.action_publish()
         return project
 
     def _create_partner(self, name="P0 Partner"):
@@ -2920,7 +2931,7 @@ class TestP0StateClosure(TransactionCase):
                 "name": "P0 Progress WBS",
                 "code": "P0-WBS",
                 "project_id": project.id,
-                "level_type": "sub_section",
+                "level_type": "work_package",
             }
         )
         entry = self.env["project.progress.entry"].create(
@@ -2946,7 +2957,7 @@ class TestP0StateClosure(TransactionCase):
                 "name": "P0 Progress Block WBS",
                 "code": "P0-WBS-BLOCK",
                 "project_id": project.id,
-                "level_type": "sub_section",
+                "level_type": "work_package",
             }
         )
         entry = self.env["project.progress.entry"].create(

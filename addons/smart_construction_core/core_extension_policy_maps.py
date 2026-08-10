@@ -214,6 +214,16 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "primary_menu_xmlids": [
             "smart_construction_core.menu_sc_project_project",
+            "smart_construction_core.menu_sc_boq_version",
+            "smart_construction_core.menu_sc_project_boq_root",
+            "smart_construction_core.menu_sc_boq_analysis",
+            "smart_construction_core.menu_sc_project_budget",
+            "smart_construction_core.menu_sc_project_work_breakdown",
+            "smart_construction_core.menu_sc_wbs_plan_version",
+            "smart_construction_core.menu_sc_project_location_breakdown",
+            "smart_construction_core.menu_sc_project_contract_section",
+            "smart_construction_core.menu_sc_project_execution_scope",
+            "smart_construction_core.menu_sc_project_boq_allocation",
             "smart_construction_core.menu_sc_general_contract",
             "smart_construction_core.menu_sc_construction_contract",
             "smart_construction_core.menu_sc_plan",
@@ -253,6 +263,29 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_tender_guarantee",
         ],
         "contextual_action_authorities": [
+            {
+                "action_xmlid": "smart_construction_core.action_project_boq_import_wizard",
+                "allowed_operation": "create",
+                "required_capability": "cost_boq_import",
+                "context_requirements": {},
+                "source": "nav_policy_01.pm.boq_import_workbench_action",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_project_budget",
+                "action_xmlid": "smart_construction_core.action_project_cost_plan_line",
+                "allowed_operation": "read",
+                "required_capability": "cost_plan_line_read",
+                "context_requirements": {},
+                "source": "nav_policy_01.pm.cost_plan_detail_ledger_action",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_project_budget",
+                "action_xmlid": "smart_construction_core.action_project_cost_plan_node",
+                "allowed_operation": "read",
+                "required_capability": "cost_plan_line_read",
+                "context_requirements": {},
+                "source": "nav_policy_01.pm.cost_plan_compilation_tree_action",
+            },
             {
                 "action_xmlid": "smart_construction_core.action_construction_contract_income_execution",
                 "allowed_operation": "read",
@@ -639,6 +672,9 @@ API_DATA_WRITE_ALLOWLIST = {
     "project.task": ["name", "description", "date_deadline", "project_id"],
     "purchase.order.line": ["name", "order_id"],
     "res.partner": ["name", "email", "phone", "sc_supplier_type", "sc_supplier_type_ids"],
+    # Transient import records are created through the generic native form runtime,
+    # then executed through their ACL-protected object button.
+    "sc.norm.import.wizard": ["data_file", "filename", "clear_before"],
 }
 
 API_DATA_MUTATION_POLICIES = {

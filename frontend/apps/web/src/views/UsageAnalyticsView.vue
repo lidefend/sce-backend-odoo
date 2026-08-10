@@ -158,7 +158,7 @@
       <section v-if="pageSectionEnabled('tables_top', true) && pageSectionTagIs('tables_top', 'section')" class="tables" :style="pageSectionStyle('tables_top')">
         <article class="table-card">
           <h3>{{ pageText('table_top_scenes', 'Top Scenes') }}</h3>
-          <table>
+          <ScDataTable class="usage-table" :label="pageText('table_top_scenes', 'Top Scenes')">
             <thead>
               <tr><th>{{ pageText('table_scene_key', 'Scene Key') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
             </thead>
@@ -169,12 +169,12 @@
                 <td>{{ item.count }}</td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </article>
 
         <article class="table-card">
           <h3>{{ pageText('table_top_capabilities', 'Top Capabilities') }}</h3>
-          <table>
+          <ScDataTable class="usage-table" :label="pageText('table_top_capabilities', 'Top Capabilities')">
             <thead>
               <tr><th>{{ pageText('table_capability_key', 'Capability Key') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
             </thead>
@@ -185,14 +185,14 @@
                 <td>{{ item.count }}</td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </article>
       </section>
 
       <section v-if="pageSectionEnabled('tables_daily', true) && pageSectionTagIs('tables_daily', 'section')" class="tables" :style="pageSectionStyle('tables_daily')">
         <article class="table-card">
           <h3>{{ pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)') }}</h3>
-          <table>
+          <ScDataTable class="usage-table" :label="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')">
             <thead>
               <tr><th>{{ pageText('table_date', 'Date') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
             </thead>
@@ -203,12 +203,12 @@
                 <td>{{ item.count }}</td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </article>
 
         <article class="table-card">
           <h3>{{ pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)') }}</h3>
-          <table>
+          <ScDataTable class="usage-table" :label="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')">
             <thead>
               <tr><th>{{ pageText('table_date', 'Date') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
             </thead>
@@ -219,14 +219,14 @@
                 <td>{{ item.count }}</td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </article>
       </section>
 
       <section v-if="pageSectionEnabled('tables_visibility', true) && pageSectionTagIs('tables_visibility', 'section')" class="tables" :style="pageSectionStyle('tables_visibility')">
         <article class="table-card">
           <h3>{{ pageText('table_visibility_reason_counts', 'Visibility Reason Counts') }}</h3>
-          <table>
+          <ScDataTable class="usage-table" :label="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')">
             <thead>
               <tr><th>{{ pageText('table_reason_code', 'Reason Code') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
             </thead>
@@ -237,12 +237,12 @@
                 <td>{{ item.count }}</td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </article>
 
         <article class="table-card">
           <h3>{{ pageText('table_hidden_capability_samples', 'Hidden Capability Samples') }}</h3>
-          <table>
+          <ScDataTable class="usage-table" :label="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')">
             <thead>
               <tr><th>{{ pageText('table_key', 'Key') }}</th><th>{{ pageText('table_reason', 'Reason') }}</th></tr>
             </thead>
@@ -253,14 +253,14 @@
                 <td>{{ item.reason_code || item.reason || '-' }}</td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </article>
       </section>
 
       <section v-if="pageSectionEnabled('tables_role_user', true) && pageSectionTagIs('tables_role_user', 'section')" class="tables" :style="pageSectionStyle('tables_role_user')">
         <article class="table-card">
           <h3>{{ pageText('table_role_top', 'Role Top') }}</h3>
-          <table>
+          <ScDataTable class="usage-table" :label="pageText('table_role_top', 'Role Top')">
             <thead>
               <tr>
                 <th>{{ pageText('table_role_code', 'Role Code') }}</th>
@@ -278,12 +278,12 @@
                 <td>{{ item.combined_total }}</td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </article>
 
         <article class="table-card">
           <h3>{{ pageText('table_user_top', 'User Top') }}</h3>
-          <table>
+          <ScDataTable class="usage-table" :label="pageText('table_user_top', 'User Top')">
             <thead>
               <tr>
                 <th>{{ pageText('table_user_id', 'User ID') }}</th>
@@ -301,7 +301,7 @@
                 <td>{{ item.combined_total }}</td>
               </tr>
             </tbody>
-          </table>
+          </ScDataTable>
         </article>
       </section>
     </template>
@@ -313,6 +313,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { exportUsageCsv, fetchCapabilityVisibilityReport, fetchUsageReport, type CapabilityVisibilityReport, type UsageReport } from '../api/usage';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScDataTable from '../components/design-system/ScDataTable.vue';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { collectErrorContextIssue, issueScopeLabel } from '../app/errorContext';
 import { usePageContract } from '../app/pageContract';
@@ -586,12 +587,12 @@ onMounted(load);
   color: var(--sc-app-text-primary);
 }
 
-table {
+.usage-table :deep(table) {
   width: 100%;
-  border-collapse: collapse;
 }
 
-th, td {
+.usage-table :deep(th),
+.usage-table :deep(td) {
   padding: 10px 12px;
   border-bottom: 1px solid var(--sc-app-border);
   text-align: left;

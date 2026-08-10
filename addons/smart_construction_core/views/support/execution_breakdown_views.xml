@@ -1,0 +1,125 @@
+<odoo>
+    <record id="view_construction_location_breakdown_tree" model="ir.ui.view">
+        <field name="name">construction.location.breakdown.tree</field>
+        <field name="model">construction.location.breakdown</field>
+        <field name="arch" type="xml">
+            <tree string="空间位置结构" js_class="smart_hierarchy_browser" default_order="project_id, parent_path, sequence, id">
+                <field name="project_id"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="location_type"/>
+                <field name="parent_id" column_invisible="1"/>
+                <field name="sequence" optional="hide"/>
+                <field name="active" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_construction_location_breakdown_form" model="ir.ui.view">
+        <field name="name">construction.location.breakdown.form</field>
+        <field name="model">construction.location.breakdown</field>
+        <field name="arch" type="xml">
+            <form string="空间位置">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="project_id"/>
+                            <field name="parent_id" domain="[('project_id', '=', project_id)]"/>
+                            <field name="location_type"/>
+                        </group>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="下级位置"><field name="child_ids"><tree editable="bottom"><field name="sequence"/><field name="location_type"/><field name="code"/><field name="name"/></tree></field></page>
+                        <page string="执行范围"><field name="scope_ids" readonly="1"><tree><field name="wbs_id"/><field name="contract_section_id"/><field name="boq_line_count"/><field name="allocated_amount"/><field name="state"/></tree></field></page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_construction_location_breakdown_search" model="ir.ui.view">
+        <field name="name">construction.location.breakdown.search</field>
+        <field name="model">construction.location.breakdown</field>
+        <field name="arch" type="xml"><search><field name="project_id"/><field name="name"/><field name="code"/><field name="location_type"/><group expand="1" string="分组"><filter string="项目" name="group_project" context="{'group_by':'project_id'}"/><filter string="位置类型" name="group_type" context="{'group_by':'location_type'}"/></group></search></field>
+    </record>
+
+    <record id="action_construction_location_breakdown" model="ir.actions.act_window">
+        <field name="name">空间位置 LBS</field>
+        <field name="res_model">construction.location.breakdown</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_construction_location_breakdown_tree"/>
+        <field name="search_view_id" ref="view_construction_location_breakdown_search"/>
+        <field name="context" eval="{'hierarchy_create': {'label': '新增位置'}, 'hierarchy_levels': [{'field': 'project_id', 'code_field': 'code', 'label_field': 'name'}, {'field': 'parent_id', 'code_field': 'code', 'label_field': 'name', 'parent_field': 'project_id', 'self_parent_field': 'parent_id', 'domain_operator': 'child_of'}]}"/>
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
+    </record>
+
+    <record id="view_construction_contract_section_tree" model="ir.ui.view">
+        <field name="name">construction.contract.section.tree</field>
+        <field name="model">construction.contract.section</field>
+        <field name="arch" type="xml">
+            <tree string="标段结构" js_class="smart_hierarchy_browser" default_order="project_id, parent_path, sequence, id">
+                <field name="project_id"/><field name="code"/><field name="name"/><field name="parent_id" column_invisible="1"/><field name="sequence" optional="hide"/><field name="active" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_construction_contract_section_form" model="ir.ui.view">
+        <field name="name">construction.contract.section.form</field>
+        <field name="model">construction.contract.section</field>
+        <field name="arch" type="xml">
+            <form string="标段"><sheet><group><group><field name="project_id"/><field name="parent_id" domain="[('project_id', '=', project_id)]"/></group><group><field name="code"/><field name="name"/><field name="sequence"/><field name="active"/></group></group><notebook><page string="下级标段"><field name="child_ids"><tree editable="bottom"><field name="sequence"/><field name="code"/><field name="name"/></tree></field></page><page string="执行范围"><field name="scope_ids" readonly="1"><tree><field name="wbs_id"/><field name="location_id"/><field name="boq_line_count"/><field name="allocated_amount"/><field name="state"/></tree></field></page></notebook></sheet></form>
+        </field>
+    </record>
+
+    <record id="action_construction_contract_section" model="ir.actions.act_window">
+        <field name="name">标段结构</field>
+        <field name="res_model">construction.contract.section</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_construction_contract_section_tree"/>
+        <field name="context" eval="{'hierarchy_create': {'label': '新增标段'}, 'hierarchy_levels': [{'field': 'project_id', 'code_field': 'code', 'label_field': 'name'}, {'field': 'parent_id', 'code_field': 'code', 'label_field': 'name', 'parent_field': 'project_id', 'self_parent_field': 'parent_id', 'domain_operator': 'child_of'}]}"/>
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
+    </record>
+
+    <record id="view_construction_execution_scope_tree" model="ir.ui.view">
+        <field name="name">construction.execution.scope.tree</field>
+        <field name="model">construction.execution.scope</field>
+        <field name="arch" type="xml">
+            <tree string="施工执行范围" decoration-success="state == 'baselined'" decoration-muted="state == 'archived'">
+                <field name="project_id"/><field name="contract_section_id"/><field name="location_id"/><field name="wbs_id"/><field name="boq_line_count"/><field name="allocated_quantity"/><field name="allocated_amount"/><field name="source_type"/><field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_construction_execution_scope_form" model="ir.ui.view">
+        <field name="name">construction.execution.scope.form</field>
+        <field name="model">construction.execution.scope</field>
+        <field name="arch" type="xml">
+            <form string="施工执行范围">
+                <header><button name="action_baseline" string="建立执行基线" type="object" class="oe_highlight" invisible="state != 'draft'"/><field name="state" widget="statusbar" statusbar_visible="draft,baselined,archived"/></header>
+                <sheet><div class="oe_title"><h1><field name="name" readonly="1"/></h1></div><group><group><field name="project_id"/><field name="wbs_id" domain="[('project_id', '=', project_id)]"/><field name="source_type" readonly="source_type == 'boq'"/></group><group><field name="contract_section_id" domain="[('project_id', '=', project_id)]"/><field name="location_id" domain="[('project_id', '=', project_id)]"/><field name="active"/></group></group><group string="汇总"><field name="boq_line_count"/><field name="allocated_quantity"/><field name="allocated_amount"/><field name="currency_id" invisible="1"/></group><field name="allocation_ids"><tree editable="bottom"><field name="boq_line_id"/><field name="allocation_basis"/><field name="allocated_quantity" readonly="allocation_basis != 'quantity'"/><field name="uom_id"/><field name="allocated_amount" readonly="allocation_basis != 'amount'"/><field name="allocation_ratio" readonly="allocation_basis != 'ratio'"/><field name="source_type" optional="hide"/></tree></field></sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_construction_execution_scope_search" model="ir.ui.view">
+        <field name="name">construction.execution.scope.search</field><field name="model">construction.execution.scope</field><field name="arch" type="xml"><search><field name="project_id"/><field name="wbs_id"/><field name="location_id"/><field name="contract_section_id"/><field name="state"/><group expand="1" string="分组"><filter string="项目" name="group_project" context="{'group_by':'project_id'}"/><filter string="WBS" name="group_wbs" context="{'group_by':'wbs_id'}"/><filter string="空间位置" name="group_location" context="{'group_by':'location_id'}"/><filter string="标段" name="group_section" context="{'group_by':'contract_section_id'}"/></group></search></field>
+    </record>
+
+    <record id="action_construction_execution_scope" model="ir.actions.act_window">
+        <field name="name">施工执行范围</field><field name="res_model">construction.execution.scope</field><field name="view_mode">tree,form</field><field name="view_id" ref="view_construction_execution_scope_tree"/><field name="search_view_id" ref="view_construction_execution_scope_search"/><field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
+    </record>
+
+    <record id="view_project_boq_allocation_tree" model="ir.ui.view">
+        <field name="name">project.boq.allocation.tree</field><field name="model">project.boq.allocation</field><field name="arch" type="xml"><tree string="清单执行分配" editable="bottom"><field name="project_id"/><field name="version_id"/><field name="boq_line_id"/><field name="execution_scope_id"/><field name="allocation_basis"/><field name="allocated_quantity" readonly="allocation_basis != 'quantity'"/><field name="uom_id"/><field name="allocated_amount" readonly="allocation_basis != 'amount'"/><field name="allocation_ratio" readonly="allocation_basis != 'ratio'"/><field name="source_type"/><field name="active" optional="hide"/></tree></field>
+    </record>
+
+    <record id="action_project_boq_allocation" model="ir.actions.act_window">
+        <field name="name">清单执行分配</field><field name="res_model">project.boq.allocation</field><field name="view_mode">tree,form</field><field name="view_id" ref="view_project_boq_allocation_tree"/><field name="domain">[('active', '=', True)]</field><field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
+    </record>
+</odoo>

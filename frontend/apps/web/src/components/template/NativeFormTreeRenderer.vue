@@ -470,7 +470,7 @@ function containerTitle(node: NativeFormLayoutNode) {
   if (type === 'group') return '';
   const raw = String(node?.string || node?.label || '').trim();
   if (!raw) return '';
-  const structural = new Set(['header', 'sheet', 'container', 'div', 'span', 'h1', 'h2', 'h3']);
+  const structural = new Set(['header', 'footer', 'sheet', 'container', 'div', 'span', 'h1', 'h2', 'h3']);
   if (structural.has(type)) return '';
   const lowered = raw.toLowerCase();
   if (structural.has(lowered) || lowered === type) return '';
@@ -480,7 +480,7 @@ function containerTitle(node: NativeFormLayoutNode) {
 function isReadablePolicyTitle(value: unknown) {
   const text = String(value || '').trim();
   if (!text) return false;
-  if (['group', 'page', 'notebook', 'sheet', 'container'].includes(text.toLowerCase())) return false;
+  if (['group', 'page', 'notebook', 'sheet', 'container', 'header', 'footer'].includes(text.toLowerCase())) return false;
   if (/^[a-z][a-z0-9_:. -]*$/i.test(text) && /[_:.]/.test(text)) return false;
   return true;
 }
@@ -497,7 +497,7 @@ function nodeText(node: NativeFormLayoutNode) {
 }
 
 function isContainerNode(node: NativeFormLayoutNode) {
-  return ['header', 'sheet', 'group', 'notebook', 'page', 'container', 'div', 'span', 'h1', 'h2', 'h3'].includes(nodeType(node));
+  return ['header', 'footer', 'sheet', 'group', 'notebook', 'page', 'container', 'div', 'span', 'h1', 'h2', 'h3'].includes(nodeType(node));
 }
 
 function rawChildren(node: NativeFormLayoutNode) {
@@ -588,7 +588,10 @@ function activeNotebookChildren(node: NativeFormLayoutNode) {
 }
 
 function fieldSectionTitle(node?: NativeFormLayoutNode, index = 0) {
-  if (node && nodeType(node) === 'group') return containerPolicyTitle(node, index);
+  if (node && nodeType(node) === 'group') {
+    const raw = String(node.string || node.label || '').trim();
+    return isReadablePolicyTitle(raw) ? raw : '';
+  }
   const semanticTitle = String(node?.semanticTitle || '').trim();
   if (semanticTitle) return semanticTitle;
   return node ? containerTitle(node) : '';

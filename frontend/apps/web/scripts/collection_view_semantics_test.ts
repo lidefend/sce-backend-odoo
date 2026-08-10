@@ -14,6 +14,7 @@ import { buildActionViewRowClickTarget, shouldUseCanonicalCollectionDetail } fro
 import { pickContractNavQuery } from '../src/app/navigationContext';
 import { extractKanbanFieldsFromContract } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import { resolveLoadKanbanFieldApplyState } from '../src/app/runtime/actionViewLoadViewFieldStateRuntime';
+import { resolveDesktopListCandidates } from '../src/pages/listPage/listColumnVisibility';
 
 const cardContract = {
   head: { view_type: 'tree,kanban,form' },
@@ -58,7 +59,7 @@ assert.equal(resolveActionCollectionPresentation(cardContract, 'kanban').label, 
 
 // workflow_board_requires_group_semantics
 assert.deepEqual(resolveActionCollectionPresentation(workflowContract, 'kanban'), {
-  semantic: 'workflow_board', label: '流程看板', groupField: 'state', groupedLanes: true,
+  semantic: 'workflow_board', label: '流程看板', groupField: 'state', groupedLanes: true, config: {},
 });
 assert.equal(groupCollectionRecords([
   { id: 1, state: ['draft', '草稿'] }, { id: 2, state: ['done', '完成'] }, { id: 3, state: ['draft', '草稿'] },
@@ -99,5 +100,19 @@ assert.equal(resolveResponsiveCollectionPresentation({ explicitMode: 'card', com
 
 // unknown_kanban_semantic_fails_safe
 assert.equal(resolveActionCollectionPresentation({ views: { kanban: { collection_presentation: { semantic: 'mystery' } } } }, 'kanban').semantic, 'card');
+
+// Native desktop tree columns within the product budget remain authoritative;
+// narrow widths use horizontal scrolling instead of silently hiding fields.
+const twelveNativeColumns = Array.from({ length: 12 }, (_, index) => ({ field: `field_${index + 1}`, width: 160 }));
+assert.deepEqual(resolveDesktopListCandidates({
+  fields: twelveNativeColumns,
+  availableWidth: 900,
+  capacity: 12,
+}), twelveNativeColumns.map((item) => item.field));
+assert.equal(resolveDesktopListCandidates({
+  fields: [...twelveNativeColumns, { field: 'field_13', width: 160 }],
+  availableWidth: 900,
+  capacity: 12,
+}).length <= 12, true);
 
 console.log('[collection-view-semantics] PASS');

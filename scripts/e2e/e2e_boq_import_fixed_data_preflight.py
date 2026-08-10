@@ -15,10 +15,12 @@ CHECKS = [
         "needles": [
             '_name = "project.boq.import.wizard"',
             "def action_import",
+            "def action_preflight",
             "def _parse_file",
             "project.boq.line",
             "boq_category",
-            "clear_mode",
+            "preview_digest",
+            "version_code",
         ],
     },
     {
@@ -75,7 +77,8 @@ def main() -> int:
         "acceptance_points": [
             "Project-scoped BOQ import wizard exists.",
             "CSV/XLS/XLSX parsing entrypoints are present.",
-            "Imported rows target project.boq.line.",
+            "Import preflight freezes the source digest before business writes.",
+            "Imported rows target project.boq.line in an independent version.",
             "Project entry action opens the import wizard.",
             "BOQ imported/status fields exist for downstream checks.",
         ],

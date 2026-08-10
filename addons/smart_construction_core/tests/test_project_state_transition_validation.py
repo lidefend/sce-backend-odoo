@@ -10,9 +10,18 @@ class TestProjectStateTransitionValidation(TransactionCase):
         self.uom_unit = self.env.ref("uom.product_uom_unit")
 
     def _create_boq(self, project):
+        version = self.env["project.boq.version"].create(
+            {
+                "name": "Lifecycle BOQ V1",
+                "code": "V1",
+                "project_id": project.id,
+                "source_type": "contract",
+            }
+        )
         self.env["project.boq.line"].create(
             {
                 "project_id": project.id,
+                "version_id": version.id,
                 "code": "BOQ-001",
                 "name": "BOQ Item",
                 "uom_id": self.uom_unit.id,
@@ -20,6 +29,8 @@ class TestProjectStateTransitionValidation(TransactionCase):
                 "price": 1.0,
             }
         )
+        version.action_validate()
+        version.action_publish()
 
     def test_draft_submit_requires_fields(self):
         project = self.env["project.project"].create({"name": "Draft Project"})

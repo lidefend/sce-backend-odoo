@@ -16,20 +16,20 @@
           v-for="action in pageGlobalActions"
           :key="action.key"
           type="button"
-          class="ghost"
+          variant="secondary"
           :disabled="action.disabled"
           @click="executeGlobalPageAction(action.key)"
         >
           {{ action.label }}
         </ScButton>
-        <ScButton v-if="canReturnToBusinessConfig" type="button" class="ghost" @click="returnToBusinessConfig">
+        <ScButton v-if="canReturnToBusinessConfig" type="button" variant="secondary" @click="returnToBusinessConfig">
           返回配置工作台
         </ScButton>
-        <ScButton type="button" class="ghost" :disabled="loading || saving" @click="loadPanel()">刷新菜单配置</ScButton>
-        <ScButton type="button" class="ghost" :disabled="loading || saving || creatingMenu || deletingMenu" @click="openCreateMenu('custom')">
+        <ScButton type="button" variant="secondary" :disabled="loading || saving" @click="loadPanel()">刷新菜单配置</ScButton>
+        <ScButton type="button" variant="secondary" :disabled="loading || saving || creatingMenu || deletingMenu" @click="openCreateMenu('custom')">
           新增一级菜单
         </ScButton>
-        <ScButton type="button" class="primary" :disabled="!dirtyCount || saving" @click="requestSaveChanges">
+        <ScButton type="button" variant="primary" :disabled="!dirtyCount || saving" @click="requestSaveChanges">
           {{ saving ? '保存中...' : '保存菜单配置' }}
         </ScButton>
       </div>
@@ -183,7 +183,7 @@
       </div>
       <div class="create-panel-footer">
         <span>复制入口会沿用已有菜单打开的页面；长期固定入口需沉淀到用户模块。</span>
-        <ScButton type="button" class="primary" :disabled="creatingMenu || !createForm.name.trim()" @click="createMenuEntry">
+        <ScButton type="button" variant="primary" :disabled="creatingMenu || !createForm.name.trim()" @click="createMenuEntry">
           {{ creatingMenu ? '创建中...' : '创建菜单' }}
         </ScButton>
       </div>
@@ -446,12 +446,13 @@
           </div>
           <div class="menu-side-section menu-side-action-group">
             <span class="menu-side-section-title">新增入口</span>
-            <ScButton type="button" class="ghost" :disabled="!selectedMenu || loading || saving || creatingMenu || deletingMenu" @click="openCreateMenu('sibling')">新增同级菜单</ScButton>
-            <ScButton type="button" class="ghost" :disabled="!selectedMenu || loading || saving || creatingMenu || deletingMenu" @click="openCreateMenu('child')">新增下级菜单</ScButton>
-            <ScButton type="button" class="ghost" :disabled="!selectedMenu || loading || saving || creatingMenu || deletingMenu" @click="openCreateMenu('copy')">复制当前菜单入口</ScButton>
+            <ScButton type="button" variant="secondary" :disabled="!selectedMenu || loading || saving || creatingMenu || deletingMenu" @click="openCreateMenu('sibling')">新增同级菜单</ScButton>
+            <ScButton type="button" variant="secondary" :disabled="!selectedMenu || loading || saving || creatingMenu || deletingMenu" @click="openCreateMenu('child')">新增下级菜单</ScButton>
+            <ScButton type="button" variant="secondary" :disabled="!selectedMenu || loading || saving || creatingMenu || deletingMenu" @click="openCreateMenu('copy')">复制当前菜单入口</ScButton>
             <ScButton
               type="button"
-              class="ghost danger-ghost"
+              class="danger-ghost"
+              variant="danger"
               :disabled="!canDeleteSelectedMenu || loading || saving || creatingMenu || deletingMenu"
               :title="selectedMenuDeleteHint"
               @click="deleteSelectedMenu"
@@ -463,19 +464,19 @@
           <div class="menu-side-section menu-side-action-group">
             <span class="menu-side-section-title">批量维护</span>
             <p>用于连续维护多条菜单；日常配置优先使用当前菜单面板。</p>
-            <ScButton type="button" class="ghost" @click="bulkPanelOpen = !bulkPanelOpen">
+            <ScButton type="button" variant="secondary" @click="bulkPanelOpen = !bulkPanelOpen">
               {{ bulkPanelOpen ? '收起批量维护表格' : '展开批量维护表格' }}
             </ScButton>
           </div>
           <div class="menu-side-section menu-side-action-group menu-utility-section">
             <span class="menu-side-section-title">检查发布</span>
-            <ScButton type="button" class="ghost" @click="showGuide = !showGuide">
+            <ScButton type="button" variant="secondary" @click="showGuide = !showGuide">
               {{ showGuide ? '收起菜单配置说明' : '查看菜单配置说明' }}
             </ScButton>
-            <ScButton type="button" class="ghost" :disabled="loading || auditing || saving" @click="auditMenuConfiguration">
+            <ScButton type="button" variant="secondary" :disabled="loading || auditing || saving" @click="auditMenuConfiguration">
               {{ auditing ? '检查中...' : '检查菜单生效' }}
             </ScButton>
-            <ScButton type="button" class="ghost" :disabled="loading || versionLoading || saving" @click="toggleVersionPanel">
+            <ScButton type="button" variant="secondary" :disabled="loading || versionLoading || saving" @click="toggleVersionPanel">
               {{ versionPanelOpen ? '收起菜单版本与回滚' : (versionLoading ? '加载中...' : '查看菜单版本与回滚') }}
             </ScButton>
           </div>
@@ -494,7 +495,7 @@
                 <input v-model="onlyConfigured" type="checkbox" />
                 只看已配置
               </label>
-              <ScButton type="button" class="ghost" @click="bulkPanelOpen = !bulkPanelOpen">
+              <ScButton type="button" variant="secondary" @click="bulkPanelOpen = !bulkPanelOpen">
                 {{ bulkPanelOpen ? '收起批量维护表格' : '展开批量维护表格' }}
               </ScButton>
             </div>

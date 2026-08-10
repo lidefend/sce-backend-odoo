@@ -20,6 +20,8 @@ type RequestResult = {
 
 type ExecuteLoadMainPhaseOptions = {
   startedAt: number;
+  loadGeneration: number;
+  isLoadCurrent: (loadGeneration: number) => boolean;
   actionId: number;
   actionMeta: Dict | null;
   routeQueryMap: Dict;
@@ -63,13 +65,16 @@ type ExecuteLoadMainPhaseOptions = {
 export function useActionViewLoadMainPhaseRuntime() {
   async function executeLoadMainPhase(options: ExecuteLoadMainPhaseOptions): Promise<{ stopped: boolean }> {
     try {
+      if (!options.isLoadCurrent(options.loadGeneration)) return { stopped: true };
       const preflightPhaseResult = await options.executeLoadPreflightPhase({
         input: {
           actionId: options.actionId,
           actionMeta: options.actionMeta,
           routeQueryMap: options.routeQueryMap,
+          isLoadCurrent: () => options.isLoadCurrent(options.loadGeneration),
         },
       });
+      if (!options.isLoadCurrent(options.loadGeneration)) return { stopped: true };
       if (preflightPhaseResult.stopped) {
         return { stopped: true };
       }
@@ -110,6 +115,7 @@ export function useActionViewLoadMainPhaseRuntime() {
         }),
         applyLoadRequestBlockedState: options.applyLoadRequestBlocked,
       });
+      if (!options.isLoadCurrent(options.loadGeneration)) return { stopped: true };
       if (loadRequestPhaseResult.blocked) {
         return { stopped: true };
       }
@@ -130,6 +136,7 @@ export function useActionViewLoadMainPhaseRuntime() {
 
       return { stopped: false };
     } catch (err) {
+      if (!options.isLoadCurrent(options.loadGeneration)) return { stopped: true };
       options.executeLoadCatchPhase({
         input: {
           err,

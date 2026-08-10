@@ -14,6 +14,8 @@ PROTECTED_FILES = (
     ROOT / "frontend/apps/web/src/views/HomeView.vue",
     ROOT / "frontend/apps/web/src/views/MyWorkView.vue",
     ROOT / "frontend/apps/web/src/pages/ListPage.vue",
+    ROOT / "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
+    ROOT / "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
     ROOT / "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
     ROOT / "frontend/apps/web/src/api/myWork.ts",
 )
@@ -59,7 +61,7 @@ RULES: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ),
     (
         "industry-literal",
-        re.compile(r"['\"`]([^'\"`]*(?:项目|合同|结算|付款|财务|经营|施工|税务)[^'\"`]*)['\"`]"),
+        re.compile(r"['\"`]([^'\"`]*(?:项目|合同|结算|付款|财务|经营|施工|税务|WBS|LBS|清单|定额|工作包|分项|标段)[^'\"`]*)['\"`]"),
         "共享层不得硬编码行业标题、说明或 fallback。",
     ),
     (
@@ -71,6 +73,11 @@ RULES: tuple[tuple[str, re.Pattern[str], str], ...] = (
         "business-fact-field",
         re.compile(r"item\.(?:project|contract|settlement|payment|partner|amount|company)(?:\?|\.|\[)"),
         "共享列表与任务组件不得直接读取行业事实字段，必须渲染契约 facts。",
+    ),
+    (
+        "business-field-literal",
+        re.compile(r"['\"`](?:project_id|parent_id|work_id|boq_line_id|execution_scope_id)['\"`]"),
+        "共享渲染器不得硬编码行业业务字段，字段绑定必须来自后端契约。",
     ),
 )
 

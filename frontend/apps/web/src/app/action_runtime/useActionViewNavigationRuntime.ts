@@ -14,6 +14,7 @@ type UseActionViewNavigationRuntimeOptions = {
   menuId: Ref<number | null>;
   actionId: Ref<number | null>;
   actionContract: Ref<Record<string, unknown> | null>;
+  canEditRecord: Ref<boolean>;
   collectionSemantic?: Ref<string>;
   resolvedModelRef: Ref<string>;
   modelRef: Ref<string>;
@@ -181,6 +182,7 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
       menuId: options.menuId.value,
       actionId: options.actionId.value,
       carryQuery: resolveCarryQuery(),
+      editable: options.canEditRecord.value,
     });
     const rowClickState = resolveRowClickPushState({ routeTarget });
     if (!rowClickState.shouldNavigate) return;

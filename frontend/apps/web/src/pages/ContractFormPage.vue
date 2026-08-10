@@ -1223,7 +1223,7 @@ const intakeCreateButtonLabel = computed(() => {
 const submitButtonLabel = computed(() => resolveSubmitButtonLabel({
   busy: busy.value,
   busyKind: busyKind.value,
-  footerActionLabel: primaryCreateFooterAction.value?.label || '',
+  footerActionLabel: primaryCreateFooterAction.value?.label || primarySubmitAction.value?.label || '',
   hasFooterAction: Boolean(primaryCreateFooterAction.value),
   hasPrimarySubmitAction: Boolean(primarySubmitAction.value),
   recordId: recordId.value,
@@ -1269,7 +1269,9 @@ const headerBusinessDirectActions = computed(() => headerBusinessActionPresentat
 const headerBusinessOverflowActions = computed(() => headerBusinessActionPresentation.value.overflow);
 const headerConfigActionsVisible = computed(() => groupedHeaderActions.value.configuration);
 const nativeCanvasFormLayoutNodes = computed<NativeFormLayoutNode[]>(() => {
-  const primaryMethod = !recordId.value ? String(primaryCreateFooterAction.value?.methodName || '').trim() : '';
+  const primaryMethod = String(
+    (!recordId.value ? primaryCreateFooterAction.value : primarySubmitAction.value)?.methodName || '',
+  ).trim();
   const filterNodes = (nodes: NativeFormLayoutNode[]): NativeFormLayoutNode[] => nodes.flatMap((node) => {
     if (node.type === 'header' && !showCurrentFormFieldConfigScope.value) return [];
     const actionMethod = String(node.name || node.action?.name || '').trim();

@@ -22,6 +22,7 @@ from odoo.addons.smart_core.app_config_engine.services.contract_governance_filte
     ContractGovernanceFilterService,
 )
 from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
+from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
 
 _logger = logging.getLogger(__name__)
 
@@ -164,7 +165,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
     # ========= 契约键白名单（类级常量） =========
     _ALLOWED_BY_VT = {
         "common": {"modifiers", "toolbar", "search", "order"},
-        "tree": {"columns", "columns_schema", "row_actions", "page_size", "row_classes", "capabilities", "default_order"},
+        "tree": {"columns", "columns_schema", "row_actions", "page_size", "row_classes", "capabilities", "default_order", "collection_presentation"},
         "form": {
             "layout", "statusbar",
             "header_buttons", "button_box", "stat_buttons",
@@ -505,6 +506,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             block['row_actions'] = vp.get('row_actions', [{'name': 'open_form', 'label': _('Open'), 'intent': 'form.open'}])
             block['page_size'] = vp.get('page_size', 50)
             block['row_classes'] = vp.get('row_classes', [])
+            block['collection_presentation'] = vp.get('collection_presentation', {})
         elif vt == 'form':
             block['layout'] = vp.get('layout', [{
                 'type': 'sheet',
@@ -652,6 +654,34 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                     root = ET.fromstring(arch)
                     if root.get('default_order'):
                         order_default = root.get('default_order')
+                    collection_semantics = {
+                        'smart_hierarchy_browser': 'hierarchy_browser',
+                        'smart_hierarchy_planner': 'hierarchy_planner',
+                        'smart_hierarchical_worksheet': 'hierarchical_worksheet',
+                    }
+                    collection_semantic = collection_semantics.get(root.get('js_class'))
+                    if collection_semantic:
+                        base['collection_presentation'] = {
+                            'semantic': collection_semantic,
+                            'source': 'native_view_derived',
+                        }
+                    native_header_actions = []
+                    for button in root.findall('./header/button'):
+                        if str(button.get('type') or '').strip() != 'action':
+                            continue
+                        try:
+                            action_id = int(str(button.get('name') or '').strip())
+                        except (TypeError, ValueError):
+                            continue
+                        native_header_actions.append({
+                            'key': 'action:%s' % action_id,
+                            'action_id': action_id,
+                            'label': str(button.get('string') or '').strip(),
+                            'variant': 'primary' if 'btn-primary' in str(button.get('class') or '').split() else 'secondary',
+                            'source': 'native_view_header',
+                        })
+                    if native_header_actions:
+                        base['toolbar']['header'] = native_header_actions
                     for field in root.findall('.//field[@name]'):
                         fname = field.get('name')
                         is_invisible = field.get('column_invisible')
@@ -962,6 +992,9 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                     meta['widget'] = f.get('widget')
                 if f.get('options'):
                     meta['options'] = f.get('options')
+                if f.get('filename'):
+                    node['filename'] = f.get('filename')
+                    meta['filename'] = f.get('filename')
                 for attr in ('readonly', 'required', 'invisible', 'column_invisible'):
                     if f.get(attr) is not None:
                         node[attr] = f.get(attr)
@@ -970,7 +1003,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                     node['fieldInfo'] = meta
                 return node
 
-            def native_children(container):
+            def native_children(container, *, include_footer=True):
                 children = []
                 for child in list(container or []):
                     tag = getattr(child, 'tag', None)
@@ -985,26 +1018,76 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                         })
                     elif tag == 'page':
                         children.append(page_node(child))
+                    elif tag == 'button':
+                        children.append(button_node(child))
+                    elif tag == 'footer' and include_footer:
+                        children.append(footer_node(child))
                 return children
 
-            def group_node(g):
+            def button_node(button):
+                invisible = normalize_native_modifier(button.get('invisible')) if button.get('invisible') else None
+                button_type = button.get('type') or 'object'
+                method = button.get('name') or ''
+                label = button.get('string') or button.get('title') or method
                 return {
+                    'type': 'button',
+                    'name': method,
+                    'label': label,
+                    'buttonType': button_type,
+                    'invisible': invisible,
+                    'action': {
+                        'key': 'native_%s_%s' % (button_type, method or label),
+                        'name': method,
+                        'label': label,
+                        'kind': 'server' if button_type == 'server' else 'object',
+                        'level': 'footer',
+                        'payload': {'method': method, 'type': button_type},
+                        'visible': {'attrs': {'invisible': invisible}},
+                    },
+                    'children': [],
+                }
+
+            def footer_node(footer):
+                return {
+                    'type': 'footer',
+                    'attributes': dict(footer.attrib or {}),
+                    'children': native_children(footer),
+                }
+
+            def group_node(g):
+                node = {
                     'type': 'group',
                     'children': native_children(g),
                     'label': g.get('string') if g is not None else None,
                 }
+                if g is not None:
+                    node['attributes'] = dict(g.attrib or {})
+                    for attr in ('readonly', 'required', 'invisible'):
+                        if g.get(attr) is not None:
+                            node[attr] = normalize_native_modifier(g.get(attr))
+                return node
 
             def page_node(p):
-                return {
+                node = {
                     'type': 'page',
                     'string': p.get('string') if p is not None else '',
                     'children': native_children(p),
                 }
+                if p is not None:
+                    node['attributes'] = dict(p.attrib or {})
+                    for attr in ('readonly', 'required', 'invisible'):
+                        if p.get(attr) is not None:
+                            node[attr] = normalize_native_modifier(p.get(attr))
+                return node
 
             def sheet_node(s):
                 if s is None:
                     return {'type': 'sheet', 'children': []}
-                return {'type': 'sheet', 'children': native_children(s)}
+                # A form without an explicit <sheet> uses the form itself as the
+                # synthetic sheet container.  Native footers remain siblings of
+                # that sheet; otherwise they are projected once inside the sheet
+                # and once again below it.
+                return {'type': 'sheet', 'children': native_children(s, include_footer=False)}
 
             form = root if (root is not None and root.tag == 'form') else (root.find('.//form') if root is not None else None)
             if form is None:
@@ -1016,7 +1099,9 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                     break
             if sheet is None:
                 sheet = form
-            return [sheet_node(sheet)]
+            result = [sheet_node(sheet)]
+            result.extend(footer_node(footer) for footer in form.findall('./footer'))
+            return result
 
         # 小工具：聚合字段级 modifiers（来自 fields_view_get）
         def _collect_field_modifiers(fields_meta):

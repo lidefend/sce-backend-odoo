@@ -1,4 +1,5 @@
 import { resolveUnifiedPageContractV2 } from './unifiedPageContractV2';
+import { resolveUnifiedPageContractV2ListProfile } from './unifiedPageContractV2';
 
 type Dict = Record<string, unknown>;
 
@@ -91,10 +92,11 @@ export function normalizeActionViewMode(raw: unknown): string {
 }
 
 export type ActionCollectionPresentation = {
-  semantic: 'table' | 'card' | 'workflow_board';
+  semantic: 'table' | 'card' | 'workflow_board' | 'hierarchy_browser' | 'hierarchy_planner' | 'hierarchical_worksheet' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard';
   label: string;
   groupField: string;
   groupedLanes: boolean;
+  config: Dict;
 };
 
 export function resolveActionCollectionPresentation(
@@ -103,10 +105,33 @@ export function resolveActionCollectionPresentation(
 ): ActionCollectionPresentation {
   const mode = normalizeActionViewMode(modeRaw);
   if (mode === 'tree') {
-    return { semantic: 'table', label: '表格', groupField: '', groupedLanes: false };
+    const listProfile = resolveUnifiedPageContractV2ListProfile(contract);
+    const formalPresentation = asDict(listProfile.collection_presentation);
+    const formalSemantic = String(formalPresentation.semantic || '').trim();
+    if (['hierarchy_browser', 'hierarchy_planner', 'hierarchical_worksheet'].includes(formalSemantic)
+      && formalPresentation.enabled === true) {
+      return {
+        semantic: formalSemantic as ActionCollectionPresentation['semantic'],
+        label: String(formalPresentation.label || '').trim() || '层级',
+        groupField: '',
+        groupedLanes: false,
+        config: asDict(formalPresentation.config),
+      };
+    }
+    return { semantic: 'table', label: '表格', groupField: '', groupedLanes: false, config: {} };
+  }
+  if (['pivot', 'graph', 'calendar', 'gantt', 'activity', 'dashboard'].includes(mode)) {
+    const views = asDict(contract?.views);
+    return {
+      semantic: mode as ActionCollectionPresentation['semantic'],
+      label: String(modeRaw || ''),
+      groupField: '',
+      groupedLanes: false,
+      config: asDict(views[mode]),
+    };
   }
   if (mode !== 'kanban') {
-    return { semantic: 'card', label: String(modeRaw || ''), groupField: '', groupedLanes: false };
+    return { semantic: 'card', label: String(modeRaw || ''), groupField: '', groupedLanes: false, config: {} };
   }
   const views = asDict(contract?.views);
   const kanban = asDict(views.kanban);
@@ -121,6 +146,7 @@ export function resolveActionCollectionPresentation(
       label: String(presentation.label || '').trim() || '流程看板',
       groupField,
       groupedLanes: true,
+      config: {},
     };
   }
   return {
@@ -128,6 +154,7 @@ export function resolveActionCollectionPresentation(
     label: semantic === 'card' ? String(presentation.label || '').trim() || '卡片' : '卡片',
     groupField: '',
     groupedLanes: false,
+    config: {},
   };
 }
 
@@ -137,7 +164,7 @@ export function resolveGroupedCollectionPresentation(
 ): ActionCollectionPresentation {
   const groupField = String(activeGroupFieldRaw || '').trim();
   if (presentation.semantic !== 'card' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(groupField)) return presentation;
-  return { semantic: 'workflow_board', label: '流程看板', groupField, groupedLanes: true };
+  return { semantic: 'workflow_board', label: '流程看板', groupField, groupedLanes: true, config: {} };
 }
 
 export function resolveActionViewAvailableModes(options: {

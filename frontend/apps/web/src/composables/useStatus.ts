@@ -213,15 +213,15 @@ export function resolveErrorCopy(err: StatusError | null, fallbackMessage = 'Req
 
 export function resolveEmptyCopy(type: 'list' | 'card' | 'record' | 'my_work' = 'list'): StatusCopy {
   if (type === 'record') {
-    return { title: 'No data', message: 'Record not found or not readable.' };
+    return { title: '暂无数据', message: '记录不存在或当前不可读取。' };
   }
   if (type === 'my_work') {
-    return { title: 'No work items', message: 'No pending items in this section.' };
+    return { title: '暂无待办', message: '当前分区没有待处理事项。' };
   }
   if (type === 'card') {
-    return { title: 'No data', message: 'No cards returned for this action.' };
+    return { title: '暂无数据', message: '当前视图没有可展示的卡片。' };
   }
-  return { title: 'No data', message: 'No records returned for this action.' };
+  return { title: '暂无数据', message: '当前视图没有可展示的记录。' };
 }
 
 export function useStatus() {

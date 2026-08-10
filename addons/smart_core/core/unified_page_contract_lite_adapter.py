@@ -35,7 +35,7 @@ LITE_TOP_LEVEL_KEYS = {
     "meta",
 }
 SUPPORTED_CLIENT_TYPES = {"web_pc", "wx_mini", "harmony_h5"}
-SUPPORTED_VIEW_TYPES = {"form", "tree", "list", "kanban", "search", "gantt", "popup", "combine"}
+SUPPORTED_VIEW_TYPES = {"form", "tree", "list", "kanban", "search", "pivot", "graph", "calendar", "gantt", "activity", "dashboard", "popup", "combine"}
 
 ZONE_CONTAINER_TYPES = {
     "header_zone": "section",

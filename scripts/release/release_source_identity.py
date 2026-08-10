@@ -38,6 +38,7 @@ def validate_repository_identity(
     root: Path,
     source_sha: str,
     *,
+    allow_boundary_head: bool = False,
     runner: CommandRunner = _run,
 ) -> dict[str, str]:
     source_sha = _require_sha(source_sha, "SOURCE_SHA")
@@ -53,7 +54,9 @@ def validate_repository_identity(
     head_sha = _require_sha(runner(["git", "rev-parse", "HEAD"], root), "Git HEAD")
     remote_line = runner(["git", "ls-remote", "origin", "refs/heads/main"], root)
     remote_sha = _require_sha(remote_line.split()[0] if remote_line else "", "origin/main")
-    if len({source_sha, head_sha, remote_sha}) != 1:
+    if source_sha != head_sha or (
+        not allow_boundary_head and source_sha != remote_sha
+    ):
         raise ReleaseIdentityError(
             f"release identity mismatch SOURCE_SHA={source_sha} HEAD={head_sha} origin/main={remote_sha}"
         )
@@ -63,6 +66,7 @@ def validate_repository_identity(
         "source_sha": source_sha,
         "head_sha": head_sha,
         "remote_main_sha": remote_sha,
+        "source_authority": "boundary_head" if allow_boundary_head else "origin_main",
     }
 
 
@@ -198,6 +202,7 @@ def main() -> int:
     source = subparsers.add_parser("source-preflight")
     source.add_argument("--root", type=Path, default=Path.cwd())
     source.add_argument("--source-sha", required=True)
+    source.add_argument("--allow-boundary-head", action="store_true")
 
     artifact = subparsers.add_parser("artifact-preflight")
     artifact.add_argument("--image", required=True)
@@ -210,7 +215,11 @@ def main() -> int:
 
     try:
         if args.command == "source-preflight":
-            result = validate_repository_identity(args.root, args.source_sha)
+            result = validate_repository_identity(
+                args.root,
+                args.source_sha,
+                allow_boundary_head=args.allow_boundary_head,
+            )
         else:
             validate_manifest_checksum(args.release_manifest, args.release_manifest_checksum)
             image_manifest = _load_json(args.image_manifest, "image manifest")

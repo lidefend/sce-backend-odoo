@@ -577,6 +577,15 @@ class UiContractV2Handler(BaseIntentHandler):
             "record": source_record,
             "source_meta": ui_meta,
         })
+        try:
+            from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
+
+            PageAssembler(self.env, self.su_env)._inject_native_collection_presentation(
+                source_contract,
+                source_context if isinstance(source_context, dict) else {},
+            )
+        except Exception:
+            _logger.debug("ui.contract.v2 route collection presentation refresh skipped", exc_info=True)
         self._inject_action_window_contract(
             source_contract,
             params=params,

@@ -152,9 +152,15 @@ class StaticContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dockerfile = (ROOT / "Dockerfile.production-candidate").read_text()
+        cls.frontend_dockerfile = (
+            ROOT / "Dockerfile.production-frontend-builder"
+        ).read_text()
         cls.entrypoint = (ROOT / "scripts/release/production_odoo_entrypoint.sh").read_text()
         cls.manager = (ROOT / "scripts/release/production_db_manage.sh").read_text()
         cls.compose = (ROOT / "docker-compose.production-candidate.yml").read_text()
+        cls.nginx_candidate = (
+            ROOT / "config/nginx/conf.d/production-candidate.conf"
+        ).read_text()
         cls.acceptance = (ROOT / "scripts/release/production_contract_image_acceptance.sh").read_text()
         cls.release_make = (ROOT / "make/release.mk").read_text()
         cls.identity = (ROOT / "scripts/release/release_source_identity.py").read_text()
@@ -200,6 +206,20 @@ class StaticContractTests(unittest.TestCase):
 
     def test_base_image_has_digest(self): self.assertRegex(self.dockerfile.splitlines()[0], r"^FROM odoo:17\.0@sha256:[0-9a-f]{64}$")
     def test_no_distribution_upgrade(self): self.assertNotRegex(self.dockerfile, r"apt(?:-get)?\s+(?:dist-upgrade|full-upgrade|upgrade)")
+    def test_candidate_build_uses_stable_dependency_cache_layers(self):
+        dependency_copy = self.frontend_dockerfile.index(
+            "COPY frontend/package.json frontend/pnpm-lock.yaml"
+        )
+        dependency_install = self.frontend_dockerfile.index(
+            "pnpm install --frozen-lockfile"
+        )
+        source_copy = self.frontend_dockerfile.index("COPY frontend/ ./")
+        self.assertLess(dependency_copy, dependency_install)
+        self.assertLess(dependency_install, source_copy)
+        self.assertIn("id=sce-frontend-pnpm-store", self.frontend_dockerfile)
+        self.assertIn("id=sce-frontend-apt-lists", self.frontend_dockerfile)
+        self.assertIn("id=sce-runtime-apt-lists", self.dockerfile)
+        self.assertIn("id=sce-runtime-pip-cache", self.dockerfile)
     def test_empty_addon_directories_created(self):
         for path in ("/mnt/customer-addons", "/mnt/test-addons", "/mnt/source-addons"): self.assertIn(path, self.dockerfile)
     def test_candidate_image_copies_versioned_locked_menu_contract(self):
@@ -234,6 +254,15 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("NGINX_IMAGE_REF with image@sha256 digest is required", self.compose)
         self.assertNotIn("image: ${CANDIDATE_IMAGE", self.compose)
         self.assertIn("PRODUCTION_COMPOSE_PROJECT:?PRODUCTION_COMPOSE_PROJECT is required", self.compose)
+
+    def test_candidate_edge_health_is_json_and_drives_container_health(self):
+        self.assertIn("location = /healthz", self.nginx_candidate)
+        self.assertIn('default_type application/json', self.nginx_candidate)
+        self.assertIn('return 200 \'{"status":"ok","service":"sce-web"}', self.nginx_candidate)
+        nginx_service = self.compose.split("\n  nginx:\n", 1)[1]
+        self.assertIn("http://127.0.0.1/healthz", nginx_service)
+        self.assertIn("json.load(r).get('status') == 'ok'", nginx_service)
+        self.assertNotIn('test: ["CMD-SHELL", "nginx -t"]', nginx_service)
 
     def test_promotion_config_preflight_is_read_only_and_fail_closed(self):
         target = self.release_make.split(
@@ -275,7 +304,10 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("PLATFORM_RELEASE_DB:?PLATFORM_RELEASE_DB is required", self.compose)
     def test_candidate_source_sha_has_no_hardcoded_default(self):
         self.assertIn("SOURCE_SHA ?=", self.release_make)
-        self.assertNotIn("CANDIDATE_SOURCE_SHA ?=", self.release_make)
+        self.assertNotRegex(
+            self.release_make,
+            r"(?m)^CANDIDATE_SOURCE_SHA\s*\?=",
+        )
         self.assertNotIn("c93e40c5e2613c0b9389492f185365c1d498e7d2", self.release_make)
         self.assertIn("SOURCE_SHA is required", self.release_make)
     def test_formal_repository_identity_is_exact(self):

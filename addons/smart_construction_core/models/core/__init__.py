@@ -9,6 +9,8 @@ from . import progress_entry
 from . import project_project_financial
 from . import project_budget
 from . import boq
+from . import boq_analysis
+from . import cost_plan
 from . import material_plan
 from . import material_catalog
 from . import material_acceptance

@@ -90,9 +90,18 @@
     </record>
 
     <record id="action_project_budget" model="ir.actions.act_window">
-        <field name="name">项目预算</field>
-        <field name="res_model">project.budget</field>
+        <!--
+            Stable product entry contract: keep the historical XMLID so saved
+            links and backend-composed routes remain valid, while the formal
+            target-cost workspace is project.cost.plan.
+        -->
+        <field name="name">目标成本计划</field>
+        <field name="res_model">project.cost.plan</field>
         <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_project_cost_plan_tree"/>
+        <field name="search_view_id" ref="view_project_cost_plan_search"/>
+        <field name="context">{}</field>
+        <field name="domain">[]</field>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>
 

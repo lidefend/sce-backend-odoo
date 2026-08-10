@@ -2,6 +2,7 @@
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List
+from odoo.tools.safe_eval import safe_eval
 
 from odoo.addons.smart_core.core.delivery_menu_defaults import register_current_project_scope_model
 from odoo.addons.smart_core.core.project_context import (
@@ -477,6 +478,31 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     ).lower()
     render_profile = _sc_text(source.get("render_profile") or head.get("render_profile") or (((context or {}).get("meta") or {}).get("params") or {}).get("render_profile")).lower()
     out = deepcopy(contract)
+    if model == "construction.work.breakdown" and view_type in {"tree", "list"}:
+        source_context = source.get("context") if isinstance(source.get("context"), dict) else {}
+        if not source_context:
+            meta = context.get("meta") if isinstance(context.get("meta"), dict) else {}
+            params = meta.get("params") if isinstance(meta.get("params"), dict) else {}
+            source_context = params.get("context") if isinstance(params.get("context"), dict) else {}
+            if not source_context and isinstance(params.get("context_raw"), str):
+                try:
+                    parsed_context = safe_eval(params["context_raw"], {})
+                except Exception:
+                    parsed_context = {}
+                source_context = parsed_context if isinstance(parsed_context, dict) else {}
+        hierarchy_governance = smart_core_hierarchy_governance(
+            env, model, source_context, source,
+        )
+        if isinstance(hierarchy_governance, dict):
+            layout = out.get("layoutContract") if isinstance(out.get("layoutContract"), dict) else {}
+            list_profile = layout.get("listProfile") if isinstance(layout.get("listProfile"), dict) else {}
+            presentation = list_profile.get("collection_presentation") if isinstance(list_profile.get("collection_presentation"), dict) else {}
+            config = presentation.get("config") if isinstance(presentation.get("config"), dict) else {}
+            config["governance"] = hierarchy_governance
+            presentation["config"] = config
+            list_profile["collection_presentation"] = presentation
+            layout["listProfile"] = list_profile
+            out["layoutContract"] = layout
     _sc_inject_workflow_contract(env, out, source, model=model, view_type=view_type)
     inject_financial_workspace_runtime(
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
@@ -962,6 +988,26 @@ def smart_core_form_business_actions(env, model_name, record_id, contract):
         return build_financial_form_business_actions(env, model_name, record_id)
     except Exception:
         return None
+
+
+def smart_core_hierarchy_governance(env, model_name, context, contract):
+    """Project authoritative governance facts into the generic hierarchy shell."""
+    del contract
+    if str(model_name or "").strip() != "construction.work.breakdown":
+        return None
+    context = context if isinstance(context, dict) else {}
+    try:
+        plan_id = int(context.get("default_plan_id") or 0)
+    except (TypeError, ValueError):
+        plan_id = 0
+    if plan_id <= 0:
+        return None
+    plan = env["construction.wbs.plan"].browse(plan_id).exists()
+    if not plan:
+        return None
+    plan.check_access_rights("read")
+    plan.check_access_rule("read")
+    return plan._governance_contract()
 
 
 def get_system_init_fact_contributions(env, user, context=None):

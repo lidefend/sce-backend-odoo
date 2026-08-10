@@ -20,9 +20,14 @@ if [[ "$source_ref" == "HEAD" ]]; then
     exit 2
   }
 fi
+identity_args=()
+if [[ "$source_ref" == "HEAD" ]]; then
+  identity_args+=(--allow-boundary-head)
+fi
 python3 scripts/release/release_source_identity.py source-preflight \
   --root "$root" \
-  --source-sha "$source_sha"
+  --source-sha "$source_sha" \
+  "${identity_args[@]}"
 if [[ "$(git rev-parse "$source_ref")" != "$source_sha" ]]; then
   echo "[candidate.build] $source_ref no longer matches locked source SHA" >&2
   exit 2

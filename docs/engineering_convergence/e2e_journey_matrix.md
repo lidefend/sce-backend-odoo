@@ -4,7 +4,7 @@ Generated from `test_inventory.csv` E2E-classified assets.
 
 ## Summary
 
-- E2E-classified assets: `37`
+- E2E-classified assets: `44`
 - Strong or near-strong coverage: `10`
 - Partial coverage: `2`
 - Gaps: `0`
@@ -14,8 +14,8 @@ Generated from `test_inventory.csv` E2E-classified assets.
 | Journey | Status | Existing Assets | Gap to Close |
 | --- | --- | --- | --- |
 | E2E-01: Project administrator creates a project and configures members. | partial_to_strong | `scripts/verify/direct_project_business_browser_acceptance.js`<br>`scripts/verify/user_entry_delivery_browser_acceptance.js` | Map assertions to acceptance points and add missing business data checks if needed. |
-| E2E-02: Cost engineer imports BOQ. | strong | `make test.e2e.fixed_data.odoo`<br>`scripts/e2e/e2e_boq_import_fixed_data_preflight.py`<br>`scripts/e2e/e2e_boq_to_wbs_task_preflight.py` | Keep Odoo fixed-data gate green; add role/browser evidence before release if this journey is user-facing. |
-| E2E-03: Project manager generates WBS or tasks from BOQ. | strong | `make test.e2e.fixed_data.odoo`<br>`scripts/e2e/e2e_boq_import_fixed_data_preflight.py`<br>`scripts/e2e/e2e_boq_to_wbs_task_preflight.py` | Keep Odoo fixed-data gate green; add role/browser evidence before release if this journey is user-facing. |
+| E2E-02: Cost engineer imports BOQ. | strong | `make test.e2e.fixed_data.odoo`<br>`scripts/e2e/e2e_boq_import_fixed_data_preflight.py`<br>`scripts/e2e/e2e_boq_to_wbs_task_preflight.py`<br>`scripts/verify/boq_baseline_browser_acceptance.mjs` | Keep Odoo fixed-data gate green; add role/browser evidence before release if this journey is user-facing. |
+| E2E-03: Project manager generates WBS or tasks from BOQ. | strong | `make test.e2e.fixed_data.odoo`<br>`scripts/e2e/e2e_boq_import_fixed_data_preflight.py`<br>`scripts/e2e/e2e_boq_to_wbs_task_preflight.py`<br>`scripts/verify/boq_baseline_browser_acceptance.mjs` | Keep Odoo fixed-data gate green; add role/browser evidence before release if this journey is user-facing. |
 | E2E-04: Commercial user creates budget and contract. | partial_to_strong | `scripts/e2e/e2e_contract_smoke.py`<br>`scripts/verify/unified_page_contract_lite_all_tree_browser_smoke.js`<br>`scripts/verify/unified_page_contract_lite_all_tree_legacy_browser_smoke.js`<br>`scripts/verify/unified_page_contract_lite_all_tree_matrix_browser_smoke.js`<br>`scripts/verify/unified_page_contract_lite_frontend_pilot_browser_smoke.js`<br>`scripts/verify/web_contract_v2_form_shadow_browser_smoke.js` | Map assertions to acceptance points and add missing business data checks if needed. |
 | E2E-05: Project user starts variation or site instruction workflow. | partial_to_strong | `scripts/verify/direct_acceptance_formal_browser_probe.js`<br>`scripts/verify/direct_acceptance_full_formal_browser_coverage.js`<br>`scripts/verify/workflow_create_statusbar_browser_acceptance.js`<br>`scripts/verify/workflow_evidence_gate_browser_acceptance.js` | Map assertions to acceptance points and add missing business data checks if needed. |
 | E2E-06: Finance user starts payment request. | partial | `scripts/verify/payment_request_receipt_type_browser_group_smoke.js` | Confirm fixed data, role assertions, failure artifacts, and link to nightly/release gate. |

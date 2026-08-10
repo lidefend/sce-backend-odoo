@@ -99,7 +99,7 @@ export async function resolveAction(
   menuTree: NavNode[],
   actionId: number,
   currentAction?: NavMeta | null,
-  options?: { menuId?: number | null; viewType?: string | null; previewToken?: string | null; previewRoleKey?: string | null },
+  options?: { menuId?: number | null; viewType?: string | null; contextRaw?: string | null; previewToken?: string | null; previewRoleKey?: string | null },
 ): Promise<ActionResolution> {
   const currentMatches = Boolean(currentAction && Number(currentAction.action_id || 0) === Number(actionId || 0));
   const currentMenuId = Number(options?.menuId || currentAction?.menu_id || 0);
@@ -108,6 +108,7 @@ export async function resolveAction(
     viewType: String(options?.viewType || '').trim().toLowerCase() as Parameters<typeof loadActionContract>[1] extends infer T
       ? T extends { viewType?: infer V } ? V : never
       : never,
+    contextRaw: String(options?.contextRaw || '').trim() || undefined,
     previewToken: String(options?.previewToken || '').trim() || undefined,
     previewRoleKey: String(options?.previewRoleKey || '').trim() || undefined,
   };

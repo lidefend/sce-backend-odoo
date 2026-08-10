@@ -145,8 +145,8 @@ class CapabilityMatrixService:
                     },
                     {
                         "key": "project_budget",
-                        "label": "项目预算",
-                        "desc": "项目预算与调整",
+                        "label": "目标成本计划",
+                        "desc": "基于清单综合分析编制并调整目标成本计划",
                         "menu_xmlid": "smart_construction_core.menu_sc_project_budget",
                         "action_xmlid": "smart_construction_core.action_project_budget",
                         "order": 20,

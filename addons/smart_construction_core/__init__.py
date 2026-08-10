@@ -28,6 +28,7 @@ from .core_extension import (  # noqa: F401
     smart_core_capability_groups,
     smart_core_create_field_fallbacks,
     smart_core_form_business_actions,
+    smart_core_hierarchy_governance,
     smart_core_identity_profile,
     smart_core_nav_scene_maps,
     smart_core_surface_aliases,

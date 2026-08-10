@@ -2,7 +2,7 @@
 # pyright: reportUnusedExpression=false
 {
     'name': 'Smart Construction Core',
-    'version': '17.0.0.100',
+    'version': '17.0.0.107',
     'summary': 'Core module for construction enterprise management (Architecture 2.0)',
     'author': 'Leedefend',
     'depends': [
@@ -79,12 +79,12 @@
         'views/core/cost_domain_views.xml',
         'views/core/project_boq_import_views.xml',
         'views/core/project_task_from_boq_views.xml',
-        'views/core/project_structure_views.xml',
         'actions/execution_structure_actions_base.xml',
         'views/core/execution_structure_views.xml',
         'actions/execution_structure_actions.xml',
-        'actions/project_structure_actions.xml',
         'views/core/boq_views.xml',
+        'views/core/boq_analysis_views.xml',
+        'views/core/cost_plan_views.xml',
         'views/core/project_lifecycle_kanban_views.xml',
         'wizard/material_plan_to_rfq_views.xml',
         'views/core/material_plan_views.xml',
@@ -103,7 +103,9 @@
         'views/core/project_views.xml',
         'views/core/task_boq_views.xml',
         'views/support/task_sc_state_views.xml',
+        'views/support/wbs_plan_views.xml',
         'views/support/work_breakdown_views.xml',
+        'views/support/execution_breakdown_views.xml',
         'views/support/tender_views.xml',
         'views/support/document_views.xml',
         'views/projection/operating_metrics_views.xml',

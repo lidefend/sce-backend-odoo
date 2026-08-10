@@ -50,6 +50,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       sceneReadyActions,
       v2ButtonStatus,
       workflowActionRows: workflowContractActionRows(),
+      v2ActionRuleList: (v2ContractStore.value?.snapshot.actionContract.actionRuleList || []) as Array<Record<string, unknown>>,
       policyContext: policyContext.value,
       evaluateNativeActionVisibility,
       isTierValidationActionHidden,
@@ -176,6 +177,18 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     if (isIntakeCreateMode.value) return null;
     if (!model.value) return null;
     if (!recordId.value) return nativeHeaderSubmitActionForCreate();
+    const runtime = parseMaybeJsonRecord(
+      v2ContractStore.value?.snapshot.runtimeContract
+      || resolveUnifiedPageContractV2(contract.value)?.runtimeContract,
+    );
+    if (String(runtime.interactionMode || '').trim() === 'wizard') {
+      const wizardAction = contractActions.value.find((action) => (
+        action.level === 'footer'
+        && action.presentationTier === 'primary'
+        && action.enabled
+      ));
+      if (wizardAction) return wizardAction;
+    }
     const visibleAction = headerActions.value.find((action) => isUnifiedSubmitAction(action) && action.enabled);
     return visibleAction || null;
   });
@@ -294,6 +307,10 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       onMany2one: (name, descriptor, value) => setMany2oneField(name, descriptor, value),
       onText: (name, value) => setTextField(name, value),
     });
+    const filenameField = String(payload.descriptor?.filename || '').trim();
+    if (String(payload.type || '').trim().toLowerCase() === 'binary' && filenameField && payload.fileName) {
+      setTextField(filenameField, payload.fileName);
+    }
   }
 
   const relationFieldAdapter = computed<RelationFieldAdapter>(() => ({

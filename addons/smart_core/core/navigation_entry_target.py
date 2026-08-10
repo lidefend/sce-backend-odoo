@@ -162,6 +162,10 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
     if not isinstance(result, dict):
         return None
     payload = dict(result)
+    # A model method may intentionally open an action owned by a different
+    # authorized menu.  Preserve that explicit backend entry authority instead
+    # of pairing the returned action with the caller's current menu.
+    effective_menu_id = _to_int(payload.get("menu_id")) or _to_int(menu_id)
     if isinstance(payload.get("entry_target"), dict) and _text(payload["entry_target"].get("type")):
         return payload
     params = payload.get("params") if isinstance(payload.get("params"), dict) else {}
@@ -171,7 +175,7 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
         normalized_next = normalize_odoo_action_result(
             env,
             next_action,
-            menu_id=menu_id,
+            menu_id=effective_menu_id,
             source_model=source_model,
             source_record_id=source_record_id,
             _depth=_depth + 1,
@@ -212,7 +216,7 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
     )
     entry_target = nested_entry_target or normalize_entry_target(
         env=env,
-        menu_id=menu_id,
+        menu_id=effective_menu_id,
         action_id=action_id,
         model=model,
         view_modes=view_modes,

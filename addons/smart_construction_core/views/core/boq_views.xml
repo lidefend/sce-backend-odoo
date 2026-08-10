@@ -1,62 +1,162 @@
 <odoo>
+    <record id="view_project_boq_version_tree" model="ir.ui.view">
+        <field name="name">project.boq.version.tree</field>
+        <field name="model">project.boq.version</field>
+        <field name="arch" type="xml">
+            <tree string="清单版本" decoration-success="state == 'published'" decoration-muted="state in ('superseded', 'cancelled')">
+                <field name="project_id"/>
+                <field name="source_type"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="state" widget="badge"/>
+                <field name="line_count"/>
+                <field name="item_count"/>
+                <field name="total_amount"/>
+                <field name="published_at" optional="show"/>
+                <field name="published_by" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_project_boq_version_form" model="ir.ui.view">
+        <field name="name">project.boq.version.form</field>
+        <field name="model">project.boq.version</field>
+        <field name="arch" type="xml">
+            <form string="清单版本">
+                <header>
+                    <button name="action_validate" string="校验" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_publish" string="发布" type="object" class="oe_highlight" invisible="state != 'validated'"/>
+                    <button name="action_open_wbs_planning" string="进入 WBS 计划" type="object" class="btn-secondary" groups="smart_construction_core.group_sc_cap_project_manager"/>
+                    <button name="action_restore" string="恢复此版本" type="object" class="btn-secondary" invisible="state != 'superseded'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,validated,published,superseded"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="state in ('published', 'superseded')"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="project_id" readonly="state != 'draft'"/>
+                            <field name="source_type" readonly="state != 'draft'"/>
+                            <field name="code" readonly="state != 'draft'"/>
+                            <field name="previous_version_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="line_count"/>
+                            <field name="item_count"/>
+                            <field name="total_amount"/>
+                            <field name="published_at" invisible="not published_at"/>
+                            <field name="published_by" invisible="not published_by"/>
+                        </group>
+                    </group>
+                    <field name="note" placeholder="记录本版本的业务范围和变更原因……" readonly="state in ('published', 'superseded')"/>
+                    <notebook>
+                        <page string="清单明细">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <tree default_order="section_type, parent_path, sequence, id" decoration-bf="line_type != 'item'">
+                                    <field name="parent_id" invisible="1"/>
+                                    <field name="line_type" invisible="1"/>
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="major_name" optional="show"/>
+                                    <field name="division_name" optional="show"/>
+                                    <field name="uom_id"/>
+                                    <field name="quantity"/>
+                                    <field name="price"/>
+                                    <field name="amount"/>
+                                    <field name="work_id" optional="show"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="执行分配">
+                            <field name="line_ids" readonly="1">
+                                <tree default_order="sheet_index, sequence, id">
+                                    <field name="source_code"/>
+                                    <field name="name"/>
+                                    <field name="quantity"/>
+                                    <field name="amount_leaf"/>
+                                    <field name="allocated_quantity"/>
+                                    <field name="allocated_amount"/>
+                                    <field name="unallocated_quantity"/>
+                                    <field name="unallocated_amount"/>
+                                    <field name="allocation_balanced"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="导入批次">
+                            <field name="batch_ids" readonly="1">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="filename"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="row_count"/>
+                                    <field name="item_count"/>
+                                    <field name="skipped_count"/>
+                                    <field name="warning_count"/>
+                                    <field name="imported_at"/>
+                                    <field name="imported_by"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_project_boq_version_search" model="ir.ui.view">
+        <field name="name">project.boq.version.search</field>
+        <field name="model">project.boq.version</field>
+        <field name="arch" type="xml">
+            <search string="清单版本">
+                <field name="project_id"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="source_type"/>
+                <filter string="当前发布版本" name="published" domain="[('state', '=', 'published')]"/>
+                <group expand="0" string="分组">
+                    <filter string="项目" name="group_project" context="{'group_by': 'project_id'}"/>
+                    <filter string="清单来源" name="group_source" context="{'group_by': 'source_type'}"/>
+                    <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_project_boq_version" model="ir.actions.act_window">
+        <field name="name">清单版本</field>
+        <field name="res_model">project.boq.version</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_project_boq_version_search"/>
+        <field name="context">{'search_default_published': 1}</field>
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
+    </record>
+
     <!-- 工程量清单：树视图 -->
     <record id="view_project_boq_line_tree" model="ir.ui.view">
         <field name="name">project.boq.line.tree</field>
         <field name="model">project.boq.line</field>
         <field name="arch" type="xml">
             <tree string="工程量清单"
-                  default_order="section_type, parent_path, sequence, id"
-                  decoration-bf="line_type != 'item'">
-
-                <!-- 树结构关键字段（隐藏） -->
-                <field name="parent_id" invisible="1"/>
-                <field name="line_type" invisible="1"/>
-
-                <!-- 拖拽排序 -->
-                <field name="sequence" widget="handle" optional="hide"/>
-
-                <!-- 名称列（用于显示缩进） -->
-                <field name="name" string="名称"/>
-
-                <!-- 层级信息 -->
-                <field name="level" string="层级" readonly="1" optional="hide"/>
-                <field name="hierarchy_code" string="层级编号" readonly="1" optional="hide"/>
-                <field name="display_order" string="展示顺序" readonly="1" optional="hide"/>
-                <field name="is_group" string="章节行" readonly="1" optional="hide"/>
-
-                <!-- 工程维度 -->
-                <field name="project_id" optional="hide"/>
-                <field name="section_type"/>
-                <field name="single_name" optional="hide"/>
-                <field name="unit_name" optional="hide"/>
-                <field name="major_name" optional="hide"/>
-                <field name="category" optional="hide"/>
-                <field name="is_provisional" optional="hide"/>
-                <field name="source_type" optional="hide"/>
-                <field name="version" optional="hide"/>
-                <field name="code_division" optional="hide"/>
-                <field name="code_subdivision" optional="hide"/>
-
-                <!-- 清单识别信息 -->
-                <field name="code"/>
-                <field name="spec"/>
-
-                <!-- 计量计价 -->
+                  js_class="smart_hierarchical_worksheet"
+                  default_order="section_type, parent_path, sequence, id">
+                <header>
+                    <button name="%(action_project_boq_import_wizard)d" type="action" string="导入清单" class="btn-primary"/>
+                </header>
+                <field name="sequence" string="序号"/>
+                <field name="source_code" string="项目编码"/>
+                <field name="name" string="项目名称"/>
+                <field name="spec" string="项目特征"/>
                 <field name="uom_id"/>
-                <field name="quantity" sum="工程量合计"/>
-                <field name="price"/>
-                <field name="amount"/>
-                <field name="amount_leaf" sum="工程合价" optional="hide"/>
-
-                <!-- 预警信息 -->
-                <field name="has_warning" widget="boolean_toggle" optional="hide"/>
-                <field name="warning_message" optional="hide"/>
-
-                <!-- 关联信息 -->
-                <field name="cost_item_id" optional="hide"/>
-                <field name="structure_id" optional="hide"/>
-                <field name="task_id" optional="hide"/>
-                <field name="remark" optional="hide"/>
+                <field name="quantity"/>
+                <field name="price" string="综合单价"/>
+                <field name="imported_amount" string="源文件合价"/>
+                <field name="calculated_amount" string="系统计算合价"/>
+                <field name="source_calc_base" optional="hide"/>
+                <field name="source_rate" optional="hide"/>
+                <field name="is_calculation_detail" optional="hide"/>
             </tree>
         </field>
     </record>
@@ -106,8 +206,12 @@
                         </group>
                         <group>
                             <field name="source_type"/>
-                            <field name="version"/>
-                            <field name="structure_id" readonly="1"/>
+                            <field name="version_id" readonly="1"/>
+                            <field name="import_batch_id" readonly="1"/>
+                            <field name="source_calc_base" readonly="1"/>
+                            <field name="source_rate" readonly="1"/>
+                            <field name="is_calculation_detail" readonly="1"/>
+                            <field name="work_id" readonly="1"/>
                             <field name="task_id" readonly="1"/>
                         </group>
                     </group>
@@ -117,6 +221,7 @@
                             <field name="uom_id"/>
                             <field name="quantity"/>
                             <field name="price"/>
+                            <field name="imported_amount" readonly="1"/>
                             <field name="amount" readonly="1"/>
                             <field name="amount_leaf" readonly="1"/>
                         </group>
@@ -144,6 +249,26 @@
                                     <field name="quantity"/>
                                     <field name="price"/>
                                     <field name="amount" readonly="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="执行范围分配">
+                            <group>
+                                <field name="allocated_quantity" readonly="1"/>
+                                <field name="allocated_amount" readonly="1"/>
+                                <field name="unallocated_quantity" readonly="1"/>
+                                <field name="unallocated_amount" readonly="1"/>
+                                <field name="allocation_balanced" readonly="1"/>
+                            </group>
+                            <field name="allocation_ids" readonly="1">
+                                <tree>
+                                    <field name="execution_scope_id"/>
+                                    <field name="allocation_basis"/>
+                                    <field name="allocated_quantity" readonly="allocation_basis != 'quantity'"/>
+                                    <field name="uom_id"/>
+                                    <field name="allocated_amount" readonly="allocation_basis != 'amount'"/>
+                                    <field name="allocation_ratio" readonly="allocation_basis != 'ratio'"/>
+                                    <field name="source_type"/>
                                 </tree>
                             </field>
                         </page>
@@ -187,7 +312,7 @@
                 <field name="single_name"/>
                 <field name="unit_name"/>
                 <field name="source_type"/>
-                <field name="version"/>
+                <field name="version_id"/>
 
                 <filter string="仅清单项" name="only_item"
                         domain="[('line_type','=','item')]"/>
@@ -213,7 +338,7 @@
                     <filter string="按来源" name="group_by_source"
                             context="{'group_by': 'source_type'}"/>
                     <filter string="按版本" name="group_by_version"
-                            context="{'group_by': 'version'}"/>
+                            context="{'group_by': 'version_id'}"/>
                     <filter string="按行类型" name="group_by_line_type"
                             context="{'group_by': 'line_type'}"/>
                 </group>
@@ -231,7 +356,66 @@
         <field name="res_model">project.boq.line</field>
         <field name="view_mode">tree,form,pivot</field>
         <field name="view_id" ref="view_project_boq_line_tree"/>
-        <field name="context">{}</field>
+        <field name="domain">[('version_id.state', '=', 'published')]</field>
+        <field name="context" eval="{
+            'hierarchical_worksheet': {
+                'navigation_mode': 'sheet_groups',
+                'navigation_groups': [
+                    {'field': 'single_name', 'label': '单项工程', 'empty_label': '未识别单项工程'},
+                    {'field': 'unit_name', 'label': '单位工程', 'empty_label': '未识别单位工程'},
+                    {'field': 'sheet_name', 'label': '清单表', 'empty_label': '未识别清单表'},
+                    {'field': 'division_name', 'label': '源文件分组', 'empty_label': '未分组'},
+                ],
+                'tree_column': 'name',
+                'ordinal_field': 'sequence',
+                'presentation_mode': 'source_order',
+                'row_kind_field': 'source_row_type',
+                'item_values': ['item'],
+                'heading_values': ['heading'],
+                'summary_values': ['subtotal', 'total'],
+                'variance_field': 'amount_variance',
+                'variance_tolerance': 0.005,
+                'blank_fields_by_kind': {
+                    'heading': ['source_code', 'spec', 'uom_id', 'quantity', 'price', 'imported_amount', 'calculated_amount', 'amount_variance'],
+                    'subtotal': ['source_code', 'spec', 'uom_id', 'quantity', 'price'],
+                    'total': ['source_code', 'spec', 'uom_id', 'quantity', 'price'],
+                },
+                'navigation_title': '清单结构',
+                'exclude_fields': ['create_uid', 'create_date'],
+                'column_widths': {
+                    'sequence': 48,
+                    'source_code': 112,
+                    'name': 190,
+                    'spec': 170,
+                    'uom_id': 54,
+                    'quantity': 78,
+                    'price': 88,
+                    'imported_amount': 144,
+                    'calculated_amount': 144,
+                    'amount_variance': 88,
+                },
+                'column_precisions': {
+                    'imported_amount': 2,
+                    'calculated_amount': 2,
+                    'amount_variance': 2,
+                },
+                'navigation_depth': 4,
+                'sheet_domain': [('source_row_type', 'in', ['item', 'heading', 'subtotal', 'total']), ('version_id.state', '=', 'published')],
+                'sheet_order': 'sheet_index, sequence, id',
+                'tabs': [
+                    {'key': 'features', 'label': '项目特征', 'fields': ['source_code', 'name', 'spec', 'remark']},
+                    {'key': 'pricing', 'label': '计量计价', 'fields': ['uom_id', 'quantity', 'price', 'imported_amount', 'calculated_amount']},
+                    {'key': 'structure', 'label': '清单结构', 'fields': ['single_name', 'unit_name', 'sheet_name', 'major_name', 'division_name', 'code_prof', 'code_division', 'code_subdivision']},
+                    {'key': 'allocation', 'label': '执行分配', 'fields': ['allocated_quantity', 'allocated_amount', 'unallocated_quantity', 'unallocated_amount', 'allocation_balanced']},
+                    {'key': 'source', 'label': '来源与诊断', 'fields': ['version_id', 'import_batch_id', 'sheet_name', 'source_row_type', 'amount_variance', 'calculation_scope_item_count', 'has_warning', 'warning_message']},
+                ],
+                'labels': {
+                    'surface_aria': '工程量清单编制工作表',
+                    'all': '全部清单',
+                    'select_hint': '请选择清单项查看属性',
+                },
+            },
+        }"/>
         <field name="groups_id"
                eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>

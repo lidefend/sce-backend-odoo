@@ -1,7 +1,6 @@
 FROM node:22.17.0-bookworm-slim@sha256:b04ce4ae4e95b522112c2e5c52f781471a5cbc3b594527bcddedee9bc48c03a0
 
 WORKDIR /build/frontend
-COPY frontend/ ./
 ARG VITE_ODOO_DB=
 ARG VITE_ODOO_DB_LOCKED=0
 ENV VITE_ODOO_DB=${VITE_ODOO_DB} \
@@ -9,11 +8,27 @@ ENV VITE_ODOO_DB=${VITE_ODOO_DB} \
     VITE_APP_ENV=production \
     VITE_BUILD_MODE=production \
     VITE_BUILD_OUT_DIR=/build/frontend/apps/web/dist
-RUN corepack enable \
-    && corepack prepare pnpm@9.12.3 --activate \
-    && apt-get update \
+RUN --mount=type=cache,id=sce-frontend-apt-lists,target=/var/lib/apt/lists,sharing=locked \
+    --mount=type=cache,id=sce-frontend-apt-cache,target=/var/cache/apt,sharing=locked \
+    apt-get update \
     && apt-get install -y --no-install-recommends python3 \
-    && rm -rf /var/lib/apt/lists/* \
-    && pnpm install --frozen-lockfile \
-    && pnpm -C packages/design-tokens build \
+    && corepack enable \
+    && corepack prepare pnpm@9.12.3 --activate
+
+# Dependency metadata is isolated from application source so normal TS/Vue/CSS
+# edits reuse the expensive frozen install layer.
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
+COPY frontend/apps/mobile/package.json ./apps/mobile/package.json
+COPY frontend/apps/web/package.json ./apps/web/package.json
+COPY frontend/packages/design-tokens/package.json ./packages/design-tokens/package.json
+COPY frontend/packages/schema/package.json ./packages/schema/package.json
+COPY frontend/packages/sdk/package.json ./packages/sdk/package.json
+COPY frontend/packages/tools/package.json ./packages/tools/package.json
+COPY frontend/packages/ui/package.json ./packages/ui/package.json
+RUN --mount=type=cache,id=sce-frontend-pnpm-store,target=/pnpm/store,sharing=locked \
+    pnpm config set store-dir /pnpm/store \
+    && pnpm install --frozen-lockfile
+
+COPY frontend/ ./
+RUN pnpm -C packages/design-tokens build \
     && pnpm -C apps/web exec vite build --mode production

@@ -5,7 +5,7 @@
     </header>
 
     <div v-if="rows.length" class="table-wrap">
-      <table class="mini-table">
+      <ScDataTable class="mini-table" :label="block.title || '表格'">
         <thead>
           <tr>
             <th v-for="(col, index) in columns" :key="`col-${col}`">{{ columnLabel(col, index) }}</th>
@@ -16,7 +16,7 @@
             <td v-for="col in columns" :key="`cell-${idx}-${col}`">{{ stringify(row[col]) }}</td>
           </tr>
         </tbody>
-      </table>
+      </ScDataTable>
     </div>
     <p v-else class="empty-text">{{ emptyMessage }}</p>
   </article>
@@ -25,6 +25,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
+import ScDataTable from '../../design-system/ScDataTable.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -72,11 +73,11 @@ function stringify(value: unknown) {
 .block { border: 1px solid var(--sc-app-border); border-radius: 8px; background: var(--sc-app-panel); padding: 10px; min-height: 170px; }
 .block-header h4 { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
 .table-wrap { max-width: 100%; overflow: auto; }
-.mini-table { width: max(100%, 560px); min-width: 560px; border-collapse: collapse; font-size: 13px; }
-.mini-table th,
-.mini-table td { border: 1px solid var(--sc-app-border); padding: 8px 10px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
-.mini-table th { border: 1px solid var(--sc-app-border); background: var(--sc-app-muted-bg); font-weight: 700; color: var(--sc-app-text-primary); padding: 8px 10px; }
-.mini-table tbody tr:nth-child(2n) td { background: var(--sc-app-muted-bg); }
+.mini-table :deep(table) { width: max(100%, 560px); min-width: 560px; font-size: 13px; }
+.mini-table :deep(th),
+.mini-table :deep(td) { border: 1px solid var(--sc-app-border); padding: 8px 10px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.mini-table :deep(th) { background: var(--sc-app-muted-bg); font-weight: 700; color: var(--sc-app-text-primary); }
+.mini-table :deep(tbody tr:nth-child(2n) td) { background: var(--sc-app-muted-bg); }
 .empty-text { margin: 6px 0 0; color: var(--sc-app-text-secondary); font-size: 13px; }
 
 </style>

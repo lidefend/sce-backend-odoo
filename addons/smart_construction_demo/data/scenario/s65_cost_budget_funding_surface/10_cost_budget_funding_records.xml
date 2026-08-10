@@ -18,7 +18,7 @@
       <field name="code">S65-01</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="sequence">65</field>
-      <field name="level_type">unit</field>
+      <field name="level_type">control_account</field>
     </record>
 
     <record id="sc_demo_wbs_065_sub_section" model="construction.work.breakdown">
@@ -27,7 +27,7 @@
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="parent_id" ref="smart_construction_demo.sc_demo_wbs_065_unit"/>
       <field name="sequence">10</field>
-      <field name="level_type">sub_section</field>
+      <field name="level_type">work_package</field>
     </record>
 
     <record id="sc_demo_budget_065_control" model="project.budget">

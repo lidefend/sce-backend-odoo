@@ -7,7 +7,6 @@ FROM ${NODE_BASE_IMAGE} AS frontend-build
 WORKDIR /build/frontend
 COPY frontend/ ./
 ARG APT_MIRROR
-ARG FRONTEND_BUILD_SHA256
 ARG VITE_ODOO_DB=sc_prod
 ARG VITE_APP_ENV=production
 ENV VITE_ODOO_DB=${VITE_ODOO_DB} \
@@ -42,6 +41,7 @@ COPY --from=frontend-build /build/frontend/apps/web/dist/ /
 FROM frontend-build AS frontend-verified
 ARG FRONTEND_BUILD_SHA256
 RUN recorded="$(cat apps/web/dist/.build-sha256)" \
+    && printf 'frontend build fingerprint expected=%s recorded=%s\n' "${FRONTEND_BUILD_SHA256}" "${recorded}" \
     && test -n "${FRONTEND_BUILD_SHA256}" \
     && test "${recorded}" = "${FRONTEND_BUILD_SHA256}"
 

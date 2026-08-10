@@ -107,7 +107,7 @@ try:
         {
             "name": "P2 Smoke WBS",
             "project_id": project.id,
-            "level_type": "sub_section",
+            "level_type": "work_package",
         }
     )
 

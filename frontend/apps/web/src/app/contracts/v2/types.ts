@@ -1,6 +1,6 @@
 export type ContractV2ClientType = 'web_pc' | 'wx_mini' | 'harmony_h5';
-export type ContractV2ViewType = 'form' | 'list' | 'table' | 'kanban' | 'tree' | 'gantt' | 'combine';
-export type ContractV2LayoutType = 'form' | 'table' | 'kanban' | 'tree' | 'gantt' | 'combine';
+export type ContractV2ViewType = 'form' | 'list' | 'table' | 'kanban' | 'tree' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | 'combine';
+export type ContractV2LayoutType = 'form' | 'table' | 'kanban' | 'tree' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | 'combine';
 export type ContractV2AdaptMode = 'pc' | 'mobile';
 export type ContractV2TriggerType = 'change' | 'click' | 'select' | 'refresh' | 'add' | 'delete' | 'confirm' | 'submit' | 'blur' | 'focus';
 export type ContractV2DispatchMode = 'local' | 'server' | 'serverDebounced' | 'serverBlocking';
@@ -95,6 +95,12 @@ export interface ContractV2ActionRule {
   intent?: string;
   target?: ContractV2Dictionary;
   button?: ContractV2Dictionary;
+  visible?: ContractV2Dictionary;
+  modifiers?: ContractV2Dictionary;
+  invisible?: unknown;
+  visible_profiles?: string[];
+  presentation?: ContractV2Dictionary;
+  action_safety?: ContractV2Dictionary;
   submitPolicy?: ContractV2Dictionary;
   tracePolicy?: ContractV2Dictionary;
 }
@@ -195,6 +201,8 @@ export interface ContractV2RuntimeContract {
   tracePolicy?: ContractV2Dictionary;
   complexityBudget?: ContractV2Dictionary;
   aiEnvelope?: ContractV2Dictionary;
+  interactionMode?: string;
+  actionTarget?: string;
 }
 
 export interface ContractV2Meta {

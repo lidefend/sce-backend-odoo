@@ -17,6 +17,7 @@ import logging
 import ast
 import json
 import re
+from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
 
 _logger = logging.getLogger(__name__)
 
@@ -42,54 +43,7 @@ class _TreeFormParserMixin:
     )
 
     def _normalize_modifier_value(self, value):
-        raw = str(value or "").strip()
-        if not raw:
-            return raw
-        if raw in ("1", "true", "True"):
-            return True
-        if raw in ("0", "false", "False"):
-            return False
-        normalized = self._normalize_modifier_structure(value)
-        if normalized is not None:
-            return normalized
-        parsed = self._safe_eval_expr(value)
-        if parsed is not None and parsed != value:
-            normalized = self._normalize_modifier_structure(parsed)
-            return normalized if normalized is not None else parsed
-        match = self._SIMPLE_MODIFIER_RE.match(raw)
-        if match:
-            expected_raw = match.group(4) if match.group(4) is not None else match.group(5)
-            if expected_raw is None:
-                token = match.group(3)
-                if token in ("True", "true"):
-                    expected_raw = True
-                elif token in ("False", "false"):
-                    expected_raw = False
-                elif "." in token:
-                    try:
-                        expected_raw = float(token)
-                    except Exception:
-                        expected_raw = token
-                else:
-                    try:
-                        expected_raw = int(token)
-                    except Exception:
-                        expected_raw = token
-            op = "==" if match.group(2) == "=" else match.group(2)
-            return {
-                "kind": "field_compare",
-                "field": match.group(1),
-                "operator": op,
-                "value": expected_raw,
-                "raw": raw,
-            }
-        if re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", raw):
-            return {
-                "kind": "field_truthy",
-                "field": raw,
-                "raw": raw,
-            }
-        return raw
+        return normalize_native_modifier(value)
 
     def _normalize_modifier_structure(self, value):
         if isinstance(value, bool):
@@ -688,6 +642,12 @@ class _TreeFormParserMixin:
                 "label": label,
                 "kind": "object",
                 "level": lvl,
+                # The form command bar only consumes actions whose placement
+                # authority is explicit.  Native <header> buttons are already
+                # authoritative page-header actions; preserve that fact in the
+                # legacy projection so the V2 projection and renderer do not
+                # have to infer it from a model or action name.
+                "source_widget_id": "page.header" if level == "header" else "",
                 "selection": selection,
                 "visible_profiles": visible_profiles,
                 "groups": [],
@@ -703,6 +663,9 @@ class _TreeFormParserMixin:
                     confirm=confirm,
                     level=level,
                 ),
+                "presentation": {
+                    "tier": "primary" if ("btn-primary" in classes or "oe_highlight" in classes) else "overflow",
+                },
                 "badge": badge or None,
                 "payload": {
                     "method": None,
@@ -951,6 +914,9 @@ class _TreeFormParserMixin:
                 semantics = self._field_widget_semantics(fname, meta.get('widget'), meta['widget_options'])
                 if semantics:
                     meta['widget_semantics'] = semantics
+            if el.get('filename'):
+                node['filename'] = el.get('filename')
+                meta['filename'] = el.get('filename')
             # 局部修饰
             fmods = {}
             for k in ('readonly', 'required', 'invisible'):
