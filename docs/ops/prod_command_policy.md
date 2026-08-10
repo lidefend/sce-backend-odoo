@@ -169,6 +169,14 @@ Makefile guards and script-level guards.
   `CONFIRM_PRODUCTION_DEPLOYMENT_TOOL_SYNC=YES_SYNC_IMMUTABLE_DEPLOYMENT_TOOLING`;
   streams the exact clean dual-remote-approved main Git archive into one new
   atomic `/opt/sce/deployment-tools/<sha>` directory without runtime changes)
+- `make production.tenant.delivery.artifacts.sync` (requires
+  `CONFIRM_PRODUCTION_TENANT_ARTIFACT_SYNC=YES_SYNC_SIGNED_TENANT_DELIVERY_ARTIFACTS`;
+  from a clean dual-remote-approved `main`, validates and incrementally
+  synchronizes one signed customer package, signed tenant payload, and public
+  key into a new root-owned production custody directory, then generates the
+  bound release-set lock with the immutable deployment tool; it changes no
+  database, service, container, product image, product filestore, or historical
+  attachment binary)
 - `make production.release.config.promote` (requires
   `CONFIRM_PRODUCTION_RELEASE_CONFIG_PROMOTE=YES_PROMOTE_VERIFIED_PRODUCTION_RELEASE_CONFIG`;
   verifies the current running image, current runtime identity, next cached
