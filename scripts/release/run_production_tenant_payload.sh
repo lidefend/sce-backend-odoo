@@ -16,9 +16,22 @@ python3 scripts/release/production_release_set.py validate --lock "$PRODUCTION_R
 payload_root="$(realpath "${TENANT_PAYLOAD:?TENANT_PAYLOAD is required}")"
 customer_root="$(realpath "${SC_CUSTOMER_ADDONS_ROOT:?SC_CUSTOMER_ADDONS_ROOT is required}")"
 public_key="$(realpath "${SC_TENANT_PAYLOAD_PUBLIC_KEY:?SC_TENANT_PAYLOAD_PUBLIC_KEY is required}")"
+maintenance_config="$(realpath "${SC_PRODUCTION_MAINTENANCE_CONFIG_OVERRIDE:?SC_PRODUCTION_MAINTENANCE_CONFIG_OVERRIDE is required}")"
 for path in "$payload_root" "$customer_root" "$public_key"; do
   [[ ! -L "$path" ]] || { echo "PRODUCTION_TPV1_SYMLINK_FORBIDDEN" >&2; exit 2; }
 done
+[[ -f "$maintenance_config" && ! -L "$maintenance_config" ]] || {
+  echo "PRODUCTION_TPV1_MAINTENANCE_CONFIG_INVALID" >&2; exit 2;
+}
+case "$maintenance_config" in
+  /opt/sce/deployment-tools/????????????????????????????????????????/scripts/release/production_maintenance_config.py) ;;
+  *) echo "PRODUCTION_TPV1_MAINTENANCE_CONFIG_IDENTITY_INVALID" >&2; exit 2;;
+esac
+tool_root="${maintenance_config%/scripts/release/production_maintenance_config.py}"
+tool_sha="${tool_root##*/}"
+[[ "$tool_sha" =~ ^[0-9a-f]{40}$ && "$(cat "$tool_root/DEPLOYMENT_TOOL_SHA")" == "$tool_sha" ]] || {
+  echo "PRODUCTION_TPV1_MAINTENANCE_TOOL_IDENTITY_INVALID" >&2; exit 2;
+}
 case "$payload_root:$customer_root" in
   *"/data/odoo/legacy_attachments"*) echo "PRODUCTION_TPV1_LEGACY_ATTACHMENTS_FORBIDDEN" >&2; exit 2;;
 esac

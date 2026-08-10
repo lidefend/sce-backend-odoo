@@ -130,6 +130,15 @@ class MaintenanceConfigTest(unittest.TestCase):
         self.assertIn("YES_ACTIVATE_SIGNED_CUSTOMER_RUNTIME", makefile)
         self.assertIn("release.production.customer_runtime.activate", policy)
 
+    def test_payload_runner_mounts_only_immutable_maintenance_validator(self):
+        source = (ROOT / "scripts/release/run_production_tenant_payload.sh").read_text()
+        compose = (ROOT / "docker-compose.tenant-payload.yml").read_text()
+        self.assertIn("SC_PRODUCTION_MAINTENANCE_CONFIG_OVERRIDE", source)
+        self.assertIn("/opt/sce/deployment-tools/", source)
+        self.assertIn("DEPLOYMENT_TOOL_SHA", source)
+        self.assertIn("SC_PRODUCTION_MAINTENANCE_CONFIG_OVERRIDE", compose)
+        self.assertIn("/usr/local/bin/production_maintenance_config.py:ro", compose)
+
     def test_operator_contract_is_external_identity_and_single_group_only(self):
         provision = (ROOT / "scripts/tenant_payload/provision_operator.py").read_text()
         self.assertIn('identity_type != "external_xmlid"', provision)
