@@ -3408,3 +3408,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   groups are deactivated rather than repurposed. Static XML, action binding,
   menu-depth, primary-center, menu-contract and `git diff --check` guards
   must pass before a controlled dev/test module upgrade.
+
+## 2026-08-10 — P1-DAILY-CONTRACT-SETTLEMENT-BOUNDARY
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `57d6a9c`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 settlement source
+  contract / `smart_construction_core`.
+- Reason / Why Here: the P1 menu target includes daily-contract settlement,
+  but the existing settlement object only anchors `construction.contract` and
+  therefore cannot truthfully represent `sc.general.contract` settlement.
+- Why Not Elsewhere: a tenant-only menu override cannot supply model-level
+  integrity; P0 does not own construction contract semantics; P4 cannot be a
+  long-lived relation adapter. No customer-specific model is introduced.
+- Blast Radius / validation: no runtime implementation in this batch. The
+  capability contract requires mutual exclusivity, direction, company,
+  project, counterparty, currency, approval, payment, invoice, audit and
+  historical compatibility checks before the menu may be visible.
