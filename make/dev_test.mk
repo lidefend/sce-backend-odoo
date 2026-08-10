@@ -1620,9 +1620,12 @@ verify.product.tier.coverage: guard.prod.forbid
 	@python3 scripts/verify/product_tier_coverage.py
 
 seed.delivery.minimum: guard.prod.forbid
+	@bash scripts/verify/delivery_acceptance_scope_guard.sh
 	@python3 scripts/verify/seed_delivery_minimum.py
 
-verify.delivery.business.success.ready: guard.prod.forbid seed.delivery.minimum
+verify.delivery.business.success.ready: guard.prod.forbid
+	@bash scripts/verify/delivery_acceptance_scope_guard.sh
+	@python3 scripts/verify/seed_delivery_minimum.py
 	@python3 scripts/verify/delivery_business_success_ready.py
 
 verify.runtime_contract.test_placeholder.guard: guard.prod.forbid check-compose-project check-compose-env
@@ -1631,7 +1634,7 @@ verify.runtime_contract.test_placeholder.guard: guard.prod.forbid check-compose-
 	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/runtime_contract_test_placeholder_guard.json artifacts/backend/runtime_contract_test_placeholder_guard.json >/dev/null
 
 .PHONY: verify.lowcode_config.boundary.guard
-verify.lowcode_config.boundary.guard: guard.prod.forbid verify.business_config.guard_inventory verify.smart_core.boundary_guard verify.app_config_engine.boundary_guard verify.view.orchestration_product_boundary_guard verify.view.orchestration_boundary_guard verify.lowcode_config.customer_module_asset.replay.guard
+verify.lowcode_config.boundary.guard: guard.prod.forbid verify.business_config.guard_inventory verify.smart_core.boundary_guard verify.app_config_engine.boundary_guard verify.view.orchestration_product_boundary_guard verify.view.orchestration_boundary_guard verify.user_module.product_boundary
 	@python3 -m py_compile scripts/verify/lowcode_config_boundary_guard.py
 	@python3 scripts/verify/lowcode_config_boundary_guard.py
 
@@ -1715,6 +1718,10 @@ verify.ui.product.stability: guard.prod.forbid verify.ui.surface.stability.ready
 verify.delivery.reproducible: guard.prod.forbid verify.delivery.business.success.ready
 	@echo "[OK] verify.delivery.reproducible done"
 
+.PHONY: verify.product.acceptance.ready
+verify.product.acceptance.ready: guard.prod.forbid verify.delivery.reproducible
+	@echo "[OK] verify.product.acceptance.ready done"
+
 verify.product.sla.baseline: guard.prod.forbid verify.platform.performance.smoke
 	@echo "[OK] verify.product.sla.baseline done"
 
@@ -1730,7 +1737,6 @@ verify.product.release.ready: guard.prod.forbid \
 	verify.product.delivery.productization.readiness.strict \
 	verify.frontend.widget_richness.post_ga.guard \
 	verify.ui.product.stability \
-	verify.delivery.reproducible \
 	verify.product.sla.baseline
 	@echo "[OK] verify.product.release.ready done"
 
@@ -1870,7 +1876,6 @@ verify.productization.ready: guard.prod.forbid \
 	verify.product.bundle.isolation \
 	verify.product.tier.enforcement \
 	verify.ui.product.stability \
-	verify.delivery.reproducible \
 	verify.product.complexity.bound \
 	verify.platform.governance.ready
 	@echo "[OK] verify.productization.ready done"

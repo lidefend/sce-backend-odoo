@@ -8,6 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 MAKEFILE = ROOT / "Makefile"
+MAKEFILE_FRAGMENTS = tuple(sorted((ROOT / "make").glob("*.mk")))
 CONTROL_README = ROOT / "docs" / "ops" / "releases" / "v2.0.0" / "README.md"
 RELEASE_NOTES = ROOT / "docs" / "ops" / "release_notes_v2.0.0.md"
 CHECKLIST = ROOT / "docs" / "ops" / "release_checklist_v2.0.0.md"
@@ -15,6 +16,11 @@ VERSIONING = ROOT / "docs" / "ops" / "versioning.md"
 RELEASE_INDEX_EN = ROOT / "docs" / "ops" / "releases" / "README.md"
 RELEASE_INDEX_ZH = ROOT / "docs" / "ops" / "releases" / "README.zh.md"
 VERIFY_README = ROOT / "docs" / "ops" / "verify" / "README.md"
+
+
+def _makefile_source() -> str:
+    paths = (MAKEFILE, *MAKEFILE_FRAGMENTS)
+    return "\n".join(path.read_text(encoding="utf-8") for path in paths if path.is_file())
 
 README_TOKENS = (
     "# v2.0.0 Release Control",
@@ -471,8 +477,6 @@ MAKEFILE_TARGET_PREREQS = (
             "verify.docs.product_boundary",
             "verify.industry_module.product_boundary",
             "verify.user_module.product_boundary",
-            "verify.lowcode_config.customer_module_asset.pipeline",
-            "verify.lowcode_config.customer_module_asset.release_hardening.guard",
             "verify.product.surface.clean",
             "verify.product.menu.release.ready",
             "verify.product.complexity.bound",
@@ -481,7 +485,6 @@ MAKEFILE_TARGET_PREREQS = (
             "verify.product.delivery.productization.readiness.strict",
             "verify.frontend.widget_richness.post_ga.guard",
             "verify.ui.product.stability",
-            "verify.delivery.reproducible",
             "verify.product.sla.baseline",
         ),
     ),
@@ -1109,7 +1112,7 @@ def _contains_makefile_targets(errors: list[str]) -> None:
     if not MAKEFILE.is_file():
         errors.append(f"missing Makefile: {MAKEFILE.relative_to(ROOT).as_posix()}")
         return
-    text = MAKEFILE.read_text(encoding="utf-8")
+    text = _makefile_source()
     phony_targets = _makefile_phony_targets(text)
     for target in MAKEFILE_PHONY_TARGETS:
         if target not in phony_targets:
@@ -1197,7 +1200,7 @@ def _contains_product_readiness_checklist_alignment(errors: list[str]) -> None:
     if not CHECKLIST.is_file():
         errors.append(f"missing checklist: {CHECKLIST.relative_to(ROOT).as_posix()}")
         return
-    makefile_text = MAKEFILE.read_text(encoding="utf-8")
+    makefile_text = _makefile_source()
     checklist_text = CHECKLIST.read_text(encoding="utf-8")
     prereqs = _makefile_prereqs(makefile_text, "verify.product.release.ready")
     if prereqs is None:
@@ -1225,7 +1228,7 @@ def _contains_notes_preflight_dependency_alignment(errors: list[str]) -> None:
     if not RELEASE_NOTES.is_file():
         errors.append(f"missing release notes: {RELEASE_NOTES.relative_to(ROOT).as_posix()}")
         return
-    makefile_text = MAKEFILE.read_text(encoding="utf-8")
+    makefile_text = _makefile_source()
     notes_text = RELEASE_NOTES.read_text(encoding="utf-8")
     prereqs = _makefile_prereqs(makefile_text, "verify.release.v2_0_0.preflight")
     if prereqs is None:
@@ -1253,7 +1256,7 @@ def _contains_readme_preflight_dependency_alignment(errors: list[str]) -> None:
     if not CONTROL_README.is_file():
         errors.append(f"missing release-control README: {CONTROL_README.relative_to(ROOT).as_posix()}")
         return
-    makefile_text = MAKEFILE.read_text(encoding="utf-8")
+    makefile_text = _makefile_source()
     readme_text = CONTROL_README.read_text(encoding="utf-8")
     prereqs = _makefile_prereqs(makefile_text, "verify.release.v2_0_0.preflight")
     if prereqs is None:

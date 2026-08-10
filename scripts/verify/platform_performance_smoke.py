@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 from pathlib import Path
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import env_value, get_base_url, http_post_json, obtain_runtime_probe_token
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -34,19 +33,6 @@ def _p95(values: list[float]) -> float:
     return float(arr[idx])
 
 
-def _login(intent_url: str, db_name: str, login: str, password: str) -> tuple[bool, str]:
-    status, payload = http_post_json(
-        intent_url,
-        {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1"},
-    )
-    if status >= 400 or not isinstance(payload, dict) or payload.get("ok") is not True:
-        return False, ""
-    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
-    token = str(data.get("token") or "").strip()
-    return bool(token), token
-
-
 def _intent_call(intent_url: str, token: str, intent: str, params: dict) -> tuple[int, dict, float]:
     ts0 = time.perf_counter()
     status, payload = http_post_json(
@@ -56,6 +42,31 @@ def _intent_call(intent_url: str, token: str, intent: str, params: dict) -> tupl
     )
     elapsed_ms = (time.perf_counter() - ts0) * 1000.0
     return status, payload if isinstance(payload, dict) else {}, elapsed_ms
+
+
+def _first_project_id(intent_url: str, token: str) -> int:
+    status, payload, _elapsed_ms = _intent_call(
+        intent_url,
+        token,
+        "api.data",
+        {
+            "op": "list",
+            "model": "project.project",
+            "fields": ["id"],
+            "domain": [],
+            "limit": 1,
+            "order": "id asc",
+        },
+    )
+    if not 200 <= status < 300 or payload.get("ok") is not True:
+        return 0
+    rows = ((payload.get("data") or {}).get("records") or [])
+    if not rows or not isinstance(rows[0], dict):
+        return 0
+    try:
+        return int(rows[0].get("id") or 0)
+    except (TypeError, ValueError):
+        return 0
 
 
 def main() -> int:
@@ -69,14 +80,16 @@ def main() -> int:
 
     base_url = get_base_url()
     intent_url = f"{base_url}/api/v1/intent"
-    db_name = str(os.getenv("DB_NAME") or os.getenv("ODOO_DB") or "sc_dev").strip()
-    login = str(os.getenv("E2E_LOGIN") or "admin").strip()
-    password = str(os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin").strip()
+    db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
 
-    ok, token = _login(intent_url, db_name, login, password)
+    ok, token, _auth_source = obtain_runtime_probe_token(intent_url, db_name)
     if not ok:
-        errors.append("login failed for performance smoke")
+        errors.append("runtime probe authentication failed for performance smoke")
         token = ""
+
+    project_id = _first_project_id(intent_url, token) if token else 0
+    if token and project_id <= 0:
+        errors.append("performance smoke requires an accessible project.project record")
 
     targets = [
         (
@@ -96,7 +109,7 @@ def main() -> int:
             {
                 "model": "project.project",
                 "button": {"name": "action_view_tasks", "type": "object"},
-                "res_id": 1,
+                "res_id": project_id,
                 "dry_run": True,
             },
         ),
@@ -108,13 +121,14 @@ def main() -> int:
             times: list[float] = []
             statuses: list[int] = []
             payload_sizes: list[int] = []
+            invalid_responses: list[str] = []
             for _ in range(iterations):
                 status, payload, elapsed_ms = _intent_call(intent_url, token, intent, params)
                 times.append(elapsed_ms)
                 statuses.append(int(status))
                 payload_sizes.append(len(json.dumps(payload, ensure_ascii=False).encode("utf-8")))
-                if int(status) >= 500:
-                    errors.append(f"{intent} returned 5xx status={status}")
+                if not 200 <= int(status) < 300 or payload.get("ok") is not True:
+                    invalid_responses.append(f"status={status},ok={payload.get('ok')}")
             p95 = _p95(times)
             avg = (sum(times) / len(times)) if times else 0.0
             max_size = max(payload_sizes) if payload_sizes else 0
@@ -124,6 +138,11 @@ def main() -> int:
                 errors.append(f"{intent} p95_ms exceeded: {p95:.2f} > {threshold:.2f}")
             if max_size > size_threshold:
                 errors.append(f"{intent} payload_bytes exceeded: {max_size} > {size_threshold}")
+            if invalid_responses:
+                errors.append(
+                    f"{intent} requires 2xx + ok=true for every sample: "
+                    f"invalid={len(invalid_responses)}/{iterations} first={invalid_responses[0]}"
+                )
             rows.append(
                 {
                     "intent": intent,

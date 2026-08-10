@@ -35,7 +35,6 @@ class LoadModelViewHandler(BaseIntentHandler):
         model = str(params.get("model") or params.get("model_code") or "").strip()
         if model in SENSITIVE_SYSTEM_MODELS and not user_is_platform_admin(
             getattr(self.env, "user", None),
-            include_legacy=True,
             include_system=True,
         ):
             return self._permission_denied(model)

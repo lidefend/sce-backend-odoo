@@ -52,10 +52,47 @@ def get_base_url() -> str:
     return f"http://localhost:{port}"
 
 
+def env_value(key: str, env_file: str | None = None) -> str:
+    value = str(os.getenv(key) or "").strip()
+    if value:
+        return value
+    path = str(env_file or os.getenv("ENV_FILE") or "").strip()
+    return str(load_env_value_from_file(path, key) or "").strip()
+
+
 def extract_login_token(payload: dict[str, Any]) -> str:
     data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
     session = data.get("session") if isinstance(data.get("session"), dict) else {}
     return str(session.get("token") or data.get("token") or "").strip()
+
+
+def obtain_runtime_probe_token(intent_url: str, db_name: str) -> tuple[bool, str, str]:
+    login = env_value("E2E_LOGIN")
+    password = env_value("E2E_PASSWORD")
+    if login and password:
+        status, payload = http_post_json(
+            intent_url,
+            {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
+            headers={"X-Anonymous-Intent": "1"},
+        )
+        token = extract_login_token(payload) if status < 400 and payload.get("ok") is True else ""
+        return bool(token), token, "e2e_login"
+
+    bootstrap_login = env_value("SC_BOOTSTRAP_LOGIN")
+    bootstrap_secret = env_value("SC_BOOTSTRAP_SECRET")
+    if bootstrap_login and bootstrap_secret:
+        status, payload = http_post_json(
+            intent_url,
+            {
+                "intent": "session.bootstrap",
+                "params": {"db": db_name, "login": bootstrap_login},
+            },
+            headers={"X-Anonymous-Intent": "1", "X-Bootstrap-Secret": bootstrap_secret},
+        )
+        token = extract_login_token(payload) if status < 400 and payload.get("ok") is True else ""
+        return bool(token), token, "dev_test_bootstrap"
+
+    return False, "", "unconfigured"
 
 
 def live_login_failure_hint(

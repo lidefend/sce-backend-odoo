@@ -5,10 +5,9 @@ from __future__ import annotations
 import ast
 import copy
 import json
-import os
 from pathlib import Path
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import env_value, get_base_url, http_post_json, obtain_runtime_probe_token
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,19 +34,6 @@ def _list_return(path: Path, fn_name: str) -> list[dict]:
                 if isinstance(value, list):
                     return [item for item in value if isinstance(item, dict)]
     return []
-
-
-def _login(intent_url: str, db_name: str, login: str, password: str) -> tuple[bool, str]:
-    status, payload = http_post_json(
-        intent_url,
-        {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1"},
-    )
-    if status >= 400 or not isinstance(payload, dict) or payload.get("ok") is not True:
-        return False, ""
-    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
-    token = str(data.get("token") or "").strip()
-    return bool(token), token
 
 
 def _system_init(intent_url: str, token: str) -> dict:
@@ -80,7 +66,7 @@ def _set_bundle_fact(payload: dict, bundle_name: str, scenes: list, caps: list) 
     return out
 
 
-def _remove_bundle_fact(payload: dict) -> dict:
+def _remove_bundle_fact(payload: dict, baseline: dict) -> dict:
     out = copy.deepcopy(payload)
     ext_facts = out.get("ext_facts") if isinstance(out.get("ext_facts"), dict) else {}
     product = ext_facts.get("product") if isinstance(ext_facts.get("product"), dict) else {}
@@ -89,7 +75,7 @@ def _remove_bundle_fact(payload: dict) -> dict:
         ext_facts["product"] = product
     else:
         ext_facts.pop("product", None)
-    if ext_facts:
+    if ext_facts or "ext_facts" in baseline:
         out["ext_facts"] = ext_facts
     else:
         out.pop("ext_facts", None)
@@ -111,13 +97,10 @@ def main() -> int:
     warnings: list[str] = []
     base_url = get_base_url()
     intent_url = f"{base_url}/api/v1/intent"
-    db_name = str(os.getenv("DB_NAME") or os.getenv("ODOO_DB") or "sc_dev").strip()
-    login = str(os.getenv("E2E_LOGIN") or "admin").strip()
-    password = str(os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin").strip()
-
-    ok, token = _login(intent_url, db_name, login, password)
+    db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
+    ok, token, _auth_source = obtain_runtime_probe_token(intent_url, db_name)
     if not ok:
-        errors.append("login failed for bundle installation check")
+        errors.append("no valid E2E login or dev/test bootstrap token for bundle installation check")
         token = ""
     baseline = _system_init(intent_url, token) if token else {}
     if not baseline:
@@ -133,7 +116,7 @@ def main() -> int:
             errors.append(f"{bundle} bundle registry incomplete")
             continue
         enabled = _set_bundle_fact(baseline, bundle, scenes, caps)
-        disabled = _remove_bundle_fact(enabled)
+        disabled = _remove_bundle_fact(enabled, baseline)
         enabled_extra_keys = [key for key in _keys(enabled) if key not in baseline_keys]
         disabled_extra_keys = [key for key in _keys(disabled) if key not in baseline_keys]
         missing_after_disabled = [key for key in baseline_keys if key not in _keys(disabled)]

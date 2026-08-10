@@ -8,7 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 SESSION_STORE = ROOT / "frontend/apps/web/src/stores/session.ts"
 HOME_VIEW = ROOT / "frontend/apps/web/src/views/HomeView.vue"
-HOME_RUNTIME = ROOT / "frontend/apps/web/src/composables/shared-surface/useContractRoleHome.ts"
+HOME_RUNTIME = ROOT / "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts"
 ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 SCENE_VIEW = ROOT / "frontend/apps/web/src/views/SceneView.vue"
 WORKBENCH_VIEW = ROOT / "frontend/apps/web/src/views/WorkbenchView.vue"
@@ -213,7 +213,7 @@ def main() -> int:
     if not ok_session:
         errors.extend([f"session.ts missing token: {token}" for token in missing_session])
     if not ok_home:
-        errors.extend([f"useContractRoleHome.ts missing token: {token}" for token in missing_home])
+        errors.extend([f"useWorkspaceHome.ts missing token: {token}" for token in missing_home])
     if not ok_shell:
         errors.extend([f"AppShell.vue missing token: {token}" for token in missing_shell])
     if not ok_action:

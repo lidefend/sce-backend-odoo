@@ -87,8 +87,7 @@ class ScTenantCompanyRegistration(models.Model):
     def create(self, vals_list):
         _assert_signed_import_boundary(self.env)
         if any(
-            str(values.get("source_module") or "").strip()
-            in {"smart_core", "smart_construction_core"}
+            str(values.get("source_module") or "").strip().startswith(("smart_", "sc_"))
             for values in vals_list
         ):
             raise UserError("TPV1_PRODUCT_MODULE_CANNOT_REGISTER_BUSINESS_COMPANY")

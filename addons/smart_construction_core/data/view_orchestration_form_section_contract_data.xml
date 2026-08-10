@@ -12,8 +12,9 @@
             <field name="version_no">1</field>
             <field name="contract_json" eval="{
                 'view_orchestration': {
+                    'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
                     'views': {
-                        'form': {
+                        'form': {'composition_mode': 'entry_semantic_surface',
                             'sections': [
                                 {'title': '项目基本信息'},
                                 {'title': '业务关系与类型'},
@@ -96,8 +97,9 @@
             <field name="version_no">1</field>
             <field name="contract_json" eval="{
                 'view_orchestration': {
+                    'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
                     'views': {
-                        'form': {
+                        'form': {'composition_mode': 'entry_semantic_surface',
                             'sections': [
                                 {'title': '报名信息'},
                                 {'title': '投标金额与时间'},
@@ -151,8 +153,9 @@
             <field name="version_no">1</field>
             <field name="contract_json" eval="{
                 'view_orchestration': {
+                    'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
                     'views': {
-                        'form': {
+                        'form': {'composition_mode': 'entry_semantic_surface',
                             'sections': [
                                 {'title': '申请信息'},
                                 {'title': '费用与缴费'},
@@ -192,7 +195,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "贷款信息"}, {"title": "还款信息"}, {"title": "贷款账户"}, {"title": "银行"}, {"title": "期限"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "贷款信息"}, {"title": "还款信息"}, {"title": "贷款账户"}, {"title": "银行"}, {"title": "期限"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_tax_deduction_registration_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_tax_deduction_registration_form_sections_v1</field>
@@ -203,7 +206,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "扣款信息"}, {"title": "扣款实缴信息"}, {"title": "扣款退回信息"}, {"title": "开票详情"}, {"title": "预缴税款详情"}, {"title": "抵扣登记信息"}, {"title": "抵扣详情"}, {"title": "发票信息"}, {"title": "材料信息"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "扣款信息"}, {"title": "扣款实缴信息"}, {"title": "扣款退回信息"}, {"title": "开票详情"}, {"title": "预缴税款详情"}, {"title": "抵扣登记信息"}, {"title": "抵扣详情"}, {"title": "发票信息"}, {"title": "材料信息"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_payment_execution_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_payment_execution_form_sections_v1</field>
@@ -214,7 +217,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "办理类型"}, {"title": "付款依据"}, {"title": "付款金额"}, {"title": "收款账户"}, {"title": "付款账户"}, {"title": "办理说明"}, {"title": "公司-承包人资金责任"}, {"title": "来源与系统追溯"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "办理类型"}, {"title": "付款依据"}, {"title": "付款金额"}, {"title": "收款账户"}, {"title": "付款账户"}, {"title": "办理说明"}, {"title": "公司-承包人资金责任"}, {"title": "来源与系统追溯"}]}}}}'/>
         </record>
         <record id="business_config_contract_payment_request_form_sections_v1" model="ui.business.config.contract">
             <field name="name">payment_request_form_sections_v1</field>
@@ -225,7 +228,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "办理类型"}, {"title": "项目与往来单位"}, {"title": "申请依据"}, {"title": "申请金额"}, {"title": "收款账户"}, {"title": "付款单位"}, {"title": "办理说明与附件"}, {"title": "申请明细"}, {"title": "执行与额度"}, {"title": "往来单位默认账户"}, {"title": "迁移来源"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "办理类型"}, {"title": "项目与往来单位"}, {"title": "申请依据"}, {"title": "申请金额"}, {"title": "收款账户"}, {"title": "付款单位"}, {"title": "办理说明与附件"}, {"title": "申请明细"}, {"title": "执行与额度"}, {"title": "往来单位默认账户"}, {"title": "迁移来源"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_fund_account_operation_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_fund_account_operation_form_sections_v1</field>
@@ -236,7 +239,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "详情"}, {"title": "项目间借贷"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "详情"}, {"title": "项目间借贷"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_fund_account_form_p1_fields_v1" model="ui.business.config.contract">
             <field name="name">sc_fund_account_form_p1_fields_v1</field>
@@ -247,7 +250,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"fields": [{"name": "project_id", "sequence": 10}, {"name": "name", "sequence": 20}, {"name": "opening_balance", "sequence": 30}, {"name": "account_type", "sequence": 40}, {"name": "account_no", "sequence": 50}, {"name": "is_default", "sequence": 60}, {"name": "fixed_account", "sequence": 70}, {"name": "sequence", "sequence": 80}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","fields": [{"name": "project_id", "sequence": 10}, {"name": "name", "sequence": 20}, {"name": "opening_balance", "sequence": 30}, {"name": "account_type", "sequence": 40}, {"name": "account_no", "sequence": 50}, {"name": "is_default", "sequence": 60}, {"name": "fixed_account", "sequence": 70}, {"name": "sequence", "sequence": 80}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_construction_diary_form_p1_fields_v1" model="ui.business.config.contract">
             <field name="name">sc_construction_diary_form_p1_fields_v1</field>
@@ -258,7 +261,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"fields": [{"name": "diary_document_no", "sequence": 10}, {"name": "diary_project_name", "sequence": 20}, {"name": "diary_construction_part", "sequence": 30}, {"name": "diary_manpower_count_display", "sequence": 40}, {"name": "diary_equipment_attendance", "sequence": 50}, {"name": "diary_temperature_display", "sequence": 60}, {"name": "diary_morning_weather_display", "sequence": 70}, {"name": "diary_afternoon_weather_display", "sequence": 80}, {"name": "diary_daily_construction_content_display", "sequence": 90}, {"name": "diary_operator_manager_display", "sequence": 100}, {"name": "quality_name", "sequence": 110}, {"name": "diary_construction_worker_display", "sequence": 120}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","fields": [{"name": "diary_document_no", "sequence": 10}, {"name": "diary_project_name", "sequence": 20}, {"name": "diary_construction_part", "sequence": 30}, {"name": "diary_manpower_count_display", "sequence": 40}, {"name": "diary_equipment_attendance", "sequence": 50}, {"name": "diary_temperature_display", "sequence": 60}, {"name": "diary_morning_weather_display", "sequence": 70}, {"name": "diary_afternoon_weather_display", "sequence": 80}, {"name": "diary_daily_construction_content_display", "sequence": 90}, {"name": "diary_operator_manager_display", "sequence": 100}, {"name": "quality_name", "sequence": 110}, {"name": "diary_construction_worker_display", "sequence": 120}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_receipt_income_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_receipt_income_form_sections_v1</field>
@@ -269,7 +272,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "工程款确认"}, {"title": "代扣代缴明细"}, {"title": "施工队明细"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "工程款确认"}, {"title": "代扣代缴明细"}, {"title": "施工队明细"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_invoice_registration_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_invoice_registration_form_sections_v1</field>
@@ -280,7 +283,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "发票标题"}, {"title": "受票方信息"}, {"title": "开票方信息"}, {"title": "本次开票信息"}, {"title": "相关数据"}, {"title": "开票详情"}, {"title": "发票实开详情"}, {"title": "发票金额"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "发票标题"}, {"title": "受票方信息"}, {"title": "开票方信息"}, {"title": "本次开票信息"}, {"title": "相关数据"}, {"title": "开票详情"}, {"title": "发票实开详情"}, {"title": "发票金额"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_material_purchase_request_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_material_purchase_request_form_sections_v1</field>
@@ -291,7 +294,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "材料信息"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "材料信息"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_material_inbound_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_material_inbound_form_sections_v1</field>
@@ -302,7 +305,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "材料信息"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "材料信息"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_labor_request_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_labor_request_form_sections_v1</field>
@@ -313,7 +316,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "施工单位"}, {"title": "合同信息"}, {"title": "工种信息"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "施工单位"}, {"title": "合同信息"}, {"title": "工种信息"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_labor_usage_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_labor_usage_form_sections_v1</field>
@@ -324,7 +327,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "工种/表单信息"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "工种/表单信息"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_labor_settlement_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_labor_settlement_form_sections_v1</field>
@@ -335,7 +338,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "汇总信息"}, {"title": "方单详情"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "汇总信息"}, {"title": "方单详情"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_subcontract_register_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_subcontract_register_form_sections_v1</field>
@@ -346,7 +349,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "合同清单"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "合同清单"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_subcontract_request_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_subcontract_request_form_sections_v1</field>
@@ -357,7 +360,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "方单详情"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "方单详情"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_subcontract_settlement_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_subcontract_settlement_form_sections_v1</field>
@@ -368,7 +371,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "汇总信息"}, {"title": "方单详情"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "汇总信息"}, {"title": "方单详情"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_equipment_request_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_equipment_request_form_sections_v1</field>
@@ -379,7 +382,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "机械设备明细"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "机械设备明细"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_equipment_usage_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_equipment_usage_form_sections_v1</field>
@@ -390,7 +393,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "表单信息"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "表单信息"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_equipment_settlement_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_equipment_settlement_form_sections_v1</field>
@@ -401,7 +404,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "机械设备租赁清单"}, {"title": "结算费用清单"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "机械设备租赁清单"}, {"title": "结算费用清单"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_material_rental_order_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_material_rental_order_form_sections_v1</field>
@@ -412,7 +415,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "租赁材料清单"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "租赁材料清单"}]}}}}'/>
         </record>
         <record id="business_config_contract_sc_material_rental_settlement_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_material_rental_settlement_form_sections_v1</field>
@@ -423,7 +426,7 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"views": {"form": {"sections": [{"title": "结算材料租赁清单"}, {"title": "结算费用清单"}]}}}}'/>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "结算材料租赁清单"}, {"title": "结算费用清单"}]}}}}'/>
         </record>
     </data>
 </odoo>

@@ -38,6 +38,7 @@
 | `smart_construction_seed` | P4 初始化工具 | 新库确定性初始化和基线数据重放 | 客户长期偏好、运行时管理员配置 |
 | `smart_construction_bootstrap` | P4 启动工具 | 最小系统启动参数、安全默认值和环境基础 | 业务模型、客户偏好、演示数据 |
 | `smart_construction_demo` | P4 演示工具 | 演示数据、样例用户、展示内容 | 生产业务规则、标准默认、客户真实数据 |
+| `smart_construction_acceptance_fixture` | P4 验收夹具 | 隔离验收库的确定性角色、流程与数据夹具 | 生产安装集、标准业务事实、客户真实数据 |
 | `smart_construction_portal` | P1/P0 门户扩展 | 门户交互和对外入口能力；行业语义由依赖模块提供 | 客户个性化表单和菜单偏好 |
 
 ## 平台产品

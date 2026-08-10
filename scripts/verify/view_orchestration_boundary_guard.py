@@ -32,6 +32,9 @@ CONTRACT_MIXIN_TEST = ROOT / "addons/smart_core/tests/test_contract_mixin_view_s
 ACTION_VIEW_RUNTIME = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts"
 ACTION_VIEW_SHAPE_SMOKE = ROOT / "scripts/verify/action_view_orchestration_contract_shape_smoke.js"
 CONTRACT_FORM_PAGE = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
+CONTRACT_FORM_LIFECYCLE = ROOT / "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts"
+CONTRACT_FORM_DESIGNER_PERSISTENCE = ROOT / "frontend/apps/web/src/pages/contractForm/useRecordFormDesignerPersistence.ts"
+CONTRACT_FORM_SAVE_RUNTIME = ROOT / "frontend/apps/web/src/pages/contractForm/useFormConfigSaveRuntime.ts"
 CONTRACT_FORM_LOWCODING_SMOKE = ROOT / "scripts/verify/contract_form_lowcode_orchestration_smoke.js"
 CONTRACT_FORM_ORCHESTRATION_HUD_SMOKE = ROOT / "scripts/verify/contract_form_view_orchestration_hud_smoke.js"
 
@@ -83,6 +86,9 @@ def main() -> int:
     action_view_runtime = _read(ACTION_VIEW_RUNTIME)
     action_view_shape_smoke = _read(ACTION_VIEW_SHAPE_SMOKE)
     contract_form_page = _read(CONTRACT_FORM_PAGE)
+    contract_form_lifecycle = _read(CONTRACT_FORM_LIFECYCLE)
+    contract_form_designer_persistence = _read(CONTRACT_FORM_DESIGNER_PERSISTENCE)
+    contract_form_save_runtime = _read(CONTRACT_FORM_SAVE_RUNTIME)
     contract_form_lowcode_smoke = _read(CONTRACT_FORM_LOWCODING_SMOKE)
     contract_form_hud_smoke = _read(CONTRACT_FORM_ORCHESTRATION_HUD_SMOKE)
 
@@ -271,9 +277,9 @@ def main() -> int:
         errors,
     )
     _assert(
-        'return "tree" if normalized == "list" else normalized' in business_config
-        and "rec.view_id.type" in business_config
-        and "contract.view_type" in business_config,
+        "return normalize_contract_view_type(view_type)" in business_config
+        and "self._normalize_view_orchestration_view_type(rec.view_id.type)" in business_config
+        and "self._normalize_view_orchestration_view_type(rec.view_type)" in business_config,
         "ui.business.config.contract must normalize tree/list consistently for scope checks",
         errors,
     )
@@ -418,8 +424,8 @@ def main() -> int:
     )
     _assert(
         '"role_key": str(rec.role_key or "")' in page_assembler
-        and "viewOrchestrationHudSummary" in contract_form_page
-        and "view_orchestration_contracts" in contract_form_page
+        and "viewOrchestrationHudSummary" in contract_form_lifecycle
+        and "business_config_contracts" in contract_form_lifecycle
         and "contract_form_view_orchestration_hud_smoke" in contract_form_hud_smoke,
         "form UI diagnostics must expose applied view orchestration contract summary",
         errors,
@@ -469,9 +475,9 @@ def main() -> int:
         errors,
     )
     _assert(
-        "buildLowCodeViewOrchestration" in contract_form_page
-        and "view_orchestration: buildLowCodeViewOrchestration()" in contract_form_page
-        and "collectLowCodeLayoutFromViewOrchestration" in contract_form_page
+        "buildLowCodeViewOrchestration" in contract_form_designer_persistence
+        and "view_orchestration: params.buildLowCodeViewOrchestration()" in contract_form_save_runtime
+        and "collectLowCodeLayoutFromViewOrchestration" in contract_form_designer_persistence
         and "contract_form_lowcode_orchestration_smoke" in contract_form_lowcode_smoke,
         "frontend low-code form authoring must persist and hydrate view_orchestration contracts",
         errors,
