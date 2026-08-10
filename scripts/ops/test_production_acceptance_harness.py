@@ -139,6 +139,33 @@ class ProductionAcceptanceHarnessTest(unittest.TestCase):
         self.assertNotIn("generate_" + "token(", source)
         self.assertNotIn("odoo " + "shell", source)
 
+    def test_navigation_uses_canonical_navigation_v1_contract(self) -> None:
+        paths = harness.navigation_from_init(
+            {
+                "navigation_v1": {
+                    "nav": [
+                        {
+                            "label": "智慧施工管理平台",
+                            "children": [
+                                {"label": "项目台账"},
+                                {"label": "合同中心"},
+                                {"label": "付款办理"},
+                            ],
+                        }
+                    ]
+                }
+            }
+        )
+        self.assertEqual(
+            paths,
+            [
+                "智慧施工管理平台",
+                "智慧施工管理平台 / 项目台账",
+                "智慧施工管理平台 / 合同中心",
+                "智慧施工管理平台 / 付款办理",
+            ],
+        )
+
     def test_package_digest_changes_when_package_content_changes(self) -> None:
         observed = harness.package_digest()
         self.assertRegex(observed, r"^[0-9a-f]{64}$")
