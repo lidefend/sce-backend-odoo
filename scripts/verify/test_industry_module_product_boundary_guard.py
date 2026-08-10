@@ -218,6 +218,32 @@ class IndustryModuleProductBoundaryGuardTests(unittest.TestCase):
         self.assertTrue(any("must not register P2" in error for error in errors))
         self.assertTrue(any("without display aliases" in error for error in errors))
 
+    def test_construction_diary_customer_field_boundary_rejects_legacy_extension(self):
+        tmp = tempfile.TemporaryDirectory()
+        root = Path(tmp.name)
+        module = root / "addons" / "smart_construction_core"
+        model_dir = module / "models" / "support"
+        core_model_dir = module / "models" / "core"
+        migration_dir = module / "migrations" / "17.0.0.118"
+        model_dir.mkdir(parents=True)
+        core_model_dir.mkdir(parents=True)
+        migration_dir.mkdir(parents=True)
+        (model_dir / "direct_acceptance_formal_visible_fields.py").write_text(
+            '_inherit = "sc.construction.diary"', encoding="utf-8"
+        )
+        (core_model_dir / "formal_config_contract_fields.py").write_text(
+            "class ConstructionDiaryFormalConfigContractFields: pass", encoding="utf-8"
+        )
+        (migration_dir / "pre-migration.py").write_text(
+            "sc_construction_diary legacy_visible_%02d "
+            "CONSTRUCTION_DIARY_P2_HISTORY_NOT_EXTRACTED raise RuntimeError",
+            encoding="utf-8",
+        )
+        with tmp, patch.object(guard, "ADDONS", root / "addons"):
+            errors = guard.verify_construction_diary_customer_field_boundary()
+        self.assertTrue(any("must not register P2" in error for error in errors))
+        self.assertTrue(any("without display aliases" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

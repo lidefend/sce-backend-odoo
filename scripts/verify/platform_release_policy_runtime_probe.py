@@ -358,6 +358,11 @@ def main():
             "sc.subcontract.request: P2 legacy-visible physical columns remain after guarded extraction: %s"
             % ",".join(subcontract_request_customer_field_boundary["remaining_physical_columns"])
         )
+    construction_diary_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.construction.diary", table_name="sc_construction_diary"
+    )
+    if construction_diary_customer_field_boundary["registered_fields"] or construction_diary_customer_field_boundary["remaining_physical_columns"]:
+        failures.append("sc.construction.diary: P2 legacy-visible boundary remains registered or physical")
     pass_through_customer_field_boundaries = {}
     for model_name, table_name in (
         ("sc.fund.account.operation", "sc_fund_account_operation"),
@@ -475,6 +480,7 @@ def main():
         "material_rfq_customer_field_boundary": material_rfq_customer_field_boundary,
         "material_inbound_customer_field_boundary": material_inbound_customer_field_boundary,
         "subcontract_request_customer_field_boundary": subcontract_request_customer_field_boundary,
+        "construction_diary_customer_field_boundary": construction_diary_customer_field_boundary,
         "pass_through_customer_field_boundaries": pass_through_customer_field_boundaries,
         "products": products,
         "failures": failures,

@@ -890,60 +890,6 @@ class HrPayrollDocumentDirectAcceptanceVisible(models.Model):
             )
 
 
-class ConstructionDiaryDirectAcceptanceVisible(models.Model):
-    _inherit = "sc.construction.diary"
-
-    _add_legacy_visible_fields(locals())
-    diary_status_display = fields.Char(string="单据状态", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_project_name = fields.Char(string="项目名称", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_document_no = fields.Char(string="单据编号", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_date_display = fields.Char(string="日期", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_construction_part = fields.Char(string="施工部位", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_manpower_count_display = fields.Char(string="出勤人数", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_equipment_attendance = fields.Char(string="出勤机械", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_note_display = fields.Char(string="备注", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_attachment_text = fields.Char(string="附件", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_source_created_by = fields.Char(string="录入人", compute="_compute_diary_formal_visible_fields", readonly=True)
-    diary_source_created_at = fields.Char(string="录入时间", compute="_compute_diary_formal_visible_fields", readonly=True)
-
-    @api.depends(
-        "state",
-        "project_id",
-        "document_no",
-        "name",
-        "date_diary",
-        "title",
-        "quality_name",
-        "manpower_count",
-        "attendance_equipment",
-        "note",
-        "header_description",
-        "description",
-        "attachment_ids",
-        *[_lv(index) for index in range(1, 12)],
-    )
-    def _compute_diary_formal_visible_fields(self):
-        state_map = {
-            "draft": "草稿",
-            "confirmed": "已确认",
-            "done": "已完成",
-            "legacy_confirmed": "历史已确认",
-            "cancel": "已取消",
-        }
-        for record in self:
-            record.diary_status_display = record[_lv(1)] or state_map.get(record.state, record.state or "")
-            record.diary_project_name = record[_lv(2)] or record.project_id.display_name or ""
-            record.diary_document_no = record[_lv(3)] or record.document_no or record.name or ""
-            record.diary_date_display = record[_lv(4)] or (fields.Datetime.to_string(record.date_diary) if record.date_diary else "")
-            record.diary_construction_part = record[_lv(5)] or record.quality_name or record.title or ""
-            record.diary_manpower_count_display = record[_lv(6)] or (str(record.manpower_count) if record.manpower_count else "")
-            record.diary_equipment_attendance = record[_lv(7)] or record.attendance_equipment or ""
-            record.diary_note_display = record[_lv(8)] or record.note or record.header_description or record.description or ""
-            record.diary_attachment_text = record[_lv(9)] or ("附件(%s)" % len(record.attachment_ids) if record.attachment_ids else "")
-            record.diary_source_created_by = record[_lv(10)] or record.handler_name or ""
-            record.diary_source_created_at = record[_lv(11)] or ""
-
-
 class SettlementOrderDirectAcceptanceVisible(models.Model):
     _inherit = "sc.settlement.order"
 

@@ -165,6 +165,18 @@ def main() -> int:
                 errors.append("subcontract request registered count mismatch")
             if subcontract_boundary.get("remaining_physical_column_count") != len(physical or []):
                 errors.append("subcontract request physical count mismatch")
+        diary_boundary = payload.get("construction_diary_customer_field_boundary")
+        if not isinstance(diary_boundary, dict):
+            errors.append("construction_diary_customer_field_boundary must be object")
+        else:
+            registered = diary_boundary.get("registered_fields")
+            physical = diary_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("construction diary P2 boundary must be empty")
+            if diary_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("construction diary registered count mismatch")
+            if diary_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("construction diary physical count mismatch")
         expected_pass_through_models = {
             "sc.fund.account.operation",
             "sc.receipt.income",

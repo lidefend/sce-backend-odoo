@@ -231,18 +231,20 @@
         <field name="name">sc.construction.diary.user.confirmed.tree</field>
         <field name="model">sc.construction.diary</field>
         <field name="arch" type="xml">
-            <tree string="施工日志（新）" create="false" edit="false" delete="false">
-                <field name="diary_status_display" string="单据状态" />
-                <field name="diary_project_name" string="项目名称" />
-                <field name="diary_document_no" string="单据编号" />
-                <field name="diary_date_display" string="日期" />
-                <field name="diary_construction_part" string="施工部位" />
-                <field name="diary_manpower_count_display" string="出勤人数" />
-                <field name="diary_equipment_attendance" string="出勤机械" />
-                <field name="diary_note_display" string="备注" />
-                <field name="diary_attachment_text" string="附件" />
-                <field name="diary_source_created_by" string="录入人" />
-                <field name="diary_source_created_at" string="录入时间" />
+            <tree string="施工日志" create="false" edit="false" delete="false">
+                <field name="state" string="单据状态" />
+                <field name="project_id" string="项目名称" />
+                <field name="name" string="日志编号" />
+                <field name="date_diary" string="日志日期" />
+                <field name="title" string="标题" />
+                <field name="quality_name" string="质量/事项" />
+                <field name="manpower_count" string="现场人数" />
+                <field name="attendance_equipment" string="出勤机械" />
+                <field name="description" string="日志内容" />
+                <field name="note" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="handler_name" string="经办人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>

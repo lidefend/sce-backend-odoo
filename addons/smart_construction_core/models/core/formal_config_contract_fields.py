@@ -74,33 +74,6 @@ class PaymentRequestFormalConfigContractFields(models.Model):
             {field_name: sources for field_name, (_label, sources) in _PAYMENTREQUEST_FORMAL_CONFIG_FIELDS.items()},
         )
 
-_CONSTRUCTIONDIARY_FORMAL_CONFIG_FIELDS = {
-    'diary_morning_weather_display': ('上午气候', ('weather',)),
-    'diary_afternoon_weather_display': ('下午气候', ('weather',)),
-    'diary_daily_construction_content_display': ('当日施工内容', ('description',)),
-    'diary_operator_manager_display': ('操作负责人', ('handler_name',)),
-    'diary_quality_status_display': ('质量情况', ('quality_name',)),
-    'diary_construction_worker_display': ('施工员', ('handler_name',)),
-    'diary_temperature_display': ('温度', ('weather',)),
-}
-
-class ConstructionDiaryFormalConfigContractFields(models.Model):
-    _inherit = 'sc.construction.diary'
-
-    for _field_name, (_field_label, _field_sources) in _CONSTRUCTIONDIARY_FORMAL_CONFIG_FIELDS.items():
-        locals()[_field_name] = fields.Char(
-            string=_field_label,
-            compute="_compute_formal_config_contract_fields",
-            readonly=True,
-        )
-
-    @api.depends()
-    def _compute_formal_config_contract_fields(self):
-        _compute_formal_config_contract_fields(
-            self,
-            {field_name: sources for field_name, (_label, sources) in _CONSTRUCTIONDIARY_FORMAL_CONFIG_FIELDS.items()},
-        )
-
 _EQUIPMENTREQUEST_FORMAL_CONFIG_FIELDS = {
     'equipment_request_document_no_display': ('单据编号', ('name',)),
     'equipment_request_contract_title_display': ('合同标题', ('name',)),
