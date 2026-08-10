@@ -408,23 +408,23 @@
         <field name="model">sc.settlement.order</field>
         <field name="arch" type="xml">
             <tree string="合同结算" create="true" edit="false" delete="false" default_order="id desc">
-                <field name="settlement_acceptance_document_state" string="单据状态" />
-                <field name="settlement_acceptance_document_no" string="单据编号" />
-                <field name="settlement_acceptance_project_name" string="项目名称" />
-                <field name="settlement_acceptance_document_date" string="单据日期" />
-                <field name="settlement_acceptance_title" string="标题/结算内容" />
-                <field name="settlement_acceptance_partner_name" string="结算单位" />
-                <field name="settlement_acceptance_amount" string="结算金额" />
-                <field name="settlement_acceptance_payment_state" string="付款状态" />
-                <field name="settlement_acceptance_paid_amount" string="已付款金额" />
-                <field name="settlement_acceptance_unpaid_amount" string="未付款金额" />
-                <field name="settlement_acceptance_request_state" string="支付申请状态" />
-                <field name="settlement_acceptance_requested_amount" string="已申请金额" />
-                <field name="settlement_acceptance_unrequested_amount" string="未申请金额" />
-                <field name="settlement_acceptance_note" string="结算说明/备注" />
-                <field name="settlement_acceptance_attachment" string="附件" />
-                <field name="settlement_acceptance_creator" string="录入人" />
-                <field name="settlement_acceptance_created_at" string="录入时间" />
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="project_id" string="项目名称" />
+                <field name="document_date" string="单据日期" />
+                <field name="title" string="标题/结算内容" />
+                <field name="settlement_unit_id" string="结算单位" />
+                <field name="contract_id" string="合同" />
+                <field name="settlement_amount" string="结算金额" />
+                <field name="paid_amount" string="已付款金额" />
+                <field name="unpaid_amount" string="未付款金额" />
+                <field name="requested_fund_amount" string="申请资金金额" />
+                <field name="remaining_amount" string="可付余额" />
+                <field name="settlement_description" string="结算说明" />
+                <field name="note" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="entry_user_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
@@ -543,14 +543,14 @@
         <field name="context">{'create': True, 'edit': True, 'default_source_kind': 'output_invoice_tax', 'default_direction': 'output', 'default_invoice_content': '销项开票登记', 'default_business_category_code': 'invoice.output.registration', 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_settlement_order_income" model="ir.actions.act_window">
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_settlement_order_form')})]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_settlement_order_user_confirmed_tree" />
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_settlement_order_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_settlement_order_form')})]" />
         <field name="domain">[('business_category_id.code', '=', 'settlement.income')]</field>
         <field name="context">{'create': True, 'edit': True, 'default_settlement_type': 'in', 'default_business_category_code': 'settlement.income', 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_settlement_order_expense" model="ir.actions.act_window">
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_settlement_order_form')})]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_settlement_order_user_confirmed_tree" />
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_settlement_order_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_settlement_order_form')})]" />
         <field name="domain">[('business_category_id.code', '=', 'settlement.expense')]</field>
         <field name="context">{'create': True, 'edit': True, 'default_settlement_type': 'out', 'default_business_category_code': 'settlement.expense', 'search_default_group_project': 1}</field>
     </record>

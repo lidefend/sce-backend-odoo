@@ -57,6 +57,18 @@ FORMAL_ACCEPTANCE_LABEL_ACTIONS = {
     "action_sc_material_rental_return_acceptance": "还租",
 }
 EXPECTED_ACTION_CONTRACTS = {
+    "action_sc_settlement_order_income": {
+        "name": "收入合同结算",
+        "res_model": "sc.settlement.order",
+        "view_name": "sc.settlement.order.user.confirmed.tree",
+        "field_names": ["state", "name", "project_id", "document_date", "title", "settlement_unit_id", "contract_id", "settlement_amount", "paid_amount", "unpaid_amount", "requested_fund_amount", "remaining_amount", "settlement_description", "note", "attachment_ids", "entry_user_id", "create_date"],
+    },
+    "action_sc_settlement_order_expense": {
+        "name": "支出合同结算",
+        "res_model": "sc.settlement.order",
+        "view_name": "sc.settlement.order.user.confirmed.tree",
+        "field_names": ["state", "name", "project_id", "document_date", "title", "settlement_unit_id", "contract_id", "settlement_amount", "paid_amount", "unpaid_amount", "requested_fund_amount", "remaining_amount", "settlement_description", "note", "attachment_ids", "entry_user_id", "create_date"],
+    },
     "action_sc_subcontract_request_user_confirmed": {
         "name": "分包方单",
         "res_model": "sc.subcontract.request",

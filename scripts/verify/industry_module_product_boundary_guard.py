@@ -363,6 +363,25 @@ def verify_construction_diary_customer_field_boundary() -> list[str]:
     return errors
 
 
+def verify_settlement_order_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.settlement.order"' in mixed_text:
+        errors.append("smart_construction_core: sc.settlement.order must not register P2 legacy-visible fields")
+    list_view = ADDONS / "smart_construction_core/views/support/user_confirmed_formal_list_views.xml"
+    list_text = list_view.read_text(encoding="utf-8", errors="ignore") if list_view.is_file() else ""
+    for field_name in ("state", "name", "project_id", "settlement_amount", "paid_amount", "unpaid_amount", "attachment_ids"):
+        if f'<field name="{field_name}"' not in list_text:
+            errors.append(f"smart_construction_core: settlement list missing canonical field {field_name}")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.119/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in ("sc_settlement_order", "legacy_visible_%02d", "SETTLEMENT_ORDER_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: settlement P2 extraction preflight missing {token}")
+    return errors
+
+
 def verify_guard_metadata_product_language() -> list[str]:
     text = Path(__file__).read_text(encoding="utf-8", errors="ignore")
     forbidden_tokens = ("compatibility " + "stub",)
@@ -1825,6 +1844,7 @@ def main() -> int:
     errors.extend(verify_pass_through_customer_field_boundary())
     errors.extend(verify_subcontract_request_customer_field_boundary())
     errors.extend(verify_construction_diary_customer_field_boundary())
+    errors.extend(verify_settlement_order_customer_field_boundary())
     errors.extend(verify_guard_metadata_product_language())
     errors.extend(verify_production_token_boundary())
     errors.extend(verify_legacy_temporary_account_boundary())
