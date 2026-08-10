@@ -3459,3 +3459,14 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   tool is immutable-SHA bound, captures a rollback copy, fails closed on policy
   drift, validates nginx before reload, verifies the public header, and rolls
   back on failure. Unit tests and real wutao browser preview/download prove it.
+
+## 2026-08-11 — PRODUCTION-CSP-RELOAD-CONVERGENCE
+
+- Branch / anchor: `fix/production-csp-reload-convergence` from `311ea03`.
+- Formal Product Layer / Layer Target / Module: P4 production edge verification
+  in `scripts/ops/production_attachment_preview_csp.py`.
+- Reason / Boundary: nginx graceful reload may serve one in-flight request from
+  an old worker immediately after `systemctl reload`; a single public-header
+  read caused a correct candidate to roll back. Verification now polls the same
+  exact public CSP condition for at most five seconds. Mutation scope and
+  rollback behavior are unchanged.
