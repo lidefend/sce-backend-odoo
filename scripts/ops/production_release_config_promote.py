@@ -17,6 +17,7 @@ SSH_TARGET = "sc-prod"
 CONFIRMATION = "YES_PROMOTE_VERIFIED_PRODUCTION_RELEASE_CONFIG"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
+HASH = re.compile(r"^[0-9a-f]{64}$")
 VERSION = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$")
 
 
@@ -29,7 +30,7 @@ import hashlib, json, os, re, shutil, stat, subprocess, sys, tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-current_source, current_digest, next_source, next_digest, version, next_image_id, tool_sha = sys.argv[1:]
+current_source, current_digest, next_source, next_digest, version, next_image_id, tool_sha, acceptance_digest = sys.argv[1:]
 runtime_path = Path("/opt/sce/config/sc_production/runtime.env")
 promotion_path = Path("/etc/scems/production-promotion.env")
 manifest_root = Path("/opt/sce/candidates") / ("v" + version)
@@ -102,7 +103,11 @@ runtime_updates = {
     "RELEASE_MANIFEST_PATH": str(manifest_root / "product-release-manifest.json"),
     "RELEASE_MANIFEST_CHECKSUM_PATH": str(manifest_root / "product-release-manifest.sha256"),
 }
-promotion_updates = {"ACCEPTANCE_PRODUCT_KEY": "sce-product", "DEPLOYMENT_IMAGE_REF": next_image_id}
+promotion_updates = {
+    "ACCEPTANCE_PRODUCT_KEY": "sce-product",
+    "ACCEPTANCE_PACKAGE_DIGEST": acceptance_digest,
+    "DEPLOYMENT_IMAGE_REF": next_image_id,
+}
 new_runtime = rendered(runtime_rows, runtime_updates)
 new_promotion = rendered(promotion_rows, promotion_updates)
 stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -130,7 +135,7 @@ try:
     os.replace(promotion_temp, promotion_path)
     _, observed_runtime = env_read(runtime_path)
     _, observed_promotion = env_read(promotion_path)
-    if observed_runtime.get("EXPECTED_RELEASE_SHA") != next_source or observed_runtime.get("EXPECTED_IMAGE_DIGEST") != next_digest or observed_promotion.get("DEPLOYMENT_IMAGE_REF") != next_image_id:
+    if observed_runtime.get("EXPECTED_RELEASE_SHA") != next_source or observed_runtime.get("EXPECTED_IMAGE_DIGEST") != next_digest or observed_promotion.get("DEPLOYMENT_IMAGE_REF") != next_image_id or observed_promotion.get("ACCEPTANCE_PACKAGE_DIGEST") != acceptance_digest:
         raise RuntimeError("post-promote identity mismatch")
 except Exception:
     shutil.copy2(runtime_backup, runtime_path)
@@ -140,7 +145,7 @@ finally:
     runtime_temp.unlink(missing_ok=True)
     promotion_temp.unlink(missing_ok=True)
 print(json.dumps({"status":"PASS","source_sha":next_source,"image_digest":next_digest,
-                  "image_id":next_image_id,"runtime_backup":str(runtime_backup),
+                  "image_id":next_image_id,"acceptance_package_digest":acceptance_digest,"runtime_backup":str(runtime_backup),
                   "promotion_backup":str(promotion_backup)}))
 '''
 
@@ -179,12 +184,15 @@ def promote(args: argparse.Namespace) -> dict:
         raise PromoteError("release source identity is invalid")
     if not all(DIGEST.fullmatch(value) for value in (args.current_image_digest, args.next_image_digest, args.next_image_id)):
         raise PromoteError("release image identity is invalid")
+    if not HASH.fullmatch(args.acceptance_package_digest):
+        raise PromoteError("acceptance package identity is invalid")
     if not VERSION.fullmatch(args.version):
         raise PromoteError("release version is invalid")
     remote = " ".join(shlex.quote(item) for item in (
         "python3", "-c", REMOTE_PROMOTE, args.current_source_sha,
         args.current_image_digest, args.next_source_sha, args.next_image_digest,
         args.version, args.next_image_id, args.expected_live_main_sha,
+        args.acceptance_package_digest,
     ))
     output = run(["ssh", "-o", "BatchMode=yes", SSH_TARGET, remote])
     try:
@@ -204,6 +212,7 @@ def main() -> int:
     parser.add_argument("--next-source-sha", required=True)
     parser.add_argument("--next-image-digest", required=True)
     parser.add_argument("--next-image-id", required=True)
+    parser.add_argument("--acceptance-package-digest", required=True)
     parser.add_argument("--version", required=True)
     args = parser.parse_args()
     try:
