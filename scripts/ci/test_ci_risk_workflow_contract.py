@@ -63,8 +63,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
     def test_cache_keys_bind_lockfile_and_runtime(self) -> None:
         text = self.text("frontend_release_gate.yml")
         self.assertIn("actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830", text)
+        self.assertIn("actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020", text)
+        self.assertIn("node-version: 22.17.0", text)
         self.assertIn("hashFiles('frontend/pnpm-lock.yaml')", text)
-        self.assertIn("node20", text)
+        self.assertIn("node22.17.0", text)
 
     def test_frontend_full_policy_is_surface_specific(self) -> None:
         policy = json.loads(
