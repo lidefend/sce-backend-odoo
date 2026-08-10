@@ -222,6 +222,7 @@
         'views/menu_product_contract_wave1.xml',
         'views/menu_product_cost_wave1.xml',
         'views/menu_product_finance_wave1.xml',
+        'views/menu_product_tax_wave1.xml',
         'data/hr_payroll_form_productization_contract.xml',
         'data/office_admin_form_productization_contract.xml',
         'data/document_admin_form_productization_contract.xml',

@@ -3457,3 +3457,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   without action replacement. Superseded groups are inactive, and static
   identity, depth, product-contract and syntax guards must pass before a
   controlled dev/test module upgrade.
+
+## 2026-08-10 — P1-TAX-CENTER-NAVIGATION-WAVE-ONE
+
+- Branch / anchor: `codex/product-center-baseline-v1` from `cf456cd`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native navigation /
+  `smart_construction_core`.
+- Reason / Why Here: external tax certificate, prepayment, invoice request,
+  output/input invoice, red-flush and tax deduction already have audited P1
+  models, workflows and secured actions.
+- Why Not Elsewhere: tax facts remain in the industry backend rather than the
+  frontend or tenant menu configuration. Project-specific deduction and tax
+  filing remain unpublished until their standard business closure exists.
+- Blast Radius / validation: only existing tax menu parent/name/sequence and
+  visibility. Existing actions and XMLIDs remain unchanged; identity, depth,
+  product-contract and syntax guards precede controlled runtime upgrade.
