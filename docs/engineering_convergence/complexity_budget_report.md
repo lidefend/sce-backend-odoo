@@ -59,7 +59,7 @@ Generated from repository source files. This report is informational during the 
 | 1711 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1479 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 1452 | Python source | `scripts/release/release_publication.py` |
+| 1453 | Python source | `scripts/release/release_publication.py` |
 | 1442 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1441 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
@@ -99,12 +99,12 @@ Generated from repository source files. This report is informational during the 
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
+| 899 | Python source | `scripts/release/test_release_publication.py` |
 | 899 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 895 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
-| 870 | Python source | `scripts/release/test_release_publication.py` |
 | 867 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 861 | Python source | `scripts/release/release_candidate.py` |
@@ -171,7 +171,7 @@ Generated from repository source files. This report is informational during the 
 | 1511 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1479 | warning | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 1452 | warning | Python source | `scripts/release/release_publication.py` |
+| 1453 | warning | Python source | `scripts/release/release_publication.py` |
 | 1442 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1441 | warning | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
