@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 import urllib.request
 from pathlib import Path
 
@@ -63,6 +64,19 @@ def public_header(base_url: str) -> str:
         return str(response.headers.get("Content-Security-Policy") or "")
 
 
+def wait_for_public_policy(base_url: str, *, attempts: int = 20, pause: float = 0.25) -> str:
+    header = ""
+    for _ in range(attempts):
+        try:
+            header = public_header(base_url)
+        except OSError:
+            header = ""
+        if "frame-src 'self' blob:" in header:
+            return header
+        time.sleep(pause)
+    raise CspError("public CSP did not admit same-origin blob frames")
+
+
 def apply(config: Path, evidence: Path, public_base_url: str) -> dict:
     if config != CONFIG or config.is_symlink() or not config.is_file():
         raise CspError("production security header file identity differs")
@@ -94,9 +108,7 @@ def apply(config: Path, evidence: Path, public_base_url: str) -> dict:
         run(["nginx", "-t"])
         if changed:
             run(["systemctl", "reload", "nginx"])
-        header = public_header(public_base_url)
-        if "frame-src 'self' blob:" not in header:
-            raise CspError("public CSP did not admit same-origin blob frames")
+        wait_for_public_policy(public_base_url)
     except Exception:
         if changed:
             shutil.copyfile(rollback, config)
