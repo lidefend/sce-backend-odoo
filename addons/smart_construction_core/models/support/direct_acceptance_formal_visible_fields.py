@@ -1070,30 +1070,6 @@ class HrPayrollDocumentDirectAcceptanceVisible(models.Model):
             )
 
 
-class FundAccountOperationDirectAcceptanceVisible(models.Model):
-    _inherit = "sc.fund.account.operation"
-
-    _add_legacy_visible_fields(locals())
-
-
-class ReceiptIncomeDirectAcceptanceVisible(models.Model):
-    _inherit = "sc.receipt.income"
-
-    _add_legacy_visible_fields(locals())
-
-
-class InvoiceRegistrationDirectAcceptanceVisible(models.Model):
-    _inherit = "sc.invoice.registration"
-
-    _add_legacy_visible_fields(locals())
-
-
-class ConstructionContractExpenseDirectAcceptanceVisible(models.Model):
-    _inherit = "construction.contract.expense"
-
-    _add_legacy_visible_fields(locals())
-
-
 class ConstructionDiaryDirectAcceptanceVisible(models.Model):
     _inherit = "sc.construction.diary"
 

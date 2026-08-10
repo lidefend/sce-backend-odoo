@@ -287,6 +287,33 @@ def verify_material_inbound_customer_field_boundary() -> list[str]:
     return errors
 
 
+def verify_pass_through_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    for model_name in (
+        "sc.fund.account.operation",
+        "sc.receipt.income",
+        "sc.invoice.registration",
+        "construction.contract.expense",
+    ):
+        if f'_inherit = "{model_name}"' in text:
+            errors.append(f"smart_construction_core: {model_name} must not register pass-through P2 fields")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.116/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in (
+        "sc_fund_account_operation",
+        "sc_receipt_income",
+        "sc_invoice_registration",
+        "construction_contract_expense",
+        "PASS_THROUGH_P2_HISTORY_NOT_EXTRACTED",
+        "raise RuntimeError",
+    ):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: pass-through extraction preflight missing {token}")
+    return errors
+
+
 def verify_guard_metadata_product_language() -> list[str]:
     text = Path(__file__).read_text(encoding="utf-8", errors="ignore")
     forbidden_tokens = ("compatibility " + "stub",)
@@ -1746,6 +1773,7 @@ def main() -> int:
     errors.extend(verify_material_plan_customer_field_boundary())
     errors.extend(verify_material_rfq_customer_field_boundary())
     errors.extend(verify_material_inbound_customer_field_boundary())
+    errors.extend(verify_pass_through_customer_field_boundary())
     errors.extend(verify_guard_metadata_product_language())
     errors.extend(verify_production_token_boundary())
     errors.extend(verify_legacy_temporary_account_boundary())

@@ -152,6 +152,30 @@ def main() -> int:
                 errors.append("inbound P2 legacy-visible registered field list must be empty")
             if material_inbound_boundary.get("remaining_physical_columns"):
                 errors.append("inbound P2 legacy-visible physical column list must be empty")
+        pass_through_boundaries = payload.get("pass_through_customer_field_boundaries")
+        expected_pass_through_models = {
+            "sc.fund.account.operation",
+            "sc.receipt.income",
+            "sc.invoice.registration",
+            "construction.contract.expense",
+        }
+        if not isinstance(pass_through_boundaries, dict):
+            errors.append("pass_through_customer_field_boundaries must be object")
+        elif set(pass_through_boundaries) != expected_pass_through_models:
+            errors.append("pass-through customer field boundary model set mismatch")
+        else:
+            for model_name, boundary in pass_through_boundaries.items():
+                if not isinstance(boundary, dict):
+                    errors.append(f"pass-through boundary must be object: {model_name}")
+                    continue
+                registered = boundary.get("registered_fields")
+                physical = boundary.get("remaining_physical_columns")
+                if registered or physical:
+                    errors.append(f"pass-through P2 boundary must be empty: {model_name}")
+                if boundary.get("registered_field_count") != len(registered or []):
+                    errors.append(f"pass-through registered count mismatch: {model_name}")
+                if boundary.get("remaining_physical_column_count") != len(physical or []):
+                    errors.append(f"pass-through physical count mismatch: {model_name}")
         failures = payload.get("failures")
         if not isinstance(failures, list) or not all(isinstance(item, str) for item in failures):
             errors.append("failures must be string list")

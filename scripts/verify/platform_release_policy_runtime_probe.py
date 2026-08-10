@@ -345,6 +345,20 @@ def main():
             "sc.material.inbound: P2 legacy-visible physical columns remain after guarded extraction: %s"
             % ",".join(material_inbound_customer_field_boundary["remaining_physical_columns"])
         )
+    pass_through_customer_field_boundaries = {}
+    for model_name, table_name in (
+        ("sc.fund.account.operation", "sc_fund_account_operation"),
+        ("sc.receipt.income", "sc_receipt_income"),
+        ("sc.invoice.registration", "sc_invoice_registration"),
+        ("construction.contract.expense", "construction_contract_expense"),
+    ):
+        boundary = _customer_field_boundary(env, model_name=model_name, table_name=table_name)
+        pass_through_customer_field_boundaries[model_name] = boundary
+        if boundary["registered_fields"] or boundary["remaining_physical_columns"]:
+            failures.append(
+                "%s: pass-through P2 legacy-visible boundary remains registered or physical"
+                % model_name
+            )
 
     products = []
     allowed_policy_sources = {
@@ -447,6 +461,7 @@ def main():
         "material_plan_customer_field_boundary": material_plan_customer_field_boundary,
         "material_rfq_customer_field_boundary": material_rfq_customer_field_boundary,
         "material_inbound_customer_field_boundary": material_inbound_customer_field_boundary,
+        "pass_through_customer_field_boundaries": pass_through_customer_field_boundaries,
         "products": products,
         "failures": failures,
         "artifacts": {
