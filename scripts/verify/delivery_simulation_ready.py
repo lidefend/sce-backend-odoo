@@ -3,24 +3,15 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import env_value, get_base_url, http_post_json, obtain_runtime_probe_token
 
 
 ROOT = Path(__file__).resolve().parents[2]
 PLAYBOOK = ROOT / "docs" / "product" / "delivery_playbook_v1.md"
 REPORT_MD = ROOT / "docs" / "ops" / "audit" / "delivery_simulation_report.md"
 REPORT_JSON = ROOT / "artifacts" / "backend" / "delivery_simulation_report.json"
-
-
-def _login(intent_url: str, db_name: str, login: str, password: str) -> tuple[int, dict]:
-    return http_post_json(
-        intent_url,
-        {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1"},
-    )
 
 
 def _intent(intent_url: str, token: str, intent: str, params: dict, context: dict | None = None) -> tuple[int, dict]:
@@ -38,20 +29,13 @@ def main() -> int:
 
     base_url = get_base_url()
     intent_url = f"{base_url}/api/v1/intent"
-    db_name = str(os.getenv("DB_NAME") or os.getenv("ODOO_DB") or "sc_dev").strip()
-    login = str(os.getenv("E2E_LOGIN") or "admin").strip()
-    password = str(os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin").strip()
+    db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
 
     timeline: list[dict] = []
-    st_login, p_login = _login(intent_url, db_name, login, password)
-    timeline.append({"step": "login", "status": st_login, "ok": bool(isinstance(p_login, dict) and p_login.get("ok") is True)})
-    if st_login >= 400 or not isinstance(p_login, dict) or p_login.get("ok") is not True:
-        errors.append("login failed")
-        token = ""
-    else:
-        token = str(((p_login.get("data") or {}).get("token")) or "")
-        if not token:
-            errors.append("login token missing")
+    auth_ok, token, auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    timeline.append({"step": "authenticate", "source": auth_source, "ok": auth_ok})
+    if not auth_ok:
+        errors.append("runtime probe authentication failed")
 
     if token:
         for step, intent, params, context in [

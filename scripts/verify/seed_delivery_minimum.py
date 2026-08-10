@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import base64
 import json
-import os
 from pathlib import Path
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import env_value, get_base_url, http_post_json, obtain_runtime_probe_token
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -55,77 +54,6 @@ def _first_id(intent_url: str, token: str, model: str, fields: list[str], domain
         return int(rows[0].get("id") or 0)
     except Exception:
         return 0
-
-
-def _ensure_group_membership(intent_url: str, token: str, login: str, group_xmlid: str) -> bool:
-    module, _, name = str(group_xmlid or "").partition(".")
-    if not module or not name:
-        return False
-    user_id = _first_id(intent_url, token, "res.users", ["id", "login"], [["login", "=", login]])
-    if user_id <= 0:
-        return False
-    group_id = _first_id(
-        intent_url,
-        token,
-        "ir.model.data",
-        ["id", "res_id", "module", "name", "model"],
-        [["module", "=", module], ["name", "=", name], ["model", "=", "res.groups"]],
-    )
-    if group_id <= 0:
-        return False
-    # ir.model.data.res_id is target group id; read it
-    status, payload = _intent(
-        intent_url,
-        token,
-        "api.data",
-        {"op": "read", "model": "ir.model.data", "ids": [group_id], "fields": ["id", "res_id"]},
-    )
-    if status >= 400 or payload.get("ok") is not True:
-        return False
-    rows = (((payload.get("data") or {}).get("records")) or [])
-    if not rows or not isinstance(rows[0], dict):
-        return False
-    try:
-        target_group_id = int(rows[0].get("res_id") or 0)
-    except Exception:
-        target_group_id = 0
-    if target_group_id <= 0:
-        return False
-    # 已有组关系时不重复写，避免无谓触发“修改自身权限”限制。
-    status, payload = _intent(
-        intent_url,
-        token,
-        "api.data",
-        {"op": "read", "model": "res.users", "ids": [user_id], "fields": ["id", "groups_id"]},
-    )
-    if status < 400 and payload.get("ok") is True:
-        rows = (((payload.get("data") or {}).get("records")) or [])
-        if rows and isinstance(rows[0], dict):
-            raw_groups = rows[0].get("groups_id") or []
-            group_ids: set[int] = set()
-            if isinstance(raw_groups, list):
-                for item in raw_groups:
-                    if isinstance(item, int):
-                        group_ids.add(item)
-                    elif isinstance(item, (list, tuple)) and item:
-                        try:
-                            group_ids.add(int(item[0]))
-                        except Exception:
-                            continue
-            if target_group_id in group_ids:
-                return True
-    status, payload = _intent(
-        intent_url,
-        token,
-        "api.data",
-        {
-            "op": "write",
-            "model": "res.users",
-            "ids": [user_id],
-            "vals": {"groups_id": [[4, target_group_id]]},
-        },
-    )
-    return status < 400 and payload.get("ok") is True
 
 
 def _create_payment_request(intent_url: str, token: str, project_id: int, partner_id: int, contract_id: int) -> int:
@@ -252,15 +180,15 @@ def _ensure_payment_request(intent_url: str, token: str) -> tuple[int, str]:
     if candidate_id > 0:
         return candidate_id, ";".join(debug)
 
-    # Existing draft is only acceptable when submit is actually allowed.
+    # Do not manufacture a new record on every gate run when an existing draft
+    # proves this actor cannot submit the flow. The owner fallback remains the
+    # deterministic non-mutating path for that environment.
     payment_id = _first_id(intent_url, token, "payment.request", ["id", "state"], [["state", "=", "draft"]])
     if payment_id > 0 and "submit" in _available_action_keys(intent_url, token, payment_id):
         return payment_id, "existing_draft_submit_allowed"
     if payment_id > 0:
-        _attach_minimum_file(intent_url, token, payment_id)
-        if "submit" in _available_action_keys(intent_url, token, payment_id):
-            return payment_id, "existing_draft_submit_allowed_after_attach"
         debug.append(f"existing_draft_not_submittable={payment_id}")
+        return 0, ";".join(debug)
     else:
         debug.append("no_existing_draft")
 
@@ -289,19 +217,10 @@ def main() -> int:
 
     base_url = get_base_url()
     intent_url = f"{base_url}/api/v1/intent"
-    db_name = str(os.getenv("DB_NAME") or os.getenv("ODOO_DB") or "sc_dev").strip()
+    db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
     candidate_accounts = [
-        ("admin", str(os.getenv("ADMIN_PASSWD") or os.getenv("E2E_PASSWORD") or "admin").strip()),
-        (
-            str(os.getenv("ROLE_FINANCE_LOGIN") or "").strip(),
-            str(os.getenv("ROLE_FINANCE_PASSWORD") or "").strip(),
-        ),
-        ("demo_role_finance", "demo"),
-        ("sc_fx_finance", "prod_like"),
-        (
-            str(os.getenv("E2E_LOGIN") or "").strip(),
-            str(os.getenv("E2E_PASSWORD") or "").strip(),
-        ),
+        (env_value("ROLE_FINANCE_LOGIN"), env_value("ROLE_FINANCE_PASSWORD")),
+        (env_value("E2E_LOGIN"), env_value("E2E_PASSWORD")),
     ]
 
     tokens: list[dict] = []
@@ -311,29 +230,14 @@ def main() -> int:
         ok, cand_token = _login(intent_url, db_name, cand_login, cand_password)
         if ok and cand_token:
             tokens.append({"login": cand_login, "token": cand_token})
+    probe_ok, probe_token, probe_source = obtain_runtime_probe_token(intent_url, db_name)
+    if probe_ok and probe_token and all(row["token"] != probe_token for row in tokens):
+        probe_login = env_value("SC_BOOTSTRAP_LOGIN") if probe_source == "dev_test_bootstrap" else env_value("E2E_LOGIN")
+        tokens.append({"login": probe_login or probe_source, "token": probe_token})
     token = str(tokens[0]["token"]) if tokens else ""
     login = str(tokens[0]["login"]) if tokens else ""
     if not tokens:
         errors.append("login failed for seed.delivery.minimum")
-    else:
-        admin_token = ""
-        for row in tokens:
-            if str(row.get("login")) == "admin":
-                admin_token = str(row.get("token") or "")
-                break
-        for row in tokens:
-            actor_login = str(row["login"])
-            actor_token = str(row["token"])
-            # admin 给自己改组在 Odoo 常被限制；且 admin 已可作为保底执行账户。
-            if actor_login == "admin":
-                continue
-            grant_token = admin_token or actor_token
-            for xmlid in (
-                "smart_construction_core.group_sc_cap_finance_user",
-            ):
-                if _ensure_group_membership(intent_url, grant_token, actor_login, xmlid):
-                    continue
-                warnings.append(f"group ensure failed: {xmlid} for {actor_login}")
 
     project_id = _first_id(intent_url, token, "project.project", ["id", "name"]) if token else 0
     if project_id <= 0:

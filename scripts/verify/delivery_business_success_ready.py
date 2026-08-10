@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 from pathlib import Path
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import env_value, get_base_url, http_post_json, obtain_runtime_probe_token
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,11 +18,8 @@ REPORT_JSON = ROOT / "artifacts" / "backend" / "delivery_business_report.json"
 
 def _candidate_accounts() -> list[tuple[str, str]]:
     return [
-        (str(os.getenv("ROLE_FINANCE_LOGIN") or "").strip(), str(os.getenv("ROLE_FINANCE_PASSWORD") or "").strip()),
-        ("demo_role_finance", "demo"),
-        ("sc_fx_finance", "prod_like"),
-        (str(os.getenv("E2E_LOGIN") or "").strip(), str(os.getenv("E2E_PASSWORD") or "").strip()),
-        ("admin", str(os.getenv("ADMIN_PASSWD") or os.getenv("E2E_PASSWORD") or "admin").strip()),
+        (env_value("ROLE_FINANCE_LOGIN"), env_value("ROLE_FINANCE_PASSWORD")),
+        (env_value("E2E_LOGIN"), env_value("E2E_PASSWORD")),
     ]
 
 
@@ -157,7 +153,7 @@ def main() -> int:
 
     base_url = get_base_url()
     intent_url = f"{base_url}/api/v1/intent"
-    db_name = str(os.getenv("DB_NAME") or os.getenv("ODOO_DB") or "sc_dev").strip()
+    db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
 
     actor_tokens: list[dict] = []
     for login, password in _candidate_accounts():
@@ -166,6 +162,10 @@ def main() -> int:
         ok, token = _login(intent_url, db_name, login, password)
         if ok and token:
             actor_tokens.append({"login": login, "token": token})
+    probe_ok, probe_token, probe_source = obtain_runtime_probe_token(intent_url, db_name)
+    if probe_ok and probe_token and all(row["token"] != probe_token for row in actor_tokens):
+        probe_login = env_value("SC_BOOTSTRAP_LOGIN") if probe_source == "dev_test_bootstrap" else env_value("E2E_LOGIN")
+        actor_tokens.append({"login": probe_login or probe_source, "token": probe_token})
     if not actor_tokens:
         errors.append("login failed (no actor token)")
 
