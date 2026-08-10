@@ -404,6 +404,16 @@ production.deployment.tool.sync: guard.prod.danger
 		python3 scripts/ops/production_deployment_tool_sync.py \
 			--expected-live-main-sha "$(PRODUCTION_DEPLOYMENT_TOOL_SYNC_SHA)"
 
+production.attachment_preview.csp.apply: guard.prod.danger
+	@test "$(CONFIRM_PRODUCTION_ATTACHMENT_PREVIEW_CSP)" = "YES_ADMIT_SAME_ORIGIN_BLOB_ATTACHMENT_PREVIEWS" || (echo "exact attachment preview CSP confirmation is required"; exit 2)
+	@test -n "$(PRODUCTION_ATTACHMENT_PREVIEW_CSP_TOOL_SHA)" -a -n "$(PRODUCTION_ATTACHMENT_PREVIEW_CSP_EVIDENCE)" -a -n "$(PRODUCTION_PUBLIC_BASE_URL)" || (echo "tool SHA, evidence path and public base URL are required"; exit 2)
+	@ENV="$(ENV)" PROD_DANGER="$${PROD_DANGER:-}" \
+		CONFIRM_PRODUCTION_ATTACHMENT_PREVIEW_CSP="$(CONFIRM_PRODUCTION_ATTACHMENT_PREVIEW_CSP)" \
+		python3 scripts/ops/production_attachment_preview_csp.py \
+			--tool-sha "$(PRODUCTION_ATTACHMENT_PREVIEW_CSP_TOOL_SHA)" \
+			--evidence "$(PRODUCTION_ATTACHMENT_PREVIEW_CSP_EVIDENCE)" \
+			--public-base-url "$(PRODUCTION_PUBLIC_BASE_URL)"
+
 production.tenant.delivery.artifacts.sync: guard.prod.danger
 	@test "$(CONFIRM_PRODUCTION_TENANT_ARTIFACT_SYNC)" = "YES_SYNC_SIGNED_TENANT_DELIVERY_ARTIFACTS" || (echo "exact signed tenant delivery artifact synchronization acknowledgement is required"; exit 2)
 	@ENV="$(ENV)" PROD_DANGER="$${PROD_DANGER:-}" \
