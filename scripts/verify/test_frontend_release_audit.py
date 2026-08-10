@@ -8,6 +8,7 @@ from pathlib import Path
 
 from frontend_release_audit import (
     EvidenceError,
+    authoritative_navigation_counts,
     read_json,
     validate_accessibility,
     validate_navigation,
@@ -31,9 +32,16 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
                 read_json(damaged)
 
     def test_navigation_missing_unexpected_duplicate_is_rejected(self):
+        expected_roles = authoritative_navigation_counts()
+        expected_total = sum(expected_roles.values())
         base = {
             "git_sha": SHA,
-            "total": {"result": "PASS", "expected_count": 71},
+            "total": {
+                "result": "PASS",
+                "expected_count": expected_total,
+                "actual_count": expected_total,
+                "matched_count": expected_total,
+            },
             "roles": {
                 role: {
                     "expected_count": count,
@@ -43,7 +51,7 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
                     "unexpected_leaf_keys": [],
                     "duplicate_leaf_keys": [],
                 }
-                for role, count in {"finance": 43, "project_a_member": 9, "pm": 14, "owner": 5}.items()
+                for role, count in expected_roles.items()
             },
         }
         validate_navigation(base, SHA)
