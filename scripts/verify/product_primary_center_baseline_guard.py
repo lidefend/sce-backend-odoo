@@ -86,6 +86,13 @@ def validate(baseline: dict, release_manifest: dict) -> list[str]:
     if target_ref != expected_ref:
         errors.append("release manifest must explicitly link the locked target as MIGRATION_PENDING")
 
+    if baseline.get("menu_contract") != {
+        "ref": "config/product_menu_contract_v1.json",
+        "status": "LOCKED",
+        "runtime_alignment_status": "MIGRATION_PENDING",
+    }:
+        errors.append("primary-center baseline must link the locked full menu contract as MIGRATION_PENDING")
+
     transitions = baseline.get("legacy_center_transitions", [])
     transition_pairs = {(item.get("source"), item.get("target")) for item in transitions}
     if transition_pairs != EXPECTED_TRANSITIONS:

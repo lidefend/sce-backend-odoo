@@ -36,6 +36,11 @@ class ProductPrimaryCenterBaselineGuardTest(unittest.TestCase):
         release_manifest["target_primary_center_baseline"]["ref"] = "config/wrong.json"
         self.assertTrue(validate(self.baseline, release_manifest))
 
+    def test_full_menu_contract_reference_drift_fails(self) -> None:
+        baseline = copy.deepcopy(self.baseline)
+        baseline["menu_contract"]["ref"] = "config/wrong.json"
+        self.assertTrue(validate(baseline, self.release_manifest))
+
     def test_center_level_maturity_policy_fails_closed(self) -> None:
         baseline = copy.deepcopy(self.baseline)
         baseline["center_level_maturity_policy"] = "GA_OR_PILOT_BY_CENTER"

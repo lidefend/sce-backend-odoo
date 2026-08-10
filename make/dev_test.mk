@@ -1387,11 +1387,16 @@ verify.product.delivery.scoreboard.final_closeout.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_delivery_scoreboard_final_closeout_guard.py
 	@python3 scripts/verify/product_delivery_scoreboard_final_closeout_guard.py
 
-.PHONY: verify.product.primary_center.baseline.guard verify.product.menu.release_manifest_v2.guard verify.product.menu.release.ready
+.PHONY: verify.product.primary_center.baseline.guard verify.product.menu.contract_v1.guard verify.product.menu.release_manifest_v2.guard verify.product.menu.release.ready
 verify.product.primary_center.baseline.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_primary_center_baseline_guard.py scripts/verify/test_product_primary_center_baseline_guard.py
 	@python3 -m unittest scripts.verify.test_product_primary_center_baseline_guard
 	@python3 scripts/verify/product_primary_center_baseline_guard.py
+
+verify.product.menu.contract_v1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_menu_contract_v1_guard.py scripts/verify/test_product_menu_contract_v1_guard.py
+	@python3 -m unittest scripts.verify.test_product_menu_contract_v1_guard
+	@python3 scripts/verify/product_menu_contract_v1_guard.py
 
 verify.product.menu.release_manifest_v2.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_menu_release_manifest_v2_guard.py
@@ -1399,6 +1404,7 @@ verify.product.menu.release_manifest_v2.guard: guard.prod.forbid
 
 verify.product.menu.release.ready: guard.prod.forbid \
 	verify.product.primary_center.baseline.guard \
+	verify.product.menu.contract_v1.guard \
 	verify.product.menu.release_manifest_v2.guard \
 	verify.product.menu.catalog \
 	verify.system_init.menu_boundary.guard \

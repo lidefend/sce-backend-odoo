@@ -8,6 +8,11 @@
   "module": "smart_construction_core",
   "scope": "TARGET_INFORMATION_ARCHITECTURE",
   "runtime_migration_status": "NOT_STARTED",
+  "menu_contract": {
+    "ref": "config/product_menu_contract_v1.json",
+    "status": "LOCKED",
+    "runtime_alignment_status": "MIGRATION_PENDING"
+  },
   "maximum_business_depth": 3,
   "center_level_maturity_policy": "CAPABILITY_LEVEL_ONLY",
   "primary_centers": [
