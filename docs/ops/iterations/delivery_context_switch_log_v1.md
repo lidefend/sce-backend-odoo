@@ -3470,3 +3470,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   read caused a correct candidate to roll back. Verification now polls the same
   exact public CSP condition for at most five seconds. Mutation scope and
   rollback behavior are unchanged.
+
+## 2026-08-11 — P1-PRODUCT-CENTER-BASELINE-INTEGRATED-CLOSEOUT
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` from current
+  `main` at `c1edcf8`; source task branch ended at `63a2159`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native navigation /
+  `smart_construction_core`; generic navigation delivery remains in
+  `smart_core`.
+- Reason / Why Here: the locked construction-product centers, released menu
+  actions, ACL-visible native tree and product configuration entry are standard
+  industry defaults. The task branch was replayed on current main to preserve
+  completed production attachment tooling without using a divergent merge or
+  rebase.
+- Why Not Elsewhere: P0 owns only the generic navigation contract and delivery
+  mechanism; customer naming and stable customer differences remain P2;
+  administrator runtime adjustments remain P3; verification scripts are P4
+  evidence rather than runtime authority.
+- Blast Radius / validation: ten canonical primary-center identities and order,
+  51 delivered menu leaves, product/low-code boundary guards and customer-field
+  extraction guards. The isolated `sc_product_center` runtime and `wutao`
+  browser acceptance are rerun on the integrated candidate before publication.

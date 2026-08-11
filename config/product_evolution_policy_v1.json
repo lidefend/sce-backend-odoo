@@ -1,0 +1,33 @@
+{
+  "schema": "sce.product_evolution_policy.v1",
+  "policy_id": "construction-industry-evolution-with-seed-customer-validation-20260810",
+  "status": "LOCKED",
+  "decision_date": "2026-08-10",
+  "primary_goal": "P1_INDUSTRY_BENCHMARK_EVOLUTION",
+  "secondary_goal": "P2_SEED_CUSTOMER_DELIVERY_COMPATIBILITY",
+  "decision_order": [
+    "industry_reusability",
+    "business_closure_and_auditability",
+    "seed_customer_validation",
+    "tenant_configuration_or_customer_overlay"
+  ],
+  "ownership_rules": {
+    "P1": "Construction-industry standard models, flows, default menus, actions, permissions, reports and acceptance contracts reusable by standard deployments.",
+    "P2": "Confirmed seed-customer-only naming, menu visibility/order, role defaults, layout and data baseline; carried only by a private customer module.",
+    "P3": "Tenant administrator runtime adjustments with versioning, audit and rollback.",
+    "P4": "One-off migration, repair, rehearsal and acceptance evidence."
+  },
+  "admission_gate": [
+    "Every proposal states whether it is reusable by standard construction deployments.",
+    "P1 changes must identify an industry business fact, owner model, permission, action, route and acceptance evidence.",
+    "A seed-customer requirement that changes only presentation, role visibility, default ordering or local data is rejected from P1 and routed to P2 or P3.",
+    "A seed-customer requirement may promote to P1 only after a documented industry rationale and no customer-specific name, organization, data or workflow assumption remains.",
+    "No P1 default may overwrite a confirmed P2 projection or P3 runtime configuration."
+  ],
+  "release_policy": {
+    "P1": "Publish only completed, non-empty, role-verified capability closures.",
+    "P2": "Release independently after customer acceptance; never required for a standard P1 installation.",
+    "P3": "Publish through configuration versioning and rollback, not source edits.",
+    "P4": "Never treated as product behavior authority."
+  }
+}

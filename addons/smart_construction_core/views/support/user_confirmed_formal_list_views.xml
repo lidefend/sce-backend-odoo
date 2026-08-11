@@ -1,23 +1,22 @@
 <odoo>
     <record id="view_project_material_plan_user_confirmed_tree" model="ir.ui.view">
-        <field name="name">project.material.plan.user.confirmed.tree</field>
+        <!-- XML-ID retained for upgrade compatibility; runtime semantics are pure P1. -->
+        <field name="name">project.material.plan.product.tree</field>
         <field name="model">project.material.plan</field>
         <field name="arch" type="xml">
-            <tree string="材料计划" create="false" edit="false" delete="false" default_order="material_plan_document_date desc, material_plan_source_created_at asc, material_plan_document_no asc">
-                <field name="material_plan_status_display" string="单据状态" />
-                <field name="material_plan_document_no" string="单据编号" />
-                <field name="material_plan_document_date" string="单据日期" />
-                <field name="material_plan_arrival_date" string="到货时间" />
-                <field name="material_plan_material_name" string="采购材料名称" />
-                <field name="material_plan_specification" string="规格型号" />
-                <field name="material_plan_unit" string="单位" />
-                <field name="material_plan_quantity" string="数量" />
-                <field name="material_plan_material_alias" string="材料别名(设计/清单)" />
-                <field name="material_plan_note" string="备注" />
-                <field name="material_plan_attachment_text" string="附件" />
-                <field name="material_plan_project_name" string="项目名称" />
-                <field name="material_plan_source_created_by" string="录入人" />
-                <field name="material_plan_source_created_at" string="录入时间" />
+            <tree string="材料计划" create="false" edit="false" delete="false" default_order="date_plan desc, id desc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="date_plan" string="需用日期" />
+                <field name="material_name_summary" string="采购材料名称" />
+                <field name="material_spec_summary" string="规格型号" />
+                <field name="material_uom_summary" string="单位" />
+                <field name="total_plan_qty" string="计划数量" />
+                <field name="line_note_summary" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="project_id" string="项目名称" />
+                <field name="create_uid" string="创建人" />
+                <field name="create_date" string="创建时间" />
             </tree>
         </field>
     </record>
@@ -25,26 +24,17 @@
         <field name="name">sc.material.rfq.quote.formal.tree</field>
         <field name="model">sc.material.rfq</field>
         <field name="arch" type="xml">
-            <tree string="报价单" create="false" edit="false" delete="false">
-                <field name="quote_status_display" string="单据状态" />
-                <field name="quote_document_no" string="单据编号" />
-                <field name="quote_supplier_name" string="供应商名称" />
-                <field name="quote_inquiry_time" string="询价时间" />
-                <field name="quote_material_name" string="材料名称" />
-                <field name="quote_material_spec" string="规格型号" />
-                <field name="quote_quantity_display" string="数量" />
-                <field name="quote_tax_price_display" string="含税单价" />
-                <field name="quote_tax_amount_display" string="含税总金额" />
-                <field name="quote_total_quantity_display" string="总数量" />
-                <field name="quote_total_amount_display" string="总金额" />
-                <field name="quote_note_display" string="备注" />
-                <field name="quote_contact_name" string="联系人" />
-                <field name="quote_contact_phone" string="联系电话" />
-                <field name="quote_attachment_text" string="附件" />
-                <field name="quote_selected_text" string="是否中标" />
-                <field name="quote_project_name" string="项目名称" />
-                <field name="quote_source_created_by" string="录入人" />
-                <field name="quote_source_created_at" string="录入时间" />
+            <tree string="报价单" create="false" edit="false" delete="false" default_order="rfq_date desc, id desc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="selected_supplier_id" string="选定供应商" />
+                <field name="rfq_date" string="询价日期" />
+                <field name="due_date" string="报价截止日期" />
+                <field name="project_id" string="项目名称" />
+                <field name="owner_id" string="经办人" />
+                <field name="contact_name" string="联系人" optional="hide" />
+                <field name="contact_phone" string="联系电话" optional="hide" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" optional="hide" />
             </tree>
         </field>
     </record>
@@ -82,22 +72,21 @@
         <field name="name">sc.subcontract.request.user.confirmed.tree</field>
         <field name="model">sc.subcontract.request</field>
         <field name="arch" type="xml">
-            <tree string="分包方单" create="false" edit="false" delete="false">
-                <field name="subcontract_request_status_display" string="单据状态" />
-                <field name="subcontract_request_document_no" string="单据编号" />
-                <field name="subcontract_request_project_name" string="项目名称" />
-                <field name="subcontract_request_title" string="标题" />
-                <field name="subcontract_request_subcontractor" string="分包商" />
-                <field name="subcontract_request_type_display" string="分包类型" />
-                <field name="subcontract_request_content" string="分包内容" />
-                <field name="subcontract_request_quantity_display" string="数量" />
-                <field name="subcontract_request_price_unit_display" string="单价" />
-                <field name="subcontract_request_amount_display" string="金额" />
-                <field name="subcontract_request_monthly_amount_display" string="本月合价" />
-                <field name="subcontract_request_note_display" string="备注" />
-                <field name="subcontract_request_attachment_text" string="附件" />
-                <field name="subcontract_request_source_created_by" string="录入人" />
-                <field name="subcontract_request_source_created_at" string="录入时间" />
+            <tree string="分包申请" create="false" edit="false" delete="false">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="project_id" string="项目名称" />
+                <field name="subcontract_scope" string="分包内容" />
+                <field name="suggested_subcontractor_id" string="建议分包单位" />
+                <field name="subcontract_type_text" string="分包类型" />
+                <field name="quantity_total" string="数量" />
+                <field name="price_unit" string="单价" />
+                <field name="amount_total" string="金额" />
+                <field name="monthly_amount_total" string="本月合价" />
+                <field name="note" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="applicant_id" string="申请人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
@@ -105,20 +94,20 @@
         <field name="name">sc.labor.usage.ticket.user.confirmed.tree</field>
         <field name="model">sc.labor.usage</field>
         <field name="arch" type="xml">
-            <tree string="方单" create="false" edit="false" delete="false">
-                <field name="labor_usage_status_display" string="单据状态" />
-                <field name="labor_usage_document_no" string="单据编号" />
-                <field name="labor_usage_project_name" string="项目名称" />
-                <field name="labor_usage_document_date" string="单据日期" />
-                <field name="labor_usage_title" string="标题" />
-                <field name="labor_usage_labor_team_name" string="劳务单位" />
-                <field name="labor_usage_construction_part" string="施工部位" />
-                <field name="labor_usage_settlement_status" string="结算状态" />
-                <field name="labor_usage_amount" string="总金额" />
-                <field name="labor_usage_note" string="备注" />
-                <field name="labor_usage_attachment_text" string="附件" />
-                <field name="labor_usage_source_created_by" string="录入人" />
-                <field name="labor_usage_source_created_at" string="录入时间" />
+            <tree string="方单" default_order="usage_date desc, create_date asc, name asc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="project_id" string="项目名称" />
+                <field name="usage_date" string="单据日期" />
+                <field name="contractor_id" string="劳务单位" />
+                <field name="construction_part" string="施工部位" />
+                <field name="work_content" string="工作内容" />
+                <field name="settlement_state" string="结算状态" />
+                <field name="amount_total" string="总金额" />
+                <field name="note" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="recorder_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
@@ -126,22 +115,22 @@
         <field name="name">sc.labor.usage.casual.user.confirmed.tree</field>
         <field name="model">sc.labor.usage</field>
         <field name="arch" type="xml">
-            <tree string="零星用工" create="false" edit="false" delete="false" default_order="labor_usage_document_date desc, labor_usage_source_created_at asc, labor_usage_document_no asc, labor_usage_work_type asc">
-                <field name="labor_usage_status_display" string="单据状态" />
-                <field name="labor_usage_document_no" string="单据编号" />
-                <field name="labor_usage_project_name" string="项目名称" />
-                <field name="labor_usage_document_date" string="用工日期" />
-                <field name="labor_usage_labor_team_name" string="劳务单位" />
-                <field name="labor_usage_work_type" string="工种" />
-                <field name="labor_usage_quantity" string="数量" />
-                <field name="labor_usage_price_unit" string="单价" />
-                <field name="labor_usage_amount" string="金额" />
-                <field name="labor_usage_work_content" string="工作内容" />
-                <field name="labor_usage_attachment_text" string="附件" />
-                <field name="labor_usage_settlement_status" string="结算状态" />
-                <field name="labor_usage_note" string="备注" />
-                <field name="labor_usage_source_created_by" string="录入人" />
-                <field name="labor_usage_source_created_at" string="录入时间" />
+            <tree string="零星用工" default_order="usage_date desc, create_date asc, name asc, work_type asc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="project_id" string="项目名称" />
+                <field name="usage_date" string="用工日期" />
+                <field name="contractor_id" string="劳务单位" />
+                <field name="work_type" string="工种" />
+                <field name="worker_qty" string="数量" />
+                <field name="price_unit" string="单价" />
+                <field name="amount_total" string="金额" />
+                <field name="work_content" string="工作内容" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="settlement_state" string="结算状态" />
+                <field name="note" string="备注" />
+                <field name="recorder_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
@@ -149,23 +138,23 @@
         <field name="name">sc.equipment.usage.shift.formal.tree</field>
         <field name="model">sc.equipment.usage</field>
         <field name="arch" type="xml">
-            <tree string="机械台班记录" create="false" edit="false" delete="false" default_order="document_date desc, source_created_at asc, name asc">
+            <tree string="机械台班记录" default_order="usage_date desc, create_date asc, name asc">
                 <field name="state" string="单据状态" />
                 <field name="project_id" string="项目名称" />
                 <field name="name" string="单据编号" />
-                <field name="document_date" string="单据日期" />
+                <field name="usage_date" string="单据日期" />
                 <field name="supplier_id" string="租赁单位" />
-                <field name="former_supplier_name" string="曾用名单位" />
                 <field name="equipment_name" string="机械名称" />
                 <field name="specification" string="规格型号" />
                 <field name="uom_text" string="单位" />
-                <field name="work_hours" string="工作时间" />
+                <field name="usage_qty" string="使用台数" />
+                <field name="usage_hours" string="工作时间" />
                 <field name="price_unit" string="单价" />
                 <field name="amount" string="金额" />
                 <field name="attachment_ids" string="附件" widget="many2many_binary" />
                 <field name="note" string="备注" />
-                <field name="source_created_by" string="录入人" />
-                <field name="source_created_at" string="录入时间" />
+                <field name="recorder_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
@@ -173,22 +162,22 @@
         <field name="name">sc.material.rental.order.in.user.confirmed.tree</field>
         <field name="model">sc.material.rental.order</field>
         <field name="arch" type="xml">
-            <tree string="租入" create="false" edit="false" delete="false">
-                <field name="rental_order_status_display" string="单据状态" />
-                <field name="rental_order_document_no" string="单据编号" />
-                <field name="rental_order_document_date" string="单据日期" />
-                <field name="rental_order_partner_name" string="租赁单位" />
-                <field name="rental_order_use_unit_name" string="使用单位名称" />
-                <field name="rental_order_material_name" string="材料名称" />
-                <field name="rental_order_material_spec" string="规格型号" />
-                <field name="rental_order_quantity" string="数量" />
-                <field name="rental_order_unit_price" string="单价" />
-                <field name="rental_order_deposit_amount" string="租赁押金" />
-                <field name="rental_order_note" string="备注" />
-                <field name="rental_order_attachment_text" string="附件" />
-                <field name="rental_order_source_created_by" string="录入人" />
-                <field name="rental_order_source_created_at" string="录入时间" />
-                <field name="rental_order_project_name" string="项目名称" />
+            <tree string="租入" default_order="rental_date desc, create_date asc, name asc">
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="rental_date" string="单据日期" />
+                <field name="supplier_id" string="租赁单位" />
+                <field name="use_unit_name" string="使用单位名称" />
+                <field name="material_summary" string="材料名称" />
+                <field name="specification_summary" string="规格型号" />
+                <field name="quantity_total" string="数量" />
+                <field name="amount_total" string="租赁金额" />
+                <field name="deposit_amount" string="租赁押金" />
+                <field name="note" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="owner_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
+                <field name="project_id" string="项目名称" />
             </tree>
         </field>
     </record>
@@ -196,23 +185,22 @@
         <field name="name">sc.material.rental.order.return.user.confirmed.tree</field>
         <field name="model">sc.material.rental.order</field>
         <field name="arch" type="xml">
-            <tree string="还租" create="false" edit="false" delete="false">
-                <field name="rental_order_status_display" string="单据状态" />
-                <field name="rental_order_project_name" string="项目名称" />
-                <field name="rental_order_settlement_status" string="结算状态" />
-                <field name="rental_order_document_no" string="还租单号" />
-                <field name="rental_order_document_date" string="单据日期" />
-                <field name="rental_order_partner_name" string="租赁单位" />
-                <field name="rental_order_settlement_amount" string="单据结算金额" />
-                <field name="rental_order_compensation_fee" string="赔偿费" />
-                <field name="rental_order_repair_fee" string="维修费" />
-                <field name="rental_order_transport_fee" string="进出场费" />
-                <field name="rental_order_attachment_text" string="附件" />
-                <field name="rental_order_note" string="备注" />
-                <field name="rental_order_source_created_by" string="录入人" />
-                <field name="rental_order_source_created_at" string="录入时间" />
-                <field name="rental_order_deposit_deduction" string="抵扣押金" />
-                <field name="rental_order_use_unit_name" string="使用单位" />
+            <tree string="还租" default_order="actual_return_date desc, create_date asc, name asc">
+                <field name="state" string="单据状态" />
+                <field name="project_id" string="项目名称" />
+                <field name="name" string="还租单号" />
+                <field name="actual_return_date" string="退租日期" />
+                <field name="supplier_id" string="租赁单位" />
+                <field name="settlement_amount" string="单据结算金额" />
+                <field name="compensation_fee" string="赔偿费" />
+                <field name="repair_fee" string="维修费" />
+                <field name="transport_fee" string="进出场费" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="note" string="备注" />
+                <field name="owner_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
+                <field name="deposit_deduction" string="抵扣押金" />
+                <field name="use_unit_name" string="使用单位" />
             </tree>
         </field>
     </record>
@@ -220,21 +208,22 @@
         <field name="name">sc.hr.payroll.document.user.confirmed.tree</field>
         <field name="model">sc.hr.payroll.document</field>
         <field name="arch" type="xml">
-            <tree string="项目管理人员工资登记" create="false" edit="false" delete="false" default_order="legacy_acceptance_sort_id desc, id desc">
-                <field name="payroll_document_status_display" string="单据状态" />
-                <field name="payroll_document_project_name" string="项目名称" />
-                <field name="payroll_document_no" string="单据编号" />
-                <field name="payroll_document_date" string="单据日期" />
-                <field name="payroll_document_salary_month" string="工资月份" />
-                <field name="payroll_document_net_salary" string="本次实发工资总额" />
-                <field name="payroll_document_gross_salary" string="本次应发工资总额" />
-                <field name="payroll_document_payment_status" string="付款状态" />
-                <field name="payroll_document_paid_amount" string="已付款金额" />
-                <field name="payroll_document_unpaid_amount" string="未付款金额" />
-                <field name="payroll_document_note" string="备注" />
-                <field name="payroll_document_attachment_text" string="附件" />
-                <field name="payroll_document_source_created_by" string="录入人" />
-                <field name="payroll_document_source_created_at" string="录入时间" />
+            <tree string="项目管理人员工资登记" default_order="period_year desc, period_month desc, business_date desc, id desc">
+                <field name="state" string="单据状态" />
+                <field name="project_id" string="项目名称" />
+                <field name="document_no" string="单据编号" />
+                <field name="business_date" string="单据日期" />
+                <field name="period_year" string="年度" />
+                <field name="period_month" string="月份" />
+                <field name="net_salary" string="本次实发工资总额" sum="实发工资合计" />
+                <field name="gross_amount" string="本次应发工资总额" sum="应发工资合计" />
+                <field name="payment_state" string="付款状态" />
+                <field name="paid_amount" string="已付款金额" sum="已付款合计" />
+                <field name="unpaid_amount" string="未付款金额" sum="未付款合计" />
+                <field name="description" string="备注" optional="show" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" optional="show" />
+                <field name="requester_id" string="录入人" optional="show" />
+                <field name="create_date" string="录入时间" optional="show" />
             </tree>
         </field>
     </record>
@@ -242,18 +231,20 @@
         <field name="name">sc.construction.diary.user.confirmed.tree</field>
         <field name="model">sc.construction.diary</field>
         <field name="arch" type="xml">
-            <tree string="施工日志（新）" create="false" edit="false" delete="false">
-                <field name="diary_status_display" string="单据状态" />
-                <field name="diary_project_name" string="项目名称" />
-                <field name="diary_document_no" string="单据编号" />
-                <field name="diary_date_display" string="日期" />
-                <field name="diary_construction_part" string="施工部位" />
-                <field name="diary_manpower_count_display" string="出勤人数" />
-                <field name="diary_equipment_attendance" string="出勤机械" />
-                <field name="diary_note_display" string="备注" />
-                <field name="diary_attachment_text" string="附件" />
-                <field name="diary_source_created_by" string="录入人" />
-                <field name="diary_source_created_at" string="录入时间" />
+            <tree string="施工日志" create="false" edit="false" delete="false">
+                <field name="state" string="单据状态" />
+                <field name="project_id" string="项目名称" />
+                <field name="name" string="日志编号" />
+                <field name="date_diary" string="日志日期" />
+                <field name="title" string="标题" />
+                <field name="quality_name" string="质量/事项" />
+                <field name="manpower_count" string="现场人数" />
+                <field name="attendance_equipment" string="出勤机械" />
+                <field name="description" string="日志内容" />
+                <field name="note" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="handler_name" string="经办人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
@@ -417,23 +408,23 @@
         <field name="model">sc.settlement.order</field>
         <field name="arch" type="xml">
             <tree string="合同结算" create="true" edit="false" delete="false" default_order="id desc">
-                <field name="settlement_acceptance_document_state" string="单据状态" />
-                <field name="settlement_acceptance_document_no" string="单据编号" />
-                <field name="settlement_acceptance_project_name" string="项目名称" />
-                <field name="settlement_acceptance_document_date" string="单据日期" />
-                <field name="settlement_acceptance_title" string="标题/结算内容" />
-                <field name="settlement_acceptance_partner_name" string="结算单位" />
-                <field name="settlement_acceptance_amount" string="结算金额" />
-                <field name="settlement_acceptance_payment_state" string="付款状态" />
-                <field name="settlement_acceptance_paid_amount" string="已付款金额" />
-                <field name="settlement_acceptance_unpaid_amount" string="未付款金额" />
-                <field name="settlement_acceptance_request_state" string="支付申请状态" />
-                <field name="settlement_acceptance_requested_amount" string="已申请金额" />
-                <field name="settlement_acceptance_unrequested_amount" string="未申请金额" />
-                <field name="settlement_acceptance_note" string="结算说明/备注" />
-                <field name="settlement_acceptance_attachment" string="附件" />
-                <field name="settlement_acceptance_creator" string="录入人" />
-                <field name="settlement_acceptance_created_at" string="录入时间" />
+                <field name="state" string="单据状态" />
+                <field name="name" string="单据编号" />
+                <field name="project_id" string="项目名称" />
+                <field name="document_date" string="单据日期" />
+                <field name="title" string="标题/结算内容" />
+                <field name="settlement_unit_id" string="结算单位" />
+                <field name="contract_id" string="合同" />
+                <field name="settlement_amount" string="结算金额" />
+                <field name="paid_amount" string="已付款金额" />
+                <field name="unpaid_amount" string="未付款金额" />
+                <field name="requested_fund_amount" string="申请资金金额" />
+                <field name="remaining_amount" string="可付余额" />
+                <field name="settlement_description" string="结算说明" />
+                <field name="note" string="备注" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" />
+                <field name="entry_user_id" string="录入人" />
+                <field name="create_date" string="录入时间" />
             </tree>
         </field>
     </record>
@@ -450,8 +441,8 @@
         <field name="name">分包方单</field>
         <field name="res_model">sc.subcontract.request</field>
         <field name="view_mode">tree,form</field>
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0)]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_subcontract_request_user_confirmed_tree" />
+        <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_subcontract_request_user_confirmed_tree')}),             (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_subcontract_request_form')})         ]" />
         <field name="domain">[]</field>
         <field name="context">{'search_default_group_project': 1}</field>
     </record>
@@ -469,12 +460,16 @@
         <field name="view_ids" eval="[(5, 0, 0)]" />
     </record>
     <record id="action_sc_labor_usage_ticket" model="ir.actions.act_window">
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0)]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_labor_usage_ticket_user_confirmed_tree" />
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_labor_usage_ticket_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_labor_usage_form')})]" />
+        <field name="domain">[('usage_type', '=', 'ticket')]</field>
+        <field name="context">{'default_usage_type': 'ticket', 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_labor_usage_casual" model="ir.actions.act_window">
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0)]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_labor_usage_casual_user_confirmed_tree" />
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_labor_usage_casual_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_labor_usage_form')})]" />
+        <field name="domain">[('usage_type', '=', 'casual')]</field>
+        <field name="context">{'default_usage_type': 'casual', 'search_default_group_project': 1}</field>
     </record>
     <record id="action_payment_request_user_payment_apply" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_payment_request_formal_payment_apply_tree" />
@@ -501,25 +496,25 @@
         <field name="name">入库</field>
         <field name="view_id" ref="smart_construction_core.view_sc_material_inbound_user_confirmed_tree" />
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_inbound_user_confirmed_tree')})         ]" />
-        <field name="domain">[('legacy_acceptance_label', '=', '入库')]</field>
+        <field name="domain">[]</field>
         <field name="context">{'create': False, 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_material_rental_in_acceptance" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_sc_material_rental_in_user_confirmed_tree" />
-        <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_in_user_confirmed_tree')})         ]" />
-        <field name="domain">[('legacy_acceptance_label', '=', '租入')]</field>
-        <field name="context">{'create': False, 'search_default_group_project': 1}</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_in_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_material_rental_order_form')})]" />
+        <field name="domain">[('state', 'in', ['draft', 'active'])]</field>
+        <field name="context">{'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_material_rental_return_acceptance" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_sc_material_rental_return_user_confirmed_tree" />
-        <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_return_user_confirmed_tree')})         ]" />
-        <field name="domain">[('legacy_acceptance_label', '=', '还租')]</field>
-        <field name="context">{'create': False, 'search_default_group_project': 1}</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rental_return_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_material_rental_order_form')})]" />
+        <field name="domain">[('state', 'in', ['returned', 'settled'])]</field>
+        <field name="context">{'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_salary_registration" model="ir.actions.act_window">
         <field name="name">项目管理人员工资登记</field>
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0)]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_hr_payroll_document_formal_manager_salary_tree" />
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_hr_payroll_document_formal_manager_salary_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_hr_payroll_document_form')})]" />
         <field name="domain">[('fact_type', '=', 'salary_registration')]</field>
         <field name="context">{'default_fact_type': 'salary_registration', 'search_default_salary_registration': 1}</field>
     </record>
@@ -552,14 +547,14 @@
         <field name="context">{'create': True, 'edit': True, 'default_source_kind': 'output_invoice_tax', 'default_direction': 'output', 'default_invoice_content': '销项开票登记', 'default_business_category_code': 'invoice.output.registration', 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_settlement_order_income" model="ir.actions.act_window">
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_settlement_order_form')})]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_settlement_order_user_confirmed_tree" />
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_settlement_order_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_settlement_order_form')})]" />
         <field name="domain">[('business_category_id.code', '=', 'settlement.income')]</field>
         <field name="context">{'create': True, 'edit': True, 'default_settlement_type': 'in', 'default_business_category_code': 'settlement.income', 'search_default_group_project': 1}</field>
     </record>
     <record id="action_sc_settlement_order_expense" model="ir.actions.act_window">
-        <field name="view_id" eval="False" />
-        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_settlement_order_form')})]" />
+        <field name="view_id" ref="smart_construction_core.view_sc_settlement_order_user_confirmed_tree" />
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_settlement_order_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_settlement_order_form')})]" />
         <field name="domain">[('business_category_id.code', '=', 'settlement.expense')]</field>
         <field name="context">{'create': True, 'edit': True, 'default_settlement_type': 'out', 'default_business_category_code': 'settlement.expense', 'search_default_group_project': 1}</field>
     </record>

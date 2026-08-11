@@ -241,10 +241,14 @@
                 <field name="usage_date"/>
                 <field name="equipment_name"/>
                 <field name="equipment_code"/>
+                <field name="specification"/>
+                <field name="uom_text"/>
                 <field name="usage_location"/>
                 <field name="operator_name"/>
                 <field name="usage_qty" sum="使用台数合计"/>
                 <field name="usage_hours"/>
+                <field name="price_unit"/>
+                <field name="amount" sum="使用金额合计"/>
                 <field name="supplier_id"/>
                 <field name="recorder_id"/>
                 <field name="state"/>
@@ -273,12 +277,17 @@
                             <field name="usage_date"/>
                             <field name="equipment_name"/>
                             <field name="equipment_code"/>
+                            <field name="specification"/>
+                            <field name="uom_text"/>
                         </group>
                         <group>
                             <field name="usage_location"/>
                             <field name="operator_name"/>
                             <field name="usage_qty"/>
                             <field name="usage_hours"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                            <field name="price_unit"/>
+                            <field name="amount" readonly="1"/>
                             <field name="supplier_id"/>
                             <field name="recorder_id"/>
                         </group>

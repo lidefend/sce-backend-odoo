@@ -36,11 +36,11 @@ def _list_return(path: Path, fn_name: str) -> list[dict]:
     return []
 
 
-def _system_init(intent_url: str, token: str) -> dict:
+def _system_init(intent_url: str, token: str, db_name: str) -> dict:
     status, payload = http_post_json(
         intent_url,
         {"intent": "system.init", "params": {"contract_mode": "user"}},
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
     )
     if status >= 400 or not isinstance(payload, dict) or payload.get("ok") is not True:
         return {}
@@ -102,7 +102,7 @@ def main() -> int:
     if not ok:
         errors.append("no valid E2E login or dev/test bootstrap token for bundle installation check")
         token = ""
-    baseline = _system_init(intent_url, token) if token else {}
+    baseline = _system_init(intent_url, token, db_name) if token else {}
     if not baseline:
         errors.append("system.init baseline unavailable")
 

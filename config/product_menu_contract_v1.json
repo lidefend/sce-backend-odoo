@@ -1,0 +1,73 @@
+{
+  "schema": "sce.product_menu_contract.v1",
+  "contract_id": "construction-industry-product-menu-20260810",
+  "status": "LOCKED",
+  "decision_date": "2026-08-10",
+  "product_layer": "P1",
+  "module": "smart_construction_core",
+  "runtime_migration_status": "IN_PROGRESS",
+  "rules": {
+    "maximum_business_depth": 3,
+    "project_center_is_only_center_with_level_three": true,
+    "all_non_project_centers_maximum_depth": 2,
+    "handling_is_page_action_not_menu_level": true,
+    "runtime_menu_claim": "TARGET_CONTRACT_ONLY",
+    "seed_customer_input": "VALIDATES_PRIORITY_AND_CONFIGURABILITY_ONLY"
+  },
+  "centers": [
+    {"key": "workbench", "name": "工作台", "sequence": 10, "level_two": [
+      {"name": "数据总览", "delivery": "RELEASED_FOUNDATION"},
+      {"name": "项目看板", "delivery": "RELEASED_FOUNDATION"},
+      {"name": "待办事项", "delivery": "RELEASED_FOUNDATION"},
+      {"name": "消息通知", "delivery": "ADAPTATION_REQUIRED"}
+    ]},
+    {"key": "project", "name": "项目中心", "sequence": 20, "level_two": [
+      {"name": "项目创建", "children": [{"name": "新项目立项", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目信息编辑", "delivery": "ADAPTATION_REQUIRED"}, {"name": "项目启停管理", "delivery": "ADAPTATION_REQUIRED"}]},
+      {"name": "客商管理", "children": [{"name": "客户档案", "delivery": "RELEASED_FOUNDATION"}, {"name": "供应商档案", "delivery": "RELEASED_FOUNDATION"}, {"name": "客商黑名单", "delivery": "NEW_CAPABILITY_REQUIRED"}]},
+      {"name": "招投标管理", "children": [{"name": "招标信息", "delivery": "ADAPTATION_REQUIRED"}, {"name": "投标项目", "delivery": "RELEASED_FOUNDATION"}, {"name": "标书管理", "delivery": "ADAPTATION_REQUIRED"}, {"name": "投标保证金", "delivery": "RELEASED_FOUNDATION"}, {"name": "中标管理", "delivery": "RELEASED_FOUNDATION"}]},
+      {"name": "施工管理", "children": [{"name": "安全检查", "delivery": "RELEASED_FOUNDATION"}, {"name": "质量验收", "delivery": "ADAPTATION_REQUIRED"}, {"name": "工程资料", "delivery": "RELEASED_FOUNDATION"}, {"name": "施工日志", "delivery": "RELEASED_FOUNDATION"}, {"name": "施工进度", "delivery": "RELEASED_FOUNDATION"}, {"name": "签证变更", "delivery": "ADAPTATION_REQUIRED"}]},
+      {"name": "劳务成本", "children": [{"name": "劳务实名制", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "劳务成本登记", "delivery": "ADAPTATION_REQUIRED"}, {"name": "劳务扣款明细", "delivery": "ADAPTATION_REQUIRED"}]},
+      {"name": "材料成本", "children": [{"name": "材料入库", "delivery": "RELEASED_FOUNDATION"}, {"name": "材料出库", "delivery": "RELEASED_FOUNDATION"}, {"name": "材料退货", "delivery": "NEW_CAPABILITY_REQUIRED"}]},
+      {"name": "机械成本", "children": [{"name": "机械台班登记", "delivery": "ADAPTATION_REQUIRED"}]},
+      {"name": "分包成本", "children": [{"name": "分包成本登记", "delivery": "ADAPTATION_REQUIRED"}, {"name": "分包签证费用", "delivery": "ADAPTATION_REQUIRED"}]},
+      {"name": "项目薪资", "children": [{"name": "薪资核算清单", "delivery": "ADAPTATION_REQUIRED"}, {"name": "薪资发放登记", "delivery": "RELEASED_FOUNDATION"}]},
+      {"name": "班组借/扣款", "children": [{"name": "班组借/扣款登记", "delivery": "ADAPTATION_REQUIRED"}]}
+    ]},
+    {"key": "contract", "name": "合同中心", "sequence": 30, "level_two": [
+      {"name": "收入合同", "delivery": "RELEASED_FOUNDATION"}, {"name": "支出合同", "delivery": "RELEASED_FOUNDATION"}, {"name": "合同变更", "delivery": "RELEASED_FOUNDATION"}, {"name": "日常合同", "delivery": "RELEASED_FOUNDATION"}, {"name": "日常合同结算", "delivery": "ADAPTATION_REQUIRED"}, {"name": "收入结算", "delivery": "RELEASED_FOUNDATION"}, {"name": "支出结算", "delivery": "RELEASED_FOUNDATION"}
+    ]},
+    {"key": "cost", "name": "成本中心", "sequence": 40, "level_two": [
+      {"name": "项目预算", "delivery": "RELEASED_FOUNDATION"}, {"name": "成本计划编制", "delivery": "RELEASED_FOUNDATION"}, {"name": "成本归集", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目盈亏分析", "delivery": "RELEASED_FOUNDATION"}
+    ]},
+    {"key": "finance", "name": "财务中心", "sequence": 50, "level_two": [
+      {"name": "收款登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "付款申请", "delivery": "RELEASED_FOUNDATION"}, {"name": "实付登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "费用报销", "delivery": "RELEASED_FOUNDATION"}, {"name": "往来款登记", "delivery": "ADAPTATION_REQUIRED"}, {"name": "公司收入", "delivery": "RELEASED_FOUNDATION"}, {"name": "公司支出", "delivery": "RELEASED_FOUNDATION"}, {"name": "公司&项目扣款", "delivery": "RELEASED_FOUNDATION"}, {"name": "公司&项目退款", "delivery": "ADAPTATION_REQUIRED"}, {"name": "备用金", "delivery": "RELEASED_FOUNDATION"}, {"name": "资金汇总", "delivery": "RELEASED_FOUNDATION"}
+    ]},
+    {"key": "tax", "name": "税务中心", "sequence": 60, "level_two": [
+      {"name": "外经证", "delivery": "RELEASED_FOUNDATION"}, {"name": "预缴登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "开票申请", "delivery": "RELEASED_FOUNDATION"}, {"name": "销项开票", "delivery": "RELEASED_FOUNDATION"}, {"name": "发票红冲", "delivery": "RELEASED_FOUNDATION"}, {"name": "进项发票", "delivery": "RELEASED_FOUNDATION"}, {"name": "税额抵扣", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目专项抵扣", "delivery": "ADAPTATION_REQUIRED"}, {"name": "税务申报", "delivery": "NEW_CAPABILITY_REQUIRED"}
+    ]},
+    {"key": "accounting", "name": "会计账务中心", "sequence": 70, "level_two": [
+      {"name": "记账凭证", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "会计科目", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "账簿管理", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "期末结转", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "账务对账", "delivery": "NEW_CAPABILITY_REQUIRED"}
+    ]},
+    {"key": "reporting", "name": "报表中心", "sequence": 80, "level_two": [
+      {"name": "项目报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "成本报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "资金报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "税务报表", "delivery": "ADAPTATION_REQUIRED"}, {"name": "劳务分包报表", "delivery": "ADAPTATION_REQUIRED"}
+    ]},
+    {"key": "administration", "name": "行政中心", "sequence": 90, "level_two": [
+      {"name": "部门管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "岗位管理", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "人员档案", "delivery": "RELEASED_FOUNDATION"}, {"name": "证书管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "社保公积", "delivery": "ADAPTATION_REQUIRED"}, {"name": "工资薪酬", "delivery": "RELEASED_FOUNDATION"}, {"name": "办公资产", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "制度文件", "delivery": "ADAPTATION_REQUIRED"}
+    ]},
+    {"key": "product_configuration", "name": "产品配置", "sequence": 100, "level_two": [
+      {"name": "表单配置", "delivery": "RELEASED_FOUNDATION"}, {"name": "流程审批配置", "delivery": "RELEASED_FOUNDATION"}, {"name": "字段管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "数据权限", "delivery": "ADAPTATION_REQUIRED"}, {"name": "系统参数", "delivery": "ADAPTATION_REQUIRED"}, {"name": "编码规则", "delivery": "NEW_CAPABILITY_REQUIRED"}
+    ]}
+  ],
+  "cross_center_ownership": [
+    {"capability": "签证变更", "authoritative_center": "合同中心", "project_center_rule": "仅提供按项目过滤的入口，不复制合同变更主数据、审批和审计"},
+    {"capability": "项目薪资", "authoritative_center": "行政中心", "project_center_rule": "项目中心只展示项目维度工资投影，薪酬主数据与核算规则归行政中心"},
+    {"capability": "班组借/扣款", "authoritative_center": "财务中心", "project_center_rule": "项目中心只提供项目上下文入口，资金单据与资金核算归财务中心"},
+    {"capability": "日常合同结算", "authoritative_center": "合同中心", "project_center_rule": "复用结算对象并增加日常合同来源关系，不新建平行结算模型"}
+  ],
+  "release_gates": [
+    "每个可见菜单必须绑定已验收 action、路由、权限与公司/项目数据域",
+    "NEW_CAPABILITY_REQUIRED 不得以空页面、占位菜单或技术模型直接对业务用户发布",
+    "菜单迁移默认保留 XMLID、action、权限与业务语义；破坏性变更需 ADR",
+    "验收必须覆盖真实角色、公司、数据库、桌面、平板和移动视口"
+  ]
+}

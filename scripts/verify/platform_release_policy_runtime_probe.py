@@ -19,6 +19,7 @@ from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
 from odoo.addons.smart_core.delivery.menu_service import MenuService
 from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
 from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
+from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 
 PRODUCT_KEYS = ("construction.standard", "construction.preview")
@@ -190,6 +191,49 @@ def _find_probe_user():
     return env.user
 
 
+def _customer_specific_product_views(env):
+    xmlids = env["ir.model.data"].sudo().search(
+        [
+            ("module", "=", "smart_construction_core"),
+            ("model", "=", "ir.ui.view"),
+        ]
+    )
+    views = env["ir.ui.view"].sudo().with_context(active_test=False).browse(xmlids.mapped("res_id")).exists()
+    forbidden_tokens = ("用户确认数据",)
+    contaminated = []
+    external_ids = views.get_external_id()
+    for view in views:
+        arch = _text(getattr(view, "arch_db", ""))
+        if any(token in arch for token in forbidden_tokens):
+            contaminated.append(_text(external_ids.get(view.id)) or "ir.ui.view:%s" % view.id)
+    return sorted(set(contaminated))
+
+
+def _customer_field_boundary(env, *, model_name, table_name):
+    legacy_fields = ["legacy_acceptance_label", "legacy_acceptance_sort_id"] + [
+        "legacy_visible_%02d" % index for index in range(1, 61)
+    ]
+    registered = sorted(set(legacy_fields) & set(env[model_name]._fields))
+    env.cr.execute(
+        """
+        SELECT column_name
+          FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = %s
+           AND column_name = ANY(%s)
+         ORDER BY column_name
+        """,
+        [table_name, legacy_fields],
+    )
+    retained_columns = [row[0] for row in env.cr.fetchall()]
+    return {
+        "registered_fields": registered,
+        "registered_field_count": len(registered),
+        "remaining_physical_columns": retained_columns,
+        "remaining_physical_column_count": len(retained_columns),
+    }
+
+
 def _write_report(payload: dict):
     REPORT_JSON.parent.mkdir(parents=True, exist_ok=True)
     REPORT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
@@ -247,6 +291,117 @@ def main():
     native_nav = _native_nav_for_user(user_env)
     native_leaf_count = _leaf_count(native_nav)
     native_subset = _native_nav_for_user(user_env, limit=1)
+    native_navigation_authoritative = bool(
+        call_extension_hook_first(
+            user_env,
+            "smart_core_native_navigation_authority",
+            user_env,
+            {},
+            RUNTIME_USER_ROLE_SURFACE,
+        )
+    )
+    customer_specific_product_views = _customer_specific_product_views(env)
+    if customer_specific_product_views:
+        failures.append(
+            "smart_construction_core: customer-specific form views remain active in P1: %s"
+            % ",".join(customer_specific_product_views)
+        )
+    material_plan_customer_field_boundary = _customer_field_boundary(
+        env, model_name="project.material.plan", table_name="project_material_plan"
+    )
+    if material_plan_customer_field_boundary["registered_fields"]:
+        failures.append(
+            "project.material.plan: P2 legacy-visible fields remain registered in P1: %s"
+            % ",".join(material_plan_customer_field_boundary["registered_fields"])
+        )
+    if material_plan_customer_field_boundary["remaining_physical_columns"]:
+        failures.append(
+            "project.material.plan: P2 legacy-visible physical columns remain after guarded extraction: %s"
+            % ",".join(material_plan_customer_field_boundary["remaining_physical_columns"])
+        )
+    material_rfq_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.material.rfq", table_name="sc_material_rfq"
+    )
+    if material_rfq_customer_field_boundary["registered_fields"]:
+        failures.append(
+            "sc.material.rfq: P2 legacy-visible fields remain registered in P1: %s"
+            % ",".join(material_rfq_customer_field_boundary["registered_fields"])
+        )
+    if material_rfq_customer_field_boundary["remaining_physical_columns"]:
+        failures.append(
+            "sc.material.rfq: P2 legacy-visible physical columns remain after guarded extraction: %s"
+            % ",".join(material_rfq_customer_field_boundary["remaining_physical_columns"])
+        )
+    material_inbound_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.material.inbound", table_name="sc_material_inbound"
+    )
+    if material_inbound_customer_field_boundary["registered_fields"]:
+        failures.append(
+            "sc.material.inbound: P2 legacy-visible fields remain registered in P1: %s"
+            % ",".join(material_inbound_customer_field_boundary["registered_fields"])
+        )
+    if material_inbound_customer_field_boundary["remaining_physical_columns"]:
+        failures.append(
+            "sc.material.inbound: P2 legacy-visible physical columns remain after guarded extraction: %s"
+            % ",".join(material_inbound_customer_field_boundary["remaining_physical_columns"])
+        )
+    subcontract_request_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.subcontract.request", table_name="sc_subcontract_request"
+    )
+    if subcontract_request_customer_field_boundary["registered_fields"]:
+        failures.append(
+            "sc.subcontract.request: P2 legacy-visible fields remain registered in P1: %s"
+            % ",".join(subcontract_request_customer_field_boundary["registered_fields"])
+        )
+    if subcontract_request_customer_field_boundary["remaining_physical_columns"]:
+        failures.append(
+            "sc.subcontract.request: P2 legacy-visible physical columns remain after guarded extraction: %s"
+            % ",".join(subcontract_request_customer_field_boundary["remaining_physical_columns"])
+        )
+    construction_diary_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.construction.diary", table_name="sc_construction_diary"
+    )
+    if construction_diary_customer_field_boundary["registered_fields"] or construction_diary_customer_field_boundary["remaining_physical_columns"]:
+        failures.append("sc.construction.diary: P2 legacy-visible boundary remains registered or physical")
+    settlement_order_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.settlement.order", table_name="sc_settlement_order"
+    )
+    if settlement_order_customer_field_boundary["registered_fields"] or settlement_order_customer_field_boundary["remaining_physical_columns"]:
+        failures.append("sc.settlement.order: P2 legacy-visible boundary remains registered or physical")
+    equipment_usage_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.equipment.usage", table_name="sc_equipment_usage"
+    )
+    if equipment_usage_customer_field_boundary["registered_fields"] or equipment_usage_customer_field_boundary["remaining_physical_columns"]:
+        failures.append("sc.equipment.usage: P2 legacy-visible boundary remains registered or physical")
+    labor_usage_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.labor.usage", table_name="sc_labor_usage"
+    )
+    if labor_usage_customer_field_boundary["registered_fields"] or labor_usage_customer_field_boundary["remaining_physical_columns"]:
+        failures.append("sc.labor.usage: P2 legacy-visible boundary remains registered or physical")
+    material_rental_order_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.material.rental.order", table_name="sc_material_rental_order"
+    )
+    if material_rental_order_customer_field_boundary["registered_fields"] or material_rental_order_customer_field_boundary["remaining_physical_columns"]:
+        failures.append("sc.material.rental.order: P2 legacy-visible boundary remains registered or physical")
+    hr_payroll_document_customer_field_boundary = _customer_field_boundary(
+        env, model_name="sc.hr.payroll.document", table_name="sc_hr_payroll_document"
+    )
+    if hr_payroll_document_customer_field_boundary["registered_fields"] or hr_payroll_document_customer_field_boundary["remaining_physical_columns"]:
+        failures.append("sc.hr.payroll.document: P2 legacy-visible boundary remains registered or physical")
+    pass_through_customer_field_boundaries = {}
+    for model_name, table_name in (
+        ("sc.fund.account.operation", "sc_fund_account_operation"),
+        ("sc.receipt.income", "sc_receipt_income"),
+        ("sc.invoice.registration", "sc_invoice_registration"),
+        ("construction.contract.expense", "construction_contract_expense"),
+    ):
+        boundary = _customer_field_boundary(env, model_name=model_name, table_name=table_name)
+        pass_through_customer_field_boundaries[model_name] = boundary
+        if boundary["registered_fields"] or boundary["remaining_physical_columns"]:
+            failures.append(
+                "%s: pass-through P2 legacy-visible boundary remains registered or physical"
+                % model_name
+            )
 
     products = []
     allowed_policy_sources = {
@@ -303,10 +458,21 @@ def main():
             failures.append("%s: delivery product_policy menu keys empty" % product_key)
         if user_delivery["delivered_menu_leaf_count"] <= 0:
             failures.append("%s: user delivery nav leaf count is empty" % product_key)
-        if no_native_delivery["delivered_menu_leaf_count"] != 0:
-            failures.append("%s: non-admin without native authorization still sees policy menus" % product_key)
-        if subset_delivery["delivered_menu_leaf_count"] > 1:
-            failures.append("%s: native subset authorization leaked extra menus" % product_key)
+        if native_navigation_authoritative:
+            # The industry product owns its active ACL-visible native tree, so
+            # caller-supplied native candidates are deliberately ignored. The
+            # probe must prove deterministic recomputation from current-user
+            # facts instead of treating an injected empty/subset tree as an
+            # authorization boundary.
+            if no_native_delivery["delivered_menu_leaf_count"] != user_delivery["delivered_menu_leaf_count"]:
+                failures.append("%s: authoritative native tree changed for empty caller candidate" % product_key)
+            if subset_delivery["delivered_menu_leaf_count"] != user_delivery["delivered_menu_leaf_count"]:
+                failures.append("%s: authoritative native tree changed for subset caller candidate" % product_key)
+        else:
+            if no_native_delivery["delivered_menu_leaf_count"] != 0:
+                failures.append("%s: non-admin without native authorization still sees policy menus" % product_key)
+            if subset_delivery["delivered_menu_leaf_count"] > 1:
+                failures.append("%s: native subset authorization leaked extra menus" % product_key)
         if admin_delivery["stable_leaf_count"] < user_delivery["stable_leaf_count"]:
             failures.append("%s: platform admin policy surface smaller than user surface" % product_key)
         if user_delivery["nav_source_authority_kind"] != MenuService.SOURCE_KIND:
@@ -332,6 +498,20 @@ def main():
         "db": _text(env.cr.dbname),
         "probe_user_login": _text(probe_user.login),
         "native_authorized_leaf_count": native_leaf_count,
+        "native_navigation_authoritative": native_navigation_authoritative,
+        "customer_specific_product_view_count": len(customer_specific_product_views),
+        "customer_specific_product_view_xmlids": customer_specific_product_views,
+        "material_plan_customer_field_boundary": material_plan_customer_field_boundary,
+        "material_rfq_customer_field_boundary": material_rfq_customer_field_boundary,
+        "material_inbound_customer_field_boundary": material_inbound_customer_field_boundary,
+        "subcontract_request_customer_field_boundary": subcontract_request_customer_field_boundary,
+        "construction_diary_customer_field_boundary": construction_diary_customer_field_boundary,
+        "settlement_order_customer_field_boundary": settlement_order_customer_field_boundary,
+        "equipment_usage_customer_field_boundary": equipment_usage_customer_field_boundary,
+        "labor_usage_customer_field_boundary": labor_usage_customer_field_boundary,
+        "material_rental_order_customer_field_boundary": material_rental_order_customer_field_boundary,
+        "hr_payroll_document_customer_field_boundary": hr_payroll_document_customer_field_boundary,
+        "pass_through_customer_field_boundaries": pass_through_customer_field_boundaries,
         "products": products,
         "failures": failures,
         "artifacts": {

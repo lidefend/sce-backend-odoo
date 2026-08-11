@@ -196,6 +196,24 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             menu_service.MenuService(env={})._action_is_runtime_allowed(action, "read")
         )
 
+    def test_native_route_discovery_keeps_new_product_menu_reusing_contextual_action(self):
+        self.assertFalse(
+            menu_service.MenuService._native_route_discovery_blocked(
+                (682, 600),
+                existing_pairs=set(),
+                reserved_pairs={(333, 600)},
+                denied_action_ids=set(),
+            )
+        )
+        self.assertTrue(
+            menu_service.MenuService._native_route_discovery_blocked(
+                (682, 600),
+                existing_pairs=set(),
+                reserved_pairs=set(),
+                denied_action_ids={600},
+            )
+        )
+
     def test_model_less_window_action_is_not_runtime_allowed(self):
         action = types.SimpleNamespace(
             active=True,
@@ -454,6 +472,93 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         groups = (nav[0].get("children") or []) if nav else []
         self.assertEqual([group.get("label") for group in groups], ["基础资料"])
         self.assertEqual(groups[0]["children"][0]["label"], "客户")
+
+    def test_installed_capability_discovery_preserves_native_nested_menu_path(self):
+        project_leaf = self._native_leaf(
+            label="新项目立项",
+            menu_xmlid="smart_construction_core.menu_sc_project_initiation",
+            menu_id=501,
+            route="/a/601?menu_id=501",
+            action_id=601,
+            model="project.project",
+        )
+        nav = menu_service.MenuService()._build_native_authoritative_nav(
+            role_surface={
+                "role_code": "business_config_admin",
+                "discover_installed_capabilities": True,
+            },
+            native_nav=[
+                {
+                    "label": "项目中心",
+                    "menu_id": 200,
+                    "meta": {"menu_xmlid": "smart_construction_core.menu_sc_project_center"},
+                    "children": [
+                        {
+                            "label": "项目创建",
+                            "menu_id": 300,
+                            "meta": {"menu_xmlid": "smart_construction_core.menu_sc_project_management_group"},
+                            "children": [project_leaf],
+                        }
+                    ],
+                }
+            ],
+        )
+
+        groups = nav[0]["children"]
+        project = next(group for group in groups if group.get("label") == "项目中心")
+        project_creation = next(child for child in project["children"] if child.get("label") == "项目创建")
+        self.assertEqual([child.get("label") for child in project_creation["children"]], ["新项目立项"])
+        self.assertEqual(nav[0]["meta"]["source"], "native_product_navigation_authority")
+        self.assertEqual(nav[0]["meta"]["strategy"], "active_native_tree_with_acl")
+
+    def test_native_authority_keeps_acl_visible_nodes_without_exposure_allowlist(self):
+        nav = menu_service.MenuService()._build_native_authoritative_nav(
+            role_surface={
+                "role_code": "business_config_admin",
+                "exposure_policy_declared": True,
+                "primary_menu_xmlids": ["smart_construction_core.menu_sc_business_config_center"],
+                "menu_blocklist_xmlids": ["example.menu_blocked"],
+            },
+            native_nav=[
+                {
+                    "label": "项目中心",
+                    "meta": {"menu_xmlid": "smart_construction_core.menu_sc_project_center"},
+                    "children": [
+                        self._native_leaf(
+                            label="新项目立项",
+                            menu_xmlid="smart_construction_core.menu_sc_project_initiation",
+                        ),
+                        self._native_leaf(label="禁止入口", menu_xmlid="example.menu_blocked", menu_id=502),
+                    ],
+                }
+            ],
+        )
+
+        project = nav[0]["children"][0]
+        self.assertEqual(project["label"], "项目中心")
+        self.assertEqual([child["label"] for child in project["children"]], ["新项目立项"])
+
+    def test_native_authority_selects_declared_business_root_from_all_odoo_apps(self):
+        original_hook = menu_service.call_extension_hook_first
+        menu_service.call_extension_hook_first = lambda *_args, **_kwargs: "example.menu_business_root"
+        try:
+            nav = menu_service.MenuService(types.SimpleNamespace())._build_native_authoritative_nav(
+                role_surface={"role_code": "employee"},
+                native_nav=[
+                    {"label": "Discuss", "meta": {"menu_xmlid": "mail.menu_root_discuss"}, "children": []},
+                    {
+                        "label": "行业产品",
+                        "meta": {"menu_xmlid": "example.menu_business_root"},
+                        "children": [
+                            {"label": "项目中心", "meta": {"menu_xmlid": "example.menu_project"}, "children": []}
+                        ],
+                    },
+                ],
+            )
+        finally:
+            menu_service.call_extension_hook_first = original_hook
+
+        self.assertEqual([node["label"] for node in nav[0]["children"]], ["项目中心"])
 
     def test_policy_menu_surface_is_filtered_by_native_authorized_menu_fact(self):
         nav = menu_service.MenuService().build_nav(

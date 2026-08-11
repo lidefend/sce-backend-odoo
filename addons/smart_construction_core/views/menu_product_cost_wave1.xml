@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- P1 cost-center wave one: direct L2 workspaces backed by existing actions. -->
+    <data>
+        <record id="menu_sc_project_wbs_cost" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_cost_forecast_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_cost_cashflow_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_cost_target_budget_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_cost_dynamic_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_cost_analysis_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <menuitem id="menu_sc_p1_project_budget" name="项目预算" parent="smart_construction_core.menu_sc_cost_center" action="smart_construction_core.action_project_budget" sequence="10" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager"/>
+        <menuitem id="menu_sc_p1_cost_plan" name="成本计划编制" parent="smart_construction_core.menu_sc_cost_center" action="smart_construction_core.action_project_cost_plan" sequence="20" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager"/>
+        <menuitem id="menu_sc_p1_cost_ledger" name="成本归集" parent="smart_construction_core.menu_sc_cost_center" action="smart_construction_core.action_project_cost_ledger" sequence="30" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager"/>
+        <menuitem id="menu_sc_p1_profit_analysis" name="项目盈亏分析" parent="smart_construction_core.menu_sc_cost_center" action="smart_construction_core.action_project_profit_compare" sequence="40" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager"/>
+    </data>
+</odoo>

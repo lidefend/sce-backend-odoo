@@ -63,6 +63,9 @@
           <field name="gross_amount" optional="show" sum="应发工资合计"/>
           <field name="deduction_amount" optional="show" sum="扣款合计"/>
           <field name="net_salary" optional="show" sum="实发工资合计"/>
+          <field name="payment_state" optional="show"/>
+          <field name="paid_amount" optional="show" sum="已付款合计"/>
+          <field name="unpaid_amount" optional="show" sum="未付款合计"/>
           <field name="amount" optional="show" sum="金额合计"/>
           <field name="certificate_fee" optional="show" sum="证书费用合计"/>
           <field name="item_type" optional="show"/>
@@ -123,6 +126,9 @@
                 <field name="gross_amount" required="fact_type == 'salary_registration'"/>
                 <field name="deduction_amount"/>
                 <field name="net_salary" required="fact_type == 'salary_registration'"/>
+                <field name="payment_state" readonly="1"/>
+                <field name="paid_amount"/>
+                <field name="unpaid_amount" readonly="1"/>
               </group>
               <group string="补助/奖金" invisible="fact_type not in ['subsidy', 'bonus']">
                 <field name="payout_unit"/>

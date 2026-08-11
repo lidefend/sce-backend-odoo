@@ -33,12 +33,17 @@ FORBIDDEN_MANIFEST_XML = {
     "smart_construction_core": {
         "views/res_users_views.xml",
         "views/support/partner_acceptance_product_menu_policy.xml",
+        "views/support/user_confirmed_formal_form_views.xml",
     },
     "smart_construction_seed": {
         "data/sc_seed_login_env.xml",
         "data/sc_seed_partner.xml",
     },
 }
+
+CUSTOMER_SPECIFIC_RUNTIME_VIEW_TOKENS = (
+    "用户确认数据",
+)
 
 FORBIDDEN_PRODUCTION_TOKENS = {
     "smart_construction_core": ("smart_construction_demo.", "sc_demo", "Demo-", "演示项目"),
@@ -112,6 +117,357 @@ def verify_manifest_shape() -> list[str]:
         for item in sorted(FORBIDDEN_MANIFEST_XML.get(module, set()) & data_set):
             errors.append(f"{module}: forbidden production manifest asset is loaded: {item}")
 
+    return errors
+
+
+def verify_customer_specific_runtime_view_boundary() -> list[str]:
+    """P1 manifests must not publish P2 customer-confirmation form sections."""
+    errors: list[str] = []
+    module = "smart_construction_core"
+    base = ADDONS / module
+    for item in _manifest_data(module):
+        path = base / item
+        if not path.is_file() or path.suffix != ".xml":
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for token in CUSTOMER_SPECIFIC_RUNTIME_VIEW_TOKENS:
+            if token in text:
+                errors.append(
+                    f"{module}: customer-specific runtime view token {token!r} is loaded: {item}"
+                )
+    return errors
+
+
+def verify_material_plan_customer_field_boundary() -> list[str]:
+    """The P1 material-plan page must use canonical fields only."""
+    errors: list[str] = []
+    mixed_model = (
+        ADDONS
+        / "smart_construction_core"
+        / "models"
+        / "support"
+        / "direct_acceptance_formal_visible_fields.py"
+    )
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "project.material.plan"' in mixed_text:
+        errors.append(
+            "smart_construction_core: project.material.plan must not register P2 legacy-visible fields"
+        )
+
+    list_views = (
+        ADDONS
+        / "smart_construction_core"
+        / "views"
+        / "support"
+        / "user_confirmed_formal_list_views.xml"
+    )
+    list_text = list_views.read_text(encoding="utf-8", errors="ignore") if list_views.is_file() else ""
+    forbidden_fields = (
+        "material_plan_status_display",
+        "material_plan_document_no",
+        "material_plan_document_date",
+        "material_plan_arrival_date",
+        "material_plan_material_alias",
+        "material_plan_source_created_by",
+        "material_plan_source_created_at",
+    )
+    for field_name in forbidden_fields:
+        if field_name in list_text:
+            errors.append(
+                f"smart_construction_core: material-plan product list uses customer projection field {field_name}"
+            )
+    for field_name in ("state", "name", "date_plan", "material_name_summary", "project_id"):
+        if f'<field name="{field_name}"' not in list_text:
+            errors.append(
+                f"smart_construction_core: material-plan product list missing canonical field {field_name}"
+            )
+    migration = (
+        ADDONS
+        / "smart_construction_core"
+        / "migrations"
+        / "17.0.0.113"
+        / "pre-migration.py"
+    )
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in (
+        "project_material_plan",
+        "information_schema.columns",
+        "legacy_visible_%02d",
+        "MATERIAL_PLAN_P2_HISTORY_NOT_EXTRACTED",
+        "raise RuntimeError",
+    ):
+        if token not in migration_text:
+            errors.append(
+                f"smart_construction_core: material-plan P2 extraction preflight missing {token}"
+            )
+    return errors
+
+
+def verify_material_rfq_customer_field_boundary() -> list[str]:
+    """The P1 RFQ page must use canonical fields only."""
+    errors: list[str] = []
+    mixed_model = (
+        ADDONS
+        / "smart_construction_core"
+        / "models"
+        / "support"
+        / "direct_acceptance_formal_visible_fields.py"
+    )
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.material.rfq"' in mixed_text:
+        errors.append(
+            "smart_construction_core: sc.material.rfq must not register P2 legacy-visible fields"
+        )
+
+    list_views = (
+        ADDONS
+        / "smart_construction_core"
+        / "views"
+        / "support"
+        / "user_confirmed_formal_list_views.xml"
+    )
+    list_text = list_views.read_text(encoding="utf-8", errors="ignore") if list_views.is_file() else ""
+    for field_name in (
+        "quote_status_display",
+        "quote_document_no",
+        "quote_supplier_name",
+        "quote_inquiry_time",
+        "quote_material_name",
+        "quote_material_spec",
+        "quote_total_amount_display",
+        "quote_source_created_by",
+    ):
+        if field_name in list_text:
+            errors.append(
+                f"smart_construction_core: RFQ product list uses customer projection field {field_name}"
+            )
+    for field_name in ("state", "name", "selected_supplier_id", "rfq_date", "project_id", "owner_id"):
+        if f'<field name="{field_name}"' not in list_text:
+            errors.append(
+                f"smart_construction_core: RFQ product list missing canonical field {field_name}"
+            )
+    migration = (
+        ADDONS
+        / "smart_construction_core"
+        / "migrations"
+        / "17.0.0.114"
+        / "pre-migration.py"
+    )
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in (
+        "sc_material_rfq",
+        "information_schema.columns",
+        "legacy_visible_%02d",
+        "MATERIAL_RFQ_P2_HISTORY_NOT_EXTRACTED",
+        "raise RuntimeError",
+    ):
+        if token not in migration_text:
+            errors.append(
+                f"smart_construction_core: RFQ P2 extraction preflight missing {token}"
+            )
+    return errors
+
+
+def verify_material_inbound_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.material.inbound"' in mixed_text:
+        errors.append("smart_construction_core: sc.material.inbound must not register P2 legacy-visible fields")
+    list_view = ADDONS / "smart_construction_core/views/support/user_confirmed_formal_list_views.xml"
+    list_text = list_view.read_text(encoding="utf-8", errors="ignore") if list_view.is_file() else ""
+    for field_name in ("document_status", "name", "inbound_date", "supplier_id", "material_name_summary", "project_name_display"):
+        if f'<field name="{field_name}"' not in list_text:
+            errors.append(f"smart_construction_core: inbound product list missing canonical field {field_name}")
+    if "('legacy_acceptance_label', '=', '入库')" in list_text:
+        errors.append("smart_construction_core: inbound product action must not filter on removed P2 label")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.115/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in ("sc_material_inbound", "information_schema.columns", "legacy_visible_%02d", "MATERIAL_INBOUND_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: inbound P2 extraction preflight missing {token}")
+    return errors
+
+
+def verify_pass_through_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    for model_name in (
+        "sc.fund.account.operation",
+        "sc.receipt.income",
+        "sc.invoice.registration",
+        "construction.contract.expense",
+    ):
+        if f'_inherit = "{model_name}"' in text:
+            errors.append(f"smart_construction_core: {model_name} must not register pass-through P2 fields")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.116/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in (
+        "sc_fund_account_operation",
+        "sc_receipt_income",
+        "sc_invoice_registration",
+        "construction_contract_expense",
+        "PASS_THROUGH_P2_HISTORY_NOT_EXTRACTED",
+        "raise RuntimeError",
+    ):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: pass-through extraction preflight missing {token}")
+    return errors
+
+
+def verify_subcontract_request_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.subcontract.request"' in mixed_text:
+        errors.append("smart_construction_core: sc.subcontract.request must not register P2 legacy-visible fields")
+    formal_fields = ADDONS / "smart_construction_core/models/core/formal_config_contract_fields.py"
+    formal_text = formal_fields.read_text(encoding="utf-8", errors="ignore") if formal_fields.is_file() else ""
+    if "SubcontractRequestFormalConfigContractFields" in formal_text:
+        errors.append("smart_construction_core: subcontract request must use canonical fields without display aliases")
+    list_view = ADDONS / "smart_construction_core/views/support/user_confirmed_formal_list_views.xml"
+    list_text = list_view.read_text(encoding="utf-8", errors="ignore") if list_view.is_file() else ""
+    for field_name in ("state", "name", "project_id", "subcontract_scope", "amount_total", "attachment_ids"):
+        if f'<field name="{field_name}"' not in list_text:
+            errors.append(f"smart_construction_core: subcontract request list missing canonical field {field_name}")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.117/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in (
+        "sc_subcontract_request",
+        "information_schema.columns",
+        "legacy_visible_%02d",
+        "SUBCONTRACT_REQUEST_P2_HISTORY_NOT_EXTRACTED",
+        "raise RuntimeError",
+    ):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: subcontract request P2 extraction preflight missing {token}")
+    return errors
+
+
+def verify_construction_diary_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.construction.diary"' in mixed_text:
+        errors.append("smart_construction_core: sc.construction.diary must not register P2 legacy-visible fields")
+    formal_fields = ADDONS / "smart_construction_core/models/core/formal_config_contract_fields.py"
+    formal_text = formal_fields.read_text(encoding="utf-8", errors="ignore") if formal_fields.is_file() else ""
+    if "ConstructionDiaryFormalConfigContractFields" in formal_text:
+        errors.append("smart_construction_core: construction diary must use canonical fields without display aliases")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.118/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in ("sc_construction_diary", "legacy_visible_%02d", "CONSTRUCTION_DIARY_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: construction diary P2 extraction preflight missing {token}")
+    return errors
+
+
+def verify_settlement_order_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.settlement.order"' in mixed_text:
+        errors.append("smart_construction_core: sc.settlement.order must not register P2 legacy-visible fields")
+    list_view = ADDONS / "smart_construction_core/views/support/user_confirmed_formal_list_views.xml"
+    list_text = list_view.read_text(encoding="utf-8", errors="ignore") if list_view.is_file() else ""
+    for field_name in ("state", "name", "project_id", "settlement_amount", "paid_amount", "unpaid_amount", "attachment_ids"):
+        if f'<field name="{field_name}"' not in list_text:
+            errors.append(f"smart_construction_core: settlement list missing canonical field {field_name}")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.119/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in ("sc_settlement_order", "legacy_visible_%02d", "SETTLEMENT_ORDER_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: settlement P2 extraction preflight missing {token}")
+    return errors
+
+
+def verify_equipment_usage_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.equipment.usage"' in mixed_text:
+        errors.append("smart_construction_core: sc.equipment.usage must not register P2 legacy-visible fields")
+    core_model = ADDONS / "smart_construction_core/models/core/equipment_management.py"
+    core_text = core_model.read_text(encoding="utf-8", errors="ignore") if core_model.is_file() else ""
+    for field_name in ("specification", "uom_text", "currency_id", "price_unit", "amount"):
+        if field_name not in core_text:
+            errors.append(f"smart_construction_core: equipment usage missing canonical field {field_name}")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.120/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in ("sc_equipment_usage", "legacy_visible_%02d", "EQUIPMENT_USAGE_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: equipment usage P2 extraction preflight missing {token}")
+    return errors
+
+
+def verify_labor_usage_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.labor.usage"' in mixed_text:
+        errors.append("smart_construction_core: sc.labor.usage must not register P2 legacy-visible fields")
+    core_model = ADDONS / "smart_construction_core/models/core/labor_management.py"
+    core_text = core_model.read_text(encoding="utf-8", errors="ignore") if core_model.is_file() else ""
+    for field_name in ("usage_type", "work_type", "construction_part", "price_unit", "amount_total", "settlement_state"):
+        if field_name not in core_text:
+            errors.append(f"smart_construction_core: labor usage missing canonical field {field_name}")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.121/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in ("sc_labor_usage", "legacy_visible_%02d", "LABOR_USAGE_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: labor usage P2 extraction preflight missing {token}")
+    return errors
+
+
+def verify_material_rental_order_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    mixed_text = mixed_model.read_text(encoding="utf-8", errors="ignore") if mixed_model.is_file() else ""
+    if '_inherit = "sc.material.rental.order"' in mixed_text:
+        errors.append("smart_construction_core: sc.material.rental.order must not register P2 legacy-visible fields")
+    core_model = ADDONS / "smart_construction_core/models/core/material_rental.py"
+    core_text = core_model.read_text(encoding="utf-8", errors="ignore") if core_model.is_file() else ""
+    for field_name in (
+        "actual_return_date", "use_unit_name", "deposit_amount", "settlement_amount",
+        "compensation_fee", "repair_fee", "transport_fee", "deposit_deduction",
+        "material_summary", "specification_summary", "quantity_total", "attachment_ids",
+    ):
+        if field_name not in core_text:
+            errors.append(f"smart_construction_core: material rental order missing canonical field {field_name}")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.122/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in (
+        "sc_material_rental_order", "legacy_visible_%02d",
+        "MATERIAL_RENTAL_ORDER_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError",
+    ):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: material rental order P2 extraction preflight missing {token}")
+    return errors
+
+
+def verify_hr_payroll_document_customer_field_boundary() -> list[str]:
+    errors: list[str] = []
+    mixed_model = ADDONS / "smart_construction_core/models/support/direct_acceptance_formal_visible_fields.py"
+    if mixed_model.is_file():
+        errors.append("smart_construction_core: obsolete direct acceptance customer field module must be removed")
+    models_init = ADDONS / "smart_construction_core/models/__init__.py"
+    init_text = models_init.read_text(encoding="utf-8", errors="ignore") if models_init.is_file() else ""
+    if "direct_acceptance_formal_visible_fields" in init_text:
+        errors.append("smart_construction_core: models init must not import customer acceptance field module")
+    core_model = ADDONS / "smart_construction_core/models/core/hr_payroll_document.py"
+    core_text = core_model.read_text(encoding="utf-8", errors="ignore") if core_model.is_file() else ""
+    for field_name in ("gross_amount", "net_salary", "payment_state", "paid_amount", "unpaid_amount", "attachment_ids"):
+        if field_name not in core_text:
+            errors.append(f"smart_construction_core: payroll document missing canonical field {field_name}")
+    migration = ADDONS / "smart_construction_core/migrations/17.0.0.123/pre-migration.py"
+    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
+    for token in (
+        "sc_hr_payroll_document", "legacy_visible_%02d",
+        "HR_PAYROLL_DOCUMENT_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError",
+    ):
+        if token not in migration_text:
+            errors.append(f"smart_construction_core: payroll document P2 extraction preflight missing {token}")
     return errors
 
 
@@ -1570,6 +1926,18 @@ def verify_industry_contract_migration_scope() -> list[str]:
 def main() -> int:
     errors: list[str] = []
     errors.extend(verify_manifest_shape())
+    errors.extend(verify_customer_specific_runtime_view_boundary())
+    errors.extend(verify_material_plan_customer_field_boundary())
+    errors.extend(verify_material_rfq_customer_field_boundary())
+    errors.extend(verify_material_inbound_customer_field_boundary())
+    errors.extend(verify_pass_through_customer_field_boundary())
+    errors.extend(verify_subcontract_request_customer_field_boundary())
+    errors.extend(verify_construction_diary_customer_field_boundary())
+    errors.extend(verify_settlement_order_customer_field_boundary())
+    errors.extend(verify_equipment_usage_customer_field_boundary())
+    errors.extend(verify_labor_usage_customer_field_boundary())
+    errors.extend(verify_material_rental_order_customer_field_boundary())
+    errors.extend(verify_hr_payroll_document_customer_field_boundary())
     errors.extend(verify_guard_metadata_product_language())
     errors.extend(verify_production_token_boundary())
     errors.extend(verify_legacy_temporary_account_boundary())

@@ -383,6 +383,17 @@ class MenuService:
             yield from MenuService._walk_nav_action_refs(node.get("children") or [])
 
     @staticmethod
+    def _native_route_discovery_blocked(
+        pair: tuple[int, int],
+        *,
+        existing_pairs: set[tuple[int, int]],
+        reserved_pairs: set[tuple[int, int]],
+        denied_action_ids: set[int],
+    ) -> bool:
+        """Keep stable menu identity while preserving action-level denials."""
+        return pair in existing_pairs or pair in reserved_pairs or pair[1] in denied_action_ids
+
+    @staticmethod
     def _nav_target_index(nodes: list[dict]) -> dict[tuple[int, int], dict]:
         targets: dict[tuple[int, int], dict] = {}
         for node in nodes or []:
@@ -541,10 +552,15 @@ class MenuService:
                 for row in facts.flat
                 if isinstance(row, dict)
             }
-            reserved_action_ids = {
-                int(item.get("action_id") or 0)
-                for bucket_name in ("contextual_actions", "admin_actions", "denied_actions")
+            reserved_pairs = {
+                (int(item.get("menu_id") or 0), int(item.get("action_id") or 0))
+                for bucket_name in ("contextual_actions", "admin_actions")
                 for item in buckets[bucket_name]
+                if isinstance(item, dict)
+            }
+            denied_action_ids = {
+                int(item.get("action_id") or 0)
+                for item in buckets["denied_actions"]
                 if isinstance(item, dict)
             }
             existing_pairs = {
@@ -555,7 +571,12 @@ class MenuService:
             }
             for menu_id, action_id in self._walk_nav_action_refs(nav):
                 pair = (menu_id, action_id)
-                if pair in existing_pairs or action_id in reserved_action_ids:
+                if self._native_route_discovery_blocked(
+                    pair,
+                    existing_pairs=existing_pairs,
+                    reserved_pairs=reserved_pairs,
+                    denied_action_ids=denied_action_ids,
+                ):
                     continue
                 entry = self._route_entry_from_menu(
                     visible_by_pair.get(pair),
@@ -804,11 +825,21 @@ class MenuService:
 
     def _resolve_preview_group_anchor(self, ancestors: list[dict]) -> tuple[str, str, int]:
         skipped_labels = _PREVIEW_GROUP_ANCHOR_SKIPPED_LABELS
+        business_root_xmlid = ""
+        if self.env is not None:
+            business_root_xmlid = str(
+                call_extension_hook_first(self.env, "smart_core_business_root_menu_xmlid", self.env) or ""
+            ).strip().lower()
+
+        def is_root_ancestor(ancestor: dict) -> bool:
+            key = str(ancestor.get("key") or "").strip()
+            xmlid = self._node_menu_xmlid(ancestor)
+            return key.startswith("root:") or bool(business_root_xmlid and xmlid == business_root_xmlid)
+
         for ancestor in ancestors or []:
             if not isinstance(ancestor, dict):
                 continue
-            key = str(ancestor.get("key") or "").strip()
-            if key.startswith("root:"):
+            if is_root_ancestor(ancestor):
                 continue
             label = str(ancestor.get("label") or ancestor.get("title") or ancestor.get("name") or "").strip()
             if label in skipped_labels:
@@ -818,6 +849,8 @@ class MenuService:
                 return f"menu_{menu_id}", label, int(menu_id)
         for ancestor in ancestors or []:
             if not isinstance(ancestor, dict):
+                continue
+            if is_root_ancestor(ancestor):
                 continue
             label = str(ancestor.get("label") or ancestor.get("title") or ancestor.get("name") or "").strip()
             if label in skipped_labels:
@@ -1622,6 +1655,14 @@ class MenuService:
                         if isinstance(meta.get("view_modes"), list)
                         else (leaf.get("view_modes") if isinstance(leaf.get("view_modes"), list) else [])
                     ),
+                    "visible_menu_path": " / ".join(
+                        [
+                            str(node.get("label") or node.get("title") or node.get("name") or "").strip()
+                            for node in ancestors
+                            if str(node.get("label") or node.get("title") or node.get("name") or "").strip()
+                        ]
+                        + [label]
+                    ),
                 }
             )
         return [preview_menus_by_group[group_key] for group_key in group_order]
@@ -1742,6 +1783,67 @@ class MenuService:
                 out.append(next_group)
         return out
 
+    def _native_navigation_is_authoritative(self, policy: dict, role_surface: dict | None) -> bool:
+        if self.env is None:
+            return False
+        return bool(
+            call_extension_hook_first(
+                self.env,
+                "smart_core_native_navigation_authority",
+                self.env,
+                policy,
+                role_surface or {},
+            )
+        )
+
+    def _native_authoritative_fact_nav(self) -> list[dict]:
+        if self.env is None:
+            return []
+        facts = MenuFactService(self.env).export_visible_menu_facts()
+        return self._menu_fact_tree_as_native(facts.tree)
+
+    def _build_native_authoritative_nav(self, native_nav: list[dict], role_surface: dict | None) -> list[dict]:
+        nodes = [dict(node) for node in native_nav or [] if isinstance(node, dict)]
+        root_xmlid = str(
+            call_extension_hook_first(self.env, "smart_core_business_root_menu_xmlid", self.env) or ""
+        ).strip().lower() if self.env is not None else ""
+        business_root = next(
+            (node for node in nodes if root_xmlid and self._node_menu_xmlid(node) == root_xmlid),
+            None,
+        )
+        if business_root is not None:
+            nodes = [dict(node) for node in business_root.get("children") or [] if isinstance(node, dict)]
+        elif len(nodes) == 1:
+            only = nodes[0]
+            only_label = str(only.get("label") or only.get("title") or "").strip()
+            if only_label in {"系统菜单", "业务菜单"}:
+                nodes = [dict(node) for node in only.get("children") or [] if isinstance(node, dict)]
+
+        def keep_allowed(node: dict):
+            if not isinstance(node, dict) or not self._role_surface_menu_allowed(node, role_surface):
+                return None
+            candidate = dict(node)
+            candidate["children"] = [
+                kept
+                for child in node.get("children") or []
+                if (kept := keep_allowed(child))
+            ]
+            return candidate
+
+        nodes = [kept for node in nodes if (kept := keep_allowed(node))]
+        nodes = self._sort_delivery_nodes(nodes, top_level=True)
+        root = build_delivery_menu_root(nodes, str((role_surface or {}).get("role_code") or ""))
+        root["key"] = "root:system_menu"
+        root["label"] = "系统菜单"
+        root["title"] = "系统菜单"
+        root["meta"] = {
+            "source": "native_product_navigation_authority",
+            "role_code": str((role_surface or {}).get("role_code") or ""),
+            "strategy": "active_native_tree_with_acl",
+            "source_authority": self.source_authority_contract(),
+        }
+        return [root]
+
     def build_nav(self, *, policy: dict, role_surface: dict | None = None, native_nav: list[dict] | None = None) -> list[dict]:
         role_code = str((role_surface or {}).get("role_code") or "").strip().lower()
         role_codes = [
@@ -1761,6 +1863,8 @@ class MenuService:
         policy_has_menu_surface = self._policy_has_menu_surface(policy)
         customer_acceptance_focus = self._policy_is_customer_acceptance_focus(policy)
         exposed_xmlids = self._exposed_menu_xmlids(role_surface)
+        if self._native_navigation_is_authoritative(policy, role_surface):
+            return self._build_native_authoritative_nav(self._native_authoritative_fact_nav(), role_surface)
         authorization_native_nav = self._authorization_native_nav(role_surface, native_nav or [])
         primary_native_nav = self._filter_primary_native_nodes(authorization_native_nav, role_surface)
         native_index = self._native_authorized_menu_index(primary_native_nav)
