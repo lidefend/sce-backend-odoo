@@ -186,7 +186,7 @@
 - 证书管理 -> `sc.document.admin.document`
 - 社保公积 -> `sc.hr.payroll.document`
 - 工资薪酬 -> `sc.hr.payroll.document`
-- 办公资产 -> `sc.office.admin.document`
+- 办公资产 -> `sc.office.asset`
 - 制度文件 -> `sc.document.admin.document`
 
 ### 产品配置

@@ -104,7 +104,7 @@ RELEASED_MENU_BINDINGS = (
     ("行政中心", "证书管理", "smart_construction_core.menu_sc_certificate_registration", "smart_construction_core.action_sc_certificate_registration", "sc.document.admin.document", ("证书管理",)),
     ("行政中心", "社保公积", "smart_construction_core.menu_sc_product_social_fund_v1", "smart_construction_core.action_sc_product_social_fund_v1", "sc.hr.payroll.document", ("社保公积",)),
     ("行政中心", "工资薪酬", "smart_construction_core.menu_sc_payroll_management", "smart_construction_core.action_sc_payroll_management", "sc.hr.payroll.document", ("工资薪酬",)),
-    ("行政中心", "办公资产", "smart_construction_core.menu_sc_product_office_asset_v1", "smart_construction_core.action_sc_product_office_asset_v1", "sc.office.admin.document", ("办公资产",)),
+    ("行政中心", "办公资产", "smart_construction_core.menu_sc_product_office_asset_v1", "smart_construction_core.action_sc_product_office_asset_v1", "sc.office.asset", ("办公资产",)),
     ("行政中心", "制度文件", "smart_construction_core.menu_sc_product_policy_document_v1", "smart_construction_core.action_sc_product_policy_document_v1", "sc.document.admin.document", ("制度文件",)),
     ("产品配置", "表单配置", "smart_construction_core.menu_sc_business_config_workbench", "smart_construction_core.action_sc_business_config_workbench", "ui.business.config.contract", ("表单配置",)),
     ("产品配置", "流程审批配置", "smart_construction_core.menu_sc_approval_policy", "smart_construction_core.action_sc_approval_policy", "sc.approval.policy", ("流程审批配置",)),

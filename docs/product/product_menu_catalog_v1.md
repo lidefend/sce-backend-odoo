@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T17:48:26.127749+00:00`
+- generated_at: `2026-08-11T17:52:17.257244+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -274,7 +274,7 @@
     - 人员档案 [`system_config`] -> `res.users`
     - 人员生命周期（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
     - 制度文件 [`formal_product`] -> `sc.document.admin.document`
-    - 办公资产 [`formal_product`] -> `sc.office.admin.document`
+    - 办公资产 [`formal_product`] -> `sc.office.asset`
     - 基础资料 [`formal_product` inactive]
     - 岗位管理 [`formal_product`] -> `hr.job`
     - 工资薪酬 [`formal_product`] -> `sc.hr.payroll.document`
