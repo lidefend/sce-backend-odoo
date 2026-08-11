@@ -281,12 +281,6 @@ class UiContractV2Handler(BaseIntentHandler):
         scene_key = str(params.get("scene_key") or params.get("sceneKey") or "").strip()
         if not scene_key:
             return None
-        try:
-            requested_action_id = int(params.get("action_id") or params.get("actionId") or 0)
-        except (TypeError, ValueError):
-            requested_action_id = 0
-        if requested_action_id <= 0:
-            return self._err(409, f"{REASON_SCENE_ACTION_BINDING_INVALID}: scene request missing action_id")
         payload = load_scenes_from_db_or_fallback(self.env, drift=None, logger=None) or {}
         scene = next(
             (
@@ -297,8 +291,24 @@ class UiContractV2Handler(BaseIntentHandler):
             ),
             None,
         )
+        # ``scene_key`` is also carried as a governed semantic routing hint by
+        # action-first entries.  Only a concrete registry action binding is an
+        # authority against which the requested action can be validated.
+        # Action/menu access is enforced independently by the normal contract
+        # security path, so an absent or route-only scene must not become a
+        # parallel availability gate.
+        if not scene:
+            return None
         expected_action_id = self._scene_target_action_id(scene or {})
-        if not scene or expected_action_id <= 0 or expected_action_id != requested_action_id:
+        if expected_action_id <= 0:
+            return None
+        try:
+            requested_action_id = int(params.get("action_id") or params.get("actionId") or 0)
+        except (TypeError, ValueError):
+            requested_action_id = 0
+        if requested_action_id <= 0:
+            return self._err(409, f"{REASON_SCENE_ACTION_BINDING_INVALID}: scene request missing action_id")
+        if expected_action_id != requested_action_id:
             return self._err(
                 409,
                 f"{REASON_SCENE_ACTION_BINDING_INVALID}: scene={scene_key} action_id={requested_action_id}",
