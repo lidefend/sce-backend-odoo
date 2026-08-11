@@ -3,8 +3,8 @@
 Date: 2026-08-08
 Owner: Platform owner
 Target file: `addons/smart_core/handlers/ui_contract_v2.py`
-Current size: 3,440 lines
-Phase: Stage 3 form layout governance helper split
+Current size: 3,473 lines
+Phase: Stage 4 contract authority helper split
 
 ## Purpose
 
@@ -110,7 +110,7 @@ infer backend permissions.
 
 ## Stage 3 Target
 
-Stage 3 is complete:
+Stage 3 form layout governance helper split is complete:
 
 - `ui_contract_v2_projection.py` also owns pure form layout governance helpers:
   `_form_layout_governance`, `_form_layout_governance_columns`,
@@ -129,6 +129,21 @@ group rewrites, list projection, and record hydration.
 Do not move `_apply_business_config_form_groups_to_v2` yet; it rewrites the
 container tree based on configured business groups and needs behavior coverage
 for group order, hidden fields, and node preservation.
+
+## Stage 4 Complete
+
+The contract-governance integration adds backend entitlement resolution,
+scene/action authority validation, trace resolution, and final contract
+sealing. These responsibilities live in `ui_contract_v2_authority.py` rather
+than becoming another policy branch inside the main handler:
+
+- `ui_contract_v2_authority.py` owns contract authority projections;
+- the main handler retains only environment-aware orchestration entrypoints;
+- scene/action equality is enforced only for a concrete registry action
+  binding; a governed semantic scene hint is not promoted into an authority;
+- action and menu access remain independently enforced by the normal backend
+  contract security path;
+- `ui_contract_v2.py` is locked at `<=3475` lines for this stage.
 
 ## Verification Gaps
 

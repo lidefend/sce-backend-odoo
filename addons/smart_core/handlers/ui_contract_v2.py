@@ -8,7 +8,6 @@ from typing import Any, Dict, Optional
 from lxml import etree
 
 from ..core.base_handler import BaseIntentHandler
-from ..core.contract_lifecycle import seal_unified_page_contract
 from ..core.intent_execution_result import IntentExecutionResult
 from ..core.unified_page_contract_v2_assembler import (
     CONTRACT_VERSION,
@@ -25,6 +24,7 @@ from ..core.request_params import parse_positive_int
 from ..utils.contract_governance import apply_contract_governance, resolve_contract_mode, resolve_contract_surface
 from ..utils.extension_hooks import call_extension_hook_first
 from . import ui_contract_v2_adapters as _adapters
+from . import ui_contract_v2_authority as _authority
 from . import ui_contract_v2_projection as _projection
 from .ui_contract import UiContractHandler
 from .ui_contract_preview import PreviewAccessDenied, build_projection_environments
@@ -32,8 +32,8 @@ _logger = logging.getLogger(__name__)
 
 REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
 REASON_SCENE_CONTRACT_READY = "SCENE_CONTRACT_READY"
-REASON_ACTION_GROUP_ACCESS_DENIED = "ACTION_GROUP_ACCESS_DENIED"
-REASON_SCENE_ACTION_BINDING_INVALID = "SCENE_ACTION_BINDING_INVALID"
+REASON_ACTION_GROUP_ACCESS_DENIED = _authority.REASON_ACTION_GROUP_ACCESS_DENIED
+REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INVALID
 BUSINESS_OPERATION_FIELD_PRIORITY = (
     "name",
     "document_no",
@@ -213,107 +213,11 @@ class UiContractV2Handler(BaseIntentHandler):
         }
 
     def _project_action_group_entitlements(self, source_contract: dict[str, Any]) -> None:
-        """Resolve group constraints server-side and publish only final button status."""
-        policies = source_contract.get("action_policies")
-        if not isinstance(policies, dict):
-            return
-        user = getattr(self.env, "user", None)
-        for action_key, raw_policy in policies.items():
-            if not isinstance(raw_policy, dict):
-                continue
-            enabled_when = raw_policy.get("enabled_when")
-            if not isinstance(enabled_when, dict):
-                continue
-            required_groups = [
-                str(item or "").strip()
-                for item in (enabled_when.get("required_groups") or [])
-                if str(item or "").strip()
-            ]
-            if not required_groups:
-                continue
-            allowed = False
-            if user is not None:
-                try:
-                    allowed = any(bool(user.has_group(xmlid)) for xmlid in required_groups)
-                except Exception:
-                    _logger.warning(
-                        "ui.contract.v2 group entitlement projection failed action=%s",
-                        action_key,
-                        exc_info=True,
-                    )
-                    allowed = False
-            projected_when = dict(enabled_when)
-            projected_when.pop("required_groups", None)
-            raw_policy["enabled_when"] = projected_when
-            raw_policy["entitlement_evaluated"] = True
-            raw_policy["enabled"] = bool(raw_policy.get("enabled", True)) and allowed
-            if not allowed:
-                raw_policy["reason_code"] = REASON_ACTION_GROUP_ACCESS_DENIED
-                raw_policy["disabled_reason"] = str(
-                    raw_policy.get("disabled_reason") or "当前账号无权执行此操作"
-                )
-
-    @staticmethod
-    def _scene_target_action_id(scene: dict[str, Any]) -> int:
-        target = scene.get("target") if isinstance(scene.get("target"), dict) else {}
-        candidates = [target]
-        entry_target = target.get("entry_target") if isinstance(target.get("entry_target"), dict) else {}
-        candidates.extend(
-            row
-            for row in (
-                entry_target,
-                entry_target.get("compatibility_refs"),
-                entry_target.get("record_entry"),
-                entry_target.get("list_entry"),
-            )
-            if isinstance(row, dict)
-        )
-        for row in candidates:
-            try:
-                action_id = int(row.get("action_id") or 0)
-            except (TypeError, ValueError):
-                action_id = 0
-            if action_id > 0:
-                return action_id
-        return 0
+        _authority.project_action_group_entitlements(self.env, source_contract, _logger)
 
     def _validate_scene_action_binding(self, params: dict[str, Any]):
-        scene_key = str(params.get("scene_key") or params.get("sceneKey") or "").strip()
-        if not scene_key:
-            return None
         payload = load_scenes_from_db_or_fallback(self.env, drift=None, logger=None) or {}
-        scene = next(
-            (
-                row
-                for row in (payload.get("scenes") or [])
-                if isinstance(row, dict)
-                and str(row.get("code") or row.get("key") or "").strip() == scene_key
-            ),
-            None,
-        )
-        # ``scene_key`` is also carried as a governed semantic routing hint by
-        # action-first entries.  Only a concrete registry action binding is an
-        # authority against which the requested action can be validated.
-        # Action/menu access is enforced independently by the normal contract
-        # security path, so an absent or route-only scene must not become a
-        # parallel availability gate.
-        if not scene:
-            return None
-        expected_action_id = self._scene_target_action_id(scene or {})
-        if expected_action_id <= 0:
-            return None
-        try:
-            requested_action_id = int(params.get("action_id") or params.get("actionId") or 0)
-        except (TypeError, ValueError):
-            requested_action_id = 0
-        if requested_action_id <= 0:
-            return self._err(409, f"{REASON_SCENE_ACTION_BINDING_INVALID}: scene request missing action_id")
-        if expected_action_id != requested_action_id:
-            return self._err(
-                409,
-                f"{REASON_SCENE_ACTION_BINDING_INVALID}: scene={scene_key} action_id={requested_action_id}",
-            )
-        return None
+        return _authority.validate_scene_action_binding(payload, params, self._err)
 
     def _set_v2_container_tree(self, contract: dict[str, Any], container_tree: list[Any]) -> None:
         _projection.set_v2_container_tree(contract, container_tree)
@@ -641,12 +545,7 @@ class UiContractV2Handler(BaseIntentHandler):
         ui_data, ui_meta = self._resolve_entry_contract(ui_data, ui_meta, ui_params, ctx)
         model = params.get("model") or ui_data.get("model") or ui_meta.get("model") or ""
         view_type = params.get("view_type") or params.get("viewType") or ui_data.get("view_type") or ui_meta.get("view_type") or "form"
-        trace_id = str(
-            (self.context.get("trace_id") if isinstance(self.context, dict) else "")
-            or ui_meta.get("trace_id")
-            or ui_meta.get("traceId")
-            or ""
-        ).strip()
+        trace_id = _authority.resolve_trace_id(self.context, ui_meta)
         request_id = (
             params.get("request_id")
             or params.get("requestId")
@@ -827,17 +726,8 @@ class UiContractV2Handler(BaseIntentHandler):
             delivery_profile=delivery_profile,
             **limit_params,
         )
-        contract_v2 = seal_unified_page_contract(
-            contract_v2,
-            source_payload=source_contract,
-            source_type="ui.contract",
-            request_id=str(request_id),
-            trace_id=trace_id,
-            client_type=client_type,
-            stage="runtime_delivery",
-            generator=self.SOURCE_KIND,
-            generator_version=self.VERSION,
-            source_authority=self.source_authority_contract(),
+        contract_v2 = _authority.seal_runtime_contract(
+            self, contract_v2, source_contract, "ui.contract", str(request_id), trace_id, client_type
         )
 
         return IntentExecutionResult(
@@ -3380,7 +3270,7 @@ class UiContractV2Handler(BaseIntentHandler):
         if limit_error:
             return self._err(400, f"{limit_error} 无效")
         source_contract = self._scene_contract_source(scene_key)
-        trace_id = str(self.context.get("trace_id") if isinstance(self.context, dict) else "").strip()
+        trace_id = _authority.resolve_trace_id(self.context)
         request_id = str(params.get("request_id") or params.get("requestId") or trace_id or f"ui.contract.v2.scene.{scene_key}")
         contract_v2 = assemble_unified_page_contract_v2(
             {"scene_contract_v1": source_contract},
@@ -3395,17 +3285,8 @@ class UiContractV2Handler(BaseIntentHandler):
             delivery_profile=delivery_profile,
             **limit_params,
         )
-        contract_v2 = seal_unified_page_contract(
-            contract_v2,
-            source_payload=source_contract,
-            source_type="scene_contract_v1",
-            request_id=request_id,
-            trace_id=trace_id,
-            client_type=client_type,
-            stage="runtime_delivery",
-            generator=self.SOURCE_KIND,
-            generator_version=self.VERSION,
-            source_authority=self.source_authority_contract(),
+        contract_v2 = _authority.seal_runtime_contract(
+            self, contract_v2, source_contract, "scene_contract_v1", request_id, trace_id, client_type
         )
         return IntentExecutionResult(
             ok=True,

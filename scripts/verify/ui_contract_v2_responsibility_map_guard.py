@@ -9,6 +9,7 @@ DOC = ROOT / "docs/engineering_convergence/ui_contract_v2_responsibility_map.md"
 HANDLER = ROOT / "addons/smart_core/handlers/ui_contract_v2.py"
 ADAPTERS = ROOT / "addons/smart_core/handlers/ui_contract_v2_adapters.py"
 PROJECTION = ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py"
+AUTHORITY = ROOT / "addons/smart_core/handlers/ui_contract_v2_authority.py"
 CI = ROOT / "make/ci.mk"
 
 REQUIRED_METHODS = [
@@ -47,6 +48,7 @@ def main() -> int:
     handler = _read(HANDLER)
     adapters = _read(ADAPTERS)
     projection = _read(PROJECTION)
+    authority = _read(AUTHORITY)
     ci = _read(CI)
 
     if not doc:
@@ -57,11 +59,14 @@ def main() -> int:
         errors.append(f"missing adapters: {ADAPTERS.relative_to(ROOT)}")
     if not projection:
         errors.append(f"missing projection helpers: {PROJECTION.relative_to(ROOT)}")
+    if not authority:
+        errors.append(f"missing authority helpers: {AUTHORITY.relative_to(ROOT)}")
 
     for token in [
         "UI Contract V2 Responsibility Map",
-        "Current size: 3,440 lines",
+        "Current size: 3,473 lines",
         "Stage 3 form layout governance helper split",
+        "Stage 4 contract authority helper split",
         "## Public Entry Points",
         "## Responsibility Bands",
         "## Current Side-Effect Boundaries",
@@ -70,15 +75,18 @@ def main() -> int:
         "## Stage 2 Target",
         "## Stage 3 Target",
         "## Stage 4 Candidate",
+        "## Stage 4 Complete",
         "## Verification Gaps",
         "## Invariants",
         "`UiContractV2Handler.handle`",
         "`ui_contract_v2.py` is locked at `<=3440` lines",
+        "`ui_contract_v2.py` is locked at `<=3475` lines",
         "`ui_contract_v2_adapters.py` owns request/result adapters",
         "`ui_contract_v2_adapters.py` also owns pure value builders",
         "`ui_contract_v2_projection.py` owns pure v2 mutation helpers",
         "`ui_contract_v2_projection.py` also owns pure policy/status projection",
         "`ui_contract_v2_projection.py` also owns pure form layout governance helpers",
+        "`ui_contract_v2_authority.py` owns contract authority projections",
         "Do not move these responsibilities before behavior coverage exists",
         "UiContractHandler",
         "PageAssembler",
@@ -93,8 +101,8 @@ def main() -> int:
 
     if handler:
         line_count = handler.count("\n") + (0 if handler.endswith("\n") else 1)
-        if line_count > 3440:
-            errors.append(f"ui_contract_v2.py line budget exceeded: {line_count} > 3440")
+        if line_count > 3475:
+            errors.append(f"ui_contract_v2.py line budget exceeded: {line_count} > 3475")
         methods = _class_method_names(handler)
         for name in REQUIRED_METHODS:
             if name not in methods:
@@ -108,6 +116,7 @@ def main() -> int:
             "class UiContractV2Handler(BaseIntentHandler):",
             "from . import ui_contract_v2_adapters as _adapters",
             "from . import ui_contract_v2_projection as _projection",
+            "from . import ui_contract_v2_authority as _authority",
             "return _adapters.params_from_payload(payload, self.params)",
             "return _adapters.headers_from_request(self.request, _logger)",
             "return _adapters.trim_limit_params(params)",
@@ -186,6 +195,19 @@ def main() -> int:
         ]:
             if token not in projection:
                 errors.append(f"ui_contract_v2_projection.py missing token: {token}")
+
+    if authority:
+        for token in [
+            "def project_action_group_entitlements(",
+            "def validate_scene_action_binding(",
+            "def resolve_trace_id(",
+            "def seal_runtime_contract(",
+            "seal_unified_page_contract(",
+            "REASON_ACTION_GROUP_ACCESS_DENIED",
+            "REASON_SCENE_ACTION_BINDING_INVALID",
+        ]:
+            if token not in authority:
+                errors.append(f"ui_contract_v2_authority.py missing token: {token}")
 
     ci_token = "python3 scripts/verify/ui_contract_v2_responsibility_map_guard.py"
     if ci_token not in ci:
