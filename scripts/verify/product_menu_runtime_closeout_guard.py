@@ -133,14 +133,14 @@ def validate() -> list[str]:
     init_source = CORE_INIT.read_text(encoding="utf-8")
     service_source = MENU_SERVICE.read_text(encoding="utf-8")
     menu_config_source = MENU_CONFIG_POLICY.read_text(encoding="utf-8")
-    if "def smart_core_native_navigation_authority" not in extension_source:
-        errors.append("construction product must opt into native active-menu navigation authority")
-    if "smart_core_native_navigation_authority," not in init_source:
-        errors.append("construction native-navigation authority hook must be exported")
+    if "def smart_core_native_navigation_authority" in extension_source:
+        errors.append("construction product release policy must not be bypassed by native-tree authority")
+    if "smart_core_native_navigation_authority," in init_source:
+        errors.append("construction product must not export the retired native-tree authority hook")
     if '"source": "native_product_navigation_authority"' not in service_source:
-        errors.append("platform menu delivery must expose native navigation authority evidence")
+        errors.append("platform menu delivery must retain the generic native-navigation extension mechanism")
     if "if self._native_navigation_is_authoritative(policy, role_surface):" not in service_source:
-        errors.append("native authority must short-circuit legacy policy regrouping")
+        errors.append("platform menu delivery must retain the generic native-navigation extension point")
     if "self._native_authoritative_fact_nav()" not in service_source:
         errors.append("native authority must read the request user's ACL-visible Odoo menu facts")
     if "def _native_route_discovery_blocked" not in service_source or "reserved_pairs=reserved_pairs" not in service_source:

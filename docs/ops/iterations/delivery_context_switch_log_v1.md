@@ -3624,3 +3624,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   transaction tests only. The exact candidate is replayed on `sc_demo`, then
   the 159-page release audit, contract-open matrix and authenticated browser
   navigation acceptance are rerun before baseline promotion.
+
+## 2026-08-11 — P1-FULL-MENU-POLICY-AUTHORITY-CONVERGENCE
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after
+  `6e20d0e` daily-source diagnostics.
+- Formal Product Layer / Layer Target / Module: P1 / construction product
+  navigation authority / `smart_construction_core`; the P0 generic extension
+  point remains available for products that explicitly require a native tree.
+- Reason / Boundary: construction still exported an unconditional native-tree
+  authority hook from the earlier primary-center experiment. It bypassed the
+  locked 159-page release policy, delivered 94 database-native actions including
+  42 descendants of the retired user-acceptance root, and left only 36 actions
+  after the release gate. The construction product now uses the standard
+  delivery-policy projection: the release snapshot selects product pages while
+  Odoo menu visibility, action identity, model ACL and record rules remain the
+  execution authority.
+- Read-only counterfactual evidence: disabling only the stale hook on `sc_demo`
+  projected 135 executable actions, zero release-gate removals and nine product
+  groups for `wutao`; route authority retained 131 primary, 14 contextual and
+  five administrator action facts. The committed change is accepted only after
+  exact-source replay and authenticated browser/contract verification reproduce
+  those bounds.
