@@ -16,6 +16,9 @@ class BusinessEntryOwnershipGuardTest(unittest.TestCase):
     def test_repository_registry_passes(self):
         self.assertEqual(guard.validate(self.registry), [])
 
+    def test_native_model_extension_is_detected_as_implemented(self):
+        self.assertIn("res.users", guard._detected_models())
+
     def test_shared_fact_model_drift_fails_closed(self):
         registry = copy.deepcopy(self.registry)
         spec = next(item for item in registry["ownership_specs"] if item.get("entry_bindings"))

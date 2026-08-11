@@ -55,7 +55,7 @@
       {"name": "部门管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "岗位管理", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "人员档案", "delivery": "RELEASED_FOUNDATION"}, {"name": "证书管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "社保公积", "delivery": "RELEASED_FOUNDATION"}, {"name": "工资薪酬", "delivery": "RELEASED_FOUNDATION"}, {"name": "办公资产", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "制度文件", "delivery": "RELEASED_FOUNDATION"}
     ]},
     {"key": "product_configuration", "name": "产品配置", "sequence": 100, "level_two": [
-      {"name": "表单配置", "delivery": "RELEASED_FOUNDATION"}, {"name": "流程审批配置", "delivery": "RELEASED_FOUNDATION"}, {"name": "字段管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "数据权限", "delivery": "ADAPTATION_REQUIRED"}, {"name": "系统参数", "delivery": "RELEASED_FOUNDATION"}, {"name": "编码规则", "delivery": "NEW_CAPABILITY_REQUIRED"}
+      {"name": "表单配置", "delivery": "RELEASED_FOUNDATION"}, {"name": "流程审批配置", "delivery": "RELEASED_FOUNDATION"}, {"name": "字段管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "数据权限", "delivery": "RELEASED_FOUNDATION"}, {"name": "系统参数", "delivery": "RELEASED_FOUNDATION"}, {"name": "编码规则", "delivery": "NEW_CAPABILITY_REQUIRED"}
     ]}
   ],
   "cross_center_ownership": [

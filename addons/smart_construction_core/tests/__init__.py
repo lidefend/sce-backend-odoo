@@ -81,3 +81,4 @@ from . import test_project_special_tax_deduction
 from . import test_policy_document_capability
 from . import test_social_fund_capability
 from . import test_product_system_settings
+from . import test_data_permission_surface

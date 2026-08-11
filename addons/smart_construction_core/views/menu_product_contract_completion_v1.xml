@@ -152,7 +152,10 @@
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
     </record>
     <record id="action_sc_product_data_permission_v1" model="ir.actions.act_window">
-      <field name="name">数据权限</field><field name="res_model">ui.business.config.contract</field><field name="view_mode">tree,form</field>
+      <field name="name">数据权限</field><field name="res_model">res.users</field><field name="view_mode">tree,form</field>
+      <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_data_permission_user_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_data_permission_user_form')})]"/>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_data_permission_user_search"/>
+      <field name="domain">[('sc_runtime_company_maintainable', '=', True)]</field><field name="context">{'active_test': False, 'sc_runtime_user_management': True, 'create': False, 'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
     </record>
     <record id="view_sc_product_system_settings_form_v1" model="ir.ui.view">

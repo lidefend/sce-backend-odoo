@@ -469,6 +469,22 @@
       "frontend_policy": "contract_renderer_only"
     },
     {
+      "spec": "product_data_permission_surface",
+      "risk_family": "permission model bypass and configuration overlap",
+      "business_object": "data_permission_assignment",
+      "fact_source_model": ["res.users"],
+      "allowed_support_models": ["res.groups", "res.company", "sc.project.member.assignment"],
+      "projection_models": [],
+      "boundary_rule": "Data permission configuration reuses user identity, assignable capability groups and project membership authorities through the guarded runtime-user context.",
+      "forbidden_drift": "Do not model permissions as UI contracts, expose raw ACL or record-rule editing, bypass capability groups, or allow privileged-user targets.",
+      "decision": "Bind the product entry to a dedicated res.users permission surface with company, role and project scopes only.",
+      "formal_product_layer": "P1", "layer_target": "L2_industry_standard", "module": "smart_construction_core", "standard_vs_user_specific": "construction_industry_standard", "separation_policy": "existing_authority_guarded_surface",
+      "entry_bindings": [{"intent": "data_permission_assignment", "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1", "action_xmlid": "smart_construction_core.action_sc_product_data_permission_v1", "fact_model": "res.users", "view_contract_xmlid": "smart_construction_core.business_config_contract_data_permission_form_v1"}],
+      "conservation_invariants": ["identity_remains_res_users", "roles_are_limited_to_assignable_capability_groups", "project_scope_remains_project_membership", "privileged_users_are_excluded", "frontend_does_not_edit_acl_or_record_rules"],
+      "authority_carriers": ["addons/smart_construction_core/models/support/runtime_user_management.py", "addons/smart_construction_core/views/support/runtime_user_management_views.xml", "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml", "addons/smart_construction_core/data/data_permission_contract.xml"],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "projection_refresh_ownership",
       "risk_family": "projection and management visibility",
       "business_object": "projection",

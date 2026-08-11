@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T16:47:08.960975+00:00`
+- generated_at: `2026-08-11T17:39:32.454829+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -107,7 +107,7 @@
       - 工作流实例 [`dev_governance`] -> `sc.workflow.instance`
       - 工作流日志 [`dev_governance`] -> `sc.workflow.log`
       - 工作项 [`dev_governance`] -> `sc.workflow.workitem`
-    - 数据权限 [`formal_product`] -> `ui.business.config.contract`
+    - 数据权限 [`formal_product`] -> `res.users`
     - 流程审批配置 [`system_config`] -> `sc.approval.policy`
     - 系统参数 [`system_config`] -> `sc.product.system.settings`
     - 编码规则 [`system_config`] -> `ui.business.config.contract`

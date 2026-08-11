@@ -197,7 +197,7 @@
 
 - 表单配置 -> `ui.business.config.contract`
 - 字段管理 -> `ui.form.field.policy`
-- 数据权限 -> `ui.business.config.contract`
+- 数据权限 -> `res.users`
 
 ## 系统配置边界
 

@@ -82,9 +82,15 @@ def _xml_record_definitions() -> dict[str, list[ET.Element]]:
 
 def _detected_models() -> set[str]:
     result: set[str] = set()
-    pattern = re.compile(r"^\s*_name\s*=\s*['\"]([^'\"]+)['\"]", re.MULTILINE)
+    name_pattern = re.compile(r"^\s*_name\s*=\s*['\"]([^'\"]+)['\"]", re.MULTILINE)
+    inherit_pattern = re.compile(r"^\s*_inherit\s*=\s*['\"]([^'\"]+)['\"]", re.MULTILINE)
     for path in MODULE.rglob("*.py"):
-        result.update(pattern.findall(path.read_text(encoding="utf-8")))
+        source = path.read_text(encoding="utf-8")
+        result.update(name_pattern.findall(source))
+        # A product-owned extension of a native Odoo model is an implemented
+        # authority carrier too. List-style mixin inheritance is intentionally
+        # excluded because it does not identify the extended model.
+        result.update(inherit_pattern.findall(source))
     return result
 
 
