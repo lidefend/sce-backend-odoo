@@ -3575,3 +3575,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   actionless and childless, so it remains invisible until real capabilities
   arrive. A candidate guard enforces load order and the locked baseline before
   controlled module upgrade and browser evidence.
+
+## 2026-08-11 — P1-PRODUCT-CENTER-BASELINE-HANDOFF-CLOSEOUT
+
+- Branch / anchor: `feature/product-center-baseline-v1-closeout` from
+  `26ab132`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native navigation /
+  `smart_construction_core`; generic delivery assembly remains in `smart_core`.
+- Reason / Why Here: the locked construction-product centers, released menu
+  actions, ACL-visible native tree and product configuration entry are standard
+  industry defaults. This handoff closes the existing task branch without
+  adding page-specific frontend navigation logic.
+- Why Not Elsewhere: P0 owns only the generic navigation contract and delivery
+  mechanism; customer naming and stable customer differences remain P2;
+  administrator runtime adjustments remain P3; verification scripts are P4
+  evidence rather than runtime authority.
+- Blast Radius / validation: ten canonical primary-center identities and order,
+  51 delivered menu leaves, product/low-code boundary guards and customer-field
+  extraction guards. `verify.product.menu.release.ready` passed against the
+  isolated `sc_product_center` database; `wutao` browser acceptance passed at
+  1440x900 and 390x844 with native navigation authority and zero console/page
+  errors. Generated inventory and complexity reports were refreshed before PR
+  publication.

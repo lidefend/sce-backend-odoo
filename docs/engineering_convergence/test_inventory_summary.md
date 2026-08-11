@@ -4,22 +4,22 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1103`
+- Total assets: `1144`
 - Review queue: `4`
 - Unknown runtime: `3`
-- Long-running assets: `159`
+- Long-running assets: `161`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `719`
+- PR dedupe candidates: `758`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 421 |
-| contract | 314 |
-| unit | 179 |
-| odoo_integration | 91 |
+| governance | 441 |
+| contract | 319 |
+| unit | 193 |
+| odoo_integration | 93 |
 | e2e | 44 |
 | security | 26 |
 | frontend_acceptance | 24 |
@@ -30,8 +30,8 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 938 |
-| integration_candidate | 114 |
+| pr_candidate | 977 |
+| integration_candidate | 116 |
 | release_candidate | 42 |
 | manual_review | 4 |
 | release_required | 2 |
@@ -43,9 +43,9 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 719 |
+| deduplicate_before_required | 758 |
 | covered_by_aggregate | 220 |
-| keep_integration_or_release_only | 113 |
+| keep_integration_or_release_only | 115 |
 | keep_release_only | 42 |
 | canonical_entry | 5 |
 | review_or_archive | 4 |
@@ -142,8 +142,8 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 940 |
-| 10-30m | 115 |
+| <5m | 979 |
+| 10-30m | 117 |
 | 30-60m | 44 |
 | unknown | 3 |
 | 10-15m | 1 |
@@ -152,10 +152,10 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 421 |
-| platform owner | 314 |
-| test owner | 180 |
-| backend owner | 91 |
+| architecture owner | 441 |
+| platform owner | 319 |
+| test owner | 194 |
+| backend owner | 93 |
 | qa owner | 44 |
 | security owner | 26 |
 | frontend owner | 25 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 979 |
+| scripts/verify | 1020 |
 | scripts/ops | 63 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 12 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-188 | contract | `scripts/verify/company_contractor_responsibility_context_audit.py` | platform owner |
 | T-ASSET-193 | governance | `scripts/verify/complexity_guard.py` | architecture owner |
 | T-ASSET-194 | contract | `scripts/verify/construction_contract_history_value_gap_probe.py` | platform owner |
-| ... | ... | 639 more | ... |
+| ... | ... | 678 more | ... |
 
 ## Dedupe Hotspots
 
@@ -300,7 +300,9 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/intent_smoke_utils` | 2 |
 | `scripts/verify/material_business_category` | 2 |
 | `scripts/verify/material_settlement_payment` | 2 |
+| `scripts/verify/product_primary_center` | 2 |
 | `scripts/verify/test_formal_product` | 2 |
+| `scripts/verify/test_product_primary` | 2 |
 | `scripts/verify/test_scene_company` | 2 |
 | `scripts/verify/test_um_p3` | 2 |
 | `scripts/verify/ui_contract_v2` | 2 |
@@ -310,8 +312,6 @@ Generated from `test_inventory.csv`.
 | `frontend/apps/web/scripts/frontend_product_baseline` | 1 |
 | `frontend/apps/web/scripts/frontend_product_maturity` | 1 |
 | `frontend/apps/web/scripts/frontend_role_journey` | 1 |
-| `frontend/apps/web/scripts/handling_entry_catalog` | 1 |
-| `frontend/apps/web/scripts/list_selection_contract` | 1 |
 
 ## Residual Dedupe Hotspot Disposition
 
@@ -335,7 +335,9 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/intent_smoke_utils` | 2 | platform owner | helper debt, no aggregate gate | Retain as helper debt; utility modules are consumed by multiple smokes and should not be marked covered by one gate. |
 | `scripts/verify/material_business_category` | 2 | architecture owner | owner-reviewed PR candidates | Retain as explicit PR candidates; action and binding audits are only wrapped by separate ops scripts. |
 | `scripts/verify/material_settlement_payment` | 2 | architecture owner | owner-reviewed PR candidates | Retain as explicit PR candidates; approval policy and reversal audits are not covered by the traceability aggregate. |
+| `scripts/verify/product_primary_center` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_formal_product` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/test_product_primary` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_scene_company` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_um_p3` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/ui_contract_v2` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
