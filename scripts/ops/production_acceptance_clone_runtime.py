@@ -19,8 +19,11 @@ RESTORE_ID = re.compile(r"^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 IMAGE = re.compile(r"^sha256:[0-9a-f]{64}$")
 MODULE = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
+RELEASE_VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
 CONFIRMATION = "ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE"
 PUBLIC_CONFIRMATION = "PUBLISH_ISOLATED_ACCEPTANCE_FRONTEND_TO_APPROVED_PORT"
+PLATFORM_SNAPSHOT_CONFIRMATION = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION"
+PLATFORM_PRODUCT_KEY = "construction.standard"
 MODULE_SET_PATH = Path(__file__).resolve().parents[2] / "config/tenant/module_sets.v1.json"
 
 
@@ -158,6 +161,70 @@ def odoo_container_args(
         "-c",
         "/etc/odoo/odoo.conf",
     ]
+
+
+def image_release_version(image: str) -> str:
+    version = run(
+        [
+            "docker",
+            "image",
+            "inspect",
+            image,
+            "--format",
+            '{{index .Config.Labels "org.opencontainers.image.version"}}',
+        ]
+    )
+    if not RELEASE_VERSION.fullmatch(version):
+        raise CloneRuntimeError("immutable image release version is unavailable")
+    return version
+
+
+def platform_snapshot_container_args(
+    *,
+    name: str,
+    network: str,
+    filestore: str,
+    tenant_root: Path,
+    config: Path,
+    image: str,
+    database: str,
+    version: str,
+) -> list[str]:
+    if not RELEASE_VERSION.fullmatch(version):
+        raise CloneRuntimeError("invalid platform snapshot release version")
+    args = odoo_container_args(
+        name=name,
+        network=network,
+        filestore=filestore,
+        tenant_root=tenant_root,
+        config=config,
+        image=image,
+    )
+    args.insert(2, "--rm")
+    entrypoint_index = args.index("--entrypoint")
+    args[entrypoint_index + 1] = "/bin/sh"
+    image_index = args.index(image)
+    args[image_index:image_index] = [
+        "-e",
+        f"SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY={PLATFORM_SNAPSHOT_CONFIRMATION}",
+        "-e",
+        f"PLATFORM_RELEASE_DB={database}",
+        "-e",
+        f"PLATFORM_RELEASE_PRODUCT_KEY={PLATFORM_PRODUCT_KEY}",
+        "-e",
+        f"PLATFORM_RELEASE_VERSION={version}",
+    ]
+    image_index = args.index(image)
+    del args[image_index + 1 :]
+    args.extend(
+        [
+            "-eu",
+            "-c",
+            "odoo shell -c /etc/odoo/odoo.conf -d \"$PLATFORM_RELEASE_DB\" --no-http "
+            "< /usr/local/share/sce/initialize_colocated_platform_snapshot.py",
+        ]
+    )
+    return args
 
 
 def url_ready(url: str, expected: str = "") -> bool:
@@ -470,6 +537,19 @@ def activate(
             ",".join(modules),
         ]
     )
+    release_version = image_release_version(image)
+    run(
+        platform_snapshot_container_args(
+            name=f"{restore_id}_acceptance_snapshot",
+            network=str(network),
+            filestore=str(filestore),
+            tenant_root=tenant_root,
+            config=config,
+            image=image,
+            database=database,
+            version=release_version,
+        )
+    )
     after = database_snapshot(str(db_container), database)
     if after != before:
         raise CloneRuntimeError("acceptance upgrade changed protected business-data counts")
@@ -537,6 +617,9 @@ def activate(
         "protected_counts_before": before,
         "protected_counts_after": after,
         "pending_modules": 0,
+        "platform_release_product_key": PLATFORM_PRODUCT_KEY,
+        "platform_release_version": release_version,
+        "platform_snapshot_refreshed": True,
         "http_health": 200,
         "external_egress": False,
         "replaced_existing_runtime": replaced,
