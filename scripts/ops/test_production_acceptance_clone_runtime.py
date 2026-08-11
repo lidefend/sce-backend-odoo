@@ -89,6 +89,31 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         self.assertIn('f"{filestore}:/var/lib/odoo/filestore"', source)
         self.assertIn('"data_dir = /var/lib/odoo\\n"', source)
 
+    def test_platform_snapshot_refresh_uses_locked_policy_and_image_version(self) -> None:
+        command = RUNTIME.platform_snapshot_container_args(
+            name="sc_restore_20260808t102000z_4d7e91a2_acceptance_snapshot",
+            network="sc_restore_20260808t102000z_4d7e91a2_internal",
+            filestore="sc_restore_20260808t102000z_4d7e91a2_filestore",
+            tenant_root=Path("/opt/sce/tenant-addons/acceptance/" + "1" * 40),
+            config=Path("/tmp/acceptance/odoo.conf"),
+            image="sha256:" + "2" * 64,
+            database="r10e_sc_restore_20260808t102000z_4d7e91a2",
+            version="1.0.0-rc.17",
+        )
+        self.assertEqual(command[2], "--rm")
+        self.assertIn(
+            "PLATFORM_RELEASE_PRODUCT_KEY=construction.standard",
+            command,
+        )
+        self.assertIn("PLATFORM_RELEASE_VERSION=1.0.0-rc.17", command)
+        self.assertIn("PLATFORM_RELEASE_DB=r10e_sc_restore_20260808t102000z_4d7e91a2", command)
+        self.assertIn("initialize_colocated_platform_snapshot.py", command[-1])
+
+    def test_platform_snapshot_version_comes_from_immutable_image_label(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="1.0.0-rc.17") as runner:
+            self.assertEqual(RUNTIME.image_release_version("sha256:" + "2" * 64), "1.0.0-rc.17")
+        self.assertIn("org.opencontainers.image.version", runner.call_args.args[0][-1])
+
     def test_retry_removes_stopped_upgrade_from_exact_isolated_network(self) -> None:
         network = "sc_restore_20260808t102000z_4d7e91a2_internal"
         with mock.patch.object(
