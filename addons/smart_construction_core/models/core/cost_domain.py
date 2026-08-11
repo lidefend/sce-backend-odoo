@@ -430,6 +430,7 @@ class ProjectCostLedger(models.Model):
             "sc.material.settlement": _("材料结算成本"),
             "sc.labor.settlement": _("劳务结算成本"),
             "sc.equipment.settlement": _("机械结算成本"),
+            "sc.equipment.usage": _("机械台班成本"),
             "sc.subcontract.settlement": _("分包结算成本"),
         }
         for rec in self:

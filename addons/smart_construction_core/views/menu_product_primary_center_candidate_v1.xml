@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Final P1 primary-center candidate overlay. Runtime remains pending until controlled upgrade. -->
+    <!-- Final P1 primary-center runtime overlay. Product policy is the selection authority. -->
     <data>
         <record id="menu_sc_workspace_center" model="ir.ui.menu"><field name="name">工作台</field><field name="sequence">10</field><field name="active">True</field></record>
         <record id="menu_sc_project_center" model="ir.ui.menu"><field name="name">项目中心</field><field name="sequence">20</field><field name="active">True</field></record>
@@ -14,7 +14,7 @@
             <field name="sequence">70</field>
             <field name="action" eval="False"/>
             <field name="active">True</field>
-            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_accounting_read')])]"/>
         </record>
         <record id="menu_sc_data_center" model="ir.ui.menu"><field name="name">报表中心</field><field name="sequence">80</field><field name="active">True</field></record>
         <record id="menu_sc_hr_admin_center" model="ir.ui.menu"><field name="name">行政中心</field><field name="sequence">90</field><field name="active">True</field></record>

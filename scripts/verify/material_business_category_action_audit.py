@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TARGETS = [
     ROOT / "addons" / "smart_construction_core" / "views" / "core" / "material_plan_views.xml",
     ROOT / "addons" / "smart_construction_core" / "views" / "core" / "material_acceptance_views.xml",
+    ROOT / "addons" / "smart_construction_core" / "views" / "core" / "material_supplier_return_views.xml",
 ]
 
 
@@ -65,6 +66,13 @@ CATEGORY_ACTIONS = {
         "action": "action_sc_material_return",
         "context": {"default_outbound_type": "return", "default_business_category_code": "material.return"},
         "domain_tokens": ["business_category_id.code", "material.return", "outbound_type", "return"],
+    },
+    "material.supplier_return": {
+        "label": "材料退货",
+        "model": "sc.material.supplier.return",
+        "action": "action_sc_material_supplier_return",
+        "context": {},
+        "domain_tokens": [],
     },
     "material.transfer": {
         "label": "材料调拨",

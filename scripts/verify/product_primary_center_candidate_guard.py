@@ -53,7 +53,7 @@ def validate() -> list[str]:
         data = _fields(accounting)
         action = next((field for field in accounting.findall("field") if field.attrib.get("name") == "action"), None)
         if action is None or action.attrib.get("eval") != "False" or data.get("action"):
-            errors.append("accounting center must remain actionless until a real capability is released")
+            errors.append("accounting center must remain an actionless directory for released Odoo accounting capabilities")
     internal = records.get("menu_sc_config_center")
     if internal is None or (_fields(internal).get("name"), _fields(internal).get("sequence")) != ("系统管理（内部）", "990"):
         errors.append("system management must remain an explicitly internal non-primary entry")
@@ -67,4 +67,4 @@ if __name__ == "__main__":
     if failures:
         print("\n".join(f"[FAIL] {item}" for item in failures))
         sys.exit(1)
-    print("[PASS] source candidate locks ten primary centers and keeps accounting capability-empty")
+    print("[PASS] source overlay locks ten runtime centers and keeps accounting as a governed directory")

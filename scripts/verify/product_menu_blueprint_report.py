@@ -304,7 +304,7 @@ def main() -> int:
     else:
         lines.append("- 当前无待复核菜单。")
     if int(active_layer_counts.get("user_config", 0)) == 0:
-        lines.append("- 当前无独立用户配置入口；低代码和产品配置仍归入系统配置边界。")
+        lines.append("- 当前无独立用户配置入口；产品配置中心属于正式产品，受保护的低代码与管理子项仍归入系统配置边界。")
     for center in centers:
         metrics = _center_metrics(rows, center)
         if metrics["active_history"] or metrics["active_system"]:

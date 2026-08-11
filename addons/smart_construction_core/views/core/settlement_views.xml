@@ -15,7 +15,10 @@
                     <field name="settlement_type" invisible="1"/>
                     <field name="settlement_stage_id"/>
                     <field name="project_id"/>
-                    <field name="contract_id"/>
+                    <field name="contract_source_kind"/>
+                    <field name="contract_id" optional="show"/>
+                    <field name="general_contract_id" optional="show"/>
+                    <field name="source_contract_name" optional="hide"/>
                     <field name="partner_id"/>
                     <field name="amount_total" sum="金额合计"/>
                     <field name="amount_paid" sum="已付款金额合计"/>
@@ -37,6 +40,8 @@
                     <field name="project_id"/>
                     <field name="operation_strategy"/>
                     <field name="contract_id"/>
+                    <field name="general_contract_id"/>
+                    <field name="source_contract_name"/>
                     <field name="partner_id"/>
                     <field name="settlement_category_id" string="结算分类"/>
                     <field name="settlement_category_display" string="结算分类"/>
@@ -57,6 +62,7 @@
                     <filter name="operation_direct" string="公司直营" domain="[('operation_strategy', '=', 'direct')]"/>
                     <filter name="operation_joint" string="联营项目" domain="[('operation_strategy', '=', 'joint')]"/>
                     <filter name="with_contract" string="有关联合同" domain="[('contract_id', '!=', False)]"/>
+                    <filter name="general_contract_source" string="日常合同结算" domain="[('contract_source_kind', '=', 'general_contract')]"/>
                     <filter name="stage_final" string="结算定案" domain="[('settlement_stage_id.code', '=', 'final')]"/>
                     <group expand="0" string="分组">
                         <filter name="group_project" string="按项目" context="{'group_by': 'project_id'}"/>
@@ -115,8 +121,16 @@
                                 <group>
                                     <field name="project_id" options="{'no_create': True}" required="1"/>
                                     <field name="operation_strategy" readonly="1"/>
+                                    <field name="contract_source_kind" readonly="1"/>
                                     <field name="contract_id"
-                                           domain="[('project_id','=',project_id),('company_id','=',company_id)]"/>
+                                           domain="[('project_id','=',project_id),('company_id','=',company_id)]"
+                                           invisible="contract_source_kind == 'general_contract'"/>
+                                    <field name="general_contract_id"
+                                           domain="[('company_id','=',company_id),'|',('project_id','=',False),('project_id','=',project_id)]"
+                                           options="{'no_create': True}"
+                                           invisible="contract_source_kind != 'general_contract'"/>
+                                    <field name="source_contract_name" readonly="1"/>
+                                    <field name="source_contract_no" readonly="1"/>
                                     <field name="partner_id" options="{'no_create_edit': True}" required="1"/>
                                     <field name="settlement_unit_id" options="{'no_create_edit': True}" invisible="1"/>
                                     <field name="company_id" readonly="1"/>
@@ -156,11 +170,15 @@
                                    class="text-danger"
                                    modifiers="{'invisible': [['amount_payable','&gt;=',0.0]]}"/>
                                 </group>
-                                <field name="line_ids" context="{'default_contract_id': contract_id}">
+                                <field name="line_ids" context="{'default_contract_id': contract_id, 'default_general_contract_id': general_contract_id}">
                                     <tree editable="bottom">
                                         <field name="contract_id"
                                                domain="[('project_id','=',parent.project_id),('company_id','=',parent.company_id)]"
-                                               options="{'no_create': True}"/>
+                                               options="{'no_create': True}"
+                                               invisible="parent.contract_source_kind == 'general_contract'"/>
+                                        <field name="general_contract_id"
+                                               options="{'no_create': True}"
+                                               invisible="parent.contract_source_kind != 'general_contract'"/>
                                         <field name="name"/>
                                         <field name="qty"/>
                                         <field name="price_unit"/>
@@ -171,7 +189,11 @@
                                         <group>
                                             <field name="contract_id"
                                                    domain="[('project_id','=',parent.project_id),('company_id','=',parent.company_id)]"
-                                                   options="{'no_create': True}"/>
+                                                   options="{'no_create': True}"
+                                                   invisible="parent.contract_source_kind == 'general_contract'"/>
+                                            <field name="general_contract_id"
+                                                   options="{'no_create': True}"
+                                                   invisible="parent.contract_source_kind != 'general_contract'"/>
                                             <field name="name"/>
                                             <field name="qty"/>
                                             <field name="price_unit"/>

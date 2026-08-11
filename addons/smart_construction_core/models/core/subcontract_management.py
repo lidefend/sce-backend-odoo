@@ -351,12 +351,15 @@ class ScSubcontractRequestLine(models.Model):
 
 class ScSubcontractRegister(models.Model):
     _name = "sc.subcontract.register"
-    _description = "分包登记"
+    _description = "分包成本登记"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "register_date desc, id desc"
 
     name = fields.Char(string="登记单号", required=True, default="新建", tracking=True)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True, tracking=True)
+    company_id = fields.Many2one(
+        related="project_id.company_id", store=True, readonly=True, string="所属公司"
+    )
     request_id = fields.Many2one("sc.subcontract.request", string="来源分包申请", index=True)
     contract_id = fields.Many2one("construction.contract", string="分包合同", index=True)
     register_date = fields.Date(string="登记日期", required=True, default=fields.Date.context_today, index=True)
@@ -414,6 +417,14 @@ class ScSubcontractRegister(models.Model):
     line_ids = fields.One2many("sc.subcontract.register.line", "register_id", string="登记明细")
     management_note = fields.Text(string="管理要求")
     note = fields.Text(string="备注")
+    attachment_ids = fields.Many2many(
+        "ir.attachment",
+        "sc_subcontract_register_attachment_rel",
+        "register_id",
+        "attachment_id",
+        string="附件",
+    )
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
@@ -655,6 +666,7 @@ class ScSubcontractRegister(models.Model):
                 )
 
     def action_register(self):
+        self._check_project_manager()
         for record in self:
             if record.state != "draft":
                 raise UserError(_("只有草稿状态的分包登记可以确认登记。"))
@@ -668,6 +680,7 @@ class ScSubcontractRegister(models.Model):
         return True
 
     def action_close(self):
+        self._check_project_manager()
         for record in self:
             if record.state != "active":
                 raise UserError(_("只有已登记状态的分包登记可以关闭。"))
@@ -680,15 +693,59 @@ class ScSubcontractRegister(models.Model):
         for record in self:
             if record.state not in ("draft", "active"):
                 raise UserError(_("只有草稿或已登记状态的分包登记可以取消。"))
+            if record.state == "active":
+                record._check_project_manager()
+            else:
+                record._check_project_operator()
         self.write({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
+        self._check_project_manager()
         for record in self:
             if record.state != "cancel":
                 raise UserError(_("只有已取消状态的分包登记可以重置为草稿。"))
         self.write({"state": "draft"})
         return True
+
+    def _check_project_operator(self):
+        if self.env.su or self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_project_user"
+        ) or self.env.user.has_group("smart_construction_core.group_sc_super_admin"):
+            return
+        raise UserError(_("你没有权限办理分包成本登记。"))
+
+    def _check_project_manager(self):
+        if self.env.su or self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_project_manager"
+        ) or self.env.user.has_group("smart_construction_core.group_sc_super_admin"):
+            return
+        raise UserError(_("只有项目审批人员可以确认分包成本登记。"))
+
+    @api.depends(
+        "request_id",
+        "contract_id",
+        "start_date",
+        "end_date",
+        "management_note",
+        "attachment_ids",
+    )
+    def _compute_processing_advisory(self):
+        for record in self:
+            suggestions = []
+            if not record.request_id:
+                suggestions.append("建议关联来源分包申请")
+            if not record.contract_id:
+                suggestions.append("建议关联分包合同")
+            if not record.start_date or not record.end_date:
+                suggestions.append("建议补充履约期间")
+            if not record.management_note:
+                suggestions.append("建议补充管理要求")
+            if not record.attachment_ids:
+                suggestions.append("建议上传分包成本依据")
+            record.processing_advisory = (
+                "；".join(suggestions) if suggestions else "当前分包成本资料已完善"
+            )
 
     def _check_business_anchor(self):
         for record in self:
@@ -718,7 +775,7 @@ class ScSubcontractRegister(models.Model):
 
 class ScSubcontractRegisterLine(models.Model):
     _name = "sc.subcontract.register.line"
-    _description = "分包登记明细"
+    _description = "分包成本登记明细"
     _order = "register_id, sequence, id"
 
     register_id = fields.Many2one("sc.subcontract.register", string="登记单", required=True, ondelete="cascade", index=True)

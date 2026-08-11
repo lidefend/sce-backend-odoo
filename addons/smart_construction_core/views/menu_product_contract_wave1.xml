@@ -37,9 +37,9 @@
         <menuitem id="menu_sc_p1_contract_change"
                   name="合同变更"
                   parent="smart_construction_core.menu_sc_contract_center"
-                  action="smart_construction_core.action_sc_settlement_adjustment"
+                  action="smart_construction_core.action_sc_contract_change"
                   sequence="25"
-                  groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_settlement_read,smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_cost_read,smart_construction_core.group_sc_cap_finance_read"/>
+                  groups="smart_construction_core.group_sc_cap_contract_read"/>
         <menuitem id="menu_sc_p1_daily_contract"
                   name="日常合同"
                   parent="smart_construction_core.menu_sc_contract_center"

@@ -25,8 +25,8 @@ EXPECTED_CENTERS = (
     ("product_configuration", 100, "产品配置"),
 )
 EXPECTED_RUNTIME_CENTERS = (
-    "工作台", "项目中心", "合同中心", "成本中心", "物资与分包",
-    "施工管理", "财务中心", "税务中心", "报表中心", "组织行政",
+    "工作台", "项目中心", "合同中心", "成本中心", "财务中心",
+    "税务中心", "会计账务中心", "报表中心", "行政中心", "产品配置",
 )
 EXPECTED_TRANSITIONS = {
     ("物资与分包", "项目中心"),
@@ -80,18 +80,18 @@ def validate(baseline: dict, release_manifest: dict) -> list[str]:
     expected_ref = {
         "ref": "config/product_primary_center_baseline_v1.json",
         "status": "LOCKED",
-        "runtime_alignment_status": "MIGRATION_PENDING",
-        "current_runtime_semantics": "AS_BUILT_RELEASE_SNAPSHOT",
+        "runtime_alignment_status": "ALIGNED",
+        "current_runtime_semantics": "LOCKED_TARGET_RUNTIME",
     }
     if target_ref != expected_ref:
-        errors.append("release manifest must explicitly link the locked target as MIGRATION_PENDING")
+        errors.append("release manifest must explicitly link the locked target as ALIGNED")
 
     if baseline.get("menu_contract") != {
         "ref": "config/product_menu_contract_v1.json",
         "status": "LOCKED",
-        "runtime_alignment_status": "MIGRATION_PENDING",
+        "runtime_alignment_status": "ALIGNED",
     }:
-        errors.append("primary-center baseline must link the locked full menu contract as MIGRATION_PENDING")
+        errors.append("primary-center baseline must link the locked full menu contract as ALIGNED")
 
     transitions = baseline.get("legacy_center_transitions", [])
     transition_pairs = {(item.get("source"), item.get("target")) for item in transitions}
@@ -105,8 +105,8 @@ def validate(baseline: dict, release_manifest: dict) -> list[str]:
         {"name": "系统管理", "classification": "INTERNAL_GOVERNANCE"}
     ]:
         errors.append("系统管理 must remain a non-primary internal-governance center")
-    if baseline.get("runtime_migration_status") not in {"NOT_STARTED", "IN_PROGRESS", "ALIGNED"}:
-        errors.append("runtime_migration_status has an unsupported value")
+    if baseline.get("runtime_migration_status") != "ALIGNED":
+        errors.append("runtime_migration_status must remain ALIGNED after ten-center promotion")
     return errors
 
 
@@ -120,7 +120,7 @@ def main() -> int:
         for error in errors:
             print(f"[FAIL] {error}")
         return 1
-    print("[PASS] locked product primary-center baseline and as-built release snapshot are consistent")
+    print("[PASS] locked product primary-center baseline and aligned runtime snapshot are consistent")
     return 0
 
 

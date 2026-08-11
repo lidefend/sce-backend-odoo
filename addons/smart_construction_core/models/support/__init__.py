@@ -21,6 +21,10 @@ from . import wbs_plan
 from . import work_breakdown
 from . import execution_breakdown
 from . import tender
+from . import tender_product
+from . import quality_acceptance
+from . import labor_product
+from . import variation_change
 from . import res_config_settings
 from . import tier_definition_ext
 from . import sc_workflow
@@ -48,5 +52,13 @@ from . import partner_business_fact_line
 from . import runtime_user_management
 from . import formal_user_management
 from . import product_policy_sync
+from . import product_system_settings
+from . import product_numbering_rule
+from . import product_job
+from . import office_asset
+from . import mail_notification_product
 from . import project_capability_roadmap
 from . import formal_list_contract_sync
+from . import team_loan_deduction_workspace
+from . import current_account_workspace
+from . import company_project_refund_workspace

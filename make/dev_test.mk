@@ -1398,7 +1398,7 @@ verify.product.delivery.scoreboard.final_closeout.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_delivery_scoreboard_final_closeout_guard.py
 	@python3 scripts/verify/product_delivery_scoreboard_final_closeout_guard.py
 
-.PHONY: verify.product.primary_center.baseline.guard verify.product.primary_center.candidate.guard verify.product.menu.contract_v1.guard verify.product.contract_center.wave1.guard verify.product.cost_center.wave1.guard verify.product.finance_center.wave1.guard verify.product.tax_center.wave1.guard verify.product.reporting_center.wave1.guard verify.product.administration_center.wave1.guard verify.product.configuration_center.wave1.guard verify.product.project_center.wave1.guard verify.product.workbench.wave1.guard verify.product.menu.runtime_closeout.guard verify.product.menu.release_manifest_v2.guard verify.product.menu.release.ready
+.PHONY: verify.product.primary_center.baseline.guard verify.product.primary_center.candidate.guard verify.product.menu.contract_v1.guard verify.product.business_entry.ownership.guard verify.product.contract_center.wave1.guard verify.product.cost_center.wave1.guard verify.product.finance_center.wave1.guard verify.product.tax_center.wave1.guard verify.product.reporting_center.wave1.guard verify.product.administration_center.wave1.guard verify.product.configuration_center.wave1.guard verify.product.project_center.wave1.guard verify.product.workbench.wave1.guard verify.product.menu.runtime_closeout.guard verify.product.menu.release_manifest_v2.guard verify.product.menu.release.ready
 verify.product.primary_center.baseline.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_primary_center_baseline_guard.py scripts/verify/test_product_primary_center_baseline_guard.py
 	@python3 -m unittest scripts.verify.test_product_primary_center_baseline_guard
@@ -1413,6 +1413,11 @@ verify.product.menu.contract_v1.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_menu_contract_v1_guard.py scripts/verify/test_product_menu_contract_v1_guard.py
 	@python3 -m unittest scripts.verify.test_product_menu_contract_v1_guard
 	@python3 scripts/verify/product_menu_contract_v1_guard.py
+
+verify.product.business_entry.ownership.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/business_entry_ownership_guard.py scripts/verify/test_business_entry_ownership_guard.py
+	@python3 -m unittest scripts.verify.test_business_entry_ownership_guard
+	@python3 scripts/verify/business_entry_ownership_guard.py
 
 verify.product.contract_center.wave1.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_contract_center_wave1_guard.py scripts/verify/test_product_contract_center_wave1_guard.py
@@ -1465,13 +1470,16 @@ verify.product.menu.runtime_closeout.guard: guard.prod.forbid
 	@python3 scripts/verify/product_menu_runtime_closeout_guard.py
 
 verify.product.menu.release_manifest_v2.guard: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/product_menu_release_manifest_v2_guard.py
+	@python3 -m py_compile scripts/verify/product_menu_release_manifest_v2_guard.py scripts/ops/promote_product_ten_center_policy.py scripts/ops/test_promote_product_ten_center_policy.py
+	@python3 -m unittest scripts.ops.test_promote_product_ten_center_policy
+	@python3 scripts/ops/promote_product_ten_center_policy.py
 	@python3 scripts/verify/product_menu_release_manifest_v2_guard.py
 
 verify.product.menu.release.ready: guard.prod.forbid \
 	verify.product.primary_center.baseline.guard \
 	verify.product.primary_center.candidate.guard \
 	verify.product.menu.contract_v1.guard \
+	verify.product.business_entry.ownership.guard \
 	verify.product.contract_center.wave1.guard \
 	verify.product.cost_center.wave1.guard \
 	verify.product.finance_center.wave1.guard \
@@ -1816,6 +1824,7 @@ verify.product.sla.baseline: guard.prod.forbid verify.platform.performance.smoke
 	@echo "[OK] verify.product.sla.baseline done"
 
 verify.product.release.ready: guard.prod.forbid \
+	verify.backend.contract_lifecycle.authority \
 	verify.frontend.product.ready \
 	verify.docs.product_boundary \
 	verify.industry_module.product_boundary \
@@ -1830,6 +1839,24 @@ verify.product.release.ready: guard.prod.forbid \
 	verify.ui.product.stability \
 	verify.product.sla.baseline
 	@echo "[OK] verify.product.release.ready done"
+
+.PHONY: verify.backend.contract_lifecycle.authority
+verify.backend.contract_lifecycle.authority: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_lifecycle.py \
+		addons/smart_core/core/unified_page_contract_v2_assembler.py \
+		addons/smart_core/handlers/ui_contract_v2.py \
+		addons/smart_core/model/ui_business_config_contract.py \
+		scripts/verify/backend_contract_lifecycle_authority_guard.py
+	@python3 addons/smart_core/tests/test_contract_lifecycle.py
+	@python3 addons/smart_core/tests/test_backend_contract_boundary_guard.py
+	@python3 scripts/verify/backend_contract_lifecycle_authority_guard.py
+
+.PHONY: verify.backend.contract_lifecycle.runtime
+verify.backend.contract_lifecycle.runtime: guard.prod.forbid check-compose-project check-compose-env
+	@mkdir -p artifacts/backend
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_lifecycle_runtime_probe.py
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/backend_contract_lifecycle_runtime_probe.json artifacts/backend/backend_contract_lifecycle_runtime_probe.json >/dev/null
 
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env

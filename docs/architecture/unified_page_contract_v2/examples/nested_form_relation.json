@@ -7,7 +7,7 @@
     "viewType": "form",
     "layoutType": "combine",
     "renderMode": "governed",
-    "contractVersion": "2.1.0",
+    "contractVersion": "2.2.0",
     "clientType": "web_pc"
   },
   "layoutContract": {
@@ -201,6 +201,39 @@
     "snapshotId": "snapshot.project.contracting.001",
     "traceId": "trace.project.contracting.001",
     "requestId": "request.project.contracting.001",
-    "sourceType": "ui.contract"
+    "sourceType": "ui.contract",
+    "lifecycle": {
+      "lifecycleVersion": "1.0.0",
+      "stage": "runtime_delivery",
+      "definition": {
+        "schemaId": "smart_core.unified_page_contract_v2",
+        "schemaVersion": "2.2.0",
+        "schemaSha256": "b4a2614f4aa0f5ad052b6fc0f1351fb74cf511825c5fdee3036afdb0122ee419",
+        "contractVersion": "2.2.0",
+        "normativeStatus": "stable"
+      },
+      "generation": {
+        "generator": "documentation.example",
+        "generatorVersion": "2.2.0",
+        "sourceType": "ui.contract",
+        "sourceSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "runtime": {
+        "requestId": "request.project.contracting.001",
+        "traceId": "trace.project.contracting.001",
+        "clientType": "web_pc",
+        "traceSource": "request_context"
+      },
+      "integrity": {
+        "algorithm": "sha256",
+        "contractSha256": "aabc13d5ebdb03a3429b2908c357fe02f5118bb3c8c25f3e06bd5969a4606219"
+      },
+      "authority": {
+        "kind": "documentation_example",
+        "projection_only": true,
+        "no_business_fact_authority": true,
+        "runtime_carrier": "unified_page_contract_v2"
+      }
+    }
   }
 }

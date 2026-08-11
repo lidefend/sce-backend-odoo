@@ -14,12 +14,15 @@ from . import cost_plan
 from . import material_plan
 from . import material_catalog
 from . import material_acceptance
+from . import material_supplier_return
 from . import material_rental
 from . import labor_management
+from . import labor_product_extension
 from . import equipment_management
 from . import subcontract_management
 from . import settlement_order
 from . import settlement_adjustment
+from . import variation_change_extension
 from . import settlement
 from . import funding_baseline
 from . import fund_account
@@ -39,6 +42,7 @@ from . import payment_execution
 from . import invoice_registration
 from . import tax_deduction_registration
 from . import tax_certificate_registration
+from . import tax_filing
 from . import financing_loan
 from . import self_funding_registration
 from . import general_contract
@@ -52,6 +56,7 @@ from . import output_invoice_adjustment
 from . import output_invoice_ledger
 from . import payment_ledger
 from . import historical_payment_fact
+from . import daily_contract_settlement
 from . import project_dashboard
 from . import contract_recon_summary
 from . import project_risk

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_sc_product_mail_notification_tree" model="ir.ui.view">
+    <field name="name">mail.notification.sc.product.tree</field>
+    <field name="model">mail.notification</field>
+    <field name="arch" type="xml">
+      <tree string="消息通知" create="0" edit="0" delete="0" default_order="sc_message_date desc">
+        <field name="is_read" string="已读" widget="boolean_toggle"/>
+        <field name="sc_subject"/>
+        <field name="sc_record_name"/>
+        <field name="author_id" string="发送人"/>
+        <field name="sc_message_date"/>
+        <field name="notification_type" optional="hide"/>
+      </tree>
+    </field>
+  </record>
+  <record id="view_sc_product_mail_notification_form" model="ir.ui.view">
+    <field name="name">mail.notification.sc.product.form</field>
+    <field name="model">mail.notification</field>
+    <field name="arch" type="xml">
+      <form string="消息通知" create="0" edit="0" delete="0">
+        <field name="sc_source_model" invisible="1"/>
+        <field name="sc_source_res_id" invisible="1"/>
+        <header>
+          <button name="action_sc_mark_read" type="object" string="标记已读" class="btn-primary" invisible="is_read"/>
+          <button name="action_sc_mark_unread" type="object" string="标记未读" invisible="not is_read"/>
+          <button name="action_sc_open_source" type="object" string="打开关联单据" invisible="not sc_source_model or not sc_source_res_id"/>
+        </header>
+        <sheet>
+          <group>
+            <group><field name="sc_subject"/><field name="author_id" string="发送人"/><field name="sc_message_date"/></group>
+            <group><field name="is_read"/><field name="read_date"/><field name="sc_record_name"/></group>
+          </group>
+          <group string="消息内容"><field name="sc_body" nolabel="1" widget="html"/></group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="view_sc_product_mail_notification_search" model="ir.ui.view">
+    <field name="name">mail.notification.sc.product.search</field>
+    <field name="model">mail.notification</field>
+    <field name="arch" type="xml">
+      <search string="消息通知">
+        <field name="sc_subject"/><field name="sc_record_name"/><field name="author_id"/>
+        <filter name="unread" string="未读" domain="[('is_read', '=', False)]"/>
+        <filter name="read" string="已读" domain="[('is_read', '=', True)]"/>
+        <separator/><filter name="group_date" string="按发送日期" context="{'group_by': 'sc_message_date:month'}"/>
+      </search>
+    </field>
+  </record>
+</odoo>

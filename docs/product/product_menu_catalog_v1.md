@@ -4,18 +4,18 @@
 
 ## 运行时来源
 
-- database: `sc_product_center`
-- generated_at: `2026-08-11T02:03:13.968127+00:00`
+- database: `sc_ten_center_clean`
+- generated_at: `2026-08-11T18:13:29.901029+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
-- visible_login_probe: `admin, wutao`
+- visible_login_probe: `admin`
 
 ## 总览
 
-- menu_count: `385`
-- active_menu_count: `286`
-- inactive_menu_count: `99`
-- action_menu_count: `309`
-- needs_review_count: `1`
+- menu_count: `425`
+- active_menu_count: `318`
+- inactive_menu_count: `107`
+- action_menu_count: `344`
+- needs_review_count: `0`
 - internal_history_business_visible_count: `0`
 - ordinary_business_system_config_visible_count: `0`
 - business_config_legacy_count: `0`
@@ -35,8 +35,8 @@
 
 | Layer | Count |
 | --- | ---: |
-| `formal_product` | 322 |
-| `system_config` | 31 |
+| `formal_product` | 361 |
+| `system_config` | 32 |
 | `user_config` | 0 |
 | `history_acceptance` | 5 |
 | `dev_governance` | 27 |
@@ -45,35 +45,36 @@
 
 | 入口 | XMLID | 可见性探针用户 |
 | --- | --- | --- |
+| 智慧施工管理平台 / 产品配置 | `smart_construction_core.menu_sc_business_config_center` |  |
 | 智慧施工管理平台 / 会计账务中心 | `smart_construction_core.menu_sc_accounting_center` |  |
-| 智慧施工管理平台 / 合同中心 | `smart_construction_core.menu_sc_contract_center` | wutao |
-| 智慧施工管理平台 / 工作台 | `smart_construction_core.menu_sc_workspace_center` | wutao |
-| 智慧施工管理平台 / 成本中心 | `smart_construction_core.menu_sc_cost_center` | wutao |
-| 智慧施工管理平台 / 报表中心 | `smart_construction_core.menu_sc_data_center` | wutao |
-| 智慧施工管理平台 / 税务中心 | `smart_construction_core.menu_sc_tax_center` | wutao |
-| 智慧施工管理平台 / 行政中心 | `smart_construction_core.menu_sc_hr_admin_center` | wutao |
-| 智慧施工管理平台 / 财务中心 | `smart_construction_core.menu_sc_finance_center` | wutao |
-| 智慧施工管理平台 / 项目中心 | `smart_construction_core.menu_sc_project_center` | wutao |
+| 智慧施工管理平台 / 合同中心 | `smart_construction_core.menu_sc_contract_center` |  |
+| 智慧施工管理平台 / 工作台 | `smart_construction_core.menu_sc_workspace_center` |  |
+| 智慧施工管理平台 / 成本中心 | `smart_construction_core.menu_sc_cost_center` |  |
+| 智慧施工管理平台 / 报表中心 | `smart_construction_core.menu_sc_data_center` |  |
+| 智慧施工管理平台 / 税务中心 | `smart_construction_core.menu_sc_tax_center` |  |
+| 智慧施工管理平台 / 行政中心 | `smart_construction_core.menu_sc_hr_admin_center` |  |
+| 智慧施工管理平台 / 财务中心 | `smart_construction_core.menu_sc_finance_center` |  |
+| 智慧施工管理平台 / 项目中心 | `smart_construction_core.menu_sc_project_center` |  |
 
 ## 顶层菜单
 
 | Menu | Layer | Visible Probe Logins | XMLID |
 | --- | --- | --- | --- |
-| 平台内核 | `dev_governance` |  | `smart_core.menu_smart_core_platform_root` |
-| 平台内核 / 产品发布 | `dev_governance` |  | `smart_core.menu_smart_core_release_root` |
-| 平台内核 / 公司访问 | `dev_governance` |  | `smart_core.menu_smart_core_company_access_root` |
-| 智慧施工管理平台 | `formal_product` | wutao | `smart_construction_core.menu_sc_root` |
-| 智慧施工管理平台 / 产品配置 | `system_config` | wutao | `smart_construction_core.menu_sc_business_config_center` |
+| 平台内核 | `dev_governance` | admin | `smart_core.menu_smart_core_platform_root` |
+| 平台内核 / 产品发布 | `dev_governance` | admin | `smart_core.menu_smart_core_release_root` |
+| 平台内核 / 公司访问 | `dev_governance` | admin | `smart_core.menu_smart_core_company_access_root` |
+| 智慧施工管理平台 | `formal_product` | admin | `smart_construction_core.menu_sc_root` |
+| 智慧施工管理平台 / 产品配置 | `formal_product` |  | `smart_construction_core.menu_sc_business_config_center` |
 | 智慧施工管理平台 / 会计账务中心 | `formal_product` |  | `smart_construction_core.menu_sc_accounting_center` |
-| 智慧施工管理平台 / 合同中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_contract_center` |
-| 智慧施工管理平台 / 工作台 | `formal_product` | wutao | `smart_construction_core.menu_sc_workspace_center` |
-| 智慧施工管理平台 / 成本中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_cost_center` |
-| 智慧施工管理平台 / 报表中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_data_center` |
-| 智慧施工管理平台 / 税务中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_tax_center` |
-| 智慧施工管理平台 / 系统管理（内部） | `system_config` |  | `smart_construction_core.menu_sc_config_center` |
-| 智慧施工管理平台 / 行政中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_hr_admin_center` |
-| 智慧施工管理平台 / 财务中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_finance_center` |
-| 智慧施工管理平台 / 项目中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_project_center` |
+| 智慧施工管理平台 / 合同中心 | `formal_product` |  | `smart_construction_core.menu_sc_contract_center` |
+| 智慧施工管理平台 / 工作台 | `formal_product` |  | `smart_construction_core.menu_sc_workspace_center` |
+| 智慧施工管理平台 / 成本中心 | `formal_product` |  | `smart_construction_core.menu_sc_cost_center` |
+| 智慧施工管理平台 / 报表中心 | `formal_product` |  | `smart_construction_core.menu_sc_data_center` |
+| 智慧施工管理平台 / 税务中心 | `formal_product` |  | `smart_construction_core.menu_sc_tax_center` |
+| 智慧施工管理平台 / 系统管理（内部） | `system_config` | admin | `smart_construction_core.menu_sc_config_center` |
+| 智慧施工管理平台 / 行政中心 | `formal_product` |  | `smart_construction_core.menu_sc_hr_admin_center` |
+| 智慧施工管理平台 / 财务中心 | `formal_product` |  | `smart_construction_core.menu_sc_finance_center` |
+| 智慧施工管理平台 / 项目中心 | `formal_product` |  | `smart_construction_core.menu_sc_project_center` |
 
 ## 产品菜单树
 
@@ -91,7 +92,7 @@
     - 订阅实例 [`dev_governance`] -> `sc.subscription`
     - 运营任务 [`dev_governance`] -> `sc.ops.job`
 - 智慧施工管理平台 [`formal_product`]
-  - 产品配置 [`system_config`]
+  - 产品配置 [`formal_product`]
     - 业务基础数据 [`formal_product` inactive]
       - 业务分类字典 [`system_config`] -> `sc.business.category`
       - 审批岗位人员 [`system_config`] -> `sc.approval.scope`
@@ -106,13 +107,19 @@
       - 工作流实例 [`dev_governance`] -> `sc.workflow.instance`
       - 工作流日志 [`dev_governance`] -> `sc.workflow.log`
       - 工作项 [`dev_governance`] -> `sc.workflow.workitem`
+    - 数据权限 [`formal_product`] -> `res.users`
     - 流程审批配置 [`system_config`] -> `sc.approval.policy`
+    - 系统参数 [`system_config`] -> `sc.product.system.settings`
+    - 编码规则 [`system_config`] -> `ir.sequence`
     - 表单配置 [`formal_product`] -> `ui.business.config.contract`
-  - 会计账务中心 [`formal_product` review]
+  - 会计账务中心 [`formal_product`]
+    - 分析分配模型 [`formal_product`] -> `account.analytic.distribution.model`
+    - 分析账户 [`formal_product`] -> `account.analytic.account`
+    - 日记账 [`formal_product`] -> `account.journal`
   - 合同中心 [`formal_product`]
     - 合同办理 [`formal_product` inactive] -> `construction.contract`
     - 合同办理 [`formal_product` inactive] -> `construction.contract`
-    - 合同变更 [`formal_product`] -> `sc.settlement.adjustment`
+    - 合同变更 [`formal_product`] -> `sc.contract.change`
     - 合同管理 [`formal_product` inactive] -> `sc.expense.contract.ledger`
       - 一般合同（公司） [`formal_product`] -> `sc.general.contract`
       - 其他合同 [`formal_product`] -> `construction.contract.expense`
@@ -142,11 +149,13 @@
       - 项目收入合同 [`formal_product`] -> `construction.contract.income`
     - 收入结算 [`formal_product`] -> `sc.settlement.order`
     - 日常合同 [`formal_product`] -> `sc.general.contract`
+    - 日常合同结算 [`formal_product`] -> `sc.settlement.order`
   - 工作台 [`formal_product`]
     - 待办事项 [`formal_product`] -> `sc.workbench.item`
     - 我的审批 [`formal_product` inactive] -> `sc.workbench.item`
     - 我的项目 [`formal_product` inactive] -> `project.project`
     - 数据总览 [`formal_product`] -> `sc.operating.metrics.project`
+    - 消息通知 [`formal_product`] -> `mail.notification`
     - 项目看板 [`formal_product`] -> `project.project`
   - 成本中心 [`formal_product`]
     - WBS/分部分项 [`formal_product` inactive] -> `construction.work.breakdown`
@@ -177,6 +186,7 @@
       - 预算清单 [`formal_product`] -> `project.cost.plan`
   - 报表中心 [`formal_product`]
     - 业务核算主体 [`formal_product` inactive] -> `sc.business.entity`
+    - 劳务分包报表 [`formal_product`] -> `sc.labor.subcontract.report`
     - 成本报表 [`formal_product` inactive]
     - 成本报表 [`formal_product`] -> `sc.comprehensive.cost.summary`
       - 发票分析报表 [`formal_product`] -> `sc.invoice.registration`
@@ -185,6 +195,7 @@
       - 库存统计表（新） [`formal_product`] -> `sc.material.stock.summary`
       - 报销统计 [`formal_product`] -> `sc.expense.reimbursement.summary`
       - 进项发票明细表 [`formal_product`] -> `sc.invoice.registration`
+    - 税务报表 [`formal_product`] -> `sc.tax.filing`
     - 经营分析 [`formal_product` inactive]
       - 合同执行表 [`formal_product`] -> `construction.contract`
       - 项目经营分析 [`formal_product`] -> `sc.operating.metrics.project`
@@ -213,10 +224,12 @@
     - 发票红冲 [`formal_product`] -> `sc.output.invoice.adjustment`
     - 外经证 [`formal_product`] -> `sc.tax.certificate.registration`
     - 开票申请 [`formal_product`] -> `sc.invoice.registration`
+    - 税务申报 [`formal_product`] -> `sc.tax.filing`
     - 税务申报（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
     - 税额抵扣 [`formal_product`] -> `sc.tax.deduction.registration`
     - 进项发票 [`formal_product`] -> `sc.invoice.registration`
     - 销项开票 [`formal_product`] -> `sc.invoice.registration`
+    - 项目专项抵扣 [`formal_product`] -> `sc.tax.deduction.registration`
     - 预缴登记 [`formal_product`] -> `sc.invoice.registration`
   - 系统管理（内部） [`system_config`]
     - 历史验收归档（内部） [`history_acceptance` inactive]
@@ -253,25 +266,29 @@
     - 项目管理（后台） [`dev_governance`] -> `project.project`
   - 行政中心 [`formal_product`]
     - 人事薪酬 [`formal_product` inactive]
-      - 奖金 [`formal_product`] -> `sc.hr.payroll.document`
-      - 社保人员登记 [`formal_product`] -> `sc.hr.payroll.document`
-      - 社保登记 [`formal_product`] -> `sc.hr.payroll.document`
-      - 补助 [`formal_product`] -> `sc.hr.payroll.document`
+      - 奖金 [`formal_product` inactive] -> `sc.hr.payroll.document`
+      - 社保人员登记 [`formal_product` inactive] -> `sc.hr.payroll.document`
+      - 社保登记 [`formal_product` inactive] -> `sc.hr.payroll.document`
+      - 补助 [`formal_product` inactive] -> `sc.hr.payroll.document`
       - 项目管理人员工资登记 [`formal_product` inactive] -> `sc.hr.payroll.document`
     - 人员档案 [`system_config`] -> `res.users`
     - 人员生命周期（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
+    - 制度文件 [`formal_product`] -> `sc.document.admin.document`
+    - 办公资产 [`formal_product`] -> `sc.office.asset`
     - 基础资料 [`formal_product` inactive]
+    - 岗位管理 [`formal_product`] -> `hr.job`
     - 工资薪酬 [`formal_product`] -> `sc.hr.payroll.document`
     - 油卡管理 [`formal_product` inactive]
       - 充值登记 [`history_acceptance`] -> `sc.fund.account.operation`
       - 油卡登记 [`history_acceptance`] -> `sc.fund.account.operation`
+    - 社保公积 [`formal_product`] -> `sc.hr.payroll.document`
     - 行政审批 [`formal_product` inactive]
-      - 印章使用审批表 [`formal_product`] -> `sc.office.admin.document`
-      - 请假/休假审批单 [`formal_product`] -> `sc.office.admin.document`
+      - 印章使用审批表 [`formal_product` inactive] -> `sc.office.admin.document`
+      - 请假/休假审批单 [`formal_product` inactive] -> `sc.office.admin.document`
     - 证书管理 [`formal_product`] -> `sc.document.admin.document`
     - 资料证照 [`formal_product` inactive]
-      - 借阅申请 [`formal_product`] -> `sc.document.admin.document`
-      - 公司资料存档 [`formal_product`] -> `sc.document.admin.document`
+      - 借阅申请 [`formal_product` inactive] -> `sc.document.admin.document`
+      - 公司资料存档 [`formal_product` inactive] -> `sc.document.admin.document`
     - 资源能力（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
     - 部门管理 [`formal_product`] -> `hr.department`
   - 财务中心 [`formal_product`]
@@ -291,6 +308,7 @@
       - 自筹保证金退回 [`formal_product` inactive] -> `sc.expense.claim`
     - 借还款办理 [`formal_product` inactive]
     - 公司&项目扣款 [`formal_product`] -> `sc.expense.claim`
+    - 公司&项目退款 [`formal_product`] -> `sc.company.project.refund.workspace`
     - 公司支出 [`formal_product`] -> `sc.payment.execution`
     - 公司收入 [`formal_product`] -> `sc.receipt.income`
     - 到款确认表 [`formal_product` inactive] -> `sc.receipt.income`
@@ -302,6 +320,7 @@
       - 销项调整记录 [`formal_product`] -> `sc.output.invoice.ledger`
     - 备用金 [`formal_product`] -> `sc.expense.claim`
     - 实付登记 [`formal_product`] -> `sc.payment.execution`
+    - 往来款登记 [`formal_product`] -> `sc.current.account.workspace`
     - 待我审批（付款申请） [`formal_product` inactive] -> `tier.review`
     - 扣款 [`formal_product` inactive]
     - 扣款与非现金 [`formal_product` inactive]
@@ -367,8 +386,16 @@
     - 资金预测（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
     - 项目资金 [`formal_product` inactive]
   - 项目中心 [`formal_product`]
+    - 分包成本 [`formal_product`]
+      - 分包成本登记 [`formal_product`] -> `sc.subcontract.register`
+      - 分包签证费用 [`formal_product`] -> `sc.site.variation`
+    - 劳务成本 [`formal_product`]
+      - 劳务实名制 [`formal_product`] -> `sc.labor.worker`
+      - 劳务成本登记 [`formal_product`] -> `sc.labor.usage`
+      - 劳务扣款明细 [`formal_product`] -> `sc.labor.deduction`
     - 客商管理 [`formal_product`]
       - 供应商档案 [`formal_product`] -> `res.partner`
+      - 客商黑名单 [`formal_product`] -> `res.partner`
       - 客户档案 [`formal_product`] -> `res.partner`
     - 招投标管理 [`formal_product`]
       - 中标管理 [`formal_product`] -> `tender.bid`
@@ -378,6 +405,8 @@
       - 投标报名管理 [`formal_product` inactive] -> `tender.bid`
       - 投标报名费申请 [`formal_product` inactive] -> `tender.doc.purchase`
       - 投标项目 [`formal_product`] -> `tender.bid`
+      - 招标信息 [`formal_product`] -> `tender.opportunity`
+      - 标书管理 [`formal_product`] -> `tender.document`
     - 施工管理 [`formal_product`]
       - BIM协同（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
       - 安全检查 [`formal_product`] -> `sc.safety.issue`
@@ -393,17 +422,21 @@
       - 施工日志 [`formal_product`] -> `sc.construction.diary`
       - 施工进度 [`formal_product`] -> `project.progress.entry`
       - 现场移动（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
+      - 签证变更 [`formal_product`] -> `sc.site.variation`
       - 质量管理 [`formal_product` inactive]
         - 现场影像 [`formal_product`] -> `sc.site.photo.batch`
         - 质量复验 [`formal_product`] -> `sc.quality.recheck`
         - 质量整改 [`formal_product`] -> `sc.quality.rectification`
         - 质量标准 [`formal_product`] -> `sc.check.standard`
         - 质量检查 [`formal_product`] -> `sc.quality.issue`
+      - 质量验收 [`formal_product`] -> `sc.quality.acceptance`
       - 进度与施工 [`formal_product` inactive]
         - 计划汇报 [`formal_product`] -> `sc.plan.report`
         - 计划管理 [`formal_product`] -> `sc.plan`
     - 施工资料 [`formal_product` inactive]
       - 现场资料 [`formal_product`] -> `sc.project.document`
+    - 机械成本 [`formal_product`]
+      - 机械台班登记 [`formal_product`] -> `sc.equipment.usage`
     - 材料成本 [`formal_product`]
       - 专业分包 [`formal_product` inactive]
         - 分包方单 [`formal_product`] -> `sc.subcontract.request`
@@ -445,10 +478,15 @@
         - 退库办理 [`formal_product`] -> `sc.material.outbound`
         - 采购申请 [`formal_product`] -> `sc.material.purchase.request`
         - 采购订单 [`formal_product`] -> `purchase.order`
+      - 材料退货 [`formal_product`] -> `sc.material.supplier.return`
+    - 班组借/扣款 [`formal_product`]
+      - 班组借/扣款登记 [`formal_product`] -> `sc.team.loan.deduction.workspace`
     - 里程碑管理（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
     - 项目创建 [`formal_product`]
       - 快速创建项目 [`formal_product` inactive] -> `project.project`
       - 新项目立项 [`formal_product`] -> `project.project`
+      - 项目信息编辑 [`formal_product`] -> `project.project`
+      - 项目启停管理 [`formal_product`] -> `project.project`
     - 项目协同（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
     - 项目台账 [`formal_product` inactive]
       - 项目台账 [`formal_product`] -> `project.project`
@@ -457,6 +495,9 @@
       - 项目驾驶舱 [`formal_product`] -> `project.project`
     - 项目收尾（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
     - 项目组织（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
+    - 项目薪资 [`formal_product`]
+      - 薪资发放登记 [`formal_product`] -> `sc.hr.salary.payment`
+      - 薪资核算清单 [`formal_product`] -> `sc.hr.payroll.document`
     - 项目计划 [`formal_product` inactive]
       - WBS 版本 [`formal_product`] -> `construction.wbs.plan`
       - WBS 计划 [`formal_product`] -> `construction.work.breakdown`
@@ -465,6 +506,4 @@
 
 ## 待复核队列
 
-| Path | Layer | Reason | XMLID |
-| --- | --- | --- | --- |
-| 智慧施工管理平台 / 会计账务中心 | `formal_product` | container_default | `smart_construction_core.menu_sc_accounting_center` |
+未检测到需要人工复核的模糊菜单。

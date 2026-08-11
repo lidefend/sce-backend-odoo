@@ -117,14 +117,14 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         self.assertEqual(
             contract["sha256"],
-            "ebb8ddd3518a46ef4bb21cd8375b10c06ff875937ad45063c36a2a880e01ab9c",
+            "0faff35011eb8f4146a58f444e2812e1178eba92056c2ecf79bafc205a79fb76",
         )
         for product_key in CONTRACT.REQUIRED_PRODUCT_KEYS:
             rows = CONTRACT.baseline_rows(contract, product_key)
-            self.assertEqual(len(rows), 163)
+            self.assertEqual(len(rows), 89)
             self.assertIn(
                 (
-                    "配置中心",
+                    "产品配置",
                     "表单配置",
                     "smart_construction_core.menu_sc_business_config_workbench",
                 ),
@@ -132,7 +132,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             )
             self.assertIn(
                 (
-                    "组织行政",
+                    "行政中心",
                     "人员档案",
                     "smart_construction_core.menu_sc_runtime_user_management",
                 ),
@@ -140,44 +140,29 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             )
             self.assertIn(
                 (
-                    "财务中心",
-                    "历史付款",
-                    "smart_construction_core.menu_sc_historical_payment_fact",
-                ),
-                rows,
-            )
-            self.assertIn(
-                (
-                    "施工管理",
-                    "质量标准",
-                    "smart_construction_core.menu_sc_quality_standard_v2",
-                ),
-                rows,
-            )
-            self.assertIn(
-                (
                     "项目中心",
-                    "WBS 计划",
-                    "smart_construction_core.menu_sc_project_work_breakdown",
+                    "新项目立项",
+                    "smart_construction_core.menu_sc_project_initiation",
                 ),
                 rows,
             )
             self.assertIn(
                 (
                     "成本中心",
-                    "清单版本",
-                    "smart_construction_core.menu_sc_boq_version",
+                    "成本计划编制",
+                    "smart_construction_core.menu_sc_p1_cost_plan",
                 ),
                 rows,
             )
             self.assertIn(
                 (
-                    "施工管理",
-                    "安全巡检",
-                    "smart_construction_core.menu_sc_safety_patrol_v2",
+                    "合同中心",
+                    "日常合同",
+                    "smart_construction_core.menu_sc_p1_daily_contract",
                 ),
                 rows,
             )
+            self.assertNotIn("smart_construction_core.menu_sc_historical_payment_fact", {row[2] for row in rows})
 
     def test_missing_baseline_fails_closed(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -228,7 +213,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             menu["menu_id"] = index
             menu["action_id"] = index + 10000
         result = CONTRACT.assert_policy_matches_locked_contract(contract, "construction.standard", groups)
-        self.assertEqual(result["menu_count"], 163)
+        self.assertEqual(result["menu_count"], 89)
         self.assertTrue(result["exact_match"])
 
     def test_full_baseline_rejects_every_out_of_band_addition(self):
@@ -256,7 +241,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         ]
         self.assertEqual(
             CONTRACT.assert_snapshot_matches_locked_contract(contract, "construction.standard", pages)["menu_count"],
-            163,
+            89,
         )
         pages.pop()
         with self.assertRaisesRegex(CONTRACT.LockedMenuPolicyContractError, "LOCKED_MENU_SNAPSHOT_MISMATCH"):
@@ -267,8 +252,8 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         standard = contract["products"]["construction.standard"]
         preview = contract["products"]["construction.preview"]
         self.assertIsNot(standard, preview)
-        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.standard")), 163)
-        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.preview")), 163)
+        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.standard")), 89)
+        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.preview")), 89)
         self.assertNotEqual(standard["product_key"], preview["product_key"])
 
 

@@ -872,6 +872,150 @@
         }
       }
     },
+    "contractLifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lifecycleVersion",
+        "stage",
+        "definition",
+        "generation",
+        "runtime",
+        "integrity",
+        "authority"
+      ],
+      "properties": {
+        "lifecycleVersion": {
+          "const": "1.0.0"
+        },
+        "stage": {
+          "enum": [
+            "assembly",
+            "runtime_delivery"
+          ]
+        },
+        "definition": {
+          "$ref": "#/$defs/contractLifecycleDefinition"
+        },
+        "generation": {
+          "$ref": "#/$defs/contractLifecycleGeneration"
+        },
+        "runtime": {
+          "$ref": "#/$defs/contractLifecycleRuntime"
+        },
+        "integrity": {
+          "$ref": "#/$defs/contractLifecycleIntegrity"
+        },
+        "authority": {
+          "$ref": "#/$defs/sourceAuthority"
+        }
+      }
+    },
+    "contractLifecycleDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaId",
+        "schemaVersion",
+        "schemaSha256",
+        "contractVersion",
+        "normativeStatus"
+      ],
+      "properties": {
+        "schemaId": {
+          "const": "smart_core.unified_page_contract_v2"
+        },
+        "schemaVersion": {
+          "const": "2.2.0"
+        },
+        "schemaSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "contractVersion": {
+          "const": "2.2.0"
+        },
+        "normativeStatus": {
+          "const": "stable"
+        }
+      }
+    },
+    "contractLifecycleGeneration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generator",
+        "generatorVersion",
+        "sourceType",
+        "sourceSha256"
+      ],
+      "properties": {
+        "generator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generatorVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "contractLifecycleRuntime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestId",
+        "traceId",
+        "clientType",
+        "traceSource"
+      ],
+      "properties": {
+        "requestId": {
+          "$ref": "#/$defs/id"
+        },
+        "traceId": {
+          "$ref": "#/$defs/id"
+        },
+        "clientType": {
+          "enum": [
+            "web_pc",
+            "wx_mini",
+            "harmony_h5"
+          ]
+        },
+        "traceSource": {
+          "enum": [
+            "request_context",
+            "request_id_fallback"
+          ]
+        }
+      }
+    },
+    "contractLifecycleIntegrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm",
+        "contractSha256"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "contractSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
     "runtimeContract": {
       "type": "object",
       "additionalProperties": false,
@@ -961,7 +1105,8 @@
         "snapshotId",
         "traceId",
         "requestId",
-        "sourceType"
+        "sourceType",
+        "lifecycle"
       ],
       "properties": {
         "etag": {
@@ -978,6 +1123,9 @@
         },
         "sourceType": {
           "type": "string"
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/contractLifecycle"
         }
       }
     }

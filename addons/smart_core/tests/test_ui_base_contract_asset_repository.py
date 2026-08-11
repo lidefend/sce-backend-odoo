@@ -43,6 +43,55 @@ target = _load_module(
 
 
 class TestUiBaseContractAssetRepository(unittest.TestCase):
+    def test_upsert_asset_recovers_concurrent_unique_winner_without_aborting_transaction(self):
+        class _Savepoint:
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+
+        class _Cursor:
+            def savepoint(self): return _Savepoint()
+
+        class _Record:
+            id = 42
+            def write(self, vals): self.vals = vals
+
+        winner = _Record()
+
+        class _Model:
+            def __init__(self): self.search_count = 0
+            def sudo(self): return self
+            def search(self, _domain, limit=None):
+                self.search_count += 1
+                if not limit:
+                    return []
+                return winner if self.search_count >= 3 else None
+            def create(self, _vals):
+                error = RuntimeError("concurrent unique winner")
+                error.pgcode = "23505"
+                raise error
+
+        class _Env:
+            def __init__(self): self.model = _Model(); self.cr = _Cursor()
+            def __contains__(self, item): return item == target.ASSET_MODEL
+            def __getitem__(self, item):
+                if item != target.ASSET_MODEL: raise KeyError(item)
+                return self.model
+
+        env = _Env()
+        original_table_available = target._asset_table_available
+        original_get_latest = target.get_latest_asset
+        target._asset_table_available = lambda _env: True
+        target.get_latest_asset = lambda *_args, **_kwargs: {"id": winner.id}
+        try:
+            result = target.upsert_asset(env, scene_key="default", payload={"model": "res.partner"})
+        finally:
+            target._asset_table_available = original_table_available
+            target.get_latest_asset = original_get_latest
+
+        self.assertEqual(result, {"id": 42})
+        self.assertEqual(env.model.search_count, 3)
+        self.assertEqual(winner.vals["scene_key"], "default")
+
     def test_upsert_asset_serializes_projection_scalars(self):
         class _Savepoint:
             def __enter__(self):

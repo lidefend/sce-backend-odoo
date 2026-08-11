@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="business_config_contract_company_project_refund_workspace_form_v1" model="ui.business.config.contract">
+        <field name="name">company_project_refund_workspace_form_v1</field>
+        <field name="model">sc.company.project.refund.workspace</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_sc_product_company_project_refund_v1"/>
+        <field name="priority">800</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {
+                    'source': 'smart_construction_core.product_release',
+                    'source_status': 'product_release',
+                    'fact_authority': 'dispatch_only',
+                    'fact_models': ['sc.expense.claim', 'sc.self.funding.registration'],
+                    'projection_authority': 'sc.finance.project.counterparty.position'
+                },
+                'views': {'form': {
+                    'title': '公司&amp;项目退款',
+                    'composition_mode': 'entry_semantic_surface',
+                    'columns': 2,
+                    'sections': [
+                        {'title': '办理上下文', 'sequence': 10, 'columns': 2, 'fields': ['project_id', 'partner_id', 'business_date', 'processing_advisory']},
+                        {'title': '办理说明', 'sequence': 20, 'columns': 1, 'fields': ['note']}
+                    ],
+                    'fields': [
+                        {'name': 'project_id', 'sequence': 10, 'group_title': '办理上下文'},
+                        {'name': 'partner_id', 'sequence': 20, 'group_title': '办理上下文'},
+                        {'name': 'business_date', 'sequence': 30, 'group_title': '办理上下文'},
+                        {'name': 'processing_advisory', 'sequence': 40, 'group_title': '办理上下文', 'readonly': True},
+                        {'name': 'note', 'sequence': 50, 'group_title': '办理说明'}
+                    ]
+                }}
+            }
+        }"/>
+    </record>
+</odoo>

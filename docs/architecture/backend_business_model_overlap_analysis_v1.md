@@ -16,6 +16,7 @@ The current model shape is still reasonable, but not all overlap families have t
 | treasury account/reconciliation/ledger | workable but terminology must separate master, document, and controlled ledger | high |
 | product/material catalog | reasonable native/custom split, with legacy product promotion risk | medium |
 | payment request/execution | clear intent-vs-fact split, but request still carries receive compatibility | medium |
+| project salary calculation/payment | distinct cost recognition and payment evidence, locked through governed entries | high |
 | projection refresh | mixed SQL views, physical refresh tables, and controlled ledgers need a registry | high |
 
 ## Contract Ownership
@@ -137,6 +138,19 @@ Consolidation rule:
 - `sc.payment.execution` owns actual expense payment facts.
 - `sc.receipt.income` owns income receipt facts.
 - `sc.treasury.ledger` is a controlled ledger derived from approved actions or replay, not the place where request semantics are invented.
+
+## Project Salary Calculation and Payment
+
+Models checked:
+
+- `sc.hr.payroll.document`
+- `sc.hr.salary.payment`
+- `sc.salary.summary`
+- `sc.comprehensive.cost.summary`
+
+Ownership is intentionally split. A completed payroll calculation recognizes the project salary cost and payable amount. Each salary payment is independent payment evidence linked to that calculation; confirmed payments are conserved against the completed net salary. Summary models are rebuildable visibility only.
+
+The P1 ownership spec binds each user-visible menu to one action, fact model and action-scoped rendering contract. `verify.product.business_entry.ownership.guard` is part of the menu release-ready aggregate and fails if the two intents share a fact model, an action or contract drifts to another model, or frontend code is declared as business-fact authority.
 
 ## Projection Refresh
 

@@ -65,6 +65,12 @@ ALLOWED_DIRECT_CONTRACT_WRITERS = {
         "reason": "archives stale action-scoped business config contracts whose action model no longer matches the contract model",
         "expected_source": "smart_construction_core.stale_contract_scope_cleanup",
     },
+    "addons/smart_construction_core/hooks.py": {
+        "layer": "L2",
+        "boundary": "industry_install_contract_source_status_normalization",
+        "reason": "normalizes source status on industry contracts during install through the append-only contract lifecycle authority",
+        "expected_source": "smart_construction_core.post_init_lowcode_source_status",
+    },
 }
 ALLOWED_APPROVAL_POLICY_RUNTIME_WRITERS = {
     "addons/smart_construction_core/handlers/approval_policy_configuration.py": {
@@ -122,6 +128,9 @@ def _is_contract_writer(text: str) -> bool:
         "rec.write(",
         "rec.action_publish(",
         "contract.action_publish(",
+        "rec.replace_and_publish(",
+        "contract.replace_and_publish(",
+        "rec.restore_published_version(",
     )
     return any(marker in text for marker in write_markers)
 
@@ -140,7 +149,13 @@ def _is_approval_policy_runtime_writer(text: str) -> bool:
 
 
 def _is_lowcoding_policy_runtime_writer(text: str) -> bool:
-    uses_menu_policy_constant_writer = "Policy = env[MENU_CONFIG_POLICY_MODEL]" in text
+    uses_menu_policy_constant_writer = any(
+        marker in text
+        for marker in (
+            "Policy = env[MENU_CONFIG_POLICY_MODEL]",
+            "Policy = self.env[MENU_CONFIG_POLICY_MODEL]",
+        )
+    )
     if (
         "ui.form.field.policy" not in text
         and "ui.menu.config.policy" not in text

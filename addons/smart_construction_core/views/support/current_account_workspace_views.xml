@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sc_current_account_workspace_form" model="ir.ui.view">
+        <field name="name">sc.current.account.workspace.form</field>
+        <field name="model">sc.current.account.workspace</field>
+        <field name="arch" type="xml">
+            <form string="往来款登记" edit="1" delete="0">
+                <header>
+                    <button name="action_project_borrow_company" type="object" string="项目借公司款" class="btn-primary"/>
+                    <button name="action_project_repay_company" type="object" string="项目还公司款" class="btn-secondary"/>
+                    <button name="action_contractor_borrow_project" type="object" string="承包人借项目款" class="btn-secondary" invisible="not partner_id"/>
+                    <button name="action_contractor_repay_project" type="object" string="承包人还项目款" class="btn-secondary" invisible="not partner_id"/>
+                    <button name="action_account_transfer" type="object" string="账户间调拨" class="btn-secondary"/>
+                    <button name="action_view_current_account" type="object" string="查看往来台账" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <group string="办理上下文" col="2">
+                        <field name="project_id"/>
+                        <field name="partner_id"/>
+                        <field name="business_date"/>
+                        <field name="processing_advisory" readonly="1"/>
+                    </group>
+                    <group string="办理说明">
+                        <field name="note" placeholder="可补充本次借款、还款或调拨的业务背景；金额、账户和附件在正式单据中填写。"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

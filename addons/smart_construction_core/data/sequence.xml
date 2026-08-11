@@ -356,4 +356,15 @@
         <field name="padding">5</field>
         <field name="company_id" eval="False" />
     </record>
+    <record id="seq_sc_material_supplier_return" model="ir.sequence">
+        <field name="name">材料退货单</field>
+        <field name="code">sc.material.supplier.return</field>
+        <field name="prefix">MR%(y)s</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False" />
+    </record>
+    <record id="seq_sc_tax_filing" model="ir.sequence">
+        <field name="name">税务申报</field><field name="code">sc.tax.filing</field>
+        <field name="prefix">TAX%(y)s%(month)s</field><field name="padding">4</field><field name="company_id" eval="False"/>
+    </record>
 </odoo>

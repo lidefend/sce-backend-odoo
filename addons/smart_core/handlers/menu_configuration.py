@@ -1690,12 +1690,7 @@ class MenuConfigurationRollbackHandler(MenuConfigurationLoadHandler):
             return self._err(400, "目标版本不是可恢复的菜单配置")
         scoped_snapshot = self._scope_contract_json(company_id, snapshot)
         restored = self._restore_policy_rows(company_id, scoped_snapshot)
-        contract.write({
-            "contract_json": scoped_snapshot,
-            "status": "published",
-            "version_no": int(target.version_no or contract.version_no or 1),
-        })
-        contract.action_publish()
+        contract.replace_and_publish(scoped_snapshot)
         return {
             "ok": True,
             "data": {

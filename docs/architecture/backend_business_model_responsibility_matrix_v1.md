@@ -38,7 +38,7 @@ The binding family-level registry is `backend_business_model_family_registry_v1.
 | safety/quality/risk | industry source-of-truth | issue/rectification/recheck/risk docs | project, user, document attachment | workbench, dashboards, compliance reports | clear |
 | progress/planning/WBS | industry source-of-truth | plans, plan lines, versions, progress entries, WBS | project/task | dashboards, progress reports, cost linkage | mostly clear |
 | tender chain | industry source-of-truth | tender bid lifecycle docs | partner, project candidate, attachment | contract creation, business development reports | clear |
-| document/admin/hr payroll | industry/admin source-of-truth | project documents and admin/payroll process docs | attachment, approval, users | workbench, document center, reports | mostly clear |
+| document/admin/hr payroll | industry/admin source-of-truth with explicit salary split | `sc.hr.payroll.document` owns recognized salary calculation/payable; `sc.hr.salary.payment` owns confirmed payment evidence | attachment, approval, users, project | workbench, document center, cost and salary reports | calculation/payment split locked by entry ownership guard |
 | projection/reporting | projection/read model | upstream formal/native/industry docs | source models only | list, report, cockpit, export | clear if refresh path remains deterministic |
 | legacy replay/staging | legacy source carrier | old-system source facts and mapping tables | target anchors only | projection scripts, acceptance probes | clear conceptually; must stay out of user workflow |
 | capability/scene/pack/subscription | governance/config | governance models | user/group/menu/action/runtime contracts | frontend scene/runtime, release packs | clear platform responsibility |
@@ -74,6 +74,7 @@ The binding family-level registry is `backend_business_model_family_registry_v1.
 | treasury triple overlap | `sc.fund.account`, `sc.treasury.reconciliation`, and `sc.treasury.ledger` can be confused | account master, reconciliation document, and derived ledger must stay separate |
 | material catalog vs product template | product identity and construction catalog surface can diverge | product is identity; catalog is construction-visible material surface and legacy projection carrier |
 | payment request vs payment execution | request, approval, and actual payment can be conflated | request owns intent/approval; execution owns payment fact |
+| salary calculation vs salary payment | menu/action reuse can conflate recognized cost/payable with cash-payment evidence | distinct fact models, action-scoped contracts, conserved one-to-many payment relation, and `verify.product.business_entry.ownership.guard` |
 | legacy field promotion | customer migration fields may become permanent model fields accidentally | require solution layer and target problem before adding fields |
 | projection source-of-truth drift | reports can become de facto writable facts | projections must have refresh scripts and no primary workflow writes |
 

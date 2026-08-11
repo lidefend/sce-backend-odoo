@@ -211,6 +211,42 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertIsNone(result)
 
+    def test_scene_action_binding_accepts_semantic_hint_without_registry_authority(self):
+        self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
+            "scenes": [{"key": "workspace.home", "target": {"action_id": 1}}]
+        }
+        handler = self.module.UiContractV2Handler(env=object())
+
+        result = handler._validate_scene_action_binding(
+            {"scene_key": "projects.list", "action_id": 519}
+        )
+
+        self.assertIsNone(result)
+
+    def test_scene_action_binding_accepts_route_only_scene(self):
+        self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
+            "scenes": [{"key": "projects.list", "target": {"route": "/s/projects.list"}}]
+        }
+        handler = self.module.UiContractV2Handler(env=object())
+
+        result = handler._validate_scene_action_binding(
+            {"scene_key": "projects.list", "action_id": 519}
+        )
+
+        self.assertIsNone(result)
+
+    def test_scene_action_binding_rejects_missing_action_for_authoritative_target(self):
+        self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
+            "scenes": [{"key": "contract.income", "target": {"action_id": 786}}]
+        }
+        handler = self.module.UiContractV2Handler(env=object())
+
+        result = handler._validate_scene_action_binding({"scene_key": "contract.income"})
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.code, 409)
+        self.assertIn("SCENE_ACTION_BINDING_INVALID", result.error["message"])
+
     def test_scene_action_binding_rejects_parallel_action(self):
         self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
             "scenes": [{"key": "contract.income", "target": {"action_id": 786}}]

@@ -282,6 +282,11 @@ class ScSettlementOrder(models.Model):
 
     _sql_constraints = [
         ("legacy_settlement_order_unique", "unique(legacy_fact_model, legacy_fact_id)", "来源通用结算单已迁移为专业结算单。"),
+        (
+            "settlement_contract_source_exclusive",
+            "CHECK (NOT (contract_id IS NOT NULL AND general_contract_id IS NOT NULL))",
+            "一张结算单只能关联一种合同来源。",
+        ),
     ]
 
     @api.constrains("partner_id", "legacy_fact_model")
@@ -1198,6 +1203,14 @@ class ScSettlementOrderLine(models.Model):
     _name = "sc.settlement.order.line"
     _description = "结算单明细"
     _order = "id"
+
+    _sql_constraints = [
+        (
+            "settlement_line_contract_source_exclusive",
+            "CHECK (NOT (contract_id IS NOT NULL AND general_contract_id IS NOT NULL))",
+            "结算明细只能关联一种合同来源。",
+        ),
+    ]
 
     settlement_id = fields.Many2one(
         "sc.settlement.order",

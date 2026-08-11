@@ -47,6 +47,13 @@
         <field name="parent_id" ref="smart_construction_core.menu_sc_root"/>
         <field name="sequence">75</field>
     </record>
+    <record id="menu_sc_accounting_center" model="ir.ui.menu">
+        <field name="name">会计账务中心</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_root"/>
+        <field name="sequence">77</field>
+        <field name="action" eval="False"/>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_accounting_read')])]"/>
+    </record>
     <record id="menu_sc_data_center" model="ir.ui.menu">
         <field name="name">报表中心</field>
         <field name="sequence">80</field>

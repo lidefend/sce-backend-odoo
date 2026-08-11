@@ -83,6 +83,7 @@
       "source_of_truth": "payment.request for intent/approval and sc.payment.execution for paid fact",
       "native_dependency": "project.project, res.partner, account, approval",
       "representative_models": ["payment.request", "payment.request.line", "sc.payment.execution"],
+      "owned_models": ["sc.team.loan.deduction.workspace"],
       "target_problem": "Separate expense payment intent, approval, and actual cash movement.",
       "boundary_rule": "Request owns workflow intent; execution owns the business fact that payment happened.",
       "status": "clear enough"
@@ -166,7 +167,8 @@
       "solution_layer": "industry",
       "source_of_truth": "document/admin/hr payroll process documents",
       "native_dependency": "ir.attachment, res.users, approval",
-      "representative_models": ["sc.document.admin.document", "sc.office.admin.document", "sc.hr.payroll.document", "sc.audit.log"],
+      "representative_models": ["sc.document.admin.document", "sc.office.admin.document", "sc.hr.payroll.document", "sc.hr.salary.payment", "sc.audit.log"],
+      "owned_models": ["sc.hr.salary.payment"],
       "target_problem": "Manage operational evidence and administrative workflow around company and project execution.",
       "boundary_rule": "Administrative evidence can support business workflows, but should not become the source for income/expense amounts unless explicitly promoted.",
       "status": "mostly clear"
