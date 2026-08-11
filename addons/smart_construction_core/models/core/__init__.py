@@ -16,6 +16,7 @@ from . import material_catalog
 from . import material_acceptance
 from . import material_rental
 from . import labor_management
+from . import labor_product_extension
 from . import equipment_management
 from . import subcontract_management
 from . import settlement_order

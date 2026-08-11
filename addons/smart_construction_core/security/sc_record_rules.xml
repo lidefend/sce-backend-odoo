@@ -1524,47 +1524,47 @@
         </record>
 
         <record id="rule_sc_internal_attendance_checkin" model="ir.rule">
-            <field name="name">SC Internal - sc.attendance.checkin own or project member</field>
+            <field name="name">SC Project - attendance checkin own or project member</field>
             <field name="model_id" ref="model_sc_attendance_checkin"/>
             <field name="domain_force">['|','|', ('create_uid', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
         </record>
 
         <record id="rule_sc_super_admin_attendance_checkin" model="ir.rule">
-            <field name="name">SC Super Admin - sc.attendance.checkin ALL</field>
+            <field name="name">SC Project Manager - attendance checkin ALL</field>
             <field name="model_id" ref="model_sc_attendance_checkin"/>
             <field name="domain_force">[(1,'=',1)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_super_admin'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
         <record id="rule_sc_internal_labor_usage" model="ir.rule">
-            <field name="name">SC Internal - sc.labor.usage own or project member</field>
+            <field name="name">SC Project - labor usage own or project member</field>
             <field name="model_id" ref="model_sc_labor_usage"/>
             <field name="domain_force">['|','|', ('create_uid', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
         </record>
 
         <record id="rule_sc_super_admin_labor_usage" model="ir.rule">
-            <field name="name">SC Super Admin - sc.labor.usage ALL</field>
+            <field name="name">SC Project Manager - labor usage ALL</field>
             <field name="model_id" ref="model_sc_labor_usage"/>
             <field name="domain_force">[(1,'=',1)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_super_admin'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
         <record id="rule_sc_internal_labor_request" model="ir.rule">
@@ -2729,6 +2729,16 @@
         <record id="rule_sc_quality_acceptance_company" model="ir.rule">
             <field name="name">Quality acceptance: allowed companies</field>
             <field name="model_id" ref="model_sc_quality_acceptance"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_labor_worker_company" model="ir.rule">
+            <field name="name">Labor worker: allowed companies</field>
+            <field name="model_id" ref="model_sc_labor_worker"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_labor_deduction_company" model="ir.rule">
+            <field name="name">Labor deduction: allowed companies</field>
+            <field name="model_id" ref="model_sc_labor_deduction"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
 

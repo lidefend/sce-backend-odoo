@@ -110,6 +110,7 @@
         'views/support/tender_views.xml',
         'views/support/tender_product_views.xml',
         'views/support/quality_acceptance_views.xml',
+        'views/support/labor_product_views.xml',
         'views/support/document_views.xml',
         'views/projection/operating_metrics_views.xml',
         'views/projection/project_dashboard_kanban.xml',

@@ -69,9 +69,9 @@
   - 施工进度 -> `project.progress.entry`
   - 签证变更 -> `sc.settlement.adjustment`
 - 劳务成本
-  - 劳务实名制 -> `sc.attendance.checkin`
+  - 劳务实名制 -> `sc.labor.worker`
   - 劳务成本登记 -> `sc.labor.usage`
-  - 劳务扣款明细 -> `sc.expense.claim`
+  - 劳务扣款明细 -> `sc.labor.deduction`
 - 材料成本
   - 材料入库 -> `sc.material.inbound`
   - 材料出库 -> `sc.material.outbound`
