@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sc_product_system_settings_config_admin,sc.product.system.settings.config.admin,model_sc_product_system_settings,smart_construction_core.group_sc_cap_config_admin,1,1,1,1
 access_sc_supplier_type_read,sc.supplier.type.read,model_sc_supplier_type,smart_construction_core.group_sc_internal_user,1,0,0,0
 access_sc_historical_payment_fact_finance_read,sc.historical.payment.fact.finance.read,model_sc_historical_payment_fact,smart_construction_core.group_sc_cap_finance_read,1,0,0,0
 access_sc_historical_payment_fact_importer,sc.historical.payment.fact.importer,model_sc_historical_payment_fact,smart_core.group_smart_core_tenant_payload_importer,1,0,1,0

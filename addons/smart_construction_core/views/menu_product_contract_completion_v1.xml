@@ -155,8 +155,13 @@
       <field name="name">数据权限</field><field name="res_model">ui.business.config.contract</field><field name="view_mode">tree,form</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
     </record>
+    <record id="view_sc_product_system_settings_form_v1" model="ir.ui.view">
+      <field name="name">sc.product.system.settings.form.v1</field><field name="model">sc.product.system.settings</field>
+      <field name="arch" type="xml"><form string="系统参数"><sheet><group string="参数范围"><field name="parameter_scope"/></group><group string="成本台账"><field name="cost_ledger_source"/></group><group string="运行说明"><field name="operation_notice" nolabel="1"/></group><footer><button name="action_apply" type="object" string="应用参数" class="btn-primary"/><button string="取消" special="cancel"/></footer></sheet></form></field>
+    </record>
     <record id="action_sc_product_system_parameter_v1" model="ir.actions.act_window">
-      <field name="name">系统参数</field><field name="res_model">ui.business.config.contract</field><field name="view_mode">tree,form</field>
+      <field name="name">系统参数</field><field name="res_model">sc.product.system.settings</field><field name="view_mode">form</field>
+      <field name="view_id" ref="smart_construction_core.view_sc_product_system_settings_form_v1"/><field name="target">current</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
     </record>
     <record id="action_sc_product_numbering_rule_v1" model="ir.actions.act_window">

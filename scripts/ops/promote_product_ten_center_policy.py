@@ -110,7 +110,7 @@ RELEASED_MENU_BINDINGS = (
     ("产品配置", "流程审批配置", "smart_construction_core.menu_sc_approval_policy", "smart_construction_core.action_sc_approval_policy", "sc.approval.policy", ("流程审批配置",)),
     ("产品配置", "字段管理", "smart_construction_core.menu_ui_form_field_policy_business_config", "smart_construction_core.action_ui_form_field_policy_business_config", "ui.form.field.policy", ("字段管理",)),
     ("产品配置", "数据权限", "smart_construction_core.menu_sc_product_data_permission_v1", "smart_construction_core.action_sc_product_data_permission_v1", "ui.business.config.contract", ("数据权限",)),
-    ("产品配置", "系统参数", "smart_construction_core.menu_sc_product_system_parameter_v1", "smart_construction_core.action_sc_product_system_parameter_v1", "ui.business.config.contract", ("系统参数",)),
+    ("产品配置", "系统参数", "smart_construction_core.menu_sc_product_system_parameter_v1", "smart_construction_core.action_sc_product_system_parameter_v1", "sc.product.system.settings", ("系统参数",)),
     ("产品配置", "编码规则", "smart_construction_core.menu_sc_product_numbering_rule_v1", "smart_construction_core.action_sc_product_numbering_rule_v1", "ui.business.config.contract", ("编码规则",)),
 )
 
