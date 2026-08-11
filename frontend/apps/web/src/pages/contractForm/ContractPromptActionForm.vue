@@ -10,31 +10,36 @@
       class="contract-mode-prompt-field"
     >
       <span>{{ field.label }}</span>
-      <select
+      <ScSelect
         v-if="field.options.length"
-        :value="String(values[field.name] || '')"
+        :model-value="String(values[field.name] || '')"
+        :label="field.label"
         :required="field.required"
         :disabled="busy"
-        @change="$emit('value-change', { fieldName: field.name, value: inputValue($event) })"
+        @update:model-value="$emit('value-change', { fieldName: field.name, value: $event })"
       >
         <option value=""></option>
         <option v-for="option in field.options" :key="option.value" :value="option.value">{{ option.label }}</option>
-      </select>
-      <input
+      </ScSelect>
+      <ScTextField
         v-else
-        :value="String(values[field.name] || '')"
+        :model-value="String(values[field.name] || '')"
+        :label="field.label"
         :required="field.required"
         :disabled="busy"
-        @input="$emit('value-change', { fieldName: field.name, value: inputValue($event) })"
+        @update:model-value="$emit('value-change', { fieldName: field.name, value: $event })"
       />
     </label>
-    <button type="submit" class="chip-btn" :disabled="busy">确定</button>
-    <button type="button" class="ghost" :disabled="busy" @click="$emit('cancel')">取消</button>
+    <ScButton type="submit" variant="primary" class="chip-btn" :disabled="busy">确定</ScButton>
+    <ScButton type="button" variant="ghost" class="ghost" :disabled="busy" @click="$emit('cancel')">取消</ScButton>
   </form>
 </template>
 
 <script setup lang="ts">
 import type { ContractPromptField } from './types';
+import ScButton from '../../components/design-system/ScButton.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScTextField from '../../components/design-system/ScTextField.vue';
 
 defineProps<{
   visible: boolean;
@@ -49,9 +54,6 @@ defineEmits<{
   'value-change': [payload: { fieldName: string; value: string }];
 }>();
 
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement | HTMLSelectElement).value || '');
-}
 </script>
 
 <style scoped src="./ContractPromptActionForm.css"></style>

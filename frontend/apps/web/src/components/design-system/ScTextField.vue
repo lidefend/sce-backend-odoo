@@ -8,6 +8,7 @@
     :name="name"
     :placeholder="placeholder"
     :autocomplete="autocomplete"
+    :autofocus="autofocus"
     :disabled="disabled"
     :readonly="readonly"
     :status="invalid ? 'error' : 'default'"
@@ -16,12 +17,12 @@
     data-ui-engine="tdesign"
     @update:model-value="onUpdate"
     @change="onChange"
-    @focus="$emit('focus', $event)"
-    @blur="$emit('blur', $event)"
-    @keydown="$emit('keydown', $event)"
-    @enter="$emit('enter', $event)"
-    @compositionstart="$emit('compositionstart', $event)"
-    @compositionend="$emit('compositionend', $event)"
+    @focus="onFocus"
+    @blur="onBlur"
+    @keydown="onKeydown"
+    @enter="onEnter"
+    @compositionstart="onCompositionStart"
+    @compositionend="onCompositionEnd"
   />
 </template>
 
@@ -41,6 +42,7 @@ const props = withDefaults(defineProps<{
   label?: string;
   placeholder?: string;
   autocomplete?: string;
+  autofocus?: boolean;
   disabled?: boolean;
   readonly?: boolean;
   required?: boolean;
@@ -55,6 +57,7 @@ const props = withDefaults(defineProps<{
   label: undefined,
   placeholder: undefined,
   autocomplete: undefined,
+  autofocus: false,
   disabled: false,
   readonly: false,
   required: false,
@@ -91,7 +94,7 @@ function syncNativeAccessibility(): void {
     'aria-invalid': props.invalid ? 'true' : undefined,
   };
   Object.entries(attrs).forEach(([name, value]) => {
-    if (['role', 'tabindex', 'min', 'max', 'step', 'minlength', 'inputmode', 'spellcheck'].includes(name) || name.startsWith('aria-') || name.startsWith('data-')) {
+    if (['role', 'tabindex', 'min', 'max', 'step', 'minlength', 'pattern', 'inputmode', 'spellcheck'].includes(name) || name.startsWith('aria-') || name.startsWith('data-')) {
       attributes[name] = value === undefined || value === null ? undefined : String(value);
     }
   });
@@ -107,6 +110,12 @@ function onUpdate(value: InputValue): void {
 function onChange(value: InputValue): void {
   emit('change', String(value ?? ''));
 }
+function onFocus(_value: InputValue, context: { e: FocusEvent }): void { emit('focus', context.e); }
+function onBlur(_value: InputValue, context: { e: FocusEvent }): void { emit('blur', context.e); }
+function onKeydown(_value: InputValue, context: { e: KeyboardEvent }): void { emit('keydown', context.e); }
+function onEnter(value: InputValue, context: { e: KeyboardEvent }): void { emit('enter', String(value ?? ''), context); }
+function onCompositionStart(_value: string, context: { e: CompositionEvent }): void { emit('compositionstart', context.e); }
+function onCompositionEnd(_value: string, context: { e: CompositionEvent }): void { emit('compositionend', context.e); }
 function focus(): void {
   nativeInput()?.focus();
 }

@@ -242,7 +242,7 @@ const hierarchyTableRows = computed<ScHierarchyTableRow[]>(() => visibleEntries.
 const headerLayoutStyle = computed(() => ({ gridTemplateColumns: 'minmax(240px, auto) 0 minmax(320px, 1fr) 0 max-content' }));
 
 function displayValue(value: unknown, column: Column): string { return formatDisplayValue(value, column); }
-function onSearchInput(event: Event): void { keyword.value = String((event.target as HTMLInputElement | null)?.value || ''); }
+function onSearchInput(value: string): void { keyword.value = value; }
 function selectEntry(entry: OutlineEntry): void { selectedRecord.value = entry.record; }
 function hierarchyEntry(row: ScHierarchyTableRow): OutlineEntry | null {
   return row.source && typeof row.source === 'object' ? row.source as OutlineEntry : null;

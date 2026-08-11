@@ -179,16 +179,17 @@
             </button>
             <label v-if="onGroupSampleLimitChange" class="group-sample-limit">
               <span>{{ uiLabel('group_sample_limit', '每组') }}</span>
-              <select
+              <ScSelect
                 class="group-sample-limit-select"
-                :value="String(effectiveGroupSampleLimit)"
+                :model-value="String(effectiveGroupSampleLimit)"
+                :label="uiLabel('group_sample_limit', '每组')"
                 :disabled="loading"
-                @change="onGroupSampleLimitSelectChange"
+                @update:model-value="onGroupSampleLimitSelectChange"
               >
                 <option v-for="option in groupSampleLimitOptions" :key="`group-sample-limit-${option}`" :value="String(option)">
                   {{ option }}
                 </option>
-              </select>
+              </ScSelect>
             </label>
           </div>
         </header>
@@ -217,11 +218,11 @@
               >
                 {{ uiLabel('pagination_next', '下一页') }}
               </button>
-              <input
+              <ScTextField
                 class="group-page-input"
-                :value="groupJumpPageInput[group.key] || String(groupCurrentPage(group))"
+                :model-value="groupJumpPageInput[group.key] || String(groupCurrentPage(group))"
                 :disabled="Boolean(group.loading) || groupTotalPages(group) <= 1"
-                :aria-label="uiLabel('group_page_input', `${group.label}页码`)"
+                :label="uiLabel('group_page_input', `${group.label}页码`)"
                 inputmode="numeric"
                 pattern="[0-9]*"
                 @change="onGroupJumpInputChange(group.key, $event)"
@@ -258,13 +259,12 @@
             <thead>
               <tr>
                 <th v-if="showSelectionColumn" class="cell-select">
-                  <input
-                    type="checkbox"
-                    :aria-label="uiLabel('select_group_rows', `选择${group.label}当前页记录`)"
-                    :checked="isGroupAllSelected(group)"
+                  <ScCheckbox
+                    :label="uiLabel('select_group_rows', `选择${group.label}当前页记录`)"
+                    :model-value="isGroupAllSelected(group)"
                     :disabled="loading || !groupSelectableRows(group).length"
                     @click.stop
-                    @change="onGroupSelectAllChange(group, $event)"
+                    @update:model-value="onGroupSelectAllChange(group, $event)"
                   />
                 </th>
                 <th v-if="showRowNumberColumn" class="cell-row-number">{{ uiLabel('row_number', '序号') }}</th>
@@ -325,13 +325,12 @@
                 @click="handleRowClick(row, $event)"
               >
                 <td v-if="showSelectionColumn" class="cell-select" @click.stop>
-                  <input
+                  <ScCheckbox
                     v-if="rowId(row)"
-                    type="checkbox"
-                    :aria-label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, row[mobileIdentityField]).text}`)"
-                    :checked="isSelected(row)"
+                    :label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, row[mobileIdentityField]).text}`)"
+                    :model-value="isSelected(row)"
                     :disabled="loading"
-                    @change="onRowCheckboxChange(row, $event)"
+                    @update:model-value="onRowCheckboxChange(row, $event)"
                   />
                 </td>
                 <td v-if="showRowNumberColumn" class="cell-row-number">{{ groupedRowNumber(group.key, index) }}</td>
@@ -445,11 +444,10 @@
             data-mobile-record-select
             @click.stop
           >
-            <input
-              type="checkbox"
-              :checked="isSelected(row)"
-              :aria-label="`选择第 ${index + 1} 条记录`"
-              @change="onRowCheckboxChange(row, $event)"
+            <ScCheckbox
+              :model-value="isSelected(row)"
+              :label="`选择第 ${index + 1} 条记录`"
+              @update:model-value="onRowCheckboxChange(row, $event)"
             />
           </label>
           <ScMobileRecordCard
@@ -492,13 +490,12 @@
         <thead>
           <tr>
             <th v-if="showSelectionColumn" class="cell-select">
-              <input
-                type="checkbox"
-                :aria-label="uiLabel('select_page_rows', '选择当前页记录')"
-                :checked="allSelected"
+              <ScCheckbox
+                :label="uiLabel('select_page_rows', '选择当前页记录')"
+                :model-value="allSelected"
                 :disabled="loading || !selectableRows.length"
                 @click.stop
-                @change="onSelectAllChange"
+                @update:model-value="onSelectAllChange"
               />
             </th>
             <th v-if="showRowNumberColumn" class="cell-row-number">{{ uiLabel('row_number', '序号') }}</th>
@@ -559,13 +556,12 @@
             @click="handleRowClick(row, $event)"
           >
             <td v-if="showSelectionColumn" class="cell-select" @click.stop>
-              <input
+              <ScCheckbox
                 v-if="rowId(row)"
-                type="checkbox"
-                :aria-label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, row[mobileIdentityField]).text}`)"
-                :checked="isSelected(row)"
+                :label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, row[mobileIdentityField]).text}`)"
+                :model-value="isSelected(row)"
                 :disabled="loading"
-                @change="onRowCheckboxChange(row, $event)"
+                @update:model-value="onRowCheckboxChange(row, $event)"
               />
             </td>
             <td v-if="showRowNumberColumn" class="cell-row-number">{{ flatRowNumber(index) }}</td>
@@ -691,15 +687,15 @@
           >
             {{ uiLabel('pagination_next', '下一页') }}
           </button>
-          <input
+          <ScTextField
             class="pagination-input"
-            :value="pageJumpInput"
+            :model-value="pageJumpInput"
             :disabled="loading || totalPages <= 1"
-            :aria-label="uiLabel('pagination_page_input', '页码')"
+            :label="uiLabel('pagination_page_input', '页码')"
             inputmode="numeric"
             pattern="[0-9]*"
-            @input="onPageJumpInput"
-            @keyup.enter="jumpPage"
+            @update:model-value="onPageJumpInput"
+            @enter="jumpPage"
           />
           <button
             type="button"
@@ -712,27 +708,28 @@
           <label class="pagination-size-control">
             <span class="pagination-size-label">{{ uiLabel('pagination_page_size', '每页') }}</span>
             <span class="pagination-size-combo">
-              <input
+              <ScTextField
                 class="pagination-input pagination-input--size"
-                :value="pageLimitInput"
+                :model-value="pageLimitInput"
+                :label="uiLabel('pagination_page_size', '每页')"
                 :disabled="loading"
                 inputmode="numeric"
                 pattern="[0-9]*"
-                @input="onPageLimitInput"
+                @update:model-value="onPageLimitInput"
                 @change="applyPageLimit"
-                @keyup.enter="applyPageLimit"
+                @enter="applyPageLimit"
               />
-              <select
+              <ScSelect
                 class="pagination-size-select"
-                :value="pageLimitOptions.includes(listLimit) ? String(listLimit) : undefined"
+                :model-value="pageLimitOptions.includes(listLimit) ? String(listLimit) : ''"
                 :disabled="loading"
-                :aria-label="uiLabel('pagination_page_size_select', '选择每页条数')"
-                @change="onPageLimitSelectChange"
+                :label="uiLabel('pagination_page_size_select', '选择每页条数')"
+                @update:model-value="onPageLimitSelectChange"
               >
                 <option v-for="option in pageLimitOptions" :key="`page-limit-${option}`" :value="String(option)">
                   {{ option }}
                 </option>
-              </select>
+              </ScSelect>
             </span>
           </label>
         </div>
@@ -755,12 +752,15 @@ import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScCheckbox from '../components/design-system/ScCheckbox.vue';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScMobileRecordCard from '../components/design-system/ScMobileRecordCard.vue';
 import ScPageHeader from '../components/design-system/ScPageHeader.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
+import ScTextField from '../components/design-system/ScTextField.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
@@ -1224,8 +1224,8 @@ function toggleGroupSort() {
   props.onGroupSortChange(nextDirection);
 }
 
-function onGroupSampleLimitSelectChange(event: Event) {
-  const raw = Number((event.target as HTMLSelectElement).value || 0);
+function onGroupSampleLimitSelectChange(value: string) {
+  const raw = Number(value || 0);
   if (!Number.isFinite(raw) || raw <= 0) return;
   props.onGroupSampleLimitChange?.(Math.trunc(raw));
 }
@@ -1381,8 +1381,7 @@ function jumpGroupPage(group: { key: string; label: string; count: number; domai
   props.onGroupPageChange({ key: group.key, label: group.label, count: group.count, domain: group.domain, offset, limit });
 }
 
-function onGroupJumpInputChange(groupKey: string, event: Event) {
-  const value = String((event.target as HTMLInputElement | null)?.value || '');
+function onGroupJumpInputChange(groupKey: string, value: string) {
   groupJumpPageInput.value = { ...groupJumpPageInput.value, [groupKey]: value };
 }
 
@@ -1559,9 +1558,8 @@ function isGroupAllSelected(group: { sampleRows?: Array<Record<string, unknown>>
   return ids.every((id) => selectedIdSet.value.has(id));
 }
 
-function onGroupSelectAllChange(group: { sampleRows?: Array<Record<string, unknown>> }, event: Event) {
+function onGroupSelectAllChange(group: { sampleRows?: Array<Record<string, unknown>> }, selected: boolean) {
   if (!props.onToggleSelectionAll) return;
-  const selected = Boolean((event.target as HTMLInputElement | null)?.checked);
   props.onToggleSelectionAll(groupSelectableRows(group), selected);
 }
 
@@ -1589,8 +1587,8 @@ function pageNext() {
   emitPageOffset(listOffset.value + listLimit.value);
 }
 
-function onPageJumpInput(event: Event) {
-  pageJumpInput.value = String((event.target as HTMLInputElement | null)?.value || '');
+function onPageJumpInput(value: string) {
+  pageJumpInput.value = value;
 }
 
 function jumpPage() {
@@ -1610,20 +1608,20 @@ function applyPageLimitValue(raw: number) {
   props.onPageLimitChange?.(normalized);
 }
 
-function onPageLimitInput(event: Event) {
-  pageLimitInput.value = String((event.target as HTMLInputElement | null)?.value || '');
+function onPageLimitInput(value: string) {
+  pageLimitInput.value = value;
 }
 
 function applyPageLimit() {
   applyPageLimitValue(Number(pageLimitInput.value || listLimit.value));
 }
 
-function onPageLimitSelectChange(event: Event) {
-  applyPageLimitValue(Number((event.target as HTMLSelectElement | null)?.value || 0));
+function onPageLimitSelectChange(value: string) {
+  applyPageLimitValue(Number(value || 0));
 }
 
-function onPlainSearchInput(event: Event) {
-  plainSearchDraft.value = String((event.target as HTMLInputElement | null)?.value || '');
+function onPlainSearchInput(value: string) {
+  plainSearchDraft.value = value;
 }
 
 function onPlainSearchCompositionEnd(event: CompositionEvent) {
@@ -1692,13 +1690,11 @@ watch(
   { immediate: true },
 );
 
-function onSelectAllChange(event: Event) {
-  const checked = Boolean((event.target as HTMLInputElement | null)?.checked);
+function onSelectAllChange(checked: boolean) {
   onToggleAll(checked);
 }
 
-function onRowCheckboxChange(row: Record<string, unknown>, event: Event) {
-  const checked = Boolean((event.target as HTMLInputElement | null)?.checked);
+function onRowCheckboxChange(row: Record<string, unknown>, checked: boolean) {
   onToggleRow(row, checked);
 }
 

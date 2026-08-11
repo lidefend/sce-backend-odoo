@@ -2901,8 +2901,7 @@ const {
   clearSelection,
 });
 
-function onToolbarSearchInput(event: Event): void {
-  const value = String((event.target as HTMLInputElement | null)?.value || '');
+function onToolbarSearchInput(value: string): void {
   toolbarSearchDraft.value = value;
 }
 

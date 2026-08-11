@@ -62,14 +62,15 @@
           <div v-if="composeMode" class="global-message__recipient-box">
             <label class="global-message__field">
               <span>接收人</span>
-              <input
+              <ScTextField
                 ref="recipientInputRef"
                 v-model="userQuery"
                 class="sc-search"
                 type="search"
+                label="接收人"
                 placeholder="搜索姓名、账号或邮箱"
                 @focus="loadUsers"
-                @input="queueUserSearch"
+                @update:model-value="queueUserSearch"
               />
             </label>
             <p class="global-message__compose-hint sc-muted">{{ composeHint }}</p>
@@ -118,15 +119,16 @@
           </div>
 
           <footer class="global-message__composer">
-            <textarea
+            <ScTextArea
               v-model="body"
               class="sc-input"
-              rows="3"
+              label="沟通内容"
+              :rows="3"
               placeholder="输入沟通内容"
               :disabled="!composeMode && !activeConversation"
               @keydown.ctrl.enter.prevent="send"
               @keydown.meta.enter.prevent="send"
-            ></textarea>
+            />
             <div class="global-message__composer-actions">
               <p v-if="error" class="global-message__error sc-alert sc-alert-danger">{{ error }}</p>
               <button class="sc-btn sc-btn-primary sc-btn-sm" type="button" :disabled="sending" @click="send">
@@ -143,6 +145,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import ScIcon from './design-system/ScIcon.vue';
+import ScTextArea from './design-system/ScTextArea.vue';
+import ScTextField from './design-system/ScTextField.vue';
 import { searchCollaborationUsers, type CollaborationUserOption } from '../api/chatter';
 import {
   fetchGlobalConversations,
@@ -168,7 +172,7 @@ const selectedUsers = ref<CollaborationUserOption[]>([]);
 const conversations = ref<GlobalMessageConversation[]>([]);
 const messages = ref<GlobalMessageItem[]>([]);
 const activeConversationKey = ref('');
-const recipientInputRef = ref<HTMLInputElement | null>(null);
+const recipientInputRef = ref<{ focus: () => void } | null>(null);
 const composeNonce = ref(0);
 let userSearchTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;

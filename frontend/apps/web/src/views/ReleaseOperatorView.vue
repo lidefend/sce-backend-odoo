@@ -7,11 +7,11 @@
         <p>{{ copy.description || '查看当前发布状态、候选快照、待审批动作与回滚目标。' }}</p>
       </div>
       <div class="release-operator__actions">
-        <select v-model="selectedProduct" class="release-operator__select" @change="loadSurface">
+        <ScSelect v-model="selectedProduct" class="release-operator__select" label="选择产品" @change="loadSurface">
           <option v-for="product in products" :key="product.product_key" :value="product.product_key">
             {{ product.label || product.product_key }} · {{ product.product_key }}
           </option>
-        </select>
+        </ScSelect>
         <button class="sc-btn sc-btn-ghost" type="button" :disabled="loading" @click="loadSurface">
           {{ copy.action_refresh || '刷新' }}
         </button>
@@ -183,20 +183,20 @@
         <div class="release-operator__policy-control">
           <label>
             <span>{{ copy.policy_state_label || '发布状态' }}</span>
-            <select v-model="policyState" class="release-operator__select">
+            <ScSelect v-model="policyState" class="release-operator__select" label="发布状态">
               <option value="draft">draft</option>
               <option value="preview">preview</option>
               <option value="stable">stable</option>
               <option value="archived">archived</option>
-            </select>
+            </ScSelect>
           </label>
           <label>
             <span>{{ copy.policy_access_label || '访问级别' }}</span>
-            <select v-model="policyAccessLevel" class="release-operator__select">
+            <ScSelect v-model="policyAccessLevel" class="release-operator__select" label="访问级别">
               <option value="public">public</option>
               <option value="internal">internal</option>
               <option value="role_restricted">role_restricted</option>
-            </select>
+            </ScSelect>
           </label>
           <button
             class="sc-btn sc-btn-ghost"
@@ -432,6 +432,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
 import { intentRequest } from '../api/intents';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';

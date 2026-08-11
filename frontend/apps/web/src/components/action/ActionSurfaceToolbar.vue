@@ -389,7 +389,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'switch-view': [mode: string];
-  'search-input': [event: Event];
+  'search-input': [value: string];
   'search-composition-start': [];
   'search-composition-end': [event: CompositionEvent];
   'search-submit': [];

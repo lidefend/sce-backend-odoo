@@ -3698,15 +3698,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   one `Sc*` public API and one fail-closed vendor boundary. It does not authorize
   page-level TDesign imports or changes to page contracts, permissions, routes,
   model fields, persistence, menu semantics or customer data.
-- Adoption Closure: text, numeric, search, password, multiline and boolean
-  inputs now have reviewed TDesign-backed SC adapters. Thirteen high-reuse data
-  entry surfaces are governed against native-control regression, covering the
-  application shell, navigation, lists, forms, generic views, My Work,
-  authentication and product-configuration operations.
+- Adoption Closure: text, numeric, search, password, multiline, single-select,
+  multi-select, date and boolean inputs now have reviewed TDesign-backed SC
+  adapters. The regression boundary covers all 128 Vue source files, including
+  the application shell, navigation, lists, forms, generic views, My Work,
+  authentication, product configuration, collaboration and relationship
+  editing. Ordinary native `input`, `select` and `textarea` controls fail the
+  gate anywhere in that tree.
 - Controlled Exceptions: native file upload and radio controls remain where
-  browser semantics or current business widgets require them. Other outstanding
-  native controls are reported as explicit migration debt rather than being
-  hidden or mechanically rewritten.
+  browser semantics or current business widgets require them. Native command
+  buttons remain inventoried because tree nodes, table sort/resize triggers,
+  drag handles and other specialized commands must migrate through dedicated
+  interaction primitives, not a mechanical tag replacement. The inventory is
+  reported rather than hidden.
 - Validation: strict typecheck, release units, source lint, production build,
   style/token guard, table primitive guard, My Work authority guard and
   five-viewport browser interaction/accessibility checks are required. The

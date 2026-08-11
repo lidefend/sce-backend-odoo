@@ -50,7 +50,7 @@ The following reverse dependencies are forbidden:
 
 System-wide adoption means one engine, one token authority, one public component API, and one enforcement boundary. It does not mean that pages call vendor components directly. Adoption has three rings: global engine loading, `Sc*` public primitives, and prioritized business-surface migration.
 
-This iteration fail-closes 13 data-entry surfaces: application scope search, primary navigation search, action filtering, generic form rendering, generic view fields, My Work, login, account activation, usage analytics, scene packages, approval configuration, coverage workspace, and field editing. These surfaces may not reintroduce ordinary native `input`, `select`, or `textarea` elements. File upload and native radio controls remain explicit controlled exceptions.
+This iteration expands the fail-closed boundary to every Vue source file under `frontend/apps/web/src`. Business pages, layouts, renderers, and public components may not reintroduce ordinary native `input`, `select`, or `textarea` elements; they must use product-semantic primitives such as `ScTextField`, `ScTextArea`, `ScSelect`, `ScMultiSelect`, `ScCheckbox`, and `ScDateField`. Native file upload and radio controls that preserve browser selection semantics remain explicit, inventoried exceptions. The gate also prints the source-wide native-control inventory so the exception scope cannot grow silently.
 
 ## 5. First real closures
 
@@ -60,7 +60,7 @@ This iteration fail-closes 13 data-entry surfaces: application scope search, pri
 | Contract form | `ScTextField`, `ScTextArea`, `ScCheckbox`, `ScDateField`, `ScSelect`, `ScDialog`, `ScDrawer` | Consistent data entry, selection, overlays, and feedback | Backend supplies fields, modifiers, and save semantics |
 | WBS hierarchy | `ScHierarchyTable` | Mature table engine, discoverable hierarchy, keyboard selection | Page-contract projection supplies tree, columns, commands, and records |
 
-These surfaces prove representative adapter closures; they do not claim that every page has migrated. Further adoption must proceed through `Sc*` capabilities. Direct vendor API use is not an acceptable shortcut.
+These surfaces are the representative browser-acceptance closures. Ordinary data-entry controls have migrated across the complete source tree. Complex command buttons, tree nodes, drag handles, and sort triggers continue to evolve through their dedicated interaction primitives instead of being mechanically replaced merely to drive the native-tag count to zero. Further adoption must proceed through `Sc*` capabilities; direct vendor API use is not an acceptable shortcut.
 
 ## 6. Quality gates
 
@@ -70,7 +70,7 @@ The topic baseline requires:
 2. vendor imports confined to one adapter;
 3. all theme variables bridged through SC semantic tokens and zero hardcoded colors;
 4. contract list, contract form, and WBS hierarchy consuming their required `Sc*` components;
-5. governed data-entry surfaces rejecting native-control regression and reporting the repository-wide native-control inventory;
+5. every Vue source file rejecting ordinary native data-entry regression and reporting the repository-wide native-control and controlled-exception inventory;
 6. the WBS guard verifying the real `ScHierarchyTable → TEnhancedTable` chain, not obsolete CSS markers;
 7. strict typecheck, release units, production build, table-primitive guard, workspace-layout guard, and `git diff --check` passing;
 8. when a runtime is available, five-viewport browser acceptance for text, textarea, checkbox, select, keyboard focus, expand/collapse, overlay close behavior, page overflow, and console errors.

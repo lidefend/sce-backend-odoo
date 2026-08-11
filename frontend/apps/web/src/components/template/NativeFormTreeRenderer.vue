@@ -11,14 +11,14 @@
         @mouseup.self="emitGroupFieldOrderPointerDrop(node, index)"
       >
         <header v-if="containerTitle(node)" class="native-container-head">
-          <input
+          <ScTextField
             v-if="fieldConfigEditable && isEditableGroupNode(node)"
             class="native-container-title-editor"
             type="text"
-            :value="containerTitle(node)"
-            :aria-label="`${containerTitle(node)}区域名称`"
-            @change="emitGroupRename(node, ($event.target as HTMLInputElement).value)"
-            @keydown.enter.prevent="emitGroupRename(node, ($event.target as HTMLInputElement).value)"
+            :model-value="containerTitle(node)"
+            :label="`${containerTitle(node)}区域名称`"
+            @change="emitGroupRename(node, $event)"
+            @enter="emitGroupRename(node, $event)"
           />
           <h3 v-else>{{ containerTitle(node) }}</h3>
         </header>
@@ -108,13 +108,13 @@
             >
               <ScIcon :name="titleFieldForNode(node)?.favoriteToggle?.active ? 'star' : 'star-outline'" :size="18" />
             </button>
-            <input
+            <ScTextField
               v-if="!titleFieldForNode(node)?.readonly"
               class="native-title-input"
               type="text"
-              :value="titleFieldValue(titleFieldForNode(node))"
-              :aria-label="titleFieldForNode(node)?.label"
-              @input="emitTitleFieldChange(titleFieldForNode(node), ($event.target as HTMLInputElement).value)"
+              :model-value="titleFieldValue(titleFieldForNode(node))"
+              :label="titleFieldForNode(node)?.label"
+              @update:model-value="emitTitleFieldChange(titleFieldForNode(node), $event)"
             />
             <h1 v-else class="native-title-text">{{ titleFieldValue(titleFieldForNode(node)) || titleFieldForNode(node)?.label }}</h1>
           </div>
@@ -348,6 +348,7 @@
 import { computed, ref } from 'vue';
 import FormSection from './FormSection.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScTextField from '../design-system/ScTextField.vue';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,

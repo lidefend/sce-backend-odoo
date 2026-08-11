@@ -12,11 +12,11 @@
     >
       <label class="contract-mode-prompt-field">
         <span>字段标题</span>
-        <input autofocus :value="dialog.label" required :disabled="busy" @input="$emit('update:label', inputValue($event))" />
+        <ScTextField autofocus :model-value="dialog.label" label="字段名称" required :disabled="busy" @update:model-value="$emit('update:label', $event)" />
       </label>
       <label class="contract-mode-prompt-field">
         <span>字段类型</span>
-        <select :value="dialog.ttype" required :disabled="busy" @change="$emit('update:ttype', inputValue($event))">
+        <ScSelect :model-value="dialog.ttype" label="字段类型" required :disabled="busy" @update:model-value="$emit('update:ttype', $event)">
           <option value="char">单行文本</option>
           <option value="text">多行文本</option>
           <option value="integer">整数</option>
@@ -25,7 +25,7 @@
           <option value="date">日期</option>
           <option value="datetime">日期时间</option>
           <option value="html">富文本</option>
-        </select>
+        </ScSelect>
       </label>
       <footer class="low-code-field-create-actions">
         <button type="submit" class="chip-btn" :disabled="busy">创建字段</button>
@@ -37,6 +37,8 @@
 
 <script setup lang="ts">
 import ScDialog from '../../components/design-system/ScDialog.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScTextField from '../../components/design-system/ScTextField.vue';
 
 export type LowCodeFieldCreateDialogState = {
   open: boolean;
@@ -59,9 +61,6 @@ defineEmits<{
   'update:ttype': [value: string];
 }>();
 
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement | HTMLSelectElement).value || '');
-}
 </script>
 
 <style scoped src="./LowCodeFieldCreateDialog.css"></style>

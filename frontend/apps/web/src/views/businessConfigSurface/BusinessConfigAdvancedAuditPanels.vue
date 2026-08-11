@@ -53,13 +53,14 @@
         下载整改清单
       </ScButton>
     </div>
-    <textarea
-      :value="snapshotCompareText"
+    <ScTextArea
+      :model-value="snapshotCompareText"
       class="snapshot-input"
-      rows="5"
+      label="配置快照内容"
+      :rows="5"
       placeholder="粘贴从目标环境导出的配置快照内容"
-      @input="$emit('update:snapshotCompareText', ($event.target as HTMLTextAreaElement).value)"
-    ></textarea>
+      @update:model-value="$emit('update:snapshotCompareText', $event)"
+    />
     <div v-if="snapshotCompareResult" class="snapshot-remediation-summary">
       <span>{{ snapshotRemediationSummary }}</span>
     </div>
@@ -93,6 +94,7 @@ import type {
   BusinessConfigSnapshotComparePayload,
 } from '../../api/businessConfig';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScTextArea from '../../components/design-system/ScTextArea.vue';
 
 defineProps<{
   coverageScan: unknown;

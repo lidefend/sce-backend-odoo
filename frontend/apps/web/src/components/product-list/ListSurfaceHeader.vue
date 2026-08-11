@@ -41,16 +41,18 @@
           <span v-if="saveStatusText" class="list-surface-save-badge" :class="`is-${saveStatus}`">{{ saveStatusText }}</span>
           <div v-if="pickerOpen" class="list-surface-column-menu" aria-label="列设置">
             <p class="list-surface-column-summary">已启用 {{ enabledCount }} 列，共 {{ columns.length }} 列</p>
-            <label v-for="column in columns" :key="column.name" class="list-surface-column-choice">
-              <input
-                type="checkbox"
-                :checked="visibleColumns.includes(column.name)"
+            <ScCheckbox
+              v-for="column in columns"
+              :key="column.name"
+              class="list-surface-column-choice"
+              :model-value="visibleColumns.includes(column.name)"
+              :label="column.label"
                 :disabled="loading || lastVisibleColumn === column.name"
-                @change="emitVisibility(column.name, $event)"
-              />
+              @update:model-value="emitVisibility(column.name, $event)"
+            >
               <span>{{ column.label }}</span>
-            </label>
-            <button type="button" class="list-surface-column-reset" :disabled="loading" @click="$emit('column-reset')">恢复默认</button>
+            </ScCheckbox>
+            <ScButton type="button" variant="ghost" class="list-surface-column-reset" :disabled="loading" @click="$emit('column-reset')">恢复默认</ScButton>
             <p v-if="saveStatusText" class="list-surface-save-message" :class="`is-${saveStatus}`">{{ saveStatusText }}</p>
           </div>
         </div>
@@ -65,6 +67,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
+import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ProductListHeader from './ProductListHeader.vue';
 
@@ -87,7 +90,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'search-input': [event: Event];
+  'search-input': [value: string];
   'search-submit': [];
   'search-clear': [];
   'composition-start': [];
@@ -102,10 +105,10 @@ const pickerOpen = ref(false);
 const enabledCount = computed(() => props.visibleColumns.length);
 const settingsDescription = computed(() => `列设置，已启用 ${enabledCount.value} 列，共 ${props.columns.length} 列`);
 
-function emitVisibility(name: string, event: Event) {
+function emitVisibility(name: string, checked: boolean) {
   emit('column-visibility-change', {
     name,
-    checked: Boolean((event.target as HTMLInputElement | null)?.checked),
+    checked,
   });
 }
 

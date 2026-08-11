@@ -1,7 +1,7 @@
 <template>
   <TSelect
     ref="control"
-    class="sc-design-select"
+    class="sc-design-select sc-design-multi-select"
     :model-value="modelValue"
     :options="options"
     :disabled="disabled"
@@ -9,6 +9,8 @@
     :status="invalid ? 'error' : 'default'"
     :aria-label="label"
     data-ui-engine="tdesign"
+    multiple
+    clearable
     @change="onChange"
   />
 </template>
@@ -21,7 +23,7 @@ type SelectValue = string | number;
 type SelectOption = { label: string; value: SelectValue; disabled?: boolean };
 
 const props = withDefaults(defineProps<{
-  modelValue: SelectValue;
+  modelValue: SelectValue[];
   disabled?: boolean;
   readonly?: boolean;
   required?: boolean;
@@ -36,19 +38,16 @@ const props = withDefaults(defineProps<{
   label: undefined,
   describedBy: undefined,
 });
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
+const emit = defineEmits<{ 'update:modelValue': [value: string[]] }>();
 const slots = useSlots();
 const control = ref<ComponentPublicInstance | null>(null);
 
 function textContent(value: unknown): string {
   if (typeof value === 'string' || typeof value === 'number') return String(value);
   if (Array.isArray(value)) return value.map(textContent).join('');
-  if (value && typeof value === 'object' && 'children' in value) {
-    return textContent((value as VNode).children);
-  }
+  if (value && typeof value === 'object' && 'children' in value) return textContent((value as VNode).children);
   return '';
 }
-
 function collectOptions(nodes: VNode[], output: SelectOption[]): void {
   nodes.forEach((node) => {
     if (node.type === Fragment && Array.isArray(node.children)) {
@@ -65,7 +64,6 @@ function collectOptions(nodes: VNode[], output: SelectOption[]): void {
     }
   });
 }
-
 const options = computed(() => {
   const output: SelectOption[] = [];
   collectOptions((slots.default?.() || []) as VNode[], output);
@@ -87,7 +85,7 @@ function syncNativeAccessibility(): void {
 }
 function onChange(value: unknown): void {
   if (props.readonly) return;
-  emit('update:modelValue', String(Array.isArray(value) ? value[0] ?? '' : value ?? ''));
+  emit('update:modelValue', (Array.isArray(value) ? value : [value]).map((item) => String(item ?? '')));
 }
 onMounted(() => nextTick(syncNativeAccessibility));
 onUpdated(() => nextTick(syncNativeAccessibility));

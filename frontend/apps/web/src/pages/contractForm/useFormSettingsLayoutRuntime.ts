@@ -71,10 +71,9 @@ export function useFormSettingsLayoutRuntime(params: {
     }
   }
 
-  function onFormLayoutColumnsChange(event: Event) {
-    const target = event.target as HTMLSelectElement | null;
+  function onFormLayoutColumnsChange(value: number) {
     const previousColumns = params.formLayoutColumnsDraft.value;
-    const columns = normalizeLowCodeColumns(target?.value, params.formLayoutColumnsDraft.value);
+    const columns = normalizeLowCodeColumns(value, params.formLayoutColumnsDraft.value);
     if (columns === params.formLayoutColumnsDraft.value) return;
     const groupTitles = new Set<string>();
     params.currentGroupOptions().forEach((title) => {
@@ -121,11 +120,10 @@ export function useFormSettingsLayoutRuntime(params: {
     params.appendOperation(visible ? '显示分组' : '隐藏分组', `${key} 设置为${visible ? '显示' : '隐藏'}`);
   }
 
-  function onSelectedFormSettingsGroupColumnsChange(event: Event) {
+  function onSelectedFormSettingsGroupColumnsChange(value: number) {
     const key = normalizeFieldGroupTitle(params.selectedGroupTitle());
     if (!key) return;
-    const target = event.target as HTMLSelectElement | null;
-    const columns = normalizeLowCodeColumns(target?.value, params.effectiveGroupColumns(key));
+    const columns = normalizeLowCodeColumns(value, params.effectiveGroupColumns(key));
     if (params.effectiveGroupColumns(key) === columns) return;
     params.groupColumnsDraft[key] = columns;
     updateGroupLayoutDirty(key, columns, draftGroupVisible(key));
@@ -133,11 +131,10 @@ export function useFormSettingsLayoutRuntime(params: {
     params.appendOperation('调整分组列数', `${key} 调整为 ${columns} 栏`);
   }
 
-  function onSelectedFormSettingsFieldSizeChange(event: Event) {
+  function onSelectedFormSettingsFieldSizeChange(value: LowCodeFieldSize) {
     const fieldKey = params.selectedFieldKey();
     if (!fieldKey) return;
-    const target = event.target as HTMLSelectElement | null;
-    const size = normalizeLowCodeFieldSize(target?.value);
+    const size = normalizeLowCodeFieldSize(value);
     if (params.effectiveFieldSize(fieldKey) === size) return;
     params.fieldSizeDraft[fieldKey] = size;
     if (size === (params.fieldSizeBase.value[fieldKey] || 'normal')) {

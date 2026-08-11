@@ -57,6 +57,27 @@ class TDesignImportBoundaryTests(unittest.TestCase):
         for source in ('<input type="radio" />', '<input type="file" />'):
             self.assertIsNone(guard.UNADAPTED_DATA_ENTRY_RE.search(source), source)
 
+    def test_full_source_data_entry_scan_reports_every_unadapted_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            src = Path(directory)
+            (src / "pages").mkdir()
+            (src / "pages/Text.vue").write_text('<template><input type="text" /></template>', encoding="utf-8")
+            (src / "pages/Select.vue").write_text('<template><select /></template>', encoding="utf-8")
+            (src / "pages/Allowed.vue").write_text('<template><input type="file" /></template>', encoding="utf-8")
+            self.assertEqual(
+                guard.collect_unadapted_data_entry_controls(src, src),
+                ["pages/Select.vue", "pages/Text.vue"],
+            )
+
+    def test_full_source_data_entry_scan_allows_framework_primitives(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            src = Path(directory)
+            (src / "ScFixture.vue").write_text(
+                '<template><ScTextField/><ScSelect/><ScTextArea/><ScMultiSelect/></template>',
+                encoding="utf-8",
+            )
+            self.assertEqual(guard.collect_unadapted_data_entry_controls(src, src), [])
+
     def test_native_control_inventory_is_structured(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             src = Path(directory)

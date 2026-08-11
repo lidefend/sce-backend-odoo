@@ -17,14 +17,15 @@
             <ScIcon name="close" :size="14" />
           </button>
         </div>
-        <input
+        <ScTextField
           class="relation-tags-input"
           type="text"
-          :value="adapter.relationKeyword(field.name)"
+          :model-value="adapter.relationKeyword(field.name)"
+          :label="field.label"
           :placeholder="field.inputPlaceholder || adapter.inputPlaceholder(field.label)"
           autocomplete="off"
-          @input="adapter.setRelationKeyword(field.name, ($event.target as HTMLInputElement).value)"
-          @keydown.enter.prevent="commitTagKeyword(field.name)"
+          @update:model-value="adapter.setRelationKeyword(field.name, $event)"
+          @enter="commitTagKeyword(field.name)"
         />
         <div v-if="hasTagDropdown(field.name)" class="relation-tag-dropdown">
           <button
@@ -60,19 +61,19 @@
       </div>
     </div>
     <div v-else class="relation-select-editor">
-      <input
+      <ScTextField
         class="input relation-search"
         type="text"
-        :value="adapter.relationKeyword(field.name)"
+        :model-value="adapter.relationKeyword(field.name)"
+        :label="field.label"
         :placeholder="field.inputPlaceholder || adapter.inputPlaceholder(field.label)"
-        @input="adapter.setRelationKeyword(field.name, ($event.target as HTMLInputElement).value)"
+        @update:model-value="adapter.setRelationKeyword(field.name, $event)"
       />
-      <select
+      <ScMultiSelect
         class="input"
-        multiple
-        size="6"
-        :value="adapter.relationIds(field.name).map((id) => String(id))"
-        @change="adapter.setRelationMultiField(field.name, $event.target as HTMLSelectElement)"
+        :model-value="adapter.relationIds(field.name).map((id) => String(id))"
+        :label="field.label"
+        @update:model-value="adapter.setRelationIds(field.name, $event.map((id) => Number(id)))"
       >
         <option
           v-for="option in adapter.filteredRelationOptions(field.name)"
@@ -81,7 +82,7 @@
         >
           {{ option.label }}
         </option>
-      </select>
+      </ScMultiSelect>
     </div>
   </div>
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
@@ -118,34 +119,45 @@
             class="o2m-field"
           >
             <span class="meta">{{ column.label }}</span>
-            <input
+            <ScCheckbox
               v-if="column.ttype === 'boolean'"
               class="input-checkbox"
-              type="checkbox"
+              :model-value="Boolean(row.values[column.name])"
+              :label="column.label"
               :disabled="column.readonly || adapter.busy"
-              :checked="Boolean(row.values[column.name])"
-              @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).checked)"
+              @update:model-value="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
             />
-            <select
+            <ScSelect
               v-else-if="column.ttype === 'selection'"
               class="input"
               :disabled="column.readonly || adapter.busy"
-              :value="String(row.values[column.name] ?? '')"
-              @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLSelectElement).value)"
+              :model-value="String(row.values[column.name] ?? '')"
+              :label="column.label"
+              @update:model-value="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
             >
               <option value="">{{ adapter.selectPlaceholder(column.label) }}</option>
               <option v-for="option in column.selection || []" :key="String(option[0])" :value="String(option[0])">
                 {{ String(option[1]) }}
               </option>
-            </select>
-            <input
+            </ScSelect>
+            <ScDateField
+              v-else-if="column.ttype === 'date' || column.ttype === 'datetime'"
+              class="input"
+              :disabled="column.readonly || adapter.busy"
+              :model-value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
+              :with-time="column.ttype === 'datetime'"
+              :aria-label="column.label"
+              @update:model-value="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
+            />
+            <ScTextField
               v-else
               class="input"
-              :type="adapter.one2manyColumnInputType(column)"
+              :type="adapter.one2manyColumnInputType(column) === 'number' ? 'number' : 'text'"
               :disabled="column.readonly || adapter.busy"
-              :value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
+              :model-value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
+              :label="column.label"
               :placeholder="column.label"
-              @input="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).value)"
+              @update:model-value="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
             />
           </label>
         </div>
@@ -180,19 +192,25 @@
       </div>
     </div>
   </div>
-  <input
+  <ScTextField
   v-else
-    :value="adapter.inputFieldValue(field.name)"
+    :model-value="adapter.inputFieldValue(field.name)"
     class="input"
-    :type="adapter.fieldInputType(field.type)"
+    type="text"
+    :label="field.label"
     :placeholder="adapter.inputPlaceholder(field.label)"
-    @input="adapter.setTextField(field.name, ($event.target as HTMLInputElement).value)"
+    @update:model-value="adapter.setTextField(field.name, $event)"
   />
 </template>
 
 <script setup lang="ts">
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScCheckbox from '../design-system/ScCheckbox.vue';
+import ScDateField from '../design-system/ScDateField.vue';
+import ScMultiSelect from '../design-system/ScMultiSelect.vue';
+import ScSelect from '../design-system/ScSelect.vue';
+import ScTextField from '../design-system/ScTextField.vue';
 import type { X2ManyRelationRendererProps } from './relationField.types';
 
 const props = defineProps<X2ManyRelationRendererProps>();

@@ -13,12 +13,13 @@
         <ScButton @click="drawerOpen = true">打开抽屉</ScButton>
         <ScStatusBadge value="ready" label="可用" semantic="success" />
         <label>选项<ScSelect v-model="selectedOption"><option value="a">选项 A</option><option value="b">选项 B</option></ScSelect></label>
+        <label>多选<ScMultiSelect v-model="selectedOptions" label="多选"><option value="a">多选项 A</option><option value="b">多选项 B</option></ScMultiSelect></label>
         <label>日期<ScDateField v-model="selectedDate" /></label>
         <label>文本<ScTextField v-model="textValue" label="文本" /></label>
         <label>说明<ScTextArea v-model="notesValue" label="说明" :rows="3" /></label>
         <ScCheckbox v-model="confirmed" label="确认统一控件">确认统一控件</ScCheckbox>
       </div>
-      <p role="status">当前选项：{{ selectedOption }}；当前日期：{{ selectedDate }}；文本：{{ textValue }}；说明：{{ notesValue }}；确认：{{ confirmed ? '是' : '否' }}</p>
+      <p role="status">当前选项：{{ selectedOption }}；当前多选：{{ selectedOptions.join(',') }}；当前日期：{{ selectedDate }}；文本：{{ textValue }}；说明：{{ notesValue }}；确认：{{ confirmed ? '是' : '否' }}</p>
     </section>
 
     <section aria-labelledby="hierarchy-title">
@@ -58,6 +59,7 @@ import ScHierarchyTable, {
   type ScHierarchyTableColumn,
   type ScHierarchyTableRow,
 } from '../src/components/design-system/ScHierarchyTable.vue';
+import ScMultiSelect from '../src/components/design-system/ScMultiSelect.vue';
 import ScSelect from '../src/components/design-system/ScSelect.vue';
 import ScStatusBadge from '../src/components/design-system/ScStatusBadge.vue';
 import ScTextArea from '../src/components/design-system/ScTextArea.vue';
@@ -66,6 +68,7 @@ import ScTextField from '../src/components/design-system/ScTextField.vue';
 const dialogOpen = ref(false);
 const drawerOpen = ref(false);
 const selectedOption = ref('a');
+const selectedOptions = ref(['a']);
 const selectedDate = ref('2026-08-12');
 const textValue = ref('初始值');
 const notesValue = ref('初始说明');

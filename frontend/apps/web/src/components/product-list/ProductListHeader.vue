@@ -15,14 +15,15 @@
       <form v-if="showSearch" class="product-list-header__search" role="search" @submit.prevent="$emit('search-submit')">
         <label>
           <span class="sc-visually-hidden">{{ searchLabel }}</span>
-          <input
+          <ScTextField
             type="search"
-            :value="searchValue"
+            :model-value="searchValue"
+            :label="searchLabel"
             :disabled="loading"
             :placeholder="searchPlaceholder"
             @compositionstart="$emit('composition-start')"
             @compositionend="$emit('composition-end', $event)"
-            @input="$emit('search-input', $event)"
+            @update:model-value="$emit('search-input', $event)"
           />
         </label>
         <ScButton type="submit" :disabled="loading">{{ searchLabel }}</ScButton>
@@ -39,6 +40,7 @@
 import type { StyleValue } from 'vue';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
+import ScTextField from '../design-system/ScTextField.vue';
 
 defineProps<{
   loading: boolean;
@@ -51,7 +53,7 @@ defineProps<{
 }>();
 
 defineEmits<{
-  'search-input': [event: Event];
+  'search-input': [value: string];
   'search-submit': [];
   'search-clear': [];
   'composition-start': [];
@@ -118,8 +120,10 @@ defineEmits<{
 .product-list-header__search { grid-area: main; display: flex; gap: var(--sc-toolbar-gap); align-items: center; min-width: 320px; }
 .product-list-header__search label { min-width: 0; flex: 1; }
 .product-list-header__search :deep(.sc-btn) { min-height: 40px; }
-.product-list-header__search input {
+.product-list-header__search :deep(.sc-design-text-field) {
   width: 100%;
+}
+.product-list-header__search :deep(.t-input) {
   min-height: 40px;
   padding: 0 var(--sc-space-sm);
   border: 1px solid var(--sc-app-border-strong);
@@ -127,7 +131,7 @@ defineEmits<{
   background: var(--sc-app-panel);
   color: var(--sc-app-text-primary);
 }
-.product-list-header__search input:focus {
+.product-list-header__search :deep(.t-input--focused) {
   border-color: var(--sc-semantic-surface-interactive);
   outline: 3px solid var(--sc-app-focus-ring);
   outline-offset: 0;

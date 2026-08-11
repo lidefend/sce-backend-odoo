@@ -47,6 +47,7 @@ REQUIRED_SC_ADAPTERS = {
     "ScHierarchyTable.vue": "TEnhancedTable",
     "ScTextField.vue": "TInput",
     "ScSelect.vue": "TSelect",
+    "ScMultiSelect.vue": "TSelect",
     "ScStatusBadge.vue": "TTag",
     "ScTextArea.vue": "TTextarea",
 }
@@ -61,23 +62,6 @@ REQUIRED_SURFACE_CONSUMERS = {
     "generic view field": (SRC / "components/view/ViewFieldRenderer.vue", "ScTextField"),
     "WBS hierarchy": (SRC / "components/action/HierarchyPlanner.vue", "ScHierarchyTable"),
 }
-DATA_ENTRY_SURFACES = {
-    "application shell scope search": SRC / "layouts/AppShell.vue",
-    "primary navigation search": SRC / "components/product-shell/PrimaryNavigation.vue",
-    "action surface filters": SRC / "components/action/ActionSurfaceToolbar.vue",
-    "contract form fields": SRC / "components/template/FormSection.vue",
-    "generic view fields": SRC / "components/view/ViewFieldRenderer.vue",
-    "my work approval": SRC / "components/business/MyWorkApprovalWorkspace.vue",
-    "login": SRC / "views/LoginView.vue",
-    "account activation": SRC / "views/AccountActivationView.vue",
-    "usage analytics": SRC / "views/UsageAnalyticsView.vue",
-    "scene packages": SRC / "views/ScenePackagesView.vue",
-    "business configuration approval": SRC / "views/businessConfigSurface/BusinessConfigApprovalPanel.vue",
-    "business configuration coverage": SRC / "views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
-    "business configuration field editor": SRC / "views/businessConfigSurface/LowCodeFieldChipEditor.vue",
-}
-
-
 def collect_direct_imports(
     src: Path = SRC,
     root: Path = ROOT,
@@ -104,6 +88,23 @@ def collect_native_control_inventory(src: Path = SRC) -> dict[str, int]:
         for control in RAW_CONTROL_RE.findall(path.read_text(encoding="utf-8", errors="ignore")):
             inventory[control.lower()] += 1
     return inventory
+
+
+def collect_unadapted_data_entry_controls(
+    src: Path = SRC,
+    root: Path = ROOT,
+) -> list[str]:
+    violations: list[str] = []
+    for path in src.rglob("*.vue"):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if not UNADAPTED_DATA_ENTRY_RE.search(text):
+            continue
+        try:
+            display = path.relative_to(root).as_posix()
+        except ValueError:
+            display = path.as_posix()
+        violations.append(display)
+    return sorted(violations)
 
 
 def validate() -> list[str]:
@@ -161,10 +162,8 @@ def validate() -> list[str]:
         text = path.read_text(encoding="utf-8", errors="ignore") if path.is_file() else ""
         if primitive not in text:
             errors.append(f"{surface} does not consume required SC primitive: {primitive}")
-    for surface, path in DATA_ENTRY_SURFACES.items():
-        text = path.read_text(encoding="utf-8", errors="ignore") if path.is_file() else ""
-        if UNADAPTED_DATA_ENTRY_RE.search(text):
-            errors.append(f"{surface} contains an unadapted native data-entry control: {path.relative_to(ROOT)}")
+    for path in collect_unadapted_data_entry_controls():
+        errors.append(f"source contains an unadapted native data-entry control: {path}")
     return errors
 
 
@@ -180,7 +179,8 @@ def main() -> int:
     print("- product theming: SC semantic-token bridge")
     print("- versions: exact and reviewable")
     print(f"- native control inventory: {json.dumps(collect_native_control_inventory(), ensure_ascii=False, sort_keys=True)}")
-    print(f"- governed data-entry surfaces: {len(DATA_ENTRY_SURFACES)}")
+    print(f"- governed data-entry scope: all {len(list(SRC.rglob('*.vue')))} Vue source files")
+    print("- controlled native exceptions: radio and file inputs only")
     return 0
 
 

@@ -19,60 +19,64 @@
       <template v-if="activeIsActivity">
         <label class="native-chatter-field">
           <span>{{ activityAssigneeLabel }}</span>
-          <select
+          <ScSelect
             class="input"
-            :value="activityAssigneeId || ''"
+            :model-value="activityAssigneeId || ''"
+            :label="activityAssigneeLabel"
             :disabled="posting || usersLoading"
-            @change="emitActivityAssignee"
+            @update:model-value="emitActivityAssignee"
           >
             <option value="">当前用户</option>
             <option v-for="user in activityAssigneeOptions" :key="`activity-user-${user.id}`" :value="user.id">
               {{ collaborationUserLabel(user) }}
             </option>
-          </select>
+          </ScSelect>
         </label>
         <label class="native-chatter-field">
           <span>{{ activitySummaryLabel }}</span>
-          <input
+          <ScTextField
             class="input"
             type="text"
-            :value="activitySummary"
+            :model-value="activitySummary"
+            :label="activitySummaryLabel"
             :placeholder="activitySummaryPlaceholder"
             :disabled="posting"
-            @input="$emit('update:activitySummary', inputValue($event))"
+            @update:model-value="$emit('update:activitySummary', $event)"
           />
         </label>
         <label class="native-chatter-field">
           <span>{{ activityDeadlineLabel }}</span>
-          <input
+          <ScDateField
             class="input"
-            type="date"
-            :value="activityDeadline"
+            :model-value="activityDeadline"
+            :aria-label="activityDeadlineLabel"
             :disabled="posting"
-            @input="$emit('update:activityDeadline', inputValue($event))"
+            @update:model-value="$emit('update:activityDeadline', $event)"
           />
         </label>
         <label class="native-chatter-field">
           <span>{{ activityNoteLabel }}</span>
-          <textarea
+          <ScTextArea
             class="native-chatter-input"
-            :value="activityNote"
+            :model-value="activityNote"
+            :label="activityNoteLabel"
             :placeholder="activityNotePlaceholder"
             :disabled="posting"
-            @input="$emit('update:activityNote', inputValue($event))"
+            @update:model-value="$emit('update:activityNote', $event)"
           />
         </label>
       </template>
       <template v-else>
         <label class="native-chatter-field">
           <span>提醒对象</span>
-          <input
+          <ScTextField
             class="input"
             type="text"
-            :value="collaborationUserQuery"
+            :model-value="collaborationUserQuery"
+            label="提醒对象"
             :disabled="posting || usersLoading"
             placeholder="搜索姓名或账号"
-            @input="emitCollaborationUserQuery"
+            @update:model-value="emitCollaborationUserQuery"
           />
         </label>
         <div v-if="selectedMentionUsers.length" class="native-collab-selected">
@@ -99,12 +103,13 @@
             @{{ collaborationUserLabel(user) }}
           </button>
         </div>
-        <textarea
+        <ScTextArea
           class="native-chatter-input"
-          :value="chatterDraft"
+          :model-value="chatterDraft"
+          label="沟通内容"
           :placeholder="activePlaceholder"
           :disabled="posting"
-          @input="$emit('update:chatterDraft', inputValue($event))"
+          @update:model-value="$emit('update:chatterDraft', $event)"
         />
       </template>
       <div class="native-chatter-compose-actions">
@@ -176,6 +181,10 @@
 <script setup lang="ts">
 import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
 import type { NativeChatterAction } from './types';
+import ScDateField from '../../components/design-system/ScDateField.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScTextArea from '../../components/design-system/ScTextArea.vue';
+import ScTextField from '../../components/design-system/ScTextField.vue';
 
 type PendingNativeAttachment = {
   key: string;
@@ -264,18 +273,13 @@ const emit = defineEmits<{
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
 }>();
 
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement | HTMLTextAreaElement).value || '');
-}
-
-function emitCollaborationUserQuery(event: Event) {
-  const value = inputValue(event);
+function emitCollaborationUserQuery(value: string) {
   emit('update:collaborationUserQuery', value);
   emit('load-users', value);
 }
 
-function emitActivityAssignee(event: Event) {
-  const value = Number((event.target as HTMLSelectElement).value || 0);
+function emitActivityAssignee(raw: string) {
+  const value = Number(raw || 0);
   emit('select-activity-assignee', Number.isFinite(value) && value > 0 ? value : 0);
 }
 

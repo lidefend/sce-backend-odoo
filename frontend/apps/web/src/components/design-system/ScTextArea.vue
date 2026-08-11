@@ -16,6 +16,7 @@
     @change="$emit('change', String($event ?? ''))"
     @focus="$emit('focus', $event)"
     @blur="$emit('blur', $event)"
+    @keydown="$emit('keydown', $event)"
   />
 </template>
 
@@ -55,6 +56,7 @@ defineEmits<{
   change: [value: string];
   focus: [event: FocusEvent];
   blur: [event: FocusEvent];
+  keydown: [event: KeyboardEvent];
 }>();
 const control = ref<ComponentPublicInstance | null>(null);
 const attrs = useAttrs();

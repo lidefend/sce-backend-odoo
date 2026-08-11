@@ -87,13 +87,8 @@ export function useFieldOrderMutationRuntime(params: {
     moveFieldToGroupEnd(fieldKey, groupTitle);
   }
 
-  function onSelectedFormSettingsFieldGroupMoveChange(event: Event) {
-    const target = event.target;
-    const targetInput = target as unknown as { value?: unknown };
-    const value = target && typeof targetInput.value === 'string'
-      ? targetInput.value
-      : '';
-    moveSelectedFormSettingsFieldToGroup(value);
+  function onSelectedFormSettingsFieldGroupMoveChange(groupTitle: string) {
+    moveSelectedFormSettingsFieldToGroup(groupTitle);
   }
 
   function moveSelectedFormSettingsFieldToOrderTarget() {

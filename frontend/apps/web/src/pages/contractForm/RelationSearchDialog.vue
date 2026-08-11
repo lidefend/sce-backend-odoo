@@ -7,15 +7,16 @@
     @close="$emit('close')"
   >
       <div class="relation-dialog-search">
-        <input
+        <ScTextField
           ref="searchInputRef"
           class="input"
           type="text"
           autofocus
-          :value="dialog.keyword"
+          :model-value="dialog.keyword"
+          :label="dialog.labels.search_placeholder || '输入名称搜索'"
           :placeholder="dialog.labels.search_placeholder || '输入名称搜索'"
-          @input="$emit('keyword-change', inputValue($event))"
-          @keydown.enter.prevent="$emit('search')"
+          @update:model-value="$emit('keyword-change', $event)"
+          @enter="$emit('search')"
         />
         <ScButton :disabled="dialog.loading" @click="$emit('search')">
           {{ dialog.labels.search || '搜索' }}
@@ -116,6 +117,7 @@ import ScButton from '../../components/design-system/ScButton.vue';
 import ScDataTable from '../../components/design-system/ScDataTable.vue';
 import ScDialog from '../../components/design-system/ScDialog.vue';
 import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
+import ScTextField from '../../components/design-system/ScTextField.vue';
 import type { RelationOption, RelationSearchColumn, RelationSearchRow, RelationUiLabels } from './types';
 
 export type RelationSearchDialogState = {
@@ -148,7 +150,7 @@ defineEmits<{
   'keyword-change': [keyword: string];
 }>();
 
-const searchInputRef = ref<HTMLInputElement | null>(null);
+const searchInputRef = ref<{ focus: () => void } | null>(null);
 
 watch(
   () => props.dialog.open,
@@ -159,9 +161,6 @@ watch(
   },
 );
 
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement).value || '');
-}
 
 function relationSearchCell(row: RelationSearchRow, columnName: string) {
   const value = row.values[columnName];

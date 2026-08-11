@@ -59,12 +59,13 @@
           <section class="contract-form-field-search" aria-label="字段快速查找">
             <label>
               <span>查找字段</span>
-              <input
-                :value="fieldSearchText"
+              <ScTextField
+                :model-value="fieldSearchText"
                 type="search"
+                label="查找字段"
                 placeholder="搜索字段名称"
                 :disabled="busy"
-                @input="$emit('update:fieldSearchText', inputValue($event))"
+                @update:model-value="$emit('update:fieldSearchText', $event)"
               />
             </label>
             <div class="contract-form-field-search-summary">
@@ -119,11 +120,16 @@
             </header>
             <label>
               <span>页面列数</span>
-              <select :value="layoutColumns" :disabled="busy" @change="$emit('layout-columns-change', $event)">
+              <ScSelect
+                :model-value="String(layoutColumns)"
+                label="页面列数"
+                :disabled="busy"
+                @update:model-value="$emit('layout-columns-change', Number($event))"
+              >
                 <option :value="1">1 栏</option>
                 <option :value="2">2 栏</option>
                 <option :value="3">3 栏</option>
-              </select>
+              </ScSelect>
             </label>
           </section>
         </aside>
@@ -142,12 +148,13 @@
                   </header>
                   <label class="contract-field-label-edit">
                     <span>字段显示名称</span>
-                    <input
+                    <ScTextField
                       type="text"
-                      :value="selectedFieldRow.label"
+                      :model-value="selectedFieldRow.label"
+                      label="字段显示名称"
                       :disabled="busy"
                       @change="$emit('selected-field-label-change', $event)"
-                      @keydown.enter.prevent="$emit('selected-field-label-change', $event)"
+                      @enter="$emit('selected-field-label-change', $event)"
                     />
                   </label>
                   <div class="contract-field-governance-actions" role="radiogroup" :aria-label="`${selectedFieldRow.label}字段显示`">
@@ -175,10 +182,11 @@
                   </header>
                   <label class="contract-field-group-move">
                     <span>移动到分组</span>
-                    <select
-                      :value="selectedFieldGroupTitle"
+                    <ScSelect
+                      :model-value="selectedFieldGroupTitle"
+                      label="移动到分组"
                       :disabled="busy || groupOptions.length < 2"
-                      @change="$emit('selected-field-group-move-change', $event)"
+                      @update:model-value="$emit('selected-field-group-move-change', $event)"
                     >
                       <option
                         v-for="groupTitle in groupOptions"
@@ -187,17 +195,18 @@
                       >
                         {{ groupTitle }}
                       </option>
-                    </select>
+                    </ScSelect>
                   </label>
                   <label class="contract-field-group-rename">
                     <span>分组名称</span>
-                    <input
-                      :value="selectedFieldGroupTitleEdit"
+                    <ScTextField
+                      :model-value="selectedFieldGroupTitleEdit"
                       type="text"
+                      label="分组名称"
                       :disabled="busy || !selectedFieldGroupTitle"
-                      @input="$emit('update:selectedFieldGroupTitleEdit', inputValue($event))"
+                      @update:model-value="$emit('update:selectedFieldGroupTitleEdit', $event)"
                       @change="$emit('selected-group-title-change', $event)"
-                      @keydown.enter.prevent="$emit('selected-group-title-change', $event)"
+                      @enter="$emit('selected-group-title-change', $event)"
                     />
                   </label>
                   <div class="contract-field-group-visibility" role="radiogroup" :aria-label="`${selectedFieldGroupTitle}分组显示`">
@@ -227,28 +236,30 @@
                   </div>
                   <label class="contract-field-group-columns">
                     <span>分组列数</span>
-                    <select
-                      :value="selectedGroupColumns"
+                    <ScSelect
+                      :model-value="String(selectedGroupColumns)"
+                      label="分组列数"
                       :disabled="busy || !selectedFieldGroupTitle"
-                      @change="$emit('selected-group-columns-change', $event)"
+                      @update:model-value="$emit('selected-group-columns-change', Number($event))"
                     >
                       <option :value="1">1 栏</option>
                       <option :value="2">2 栏</option>
                       <option :value="3">3 栏</option>
-                    </select>
+                    </ScSelect>
                   </label>
                   <label class="contract-field-size-control">
                     <span>字段尺寸</span>
-                    <select
-                      :value="selectedFieldSize"
+                    <ScSelect
+                      :model-value="selectedFieldSize"
+                      label="字段尺寸"
                       :disabled="busy || !selectedFieldKey"
-                      @change="$emit('selected-field-size-change', $event)"
+                      @update:model-value="$emit('selected-field-size-change', $event as LowCodeFieldSize)"
                     >
                       <option value="normal">标准</option>
                       <option value="wide">加宽</option>
                       <option value="full">整行</option>
                       <option value="large">大输入框</option>
-                    </select>
+                    </ScSelect>
                   </label>
                 </section>
                 <section class="contract-field-inspector-section">
@@ -258,10 +269,11 @@
                   <div class="contract-field-position-move">
                     <label>
                       <span>移动位置</span>
-                      <select
-                        :value="orderTargetKey"
+                      <ScSelect
+                        :model-value="orderTargetKey"
+                        label="移动位置"
                         :disabled="busy || orderTargetOptions.length === 0"
-                        @change="$emit('update:orderTargetKey', inputValue($event))"
+                        @update:model-value="$emit('update:orderTargetKey', $event)"
                       >
                         <option
                           v-for="option in orderTargetOptions"
@@ -270,18 +282,19 @@
                         >
                           {{ option.label }}
                         </option>
-                      </select>
+                      </ScSelect>
                     </label>
                     <label>
                       <span>放置方式</span>
-                      <select
-                        :value="orderPlacement"
+                      <ScSelect
+                        :model-value="orderPlacement"
+                        label="放置方式"
                         :disabled="busy || orderTargetOptions.length === 0"
-                        @change="$emit('update:orderPlacement', inputValue($event) as 'before' | 'after')"
+                        @update:model-value="$emit('update:orderPlacement', $event as 'before' | 'after')"
                       >
                         <option value="before">移到其前</option>
                         <option value="after">移到其后</option>
-                      </select>
+                      </ScSelect>
                     </label>
                     <button
                       class="ghost small"
@@ -354,6 +367,7 @@
 </template>
 
 <script setup lang="ts">
+import { ScSelect, ScTextField } from '../../components/design-system';
 import type {
   ContractFieldGovernanceRow,
   FormConfigAuditResult,
@@ -422,15 +436,15 @@ defineEmits<{
   'update:fieldSearchText': [value: string];
   'select-field': [fieldKey: string];
   'select-group': [title: string];
-  'layout-columns-change': [event: Event];
-  'selected-field-label-change': [event: Event];
+  'layout-columns-change': [columns: number];
+  'selected-field-label-change': [label: string];
   'selected-field-visibility-change': [value: string];
-  'selected-field-group-move-change': [event: Event];
+  'selected-field-group-move-change': [groupTitle: string];
   'update:selectedFieldGroupTitleEdit': [value: string];
-  'selected-group-title-change': [event: Event];
+  'selected-group-title-change': [title: string];
   'selected-group-visibility-change': [value: 'show' | 'hide'];
-  'selected-group-columns-change': [event: Event];
-  'selected-field-size-change': [event: Event];
+  'selected-group-columns-change': [columns: number];
+  'selected-field-size-change': [size: LowCodeFieldSize];
   'update:orderTargetKey': [value: string];
   'update:orderPlacement': [value: 'before' | 'after'];
   'move-selected-field': [];
@@ -441,10 +455,6 @@ defineEmits<{
   'return-to-workbench': [];
   reset: [];
 }>();
-
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement | HTMLSelectElement).value || '');
-}
 </script>
 
 <style src="./CurrentFormFieldSettingsPanel.css"></style>

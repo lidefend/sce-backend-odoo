@@ -124,10 +124,9 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     });
   }
 
-  async function onSelectedFormSettingsGroupTitleChange(event: Event) {
+  async function onSelectedFormSettingsGroupTitleChange(value: string) {
     const oldTitle = selectedFormSettingsFieldGroupTitle.value;
-    const target = event.target as HTMLInputElement | null;
-    const newTitle = String(selectedFormSettingsFieldGroupTitleEdit.value || target?.value || '').trim();
+    const newTitle = String(value || selectedFormSettingsFieldGroupTitleEdit.value || '').trim();
     if (!oldTitle || !newTitle || oldTitle === newTitle) {
       selectedFormSettingsFieldGroupTitleEdit.value = oldTitle;
       return;
@@ -135,10 +134,9 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     await onContractInlineGroupRename({ oldTitle, newTitle });
   }
 
-  async function onSelectedFormSettingsFieldLabelChange(event: Event) {
+  async function onSelectedFormSettingsFieldLabelChange(value: string) {
     const fieldKey = selectedFormSettingsFieldKey.value;
-    const target = event.target as HTMLInputElement | null;
-    const label = String(target?.value || '').trim();
+    const label = String(value || '').trim();
     if (!fieldKey || !label || label === selectedFormSettingsFieldRow.value?.label) return;
     selectedFormSettingsFieldLabel.value = label;
     await setInlineFieldPolicy(fieldKey, { label });

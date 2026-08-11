@@ -90,40 +90,41 @@
       <section v-if="showPagination" class="pagination-bar">
         <div class="pagination-actions">
           <span class="pagination-total">{{ paginationTotalText }}</span>
-          <button
+          <ScButton
             type="button"
             class="pagination-btn"
             :disabled="loading || !canPagePrev"
             @click="pagePrev"
           >
             上一页
-          </button>
+          </ScButton>
           <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
-          <button
+          <ScButton
             type="button"
             class="pagination-btn"
             :disabled="loading || !canPageNext"
             @click="pageNext"
           >
             下一页
-          </button>
-          <input
+          </ScButton>
+          <ScTextField
             class="pagination-input"
-            :value="pageJumpInput"
+            :model-value="pageJumpInput"
+            label="页码"
             :disabled="loading || totalPages <= 1"
             inputmode="numeric"
             pattern="[0-9]*"
-            @input="onPageJumpInput"
-            @keyup.enter="jumpPage"
+            @update:model-value="onPageJumpInput"
+            @enter="jumpPage"
           />
-          <button
+          <ScButton
             type="button"
             class="pagination-btn"
             :disabled="loading || totalPages <= 1"
             @click="jumpPage"
           >
             跳转
-          </button>
+          </ScButton>
         </div>
       </section>
       <section v-else class="pagination-bar pagination-bar--count-only">
@@ -138,6 +139,8 @@ import { computed, ref, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import PageHeader from '../components/page/PageHeader.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
+import ScButton from '../components/design-system/ScButton.vue';
+import ScTextField from '../components/design-system/ScTextField.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { pageModeLabel } from '../app/pageMode';
 import { semanticStatus, semanticValueByField } from '../utils/semantic';
@@ -295,8 +298,8 @@ function pageNext() {
   emitPageOffset(listOffset.value + listLimit.value);
 }
 
-function onPageJumpInput(event: Event) {
-  pageJumpInput.value = String((event.target as HTMLInputElement | null)?.value || '');
+function onPageJumpInput(value: string) {
+  pageJumpInput.value = value;
 }
 
 function jumpPage() {

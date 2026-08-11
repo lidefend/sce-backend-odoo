@@ -17,6 +17,7 @@ export { default as ScHierarchyTable } from './ScHierarchyTable.vue';
 export type { ScHierarchyTableColumn, ScHierarchyTableRow } from './ScHierarchyTable.vue';
 export { default as ScMobileRecordCard } from './ScMobileRecordCard.vue';
 export { default as ScMoney } from './ScMoney.vue';
+export { default as ScMultiSelect } from './ScMultiSelect.vue';
 export { default as ScPage } from './ScPage.vue';
 export type { ContentLayoutMode, PageKind, WorkspaceFrameMode } from './pageWidth';
 export { contractContentLayoutMode, normalizeContentLayoutMode, resolveContentLayoutMode } from './pageWidth';

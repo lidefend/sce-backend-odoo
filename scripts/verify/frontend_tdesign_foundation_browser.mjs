@@ -58,6 +58,10 @@ try {
     await page.getByText('子节点 B', { exact: true }).dblclick();
     await page.getByRole('textbox', { name: '选项' }).click();
     await page.getByRole('listitem', { name: '选项 B' }).click();
+    await page.locator('.sc-design-multi-select').click();
+    await page.getByRole('listitem', { name: '多选项 B' }).click();
+    await page.locator('.sc-design-multi-select').click();
+    await page.getByRole('listitem', { name: '多选项 A' }).waitFor({ state: 'hidden' });
     await page.getByRole('textbox', { name: '文本' }).fill('统一文本控件');
     await page.getByRole('textbox', { name: '说明' }).fill('统一多行控件');
     await page.locator('.sc-design-checkbox[aria-label="确认统一控件"]').click();
@@ -82,6 +86,7 @@ try {
       selected: document.body.textContent?.includes('已选择：child-b') || false,
       opened: document.body.textContent?.includes('已打开：child-b') || false,
       selectedOption: document.body.textContent?.includes('当前选项：b') || false,
+      selectedOptions: document.body.textContent?.includes('当前多选：a,b') || false,
       textField: document.body.textContent?.includes('文本：统一文本控件') || false,
       textArea: document.body.textContent?.includes('说明：统一多行控件') || false,
       checkbox: document.body.textContent?.includes('确认：是') || false,
@@ -102,7 +107,7 @@ try {
       })(),
     }));
     if (geometry.documentWidth > geometry.viewportWidth + 1) throw new Error(`${viewport.width}x${viewport.height}: page horizontal overflow`);
-    if (!geometry.selected || !geometry.opened || !geometry.selectedOption || !geometry.textField || !geometry.textArea || !geometry.checkbox) {
+    if (!geometry.selected || !geometry.opened || !geometry.selectedOption || !geometry.selectedOptions || !geometry.textField || !geometry.textArea || !geometry.checkbox) {
       throw new Error(`${viewport.width}x${viewport.height}: interaction state missing`);
     }
     if (geometry.hierarchy.content_scroll_left !== 0 || geometry.hierarchy.first_header_left < geometry.hierarchy.root_left - 1) {

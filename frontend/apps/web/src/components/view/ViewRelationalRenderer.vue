@@ -29,7 +29,7 @@
         <div v-if="editTxState === 'saved'" class="editor-banner">Saved.</div>
         <div v-else-if="editTxState === 'saving'" class="editor-banner">Saving…</div>
         <label class="editor-label">Name</label>
-        <input v-model="draftName" class="editor-input" type="text" />
+        <ScTextField v-model="draftName" class="editor-input" type="text" label="名称" />
         <div class="editor-actions">
           <button class="relational-save" type="button" :disabled="saving || !draftName.trim()" @click="saveRow">
             {{ saving ? 'Saving…' : 'Save' }}
@@ -46,6 +46,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useEditTx } from '../../composables/useEditTx';
+import ScTextField from '../design-system/ScTextField.vue';
 import { pickContractNavQuery } from '../../app/navigationContext';
 import {
   createRelationRendererRecord,

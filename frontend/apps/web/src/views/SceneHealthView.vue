@@ -8,12 +8,12 @@
       <div class="actions">
         <label>
           <span>Company</span>
-          <select v-model="companyIdText" @change="loadHealth">
+          <ScSelect v-model="companyIdText" label="公司" @change="loadHealth">
             <option value="">Current</option>
             <option v-for="company in companies" :key="company.id" :value="String(company.id)">
               {{ company.name }}
             </option>
-          </select>
+          </ScSelect>
         </label>
         <button
           v-for="action in headerActions"
@@ -103,15 +103,15 @@
         <div class="governance-grid">
           <label>
             <span>Target Channel</span>
-            <select v-model="targetChannel">
+            <ScSelect v-model="targetChannel" label="目标通道">
               <option value="stable">stable</option>
               <option value="beta">beta</option>
               <option value="dev">dev</option>
-            </select>
+            </ScSelect>
           </label>
           <label class="reason">
             <span>Reason (required)</span>
-            <input v-model="governanceReason" type="text" placeholder="input reason" />
+            <ScTextField v-model="governanceReason" label="操作原因" type="text" placeholder="input reason" />
           </label>
         </div>
         <div class="governance-actions">
@@ -154,6 +154,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
+import ScTextField from '../components/design-system/ScTextField.vue';
 import { intentRequest } from '../api/intents';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { usePageContract } from '../app/pageContract';
