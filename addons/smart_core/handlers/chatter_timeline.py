@@ -65,6 +65,9 @@ class ChatterTimelineHandler(BaseIntentHandler):
         limit, limit_error = _read_limit(params.get("limit"), default=40, cap=120)
         if limit_error:
             return self._failure(REASON_USER_ERROR, "limit 无效", 400, trace_id)
+        offset, offset_error = _read_offset(params.get("offset"))
+        if offset_error:
+            return self._failure(REASON_USER_ERROR, "offset 无效", 400, trace_id)
         if model not in self.env:
             return self._failure(REASON_NOT_FOUND, "模型不存在", 404, trace_id)
 
@@ -99,10 +102,11 @@ class ChatterTimelineHandler(BaseIntentHandler):
             return self._failure(REASON_NOT_FOUND, "记录不存在", 404, trace_id)
 
         try:
-            messages = self._load_messages(model, record.id, limit)
-            attachments = self._load_attachments(model, record.id, limit)
-            activity_items = self._load_activities(model, record.id, limit)
-            audit_items = self._load_audit_items(model, record.id, limit) if include_audit else []
+            fetch_limit = offset + limit + 1
+            messages = self._load_messages(model, record.id, fetch_limit)
+            attachments = self._load_attachments(model, record.id, fetch_limit)
+            activity_items = self._load_activities(model, record.id, fetch_limit)
+            audit_items = self._load_audit_items(model, record.id, fetch_limit) if include_audit else []
         except AccessError:
             return self._failure(REASON_PERMISSION_DENIED, "无权限读取协作时间线", 403, trace_id)
         except UserError as exc:
@@ -112,17 +116,23 @@ class ChatterTimelineHandler(BaseIntentHandler):
 
         items = messages + attachments + activity_items + audit_items
         items.sort(key=lambda item: item.get("at") or "", reverse=True)
-        if len(items) > limit:
-            items = items[:limit]
+        page_items = items[offset:offset + limit]
+        has_more = len(items) > offset + limit
 
         return {
-            "items": items,
+            "items": page_items,
             "counts": {
-                "messages": len(messages),
-                "attachments": len(attachments),
-                "activities": len(activity_items),
-                "audit": len(audit_items),
-                "total": len(items),
+                "messages": sum(1 for item in page_items if item.get("type") == "message"),
+                "attachments": sum(1 for item in page_items if item.get("type") == "attachment"),
+                "activities": sum(1 for item in page_items if item.get("type") == "activity"),
+                "audit": sum(1 for item in page_items if item.get("type") == "audit"),
+                "total": len(page_items),
+            },
+            "paging": {
+                "offset": offset,
+                "limit": limit,
+                "next_offset": offset + len(page_items) if has_more else None,
+                "has_more": has_more,
             },
             "source_authorities": list(self.SOURCE_AUTHORITIES),
             "auxiliary_authorities": list(self.AUXILIARY_AUTHORITIES) if include_audit else [],
@@ -295,6 +305,20 @@ def _read_limit(value: Any, default: int, cap: int):
     if parsed is None:
         return default, None
     return min(parsed, cap), None
+
+
+def _read_offset(value: Any):
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return 0, None
+    if isinstance(value, bool):
+        return 0, "invalid"
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 0, "invalid"
+    if parsed < 0 or str(value).strip() != str(parsed):
+        return 0, "invalid"
+    return parsed, None
 
 
 def _is_empty_param(value: Any) -> bool:

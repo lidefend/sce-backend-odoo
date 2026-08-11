@@ -10,6 +10,10 @@ type PresentationDependencies = Record<string, any>;
 /** Owns authoritative action presentation and field interaction adapters. */
 export function useRecordActionPresentation(dependencies: PresentationDependencies) {
   const { ErrorCodes, actionId, activeChatterLabel, activeChatterMode, activityAssigneeId, activityDeadline, activityNote, activitySummary, activityUpdatingIds, addOne2manyRow, advancedExpanded, applyPageStatusEvent, applyWorkflowAvailability, attachmentError, attachmentUploading, buildContractFormActions, busy, busyKind, canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, chatterError, chatterPosting, chatterTimeline, closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions, collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById, collectSceneValidationPrecheckErrorsFromRules, collectUnifiedPageContractV2ButtonStatus, commitMany2oneInline, confirmActionSafety, contract, detectObjectMethodFromActionKey, dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible, ensureSavedBeforeRecordAction, executeButton, fieldGroupBase, fieldGroupDraft, fieldInputType, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft, filteredRelationOptions, focusProductFormValidationError, formConflict, formData, formLayoutColumnsDraft, inputFieldValue, intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue, isIntakeCreateMode, isQuickIntakeMode, isTierValidationActionHidden, layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase, many2oneValue, markFieldChanged, model, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision, navigateActionResponseResult, normalizeActionKind, normalizeActionSafety, normalizeRequiredParams, normalizeWorkflowActionRows, normalizeWorkflowEvidenceGateRows, onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, one2manyCreateLabel, one2manyRowErrors, one2manyRowHints, one2manyRowLabel, one2manyRowStateLabel, one2manySummary, openNativeAttachment, openNativeChatterAction, openRelationCreateForm, parseMaybeJsonRecord, pendingNativeAttachments, policyContext, queryMany2oneInline, recordId, relationCreateMode, relationIds, relationInlineCreate, relationKeyword, relationOptionsForField, relationUiLabel, reload, rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow, removePendingNativeAttachment, removedOne2manyRows, renderProfile, resolveContractFormFieldLabels, resolveInputPlaceholder, resolvePrimaryCreateFooterAction, resolveSelectPlaceholder, resolveUnifiedPageContractV2, resolveWorkflowContractFromSources, restoreOne2manyRow, rights, route, runAction, runtimeRoleCode, selectMentionUser, selectedMentionUsers, selectedRelationOptions, sendNativeChatter, session, setBooleanField, setMany2oneField, setOne2manyRowField, setRelationIds, setRelationKeyword, setRelationMultiField, setSelectionField, setTextField, shouldShowWorkflowAction, showHud, showOne2manyErrors, toDateInputValue, toDatetimeInputValue, toPositiveInt, updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics, useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore, validationErrors, visibleOne2manyRows } = dependencies;
+  const chatterTimelineHasMore = dependencies.chatterTimelineHasMore;
+  const chatterTimelineLoading = dependencies.chatterTimelineLoading;
+  const loadMoreNativeChatterTimeline = dependencies.loadMoreNativeChatterTimeline;
+
   function currentWorkflowContract(): Record<string, unknown> {
     return resolveWorkflowContractFromSources(contract.value, v2ContractStore.value?.snapshot);
   }
@@ -77,10 +81,12 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     contract, v2ContractStore, recordId, model, renderProfile, busy,
     activeChatterMode, activeChatterLabel, chatterDraft, activitySummary, activityDeadline, activityNote,
     collaborationUserQuery, collaborationUserOptions, collaborationUserChoices, collaborationUsersLoading,
-    selectedMentionUsers, activityAssigneeId, chatterPosting, chatterError, chatterTimeline, activityUpdatingIds,
+    selectedMentionUsers, activityAssigneeId, chatterPosting, chatterError, chatterTimeline,
+    chatterTimelineHasMore, chatterTimelineLoading, activityUpdatingIds,
     attachmentError, attachmentUploading, pendingNativeAttachments, onNativeAttachmentSelected,
     closeNativeChatterComposer, loadCollaborationUsers, openNativeChatterAction, openNativeAttachment,
     removeMentionUser, removePendingNativeAttachment, selectMentionUser, sendNativeChatter, updateNativeActivity,
+    loadMoreNativeChatterTimeline,
   });
 
   const hasNativeChatterNode = computed(() => nativeLayoutContainsType(nativeFormLayoutNodes.value, 'chatter'));

@@ -157,6 +157,18 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
         self.assertEqual(result["error"]["reason_code"], "USER_ERROR")
         self.assertEqual(result["error"]["message"], "limit 无效")
 
+    def test_invalid_offset_returns_user_error(self):
+        handler = self.module.ChatterTimelineHandler(
+            env={"x.model": object()},
+            params={"model": "x.model", "res_id": 7, "offset": -1},
+        )
+
+        result = handler.handle()
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["code"], 400)
+        self.assertEqual(result["error"]["message"], "offset 无效")
+
     def test_string_false_include_audit_skips_audit_authority(self):
         handler = self.module.ChatterTimelineHandler(
             env=_Env({"x.model": _Model(), "mail.message": _EmptySearchModel(), "ir.attachment": _EmptySearchModel()}),
@@ -168,8 +180,31 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
         self.assertIsInstance(result, tuple)
         data, meta = result
         self.assertEqual(data["counts"]["audit"], 0)
+        self.assertEqual(data["paging"], {"offset": 0, "limit": 40, "next_offset": None, "has_more": False})
         self.assertEqual(data["auxiliary_authorities"], [])
         self.assertEqual(meta["auxiliary_authorities"], [])
+
+    def test_offset_pages_the_merged_timeline_without_dropping_items(self):
+        handler = self.module.ChatterTimelineHandler(
+            env=_Env({"x.model": _Model()}),
+            params={"model": "x.model", "res_id": 7, "limit": 2, "offset": 2, "include_audit": False},
+        )
+        handler._load_messages = lambda model, res_id, limit: [
+            {"key": "m-1", "type": "message", "at": "2026-08-11T12:00:00"},
+            {"key": "m-2", "type": "message", "at": "2026-08-11T10:00:00"},
+        ]
+        handler._load_attachments = lambda model, res_id, limit: [
+            {"key": "a-1", "type": "attachment", "at": "2026-08-11T11:00:00"},
+            {"key": "a-2", "type": "attachment", "at": "2026-08-11T09:00:00"},
+            {"key": "a-3", "type": "attachment", "at": "2026-08-11T08:00:00"},
+        ]
+        handler._load_activities = lambda model, res_id, limit: []
+
+        data, _meta = handler.handle()
+
+        self.assertEqual([item["key"] for item in data["items"]], ["m-2", "a-2"])
+        self.assertEqual(data["paging"], {"offset": 2, "limit": 2, "next_offset": 4, "has_more": True})
+        self.assertEqual(data["counts"]["total"], 2)
 
 
 if __name__ == "__main__":

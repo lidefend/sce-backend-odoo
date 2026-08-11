@@ -43,6 +43,8 @@ export function useNativeChatterRuntime(params: {
   const loading = ref(false);
   const error = ref('');
   const timeline = ref<ChatterTimelineEntry[]>([]);
+  const timelineHasMore = ref(false);
+  const timelineNextOffset = ref(0);
   const activityUpdatingIds = ref<number[]>([]);
   let timelineRequestToken = 0;
 
@@ -60,6 +62,8 @@ export function useNativeChatterRuntime(params: {
     loading.value = false;
     error.value = '';
     timeline.value = [];
+    timelineHasMore.value = false;
+    timelineNextOffset.value = 0;
   }
 
   function closeComposer() {
@@ -74,7 +78,7 @@ export function useNativeChatterRuntime(params: {
     userQuery.value = '';
   }
 
-  async function loadTimeline(targetResId = params.recordId(), targetModel = params.model()) {
+  async function loadTimeline(targetResId = params.recordId(), targetModel = params.model(), append = false) {
     if (!targetResId || !targetModel) return;
     const requestToken = ++timelineRequestToken;
     const isCurrentRequest = () => (
@@ -87,17 +91,31 @@ export function useNativeChatterRuntime(params: {
       const response = await fetchChatterTimeline({
         model: targetModel,
         res_id: targetResId,
-        limit: 12,
+        offset: append ? timelineNextOffset.value : 0,
         include_audit: false,
       });
       if (!isCurrentRequest()) return;
-      timeline.value = Array.isArray(response.items) ? response.items : [];
+      const nextItems = Array.isArray(response.items) ? response.items : [];
+      if (append) {
+        const merged = new Map(timeline.value.map(item => [item.key, item]));
+        nextItems.forEach(item => merged.set(item.key, item));
+        timeline.value = Array.from(merged.values());
+      } else {
+        timeline.value = nextItems;
+      }
+      timelineHasMore.value = Boolean(response.paging?.has_more);
+      timelineNextOffset.value = Number(response.paging?.next_offset || 0);
     } catch (err) {
       if (!isCurrentRequest()) return;
       error.value = err instanceof Error ? err.message : '协作记录加载失败';
     } finally {
       if (requestToken === timelineRequestToken) loading.value = false;
     }
+  }
+
+  async function loadMoreTimeline() {
+    if (loading.value || !timelineHasMore.value || !timelineNextOffset.value) return;
+    await loadTimeline(params.recordId(), params.model(), true);
   }
 
   async function loadUsers(query = userQuery.value) {
@@ -262,10 +280,12 @@ export function useNativeChatterRuntime(params: {
     loading,
     error,
     timeline,
+    timelineHasMore,
     activityUpdatingIds,
     clearForRecordLoad,
     closeComposer,
     loadTimeline,
+    loadMoreTimeline,
     loadUsers,
     selectMentionUser,
     removeMentionUser,

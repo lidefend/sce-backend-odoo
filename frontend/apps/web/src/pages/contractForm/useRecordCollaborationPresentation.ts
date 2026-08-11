@@ -46,6 +46,8 @@ export function useRecordCollaborationPresentation(context: {
   chatterPosting: MutableRef<boolean>;
   chatterError: MutableRef<string>;
   chatterTimeline: MutableRef<ChatterTimelineEntry[]>;
+  chatterTimelineHasMore: MutableRef<boolean>;
+  chatterTimelineLoading: MutableRef<boolean>;
   activityUpdatingIds: MutableRef<number[]>;
   attachmentError: MutableRef<string>;
   attachmentUploading: MutableRef<boolean>;
@@ -60,6 +62,7 @@ export function useRecordCollaborationPresentation(context: {
   selectMentionUser: (...args: any[]) => unknown;
   sendNativeChatter: (...args: any[]) => unknown;
   updateNativeActivity: (...args: any[]) => unknown;
+  loadMoreNativeChatterTimeline: (...args: any[]) => unknown;
 }) {
   const runtimeCollaborationContract = computed(() => resolveRuntimeCollaborationContract(
     context.v2ContractStore.value?.snapshot?.runtimeContract,
@@ -128,12 +131,14 @@ export function useRecordCollaborationPresentation(context: {
     collaborationUserQuery: context.collaborationUserQuery.value, hasAttachments: Boolean(nativeAttachments.value),
     pendingAttachments: context.pendingNativeAttachments.value, posting: context.chatterPosting.value,
     selectedMentionUsers: context.selectedMentionUsers.value, submitDisabled: isNativeChatterSubmitDisabled.value,
-    timeline: context.chatterTimeline.value, title: nativeCollaborationTitle.value,
+    timeline: context.chatterTimeline.value, timelineHasMore: context.chatterTimelineHasMore.value,
+    timelineLoading: context.chatterTimelineLoading.value, title: nativeCollaborationTitle.value,
     unavailableMessage: nativeCollaborationUnavailableMessage.value, usersLoading: context.collaborationUsersLoading.value,
   }));
   const nativeCollaborationPanelListeners: NativeCollaborationPanelListeners = {
     'attachment-selected': context.onNativeAttachmentSelected, 'close-composer': context.closeNativeChatterComposer,
     'load-users': context.loadCollaborationUsers, 'open-action': context.openNativeChatterAction,
+    'load-more-timeline': context.loadMoreNativeChatterTimeline,
     'open-attachment': context.openNativeAttachment, 'remove-mention-user': context.removeMentionUser,
     'remove-pending-attachment': context.removePendingNativeAttachment,
     'select-activity-assignee': (id) => { context.activityAssigneeId.value = id; },
