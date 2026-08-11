@@ -19,7 +19,6 @@ from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
 from odoo.addons.smart_core.delivery.menu_service import MenuService
 from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
 from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
-from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 
 PRODUCT_KEYS = ("construction.standard", "construction.preview")
@@ -291,15 +290,7 @@ def main():
     native_nav = _native_nav_for_user(user_env)
     native_leaf_count = _leaf_count(native_nav)
     native_subset = _native_nav_for_user(user_env, limit=1)
-    native_navigation_authoritative = bool(
-        call_extension_hook_first(
-            user_env,
-            "smart_core_native_navigation_authority",
-            user_env,
-            {},
-            RUNTIME_USER_ROLE_SURFACE,
-        )
-    )
+    native_navigation_authoritative = False
     customer_specific_product_views = _customer_specific_product_views(env)
     if customer_specific_product_views:
         failures.append(
@@ -458,21 +449,10 @@ def main():
             failures.append("%s: delivery product_policy menu keys empty" % product_key)
         if user_delivery["delivered_menu_leaf_count"] <= 0:
             failures.append("%s: user delivery nav leaf count is empty" % product_key)
-        if native_navigation_authoritative:
-            # The industry product owns its active ACL-visible native tree, so
-            # caller-supplied native candidates are deliberately ignored. The
-            # probe must prove deterministic recomputation from current-user
-            # facts instead of treating an injected empty/subset tree as an
-            # authorization boundary.
-            if no_native_delivery["delivered_menu_leaf_count"] != user_delivery["delivered_menu_leaf_count"]:
-                failures.append("%s: authoritative native tree changed for empty caller candidate" % product_key)
-            if subset_delivery["delivered_menu_leaf_count"] != user_delivery["delivered_menu_leaf_count"]:
-                failures.append("%s: authoritative native tree changed for subset caller candidate" % product_key)
-        else:
-            if no_native_delivery["delivered_menu_leaf_count"] != 0:
-                failures.append("%s: non-admin without native authorization still sees policy menus" % product_key)
-            if subset_delivery["delivered_menu_leaf_count"] > 1:
-                failures.append("%s: native subset authorization leaked extra menus" % product_key)
+        if no_native_delivery["delivered_menu_leaf_count"] != 0:
+            failures.append("%s: non-admin without native authorization still sees policy menus" % product_key)
+        if subset_delivery["delivered_menu_leaf_count"] > 1:
+            failures.append("%s: native subset authorization leaked extra menus" % product_key)
         if admin_delivery["stable_leaf_count"] < user_delivery["stable_leaf_count"]:
             failures.append("%s: platform admin policy surface smaller than user surface" % product_key)
         if user_delivery["nav_source_authority_kind"] != MenuService.SOURCE_KIND:

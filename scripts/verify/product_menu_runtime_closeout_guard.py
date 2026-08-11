@@ -137,16 +137,14 @@ def validate() -> list[str]:
         errors.append("construction product release policy must not be bypassed by native-tree authority")
     if "smart_core_native_navigation_authority," in init_source:
         errors.append("construction product must not export the retired native-tree authority hook")
-    if '"source": "native_product_navigation_authority"' not in service_source:
-        errors.append("platform menu delivery must retain the generic native-navigation extension mechanism")
-    if "if self._native_navigation_is_authoritative(policy, role_surface):" not in service_source:
-        errors.append("platform menu delivery must retain the generic native-navigation extension point")
-    if "self._native_authoritative_fact_nav()" not in service_source:
-        errors.append("native authority must read the request user's ACL-visible Odoo menu facts")
+    if "smart_core_native_navigation_authority" in service_source:
+        errors.append("platform menu delivery must not retain the retired native-tree bypass")
+    if "_native_authoritative_fact_nav" in service_source or "_build_native_authoritative_nav" in service_source:
+        errors.append("platform menu delivery must have one release-policy projection path")
     if "def _native_route_discovery_blocked" not in service_source or "reserved_pairs=reserved_pairs" not in service_source:
         errors.append("native product routes must preserve stable menu/action pair identity")
-    if "product_baseline_authoritative = native_product_baseline_authoritative()" not in menu_config_source:
-        errors.append("P2 menu configuration must recognize the P1 native product baseline")
+    if "product_baseline_authoritative = released_product_baseline_authoritative()" not in menu_config_source:
+        errors.append("P2 menu configuration must recognize the released P1 product baseline")
     if "if not policy and not normalized_menu_id" not in menu_config_source:
         errors.append("legacy same-label policies must not bind to stable product menu ids")
     norm_root = ET.parse(NORM_MENU).getroot().find(".//menuitem[@id='menu_sc_norm_root']")

@@ -2665,7 +2665,7 @@ class TestMenuConfigurationAudit(unittest.TestCase):
         self.assertEqual([node["menu_id"] for node in overlaid["flat"]], [682])
         self.assertEqual(stats["hidden_count"], 0)
 
-    def test_runtime_overlay_keeps_unconfigured_native_product_baseline_menu(self):
+    def test_runtime_overlay_keeps_unconfigured_released_product_baseline_menu(self):
         module = _load_policy_model()
         company = types.SimpleNamespace(id=7)
         user = _User([])
@@ -2683,7 +2683,7 @@ class TestMenuConfigurationAudit(unittest.TestCase):
                 {
                     "menu_id": 304,
                     "name": "系统菜单",
-                    "meta": {"source": "native_product_navigation_authority"},
+                    "meta": {"source": "delivery_engine_v1"},
                     "children": [{"menu_id": 682, "name": "收入合同", "children": []}],
                 }
             ],

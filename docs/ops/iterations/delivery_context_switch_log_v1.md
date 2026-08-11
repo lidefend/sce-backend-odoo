@@ -3646,3 +3646,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   five administrator action facts. The committed change is accepted only after
   exact-source replay and authenticated browser/contract verification reproduce
   those bounds.
+
+## 2026-08-11 — P0-SINGLE-NAVIGATION-AUTHORITY-CLOSURE
+
+- Formal Product Layer / Layer Target / Module: P0 / L0-L1 navigation authority
+  / `smart_core`, generic overlay and runtime verification.
+- Decision: the early experimental native-tree short circuit is removed from
+  the platform, not merely disabled in construction. Every product follows one
+  route: released product policy selects pages, native Odoo menu/action facts
+  intersect authorization, the release gate enforces the active snapshot, and
+  the frontend renders the final contract.
+- Compatibility: Odoo models, views, actions, ACL and record rules remain
+  authoritative execution facts. P2/P3 overlays may rename, order or hide only
+  allowed stable menu identities; lack of a customer configuration row cannot
+  delete a released P1 page. No client action or frontend business fallback is
+  introduced.
+- Governance: focused tests and static guards now reject reintroduction of the
+  native-tree hook, helper builders or source marker. The runtime probe always
+  verifies that a non-admin policy projection cannot exceed its supplied native
+  authorization facts.

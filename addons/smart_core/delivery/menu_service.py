@@ -1783,67 +1783,6 @@ class MenuService:
                 out.append(next_group)
         return out
 
-    def _native_navigation_is_authoritative(self, policy: dict, role_surface: dict | None) -> bool:
-        if self.env is None:
-            return False
-        return bool(
-            call_extension_hook_first(
-                self.env,
-                "smart_core_native_navigation_authority",
-                self.env,
-                policy,
-                role_surface or {},
-            )
-        )
-
-    def _native_authoritative_fact_nav(self) -> list[dict]:
-        if self.env is None:
-            return []
-        facts = MenuFactService(self.env).export_visible_menu_facts()
-        return self._menu_fact_tree_as_native(facts.tree)
-
-    def _build_native_authoritative_nav(self, native_nav: list[dict], role_surface: dict | None) -> list[dict]:
-        nodes = [dict(node) for node in native_nav or [] if isinstance(node, dict)]
-        root_xmlid = str(
-            call_extension_hook_first(self.env, "smart_core_business_root_menu_xmlid", self.env) or ""
-        ).strip().lower() if self.env is not None else ""
-        business_root = next(
-            (node for node in nodes if root_xmlid and self._node_menu_xmlid(node) == root_xmlid),
-            None,
-        )
-        if business_root is not None:
-            nodes = [dict(node) for node in business_root.get("children") or [] if isinstance(node, dict)]
-        elif len(nodes) == 1:
-            only = nodes[0]
-            only_label = str(only.get("label") or only.get("title") or "").strip()
-            if only_label in {"系统菜单", "业务菜单"}:
-                nodes = [dict(node) for node in only.get("children") or [] if isinstance(node, dict)]
-
-        def keep_allowed(node: dict):
-            if not isinstance(node, dict) or not self._role_surface_menu_allowed(node, role_surface):
-                return None
-            candidate = dict(node)
-            candidate["children"] = [
-                kept
-                for child in node.get("children") or []
-                if (kept := keep_allowed(child))
-            ]
-            return candidate
-
-        nodes = [kept for node in nodes if (kept := keep_allowed(node))]
-        nodes = self._sort_delivery_nodes(nodes, top_level=True)
-        root = build_delivery_menu_root(nodes, str((role_surface or {}).get("role_code") or ""))
-        root["key"] = "root:system_menu"
-        root["label"] = "系统菜单"
-        root["title"] = "系统菜单"
-        root["meta"] = {
-            "source": "native_product_navigation_authority",
-            "role_code": str((role_surface or {}).get("role_code") or ""),
-            "strategy": "active_native_tree_with_acl",
-            "source_authority": self.source_authority_contract(),
-        }
-        return [root]
-
     def build_nav(self, *, policy: dict, role_surface: dict | None = None, native_nav: list[dict] | None = None) -> list[dict]:
         role_code = str((role_surface or {}).get("role_code") or "").strip().lower()
         role_codes = [
@@ -1863,8 +1802,6 @@ class MenuService:
         policy_has_menu_surface = self._policy_has_menu_surface(policy)
         customer_acceptance_focus = self._policy_is_customer_acceptance_focus(policy)
         exposed_xmlids = self._exposed_menu_xmlids(role_surface)
-        if self._native_navigation_is_authoritative(policy, role_surface):
-            return self._build_native_authoritative_nav(self._native_authoritative_fact_nav(), role_surface)
         authorization_native_nav = self._authorization_native_nav(role_surface, native_nav or [])
         primary_native_nav = self._filter_primary_native_nodes(authorization_native_nav, role_surface)
         native_index = self._native_authorized_menu_index(primary_native_nav)

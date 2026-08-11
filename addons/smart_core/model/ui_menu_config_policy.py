@@ -389,21 +389,26 @@ class UiMenuConfigPolicy(models.Model):
         policies_by_menu, runtime_source = self._runtime_menu_config_source_for_user(user=user)
         scene_target_resolver = MenuTargetInterpreterService(self.env)
 
-        def native_product_baseline_authoritative() -> bool:
+        def released_product_baseline_authoritative() -> bool:
             tree = nav_fact.get("tree") if isinstance(nav_fact.get("tree"), list) else []
-            for node in tree:
+            pending = list(tree)
+            while pending:
+                node = pending.pop()
                 if not isinstance(node, dict):
                     continue
                 meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-                if str(meta.get("source") or "").strip() == "native_product_navigation_authority":
+                if str(meta.get("source") or "").strip() == "delivery_engine_v1":
                     return True
+                if str(node.get("delivery_bucket") or meta.get("delivery_bucket") or "").strip() == "released_product_policy":
+                    return True
+                pending.extend(node.get("children") if isinstance(node.get("children"), list) else [])
             return False
 
-        product_baseline_authoritative = native_product_baseline_authoritative()
+        product_baseline_authoritative = released_product_baseline_authoritative()
 
         def config_only_enabled() -> bool:
-            # P1 product navigation is established by the active ACL-visible
-            # native tree. P2 tenant/user configuration may explicitly
+            # P1 product navigation is established by the released product
+            # policy intersected with native ACL facts. P2 configuration may
             # customize a stable menu id, but absence of a P2 row must never
             # delete a released P1 product menu.
             if product_baseline_authoritative:
