@@ -5,12 +5,20 @@ set -euo pipefail
 source "${ROOT_DIR}/scripts/common/env.sh"
 source "${ROOT_DIR}/scripts/common/compose.sh"
 
-if [[ "${COMPOSE_PROJECT_NAME}" != "sc-local-clean" || "${DB_NAME}" != "sc_clean" || "${ODOO_DBFILTER}" != '^sc_clean$' ]]; then
-  echo "[local.clean.rebuild] refused: target identity is not the isolated clean environment" >&2
+if [[ "${ENV}" != "dev" || "${ISOLATED_REHEARSAL_DATABASE:-0}" != "1" ]]; then
+  echo "[local.clean.rebuild] refused: target is not marked as an isolated dev rehearsal" >&2
   exit 2
 fi
-if [[ "${CONFIRM_LOCAL_CLEAN_REBUILD:-}" != "REBUILD_SC_CLEAN" ]]; then
-  echo "[local.clean.rebuild] confirmation required: CONFIRM_LOCAL_CLEAN_REBUILD=REBUILD_SC_CLEAN" >&2
+if [[ ! "${COMPOSE_PROJECT_NAME}" =~ ^sc-[a-z0-9-]+$ || ! "${DB_NAME}" =~ ^sc_[a-z0-9_]+$ ]]; then
+  echo "[local.clean.rebuild] refused: invalid isolated project/database identity" >&2
+  exit 2
+fi
+if [[ "${ODOO_DBFILTER}" != "^${DB_NAME}$" ]]; then
+  echo "[local.clean.rebuild] refused: dbfilter is not exact for ${DB_NAME}" >&2
+  exit 2
+fi
+if [[ "${CONFIRM_LOCAL_CLEAN_REBUILD:-}" != "REBUILD_ISOLATED_REHEARSAL" ]]; then
+  echo "[local.clean.rebuild] confirmation required: CONFIRM_LOCAL_CLEAN_REBUILD=REBUILD_ISOLATED_REHEARSAL" >&2
   exit 2
 fi
 

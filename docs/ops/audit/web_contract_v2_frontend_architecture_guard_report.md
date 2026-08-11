@@ -2,8 +2,8 @@
 
 - mode: debt_lock
 - status: PASS
-- findings: 1
+- findings: 0
 
 ## Findings
 
-- [P1] contract_form_groups_usage `frontend/apps/web/src/pages/ContractFormPage.vue` count=1/1
+- none

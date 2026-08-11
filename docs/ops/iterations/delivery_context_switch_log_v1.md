@@ -3597,3 +3597,34 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   1440x900 and 390x844 with native navigation authority and zero console/page
   errors. Generated inventory and complexity reports were refreshed before PR
   publication.
+
+## 2026-08-11 — P0-CONTRACT-GOVERNANCE-CLOSURE-V1
+
+- Branch / anchor: `codex/contract-governance-closure-v1` from `63a2159`.
+- Formal Product Layer / Layer Target / Module: P0 / L0-L1 contract and release
+  governance / `smart_core`, generic frontend contract consumers, verification
+  scripts and Make release topology.
+- Standard vs User-Specific: platform mechanism shared by every industry and
+  tenant; no construction or customer semantics are introduced.
+- Reason / Why Here: release certification, Scene-ready authority, contract
+  projection, entitlement consumption and runtime probes are platform
+  mechanisms. Their evidence must fail closed and remain synchronized with
+  refactored runtime code.
+- Why Not Elsewhere: P1 owns construction defaults, P2 customer baselines and
+  P3 administrator configuration. None may define or bypass the common
+  contract protocol or its release gate.
+- Blast Radius / validation: product release dependencies, generic web
+  Home/Action/Form consumers, contract verification scripts and isolated test
+  runtime only. Validation requires the full frontend product gate, Unified
+  Page Contract v2 gate, contract-mode runtime probes, Scene source evidence
+  minimums, production-chain guard and two-viewport browser acceptance.
+- Closure Evidence: `verify.product.release.ready` passed end to end; the
+  isolated `sc_contract_governance_v1` database was rebuilt without demo or
+  customer data and passed exact project/database/dbfilter health checks.
+  Contract-mode and strict Scene live probes passed with canonical token and
+  explicit database routing; strict Scene gaps and fallback gaps were both
+  zero. Frontend strict typecheck, release units, style-system guard and a
+  667-module isolated static build passed. The zero-data browser check reached the
+  database-locked login shell with zero console warnings/errors; authenticated
+  customer UX evidence is intentionally outside this platform-mechanism
+  closure because no customer principal is seeded into the isolated database.

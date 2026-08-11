@@ -11,6 +11,7 @@
 
 from odoo import models, fields, api, _
 from odoo.tools.safe_eval import safe_eval
+from psycopg2 import IntegrityError
 import json, hashlib, logging, re
 
 _logger = logging.getLogger(__name__)
@@ -341,8 +342,24 @@ class AppMenuConfig(models.Model):
                     _logger.info("Menu config unchanged: %s/%s v%s", target_key, scene, cfg.version)
             else:
                 vals['version'] = 1
-                cfg = self.sudo().create(vals)
-                _logger.info("Menu config created: %s/%s v1", target_key, scene)
+                try:
+                    with self.env.cr.savepoint():
+                        cfg = self.sudo().create(vals)
+                    _logger.info("Menu config created: %s/%s v1", target_key, scene)
+                except IntegrityError:
+                    # Another request may create the same company/lang cache after
+                    # our initial search. Roll back only the create savepoint and
+                    # consume the now-authoritative row instead of failing system.init.
+                    cfg = self.sudo().search(
+                        self._menu_config_domain(model_name=model_name, scene=scene),
+                        limit=1,
+                    )
+                    if not cfg:
+                        raise
+                    if cfg.config_hash != new_hash:
+                        vals['version'] = cfg.version + 1
+                        cfg.write(vals)
+                    _logger.info("Menu config concurrent create resolved: %s/%s v%s", target_key, scene, cfg.version)
 
             return cfg
 

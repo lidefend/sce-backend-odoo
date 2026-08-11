@@ -114,11 +114,13 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     const currentModel = String(model.value || '').trim();
     const contractContext = buildRouteContractContext(route.query as Record<string, unknown>);
     const contextRaw = String(route.query.context_raw || '').trim();
+    const sceneKey = String(route.query.scene_key || route.query.scene || '').trim();
     const requestedViewId = toPositiveInt(route.query.view_id) || toPositiveInt(route.query.viewId) || 0;
     let response: Awaited<ReturnType<typeof loadActionContractRaw>> | null = null;
     if (actionId.value && recordId.value) {
       try {
         response = await loadActionContractRaw(actionId.value, {
+          sceneKey: sceneKey || undefined,
           menuId: menuId.value || undefined,
           viewType: 'form',
           viewId: requestedViewId || undefined,
@@ -142,6 +144,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     }
     if (!response && currentModel) {
       response = await loadModelContractRaw(currentModel, {
+        sceneKey: sceneKey || undefined,
         actionId: actionId.value || undefined,
         menuId: menuId.value || undefined,
         viewType: 'form',

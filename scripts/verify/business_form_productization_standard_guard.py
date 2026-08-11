@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 STANDARD = ROOT / "docs/product/formal_business_form_productization_standard_v1.md"
 AUDIT = ROOT / "scripts/verify/business_form_productization_audit.py"
 MAKEFILE = ROOT / "Makefile"
+MAKE_DIR = ROOT / "make"
 VERIFY_README = ROOT / "docs/ops/verify/README.md"
 
 STANDARD_TOKENS = (
@@ -81,6 +82,11 @@ def main() -> int:
     standard = _read(STANDARD, errors)
     audit = _read(AUDIT, errors)
     makefile = _read(MAKEFILE, errors)
+    if MAKE_DIR.is_dir():
+        makefile = "\n".join(
+            [makefile]
+            + [path.read_text(encoding="utf-8") for path in sorted(MAKE_DIR.glob("*.mk"))]
+        )
     verify_readme = _read(VERIFY_README, errors)
 
     _require("standard", standard, STANDARD_TOKENS, errors)

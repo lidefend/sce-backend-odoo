@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import build_intent_url, get_base_url, http_post_json, obtain_runtime_probe_token
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -98,20 +98,11 @@ def _missing_contract_paths(row: dict) -> list[str]:
 
 def _fetch_scene_ready_contract() -> dict:
     base_url = get_base_url()
-    intent_url = f"{base_url}/api/v1/intent"
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
-    login = os.getenv("E2E_LOGIN") or "admin"
-    password = os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin"
-
-    status, login_resp = http_post_json(
-        intent_url,
-        {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1"},
-    )
-    require_ok(status, login_resp, "login")
-    token = ((_as_dict(login_resp.get("data"))).get("token") or "")
-    if not token:
-        raise RuntimeError("login response missing token")
+    intent_url = build_intent_url(base_url, db_name)
+    token_ok, token, auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    if not token_ok or not token:
+        raise RuntimeError(f"runtime probe authentication unavailable: source={auth_source}")
 
     status, init_resp = http_post_json(
         intent_url,

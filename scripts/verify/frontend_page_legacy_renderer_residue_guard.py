@@ -13,9 +13,9 @@ RETIRED_DELEGATES = [
 def main() -> int:
     text = HOME.read_text(encoding="utf-8", errors="ignore") if HOME.is_file() else ""
     errors = []
-    if "<ContractRoleHome />" not in text:
-        errors.append("HomeView must mount the shared role-home surface")
-    for token in ["legacy_home", "minimum-workspace-fallback", "capability-home", "PageRenderer", "workspaceHome"]:
+    if "<WorkspaceHome />" not in text:
+        errors.append("HomeView must mount the shared workspace-home surface")
+    for token in ["legacy_home", "minimum-workspace-fallback", "capability-home", "PageRenderer"]:
         if token in text:
             errors.append(f"HomeView contains legacy residue: {token}")
     if len(text.splitlines()) > 40:

@@ -2240,7 +2240,10 @@ async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; 
     is_default: payload.isDefault === true,
     is_shared: payload.isShared === true,
   });
-  actionContract.value = await loadActionContract(actionId.value) as ActionViewRuntimeContract;
+  actionContract.value = await loadActionContract(actionId.value, {
+    sceneKey: sceneKey.value || undefined,
+    menuId: menuId.value || undefined,
+  }) as ActionViewRuntimeContract;
   await requestLoadPage();
 }
 
@@ -2640,6 +2643,7 @@ const {
       nextActionId,
       { ...(currentAction || {}), menu_id: menuId.value || currentAction?.menu_id },
       {
+        sceneKey: sceneKey.value || undefined,
         menuId: menuId.value || currentAction?.menu_id,
         viewType: String(routeQueryMap.value.view_mode || '').trim() || undefined,
         contextRaw: String(routeQueryMap.value.context_raw || '').trim() || undefined,

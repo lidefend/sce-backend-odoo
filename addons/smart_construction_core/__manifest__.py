@@ -8,6 +8,7 @@
     'depends': [
         'project',
         'purchase',
+        'purchase_stock',
         'stock',
         'account',
         'hr',
@@ -210,8 +211,8 @@
         'views/menu_user_acceptance_cleanup.xml',
         'views/menu_contract_product_release.xml',
         'views/support/audit_list_fields_views.xml',
-        'views/support/user_confirmed_formal_list_alignment_views.xml',
         'views/support/user_confirmed_formal_list_views.xml',
+        'views/support/user_confirmed_formal_list_alignment_views.xml',
         # Productized visible navigation authority. Keep this after all native
         # menu declarations and before the product-policy synchronization.
         'views/menu_product_navigation_v2.xml',

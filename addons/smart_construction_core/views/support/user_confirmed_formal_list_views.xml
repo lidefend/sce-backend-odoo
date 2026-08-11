@@ -513,8 +513,6 @@
     </record>
     <record id="action_sc_salary_registration" model="ir.actions.act_window">
         <field name="name">项目管理人员工资登记</field>
-        <field name="view_id" ref="smart_construction_core.view_sc_hr_payroll_document_formal_manager_salary_tree" />
-        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_hr_payroll_document_formal_manager_salary_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_hr_payroll_document_form')})]" />
         <field name="domain">[('fact_type', '=', 'salary_registration')]</field>
         <field name="context">{'default_fact_type': 'salary_registration', 'search_default_salary_registration': 1}</field>
     </record>
