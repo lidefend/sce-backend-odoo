@@ -10,6 +10,7 @@ from odoo.tests.common import TransactionCase, tagged
 class TestP0StateClosure(TransactionCase):
     def setUp(self):
         super().setUp()
+        self.env.user.groups_id = [(4, self.env.ref("smart_construction_core.group_sc_cap_project_manager").id)]
         self.company = self.env.ref("base.main_company")
         self.uom_unit = self.env.ref("uom.product_uom_unit")
 
@@ -211,14 +212,11 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
-    def test_project_lifecycle_requires_boq(self):
+    def test_project_lifecycle_without_boq_is_advisory(self):
         project = self._create_project("P0 Project No BOQ")
-        with self.assertRaises(UserError):
-            project.action_set_lifecycle_state("in_progress")
-
-        project = self._create_project("P0 Project With BOQ", with_boq=True)
         project.action_set_lifecycle_state("in_progress")
         self.assertEqual(project.lifecycle_state, "in_progress")
+        self.assertIn("建议后续导入工程量清单", project.lifecycle_advisory)
 
     def test_project_lifecycle_blocked_by_settlement(self):
         project = self._create_project("P0 Project Settlement", with_boq=True)

@@ -104,6 +104,7 @@ class ProjectConnectionTransitionHandler(ProjectContextResolverMixin, BaseIntent
             }
         from_state = str(getattr(project, "lifecycle_state", "") or "")
         target_state = str(transition.get("target_state") or "")
+        advisories = project._sc_lifecycle_advisories(target_state)
         try:
             project.action_set_lifecycle_state(target_state)
             result = "success"
@@ -124,6 +125,7 @@ class ProjectConnectionTransitionHandler(ProjectContextResolverMixin, BaseIntent
                 "to_state": target_state,
                 "reason_code": reason_code,
                 "message": message,
+                "advisories": advisories,
             },
             "meta": {
                 "intent": self.INTENT_TYPE,

@@ -17,11 +17,12 @@
     </record>
     <record id="action_sc_product_project_edit_v1" model="ir.actions.act_window">
       <field name="name">项目信息编辑</field><field name="res_model">project.project</field><field name="view_mode">tree,form</field>
+      <field name="context">{'create': False, 'active_test': True}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
     <record id="action_sc_product_project_lifecycle_v1" model="ir.actions.act_window">
       <field name="name">项目启停管理</field><field name="res_model">project.project</field><field name="view_mode">tree,form</field>
-      <field name="context">{'active_test': False}</field>
+      <field name="context">{'active_test': False, 'create': False, 'delete': False, 'sc_project_lifecycle_management': True}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
     <record id="action_sc_product_partner_blacklist_v1" model="ir.actions.act_window">
@@ -127,6 +128,91 @@
     <record id="action_sc_product_numbering_rule_v1" model="ir.actions.act_window">
       <field name="name">编码规则</field><field name="res_model">ui.business.config.contract</field><field name="view_mode">tree,form</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
+    </record>
+
+    <!-- Project lifecycle is a backend state machine rendered by generic views. -->
+    <record id="view_sc_product_project_lifecycle_tree_v1" model="ir.ui.view">
+      <field name="name">project.project.lifecycle.tree.product.v1</field>
+      <field name="model">project.project</field>
+      <field name="arch" type="xml">
+        <tree string="项目启停管理" create="false" delete="false"
+              decoration-muted="lifecycle_state == 'closed'"
+              decoration-warning="lifecycle_state == 'paused'"
+              decoration-success="lifecycle_state == 'in_progress'">
+          <field name="project_code"/>
+          <field name="name"/>
+          <field name="manager_id"/>
+          <field name="start_date"/>
+          <field name="end_date"/>
+          <field name="lifecycle_state" widget="badge"/>
+          <field name="active"/>
+        </tree>
+      </field>
+    </record>
+    <record id="view_sc_product_project_lifecycle_form_v1" model="ir.ui.view">
+      <field name="name">project.project.lifecycle.form.product.v1</field>
+      <field name="model">project.project</field>
+      <field name="arch" type="xml">
+        <form string="项目启停管理" create="false" delete="false">
+          <header>
+            <button name="action_sc_submit" type="object" string="启动项目" class="btn-primary"
+                    groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"
+                    invisible="lifecycle_state != 'draft'"/>
+            <button name="action_sc_pause" type="object" string="暂停项目"
+                    groups="smart_construction_core.group_sc_cap_project_manager"
+                    invisible="lifecycle_state != 'in_progress'"/>
+            <button name="action_sc_resume" type="object" string="恢复项目" class="btn-primary"
+                    groups="smart_construction_core.group_sc_cap_project_manager"
+                    invisible="lifecycle_state != 'paused'"/>
+            <button name="action_sc_mark_done" type="object" string="标记竣工"
+                    groups="smart_construction_core.group_sc_cap_project_manager"
+                    invisible="lifecycle_state != 'in_progress'"/>
+            <button name="action_sc_begin_closing" type="object" string="进入结算"
+                    groups="smart_construction_core.group_sc_cap_project_manager"
+                    invisible="lifecycle_state not in ['in_progress', 'done']"/>
+            <button name="action_sc_start_warranty" type="object" string="进入保修期"
+                    groups="smart_construction_core.group_sc_cap_project_manager"
+                    invisible="lifecycle_state not in ['done', 'closing']"/>
+            <button name="action_sc_close" type="object" string="关闭项目" confirm="关闭后不可恢复，确定继续吗？"
+                    groups="smart_construction_core.group_sc_cap_project_manager"
+                    invisible="lifecycle_state == 'closed'"/>
+            <field name="lifecycle_state" widget="statusbar" readonly="1"
+                   statusbar_visible="draft,in_progress,paused,done,closing,warranty,closed"/>
+          </header>
+          <sheet>
+            <div class="oe_title"><label for="name"/><h1><field name="name" readonly="1"/></h1></div>
+            <group>
+              <group string="项目标识">
+                <field name="project_code" readonly="1"/>
+                <field name="company_id" readonly="1"/>
+                <field name="manager_id" readonly="1"/>
+                <field name="active" readonly="1"/>
+                <field name="lifecycle_advisory" readonly="1"/>
+              </group>
+              <group string="计划信息">
+                <field name="initiation_date" readonly="1"/>
+                <field name="start_date" readonly="1"/>
+                <field name="end_date" readonly="1"/>
+                <field name="location" readonly="1"/>
+              </group>
+            </group>
+            <div class="alert alert-info" role="status">
+              状态变更由后端项目状态机校验；资料与清单完整性只作提示，未完结结算或付款等会导致业务无法继续的冲突才会阻断关闭。
+            </div>
+          </sheet>
+          <chatter/>
+        </form>
+      </field>
+    </record>
+    <record id="action_sc_product_project_lifecycle_tree_v1" model="ir.actions.act_window.view">
+      <field name="sequence">10</field><field name="view_mode">tree</field>
+      <field name="view_id" ref="smart_construction_core.view_sc_product_project_lifecycle_tree_v1"/>
+      <field name="act_window_id" ref="smart_construction_core.action_sc_product_project_lifecycle_v1"/>
+    </record>
+    <record id="action_sc_product_project_lifecycle_form_v1" model="ir.actions.act_window.view">
+      <field name="sequence">20</field><field name="view_mode">form</field>
+      <field name="view_id" ref="smart_construction_core.view_sc_product_project_lifecycle_form_v1"/>
+      <field name="act_window_id" ref="smart_construction_core.action_sc_product_project_lifecycle_v1"/>
     </record>
 
     <!-- Workbench completion. -->

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -7,6 +7,7 @@ from odoo.tests.common import TransactionCase, tagged
 class TestProjectStateTransitionValidation(TransactionCase):
     def setUp(self):
         super().setUp()
+        self.env.user.groups_id = [(4, self.env.ref("smart_construction_core.group_sc_cap_project_manager").id)]
         self.uom_unit = self.env.ref("uom.product_uom_unit")
 
     def _create_boq(self, project):
@@ -32,19 +33,57 @@ class TestProjectStateTransitionValidation(TransactionCase):
         version.action_validate()
         version.action_publish()
 
-    def test_draft_submit_requires_fields(self):
-        project = self.env["project.project"].create({"name": "Draft Project"})
-        self._create_boq(project)
-        with self.assertRaises(ValidationError):
-            project.action_set_lifecycle_state("in_progress")
-
-        owner = self.env["res.partner"].create({"name": "Owner"})
-        project.write(
+    def _create_project_user(self, login, group_xmlid):
+        return self.env["res.users"].with_context(no_reset_password=True).create(
             {
-                "owner_id": owner.id,
-                "manager_id": self.env.user.id,
-                "location": "Test Location",
+                "name": login,
+                "login": login,
+                "email": f"{login}@invalid.local",
+                "groups_id": [
+                    (
+                        6,
+                        0,
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref(group_xmlid).id,
+                        ],
+                    )
+                ],
             }
         )
+
+    def test_draft_submit_reports_missing_fields_without_blocking(self):
+        project = self.env["project.project"].create({"name": "Draft Project"})
         project.action_set_lifecycle_state("in_progress")
+        self.assertEqual(project.lifecycle_state, "in_progress")
+        self.assertIn("建议完善", project.lifecycle_advisory)
+        self.assertIn("建议后续导入工程量清单", project.lifecycle_advisory)
+
+    def test_lifecycle_permission_is_enforced_by_model(self):
+        reader = self._create_project_user(
+            "lifecycle_reader",
+            "smart_construction_core.group_sc_cap_project_read",
+        )
+        operator = self._create_project_user(
+            "lifecycle_operator",
+            "smart_construction_core.group_sc_cap_project_user",
+        )
+        manager = self._create_project_user(
+            "lifecycle_manager",
+            "smart_construction_core.group_sc_cap_project_manager",
+        )
+        project = self.env["project.project"].create(
+            {
+                "name": "Lifecycle Permission Project",
+                "manager_id": operator.id,
+                "user_id": operator.id,
+            }
+        )
+        with self.assertRaises(UserError):
+            project.with_user(reader).action_set_lifecycle_state("in_progress")
+        project.with_user(operator).action_set_lifecycle_state("in_progress")
+        with self.assertRaises(UserError):
+            project.with_user(operator).action_set_lifecycle_state("paused")
+        project.with_user(manager).action_set_lifecycle_state("paused")
+        project.with_user(manager).action_set_lifecycle_state("in_progress")
         self.assertEqual(project.lifecycle_state, "in_progress")
