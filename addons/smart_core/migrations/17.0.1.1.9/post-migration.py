@@ -39,4 +39,6 @@ def migrate(cr, version):
                 ],
             )
         if contract.status == "published" and not Version.search_count([("contract_id", "=", contract.id)]):
-            contract._append_published_version()
+            # Seal the already-published historical fact without re-validating
+            # runtime models before their owning modules finish loading.
+            contract._append_published_version(validate_runtime=False)

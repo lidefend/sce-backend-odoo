@@ -556,6 +556,12 @@ class UIBusinessConfigContract(models.Model):
 
     @api.constrains("contract_json", "model", "view_type", "action_id", "view_id", "active", "status")
     def _check_published_runtime_contract(self):
+        # A version-upgrade may seal an already-published legacy row while the
+        # module graph that owns its runtime model is not loaded yet.  This
+        # narrowly-scoped context is used only by the private append authority;
+        # normal create/write/publish paths still validate before publication.
+        if self.env.context.get("contract_lifecycle_migration_reseal"):
+            return
         for rec in self:
             if not rec.active or rec.status != "published":
                 continue
@@ -820,10 +826,12 @@ class UIBusinessConfigContract(models.Model):
                 "source_authority_json": record.source_authority_json or record.source_authority_contract(),
             })
 
-    def _append_published_version(self):
+    def _append_published_version(self, *, validate_runtime=True):
         """Append one immutable publication snapshot under a database row lock."""
         Version = self.env["ui.business.config.contract.version"].sudo()
         for record in self:
+            if not validate_runtime:
+                record = record.with_context(contract_lifecycle_migration_reseal=True)
             self.env.cr.execute(
                 "SELECT id FROM ui_business_config_contract WHERE id = %s FOR UPDATE",
                 [record.id],

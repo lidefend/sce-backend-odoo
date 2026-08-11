@@ -151,6 +151,7 @@ def check_examples() -> dict[str, Any]:
 
 def check_persistence() -> dict[str, Any]:
     text = MODEL_PATH.read_text(encoding="utf-8")
+    migration_text = MIGRATION_PATH.read_text(encoding="utf-8")
     require_tokens(
         text,
         (
@@ -166,6 +167,19 @@ def check_persistence() -> dict[str, Any]:
     )
     if not MIGRATION_PATH.is_file():
         raise AssertionError("contract lifecycle backfill migration is missing")
+    require_tokens(
+        text,
+        (
+            "def _append_published_version(self, *, validate_runtime=True)",
+            "contract_lifecycle_migration_reseal",
+        ),
+        "migration reseal boundary",
+    )
+    require_tokens(
+        migration_text,
+        ("_append_published_version(validate_runtime=False)",),
+        "migration reseal caller",
+    )
     return {"migration": MIGRATION_PATH.relative_to(ROOT).as_posix()}
 
 
