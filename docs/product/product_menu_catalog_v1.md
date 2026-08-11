@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T11:13:16.817581+00:00`
+- generated_at: `2026-08-11T11:29:39.052695+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -405,8 +405,8 @@
       - 投标报名管理 [`formal_product` inactive] -> `tender.bid`
       - 投标报名费申请 [`formal_product` inactive] -> `tender.doc.purchase`
       - 投标项目 [`formal_product`] -> `tender.bid`
-      - 招标信息 [`formal_product`] -> `tender.bid`
-      - 标书管理 [`formal_product`] -> `tender.doc.purchase`
+      - 招标信息 [`formal_product`] -> `tender.opportunity`
+      - 标书管理 [`formal_product`] -> `tender.document`
     - 施工管理 [`formal_product`]
       - BIM协同（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
       - 安全检查 [`formal_product`] -> `sc.safety.issue`

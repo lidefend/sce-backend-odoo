@@ -31,11 +31,14 @@
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_contact_manager')])]"/>
     </record>
     <record id="action_sc_product_tender_information_v1" model="ir.actions.act_window">
-      <field name="name">招标信息</field><field name="res_model">tender.bid</field><field name="view_mode">tree,form</field>
+      <field name="name">招标信息</field><field name="res_model">tender.opportunity</field><field name="view_mode">tree,form</field>
+      <field name="search_view_id" ref="smart_construction_core.view_tender_opportunity_search"/>
+      <field name="context">{'search_default_active_follow': 1}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
     </record>
     <record id="action_sc_product_tender_document_v1" model="ir.actions.act_window">
-      <field name="name">标书管理</field><field name="res_model">tender.doc.purchase</field><field name="view_mode">tree,form</field>
+      <field name="name">标书管理</field><field name="res_model">tender.document</field><field name="view_mode">tree,form</field>
+      <field name="search_view_id" ref="smart_construction_core.view_tender_document_search"/>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
     <record id="action_sc_product_quality_acceptance_v1" model="ir.actions.act_window">

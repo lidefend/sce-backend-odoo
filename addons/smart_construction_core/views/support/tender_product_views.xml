@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_tender_opportunity_search" model="ir.ui.view">
+    <field name="name">tender.opportunity.search</field>
+    <field name="model">tender.opportunity</field>
+    <field name="arch" type="xml">
+      <search string="招标信息">
+        <field name="name"/><field name="code"/><field name="owner_id"/><field name="project_id"/>
+        <filter name="active_follow" string="待评估/跟进中" domain="[('state', 'in', ['draft', 'following'])]"/>
+        <group expand="0" string="分组"><filter name="group_state" string="按状态" context="{'group_by': 'state'}"/><filter name="group_owner" string="按招标人" context="{'group_by': 'owner_id'}"/></group>
+      </search>
+    </field>
+  </record>
+  <record id="view_tender_opportunity_tree" model="ir.ui.view">
+    <field name="name">tender.opportunity.tree</field><field name="model">tender.opportunity</field>
+    <field name="arch" type="xml"><tree string="招标信息" default_order="deadline asc, id desc"><field name="code"/><field name="name"/><field name="owner_id"/><field name="location"/><field name="publish_date"/><field name="deadline"/><field name="estimated_amount"/><field name="project_id"/><field name="state"/><field name="processing_advisory" optional="hide"/></tree></field>
+  </record>
+  <record id="view_tender_opportunity_form" model="ir.ui.view">
+    <field name="name">tender.opportunity.form</field><field name="model">tender.opportunity</field>
+    <field name="arch" type="xml"><form string="招标信息"><header><button name="action_follow" type="object" string="开始跟进" class="btn-primary" invisible="state != 'draft'"/><button name="action_create_bid" type="object" string="生成投标项目" class="btn-primary" invisible="state in ['converted','abandoned']"/><button name="action_abandon" type="object" string="放弃" invisible="state in ['converted','abandoned']"/><field name="state" widget="statusbar" statusbar_visible="draft,following,converted,abandoned"/></header><sheet><group><group><field name="name"/><field name="code"/><field name="owner_id"/><field name="location"/><field name="company_id"/></group><group><field name="publish_date"/><field name="deadline"/><field name="estimated_amount"/><field name="currency_id" invisible="1"/><field name="source"/></group></group><group string="联系信息"><field name="contact_name"/><field name="contact_phone"/></group><group string="资格与说明"><field name="qualification_requirements"/><field name="note"/></group><group string="关联办理"><field name="project_id"/><field name="bid_id" readonly="1"/><field name="attachment_ids" widget="many2many_binary"/></group><group string="办理提示"><field name="processing_advisory" readonly="1" nolabel="1"/></group></sheet><chatter/></form></field>
+  </record>
+
+  <record id="view_tender_document_search" model="ir.ui.view"><field name="name">tender.document.search</field><field name="model">tender.document</field><field name="arch" type="xml"><search string="标书管理"><field name="name"/><field name="bid_id"/><field name="project_id"/><field name="responsible_id"/><filter name="group_bid" string="按投标项目" context="{'group_by':'bid_id'}"/><filter name="group_type" string="按文件类型" context="{'group_by':'document_type'}"/><filter name="group_state" string="按状态" context="{'group_by':'state'}"/></search></field></record>
+  <record id="view_tender_document_tree" model="ir.ui.view"><field name="name">tender.document.tree</field><field name="model">tender.document</field><field name="arch" type="xml"><tree string="标书管理" default_order="bid_id, sequence, id desc"><field name="sequence" widget="handle"/><field name="project_id"/><field name="bid_id"/><field name="document_type"/><field name="name"/><field name="version"/><field name="responsible_id"/><field name="deadline"/><field name="submitted_at"/><field name="state"/><field name="processing_advisory" optional="hide"/></tree></field></record>
+  <record id="view_tender_document_form" model="ir.ui.view"><field name="name">tender.document.form</field><field name="model">tender.document</field><field name="arch" type="xml"><form string="标书文件"><header><button name="action_start" type="object" string="开始编制" class="btn-primary" invisible="state != 'draft'"/><button name="action_review" type="object" string="完成复核" class="btn-primary" invisible="state not in ['draft','preparing']"/><button name="action_submit" type="object" string="提交标书" class="btn-primary" invisible="state not in ['draft','preparing','reviewed']"/><button name="action_archive" type="object" string="归档" invisible="state != 'submitted'"/><field name="state" widget="statusbar" statusbar_visible="draft,preparing,reviewed,submitted,archived"/></header><sheet><group><group><field name="bid_id"/><field name="project_id" readonly="1"/><field name="name"/><field name="document_type"/></group><group><field name="version"/><field name="responsible_id"/><field name="deadline"/><field name="submitted_at" readonly="1"/></group></group><group string="文件与说明"><field name="attachment_ids" widget="many2many_binary"/><field name="note"/></group><group string="办理提示"><field name="processing_advisory" readonly="1" nolabel="1"/></group></sheet><chatter/></form></field></record>
+</odoo>

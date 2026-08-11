@@ -5,6 +5,27 @@ from odoo.exceptions import AccessError
 
 @tagged("post_install", "-at_install", "sc_gate", "tender_document")
 class TestTenderDocumentAdvisory(TransactionCase):
+    def _project_operator(self):
+        return self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "招投标经办用户",
+                "login": "tender_project_operator",
+                "email": "tender-project-operator@invalid.local",
+                "groups_id": [
+                    (
+                        6,
+                        0,
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref(
+                                "smart_construction_core.group_sc_cap_project_user"
+                            ).id,
+                        ],
+                    )
+                ],
+            }
+        )
+
     def _project_reader(self):
         return self.env["res.users"].with_context(no_reset_password=True).create(
             {
@@ -86,3 +107,38 @@ class TestTenderDocumentAdvisory(TransactionCase):
 
         self.assertTrue(application.action_submit())
         self.assertEqual(application.processing_advisory, "当前办理资料已完善")
+
+    def test_product_tender_surfaces_are_distinct_and_advisory_driven(self):
+        operator = self._project_operator()
+        opportunity = self.env["tender.opportunity"].with_user(operator).create(
+            {"name": "待评估招标信息"}
+        )
+
+        opportunity.with_user(operator).action_follow()
+        self.assertEqual(opportunity.state, "following")
+        self.assertIn("建议补充招标编号", opportunity.processing_advisory)
+
+        project = self.env["project.project"].create({"name": "标书工作台测试项目"})
+        bid = self.env["tender.bid"].create(
+            {"project_id": project.id, "tender_name": "标书工作台测试"}
+        )
+        document = self.env["tender.document"].with_user(operator).create(
+            {"name": "技术标初稿", "bid_id": bid.id}
+        )
+        notification = document.with_user(operator).action_submit()
+
+        self.assertEqual(document.state, "submitted")
+        self.assertEqual(notification.get("tag"), "display_notification")
+        self.assertIn("建议上传标书文件", document.processing_advisory)
+        self.assertEqual(
+            self.env.ref(
+                "smart_construction_core.action_sc_product_tender_information_v1"
+            ).res_model,
+            "tender.opportunity",
+        )
+        self.assertEqual(
+            self.env.ref(
+                "smart_construction_core.action_sc_product_tender_document_v1"
+            ).res_model,
+            "tender.document",
+        )

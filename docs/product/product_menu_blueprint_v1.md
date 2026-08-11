@@ -56,9 +56,9 @@
   - 供应商档案 -> `res.partner`
   - 客商黑名单 -> `res.partner`
 - 招投标管理
-  - 招标信息 -> `tender.bid`
+  - 招标信息 -> `tender.opportunity`
   - 投标项目 -> `tender.bid`
-  - 标书管理 -> `tender.doc.purchase`
+  - 标书管理 -> `tender.document`
   - 投标保证金 -> `tender.guarantee`
   - 中标管理 -> `tender.bid`
 - 施工管理

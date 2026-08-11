@@ -2716,5 +2716,16 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
         </record>
 
+        <record id="rule_sc_tender_opportunity_company" model="ir.rule">
+            <field name="name">Tender opportunity: allowed companies</field>
+            <field name="model_id" ref="model_tender_opportunity"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_tender_document_company" model="ir.rule">
+            <field name="name">Tender document: allowed companies</field>
+            <field name="model_id" ref="model_tender_document"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
     </data>
 </odoo>
