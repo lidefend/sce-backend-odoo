@@ -1,7 +1,7 @@
 <template>
   <TDatePicker
     class="sc-design-date-field"
-    :model-value="modelValue"
+    :model-value="normalizedModelValue"
     :format="withTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD'"
     :value-type="withTime ? 'YYYY-MM-DDTHH:mm:ss' : 'YYYY-MM-DD'"
     :enable-time-picker="withTime"
@@ -37,6 +37,10 @@ const props = withDefaults(defineProps<{
   describedBy: undefined,
 });
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
+const normalizedModelValue = computed(() => {
+  const value = String(props.modelValue ?? '').trim();
+  return ['false', 'null', 'undefined'].includes(value.toLowerCase()) ? '' : value;
+});
 const inputProps = computed(() => ({
   'aria-required': props.required || undefined,
   'aria-invalid': props.invalid || undefined,

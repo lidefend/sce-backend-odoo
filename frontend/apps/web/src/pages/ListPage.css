@@ -759,49 +759,24 @@
 }
 
 .pagination-input {
-  width: 46px;
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: 6px;
-  padding: 3px 6px;
-  color: var(--sc-app-text-primary);
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.pagination-input--size {
-  width: 64px;
-  padding-right: 28px;
+  flex: 0 0 54px;
+  width: 54px;
 }
 
 .pagination-size-combo {
-  position: relative;
   display: inline-flex;
   align-items: center;
+  gap: 4px;
 }
 
 .pagination-size-select {
-  position: absolute;
-  top: 1px;
-  right: 1px;
-  bottom: 1px;
-  width: 26px;
-  border: 0;
-  border-left: 1px solid var(--sc-app-info-border);
-  border-radius: 0 5px 5px 0;
-  background: var(--sc-app-info-bg);
-  font-size: 0;
-  color: var(--sc-app-info-text);
-  cursor: pointer;
+  flex: 0 0 88px;
+  width: 88px;
 }
 
 .pagination-size-select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.pagination-size-select option {
-  font-size: 12px;
-  color: var(--sc-app-text-primary);
 }
 
 @media (max-width: 900px) {
@@ -827,6 +802,11 @@
   .pagination-actions--bottom {
     justify-content: flex-start;
     white-space: normal;
+    row-gap: 8px;
+  }
+
+  .pagination-size-control {
+    flex: 1 1 100%;
   }
 
   .list-plain-search {

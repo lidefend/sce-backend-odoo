@@ -2,7 +2,7 @@
   <TTextarea
     ref="control"
     :class="['sc-design-text-area', attrs.class]"
-    :style="attrs.style"
+    :style="textareaStyle"
     :model-value="modelValue"
     :name="name"
     :placeholder="placeholder"
@@ -10,7 +10,7 @@
     :readonly="readonly"
     :status="invalid ? 'error' : 'default'"
     :maxlength="maxlength"
-    :autosize="autosize"
+    :autosize="false"
     data-ui-engine="tdesign"
     @update:model-value="$emit('update:modelValue', String($event ?? ''))"
     @change="$emit('change', String($event ?? ''))"
@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, onUpdated, ref, useAttrs, type ComponentPublicInstance } from 'vue';
+import { computed, nextTick, onMounted, onUpdated, ref, useAttrs, type ComponentPublicInstance } from 'vue';
 import { TTextarea } from './tdesignAdapter';
 
 const props = withDefaults(defineProps<{
@@ -60,7 +60,14 @@ defineEmits<{
 }>();
 const control = ref<ComponentPublicInstance | null>(null);
 const attrs = useAttrs();
-const autosize = { minRows: props.rows, maxRows: Math.max(props.rows, 12) };
+const textareaStyle = computed(() => ({
+  ...(
+    attrs.style && typeof attrs.style === 'object' && !Array.isArray(attrs.style)
+      ? attrs.style as Record<string, string | number>
+      : {}
+  ),
+  height: `${Math.max(2, props.rows) * 24 + 16}px`,
+}));
 
 function syncNativeAccessibility(): void {
   const textarea = (control.value?.$el as HTMLElement | undefined)?.querySelector('textarea');

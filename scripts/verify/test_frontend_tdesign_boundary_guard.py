@@ -90,6 +90,12 @@ class TDesignImportBoundaryTests(unittest.TestCase):
                 {"button": 1, "input": 1, "select": 1, "textarea": 1, "table": 1},
             )
 
+    def test_real_product_audit_uses_unified_page_contract(self) -> None:
+        audit = guard.PRODUCT_DESIGN_AUDIT.read_text(encoding="utf-8")
+        self.assertNotIn('.financial-workspace[data-workspace-kind=', audit)
+        self.assertIn('main [data-product-page-mode="form"]', audit)
+        self.assertIn("payload.intent === 'ui.contract.v2'", audit)
+
 
 if __name__ == "__main__":
     unittest.main()

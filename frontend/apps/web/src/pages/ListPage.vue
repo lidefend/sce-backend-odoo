@@ -708,26 +708,15 @@
           <label class="pagination-size-control">
             <span class="pagination-size-label">{{ uiLabel('pagination_page_size', '每页') }}</span>
             <span class="pagination-size-combo">
-              <ScTextField
-                class="pagination-input pagination-input--size"
-                :model-value="pageLimitInput"
-                :label="uiLabel('pagination_page_size', '每页')"
-                :disabled="loading"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                @update:model-value="onPageLimitInput"
-                @change="applyPageLimit"
-                @enter="applyPageLimit"
-              />
               <ScSelect
                 class="pagination-size-select"
-                :model-value="pageLimitOptions.includes(listLimit) ? String(listLimit) : ''"
+                :model-value="String(listLimit)"
                 :disabled="loading"
                 :label="uiLabel('pagination_page_size_select', '选择每页条数')"
                 @update:model-value="onPageLimitSelectChange"
               >
-                <option v-for="option in pageLimitOptions" :key="`page-limit-${option}`" :value="String(option)">
-                  {{ option }}
+                <option v-for="option in effectivePageLimitOptions" :key="`page-limit-${option}`" :value="String(option)">
+                  {{ option }} 条
                 </option>
               </ScSelect>
             </span>
@@ -970,7 +959,6 @@ const groupedRows = computed(() =>
 const showGroupedRows = computed(() => props.enableGroupedRows === true && groupedRows.value.length > 0);
 const groupJumpPageInput = ref<Record<string, string>>({});
 const pageJumpInput = ref('');
-const pageLimitInput = ref('');
 const plainSearchDraft = ref('');
 const plainSearchComposing = ref(false);
 const observedListLimit = ref(0);
@@ -1483,6 +1471,9 @@ const listLimit = computed(() => {
   return Number.isFinite(limit) && limit > 0 ? Math.trunc(limit) : 40;
 });
 const pageLimitOptions = computed(() => [10, 20, 50]);
+const effectivePageLimitOptions = computed(() => (
+  Array.from(new Set([listLimit.value, ...pageLimitOptions.value])).sort((left, right) => left - right)
+));
 const listTotal = computed(() => {
   if (props.listTotalCount === null || typeof props.listTotalCount === 'undefined') return null;
   const raw = Number(props.listTotalCount);
@@ -1602,18 +1593,9 @@ function jumpPage() {
 function applyPageLimitValue(raw: number) {
   if (!Number.isFinite(raw)) return;
   const normalized = Math.min(Math.max(Math.trunc(raw), 1), 200);
-  pageLimitInput.value = String(normalized);
   if (normalized === listLimit.value) return;
   observedListLimit.value = normalized;
   props.onPageLimitChange?.(normalized);
-}
-
-function onPageLimitInput(value: string) {
-  pageLimitInput.value = value;
-}
-
-function applyPageLimit() {
-  applyPageLimitValue(Number(pageLimitInput.value || listLimit.value));
 }
 
 function onPageLimitSelectChange(value: string) {
@@ -1653,14 +1635,6 @@ watch(
   currentPage,
   (page) => {
     pageJumpInput.value = String(page);
-  },
-  { immediate: true },
-);
-
-watch(
-  listLimit,
-  (limit) => {
-    pageLimitInput.value = String(limit);
   },
   { immediate: true },
 );

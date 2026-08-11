@@ -37,6 +37,7 @@ const ROOT = FORM_CANVAS_AUDIT
 const OUTPUT = path.join(ROOT, PHASE);
 const REPORT = path.join(ROOT, `${PHASE}-report.json`);
 const TARGETS = JSON.parse(process.env.FRONTEND_DELIVERY_HARDENING_TARGETS_JSON || '{}');
+const EXPECTED_STATE_TIMEOUT = Number(process.env.FE_PRO_04_EXPECTED_STATE_TIMEOUT_MS || 45000);
 const VIEWPORTS = FORM_CANVAS_AUDIT
   ? [
       { width: 1440, height: 900 },
@@ -120,6 +121,7 @@ const WORKSPACE_CASE_KEYS = new Set(['payment_request_list', 'contract_list', 'p
 const WORKSPACE_COMPAT_CASE_KEYS = new Set(['payment_request_list', 'contract_detail', 'contract_form', 'payment_request_create']);
 const FORM_CANVAS_CASE_KEYS = new Set(['payment_request_create', 'payment_request_edit', 'contract_create', 'contract_form', 'contract_detail', 'relationship_form', 'x2many_form', 'long_text_form']);
 const CASE_FILTER = String(process.env.FE_PRO_04_CASE || process.env.FE_PRO_04W_CASE || process.env.FE_PRO_04WR_CASE || process.env.FE_PRO_04WR2_CASE || '').trim();
+const CASE_FILTERS = new Set(CASE_FILTER.split(',').map((value) => value.trim()).filter(Boolean));
 const PROFILE_CASES = FORM_CANVAS_AUDIT
   ? ALL_CASES.filter((entry) => FORM_CANVAS_CASE_KEYS.has(entry.key))
   : WORKSPACE_COMPAT_AUDIT
@@ -127,8 +129,8 @@ const PROFILE_CASES = FORM_CANVAS_AUDIT
   : WORKSPACE_AUDIT
   ? ALL_CASES.filter((entry) => WORKSPACE_CASE_KEYS.has(entry.key))
   : (WIDTH_AUDIT ? ALL_CASES.filter((entry) => WIDTH_CASE_KEYS.has(entry.key)) : ALL_CASES);
-const CASES = CASE_FILTER ? PROFILE_CASES.filter((entry) => entry.key === CASE_FILTER) : PROFILE_CASES;
-check(CASES.length > 0, `unknown FE_PRO_04_CASE=${CASE_FILTER}`);
+const CASES = CASE_FILTERS.size ? PROFILE_CASES.filter((entry) => CASE_FILTERS.has(entry.key)) : PROFILE_CASES;
+check(CASES.length > 0 && CASES.length === CASE_FILTERS.size || CASE_FILTERS.size === 0, `unknown FE_PRO_04_CASE=${CASE_FILTER}`);
 const DARK_ONLY_CASES = FORM_CANVAS_AUDIT
   ? [
       { key: 'required_error', role: 'fixture_role_finance', pageKind: 'create', mode: 'required-error', route: () => recordRoute(TARGETS.work_settlement) },
@@ -144,7 +146,7 @@ function runtimeCapture(page) {
   page.on('console', (message) => {
     if (message.type() === 'error' && !/favicon|ResizeObserver|Failed to load resource/i.test(message.text())) state.console.push(message.text());
   });
-  page.on('pageerror', (error) => state.pageerror.push(error.message));
+  page.on('pageerror', (error) => state.pageerror.push(error.stack || error.message));
   page.on('response', (response) => {
     if (response.status() < 400 || !response.url().includes('/api/v1/')) return;
     const row = { status: response.status(), url: response.url() };
@@ -170,18 +172,32 @@ function fulfillError(route, status, code, message) {
 }
 
 async function interceptTargetRead(page, target, handler) {
-  let used = false;
+  if (process.env.FE_PRO_04_DEBUG_REQUESTS === '1') {
+    console.log(`[fe-pro-04:target] ${target.model}:${target.action_id}:${target.record_id}`);
+  }
   const callback = async (route) => {
     let payload = {};
     try { payload = JSON.parse(route.request().postData() || '{}'); } catch {}
     const params = payload.params || {};
+    if (process.env.FE_PRO_04_DEBUG_REQUESTS === '1') {
+      console.log(`[fe-pro-04:request] ${payload.intent || ''}:${params.op || ''}:${params.model || ''}:${params.record_id || ''}:${Array.isArray(params.ids) ? params.ids.join(',') : ''}`);
+    }
     const ids = Array.isArray(params.ids) ? params.ids.map(Number) : [];
-    const matches = payload.intent === 'api.data'
+    const matchesDataRead = payload.intent === 'api.data'
       && params.op === 'read'
       && params.model === target.model
       && ids.includes(Number(target.record_id));
-    if (matches && !used) {
-      used = true;
+    const matchesActionContract = payload.intent === 'ui.contract.v2'
+      && params.op === 'action_open'
+      && Number(params.action_id || 0) === Number(target.action_id)
+      && Number(params.record_id || 0) === Number(target.record_id);
+    const matchesModelContract = payload.intent === 'ui.contract.v2'
+      && params.op === 'model'
+      && params.model === target.model
+      && Number(params.record_id || 0) === Number(target.record_id);
+    const matches = matchesDataRead || matchesActionContract || matchesModelContract;
+    if (matches) {
+      if (process.env.FE_PRO_04_DEBUG_REQUESTS === '1') console.log('[fe-pro-04:request] injecting');
       await handler(route);
       return;
     }
@@ -204,9 +220,10 @@ async function prepareCase(page, entry) {
     ].join(', ')).first().waitFor({ state: 'visible', timeout: 45000 });
   }
   if (['create', 'required-error'].includes(entry.mode)) {
-    await page.locator('.financial-workspace[data-workspace-kind="settlement"]').waitFor({ timeout: 45000 });
-    await page.getByRole('button', { name: '新建付款申请', exact: true }).click();
+    await page.locator('main [data-product-page-mode="form"]').first().waitFor({ timeout: 45000 });
+    await page.locator('#main-content, main').first().getByRole('button', { name: '新建付款申请', exact: true }).click();
     await page.waitForURL((url) => url.pathname.includes('/f/payment.request/new'), { timeout: 45000 });
+    await page.locator('main [data-product-page-mode="form"]').first().waitFor({ timeout: 45000 });
   } else if (entry.mode === 'empty') {
     await page.locator('main [data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
     const search = page.locator('main input[type="search"]:visible, main input[placeholder*="搜索"]:visible').first();
@@ -215,7 +232,7 @@ async function prepareCase(page, entry) {
     await search.press('Enter');
     await page.locator('main .sc-empty, main .list-empty-state').first().waitFor({ state: 'visible', timeout: 45000 });
   } else if (entry.mode === 'dialog') {
-    await page.locator('.financial-workspace[data-workspace-kind="payment_request"]').waitFor({ timeout: 45000 });
+    await page.locator('main [data-product-page-mode="form"]').first().waitFor({ timeout: 45000 });
     let submit = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
     if (await submit.count() === 0) {
       const more = page.locator('.form-header-more-actions > summary:visible').filter({ hasText: /^更多操作$/ }).first();
@@ -250,7 +267,7 @@ async function prepareCase(page, entry) {
     conflict: '数据已发生变化',
     network: '网络连接异常',
   }[entry.mode];
-  if (expectedHeading) await page.getByRole('heading', { name: expectedHeading }).first().waitFor({ timeout: 45000 });
+  if (expectedHeading) await page.getByRole('heading', { name: expectedHeading }).first().waitFor({ timeout: EXPECTED_STATE_TIMEOUT });
   else await page.locator('main').waitFor({ timeout: 45000 });
   await page.waitForFunction(
     () => !/(正在初始化|正在加载|加载中)/.test(document.body.textContent || ''),

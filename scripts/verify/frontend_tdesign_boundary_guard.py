@@ -12,6 +12,7 @@ ADAPTER = SRC / "components/design-system/tdesignAdapter.ts"
 BRIDGE = SRC / "styles/tdesign-bridge.css"
 MAIN = SRC / "main.ts"
 PACKAGE = WEB / "package.json"
+PRODUCT_DESIGN_AUDIT = ROOT / "scripts/verify/frontend_product_design_system_audit.mjs"
 
 ALLOWED_RUNTIME_IMPORT = ADAPTER.resolve()
 TDESIGN_IMPORT_RE = re.compile(
@@ -162,6 +163,13 @@ def validate() -> list[str]:
         text = path.read_text(encoding="utf-8", errors="ignore") if path.is_file() else ""
         if primitive not in text:
             errors.append(f"{surface} does not consume required SC primitive: {primitive}")
+    audit_text = PRODUCT_DESIGN_AUDIT.read_text(encoding="utf-8", errors="ignore") if PRODUCT_DESIGN_AUDIT.is_file() else ""
+    if '.financial-workspace[data-workspace-kind=' in audit_text:
+        errors.append("product design audit must target the unified product-page contract, not legacy financial workspace selectors")
+    if 'main [data-product-page-mode="form"]' not in audit_text:
+        errors.append("product design audit missing unified form-page readiness selector")
+    if "payload.intent === 'ui.contract.v2'" not in audit_text:
+        errors.append("product design audit fault injection must cover the current ui.contract.v2 read path")
     for path in collect_unadapted_data_entry_controls():
         errors.append(f"source contains an unadapted native data-entry control: {path}")
     return errors
