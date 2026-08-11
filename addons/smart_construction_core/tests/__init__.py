@@ -85,3 +85,4 @@ from . import test_data_permission_surface
 from . import test_product_numbering_rule
 from . import test_product_job
 from . import test_office_asset
+from . import test_product_message_notification

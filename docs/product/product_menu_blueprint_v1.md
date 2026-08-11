@@ -39,7 +39,7 @@
 - 数据总览 -> `sc.operating.metrics.project`
 - 项目看板 -> `project.project`
 - 待办事项 -> `sc.workbench.item`
-- 消息通知 -> `mail.activity`
+- 消息通知 -> `mail.notification`
 
 ### 项目中心
 

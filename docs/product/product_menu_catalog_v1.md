@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T17:52:17.257244+00:00`
+- generated_at: `2026-08-11T17:58:47.070810+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -155,7 +155,7 @@
     - 我的审批 [`formal_product` inactive] -> `sc.workbench.item`
     - 我的项目 [`formal_product` inactive] -> `project.project`
     - 数据总览 [`formal_product`] -> `sc.operating.metrics.project`
-    - 消息通知 [`formal_product`] -> `mail.activity`
+    - 消息通知 [`formal_product`] -> `mail.notification`
     - 项目看板 [`formal_product`] -> `project.project`
   - 成本中心 [`formal_product`]
     - WBS/分部分项 [`formal_product` inactive] -> `construction.work.breakdown`

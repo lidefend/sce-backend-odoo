@@ -3020,6 +3020,13 @@
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
         </record>
+        <record id="rule_sc_product_mail_notification_recipient" model="ir.rule">
+            <field name="name">消息通知仅限当前收件人</field><field name="model_id" ref="mail.model_mail_notification"/>
+            <field name="domain_force">[('res_partner_id', '=', user.partner_id.id)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="perm_read" eval="True"/><field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+        </record>
 
     </data>
 </odoo>

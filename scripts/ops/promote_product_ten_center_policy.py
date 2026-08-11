@@ -32,7 +32,7 @@ RELEASED_MENU_BINDINGS = (
     ("工作台", "数据总览", "smart_construction_core.menu_sc_operating_metrics_project", "smart_construction_core.action_sc_operating_metrics_project", "sc.operating.metrics.project", ("数据总览",)),
     ("工作台", "项目看板", "smart_construction_core.menu_sc_project_kanban", "smart_construction_core.action_project_dashboard", "project.project", ("项目看板",)),
     ("工作台", "待办事项", "smart_construction_core.menu_sc_workbench_my_todo_fact", "smart_construction_core.action_sc_workbench_task_center", "sc.workbench.item", ("待办事项",)),
-    ("工作台", "消息通知", "smart_construction_core.menu_sc_product_message_notification_v1", "smart_construction_core.action_sc_product_message_notification_v1", "mail.activity", ("消息通知",)),
+    ("工作台", "消息通知", "smart_construction_core.menu_sc_product_message_notification_v1", "smart_construction_core.action_sc_product_message_notification_v1", "mail.notification", ("消息通知",)),
     ("项目中心", "新项目立项", "smart_construction_core.menu_sc_project_initiation", "smart_construction_core.action_project_initiation", "project.project", ("项目创建", "新项目立项")),
     ("项目中心", "项目信息编辑", "smart_construction_core.menu_sc_product_project_edit_v1", "smart_construction_core.action_sc_product_project_edit_v1", "project.project", ("项目创建", "项目信息编辑")),
     ("项目中心", "项目启停管理", "smart_construction_core.menu_sc_product_project_lifecycle_v1", "smart_construction_core.action_sc_product_project_lifecycle_v1", "project.project", ("项目创建", "项目启停管理")),

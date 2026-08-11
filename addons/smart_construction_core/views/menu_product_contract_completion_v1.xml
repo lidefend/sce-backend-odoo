@@ -11,8 +11,10 @@
   <data>
     <!-- Action adapters for contracted pages which do not yet own a dedicated action. -->
     <record id="action_sc_product_message_notification_v1" model="ir.actions.act_window">
-      <field name="name">消息通知</field><field name="res_model">mail.activity</field><field name="view_mode">tree,form</field>
-      <field name="domain">[('user_id', '=', uid)]</field><field name="context">{'create': False}</field>
+      <field name="name">消息通知</field><field name="res_model">mail.notification</field><field name="view_mode">tree,form</field>
+      <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_product_mail_notification_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_product_mail_notification_form')})]"/>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_product_mail_notification_search"/>
+      <field name="domain">[('sc_is_current_recipient', '=', True), ('notification_type', '=', 'inbox')]</field><field name="context">{'create': False, 'delete': False, 'search_default_unread': 1}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
     </record>
     <record id="action_sc_product_project_edit_v1" model="ir.actions.act_window">
