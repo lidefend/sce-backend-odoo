@@ -42,7 +42,8 @@
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
     <record id="action_sc_product_quality_acceptance_v1" model="ir.actions.act_window">
-      <field name="name">质量验收</field><field name="res_model">sc.quality.issue</field><field name="view_mode">tree,form</field>
+      <field name="name">质量验收</field><field name="res_model">sc.quality.acceptance</field><field name="view_mode">tree,form</field>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_quality_acceptance_search"/>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
     <record id="action_sc_product_site_variation_v1" model="ir.actions.act_window">

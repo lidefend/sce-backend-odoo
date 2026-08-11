@@ -63,7 +63,7 @@
   - 中标管理 -> `tender.bid`
 - 施工管理
   - 安全检查 -> `sc.safety.issue`
-  - 质量验收 -> `sc.quality.issue`
+  - 质量验收 -> `sc.quality.acceptance`
   - 工程资料 -> `sc.project.document`
   - 施工日志 -> `sc.construction.diary`
   - 施工进度 -> `project.progress.entry`

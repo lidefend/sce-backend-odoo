@@ -45,7 +45,7 @@ RELEASED_MENU_BINDINGS = (
     ("项目中心", "投标保证金", "smart_construction_core.menu_sc_tender_guarantee", "smart_construction_core.action_sc_tender_guarantee", "tender.guarantee", ("招投标管理", "投标保证金")),
     ("项目中心", "中标管理", "smart_construction_core.menu_sc_tender_won", "smart_construction_core.action_sc_tender_won", "tender.bid", ("招投标管理", "中标管理")),
     ("项目中心", "安全检查", "smart_construction_core.menu_sc_safety_issue", "smart_construction_core.action_sc_safety_issue", "sc.safety.issue", ("施工管理", "安全检查")),
-    ("项目中心", "质量验收", "smart_construction_core.menu_sc_product_quality_acceptance_v1", "smart_construction_core.action_sc_product_quality_acceptance_v1", "sc.quality.issue", ("施工管理", "质量验收")),
+    ("项目中心", "质量验收", "smart_construction_core.menu_sc_product_quality_acceptance_v1", "smart_construction_core.action_sc_product_quality_acceptance_v1", "sc.quality.acceptance", ("施工管理", "质量验收")),
     ("项目中心", "工程资料", "smart_construction_core.menu_sc_project_documents", "smart_construction_core.action_sc_project_document", "sc.project.document", ("施工管理", "工程资料")),
     ("项目中心", "施工日志", "smart_construction_core.menu_sc_construction_diary", "smart_construction_core.action_sc_construction_diary", "sc.construction.diary", ("施工管理", "施工日志")),
     ("项目中心", "施工进度", "smart_construction_core.menu_sc_construction_progress", "smart_construction_core.action_project_progress_entry", "project.progress.entry", ("施工管理", "施工进度")),
