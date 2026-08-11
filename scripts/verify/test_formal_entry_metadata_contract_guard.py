@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import shutil
 import tempfile
 import unittest
@@ -40,7 +41,12 @@ class FormalEntryMetadataContractGuardTest(unittest.TestCase):
         root = self.fixture()
         path = root / "addons/smart_construction_core/__manifest__.py"
         path.write_text(
-            path.read_text(encoding="utf-8").replace("17.0.0.86", "17.0.0.81"),
+            re.sub(
+                r"(['\"]version['\"]\s*:\s*['\"])[^'\"]+(['\"])",
+                r"\g<1>17.0.0.81\2",
+                path.read_text(encoding="utf-8"),
+                count=1,
+            ),
             encoding="utf-8",
         )
         self.assertIn("module_version_not_bumped", {row["reason"] for row in scan(root)})
