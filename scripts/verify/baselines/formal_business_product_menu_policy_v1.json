@@ -2186,7 +2186,7 @@
         {
           "access_level": "public",
           "capability_key": "construction.menu.smart_construction_core_menu_sc_product_policy_document_v1",
-          "capability_maturity": "ADAPTATION_REQUIRED",
+          "capability_maturity": "RELEASED_FOUNDATION",
           "control_object": "P1 施工行业正式产品入口",
           "disposition_policy": "keep_list_form",
           "enabled": true,
@@ -5827,10 +5827,10 @@
             },
             {
               "access_level": "public",
-              "action_xmlid": "smart_construction_core.action_sc_company_document_archive",
+              "action_xmlid": "smart_construction_core.action_sc_product_policy_document_v1",
               "business_entry_contract_version": "business_entry_disposition.v1",
               "capability_key": "construction.menu.smart_construction_core_menu_sc_product_policy_document_v1",
-              "capability_maturity": "ADAPTATION_REQUIRED",
+              "capability_maturity": "RELEASED_FOUNDATION",
               "control_granularity": "user_visible_menu_page",
               "control_object": "P1 施工行业正式产品入口",
               "disposition_policy": "keep_list_form",
@@ -8286,7 +8286,7 @@
         {
           "access_level": "public",
           "capability_key": "construction.menu.smart_construction_core_menu_sc_product_policy_document_v1",
-          "capability_maturity": "ADAPTATION_REQUIRED",
+          "capability_maturity": "RELEASED_FOUNDATION",
           "control_object": "P1 施工行业正式产品入口",
           "disposition_policy": "keep_list_form",
           "enabled": true,
@@ -11927,10 +11927,10 @@
             },
             {
               "access_level": "public",
-              "action_xmlid": "smart_construction_core.action_sc_company_document_archive",
+              "action_xmlid": "smart_construction_core.action_sc_product_policy_document_v1",
               "business_entry_contract_version": "business_entry_disposition.v1",
               "capability_key": "construction.menu.smart_construction_core_menu_sc_product_policy_document_v1",
-              "capability_maturity": "ADAPTATION_REQUIRED",
+              "capability_maturity": "RELEASED_FOUNDATION",
               "control_granularity": "user_visible_menu_page",
               "control_object": "P1 施工行业正式产品入口",
               "disposition_policy": "keep_list_form",

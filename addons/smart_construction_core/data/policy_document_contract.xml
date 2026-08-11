@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="business_config_contract_policy_document_form_v1" model="ui.business.config.contract">
+    <field name="name">policy_document_form_v1</field>
+    <field name="model">sc.document.admin.document</field>
+    <field name="view_type">form</field>
+    <field name="action_id" ref="smart_construction_core.action_sc_product_policy_document_v1"/>
+    <field name="priority">800</field>
+    <field name="company_id" eval="False"/>
+    <field name="active" eval="True"/>
+    <field name="status">published</field>
+    <field name="version_no">1</field>
+    <field name="contract_json" eval="{
+      'view_orchestration': {
+        'context': {
+          'source': 'smart_construction_core.product_release',
+          'source_status': 'product_release',
+          'fact_authority': 'sc.document.admin.document',
+          'fact_type_authority': 'policy_document'
+        },
+        'views': {'form': {
+          'title': '制度文件',
+          'composition_mode': 'entry_semantic_surface',
+          'columns': 2,
+          'sections': [
+            {'title': '制度主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'document_no', 'name', 'fact_type', 'document_title', 'policy_category', 'policy_version', 'confidentiality_level']},
+            {'title': '发布与有效期', 'sequence': 20, 'columns': 2, 'fields': ['issuing_department', 'policy_issue_date', 'policy_effective_date', 'policy_expiry_date', 'business_date', 'department_id']},
+            {'title': '维护与附件', 'sequence': 30, 'columns': 2, 'fields': ['requester_id', 'handler_id', 'due_date', 'description', 'result_note', 'attachment_ids']},
+            {'title': '来源追溯', 'sequence': 40, 'columns': 2, 'fields': ['legacy_document_no', 'legacy_document_state', 'legacy_source_table', 'legacy_source_id']}
+          ],
+          'fields': [
+            {'name': 'state', 'sequence': 10, 'group_title': '制度主信息', 'readonly': True},
+            {'name': 'document_no', 'sequence': 20, 'group_title': '制度主信息'},
+            {'name': 'name', 'sequence': 30, 'group_title': '制度主信息'},
+            {'name': 'fact_type', 'sequence': 40, 'group_title': '制度主信息', 'readonly': True},
+            {'name': 'document_title', 'sequence': 50, 'group_title': '制度主信息', 'label': '制度名称'},
+            {'name': 'policy_category', 'sequence': 60, 'group_title': '制度主信息'},
+            {'name': 'policy_version', 'sequence': 70, 'group_title': '制度主信息'},
+            {'name': 'confidentiality_level', 'sequence': 80, 'group_title': '制度主信息'},
+            {'name': 'issuing_department', 'sequence': 90, 'group_title': '发布与有效期'},
+            {'name': 'policy_issue_date', 'sequence': 100, 'group_title': '发布与有效期'},
+            {'name': 'policy_effective_date', 'sequence': 110, 'group_title': '发布与有效期'},
+            {'name': 'policy_expiry_date', 'sequence': 120, 'group_title': '发布与有效期'},
+            {'name': 'business_date', 'sequence': 130, 'group_title': '发布与有效期'},
+            {'name': 'department_id', 'sequence': 140, 'group_title': '发布与有效期'},
+            {'name': 'requester_id', 'sequence': 150, 'group_title': '维护与附件'},
+            {'name': 'handler_id', 'sequence': 160, 'group_title': '维护与附件'},
+            {'name': 'due_date', 'sequence': 170, 'group_title': '维护与附件'},
+            {'name': 'description', 'sequence': 180, 'group_title': '维护与附件'},
+            {'name': 'result_note', 'sequence': 190, 'group_title': '维护与附件'},
+            {'name': 'attachment_ids', 'sequence': 200, 'group_title': '维护与附件'},
+            {'name': 'legacy_document_no', 'sequence': 210, 'group_title': '来源追溯', 'readonly': True},
+            {'name': 'legacy_document_state', 'sequence': 220, 'group_title': '来源追溯', 'readonly': True},
+            {'name': 'legacy_source_table', 'sequence': 230, 'group_title': '来源追溯', 'readonly': True},
+            {'name': 'legacy_source_id', 'sequence': 240, 'group_title': '来源追溯', 'readonly': True}
+          ]
+        }}
+      }
+    }"/>
+  </record>
+</odoo>

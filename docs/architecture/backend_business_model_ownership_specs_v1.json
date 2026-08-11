@@ -335,6 +335,57 @@
       "frontend_policy": "contract_renderer_only"
     },
     {
+      "spec": "policy_document_fact_scope",
+      "risk_family": "document semantic aliasing and entry overlap",
+      "business_object": "policy_document",
+      "fact_source_model": ["sc.document.admin.document"],
+      "allowed_support_models": ["ir.attachment", "hr.department", "res.users"],
+      "projection_models": [],
+      "boundary_rule": "The shared document carrier owns distinct backend fact types; policy documents use policy_document and never inherit company archive semantics from a renamed menu.",
+      "forbidden_drift": "Do not bind the policy menu to the company archive action, expose overlapping domains, create a second document carrier, or let frontend text infer fact_type.",
+      "decision": "Keep one document carrier, add an explicit policy fact type and metadata, isolate actions, and publish an action-specific rendering contract.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "single_carrier_scoped_entries",
+      "entry_bindings": [
+        {
+          "intent": "policy_document_maintenance",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_policy_document_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_policy_document_v1",
+          "fact_model": "sc.document.admin.document",
+          "scope_field": "fact_type",
+          "scope_value": "policy_document",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_policy_document_form_v1"
+        }
+      ],
+      "source_isolation_actions": [
+        {
+          "action_xmlid": "smart_construction_core.action_sc_company_document_archive",
+          "required_domain_tokens": ["fact_type", "company_document_archive"]
+        },
+        {
+          "action_xmlid": "smart_construction_core.action_sc_product_policy_document_v1",
+          "required_domain_tokens": ["fact_type", "policy_document"]
+        }
+      ],
+      "conservation_invariants": [
+        "one_document_fact_has_exactly_one_fact_type",
+        "company_archive_and_policy_actions_do_not_overlap",
+        "policy_metadata_is_owned_by_backend_fields",
+        "attachments_remain_on_the_canonical_document_fact",
+        "only_operational_date_inconsistency_hard_blocks_completion"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/core/document_admin_document.py",
+        "addons/smart_construction_core/views/core/document_admin_document_views.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/policy_document_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "projection_refresh_ownership",
       "risk_family": "projection and management visibility",
       "business_object": "projection",

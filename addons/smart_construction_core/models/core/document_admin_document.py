@@ -15,6 +15,7 @@ class ScDocumentAdminDocument(models.Model):
             ("company_document_archive", "公司资料存档"),
             ("certificate_registration", "证照登记"),
             ("document_borrow", "借阅申请"),
+            ("policy_document", "制度文件"),
         ]
 
     certificate_name = fields.Char(string="证照名称", index=True, tracking=True)
@@ -24,6 +25,29 @@ class ScDocumentAdminDocument(models.Model):
     issue_date = fields.Date(string="发证日期")
     valid_until = fields.Date(string="有效期至", index=True)
     document_title = fields.Char(string="资料名称", index=True, tracking=True)
+    policy_category = fields.Selection(
+        [
+            ("management_policy", "管理制度"),
+            ("operating_procedure", "操作规程"),
+            ("work_standard", "工作标准"),
+            ("notice_decision", "通知决定"),
+            ("other", "其他"),
+        ],
+        string="制度类别",
+        index=True,
+        tracking=True,
+    )
+    policy_version = fields.Char(string="版本号", index=True, tracking=True)
+    issuing_department = fields.Char(string="发布部门", index=True)
+    policy_issue_date = fields.Date(string="发布日期", index=True)
+    policy_effective_date = fields.Date(string="生效日期", index=True)
+    policy_expiry_date = fields.Date(string="失效日期", index=True)
+    confidentiality_level = fields.Selection(
+        [("internal", "内部"), ("restricted", "受限"), ("public", "公开")],
+        string="密级",
+        default="internal",
+        index=True,
+    )
     borrow_user_id = fields.Many2one("res.users", string="借阅人", default=lambda self: self.env.user, index=True)
     borrow_project_name = fields.Char(string="借阅项目名称", index=True)
     borrow_department_name = fields.Char(string="借阅部门或项目部名称", index=True)
@@ -75,6 +99,13 @@ class ScDocumentAdminDocument(models.Model):
     def _business_specific_fields(self):
         return [
             "document_title",
+            "policy_category",
+            "policy_version",
+            "issuing_department",
+            "policy_issue_date",
+            "policy_effective_date",
+            "policy_expiry_date",
+            "confidentiality_level",
             "certificate_name",
             "certificate_no",
             "holder_name",
@@ -187,6 +218,13 @@ class ScDocumentAdminDocument(models.Model):
                 record._require_fields(["document_title", "borrow_user_id", "borrow_date", "expected_return_date"])
                 if record.borrow_date and record.expected_return_date and record.borrow_date > record.expected_return_date:
                     raise ValidationError(_("借阅日期不能晚于预计归还日期。"))
+            elif record.fact_type == "policy_document":
+                if (
+                    record.policy_effective_date
+                    and record.policy_expiry_date
+                    and record.policy_effective_date > record.policy_expiry_date
+                ):
+                    raise ValidationError(_("制度生效日期不能晚于失效日期。"))
 
     def unlink(self):
         locked = self.filtered(lambda rec: rec.state not in ("draft", "cancel"))
