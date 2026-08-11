@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T15:54:16.975567+00:00`
+- generated_at: `2026-08-11T16:09:25.176636+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -308,7 +308,7 @@
       - 自筹保证金退回 [`formal_product` inactive] -> `sc.expense.claim`
     - 借还款办理 [`formal_product` inactive]
     - 公司&项目扣款 [`formal_product`] -> `sc.expense.claim`
-    - 公司&项目退款 [`formal_product`] -> `sc.expense.claim`
+    - 公司&项目退款 [`formal_product`] -> `sc.company.project.refund.workspace`
     - 公司支出 [`formal_product`] -> `sc.payment.execution`
     - 公司收入 [`formal_product`] -> `sc.receipt.income`
     - 到款确认表 [`formal_product` inactive] -> `sc.receipt.income`

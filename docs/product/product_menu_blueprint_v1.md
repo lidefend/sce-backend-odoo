@@ -127,7 +127,7 @@
 - 公司收入 -> `sc.receipt.income`
 - 公司支出 -> `sc.payment.execution`
 - 公司&项目扣款 -> `sc.expense.claim`
-- 公司&项目退款 -> `sc.expense.claim`
+- 公司&项目退款 -> `sc.company.project.refund.workspace`
 - 备用金 -> `sc.expense.claim`
 - 资金汇总 -> `project.funding.baseline`
 

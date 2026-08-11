@@ -81,7 +81,7 @@ RELEASED_MENU_BINDINGS = (
     ("财务中心", "公司收入", "smart_construction_core.menu_sc_user_income", "smart_construction_core.action_sc_receipt_income_user_income", "sc.receipt.income", ("公司收入",)),
     ("财务中心", "公司支出", "smart_construction_core.menu_sc_company_finance_expense", "smart_construction_core.action_sc_payment_execution_company_finance_expense", "sc.payment.execution", ("公司支出",)),
     ("财务中心", "公司&项目扣款", "smart_construction_core.menu_sc_deduction_bill", "smart_construction_core.action_sc_expense_claim_deduction_bill", "sc.expense.claim", ("公司&项目扣款",)),
-    ("财务中心", "公司&项目退款", "smart_construction_core.menu_sc_product_company_project_refund_v1", "smart_construction_core.action_sc_product_company_project_refund_v1", "sc.expense.claim", ("公司&项目退款",)),
+    ("财务中心", "公司&项目退款", "smart_construction_core.menu_sc_product_company_project_refund_v1", "smart_construction_core.action_sc_product_company_project_refund_v1", "sc.company.project.refund.workspace", ("公司&项目退款",)),
     ("财务中心", "备用金", "smart_construction_core.menu_sc_advance_fund", "smart_construction_core.action_sc_expense_claim_advance_fund", "sc.expense.claim", ("备用金",)),
     ("财务中心", "资金汇总", "smart_construction_core.menu_sc_funding_plan_summary", "smart_construction_core.action_project_funding_baseline_summary", "project.funding.baseline", ("资金汇总",)),
     ("税务中心", "外经证", "smart_construction_core.menu_sc_tax_certificate_registration_user", "smart_construction_core.action_sc_tax_certificate_registration_user", "sc.tax.certificate.registration", ("外经证",)),

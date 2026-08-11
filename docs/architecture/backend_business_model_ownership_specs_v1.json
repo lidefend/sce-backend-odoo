@@ -236,6 +236,51 @@
       "frontend_policy": "contract_renderer_only"
     },
     {
+      "spec": "company_project_refund_context_entry",
+      "risk_family": "refund classification and cash-responsibility conservation",
+      "business_object": "bilateral_mixed",
+      "fact_source_model": ["sc.expense.claim", "sc.self.funding.registration"],
+      "allowed_support_models": ["sc.company.project.refund.workspace", "project.project", "res.partner"],
+      "projection_models": ["sc.finance.business.fact", "sc.company.contractor.responsibility.fact", "sc.treasury.ledger", "sc.finance.project.counterparty.position"],
+      "boundary_rule": "Finance Center owns refund context dispatch; expense claims own deduction and deposit returns, self-funding registration owns contractor self-funding refunds, and projections remain read-only.",
+      "forbidden_drift": "Do not create a generic refund fact, persist amounts or state in the workspace, merge responsibility refunds with deposit returns, let frontend choose the fact owner, or write into projections.",
+      "decision": "Use one transient P1 refund entry that dispatches four explicit intents to two canonical fact models and retains their distinct cash and responsibility semantics.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "transient_dispatch_only",
+      "entry_bindings": [
+        {
+          "intent": "company_project_refund_context_entry",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_company_project_refund_v1",
+          "entry_model": "sc.company.project.refund.workspace",
+          "fact_models": ["sc.expense.claim", "sc.self.funding.registration"],
+          "projection_model": "sc.finance.project.counterparty.position",
+          "orchestration_policy": "transient_dispatch_only",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_company_project_refund_workspace_form_v1"
+        }
+      ],
+      "conservation_invariants": [
+        "workspace_must_not_persist_business_amount_or_state",
+        "each_refund_intent_dispatches_to_exactly_one_canonical_fact_model",
+        "self_funding_refund_requires_a_counterparty_identity",
+        "cash_effects_are_traceable_in_treasury_ledger",
+        "refund_summary_remains_read_only"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/support/company_project_refund_workspace.py",
+        "addons/smart_construction_core/models/core/expense_claim.py",
+        "addons/smart_construction_core/models/core/self_funding_registration.py",
+        "addons/smart_construction_core/models/projection/finance_project_counterparty_position.py",
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/company_project_refund_workspace_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "projection_refresh_ownership",
       "risk_family": "projection and management visibility",
       "business_object": "projection",

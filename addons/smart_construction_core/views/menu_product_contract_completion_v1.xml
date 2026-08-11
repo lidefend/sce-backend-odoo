@@ -103,7 +103,8 @@
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
     </record>
     <record id="action_sc_product_company_project_refund_v1" model="ir.actions.act_window">
-      <field name="name">公司&amp;项目退款</field><field name="res_model">sc.expense.claim</field><field name="view_mode">tree,form</field>
+      <field name="name">公司&amp;项目退款</field><field name="res_model">sc.company.project.refund.workspace</field><field name="view_mode">form</field>
+      <field name="view_id" ref="smart_construction_core.view_sc_company_project_refund_workspace_form"/><field name="target">current</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
     </record>
     <record id="action_sc_product_project_tax_deduction_v1" model="ir.actions.act_window">
