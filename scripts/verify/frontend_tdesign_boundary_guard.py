@@ -17,32 +17,64 @@ ALLOWED_RUNTIME_IMPORT = ADAPTER.resolve()
 TDESIGN_IMPORT_RE = re.compile(
     r"(?:from\s*|import\s*)['\"]tdesign(?:-icons)?-vue-next(?:/[^'\"]*)?['\"]"
 )
+RAW_CONTROL_RE = re.compile(r"<(button|input|select|textarea|table)\b", re.IGNORECASE)
+UNADAPTED_DATA_ENTRY_RE = re.compile(
+    r"<(?:select|textarea)\b|<input\b(?![^>]*\btype\s*=\s*['\"](?:radio|file)['\"])[^>]*>",
+    re.IGNORECASE | re.DOTALL,
+)
 EXPECTED_DEPENDENCIES = {
     "tdesign-vue-next": "1.20.5",
     "tdesign-icons-vue-next": "0.4.9",
 }
 REQUIRED_ADAPTER_EXPORTS = {
     "TButton",
+    "TCheckbox",
     "TDatePicker",
     "TDialog",
     "TDrawer",
     "TEnhancedTable",
+    "TInput",
     "TSelect",
     "TTag",
+    "TTextarea",
 }
 REQUIRED_SC_ADAPTERS = {
     "ScButton.vue": "TButton",
+    "ScCheckbox.vue": "TCheckbox",
     "ScDateField.vue": "TDatePicker",
     "ScDialog.vue": "TDialog",
     "ScDrawer.vue": "TDrawer",
     "ScHierarchyTable.vue": "TEnhancedTable",
+    "ScTextField.vue": "TInput",
     "ScSelect.vue": "TSelect",
     "ScStatusBadge.vue": "TTag",
+    "ScTextArea.vue": "TTextarea",
 }
 REQUIRED_SURFACE_CONSUMERS = {
     "contract list": (SRC / "pages/ListPage.vue", "ScButton"),
     "contract form": (SRC / "components/template/FormSection.vue", "ScDateField"),
+    "contract form text input": (SRC / "components/template/FormSection.vue", "ScTextField"),
+    "contract form multiline input": (SRC / "components/template/FormSection.vue", "ScTextArea"),
+    "contract form boolean input": (SRC / "components/template/FormSection.vue", "ScCheckbox"),
+    "action surface search": (SRC / "components/action/ActionSurfaceToolbar.vue", "ScTextField"),
+    "action surface structured select": (SRC / "components/action/ActionSurfaceToolbar.vue", "ScSelect"),
+    "generic view field": (SRC / "components/view/ViewFieldRenderer.vue", "ScTextField"),
     "WBS hierarchy": (SRC / "components/action/HierarchyPlanner.vue", "ScHierarchyTable"),
+}
+DATA_ENTRY_SURFACES = {
+    "application shell scope search": SRC / "layouts/AppShell.vue",
+    "primary navigation search": SRC / "components/product-shell/PrimaryNavigation.vue",
+    "action surface filters": SRC / "components/action/ActionSurfaceToolbar.vue",
+    "contract form fields": SRC / "components/template/FormSection.vue",
+    "generic view fields": SRC / "components/view/ViewFieldRenderer.vue",
+    "my work approval": SRC / "components/business/MyWorkApprovalWorkspace.vue",
+    "login": SRC / "views/LoginView.vue",
+    "account activation": SRC / "views/AccountActivationView.vue",
+    "usage analytics": SRC / "views/UsageAnalyticsView.vue",
+    "scene packages": SRC / "views/ScenePackagesView.vue",
+    "business configuration approval": SRC / "views/businessConfigSurface/BusinessConfigApprovalPanel.vue",
+    "business configuration coverage": SRC / "views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
+    "business configuration field editor": SRC / "views/businessConfigSurface/LowCodeFieldChipEditor.vue",
 }
 
 
@@ -64,6 +96,14 @@ def collect_direct_imports(
                     display = path.as_posix()
                 violations.append(display)
     return sorted(set(violations))
+
+
+def collect_native_control_inventory(src: Path = SRC) -> dict[str, int]:
+    inventory = {name: 0 for name in ("button", "input", "select", "textarea", "table")}
+    for path in src.rglob("*.vue"):
+        for control in RAW_CONTROL_RE.findall(path.read_text(encoding="utf-8", errors="ignore")):
+            inventory[control.lower()] += 1
+    return inventory
 
 
 def validate() -> list[str]:
@@ -121,6 +161,10 @@ def validate() -> list[str]:
         text = path.read_text(encoding="utf-8", errors="ignore") if path.is_file() else ""
         if primitive not in text:
             errors.append(f"{surface} does not consume required SC primitive: {primitive}")
+    for surface, path in DATA_ENTRY_SURFACES.items():
+        text = path.read_text(encoding="utf-8", errors="ignore") if path.is_file() else ""
+        if UNADAPTED_DATA_ENTRY_RE.search(text):
+            errors.append(f"{surface} contains an unadapted native data-entry control: {path.relative_to(ROOT)}")
     return errors
 
 
@@ -135,6 +179,8 @@ def main() -> int:
     print("- vendor imports: design-system adapter only")
     print("- product theming: SC semantic-token bridge")
     print("- versions: exact and reviewable")
+    print(f"- native control inventory: {json.dumps(collect_native_control_inventory(), ensure_ascii=False, sort_keys=True)}")
+    print(f"- governed data-entry surfaces: {len(DATA_ENTRY_SURFACES)}")
     return 0
 
 

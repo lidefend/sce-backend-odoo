@@ -14,8 +14,11 @@
         <ScStatusBadge value="ready" label="可用" semantic="success" />
         <label>选项<ScSelect v-model="selectedOption"><option value="a">选项 A</option><option value="b">选项 B</option></ScSelect></label>
         <label>日期<ScDateField v-model="selectedDate" /></label>
+        <label>文本<ScTextField v-model="textValue" label="文本" /></label>
+        <label>说明<ScTextArea v-model="notesValue" label="说明" :rows="3" /></label>
+        <ScCheckbox v-model="confirmed" label="确认统一控件">确认统一控件</ScCheckbox>
       </div>
-      <p role="status">当前选项：{{ selectedOption }}；当前日期：{{ selectedDate }}</p>
+      <p role="status">当前选项：{{ selectedOption }}；当前日期：{{ selectedDate }}；文本：{{ textValue }}；说明：{{ notesValue }}；确认：{{ confirmed ? '是' : '否' }}</p>
     </section>
 
     <section aria-labelledby="hierarchy-title">
@@ -47,6 +50,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import ScButton from '../src/components/design-system/ScButton.vue';
+import ScCheckbox from '../src/components/design-system/ScCheckbox.vue';
 import ScDateField from '../src/components/design-system/ScDateField.vue';
 import ScDialog from '../src/components/design-system/ScDialog.vue';
 import ScDrawer from '../src/components/design-system/ScDrawer.vue';
@@ -56,11 +60,16 @@ import ScHierarchyTable, {
 } from '../src/components/design-system/ScHierarchyTable.vue';
 import ScSelect from '../src/components/design-system/ScSelect.vue';
 import ScStatusBadge from '../src/components/design-system/ScStatusBadge.vue';
+import ScTextArea from '../src/components/design-system/ScTextArea.vue';
+import ScTextField from '../src/components/design-system/ScTextField.vue';
 
 const dialogOpen = ref(false);
 const drawerOpen = ref(false);
 const selectedOption = ref('a');
 const selectedDate = ref('2026-08-12');
+const textValue = ref('初始值');
+const notesValue = ref('初始说明');
+const confirmed = ref(false);
 const selectedKey = ref<string | number>();
 const openedKey = ref<string | number>();
 const expanded = ref(true);
@@ -114,7 +123,7 @@ p {
 
 .acceptance-controls {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: end;
   gap: var(--sc-product-space-2);
 }

@@ -64,7 +64,9 @@
 }
 
 .sc-design-select.t-select,
-.sc-design-date-field.t-date-picker {
+.sc-design-date-field.t-date-picker,
+.sc-design-text-field.t-input,
+.sc-design-text-area.t-textarea {
   width: 100%;
 }
 
@@ -75,6 +77,27 @@
   border: 0;
   padding: 0;
   background: transparent;
+}
+
+.sc-design-text-field.input,
+.sc-design-text-area.input,
+.sc-design-text-field.view-input,
+.sc-design-select.view-select,
+.sc-design-text-field.sc-input,
+.sc-design-text-field.sc-search,
+.sc-design-text-field.workspace-scope-search,
+.sc-design-text-field.field-option-search {
+  height: auto;
+  min-height: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.sc-design-text-field .t-input,
+.sc-design-text-area .t-textarea__inner,
+.sc-design-select .t-input {
+  background: var(--sc-semantic-surface-input);
 }
 
 .sc-design-dialog.t-dialog,

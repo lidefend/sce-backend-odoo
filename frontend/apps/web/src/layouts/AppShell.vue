@@ -55,7 +55,7 @@
             <div><small>数据范围</small><h2 id="company-space-title">公司空间</h2></div>
             <span>{{ filteredCompanyOptions.length }}</span>
           </header>
-          <input v-model="companySearch" class="workspace-scope-search sc-search" type="search" placeholder="搜索公司" aria-label="搜索公司" />
+          <ScTextField v-model="companySearch" class="workspace-scope-search sc-search" type="search" label="搜索公司" placeholder="搜索公司" />
           <div class="workspace-scope-options">
             <button
               v-for="company in filteredCompanyOptions"
@@ -88,14 +88,14 @@
               @click.stop="changeOperationScope(operation.operation_strategy)"
             >{{ operationScopeLabel(operation) }}</button>
           </div>
-          <input
+          <ScTextField
             v-model="recordContextSearch"
             class="workspace-scope-search sc-search"
             type="search"
-            :aria-label="recordContextSearchPlaceholder"
+            :label="recordContextSearchPlaceholder"
             :placeholder="recordContextSearchPlaceholder"
-            @input="queueRecordContextSearch"
-            @keydown.enter.prevent="submitRecordContextSearch"
+            @update:model-value="queueRecordContextSearch"
+            @enter="submitRecordContextSearch"
           />
           <div class="workspace-scope-options">
             <button
@@ -357,6 +357,7 @@ import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import GlobalMessagePanel from '../components/GlobalMessagePanel.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
+import ScTextField from '../components/design-system/ScTextField.vue';
 import { useSessionStore, type ActivityPage } from '../stores/session';
 import { intentRequest } from '../api/intents';
 import { getSceneByKey, getSceneRegistryDiagnostics, resolveSceneLayout } from '../app/resolvers/sceneRegistry';
@@ -819,12 +820,8 @@ function queueRecordContextSearch() {
   }, 260);
 }
 
-async function submitRecordContextSearch(event: KeyboardEvent) {
-  if (event.isComposing) return;
-  const target = event.currentTarget;
-  if (target instanceof HTMLInputElement) {
-    recordContextSearch.value = target.value;
-  }
+async function submitRecordContextSearch(value: string) {
+  recordContextSearch.value = value;
   if (recordContextSearchTimer) {
     clearTimeout(recordContextSearchTimer);
     recordContextSearchTimer = null;

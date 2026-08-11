@@ -48,7 +48,7 @@ try {
     }
 
     const engineMarkers = await page.locator('[data-ui-engine]').count();
-    if (engineMarkers < 8) throw new Error(`${viewport.width}x${viewport.height}: missing UI engine markers (${engineMarkers})`);
+    if (engineMarkers < 11) throw new Error(`${viewport.width}x${viewport.height}: missing UI engine markers (${engineMarkers})`);
     const firstRow = page.locator('.sc-hierarchy-table tbody tr').first();
     await firstRow.focus();
     await firstRow.press('Enter');
@@ -58,6 +58,12 @@ try {
     await page.getByText('子节点 B', { exact: true }).dblclick();
     await page.getByRole('textbox', { name: '选项' }).click();
     await page.getByRole('listitem', { name: '选项 B' }).click();
+    await page.getByRole('textbox', { name: '文本' }).fill('统一文本控件');
+    await page.getByRole('textbox', { name: '说明' }).fill('统一多行控件');
+    await page.locator('.sc-design-checkbox[aria-label="确认统一控件"]').click();
+    if (!(await page.getByRole('checkbox', { name: '确认统一控件' }).isChecked())) {
+      throw new Error(`${viewport.width}x${viewport.height}: checkbox state was not committed`);
+    }
     await page.getByRole('button', { name: '打开对话框' }).click();
     await page.getByRole('dialog', { name: '通用对话框' }).waitFor();
     await page.getByRole('button', { name: '关闭对话框' }).click();
@@ -76,6 +82,9 @@ try {
       selected: document.body.textContent?.includes('已选择：child-b') || false,
       opened: document.body.textContent?.includes('已打开：child-b') || false,
       selectedOption: document.body.textContent?.includes('当前选项：b') || false,
+      textField: document.body.textContent?.includes('文本：统一文本控件') || false,
+      textArea: document.body.textContent?.includes('说明：统一多行控件') || false,
+      checkbox: document.body.textContent?.includes('确认：是') || false,
       hierarchy: (() => {
         const root = document.querySelector('.sc-hierarchy-table');
         const content = document.querySelector('.t-table__content');
@@ -93,7 +102,9 @@ try {
       })(),
     }));
     if (geometry.documentWidth > geometry.viewportWidth + 1) throw new Error(`${viewport.width}x${viewport.height}: page horizontal overflow`);
-    if (!geometry.selected || !geometry.opened || !geometry.selectedOption) throw new Error(`${viewport.width}x${viewport.height}: interaction state missing`);
+    if (!geometry.selected || !geometry.opened || !geometry.selectedOption || !geometry.textField || !geometry.textArea || !geometry.checkbox) {
+      throw new Error(`${viewport.width}x${viewport.height}: interaction state missing`);
+    }
     if (geometry.hierarchy.content_scroll_left !== 0 || geometry.hierarchy.first_header_left < geometry.hierarchy.root_left - 1) {
       throw new Error(`${viewport.width}x${viewport.height}: hierarchy left edge is clipped`);
     }

@@ -6,25 +6,26 @@
 
       <form v-if="stage === 'code'" @submit.prevent="startActivation">
         <label for="activation-code">激活码</label>
-        <input
+        <ScTextField
           id="activation-code"
           ref="codeInput"
           v-model="activationCode"
+          label="激活码"
           autocomplete="one-time-code"
           spellcheck="false"
           required
           :disabled="busy"
         />
-        <button type="submit" :disabled="busy || !activationCode.trim()">{{ busy ? '正在验证…' : '继续' }}</button>
+        <ScButton type="submit" variant="primary" :disabled="busy || !activationCode.trim()" :loading="busy">{{ busy ? '正在验证…' : '继续' }}</ScButton>
       </form>
 
       <form v-else-if="stage === 'password'" @submit.prevent="finishActivation">
         <p class="hint">密码至少12位，并同时包含字母和数字。</p>
         <label for="activation-password">正式密码</label>
-        <input id="activation-password" v-model="password" type="password" autocomplete="new-password" minlength="12" required :disabled="busy" />
+        <ScTextField id="activation-password" v-model="password" label="正式密码" type="password" autocomplete="new-password" minlength="12" required :disabled="busy" />
         <label for="activation-password-confirm">确认正式密码</label>
-        <input id="activation-password-confirm" v-model="confirmPassword" type="password" autocomplete="new-password" minlength="12" required :disabled="busy" />
-        <button type="submit" :disabled="busy || !password || !confirmPassword">{{ busy ? '正在设置…' : '设置正式密码' }}</button>
+        <ScTextField id="activation-password-confirm" v-model="confirmPassword" label="确认正式密码" type="password" autocomplete="new-password" minlength="12" required :disabled="busy" />
+        <ScButton type="submit" variant="primary" :disabled="busy || !password || !confirmPassword" :loading="busy">{{ busy ? '正在设置…' : '设置正式密码' }}</ScButton>
       </form>
 
       <section v-else class="success" role="status">
@@ -41,6 +42,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref } from 'vue';
 import { beginAccountActivation, completeAccountActivation } from '../services/accountActivation';
+import ScButton from '../components/design-system/ScButton.vue';
+import ScTextField from '../components/design-system/ScTextField.vue';
 
 const stage = ref<'code' | 'password' | 'done'>('code');
 const activationCode = ref('');
@@ -49,7 +52,7 @@ const password = ref('');
 const confirmPassword = ref('');
 const message = ref('');
 const busy = ref(false);
-const codeInput = ref<HTMLInputElement | null>(null);
+const codeInput = ref<{ focus: () => void } | null>(null);
 
 async function startActivation() {
   if (busy.value) return;

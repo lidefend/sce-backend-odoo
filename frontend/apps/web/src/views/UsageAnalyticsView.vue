@@ -8,70 +8,73 @@
       <div class="actions">
         <label>
           {{ pageText('label_top', 'Top') }}
-          <select v-model="topN" :disabled="loading">
+          <ScSelect :model-value="topN" :disabled="loading" @update:model-value="topN = Number($event)">
             <option :value="5">5</option>
             <option :value="10">10</option>
             <option :value="20">20</option>
-          </select>
+          </ScSelect>
         </label>
         <label>
           {{ pageText('label_daily_range', '趋势范围') }}
-          <select v-model="dailyRange" :disabled="loading">
+          <ScSelect :model-value="dailyRange" :disabled="loading" @update:model-value="dailyRange = Number($event)">
             <option :value="3">{{ pageText('option_recent_3_days', '最近 3 天') }}</option>
             <option :value="7">{{ pageText('option_recent_7_days', '最近 7 天') }}</option>
-          </select>
+          </ScSelect>
         </label>
         <label>
           {{ pageText('label_hidden_reason', '隐藏原因') }}
-          <select v-model="hiddenReasonFilter" :disabled="loading">
+          <ScSelect v-model="hiddenReasonFilter" :disabled="loading">
             <option value="ALL">{{ pageText('option_all', '全部') }}</option>
             <option v-for="item in reasonCounts" :key="`reason-filter-${item.reason_code}`" :value="item.reason_code">
               {{ item.reason_code }} ({{ item.count }})
             </option>
-          </select>
+          </ScSelect>
         </label>
         <label>
           {{ pageText('label_role_slice', '角色切片') }}
-          <select v-model="roleSlice" :disabled="loading">
+          <ScSelect v-model="roleSlice" :disabled="loading">
             <option value="">{{ pageText('option_all_roles', '全部角色') }}</option>
             <option v-for="code in roleCodeOptions" :key="`role-${code}`" :value="code">
               {{ code }}
             </option>
-          </select>
+          </ScSelect>
         </label>
         <label>
           {{ pageText('label_user_slice', '用户切片') }}
-          <input
-            v-model.number="userSlice"
+          <ScTextField
+            :model-value="userSlice"
             type="number"
             min="0"
             step="1"
+            :label="pageText('label_user_slice', '用户切片')"
             :placeholder="pageText('placeholder_user_slice', '0=全部')"
             :disabled="loading"
+            @update:model-value="userSlice = Number($event)"
           />
         </label>
         <label>
           {{ pageText('label_scene_prefix', 'Scene 前缀') }}
-          <input
-            v-model.trim="scenePrefix"
+          <ScTextField
+            v-model="scenePrefix"
             type="text"
+            :label="pageText('label_scene_prefix', 'Scene 前缀')"
             :placeholder="pageText('placeholder_scene_prefix', '如 workspace.')"
             :disabled="loading"
           />
         </label>
         <label>
           {{ pageText('label_capability_prefix', 'Capability 前缀') }}
-          <input
-            v-model.trim="capabilityPrefix"
+          <ScTextField
+            v-model="capabilityPrefix"
             type="text"
+            :label="pageText('label_capability_prefix', 'Capability 前缀')"
             :placeholder="pageText('placeholder_capability_prefix', '如 contract.')"
             :disabled="loading"
           />
         </label>
-        <label class="export-scope">
-          <input v-model="exportFilteredOnly" type="checkbox" />
+        <ScCheckbox v-model="exportFilteredOnly" class="export-scope" :label="pageText('label_export_filtered_only', '仅导出当前筛选')">
           {{ pageText('label_export_filtered_only', '仅导出当前筛选') }}
-        </label>
+        </ScCheckbox>
         <button class="secondary" :disabled="loading" @click="copyExportParams">{{ pageText('action_copy_export_params', '复制导出参数') }}</button>
         <button class="secondary" :disabled="loading" @click="resetFilters">{{ pageText('action_reset_filters', '重置筛选') }}</button>
         <button class="secondary" :disabled="loading || !canExport" @click="exportCsv">{{ pageText('action_export_csv', '导出 CSV') }}</button>
@@ -314,6 +317,9 @@ import { useRouter } from 'vue-router';
 import { exportUsageCsv, fetchCapabilityVisibilityReport, fetchUsageReport, type CapabilityVisibilityReport, type UsageReport } from '../api/usage';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
+import ScCheckbox from '../components/design-system/ScCheckbox.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
+import ScTextField from '../components/design-system/ScTextField.vue';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { collectErrorContextIssue, issueScopeLabel } from '../app/errorContext';
 import { usePageContract } from '../app/pageContract';

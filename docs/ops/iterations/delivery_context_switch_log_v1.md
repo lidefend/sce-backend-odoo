@@ -3687,3 +3687,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   one generic hierarchy renderer, focused static guards, strict typecheck,
   release units and production build. No database, backend contract, route,
   permission, menu or business-data mutation is authorized.
+
+## 2026-08-12 — P0-TDESIGN-SYSTEM-ADOPTION-V1
+
+- Branch / anchor: continuation on `codex/tdesign-enterprise-ui-foundation-v1`
+  after foundation commit `eb62250dcb523ee9895b418baf20a9c266ff4bbf`.
+- Formal Product Layer / Layer Target / Module: P0 / system-wide frontend data
+  entry and interaction primitives / `frontend/apps/web`.
+- Decision / Boundary: system-wide adoption means one globally themed engine,
+  one `Sc*` public API and one fail-closed vendor boundary. It does not authorize
+  page-level TDesign imports or changes to page contracts, permissions, routes,
+  model fields, persistence, menu semantics or customer data.
+- Adoption Closure: text, numeric, search, password, multiline and boolean
+  inputs now have reviewed TDesign-backed SC adapters. Thirteen high-reuse data
+  entry surfaces are governed against native-control regression, covering the
+  application shell, navigation, lists, forms, generic views, My Work,
+  authentication and product-configuration operations.
+- Controlled Exceptions: native file upload and radio controls remain where
+  browser semantics or current business widgets require them. Other outstanding
+  native controls are reported as explicit migration debt rather than being
+  hidden or mechanically rewritten.
+- Validation: strict typecheck, release units, source lint, production build,
+  style/token guard, table primitive guard, My Work authority guard and
+  five-viewport browser interaction/accessibility checks are required. The
+  browser fixture proves generic engine behavior only; authenticated business
+  page evidence remains a separate runtime acceptance responsibility.

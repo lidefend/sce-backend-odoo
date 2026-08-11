@@ -1,6 +1,7 @@
 export { default as ScActionBar } from './ScActionBar.vue';
 export { default as ScAuditTrail } from './ScAuditTrail.vue';
 export { default as ScButton } from './ScButton.vue';
+export { default as ScCheckbox } from './ScCheckbox.vue';
 export { default as ScDataTable } from './ScDataTable.vue';
 export { default as ScDateField } from './ScDateField.vue';
 export { default as ScDialog } from './ScDialog.vue';
@@ -26,3 +27,5 @@ export { default as ScRelationshipFlow } from './ScRelationshipFlow.vue';
 export { default as ScSection } from './ScSection.vue';
 export { default as ScSelect } from './ScSelect.vue';
 export { default as ScStatusBadge } from './ScStatusBadge.vue';
+export { default as ScTextArea } from './ScTextArea.vue';
+export { default as ScTextField } from './ScTextField.vue';

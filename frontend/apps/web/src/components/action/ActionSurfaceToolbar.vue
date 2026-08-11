@@ -62,16 +62,17 @@
           <span>{{ activeGroupChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
         </button>
-        <input
+        <ScTextField
           type="search"
-          :value="searchValue"
+          :model-value="searchValue"
+          :label="searchPlaceholder"
           :disabled="loading"
           :placeholder="searchPlaceholder"
           @compositionstart="$emit('search-composition-start')"
           @compositionend="$emit('search-composition-end', $event)"
-          @input="$emit('search-input', $event)"
-          @keydown.enter.prevent="$emit('search-submit')"
-          @keydown.esc="searchMenuOpen = false"
+          @update:model-value="$emit('search-input', $event)"
+          @enter="$emit('search-submit')"
+          @keydown="handleSearchKeydown"
         />
         <ScButton
           class="toolbar-search-submit"
@@ -141,22 +142,29 @@
               <span>{{ customFilterLabel }}</span>
             </button>
             <div v-if="customFilterEnabled && customFilterOpen" class="custom-search-panel">
-              <select v-model="customFilterField">
+              <ScSelect v-model="customFilterField">
                 <option value="">{{ uiLabel('select_field', '选择字段') }}</option>
                 <option v-for="field in customFilterFields" :key="field.field" :value="field.field">{{ field.label }}</option>
-              </select>
-              <select v-model="customFilterOperator">
+              </ScSelect>
+              <ScSelect v-model="customFilterOperator">
                 <option v-for="operator in activeCustomFilterOperators" :key="operator.value" :value="operator.value">{{ operator.label }}</option>
-              </select>
-              <select v-if="activeCustomFilterField?.type === 'selection'" v-model="customFilterValue">
+              </ScSelect>
+              <ScSelect v-if="activeCustomFilterField?.type === 'selection'" v-model="customFilterValue">
                 <option value="">{{ uiLabel('select_value', '选择值') }}</option>
                 <option v-for="choice in activeCustomFilterChoices" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
-              </select>
-              <select v-else-if="activeCustomFilterField?.type === 'boolean'" v-model="customFilterValue">
+              </ScSelect>
+              <ScSelect v-else-if="activeCustomFilterField?.type === 'boolean'" v-model="customFilterValue">
                 <option value="true">{{ uiLabel('boolean_true', '是') }}</option>
                 <option value="false">{{ uiLabel('boolean_false', '否') }}</option>
-              </select>
-              <input v-else v-model="customFilterValue" :type="customFilterInputType" :placeholder="uiLabel('input_value', '输入值')" />
+              </ScSelect>
+              <ScDateField
+                v-else-if="activeCustomFilterField?.type === 'date' || activeCustomFilterField?.type === 'datetime'"
+                v-model="customFilterValue"
+                :with-time="activeCustomFilterField?.type === 'datetime'"
+                :aria-label="uiLabel('input_value', '输入值')"
+                :placeholder="uiLabel('input_value', '输入值')"
+              />
+              <ScTextField v-else v-model="customFilterValue" :type="customFilterInputType" :label="uiLabel('input_value', '输入值')" :placeholder="uiLabel('input_value', '输入值')" />
               <div class="custom-search-actions">
                 <button type="button" :disabled="!canApplyCustomFilter || loading" @click="applyCustomFilter">{{ uiLabel('add', '添加') }}</button>
                 <button type="button" :disabled="loading" @click="resetCustomFilter">{{ uiLabel('cancel', '取消') }}</button>
@@ -180,7 +188,7 @@
               <span>{{ chip.label }}</span>
             </button>
             <p v-if="!menuGroupChips.length" class="search-menu-empty">{{ uiLabel('empty_group_by', '暂无分组') }}</p>
-            <select
+            <ScSelect
               v-if="customGroupEnabled"
               v-model="customGroupField"
               class="custom-group-select"
@@ -189,7 +197,7 @@
             >
               <option value="">{{ customGroupLabel }}</option>
               <option v-for="chip in customGroupFields" :key="chip.key" :value="chip.key">{{ chip.label }}</option>
-            </select>
+            </ScSelect>
           </div>
         </section>
 
@@ -221,15 +229,13 @@
               <span>{{ favoriteSaveLabel }}</span>
             </button>
             <div v-if="favoriteSaveEnabled && favoriteSaveOpen" class="custom-search-panel">
-              <input v-model="favoriteName" :placeholder="uiLabel('favorite_name', '收藏名称')" />
-              <label class="custom-search-check">
-                <input v-model="favoriteUseByDefault" type="checkbox" />
+              <ScTextField v-model="favoriteName" :label="uiLabel('favorite_name', '收藏名称')" :placeholder="uiLabel('favorite_name', '收藏名称')" />
+              <ScCheckbox v-model="favoriteUseByDefault" class="custom-search-check" :label="uiLabel('favorite_use_by_default', '设为默认筛选')">
                 <span>{{ uiLabel('favorite_use_by_default', '设为默认筛选') }}</span>
-              </label>
-              <label class="custom-search-check">
-                <input v-model="favoriteShared" type="checkbox" />
+              </ScCheckbox>
+              <ScCheckbox v-model="favoriteShared" class="custom-search-check" :label="uiLabel('favorite_shared', '共享给所有用户')">
                 <span>{{ uiLabel('favorite_shared', '共享给所有用户') }}</span>
-              </label>
+              </ScCheckbox>
               <div class="custom-search-actions">
                 <button type="button" :disabled="!favoriteName.trim() || loading" @click="saveFavorite">{{ uiLabel('save', '保存') }}</button>
                 <button type="button" :disabled="loading" @click="favoriteSaveOpen = false">{{ uiLabel('cancel', '取消') }}</button>
@@ -321,7 +327,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
+import ScCheckbox from '../design-system/ScCheckbox.vue';
+import ScDateField from '../design-system/ScDateField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScSelect from '../design-system/ScSelect.vue';
+import ScTextField from '../design-system/ScTextField.vue';
 
 type SearchChip = { key: string; label: string };
 type CustomOperator = { value: string; label: string; needs_value?: boolean };
@@ -418,6 +428,10 @@ function uiLabel(key: string, fallback: string) {
   return String(props.uiLabels?.[key] || fallback).trim() || fallback;
 }
 
+function handleSearchKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') searchMenuOpen.value = false;
+}
+
 const allFilterChips = computed(() => [...props.filterPrimary, ...props.filterOverflow]);
 const allSavedFilterChips = computed(() => [...props.savedFilterPrimary, ...props.savedFilterOverflow]);
 const menuGroupChips = computed(() => [...props.groupPrimary, ...props.groupOverflow]);
@@ -433,8 +447,6 @@ const activeCustomFilterOperators = computed<CustomOperator[]>(() => {
 const activeCustomFilterChoices = computed(() => activeCustomFilterField.value?.choices || []);
 const customFilterInputType = computed(() => {
   const type = activeCustomFilterField.value?.type;
-  if (type === 'date') return 'date';
-  if (type === 'datetime') return 'datetime-local';
   if (type === 'integer' || type === 'float' || type === 'monetary') return 'number';
   return 'text';
 });
@@ -677,18 +689,22 @@ onBeforeUnmount(() => {
   padding: 3px 3px 3px 8px;
 }
 
-.native-searchbox input {
+.native-searchbox .sc-design-text-field {
   flex: 1 1 110px;
   min-width: 72px;
-  height: 28px;
+}
+
+.native-searchbox :deep(.t-input) {
+  min-height: 28px;
   border: 0;
   background: transparent;
   color: var(--sc-app-text-primary);
   font-size: 12px;
   padding: 2px 4px;
+  box-shadow: none;
 }
 
-.native-searchbox input:focus {
+.native-searchbox :deep(input:focus) {
   outline: none;
 }
 
@@ -850,16 +866,12 @@ onBeforeUnmount(() => {
   padding: 6px 12px 10px 36px;
 }
 
-.custom-search-panel select,
-.custom-search-panel input,
+.custom-search-panel .sc-design-select,
+.custom-search-panel .sc-design-text-field,
+.custom-search-panel .sc-design-date-field,
 .custom-group-select {
   width: 100%;
   min-width: 0;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 6px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 6px 8px;
   font-size: 12px;
 }
 

@@ -10,18 +10,27 @@
         :parent-id="parentId"
         :editable="relationalEditable"
       />
-      <input
+      <ScDateField
+        v-else-if="canEdit && isDateField"
+        class="view-input"
+        :model-value="inputValue"
+        :with-time="fieldType === 'datetime'"
+        :aria-label="label"
+        @update:model-value="onInput"
+      />
+      <ScTextField
         v-else-if="canEdit && !isSelection"
         class="view-input"
         :type="inputType"
-        :value="inputValue"
-        @input="onInput"
+        :model-value="inputValue"
+        :label="label"
+        @update:model-value="onInput"
       />
-      <select v-else-if="canEdit && isSelection" class="view-select" :value="inputValue" @change="onInput">
+      <ScSelect v-else-if="canEdit && isSelection" class="view-select" :model-value="inputValue" @update:model-value="onInput">
         <option v-for="opt in selectionOptions" :key="opt[0]" :value="opt[0]">
           {{ opt[1] }}
         </option>
-      </select>
+      </ScSelect>
       <FieldValue v-else :value="value" :field="descriptor" />
     </div>
   </div>
@@ -30,6 +39,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import FieldValue from '../FieldValue.vue';
+import ScDateField from '../design-system/ScDateField.vue';
+import ScSelect from '../design-system/ScSelect.vue';
+import ScTextField from '../design-system/ScTextField.vue';
 import ViewRelationalRenderer from './ViewRelationalRenderer.vue';
 import type { ViewContract } from '@sc/schema';
 
@@ -63,6 +75,7 @@ const canEdit = computed(() => {
 });
 const fieldType = computed(() => props.descriptor?.ttype || props.descriptor?.type || '');
 const isSelection = computed(() => fieldType.value === 'selection');
+const isDateField = computed(() => fieldType.value === 'date' || fieldType.value === 'datetime');
 const selectionOptions = computed(() => (Array.isArray(props.descriptor?.selection) ? props.descriptor?.selection : []));
 const isRelational = computed(() => ['one2many', 'many2many'].includes(String(fieldType.value)));
 const relationIds = computed(() => {
@@ -101,10 +114,6 @@ const inputType = computed(() => {
     case 'integer':
     case 'float':
       return 'number';
-    case 'date':
-      return 'date';
-    case 'datetime':
-      return 'datetime-local';
     default:
       return 'text';
   }
@@ -123,9 +132,9 @@ const isHidden = computed(() => {
   return false;
 });
 
-function onInput(event: Event) {
+function onInput(value: string) {
   const name = props.field.name || '';
-  emit('update:field', { name, value: (event.target as HTMLInputElement).value });
+  emit('update:field', { name, value });
 }
 </script>
 

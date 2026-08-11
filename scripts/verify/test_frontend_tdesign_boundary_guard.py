@@ -44,6 +44,31 @@ class TDesignImportBoundaryTests(unittest.TestCase):
                 ["components/SearchAction.ts"],
             )
 
+    def test_data_entry_guard_rejects_unadapted_controls(self) -> None:
+        for source in (
+            '<input type="text" />',
+            '<input type="search" />',
+            '<select><option>one</option></select>',
+            '<textarea rows="3"></textarea>',
+        ):
+            self.assertIsNotNone(guard.UNADAPTED_DATA_ENTRY_RE.search(source), source)
+
+    def test_data_entry_guard_keeps_controlled_native_exceptions(self) -> None:
+        for source in ('<input type="radio" />', '<input type="file" />'):
+            self.assertIsNone(guard.UNADAPTED_DATA_ENTRY_RE.search(source), source)
+
+    def test_native_control_inventory_is_structured(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            src = Path(directory)
+            (src / 'Fixture.vue').write_text(
+                '<template><button/><input type="file"/><select/><textarea/><table/></template>',
+                encoding='utf-8',
+            )
+            self.assertEqual(
+                guard.collect_native_control_inventory(src),
+                {"button": 1, "input": 1, "select": 1, "textarea": 1, "table": 1},
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,12 +2,15 @@
 // Vite traverse the full component/icon catalog even when tree shaking later
 // removes most of it.
 export { Button as TButton } from 'tdesign-vue-next/es/button';
+export { Checkbox as TCheckbox } from 'tdesign-vue-next/es/checkbox';
 export { DatePicker as TDatePicker } from 'tdesign-vue-next/es/date-picker';
 export { Dialog as TDialog } from 'tdesign-vue-next/es/dialog';
 export { Drawer as TDrawer } from 'tdesign-vue-next/es/drawer';
 export { EnhancedTable as TEnhancedTable } from 'tdesign-vue-next/es/table';
+export { Input as TInput } from 'tdesign-vue-next/es/input';
 export { Select as TSelect } from 'tdesign-vue-next/es/select';
 export { Tag as TTag } from 'tdesign-vue-next/es/tag';
+export { Textarea as TTextarea } from 'tdesign-vue-next/es/textarea';
 
 export { default as AddIcon } from 'tdesign-icons-vue-next/esm/components/add';
 export { default as AppIcon } from 'tdesign-icons-vue-next/esm/components/app';

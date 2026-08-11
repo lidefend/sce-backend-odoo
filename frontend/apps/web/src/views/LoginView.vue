@@ -43,38 +43,41 @@
           >
             <label class="sc-form-label">
               {{ pageText('username_label', '账号') }}
-              <input
+              <ScTextField
                 id="login-username"
                 v-model="username"
                 class="sc-input"
+                :label="pageText('username_label', '账号')"
                 autocomplete="username"
                 :placeholder="pageText('username_placeholder', '请输入账号')"
                 :disabled="loading"
                 required
-                :aria-invalid="Boolean(error)"
-                :aria-describedby="error ? 'login-error' : undefined"
+                :invalid="Boolean(error)"
+                :described-by="error ? 'login-error' : undefined"
               />
             </label>
             <label class="sc-form-label">
               {{ pageText('password_label', '密码') }}
-              <input
+              <ScTextField
                 id="login-password"
                 v-model="password"
                 class="sc-input"
                 type="password"
+                :label="pageText('password_label', '密码')"
                 autocomplete="current-password"
                 :placeholder="pageText('password_placeholder', '请输入密码')"
                 :disabled="loading"
                 required
-                :aria-invalid="Boolean(error)"
-                :aria-describedby="error ? 'login-error' : undefined"
+                :invalid="Boolean(error)"
+                :described-by="error ? 'login-error' : undefined"
               />
             </label>
             <label class="sc-form-label">
               {{ pageText('db_label', '数据库') }}
-              <input
+              <ScTextField
                 v-model="dbName"
                 class="sc-input"
+                :label="pageText('db_label', '数据库')"
                 autocomplete="off"
                 :placeholder="pageText('db_placeholder', '请输入数据库名（如 sc_minimal）')"
                 :disabled="dbInputDisabled"
@@ -89,7 +92,7 @@
             >
               {{ error }}
             </p>
-            <button class="submit sc-btn sc-btn-primary" type="submit" :disabled="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</button>
+            <ScButton class="submit" type="submit" variant="primary" :disabled="loading" :loading="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</ScButton>
           </form>
           <nav v-if="authEntryActions.length" class="auth-entry-links" aria-label="账号帮助">
             <button
@@ -123,6 +126,8 @@ import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { isConfiguredDbPinned, isPlatformAdminEntryRuntime, resolveConfiguredDb } from '../services/dbContext';
 import { config } from '../config';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
+import ScButton from '../components/design-system/ScButton.vue';
+import ScTextField from '../components/design-system/ScTextField.vue';
 
 const router = useRouter();
 const route = useRoute();

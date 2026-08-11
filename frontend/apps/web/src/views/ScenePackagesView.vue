@@ -55,19 +55,19 @@
         <h3>Import Package</h3>
         <label>
           <span>Package JSON</span>
-          <textarea v-model="importText" rows="10" placeholder="Paste scene package json"></textarea>
+          <ScTextArea v-model="importText" label="Package JSON" :rows="10" placeholder="Paste scene package json" />
         </label>
         <label>
           <span>Strategy</span>
-          <select v-model="importStrategy">
+          <ScSelect v-model="importStrategy">
             <option value="skip_existing">skip_existing</option>
             <option value="override_existing">override_existing</option>
             <option value="rename_on_conflict">rename_on_conflict</option>
-          </select>
+          </ScSelect>
         </label>
         <label>
           <span>Reason (required)</span>
-          <input v-model="importReason" type="text" placeholder="input reason" />
+          <ScTextField v-model="importReason" label="Reason" type="text" placeholder="input reason" />
         </label>
         <div class="actions">
           <button class="secondary" :disabled="busy" @click="runDryRun">Dry Run</button>
@@ -84,23 +84,23 @@
         <h3>Export Package</h3>
         <label>
           <span>Package Name</span>
-          <input v-model="exportName" type="text" placeholder="example: workspace-default" />
+          <ScTextField v-model="exportName" label="Package Name" type="text" placeholder="example: workspace-default" />
         </label>
         <label>
           <span>Package Version</span>
-          <input v-model="exportVersion" type="text" placeholder="example: 1.0.0" />
+          <ScTextField v-model="exportVersion" label="Package Version" type="text" placeholder="example: 1.0.0" />
         </label>
         <label>
           <span>Scene Channel</span>
-          <select v-model="exportChannel">
+          <ScSelect v-model="exportChannel">
             <option value="stable">stable</option>
             <option value="beta">beta</option>
             <option value="dev">dev</option>
-          </select>
+          </ScSelect>
         </label>
         <label>
           <span>Reason</span>
-          <input v-model="exportReason" type="text" placeholder="scene package export" />
+          <ScTextField v-model="exportReason" label="Reason" type="text" placeholder="scene package export" />
         </label>
         <div class="actions">
           <button class="secondary" :disabled="busy" @click="runExport">Export</button>
@@ -115,6 +115,9 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
+import ScTextArea from '../components/design-system/ScTextArea.vue';
+import ScTextField from '../components/design-system/ScTextField.vue';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import {

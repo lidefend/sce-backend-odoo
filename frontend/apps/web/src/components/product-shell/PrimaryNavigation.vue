@@ -7,7 +7,7 @@
     <label class="primary-navigation__search">
       <span class="sr-only">搜索菜单</span>
       <ScIcon name="search" :size="16" />
-      <input :value="search" type="search" placeholder="搜索菜单..." @input="emitSearch" />
+      <ScTextField :model-value="search" type="search" label="搜索菜单" placeholder="搜索菜单..." @update:model-value="emitSearch" />
     </label>
     <div class="primary-navigation__tree">
       <MenuTree
@@ -26,6 +26,7 @@ import { computed } from 'vue';
 import type { NavNode } from '@sc/schema';
 import MenuTree from '../MenuTree.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScTextField from '../design-system/ScTextField.vue';
 
 const props = defineProps<{
   nodes: NavNode[];
@@ -44,8 +45,8 @@ const emit = defineEmits<{
 const homeActive = computed(() => props.activePath === '/' || props.activePath === '/s/workspace.home');
 const workActive = computed(() => props.activePath === '/my-work' || props.activePath === '/s/my_work.workspace');
 
-function emitSearch(event: Event) {
-  emit('update:search', (event.target as HTMLInputElement).value);
+function emitSearch(value: string) {
+  emit('update:search', value);
 }
 </script>
 
@@ -90,12 +91,12 @@ function emitSearch(event: Event) {
 }
 
 .primary-navigation__shortcuts button:focus-visible,
-.primary-navigation__search input:focus-visible {
+.primary-navigation__search :deep(input:focus-visible) {
   outline: 2px solid var(--sc-semantic-surface-interactive);
   outline-offset: -2px;
 }
 
-.primary-navigation__search input {
+.primary-navigation__search :deep(.t-input) {
   width: 100%;
   min-height: var(--sc-product-control-height);
   padding: 0 var(--sc-space-3, 12px);
@@ -119,7 +120,7 @@ function emitSearch(event: Event) {
   pointer-events: none;
 }
 
-.primary-navigation__search input {
+.primary-navigation__search :deep(input) {
   padding-left: 34px;
 }
 
@@ -155,7 +156,7 @@ function emitSearch(event: Event) {
     font-size: 13px;
   }
 
-  .primary-navigation__search input {
+  .primary-navigation__search :deep(.t-input) {
     min-height: 38px;
     border-color: var(--sc-app-border);
     border-radius: 9px;
@@ -163,7 +164,7 @@ function emitSearch(event: Event) {
     box-shadow: inset 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 6%, transparent);
   }
 
-  .primary-navigation__search input:focus {
+  .primary-navigation__search :deep(.t-input--focused) {
     border-color: var(--sc-semantic-surface-interactive);
     outline: 3px solid var(--sc-app-focus-ring);
   }

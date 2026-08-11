@@ -35,14 +35,14 @@
               <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
               <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
             </label>
-            <input
+            <ScTextField
               v-else
               class="field-label-editor"
               type="text"
-              :value="field.label"
-              :aria-label="`${field.label}显示名称`"
-              @change="emitFieldLabelChange(field, ($event.target as HTMLInputElement).value)"
-              @keydown.enter.prevent="emitFieldLabelChange(field, ($event.target as HTMLInputElement).value)"
+              :model-value="field.label"
+              :label="`${field.label}显示名称`"
+              @change="emitFieldLabelChange(field, $event)"
+              @enter="emitFieldLabelChange(field, $event)"
             />
             <div v-if="fieldActionsFor(field).length" class="field-inline-config">
               <div
@@ -125,16 +125,15 @@
                 <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
               </template>
               <template v-else-if="isBaseFieldType(field.type)">
-                <input
+                <ScCheckbox
                   v-if="field.type === 'boolean'"
-                  :id="fieldControlId(field)"
-                  :checked="Boolean(field.value)"
+                  :model-value="Boolean(field.value)"
                   class="input-checkbox"
-                  :aria-required="field.required || undefined"
-                  :aria-invalid="field.invalid || undefined"
-                  :aria-describedby="fieldDescribedBy(field)"
-                  type="checkbox"
-                  @change="emitFieldChange(field, ($event.target as HTMLInputElement).checked)"
+                  :label="field.label"
+                  :required="field.required"
+                  :invalid="field.invalid"
+                  :described-by="fieldDescribedBy(field)"
+                  @update:model-value="emitFieldChange(field, $event)"
                 />
                 <ScFileField
                   v-else-if="field.type === 'binary'"
@@ -179,7 +178,7 @@
                       :aria-activedescendant="many2oneActiveDescendant(field)"
                       @update:model-value="emitMany2oneQuery(field, $event)"
                       @focus="focusMany2one(field)"
-                      @change="emitMany2oneCommit(field, ($event.target as HTMLInputElement).value)"
+                      @change="emitMany2oneCommit(field, $event)"
                       @keydown="handleMany2oneKeydown(field, $event)"
                       @blur="blurMany2one(field, $event)"
                     />
@@ -275,42 +274,45 @@
                   :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
                   @update:model-value="emitFieldChange(field, $event)"
                 />
-                <textarea
+                <ScTextArea
                   v-else-if="isMultilineField(field.type)"
                   :id="fieldControlId(field)"
-                  :value="String(field.inputValue ?? '')"
+                  :model-value="String(field.inputValue ?? '')"
                   class="input input--textarea"
-                  :aria-required="field.required || undefined"
-                  :aria-invalid="field.invalid || undefined"
-                  :aria-describedby="fieldDescribedBy(field)"
+                  :label="field.label"
+                  :required="field.required"
+                  :invalid="field.invalid"
+                  :described-by="fieldDescribedBy(field)"
                   :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                  rows="4"
-                  @input="emitFieldChange(field, ($event.target as HTMLTextAreaElement).value)"
+                  :rows="4"
+                  @update:model-value="emitFieldChange(field, $event)"
                 />
-                <input
+                <ScTextField
                   v-else
                   :id="fieldControlId(field)"
-                  :value="String(field.inputValue ?? '')"
+                  :model-value="String(field.inputValue ?? '')"
                   class="input"
-                  :aria-required="field.required || undefined"
-                  :aria-invalid="field.invalid || undefined"
-                  :aria-describedby="fieldDescribedBy(field)"
+                  :label="field.label"
+                  :required="field.required"
+                  :invalid="field.invalid"
+                  :described-by="fieldDescribedBy(field)"
                   :type="inputType(field.type)"
                   :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                  @input="emitFieldChange(field, ($event.target as HTMLInputElement).value)"
+                  @update:model-value="emitFieldChange(field, $event)"
                 />
               </template>
               <template v-else>
-                <input
+                <ScTextField
                   :id="fieldControlId(field)"
-                  :value="String(field.inputValue ?? '')"
+                  :model-value="String(field.inputValue ?? '')"
                   class="input"
-                  :aria-required="field.required || undefined"
-                  :aria-invalid="field.invalid || undefined"
-                  :aria-describedby="fieldDescribedBy(field)"
+                  :label="field.label"
+                  :required="field.required"
+                  :invalid="field.invalid"
+                  :described-by="fieldDescribedBy(field)"
                   :type="inputType(field.type)"
                   :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                  @input="emitFieldChange(field, ($event.target as HTMLInputElement).value)"
+                  @update:model-value="emitFieldChange(field, $event)"
                 />
               </template>
             </div>
@@ -327,10 +329,13 @@
 <script setup lang="ts">
 import { computed, ref, useId, useSlots } from 'vue';
 import ScDateField from '../design-system/ScDateField.vue';
+import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import ScSelect from '../design-system/ScSelect.vue';
+import ScTextArea from '../design-system/ScTextArea.vue';
+import ScTextField from '../design-system/ScTextField.vue';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';

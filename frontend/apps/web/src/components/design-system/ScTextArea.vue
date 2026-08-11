@@ -1,0 +1,89 @@
+<template>
+  <TTextarea
+    ref="control"
+    :class="['sc-design-text-area', attrs.class]"
+    :style="attrs.style"
+    :model-value="modelValue"
+    :name="name"
+    :placeholder="placeholder"
+    :disabled="disabled"
+    :readonly="readonly"
+    :status="invalid ? 'error' : 'default'"
+    :maxlength="maxlength"
+    :autosize="autosize"
+    data-ui-engine="tdesign"
+    @update:model-value="$emit('update:modelValue', String($event ?? ''))"
+    @change="$emit('change', String($event ?? ''))"
+    @focus="$emit('focus', $event)"
+    @blur="$emit('blur', $event)"
+  />
+</template>
+
+<script setup lang="ts">
+import { nextTick, onMounted, onUpdated, ref, useAttrs, type ComponentPublicInstance } from 'vue';
+import { TTextarea } from './tdesignAdapter';
+
+const props = withDefaults(defineProps<{
+  modelValue: string;
+  id?: string;
+  name?: string;
+  label?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  readonly?: boolean;
+  required?: boolean;
+  invalid?: boolean;
+  describedBy?: string;
+  maxlength?: number;
+  rows?: number;
+}>(), {
+  id: undefined,
+  name: undefined,
+  label: undefined,
+  placeholder: undefined,
+  disabled: false,
+  readonly: false,
+  required: false,
+  invalid: false,
+  describedBy: undefined,
+  maxlength: undefined,
+  rows: 4,
+});
+defineOptions({ inheritAttrs: false });
+defineEmits<{
+  'update:modelValue': [value: string];
+  change: [value: string];
+  focus: [event: FocusEvent];
+  blur: [event: FocusEvent];
+}>();
+const control = ref<ComponentPublicInstance | null>(null);
+const attrs = useAttrs();
+const autosize = { minRows: props.rows, maxRows: Math.max(props.rows, 12) };
+
+function syncNativeAccessibility(): void {
+  const textarea = (control.value?.$el as HTMLElement | undefined)?.querySelector('textarea');
+  if (!textarea) return;
+  const attributes: Record<string, string | undefined> = {
+    id: props.id,
+    'aria-label': props.label,
+    'aria-describedby': props.describedBy,
+    'aria-required': props.required ? 'true' : undefined,
+    'aria-invalid': props.invalid ? 'true' : undefined,
+  };
+  Object.entries(attrs).forEach(([name, value]) => {
+    if (name === 'role' || name === 'tabindex' || name.startsWith('aria-') || name.startsWith('data-')) {
+      attributes[name] = value === undefined || value === null ? undefined : String(value);
+    }
+  });
+  Object.entries(attributes).forEach(([name, value]) => {
+    if (value === undefined || value === '') textarea.removeAttribute(name);
+    else textarea.setAttribute(name, value);
+  });
+}
+function focus(): void {
+  (control.value?.$el as HTMLElement | undefined)?.querySelector('textarea')?.focus();
+}
+defineExpose({ focus });
+onMounted(() => nextTick(syncNativeAccessibility));
+onUpdated(() => nextTick(syncNativeAccessibility));
+</script>

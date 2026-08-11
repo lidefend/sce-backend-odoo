@@ -1,2 +1,29 @@
-<template><input class="sc-input" type="text" :value="modelValue" :readonly="readonly" :disabled="disabled" :aria-required="required || undefined" :aria-invalid="invalid || undefined" :aria-describedby="describedBy" autocomplete="off" @input="$emit('update:modelValue',($event.target as HTMLInputElement).value)" /></template>
-<script setup lang="ts">defineProps<{ modelValue:string; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string }>(); defineEmits<{ 'update:modelValue':[value:string] }>();</script>
+<template>
+  <ScTextField
+    class="sc-input"
+    type="text"
+    :model-value="modelValue"
+    :readonly="readonly"
+    :disabled="disabled"
+    :required="required"
+    :invalid="invalid"
+    :described-by="describedBy"
+    autocomplete="off"
+    @update:model-value="$emit('update:modelValue', $event)"
+    @change="$emit('change', $event)"
+    @focus="$emit('focus', $event)"
+    @blur="$emit('blur', $event)"
+    @keydown="$emit('keydown', $event)"
+  />
+</template>
+<script setup lang="ts">
+import ScTextField from './ScTextField.vue';
+defineProps<{ modelValue:string; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string }>();
+defineEmits<{
+  'update:modelValue':[value:string];
+  change:[value:string];
+  focus:[event:FocusEvent];
+  blur:[event:FocusEvent];
+  keydown:[event:KeyboardEvent];
+}>();
+</script>

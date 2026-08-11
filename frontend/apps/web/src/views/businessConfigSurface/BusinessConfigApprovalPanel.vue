@@ -19,20 +19,20 @@
         <span>{{ runtimeText }}</span>
       </div>
       <div class="approval-config-grid">
-        <label class="approval-toggle">
-          <input
-            :checked="form.approval_required"
-            type="checkbox"
-            @change="$emit('updateFormField', 'approval_required', ($event.target as HTMLInputElement).checked); $emit('approvalRequiredChange')"
-          />
+        <ScCheckbox
+          class="approval-toggle"
+          :model-value="form.approval_required"
+          label="启用审批"
+          @update:model-value="$emit('updateFormField', 'approval_required', $event); $emit('approvalRequiredChange')"
+        >
           <span>启用审批</span>
-        </label>
+        </ScCheckbox>
         <label>
           <span>审批方式</span>
-          <select
-            :value="form.mode"
+          <ScSelect
+            :model-value="form.mode"
             :disabled="!form.approval_required"
-            @change="$emit('updateFormField', 'mode', ($event.target as HTMLSelectElement).value)"
+            @update:model-value="$emit('updateFormField', 'mode', $event)"
           >
             <option
               v-for="option in modeOptions"
@@ -42,20 +42,20 @@
             >
               {{ option.label }}
             </option>
-          </select>
+          </ScSelect>
         </label>
         <label>
           <span>默认审批岗位</span>
-          <select
-            :value="form.manager_scope_key"
+          <ScSelect
+            :model-value="form.manager_scope_key"
             :disabled="!form.approval_required"
-            @change="$emit('updateFormField', 'manager_scope_key', ($event.target as HTMLSelectElement).value)"
+            @update:model-value="$emit('updateFormField', 'manager_scope_key', $event)"
           >
             <option value="">暂不指定</option>
             <option v-for="option in scopeOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
-          </select>
+          </ScSelect>
         </label>
       </div>
       <div class="edit-meta approval-rule-summary">
@@ -108,21 +108,21 @@
         >
           <span class="approval-step-seq">{{ index + 1 }}</span>
           <div class="approval-step-cell">
-          <input v-model="step.name" type="text" placeholder="例如：业务复核" :disabled="!form.approval_required" :aria-label="`第${index + 1}步名称`" />
+          <ScTextField v-model="step.name" type="text" placeholder="例如：业务复核" :disabled="!form.approval_required" :label="`第${index + 1}步名称`" />
           </div>
           <div class="approval-step-cell">
-            <select v-model="step.approval_scope_key" :disabled="!form.approval_required" :aria-label="`第${index + 1}步审批岗位`">
+            <ScSelect v-model="step.approval_scope_key" :disabled="!form.approval_required" :aria-label="`第${index + 1}步审批岗位`">
               <option value="">请选择</option>
               <option v-for="option in scopeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
-            </select>
+            </ScSelect>
           </div>
           <div class="approval-step-cell">
-            <input v-model="step.amount_min" type="number" min="0" step="0.01" placeholder="不限制" :disabled="!form.approval_required" :aria-label="`第${index + 1}步金额下限`" />
+            <ScTextField v-model="step.amount_min" type="number" min="0" step="0.01" placeholder="不限制" :disabled="!form.approval_required" :label="`第${index + 1}步金额下限`" />
           </div>
           <div class="approval-step-cell">
-            <input v-model="step.amount_max" type="number" min="0" step="0.01" placeholder="不限制" :disabled="!form.approval_required" :aria-label="`第${index + 1}步金额上限`" />
+            <ScTextField v-model="step.amount_max" type="number" min="0" step="0.01" placeholder="不限制" :disabled="!form.approval_required" :label="`第${index + 1}步金额上限`" />
           </div>
           <div class="approval-step-actions">
             <ScButton type="button" title="上移" :aria-label="`上移第${index + 1}步`" :disabled="loading || !form.approval_required || index === 0" @click="$emit('moveStep', index, -1)">上移</ScButton>
@@ -153,6 +153,9 @@
 
 <script setup lang="ts">
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScCheckbox from '../../components/design-system/ScCheckbox.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScTextField from '../../components/design-system/ScTextField.vue';
 
 type ApprovalForm = {
   approval_required: boolean;
