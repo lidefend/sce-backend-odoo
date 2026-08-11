@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -123,6 +124,29 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
                     "sc_restore_20260808t102000z_4d7e91a2",
                     "sc_restore_20260808t102000z_4d7e91a2_internal",
                 )
+
+    def test_retry_admits_only_tool_generated_runtime_config(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime_root = Path(temporary) / "acceptance-runtime"
+            runtime_root.mkdir()
+            (runtime_root / "odoo.conf").write_text("[options]\n", encoding="utf-8")
+            RUNTIME.ensure_retryable_runtime_root(runtime_root)
+            self.assertEqual(runtime_root.stat().st_mode & 0o777, 0o700)
+
+    def test_retry_creates_missing_runtime_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime_root = Path(temporary) / "acceptance-runtime"
+            RUNTIME.ensure_retryable_runtime_root(runtime_root)
+            self.assertTrue(runtime_root.is_dir())
+            self.assertEqual(runtime_root.stat().st_mode & 0o777, 0o700)
+
+    def test_retry_rejects_unmanaged_runtime_root_content(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime_root = Path(temporary) / "acceptance-runtime"
+            runtime_root.mkdir()
+            (runtime_root / "foreign.txt").write_text("foreign", encoding="utf-8")
+            with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "unmanaged files"):
+                RUNTIME.ensure_retryable_runtime_root(runtime_root)
 
     def test_existing_tenant_package_still_consumes_archive_stream(self) -> None:
         source = RELEASE_MAKE.read_text(encoding="utf-8")
