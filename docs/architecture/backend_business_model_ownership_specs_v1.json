@@ -99,6 +99,53 @@
       "frontend_policy": "contract_renderer_only"
     },
     {
+      "spec": "daily_contract_settlement_source_bridge",
+      "risk_family": "general contract and settlement execution",
+      "business_object": "bilateral_mixed",
+      "fact_source_model": ["sc.general.contract", "sc.settlement.order"],
+      "allowed_support_models": ["sc.settlement.order.line", "payment.request", "sc.invoice.registration"],
+      "projection_models": ["sc.expense.contract.ledger", "sc.income.contract.ledger"],
+      "boundary_rule": "General contract owns the daily contract commitment; settlement order owns settlement workflow and amounts. The two explicit source relations are mutually exclusive and downstream payment or invoice documents identify the general contract through the settlement source projection.",
+      "forbidden_drift": "Do not cast a general contract into construction.contract, create a parallel daily settlement model, allow both source relations on one settlement, or infer the source model in frontend code.",
+      "decision": "Extend the canonical settlement order with an explicit general-contract source while preserving the existing construction-contract relation and one settlement workflow.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "entry_bindings": [
+        {
+          "intent": "daily_contract_settlement",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_general_contract_settlement_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_general_contract_settlement_v1",
+          "fact_model": "sc.settlement.order",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_daily_contract_settlement_form_v1"
+        }
+      ],
+      "source_isolation_actions": [
+        {
+          "action_xmlid": "smart_construction_core.action_sc_settlement_order_income",
+          "required_domain_tokens": ["contract_source_kind", "general_contract"]
+        },
+        {
+          "action_xmlid": "smart_construction_core.action_sc_settlement_order_expense",
+          "required_domain_tokens": ["contract_source_kind", "general_contract"]
+        }
+      ],
+      "conservation_invariants": [
+        "one_settlement_has_exactly_one_contract_source_when_submitted",
+        "general_contract_direction_determines_settlement_direction",
+        "project_company_partner_and_currency_match_the_source_contract",
+        "payment_and_invoice_retain_the_settlement_contract_source_identity"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/core/daily_contract_settlement.py",
+        "addons/smart_construction_core/security/contract_settlement_capability_bridge.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/daily_contract_settlement_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "team_loan_deduction_context_entry",
       "risk_family": "project contextual initiation and finance authority",
       "business_object": "bilateral_mixed",

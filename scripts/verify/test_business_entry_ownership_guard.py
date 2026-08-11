@@ -38,6 +38,13 @@ class BusinessEntryOwnershipGuardTest(unittest.TestCase):
         errors = guard.validate(registry)
         self.assertTrue(any("must not own a business fact" in item for item in errors), errors)
 
+    def test_contract_source_isolation_action_is_governed(self):
+        registry = copy.deepcopy(self.registry)
+        spec = next(item for item in registry["ownership_specs"] if item.get("source_isolation_actions"))
+        spec["source_isolation_actions"][0]["required_domain_tokens"].append("missing_source_token")
+        errors = guard.validate(registry)
+        self.assertTrue(any("source-isolation action definition drifted" in item for item in errors), errors)
+
     def test_explicit_family_owner_precedes_heuristic_classifier(self):
         rows = [
             {

@@ -40,6 +40,7 @@
         # 安全
         'security/sc_groups.xml',
         'security/sc_capability_groups.xml',
+        'security/contract_settlement_capability_bridge.xml',
         'security/sc_role_groups.xml',
         'security/runtime_user_permission_groups.xml',
         'security/sc_model_records.xml',
@@ -240,6 +241,7 @@
         'views/menu_product_primary_center_candidate_v1.xml',
         'data/hr_payroll_form_productization_contract.xml',
         'data/team_loan_deduction_workspace_contract.xml',
+        'data/daily_contract_settlement_contract.xml',
         'data/office_admin_form_productization_contract.xml',
         'data/document_admin_form_productization_contract.xml',
         'data/subcontract_request_form_productization_contract.xml',

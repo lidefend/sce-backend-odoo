@@ -66,6 +66,20 @@ def _xml_records() -> tuple[dict[str, ET.Element], dict[str, ET.Element]]:
     return records, menus
 
 
+def _xml_record_definitions() -> dict[str, list[ET.Element]]:
+    definitions: dict[str, list[ET.Element]] = {}
+    for path in sorted(MODULE.rglob("*.xml")):
+        try:
+            root = ET.parse(path).getroot()
+        except ET.ParseError:
+            continue
+        for node in root.findall(".//record"):
+            xmlid = node.attrib.get("id")
+            if xmlid:
+                definitions.setdefault(xmlid, []).append(node)
+    return definitions
+
+
 def _detected_models() -> set[str]:
     result: set[str] = set()
     pattern = re.compile(r"^\s*_name\s*=\s*['\"]([^'\"]+)['\"]", re.MULTILINE)
@@ -87,6 +101,7 @@ def _detected_transient_models() -> set[str]:
 def validate(registry: dict) -> list[str]:
     errors: list[str] = []
     records, menus = _xml_records()
+    record_definitions = _xml_record_definitions()
     detected_models = _detected_models()
     detected_transient_models = _detected_transient_models()
     governed = [item for item in registry.get("ownership_specs", []) if item.get("entry_bindings")]
@@ -113,6 +128,16 @@ def validate(registry: dict) -> list[str]:
         for carrier in carriers:
             if not (ROOT / carrier).exists():
                 errors.append(f"{key} authority carrier does not exist: {carrier}")
+        for isolation in spec.get("source_isolation_actions") or []:
+            action_id = _local_xmlid(isolation.get("action_xmlid", ""))
+            definitions = record_definitions.get(action_id) or []
+            required_tokens = isolation.get("required_domain_tokens") or []
+            if not definitions:
+                errors.append(f"{key} source-isolation action is missing: {action_id}")
+            for definition in definitions:
+                domain = _field_text(definition, "domain")
+                if domain and any(token not in domain for token in required_tokens):
+                    errors.append(f"{key} source-isolation action definition drifted: {action_id}")
 
         fact_sources = set(spec.get("fact_source_model") or [])
         for binding in bindings:

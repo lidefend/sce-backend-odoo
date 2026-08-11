@@ -92,6 +92,9 @@
     </record>
     <record id="action_sc_product_general_contract_settlement_v1" model="ir.actions.act_window">
       <field name="name">日常合同结算</field><field name="res_model">sc.settlement.order</field><field name="view_mode">tree,form</field>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_settlement_order_search"/>
+      <field name="domain">[('contract_source_kind', '=', 'general_contract')]</field>
+      <field name="context">{'default_contract_source_kind': 'general_contract', 'search_default_general_contract_source': 1, 'search_default_group_project': 1}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_contract_user'), ref('smart_construction_core.group_sc_cap_contract_manager')])]"/>
     </record>
     <record id="action_sc_product_current_account_v1" model="ir.actions.act_window">

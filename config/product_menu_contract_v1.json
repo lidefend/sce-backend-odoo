@@ -34,7 +34,7 @@
       {"name": "班组借/扣款", "children": [{"name": "班组借/扣款登记", "delivery": "RELEASED_FOUNDATION"}]}
     ]},
     {"key": "contract", "name": "合同中心", "sequence": 30, "level_two": [
-      {"name": "收入合同", "delivery": "RELEASED_FOUNDATION"}, {"name": "支出合同", "delivery": "RELEASED_FOUNDATION"}, {"name": "合同变更", "delivery": "RELEASED_FOUNDATION"}, {"name": "日常合同", "delivery": "RELEASED_FOUNDATION"}, {"name": "日常合同结算", "delivery": "ADAPTATION_REQUIRED"}, {"name": "收入结算", "delivery": "RELEASED_FOUNDATION"}, {"name": "支出结算", "delivery": "RELEASED_FOUNDATION"}
+      {"name": "收入合同", "delivery": "RELEASED_FOUNDATION"}, {"name": "支出合同", "delivery": "RELEASED_FOUNDATION"}, {"name": "合同变更", "delivery": "RELEASED_FOUNDATION"}, {"name": "日常合同", "delivery": "RELEASED_FOUNDATION"}, {"name": "日常合同结算", "delivery": "RELEASED_FOUNDATION"}, {"name": "收入结算", "delivery": "RELEASED_FOUNDATION"}, {"name": "支出结算", "delivery": "RELEASED_FOUNDATION"}
     ]},
     {"key": "cost", "name": "成本中心", "sequence": 40, "level_two": [
       {"name": "项目预算", "delivery": "RELEASED_FOUNDATION"}, {"name": "成本计划编制", "delivery": "RELEASED_FOUNDATION"}, {"name": "成本归集", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目盈亏分析", "delivery": "RELEASED_FOUNDATION"}
