@@ -131,12 +131,16 @@
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
     </record>
     <record id="action_sc_product_tax_report_v1" model="ir.actions.act_window">
-      <field name="name">税务报表</field><field name="res_model">sc.invoice.registration</field><field name="view_mode">pivot,graph,tree</field>
+      <field name="name">税务报表</field><field name="res_model">sc.tax.filing</field><field name="view_mode">pivot,graph,tree</field>
+      <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'pivot', 'view_id': ref('smart_construction_core.view_sc_product_tax_report_pivot')}), (0, 0, {'view_mode': 'graph', 'view_id': ref('smart_construction_core.view_sc_product_tax_report_graph')}), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_product_tax_report_tree')})]"/>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_tax_filing_search"/>
       <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_data_read')])]"/>
     </record>
     <record id="action_sc_product_labor_subcontract_report_v1" model="ir.actions.act_window">
-      <field name="name">劳务分包报表</field><field name="res_model">sc.labor.usage</field><field name="view_mode">pivot,graph,tree</field>
+      <field name="name">劳务分包报表</field><field name="res_model">sc.labor.subcontract.report</field><field name="view_mode">pivot,graph,tree,form</field>
+      <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'pivot', 'view_id': ref('smart_construction_core.view_sc_labor_subcontract_report_pivot')}), (0, 0, {'view_mode': 'graph', 'view_id': ref('smart_construction_core.view_sc_labor_subcontract_report_graph')}), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_labor_subcontract_report_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_labor_subcontract_report_form')})]"/>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_labor_subcontract_report_search"/>
       <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_data_read')])]"/>
     </record>

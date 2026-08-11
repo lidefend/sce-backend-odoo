@@ -87,3 +87,4 @@ from . import test_product_job
 from . import test_office_asset
 from . import test_product_message_notification
 from . import test_tax_filing
+from . import test_product_reports

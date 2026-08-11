@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T18:03:53.749731+00:00`
+- generated_at: `2026-08-11T18:10:20.655512+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -186,7 +186,7 @@
       - 预算清单 [`formal_product`] -> `project.cost.plan`
   - 报表中心 [`formal_product`]
     - 业务核算主体 [`formal_product` inactive] -> `sc.business.entity`
-    - 劳务分包报表 [`formal_product`] -> `sc.labor.usage`
+    - 劳务分包报表 [`formal_product`] -> `sc.labor.subcontract.report`
     - 成本报表 [`formal_product` inactive]
     - 成本报表 [`formal_product`] -> `sc.comprehensive.cost.summary`
       - 发票分析报表 [`formal_product`] -> `sc.invoice.registration`
@@ -195,7 +195,7 @@
       - 库存统计表（新） [`formal_product`] -> `sc.material.stock.summary`
       - 报销统计 [`formal_product`] -> `sc.expense.reimbursement.summary`
       - 进项发票明细表 [`formal_product`] -> `sc.invoice.registration`
-    - 税务报表 [`formal_product`] -> `sc.invoice.registration`
+    - 税务报表 [`formal_product`] -> `sc.tax.filing`
     - 经营分析 [`formal_product` inactive]
       - 合同执行表 [`formal_product`] -> `construction.contract`
       - 项目经营分析 [`formal_product`] -> `sc.operating.metrics.project`

@@ -3031,6 +3031,10 @@
             <field name="name">税务申报仅限允许公司</field><field name="model_id" ref="model_sc_tax_filing"/>
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
+        <record id="rule_sc_labor_subcontract_report_company" model="ir.rule">
+            <field name="name">劳务分包报表仅限允许公司</field><field name="model_id" ref="model_sc_labor_subcontract_report"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
 
     </data>
 </odoo>

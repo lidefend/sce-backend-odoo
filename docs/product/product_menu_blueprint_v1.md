@@ -172,8 +172,8 @@
   - 报销统计 -> `sc.expense.reimbursement.summary`
   - 工资统计表 -> `sc.salary.summary`
 - 资金报表 -> `sc.fund.daily.summary`
-- 税务报表 -> `sc.invoice.registration`
-- 劳务分包报表 -> `sc.labor.usage`
+- 税务报表 -> `sc.tax.filing`
+- 劳务分包报表 -> `sc.labor.subcontract.report`
 
 ### 行政中心
 
