@@ -501,6 +501,21 @@
       "frontend_policy": "contract_renderer_only"
     },
     {
+      "spec": "product_job_master_authority",
+      "risk_family": "duplicate organization master data",
+      "business_object": "job_position",
+      "fact_source_model": ["hr.job"],
+      "allowed_support_models": ["hr.department", "hr.employee", "res.company"], "projection_models": [],
+      "boundary_rule": "Odoo hr.job is the single position master and employee job_id remains the assignment authority.",
+      "forbidden_drift": "Do not create a parallel position table, duplicate employee assignments, bypass company scope, or delete referenced jobs from the product surface.",
+      "decision": "Extend hr.job with construction-standard metadata and publish dedicated company-scoped views and contract.",
+      "formal_product_layer": "P1", "layer_target": "L2_industry_standard", "module": "smart_construction_core", "standard_vs_user_specific": "construction_industry_standard", "separation_policy": "native_master_extension",
+      "entry_bindings": [{"intent": "job_master_maintenance", "menu_xmlid": "smart_construction_core.menu_sc_product_job_management_v1", "action_xmlid": "smart_construction_core.action_sc_product_job_management_v1", "fact_model": "hr.job", "view_contract_xmlid": "smart_construction_core.business_config_contract_product_job_form_v1"}],
+      "conservation_invariants": ["hr_job_is_single_master", "employee_assignment_remains_hr_employee_job_id", "job_code_is_unique_per_company", "company_scope_is_enforced", "product_surface_does_not_delete_jobs"],
+      "authority_carriers": ["addons/smart_construction_core/models/support/product_job.py", "addons/smart_construction_core/security/ir.model.access.csv", "addons/smart_construction_core/security/sc_record_rules.xml", "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml", "addons/smart_construction_core/data/product_job_contract.xml"],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "projection_refresh_ownership",
       "risk_family": "projection and management visibility",
       "business_object": "projection",

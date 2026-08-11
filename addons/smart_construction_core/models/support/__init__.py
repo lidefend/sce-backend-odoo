@@ -54,6 +54,7 @@ from . import formal_user_management
 from . import product_policy_sync
 from . import product_system_settings
 from . import product_numbering_rule
+from . import product_job
 from . import project_capability_roadmap
 from . import formal_list_contract_sync
 from . import team_loan_deduction_workspace

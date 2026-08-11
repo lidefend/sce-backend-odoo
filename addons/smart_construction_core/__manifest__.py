@@ -252,6 +252,7 @@
         'data/product_system_settings_contract.xml',
         'data/data_permission_contract.xml',
         'data/product_numbering_rule_contract.xml',
+        'data/product_job_contract.xml',
         'data/office_admin_form_productization_contract.xml',
         'data/document_admin_form_productization_contract.xml',
         'data/subcontract_request_form_productization_contract.xml',
