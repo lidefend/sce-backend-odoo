@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sc_material_supplier_return_search" model="ir.ui.view">
+        <field name="name">sc.material.supplier.return.search</field>
+        <field name="model">sc.material.supplier.return</field>
+        <field name="arch" type="xml">
+            <search string="材料退货">
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="source_inbound_id"/>
+                <field name="supplier_id"/>
+                <field name="warehouse_id"/>
+                <filter string="办理中" name="active_process" domain="[('state', 'in', ['draft', 'submitted'])]"/>
+                <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
+                <filter string="按供应商" name="group_supplier" context="{'group_by': 'supplier_id'}"/>
+                <filter string="按仓库" name="group_warehouse" context="{'group_by': 'warehouse_id'}"/>
+                <filter string="按状态" name="group_state" context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_sc_material_supplier_return_tree" model="ir.ui.view">
+        <field name="name">sc.material.supplier.return.tree</field>
+        <field name="model">sc.material.supplier.return</field>
+        <field name="arch" type="xml">
+            <tree string="材料退货" default_order="return_date desc, id desc" decoration-success="state == 'returned'" decoration-muted="state == 'cancel'">
+                <field name="return_date"/>
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="supplier_id"/>
+                <field name="source_inbound_id"/>
+                <field name="warehouse_id"/>
+                <field name="amount_total" sum="退货金额合计"/>
+                <field name="responsible_id"/>
+                <field name="state"/>
+                <field name="processing_advisory" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_sc_material_supplier_return_form" model="ir.ui.view">
+        <field name="name">sc.material.supplier.return.form</field>
+        <field name="model">sc.material.supplier.return</field>
+        <field name="arch" type="xml">
+            <form string="材料退货单">
+                <header>
+                    <button name="action_submit" type="object" string="提交确认" class="btn-primary" invisible="state != 'draft'" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager"/>
+                    <button name="action_confirm_return" type="object" string="确认退货" class="btn-primary" invisible="state != 'submitted'" groups="smart_construction_core.group_sc_cap_material_manager"/>
+                    <button name="action_reset_draft" type="object" string="退回草稿" invisible="state not in ('submitted', 'cancel')" groups="smart_construction_core.group_sc_cap_material_manager"/>
+                    <button name="action_cancel" type="object" string="取消" invisible="state not in ('draft', 'submitted')" groups="smart_construction_core.group_sc_cap_material_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,returned"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="project_id"/>
+                            <field name="source_inbound_id"/>
+                            <button name="action_load_inbound_lines" type="object" string="载入入库明细" invisible="not source_inbound_id or state != 'draft'"/>
+                            <field name="supplier_id"/>
+                        </group>
+                        <group>
+                            <field name="return_date"/>
+                            <field name="warehouse_id"/>
+                            <field name="source_location_id"/>
+                            <field name="responsible_id"/>
+                            <field name="amount_total" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="退货说明">
+                        <field name="reason"/>
+                        <field name="attachment_ids" widget="many2many_binary"/>
+                        <field name="stock_picking_id" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="退货明细">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <tree editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="source_inbound_line_id" domain="[('inbound_id', '=', parent.source_inbound_id)]"/>
+                                    <field name="material_catalog_id"/>
+                                    <field name="product_id"/>
+                                    <field name="material_spec"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="qty"/>
+                                    <field name="unit_price"/>
+                                    <field name="amount" sum="退货金额合计"/>
+                                    <field name="note"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="办理提示">
+                            <field name="processing_advisory" readonly="1" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sc_material_supplier_return" model="ir.actions.act_window">
+        <field name="name">材料退货</field>
+        <field name="res_model">sc.material.supplier.return</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_sc_material_supplier_return_search"/>
+        <field name="context">{'search_default_group_project': 1}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read')])]"/>
+    </record>
+</odoo>

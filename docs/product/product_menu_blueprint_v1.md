@@ -75,7 +75,7 @@
 - 材料成本
   - 材料入库 -> `sc.material.inbound`
   - 材料出库 -> `sc.material.outbound`
-  - 材料退货 -> `sc.material.outbound`
+  - 材料退货 -> `sc.material.supplier.return`
 - 机械成本
   - 机械台班登记 -> `sc.equipment.usage`
 - 分包成本

@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T12:07:46.662501+00:00`
+- generated_at: `2026-08-11T12:29:48.481217+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -478,7 +478,7 @@
         - 退库办理 [`formal_product`] -> `sc.material.outbound`
         - 采购申请 [`formal_product`] -> `sc.material.purchase.request`
         - 采购订单 [`formal_product`] -> `purchase.order`
-      - 材料退货 [`formal_product`] -> `sc.material.outbound`
+      - 材料退货 [`formal_product`] -> `sc.material.supplier.return`
     - 班组借/扣款 [`formal_product`]
       - 班组借/扣款登记 [`formal_product`] -> `sc.expense.claim`
     - 里程碑管理（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`

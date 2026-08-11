@@ -1663,6 +1663,19 @@
         <field name="ledger_policy_json">{"facts": ["sc.material.outbound", "sc.material.inbound", "sc.material.stock.summary"], "terminal_action": "action_issue", "cost_triggers": {"issue_project_cost_ledger": false}}</field>
         <field name="attachment_policy">recommended</field>
     </record>
+    <record id="business_category_material_supplier_return" model="sc.business.category">
+        <field name="name">材料退货</field>
+        <field name="code">material.supplier_return</field>
+        <field name="domain">material</field>
+        <field name="target_model">sc.material.supplier.return</field>
+        <field name="direction">cost_reversal</field>
+        <field name="sequence">261</field>
+        <field name="source_aliases">退货、供应商退货、材料退货、退供</field>
+        <field name="required_fields_json">["project_id", "warehouse_id", "source_location_id", "line_ids", "qty"]</field>
+        <field name="visible_groups_json">["return_header", "return_lines", "supplier", "stock"]</field>
+        <field name="ledger_policy_json">{"facts": ["sc.material.supplier.return", "sc.material.inbound", "sc.material.stock.summary"], "terminal_action": "action_confirm_return", "cost_triggers": {"reverse_project_cost_ledger": false}}</field>
+        <field name="attachment_policy">recommended</field>
+    </record>
     <record id="business_category_material_transfer" model="sc.business.category">
         <field name="name">材料调拨</field>
         <field name="code">material.transfer</field>

@@ -55,7 +55,7 @@ RELEASED_MENU_BINDINGS = (
     ("项目中心", "劳务扣款明细", "smart_construction_core.menu_sc_product_labor_deduction_v1", "smart_construction_core.action_sc_product_labor_deduction_v1", "sc.labor.deduction", ("劳务成本", "劳务扣款明细")),
     ("项目中心", "材料入库", "smart_construction_core.menu_sc_material_inbound", "smart_construction_core.action_sc_material_inbound_handling", "sc.material.inbound", ("材料成本", "材料入库")),
     ("项目中心", "材料出库", "smart_construction_core.menu_sc_material_outbound", "smart_construction_core.action_sc_material_outbound", "sc.material.outbound", ("材料成本", "材料出库")),
-    ("项目中心", "材料退货", "smart_construction_core.menu_sc_product_material_return_v1", "smart_construction_core.action_sc_material_return", "sc.material.outbound", ("材料成本", "材料退货")),
+    ("项目中心", "材料退货", "smart_construction_core.menu_sc_product_material_return_v1", "smart_construction_core.action_sc_material_supplier_return", "sc.material.supplier.return", ("材料成本", "材料退货")),
     ("项目中心", "机械台班登记", "smart_construction_core.menu_sc_product_equipment_shift_v1", "smart_construction_core.action_sc_equipment_usage", "sc.equipment.usage", ("机械成本", "机械台班登记")),
     ("项目中心", "分包成本登记", "smart_construction_core.menu_sc_product_subcontract_cost_v1", "smart_construction_core.action_sc_subcontract_register", "sc.subcontract.register", ("分包成本", "分包成本登记")),
     ("项目中心", "分包签证费用", "smart_construction_core.menu_sc_product_subcontract_variation_v1", "smart_construction_core.action_sc_subcontract_settlement", "sc.subcontract.settlement", ("分包成本", "分包签证费用")),

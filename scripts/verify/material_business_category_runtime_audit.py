@@ -15,6 +15,7 @@ CATEGORIES = [
     ("material.inbound", "smart_construction_core.action_sc_material_inbound_handling"),
     ("material.outbound", "smart_construction_core.action_sc_material_outbound"),
     ("material.return", "smart_construction_core.action_sc_material_return"),
+    ("material.supplier_return", "smart_construction_core.action_sc_material_supplier_return"),
     ("material.transfer", "smart_construction_core.action_sc_material_transfer"),
     ("material.loss", "smart_construction_core.action_sc_material_loss"),
     ("material.settlement", "smart_construction_core.action_sc_material_settlement"),
@@ -38,7 +39,8 @@ def _project():
         {
             "name": "MBCR Project %s" % _token(),
             "company_id": env.company.id,  # noqa: F821
-            "manager_id": env.user.id,  # noqa: F821
+            "user_id": env.user.id,  # noqa: F821
+            "operation_strategy": "direct",
         }
     )
 
@@ -206,6 +208,20 @@ def _base_vals(model_name, context, shared):
                 "line_ids": [(0, 0, _line_vals(shared, qty_field="qty"))],
             }
         )
+    elif model_name == "sc.material.supplier.return":
+        vals.update(
+            {
+                "project_id": project.id,
+                "supplier_id": supplier.id,
+                "warehouse_id": warehouse.id,
+                "source_location_id": location.id,
+                "return_date": fields.Date.context_today(env[model_name]),  # noqa: F821
+                "reason": "MBCR供应商退货",
+                "line_ids": [
+                    (0, 0, _line_vals(shared, qty_field="qty", price_field="unit_price"))
+                ],
+            }
+        )
     elif model_name == "sc.material.settlement":
         vals.update(
             {
@@ -276,6 +292,9 @@ result = {
     "rows": rows,
     "failures": failures,
 }
+# This is an audit probe, not a fixture loader.  Keep sc_clean and every other
+# non-production verification database free of probe records.
+env.cr.rollback()  # noqa: F821
 print("MATERIAL_BUSINESS_CATEGORY_RUNTIME_AUDIT: %s" % json.dumps(result, ensure_ascii=False, sort_keys=True))
 if failures:
     print("FAILURES:")

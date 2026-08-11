@@ -90,6 +90,7 @@
         'wizard/material_plan_to_rfq_views.xml',
         'views/core/material_plan_views.xml',
         'views/core/material_acceptance_views.xml',
+        'views/core/material_supplier_return_views.xml',
         'views/core/material_rental_views.xml',
         'views/core/labor_management_views.xml',
         'views/core/equipment_management_views.xml',
