@@ -3491,3 +3491,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   51 delivered menu leaves, product/low-code boundary guards and customer-field
   extraction guards. The isolated `sc_product_center` runtime and `wutao`
   browser acceptance are rerun on the integrated candidate before publication.
+
+## 2026-08-11 — P1-PRODUCT-CENTER-CLEAN-INSTALL-CLOSEOUT
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` at the PR #169
+  candidate derived from `c1edcf8`.
+- Formal Product Layer / Layer Target / Module: P1 / deterministic native view
+  loading / `smart_construction_core`; generic boundary enforcement remains P0
+  and customer identity remains outside the product repository.
+- Reason / Why Here: the candidate's formal list alignment file was loaded
+  before the tree views it binds, while a duplicated salary action introduced a
+  reverse cross-file dependency. Existing upgraded databases masked both
+  forward references; a clean product install failed closed.
+- Boundary / validation: load the base formal views before final alignment,
+  keep the salary action override only in the alignment authority, and make the
+  runtime drift audit follow manifest order. A static regression rejects future
+  cross-file forward references. Fixed customer identifiers are removed from
+  the P1 menu documentation and guard description. The tenant payload boundary,
+  19 focused tests, fresh install plus upgrade, five authorization ORM tests,
+  resource cleanup proof, and the product-menu release-ready aggregate pass.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import re
 import unittest
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -8,6 +9,7 @@ from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 AUDIT = ROOT / "scripts" / "verify" / "formal_action_runtime_drift_audit.py"
+MANIFEST = ROOT / "addons" / "smart_construction_core" / "__manifest__.py"
 FORMAL_LISTS = ROOT / "addons" / "smart_construction_core" / "views" / "support" / "user_confirmed_formal_list_views.xml"
 ALIGNMENT_LISTS = ROOT / "addons" / "smart_construction_core" / "views" / "support" / "user_confirmed_formal_list_alignment_views.xml"
 USER_FEEDBACK_TESTS = ROOT / "addons" / "smart_construction_core" / "tests" / "test_user_feedback_business_views.py"
@@ -44,6 +46,36 @@ class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
         assignments = self._assignments()
         candidates = ast.unparse(assignments["ADDON_ROOT_CANDIDATES"])
         self.assertIn("/mnt/source-addons/smart_construction_core", candidates)
+
+    def test_runtime_drift_audit_follows_manifest_load_order(self) -> None:
+        assignments = self._assignments()
+        audited_files = ast.literal_eval(assignments["HIGH_RISK_XML_FILES"])
+        manifest_files = ast.literal_eval(MANIFEST.read_text(encoding="utf-8"))["data"]
+        self.assertEqual(
+            [item for item in manifest_files if item in audited_files],
+            audited_files,
+        )
+
+    def test_high_risk_files_have_no_cross_file_forward_references(self) -> None:
+        assignments = self._assignments()
+        audited_files = ast.literal_eval(assignments["HIGH_RISK_XML_FILES"])
+        definitions: dict[str, int] = {}
+        parsed_files = []
+        for file_index, relative in enumerate(audited_files):
+            path = ROOT / "addons" / "smart_construction_core" / relative
+            xml_root = ET.fromstring(path.read_text(encoding="utf-8"))
+            parsed_files.append((file_index, relative, xml_root))
+            for record in xml_root.findall(".//record[@id]"):
+                definitions[record.attrib["id"]] = file_index
+
+        forward_references = []
+        for file_index, relative, xml_root in parsed_files:
+            for record in xml_root.findall(".//record[@id]"):
+                serialized = ET.tostring(record, encoding="unicode")
+                for xmlid in re.findall(r"smart_construction_core\.([A-Za-z0-9_]+)", serialized):
+                    if definitions.get(xmlid, file_index) > file_index:
+                        forward_references.append(f"{relative}:{record.attrib['id']}->{xmlid}")
+        self.assertEqual(forward_references, [])
 
     def test_formal_action_source_contracts_match_locked_runtime_expectations(self) -> None:
         contract_action = self._record(FORMAL_LISTS, "action_construction_contract_income_construction")
@@ -99,24 +131,19 @@ class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
             if action.find("field[@name='name']") is not None:
                 self.assertEqual(self._field_text(action, "name"), expected["name"], action_id)
 
-    def test_formal_acceptance_actions_use_generic_projection_labels(self) -> None:
+    def test_formal_actions_do_not_depend_on_legacy_acceptance_labels(self) -> None:
         assignments = self._assignments()
-        non_empty = set(ast.literal_eval(assignments["EXPECTED_NON_EMPTY_ACTIONS"]))
         parity = ast.literal_eval(assignments["FORMAL_ACCEPTANCE_LABEL_ACTIONS"])
-        expected = {
-            "action_sc_material_inbound": "入库",
-            "action_sc_material_rental_in_acceptance": "租入",
-            "action_sc_material_rental_return_acceptance": "还租",
+        expected_domains = {
+            "action_sc_material_inbound": [],
+            "action_sc_material_rental_in_acceptance": [("state", "in", ["draft", "active"])],
+            "action_sc_material_rental_return_acceptance": [("state", "in", ["returned", "settled"])],
         }
-        self.assertEqual(parity, expected)
-        self.assertTrue(expected.keys().isdisjoint(non_empty))
+        self.assertEqual(parity, {})
 
-        for action_id, label in expected.items():
+        for action_id, expected_domain in expected_domains.items():
             action = self._record(FORMAL_LISTS, action_id)
-            self.assertEqual(
-                ast.literal_eval(self._field_text(action, "domain")),
-                [("legacy_acceptance_label", "=", label)],
-            )
+            self.assertEqual(ast.literal_eval(self._field_text(action, "domain")), expected_domain)
 
         source = AUDIT.read_text(encoding="utf-8")
         self.assertIn("wrong_formal_acceptance_domain", source)

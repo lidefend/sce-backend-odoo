@@ -25,8 +25,8 @@ ADDON_ROOT_CANDIDATES = [
     Path.cwd() / "addons" / "smart_construction_core",
 ]
 HIGH_RISK_XML_FILES = [
-    "views/support/user_confirmed_formal_list_alignment_views.xml",
     "views/support/user_confirmed_formal_list_views.xml",
+    "views/support/user_confirmed_formal_list_alignment_views.xml",
 ]
 EXPECTED_NON_EMPTY_ACTIONS = {
     "action_sc_labor_usage_ticket",

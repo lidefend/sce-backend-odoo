@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed guard for the locked Baosheng product menu contract."""
+"""Fail-closed guard for the locked construction product menu contract."""
 
 from __future__ import annotations
 
