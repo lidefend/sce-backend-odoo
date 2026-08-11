@@ -55,6 +55,7 @@ local.clean.rebuild: guard.prod.forbid local.clean.prepare
 
 local.clean.health: guard.prod.forbid local.clean.prepare
 	@ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  LOCAL_CLEAN_HEALTH_MODULES="$(LOCAL_CLEAN_HEALTH_MODULES)" \
 	  bash scripts/dev/local_environment_health.sh clean
 
 local.env.status: guard.prod.forbid

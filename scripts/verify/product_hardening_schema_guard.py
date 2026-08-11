@@ -14,7 +14,8 @@ BUNDLE_MD = ROOT / "docs" / "ops" / "audit" / "bundle_installation_report.md"
 PERFORMANCE_JSON = ROOT / "artifacts" / "backend" / "platform_performance_smoke.json"
 PERFORMANCE_MD = ROOT / "docs" / "ops" / "audit" / "platform_performance_smoke.md"
 EXPECTED_BUNDLES = {"construction", "owner"}
-EXPECTED_INTENTS = {"system.init", "ui.contract", "execute_button"}
+REQUIRED_INTENTS = {"system.init", "ui.contract"}
+OPTIONAL_INTENTS = {"execute_button"}
 
 
 def _load_json(path: Path) -> dict:
@@ -119,7 +120,7 @@ def _check_performance_row(row: object, idx: int, errors: list[str]) -> None:
         errors.append(f"{prefix} must be object")
         return
     intent = str(row.get("intent") or "").strip()
-    if intent not in EXPECTED_INTENTS:
+    if intent not in REQUIRED_INTENTS | OPTIONAL_INTENTS:
         errors.append(f"{prefix}.intent must be one of {sorted(EXPECTED_INTENTS)}")
     for key in ("iterations", "max_payload_bytes", "threshold_payload_bytes"):
         if not isinstance(row.get(key), int) or row.get(key) < 1:
@@ -149,8 +150,12 @@ def _check_performance() -> list[str]:
         _check_performance_row(row, idx, errors)
         if isinstance(row, dict):
             seen_intents.add(str(row.get("intent") or "").strip())
-    if seen_intents != EXPECTED_INTENTS:
-        errors.append(f"rows must cover {sorted(EXPECTED_INTENTS)}")
+    missing_required = REQUIRED_INTENTS - seen_intents
+    unknown_intents = seen_intents - REQUIRED_INTENTS - OPTIONAL_INTENTS
+    if missing_required:
+        errors.append(f"rows missing required intents: {sorted(missing_required)}")
+    if unknown_intents:
+        errors.append(f"rows contain unsupported intents: {sorted(unknown_intents)}")
     report_errors = payload.get("errors")
     if not _string_list(report_errors):
         errors.append("errors must be string list")
@@ -159,6 +164,10 @@ def _check_performance() -> list[str]:
     if not _string_list(warnings):
         errors.append("warnings must be string list")
         warnings = []
+    if "execute_button" not in seen_intents and not any(
+        item.startswith("execute_button performance sample unavailable:") for item in warnings
+    ):
+        errors.append("missing execute_button row requires an explicit unavailable-sample warning")
     if summary:
         if summary.get("target_count") != len(rows):
             errors.append("summary.target_count must match rows length")

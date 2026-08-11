@@ -2,12 +2,13 @@
 # pyright: reportUnusedExpression=false
 {
     'name': 'Smart Construction Core',
-    'version': '17.0.0.109',
+    'version': '17.0.0.123',
     'summary': 'Core module for construction enterprise management (Architecture 2.0)',
     'author': 'Leedefend',
     'depends': [
         'project',
         'purchase',
+        'purchase_stock',
         'stock',
         'account',
         'hr',
@@ -205,18 +206,28 @@
         'security/menu_tech_hide_patch.xml',
         'actions/project_native_action_overrides.xml',
         'views/menu_business_taxonomy.xml',
-        'views/menu_legacy_direct_project_acceptance.xml',
         'views/core/expense_business_fact_taxonomy_views.xml',
         'views/core/historical_payment_fact_views.xml',
         'views/menu_user_acceptance_cleanup.xml',
         'views/menu_contract_product_release.xml',
         'views/support/audit_list_fields_views.xml',
-        'views/support/user_confirmed_formal_list_alignment_views.xml',
-        'views/support/user_confirmed_formal_form_views.xml',
         'views/support/user_confirmed_formal_list_views.xml',
+        'views/support/user_confirmed_formal_list_alignment_views.xml',
         # Productized visible navigation authority. Keep this after all native
         # menu declarations and before the product-policy synchronization.
         'views/menu_product_navigation_v2.xml',
+        # P1 wave-one contract navigation. Existing action XMLIDs are reused;
+        # legacy grouping menus remain inactive for rollback-safe migration.
+        'views/menu_product_contract_wave1.xml',
+        'views/menu_product_cost_wave1.xml',
+        'views/menu_product_finance_wave1.xml',
+        'views/menu_product_tax_wave1.xml',
+        'views/menu_product_reporting_wave1.xml',
+        'views/menu_product_administration_wave1.xml',
+        'views/menu_product_configuration_wave1.xml',
+        'views/menu_product_project_wave1.xml',
+        'views/menu_product_workbench_wave1.xml',
+        'views/menu_product_primary_center_candidate_v1.xml',
         'data/hr_payroll_form_productization_contract.xml',
         'data/office_admin_form_productization_contract.xml',
         'data/document_admin_form_productization_contract.xml',

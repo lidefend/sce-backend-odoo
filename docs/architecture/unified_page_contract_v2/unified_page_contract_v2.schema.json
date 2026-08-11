@@ -79,7 +79,12 @@
             "table",
             "kanban",
             "tree",
+            "pivot",
+            "graph",
+            "calendar",
             "gantt",
+            "activity",
+            "dashboard",
             "combine"
           ]
         },
@@ -89,7 +94,12 @@
             "table",
             "kanban",
             "tree",
+            "pivot",
+            "graph",
+            "calendar",
             "gantt",
+            "activity",
+            "dashboard",
             "combine"
           ]
         },
@@ -132,7 +142,12 @@
             "table",
             "kanban",
             "tree",
+            "pivot",
+            "graph",
+            "calendar",
             "gantt",
+            "activity",
+            "dashboard",
             "combine"
           ]
         },
@@ -685,6 +700,41 @@
             "full"
           ]
         },
+        "actionKey": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "intent": {
+          "type": "string"
+        },
+        "target": {
+          "type": "object"
+        },
+        "button": {
+          "type": "object"
+        },
+        "visible": {
+          "type": "object"
+        },
+        "modifiers": {
+          "type": "object"
+        },
+        "invisible": {},
+        "visibleProfiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "presentation": {
+          "type": "object"
+        },
+        "actionSafety": {
+          "type": "object"
+        },
         "submitPolicy": {
           "type": "object"
         },
@@ -894,6 +944,12 @@
         },
         "aiEnvelope": {
           "type": "object"
+        },
+        "interactionMode": {
+          "type": "string"
+        },
+        "actionTarget": {
+          "type": "string"
         }
       }
     },

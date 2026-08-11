@@ -272,6 +272,43 @@ class TestReleaseGateCategoryOptions(TransactionCase):
         self.assertEqual(meta["removed_leaf_count"], 0)
         self.assertEqual(meta["runtime_business_config_passthrough_count"], 2)
 
+    def test_release_gate_keeps_released_parent_target_when_children_are_filtered(self):
+        nav = [
+            {
+                "menu_id": 500,
+                "name": "项目计划",
+                "route": "/a/100?menu_id=500",
+                "action_id": 100,
+                "meta": {"menu_id": 500, "action_id": 100},
+                "children": [
+                    {
+                        "menu_id": 501,
+                        "name": "未发布明细",
+                        "route": "/a/101?menu_id=501",
+                        "action_id": 101,
+                        "meta": {"menu_id": 501, "action_id": 101},
+                        "children": [],
+                    }
+                ],
+            }
+        ]
+        gate = {
+            "applied": True,
+            "product_key": "construction.standard",
+            "allowed": {
+                "menu_ids": ["system.menu_500"],
+                "action_ids": ["/a/100"],
+            },
+        }
+
+        filtered, meta = _filter_nav_by_release_gate(nav, gate)
+
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered[0]["action_id"], 100)
+        self.assertEqual(filtered[0]["children"], [])
+        self.assertEqual(meta["kept_leaf_count"], 1)
+        self.assertEqual(meta["removed_leaf_count"], 1)
+
     def test_release_target_integrity_allows_action_only_formal_entry(self):
         service = EditionReleaseSnapshotService(self.env)
         check = service._target_integrity_check(

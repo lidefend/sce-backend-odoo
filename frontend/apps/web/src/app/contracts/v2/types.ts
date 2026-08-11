@@ -98,9 +98,9 @@ export interface ContractV2ActionRule {
   visible?: ContractV2Dictionary;
   modifiers?: ContractV2Dictionary;
   invisible?: unknown;
-  visible_profiles?: string[];
+  visibleProfiles?: string[];
   presentation?: ContractV2Dictionary;
-  action_safety?: ContractV2Dictionary;
+  actionSafety?: ContractV2Dictionary;
   submitPolicy?: ContractV2Dictionary;
   tracePolicy?: ContractV2Dictionary;
 }

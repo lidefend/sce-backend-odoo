@@ -165,8 +165,16 @@ verify.frontend.home_orchestration_consumption.guard: guard.prod.forbid
 verify.scene.ready.strict_contract.guard: guard.prod.forbid
 	@python3 scripts/verify/scene_ready_strict_contract_guard.py
 
+.PHONY: verify.contract.probe_routing.unit
+verify.contract.probe_routing.unit: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_contract_probe_routing
+
+.PHONY: verify.contract.authority_hierarchy.guard
+verify.contract.authority_hierarchy.guard: guard.prod.forbid verify.contract.probe_routing.unit
+	@python3 scripts/verify/contract_authority_hierarchy_guard.py
+
 .PHONY: verify.scene.ready.strict_gap.full_audit
-verify.scene.ready.strict_gap.full_audit: guard.prod.forbid check-compose-project check-compose-env
+verify.scene.ready.strict_gap.full_audit: guard.prod.forbid verify.contract.probe_routing.unit check-compose-project check-compose-env
 	@$(RUN_ENV) python3 scripts/verify/scene_ready_strict_gap_full_audit.py
 
 .PHONY: verify.workspace_home.sections_schema.guard
@@ -393,6 +401,7 @@ verify.frontend.product.ready: guard.prod.forbid \
 	verify.frontend.scene_contract_auto_render.guard \
 	verify.frontend.actionview.scene_specialcase.guard \
 	verify.frontend.scene_record_semantics.guard \
+	verify.contract.authority_hierarchy.guard \
 	verify.frontend.error_context.contract.guard \
 	verify.render.semantic.ready \
 	verify.render.policy.ready \
@@ -1180,6 +1189,7 @@ verify.phasex.operating.summary: guard.prod.forbid
 	@python3 scripts/verify/phasex_operating_summary_report.py
 
 verify.bundle.installation.ready: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_python_http_smoke_db_routing.py
 	@python3 scripts/verify/bundle_installation_ready.py
 	@python3 scripts/verify/product_hardening_schema_guard.py --report bundle
 
@@ -1192,6 +1202,7 @@ verify.product.tier.ready: guard.prod.forbid
 	@python3 scripts/verify/product_tier_ready.py
 
 verify.ui.surface.stability.ready: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_ui_surface_stability_db_routing.py
 	@python3 scripts/verify/ui_surface_stability_ready.py
 
 verify.delivery.simulation.ready: guard.prod.forbid
@@ -1387,12 +1398,90 @@ verify.product.delivery.scoreboard.final_closeout.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_delivery_scoreboard_final_closeout_guard.py
 	@python3 scripts/verify/product_delivery_scoreboard_final_closeout_guard.py
 
-.PHONY: verify.product.menu.release_manifest_v2.guard verify.product.menu.release.ready
+.PHONY: verify.product.primary_center.baseline.guard verify.product.primary_center.candidate.guard verify.product.menu.contract_v1.guard verify.product.contract_center.wave1.guard verify.product.cost_center.wave1.guard verify.product.finance_center.wave1.guard verify.product.tax_center.wave1.guard verify.product.reporting_center.wave1.guard verify.product.administration_center.wave1.guard verify.product.configuration_center.wave1.guard verify.product.project_center.wave1.guard verify.product.workbench.wave1.guard verify.product.menu.runtime_closeout.guard verify.product.menu.release_manifest_v2.guard verify.product.menu.release.ready
+verify.product.primary_center.baseline.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_primary_center_baseline_guard.py scripts/verify/test_product_primary_center_baseline_guard.py
+	@python3 -m unittest scripts.verify.test_product_primary_center_baseline_guard
+	@python3 scripts/verify/product_primary_center_baseline_guard.py
+
+verify.product.primary_center.candidate.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_primary_center_candidate_guard.py scripts/verify/test_product_primary_center_candidate_guard.py
+	@python3 -m unittest scripts.verify.test_product_primary_center_candidate_guard
+	@python3 scripts/verify/product_primary_center_candidate_guard.py
+
+verify.product.menu.contract_v1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_menu_contract_v1_guard.py scripts/verify/test_product_menu_contract_v1_guard.py
+	@python3 -m unittest scripts.verify.test_product_menu_contract_v1_guard
+	@python3 scripts/verify/product_menu_contract_v1_guard.py
+
+verify.product.contract_center.wave1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_contract_center_wave1_guard.py scripts/verify/test_product_contract_center_wave1_guard.py
+	@python3 -m unittest scripts.verify.test_product_contract_center_wave1_guard
+	@python3 scripts/verify/product_contract_center_wave1_guard.py
+
+verify.product.cost_center.wave1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_cost_center_wave1_guard.py scripts/verify/test_product_cost_center_wave1_guard.py
+	@python3 -m unittest scripts.verify.test_product_cost_center_wave1_guard
+	@python3 scripts/verify/product_cost_center_wave1_guard.py
+
+verify.product.finance_center.wave1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_finance_center_wave1_guard.py scripts/verify/test_product_finance_center_wave1_guard.py
+	@python3 -m unittest scripts.verify.test_product_finance_center_wave1_guard
+	@python3 scripts/verify/product_finance_center_wave1_guard.py
+
+verify.product.tax_center.wave1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_tax_center_wave1_guard.py scripts/verify/test_product_tax_center_wave1_guard.py
+	@python3 -m unittest scripts.verify.test_product_tax_center_wave1_guard
+	@python3 scripts/verify/product_tax_center_wave1_guard.py
+
+verify.product.reporting_center.wave1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_reporting_center_wave1_guard.py scripts/verify/test_product_reporting_center_wave1_guard.py
+	@python3 -m unittest scripts.verify.test_product_reporting_center_wave1_guard
+	@python3 scripts/verify/product_reporting_center_wave1_guard.py
+
+verify.product.administration_center.wave1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_administration_center_wave1_guard.py scripts/verify/test_product_administration_center_wave1_guard.py
+	@python3 -m unittest scripts.verify.test_product_administration_center_wave1_guard
+	@python3 scripts/verify/product_administration_center_wave1_guard.py
+
+verify.product.configuration_center.wave1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_configuration_center_wave1_guard.py scripts/verify/test_product_configuration_center_wave1_guard.py
+	@python3 -m unittest scripts.verify.test_product_configuration_center_wave1_guard
+	@python3 scripts/verify/product_configuration_center_wave1_guard.py
+
+verify.product.project_center.wave1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_project_center_wave1_guard.py scripts/verify/test_product_project_center_wave1_guard.py
+	@python3 -m unittest scripts.verify.test_product_project_center_wave1_guard
+	@python3 scripts/verify/product_project_center_wave1_guard.py
+
+verify.product.workbench.wave1.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_workbench_wave1_guard.py scripts/verify/test_product_workbench_wave1_guard.py
+	@python3 -m unittest scripts.verify.test_product_workbench_wave1_guard
+	@python3 scripts/verify/product_workbench_wave1_guard.py
+
+verify.product.menu.runtime_closeout.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_menu_runtime_closeout_guard.py scripts/verify/test_product_menu_runtime_closeout_guard.py
+	@python3 -m unittest scripts.verify.test_product_menu_runtime_closeout_guard
+	@python3 scripts/verify/product_menu_runtime_closeout_guard.py
+
 verify.product.menu.release_manifest_v2.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/product_menu_release_manifest_v2_guard.py
 	@python3 scripts/verify/product_menu_release_manifest_v2_guard.py
 
 verify.product.menu.release.ready: guard.prod.forbid \
+	verify.product.primary_center.baseline.guard \
+	verify.product.primary_center.candidate.guard \
+	verify.product.menu.contract_v1.guard \
+	verify.product.contract_center.wave1.guard \
+	verify.product.cost_center.wave1.guard \
+	verify.product.finance_center.wave1.guard \
+	verify.product.tax_center.wave1.guard \
+	verify.product.reporting_center.wave1.guard \
+	verify.product.administration_center.wave1.guard \
+	verify.product.configuration_center.wave1.guard \
+	verify.product.project_center.wave1.guard \
+	verify.product.workbench.wave1.guard \
+	verify.product.menu.runtime_closeout.guard \
 	verify.product.menu.release_manifest_v2.guard \
 	verify.product.menu.catalog \
 	verify.system_init.menu_boundary.guard \
@@ -1617,6 +1706,7 @@ export.product.documentation: guard.prod.forbid
 	@python3 scripts/verify/export_product_documentation.py
 
 verify.product.tier.coverage: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_product_tier_db_routing.py
 	@python3 scripts/verify/product_tier_coverage.py
 
 seed.delivery.minimum: guard.prod.forbid
@@ -1726,6 +1816,7 @@ verify.product.sla.baseline: guard.prod.forbid verify.platform.performance.smoke
 	@echo "[OK] verify.product.sla.baseline done"
 
 verify.product.release.ready: guard.prod.forbid \
+	verify.frontend.product.ready \
 	verify.docs.product_boundary \
 	verify.industry_module.product_boundary \
 	verify.user_module.product_boundary \
@@ -1828,6 +1919,7 @@ verify.contract.compat: guard.prod.forbid
 	@python3 scripts/verify/contract_compat_report.py
 
 verify.platform.performance.smoke: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_platform_performance_db_routing.py
 	@python3 scripts/verify/platform_performance_smoke.py
 	@python3 scripts/verify/product_hardening_schema_guard.py --report performance
 
@@ -2056,6 +2148,17 @@ verify.docs.product_boundary: guard.prod.forbid
 verify.industry_module.product_boundary: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/industry_module_product_boundary_guard.py
 	@python3 scripts/verify/test_industry_module_product_boundary_guard.py
+	@python3 scripts/verify/test_material_plan_p2_extraction_migration.py
+	@python3 scripts/verify/test_material_rfq_p2_extraction_migration.py
+	@python3 scripts/verify/test_material_inbound_p2_extraction_migration.py
+	@python3 scripts/verify/test_pass_through_p2_extraction_migration.py
+	@python3 scripts/verify/test_subcontract_request_p2_extraction_migration.py
+	@python3 scripts/verify/test_construction_diary_p2_extraction_migration.py
+	@python3 scripts/verify/test_settlement_order_p2_extraction_migration.py
+	@python3 scripts/verify/test_equipment_usage_p2_extraction_migration.py
+	@python3 scripts/verify/test_labor_usage_p2_extraction_migration.py
+	@python3 scripts/verify/test_material_rental_order_p2_extraction_migration.py
+	@python3 scripts/verify/test_hr_payroll_document_p2_extraction_migration.py
 	@python3 scripts/verify/industry_module_product_boundary_guard.py
 
 .PHONY: verify.user_module.product_boundary
@@ -2226,7 +2329,7 @@ verify.contract.scene_coverage.guard: guard.prod.forbid verify.contract.scene_co
 	@python3 scripts/verify/scene_contract_coverage_schema_guard.py
 	@python3 scripts/verify/scene_contract_coverage_baseline_guard.py
 
-verify.contract.mode.smoke: guard.prod.forbid check-compose-project check-compose-env
+verify.contract.mode.smoke: guard.prod.forbid verify.contract.probe_routing.unit check-compose-project check-compose-env
 	@$(RUN_ENV) python3 scripts/verify/contract_mode_smoke.py
 
 verify.contract.api.mode.smoke: guard.prod.forbid check-compose-project check-compose-env

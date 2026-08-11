@@ -24,6 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]
 ASSEMBLER_PATH = ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py"
 NATIVE_RENDERER_PATH = ROOT / "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
 CONTRACT_FORM_PATH = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
+CONTRACT_MODE_SUPPORT_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue"
+LOW_CODE_FIELD_DIALOG_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue"
 
 
 def _load_assembler():
@@ -138,22 +140,26 @@ def _backend_projection_checks(errors: list[str]) -> None:
 def _frontend_boundary_checks(errors: list[str]) -> None:
     native_renderer = NATIVE_RENDERER_PATH.read_text(encoding="utf-8")
     contract_form = CONTRACT_FORM_PATH.read_text(encoding="utf-8")
+    contract_mode_support = CONTRACT_MODE_SUPPORT_PATH.read_text(encoding="utf-8")
+    low_code_field_dialog = LOW_CODE_FIELD_DIALOG_PATH.read_text(encoding="utf-8")
     _assert(
         "if (type === 'group') return '';" in native_renderer,
         "frontend NativeFormTreeRenderer must keep Odoo group titles hidden",
         errors,
     )
     _assert(
-        ':field-group-title="containerPolicyTitle(node)"' in native_renderer,
+        ':field-group-title="containerPolicyTitle(node, index)"' in native_renderer,
         "frontend should pass hidden group metadata for low-code placement without rendering it",
         errors,
     )
-    create_dialog_start = contract_form.find('class="contract-field-create-dialog"')
-    create_dialog_end = contract_form.find("</form>", create_dialog_start)
-    create_dialog = contract_form[create_dialog_start:create_dialog_end]
-    _assert(create_dialog_start >= 0, "low-code field create dialog should exist", errors)
     _assert(
-        "分组" not in create_dialog,
+        "<ContractModeSupportPanel" in contract_form and "<LowCodeFieldCreateDialog" in contract_mode_support,
+        "contract form should delegate low-code field creation through the support panel",
+        errors,
+    )
+    _assert('class="low-code-field-create-form"' in low_code_field_dialog, "low-code field create dialog should exist", errors)
+    _assert(
+        "分组" not in low_code_field_dialog,
         "low-code field create dialog must not expose technical group selection",
         errors,
     )

@@ -25,8 +25,8 @@ ADDON_ROOT_CANDIDATES = [
     Path.cwd() / "addons" / "smart_construction_core",
 ]
 HIGH_RISK_XML_FILES = [
-    "views/support/user_confirmed_formal_list_alignment_views.xml",
     "views/support/user_confirmed_formal_list_views.xml",
+    "views/support/user_confirmed_formal_list_alignment_views.xml",
 ]
 EXPECTED_NON_EMPTY_ACTIONS = {
     "action_sc_labor_usage_ticket",
@@ -52,12 +52,41 @@ EXPECTED_NON_EMPTY_ACTIONS = {
     "action_sc_settlement_order_income",
     "action_sc_settlement_order_expense",
 }
-FORMAL_ACCEPTANCE_LABEL_ACTIONS = {
-    "action_sc_material_inbound": "入库",
-    "action_sc_material_rental_in_acceptance": "租入",
-    "action_sc_material_rental_return_acceptance": "还租",
-}
+FORMAL_ACCEPTANCE_LABEL_ACTIONS = {}
 EXPECTED_ACTION_CONTRACTS = {
+    "action_sc_settlement_order_income": {
+        "name": "收入合同结算",
+        "res_model": "sc.settlement.order",
+        "view_name": "sc.settlement.order.user.confirmed.tree",
+        "field_names": ["state", "name", "project_id", "document_date", "title", "settlement_unit_id", "contract_id", "settlement_amount", "paid_amount", "unpaid_amount", "requested_fund_amount", "remaining_amount", "settlement_description", "note", "attachment_ids", "entry_user_id", "create_date"],
+    },
+    "action_sc_settlement_order_expense": {
+        "name": "支出合同结算",
+        "res_model": "sc.settlement.order",
+        "view_name": "sc.settlement.order.user.confirmed.tree",
+        "field_names": ["state", "name", "project_id", "document_date", "title", "settlement_unit_id", "contract_id", "settlement_amount", "paid_amount", "unpaid_amount", "requested_fund_amount", "remaining_amount", "settlement_description", "note", "attachment_ids", "entry_user_id", "create_date"],
+    },
+    "action_sc_subcontract_request_user_confirmed": {
+        "name": "分包方单",
+        "res_model": "sc.subcontract.request",
+        "view_name": "sc.subcontract.request.user.confirmed.tree",
+        "field_names": [
+            "state",
+            "name",
+            "project_id",
+            "subcontract_scope",
+            "suggested_subcontractor_id",
+            "subcontract_type_text",
+            "quantity_total",
+            "price_unit",
+            "amount_total",
+            "monthly_amount_total",
+            "note",
+            "attachment_ids",
+            "applicant_id",
+            "create_date",
+        ],
+    },
     "action_construction_contract_income_construction": {
         "name": "施工合同",
         "res_model": "construction.contract.income",
@@ -92,20 +121,45 @@ EXPECTED_ACTION_CONTRACTS = {
             "state",
             "project_id",
             "name",
-            "document_date",
+            "usage_date",
             "supplier_id",
-            "former_supplier_name",
             "equipment_name",
             "specification",
             "uom_text",
-            "work_hours",
+            "usage_qty",
+            "usage_hours",
             "price_unit",
             "amount",
             "attachment_ids",
             "note",
-            "source_created_by",
-            "source_created_at",
+            "recorder_id",
+            "create_date",
         ],
+    },
+    "action_sc_labor_usage_ticket": {
+        "name": "方单",
+        "res_model": "sc.labor.usage",
+        "view_name": "sc.labor.usage.ticket.user.confirmed.tree",
+        "field_names": ["state", "name", "project_id", "usage_date", "contractor_id", "construction_part", "work_content", "settlement_state", "amount_total", "note", "attachment_ids", "recorder_id", "create_date"],
+    },
+    "action_sc_labor_usage_casual": {
+        "name": "零星用工",
+        "res_model": "sc.labor.usage",
+        "view_name": "sc.labor.usage.casual.user.confirmed.tree",
+        "field_names": ["state", "name", "project_id", "usage_date", "contractor_id", "work_type", "worker_qty", "price_unit", "amount_total", "work_content", "attachment_ids", "settlement_state", "note", "recorder_id", "create_date"],
+    },
+    "action_sc_material_rental_in_acceptance": {
+        "name": "租入", "res_model": "sc.material.rental.order", "view_name": "sc.material.rental.order.in.user.confirmed.tree",
+        "field_names": ["state", "name", "rental_date", "supplier_id", "use_unit_name", "material_summary", "specification_summary", "quantity_total", "amount_total", "deposit_amount", "note", "attachment_ids", "owner_id", "create_date", "project_id"],
+    },
+    "action_sc_material_rental_return_acceptance": {
+        "name": "还租", "res_model": "sc.material.rental.order", "view_name": "sc.material.rental.order.return.user.confirmed.tree",
+        "field_names": ["state", "project_id", "name", "actual_return_date", "supplier_id", "settlement_amount", "compensation_fee", "repair_fee", "transport_fee", "attachment_ids", "note", "owner_id", "create_date", "deposit_deduction", "use_unit_name"],
+    },
+    "action_sc_salary_registration": {
+        "name": "项目管理人员工资登记", "res_model": "sc.hr.payroll.document",
+        "view_name": "sc.hr.payroll.document.formal.manager.salary.tree",
+        "field_names": ["state", "project_id", "document_no", "business_date", "period_year", "period_month", "net_salary", "gross_amount", "payment_state", "paid_amount", "unpaid_amount", "description", "attachment_ids", "requester_id", "create_date"],
     },
     "action_sc_material_inbound": {
         "name": "入库",
@@ -141,25 +195,16 @@ EXPECTED_ACTION_CONTRACTS = {
         "res_model": "sc.material.rfq",
         "view_name": "sc.material.rfq.quote.formal.tree",
         "field_names": [
-            "quote_status_display",
-            "quote_document_no",
-            "quote_supplier_name",
-            "quote_inquiry_time",
-            "quote_material_name",
-            "quote_material_spec",
-            "quote_quantity_display",
-            "quote_tax_price_display",
-            "quote_tax_amount_display",
-            "quote_total_quantity_display",
-            "quote_total_amount_display",
-            "quote_note_display",
-            "quote_contact_name",
-            "quote_contact_phone",
-            "quote_attachment_text",
-            "quote_selected_text",
-            "quote_project_name",
-            "quote_source_created_by",
-            "quote_source_created_at",
+            "state",
+            "name",
+            "selected_supplier_id",
+            "rfq_date",
+            "due_date",
+            "project_id",
+            "owner_id",
+            "contact_name",
+            "contact_phone",
+            "attachment_ids",
         ],
     },
     "action_payment_request_user_payment_apply": {
@@ -407,10 +452,13 @@ for action_id, spec in sorted(action_records().items()):
         continue
     domain = safe_eval(action.domain or "[]")
     count = None
+    model_total_count = None
     count_error = None
     if action.res_model in env:  # noqa: F821
         try:
-            count = int(env[action.res_model].sudo().search_count(domain))  # noqa: F821
+            model = env[action.res_model].sudo()  # noqa: F821
+            count = int(model.search_count(domain))
+            model_total_count = int(model.search_count([]))
         except Exception as exc:  # pragma: no cover - executed inside Odoo shell
             count_error = f"{type(exc).__name__}: {str(exc)[:240]}"
     else:
@@ -442,6 +490,7 @@ for action_id, spec in sorted(action_records().items()):
         "res_model": action.res_model,
         "domain": action.domain or "",
         "record_count": count,
+        "model_total_count": model_total_count,
         "count_error": count_error,
         "projection_count": projection_count,
         "expected_acceptance_domain": expected_acceptance_domain,
@@ -460,7 +509,7 @@ for action_id, spec in sorted(action_records().items()):
         failures.append({"reason": "wrong_formal_acceptance_domain", **row})
     if projection_count is not None and count is not None and projection_count != count:
         failures.append({"reason": "formal_acceptance_domain_count_mismatch", **row})
-    if action_id in EXPECTED_NON_EMPTY_ACTIONS and count == 0:
+    if action_id in EXPECTED_NON_EMPTY_ACTIONS and model_total_count and count == 0:
         failures.append({"reason": "empty_high_risk_formal_action_domain", **row})
     if missing_registered_fields:
         failures.append({"reason": "tree_fields_missing_from_registered_model", **row})

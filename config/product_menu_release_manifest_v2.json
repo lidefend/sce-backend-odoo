@@ -3,6 +3,12 @@
   "release_name": "construction-visible-navigation-v2",
   "product_layer": "P1",
   "module": "smart_construction_core",
+  "target_primary_center_baseline": {
+    "ref": "config/product_primary_center_baseline_v1.json",
+    "status": "LOCKED",
+    "runtime_alignment_status": "MIGRATION_PENDING",
+    "current_runtime_semantics": "AS_BUILT_RELEASE_SNAPSHOT"
+  },
   "navigation_rules": {
     "application_root_is_business_level": false,
     "followup_menu_sibling_position": "last",

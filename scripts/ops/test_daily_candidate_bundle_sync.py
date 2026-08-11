@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 import os
 import shlex
 import subprocess
@@ -110,8 +111,9 @@ class DailyCandidateBundleSyncTests(unittest.TestCase):
             base_sha = git(source, "rev-parse", "HEAD")
 
             git(source, "switch", "-c", "feature/candidate")
+            (source / "value.txt").write_text("candidate-preseed\n", encoding="utf-8")
             (source / "candidate.txt").write_text("candidate\n", encoding="utf-8")
-            git(source, "add", "candidate.txt")
+            git(source, "add", "value.txt", "candidate.txt")
             git(source, "commit", "-m", "candidate")
             candidate_sha = git(source, "rev-parse", "HEAD")
             git(source, "switch", "main")
@@ -128,6 +130,7 @@ class DailyCandidateBundleSyncTests(unittest.TestCase):
             git(target, "checkout", "-B", "main", "FETCH_HEAD")
             git(target, "update-ref", "refs/remotes/origin/main", old_sha)
             git(target, "branch", "--set-upstream-to=origin/main", "main")
+            (target / "value.txt").write_text("candidate-preseed\n", encoding="utf-8")
 
             bundle_path = root / "candidate.bundle"
             git(
@@ -163,6 +166,8 @@ class DailyCandidateBundleSyncTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr.decode())
+            report = json.loads(result.stdout.decode())
+            self.assertEqual(report["preseeded_paths"], ["value.txt"])
             self.assertEqual(git(target, "rev-parse", "HEAD"), candidate_sha)
             self.assertEqual(git(target, "branch", "--show-current"), "")
             self.assertEqual(
@@ -210,6 +215,12 @@ class DailyCandidateBundleSyncTests(unittest.TestCase):
         self.assertIn("candidate runtime must use detached HEAD", source)
         self.assertIn("candidate evidence ref is missing", source)
         self.assertIn("main deployment mode cannot override the expected branch", source)
+
+    def test_remote_contract_rejects_non_candidate_dirty_files(self) -> None:
+        source = sync.REMOTE_SYNC
+        self.assertIn('status != " M"', source)
+        self.assertIn('git("hash-object", "--", path, check=False)', source)
+        self.assertIn("remote preseed differs from candidate", source)
 
 
 if __name__ == "__main__":

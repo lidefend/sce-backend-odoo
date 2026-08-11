@@ -1,7 +1,7 @@
 <odoo>
     <menuitem id="menu_sc_norm_root"
               name="定额引擎"
-              parent="smart_construction_core.menu_sc_business_config_center"
+              parent="smart_construction_core.menu_sc_config_center"
               action="action_sc_norm_catalog_workbench"
               sequence="35"
               groups="smart_construction_core.group_sc_cap_business_config_admin"/>

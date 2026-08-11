@@ -160,8 +160,8 @@ def main() -> int:
         "HomeView.vue",
         files["home_view"],
         [
-            "<ContractRoleHome />",
-            "components/role-home/ContractRoleHome.vue",
+            "<WorkspaceHome />",
+            "components/role-home/WorkspaceHome.vue",
         ],
         errors,
     )

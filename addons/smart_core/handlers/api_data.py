@@ -39,6 +39,10 @@ from ..core.request_params import parse_non_negative_int, parse_positive_int
 from ..utils.extension_hooks import call_extension_hook_first
 from ..utils.localized_display import localized_display_value
 from ..utils.reason_codes import (
+    REASON_CURRENCY_FIELD_MISSING,
+    REASON_CURRENCY_FIELD_NOT_READABLE,
+    REASON_CURRENCY_SCOPE_UNVERIFIED,
+    REASON_MULTI_CURRENCY_AGGREGATION_PROHIBITED,
     REASON_OK,
     REASON_PROJECT_SCOPE_DENIED,
     REASON_READONLY_PROJECTION_MUTATION_DENIED,
@@ -690,7 +694,7 @@ class ApiDataHandler(BaseIntentHandler):
                     out[display_field] = {
                         "aggregate": "none",
                         "data_type": "monetary",
-                        "reason_code": "CURRENCY_FIELD_MISSING",
+                        "reason_code": REASON_CURRENCY_FIELD_MISSING,
                     }
                     continue
                 if currency_field not in self._filter_readable_fields(env_model, [currency_field]):
@@ -698,7 +702,7 @@ class ApiDataHandler(BaseIntentHandler):
                         "aggregate": "none",
                         "data_type": "monetary",
                         "currency_field": currency_field,
-                        "reason_code": "CURRENCY_FIELD_NOT_READABLE",
+                        "reason_code": REASON_CURRENCY_FIELD_NOT_READABLE,
                     }
                     continue
                 try:
@@ -713,7 +717,7 @@ class ApiDataHandler(BaseIntentHandler):
                         "aggregate": "none",
                         "data_type": "monetary",
                         "currency_field": currency_field,
-                        "reason_code": "CURRENCY_SCOPE_UNVERIFIED",
+                        "reason_code": REASON_CURRENCY_SCOPE_UNVERIFIED,
                     }
                     continue
                 currency_ids = {
@@ -727,7 +731,7 @@ class ApiDataHandler(BaseIntentHandler):
                         "aggregate": "none",
                         "data_type": "monetary",
                         "currency_field": currency_field,
-                        "reason_code": "MULTI_CURRENCY_AGGREGATION_PROHIBITED",
+                        "reason_code": REASON_MULTI_CURRENCY_AGGREGATION_PROHIBITED,
                     }
                     continue
             total_rows = self._build_numeric_aggregates(env_model, domain, [source_field])

@@ -2,6 +2,7 @@ import type { ActionContract } from '@sc/schema';
 import type { IntentRawResult } from '../../api/intents';
 import {
   collectUnifiedPageContractV2FieldWidgets,
+  collectUnifiedPageContractV2ButtonStatus,
   resolveUnifiedPageContractV2BusinessOperationProfile,
   resolveUnifiedPageContractV2DeletePolicy,
   resolveUnifiedPageContractV2FieldGroups,
@@ -59,6 +60,13 @@ function uniqueFields(fields: string[]) {
     seen.add(name);
     return true;
   });
+}
+
+function contractButtonStatusId(actionKey: string) {
+  let stable = String(actionKey || '').trim().toLowerCase().replace(/[^a-z0-9_.-]+/g, '.').replace(/^\.+|\.+$/g, '');
+  if (!stable) stable = 'action';
+  if (!/^[a-z]/.test(stable)) stable = `id.${stable}`;
+  return stable.startsWith('btn.') ? stable : `btn.${stable}`;
 }
 
 function inferFieldType(widget: UnifiedPageContractV2Widget, mainData: Dict): string {
@@ -155,6 +163,8 @@ function collectV2LayoutButtons(v2Contract: Dict): Dict[] {
   const out: Dict[] = [];
   const seen = new Set<string>();
   const root = asDict(v2Contract);
+  const buttonStatus = collectUnifiedPageContractV2ButtonStatus(root);
+  const resolveButtonStatus = (key: string) => buttonStatus[contractButtonStatusId(key)] || {};
   const mainData = asDict(asDict(root.dataContract).mainData);
   const layoutContract = asDict(root.layoutContract);
   const findCountField = (shortLabel: string): string => {
@@ -183,6 +193,7 @@ function collectV2LayoutButtons(v2Contract: Dict): Dict[] {
     seen.add(key);
     const level = String(action.level || row.level || 'body').trim().toLowerCase();
     const kind = String(action.kind || row.buttonType || '').trim().toLowerCase();
+    const projectedStatus = resolveButtonStatus(key);
     const rawLabel = String(action.label || row.label || row.string || key).trim() || key;
     let label = rawLabel;
     if (level === 'smart' && rawLabel.endsWith('管理')) {
@@ -207,13 +218,14 @@ function collectV2LayoutButtons(v2Contract: Dict): Dict[] {
       domainRaw: String(payload.domain_raw || '').trim(),
       target: String(payload.target || '').trim(),
       url: String(payload.url || '').trim(),
-      enabled: true,
-      hint: '',
+      enabled: projectedStatus.disabled !== true,
+      visible: projectedStatus.visible !== false,
+      hint: projectedStatus.reasonCode || '',
       semantic: level === 'smart' ? 'secondary_action' : 'primary_action',
-      visibleProfiles: Array.isArray(action.visible_profiles) ? action.visible_profiles : ['create', 'edit', 'readonly'],
+      visibleProfiles: Array.isArray(action.visibleProfiles) ? action.visibleProfiles : ['create', 'edit', 'readonly'],
       requiredParams: [],
       requiresReason: false,
-      actionSafety: action.action_safety,
+      actionSafety: action.actionSafety,
     });
   });
   const actionRules = asList(asDict(asDict(root.actionContract).actionRuleList));
@@ -227,6 +239,7 @@ function collectV2LayoutButtons(v2Contract: Dict): Dict[] {
     if (!key || seen.has(key)) return;
     seen.add(key);
     const target = asDict(row.target);
+    const projectedStatus = resolveButtonStatus(key);
     const clientMode = String(target.mode || target.client_mode || '').trim();
     const level = 'header';
     out.push({
@@ -248,8 +261,9 @@ function collectV2LayoutButtons(v2Contract: Dict): Dict[] {
         mode: clientMode,
         client_mode: clientMode,
       },
-      enabled: true,
-      hint: '',
+      enabled: projectedStatus.disabled !== true,
+      visible: projectedStatus.visible !== false,
+      hint: projectedStatus.reasonCode || '',
       semantic: 'secondary_action',
       sourceWidgetId,
       visibleProfiles: ['create', 'edit', 'readonly'],

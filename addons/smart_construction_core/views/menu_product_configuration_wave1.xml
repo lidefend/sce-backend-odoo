@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- P1 product-configuration wave one: expose governed configuration surfaces only. -->
+    <data>
+        <record id="menu_sc_business_config_center" model="ir.ui.menu">
+            <field name="name">产品配置</field>
+            <field name="sequence">100</field>
+        </record>
+        <record id="menu_sc_business_base_config_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_lowcode_system_config_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_workflow_runtime_root" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_ui_form_custom_field_wizard_business_config" model="ir.ui.menu"><field name="active">False</field></record>
+
+        <record id="menu_sc_business_config_workbench" model="ir.ui.menu">
+            <field name="name">表单配置</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_business_config_center"/>
+            <field name="sequence">10</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_sc_approval_policy" model="ir.ui.menu">
+            <field name="name">流程审批配置</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_business_config_center"/>
+            <field name="sequence">20</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_ui_form_field_policy_business_config" model="ir.ui.menu">
+            <field name="name">字段管理</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_business_config_center"/>
+            <field name="sequence">30</field>
+            <field name="active">True</field>
+        </record>
+    </data>
+</odoo>

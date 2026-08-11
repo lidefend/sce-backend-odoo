@@ -2309,9 +2309,9 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("visible", "visible"),
             ("modifiers", "modifiers"),
             ("invisible", "invisible"),
-            ("visible_profiles", "visible_profiles"),
+            ("visible_profiles", "visibleProfiles"),
             ("presentation", "presentation"),
-            ("action_safety", "action_safety"),
+            ("action_safety", "actionSafety"),
         ):
             if row.get(source_key) is not None:
                 action_rule[target_key] = deepcopy(row.get(source_key))

@@ -50,14 +50,15 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             menu_service.register_preview_group_anchor_skipped_label(label)
 
     def _native_leaf(self, **overrides):
+        menu_id = overrides.get("menu_id", 379)
         row = {
             "label": overrides.get("label", "项目台账"),
-            "menu_id": overrides.get("menu_id", 379),
+            "menu_id": menu_id,
             "route": overrides.get("route", "/a/506?menu_id=379"),
             "scene_key": overrides.get("scene_key", ""),
             "meta": {
-                "menu_id": overrides.get("menu_id", 379),
-                "menu_xmlid": overrides.get("menu_xmlid", ""),
+                "menu_id": menu_id,
+                "menu_xmlid": overrides.get("menu_xmlid", f"test.menu_{menu_id}"),
                 "route": overrides.get("route", "/a/506?menu_id=379"),
                 "scene_key": overrides.get("scene_key", ""),
                 "action_id": overrides.get("action_id", 506),
@@ -65,6 +66,15 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             },
         }
         return row
+
+    def _runtime_role_surface(self, role_code="employee", **overrides):
+        surface = {
+            "role_code": role_code,
+            "exposure_policy_declared": True,
+            "discover_installed_capabilities": True,
+        }
+        surface.update(overrides)
+        return surface
 
     def test_followup_nodes_are_last_within_each_sibling_group(self):
         service = menu_service.MenuService()
@@ -194,6 +204,24 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
 
         self.assertFalse(
             menu_service.MenuService(env={})._action_is_runtime_allowed(action, "read")
+        )
+
+    def test_native_route_discovery_keeps_new_product_menu_reusing_contextual_action(self):
+        self.assertFalse(
+            menu_service.MenuService._native_route_discovery_blocked(
+                (682, 600),
+                existing_pairs=set(),
+                reserved_pairs={(333, 600)},
+                denied_action_ids=set(),
+            )
+        )
+        self.assertTrue(
+            menu_service.MenuService._native_route_discovery_blocked(
+                (682, 600),
+                existing_pairs=set(),
+                reserved_pairs=set(),
+                denied_action_ids={600},
+            )
         )
 
     def test_model_less_window_action_is_not_runtime_allowed(self):
@@ -365,7 +393,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     },
                 ]
             },
-            role_surface={"role_code": "employee"},
+            role_surface=self._runtime_role_surface(),
             native_nav=[
                 {
                     "label": "项目中心",
@@ -406,7 +434,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     }
                 ]
             },
-            role_surface={"role_code": "employee", "is_business_config_admin": True},
+            role_surface=self._runtime_role_surface(is_business_config_admin=True),
             native_nav=[
                 {
                     "label": "配置中心",
@@ -424,7 +452,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         )
 
         groups = (nav[0].get("children") or []) if nav else []
-        self.assertEqual([group.get("label") for group in groups], ["配置中心"])
+        self.assertEqual([group.get("label") for group in groups], ["产品配置"])
         self.assertEqual(groups[0]["children"][0]["label"], "客户")
 
     def test_business_config_role_builds_policy_menu_without_native_fact_for_release_snapshot(self):
@@ -447,7 +475,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     }
                 ]
             },
-            role_surface={"role_code": "business_config_admin"},
+            role_surface=self._runtime_role_surface("business_config_admin", is_business_config_admin=True),
             native_nav=[],
         )
 
@@ -483,7 +511,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     }
                 ]
             },
-            role_surface={"role_code": "employee"},
+            role_surface={"role_code": "employee", "discover_installed_capabilities": True},
             native_nav=[
                 {
                     "label": "项目中心",
@@ -542,6 +570,80 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
 
         self.assertFalse(allowed)
 
+    def test_released_inactive_menu_uses_groups_and_model_acl_without_native_tree(self):
+        class _Groups:
+            def __init__(self, values=()):
+                self.values = set(values)
+
+            def __bool__(self):
+                return bool(self.values)
+
+            def __and__(self, other):
+                return _Groups(self.values & other.values)
+
+        class _Model:
+            def check_access_rights(self, *_args, **_kwargs):
+                return True
+
+        action = types.SimpleNamespace(
+            _name="ir.actions.act_window",
+            active=True,
+            res_model="project.project",
+            groups_id=_Groups(),
+        )
+        action.sudo = lambda: action
+        menu = types.SimpleNamespace(
+            _name="ir.ui.menu",
+            active=False,
+            groups_id=_Groups({"project_user"}),
+            action=action,
+        )
+        menu.sudo = lambda: menu
+
+        class _Env:
+            user = types.SimpleNamespace(groups_id=_Groups({"project_user"}))
+
+            def __contains__(self, key):
+                return key == "project.project"
+
+            def __getitem__(self, key):
+                if key == "project.project":
+                    return _Model()
+                if key == "res.groups":
+                    return _Groups()
+                raise KeyError(key)
+
+            def ref(self, xmlid, **_kwargs):
+                return action if xmlid == "example.action_project" else menu
+
+        allowed = menu_service.MenuService(_Env())._policy_menu_user_authorized(
+            {
+                "menu_xmlid": "example.menu_project",
+                "action_xmlid": "example.action_project",
+                "model": "project.project",
+            },
+            {"ids": set(), "xmlids": set(), "scenes": set(), "routes": set()},
+        )
+
+        self.assertTrue(allowed)
+
+    def test_action_only_policy_route_uses_zero_authority_menu_id(self):
+        node = {
+            "menu_id": 912345678,
+            "action_id": 903,
+            "route": "/a/903",
+            "meta": {"synthetic": True, "action_id": 903},
+            "children": [],
+        }
+
+        self.assertEqual(menu_service.MenuService._node_route_menu_id(node), 0)
+        kept = menu_service.MenuService.filter_nav_by_route_authority(
+            [node],
+            {"primary_actions": [{"menu_id": 0, "action_id": 903}]},
+        )
+
+        self.assertEqual(len(kept), 1)
+
     def test_visible_parent_menu_is_authorized_but_unlisted_sibling_is_not(self):
         service = menu_service.MenuService()
         native = [{
@@ -560,7 +662,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             {"menu_key": "payment", "label": "付款申请", "menu_id": 606, "action_id": 1, "release_state": "released"},
             {"menu_key": "sibling", "label": "未授权菜单", "menu_id": 608, "action_id": 2, "release_state": "released"},
         ]}]}
-        nav = service.build_nav(policy=policy, role_surface={"role_code": "employee"}, native_nav=native)
+        nav = service.build_nav(policy=policy, role_surface=self._runtime_role_surface(), native_nav=native)
         labels = [leaf.get("label") for group in (nav[0].get("children") or []) for leaf in (group.get("children") or [])]
         self.assertIn("付款申请", labels)
         self.assertNotIn("未授权菜单", labels)
@@ -585,7 +687,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     }
                 ]
             },
-            role_surface={"role_code": "employee"},
+            role_surface={"role_code": "employee", "discover_installed_capabilities": True},
             native_nav=[
                 {
                     "label": "财务中心",
@@ -661,7 +763,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
     def test_empty_policy_native_preview_is_marked_outside_stable_menu_authority(self):
         nav = menu_service.MenuService().build_nav(
             policy={},
-            role_surface={"role_code": "employee"},
+            role_surface={"role_code": "employee", "discover_installed_capabilities": True},
             native_nav=[
                 {
                     "label": "项目中心",
@@ -826,7 +928,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     }
                 ]
             },
-            role_surface={"role_code": "employee", "is_platform_admin": True},
+            role_surface=self._runtime_role_surface(is_platform_admin=True),
             native_nav=[],
         )
 
@@ -894,7 +996,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     }
                 ]
             },
-            role_surface={"role_code": "employee"},
+            role_surface={"role_code": "employee", "discover_installed_capabilities": True},
             native_nav=[
                 {
                     "label": "财务中心",
@@ -986,7 +1088,11 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     }
                 ]
             },
-            role_surface={"role_code": "business_config_admin"},
+            role_surface={
+                "role_code": "business_config_admin",
+                "discover_installed_capabilities": True,
+                "is_business_config_admin": True,
+            },
             native_nav=[],
         )
 
@@ -1026,7 +1132,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     }
                 ]
             },
-            role_surface={"role_code": "business_config_admin"},
+            role_surface=self._runtime_role_surface("business_config_admin", is_business_config_admin=True),
             native_nav=[
                 {
                     "label": "智慧施工管理平台",
@@ -1056,7 +1162,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             ],
         )
 
-        config_center = next(group for group in (nav[0].get("children") or []) if group.get("label") == "配置中心")
+        config_center = next(group for group in (nav[0].get("children") or []) if group.get("label") == "产品配置")
         lowcode_group = next(child for child in config_center.get("children") or [] if child.get("label") == "低代码系统配置")
         self.assertEqual(lowcode_group.get("config_menu_id"), 861)
         self.assertTrue(lowcode_group.get("configurable"))

@@ -13,10 +13,10 @@ echo "[verify.contract_drift.guard] checking hard-coded reason_code literals..."
 # - canonical reason code modules
 # - docs
 reason_code_pattern="[\"']?reason_code[\"']?\\s*[:=]\\s*[\"']([A-Z0-9_]+)[\"']"
-hardcoded_reason_codes="$(rg -n "$reason_code_pattern" addons/*/handlers \
-  -g'*.py' \
-  -g'!**/tests/**' \
-  -g'!**/reason_codes.py' || true)"
+hardcoded_reason_codes="$(find addons -path '*/handlers/*.py' \
+  ! -path '*/tests/*' \
+  ! -name 'reason_codes.py' \
+  -print0 | xargs -0 -r grep -nHP "$reason_code_pattern" || true)"
 
 if [ -n "$hardcoded_reason_codes" ]; then
   echo "[verify.contract_drift.guard] FAIL: hard-coded reason_code literals found:"
@@ -39,7 +39,7 @@ do
     missing=1
     continue
   fi
-  if ! rg -q 'IDEMPOTENCY_WINDOW_SECONDS' "$f"; then
+  if ! grep -qE 'IDEMPOTENCY_WINDOW_SECONDS' "$f"; then
     echo "[verify.contract_drift.guard] FAIL: $f missing IDEMPOTENCY_WINDOW_SECONDS"
     missing=1
   fi
@@ -51,15 +51,15 @@ done
 # NON_IDEMPOTENT_ALLOWED = "<reason>" (non-empty reason required).
 for f in addons/smart_core/handlers/api_data_*.py; do
   [ -f "$f" ] || continue
-  if rg -q 'api\.data\.(batch|write|unlink|create|update|delete)' "$f"; then
-    if ! rg -q 'IDEMPOTENCY_WINDOW_SECONDS' "$f"; then
+  if grep -qE 'api\.data\.(batch|write|unlink|create|update|delete)' "$f"; then
+    if ! grep -qE 'IDEMPOTENCY_WINDOW_SECONDS' "$f"; then
       # Explicit waiver with non-empty reason string.
-      if rg -q 'NON_IDEMPOTENT_ALLOWED\s*=\s*["'"'"'][^"'"'"']+["'"'"']' "$f"; then
+      if grep -qE 'NON_IDEMPOTENT_ALLOWED[[:space:]]*=[[:space:]]*["'"'"'][^"'"'"']+["'"'"']' "$f"; then
         waiver_reason="$(sed -nE 's/.*NON_IDEMPOTENT_ALLOWED\s*=\s*["'"'"'"'"'"'"'"'"']([^"'"'"'"'"'"'"'"'"']+)["'"'"'"'"'"'"'"'"'].*/\1/p' "$f" | head -n 1)"
         if [ -z "$waiver_reason" ]; then
           echo "[verify.contract_drift.guard] FAIL: $f waiver reason is empty"
           missing=1
-        elif echo "$waiver_reason" | rg -qi '^(todo|tbd|n/?a|none|-)$'; then
+        elif echo "$waiver_reason" | grep -qiE '^(todo|tbd|n/?a|none|-)$'; then
           echo "[verify.contract_drift.guard] FAIL: $f waiver reason is placeholder: '$waiver_reason'"
           missing=1
         elif [ "${#waiver_reason}" -lt 8 ]; then

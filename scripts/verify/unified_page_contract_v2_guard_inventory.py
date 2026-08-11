@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MAKEFILE = ROOT / "Makefile"
+MAKEFILES = [ROOT / "Makefile", *sorted((ROOT / "make").glob("*.mk"))]
 
 OFFLINE_TARGETS = {
     "verify.unified_page_contract.v2.guard_inventory": (
@@ -91,7 +91,7 @@ def aggregate_dependencies(makefile: str) -> set[str]:
 
 
 def main() -> int:
-    makefile = MAKEFILE.read_text(encoding="utf-8")
+    makefile = "\n".join(path.read_text(encoding="utf-8") for path in MAKEFILES)
     errors: list[str] = []
 
     aggregate = aggregate_dependencies(makefile)

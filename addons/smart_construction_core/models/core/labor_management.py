@@ -331,11 +331,42 @@ class ScLaborUsage(models.Model):
     name = fields.Char(string="用工单号", required=True, default="新建", tracking=True)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True, tracking=True)
     usage_date = fields.Date(string="用工日期", required=True, default=fields.Date.context_today, index=True, tracking=True)
+    usage_type = fields.Selection(
+        [("ticket", "方单"), ("casual", "零星用工")],
+        string="用工类型",
+        required=True,
+        default=lambda self: self.env.context.get("default_usage_type", "casual"),
+        index=True,
+        tracking=True,
+    )
     labor_team = fields.Char(string="班组", required=True, index=True)
     contractor_id = fields.Many2one("res.partner", string="劳务单位", index=True)
     work_content = fields.Char(string="作业内容", required=True)
+    work_type = fields.Char(string="工种")
+    construction_part = fields.Char(string="施工部位")
     worker_qty = fields.Float(string="用工人数", required=True, default=1)
     work_hours = fields.Float(string="工时")
+    currency_id = fields.Many2one(
+        "res.currency",
+        string="币种",
+        required=True,
+        default=lambda self: self.env.company.currency_id.id,
+    )
+    price_unit = fields.Monetary(string="用工单价", currency_field="currency_id")
+    amount_total = fields.Monetary(
+        string="用工金额",
+        currency_field="currency_id",
+        compute="_compute_amount_total",
+        store=True,
+        readonly=True,
+    )
+    settlement_state = fields.Selection(
+        [("unsettled", "未结算"), ("settled", "已结算")],
+        string="结算状态",
+        default="unsettled",
+        required=True,
+        index=True,
+    )
     foreman_name = fields.Char(string="带班人")
     recorder_id = fields.Many2one("res.users", string="记录人", default=lambda self: self.env.user, index=True)
     state = fields.Selection(
@@ -398,6 +429,12 @@ class ScLaborUsage(models.Model):
                 raise UserError(_("只有已取消用工单可以重置为草稿。"))
             record.write({"state": "draft"})
         return True
+
+    @api.depends("worker_qty", "work_hours", "price_unit")
+    def _compute_amount_total(self):
+        for record in self:
+            quantity = (record.worker_qty or 0.0) * ((record.work_hours or 0.0) or 1.0)
+            record.amount_total = quantity * (record.price_unit or 0.0)
 
     @api.constrains("worker_qty", "work_hours")
     def _check_values(self):
@@ -533,8 +570,8 @@ class ScLaborSettlement(models.Model):
                     raise UserError(_("劳务结算明细引用的用工来源必须属于同一项目。"))
                 if line.source_usage_id.contractor_id and line.source_usage_id.contractor_id != record.contractor_id:
                     raise UserError(_("劳务结算明细引用的用工来源劳务单位必须与结算单一致。"))
-                if line.source_usage_id.legacy_settlement_state not in ("unsettled", "unknown"):
-                    raise UserError(_("劳务结算只能引用历史未结算或需复核的用工来源。"))
+                if line.source_usage_id.settlement_state != "unsettled":
+                    raise UserError(_("劳务结算只能引用未结算的用工来源。"))
 
 
 class ScLaborSettlementLine(models.Model):

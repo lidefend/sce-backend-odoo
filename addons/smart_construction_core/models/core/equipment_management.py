@@ -294,11 +294,27 @@ class ScEquipmentUsage(models.Model):
     usage_date = fields.Date(string="使用日期", required=True, default=fields.Date.context_today, index=True, tracking=True)
     equipment_name = fields.Char(string="设备名称", required=True, index=True, tracking=True)
     equipment_code = fields.Char(string="设备编号", index=True)
+    specification = fields.Char(string="规格型号")
+    uom_text = fields.Char(string="计量单位", default="台时")
     usage_location = fields.Char(string="使用地点", required=True, index=True)
     operator_name = fields.Char(string="操作人员", required=True, index=True)
     usage_qty = fields.Float(string="使用台数", required=True, default=1)
     usage_hours = fields.Float(string="使用台时", required=True)
     supplier_id = fields.Many2one("res.partner", string="供应单位", index=True)
+    currency_id = fields.Many2one(
+        "res.currency",
+        string="币种",
+        required=True,
+        default=lambda self: self.env.company.currency_id.id,
+    )
+    price_unit = fields.Monetary(string="台时单价", currency_field="currency_id")
+    amount = fields.Monetary(
+        string="使用金额",
+        currency_field="currency_id",
+        compute="_compute_amount",
+        store=True,
+        readonly=True,
+    )
     recorder_id = fields.Many2one("res.users", string="记录人", default=lambda self: self.env.user, index=True)
     state = fields.Selection(
         [("draft", "草稿"), ("submitted", "已提交"), ("confirmed", "已确认"), ("cancel", "已取消")],
@@ -373,6 +389,11 @@ class ScEquipmentUsage(models.Model):
                 raise UserError(_("设备使用登记只能引用已确认的设备申请。"))
             if record.supplier_id and record.request_id.supplier_id and record.supplier_id != record.request_id.supplier_id:
                 raise UserError(_("设备使用登记的供应单位必须与来源设备申请一致。"))
+
+    @api.depends("usage_qty", "usage_hours", "price_unit")
+    def _compute_amount(self):
+        for record in self:
+            record.amount = (record.usage_qty or 0.0) * (record.usage_hours or 0.0) * (record.price_unit or 0.0)
 
     @api.constrains("usage_qty", "usage_hours")
     def _check_values(self):

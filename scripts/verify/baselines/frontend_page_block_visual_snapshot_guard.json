@@ -24,7 +24,7 @@
     "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue": "af6f27feba82b0c608c95f6d3f38f432e9cc5aa3ecbd2c210e14cd510a93ed10",
     "frontend/apps/web/src/components/page/blocks/BlockProgressSummary.vue": "4d728d7edfb05764721c0511f0e0fcf35ffd80fe16365ca33cc22dea719ee42e",
     "frontend/apps/web/src/components/page/blocks/BlockRecordSummary.vue": "4a45b30e54bb73067e654b289cf150152e31a612c797119abdce1032440ce885",
-    "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue": "752c2216a872b69374b70f73bb494f9fa132efafb963eb6a458f257199647c13",
+    "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue": "4ad657d9beeba00bff53b4f28b1c95a237359cec080081a03764e60f747fee11",
     "frontend/apps/web/src/components/page/blocks/BlockTodoList.vue": "6035bce2f98f215ab15688d51af2eb5f2b68a03f718d401d073a2d614efaa229"
   },
   "registry_file": {

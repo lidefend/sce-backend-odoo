@@ -3470,3 +3470,198 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   read caused a correct candidate to roll back. Verification now polls the same
   exact public CSP condition for at most five seconds. Mutation scope and
   rollback behavior are unchanged.
+
+## 2026-08-11 — P1-PRODUCT-CENTER-BASELINE-INTEGRATED-CLOSEOUT
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` from current
+  `main` at `c1edcf8`; source task branch ended at `63a2159`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native navigation /
+  `smart_construction_core`; generic navigation delivery remains in
+  `smart_core`.
+- Reason / Why Here: the locked construction-product centers, released menu
+  actions, ACL-visible native tree and product configuration entry are standard
+  industry defaults. The task branch was replayed on current main to preserve
+  completed production attachment tooling without using a divergent merge or
+  rebase.
+- Why Not Elsewhere: P0 owns only the generic navigation contract and delivery
+  mechanism; customer naming and stable customer differences remain P2;
+  administrator runtime adjustments remain P3; verification scripts are P4
+  evidence rather than runtime authority.
+- Blast Radius / validation: ten canonical primary-center identities and order,
+  51 delivered menu leaves, product/low-code boundary guards and customer-field
+  extraction guards. The isolated `sc_product_center` runtime and `wutao`
+  browser acceptance are rerun on the integrated candidate before publication.
+
+## 2026-08-11 — P1-PRODUCT-CENTER-CLEAN-INSTALL-CLOSEOUT
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` at the PR #169
+  candidate derived from `c1edcf8`.
+- Formal Product Layer / Layer Target / Module: P1 / deterministic native view
+  loading / `smart_construction_core`; generic boundary enforcement remains P0
+  and customer identity remains outside the product repository.
+- Reason / Why Here: the candidate's formal list alignment file was loaded
+  before the tree views it binds, while a duplicated salary action introduced a
+  reverse cross-file dependency. Existing upgraded databases masked both
+  forward references; a clean product install failed closed.
+- Boundary / validation: load the base formal views before final alignment,
+  keep the salary action override only in the alignment authority, and make the
+  runtime drift audit follow manifest order. A static regression rejects future
+  cross-file forward references. Fixed customer identifiers are removed from
+  the P1 menu documentation and guard description. The tenant payload boundary,
+  19 focused tests, fresh install plus upgrade, five authorization ORM tests,
+  resource cleanup proof, and the product-menu release-ready aggregate pass.
+
+## 2026-08-11 — P1-FULL-MENU-RESTORE-CONTRACT-CONVERGENCE
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` at `020cc32`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 locked product-menu
+  projection / `smart_construction_core`; the repair is confined to its P4
+  restore consumer and release regression test.
+- Reason / Why Here: the locked 159-page product policy explicitly includes
+  stable action-only page identities, while the older restore utility required
+  every identity to resolve as `ir.ui.menu`. The canonical runtime
+  synchronizer already supports both native-menu and action-only targets.
+- Why Not Elsewhere / Blast Radius: no frontend fallback, customer override,
+  low-code mutation, menu renaming, or baseline rewrite is introduced. The
+  restore utility now consumes the same action-only mapping, validates the
+  resolved action XMLID, preserves `menu_id=0`, and emits an action route. Unit
+  tests plus a direct-source `sc_demo` restore and full runtime/browser menu
+  audit prove containment.
+
+## 2026-08-11 — P4-DAILY-CANDIDATE-INCREMENTAL-SOURCE-PRESEED
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after
+  `e244e01`.
+- Formal Product Layer / Layer Target / Module: P4 daily delivery tooling /
+  `scripts/ops/daily_candidate_bundle_sync.py`.
+- Reason / Boundary: direct-source iteration may safely preload a small set of
+  candidate files before the exact candidate bundle arrives. The governed sync
+  now accepts only tracked, unstaged modified paths whose Git blob hashes equal
+  the exact candidate commit; all unknown, staged, deleted, renamed, or
+  different bytes remain fail-closed.
+- Blast Radius / validation: daily candidate synchronization only; production,
+  origin main, database and filestore behavior are unchanged. The integration
+  test exercises an exact preseed plus remaining bundle delta and still proves
+  detached exact SHA, clean worktree and untouched origin/main.
+
+## 2026-08-11 — P4-FULL-MENU-RUNTIME-AUDIT-CONTRACT-CONVERGENCE
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after
+  `662323b`.
+- Formal Product Layer / Layer Target / Module: P4 release verification for the
+  P1 locked menu contract / `construction_product_menu_release_audit.py`.
+- Reason / Boundary: the runtime audit still assumed every locked page identity
+  was a native menu and rejected the contract's explicit action-only targets.
+  Native targets continue to require visible `ir.ui.menu`; action-only targets
+  now require the exact mapped action XMLID, installed model, action-group
+  access and model read ACL for a verification user.
+- Blast Radius / validation: verification semantics only; no runtime policy,
+  frontend, customer module or business data is changed. Unit coverage and the
+  daily `sc_demo` release audit prove the gate accepts only the two canonical
+  delivery forms.
+
+## 2026-08-11 — P4-CONTRACT-CENTER-AUDIT-AUTHORITY-CONVERGENCE
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after
+  `9742275`.
+- Formal Product Layer / Layer Target / Module: P4 contract-center release
+  verification consuming the P1 locked menu contract.
+- Reason / Boundary: the contract-specific audit retained a second hardcoded
+  list of superseded contract and settlement menus. It now derives the exact
+  contract-center set from the checksum-locked product contract, requires
+  standard/preview parity, validates native group ownership, and checks the
+  non-roadmap pages for both real verification users.
+- Blast Radius / validation: audit authority only; no menu, action, frontend or
+  database fact is changed. The full 159-page audit remains the aggregate gate,
+  while this focused gate proves the current contract center's permission and
+  user visibility semantics.
+
+## 2026-08-11 — P0-CONTRACT-GOVERNANCE-CLOSURE-V1
+
+- Branch / anchor: `codex/contract-governance-closure-v1` from `63a2159`.
+- Formal Product Layer / Layer Target / Module: P0 / L0-L1 contract and release
+  governance / `smart_core`, generic frontend contract consumers, verification
+  scripts and Make release topology.
+- Standard vs User-Specific: platform mechanism shared by every industry and
+  tenant; no construction or customer semantics are introduced.
+- Reason / Why Here: release certification, Scene-ready authority, contract
+  projection, entitlement consumption and runtime probes are platform
+  mechanisms. Their evidence must fail closed and remain synchronized with
+  refactored runtime code.
+- Why Not Elsewhere: P1 owns construction defaults, P2 customer baselines and
+  P3 administrator configuration. None may define or bypass the common
+  contract protocol or its release gate.
+- Blast Radius / validation: product release dependencies, generic web
+  Home/Action/Form consumers, contract verification scripts and isolated test
+  runtime only. Validation requires the full frontend product gate, Unified
+  Page Contract v2 gate, contract-mode runtime probes, Scene source evidence
+  minimums, production-chain guard and two-viewport browser acceptance.
+- Closure Evidence: `verify.product.release.ready` passed end to end; the
+  isolated `sc_contract_governance_v1` database was rebuilt without demo or
+  customer data and passed exact project/database/dbfilter health checks.
+  Contract-mode and strict Scene live probes passed with canonical token and
+  explicit database routing; strict Scene gaps and fallback gaps were both
+  zero. Frontend strict typecheck, release units, style-system guard and a
+  667-module isolated static build passed. The zero-data browser check reached the
+  database-locked login shell with zero console warnings/errors; authenticated
+  customer UX evidence is intentionally outside this platform-mechanism
+  closure because no customer principal is seeded into the isolated database.
+
+## 2026-08-11 — P0-RELEASE-GATE-ACTION-PARENT-PRESERVATION
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after the
+  selective integration of contract-governance commit `74a44e4`.
+- Formal Product Layer / Layer Target / Module: P0 / L0-L1 released navigation
+  projection / `smart_core`; no construction label, model or customer identity
+  is introduced into the platform mechanism.
+- Reason / Boundary: a released navigation node may own both an executable
+  target and child nodes. The release gate previously treated every such node
+  as a pure directory and deleted its released target when all children were
+  filtered. The gate now preserves only an independently authorized executable
+  parent as a leaf; pure directories, unreleased targets and user-acceptance
+  surfaces remain fail-closed.
+- Blast Radius / validation: `system.init` navigation filtering and its focused
+  transaction tests only. The exact candidate is replayed on `sc_demo`, then
+  the 159-page release audit, contract-open matrix and authenticated browser
+  navigation acceptance are rerun before baseline promotion.
+
+## 2026-08-11 — P1-FULL-MENU-POLICY-AUTHORITY-CONVERGENCE
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after
+  `6e20d0e` daily-source diagnostics.
+- Formal Product Layer / Layer Target / Module: P1 / construction product
+  navigation authority / `smart_construction_core`; the P0 generic extension
+  point remains available for products that explicitly require a native tree.
+- Reason / Boundary: construction still exported an unconditional native-tree
+  authority hook from the earlier primary-center experiment. It bypassed the
+  locked 159-page release policy, delivered 94 database-native actions including
+  42 descendants of the retired user-acceptance root, and left only 36 actions
+  after the release gate. The construction product now uses the standard
+  delivery-policy projection: the release snapshot selects product pages while
+  Odoo menu visibility, action identity, model ACL and record rules remain the
+  execution authority.
+- Read-only counterfactual evidence: disabling only the stale hook on `sc_demo`
+  projected 135 executable actions, zero release-gate removals and nine product
+  groups for `wutao`; route authority retained 131 primary, 14 contextual and
+  five administrator action facts. The committed change is accepted only after
+  exact-source replay and authenticated browser/contract verification reproduce
+  those bounds.
+
+## 2026-08-11 — P0-SINGLE-NAVIGATION-AUTHORITY-CLOSURE
+
+- Formal Product Layer / Layer Target / Module: P0 / L0-L1 navigation authority
+  / `smart_core`, generic overlay and runtime verification.
+- Decision: the early experimental native-tree short circuit is removed from
+  the platform, not merely disabled in construction. Every product follows one
+  route: released product policy selects pages, native Odoo menu/action facts
+  intersect authorization, the release gate enforces the active snapshot, and
+  the frontend renders the final contract.
+- Compatibility: Odoo models, views, actions, ACL and record rules remain
+  authoritative execution facts. P2/P3 overlays may rename, order or hide only
+  allowed stable menu identities; lack of a customer configuration row cannot
+  delete a released P1 page. No client action or frontend business fallback is
+  introduced.
+- Governance: focused tests and static guards now reject reintroduction of the
+  native-tree hook, helper builders or source marker. The runtime probe always
+  verifies that a non-admin policy projection cannot exceed its supplied native
+  authorization facts.

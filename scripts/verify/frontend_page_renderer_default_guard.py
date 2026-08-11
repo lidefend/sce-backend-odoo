@@ -8,8 +8,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 REQUIRED = {
     "frontend/apps/web/src/views/HomeView.vue": [
-        "<ContractRoleHome />",
-        "components/role-home/ContractRoleHome.vue",
+        "<WorkspaceHome />",
+        "components/role-home/WorkspaceHome.vue",
     ],
     "frontend/apps/web/src/views/WorkbenchView.vue": [
         "<PageRenderer",

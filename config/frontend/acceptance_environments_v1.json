@@ -36,7 +36,7 @@
       "runtime_identity_path": "/api/runtime-version",
       "navigation_policy": {
         "min_actions": 100,
-        "max_actions": 159,
+        "max_actions": 163,
         "forbidden_labels": ["用户核对菜单", "用户数据验收", "用户验收", "直营项目系统菜单"],
         "required_paths": [
           "系统菜单 / 组织行政 / 基础资料 / 客户",

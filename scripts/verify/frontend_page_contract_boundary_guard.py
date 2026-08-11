@@ -352,7 +352,7 @@ def main() -> int:
                 '"key": "details_resolve_errors"',
                 '"tag": "details", "open": True',
                 '"record": {',
-                '"key": "project_summary"',
+                '"key": "details_fallback"',
                 '"key": "chatter"',
             ],
             "page_contracts_builder.py",

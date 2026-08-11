@@ -149,6 +149,21 @@ class TestFinalMenuNavigationService(unittest.TestCase):
         self.assertFalse(surface["is_platform_admin"])
         self.assertFalse(surface["is_business_config_admin"])
 
+    def test_build_propagates_delivery_contract_failure_without_native_fallback(self):
+        service = object.__new__(self.module.FinalMenuNavigationService)
+        service._build_delivery_navigation_contract = lambda: (_ for _ in ()).throw(
+            RuntimeError("delivery_failed")
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "delivery_failed"):
+            service.build()
+
+        source = (SMART_CORE_DIR / "delivery" / "final_menu_navigation_service.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("MenuFactService", source)
+        self.assertNotIn("MenuTargetInterpreterService", source)
+
     def test_system_init_reapplies_role_surface_after_delivery_overlays(self):
         source = (
             SMART_CORE_DIR / "handlers" / "system_init.py"

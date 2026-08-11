@@ -75,6 +75,191 @@ def main() -> int:
                 errors.append(f"{key} must be non-empty string")
         if not isinstance(payload.get("native_authorized_leaf_count"), int):
             errors.append("native_authorized_leaf_count must be int")
+        if not isinstance(payload.get("customer_specific_product_view_count"), int):
+            errors.append("customer_specific_product_view_count must be int")
+        customer_view_xmlids = payload.get("customer_specific_product_view_xmlids")
+        if not isinstance(customer_view_xmlids, list) or not all(
+            isinstance(item, str) for item in customer_view_xmlids
+        ):
+            errors.append("customer_specific_product_view_xmlids must be string list")
+            customer_view_xmlids = []
+        if payload.get("customer_specific_product_view_count") != len(customer_view_xmlids):
+            errors.append("customer-specific product view count must match XML-ID list")
+        if customer_view_xmlids:
+            errors.append("customer-specific product view XML-ID list must be empty")
+        material_plan_boundary = payload.get("material_plan_customer_field_boundary")
+        if not isinstance(material_plan_boundary, dict):
+            errors.append("material_plan_customer_field_boundary must be object")
+        else:
+            for key in ("registered_field_count", "remaining_physical_column_count"):
+                if not isinstance(material_plan_boundary.get(key), int):
+                    errors.append(f"material_plan_customer_field_boundary.{key} must be int")
+            for key in ("registered_fields", "remaining_physical_columns"):
+                value = material_plan_boundary.get(key)
+                if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+                    errors.append(f"material_plan_customer_field_boundary.{key} must be string list")
+            if material_plan_boundary.get("registered_field_count") != len(
+                material_plan_boundary.get("registered_fields") or []
+            ):
+                errors.append("material-plan registered field count must match field list")
+            if material_plan_boundary.get("remaining_physical_column_count") != len(
+                material_plan_boundary.get("remaining_physical_columns") or []
+            ):
+                errors.append("material-plan remaining column count must match column list")
+            if material_plan_boundary.get("registered_fields"):
+                errors.append("material-plan P2 legacy-visible registered field list must be empty")
+            if material_plan_boundary.get("remaining_physical_columns"):
+                errors.append("material-plan P2 legacy-visible physical column list must be empty")
+        material_rfq_boundary = payload.get("material_rfq_customer_field_boundary")
+        if not isinstance(material_rfq_boundary, dict):
+            errors.append("material_rfq_customer_field_boundary must be object")
+        else:
+            for key in ("registered_field_count", "remaining_physical_column_count"):
+                if not isinstance(material_rfq_boundary.get(key), int):
+                    errors.append(f"material_rfq_customer_field_boundary.{key} must be int")
+            for key in ("registered_fields", "remaining_physical_columns"):
+                value = material_rfq_boundary.get(key)
+                if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+                    errors.append(f"material_rfq_customer_field_boundary.{key} must be string list")
+            if material_rfq_boundary.get("registered_field_count") != len(
+                material_rfq_boundary.get("registered_fields") or []
+            ):
+                errors.append("RFQ registered field count must match field list")
+            if material_rfq_boundary.get("remaining_physical_column_count") != len(
+                material_rfq_boundary.get("remaining_physical_columns") or []
+            ):
+                errors.append("RFQ remaining column count must match column list")
+            if material_rfq_boundary.get("registered_fields"):
+                errors.append("RFQ P2 legacy-visible registered field list must be empty")
+            if material_rfq_boundary.get("remaining_physical_columns"):
+                errors.append("RFQ P2 legacy-visible physical column list must be empty")
+        material_inbound_boundary = payload.get("material_inbound_customer_field_boundary")
+        if not isinstance(material_inbound_boundary, dict):
+            errors.append("material_inbound_customer_field_boundary must be object")
+        else:
+            for key in ("registered_field_count", "remaining_physical_column_count"):
+                if not isinstance(material_inbound_boundary.get(key), int):
+                    errors.append(f"material_inbound_customer_field_boundary.{key} must be int")
+            for key in ("registered_fields", "remaining_physical_columns"):
+                value = material_inbound_boundary.get(key)
+                if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+                    errors.append(f"material_inbound_customer_field_boundary.{key} must be string list")
+            if material_inbound_boundary.get("registered_field_count") != len(material_inbound_boundary.get("registered_fields") or []):
+                errors.append("inbound registered field count must match field list")
+            if material_inbound_boundary.get("remaining_physical_column_count") != len(material_inbound_boundary.get("remaining_physical_columns") or []):
+                errors.append("inbound remaining column count must match column list")
+            if material_inbound_boundary.get("registered_fields"):
+                errors.append("inbound P2 legacy-visible registered field list must be empty")
+            if material_inbound_boundary.get("remaining_physical_columns"):
+                errors.append("inbound P2 legacy-visible physical column list must be empty")
+        pass_through_boundaries = payload.get("pass_through_customer_field_boundaries")
+        subcontract_boundary = payload.get("subcontract_request_customer_field_boundary")
+        if not isinstance(subcontract_boundary, dict):
+            errors.append("subcontract_request_customer_field_boundary must be object")
+        else:
+            registered = subcontract_boundary.get("registered_fields")
+            physical = subcontract_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("subcontract request P2 boundary must be empty")
+            if subcontract_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("subcontract request registered count mismatch")
+            if subcontract_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("subcontract request physical count mismatch")
+        diary_boundary = payload.get("construction_diary_customer_field_boundary")
+        if not isinstance(diary_boundary, dict):
+            errors.append("construction_diary_customer_field_boundary must be object")
+        else:
+            registered = diary_boundary.get("registered_fields")
+            physical = diary_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("construction diary P2 boundary must be empty")
+            if diary_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("construction diary registered count mismatch")
+            if diary_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("construction diary physical count mismatch")
+        settlement_boundary = payload.get("settlement_order_customer_field_boundary")
+        if not isinstance(settlement_boundary, dict):
+            errors.append("settlement_order_customer_field_boundary must be object")
+        else:
+            registered = settlement_boundary.get("registered_fields")
+            physical = settlement_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("settlement order P2 boundary must be empty")
+            if settlement_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("settlement order registered count mismatch")
+            if settlement_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("settlement order physical count mismatch")
+        equipment_boundary = payload.get("equipment_usage_customer_field_boundary")
+        if not isinstance(equipment_boundary, dict):
+            errors.append("equipment_usage_customer_field_boundary must be object")
+        else:
+            registered = equipment_boundary.get("registered_fields")
+            physical = equipment_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("equipment usage P2 boundary must be empty")
+            if equipment_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("equipment usage registered count mismatch")
+            if equipment_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("equipment usage physical count mismatch")
+        labor_boundary = payload.get("labor_usage_customer_field_boundary")
+        if not isinstance(labor_boundary, dict):
+            errors.append("labor_usage_customer_field_boundary must be object")
+        else:
+            registered = labor_boundary.get("registered_fields")
+            physical = labor_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("labor usage P2 boundary must be empty")
+            if labor_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("labor usage registered count mismatch")
+            if labor_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("labor usage physical count mismatch")
+        rental_boundary = payload.get("material_rental_order_customer_field_boundary")
+        if not isinstance(rental_boundary, dict):
+            errors.append("material_rental_order_customer_field_boundary must be object")
+        else:
+            registered = rental_boundary.get("registered_fields")
+            physical = rental_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("material rental order P2 boundary must be empty")
+            if rental_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("material rental order registered count mismatch")
+            if rental_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("material rental order physical count mismatch")
+        payroll_boundary = payload.get("hr_payroll_document_customer_field_boundary")
+        if not isinstance(payroll_boundary, dict):
+            errors.append("hr_payroll_document_customer_field_boundary must be object")
+        else:
+            registered = payroll_boundary.get("registered_fields")
+            physical = payroll_boundary.get("remaining_physical_columns")
+            if registered or physical:
+                errors.append("payroll document P2 boundary must be empty")
+            if payroll_boundary.get("registered_field_count") != len(registered or []):
+                errors.append("payroll document registered count mismatch")
+            if payroll_boundary.get("remaining_physical_column_count") != len(physical or []):
+                errors.append("payroll document physical count mismatch")
+        expected_pass_through_models = {
+            "sc.fund.account.operation",
+            "sc.receipt.income",
+            "sc.invoice.registration",
+            "construction.contract.expense",
+        }
+        if not isinstance(pass_through_boundaries, dict):
+            errors.append("pass_through_customer_field_boundaries must be object")
+        elif set(pass_through_boundaries) != expected_pass_through_models:
+            errors.append("pass-through customer field boundary model set mismatch")
+        else:
+            for model_name, boundary in pass_through_boundaries.items():
+                if not isinstance(boundary, dict):
+                    errors.append(f"pass-through boundary must be object: {model_name}")
+                    continue
+                registered = boundary.get("registered_fields")
+                physical = boundary.get("remaining_physical_columns")
+                if registered or physical:
+                    errors.append(f"pass-through P2 boundary must be empty: {model_name}")
+                if boundary.get("registered_field_count") != len(registered or []):
+                    errors.append(f"pass-through registered count mismatch: {model_name}")
+                if boundary.get("remaining_physical_column_count") != len(physical or []):
+                    errors.append(f"pass-through physical count mismatch: {model_name}")
         failures = payload.get("failures")
         if not isinstance(failures, list) or not all(isinstance(item, str) for item in failures):
             errors.append("failures must be string list")

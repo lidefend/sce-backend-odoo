@@ -67,8 +67,6 @@ with lock_path.open("a+b") as lock:
     current_sha = git("rev-parse", "HEAD").stdout.strip()
     if current_sha != expected_old_sha:
         raise SystemExit("[daily.runtime.candidate.bundle_sync] BLOCKED remote old SHA differs")
-    if git("status", "--porcelain").stdout.strip():
-        raise SystemExit("[daily.runtime.candidate.bundle_sync] BLOCKED remote worktree is not clean")
     if git("cat-file", "-e", bundle_base_sha + "^{commit}", check=False).returncode:
         raise SystemExit("[daily.runtime.candidate.bundle_sync] BLOCKED remote lacks bundle base commit")
 
@@ -101,6 +99,28 @@ with lock_path.open("a+b") as lock:
         git("fetch", str(bundle_path), "+" + source_ref + ":" + evidence_ref)
         if git("rev-parse", evidence_ref).stdout.strip() != expected_sha:
             raise SystemExit("[daily.runtime.candidate.bundle_sync] BLOCKED fetched candidate SHA differs")
+
+        # Incremental source preloading is safe only when every dirty path is a
+        # tracked, unstaged file whose bytes already equal the candidate blob.
+        # Unknown, staged, deleted, renamed, or merely similar files remain a
+        # fail-closed stop; no runtime-only work is discarded.
+        preseeded_paths = []
+        status_entries = git("status", "--porcelain", "-z").stdout.split("\0")
+        for entry in (item for item in status_entries if item):
+            status, path = entry[:2], entry[3:]
+            if status != " M" or not path:
+                raise SystemExit("[daily.runtime.candidate.bundle_sync] BLOCKED remote worktree contains non-preseed changes")
+            candidate_blob = git("rev-parse", expected_sha + ":" + path, check=False)
+            worktree_blob = git("hash-object", "--", path, check=False)
+            if candidate_blob.returncode or worktree_blob.returncode or candidate_blob.stdout.strip() != worktree_blob.stdout.strip():
+                raise SystemExit("[daily.runtime.candidate.bundle_sync] BLOCKED remote preseed differs from candidate")
+            # Align only the verified path in the index so Git can switch to
+            # the candidate without treating the identical bytes as an
+            # overwrite hazard. The final clean-worktree assertion remains
+            # authoritative.
+            git("add", "--", path)
+            preseeded_paths.append(path)
+
         git("checkout", "--detach", expected_sha)
         if git("rev-parse", "HEAD").stdout.strip() != expected_sha:
             raise SystemExit("[daily.runtime.candidate.bundle_sync] BLOCKED post-sync HEAD differs")
@@ -121,6 +141,7 @@ with lock_path.open("a+b") as lock:
             "previous_branch": previous_branch or "detached",
             "runtime_branch": "detached",
             "evidence_ref": evidence_ref,
+            "preseeded_paths": sorted(preseeded_paths),
             "origin_main_mutated": False,
         }, sort_keys=True))
     finally:

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- P1 tax-center wave one: direct L2 workspaces with existing tax facts. -->
+    <data>
+        <record id="menu_sc_tax_filing_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_invoice_verification_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_invoice_tax_user_group" model="ir.ui.menu"><field name="active">False</field></record>
+
+        <record id="menu_sc_tax_certificate_registration_user" model="ir.ui.menu">
+            <field name="name">外经证</field><field name="parent_id" ref="smart_construction_core.menu_sc_tax_center"/><field name="sequence">10</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_invoice_prepaid_tax_user" model="ir.ui.menu">
+            <field name="name">预缴登记</field><field name="parent_id" ref="smart_construction_core.menu_sc_tax_center"/><field name="sequence">20</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_invoice_application_user" model="ir.ui.menu">
+            <field name="name">开票申请</field><field name="parent_id" ref="smart_construction_core.menu_sc_tax_center"/><field name="sequence">30</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_invoice_registration_user" model="ir.ui.menu">
+            <field name="name">销项开票</field><field name="parent_id" ref="smart_construction_core.menu_sc_tax_center"/><field name="sequence">40</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_output_invoice_change_registration" model="ir.ui.menu">
+            <field name="name">发票红冲</field><field name="parent_id" ref="smart_construction_core.menu_sc_tax_center"/><field name="sequence">50</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_invoice_input" model="ir.ui.menu">
+            <field name="name">进项发票</field><field name="parent_id" ref="smart_construction_core.menu_sc_tax_center"/><field name="sequence">60</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_tax_deduction_registration_user" model="ir.ui.menu">
+            <field name="name">税额抵扣</field><field name="parent_id" ref="smart_construction_core.menu_sc_tax_center"/><field name="sequence">70</field><field name="active">True</field>
+        </record>
+    </data>
+</odoo>

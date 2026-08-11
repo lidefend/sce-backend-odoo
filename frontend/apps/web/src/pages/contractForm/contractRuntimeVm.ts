@@ -259,12 +259,6 @@ export function collectRuntimeCapabilities(session: {
   return out;
 }
 
-export function collectRuntimeUserGroups(user: { groups_xmlids?: unknown } | null | undefined) {
-  return Array.isArray(user?.groups_xmlids)
-    ? user.groups_xmlids.map((item) => String(item || '').trim()).filter(Boolean)
-    : [];
-}
-
 export function normalizeContractWarnings(rows: unknown) {
   if (!Array.isArray(rows)) return [];
   return rows
