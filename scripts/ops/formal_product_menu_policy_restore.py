@@ -14,6 +14,9 @@ import os
 from pathlib import Path
 
 from odoo import SUPERUSER_ID, api
+from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
+    FORMAL_ACTION_ONLY_MENU_TARGETS,
+)
 from odoo.modules.registry import Registry
 
 
@@ -116,32 +119,58 @@ def _external_action_xmlid(action) -> str:
     return action.get_external_id().get(action.id, "") or ""
 
 
+def _resolve_runtime_target(menu_xmlid: str, row: dict):
+    """Resolve the locked page identity through its native menu or action."""
+    menu_record = env.ref(menu_xmlid, raise_if_not_found=False)  # noqa: F821
+    expected_action_xmlid = _text(row.get("action_xmlid")) or FORMAL_ACTION_ONLY_MENU_TARGETS.get(
+        menu_xmlid, ""
+    )
+    if menu_record:
+        action = menu_record.action
+    elif menu_xmlid in FORMAL_ACTION_ONLY_MENU_TARGETS:
+        action = env.ref(expected_action_xmlid, raise_if_not_found=False)  # noqa: F821
+        if not action:
+            action = env["sc.product.policy"]._resolve_or_create_formal_initialization_action(  # noqa: F821
+                expected_action_xmlid
+            )
+    else:
+        raise RuntimeError("formal product menu xmlid does not resolve: %s" % menu_xmlid)
+    if not action:
+        raise RuntimeError("formal product target has no action: %s" % menu_xmlid)
+    resolved_action_xmlid = _external_action_xmlid(action)
+    if expected_action_xmlid and resolved_action_xmlid != expected_action_xmlid:
+        raise RuntimeError(
+            "formal product action identity mismatch: %s -> %s (expected %s)"
+            % (menu_xmlid, resolved_action_xmlid, expected_action_xmlid)
+        )
+    return menu_record, action, resolved_action_xmlid
+
+
 def _hydrate_menu_row(menu: dict) -> dict:
     row = dict(menu or {})
     menu_xmlid = _text(row.get("menu_xmlid") or row.get("page_key") or row.get("menu_key"))
     if not menu_xmlid:
         raise RuntimeError("formal product menu missing menu_xmlid: %s" % row)
-    menu_record = env.ref(menu_xmlid, raise_if_not_found=False)  # noqa: F821
-    if not menu_record:
-        raise RuntimeError("formal product menu xmlid does not resolve: %s" % menu_xmlid)
-    if hasattr(menu_record, "active") and not bool(menu_record.active):
+    menu_record, action, action_xmlid = _resolve_runtime_target(menu_xmlid, row)
+    if menu_record and hasattr(menu_record, "active") and not bool(menu_record.active):
         menu_record.sudo().write({"active": True})
         ACTIVATED_MENU_XMLIDS.append(menu_xmlid)
-    action = menu_record.action
-    if not action:
-        raise RuntimeError("formal product menu has no action: %s" % menu_xmlid)
     action_id = int(action.id or 0)
     model_name = _text(getattr(action, "res_model", "")) or _text(row.get("res_model") or row.get("model"))
     view_modes = [_text(item) for item in _text(getattr(action, "view_mode", "")).split(",") if _text(item)]
-    route = "/a/%s?menu_id=%s" % (action_id, int(menu_record.id))
+    menu_id = int(menu_record.id) if menu_record else 0
+    if menu_id:
+        route = "/a/%s?menu_id=%s" % (action_id, menu_id)
+    else:
+        route = "/a/%s" % action_id
     row.update(
         {
             "menu_xmlid": menu_xmlid,
             "menu_key": menu_xmlid,
             "page_key": menu_xmlid,
-            "menu_id": int(menu_record.id),
+            "menu_id": menu_id,
             "action_id": action_id,
-            "action_xmlid": _text(row.get("action_xmlid")) or _external_action_xmlid(action),
+            "action_xmlid": action_xmlid,
             "route": route,
             "model": model_name,
             "res_model": model_name,
@@ -149,7 +178,8 @@ def _hydrate_menu_row(menu: dict) -> dict:
             "enabled": bool(row.get("enabled", True)),
             "release_state": _text(row.get("release_state")) or "released",
             "access_level": _text(row.get("access_level")) or "public",
-            "visible_menu_path": _text(row.get("visible_menu_path")) or _text(menu_record.complete_name or menu_record.name),
+            "visible_menu_path": _text(row.get("visible_menu_path"))
+            or (_text(menu_record.complete_name or menu_record.name) if menu_record else ""),
         }
     )
     row.pop("id", None)
@@ -225,9 +255,8 @@ def _hydrate_capability(row: dict) -> dict:
         payload["product_key"] = canonical_group_label
     menu_xmlid = _text(payload.get("menu_xmlid") or payload.get("target_page_key"))
     if menu_xmlid:
-        menu_record = env.ref(menu_xmlid, raise_if_not_found=False)  # noqa: F821
-        action = menu_record.action if menu_record else None
-        if menu_record and action:
+        menu_record, action, _action_xmlid = _resolve_runtime_target(menu_xmlid, payload)
+        if action:
             payload["menu_xmlid"] = menu_xmlid
             payload["target_page_key"] = menu_xmlid
             payload["action_id"] = int(action.id or 0)

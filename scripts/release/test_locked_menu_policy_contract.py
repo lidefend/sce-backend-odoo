@@ -28,6 +28,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             / "addons/smart_construction_core/views/core/fund_legacy_readonly_archive_views.xml"
         )
         self.module_manifest = ROOT / "addons/smart_construction_core/__manifest__.py"
+        self.restore_script = ROOT / "scripts/ops/formal_product_menu_policy_restore.py"
 
     def test_action_only_targets_use_stable_external_ids(self):
         self.assertEqual(
@@ -39,6 +40,13 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         for menu_xmlid, action_xmlid in CONTRACT.FORMAL_ACTION_ONLY_MENU_TARGETS.items():
             self.assertTrue(menu_xmlid.startswith("smart_construction_core.menu_"))
             self.assertTrue(action_xmlid.startswith("smart_construction_core.action_"))
+
+    def test_formal_restore_consumes_action_only_contract(self):
+        source = self.restore_script.read_text(encoding="utf-8")
+        self.assertIn("FORMAL_ACTION_ONLY_MENU_TARGETS", source)
+        self.assertIn("def _resolve_runtime_target", source)
+        self.assertIn('route = "/a/%s" % action_id', source)
+        self.assertIn("_resolve_runtime_target(menu_xmlid, payload)", source)
 
     def test_formal_initialization_action_specs_are_stable_and_complete(self):
         for action_xmlid, spec in CONTRACT.FORMAL_INITIALIZATION_ACTION_SPECS.items():

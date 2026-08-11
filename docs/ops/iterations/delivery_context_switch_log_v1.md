@@ -3510,3 +3510,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   the P1 menu documentation and guard description. The tenant payload boundary,
   19 focused tests, fresh install plus upgrade, five authorization ORM tests,
   resource cleanup proof, and the product-menu release-ready aggregate pass.
+
+## 2026-08-11 — P1-FULL-MENU-RESTORE-CONTRACT-CONVERGENCE
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` at `020cc32`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 locked product-menu
+  projection / `smart_construction_core`; the repair is confined to its P4
+  restore consumer and release regression test.
+- Reason / Why Here: the locked 159-page product policy explicitly includes
+  stable action-only page identities, while the older restore utility required
+  every identity to resolve as `ir.ui.menu`. The canonical runtime
+  synchronizer already supports both native-menu and action-only targets.
+- Why Not Elsewhere / Blast Radius: no frontend fallback, customer override,
+  low-code mutation, menu renaming, or baseline rewrite is introduced. The
+  restore utility now consumes the same action-only mapping, validates the
+  resolved action XMLID, preserves `menu_id=0`, and emits an action route. Unit
+  tests plus a direct-source `sc_demo` restore and full runtime/browser menu
+  audit prove containment.
