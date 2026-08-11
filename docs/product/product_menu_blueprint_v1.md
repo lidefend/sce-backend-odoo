@@ -145,7 +145,7 @@
 - 进项发票 -> `sc.invoice.registration`
 - 税额抵扣 -> `sc.tax.deduction.registration`
 - 项目专项抵扣 -> `sc.tax.deduction.registration`
-- 税务申报 -> `sc.invoice.registration`
+- 税务申报 -> `sc.tax.filing`
 
 ### 会计账务中心
 

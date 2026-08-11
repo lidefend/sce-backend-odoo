@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T17:58:47.070810+00:00`
+- generated_at: `2026-08-11T18:03:53.749731+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -224,7 +224,7 @@
     - 发票红冲 [`formal_product`] -> `sc.output.invoice.adjustment`
     - 外经证 [`formal_product`] -> `sc.tax.certificate.registration`
     - 开票申请 [`formal_product`] -> `sc.invoice.registration`
-    - 税务申报 [`formal_product`] -> `sc.invoice.registration`
+    - 税务申报 [`formal_product`] -> `sc.tax.filing`
     - 税务申报（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
     - 税额抵扣 [`formal_product`] -> `sc.tax.deduction.registration`
     - 进项发票 [`formal_product`] -> `sc.invoice.registration`

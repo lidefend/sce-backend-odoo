@@ -125,8 +125,9 @@
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
     </record>
     <record id="action_sc_product_tax_filing_v1" model="ir.actions.act_window">
-      <field name="name">税务申报</field><field name="res_model">sc.invoice.registration</field><field name="view_mode">tree,form</field>
-      <field name="context">{'create': False}</field>
+      <field name="name">税务申报</field><field name="res_model">sc.tax.filing</field><field name="view_mode">tree,form</field>
+      <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_tax_filing_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_tax_filing_form')})]"/>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_tax_filing_search"/>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
     </record>
     <record id="action_sc_product_tax_report_v1" model="ir.actions.act_window">

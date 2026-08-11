@@ -92,7 +92,7 @@ RELEASED_MENU_BINDINGS = (
     ("税务中心", "进项发票", "smart_construction_core.menu_sc_invoice_input", "smart_construction_core.action_sc_invoice_input", "sc.invoice.registration", ("进项发票",)),
     ("税务中心", "税额抵扣", "smart_construction_core.menu_sc_tax_deduction_registration_user", "smart_construction_core.action_sc_tax_deduction_registration_user", "sc.tax.deduction.registration", ("税额抵扣",)),
     ("税务中心", "项目专项抵扣", "smart_construction_core.menu_sc_product_project_tax_deduction_v1", "smart_construction_core.action_sc_product_project_tax_deduction_v1", "sc.tax.deduction.registration", ("项目专项抵扣",)),
-    ("税务中心", "税务申报", "smart_construction_core.menu_sc_product_tax_filing_v1", "smart_construction_core.action_sc_product_tax_filing_v1", "sc.invoice.registration", ("税务申报",)),
+    ("税务中心", "税务申报", "smart_construction_core.menu_sc_product_tax_filing_v1", "smart_construction_core.action_sc_product_tax_filing_v1", "sc.tax.filing", ("税务申报",)),
     ("报表中心", "项目报表", "smart_construction_core.menu_sc_project_operation_statistics_report", "smart_construction_core.action_sc_project_operation_statistics_report", "sc.operating.metrics.project", ("项目报表",)),
     ("报表中心", "成本报表", "smart_construction_core.menu_sc_comprehensive_cost_statistics_report", "smart_construction_core.action_sc_comprehensive_cost_statistics_report", "sc.comprehensive.cost.summary", ("成本报表",)),
     ("报表中心", "资金报表", "smart_construction_core.menu_sc_fund_daily_summary", "smart_construction_core.action_sc_fund_daily_summary", "sc.fund.daily.summary", ("资金报表",)),
