@@ -182,7 +182,7 @@ class ScComprehensiveCostSummary(models.Model):
         return self._open_action(
             "smart_construction_core.action_sc_salary_registration",
             "工资登记",
-            self._project_domain() + [("state", "!=", "cancel"), ("fact_type", "=", "salary_registration")],
+            self._project_domain() + [("state", "=", "done"), ("fact_type", "=", "salary_registration")],
             dict(self._project_context(), default_fact_type="salary_registration"),
         )
 

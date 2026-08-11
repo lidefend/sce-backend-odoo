@@ -166,7 +166,8 @@
       "solution_layer": "industry",
       "source_of_truth": "document/admin/hr payroll process documents",
       "native_dependency": "ir.attachment, res.users, approval",
-      "representative_models": ["sc.document.admin.document", "sc.office.admin.document", "sc.hr.payroll.document", "sc.audit.log"],
+      "representative_models": ["sc.document.admin.document", "sc.office.admin.document", "sc.hr.payroll.document", "sc.hr.salary.payment", "sc.audit.log"],
+      "owned_models": ["sc.hr.salary.payment"],
       "target_problem": "Manage operational evidence and administrative workflow around company and project execution.",
       "boundary_rule": "Administrative evidence can support business workflows, but should not become the source for income/expense amounts unless explicitly promoted.",
       "status": "mostly clear"

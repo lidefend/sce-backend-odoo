@@ -77,12 +77,12 @@
     </record>
     <record id="action_sc_product_project_payroll_v1" model="ir.actions.act_window">
       <field name="name">薪资核算清单</field><field name="res_model">sc.hr.payroll.document</field><field name="view_mode">tree,form</field>
-      <field name="domain">[('fact_type', '=', 'salary_registration')]</field><field name="context">{'default_fact_type': 'salary_registration'}</field>
+      <field name="domain">[('fact_type', '=', 'salary_registration'), ('project_id', '!=', False)]</field><field name="context">{'default_fact_type': 'salary_registration', 'search_default_group_project': 1}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
     <record id="action_sc_product_project_salary_payment_v1" model="ir.actions.act_window">
-      <field name="name">薪资发放登记</field><field name="res_model">sc.hr.payroll.document</field><field name="view_mode">tree,form</field>
-      <field name="domain">[('fact_type', '=', 'salary_registration')]</field><field name="context">{'default_fact_type': 'salary_registration'}</field>
+      <field name="name">薪资发放登记</field><field name="res_model">sc.hr.salary.payment</field><field name="view_mode">tree,form</field>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_hr_salary_payment_search"/><field name="context">{'search_default_group_project': 1}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
     <record id="action_sc_product_team_loan_deduction_v1" model="ir.actions.act_window">

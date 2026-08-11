@@ -72,3 +72,4 @@ from . import test_runtime_view_contract_cleanup_migration
 from . import test_material_supplier_return
 from . import test_equipment_usage_product
 from . import test_subcontract_cost_registration
+from . import test_project_salary_product

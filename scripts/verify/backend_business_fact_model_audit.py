@@ -514,6 +514,30 @@ def load_family_registry(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def apply_registered_family_ownership(rows: list[dict[str, Any]], family_registry: dict[str, Any]) -> None:
+    """Use explicit family ownership before falling back to heuristic classification."""
+    owned: dict[str, str] = {}
+    for family in family_registry.get("families", []):
+        family_name = family.get("family")
+        for model in family.get("owned_models", []):
+            if model in owned and owned[model] != family_name:
+                raise ValueError(f"model {model} is owned by multiple families")
+            owned[model] = family_name
+    for row in rows:
+        family_name = owned.get(row.get("model"))
+        if not family_name:
+            continue
+        row["model_family"] = family_name
+        row["universal_carrier_fit"] = classify_universal_carrier_fit(
+            row["path"],
+            row.get("model"),
+            row.get("inherit"),
+            row.get("fields", []),
+            row.get("buckets", []),
+            family_name,
+        )
+
+
 def load_ownership_specs(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {"ownership_specs": [], "missing_registry": True}
@@ -774,7 +798,7 @@ def summarize_family_registry(rows: list[dict[str, Any]], family_registry: dict[
                     "allowed_values": sorted(ALLOWED_BUSINESS_OBJECTS),
                 }
             )
-        for model in family.get("representative_models", []):
+        for model in family.get("representative_models", []) + family.get("owned_models", []):
             if model not in detected_reference_names:
                 reference_gaps.append({"family": family_key, "model": model})
     return {
@@ -1722,6 +1746,7 @@ def main() -> int:
     rows = extract_models()
     registry = load_registry(ROOT / args.registry)
     family_registry = load_family_registry(ROOT / args.family_registry)
+    apply_registered_family_ownership(rows, family_registry)
     ownership_specs = load_ownership_specs(ROOT / args.ownership_specs)
     projection_registry = load_projection_registry(ROOT / args.projection_registry)
     management_hierarchy = load_management_hierarchy(ROOT / args.management_hierarchy)

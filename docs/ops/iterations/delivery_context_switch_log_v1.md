@@ -3686,3 +3686,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `sc_contract_lifecycle` database contains no demo/customer data and passed
   exact environment health, a controlled 17.0.1.1.8 migration rehearsal and
   14/14 lifecycle runtime assertions.
+
+## 2026-08-11 — P1-PROJECT-SALARY-FACT-OWNERSHIP-CLOSURE
+
+- Branch / anchor: `fix/product-ten-center-runtime-closure` at `74e28e7`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 construction business
+  fact and governed-entry authority / `smart_construction_core`.
+- Standard vs User-Specific: construction-industry standard. No customer data,
+  customer wording, tenant preference or frontend business rule is introduced.
+- Reason / Why Here: salary calculation recognizes project salary cost and the
+  payable amount, while salary payment records confirmed payment evidence. The
+  previous two menu entries shared one fact model because the locked menu and
+  model-family registries had no machine-checked connection.
+- Why Not Elsewhere: P0 only transports and renders the contract; P2/P3 may
+  configure permitted presentation but cannot replace the fact owner; P4 may
+  migrate historical values but cannot own the ongoing workflow.
+- Blast Radius / validation: two project-salary menus, their actions and
+  action-scoped form contracts, payroll/payment models, ACL and record rules,
+  salary/cost projections, and the formal menu baseline. The ownership registry
+  now declares exact entry bindings and conservation invariants; the release
+  aggregate fails closed on shared-model drift or frontend fact authority.
+  `sc_ten_center_clean` passed module upgrade, project salary lifecycle tests,
+  ACL/record-rule gates, and the full 10-center/89-page/245-contract release gate.

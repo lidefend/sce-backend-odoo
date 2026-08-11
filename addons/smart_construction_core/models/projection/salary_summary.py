@@ -139,7 +139,7 @@ class ScSalarySummary(models.Model):
                 LEFT JOIN hr_department d ON d.id = h.department_id
                 WHERE h.active IS TRUE
                   AND h.fact_type = 'salary_registration'
-                  AND h.state <> 'cancel'
+                  AND h.state = 'done'
                 GROUP BY
                     h.period_year,
                     h.period_month,

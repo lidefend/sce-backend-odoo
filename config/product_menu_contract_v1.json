@@ -30,7 +30,7 @@
       {"name": "材料成本", "children": [{"name": "材料入库", "delivery": "RELEASED_FOUNDATION"}, {"name": "材料出库", "delivery": "RELEASED_FOUNDATION"}, {"name": "材料退货", "delivery": "RELEASED_FOUNDATION"}]},
       {"name": "机械成本", "children": [{"name": "机械台班登记", "delivery": "RELEASED_FOUNDATION"}]},
       {"name": "分包成本", "children": [{"name": "分包成本登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "分包签证费用", "delivery": "RELEASED_FOUNDATION"}]},
-      {"name": "项目薪资", "children": [{"name": "薪资核算清单", "delivery": "ADAPTATION_REQUIRED"}, {"name": "薪资发放登记", "delivery": "ADAPTATION_REQUIRED"}]},
+      {"name": "项目薪资", "children": [{"name": "薪资核算清单", "delivery": "RELEASED_FOUNDATION"}, {"name": "薪资发放登记", "delivery": "RELEASED_FOUNDATION"}]},
       {"name": "班组借/扣款", "children": [{"name": "班组借/扣款登记", "delivery": "ADAPTATION_REQUIRED"}]}
     ]},
     {"key": "contract", "name": "合同中心", "sequence": 30, "level_two": [

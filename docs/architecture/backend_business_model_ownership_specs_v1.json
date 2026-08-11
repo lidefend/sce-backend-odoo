@@ -48,6 +48,57 @@
       "decision": "Keep request, claim, and execution separate, with projections aggregating their state instead of replacing them."
     },
     {
+      "spec": "project_salary_calculation_payment_split",
+      "risk_family": "project salary calculation and payment",
+      "business_object": "expense",
+      "fact_source_model": ["sc.hr.payroll.document", "sc.hr.salary.payment"],
+      "allowed_support_models": ["project.project", "res.users"],
+      "projection_models": ["sc.salary.summary", "sc.comprehensive.cost.summary"],
+      "boundary_rule": "Payroll calculation owns the recognized project salary cost and payable amount; salary payment owns each confirmed cash-payment evidence row and may only reduce the payable balance through a conserved relation to a completed calculation.",
+      "forbidden_drift": "Do not reuse payroll calculation as a payment register, write payment facts directly into summary projections, let a menu or frontend contract choose another fact owner, or recognize draft calculations as project cost.",
+      "decision": "Keep calculation and payment as separate P1 fact models linked one-to-many; expose them through distinct governed entries and action-scoped rendering contracts.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "distinct_fact_models",
+      "fact_roles": {
+        "calculation": "recognized_salary_cost_and_payable_authority",
+        "payment": "confirmed_salary_payment_evidence_authority",
+        "projection": "rebuildable_management_visibility_only",
+        "contract": "action_scoped_rendering_only"
+      },
+      "entry_bindings": [
+        {
+          "intent": "salary_calculation",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_project_payroll_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_project_payroll_v1",
+          "fact_model": "sc.hr.payroll.document",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_project_payroll_productized_form_v1"
+        },
+        {
+          "intent": "salary_payment",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_project_salary_payment_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_project_salary_payment_v1",
+          "fact_model": "sc.hr.salary.payment",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_project_salary_payment_productized_form_v1"
+        }
+      ],
+      "conservation_invariants": [
+        "confirmed_payment_total_must_not_exceed_completed_payroll_net_salary",
+        "calculation_cost_recognition_requires_done_state",
+        "payment_cancellation_recomputes_payroll_payment_balance"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/core/hr_payroll_document.py",
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/hr_payroll_form_productization_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "projection_refresh_ownership",
       "risk_family": "projection and management visibility",
       "business_object": "projection",

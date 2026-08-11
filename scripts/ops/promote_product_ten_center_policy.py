@@ -60,7 +60,7 @@ RELEASED_MENU_BINDINGS = (
     ("项目中心", "分包成本登记", "smart_construction_core.menu_sc_product_subcontract_cost_v1", "smart_construction_core.action_sc_subcontract_register", "sc.subcontract.register", ("分包成本", "分包成本登记")),
     ("项目中心", "分包签证费用", "smart_construction_core.menu_sc_product_subcontract_variation_v1", "smart_construction_core.action_sc_product_subcontract_variation_v1", "sc.site.variation", ("分包成本", "分包签证费用")),
     ("项目中心", "薪资核算清单", "smart_construction_core.menu_sc_product_project_payroll_v1", "smart_construction_core.action_sc_product_project_payroll_v1", "sc.hr.payroll.document", ("项目薪资", "薪资核算清单")),
-    ("项目中心", "薪资发放登记", "smart_construction_core.menu_sc_product_project_salary_payment_v1", "smart_construction_core.action_sc_product_project_salary_payment_v1", "sc.hr.payroll.document", ("项目薪资", "薪资发放登记")),
+    ("项目中心", "薪资发放登记", "smart_construction_core.menu_sc_product_project_salary_payment_v1", "smart_construction_core.action_sc_product_project_salary_payment_v1", "sc.hr.salary.payment", ("项目薪资", "薪资发放登记")),
     ("项目中心", "班组借/扣款登记", "smart_construction_core.menu_sc_product_team_loan_deduction_v1", "smart_construction_core.action_sc_product_team_loan_deduction_v1", "sc.expense.claim", ("班组借/扣款", "班组借/扣款登记")),
     ("合同中心", "收入合同", "smart_construction_core.menu_sc_p1_income_contract", "smart_construction_core.action_construction_contract_income", "construction.contract.income", ("收入合同",)),
     ("合同中心", "支出合同", "smart_construction_core.menu_sc_p1_expense_contract", "smart_construction_core.action_construction_contract_expense", "construction.contract.expense", ("支出合同",)),

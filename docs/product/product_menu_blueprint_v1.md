@@ -83,7 +83,7 @@
   - 分包签证费用 -> `sc.site.variation`
 - 项目薪资
   - 薪资核算清单 -> `sc.hr.payroll.document`
-  - 薪资发放登记 -> `sc.hr.payroll.document`
+  - 薪资发放登记 -> `sc.hr.salary.payment`
 - 班组借/扣款
   - 班组借/扣款登记 -> `sc.expense.claim`
 
