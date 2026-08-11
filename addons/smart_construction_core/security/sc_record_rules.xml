@@ -2512,6 +2512,83 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_initiator'))]"/>
         </record>
 
+        <record id="rule_sc_project_user_financing_loan_contractor_borrow" model="ir.rule">
+            <field name="name">SC Project User - contractor borrowing by project membership</field>
+            <field name="model_id" ref="model_sc_financing_loan"/>
+            <field name="domain_force">['&amp;', ('business_category_id.code', '=', 'finance.loan.contractor_project_borrow'), '|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_financing_loan_contractor_borrow" model="ir.rule">
+            <field name="name">SC Project Manager - contractor borrowing</field>
+            <field name="model_id" ref="model_sc_financing_loan"/>
+            <field name="domain_force">[('business_category_id.code', '=', 'finance.loan.contractor_project_borrow')]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_expense_claim_company" model="ir.rule">
+            <field name="name">SC Expense Claim - allowed company</field>
+            <field name="model_id" ref="model_sc_expense_claim"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="rule_sc_project_user_expense_claim_deduction_bill" model="ir.rule">
+            <field name="name">SC Project User - deduction bill by project membership</field>
+            <field name="model_id" ref="model_sc_expense_claim"/>
+            <field name="domain_force">['&amp;', ('business_category_id.code', '=', 'finance.deduction.bill'), '|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_expense_claim_deduction_bill" model="ir.rule">
+            <field name="name">SC Project Manager - deduction bill</field>
+            <field name="model_id" ref="model_sc_expense_claim"/>
+            <field name="domain_force">[('business_category_id.code', '=', 'finance.deduction.bill')]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_project_user_interfund_movement_fact" model="ir.rule">
+            <field name="name">SC Project User - interfund facts by project membership</field>
+            <field name="model_id" ref="model_sc_interfund_movement_fact"/>
+            <field name="domain_force">['|','|','|','|','|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True), ('source_project_id.user_id', '=', user.id), ('source_project_id.message_is_follower', '=', True), ('target_project_id.user_id', '=', user.id), ('target_project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_interfund_movement_fact" model="ir.rule">
+            <field name="name">SC Project Manager - interfund facts</field>
+            <field name="model_id" ref="model_sc_interfund_movement_fact"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_project_user_finance_business_fact" model="ir.rule">
+            <field name="name">SC Project User - finance facts by project membership</field>
+            <field name="model_id" ref="model_sc_finance_business_fact"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_finance_business_fact" model="ir.rule">
+            <field name="name">SC Project Manager - finance facts</field>
+            <field name="model_id" ref="model_sc_finance_business_fact"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_project_user_finance_project_counterparty_position" model="ir.rule">
+            <field name="name">SC Project User - counterparty positions by project membership</field>
+            <field name="model_id" ref="model_sc_finance_project_counterparty_position"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_finance_project_counterparty_position" model="ir.rule">
+            <field name="name">SC Project Manager - counterparty positions</field>
+            <field name="model_id" ref="model_sc_finance_project_counterparty_position"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
         <record id="rule_sc_project_cost_ledger_company" model="ir.rule">
             <field name="name">SC Project Cost Ledger - allowed company</field>
             <field name="model_id" ref="model_project_cost_ledger"/>

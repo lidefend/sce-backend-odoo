@@ -85,7 +85,7 @@
   - 薪资核算清单 -> `sc.hr.payroll.document`
   - 薪资发放登记 -> `sc.hr.salary.payment`
 - 班组借/扣款
-  - 班组借/扣款登记 -> `sc.expense.claim`
+  - 班组借/扣款登记 -> `sc.team.loan.deduction.workspace`
 
 ### 合同中心
 

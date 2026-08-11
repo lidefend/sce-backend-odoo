@@ -74,10 +74,21 @@ def _detected_models() -> set[str]:
     return result
 
 
+def _detected_transient_models() -> set[str]:
+    result: set[str] = set()
+    pattern = re.compile(r"^\s*_name\s*=\s*['\"]([^'\"]+)['\"]", re.MULTILINE)
+    for path in MODULE.rglob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        if "models.TransientModel" in source:
+            result.update(pattern.findall(source))
+    return result
+
+
 def validate(registry: dict) -> list[str]:
     errors: list[str] = []
     records, menus = _xml_records()
     detected_models = _detected_models()
+    detected_transient_models = _detected_transient_models()
     governed = [item for item in registry.get("ownership_specs", []) if item.get("entry_bindings")]
     if not governed:
         return ["ownership registry must define at least one governed entry binding"]
@@ -89,10 +100,10 @@ def validate(registry: dict) -> list[str]:
                 errors.append(f"{key}.{field} must be {expected!r}")
         bindings = spec.get("entry_bindings") or []
         intents = [item.get("intent") for item in bindings]
-        models = [item.get("fact_model") for item in bindings]
+        direct_models = [item.get("fact_model") for item in bindings if item.get("fact_model")]
         if not all(intents) or len(intents) != len(set(intents)):
             errors.append(f"{key} entry intents must be present and unique")
-        if spec.get("separation_policy") == "distinct_fact_models" and len(models) != len(set(models)):
+        if spec.get("separation_policy") == "distinct_fact_models" and len(direct_models) != len(set(direct_models)):
             errors.append(f"{key} requires one distinct fact model per business intent")
         if not spec.get("conservation_invariants"):
             errors.append(f"{key} must declare conservation invariants")
@@ -106,18 +117,32 @@ def validate(registry: dict) -> list[str]:
         fact_sources = set(spec.get("fact_source_model") or [])
         for binding in bindings:
             intent = binding.get("intent", "<missing>")
-            model = binding.get("fact_model", "")
-            if model not in fact_sources:
-                errors.append(f"{key}.{intent} fact model is not a declared source: {model}")
-            if model not in detected_models:
-                errors.append(f"{key}.{intent} fact model is not implemented: {model}")
+            models = ([binding["fact_model"]] if binding.get("fact_model") else list(binding.get("fact_models") or []))
+            entry_model = binding.get("entry_model") or binding.get("fact_model", "")
+            for model in models:
+                if model not in fact_sources:
+                    errors.append(f"{key}.{intent} fact model is not a declared source: {model}")
+                if model not in detected_models:
+                    errors.append(f"{key}.{intent} fact model is not implemented: {model}")
+            if not models:
+                errors.append(f"{key}.{intent} must declare fact_model or fact_models")
+            if entry_model not in detected_models:
+                errors.append(f"{key}.{intent} entry model is not implemented: {entry_model}")
+            orchestration_policy = binding.get("orchestration_policy")
+            if orchestration_policy == "transient_dispatch_only":
+                if entry_model in models:
+                    errors.append(f"{key}.{intent} dispatch entry must not own a business fact")
+                if entry_model not in set(spec.get("allowed_support_models") or []):
+                    errors.append(f"{key}.{intent} dispatch entry must be a declared support model")
+                if entry_model not in detected_transient_models:
+                    errors.append(f"{key}.{intent} dispatch entry must use models.TransientModel")
 
             action_id = _local_xmlid(binding.get("action_xmlid", ""))
             action = records.get(action_id)
             if action is None or action.attrib.get("model") != "ir.actions.act_window":
                 errors.append(f"{key}.{intent} action is missing: {action_id}")
-            elif _field_text(action, "res_model") != model:
-                errors.append(f"{key}.{intent} action model drifted from {model}")
+            elif _field_text(action, "res_model") != entry_model:
+                errors.append(f"{key}.{intent} action model drifted from {entry_model}")
 
             menu_id = _local_xmlid(binding.get("menu_xmlid", ""))
             menu = menus.get(menu_id)
@@ -131,12 +156,14 @@ def validate(registry: dict) -> list[str]:
             if contract is None or contract.attrib.get("model") != "ui.business.config.contract":
                 errors.append(f"{key}.{intent} view contract is missing: {contract_id}")
             else:
-                if _field_text(contract, "model") != model:
-                    errors.append(f"{key}.{intent} view contract model drifted from {model}")
+                if _field_text(contract, "model") != entry_model:
+                    errors.append(f"{key}.{intent} view contract model drifted from {entry_model}")
                 if _field_ref(contract, "action_id") != binding.get("action_xmlid"):
                     errors.append(f"{key}.{intent} view contract action drifted from ownership registry")
                 if "smart_construction_core.product_release" not in _field_expression(contract, "contract_json"):
                     errors.append(f"{key}.{intent} view contract lacks P1 source authority")
+                if orchestration_policy == "transient_dispatch_only" and "fact_authority': 'dispatch_only" not in _field_expression(contract, "contract_json"):
+                    errors.append(f"{key}.{intent} dispatch contract must deny fact authority")
     return errors
 
 

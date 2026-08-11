@@ -591,6 +591,7 @@ class ScFinancingLoan(models.Model):
     def action_done(self):
         policy = self.env["sc.approval.policy"]
         for rec in self:
+            rec._assert_finance_completion_access()
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的融资借款可以完成。"))
             if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
@@ -605,6 +606,17 @@ class ScFinancingLoan(models.Model):
                 rec._snapshot_audit_payload(),
                 "action_done",
             )
+
+    def _has_finance_completion_access(self):
+        return (
+            self.env.su
+            or self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
+            or self.env.user.has_group("smart_construction_core.group_sc_super_admin")
+        )
+
+    def _assert_finance_completion_access(self):
+        if not self._has_finance_completion_access():
+            raise UserError(_("融资与借款单据必须由财务负责人确认完成。"))
 
     def _check_done_ready(self):
         self.ensure_one()

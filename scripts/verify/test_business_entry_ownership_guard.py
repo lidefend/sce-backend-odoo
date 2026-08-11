@@ -30,6 +30,14 @@ class BusinessEntryOwnershipGuardTest(unittest.TestCase):
         errors = guard.validate(registry)
         self.assertTrue(any("outside frontend" in item for item in errors), errors)
 
+    def test_dispatch_workspace_cannot_become_fact_owner(self):
+        registry = copy.deepcopy(self.registry)
+        spec = next(item for item in registry["ownership_specs"] if item.get("separation_policy") == "transient_dispatch_only")
+        binding = spec["entry_bindings"][0]
+        binding["entry_model"] = binding["fact_models"][0]
+        errors = guard.validate(registry)
+        self.assertTrue(any("must not own a business fact" in item for item in errors), errors)
+
     def test_explicit_family_owner_precedes_heuristic_classifier(self):
         rows = [
             {

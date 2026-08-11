@@ -338,7 +338,7 @@
         <field name="search_view_id" ref="smart_construction_core.view_sc_expense_claim_deduction_search" />
         <field name="domain">[('business_category_id.code', '=', 'finance.deduction.bill')]</field>
         <field name="context">{'default_claim_type': 'expense', 'default_expense_type': '扣款登记', 'default_summary': '扣款登记', 'default_business_category_code': 'finance.deduction.bill', 'search_default_active_rows': 1, 'search_default_deduction_bill': 1, 'search_default_group_project': 1}</field>
-        <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_business_initiator'),             ref('smart_construction_core.group_sc_cap_finance_read'),             ref('smart_construction_core.group_sc_cap_finance_user'),             ref('smart_construction_core.group_sc_cap_finance_manager')         ])]" />
+        <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_business_initiator'),             ref('smart_construction_core.group_sc_cap_finance_read'),             ref('smart_construction_core.group_sc_cap_finance_user'),             ref('smart_construction_core.group_sc_cap_finance_manager'),             ref('smart_construction_core.group_sc_cap_project_user'),             ref('smart_construction_core.group_sc_cap_project_manager')         ])]" />
     </record>
     <record id="action_sc_expense_claim_deduction_paid" model="ir.actions.act_window">
         <field name="name">扣款实缴登记</field>
@@ -401,7 +401,7 @@
         <field name="search_view_id" ref="smart_construction_core.view_sc_financing_loan_search" />
         <field name="domain">[('loan_type', '=', 'borrowing_request'), ('direction', '=', 'borrowed_fund'), ('business_category_id.code', '=', 'finance.loan.contractor_project_borrow')]</field>
         <field name="context">{'default_loan_type': 'borrowing_request', 'default_direction': 'borrowed_fund', 'default_business_category_code': 'finance.loan.contractor_project_borrow', 'default_purpose': '承包人借项目款', 'search_default_group_project': 1}</field>
-        <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_business_initiator'),             ref('smart_construction_core.group_sc_cap_finance_read'),             ref('smart_construction_core.group_sc_cap_finance_user'),             ref('smart_construction_core.group_sc_cap_finance_manager')         ])]" />
+        <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_business_initiator'),             ref('smart_construction_core.group_sc_cap_finance_read'),             ref('smart_construction_core.group_sc_cap_finance_user'),             ref('smart_construction_core.group_sc_cap_finance_manager'),             ref('smart_construction_core.group_sc_cap_project_user'),             ref('smart_construction_core.group_sc_cap_project_manager')         ])]" />
     </record>
     <record id="action_sc_financing_loan_project_borrow_company" model="ir.actions.act_window">
         <field name="name">项目借公司款登记</field>
