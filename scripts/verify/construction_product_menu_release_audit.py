@@ -3,6 +3,10 @@ from __future__ import annotations
 
 import json
 
+from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
+    FORMAL_ACTION_ONLY_MENU_TARGETS,
+)
+
 
 PRODUCT_KEYS = ("construction.standard", "construction.preview")
 VISIBLE_CHECK_USERS = ("wutao", "demo_role_project_read", "sc_fx_pm")
@@ -91,34 +95,60 @@ def _assert_menu_runtime(menu_row, visible_by_login):
     if not menu_xmlid:
         raise AssertionError("released menu is missing menu_xmlid/page_key: %s" % menu_row)
     menu = env.ref(menu_xmlid, raise_if_not_found=False)  # noqa: F821
-    if not menu:
+    expected_action_xmlid = _text(menu_row.get("action_xmlid")) or FORMAL_ACTION_ONLY_MENU_TARGETS.get(
+        menu_xmlid, ""
+    )
+    if menu:
+        action = menu.action
+    elif menu_xmlid in FORMAL_ACTION_ONLY_MENU_TARGETS:
+        action = env.ref(expected_action_xmlid, raise_if_not_found=False)  # noqa: F821
+    else:
         raise AssertionError("released menu xmlid does not resolve: %s" % menu_xmlid)
-    if hasattr(menu, "active") and not bool(menu.active):
+    if menu and hasattr(menu, "active") and not bool(menu.active):
         raise AssertionError("released menu is inactive: %s" % menu_xmlid)
-    if not menu.action:
-        raise AssertionError("released menu has no action: %s" % menu_xmlid)
+    if not action:
+        raise AssertionError("released product target has no action: %s" % menu_xmlid)
+    actual_action_xmlid = _external_id(action)
+    if expected_action_xmlid and actual_action_xmlid != expected_action_xmlid:
+        raise AssertionError(
+            "released product action identity drift: %s expected=%s actual=%s"
+            % (menu_xmlid, expected_action_xmlid, actual_action_xmlid)
+        )
     action_id = int(menu_row.get("action_id") or 0)
-    if action_id and int(menu.action.id or 0) != action_id:
+    if action_id and int(action.id or 0) != action_id:
         raise AssertionError(
             "released menu action drift: %s policy=%s actual=%s"
-            % (menu_xmlid, action_id, int(menu.action.id or 0))
+            % (menu_xmlid, action_id, int(action.id or 0))
         )
-    res_model = _text(getattr(menu.action, "res_model", "")) or _text(menu_row.get("res_model"))
+    res_model = _text(getattr(action, "res_model", "")) or _text(menu_row.get("res_model"))
     if not res_model:
         raise AssertionError("released menu action has no res_model: %s" % menu_xmlid)
     if res_model not in env:  # noqa: F821
         raise AssertionError("released menu action model missing: %s -> %s" % (menu_xmlid, res_model))
-    visible_logins = [login for login, visible_ids in visible_by_login.items() if int(menu.id) in visible_ids]
+    if menu:
+        visible_logins = [login for login, visible_ids in visible_by_login.items() if int(menu.id) in visible_ids]
+    else:
+        visible_logins = []
+        action_groups = getattr(action, "groups_id", env["res.groups"])  # noqa: F821
+        for login in visible_by_login:
+            user = env["res.users"].sudo().search([("login", "=", login)], limit=1)  # noqa: F821
+            group_allowed = not action_groups or bool(action_groups & user.groups_id)
+            model_allowed = env[res_model].with_user(user).check_access_rights("read", raise_exception=False)  # noqa: F821
+            if group_allowed and model_allowed:
+                visible_logins.append(login)
     if not visible_logins:
+        groups = getattr(menu, "groups_id", env["res.groups"]) if menu else getattr(action, "groups_id", env["res.groups"])  # noqa: F821
         raise AssertionError(
-            "released menu is not visible to verification users: %s groups=%s"
-            % (menu_xmlid, sorted(_external_id(group) for group in menu.groups_id))
+            "released product target is not accessible to verification users: %s groups=%s"
+            % (menu_xmlid, sorted(_external_id(group) for group in groups))
         )
     return {
         "menu_xmlid": menu_xmlid,
-        "label": _text(menu.name),
+        "label": _text(menu.name) if menu else _text(menu_row.get("label") or action.name),
         "path": _text(menu_row.get("visible_menu_path")),
-        "action_id": int(menu.action.id or 0),
+        "menu_id": int(menu.id) if menu else 0,
+        "action_id": int(action.id or 0),
+        "action_xmlid": actual_action_xmlid,
         "res_model": res_model,
         "visible_logins": visible_logins,
     }

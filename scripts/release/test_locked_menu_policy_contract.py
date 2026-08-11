@@ -29,6 +29,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         )
         self.module_manifest = ROOT / "addons/smart_construction_core/__manifest__.py"
         self.restore_script = ROOT / "scripts/ops/formal_product_menu_policy_restore.py"
+        self.runtime_audit = ROOT / "scripts/verify/construction_product_menu_release_audit.py"
 
     def test_action_only_targets_use_stable_external_ids(self):
         self.assertEqual(
@@ -47,6 +48,12 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertIn("def _resolve_runtime_target", source)
         self.assertIn('route = "/a/%s" % action_id', source)
         self.assertIn("_resolve_runtime_target(menu_xmlid, payload)", source)
+
+    def test_runtime_release_audit_consumes_action_only_contract(self):
+        source = self.runtime_audit.read_text(encoding="utf-8")
+        self.assertIn("FORMAL_ACTION_ONLY_MENU_TARGETS", source)
+        self.assertIn('check_access_rights("read", raise_exception=False)', source)
+        self.assertIn('"menu_id": int(menu.id) if menu else 0', source)
 
     def test_formal_initialization_action_specs_are_stable_and_complete(self):
         for action_xmlid, spec in CONTRACT.FORMAL_INITIALIZATION_ACTION_SPECS.items():

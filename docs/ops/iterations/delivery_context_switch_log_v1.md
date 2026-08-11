@@ -3543,3 +3543,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   origin main, database and filestore behavior are unchanged. The integration
   test exercises an exact preseed plus remaining bundle delta and still proves
   detached exact SHA, clean worktree and untouched origin/main.
+
+## 2026-08-11 — P4-FULL-MENU-RUNTIME-AUDIT-CONTRACT-CONVERGENCE
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after
+  `662323b`.
+- Formal Product Layer / Layer Target / Module: P4 release verification for the
+  P1 locked menu contract / `construction_product_menu_release_audit.py`.
+- Reason / Boundary: the runtime audit still assumed every locked page identity
+  was a native menu and rejected the contract's explicit action-only targets.
+  Native targets continue to require visible `ir.ui.menu`; action-only targets
+  now require the exact mapped action XMLID, installed model, action-group
+  access and model read ACL for a verification user.
+- Blast Radius / validation: verification semantics only; no runtime policy,
+  frontend, customer module or business data is changed. Unit coverage and the
+  daily `sc_demo` release audit prove the gate accepts only the two canonical
+  delivery forms.
