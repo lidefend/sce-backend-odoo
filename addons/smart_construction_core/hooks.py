@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import json
 import zlib
 from odoo import SUPERUSER_ID, api
 from odoo.addons.smart_core.utils.backend_contract_boundaries import ensure_lowcode_contract_source_status
@@ -171,15 +170,10 @@ def _backfill_lowcode_contract_source_status(env):
         next_payload = ensure_lowcode_contract_source_status(payload)
         if next_payload == payload:
             continue
-        env.cr.execute(
-            """
-            UPDATE ui_business_config_contract
-               SET contract_json = %s::jsonb,
-                   write_date = NOW()
-             WHERE id = %s
-            """,
-            (json.dumps(next_payload, ensure_ascii=False), rec.id),
-        )
+        # Fresh-install normalization is a real published-contract mutation.
+        # Route it through the P0 append-only lifecycle authority so content
+        # hashes, definition hashes and immutable history remain consistent.
+        rec.write({"contract_json": next_payload})
 
 
 def _ensure_cny_company_currency(env):

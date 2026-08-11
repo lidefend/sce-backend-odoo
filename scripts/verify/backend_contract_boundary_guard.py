@@ -65,6 +65,12 @@ ALLOWED_DIRECT_CONTRACT_WRITERS = {
         "reason": "archives stale action-scoped business config contracts whose action model no longer matches the contract model",
         "expected_source": "smart_construction_core.stale_contract_scope_cleanup",
     },
+    "addons/smart_construction_core/hooks.py": {
+        "layer": "L2",
+        "boundary": "industry_install_contract_source_status_normalization",
+        "reason": "normalizes source status on industry contracts during install through the append-only contract lifecycle authority",
+        "expected_source": "smart_construction_core.post_init_lowcode_source_status",
+    },
 }
 ALLOWED_APPROVAL_POLICY_RUNTIME_WRITERS = {
     "addons/smart_construction_core/handlers/approval_policy_configuration.py": {

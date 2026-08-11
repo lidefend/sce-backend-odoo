@@ -123,6 +123,7 @@
 | `addons/smart_core/handlers/business_config_change_set.py` | L1/L4 | 统一可逆配置变更集原子发布与批次回滚：`atomic_lowcode_change_set_publish` | `ui.business.config.change.set` |
 | `addons/smart_construction_core/models/support/formal_list_contract_sync.py` | L2 | 行业正式列表契约投影：`industry_formal_list_contract_projection` | `smart_construction_core.formal_settlement_list_contract_sync` |
 | `addons/smart_construction_core/migrations/17.0.0.61/post-migration.py` | L2 | 行业过期契约作用域清理迁移：`industry_stale_contract_scope_cleanup_migration` | `smart_construction_core.stale_contract_scope_cleanup` |
+| `addons/smart_construction_core/hooks.py` | L2 | 行业安装期契约来源状态规范化：`industry_install_contract_source_status_normalization`；必须通过契约模型写入口生成不可变版本 | `smart_construction_core.post_init_lowcode_source_status` |
 
 ## 当前允许直接写审批运行时策略的入口
 
