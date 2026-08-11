@@ -1,9 +1,47 @@
 # -*- coding: utf-8 -*-
 from odoo.tests.common import TransactionCase, tagged
+from odoo.exceptions import AccessError
 
 
 @tagged("post_install", "-at_install", "sc_gate", "tender_document")
 class TestTenderDocumentAdvisory(TransactionCase):
+    def _project_reader(self):
+        return self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "招投标只读用户",
+                "login": "tender_project_reader",
+                "email": "tender-project-reader@invalid.local",
+                "groups_id": [
+                    (
+                        6,
+                        0,
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref(
+                                "smart_construction_core.group_sc_cap_project_read"
+                            ).id,
+                        ],
+                    )
+                ],
+            }
+        )
+
+    def test_project_reader_can_open_tender_workspace_but_cannot_mutate(self):
+        project = self.env["project.project"].create({"name": "只读招投标测试项目"})
+        bid = self.env["tender.bid"].create(
+            {"project_id": project.id, "tender_name": "只读招投标测试"}
+        )
+        application = self.env["tender.doc.purchase"].create({"bid_id": bid.id})
+        reader = self._project_reader()
+
+        reader_bid = bid.with_user(reader)
+        self.assertEqual(reader_bid.read(["tender_name"])[0]["tender_name"], "只读招投标测试")
+        self.assertEqual(
+            application.with_user(reader).read(["bid_id"])[0]["bid_id"][0], bid.id
+        )
+        with self.assertRaises(AccessError):
+            reader_bid.write({"note": "不允许只读用户修改"})
+
     def test_incomplete_document_submits_with_non_blocking_advisory(self):
         project = self.env["project.project"].create({"name": "投标办理建议测试项目"})
         bid = self.env["tender.bid"].create(
