@@ -19,7 +19,7 @@
       {"name": "数据总览", "delivery": "RELEASED_FOUNDATION"},
       {"name": "项目看板", "delivery": "RELEASED_FOUNDATION"},
       {"name": "待办事项", "delivery": "RELEASED_FOUNDATION"},
-      {"name": "消息通知", "delivery": "ADAPTATION_REQUIRED"}
+      {"name": "消息通知", "delivery": "RELEASED_FOUNDATION"}
     ]},
     {"key": "project", "name": "项目中心", "sequence": 20, "level_two": [
       {"name": "项目创建", "children": [{"name": "新项目立项", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目信息编辑", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目启停管理", "delivery": "RELEASED_FOUNDATION"}]},
@@ -43,13 +43,13 @@
       {"name": "收款登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "付款申请", "delivery": "RELEASED_FOUNDATION"}, {"name": "实付登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "费用报销", "delivery": "RELEASED_FOUNDATION"}, {"name": "往来款登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "公司收入", "delivery": "RELEASED_FOUNDATION"}, {"name": "公司支出", "delivery": "RELEASED_FOUNDATION"}, {"name": "公司&项目扣款", "delivery": "RELEASED_FOUNDATION"}, {"name": "公司&项目退款", "delivery": "RELEASED_FOUNDATION"}, {"name": "备用金", "delivery": "RELEASED_FOUNDATION"}, {"name": "资金汇总", "delivery": "RELEASED_FOUNDATION"}
     ]},
     {"key": "tax", "name": "税务中心", "sequence": 60, "level_two": [
-      {"name": "外经证", "delivery": "RELEASED_FOUNDATION"}, {"name": "预缴登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "开票申请", "delivery": "RELEASED_FOUNDATION"}, {"name": "销项开票", "delivery": "RELEASED_FOUNDATION"}, {"name": "发票红冲", "delivery": "RELEASED_FOUNDATION"}, {"name": "进项发票", "delivery": "RELEASED_FOUNDATION"}, {"name": "税额抵扣", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目专项抵扣", "delivery": "RELEASED_FOUNDATION"}, {"name": "税务申报", "delivery": "NEW_CAPABILITY_REQUIRED"}
+      {"name": "外经证", "delivery": "RELEASED_FOUNDATION"}, {"name": "预缴登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "开票申请", "delivery": "RELEASED_FOUNDATION"}, {"name": "销项开票", "delivery": "RELEASED_FOUNDATION"}, {"name": "发票红冲", "delivery": "RELEASED_FOUNDATION"}, {"name": "进项发票", "delivery": "RELEASED_FOUNDATION"}, {"name": "税额抵扣", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目专项抵扣", "delivery": "RELEASED_FOUNDATION"}, {"name": "税务申报", "delivery": "RELEASED_FOUNDATION"}
     ]},
     {"key": "accounting", "name": "会计账务中心", "sequence": 70, "level_two": [
       {"name": "日记账分录", "delivery": "RELEASED_FOUNDATION"}, {"name": "日记账项目", "delivery": "RELEASED_FOUNDATION"}, {"name": "会计科目表", "delivery": "RELEASED_FOUNDATION"}, {"name": "日记账", "delivery": "RELEASED_FOUNDATION"}, {"name": "分析账户", "delivery": "RELEASED_FOUNDATION"}, {"name": "分析分配模型", "delivery": "RELEASED_FOUNDATION"}
     ]},
     {"key": "reporting", "name": "报表中心", "sequence": 80, "level_two": [
-      {"name": "项目报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "成本报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "资金报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "税务报表", "delivery": "ADAPTATION_REQUIRED"}, {"name": "劳务分包报表", "delivery": "ADAPTATION_REQUIRED"}
+      {"name": "项目报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "成本报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "资金报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "税务报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "劳务分包报表", "delivery": "RELEASED_FOUNDATION"}
     ]},
     {"key": "administration", "name": "行政中心", "sequence": 90, "level_two": [
       {"name": "部门管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "岗位管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "人员档案", "delivery": "RELEASED_FOUNDATION"}, {"name": "证书管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "社保公积", "delivery": "RELEASED_FOUNDATION"}, {"name": "工资薪酬", "delivery": "RELEASED_FOUNDATION"}, {"name": "办公资产", "delivery": "RELEASED_FOUNDATION"}, {"name": "制度文件", "delivery": "RELEASED_FOUNDATION"}
