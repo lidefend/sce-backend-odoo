@@ -94,8 +94,8 @@ Generated from repository source files. This report is informational during the 
 | 967 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 966 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 956 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
+| 952 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
-| 944 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
@@ -208,8 +208,8 @@ Generated from repository source files. This report is informational during the 
 | 967 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 966 | warning | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 956 | warning | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
+| 952 | warning | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 950 | warning | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
-| 944 | warning | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 916 | warning | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 
 ## Interpretation
