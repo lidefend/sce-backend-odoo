@@ -30,7 +30,7 @@
       {"name": "材料成本", "children": [{"name": "材料入库", "delivery": "RELEASED_FOUNDATION"}, {"name": "材料出库", "delivery": "RELEASED_FOUNDATION"}, {"name": "材料退货", "delivery": "NEW_CAPABILITY_REQUIRED"}]},
       {"name": "机械成本", "children": [{"name": "机械台班登记", "delivery": "ADAPTATION_REQUIRED"}]},
       {"name": "分包成本", "children": [{"name": "分包成本登记", "delivery": "ADAPTATION_REQUIRED"}, {"name": "分包签证费用", "delivery": "ADAPTATION_REQUIRED"}]},
-      {"name": "项目薪资", "children": [{"name": "薪资核算清单", "delivery": "ADAPTATION_REQUIRED"}, {"name": "薪资发放登记", "delivery": "RELEASED_FOUNDATION"}]},
+      {"name": "项目薪资", "children": [{"name": "薪资核算清单", "delivery": "ADAPTATION_REQUIRED"}, {"name": "薪资发放登记", "delivery": "ADAPTATION_REQUIRED"}]},
       {"name": "班组借/扣款", "children": [{"name": "班组借/扣款登记", "delivery": "ADAPTATION_REQUIRED"}]}
     ]},
     {"key": "contract", "name": "合同中心", "sequence": 30, "level_two": [
@@ -46,7 +46,7 @@
       {"name": "外经证", "delivery": "RELEASED_FOUNDATION"}, {"name": "预缴登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "开票申请", "delivery": "RELEASED_FOUNDATION"}, {"name": "销项开票", "delivery": "RELEASED_FOUNDATION"}, {"name": "发票红冲", "delivery": "RELEASED_FOUNDATION"}, {"name": "进项发票", "delivery": "RELEASED_FOUNDATION"}, {"name": "税额抵扣", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目专项抵扣", "delivery": "ADAPTATION_REQUIRED"}, {"name": "税务申报", "delivery": "NEW_CAPABILITY_REQUIRED"}
     ]},
     {"key": "accounting", "name": "会计账务中心", "sequence": 70, "level_two": [
-      {"name": "记账凭证", "delivery": "RELEASED_FOUNDATION"}, {"name": "会计科目", "delivery": "RELEASED_FOUNDATION"}, {"name": "账簿管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "期末结转", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "账务对账", "delivery": "ADAPTATION_REQUIRED"}
+      {"name": "日记账分录", "delivery": "RELEASED_FOUNDATION"}, {"name": "日记账项目", "delivery": "RELEASED_FOUNDATION"}, {"name": "会计科目表", "delivery": "RELEASED_FOUNDATION"}, {"name": "日记账", "delivery": "RELEASED_FOUNDATION"}, {"name": "分析账户", "delivery": "RELEASED_FOUNDATION"}, {"name": "分析分配模型", "delivery": "RELEASED_FOUNDATION"}
     ]},
     {"key": "reporting", "name": "报表中心", "sequence": 80, "level_two": [
       {"name": "项目报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "成本报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "资金报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "税务报表", "delivery": "ADAPTATION_REQUIRED"}, {"name": "劳务分包报表", "delivery": "ADAPTATION_REQUIRED"}

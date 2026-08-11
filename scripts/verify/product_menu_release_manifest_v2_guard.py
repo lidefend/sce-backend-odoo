@@ -1,467 +1,145 @@
 #!/usr/bin/env python3
-"""Validate visible navigation v2 and its truthful release checklist."""
+"""Fail closed when the locked ten-center product menu drifts.
+
+The product menu contract owns navigation shape. Capability maturity remains
+metadata and is intentionally not allowed to hide a contracted entry.
+"""
 from __future__ import annotations
 
+import ast
 import json
 from pathlib import Path
 from xml.etree import ElementTree
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MANIFEST = ROOT / "config/product_menu_release_manifest_v2.json"
-LOCKED_BASELINE = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
-MENU_XML = ROOT / "addons/smart_construction_core/views/menu_product_navigation_v2.xml"
-PRIMARY_CENTER_XML = ROOT / "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml"
-BASE_MENU_XML = ROOT / "addons/smart_construction_core/views/menu.xml"
-NATIVE_MENU_LOAD_ORDER = [
-    ROOT / "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
-    BASE_MENU_XML,
-    ROOT / "addons/smart_construction_core/views/support/menu_config_policy_views.xml",
-    ROOT / "addons/smart_construction_core/views/menu_business_taxonomy.xml",
-    ROOT / "addons/smart_construction_core/views/menu_user_acceptance_cleanup.xml",
-    ROOT / "addons/smart_construction_core/views/core/fund_legacy_readonly_archive_views.xml",
-    MENU_XML,
-]
-POLICY_SYNC = ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py"
-HOOK_FACTS = ROOT / "addons/smart_construction_core/core_extension_hook_facts.py"
-MENU_SERVICE = ROOT / "addons/smart_core/delivery/menu_service.py"
-DEV_MAKE = ROOT / "make/dev.mk"
-ODOO_SHELL_EXEC = ROOT / "scripts/ops/odoo_shell_exec.sh"
-ACCEPTANCE_ENVIRONMENTS = ROOT / "config/frontend/acceptance_environments_v1.json"
+CONTRACT = ROOT / "config/product_menu_contract_v1.json"
+BASELINE = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
+ACCEPTANCE = ROOT / "config/frontend/acceptance_environments_v1.json"
+MANIFEST = ROOT / "addons/smart_construction_core/__manifest__.py"
+COMPLETION_XML = ROOT / "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
 
 EXPECTED_CENTERS = [
     "工作台", "项目中心", "合同中心", "成本中心", "财务中心",
     "税务中心", "会计账务中心", "报表中心", "行政中心", "产品配置",
 ]
-ALLOWED_MATURITY = {"GA", "PILOT", "ROADMAP", "INTERNAL"}
-EXPECTED_FORMAL_MENU_COUNT = 169
-REQUIRED_COST_XMLIDS = {
-    "menu_sc_project_budget",
-    "menu_sc_budget_alloc",
-    "menu_sc_project_progress",
-    "menu_sc_project_cost_ledger",
-    "menu_sc_cost_reports",
-    "menu_sc_profit_reports",
-}
-REQUIRED_REPORT_XMLIDS = {
-    "menu_sc_project_operation_statistics_report",
-    "menu_sc_company_operation_summary_report",
-}
-EXPECTED_PROJECT_LEVEL_TWO = [
-    "项目总览", "项目前期", "项目立项", "项目台账", "项目组织",
-    "里程碑管理", "项目协同", "项目资料", "风险与问题", "项目收尾",
-]
-ALLOWED_PROJECT_RELEASE_STATUS = {"RELEASED", "READY_TO_CONVERGE", "FOLLOWUP"}
-EXPECTED_FOLLOWUP_BY_CENTER = {
-    "合同中心": ["履约与预警"],
-    "成本中心": ["成本预测", "现金流预测"],
-    "财务中心": ["资金预测"],
-    "税务中心": ["税务申报", "发票查验"],
-    "会计账务中心": ["期末结转", "账务对账"],
-    "报表中心": ["预测预警"],
-    "行政中心": ["人员生命周期", "资源能力"],
-    "产品配置": [],
-}
-EXPECTED_PROJECT_OPERATIONAL_DOMAINS = [
-    "材料管理", "询价采购", "劳务管理", "机械管理", "周转材料", "分包执行",
-    "进度与施工", "质量管理", "安全管理", "供应链协同", "现场移动", "BIM协同",
-]
-REQUIRED_ACCOUNTING_XMLIDS = {
-    "account.menu_action_move_journal_line_form",
-    "account.menu_action_account_moves_all",
-    "account.menu_action_account_form",
-    "smart_construction_core.menu_sc_account_journal_foundation",
-    "smart_construction_core.menu_sc_analytic_account_foundation",
-    "smart_construction_core.menu_sc_analytic_distribution_foundation",
-}
+EXPECTED_CONTRACT_MENU_COUNT = 89
+EXPECTED_ACCOUNTING_MENU_COUNT = 6
+EXPECTED_FORMAL_MENU_COUNT = EXPECTED_CONTRACT_MENU_COUNT
+
+
+def _contract_paths(payload: dict) -> set[tuple[str, ...]]:
+    paths: set[tuple[str, ...]] = set()
+    centers = payload.get("centers") or []
+    if [row.get("name") for row in centers] != EXPECTED_CENTERS:
+        raise ValueError("product contract center order mismatch")
+    for center in centers:
+        center_name = str(center.get("name") or "").strip()
+        for level_two in center.get("level_two") or []:
+            level_two_name = str(level_two.get("name") or "").strip()
+            children = level_two.get("children") or []
+            if center_name == "项目中心":
+                if not children:
+                    raise ValueError(f"project level-two menu has no level-three pages: {level_two_name}")
+                for child in children:
+                    paths.add((center_name, level_two_name, str(child.get("name") or "").strip()))
+            else:
+                if children:
+                    raise ValueError(f"non-project center illegally uses level three: {center_name}/{level_two_name}")
+                paths.add((center_name, level_two_name))
+    return paths
 
 
 def main() -> int:
     errors: list[str] = []
-    payload = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    locked_baseline = json.loads(LOCKED_BASELINE.read_text(encoding="utf-8"))
-    acceptance_environments = json.loads(ACCEPTANCE_ENVIRONMENTS.read_text(encoding="utf-8"))
-    rules = payload.get("navigation_rules") or {}
-    centers = rules.get("primary_centers") or []
-    if payload.get("schema") != "sce.product_menu_release_manifest.v2":
-        errors.append("manifest schema mismatch")
-    if centers != EXPECTED_CENTERS or rules.get("primary_center_count") != len(EXPECTED_CENTERS):
-        errors.append("primary center order/count mismatch")
-    if rules.get("maximum_business_depth") != 3:
-        errors.append("business menu depth must be exactly 3")
-    if rules.get("followup_menu_sibling_position") != "last":
-        errors.append("follow-up menus must be placed last within each sibling group")
-    strategy = locked_baseline.get("policy_strategy") or {}
-    if strategy.get("mode") != "FULL_FORMAL_PRODUCT_SCOPE":
-        errors.append("locked product policy must declare full formal product scope")
+    try:
+        contract_paths = _contract_paths(json.loads(CONTRACT.read_text(encoding="utf-8")))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        errors.append(str(exc))
+        contract_paths = set()
+    if len(contract_paths) != EXPECTED_CONTRACT_MENU_COUNT:
+        errors.append(f"product contract must contain exactly {EXPECTED_CONTRACT_MENU_COUNT} action pages")
+
+    baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
+    strategy = baseline.get("policy_strategy") or {}
     if strategy.get("effective_menu_count_per_product") != EXPECTED_FORMAL_MENU_COUNT:
-        errors.append("locked product policy must record the exact full menu count")
+        errors.append("locked policy menu count is not the complete 89-page product surface")
     if strategy.get("effective_capability_count_per_product") != EXPECTED_FORMAL_MENU_COUNT:
-        errors.append("locked product policy must record the exact full capability count")
-    if "油卡管理：财务中心 -> 组织行政" not in strategy.get("responsibility_boundary_updates", []):
-        errors.append("locked product policy must record the oil-card responsibility boundary move")
-    if not {
-        "物资与分包：撤销一级中心，入口按项目执行、合同、成本和资金权威归属",
-        "施工管理：撤销一级中心，现场履约能力归入项目中心",
-        "会计账务：准入 Odoo 原生模型、视图、动作和权限能力",
-    }.issubset(set(strategy.get("responsibility_boundary_updates", []))):
-        errors.append("locked product policy must record the approved ten-center convergence")
-    required_full_scope_xmlids = {
-        "smart_construction_core.menu_sc_workbench_my_todo_fact",
-        "smart_construction_core.menu_sc_workbench_my_approval_fact",
-        "smart_construction_core.menu_sc_construction_progress",
-        "smart_construction_core.menu_sc_quality_standard_v2",
-        "smart_construction_core.menu_sc_quality_issue",
-        "smart_construction_core.menu_sc_quality_rectification",
-        "smart_construction_core.menu_sc_quality_recheck",
-        "smart_construction_core.menu_sc_quality_site_photo_v2",
-        "smart_construction_core.menu_sc_safety_plan_v2",
-        "smart_construction_core.menu_sc_safety_disclosure_v2",
-        "smart_construction_core.menu_sc_safety_risk_library_v2",
-        "smart_construction_core.menu_sc_safety_hazard_source_v2",
-        "smart_construction_core.menu_sc_safety_patrol_v2",
-        "smart_construction_core.menu_sc_safety_issue",
-        "smart_construction_core.menu_sc_safety_rectification",
-        "smart_construction_core.menu_sc_safety_recheck",
-        "smart_construction_core.menu_sc_boq_version",
-        "smart_construction_core.menu_sc_project_boq_root",
-        "smart_construction_core.menu_sc_boq_analysis",
-        "smart_construction_core.menu_sc_project_work_breakdown",
-        "smart_construction_core.menu_sc_wbs_plan_version",
-        "smart_construction_core.menu_sc_project_location_breakdown",
-        "smart_construction_core.menu_sc_project_contract_section",
-        "smart_construction_core.menu_sc_project_execution_scope",
-        "smart_construction_core.menu_sc_project_boq_allocation",
-        "smart_construction_core.menu_sc_runtime_user_management",
-        "smart_construction_core.menu_sc_business_config_workbench",
-        "smart_construction_core.menu_sc_approval_policy",
-        "smart_construction_core.menu_ui_form_field_policy_business_config",
-    } | REQUIRED_ACCOUNTING_XMLIDS
-    full_baseline_xmlids = set()
-    for product in locked_baseline.get("products") or []:
-        rows = [menu for group in product.get("menu_groups") or [] for menu in group.get("menus") or []]
-        xmlids = {menu.get("menu_xmlid") for menu in rows}
-        full_baseline_xmlids.update(xmlids)
-        if len(rows) != EXPECTED_FORMAL_MENU_COUNT or len(xmlids) != EXPECTED_FORMAL_MENU_COUNT:
-            errors.append(
-                f"{product.get('product_key')} full baseline must contain "
-                f"{EXPECTED_FORMAL_MENU_COUNT} unique menus"
-            )
-        capabilities = product.get("capabilities") or []
-        capability_xmlids = {row.get("menu_xmlid") for row in capabilities}
-        if len(capabilities) != EXPECTED_FORMAL_MENU_COUNT or capability_xmlids != xmlids:
-            errors.append(f"{product.get('product_key')} capabilities must exactly match the full menu baseline")
-        missing_xmlids = sorted(required_full_scope_xmlids - xmlids)
-        if missing_xmlids:
-            errors.append(f"{product.get('product_key')} missing full construction scope: {missing_xmlids}")
-        oil_card_rows = [
-            menu
-            for group in product.get("menu_groups") or []
-            if group.get("group_label") == "行政中心"
-            for menu in group.get("menus") or []
-            if menu.get("menu_xmlid") in {
-                "smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance",
-                "smart_construction_core.menu_sc_legacy_fuel_card_recharge_fact_acceptance",
-            }
-        ]
-        if len(oil_card_rows) != 2 or any(
-            " / 行政中心 / 油卡管理 / " not in str(menu.get("visible_menu_path") or "")
-            or menu.get("product_domain") != "organization_fuel_card"
-            for menu in oil_card_rows
-        ):
-            errors.append(f"{product.get('product_key')} oil-card domain must belong to organization administration")
-    daily_navigation = (
-        ((acceptance_environments.get("profiles") or {}).get("daily") or {}).get("navigation_policy") or {}
-    )
-    if daily_navigation.get("max_actions") != EXPECTED_FORMAL_MENU_COUNT:
-        errors.append("daily acceptance maximum must lock the 169-page full product surface")
-    daily_required_paths = set(daily_navigation.get("required_paths") or [])
-    for path in (
-        "系统菜单 / 项目中心 / 质量管理 / 质量标准",
-        "系统菜单 / 项目中心 / 质量管理 / 现场影像",
-        "系统菜单 / 项目中心 / 安全管理 / 安全方案",
-        "系统菜单 / 项目中心 / 安全管理 / 安全巡检",
-        "系统菜单 / 项目中心 / 安全管理 / 安全复验",
-        "系统菜单 / 行政中心 / 油卡管理 / 油卡登记",
-        "系统菜单 / 行政中心 / 油卡管理 / 充值登记",
-        "系统菜单 / 会计账务中心 / 凭证与分录 / 日记账分录",
-        "系统菜单 / 会计账务中心 / 会计科目 / 会计科目表",
-    ):
-        if path not in daily_required_paths:
-            errors.append(f"daily acceptance missing full construction path: {path}")
-
-    project_ia = payload.get("project_center_information_architecture") or {}
-    project_level_two = project_ia.get("level_two_order") or []
-    project_level_two_names = [row.get("name") for row in project_level_two]
-    if project_ia.get("locked") is not True:
-        errors.append("project center information architecture must be locked")
-    if project_ia.get("empty_roadmap_menus_visible_to_business_users") is not False:
-        errors.append("empty project roadmap menus must stay out of business navigation")
-    if project_ia.get("roadmap_menus_visible_roles") != ["business_config_admin"]:
-        errors.append("project roadmap menus must be restricted to business_config_admin")
-    if project_level_two_names != EXPECTED_PROJECT_LEVEL_TWO:
-        errors.append("project center level-two order mismatch")
-    for index, row in enumerate(project_level_two):
-        status = row.get("release_status")
-        if status not in ALLOWED_PROJECT_RELEASE_STATUS:
-            errors.append(f"project level-two[{index}] invalid release status")
-        if status == "FOLLOWUP" and not row.get("launch_note"):
-            errors.append(f"project level-two[{index}] follow-up item missing launch note")
-    operational_domains = project_ia.get("converged_operational_domains") or []
-    if [row.get("name") for row in operational_domains] != EXPECTED_PROJECT_OPERATIONAL_DOMAINS:
-        errors.append("project center converged operational-domain order mismatch")
-    if any(row.get("release_status") not in ALLOWED_PROJECT_RELEASE_STATUS for row in operational_domains):
-        errors.append("project center converged operational domains contain invalid release status")
-
-    center_ia = payload.get("center_information_architecture") or {}
-    if list(center_ia) != list(EXPECTED_FOLLOWUP_BY_CENTER):
-        errors.append("cross-center information architecture order mismatch")
-    for center, followup_names in EXPECTED_FOLLOWUP_BY_CENTER.items():
-        architecture = center_ia.get(center) or {}
-        rows = architecture.get("level_two_order") or []
-        if architecture.get("locked") is not True or not rows:
-            errors.append(f"{center} information architecture must be locked and non-empty")
+        errors.append("locked policy capability count is not 89")
+    for product in baseline.get("products") or []:
+        groups = product.get("menu_groups") or []
+        if [row.get("group_label") for row in groups] != EXPECTED_CENTERS:
+            errors.append(f"{product.get('product_key')} center order mismatch")
             continue
-        actual_followup = [row.get("name") for row in rows if row.get("release_status") == "FOLLOWUP"]
-        if actual_followup != followup_names:
-            errors.append(f"{center} follow-up capability order mismatch")
+        rows = [menu for group in groups for menu in group.get("menus") or []]
+        xmlids = [str(row.get("menu_xmlid") or "") for row in rows]
+        if len(rows) != EXPECTED_FORMAL_MENU_COUNT or len(set(xmlids)) != EXPECTED_FORMAL_MENU_COUNT:
+            errors.append(f"{product.get('product_key')} must contain 89 unique menu identities")
+        actual_contract_paths: set[tuple[str, ...]] = set()
+        accounting_count = 0
         for row in rows:
-            if row.get("release_status") not in ALLOWED_PROJECT_RELEASE_STATUS:
-                errors.append(f"{center} invalid release status: {row.get('name')}")
-            if row.get("release_status") == "FOLLOWUP" and not row.get("launch_note"):
-                errors.append(f"{center} follow-up item missing launch note: {row.get('name')}")
-    retired_centers = {"物资与分包", "施工管理", "组织行政", "配置中心"}
-    if retired_centers.intersection(center_ia):
-        errors.append("retired first-level centers must not remain in center information architecture")
-
-    checklist = payload.get("capability_release_checklist") or []
-    if not checklist:
-        errors.append("capability release checklist is empty")
-    for index, row in enumerate(checklist):
-        if row.get("maturity") not in ALLOWED_MATURITY:
-            errors.append(f"checklist[{index}] invalid maturity")
-        if not row.get("scope") or not row.get("evidence"):
-            errors.append(f"checklist[{index}] missing scope/evidence")
-        if row.get("maturity") != "GA" and not row.get("promotion_requirements"):
-            errors.append(f"checklist[{index}] non-GA item missing promotion requirements")
-
-    gaps = payload.get("benchmark_gap_backlog") or []
-    if len(gaps) < 6 or not any(row.get("priority") == "P0" and row.get("status") != "DONE" for row in gaps):
-        errors.append("benchmark gap backlog must retain real open P0 gaps")
-
-    xml = MENU_XML.read_text(encoding="utf-8")
-    primary_center_xml = PRIMARY_CENTER_XML.read_text(encoding="utf-8")
-    xml_root = ElementTree.fromstring(xml)
-    base_menu_root = ElementTree.parse(BASE_MENU_XML).getroot()
-    policy = POLICY_SYNC.read_text(encoding="utf-8")
-    hook_facts = HOOK_FACTS.read_text(encoding="utf-8")
-    menu_service = MENU_SERVICE.read_text(encoding="utf-8")
-    dev_make = DEV_MAKE.read_text(encoding="utf-8")
-    shell_exec = ODOO_SHELL_EXEC.read_text(encoding="utf-8")
-    for center in EXPECTED_CENTERS:
-        if f">{center}</field>" not in primary_center_xml:
-            errors.append(f"primary-center XML missing center: {center}")
-    cost_records = [
-        record for record in xml_root.findall("record")
-        if record.get("id") == "menu_sc_cost_center"
-    ]
-    cost_parent_refs = [
-        field.get("ref") for record in cost_records
-        for field in record.findall("field") if field.get("name") == "parent_id"
-    ]
-    if cost_parent_refs != ["smart_construction_core.menu_sc_root"]:
-        errors.append("cost center is not explicitly rooted in the product application")
-    center_sequence = {}
-    for record in xml_root.findall("record"):
-        record_id = record.get("id")
-        for field in record.findall("field"):
-            if field.get("name") == "sequence" and (field.text or "").strip().isdigit():
-                center_sequence[record_id] = int((field.text or "0").strip())
-    if center_sequence.get("menu_sc_contract_center") + 10 != center_sequence.get("menu_sc_cost_center"):
-        errors.append("cost center must be sequenced immediately after contract center")
-    for xmlid in REQUIRED_COST_XMLIDS:
-        if f"smart_construction_core.{xmlid}" not in full_baseline_xmlids:
-            errors.append(f"released cost capability missing from policy: {xmlid}")
-    for xmlid in REQUIRED_REPORT_XMLIDS:
-        if f"smart_construction_core.{xmlid}" not in full_baseline_xmlids:
-            errors.append(f"released reporting capability missing from policy: {xmlid}")
-    for token in (
-        '"smart_construction_core.menu_sc_project_project": "项目台账"',
-        '"smart_construction_core.menu_sc_tender_registration": "项目前期"',
-        '"smart_construction_core.menu_sc_tender_registration_fee": "项目前期"',
-        '"project_center_locked_level_two_projection"',
-    ):
-        if token not in policy:
-            errors.append(f"project center delivery projection missing: {token}")
-    base_material_plan = next(
-        (node for node in base_menu_root.findall("menuitem") if node.get("id") == "menu_project_material_plan"),
-        None,
-    )
-    if base_material_plan is None:
-        errors.append("base material-plan menu is missing")
-    elif base_material_plan.get("parent") != "menu_sc_material_management_group":
-        errors.append("base material-plan menu must belong to material management")
-
-    # Rebuild the final native menu facts in module load order. Policy may
-    # expose or hide these facts, but must never invent a different hierarchy.
-    native_facts = {}
-    for source in NATIVE_MENU_LOAD_ORDER:
-        root = ElementTree.parse(source).getroot()
-        for node in root.iter():
-            menu_id = node.get("id")
-            if not menu_id or node.tag not in {"menuitem", "record"}:
+            parts = tuple(part.strip() for part in str(row.get("visible_menu_path") or "").split(" / ") if part.strip())
+            if len(parts) < 3 or parts[0] != "智慧施工管理平台":
+                errors.append(f"invalid visible path: {row.get('visible_menu_path')}")
                 continue
-            if node.tag == "record" and node.get("model") != "ir.ui.menu":
-                continue
-            fact = native_facts.setdefault(menu_id, {})
-            if node.tag == "menuitem":
-                if node.get("name"):
-                    fact["name"] = node.get("name")
-                if node.get("parent"):
-                    fact["parent"] = node.get("parent").split(".")[-1]
-            else:
-                for field in node.findall("field"):
-                    if field.get("name") == "name" and (field.text or "").strip():
-                        fact["name"] = (field.text or "").strip()
-                    if field.get("name") == "parent_id" and field.get("ref"):
-                        fact["parent"] = field.get("ref").split(".")[-1]
-    required_native_parents = {
-        "menu_project_material_plan": "menu_sc_material_management_group",
-        "menu_sc_general_contract": "menu_sc_expense_contract_group",
-        "menu_sc_project_budget": "menu_sc_cost_target_budget_group",
-        "menu_sc_construction_diary": "menu_sc_schedule_delivery_group_v2",
-        "menu_sc_construction_progress": "menu_sc_schedule_delivery_group_v2",
-        "menu_sc_quality_standard_v2": "menu_sc_quality_delivery_group_v2",
-        "menu_sc_quality_issue": "menu_sc_quality_delivery_group_v2",
-        "menu_sc_quality_rectification": "menu_sc_quality_delivery_group_v2",
-        "menu_sc_quality_recheck": "menu_sc_quality_delivery_group_v2",
-        "menu_sc_quality_site_photo_v2": "menu_sc_quality_delivery_group_v2",
-        "menu_sc_safety_plan_v2": "menu_sc_safety_delivery_group_v2",
-        "menu_sc_safety_disclosure_v2": "menu_sc_safety_delivery_group_v2",
-        "menu_sc_safety_risk_library_v2": "menu_sc_safety_delivery_group_v2",
-        "menu_sc_safety_hazard_source_v2": "menu_sc_safety_delivery_group_v2",
-        "menu_sc_safety_patrol_v2": "menu_sc_safety_delivery_group_v2",
-        "menu_sc_safety_issue": "menu_sc_safety_delivery_group_v2",
-        "menu_sc_safety_rectification": "menu_sc_safety_delivery_group_v2",
-        "menu_sc_safety_recheck": "menu_sc_safety_delivery_group_v2",
-        "menu_sc_user_payment_apply_acceptance": "menu_sc_payment_user_group",
-        "menu_sc_fund_daily_user_report": "menu_sc_fund_account_group",
-        "menu_sc_invoice_input": "menu_sc_invoice_tax_user_group",
-        "menu_sc_fuel_card_archive_group": "menu_sc_hr_admin_center",
-        "menu_sc_legacy_fuel_card_fact_acceptance": "menu_sc_fuel_card_archive_group",
-        "menu_sc_legacy_fuel_card_recharge_fact_acceptance": "menu_sc_fuel_card_archive_group",
-        "menu_ui_menu_config_policy_business_config": "menu_sc_lowcode_system_config_group",
-    }
-    for menu_id, parent_id in required_native_parents.items():
-        if native_facts.get(menu_id, {}).get("parent") != parent_id:
-            errors.append(f"native hierarchy mismatch: {menu_id} must belong to {parent_id}")
-    required_native_names = {
-        "menu_sc_expense_contract_group": "合同管理",
-        "menu_sc_cost_target_budget_group": "目标与预算",
-        "menu_sc_cost_dynamic_group": "动态成本",
-        "menu_sc_cost_analysis_group_v2": "成本分析",
-        "menu_sc_payment_user_group": "付款管理",
-        "menu_sc_fund_account_group": "账户资金",
-        "menu_sc_invoice_tax_user_group": "发票管理",
-    }
-    for menu_id, name in required_native_names.items():
-        if native_facts.get(menu_id, {}).get("name") != name:
-            errors.append(f"native menu name mismatch: {menu_id} must be {name}")
-    if "path_authority" in policy or "NATIVE_MENU_PATH_AUTHORITY_XMLIDS" in policy:
-        errors.append("per-menu path authority forks are forbidden")
-    locked_contract = (ROOT / "addons/smart_construction_core/services/locked_menu_policy_contract.py").read_text(encoding="utf-8")
-    for forbidden in (
-        "PRODUCT_NAVIGATION_V2_ADDITIVE_MENU_IDENTITIES",
-        "_append_native_modeled_product_capability_menus",
-        "_append_finance_interfund_analysis_product_menus",
-        "_sync_user_confirmed_locked_construction_product_policies",
-        "_release_all_construction_product_menus",
-        "ProductPolicyCatalogSyncService",
-    ):
-        if forbidden in policy or forbidden in locked_contract:
-            errors.append(f"dual-track product policy mechanism is forbidden: {forbidden}")
-    if 'self.synchronize_locked_formal_menu_policy(product_key)' not in policy:
-        errors.append("construction product policy sync must use the single locked baseline path")
-    for token in (
-        'native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)',
-        '"policy_group_label": str(group.get("group_label") or "").strip()',
-        '"visible_menu_path": str(menu.get("visible_menu_path") or "").strip()',
-        '"native_visible_menu_path": native_visible_menu_path',
-        'def _node_followup_rank(self, node: dict) -> int:',
-        'return (self._node_followup_rank(node), self._node_sequence(node) or 9999, index)',
-    ):
-        if token not in menu_service:
-            errors.append(f"governed product navigation authority missing: {token}")
-    for forbidden in (
-        'native_group_label = native_path_parts[1]',
-        '"visible_menu_path": native_visible_menu_path or',
-    ):
-        if forbidden in menu_service:
-            errors.append(f"native menu ancestry must not override released product grouping: {forbidden}")
-    for group in ("进度与施工", "质量管理", "安全管理", "行政审批", "人事薪酬"):
-        if f'name="{group}"' not in xml:
-            errors.append(f"level-two product group missing: {group}")
-    for group in EXPECTED_PROJECT_LEVEL_TWO:
-        if (
-            f'name="{group}"' not in xml
-            and f'name="{group}（后续上线）"' not in xml
-            and f'>{group}</field>' not in xml
-        ):
-            errors.append(f"locked project level-two group missing: {group}")
-    for group in [row["name"] for row in project_level_two if row.get("release_status") == "FOLLOWUP"]:
-        if f'name="{group}（后续上线）"' not in xml:
-            errors.append(f"follow-up project group missing launch label: {group}")
-    for token in (
-        "action_sc_project_organization_roadmap",
-        "action_sc_project_milestone_roadmap",
-        "action_sc_project_collaboration_roadmap",
-        "action_sc_project_risk_roadmap",
-        "action_sc_project_closeout_roadmap",
-        "group_sc_cap_business_config_admin",
-    ):
-        if token not in xml:
-            errors.append(f"project roadmap admin visibility binding missing: {token}")
-    for name in (
-        "履约与预警", "成本预测", "现金流预测", "供应链协同", "现场移动", "BIM协同",
-        "资金预测", "税务申报", "发票查验", "预测预警", "人员生命周期", "资源能力",
-    ):
-        if f'name="{name}（后续上线）"' not in xml:
-            errors.append(f"roadmap menu missing: {name}")
-    explicit_admin_bindings = sum(
-        1 for record in xml_root.findall("record")
-        if (record.get("id") or "").endswith("roadmap_v2")
-        and any(
-            field.get("name") == "groups_id" and "group_sc_cap_business_config_admin" in (field.get("eval") or "")
-            for field in record.findall("field")
-        )
-    )
-    if explicit_admin_bindings != 12:
-        errors.append(f"cross-center roadmap menus require 12 explicit admin bindings, got {explicit_admin_bindings}")
-    expected_center_ranks = {"工作台": 5, "项目中心": 10, "合同中心": 20, "成本中心": 30, "财务中心": 40, "税务中心": 50, "会计账务中心": 60, "报表中心": 80, "行政中心": 90, "产品配置": 100}
-    for center, expected_rank in expected_center_ranks.items():
-        if f'"{center}": {expected_rank}' not in hook_facts:
-            errors.append(f"delivery center order missing: {center}")
-    for token in (
-        "release.daily_product_navigation.snapshot:",
-        'test "$(ENV)" = "dev"',
-        'test "$(DB_NAME)" = "sc_demo"',
-        "CONFIRM_DAILY_PRODUCT_NAVIGATION_SNAPSHOT",
-        "initialize_colocated_platform_snapshot.py",
-    ):
-        if token not in dev_make:
-            errors.append(f"daily navigation release boundary missing: {token}")
-    for token in ("PLATFORM_RELEASE_*", "SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY"):
-        if token not in shell_exec:
-            errors.append(f"daily navigation release env forwarding missing: {token}")
+            relative = parts[1:]
+            if relative[0] == "会计账务中心":
+                accounting_count += 1
+                if len(relative) != 2:
+                    errors.append("accounting must remain a flat center-to-page menu")
+            actual_contract_paths.add(relative)
+        if actual_contract_paths != contract_paths:
+            errors.append(
+                f"{product.get('product_key')} contract projection mismatch: "
+                f"missing={sorted(contract_paths - actual_contract_paths)} "
+                f"extra={sorted(actual_contract_paths - contract_paths)}"
+            )
+        if accounting_count != EXPECTED_ACCOUNTING_MENU_COUNT:
+            errors.append(f"{product.get('product_key')} must retain six current accounting pages")
+        capabilities = product.get("capabilities") or []
+        if {row.get("menu_xmlid") for row in capabilities} != set(xmlids):
+            errors.append(f"{product.get('product_key')} capability/menu identity mismatch")
+
+    acceptance = json.loads(ACCEPTANCE.read_text(encoding="utf-8"))
+    daily = (((acceptance.get("profiles") or {}).get("daily") or {}).get("navigation_policy") or {})
+    if daily.get("min_actions") != EXPECTED_FORMAL_MENU_COUNT or daily.get("max_actions") != EXPECTED_FORMAL_MENU_COUNT:
+        errors.append("daily acceptance must lock exactly 89 visible action pages")
+
+    module_manifest = ast.literal_eval(MANIFEST.read_text(encoding="utf-8"))
+    completion_path = "views/menu_product_contract_completion_v1.xml"
+    if completion_path not in (module_manifest.get("data") or []):
+        errors.append("complete product-menu XML is not installed by the module")
+    try:
+        root = ElementTree.parse(COMPLETION_XML).getroot()
+        raw_xml = COMPLETION_XML.read_text(encoding="utf-8")
+        if "base.group_" in raw_xml or "project.group_" in raw_xml or "account.group_" in raw_xml:
+            errors.append("complete product menu must use SC capability groups only")
+        declared_ids = {node.get("id") for node in root.iter() if node.get("id")}
+        completion_xmlids = {
+            row[2].split(".", 1)[1]
+            for product in baseline.get("products") or []
+            for group in product.get("menu_groups") or []
+            for row in [(
+                str(group.get("group_label") or ""),
+                str((group.get("menus") or [{}])[0].get("name") or ""),
+                str(menu.get("menu_xmlid") or ""),
+            ) for menu in group.get("menus") or []]
+            if row[2].startswith("smart_construction_core.menu_sc_product_")
+        }
+        missing_declarations = completion_xmlids - declared_ids
+        if missing_declarations:
+            errors.append(f"completion XML misses contracted menu records: {sorted(missing_declarations)}")
+    except (OSError, ElementTree.ParseError) as exc:
+        errors.append(f"complete product-menu XML invalid: {exc}")
 
     if errors:
-        print("[product_menu_release_manifest_v2_guard] FAIL")
         for error in errors:
-            print(f"- {error}")
-        return 2
+            print(f"ERROR: {error}")
+        return 1
     print(
-        "[product_menu_release_manifest_v2_guard] PASS "
-        f"centers={len(centers)} checklist={len(checklist)} gaps={len(gaps)}"
+        "PRODUCT_MENU_RELEASE_MANIFEST_V2_GUARD=PASS "
+        f"centers={len(EXPECTED_CENTERS)} contract_pages={len(contract_paths)} "
+        f"accounting_pages={EXPECTED_ACCOUNTING_MENU_COUNT} total={EXPECTED_FORMAL_MENU_COUNT}"
     )
     return 0
 

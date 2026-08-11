@@ -228,6 +228,9 @@
         'views/menu_product_configuration_wave1.xml',
         'views/menu_product_project_wave1.xml',
         'views/menu_product_workbench_wave1.xml',
+        # Complete locked menu surface. Capability refinement must preserve
+        # these stable menu paths and XMLIDs.
+        'views/menu_product_contract_completion_v1.xml',
         'views/menu_product_primary_center_candidate_v1.xml',
         'data/hr_payroll_form_productization_contract.xml',
         'data/office_admin_form_productization_contract.xml',

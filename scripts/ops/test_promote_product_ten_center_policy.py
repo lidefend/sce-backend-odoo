@@ -26,7 +26,7 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
             self.assertEqual([group["group_label"] for group in product["menu_groups"]], list(TARGET_CENTERS))
             rows = [menu for group in product["menu_groups"] for menu in group["menus"]]
             xmlids = [row["menu_xmlid"] for row in rows]
-            self.assertEqual(len(rows), 169)
+            self.assertEqual(len(rows), 89)
             self.assertEqual(len(xmlids), len(set(xmlids)))
 
     def test_retired_centers_are_absent_and_accounting_is_real(self):
@@ -49,6 +49,17 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
         payload["products"][0]["menu_groups"][0]["group_label"] = "临时中心"
         with self.assertRaisesRegex(ValueError, "unapproved first-level"):
             promote(payload)
+
+    def test_only_project_center_uses_level_three(self):
+        promoted = promote(copy.deepcopy(self.payload))
+        for product in promoted["products"]:
+            for group in product["menu_groups"]:
+                for row in group["menus"]:
+                    depth = len([part for part in row["visible_menu_path"].split(" / ") if part])
+                    if group["group_label"] == "项目中心":
+                        self.assertEqual(depth, 4)
+                    else:
+                        self.assertEqual(depth, 3)
 
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ def validate() -> list[str]:
         if actual.get("parent") != "smart_construction_core.menu_sc_contract_center":
             errors.append(f"{xmlid} must be a direct contract-center L2 menu")
     text = WAVE_PATH.read_text(encoding="utf-8")
-    for forbidden in ("日常合同结算", "通用合同"):
+    for forbidden in ("日常合同结算", "通用合同结算"):
         if f'name=\"{forbidden}\"' in text:
             errors.append(f"{forbidden} must not be prematurely published in wave one")
     for legacy in ("menu_sc_construction_contract", "menu_sc_income_contract_group", "menu_sc_expense_contract_group"):

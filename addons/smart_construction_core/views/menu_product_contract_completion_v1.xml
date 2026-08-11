@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!--
+    Locked complete product-menu surface.
+
+    This file deliberately separates navigation availability from capability
+    maturity.  Every menu from product_menu_contract_v1.json exists here, while
+    later capability waves may refine an action without changing its menu XMLID
+    or path.  Only SC capability groups are used at the product boundary.
+  -->
+  <data>
+    <!-- Action adapters for contracted pages which do not yet own a dedicated action. -->
+    <record id="action_sc_product_message_notification_v1" model="ir.actions.act_window">
+      <field name="name">消息通知</field><field name="res_model">mail.activity</field><field name="view_mode">tree,form</field>
+      <field name="domain">[('user_id', '=', uid)]</field><field name="context">{'create': False}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
+    </record>
+    <record id="action_sc_product_project_edit_v1" model="ir.actions.act_window">
+      <field name="name">项目信息编辑</field><field name="res_model">project.project</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_project_lifecycle_v1" model="ir.actions.act_window">
+      <field name="name">项目启停管理</field><field name="res_model">project.project</field><field name="view_mode">tree,form</field>
+      <field name="context">{'active_test': False}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_partner_blacklist_v1" model="ir.actions.act_window">
+      <field name="name">客商黑名单</field><field name="res_model">res.partner</field><field name="view_mode">tree,form</field>
+      <field name="domain">[('active', '=', False)]</field><field name="context">{'active_test': False, 'create': False}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_tender_information_v1" model="ir.actions.act_window">
+      <field name="name">招标信息</field><field name="res_model">tender.bid</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
+    </record>
+    <record id="action_sc_product_tender_document_v1" model="ir.actions.act_window">
+      <field name="name">标书管理</field><field name="res_model">tender.doc.purchase</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_quality_acceptance_v1" model="ir.actions.act_window">
+      <field name="name">质量验收</field><field name="res_model">sc.quality.issue</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_site_variation_v1" model="ir.actions.act_window">
+      <field name="name">签证变更</field><field name="res_model">sc.settlement.adjustment</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_labor_realname_v1" model="ir.actions.act_window">
+      <field name="name">劳务实名制</field><field name="res_model">sc.attendance.checkin</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_labor_cost_v1" model="ir.actions.act_window">
+      <field name="name">劳务成本登记</field><field name="res_model">sc.labor.usage</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_labor_deduction_v1" model="ir.actions.act_window">
+      <field name="name">劳务扣款明细</field><field name="res_model">sc.expense.claim</field><field name="view_mode">tree,form</field>
+      <field name="context">{'create': False}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
+    </record>
+    <record id="action_sc_product_project_payroll_v1" model="ir.actions.act_window">
+      <field name="name">薪资核算清单</field><field name="res_model">sc.hr.payroll.document</field><field name="view_mode">tree,form</field>
+      <field name="domain">[('fact_type', '=', 'salary_registration')]</field><field name="context">{'default_fact_type': 'salary_registration'}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_project_salary_payment_v1" model="ir.actions.act_window">
+      <field name="name">薪资发放登记</field><field name="res_model">sc.hr.payroll.document</field><field name="view_mode">tree,form</field>
+      <field name="domain">[('fact_type', '=', 'salary_registration')]</field><field name="context">{'default_fact_type': 'salary_registration'}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_team_loan_deduction_v1" model="ir.actions.act_window">
+      <field name="name">班组借/扣款登记</field><field name="res_model">sc.expense.claim</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+    </record>
+    <record id="action_sc_product_general_contract_settlement_v1" model="ir.actions.act_window">
+      <field name="name">日常合同结算</field><field name="res_model">sc.settlement.order</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_contract_user'), ref('smart_construction_core.group_sc_cap_contract_manager')])]"/>
+    </record>
+    <record id="action_sc_product_current_account_v1" model="ir.actions.act_window">
+      <field name="name">往来款登记</field><field name="res_model">sc.fund.account.operation</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
+    </record>
+    <record id="action_sc_product_company_project_refund_v1" model="ir.actions.act_window">
+      <field name="name">公司&amp;项目退款</field><field name="res_model">sc.expense.claim</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
+    </record>
+    <record id="action_sc_product_project_tax_deduction_v1" model="ir.actions.act_window">
+      <field name="name">项目专项抵扣</field><field name="res_model">sc.tax.deduction.registration</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
+    </record>
+    <record id="action_sc_product_tax_filing_v1" model="ir.actions.act_window">
+      <field name="name">税务申报</field><field name="res_model">sc.invoice.registration</field><field name="view_mode">tree,form</field>
+      <field name="context">{'create': False}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
+    </record>
+    <record id="action_sc_product_tax_report_v1" model="ir.actions.act_window">
+      <field name="name">税务报表</field><field name="res_model">sc.invoice.registration</field><field name="view_mode">pivot,graph,tree</field>
+      <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_data_read')])]"/>
+    </record>
+    <record id="action_sc_product_labor_subcontract_report_v1" model="ir.actions.act_window">
+      <field name="name">劳务分包报表</field><field name="res_model">sc.labor.usage</field><field name="view_mode">pivot,graph,tree</field>
+      <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_data_read')])]"/>
+    </record>
+    <record id="action_sc_product_job_management_v1" model="ir.actions.act_window">
+      <field name="name">岗位管理</field><field name="res_model">hr.job</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="action_sc_product_social_fund_v1" model="ir.actions.act_window">
+      <field name="name">社保公积</field><field name="res_model">sc.hr.payroll.document</field><field name="view_mode">tree,form</field>
+      <field name="domain">[('fact_type', 'in', ['social_person_registration', 'social_registration'])]</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="action_sc_product_office_asset_v1" model="ir.actions.act_window">
+      <field name="name">办公资产</field><field name="res_model">sc.office.admin.document</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <record id="action_sc_product_data_permission_v1" model="ir.actions.act_window">
+      <field name="name">数据权限</field><field name="res_model">ui.business.config.contract</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
+    </record>
+    <record id="action_sc_product_system_parameter_v1" model="ir.actions.act_window">
+      <field name="name">系统参数</field><field name="res_model">ui.business.config.contract</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
+    </record>
+    <record id="action_sc_product_numbering_rule_v1" model="ir.actions.act_window">
+      <field name="name">编码规则</field><field name="res_model">ui.business.config.contract</field><field name="view_mode">tree,form</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
+    </record>
+
+    <!-- Workbench completion. -->
+    <menuitem id="menu_sc_product_message_notification_v1" name="消息通知" parent="smart_construction_core.menu_sc_workspace_center" action="smart_construction_core.action_sc_product_message_notification_v1" sequence="40" groups="smart_construction_core.group_sc_cap_project_read"/>
+
+    <!-- Project center is the sole center allowed to expose level three. -->
+    <record id="menu_sc_project_management_group" model="ir.ui.menu"><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/></record>
+    <record id="menu_sc_project_partner_group_wave1" model="ir.ui.menu"><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/></record>
+    <record id="menu_sc_tender_management_group" model="ir.ui.menu"><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/></record>
+    <record id="menu_sc_construction_management_center" model="ir.ui.menu"><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/></record>
+    <record id="menu_sc_material_center" model="ir.ui.menu"><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/></record>
+    <menuitem id="menu_sc_product_labor_cost_group_v1" name="劳务成本" parent="smart_construction_core.menu_sc_project_center" sequence="50" groups="smart_construction_core.group_sc_cap_project_read"/>
+    <menuitem id="menu_sc_product_equipment_cost_group_v1" name="机械成本" parent="smart_construction_core.menu_sc_project_center" sequence="70" groups="smart_construction_core.group_sc_cap_project_read"/>
+    <menuitem id="menu_sc_product_subcontract_cost_group_v1" name="分包成本" parent="smart_construction_core.menu_sc_project_center" sequence="80" groups="smart_construction_core.group_sc_cap_project_read"/>
+    <menuitem id="menu_sc_product_project_payroll_group_v1" name="项目薪资" parent="smart_construction_core.menu_sc_project_center" sequence="90" groups="smart_construction_core.group_sc_cap_project_read"/>
+    <menuitem id="menu_sc_product_team_loan_group_v1" name="班组借/扣款" parent="smart_construction_core.menu_sc_project_center" sequence="100" groups="smart_construction_core.group_sc_cap_project_read"/>
+
+    <menuitem id="menu_sc_product_project_edit_v1" name="项目信息编辑" parent="smart_construction_core.menu_sc_project_management_group" action="smart_construction_core.action_sc_product_project_edit_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_project_lifecycle_v1" name="项目启停管理" parent="smart_construction_core.menu_sc_project_management_group" action="smart_construction_core.action_sc_product_project_lifecycle_v1" sequence="30" groups="smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_partner_blacklist_v1" name="客商黑名单" parent="smart_construction_core.menu_sc_project_partner_group_wave1" action="smart_construction_core.action_sc_product_partner_blacklist_v1" sequence="30" groups="smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_tender_information_v1" name="招标信息" parent="smart_construction_core.menu_sc_tender_management_group" action="smart_construction_core.action_sc_product_tender_information_v1" sequence="10" groups="smart_construction_core.group_sc_cap_project_read"/>
+    <menuitem id="menu_sc_product_tender_document_v1" name="标书管理" parent="smart_construction_core.menu_sc_tender_management_group" action="smart_construction_core.action_sc_product_tender_document_v1" sequence="30" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_quality_acceptance_v1" name="质量验收" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_product_quality_acceptance_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_site_variation_v1" name="签证变更" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_product_site_variation_v1" sequence="60" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_labor_realname_v1" name="劳务实名制" parent="smart_construction_core.menu_sc_product_labor_cost_group_v1" action="smart_construction_core.action_sc_product_labor_realname_v1" sequence="10" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_labor_cost_v1" name="劳务成本登记" parent="smart_construction_core.menu_sc_product_labor_cost_group_v1" action="smart_construction_core.action_sc_product_labor_cost_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_labor_deduction_v1" name="劳务扣款明细" parent="smart_construction_core.menu_sc_product_labor_cost_group_v1" action="smart_construction_core.action_sc_product_labor_deduction_v1" sequence="30" groups="smart_construction_core.group_sc_cap_project_read"/>
+    <menuitem id="menu_sc_product_material_return_v1" name="材料退货" parent="smart_construction_core.menu_sc_material_center" action="smart_construction_core.action_sc_material_return" sequence="30" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_equipment_shift_v1" name="机械台班登记" parent="smart_construction_core.menu_sc_product_equipment_cost_group_v1" action="smart_construction_core.action_sc_equipment_usage" sequence="10" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_subcontract_cost_v1" name="分包成本登记" parent="smart_construction_core.menu_sc_product_subcontract_cost_group_v1" action="smart_construction_core.action_sc_subcontract_register" sequence="10" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_subcontract_variation_v1" name="分包签证费用" parent="smart_construction_core.menu_sc_product_subcontract_cost_group_v1" action="smart_construction_core.action_sc_subcontract_settlement" sequence="20" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_project_payroll_v1" name="薪资核算清单" parent="smart_construction_core.menu_sc_product_project_payroll_group_v1" action="smart_construction_core.action_sc_product_project_payroll_v1" sequence="10" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_project_salary_payment_v1" name="薪资发放登记" parent="smart_construction_core.menu_sc_product_project_payroll_group_v1" action="smart_construction_core.action_sc_product_project_salary_payment_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_team_loan_deduction_v1" name="班组借/扣款登记" parent="smart_construction_core.menu_sc_product_team_loan_group_v1" action="smart_construction_core.action_sc_product_team_loan_deduction_v1" sequence="10" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+
+    <!-- All remaining centers are strictly flat: center -> action page. -->
+    <menuitem id="menu_sc_product_general_contract_settlement_v1" name="日常合同结算" parent="smart_construction_core.menu_sc_contract_center" action="smart_construction_core.action_sc_product_general_contract_settlement_v1" sequence="50" groups="smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager"/>
+    <menuitem id="menu_sc_product_current_account_v1" name="往来款登记" parent="smart_construction_core.menu_sc_finance_center" action="smart_construction_core.action_sc_product_current_account_v1" sequence="50" groups="smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
+    <menuitem id="menu_sc_product_company_project_refund_v1" name="公司&amp;项目退款" parent="smart_construction_core.menu_sc_finance_center" action="smart_construction_core.action_sc_product_company_project_refund_v1" sequence="90" groups="smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
+    <menuitem id="menu_sc_product_project_tax_deduction_v1" name="项目专项抵扣" parent="smart_construction_core.menu_sc_tax_center" action="smart_construction_core.action_sc_product_project_tax_deduction_v1" sequence="80" groups="smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
+    <menuitem id="menu_sc_product_tax_filing_v1" name="税务申报" parent="smart_construction_core.menu_sc_tax_center" action="smart_construction_core.action_sc_product_tax_filing_v1" sequence="90" groups="smart_construction_core.group_sc_cap_finance_manager"/>
+    <menuitem id="menu_sc_product_tax_report_v1" name="税务报表" parent="smart_construction_core.menu_sc_data_center" action="smart_construction_core.action_sc_product_tax_report_v1" sequence="40" groups="smart_construction_core.group_sc_cap_data_read"/>
+    <menuitem id="menu_sc_product_labor_subcontract_report_v1" name="劳务分包报表" parent="smart_construction_core.menu_sc_data_center" action="smart_construction_core.action_sc_product_labor_subcontract_report_v1" sequence="50" groups="smart_construction_core.group_sc_cap_data_read"/>
+    <menuitem id="menu_sc_product_job_management_v1" name="岗位管理" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_product_job_management_v1" sequence="20" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_product_social_fund_v1" name="社保公积" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_product_social_fund_v1" sequence="50" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_product_office_asset_v1" name="办公资产" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_product_office_asset_v1" sequence="70" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_product_policy_document_v1" name="制度文件" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_company_document_archive" sequence="80" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_product_data_permission_v1" name="数据权限" parent="smart_construction_core.menu_sc_business_config_center" action="smart_construction_core.action_sc_product_data_permission_v1" sequence="40" groups="smart_construction_core.group_sc_cap_config_admin"/>
+    <menuitem id="menu_sc_product_system_parameter_v1" name="系统参数" parent="smart_construction_core.menu_sc_business_config_center" action="smart_construction_core.action_sc_product_system_parameter_v1" sequence="50" groups="smart_construction_core.group_sc_cap_config_admin"/>
+    <menuitem id="menu_sc_product_numbering_rule_v1" name="编码规则" parent="smart_construction_core.menu_sc_business_config_center" action="smart_construction_core.action_sc_product_numbering_rule_v1" sequence="60" groups="smart_construction_core.group_sc_cap_config_admin"/>
+  </data>
+</odoo>
