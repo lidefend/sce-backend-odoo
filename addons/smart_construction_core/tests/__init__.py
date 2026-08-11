@@ -75,3 +75,4 @@ from . import test_subcontract_cost_registration
 from . import test_project_salary_product
 from . import test_team_loan_deduction_workspace
 from . import test_daily_contract_settlement
+from . import test_current_account_workspace

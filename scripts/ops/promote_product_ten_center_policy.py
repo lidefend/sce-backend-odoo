@@ -77,7 +77,7 @@ RELEASED_MENU_BINDINGS = (
     ("财务中心", "付款申请", "smart_construction_core.menu_sc_user_payment_apply", "smart_construction_core.action_payment_request_user_payment_apply", "payment.request", ("付款申请",)),
     ("财务中心", "实付登记", "smart_construction_core.menu_sc_payment_execution", "smart_construction_core.action_sc_payment_execution_actual_outflow", "sc.payment.execution", ("实付登记",)),
     ("财务中心", "费用报销", "smart_construction_core.menu_sc_reimbursement_request", "smart_construction_core.action_sc_expense_claim_reimbursement_request", "sc.expense.claim", ("费用报销",)),
-    ("财务中心", "往来款登记", "smart_construction_core.menu_sc_product_current_account_v1", "smart_construction_core.action_sc_product_current_account_v1", "sc.fund.account.operation", ("往来款登记",)),
+    ("财务中心", "往来款登记", "smart_construction_core.menu_sc_product_current_account_v1", "smart_construction_core.action_sc_product_current_account_v1", "sc.current.account.workspace", ("往来款登记",)),
     ("财务中心", "公司收入", "smart_construction_core.menu_sc_user_income", "smart_construction_core.action_sc_receipt_income_user_income", "sc.receipt.income", ("公司收入",)),
     ("财务中心", "公司支出", "smart_construction_core.menu_sc_company_finance_expense", "smart_construction_core.action_sc_payment_execution_company_finance_expense", "sc.payment.execution", ("公司支出",)),
     ("财务中心", "公司&项目扣款", "smart_construction_core.menu_sc_deduction_bill", "smart_construction_core.action_sc_expense_claim_deduction_bill", "sc.expense.claim", ("公司&项目扣款",)),

@@ -190,6 +190,52 @@
       "frontend_policy": "contract_renderer_only"
     },
     {
+      "spec": "current_account_context_entry",
+      "risk_family": "multi-fact dispatch and interfund conservation",
+      "business_object": "bilateral_mixed",
+      "fact_source_model": ["sc.financing.loan", "sc.expense.claim", "sc.fund.account.operation"],
+      "allowed_support_models": ["sc.current.account.workspace", "project.project", "res.partner"],
+      "projection_models": ["sc.interfund.movement.fact", "sc.treasury.ledger", "sc.finance.project.counterparty.position"],
+      "boundary_rule": "Finance Center owns the current-account context entry; canonical loan, repayment and account-operation models own facts, while the project-counterparty position remains a read-only projection.",
+      "forbidden_drift": "Do not persist amounts or workflow state in the workspace, flatten all current-account intents into fund account operations, let frontend select fact models, or write business facts into the projection.",
+      "decision": "Use one transient P1 dispatch entry for the five governed interfund intents and one read-only drill-down; preserve each existing fact owner and its capability controls.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "transient_dispatch_only",
+      "entry_bindings": [
+        {
+          "intent": "current_account_context_entry",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_current_account_v1",
+          "entry_model": "sc.current.account.workspace",
+          "fact_models": ["sc.financing.loan", "sc.expense.claim", "sc.fund.account.operation"],
+          "projection_model": "sc.finance.project.counterparty.position",
+          "orchestration_policy": "transient_dispatch_only",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_current_account_workspace_form_v1"
+        }
+      ],
+      "conservation_invariants": [
+        "workspace_must_not_persist_business_amount_or_state",
+        "each_intent_dispatches_to_exactly_one_canonical_fact_model",
+        "interfund_cash_effects_are_traceable_in_treasury_ledger",
+        "current_account_summary_remains_read_only",
+        "finance_capability_is_required_for_product_entry"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/support/current_account_workspace.py",
+        "addons/smart_construction_core/models/core/financing_loan.py",
+        "addons/smart_construction_core/models/core/expense_claim.py",
+        "addons/smart_construction_core/models/core/fund_account_operation.py",
+        "addons/smart_construction_core/models/projection/finance_project_counterparty_position.py",
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/current_account_workspace_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "projection_refresh_ownership",
       "risk_family": "projection and management visibility",
       "business_object": "projection",

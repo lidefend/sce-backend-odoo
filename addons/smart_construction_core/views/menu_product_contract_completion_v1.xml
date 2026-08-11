@@ -98,7 +98,8 @@
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_contract_user'), ref('smart_construction_core.group_sc_cap_contract_manager')])]"/>
     </record>
     <record id="action_sc_product_current_account_v1" model="ir.actions.act_window">
-      <field name="name">往来款登记</field><field name="res_model">sc.fund.account.operation</field><field name="view_mode">tree,form</field>
+      <field name="name">往来款登记</field><field name="res_model">sc.current.account.workspace</field><field name="view_mode">form</field>
+      <field name="view_id" ref="smart_construction_core.view_sc_current_account_workspace_form"/><field name="target">current</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
     </record>
     <record id="action_sc_product_company_project_refund_v1" model="ir.actions.act_window">

@@ -55,3 +55,4 @@ from . import product_policy_sync
 from . import project_capability_roadmap
 from . import formal_list_contract_sync
 from . import team_loan_deduction_workspace
+from . import current_account_workspace

@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T15:36:27.177078+00:00`
+- generated_at: `2026-08-11T15:54:16.975567+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -320,7 +320,7 @@
       - 销项调整记录 [`formal_product`] -> `sc.output.invoice.ledger`
     - 备用金 [`formal_product`] -> `sc.expense.claim`
     - 实付登记 [`formal_product`] -> `sc.payment.execution`
-    - 往来款登记 [`formal_product`] -> `sc.fund.account.operation`
+    - 往来款登记 [`formal_product`] -> `sc.current.account.workspace`
     - 待我审批（付款申请） [`formal_product` inactive] -> `tier.review`
     - 扣款 [`formal_product` inactive]
     - 扣款与非现金 [`formal_product` inactive]
