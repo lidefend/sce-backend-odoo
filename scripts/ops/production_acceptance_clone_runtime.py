@@ -231,6 +231,24 @@ def remove_verified_failed_upgrade(restore_id: str, network: str) -> bool:
     return True
 
 
+def ensure_retryable_runtime_root(runtime_root: Path) -> None:
+    """Create or admit only the incomplete runtime directory produced by this tool."""
+    if runtime_root.is_symlink():
+        raise CloneRuntimeError("acceptance runtime root must not be a symlink")
+    if not runtime_root.exists():
+        runtime_root.mkdir(mode=0o700, parents=True)
+        return
+    if not runtime_root.is_dir():
+        raise CloneRuntimeError("acceptance runtime root is not a directory")
+    entries = {entry.name: entry for entry in runtime_root.iterdir()}
+    if set(entries) - {"odoo.conf"}:
+        raise CloneRuntimeError("acceptance runtime root contains unmanaged files")
+    config = entries.get("odoo.conf")
+    if config is not None and (config.is_symlink() or not config.is_file()):
+        raise CloneRuntimeError("acceptance runtime config is unsafe")
+    runtime_root.chmod(0o700)
+
+
 def start_frontend(
     *,
     web_container: str,
@@ -407,7 +425,7 @@ def activate(
             raise CloneRuntimeError("replace requested but verified acceptance runtime is absent")
     else:
         replaced = False
-    runtime_root.mkdir(mode=0o700, parents=True, exist_ok=replace_existing)
+    ensure_retryable_runtime_root(runtime_root)
     config = runtime_root / "odoo.conf"
     config.write_text(
         "[options]\n"
