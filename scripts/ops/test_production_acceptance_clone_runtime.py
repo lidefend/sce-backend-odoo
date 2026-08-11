@@ -72,6 +72,58 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         self.assertIn("smart_construction_seed", modules)
         self.assertEqual(len(modules), len(set(modules)))
 
+    def test_odoo_runtime_containers_have_acceptance_identity_label(self) -> None:
+        command = RUNTIME.odoo_container_args(
+            name="sc_restore_20260808t102000z_4d7e91a2_acceptance_upgrade",
+            network="sc_restore_20260808t102000z_4d7e91a2_internal",
+            filestore="sc_restore_20260808t102000z_4d7e91a2_filestore",
+            tenant_root=Path("/opt/sce/tenant-addons/acceptance/" + "1" * 40),
+            config=Path("/tmp/acceptance/odoo.conf"),
+            image="sha256:" + "2" * 64,
+        )
+        self.assertIn("sc.production-acceptance-clone=true", command)
+
+    def test_retry_removes_stopped_upgrade_from_exact_isolated_network(self) -> None:
+        network = "sc_restore_20260808t102000z_4d7e91a2_internal"
+        with mock.patch.object(
+            RUNTIME,
+            "run",
+            side_effect=[f"exited|false|{network}|", ""],
+        ) as runner:
+            self.assertTrue(
+                RUNTIME.remove_verified_failed_upgrade(
+                    "sc_restore_20260808t102000z_4d7e91a2", network
+                )
+            )
+        self.assertEqual(
+            runner.call_args_list[-1].args[0],
+            ["docker", "rm", "sc_restore_20260808t102000z_4d7e91a2_acceptance_upgrade"],
+        )
+
+    def test_retry_rejects_running_upgrade_container(self) -> None:
+        network = "sc_restore_20260808t102000z_4d7e91a2_internal"
+        with mock.patch.object(
+            RUNTIME,
+            "run",
+            return_value=f"running|true|{network}|true",
+        ):
+            with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "not safely stopped"):
+                RUNTIME.remove_verified_failed_upgrade(
+                    "sc_restore_20260808t102000z_4d7e91a2", network
+                )
+
+    def test_retry_rejects_upgrade_container_outside_restore_network(self) -> None:
+        with mock.patch.object(
+            RUNTIME,
+            "run",
+            return_value="exited|false|foreign_network|true",
+        ):
+            with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "identity differs"):
+                RUNTIME.remove_verified_failed_upgrade(
+                    "sc_restore_20260808t102000z_4d7e91a2",
+                    "sc_restore_20260808t102000z_4d7e91a2_internal",
+                )
+
     def test_existing_tenant_package_still_consumes_archive_stream(self) -> None:
         source = RELEASE_MAKE.read_text(encoding="utf-8")
         tenant_target = source.split(
