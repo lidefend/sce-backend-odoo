@@ -119,7 +119,9 @@ def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
     if scene_count <= 0:
-        warnings.append("scene_count is 0; source-mix threshold checks skipped")
+        errors.append(
+            "scene_count is 0; source-mix evidence is empty and cannot satisfy the release threshold"
+        )
     else:
         if scene_count < min_scene_count:
             errors.append(f"scene_count below threshold: {scene_count} < {min_scene_count}")

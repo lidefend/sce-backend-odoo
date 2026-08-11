@@ -57,7 +57,6 @@ def main() -> int:
         "function evaluateConditionExpr(",
         "required_fields",
         "required_capabilities",
-        "required_groups",
         "required_roles",
         "conditions",
         "condition_expr",
@@ -75,13 +74,18 @@ def main() -> int:
         "evaluateActionPolicy(params.contract, key, params.policyContext)",
         "collectPolicyValidationErrors(contract.value, policyContext.value)",
         "capabilities: runtimeCapabilities.value",
-        "userGroups: runtimeUserGroups.value",
         "roleCode: runtimeRoleCode.value",
         "contractVisibleFields",
     ]
     for token in form_tokens:
         if token not in form_text:
             errors.append(f"ContractFormPage missing token: {token}")
+
+    for token in ("required_groups", "userGroups"):
+        if token in policy_text:
+            errors.append(f"contractPolicies must not evaluate backend group authority: {token}")
+    if "runtimeUserGroups" in form_text:
+        errors.append("ContractFormPage must not reconstruct backend group authority: runtimeUserGroups")
 
     report = {
         "ok": len(errors) == 0,

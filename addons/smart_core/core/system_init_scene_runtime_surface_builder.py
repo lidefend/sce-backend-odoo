@@ -31,6 +31,24 @@ def _as_int(value):
     return number if number > 0 else None
 
 
+def _platform_scene_stub(scene_key: str) -> dict:
+    """Return the platform-owned fallback scene when the business catalog omits it."""
+    key = str(scene_key or "").strip()
+    if key != "workspace.home":
+        return {}
+    return {
+        "code": key,
+        "name": "角色首页",
+        "layout": {"kind": "workspace"},
+        "target": {"route": "/"},
+        "runtime_policy": {
+            "strict_contract_mode": True,
+            "scene_tier": "core",
+        },
+        "scene_tier": "core",
+    }
+
+
 def _build_scene_ready_registry_contract(
     scenes,
     *,
@@ -137,6 +155,19 @@ class SystemInitSceneRuntimeSurfaceBuilder:
             delivery_result.get("delivery_scenes") if isinstance(delivery_result, dict) else [],
             startup_scene_subset,
         )
+        preload_scene_keys = {
+            str(row.get("code") or row.get("key") or "").strip()
+            for row in preload_scenes or []
+            if isinstance(row, dict)
+        }
+        for startup_scene_key in startup_scene_subset:
+            if startup_scene_key in preload_scene_keys:
+                continue
+            platform_scene = _platform_scene_stub(startup_scene_key)
+            if not platform_scene:
+                continue
+            preload_scenes.append(platform_scene)
+            preload_scene_keys.add(startup_scene_key)
         scene_ready_input = []
         scene_ready_seen = set()
         for scene_row in list(preload_scenes or []) + list(delivery_result.get("deep_link_scenes") or []):

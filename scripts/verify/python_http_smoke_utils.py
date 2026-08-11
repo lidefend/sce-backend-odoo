@@ -10,6 +10,7 @@ from http.client import RemoteDisconnected
 from typing import Any
 from urllib import request as urlrequest
 from urllib.error import HTTPError, URLError
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 def request_timeout_seconds() -> int:
@@ -52,6 +53,24 @@ def get_base_url() -> str:
     return f"http://localhost:{port}"
 
 
+def with_database_query(url: str, db_name: str) -> str:
+    """Bind a runtime request to the same database routing contract as web clients."""
+    raw_url = str(url or "").strip()
+    database = str(db_name or "").strip()
+    if not raw_url or not database:
+        return raw_url
+    parts = urlsplit(raw_url)
+    query = [(key, value) for key, value in parse_qsl(parts.query, keep_blank_values=True) if key != "db"]
+    query.append(("db", database))
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+
+
+def build_intent_url(base_url: str | None = None, db_name: str | None = None) -> str:
+    base = str(base_url or get_base_url()).rstrip("/")
+    database = str(db_name or os.getenv("E2E_DB") or os.getenv("DB_NAME") or "").strip()
+    return with_database_query(f"{base}/api/v1/intent", database)
+
+
 def env_value(key: str, env_file: str | None = None) -> str:
     value = str(os.getenv(key) or "").strip()
     if value:
@@ -67,6 +86,7 @@ def extract_login_token(payload: dict[str, Any]) -> str:
 
 
 def obtain_runtime_probe_token(intent_url: str, db_name: str) -> tuple[bool, str, str]:
+    intent_url = with_database_query(intent_url, db_name)
     db_headers = {"X-Odoo-DB": db_name} if db_name else {}
     login = env_value("E2E_LOGIN")
     password = env_value("E2E_PASSWORD")

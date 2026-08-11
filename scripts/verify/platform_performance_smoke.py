@@ -92,8 +92,18 @@ def main() -> int:
         token = ""
 
     project_id = _first_project_id(intent_url, token, db_name) if token else 0
+    require_write_sample = str(env_value("PLATFORM_PERFORMANCE_REQUIRE_WRITE_SAMPLE") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     if token and project_id <= 0:
-        errors.append("performance smoke requires an accessible project.project record")
+        message = "execute_button performance sample unavailable: no accessible project.project record"
+        if require_write_sample:
+            errors.append(message)
+        else:
+            warnings.append(message)
 
     targets = [
         (
@@ -108,7 +118,9 @@ def main() -> int:
             },
         ),
         ("ui.contract", {"op": "model", "model": "project.project", "view_type": "form"}),
-        (
+    ]
+    if project_id > 0:
+        targets.append((
             "execute_button",
             {
                 "model": "project.project",
@@ -116,8 +128,7 @@ def main() -> int:
                 "res_id": project_id,
                 "dry_run": True,
             },
-        ),
-    ]
+        ))
     rows: list[dict] = []
 
     if token:

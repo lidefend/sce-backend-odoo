@@ -382,7 +382,7 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   const visible = asRecord(raw.visible);
   const modifiers = asRecord(raw.modifiers);
   const presentation = asRecord(raw.presentation);
-  const actionSafety = asRecord(raw.action_safety || raw.actionSafety);
+  const actionSafety = asRecord(raw.actionSafety);
   const submitPolicy = asRecord(raw.submitPolicy);
   const tracePolicy = asRecord(raw.tracePolicy);
   return {
@@ -401,9 +401,9 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
     ...(Object.keys(visible).length ? { visible } : {}),
     ...(Object.keys(modifiers).length ? { modifiers } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'invisible') ? { invisible: raw.invisible } : {}),
-    ...(asStringArray(raw.visible_profiles).length ? { visible_profiles: asStringArray(raw.visible_profiles) } : {}),
+    ...(asStringArray(raw.visibleProfiles).length ? { visibleProfiles: asStringArray(raw.visibleProfiles) } : {}),
     ...(Object.keys(presentation).length ? { presentation } : {}),
-    ...(Object.keys(actionSafety).length ? { action_safety: actionSafety } : {}),
+    ...(Object.keys(actionSafety).length ? { actionSafety } : {}),
     ...(Object.keys(submitPolicy).length ? { submitPolicy } : {}),
     ...(Object.keys(tracePolicy).length ? { tracePolicy } : {}),
   };

@@ -31,6 +31,8 @@ _logger = logging.getLogger(__name__)
 
 REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
 REASON_SCENE_CONTRACT_READY = "SCENE_CONTRACT_READY"
+REASON_ACTION_GROUP_ACCESS_DENIED = "ACTION_GROUP_ACCESS_DENIED"
+REASON_SCENE_ACTION_BINDING_INVALID = "SCENE_ACTION_BINDING_INVALID"
 BUSINESS_OPERATION_FIELD_PRIORITY = (
     "name",
     "document_no",
@@ -208,6 +210,99 @@ class UiContractV2Handler(BaseIntentHandler):
             "no_business_fact_authority": cls.NO_BUSINESS_FACT_AUTHORITY,
             "runtime_carrier": cls.INTENT_TYPE,
         }
+
+    def _project_action_group_entitlements(self, source_contract: dict[str, Any]) -> None:
+        """Resolve group constraints server-side and publish only final button status."""
+        policies = source_contract.get("action_policies")
+        if not isinstance(policies, dict):
+            return
+        user = getattr(self.env, "user", None)
+        for action_key, raw_policy in policies.items():
+            if not isinstance(raw_policy, dict):
+                continue
+            enabled_when = raw_policy.get("enabled_when")
+            if not isinstance(enabled_when, dict):
+                continue
+            required_groups = [
+                str(item or "").strip()
+                for item in (enabled_when.get("required_groups") or [])
+                if str(item or "").strip()
+            ]
+            if not required_groups:
+                continue
+            allowed = False
+            if user is not None:
+                try:
+                    allowed = any(bool(user.has_group(xmlid)) for xmlid in required_groups)
+                except Exception:
+                    _logger.warning(
+                        "ui.contract.v2 group entitlement projection failed action=%s",
+                        action_key,
+                        exc_info=True,
+                    )
+                    allowed = False
+            projected_when = dict(enabled_when)
+            projected_when.pop("required_groups", None)
+            raw_policy["enabled_when"] = projected_when
+            raw_policy["entitlement_evaluated"] = True
+            raw_policy["enabled"] = bool(raw_policy.get("enabled", True)) and allowed
+            if not allowed:
+                raw_policy["reason_code"] = REASON_ACTION_GROUP_ACCESS_DENIED
+                raw_policy["disabled_reason"] = str(
+                    raw_policy.get("disabled_reason") or "当前账号无权执行此操作"
+                )
+
+    @staticmethod
+    def _scene_target_action_id(scene: dict[str, Any]) -> int:
+        target = scene.get("target") if isinstance(scene.get("target"), dict) else {}
+        candidates = [target]
+        entry_target = target.get("entry_target") if isinstance(target.get("entry_target"), dict) else {}
+        candidates.extend(
+            row
+            for row in (
+                entry_target,
+                entry_target.get("compatibility_refs"),
+                entry_target.get("record_entry"),
+                entry_target.get("list_entry"),
+            )
+            if isinstance(row, dict)
+        )
+        for row in candidates:
+            try:
+                action_id = int(row.get("action_id") or 0)
+            except (TypeError, ValueError):
+                action_id = 0
+            if action_id > 0:
+                return action_id
+        return 0
+
+    def _validate_scene_action_binding(self, params: dict[str, Any]):
+        scene_key = str(params.get("scene_key") or params.get("sceneKey") or "").strip()
+        if not scene_key:
+            return None
+        try:
+            requested_action_id = int(params.get("action_id") or params.get("actionId") or 0)
+        except (TypeError, ValueError):
+            requested_action_id = 0
+        if requested_action_id <= 0:
+            return self._err(409, f"{REASON_SCENE_ACTION_BINDING_INVALID}: scene request missing action_id")
+        payload = load_scenes_from_db_or_fallback(self.env, drift=None, logger=None) or {}
+        scene = next(
+            (
+                row
+                for row in (payload.get("scenes") or [])
+                if isinstance(row, dict)
+                and str(row.get("code") or row.get("key") or "").strip() == scene_key
+            ),
+            None,
+        )
+        expected_action_id = self._scene_target_action_id(scene or {})
+        if not scene or expected_action_id <= 0 or expected_action_id != requested_action_id:
+            return self._err(
+                409,
+                f"{REASON_SCENE_ACTION_BINDING_INVALID}: scene={scene_key} action_id={requested_action_id}",
+            )
+        return None
 
     def _set_v2_container_tree(self, contract: dict[str, Any], container_tree: list[Any]) -> None:
         _projection.set_v2_container_tree(contract, container_tree)
@@ -516,6 +611,9 @@ class UiContractV2Handler(BaseIntentHandler):
         # including entry-contract re-resolution and orchestration overlays.
         self.env = projection_env
         self.su_env = projection_su_env
+        scene_binding_error = self._validate_scene_action_binding(params)
+        if scene_binding_error is not None:
+            return scene_binding_error
         source_result = UiContractHandler(
             projection_env,
             su_env=projection_su_env,
@@ -666,6 +764,7 @@ class UiContractV2Handler(BaseIntentHandler):
             client_type=client_type,
             delivery_profile=delivery_profile,
         )
+        self._project_action_group_entitlements(source_contract)
         contract_v2 = assemble_unified_page_contract_v2(
             source_contract,
             source_type="ui.contract",

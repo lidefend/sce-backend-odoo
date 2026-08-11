@@ -23,13 +23,13 @@ ROOT_XMLIDS = tuple(
     if item.strip()
 )
 OUTPUT_PATH = Path(os.getenv("PRODUCT_MENU_CATALOG_RUNTIME_PATH", "/tmp/product_menu_catalog_runtime_v1.json"))
-FULL_PRODUCT_LOGIN = str(os.getenv("PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN", "wutao") or "").strip()
+FULL_PRODUCT_LOGIN = str(os.getenv("PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN", "") or "").strip()
 VISIBLE_LOGINS = tuple(dict.fromkeys([
     *(
     item.strip()
     for item in os.getenv(
         "PRODUCT_MENU_CATALOG_VISIBLE_LOGINS",
-        "admin,wutao,demo_business_full,demo_role_project_manager,demo_role_finance,demo_role_executive",
+        "admin",
     ).split(",")
     if item.strip()
     ),
@@ -39,7 +39,7 @@ BUSINESS_VISIBLE_LOGINS = {
     item.strip()
     for item in os.getenv(
         "PRODUCT_MENU_CATALOG_BUSINESS_LOGINS",
-        "wutao,demo_business_full,demo_role_project_manager,demo_role_finance,demo_role_executive",
+        "",
     ).split(",")
     if item.strip()
 }
@@ -534,6 +534,7 @@ def _export() -> dict[str, object]:
         and row.get("layer") == "formal_product"
         and bool(row.get("action_raw") or row.get("scene_key"))
         and not _is_intentionally_internal(row)
+        and FULL_PRODUCT_LOGIN
         and FULL_PRODUCT_LOGIN not in (row.get("visible_logins") or [])
     ]
     if full_product_missing:

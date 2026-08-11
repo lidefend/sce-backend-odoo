@@ -165,8 +165,16 @@ verify.frontend.home_orchestration_consumption.guard: guard.prod.forbid
 verify.scene.ready.strict_contract.guard: guard.prod.forbid
 	@python3 scripts/verify/scene_ready_strict_contract_guard.py
 
+.PHONY: verify.contract.probe_routing.unit
+verify.contract.probe_routing.unit: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_contract_probe_routing
+
+.PHONY: verify.contract.authority_hierarchy.guard
+verify.contract.authority_hierarchy.guard: guard.prod.forbid verify.contract.probe_routing.unit
+	@python3 scripts/verify/contract_authority_hierarchy_guard.py
+
 .PHONY: verify.scene.ready.strict_gap.full_audit
-verify.scene.ready.strict_gap.full_audit: guard.prod.forbid check-compose-project check-compose-env
+verify.scene.ready.strict_gap.full_audit: guard.prod.forbid verify.contract.probe_routing.unit check-compose-project check-compose-env
 	@$(RUN_ENV) python3 scripts/verify/scene_ready_strict_gap_full_audit.py
 
 .PHONY: verify.workspace_home.sections_schema.guard
@@ -393,6 +401,7 @@ verify.frontend.product.ready: guard.prod.forbid \
 	verify.frontend.scene_contract_auto_render.guard \
 	verify.frontend.actionview.scene_specialcase.guard \
 	verify.frontend.scene_record_semantics.guard \
+	verify.contract.authority_hierarchy.guard \
 	verify.frontend.error_context.contract.guard \
 	verify.render.semantic.ready \
 	verify.render.policy.ready \
@@ -1807,6 +1816,7 @@ verify.product.sla.baseline: guard.prod.forbid verify.platform.performance.smoke
 	@echo "[OK] verify.product.sla.baseline done"
 
 verify.product.release.ready: guard.prod.forbid \
+	verify.frontend.product.ready \
 	verify.docs.product_boundary \
 	verify.industry_module.product_boundary \
 	verify.user_module.product_boundary \
@@ -2319,7 +2329,7 @@ verify.contract.scene_coverage.guard: guard.prod.forbid verify.contract.scene_co
 	@python3 scripts/verify/scene_contract_coverage_schema_guard.py
 	@python3 scripts/verify/scene_contract_coverage_baseline_guard.py
 
-verify.contract.mode.smoke: guard.prod.forbid check-compose-project check-compose-env
+verify.contract.mode.smoke: guard.prod.forbid verify.contract.probe_routing.unit check-compose-project check-compose-env
 	@$(RUN_ENV) python3 scripts/verify/contract_mode_smoke.py
 
 verify.contract.api.mode.smoke: guard.prod.forbid check-compose-project check-compose-env

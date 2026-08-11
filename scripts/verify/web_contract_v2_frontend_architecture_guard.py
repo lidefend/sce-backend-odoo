@@ -136,7 +136,7 @@ DEBT_RULES: tuple[DebtRule, ...] = (
         severity="P1",
         path="pages/ContractFormPage.vue",
         pattern="groups_xmlids",
-        max_count=1,
+        max_count=0,
         rationale="Generic form path still reads groups for field/action decisions.",
         next_action="Consume backend entitlement/status contract only.",
     ),

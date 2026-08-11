@@ -8,6 +8,7 @@
     'depends': [
         'project',
         'purchase',
+        'purchase_stock',
         'stock',
         'account',
         'hr',

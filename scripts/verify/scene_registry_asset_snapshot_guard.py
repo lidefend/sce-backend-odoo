@@ -10,7 +10,12 @@ from pathlib import Path
 from typing import Any
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import (
+    build_intent_url,
+    get_base_url,
+    http_post_json,
+    obtain_runtime_probe_token,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -58,45 +63,35 @@ def _resolve_state_path(baseline: dict) -> Path:
 
 def _fetch_live_snapshot() -> dict:
     base_url = get_base_url()
-    intent_url = f"{base_url}/api/v1/intent"
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
-    login = os.getenv("E2E_LOGIN") or "admin"
-    password = os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin"
+    intent_url = build_intent_url(base_url, db_name)
     login_company_id = _safe_int(os.getenv("E2E_COMPANY_ID"), 0)
 
-    login_params = {"db": db_name, "login": login, "password": password}
+    token_ok, token, auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    if not token_ok or not token:
+        raise RuntimeError(f"runtime probe authentication unavailable: source={auth_source}")
+
+    init_params = {"contract_mode": "user"}
     if login_company_id > 0:
-        login_params["company_id"] = login_company_id
-
-    status, login_resp = http_post_json(
-        intent_url,
-        {"intent": "login", "params": login_params},
-        headers={"X-Anonymous-Intent": "1"},
-    )
-    require_ok(status, login_resp, "login")
-    token = _text(_as_dict(login_resp.get("data")).get("token"))
-    if not token:
-        raise RuntimeError("login response missing token")
-
-    login_data = _as_dict(login_resp.get("data"))
-    login_user = _as_dict(login_data.get("user"))
-    effective_company_id = _safe_int(login_data.get("company_id"), 0) or _safe_int(login_user.get("company_id"), 0)
-    allowed_company_ids = [
-        _safe_int(item, 0) for item in _as_list(login_data.get("allowed_company_ids")) if _safe_int(item, 0) > 0
-    ]
-    if not allowed_company_ids:
-        user_company_id = _safe_int(login_user.get("company_id"), 0)
-        if user_company_id > 0:
-            allowed_company_ids = [user_company_id]
+        init_params["company_id"] = login_company_id
 
     status, init_resp = http_post_json(
         intent_url,
-        {"intent": "system.init", "params": {"contract_mode": "user"}},
-        headers={"Authorization": f"Bearer {token}"},
+        {"intent": "system.init", "params": init_params},
+        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
     )
     require_ok(status, init_resp, "system.init")
 
     data = _as_dict(init_resp.get("data"))
+    login_user = _as_dict(data.get("user"))
+    effective_company_id = _safe_int(login_user.get("company_id"), 0)
+    allowed_company_ids = [
+        _safe_int(item, 0)
+        for item in _as_list(login_user.get("allowed_company_ids"))
+        if _safe_int(item, 0) > 0
+    ]
+    if not allowed_company_ids and effective_company_id > 0:
+        allowed_company_ids = [effective_company_id]
     nav_meta = _as_dict(data.get("nav_meta"))
     scene_ready = _as_dict(data.get("scene_ready_contract_v1"))
     scene_meta = _as_dict(scene_ready.get("meta"))

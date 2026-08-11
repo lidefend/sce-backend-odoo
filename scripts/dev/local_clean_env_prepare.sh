@@ -26,6 +26,32 @@ random_secret() {
   openssl rand -hex "$1"
 }
 
+project_name="${LOCAL_CLEAN_PROJECT_NAME:-sc-local-clean}"
+db_user="${LOCAL_CLEAN_DB_USER:-sc_clean_odoo}"
+db_name="${LOCAL_CLEAN_DB_NAME:-sc_clean}"
+db_data="${LOCAL_CLEAN_DB_DATA:-sc_local_clean_db_data}"
+redis_data="${LOCAL_CLEAN_REDIS_DATA:-sc_local_clean_redis_data}"
+odoo_data="${LOCAL_CLEAN_ODOO_DATA:-sc_local_clean_odoo_data}"
+nginx_port="${LOCAL_CLEAN_NGINX_PORT:-18083}"
+odoo_port="${LOCAL_CLEAN_ODOO_PORT:-8072}"
+
+if [[ ! "${project_name}" =~ ^sc-[a-z0-9-]+$ ]]; then
+  echo "[local.clean.prepare] invalid isolated project name: ${project_name}" >&2
+  exit 2
+fi
+for value in "${db_user}" "${db_name}" "${db_data}" "${redis_data}" "${odoo_data}"; do
+  if [[ ! "${value}" =~ ^sc_[a-z0-9_]+$ ]]; then
+    echo "[local.clean.prepare] invalid isolated identifier: ${value}" >&2
+    exit 2
+  fi
+done
+for value in "${nginx_port}" "${odoo_port}"; do
+  if [[ ! "${value}" =~ ^[0-9]+$ ]] || (( value < 1024 || value > 65535 )); then
+    echo "[local.clean.prepare] invalid isolated port: ${value}" >&2
+    exit 2
+  fi
+done
+
 umask 077
 db_password="$(random_secret 24)"
 admin_password="$(random_secret 24)"
@@ -35,21 +61,21 @@ bootstrap_secret="$(random_secret 32)"
 {
   printf '%s\n' \
     'ENV=dev' \
-    'ENV_FILE=.env.local.clean' \
-    'COMPOSE_PROJECT_NAME=sc-local-clean' \
-    'DB_USER=sc_clean_odoo' \
+    "ENV_FILE=${TARGET_ENV_FILE}" \
+    "COMPOSE_PROJECT_NAME=${project_name}" \
+    "DB_USER=${db_user}" \
     "DB_PASSWORD=${db_password}" \
-    'DB_NAME=sc_clean' \
+    "DB_NAME=${db_name}" \
     "ADMIN_PASSWD=${admin_password}" \
     "JWT_SECRET=${jwt_secret}" \
-    'ODOO_DBFILTER=^sc_clean$' \
-    'DB_DATA=sc_local_clean_db_data' \
-    'REDIS_DATA=sc_local_clean_redis_data' \
-    'ODOO_DATA=sc_local_clean_odoo_data' \
-    'NGINX_PORT=18083' \
-    'ODOO_PORT=8072' \
+    "ODOO_DBFILTER=^${db_name}$" \
+    "DB_DATA=${db_data}" \
+    "REDIS_DATA=${redis_data}" \
+    "ODOO_DATA=${odoo_data}" \
+    "NGINX_PORT=${nginx_port}" \
+    "ODOO_PORT=${odoo_port}" \
     'FRONTEND_DIST_DIR=./frontend/apps/web/dist-clean' \
-    'VITE_ODOO_DB=sc_clean' \
+    "VITE_ODOO_DB=${db_name}" \
     'VITE_ODOO_DB_LOCKED=1' \
     'VITE_APP_ENV=development' \
     'VITE_BUILD_MODE=development' \
@@ -63,8 +89,9 @@ bootstrap_secret="$(random_secret 32)"
     'SC_ENVIRONMENT=dev' \
     'SC_ALLOW_DEMO_DATA=0' \
     'SC_SEED_ENABLED=0'
+  printf '%s\n' 'ISOLATED_REHEARSAL_DATABASE=1'
 } >"${TARGET_ENV_FILE}"
 chmod 600 "${TARGET_ENV_FILE}"
 
 echo "[local.clean.prepare] created ${TARGET_ENV_FILE} mode=600"
-echo "[local.clean.prepare] project=sc-local-clean db=sc_clean dbfilter=^sc_clean$"
+echo "[local.clean.prepare] project=${project_name} db=${db_name} dbfilter=^${db_name}$"
