@@ -485,6 +485,22 @@
       "frontend_policy": "contract_renderer_only"
     },
     {
+      "spec": "product_numbering_rule_authority",
+      "risk_family": "sequence authority duplication and technical exposure",
+      "business_object": "numbering_rule",
+      "fact_source_model": ["ir.sequence"],
+      "allowed_support_models": ["res.company"], "projection_models": [],
+      "boundary_rule": "Odoo ir.sequence remains the single numbering authority; product configuration exposes only backend-classified business sequences and safe format fields.",
+      "forbidden_drift": "Do not create another counter model, expose technical sequences, allow key mutation, or generate numbers in frontend code.",
+      "decision": "Extend ir.sequence with a computed product scope, enforce a capability record rule and safe write whitelist, and bind the formal entry directly to it.",
+      "formal_product_layer": "P1", "layer_target": "L2_industry_standard", "module": "smart_construction_core", "standard_vs_user_specific": "construction_industry_standard", "separation_policy": "native_authority_scoped_configuration",
+      "entry_bindings": [{"intent": "product_numbering_rule_configuration", "menu_xmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1", "action_xmlid": "smart_construction_core.action_sc_product_numbering_rule_v1", "fact_model": "ir.sequence", "view_contract_xmlid": "smart_construction_core.business_config_contract_product_numbering_rule_form_v1"}],
+      "source_isolation_actions": [{"action_xmlid": "smart_construction_core.action_sc_product_numbering_rule_v1", "required_domain_tokens": ["sc_product_configurable", "True"]}],
+      "conservation_invariants": ["ir_sequence_is_single_counter_authority", "technical_sequences_are_hidden", "sequence_code_is_immutable_for_config_admin", "create_and_delete_are_release_owned", "frontend_never_generates_business_numbers"],
+      "authority_carriers": ["addons/smart_construction_core/models/support/product_numbering_rule.py", "addons/smart_construction_core/security/ir.model.access.csv", "addons/smart_construction_core/security/sc_record_rules.xml", "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml", "addons/smart_construction_core/data/product_numbering_rule_contract.xml"],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "projection_refresh_ownership",
       "risk_family": "projection and management visibility",
       "business_object": "projection",

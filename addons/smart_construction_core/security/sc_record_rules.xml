@@ -3001,6 +3001,14 @@
             <field name="model_id" ref="model_sc_hr_salary_payment"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
+        <record id="rule_ir_sequence_sc_product_configurable" model="ir.rule">
+            <field name="name">行业配置管理员仅维护产品业务编码规则</field>
+            <field name="model_id" ref="base.model_ir_sequence"/>
+            <field name="domain_force">[('sc_product_configurable', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_config_admin'))]"/>
+            <field name="perm_read" eval="True"/><field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+        </record>
 
     </data>
 </odoo>

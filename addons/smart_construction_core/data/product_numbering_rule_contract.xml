@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="business_config_contract_product_numbering_rule_form_v1" model="ui.business.config.contract">
+    <field name="name">product_numbering_rule_form_v1</field><field name="model">ir.sequence</field><field name="view_type">form</field>
+    <field name="action_id" ref="smart_construction_core.action_sc_product_numbering_rule_v1"/><field name="priority">800</field><field name="company_id" eval="False"/><field name="active" eval="True"/><field name="status">published</field><field name="version_no">1</field>
+    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'sequence_authority': 'ir.sequence', 'scope_authority': 'sc_product_configurable'}, 'views': {'form': {'title': '编码规则', 'composition_mode': 'entry_semantic_surface', 'columns': 2, 'sections': [{'title': '规则标识', 'sequence': 10, 'columns': 2, 'fields': ['name', 'code', 'company_id']}, {'title': '编号格式', 'sequence': 20, 'columns': 2, 'fields': ['prefix', 'suffix', 'padding', 'number_increment', 'number_next_actual']}], 'fields': [{'name': 'name', 'sequence': 10, 'group_title': '规则标识', 'readonly': True}, {'name': 'code', 'sequence': 20, 'group_title': '规则标识', 'readonly': True}, {'name': 'company_id', 'sequence': 30, 'group_title': '规则标识', 'readonly': True}, {'name': 'prefix', 'sequence': 40, 'group_title': '编号格式'}, {'name': 'suffix', 'sequence': 50, 'group_title': '编号格式'}, {'name': 'padding', 'sequence': 60, 'group_title': '编号格式'}, {'name': 'number_increment', 'sequence': 70, 'group_title': '编号格式'}, {'name': 'number_next_actual', 'sequence': 80, 'group_title': '编号格式'}]}}}}"/>
+  </record>
+</odoo>

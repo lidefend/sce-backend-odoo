@@ -225,7 +225,7 @@
 - 智慧施工管理平台 / 产品配置 / 低代码系统配置 / 菜单配置 -> `ui.menu.config.policy`
 - 智慧施工管理平台 / 产品配置 / 流程审批配置 -> `sc.approval.policy`
 - 智慧施工管理平台 / 产品配置 / 系统参数 -> `sc.product.system.settings`
-- 智慧施工管理平台 / 产品配置 / 编码规则 -> `ui.business.config.contract`
+- 智慧施工管理平台 / 产品配置 / 编码规则 -> `ir.sequence`
 - 智慧施工管理平台 / 系统管理（内部）
 - 智慧施工管理平台 / 系统管理（内部） / 定额字典
 - 智慧施工管理平台 / 系统管理（内部） / 定额字典 / 专业 -> `project.dictionary`

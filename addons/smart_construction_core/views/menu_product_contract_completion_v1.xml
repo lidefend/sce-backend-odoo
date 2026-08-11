@@ -167,8 +167,23 @@
       <field name="view_id" ref="smart_construction_core.view_sc_product_system_settings_form_v1"/><field name="target">current</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
     </record>
+    <record id="view_sc_product_numbering_rule_tree_v1" model="ir.ui.view">
+      <field name="name">ir.sequence.sc.product.tree.v1</field><field name="model">ir.sequence</field>
+      <field name="arch" type="xml"><tree string="编码规则" create="0" delete="0"><field name="name"/><field name="code"/><field name="prefix"/><field name="suffix"/><field name="padding"/><field name="number_increment"/><field name="number_next_actual"/><field name="company_id"/></tree></field>
+    </record>
+    <record id="view_sc_product_numbering_rule_form_v1" model="ir.ui.view">
+      <field name="name">ir.sequence.sc.product.form.v1</field><field name="model">ir.sequence</field>
+      <field name="arch" type="xml"><form string="编码规则" create="0" delete="0"><sheet><group><group string="规则标识"><field name="name" readonly="1"/><field name="code" readonly="1"/><field name="company_id" readonly="1"/></group><group string="编号格式"><field name="prefix"/><field name="suffix"/><field name="padding"/><field name="number_increment"/><field name="number_next_actual"/></group></group></sheet></form></field>
+    </record>
+    <record id="view_sc_product_numbering_rule_search_v1" model="ir.ui.view">
+      <field name="name">ir.sequence.sc.product.search.v1</field><field name="model">ir.sequence</field>
+      <field name="arch" type="xml"><search string="编码规则"><field name="name"/><field name="code"/><field name="company_id"/><filter name="group_company" string="按公司" context="{'group_by': 'company_id'}"/></search></field>
+    </record>
     <record id="action_sc_product_numbering_rule_v1" model="ir.actions.act_window">
-      <field name="name">编码规则</field><field name="res_model">ui.business.config.contract</field><field name="view_mode">tree,form</field>
+      <field name="name">编码规则</field><field name="res_model">ir.sequence</field><field name="view_mode">tree,form</field>
+      <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_product_numbering_rule_tree_v1')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_product_numbering_rule_form_v1')})]"/>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_product_numbering_rule_search_v1"/>
+      <field name="domain">[('sc_product_configurable', '=', True)]</field><field name="context">{'create': False, 'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
     </record>
 

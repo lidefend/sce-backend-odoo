@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T17:39:32.454829+00:00`
+- generated_at: `2026-08-11T17:43:47.580039+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -110,7 +110,7 @@
     - 数据权限 [`formal_product`] -> `res.users`
     - 流程审批配置 [`system_config`] -> `sc.approval.policy`
     - 系统参数 [`system_config`] -> `sc.product.system.settings`
-    - 编码规则 [`system_config`] -> `ui.business.config.contract`
+    - 编码规则 [`system_config`] -> `ir.sequence`
     - 表单配置 [`formal_product`] -> `ui.business.config.contract`
   - 会计账务中心 [`formal_product`]
     - 分析分配模型 [`formal_product`] -> `account.analytic.distribution.model`
