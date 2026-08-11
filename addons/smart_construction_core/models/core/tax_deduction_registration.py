@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 
 from ..support.state_guard import raise_guard
@@ -39,6 +39,17 @@ class ScTaxDeductionRegistration(models.Model):
         index=True,
         ondelete="restrict",
         domain="[('target_model', '=', 'sc.tax.deduction.registration')]",
+    )
+    deduction_scope = fields.Selection(
+        [
+            ("general", "普通税额抵扣"),
+            ("project_special", "项目专项抵扣"),
+        ],
+        string="抵扣范围",
+        required=True,
+        default=lambda self: self.env.context.get("default_deduction_scope") or "general",
+        index=True,
+        tracking=True,
     )
     deduction_flow_label = fields.Char(string="办理事项", compute="_compute_deduction_flow_label")
     document_no = fields.Char(string="单据编号", index=True)
@@ -172,6 +183,15 @@ class ScTaxDeductionRegistration(models.Model):
         ),
     ]
 
+    @api.constrains("deduction_scope", "business_category_id")
+    def _check_deduction_scope_category(self):
+        for record in self:
+            code = record.business_category_id.code
+            if record.deduction_scope == "project_special" and code != "tax.deduction.project_special":
+                raise ValidationError(_("项目专项抵扣必须使用项目专项抵扣业务分类。"))
+            if code == "tax.deduction.project_special" and record.deduction_scope != "project_special":
+                raise ValidationError(_("项目专项抵扣业务分类只能用于项目专项抵扣范围。"))
+
     @api.model
     def _context_project_id(self):
         project_id = self.env.context.get("default_project_id") or self.env.context.get("current_project_id")
@@ -216,6 +236,11 @@ class ScTaxDeductionRegistration(models.Model):
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
         for vals in vals_list:
+            category_code = self.env.context.get("default_business_category_code") or self.env.context.get(
+                "current_business_category_code"
+            )
+            if category_code == "tax.deduction.project_special":
+                vals["deduction_scope"] = "project_special"
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
@@ -268,7 +293,8 @@ class ScTaxDeductionRegistration(models.Model):
         )
         is_transfer_out = vals.get("is_transfer_out", self.env.context.get("default_is_transfer_out", False))
         if not code and not is_transfer_out:
-            code = "tax.deduction.registration"
+            scope = vals.get("deduction_scope") or self.env.context.get("default_deduction_scope") or "general"
+            code = "tax.deduction.project_special" if scope == "project_special" else "tax.deduction.registration"
         category = self.env["sc.business.category"].sudo().search(
             [("code", "=", code), ("target_model", "=", "sc.tax.deduction.registration")],
             limit=1,
@@ -276,6 +302,13 @@ class ScTaxDeductionRegistration(models.Model):
         return category.id if category else False
 
     def init(self):
+        self.env.cr.execute(
+            """
+            UPDATE sc_tax_deduction_registration
+               SET deduction_scope = 'general'
+             WHERE deduction_scope IS NULL
+            """
+        )
         self.env.cr.execute(
             """
             UPDATE sc_tax_deduction_registration
@@ -368,10 +401,12 @@ class ScTaxDeductionRegistration(models.Model):
                 fields.Datetime.to_string(record.created_time) if record.created_time else ""
             )
 
-    @api.depends("is_transfer_out", "withholding_amount", "deduction_tax_amount", "deduction_amount")
+    @api.depends("deduction_scope", "is_transfer_out", "withholding_amount", "deduction_tax_amount", "deduction_amount")
     def _compute_deduction_flow_label(self):
         for rec in self:
-            if rec.is_transfer_out:
+            if rec.deduction_scope == "project_special":
+                rec.deduction_flow_label = _("项目专项抵扣")
+            elif rec.is_transfer_out:
                 rec.deduction_flow_label = _("进项税额转出")
             elif rec.withholding_amount:
                 rec.deduction_flow_label = _("扣款抵扣")
@@ -515,6 +550,7 @@ class ScTaxDeductionRegistration(models.Model):
             "state": self.state,
             "source_origin": self.source_origin,
             "business_category_code": self.business_category_id.code,
+            "deduction_scope": self.deduction_scope,
             "project_id": self.project_id.id,
             "partner_id": self.partner_id.id,
             "partner_name": self.partner_name,

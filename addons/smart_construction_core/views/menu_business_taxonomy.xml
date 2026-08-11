@@ -246,8 +246,8 @@
         <field name="res_model">sc.tax.deduction.registration</field>
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="smart_construction_core.view_sc_tax_deduction_registration_search" />
-        <field name="domain">[('business_category_id.code', '=', 'tax.deduction.registration')]</field>
-        <field name="context">{'default_is_transfer_out': False, 'default_deduction_reason': '抵扣登记', 'default_business_category_code': 'tax.deduction.registration', 'search_default_group_project': 1}</field>
+        <field name="domain">[('deduction_scope', '=', 'general'), ('business_category_id.code', '=', 'tax.deduction.registration')]</field>
+        <field name="context">{'default_deduction_scope': 'general', 'default_is_transfer_out': False, 'default_deduction_reason': '抵扣登记', 'default_business_category_code': 'tax.deduction.registration', 'search_default_group_project': 1}</field>
         <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_business_initiator'),             ref('smart_construction_core.group_sc_cap_finance_read'),             ref('smart_construction_core.group_sc_cap_finance_user'),             ref('smart_construction_core.group_sc_cap_finance_manager')         ])]" />
     </record>
     <record id="action_sc_expense_claim_expense" model="ir.actions.act_window">

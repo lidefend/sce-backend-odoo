@@ -9,6 +9,7 @@
                     <field name="name"/>
                     <field name="document_no"/>
                     <field name="business_category_id"/>
+                    <field name="deduction_scope"/>
                     <field name="project_id"/>
                     <field name="partner_id"/>
                     <field name="company_contractor_responsibility_state" optional="show"/>
@@ -23,6 +24,7 @@
                     <filter string="已抵扣" name="state_deducted" domain="[('state', '=', 'deducted')]"/>
                     <filter string="公司直营" name="operation_direct" domain="[('operation_strategy', '=', 'direct')]"/>
                     <filter string="联营项目" name="operation_joint" domain="[('operation_strategy', '=', 'joint')]"/>
+                    <filter string="项目专项抵扣" name="project_special" domain="[('deduction_scope', '=', 'project_special')]"/>
                     <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
                     <filter string="按往来单位" name="group_partner" context="{'group_by': 'partner_id'}"/>
                     <filter string="按经营策略" name="group_operation_strategy" context="{'group_by': 'operation_strategy'}"/>
@@ -42,6 +44,7 @@
                     <field name="name"/>
                     <field name="deduction_flow_label"/>
                     <field name="business_category_id" optional="show"/>
+                    <field name="deduction_scope" optional="show"/>
                     <field name="document_date"/>
                     <field name="deduction_confirm_date"/>
                     <field name="document_no"/>
@@ -89,6 +92,7 @@
                                 <field name="source_origin" invisible="1"/>
                                 <field name="deduction_flow_label" readonly="1"/>
                                 <field name="business_category_id" readonly="state == 'legacy_confirmed'"/>
+                                <field name="deduction_scope" readonly="1"/>
                                 <field name="document_no" readonly="state == 'legacy_confirmed'"/>
                                 <field name="document_date" readonly="state == 'legacy_confirmed'"/>
                                 <field name="deduction_confirm_date" readonly="state == 'legacy_confirmed'"/>

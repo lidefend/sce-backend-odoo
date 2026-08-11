@@ -77,3 +77,4 @@ from . import test_team_loan_deduction_workspace
 from . import test_daily_contract_settlement
 from . import test_current_account_workspace
 from . import test_company_project_refund_workspace
+from . import test_project_special_tax_deduction
