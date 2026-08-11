@@ -3527,3 +3527,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   resolved action XMLID, preserves `menu_id=0`, and emits an action route. Unit
   tests plus a direct-source `sc_demo` restore and full runtime/browser menu
   audit prove containment.
+
+## 2026-08-11 — P4-DAILY-CANDIDATE-INCREMENTAL-SOURCE-PRESEED
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after
+  `e244e01`.
+- Formal Product Layer / Layer Target / Module: P4 daily delivery tooling /
+  `scripts/ops/daily_candidate_bundle_sync.py`.
+- Reason / Boundary: direct-source iteration may safely preload a small set of
+  candidate files before the exact candidate bundle arrives. The governed sync
+  now accepts only tracked, unstaged modified paths whose Git blob hashes equal
+  the exact candidate commit; all unknown, staged, deleted, renamed, or
+  different bytes remain fail-closed.
+- Blast Radius / validation: daily candidate synchronization only; production,
+  origin main, database and filestore behavior are unchanged. The integration
+  test exercises an exact preseed plus remaining bundle delta and still proves
+  detached exact SHA, clean worktree and untouched origin/main.
