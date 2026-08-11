@@ -122,6 +122,9 @@ def _is_contract_writer(text: str) -> bool:
         "rec.write(",
         "rec.action_publish(",
         "contract.action_publish(",
+        "rec.replace_and_publish(",
+        "contract.replace_and_publish(",
+        "rec.restore_published_version(",
     )
     return any(marker in text for marker in write_markers)
 
@@ -140,7 +143,13 @@ def _is_approval_policy_runtime_writer(text: str) -> bool:
 
 
 def _is_lowcoding_policy_runtime_writer(text: str) -> bool:
-    uses_menu_policy_constant_writer = "Policy = env[MENU_CONFIG_POLICY_MODEL]" in text
+    uses_menu_policy_constant_writer = any(
+        marker in text
+        for marker in (
+            "Policy = env[MENU_CONFIG_POLICY_MODEL]",
+            "Policy = self.env[MENU_CONFIG_POLICY_MODEL]",
+        )
+    )
     if (
         "ui.form.field.policy" not in text
         and "ui.menu.config.policy" not in text

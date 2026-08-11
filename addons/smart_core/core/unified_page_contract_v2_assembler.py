@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import re
 from copy import deepcopy
-from hashlib import sha1
 from typing import Any
 
+from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .source_authority import build_source_authority_contract
 
-CONTRACT_VERSION = "2.1.0"
+CONTRACT_VERSION = "2.2.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
 SOURCE_AUTHORITIES = ("ui_contract", "page_orchestration", "scene_contract", "unified_page_contract_v2_schema")
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -25,7 +25,7 @@ def source_authority_contract() -> dict[str, Any]:
         runtime_carrier="unified_page_contract_v2_assembler",
     )
 
-PATCH_VERSION = "2.1.0"
+PATCH_VERSION = "2.2.0"
 STABLE_CLIENT_TYPES = {"web_pc", "wx_mini", "harmony_h5"}
 
 
@@ -71,10 +71,7 @@ def _stable_id(value: Any, fallback: str) -> str:
 
 
 def _fingerprint(value: Any) -> str:
-    import json
-
-    payload = json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
-    return sha1(payload.encode("utf-8")).hexdigest()[:12]
+    return payload_sha256(value)[:16]
 
 
 def _resolve_source_type(source: dict[str, Any], explicit: str = "") -> str:
@@ -248,17 +245,31 @@ def assemble_unified_page_contract_v2(
     source_type: str = "",
     client_type: str = "web_pc",
     request_id: str = "request.upc.v2.assembler",
+    trace_id: str = "",
 ) -> dict[str, Any]:
     source = _dict(source_contract)
     resolved = _resolve_source_type(source, source_type)
     payload = _extract_source_payload(source, resolved)
     if resolved == "scene_contract_v1":
-        return _assemble_scene_contract(payload, client_type=client_type, request_id=request_id)
-    if resolved == "page_orchestration_v1":
-        return _assemble_page_orchestration(payload, client_type=client_type, request_id=request_id)
-    if resolved == "ui.contract":
-        return _assemble_ui_contract(source, client_type=client_type, request_id=request_id)
-    return _assemble_unknown(source, client_type=client_type, request_id=request_id)
+        contract = _assemble_scene_contract(payload, client_type=client_type, request_id=request_id)
+    elif resolved == "page_orchestration_v1":
+        contract = _assemble_page_orchestration(payload, client_type=client_type, request_id=request_id)
+    elif resolved == "ui.contract":
+        contract = _assemble_ui_contract(source, client_type=client_type, request_id=request_id)
+    else:
+        contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
+    return seal_unified_page_contract(
+        contract,
+        source_payload=payload if resolved != "ui.contract" else source,
+        source_type=resolved,
+        request_id=request_id,
+        trace_id=trace_id,
+        client_type=client_type,
+        stage="assembly",
+        generator=SOURCE_KIND,
+        generator_version=CONTRACT_VERSION,
+        source_authority=source_authority_contract(),
+    )
 
 
 def assemble_unified_page_patch_v2(

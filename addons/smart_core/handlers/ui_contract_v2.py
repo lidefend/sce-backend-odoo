@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 from lxml import etree
 
 from ..core.base_handler import BaseIntentHandler
+from ..core.contract_lifecycle import seal_unified_page_contract
 from ..core.intent_execution_result import IntentExecutionResult
 from ..core.unified_page_contract_v2_assembler import (
     CONTRACT_VERSION,
@@ -630,11 +631,16 @@ class UiContractV2Handler(BaseIntentHandler):
         ui_data, ui_meta = self._resolve_entry_contract(ui_data, ui_meta, ui_params, ctx)
         model = params.get("model") or ui_data.get("model") or ui_meta.get("model") or ""
         view_type = params.get("view_type") or params.get("viewType") or ui_data.get("view_type") or ui_meta.get("view_type") or "form"
+        trace_id = str(
+            (self.context.get("trace_id") if isinstance(self.context, dict) else "")
+            or ui_meta.get("trace_id")
+            or ui_meta.get("traceId")
+            or ""
+        ).strip()
         request_id = (
             params.get("request_id")
             or params.get("requestId")
-            or ui_meta.get("trace_id")
-            or ui_meta.get("traceId")
+            or trace_id
             or f"ui.contract.v2.{model or 'unknown'}.{view_type or 'form'}"
         )
 
@@ -770,6 +776,7 @@ class UiContractV2Handler(BaseIntentHandler):
             source_type="ui.contract",
             client_type=client_type,
             request_id=str(request_id),
+            trace_id=trace_id,
         )
         self._apply_field_policies_to_v2_status(contract_v2, source_contract)
         self._ensure_native_layout_widget_status_visible(contract_v2)
@@ -809,6 +816,18 @@ class UiContractV2Handler(BaseIntentHandler):
             client_type=client_type,
             delivery_profile=delivery_profile,
             **limit_params,
+        )
+        contract_v2 = seal_unified_page_contract(
+            contract_v2,
+            source_payload=source_contract,
+            source_type="ui.contract",
+            request_id=str(request_id),
+            trace_id=trace_id,
+            client_type=client_type,
+            stage="runtime_delivery",
+            generator=self.SOURCE_KIND,
+            generator_version=self.VERSION,
+            source_authority=self.source_authority_contract(),
         )
 
         return IntentExecutionResult(
@@ -3351,17 +3370,32 @@ class UiContractV2Handler(BaseIntentHandler):
         if limit_error:
             return self._err(400, f"{limit_error} 无效")
         source_contract = self._scene_contract_source(scene_key)
+        trace_id = str(self.context.get("trace_id") if isinstance(self.context, dict) else "").strip()
+        request_id = str(params.get("request_id") or params.get("requestId") or trace_id or f"ui.contract.v2.scene.{scene_key}")
         contract_v2 = assemble_unified_page_contract_v2(
             {"scene_contract_v1": source_contract},
             source_type="scene_contract_v1",
             client_type=client_type,
-            request_id=str(params.get("request_id") or params.get("requestId") or f"ui.contract.v2.scene.{scene_key}"),
+            request_id=request_id,
+            trace_id=trace_id,
         )
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
             delivery_profile=delivery_profile,
             **limit_params,
+        )
+        contract_v2 = seal_unified_page_contract(
+            contract_v2,
+            source_payload=source_contract,
+            source_type="scene_contract_v1",
+            request_id=request_id,
+            trace_id=trace_id,
+            client_type=client_type,
+            stage="runtime_delivery",
+            generator=self.SOURCE_KIND,
+            generator_version=self.VERSION,
+            source_authority=self.source_authority_contract(),
         )
         return IntentExecutionResult(
             ok=True,

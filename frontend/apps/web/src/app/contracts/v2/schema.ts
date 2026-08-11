@@ -643,12 +643,45 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
 }
 
 function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2Meta {
+  const lifecycle = requiredRecord(source, 'lifecycle', 'meta', issues);
+  const definition = requiredRecord(lifecycle, 'definition', 'meta.lifecycle', issues);
+  const generation = requiredRecord(lifecycle, 'generation', 'meta.lifecycle', issues);
+  const runtime = requiredRecord(lifecycle, 'runtime', 'meta.lifecycle', issues);
+  const integrity = requiredRecord(lifecycle, 'integrity', 'meta.lifecycle', issues);
   return {
     etag: requiredString(source, 'etag', 'meta', issues),
     snapshotId: requiredString(source, 'snapshotId', 'meta', issues),
     traceId: requiredString(source, 'traceId', 'meta', issues),
     requestId: requiredString(source, 'requestId', 'meta', issues),
     sourceType: requiredString(source, 'sourceType', 'meta', issues),
+    lifecycle: {
+      lifecycleVersion: requiredString(lifecycle, 'lifecycleVersion', 'meta.lifecycle', issues),
+      stage: requiredString(lifecycle, 'stage', 'meta.lifecycle', issues),
+      definition: {
+        schemaId: requiredString(definition, 'schemaId', 'meta.lifecycle.definition', issues),
+        schemaVersion: requiredString(definition, 'schemaVersion', 'meta.lifecycle.definition', issues),
+        schemaSha256: requiredString(definition, 'schemaSha256', 'meta.lifecycle.definition', issues),
+        contractVersion: requiredString(definition, 'contractVersion', 'meta.lifecycle.definition', issues),
+        normativeStatus: requiredString(definition, 'normativeStatus', 'meta.lifecycle.definition', issues),
+      },
+      generation: {
+        generator: requiredString(generation, 'generator', 'meta.lifecycle.generation', issues),
+        generatorVersion: requiredString(generation, 'generatorVersion', 'meta.lifecycle.generation', issues),
+        sourceType: requiredString(generation, 'sourceType', 'meta.lifecycle.generation', issues),
+        sourceSha256: requiredString(generation, 'sourceSha256', 'meta.lifecycle.generation', issues),
+      },
+      runtime: {
+        requestId: requiredString(runtime, 'requestId', 'meta.lifecycle.runtime', issues),
+        traceId: requiredString(runtime, 'traceId', 'meta.lifecycle.runtime', issues),
+        clientType: requiredString(runtime, 'clientType', 'meta.lifecycle.runtime', issues),
+        traceSource: requiredString(runtime, 'traceSource', 'meta.lifecycle.runtime', issues),
+      },
+      integrity: {
+        algorithm: requiredString(integrity, 'algorithm', 'meta.lifecycle.integrity', issues),
+        contractSha256: requiredString(integrity, 'contractSha256', 'meta.lifecycle.integrity', issues),
+      },
+      authority: requiredRecord(lifecycle, 'authority', 'meta.lifecycle', issues),
+    },
   };
 }
 

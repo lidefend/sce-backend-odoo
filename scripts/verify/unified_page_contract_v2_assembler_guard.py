@@ -83,8 +83,8 @@ def validate_contract(
     payload_keys = set(payload.keys())
     if not required <= payload_keys or payload_keys - required - optional:
         fail(errors, f"contract top-level mismatch: {sorted(payload.keys())}")
-    if payload.get("pageInfo", {}).get("contractVersion") != "2.1.0":
-        fail(errors, "contractVersion must be 2.1.0")
+    if payload.get("pageInfo", {}).get("contractVersion") != "2.2.0":
+        fail(errors, "contractVersion must be 2.2.0")
     meta = payload.get("meta", {}) if isinstance(payload.get("meta"), dict) else {}
     if meta.get("sourceType") != expected_source_type:
         fail(errors, f"meta.sourceType must be {expected_source_type}")
@@ -172,8 +172,8 @@ def validate_patch(payload: dict[str, Any], snapshot: dict[str, Any], errors: li
         if key not in payload:
             fail(errors, f"patch missing {key}")
     meta = payload.get("meta", {})
-    if meta.get("contractVersion") != "2.1.0":
-        fail(errors, "patch contractVersion must be 2.1.0")
+    if meta.get("contractVersion") != "2.2.0":
+        fail(errors, "patch contractVersion must be 2.2.0")
     if meta.get("sourceType") != "api.onchange":
         fail(errors, "patch meta.sourceType must be api.onchange")
     if "compat" in meta:
