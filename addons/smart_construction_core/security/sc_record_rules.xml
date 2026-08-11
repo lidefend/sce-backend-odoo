@@ -2004,14 +2004,32 @@
         </record>
 
         <record id="rule_sc_internal_subcontract_register" model="ir.rule">
-            <field name="name">SC Internal - sc.subcontract.register own or project member</field>
+            <field name="name">SC Project User - sc.subcontract.register own or project member</field>
             <field name="model_id" ref="model_sc_subcontract_register"/>
             <field name="domain_force">['|','|', ('responsible_id', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_read_subcontract_register" model="ir.rule">
+            <field name="name">SC Project Read - sc.subcontract.register by project member</field>
+            <field name="model_id" ref="model_sc_subcontract_register"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_subcontract_register" model="ir.rule">
+            <field name="name">SC Project Manager - sc.subcontract.register ALL</field>
+            <field name="model_id" ref="model_sc_subcontract_register"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
         <record id="rule_sc_super_admin_subcontract_register" model="ir.rule">
@@ -2026,14 +2044,32 @@
         </record>
 
         <record id="rule_sc_internal_subcontract_register_line" model="ir.rule">
-            <field name="name">SC Internal - sc.subcontract.register.line own or project member</field>
+            <field name="name">SC Project User - sc.subcontract.register.line own or project member</field>
             <field name="model_id" ref="model_sc_subcontract_register_line"/>
             <field name="domain_force">['|','|', ('register_id.responsible_id', '=', user.id), ('register_id.project_id.user_id', '=', user.id), ('register_id.project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_read_subcontract_register_line" model="ir.rule">
+            <field name="name">SC Project Read - sc.subcontract.register.line by project member</field>
+            <field name="model_id" ref="model_sc_subcontract_register_line"/>
+            <field name="domain_force">['|', ('register_id.project_id.user_id', '=', user.id), ('register_id.project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_subcontract_register_line" model="ir.rule">
+            <field name="name">SC Project Manager - sc.subcontract.register.line ALL</field>
+            <field name="model_id" ref="model_sc_subcontract_register_line"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
         <record id="rule_sc_super_admin_subcontract_register_line" model="ir.rule">
