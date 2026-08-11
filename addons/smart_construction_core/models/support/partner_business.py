@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -103,6 +103,23 @@ class ResPartner(models.Model):
     sc_default_tax_rate = fields.Float(string="默认税率%", digits=(16, 4))
     sc_default_tax_rate_text = fields.Char(string="税率文本")
     sc_supplier_note = fields.Text(string="供应商备注")
+    sc_blacklisted = fields.Boolean(string="黑名单", default=False, index=True, tracking=True)
+    sc_blacklist_level = fields.Selection(
+        [("attention", "关注"), ("restricted", "限制合作"), ("blocked", "停止合作")],
+        string="风险级别",
+        default="attention",
+        index=True,
+        tracking=True,
+    )
+    sc_blacklist_reason = fields.Text(string="列入原因", tracking=True)
+    sc_blacklist_review_date = fields.Date(string="复核日期", tracking=True)
+    sc_blacklisted_at = fields.Datetime(string="列入时间", readonly=True, tracking=True)
+    sc_blacklisted_by = fields.Many2one("res.users", string="列入人", readonly=True, tracking=True)
+    sc_blacklist_advisory = fields.Char(
+        string="完善提示",
+        compute="_compute_sc_blacklist_advisory",
+        help="黑名单原因和复核日期仅作治理提示，不作为操作硬阻断条件。",
+    )
     sc_attachment_ids = fields.Many2many(
         "ir.attachment",
         "sc_res_partner_supplier_attachment_rel",
@@ -122,6 +139,51 @@ class ResPartner(models.Model):
                 partner.sc_supplier_type_label = "、".join(types.mapped("name"))
             else:
                 partner.sc_supplier_type_label = selection_labels.get(partner.sc_supplier_type or "", "")
+
+    @api.depends("sc_blacklisted", "sc_blacklist_reason", "sc_blacklist_review_date")
+    def _compute_sc_blacklist_advisory(self):
+        for partner in self:
+            suggestions = []
+            if partner.sc_blacklisted and not partner.sc_blacklist_reason:
+                suggestions.append("建议补充列入原因")
+            if partner.sc_blacklisted and not partner.sc_blacklist_review_date:
+                suggestions.append("建议设置复核日期")
+            partner.sc_blacklist_advisory = "；".join(suggestions) if suggestions else "治理信息已完善"
+
+    def _check_sc_blacklist_permission(self):
+        if self.env.su or self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_contact_manager"
+        ) or self.env.user.has_group("smart_construction_core.group_sc_super_admin"):
+            return
+        raise UserError(_("你没有权限维护客商黑名单。"))
+
+    def action_sc_add_blacklist(self):
+        self._check_sc_blacklist_permission()
+        self.filtered(lambda partner: not partner.sc_blacklisted).write(
+            {
+                "sc_blacklisted": True,
+                "sc_blacklisted_at": fields.Datetime.now(),
+                "sc_blacklisted_by": self.env.user.id,
+            }
+        )
+        suggestions = [item for item in self.mapped("sc_blacklist_advisory") if item and item != "治理信息已完善"]
+        if suggestions:
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": "已列入客商黑名单",
+                    "message": "；".join(dict.fromkeys(suggestions)),
+                    "type": "warning",
+                    "sticky": False,
+                },
+            }
+        return True
+
+    def action_sc_remove_blacklist(self):
+        self._check_sc_blacklist_permission()
+        self.filtered("sc_blacklisted").write({"sc_blacklisted": False})
+        return True
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -193,5 +255,4 @@ class ResPartnerBank(models.Model):
 
     sc_account_holder_name = fields.Char(string="账户名称")
     sc_bank_name = fields.Char(string="开户银行", index=True)
-
 

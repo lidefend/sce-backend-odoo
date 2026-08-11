@@ -27,8 +27,8 @@
     </record>
     <record id="action_sc_product_partner_blacklist_v1" model="ir.actions.act_window">
       <field name="name">客商黑名单</field><field name="res_model">res.partner</field><field name="view_mode">tree,form</field>
-      <field name="domain">[('active', '=', False)]</field><field name="context">{'active_test': False, 'create': False}</field>
-      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+      <field name="domain">[]</field><field name="context">{'create': False, 'search_default_blacklisted': 1}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_contact_manager')])]"/>
     </record>
     <record id="action_sc_product_tender_information_v1" model="ir.actions.act_window">
       <field name="name">招标信息</field><field name="res_model">tender.bid</field><field name="view_mode">tree,form</field>
@@ -215,6 +215,68 @@
       <field name="act_window_id" ref="smart_construction_core.action_sc_product_project_lifecycle_v1"/>
     </record>
 
+    <record id="view_sc_product_partner_blacklist_search_v1" model="ir.ui.view">
+      <field name="name">res.partner.blacklist.search.product.v1</field>
+      <field name="model">res.partner</field>
+      <field name="arch" type="xml">
+        <search string="客商黑名单">
+          <field name="name"/><field name="vat"/><field name="sc_blacklist_reason"/>
+          <filter string="已列入" name="blacklisted" domain="[('sc_blacklisted', '=', True)]"/>
+          <filter string="限制合作" name="restricted" domain="[('sc_blacklist_level', '=', 'restricted')]"/>
+          <filter string="停止合作" name="blocked" domain="[('sc_blacklist_level', '=', 'blocked')]"/>
+          <group expand="0" string="分组">
+            <filter string="风险级别" name="group_level" context="{'group_by': 'sc_blacklist_level'}"/>
+          </group>
+        </search>
+      </field>
+    </record>
+    <record id="view_sc_product_partner_blacklist_tree_v1" model="ir.ui.view">
+      <field name="name">res.partner.blacklist.tree.product.v1</field>
+      <field name="model">res.partner</field>
+      <field name="arch" type="xml">
+        <tree string="客商黑名单" create="false" delete="false" decoration-danger="sc_blacklist_level == 'blocked'">
+          <field name="name"/><field name="vat"/><field name="sc_blacklist_level" widget="badge"/>
+          <field name="sc_blacklist_reason"/><field name="sc_blacklist_review_date"/>
+          <field name="sc_blacklisted_by"/><field name="sc_blacklisted_at"/>
+        </tree>
+      </field>
+    </record>
+    <record id="view_sc_product_partner_blacklist_form_v1" model="ir.ui.view">
+      <field name="name">res.partner.blacklist.form.product.v1</field>
+      <field name="model">res.partner</field>
+      <field name="arch" type="xml">
+        <form string="客商黑名单" create="false" delete="false">
+          <header>
+            <button name="action_sc_add_blacklist" type="object" string="列入黑名单" class="btn-primary"
+                    groups="smart_construction_core.group_sc_cap_contact_manager" invisible="sc_blacklisted"/>
+            <button name="action_sc_remove_blacklist" type="object" string="移出黑名单"
+                    groups="smart_construction_core.group_sc_cap_contact_manager" invisible="not sc_blacklisted"/>
+          </header>
+          <sheet>
+            <div class="oe_title"><label for="name"/><h1><field name="name" readonly="1"/></h1></div>
+            <group>
+              <group string="客商信息"><field name="vat" readonly="1"/><field name="phone" readonly="1"/><field name="email" readonly="1"/></group>
+              <group string="黑名单治理">
+                <field name="sc_blacklisted" readonly="1"/><field name="sc_blacklist_level"/>
+                <field name="sc_blacklist_review_date"/><field name="sc_blacklisted_by" readonly="1"/><field name="sc_blacklisted_at" readonly="1"/>
+              </group>
+            </group>
+            <group><field name="sc_blacklist_reason"/><field name="sc_blacklist_advisory" readonly="1"/></group>
+          </sheet>
+          <chatter/>
+        </form>
+      </field>
+    </record>
+    <record id="action_sc_product_partner_blacklist_v1" model="ir.actions.act_window">
+      <field name="search_view_id" ref="smart_construction_core.view_sc_product_partner_blacklist_search_v1"/>
+    </record>
+    <record id="action_sc_product_partner_blacklist_tree_v1" model="ir.actions.act_window.view">
+      <field name="sequence">10</field><field name="view_mode">tree</field><field name="view_id" ref="smart_construction_core.view_sc_product_partner_blacklist_tree_v1"/><field name="act_window_id" ref="smart_construction_core.action_sc_product_partner_blacklist_v1"/>
+    </record>
+    <record id="action_sc_product_partner_blacklist_form_v1" model="ir.actions.act_window.view">
+      <field name="sequence">20</field><field name="view_mode">form</field><field name="view_id" ref="smart_construction_core.view_sc_product_partner_blacklist_form_v1"/><field name="act_window_id" ref="smart_construction_core.action_sc_product_partner_blacklist_v1"/>
+    </record>
+
     <!-- Workbench completion. -->
     <menuitem id="menu_sc_product_message_notification_v1" name="消息通知" parent="smart_construction_core.menu_sc_workspace_center" action="smart_construction_core.action_sc_product_message_notification_v1" sequence="40" groups="smart_construction_core.group_sc_cap_project_read"/>
 
@@ -232,7 +294,7 @@
 
     <menuitem id="menu_sc_product_project_edit_v1" name="项目信息编辑" parent="smart_construction_core.menu_sc_project_management_group" action="smart_construction_core.action_sc_product_project_edit_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
     <menuitem id="menu_sc_product_project_lifecycle_v1" name="项目启停管理" parent="smart_construction_core.menu_sc_project_management_group" action="smart_construction_core.action_sc_product_project_lifecycle_v1" sequence="30" groups="smart_construction_core.group_sc_cap_project_manager"/>
-    <menuitem id="menu_sc_product_partner_blacklist_v1" name="客商黑名单" parent="smart_construction_core.menu_sc_project_partner_group_wave1" action="smart_construction_core.action_sc_product_partner_blacklist_v1" sequence="30" groups="smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_partner_blacklist_v1" name="客商黑名单" parent="smart_construction_core.menu_sc_project_partner_group_wave1" action="smart_construction_core.action_sc_product_partner_blacklist_v1" sequence="30" groups="smart_construction_core.group_sc_cap_contact_manager"/>
     <menuitem id="menu_sc_product_tender_information_v1" name="招标信息" parent="smart_construction_core.menu_sc_tender_management_group" action="smart_construction_core.action_sc_product_tender_information_v1" sequence="10" groups="smart_construction_core.group_sc_cap_project_read"/>
     <menuitem id="menu_sc_product_tender_document_v1" name="标书管理" parent="smart_construction_core.menu_sc_tender_management_group" action="smart_construction_core.action_sc_product_tender_document_v1" sequence="30" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
     <menuitem id="menu_sc_product_quality_acceptance_v1" name="质量验收" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_product_quality_acceptance_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
