@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- P1 accounting foundations reuse Odoo models and ACLs.  These wrappers
+         avoid granting native accounting-manager/analytic write groups merely
+         to make the standard product navigation complete. -->
+    <data>
+        <record id="action_sc_account_journal_foundation" model="ir.actions.act_window">
+            <field name="name">日记账</field>
+            <field name="res_model">account.journal</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{}</field>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_accounting_read')])]"/>
+        </record>
+        <menuitem id="menu_sc_account_journal_foundation"
+                  name="日记账"
+                  parent="smart_construction_core.menu_sc_accounting_center"
+                  action="smart_construction_core.action_sc_account_journal_foundation"
+                  sequence="96"
+                  groups="smart_construction_core.group_sc_cap_accounting_read"/>
+
+        <record id="action_sc_analytic_account_foundation" model="ir.actions.act_window">
+            <field name="name">分析账户</field>
+            <field name="res_model">account.analytic.account</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{}</field>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_accounting_read')])]"/>
+        </record>
+        <menuitem id="menu_sc_analytic_account_foundation"
+                  name="分析账户"
+                  parent="smart_construction_core.menu_sc_accounting_center"
+                  action="smart_construction_core.action_sc_analytic_account_foundation"
+                  sequence="97"
+                  groups="smart_construction_core.group_sc_cap_accounting_read"/>
+
+        <record id="action_sc_analytic_distribution_foundation" model="ir.actions.act_window">
+            <field name="name">分析分配模型</field>
+            <field name="res_model">account.analytic.distribution.model</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{}</field>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_accounting_read')])]"/>
+        </record>
+        <menuitem id="menu_sc_analytic_distribution_foundation"
+                  name="分析分配模型"
+                  parent="smart_construction_core.menu_sc_accounting_center"
+                  action="smart_construction_core.action_sc_analytic_distribution_foundation"
+                  sequence="98"
+                  groups="smart_construction_core.group_sc_cap_accounting_read"/>
+    </data>
+</odoo>

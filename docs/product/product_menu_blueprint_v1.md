@@ -4,14 +4,14 @@
 
 ## 当前结论
 
-- 正式产品一级中心：`9` 个
-- 正式产品 active 菜单：`229` 个
-- 系统配置菜单：`31` 个，其中 active `29` 个
+- 正式产品一级中心：`10` 个
+- 正式产品 active 菜单：`233` 个
+- 系统配置菜单：`30` 个，其中 active `28` 个
 - 用户配置菜单：`0` 个，其中 active `0` 个
 - 历史验收菜单：`5` 个，其中 active `2` 个
 - 正式中心下 inactive 历史残留：`2` 个
 - 开发治理菜单：`27` 个，其中 active `26` 个
-- 待复核菜单：`1` 个
+- 待复核菜单：`0` 个
 
 ## 正式产品一级中心
 
@@ -23,9 +23,10 @@
 | 成本中心 | 18 | 0 | 0 | 8 | `smart_construction_core.menu_sc_cost_center` |
 | 财务中心 | 62 | 0 | 0 | 29 | `smart_construction_core.menu_sc_finance_center` |
 | 税务中心 | 8 | 0 | 0 | 3 | `smart_construction_core.menu_sc_tax_center` |
-| 会计账务中心 | 0 | 0 | 0 | 0 | `smart_construction_core.menu_sc_accounting_center` |
+| 会计账务中心 | 3 | 0 | 0 | 0 | `smart_construction_core.menu_sc_accounting_center` |
 | 报表中心 | 21 | 0 | 0 | 9 | `smart_construction_core.menu_sc_data_center` |
 | 行政中心 | 11 | 2 | 1 | 8 | `smart_construction_core.menu_sc_hr_admin_center` |
+| 产品配置 | 2 | 0 | 7 | 4 | `smart_construction_core.menu_sc_business_config_center` |
 
 ## 正式产品菜单结构
 
@@ -120,11 +121,13 @@
 
 ### 会计账务中心
 
-- formal_active: `0`
+- formal_active: `3`
 - history_active_under_center: `0`
 - system_config_active_under_center: `0`
 
-- 暂无直接正式产品子入口。
+- 日记账 -> `account.journal`
+- 分析账户 -> `account.analytic.account`
+- 分析分配模型 -> `account.analytic.distribution.model`
 
 ### 报表中心
 
@@ -152,23 +155,31 @@
 - 证书管理 -> `sc.document.admin.document`
 - 工资薪酬 -> `sc.hr.payroll.document`
 
+### 产品配置
+
+- formal_active: `2`
+- history_active_under_center: `0`
+- system_config_active_under_center: `7`
+
+- 表单配置 -> `ui.business.config.contract`
+- 字段管理 -> `ui.form.field.policy`
+
 ## 系统配置边界
 
 | 边界入口 | active 子入口 | action 子入口 | XMLID |
 | --- | ---: | ---: | --- |
-| 智慧施工管理平台 / 产品配置 | 7 | 7 | `smart_construction_core.menu_sc_business_config_center` |
 | 智慧施工管理平台 / 产品配置 / 业务基础数据 / 业务分类字典 | 0 | 0 | `smart_construction_core.menu_sc_business_category` |
 | 智慧施工管理平台 / 产品配置 / 业务基础数据 / 审批岗位人员 | 0 | 0 | `smart_construction_core.menu_sc_approval_scope` |
 | 智慧施工管理平台 / 产品配置 / 业务基础数据 / 数据字典 | 0 | 0 | `smart_construction_core.menu_sc_dictionary` |
 | 智慧施工管理平台 / 产品配置 / 业务基础数据 / 阶段要求配置 | 0 | 0 | `smart_construction_core.menu_sc_project_stage_requirement_items` |
 | 智慧施工管理平台 / 产品配置 / 业务基础数据 / 预算类型 | 0 | 0 | `smart_construction_core.menu_sc_project_cost_code` |
 | 智慧施工管理平台 / 产品配置 / 低代码系统配置 / 菜单配置 | 0 | 0 | `smart_construction_core.menu_ui_menu_config_policy_business_config` |
+| 智慧施工管理平台 / 产品配置 / 流程审批配置 | 0 | 0 | `smart_construction_core.menu_sc_approval_policy` |
 | 智慧施工管理平台 / 系统管理（内部） | 19 | 17 | `smart_construction_core.menu_sc_config_center` |
 | 智慧施工管理平台 / 行政中心 / 人员档案 | 0 | 0 | `smart_construction_core.menu_sc_runtime_user_management` |
 
 ### active 明细
 
-- 智慧施工管理平台 / 产品配置
 - 智慧施工管理平台 / 产品配置 / 业务基础数据 / 业务分类字典 -> `sc.business.category`
 - 智慧施工管理平台 / 产品配置 / 业务基础数据 / 审批岗位人员 -> `sc.approval.scope`
 - 智慧施工管理平台 / 产品配置 / 业务基础数据 / 数据字典 -> `sc.dictionary`
@@ -275,8 +286,9 @@
 
 ## 收口信号
 
-- 存在 `1` 个待复核菜单，必须先归类或隐藏。
-- 当前无独立用户配置入口；低代码和产品配置仍归入系统配置边界。
+- 当前无待复核菜单。
+- 当前无独立用户配置入口；产品配置中心属于正式产品，受保护的低代码与管理子项仍归入系统配置边界。
 - `行政中心` 下存在非正式产品子入口：history=2 system=1，需要确认是否应继续对业务用户可见。
+- `产品配置` 下存在非正式产品子入口：history=0 system=7，需要确认是否应继续对业务用户可见。
 - 共 `2` 个历史入口混在正式产品中心下，建议作为下一轮菜单收口清单。
 - 共 `2` 个 inactive 历史入口仍挂在正式产品中心路径下，建议后续迁出正式中心。

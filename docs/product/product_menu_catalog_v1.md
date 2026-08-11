@@ -11,11 +11,11 @@
 
 ## 总览
 
-- menu_count: `385`
-- active_menu_count: `286`
+- menu_count: `388`
+- active_menu_count: `289`
 - inactive_menu_count: `99`
-- action_menu_count: `309`
-- needs_review_count: `1`
+- action_menu_count: `312`
+- needs_review_count: `0`
 - internal_history_business_visible_count: `0`
 - ordinary_business_system_config_visible_count: `0`
 - business_config_legacy_count: `0`
@@ -35,8 +35,8 @@
 
 | Layer | Count |
 | --- | ---: |
-| `formal_product` | 322 |
-| `system_config` | 31 |
+| `formal_product` | 326 |
+| `system_config` | 30 |
 | `user_config` | 0 |
 | `history_acceptance` | 5 |
 | `dev_governance` | 27 |
@@ -45,6 +45,7 @@
 
 | 入口 | XMLID | 可见性探针用户 |
 | --- | --- | --- |
+| 智慧施工管理平台 / 产品配置 | `smart_construction_core.menu_sc_business_config_center` |  |
 | 智慧施工管理平台 / 会计账务中心 | `smart_construction_core.menu_sc_accounting_center` |  |
 | 智慧施工管理平台 / 合同中心 | `smart_construction_core.menu_sc_contract_center` |  |
 | 智慧施工管理平台 / 工作台 | `smart_construction_core.menu_sc_workspace_center` |  |
@@ -63,7 +64,7 @@
 | 平台内核 / 产品发布 | `dev_governance` | admin | `smart_core.menu_smart_core_release_root` |
 | 平台内核 / 公司访问 | `dev_governance` | admin | `smart_core.menu_smart_core_company_access_root` |
 | 智慧施工管理平台 | `formal_product` | admin | `smart_construction_core.menu_sc_root` |
-| 智慧施工管理平台 / 产品配置 | `system_config` |  | `smart_construction_core.menu_sc_business_config_center` |
+| 智慧施工管理平台 / 产品配置 | `formal_product` |  | `smart_construction_core.menu_sc_business_config_center` |
 | 智慧施工管理平台 / 会计账务中心 | `formal_product` |  | `smart_construction_core.menu_sc_accounting_center` |
 | 智慧施工管理平台 / 合同中心 | `formal_product` |  | `smart_construction_core.menu_sc_contract_center` |
 | 智慧施工管理平台 / 工作台 | `formal_product` |  | `smart_construction_core.menu_sc_workspace_center` |
@@ -91,7 +92,7 @@
     - 订阅实例 [`dev_governance`] -> `sc.subscription`
     - 运营任务 [`dev_governance`] -> `sc.ops.job`
 - 智慧施工管理平台 [`formal_product`]
-  - 产品配置 [`system_config`]
+  - 产品配置 [`formal_product`]
     - 业务基础数据 [`formal_product` inactive]
       - 业务分类字典 [`system_config`] -> `sc.business.category`
       - 审批岗位人员 [`system_config`] -> `sc.approval.scope`
@@ -108,7 +109,10 @@
       - 工作项 [`dev_governance`] -> `sc.workflow.workitem`
     - 流程审批配置 [`system_config`] -> `sc.approval.policy`
     - 表单配置 [`formal_product`] -> `ui.business.config.contract`
-  - 会计账务中心 [`formal_product` review]
+  - 会计账务中心 [`formal_product`]
+    - 分析分配模型 [`formal_product`] -> `account.analytic.distribution.model`
+    - 分析账户 [`formal_product`] -> `account.analytic.account`
+    - 日记账 [`formal_product`] -> `account.journal`
   - 合同中心 [`formal_product`]
     - 合同办理 [`formal_product` inactive] -> `construction.contract`
     - 合同办理 [`formal_product` inactive] -> `construction.contract`
@@ -465,6 +469,4 @@
 
 ## 待复核队列
 
-| Path | Layer | Reason | XMLID |
-| --- | --- | --- | --- |
-| 智慧施工管理平台 / 会计账务中心 | `formal_product` | container_default | `smart_construction_core.menu_sc_accounting_center` |
+未检测到需要人工复核的模糊菜单。

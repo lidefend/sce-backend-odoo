@@ -58,7 +58,6 @@ CONFIG_ADMIN_GROUP_XMLIDS = (
 INTERNAL_ONLY_GROUP_XMLIDS = {"base.group_no_one"}
 
 SYSTEM_CONFIG_XMLIDS = set(LOWCODE_SYSTEM_CONFIG_MENU_XMLIDS) | {
-    "smart_construction_core.menu_sc_business_config_center",
     "smart_construction_core.menu_sc_config_center",
     "smart_construction_core.menu_sc_dictionary",
     "smart_construction_core.menu_sc_dictionary_root",
@@ -69,6 +68,15 @@ SYSTEM_CONFIG_XMLIDS = set(LOWCODE_SYSTEM_CONFIG_MENU_XMLIDS) | {
     "smart_construction_core.menu_sc_legacy_user_context",
     "smart_construction_core.menu_sc_runtime_user_management",
     "smart_construction_core.menu_sc_legacy_user_priority_menu_plan",
+}
+
+# Product Configuration is a formal product center.  Its protected low-code and
+# administration children remain system configuration entries, but the parent
+# itself must not be collapsed into that boundary: doing so would make the
+# catalog classifier a second permission/menu truth outside the SC capability
+# model.
+FORMAL_PRODUCT_CENTER_XMLIDS = {
+    "smart_construction_core.menu_sc_business_config_center",
 }
 
 LAYER_DEFINITIONS = {
@@ -296,6 +304,8 @@ def _classify(row: dict[str, object]) -> tuple[str, list[str], bool]:
     create_login = _text(create_user.get("login"))
     if not xmlid and create_login not in ("", "__system__"):
         return "user_config", ["runtime_user_menu_without_xmlid"], False
+    if xmlid in FORMAL_PRODUCT_CENTER_XMLIDS:
+        return "formal_product", ["explicit_formal_product_center_xmlid"], False
     if xmlid in SYSTEM_CONFIG_XMLIDS:
         return "system_config", ["explicit_system_config_xmlid"], False
     if xmlid in SCENE_ONLY_MENU_SCENE_KEYS:

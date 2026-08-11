@@ -54,7 +54,6 @@ def native_config_delivery_excluded_menu_xmlids():
 
 def lowcode_system_config_menu_xmlids():
     return [
-        "smart_construction_core.menu_sc_business_config_center",
         "smart_construction_core.menu_sc_business_base_config_group",
         "smart_construction_core.menu_sc_runtime_user_management",
         "smart_construction_core.menu_sc_lowcode_system_config_group",

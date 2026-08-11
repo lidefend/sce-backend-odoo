@@ -46,10 +46,19 @@ ACCOUNTING_MENUS = (
     ("日记账分录", "account.menu_action_move_journal_line_form", "account.action_move_journal_line", "account.move", "凭证与分录"),
     ("日记账项目", "account.menu_action_account_moves_all", "account.action_account_moves_all", "account.move.line", "凭证与分录"),
     ("会计科目表", "account.menu_action_account_form", "account.action_account_form", "account.account", "会计科目"),
-    ("日记账", "account.menu_action_account_journal_form", "account.action_account_journal_form", "account.journal", "账簿基础"),
-    ("分析账户", "account.account_analytic_def_account", "analytic.action_account_analytic_account_form", "account.analytic.account", "分析核算"),
-    ("分析分配模型", "account.menu_analytic__distribution_model", "analytic.action_analytic_distribution_model", "account.analytic.distribution.model", "分析核算"),
+    ("日记账", "smart_construction_core.menu_sc_account_journal_foundation", "smart_construction_core.action_sc_account_journal_foundation", "account.journal", "账簿基础"),
+    ("分析账户", "smart_construction_core.menu_sc_analytic_account_foundation", "smart_construction_core.action_sc_analytic_account_foundation", "account.analytic.account", "分析核算"),
+    ("分析分配模型", "smart_construction_core.menu_sc_analytic_distribution_foundation", "smart_construction_core.action_sc_analytic_distribution_foundation", "account.analytic.distribution.model", "分析核算"),
 )
+
+# These native menus require Odoo write-capable groups.  The product policy
+# replaces them with SC capability-governed P1 projections over the same
+# models; retaining both would split permission authority and duplicate pages.
+REPLACED_NATIVE_ACCOUNTING_MENU_XMLIDS = frozenset({
+    "account.menu_action_account_journal_form",
+    "account.account_analytic_def_account",
+    "account.menu_analytic__distribution_model",
+})
 
 
 def _center_label(group: dict) -> str:
@@ -73,13 +82,15 @@ def _rewrite_visible_path(value: object, target: str, label: str) -> str:
 
 def _accounting_row(label: str, menu_xmlid: str, action_xmlid: str, model: str, domain_label: str) -> dict:
     capability_key = "construction.menu.%s" % menu_xmlid.replace(".", "_")
+    wrapped = menu_xmlid.startswith("smart_construction_core.")
+    source_kind = "p1_odoo_accounting_read_projection" if wrapped else "odoo_native_accounting_foundation"
     return {
         "access_level": "public",
         "action_xmlid": action_xmlid,
         "business_entry_contract_version": "business_entry_disposition.v1",
         "capability_key": capability_key,
         "control_granularity": "user_visible_menu_page",
-        "control_object": "Odoo 原生会计账务能力入口",
+        "control_object": "Odoo 会计账务模型产品入口",
         "disposition_policy": "keep_list_form",
         "enabled": True,
         "entry_intent": "handling",
@@ -96,15 +107,15 @@ def _accounting_row(label: str, menu_xmlid: str, action_xmlid: str, model: str, 
         "name": label,
         "page_key": menu_xmlid,
         "page_label": label,
-        "policy_note": "odoo_native_accounting_foundation_admitted_to_p1",
+        "policy_note": "odoo_accounting_foundation_admitted_to_p1_without_acl_bypass",
         "product_domain": "accounting",
         "product_domain_label": domain_label,
         "product_key": "会计账务中心",
-        "productization_source": "odoo_native_accounting_foundation",
+        "productization_source": source_kind,
         "release_domain": "construction",
         "release_state": "released",
         "res_model": model,
-        "source_kind": "odoo_native_accounting_foundation",
+        "source_kind": source_kind,
         "target_scene_key": "",
         "title": label,
         "view_modes": ["tree", "form"],
@@ -139,6 +150,8 @@ def promote(payload: dict) -> dict:
             for source_row in group.get("menus") or []:
                 row = dict(source_row)
                 menu_xmlid = str(row.get("menu_xmlid") or row.get("page_key") or "").strip()
+                if menu_xmlid in REPLACED_NATIVE_ACCOUNTING_MENU_XMLIDS:
+                    continue
                 if not menu_xmlid or menu_xmlid in seen_xmlids:
                     raise ValueError(f"missing or duplicate menu identity: {menu_xmlid!r}")
                 seen_xmlids.add(menu_xmlid)

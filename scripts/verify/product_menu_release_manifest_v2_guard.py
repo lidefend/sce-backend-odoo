@@ -70,9 +70,9 @@ REQUIRED_ACCOUNTING_XMLIDS = {
     "account.menu_action_move_journal_line_form",
     "account.menu_action_account_moves_all",
     "account.menu_action_account_form",
-    "account.menu_action_account_journal_form",
-    "account.account_analytic_def_account",
-    "account.menu_analytic__distribution_model",
+    "smart_construction_core.menu_sc_account_journal_foundation",
+    "smart_construction_core.menu_sc_analytic_account_foundation",
+    "smart_construction_core.menu_sc_analytic_distribution_foundation",
 }
 
 

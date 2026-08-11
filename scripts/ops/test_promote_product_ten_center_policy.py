@@ -8,6 +8,7 @@ import unittest
 from scripts.ops.promote_product_ten_center_policy import (
     ACCOUNTING_MENUS,
     BASELINE,
+    REPLACED_NATIVE_ACCOUNTING_MENU_XMLIDS,
     TARGET_CENTERS,
     promote,
 )
@@ -36,6 +37,11 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
         expected = {definition[1] for definition in ACCOUNTING_MENUS}
         actual = {row["menu_xmlid"] for row in groups["会计账务中心"]["menus"]}
         self.assertEqual(actual, expected)
+        self.assertFalse(actual.intersection(REPLACED_NATIVE_ACCOUNTING_MENU_XMLIDS))
+        self.assertEqual(
+            sum(xmlid.startswith("smart_construction_core.") for xmlid in actual),
+            3,
+        )
         self.assertTrue(all(row.get("action_xmlid") and row.get("res_model") for row in groups["会计账务中心"]["menus"]))
 
     def test_unapproved_first_level_center_fails_closed(self):
