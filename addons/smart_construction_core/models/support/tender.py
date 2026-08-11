@@ -412,9 +412,58 @@ class TenderDocPurchase(models.Model):
         default="draft",
         tracking=True,
     )
+    processing_advisory = fields.Char(
+        "办理建议",
+        compute="_compute_processing_advisory",
+        help="资料完整性只形成办理建议，不阻断提交或审核节奏。",
+    )
     currency_id = fields.Many2one(
         "res.currency", related="bid_id.currency_id", store=True, readonly=True
     )
+
+    @api.depends(
+        "apply_date",
+        "amount",
+        "payment_method",
+        "receipt_partner_id",
+        "receipt_partner_name",
+        "receipt_bank_account",
+    )
+    def _compute_processing_advisory(self):
+        for record in self:
+            suggestions = []
+            if not record.apply_date:
+                suggestions.append("建议补充申请日期")
+            if not record.amount or record.amount <= 0:
+                suggestions.append("建议补充有效金额")
+            if not record.payment_method:
+                suggestions.append("建议补充缴费方式")
+            if not record.receipt_partner_id and not record.receipt_partner_name:
+                suggestions.append("建议补充收款单位")
+            if not record.receipt_bank_account:
+                suggestions.append("建议补充收款账户")
+            record.processing_advisory = (
+                "；".join(suggestions) if suggestions else "当前办理资料已完善"
+            )
+
+    def _processing_notification(self, title):
+        suggestions = [
+            advisory
+            for advisory in self.mapped("processing_advisory")
+            if advisory and advisory != "当前办理资料已完善"
+        ]
+        if not suggestions:
+            return True
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": title,
+                "message": "；".join(dict.fromkeys(suggestions)),
+                "type": "warning",
+                "sticky": False,
+            },
+        }
 
     def _receipt_partner_snapshot_values(self, partner):
         if not partner:
@@ -465,23 +514,8 @@ class TenderDocPurchase(models.Model):
         for record in self:
             if record.state != "draft":
                 raise UserError("只有草稿状态的投标报名费申请可以提交。")
-            missing = []
-            if not record.bid_id:
-                missing.append("投标")
-            if not record.apply_date:
-                missing.append("申请日期")
-            if not record.amount or record.amount <= 0:
-                missing.append("金额")
-            if not record.payment_method:
-                missing.append("缴费方式")
-            if not record.receipt_partner_id and not record.receipt_partner_name:
-                missing.append("收款单位")
-            if not record.receipt_bank_account:
-                missing.append("收款账户")
-            if missing:
-                raise UserError("提交前请补充：%s。" % "、".join(missing))
         self.write({"state": "submitted"})
-        return True
+        return self._processing_notification("已提交，建议继续完善资料")
 
     def action_approve(self):
         self.write({"state": "approved"})
