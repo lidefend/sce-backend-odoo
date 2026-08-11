@@ -1,3 +1,50 @@
-<template><div v-if="open" class="sc-design-dialog-backdrop" @mousedown.self="emit('close')" @keydown="onKeydown"><section ref="dialog" :class="['sc-dialog', panelClass]" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1"><header><h2 :id="titleId">{{ title }}</h2><ScIconButton :label="closeLabel" @click="emit('close')"><ScIcon name="close" /></ScIconButton></header><slot /><footer v-if="$slots.actions" class="sc-action-group"><slot name="actions" /></footer></section></div></template>
-<script setup lang="ts">import { ref,useId } from 'vue'; import { useModalLifecycle } from '../../composables/useModalLifecycle'; import ScIcon from './ScIcon.vue'; import ScIconButton from './ScIconButton.vue'; const props=withDefaults(defineProps<{open:boolean;title:string;closeLabel?:string;panelClass?:string}>(),{closeLabel:'关闭',panelClass:''}); const emit=defineEmits<{close:[]}>(); const dialog=ref<HTMLElement|null>(null); const titleId=`sc-dialog-${useId()}`; const {onKeydown}=useModalLifecycle({open:()=>props.open,surface:dialog,close:()=>emit('close')});</script>
-<style scoped>.sc-design-dialog-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:var(--sc-product-page-gutter);background:var(--sc-app-overlay)}.sc-dialog{width:min(100%,560px);max-height:calc(100dvh - 2 * var(--sc-product-page-gutter));overflow:auto}.sc-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-product-space-2)}.sc-dialog h2{margin:0;font-size:var(--sc-product-text-section)}.sc-dialog>footer{justify-content:flex-end;margin-top:var(--sc-product-space-3)}</style>
+<template>
+  <TDialog
+    :visible="open"
+    :header="title"
+    :dialog-class-name="dialogClassName"
+    :footer="false"
+    :close-btn="closeButton"
+    :close-on-esc-keydown="true"
+    :close-on-overlay-click="true"
+    :destroy-on-close="true"
+    placement="center"
+    width="min(92vw, 560px)"
+    role="dialog"
+    aria-modal="true"
+    :aria-label="title"
+    data-ui-engine="tdesign"
+    @close="emit('close')"
+  >
+    <slot />
+    <footer v-if="$slots.actions" class="sc-action-group sc-design-dialog__actions">
+      <slot name="actions" />
+    </footer>
+  </TDialog>
+</template>
+
+<script setup lang="ts">
+import { computed, h } from 'vue';
+import ScIcon from './ScIcon.vue';
+import ScIconButton from './ScIconButton.vue';
+import { TDialog } from './tdesignAdapter';
+
+const props = withDefaults(defineProps<{
+  open: boolean;
+  title: string;
+  closeLabel?: string;
+  panelClass?: string;
+}>(), { closeLabel: '关闭', panelClass: '' });
+const emit = defineEmits<{ close: [] }>();
+const dialogClassName = computed(() => ['sc-dialog', 'sc-design-dialog', props.panelClass].filter(Boolean).join(' '));
+const closeButton = () => h(ScIconButton, { label: props.closeLabel }, () => h(ScIcon, { name: 'close' }));
+</script>
+
+<style scoped>
+.sc-design-dialog__actions {
+  justify-content: flex-end;
+  margin-top: var(--sc-product-space-3);
+  padding-top: var(--sc-product-space-2);
+  border-top: 1px solid var(--sc-semantic-border-default);
+}
+</style>

@@ -12,6 +12,8 @@ export { default as ScField } from './ScField.vue';
 export { default as ScFileField } from './ScFileField.vue';
 export { default as ScIconButton } from './ScIconButton.vue';
 export { default as ScIcon } from './ScIcon.vue';
+export { default as ScHierarchyTable } from './ScHierarchyTable.vue';
+export type { ScHierarchyTableColumn, ScHierarchyTableRow } from './ScHierarchyTable.vue';
 export { default as ScMobileRecordCard } from './ScMobileRecordCard.vue';
 export { default as ScMoney } from './ScMoney.vue';
 export { default as ScPage } from './ScPage.vue';

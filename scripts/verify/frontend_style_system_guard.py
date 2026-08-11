@@ -20,7 +20,7 @@ REQUIRED_PRODUCT_COMPONENTS = {
     "ScField.vue", "ScSelect.vue", "ScRelationField.vue", "ScDateField.vue",
     "ScErrorSummary.vue", "ScEmptyState.vue", "ScErrorState.vue", "ScDialog.vue",
     "ScDrawer.vue", "ScActionBar.vue", "ScDataTable.vue", "ScMobileRecordCard.vue",
-    "ScRelationshipFlow.vue", "ScAuditTrail.vue",
+    "ScRelationshipFlow.vue", "ScAuditTrail.vue", "ScHierarchyTable.vue",
 }
 
 REQUIRED_PRODUCT_CONSUMERS = {
@@ -32,6 +32,7 @@ REQUIRED_PRODUCT_CONSUMERS = {
     "ScErrorState": "views/NotFoundView.vue",
     "ScField": "components/business/MyWorkApprovalWorkspace.vue",
     "ScIcon": "components/template/FormSection.vue",
+    "ScHierarchyTable": "components/action/HierarchyPlanner.vue",
     "ScMoney": "components/business/MyWorkApprovalWorkspace.vue",
     "ScPage": "pages/ListPage.vue",
     "ScPageHeader": "pages/ListPage.vue",

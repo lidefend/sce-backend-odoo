@@ -1,0 +1,98 @@
+@import 'tdesign-vue-next/es/style/index.css';
+
+/*
+ * TDesign is the interaction primitive layer. SC semantic tokens remain the
+ * product authority, so vendor colors, surfaces and elevations never leak into
+ * page code or become a second theme system.
+ */
+:root,
+:root[theme-mode='light'],
+:root[data-sc-theme='dark'] {
+  --td-brand-color: var(--sc-semantic-surface-interactive);
+  --td-brand-color-hover: var(--sc-semantic-surface-interactive-hover);
+  --td-brand-color-active: var(--sc-semantic-surface-interactive-active);
+  --td-brand-color-focus: var(--sc-semantic-focus-ring);
+  --td-brand-color-light: var(--sc-semantic-state-info-bg);
+  --td-brand-color-light-hover: var(--sc-semantic-surface-selected);
+  --td-error-color: var(--sc-semantic-state-danger-text);
+  --td-error-color-light: var(--sc-semantic-state-danger-bg);
+  --td-warning-color: var(--sc-semantic-state-warning-text);
+  --td-warning-color-light: var(--sc-semantic-state-warning-bg);
+  --td-success-color: var(--sc-semantic-state-success-text);
+  --td-success-color-light: var(--sc-semantic-state-success-bg);
+  --td-bg-color-page: var(--sc-semantic-surface-page);
+  --td-bg-color-container: var(--sc-semantic-surface-panel);
+  --td-bg-color-container-hover: var(--sc-semantic-surface-hover);
+  --td-bg-color-container-active: var(--sc-semantic-surface-selected);
+  --td-bg-color-container-select: var(--sc-semantic-surface-input);
+  --td-bg-color-secondarycontainer: var(--sc-semantic-surface-subtle);
+  --td-bg-color-secondarycontainer-hover: var(--sc-semantic-surface-hover);
+  --td-bg-color-component: var(--sc-semantic-surface-panel-muted);
+  --td-bg-color-component-hover: var(--sc-semantic-surface-hover);
+  --td-bg-color-component-active: var(--sc-semantic-surface-selected);
+  --td-bg-color-component-disabled: var(--sc-semantic-surface-panel-muted);
+  --td-bg-color-specialcomponent: var(--sc-semantic-surface-panel);
+  --td-text-color-primary: var(--sc-semantic-text-primary);
+  --td-text-color-secondary: var(--sc-semantic-text-secondary);
+  --td-text-color-placeholder: var(--sc-semantic-text-muted);
+  --td-text-color-disabled: var(--sc-semantic-text-muted);
+  --td-text-color-anti: var(--sc-semantic-text-on-interactive);
+  --td-text-color-brand: var(--sc-semantic-text-link);
+  --td-text-color-link: var(--sc-semantic-text-link);
+  --td-border-level-1-color: var(--sc-semantic-border-default);
+  --td-component-stroke: var(--sc-semantic-border-default);
+  --td-border-level-2-color: var(--sc-semantic-border-strong);
+  --td-component-border: var(--sc-semantic-border-strong);
+  --td-shadow-1: var(--sc-semantic-shadow-panel);
+  --td-shadow-2: var(--sc-semantic-shadow-popover);
+  --td-shadow-3: var(--sc-semantic-shadow-modal);
+  --td-radius-default: var(--sc-product-radius-control);
+  --td-radius-medium: var(--sc-product-radius-panel);
+  --td-radius-large: var(--sc-product-radius-dialog);
+  --td-font-family: inherit;
+  --td-font-family-medium: inherit;
+}
+
+:root[data-sc-theme='dark'] {
+  color-scheme: dark;
+}
+
+.sc-design-button.t-button {
+  min-height: calc(var(--sc-component-button-height-md) * 1px);
+  border-radius: var(--sc-component-button-radius);
+  font-size: calc(var(--sc-component-button-font-size) * 1px);
+}
+
+.sc-design-select.t-select,
+.sc-design-date-field.t-date-picker {
+  width: 100%;
+}
+
+.sc-design-select.input,
+.sc-design-date-field.input {
+  height: auto;
+  min-height: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.sc-design-dialog.t-dialog,
+.sc-design-drawer.t-drawer {
+  border: 1px solid var(--sc-semantic-border-default);
+  background: var(--sc-semantic-surface-panel);
+  box-shadow: var(--sc-semantic-shadow-modal);
+}
+
+.sc-design-dialog .t-dialog__header,
+.sc-design-drawer .t-drawer__header {
+  border-bottom: 1px solid var(--sc-semantic-border-default);
+}
+
+.sc-design-dialog .t-dialog__footer {
+  border-top: 1px solid var(--sc-semantic-border-default);
+}
+
+.sc-design-status.t-tag {
+  font-weight: 600;
+}

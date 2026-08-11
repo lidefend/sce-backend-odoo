@@ -1,3 +1,35 @@
-<template><div v-if="open" class="sc-design-drawer-backdrop" @mousedown.self="emit('close')" @keydown="onKeydown"><aside ref="drawer" class="sc-design-drawer" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1"><header><h2 :id="titleId">{{ title }}</h2><ScIconButton :label="closeLabel" @click="emit('close')"><ScIcon name="close" /></ScIconButton></header><slot /></aside></div></template>
-<script setup lang="ts">import { ref,useId } from 'vue'; import { useModalLifecycle } from '../../composables/useModalLifecycle'; import ScIcon from './ScIcon.vue'; import ScIconButton from './ScIconButton.vue'; const props=withDefaults(defineProps<{open:boolean;title:string;closeLabel?:string}>(),{closeLabel:'关闭'}); const emit=defineEmits<{close:[]}>(); const drawer=ref<HTMLElement|null>(null); const titleId=`sc-drawer-${useId()}`; const {onKeydown}=useModalLifecycle({open:()=>props.open,surface:drawer,close:()=>emit('close')});</script>
-<style scoped>.sc-design-drawer-backdrop{position:fixed;inset:0;z-index:1000;display:flex;justify-content:flex-end;background:var(--sc-app-overlay)}.sc-design-drawer{width:min(90vw,420px);height:100%;overflow:auto;padding:calc(var(--sc-component-panel-padding) * 1px);background:var(--sc-app-panel);box-shadow:var(--sc-app-shadow-modal)}.sc-design-drawer>header{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-product-space-2)}.sc-design-drawer h2{margin:0;font-size:var(--sc-product-text-section)}</style>
+<template>
+  <TDrawer
+    :visible="open"
+    :header="title"
+    drawer-class-name="sc-design-drawer"
+    :footer="false"
+    :close-btn="closeButton"
+    :close-on-esc-keydown="true"
+    :close-on-overlay-click="true"
+    :destroy-on-close="true"
+    size="min(90vw, 420px)"
+    role="dialog"
+    aria-modal="true"
+    :aria-label="title"
+    data-ui-engine="tdesign"
+    @close="emit('close')"
+  >
+    <slot />
+  </TDrawer>
+</template>
+
+<script setup lang="ts">
+import { h } from 'vue';
+import ScIcon from './ScIcon.vue';
+import ScIconButton from './ScIconButton.vue';
+import { TDrawer } from './tdesignAdapter';
+
+const props = withDefaults(defineProps<{
+  open: boolean;
+  title: string;
+  closeLabel?: string;
+}>(), { closeLabel: '关闭' });
+const emit = defineEmits<{ close: [] }>();
+const closeButton = () => h(ScIconButton, { label: props.closeLabel }, () => h(ScIcon, { name: 'close' }));
+</script>

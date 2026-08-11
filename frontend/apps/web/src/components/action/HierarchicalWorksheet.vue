@@ -44,31 +44,19 @@
           </div>
           <div v-if="loading" class="worksheet-state">{{ labels.loading }}</div>
           <div v-else-if="!visibleRows.length" class="worksheet-state">{{ labels.empty }}</div>
-          <div v-else class="worksheet-table-scroll">
-            <table :style="tableStyle">
-              <colgroup><col v-for="column in columns" :key="column.field" :style="{ width: `${column.width}px` }" /></colgroup>
-              <thead><tr><th v-for="column in columns" :key="column.field" :class="`align-${column.align}`">{{ column.label }}</th></tr></thead>
-              <tbody>
-                <tr
-                  v-for="entry in visibleRows"
-                  :key="entry.key"
-                  :class="{ 'group-row': !entry.record, 'record-row': entry.record, 'item-row': itemValues.has(entry.rowKind), 'heading-row': entry.rowKind === 'heading', 'summary-row': summaryValues.has(entry.rowKind), selected: selectedRecord?.id === entry.record?.id }"
-                  tabindex="0"
-                  @click="selectEntry(entry)"
-                  @dblclick="entry.record && emit('open-record', entry.record)"
-                >
-                  <td v-for="column in columns" :key="column.field" :class="[`align-${column.align}`, { 'variance-nonzero': isVarianceCell(entry, column) }]">
-                    <div v-if="column.field === treeColumn" class="tree-cell" :style="{ paddingLeft: `${entry.node.depth * 18}px` }">
-                      <button v-if="!sourceOrderMode && entry.node.children.length" class="row-toggle" :aria-label="entry.node.label" @click.stop="toggleSheet(entry.node)">{{ sheetExpandedKeys.has(entry.node.key) ? '▾' : '▸' }}</button>
-                      <span v-else class="row-toggle-spacer" />
-                      <span>{{ displayCell(entry, column) }}</span>
-                    </div>
-                    <template v-else>{{ displayCell(entry, column) }}</template>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <ScHierarchyTable
+            v-else
+            class="worksheet-table"
+            :label="currentScopeTitle"
+            :columns="worksheetTableColumns"
+            :rows="worksheetTableRows"
+            :outline-column="treeColumn"
+            :selected-key="selectedWorksheetRowKey"
+            :indent-size="18"
+            @select="selectWorksheetRow"
+            @open="openWorksheetRow"
+            @toggle="toggleWorksheetRow"
+          />
         </section>
         <div class="worksheet-resizer worksheet-resizer-detail" role="separator" aria-orientation="horizontal" :aria-label="labels.resize_detail" tabindex="0" @pointerdown="startDetailResize" />
         <section class="worksheet-detail">
@@ -100,6 +88,10 @@ import {
   type WorksheetSheetConfig,
 } from '../../app/action_runtime/hierarchicalWorksheetDataSource';
 import ScButton from '../design-system/ScButton.vue';
+import ScHierarchyTable, {
+  type ScHierarchyTableColumn,
+  type ScHierarchyTableRow,
+} from '../design-system/ScHierarchyTable.vue';
 import ProductListHeader from '../product-list/ProductListHeader.vue';
 import HierarchyTreeNode from './HierarchyTreeNode.vue';
 
@@ -212,7 +204,27 @@ const visibleLeafCount = computed(() => {
 const activeTabFields = computed(() => detailTabs.value.find((tab) => tab.key === activeTab.value)?.fields || []);
 const layoutStyle = computed(() => ({ gridTemplateColumns: `${navigationWidth.value}px 1px minmax(0, 1fr)` }));
 const mainStyle = computed(() => ({ gridTemplateRows: `minmax(320px, 1fr) 1px ${detailHeight.value}px` }));
-const tableStyle = computed(() => ({ minWidth: `${columns.value.reduce((sum, column) => sum + Number(column.width || 120), 0)}px` }));
+const worksheetTableColumns = computed<ScHierarchyTableColumn[]>(() => columns.value.map((column) => ({
+  key: column.field,
+  label: column.label,
+  width: column.width,
+  minWidth: Math.min(column.width || 120, 120),
+  align: column.align === 'right' || column.align === 'center' ? column.align : 'left',
+})));
+const worksheetTableRows = computed<ScHierarchyTableRow[]>(() => visibleRows.value.map((entry) => ({
+  key: entry.key,
+  depth: entry.node.depth,
+  expandable: !sourceOrderMode.value && Boolean(entry.node.children.length),
+  expanded: sheetExpandedKeys.value.has(entry.node.key),
+  values: Object.fromEntries(columns.value.map((column) => [column.field, displayCell(entry, column)])),
+  tone: !entry.record ? 'group' : entry.rowKind === 'heading' ? 'heading' : summaryValues.value.has(entry.rowKind) ? 'summary' : 'default',
+  cellTones: Object.fromEntries(columns.value.flatMap((column) => isVarianceCell(entry, column) ? [[column.field, 'warning' as const]] : [])),
+  source: entry,
+})));
+const selectedWorksheetRowKey = computed(() => visibleRows.value.find((entry) => (
+  entry.node.key === selectedNode.value?.key
+  && Number(entry.record?.id || 0) === Number(selectedRecord.value?.id || 0)
+))?.key);
 
 function groupValue(node: WorksheetNode, field: string): unknown {
   const source = hierarchyConfig.value.group_field_map?.[field];
@@ -250,6 +262,21 @@ function isVarianceCell(entry: VisibleEntry, column: Column): boolean {
 function selectEntry(entry: VisibleEntry) {
   selectedNode.value = entry.node;
   selectedRecord.value = entry.record;
+}
+function worksheetEntry(row: ScHierarchyTableRow): VisibleEntry | null {
+  return row.source && typeof row.source === 'object' ? row.source as VisibleEntry : null;
+}
+function selectWorksheetRow(row: ScHierarchyTableRow) {
+  const entry = worksheetEntry(row);
+  if (entry) selectEntry(entry);
+}
+function openWorksheetRow(row: ScHierarchyTableRow) {
+  const entry = worksheetEntry(row);
+  if (entry?.record) emit('open-record', entry.record);
+}
+function toggleWorksheetRow(row: ScHierarchyTableRow) {
+  const entry = worksheetEntry(row);
+  if (entry) toggleSheet(entry.node);
 }
 function selectNavigation(rawNode: NavigationTreeNode | null) {
   const node = rawNode as WorksheetNode | null;
@@ -337,19 +364,7 @@ onBeforeUnmount(() => stopResize());
 .worksheet-grid-toolbar span { margin-left: var(--sc-space-sm); color: var(--sc-app-text-secondary); }
 .worksheet-grid-actions { display: flex; gap: var(--sc-space-xs); }
 .worksheet-state { display: grid; place-items: center; color: var(--sc-app-text-secondary); }
-.worksheet-table-scroll { min-height: 0; overflow: auto; }
-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: var(--sc-product-text-body); }
-th { position: sticky; top: 0; z-index: 1; height: 38px; padding: 0 var(--sc-space-xs); border-right: 1px solid var(--sc-app-border); border-bottom: 1px solid var(--sc-app-border); background: var(--sc-app-subtle-bg); color: var(--sc-app-text-secondary); text-align: left; white-space: nowrap; }
-td { height: 38px; padding: var(--sc-space-2xs) var(--sc-space-xs); overflow: hidden; border-right: 1px solid var(--sc-app-border); border-bottom: 1px solid var(--sc-app-border); background: var(--sc-app-panel); text-overflow: ellipsis; }
-tr:hover td, tr.selected td { background: var(--sc-app-selected-bg); }
-.group-row td { background: var(--sc-app-subtle-bg); font-weight: 600; }
-.heading-row td { background: var(--sc-app-subtle-bg); font-weight: 600; }
-.summary-row td { background: var(--sc-app-selected-bg); font-weight: 600; }
-.align-right { text-align: right; font-variant-numeric: tabular-nums; }
-.variance-nonzero { color: var(--sc-app-warning-text); font-weight: 600; }
-.tree-cell { display: flex; align-items: center; gap: var(--sc-space-2xs); min-width: 220px; }
-.row-toggle { width: 20px; padding: 0; border: 0; background: transparent; color: var(--sc-app-text-secondary); cursor: pointer; }
-.row-toggle-spacer { display: inline-block; width: 20px; }
+.worksheet-table { min-height: 0; overflow: auto; }
 .worksheet-resizer-detail { cursor: row-resize; }
 .worksheet-detail { min-height: 0; overflow: hidden; background: var(--sc-app-panel); }
 .worksheet-tabs { display: flex; min-height: 38px; padding: 0 var(--sc-space-sm); border-bottom: 1px solid var(--sc-app-border); }

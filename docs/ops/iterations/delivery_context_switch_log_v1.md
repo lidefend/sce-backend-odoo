@@ -3665,3 +3665,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   native-tree hook, helper builders or source marker. The runtime probe always
   verifies that a non-admin policy projection cannot exceed its supplied native
   authorization facts.
+
+## 2026-08-11 — P0-TDESIGN-ENTERPRISE-UI-FOUNDATION-V1
+
+- Branch / anchor: `codex/tdesign-enterprise-ui-foundation-v1` from
+  `34f79dacdee989dbabb4d334faf92e5241bea575`.
+- Formal Product Layer / Layer Target / Module: P0 / shared frontend interaction
+  and visual engine / `frontend/apps/web` design-system adapters and guards.
+- Standard vs User-Specific: shared platform mechanism only; no construction,
+  customer, model, field, route, permission or data semantics are introduced.
+- Decision / Boundary: TDesign Vue Next supplies reviewed interaction primitives
+  behind the existing `Sc*` product-semantic API. SC semantic tokens remain the
+  visual authority and `tdesignAdapter.ts` is the only allowed vendor import
+  boundary. Backend contracts remain authoritative for page structure and
+  behavior.
+- Representative Closure: contract lists consume the standardized button/icon
+  path, contract forms consume standardized date/select/overlay primitives, and
+  hierarchy planning consumes the generic `ScHierarchyTable` backed by the
+  reviewed enhanced-table engine.
+- Blast Radius / validation: frontend dependencies, design-system internals,
+  one generic hierarchy renderer, focused static guards, strict typecheck,
+  release units and production build. No database, backend contract, route,
+  permission, menu or business-data mutation is authorized.

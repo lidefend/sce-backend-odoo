@@ -60,38 +60,20 @@
 
       <div v-if="loading" class="planner-state">{{ labels.loading }}</div>
       <ScEmptyState v-else-if="!visibleEntries.length" class="planner-state" :title="String(config.empty_title || '')" :description="String(config.empty_hint || '')" />
-      <ScDataTable v-else class="planner-grid" :label="title" :table-style="tableStyle">
-        <colgroup><col v-for="column in columns" :key="column.field" :style="columnStyle(column)" /></colgroup>
-        <thead><tr><th v-for="column in columns" :key="column.field">{{ column.label }}</th></tr></thead>
-        <tbody>
-          <tr
-            v-for="entry in visibleEntries"
-            :key="entry.node.key"
-            :class="{ selected: Number(selectedRecord?.id) === entry.node.id, parent: entry.node.children.length }"
-            tabindex="0"
-            @click="selectEntry(entry)"
-            @dblclick="openRecord(entry.record)"
-            @keyup.enter="selectEntry(entry)"
-          >
-            <td v-for="column in columns" :key="column.field" :class="{ 'code-column': column.field === codeField }">
-              <div v-if="column.field === codeField" class="code-cell" :style="{ paddingInlineStart: `${entry.depth * indentSize}px` }">
-                <span v-if="entry.depth" class="tree-elbow" aria-hidden="true" /><span>{{ displayValue(entry.record[column.field], column) }}</span>
-              </div>
-              <div v-if="column.field === outlineField" class="outline-cell" :style="{ paddingInlineStart: `${entry.depth * indentSize}px` }">
-                <button
-                  v-if="entry.node.children.length"
-                  class="outline-toggle"
-                  :aria-label="entry.node.label"
-                  @click.stop="toggle(entry.node)"
-                ><ScIcon name="chevron-right" :size="14" :class="{ 'is-expanded': expandedKeys.has(entry.node.key) }" /></button>
-                <span v-else class="outline-toggle-spacer" />
-                <span>{{ displayValue(entry.record[column.field], column) }}</span>
-              </div>
-              <template v-else-if="column.field !== codeField">{{ displayValue(entry.record[column.field], column) }}</template>
-            </td>
-          </tr>
-        </tbody>
-      </ScDataTable>
+      <ScHierarchyTable
+        v-else
+        class="planner-grid"
+        :label="title"
+        :columns="hierarchyTableColumns"
+        :rows="hierarchyTableRows"
+        :outline-column="outlineField"
+        :code-column="codeField"
+        :selected-key="selectedEntry?.node.key"
+        :indent-size="indentSize"
+        @select="selectHierarchyRow"
+        @open="openHierarchyRow"
+        @toggle="toggleHierarchyRow"
+      />
       <aside v-if="showDetail && selectedRecord" class="planner-drawer" :aria-label="labels.details">
         <header><strong>{{ selectedEntry?.node.code }} {{ selectedEntry?.node.label }}</strong><ScIconButton :label="labels.close_details" @click="showDetail = false"><ScIcon name="close" :size="16" /></ScIconButton></header>
         <div class="planner-drawer-body">
@@ -117,8 +99,11 @@ import {
 } from '../../app/action_runtime/hierarchyCollectionDataSource';
 import { formatDisplayValue } from '../../utils/display';
 import ScButton from '../design-system/ScButton.vue';
-import ScDataTable from '../design-system/ScDataTable.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
+import ScHierarchyTable, {
+  type ScHierarchyTableColumn,
+  type ScHierarchyTableRow,
+} from '../design-system/ScHierarchyTable.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ProductListHeader from '../product-list/ProductListHeader.vue';
@@ -236,13 +221,44 @@ const visibleEntries = computed<OutlineEntry[]>(() => {
   return output;
 });
 const displayedTotal = computed(() => keyword.value.trim() ? visibleEntries.value.length : allPlannerNodes.value.length);
-const tableStyle = computed(() => ({ minWidth: `${Math.max(900, columns.value.length * 150)}px` }));
+const hierarchyTableColumns = computed<ScHierarchyTableColumn[]>(() => columns.value.map((column) => ({
+  key: column.field,
+  label: column.label,
+  width: column.field === outlineField.value ? 'min(36vw, 520px)' : 150,
+  minWidth: column.field === outlineField.value ? 280 : 120,
+  align: ['integer', 'float', 'monetary'].includes(String(column.type || column.ttype || '')) ? 'right' : 'left',
+})));
+const hierarchyTableRows = computed<ScHierarchyTableRow[]>(() => visibleEntries.value.map((entry) => ({
+  key: entry.node.key,
+  depth: entry.depth,
+  expandable: Boolean(entry.node.children.length),
+  expanded: expandedKeys.value.has(entry.node.key),
+  values: Object.fromEntries(columns.value.map((column) => [
+    column.field,
+    displayValue(entry.record[column.field], column),
+  ])),
+  source: entry,
+})));
 const headerLayoutStyle = computed(() => ({ gridTemplateColumns: 'minmax(240px, auto) 0 minmax(320px, 1fr) 0 max-content' }));
 
 function displayValue(value: unknown, column: Column): string { return formatDisplayValue(value, column); }
-function columnStyle(column: Column): Record<string, string> { return { width: column.field === outlineField.value ? 'min(36vw, 520px)' : '150px' }; }
 function onSearchInput(event: Event): void { keyword.value = String((event.target as HTMLInputElement | null)?.value || ''); }
 function selectEntry(entry: OutlineEntry): void { selectedRecord.value = entry.record; }
+function hierarchyEntry(row: ScHierarchyTableRow): OutlineEntry | null {
+  return row.source && typeof row.source === 'object' ? row.source as OutlineEntry : null;
+}
+function selectHierarchyRow(row: ScHierarchyTableRow): void {
+  const entry = hierarchyEntry(row);
+  if (entry) selectEntry(entry);
+}
+function openHierarchyRow(row: ScHierarchyTableRow): void {
+  const entry = hierarchyEntry(row);
+  if (entry) openRecord(entry.record);
+}
+function toggleHierarchyRow(row: ScHierarchyTableRow): void {
+  const entry = hierarchyEntry(row);
+  if (entry) toggle(entry.node);
+}
 function openRecord(record: Dict): void { if (Number(record.id || 0)) emit('open-record', record); }
 function openSelected(): void { if (selectedRecord.value) openRecord(selectedRecord.value); }
 function createRecord(): void { emit('open-record', { id: 'new' }); }
@@ -319,19 +335,6 @@ onBeforeUnmount(() => { document.removeEventListener('click', closeMenusFromOuts
 .planner-menu { position: relative; }
 .planner-menu-popover { position: absolute; z-index: 5; top: calc(100% + var(--sc-space-2xs)); right: 0; display: grid; min-width: 140px; padding: var(--sc-space-xs); border: 1px solid var(--sc-app-border); background: var(--sc-app-panel); box-shadow: var(--sc-app-shadow-md); }
 .planner-grid { max-height: calc(100vh - 260px); border: 0; border-radius: 0; box-shadow: none; }
-.planner-grid :deep(.sc-product-table) { width: 100%; border-collapse: collapse; font-size: var(--sc-product-text-body); }
-.planner-grid :deep(th), .planner-grid :deep(td) { height: var(--sc-product-table-row-height); padding: calc(var(--sc-component-table-cell-padding-y) * 1px) calc(var(--sc-component-table-cell-padding-x) * 1px); border-bottom: 1px solid var(--sc-table-divider); text-align: left; white-space: nowrap; }
-.planner-grid :deep(th) { position: sticky; top: 0; z-index: 1; height: calc(var(--sc-component-table-header-height) * 1px); background: var(--sc-table-header-bg); color: var(--sc-app-text-secondary); }
-.planner-grid :deep(tbody tr) { cursor: pointer; }
-.planner-grid :deep(tbody tr:hover) { background: var(--sc-app-hover-bg); }
-.planner-grid :deep(tbody tr.selected) { background: var(--sc-app-selected-bg); }
-.planner-grid :deep(tbody tr.parent td) { font-weight: 600; }
-.outline-cell, .code-cell { display: flex; align-items: center; min-width: 0; }
-.tree-elbow { align-self: stretch; width: var(--sc-space-sm); margin-inline-end: var(--sc-space-xs); border-bottom: 1px solid var(--sc-app-border-strong); border-left: 1px solid var(--sc-app-border-strong); }
-.outline-toggle, .outline-toggle-spacer { flex: 0 0 var(--sc-touch-target-min); width: var(--sc-touch-target-min); min-height: var(--sc-touch-target-min); }
-.outline-toggle { display: inline-grid; border: 0; background: transparent; color: var(--sc-app-text-secondary); cursor: pointer; place-items: center; }
-.outline-toggle :deep(.sc-icon) { transition: transform var(--sc-motion-fast, 120ms) ease; }
-.outline-toggle :deep(.sc-icon.is-expanded) { transform: rotate(90deg); }
 .planner-state { display: grid; min-height: 420px; place-content: center; color: var(--sc-app-text-secondary); }
 .planner-error { padding: var(--sc-space-xs) var(--sc-space-sm); border: 1px solid var(--sc-app-danger-border); background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }
 .planner-success { padding: var(--sc-space-xs) var(--sc-space-sm); border: 1px solid var(--sc-app-success-border); background: var(--sc-app-success-bg); color: var(--sc-app-success-text); }

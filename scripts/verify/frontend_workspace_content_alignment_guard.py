@@ -4,12 +4,16 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB = ROOT / "frontend/apps/web/src"
-REPORT = ROOT / "artifacts/frontend-professional/fe-pro-04wr/nested-width-inventory.json"
+REPORT = Path(os.environ.get(
+    "FRONTEND_WORKSPACE_CONTENT_ALIGNMENT_REPORT",
+    ROOT / "artifacts/frontend-professional/fe-pro-04wr/nested-width-inventory.json",
+))
 FILES = {
     "contract": WEB / "components/design-system/pageWidth.ts",
     "page": WEB / "components/design-system/ScPage.vue",
@@ -164,4 +168,8 @@ REPORT.write_text(json.dumps({
     "entries": inventory,
     "counts": {category: sum(1 for row in inventory if row["category"] == category) for category in ("WORKSPACE_FRAME", "CONTENT_READING_WIDTH", "COMPONENT_INTERNAL_WIDTH", "LEGACY_OVERRIDE", "UNRESOLVED")},
 }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-print(f"[frontend_workspace_content_alignment_guard] PASS entries={len(inventory)} report={REPORT.relative_to(ROOT)}")
+try:
+    report_display = REPORT.relative_to(ROOT)
+except ValueError:
+    report_display = REPORT
+print(f"[frontend_workspace_content_alignment_guard] PASS entries={len(inventory)} report={report_display}")

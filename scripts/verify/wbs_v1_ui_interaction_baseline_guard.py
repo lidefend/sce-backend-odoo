@@ -14,6 +14,7 @@ def require(text: str, token: str, message: str, errors: list[str]) -> None:
 def main() -> int:
     baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
     component = (ROOT / "frontend/apps/web/src/components/action/HierarchyPlanner.vue").read_text(encoding="utf-8")
+    hierarchy_table = (ROOT / "frontend/apps/web/src/components/design-system/ScHierarchyTable.vue").read_text(encoding="utf-8")
     registry = (ROOT / "frontend/apps/web/src/app/renderers/actionSurfaceRendererRegistry.ts").read_text(encoding="utf-8")
     mapping = (ROOT / "addons/smart_core/app_config_engine/models/app_view_config.py").read_text(encoding="utf-8")
     native_view = (ROOT / "addons/smart_construction_core/views/support/work_breakdown_views.xml").read_text(encoding="utf-8")
@@ -23,8 +24,8 @@ def main() -> int:
         errors.append("baseline decision must remain feature-only and must not claim release readiness")
     for token, message in (
         ("planner-grid", "frozen outline grid missing"),
-        ("outline-toggle", "frozen hierarchy expansion affordance missing"),
-        ("code-cell", "frozen code depth alignment missing"),
+        ("ScHierarchyTable", "shared hierarchy-table adapter missing"),
+        ("hierarchyTableRows", "hierarchy contract projection missing"),
         ("selectedEntry", "frozen selected-node context missing"),
         ("toolbarCommands", "frozen toolbar grouping missing"),
         ("activeMenu", "controlled menu state missing"),
@@ -32,9 +33,18 @@ def main() -> int:
         ("hierarchyCollectionDataSource", "contract runtime boundary missing"),
     ):
         require(component, token, message, errors)
+    for token, message in (
+        ("TEnhancedTable", "reviewed enterprise table engine missing"),
+        ("data-ui-engine=\"tdesign-enhanced-table\"", "inspectable hierarchy UI engine marker missing"),
+        ("sc-hierarchy-table__toggle", "frozen hierarchy expansion affordance missing"),
+        ("sc-hierarchy-table__code-cell", "frozen code depth alignment missing"),
+        ("aria-expanded", "hierarchy expansion accessibility state missing"),
+        ("aria-selected", "hierarchy selection accessibility state missing"),
+    ):
+        require(hierarchy_table, token, message, errors)
     for forbidden in ("WBS", "project_id", "parent_id", "construction."):
-        if forbidden in component:
-            errors.append(f"shared planner contains business semantic: {forbidden}")
+        if forbidden in component or forbidden in hierarchy_table:
+            errors.append(f"shared hierarchy surface contains business semantic: {forbidden}")
     require(registry, "semantic: 'hierarchy_planner'", "hierarchy planner renderer registration missing", errors)
     require(mapping, "'smart_hierarchy_planner': 'hierarchy_planner'", "native view semantic mapping missing", errors)
     require(native_view, 'js_class="smart_hierarchy_planner"', "WBS native view no longer selects frozen planner", errors)

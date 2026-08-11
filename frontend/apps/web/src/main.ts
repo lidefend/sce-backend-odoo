@@ -5,6 +5,7 @@ import { bootstrapApp } from './app/init';
 import App from './App.vue';
 import './styles/design-system.css';
 import './styles/product-patterns.css';
+import './styles/tdesign-bridge.css';
 import { bootTheme } from './styles/theme';
 import { installStaleAssetRecovery } from './app/staleAssetRecovery';
 

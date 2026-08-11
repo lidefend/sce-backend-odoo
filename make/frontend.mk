@@ -104,8 +104,15 @@ verify.frontend.page_identity: guard.prod.forbid
 verify.frontend.my_work_approval.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_my_work_approval_guard.py
 
-.PHONY: verify.frontend.style_system.guard
-verify.frontend.style_system.guard: guard.prod.forbid
+.PHONY: verify.frontend.tdesign_boundary.guard verify.frontend.tdesign_foundation.browser verify.frontend.style_system.guard
+verify.frontend.tdesign_boundary.guard: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_frontend_tdesign_boundary_guard.py
+	@python3 scripts/verify/frontend_tdesign_boundary_guard.py
+
+verify.frontend.tdesign_foundation.browser: guard.prod.forbid
+	@FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:5198}" node scripts/verify/frontend_tdesign_foundation_browser.mjs
+
+verify.frontend.style_system.guard: guard.prod.forbid verify.frontend.tdesign_boundary.guard
 	@python3 scripts/verify/frontend_style_system_guard.py
 
 .PHONY: verify.frontend.standard_list_scroll_contract.guard
