@@ -1816,6 +1816,7 @@ verify.product.sla.baseline: guard.prod.forbid verify.platform.performance.smoke
 	@echo "[OK] verify.product.sla.baseline done"
 
 verify.product.release.ready: guard.prod.forbid \
+	verify.backend.contract_lifecycle.authority \
 	verify.frontend.product.ready \
 	verify.docs.product_boundary \
 	verify.industry_module.product_boundary \
@@ -1830,6 +1831,24 @@ verify.product.release.ready: guard.prod.forbid \
 	verify.ui.product.stability \
 	verify.product.sla.baseline
 	@echo "[OK] verify.product.release.ready done"
+
+.PHONY: verify.backend.contract_lifecycle.authority
+verify.backend.contract_lifecycle.authority: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_lifecycle.py \
+		addons/smart_core/core/unified_page_contract_v2_assembler.py \
+		addons/smart_core/handlers/ui_contract_v2.py \
+		addons/smart_core/model/ui_business_config_contract.py \
+		scripts/verify/backend_contract_lifecycle_authority_guard.py
+	@python3 addons/smart_core/tests/test_contract_lifecycle.py
+	@python3 addons/smart_core/tests/test_backend_contract_boundary_guard.py
+	@python3 scripts/verify/backend_contract_lifecycle_authority_guard.py
+
+.PHONY: verify.backend.contract_lifecycle.runtime
+verify.backend.contract_lifecycle.runtime: guard.prod.forbid check-compose-project check-compose-env
+	@mkdir -p artifacts/backend
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_lifecycle_runtime_probe.py
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/backend_contract_lifecycle_runtime_probe.json artifacts/backend/backend_contract_lifecycle_runtime_probe.json >/dev/null
 
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from odoo import api, fields, models
+from odoo import api, models
 
 
 SETTLEMENT_ACTION_XMLIDS = (
@@ -62,13 +62,7 @@ class UIBusinessConfigContractSettlementFormalSync(models.Model):
                 next_payload = self._sc_settlement_formalize_contract_payload(payload)
                 if next_payload == payload:
                     continue
-                contract.write(
-                    {
-                        "contract_json": next_payload,
-                        "version_no": int(contract.version_no or 1) + 1,
-                        "published_at": fields.Datetime.now(),
-                    }
-                )
+                contract.replace_and_publish(next_payload)
                 changed += 1
         return changed
 

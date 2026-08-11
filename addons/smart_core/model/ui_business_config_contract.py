@@ -18,6 +18,7 @@ from odoo.addons.smart_core.core.view_contract_presence import (
     contract_contributes_view,
     normalize_contract_view_type,
 )
+from odoo.addons.smart_core.core.contract_lifecycle import payload_sha256
 
 TEST_PLACEHOLDER_TOKENS = ("CODEX_", "codex_view_orch_surface")
 STALE_TRANSITION_FIELD_PREFIXES = (
@@ -113,6 +114,13 @@ class UIBusinessConfigContract(models.Model):
     status = fields.Selection([("draft", "Draft"), ("published", "Published")], default="draft", required=True)
     version_no = fields.Integer(default=1, required=True)
     contract_json = fields.Json(required=True, default=dict)
+    payload_sha256 = fields.Char(index=True, readonly=True, copy=False)
+    definition_sha256 = fields.Char(index=True, readonly=True, copy=False)
+    source_authority_json = fields.Json(
+        readonly=True,
+        copy=False,
+        default=lambda self: self.source_authority_contract(),
+    )
     created_by = fields.Many2one("res.users", default=lambda self: self.env.user, readonly=True)
     published_at = fields.Datetime()
 
@@ -122,12 +130,72 @@ class UIBusinessConfigContract(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        records = super().create(vals_list)
+        normalized_vals = []
+        for values in vals_list:
+            row = dict(values)
+            payload = row.get("contract_json") if isinstance(row.get("contract_json"), dict) else {}
+            row["payload_sha256"] = payload_sha256(payload)
+            row.setdefault("source_authority_json", self.source_authority_contract())
+            normalized_vals.append(row)
+        records = super().create(normalized_vals)
+        for record in records:
+            record._refresh_definition_sha256()
+            if record.status == "published":
+                record._append_published_version()
         record_business_config_mutation(records, "create", vals_list)
         return records
 
     def write(self, vals):
+        if self.env.context.get("contract_lifecycle_internal"):
+            return super().write(vals)
+        protected = {"payload_sha256", "definition_sha256", "source_authority_json", "published_at", "version_no"}
+        definition_fields = {
+            "name",
+            "model",
+            "view_type",
+            "action_id",
+            "view_id",
+            "role_key",
+            "priority",
+            "company_id",
+            "active",
+        }
+        vals = dict(vals)
+        if "contract_json" in vals:
+            for key in protected:
+                vals.pop(key, None)
+        elif protected.intersection(vals):
+            raise ValidationError("Contract lifecycle metadata is managed by the publication authority.")
+        if definition_fields.intersection(vals) and "contract_json" not in vals and "status" not in vals:
+            published = self.filtered(lambda record: record.status == "published")
+            drafts = self - published
+            for record in published:
+                record.replace_and_publish(record.contract_json or {}, values=vals)
+            if drafts:
+                super(UIBusinessConfigContract, drafts).write(vals)
+                drafts._refresh_definition_sha256()
+            record_business_config_mutation(self, "write", vals)
+            return True
+        if "contract_json" in vals:
+            payload = vals.get("contract_json") if isinstance(vals.get("contract_json"), dict) else {}
+            publish = vals.get("status") == "published" or any(record.status == "published" for record in self)
+            if publish:
+                extra = {key: value for key, value in vals.items() if key not in {"contract_json", "status"}}
+                for record in self:
+                    record.replace_and_publish(payload, values=extra)
+                record_business_config_mutation(self, "write", vals)
+                return True
+            vals = dict(vals, payload_sha256=payload_sha256(payload))
+        if vals.get("status") == "published":
+            other_values = {key: value for key, value in vals.items() if key != "status"}
+            if other_values:
+                super(UIBusinessConfigContract, self.with_context(contract_lifecycle_internal=True)).write(other_values)
+            self.action_publish()
+            record_business_config_mutation(self, "write", vals)
+            return True
         result = super().write(vals)
+        if {"contract_json", "model", "view_type", "action_id", "view_id", "role_key", "priority", "company_id", "active"}.intersection(vals):
+            self._refresh_definition_sha256()
         record_business_config_mutation(self, "write", vals)
         return result
 
@@ -728,18 +796,121 @@ class UIBusinessConfigContract(models.Model):
         self.ensure_one()
         return classify_view_orchestration_contract(self.name, self.contract_json or {})
 
-    def action_publish(self):
-        for rec in self:
-            rec.status = "published"
-            rec.published_at = fields.Datetime.now()
-            rec.version_no = int(rec.version_no or 1) + 1
-            self.env["ui.business.config.contract.version"].create({
-                "contract_id": rec.id,
-                "version_no": rec.version_no,
-                "snapshot_json": rec.contract_json or {},
-                "status": rec.status,
+    def _definition_payload(self) -> dict:
+        self.ensure_one()
+        return {
+            "name": str(self.name or ""),
+            "model": str(self.model or ""),
+            "view_type": str(self.view_type or ""),
+            "action_id": int(self.action_id.id or 0),
+            "view_id": int(self.view_id.id or 0),
+            "role_key": str(self.role_key or ""),
+            "priority": int(self.priority or 100),
+            "company_id": int(self.company_id.id or 0),
+            "active": bool(self.active),
+            "contract_json": self.contract_json if isinstance(self.contract_json, dict) else {},
+        }
+
+    def _refresh_definition_sha256(self):
+        for record in self:
+            payload = record.contract_json if isinstance(record.contract_json, dict) else {}
+            super(UIBusinessConfigContract, record.with_context(contract_lifecycle_internal=True)).write({
+                "payload_sha256": payload_sha256(payload),
+                "definition_sha256": payload_sha256(record._definition_payload()),
+                "source_authority_json": record.source_authority_json or record.source_authority_contract(),
+            })
+
+    def _append_published_version(self):
+        """Append one immutable publication snapshot under a database row lock."""
+        Version = self.env["ui.business.config.contract.version"].sudo()
+        for record in self:
+            self.env.cr.execute(
+                "SELECT id FROM ui_business_config_contract WHERE id = %s FOR UPDATE",
+                [record.id],
+            )
+            record.invalidate_recordset(["contract_json", "version_no", "status"])
+            record._refresh_definition_sha256()
+            latest = Version.search(
+                [("contract_id", "=", record.id)],
+                order="version_no desc, id desc",
+                limit=1,
+            )
+            if (
+                latest
+                and latest.definition_sha256 == record.definition_sha256
+                and latest.status == "published"
+            ):
+                super(UIBusinessConfigContract, record.with_context(contract_lifecycle_internal=True)).write({
+                    "status": "published",
+                    "published_at": latest.published_at or fields.Datetime.now(),
+                    "version_no": int(latest.version_no),
+                })
+                continue
+            next_version = max(int(record.version_no or 0), int(latest.version_no or 0)) + (1 if latest else 0)
+            next_version = max(next_version, 1)
+            published_at = fields.Datetime.now()
+            super(UIBusinessConfigContract, record.with_context(contract_lifecycle_internal=True)).write({
+                "status": "published",
+                "published_at": published_at,
+                "version_no": next_version,
+            })
+            Version.with_context(contract_lifecycle_internal=True).create({
+                "contract_id": record.id,
+                "version_no": next_version,
+                "snapshot_json": record.contract_json or {},
+                "definition_json": record._definition_payload(),
+                "payload_sha256": record.payload_sha256,
+                "definition_sha256": record.definition_sha256,
+                "source_authority_json": record.source_authority_json or record.source_authority_contract(),
+                "status": "published",
+                "published_at": published_at,
                 "created_by": self.env.user.id,
             })
+        return True
+
+    def replace_and_publish(self, payload: dict, *, values: dict | None = None):
+        if not isinstance(payload, dict):
+            raise ValidationError("Contract payload must be a JSON object.")
+        for record in self:
+            update = dict(values or {})
+            update.update({
+                "contract_json": payload,
+                "status": "draft",
+                "payload_sha256": payload_sha256(payload),
+                "published_at": False,
+            })
+            super(UIBusinessConfigContract, record.with_context(contract_lifecycle_internal=True)).write(update)
+            record._refresh_definition_sha256()
+            record._append_published_version()
+        return True
+
+    def restore_published_version(self, version):
+        self.ensure_one()
+        if not version or version.contract_id != self:
+            raise ValidationError("The requested snapshot does not belong to this contract.")
+        definition = version.definition_json if isinstance(version.definition_json, dict) else {}
+        restored_values = {
+            key: definition[key]
+            for key in (
+                "name",
+                "model",
+                "view_type",
+                "action_id",
+                "view_id",
+                "role_key",
+                "priority",
+                "company_id",
+                "active",
+            )
+            if key in definition
+        }
+        for relation_key in ("action_id", "view_id", "company_id"):
+            if relation_key in restored_values:
+                restored_values[relation_key] = int(restored_values[relation_key] or 0) or False
+        return self.replace_and_publish(version.snapshot_json or {}, values=restored_values)
+
+    def action_publish(self):
+        return self._append_published_version()
 
 
 class UIBusinessConfigContractVersion(models.Model):
@@ -751,14 +922,23 @@ class UIBusinessConfigContractVersion(models.Model):
     version_no = fields.Integer(required=True)
     status = fields.Selection([("draft", "Draft"), ("published", "Published")], default="draft", required=True)
     snapshot_json = fields.Json(required=True, default=dict)
+    definition_json = fields.Json(required=True, default=dict)
+    payload_sha256 = fields.Char(required=True, index=True, readonly=True)
+    definition_sha256 = fields.Char(required=True, index=True, readonly=True)
+    source_authority_json = fields.Json(required=True, readonly=True)
+    published_at = fields.Datetime(required=True, readonly=True)
     created_by = fields.Many2one("res.users", default=lambda self: self.env.user, readonly=True)
 
     @api.model_create_multi
     def create(self, vals_list):
+        if not self.env.context.get("contract_lifecycle_internal"):
+            raise ValidationError("Contract versions are append-only and may only be created by publication authority.")
         records = super().create(vals_list)
         record_business_config_mutation(records, "create", vals_list)
         return records
 
+    def write(self, vals):
+        raise ValidationError("Published contract versions are immutable.")
+
     def unlink(self):
-        record_business_config_mutation(self, "unlink")
-        return super().unlink()
+        raise ValidationError("Published contract versions are immutable.")

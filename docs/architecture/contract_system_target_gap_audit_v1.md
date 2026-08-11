@@ -1,5 +1,9 @@
 # Contract System Target Gap Audit v1
 
+> Status: superseded for current-state maturity judgment by
+> `backend_contract_lifecycle_authority_v1.md`. This document remains historical
+> evidence for the 2026-05 transition baseline.
+
 Date: 2026-05-01
 Branch: `codex/contract-system-audit`
 Baseline SHA: `3553fd90`
@@ -590,4 +594,3 @@ many contract surfaces
 ```
 
 The highest-priority next step is not more page feature work. It is to freeze `UnifiedPageContract v2` and map every existing contract source into it.
-

@@ -3665,3 +3665,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   native-tree hook, helper builders or source marker. The runtime probe always
   verifies that a non-admin policy projection cannot exceed its supplied native
   authorization facts.
+## 2026-08-11 — P0-BACKEND-CONTRACT-LIFECYCLE-AUTHORITY-V1
+
+- Branch / anchor: `codex/backend-contract-lifecycle-authority-v1` from
+  `74a44e4e486d22ad97b52cba5215f947fe7a8958`.
+- Formal Product Layer / Layer Target / Module: P0 / L0-L1 contract lifecycle
+  authority / `smart_core`, typed generic frontend consumer and P4 release
+  verification.
+- Standard vs User-Specific: common platform mechanism. No construction or
+  customer semantics and no customer data are introduced.
+- Reason / Why Here: schema identity, generation provenance, append-only
+  publication, runtime resealing, traceability and compatibility are one
+  indivisible platform contract lifecycle.
+- Why Not Elsewhere: P1/P2/P3 may provide industry, customer and tenant
+  definitions but may not redefine the public protocol or bypass publication
+  authority.
+- Blast Radius / validation: UPC v2.2 metadata and typed consumer, business
+  configuration contract lifecycle fields and migration, centralized rollback,
+  backend boundary detection and release topology. The isolated
+  `sc_contract_lifecycle` database contains no demo/customer data and passed
+  exact environment health, a controlled 17.0.1.1.8 migration rehearsal and
+  14/14 lifecycle runtime assertions.

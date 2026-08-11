@@ -548,8 +548,7 @@ class BusinessConfigChangeSetRollbackHandler(_ChangeSetBase):
                 contract = self.env["ui.business.config.contract"].sudo().browse(contract_id).exists()
                 if contract and row.get("exists"):
                     values = row.get("values") if isinstance(row.get("values"), dict) else {}
-                    contract.write({"contract_json": values.get("contract_json") or {}, "status": "draft"})
-                    contract.action_publish()
+                    contract.replace_and_publish(values.get("contract_json") or {})
                     restored.append({"contract_id": contract_id, "version_no": int(contract.version_no)})
                 elif contract and not row.get("exists"):
                     contract.write({"active": False})
