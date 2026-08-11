@@ -48,7 +48,10 @@
     </record>
     <record id="action_sc_product_site_variation_v1" model="ir.actions.act_window">
       <field name="name">签证变更</field><field name="res_model">sc.settlement.adjustment</field><field name="view_mode">tree,form</field>
-      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
+      <field name="views" eval="[(ref('smart_construction_core.view_sc_settlement_adjustment_tree'), 'tree'), (ref('smart_construction_core.view_sc_settlement_adjustment_form'), 'form')]"/>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_settlement_adjustment_search"/>
+      <field name="context">{'search_default_active_rows': 1, 'search_default_group_project': 1, 'sc_project_context_entry': True}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
     </record>
     <record id="action_sc_product_labor_realname_v1" model="ir.actions.act_window">
       <field name="name">劳务实名制</field><field name="res_model">sc.labor.worker</field><field name="view_mode">tree,form</field>
@@ -305,7 +308,7 @@
     <menuitem id="menu_sc_product_tender_information_v1" name="招标信息" parent="smart_construction_core.menu_sc_tender_management_group" action="smart_construction_core.action_sc_product_tender_information_v1" sequence="10" groups="smart_construction_core.group_sc_cap_project_read"/>
     <menuitem id="menu_sc_product_tender_document_v1" name="标书管理" parent="smart_construction_core.menu_sc_tender_management_group" action="smart_construction_core.action_sc_product_tender_document_v1" sequence="30" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
     <menuitem id="menu_sc_product_quality_acceptance_v1" name="质量验收" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_product_quality_acceptance_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
-    <menuitem id="menu_sc_product_site_variation_v1" name="签证变更" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_product_site_variation_v1" sequence="60" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_site_variation_v1" name="签证变更" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_product_site_variation_v1" sequence="60" groups="smart_construction_core.group_sc_cap_project_read"/>
     <menuitem id="menu_sc_product_labor_realname_v1" name="劳务实名制" parent="smart_construction_core.menu_sc_product_labor_cost_group_v1" action="smart_construction_core.action_sc_product_labor_realname_v1" sequence="10" groups="smart_construction_core.group_sc_cap_project_read"/>
     <menuitem id="menu_sc_product_labor_cost_v1" name="劳务成本登记" parent="smart_construction_core.menu_sc_product_labor_cost_group_v1" action="smart_construction_core.action_sc_product_labor_cost_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_read"/>
     <menuitem id="menu_sc_product_labor_deduction_v1" name="劳务扣款明细" parent="smart_construction_core.menu_sc_product_labor_cost_group_v1" action="smart_construction_core.action_sc_product_labor_deduction_v1" sequence="30" groups="smart_construction_core.group_sc_cap_project_read"/>
