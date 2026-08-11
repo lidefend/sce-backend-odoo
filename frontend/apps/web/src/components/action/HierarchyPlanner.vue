@@ -346,4 +346,38 @@ onBeforeUnmount(() => { document.removeEventListener('click', closeMenusFromOuts
 .planner-drawer-body dl { display: grid; grid-template-columns: minmax(90px, auto) 1fr; gap: var(--sc-space-xs) var(--sc-space-sm); margin: 0; font-size: var(--sc-product-text-sm); }
 .planner-drawer-body dt { color: var(--sc-app-text-secondary); }.planner-drawer-body dd { margin: 0; }
 @media (max-width: 900px) { .planner-toolbar { align-items: stretch; flex-direction: column; } .planner-commands { justify-content: flex-start; } .planner-grid { max-height: none; } }
+@media (max-width: 600px) {
+  .planner-head :deep(.product-list-header__tools--aligned) {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      'leading actions'
+      'search search' !important;
+  }
+  .planner-head :deep(.product-list-header__leading),
+  .planner-head :deep(.product-list-header__actions),
+  .planner-head :deep(.product-list-header__search) { width: 100%; }
+  .planner-head :deep(.product-list-header__actions) { padding-inline-start: 0; }
+  .planner-title { min-width: 0; padding-inline: var(--sc-space-xs); }
+  .planner-title strong { overflow: hidden; text-overflow: ellipsis; }
+  .planner-governance { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-space-xs) var(--sc-space-sm); }
+  .planner-governance div { min-width: 0; }
+  .planner-governance div:last-child { grid-column: 1 / -1; }
+  .planner-governance dd { min-width: 0; overflow-wrap: anywhere; }
+  .planner-selection { min-width: 0; white-space: normal; }
+  .planner-selection span { overflow-wrap: anywhere; }
+  .planner-grid :deep(.t-table__content table) { width: 100% !important; min-width: 0 !important; }
+  .planner-grid :deep(col:nth-child(n + 3)),
+  .planner-grid :deep(th:nth-child(n + 3)),
+  .planner-grid :deep(td:nth-child(n + 3)) { display: none; }
+  .planner-grid :deep(col:first-child),
+  .planner-grid :deep(th:first-child),
+  .planner-grid :deep(td:first-child) { width: 174px !important; }
+  .planner-grid :deep(col:nth-child(2)),
+  .planner-grid :deep(th:nth-child(2)),
+  .planner-grid :deep(td:nth-child(2)) { width: auto !important; }
+  .planner-grid :deep(th:nth-child(-n + 2)),
+  .planner-grid :deep(td:nth-child(-n + 2)) { padding-inline: var(--sc-space-xs); }
+  .planner-grid :deep(.sc-hierarchy-table__value) { white-space: normal; overflow-wrap: anywhere; }
+  .planner-drawer { width: 100%; }
+}
 </style>

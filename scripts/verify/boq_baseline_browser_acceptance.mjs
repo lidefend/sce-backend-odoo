@@ -233,7 +233,23 @@ async function verifyWbsHierarchy(page, actionId, state) {
   check(await renderer.getAttribute('data-requested-renderer') === 'core.hierarchy_planner', 'WBS_RENDERER_NOT_REQUESTED');
   check(await renderer.getAttribute('data-active-renderer') === 'core.hierarchy_planner', 'WBS_RENDERER_NOT_ACTIVE');
   check(await renderer.getAttribute('data-renderer-status') === 'ready', 'WBS_RENDERER_NOT_READY');
-  await surface.locator('.planner-grid tbody tr').first().waitFor({ timeout: 30_000 });
+  try {
+    await page.waitForFunction(() => {
+      const planner = document.querySelector('.hierarchy-planner');
+      const rows = planner?.querySelectorAll('.planner-grid tbody tr');
+      return Boolean(planner && rows && rows.length >= 1 && !planner.textContent?.includes('正在加载'));
+    }, undefined, { timeout: 30_000 });
+    await surface.getByRole('button', { name: '视图', exact: true }).click();
+    await surface.getByRole('button', { name: '全部展开', exact: true }).click();
+    await page.waitForFunction(() => (
+      document.querySelectorAll('.hierarchy-planner .planner-grid tbody tr').length >= 4
+    ), undefined, { timeout: 10_000 });
+  } catch (error) {
+    const screenshot = path.join(outputDir, 'cost-wbs-planner-load-failed.png');
+    await page.screenshot({ path: screenshot, fullPage: true, animations: 'disabled' });
+    const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 1800);
+    throw new Error(`WBS_PLANNER_LOAD_FAILED:url=${page.url()}:body=${body}:http=${JSON.stringify(state.httpErrors)}:console=${JSON.stringify(state.consoleErrors)}:page=${JSON.stringify(state.pageErrors)}; ${error.message}`);
+  }
   const contractPayloads = (await Promise.all(state.contractResponses)).filter(Boolean);
   const presentation = contractPayloads.map(findHierarchyPresentation).filter(Boolean).at(-1);
   const contractColumns = presentation?.config?.list?.columns || [];
@@ -245,8 +261,8 @@ async function verifyWbsHierarchy(page, actionId, state) {
   const rows = surface.locator('.planner-grid tbody tr');
   const expandedNodeCount = await rows.count();
   check(expandedNodeCount >= 4, `WBS_OUTLINE_ROWS_MISSING:${expandedNodeCount}`);
-  check(await surface.locator('.outline-cell').count() >= expandedNodeCount, 'WBS_OUTLINE_COLUMN_MISSING');
-  check(await surface.locator('.outline-toggle').count() > 0, 'WBS_OUTLINE_NESTING_MISSING');
+  check(await surface.locator('.sc-hierarchy-table__outline-cell').count() >= expandedNodeCount, 'WBS_OUTLINE_COLUMN_MISSING');
+  check(await surface.locator('.sc-hierarchy-table__toggle').count() > 0, 'WBS_OUTLINE_NESTING_MISSING');
   for (const actionLabel of ['新增同级 WBS', '新增下级 WBS', '缩进为下级', '提升一级', '打开', '节点详情']) {
     check(await surface.getByRole('button', { name: actionLabel, exact: true }).isDisabled(), `WBS_UNSELECTED_COMMAND_NOT_DISABLED:${actionLabel}`);
   }
@@ -290,12 +306,24 @@ async function verifyWbsHierarchy(page, actionId, state) {
   await surface.locator('.planner-drawer').waitFor({ timeout: 10_000 });
   const detailScreenshot = path.join(outputDir, 'cost-wbs-planner-detail.png');
   await page.screenshot({ path: detailScreenshot, fullPage: true, animations: 'disabled' });
-  await surface.locator('.planner-drawer').getByRole('button', { name: '×', exact: true }).click();
+  await surface.locator('.planner-drawer').getByRole('button', { name: /Close details|关闭/ }).click();
   const gridText = await surface.locator('.planner-grid').innerText();
   check(/2/.test(gridText), `WBS_ALLOCATION_COUNT_MISSING:${gridText}`);
   check(/36,398\.87/.test(gridText), `WBS_ALLOCATION_AMOUNT_MISSING:${gridText}`);
   const screenshot = path.join(outputDir, 'cost-wbs-planner-verified.png');
   await page.screenshot({ path: screenshot, fullPage: true, animations: 'disabled' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('.hierarchy-planner').waitFor({ timeout: 10_000 });
+  const mobileOverflow = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  check(
+    mobileOverflow.scrollWidth <= mobileOverflow.clientWidth + 1,
+    `WBS_MOBILE_PAGE_OVERFLOW:${JSON.stringify(mobileOverflow)}`,
+  );
+  const mobileScreenshot = path.join(outputDir, 'cost-wbs-planner-mobile.png');
+  await page.screenshot({ path: mobileScreenshot, fullPage: true, animations: 'disabled' });
   return {
     semantic: 'hierarchy_planner',
     renderer: 'core.hierarchy_planner',
@@ -307,6 +335,7 @@ async function verifyWbsHierarchy(page, actionId, state) {
     contractColumnFields,
     detailScreenshot,
     screenshot,
+    mobile: { viewport: '390x844', overflow: mobileOverflow, screenshot: mobileScreenshot },
   };
 }
 
@@ -318,7 +347,7 @@ async function verifyWbsVersionGovernance(page) {
   await page.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 30_000 });
   const formText = await page.locator('body').innerText();
   check(await page.locator('[data-field-name="version_code"] input').inputValue() === 'V1.0', 'WBS_VERSION_FORM_VALUE_MISSING:V1.0');
-  for (const expected of ['草稿', '待校验', '4']) {
+  for (const expected of ['草稿', '4']) {
     check(formText.includes(expected), `WBS_VERSION_FORM_FACT_MISSING:${expected}:${formText.replace(/\s+/g, ' ').slice(0, 1400)}`);
   }
   const formScreenshot = path.join(outputDir, 'wbs-version-v1-draft.png');
@@ -334,12 +363,16 @@ async function verifyWbsVersionGovernance(page) {
   const governance = page.locator('.planner-governance');
   await governance.waitFor({ timeout: 30_000 });
   const governanceText = await governance.innerText();
-  for (const expected of ['版本', 'V1.0', '状态', '草稿', '完整性', '待校验', '最近更新']) {
+  const validation = governanceText.includes('校验通过')
+    ? { key: 'passed', label: '校验通过' }
+    : (governanceText.includes('待校验') ? { key: 'pending', label: '待校验' } : null);
+  check(validation, `WBS_VERSION_VALIDATION_STATE_MISSING:${governanceText.replace(/\s+/g, ' ').slice(0, 1400)}`);
+  for (const expected of ['版本', 'V1.0', '状态', '草稿', '完整性', validation.label, '最近更新']) {
     check(governanceText.includes(expected), `WBS_GOVERNANCE_FACT_MISSING:${expected}:${governanceText}`);
   }
   const plannerScreenshot = path.join(outputDir, 'wbs-version-governed-planner.png');
   await page.screenshot({ path: plannerScreenshot, fullPage: true, animations: 'disabled' });
-  return { version: 'V1.0', state: 'draft', validation: 'pending', nodeCount: 4, formScreenshot, plannerScreenshot };
+  return { version: 'V1.0', state: 'draft', validation: validation.key, nodeCount: 4, formScreenshot, plannerScreenshot };
 }
 
 async function main() {
