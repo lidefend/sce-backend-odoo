@@ -438,6 +438,7 @@ def activate(
         "list_db = False\n"
         "workers = 0\n"
         "max_cron_threads = 0\n"
+        "data_dir = /var/lib/odoo\n"
         "smtp_server = 127.0.0.1\n",
         encoding="utf-8",
     )
