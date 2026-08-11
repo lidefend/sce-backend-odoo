@@ -13,6 +13,9 @@ POLICY = ADDON / "models/support/product_policy_sync.py"
 CORE_EXTENSION = ADDON / "core_extension.py"
 CORE_INIT = ADDON / "__init__.py"
 MENU_SERVICE = ROOT / "addons/smart_core/delivery/menu_service.py"
+FINAL_MENU_SERVICE = ROOT / "addons/smart_core/delivery/final_menu_navigation_service.py"
+MENU_CONFIGURATION_HANDLER = ROOT / "addons/smart_core/handlers/menu_configuration.py"
+FORMAL_POLICY_RESTORE = ROOT / "scripts/ops/formal_product_menu_policy_restore.py"
 MENU_CONFIG_POLICY = ROOT / "addons/smart_core/model/ui_menu_config_policy.py"
 NORM_MENU = ROOT / "addons/sc_norm_engine/views/norm_menu.xml"
 WAVES = tuple((ADDON / "views").glob("menu_product_*_wave1.xml")) + (
@@ -132,6 +135,9 @@ def validate() -> list[str]:
     extension_source = CORE_EXTENSION.read_text(encoding="utf-8")
     init_source = CORE_INIT.read_text(encoding="utf-8")
     service_source = MENU_SERVICE.read_text(encoding="utf-8")
+    final_service_source = FINAL_MENU_SERVICE.read_text(encoding="utf-8")
+    menu_configuration_source = MENU_CONFIGURATION_HANDLER.read_text(encoding="utf-8")
+    restore_source = FORMAL_POLICY_RESTORE.read_text(encoding="utf-8")
     menu_config_source = MENU_CONFIG_POLICY.read_text(encoding="utf-8")
     if "def smart_core_native_navigation_authority" in extension_source:
         errors.append("construction product release policy must not be bypassed by native-tree authority")
@@ -141,8 +147,24 @@ def validate() -> list[str]:
         errors.append("platform menu delivery must not retain the retired native-tree bypass")
     if "_native_authoritative_fact_nav" in service_source or "_build_native_authoritative_nav" in service_source:
         errors.append("platform menu delivery must have one release-policy projection path")
+    if "MenuFactService" in final_service_source or "MenuTargetInterpreterService" in final_service_source:
+        errors.append("final navigation must not fall back to the native menu fact tree")
+    if "except Exception:\n            return {}" in final_service_source:
+        errors.append("final navigation must fail closed instead of silently returning to another authority")
+    if "final_menu_navigation_fallback" in menu_configuration_source:
+        errors.append("menu configuration runtime must not retry through a fallback navigation authority")
     if "def _native_route_discovery_blocked" not in service_source or "reserved_pairs=reserved_pairs" not in service_source:
         errors.append("native product routes must preserve stable menu/action pair identity")
+    if "delivery_engine_v1.released_policy_nav" not in service_source:
+        errors.append("released inactive/action-only targets must use the governed policy action projection")
+    if '"policy_group_label": str(group.get("group_label") or "").strip()' not in service_source:
+        errors.append("released product grouping must come from the versioned product policy")
+    if 'native_group_label or str(group.get("group_label")' in service_source:
+        errors.append("native menu ancestry must not override released product grouping")
+    if 'menu_record.sudo().write({"active": True})' in restore_source or "ACTIVATED_MENU_XMLIDS" in restore_source:
+        errors.append("formal product policy restore must not mutate native menu carrier activity")
+    if "PRESERVED_INACTIVE_MENU_XMLIDS" not in restore_source:
+        errors.append("formal product policy restore must report preserved inactive carriers")
     if "product_baseline_authoritative = released_product_baseline_authoritative()" not in menu_config_source:
         errors.append("P2 menu configuration must recognize the released P1 product baseline")
     if "if not policy and not normalized_menu_id" not in menu_config_source:

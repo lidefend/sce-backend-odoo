@@ -23,7 +23,7 @@ from odoo.modules.registry import Registry
 BASELINE_FILE = "formal_business_product_menu_policy_v1.json"
 PRODUCT_KEYS = ("construction.standard", "construction.preview")
 OUTPUT_JSON_NAME = "formal_product_menu_policy_restore_v1.json"
-ACTIVATED_MENU_XMLIDS: list[str] = []
+PRESERVED_INACTIVE_MENU_XMLIDS: list[str] = []
 CONFIG_CENTER_GROUP_LABEL = "配置中心"
 CONFIG_CENTER_LOWCODING_LABEL = "低代码系统配置"
 LEGACY_CONFIG_GROUP_LABELS = {"基础设置", "系统设置", "业务配置"}
@@ -153,8 +153,11 @@ def _hydrate_menu_row(menu: dict) -> dict:
         raise RuntimeError("formal product menu missing menu_xmlid: %s" % row)
     menu_record, action, action_xmlid = _resolve_runtime_target(menu_xmlid, row)
     if menu_record and hasattr(menu_record, "active") and not bool(menu_record.active):
-        menu_record.sudo().write({"active": True})
-        ACTIVATED_MENU_XMLIDS.append(menu_xmlid)
+        # A released product page does not require an active native menu
+        # carrier. Product policy owns selection; the action/model/ACL remain
+        # Odoo facts. Preserve the carrier state instead of mutating a second
+        # navigation authority during policy restore.
+        PRESERVED_INACTIVE_MENU_XMLIDS.append(menu_xmlid)
     action_id = int(action.id or 0)
     model_name = _text(getattr(action, "res_model", "")) or _text(row.get("res_model") or row.get("model"))
     view_modes = [_text(item) for item in _text(getattr(action, "view_mode", "")).split(",") if _text(item)]
@@ -482,7 +485,7 @@ def main() -> None:
         "snapshot_results": snapshot_results,
         "group_counts": group_counts,
         "menu_config_result": menu_config_result,
-        "activated_menu_xmlids": sorted(set(ACTIVATED_MENU_XMLIDS)),
+        "preserved_inactive_menu_xmlids": sorted(set(PRESERVED_INACTIVE_MENU_XMLIDS)),
     }
     _write_json(_artifact_root() / OUTPUT_JSON_NAME, result)
     if not ok:

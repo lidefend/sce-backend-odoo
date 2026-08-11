@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 
+from odoo import api
+from odoo.addons.smart_core.delivery.final_menu_navigation_service import FinalMenuNavigationService
 from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
     FORMAL_ACTION_ONLY_MENU_TARGETS,
 )
@@ -78,19 +80,29 @@ def _released_policy_menus(product_key):
     return rows, allowed_hidden
 
 
-def _visible_menu_ids_by_login():
+def _delivered_action_ids_by_login():
     out = {}
     for login in VISIBLE_CHECK_USERS:
         user = env["res.users"].sudo().search([("login", "=", login)], limit=1)  # noqa: F821
         if not user:
             continue
-        out[login] = set(env["ir.ui.menu"].with_user(user)._visible_menu_ids())  # noqa: F821
+        user_env = api.Environment(env.cr, int(user.id), dict(env.context or {}))  # noqa: F821
+        delivery = FinalMenuNavigationService(user_env).build()
+        convergence = (delivery.get("meta") or {}).get("delivery_convergence") or {}
+        if convergence.get("source") != "delivery_engine_v1":
+            raise AssertionError("%s did not resolve navigation through delivery_engine_v1" % login)
+        flat = (delivery.get("nav_fact") or {}).get("flat") or []
+        out[login] = {
+            int(row.get("action_id") or 0)
+            for row in flat
+            if isinstance(row, dict) and int(row.get("action_id") or 0) > 0
+        }
     if not out:
         raise AssertionError("no verification users exist: %s" % (VISIBLE_CHECK_USERS,))
     return out
 
 
-def _assert_menu_runtime(menu_row, visible_by_login):
+def _assert_menu_runtime(menu_row, delivered_by_login):
     menu_xmlid = _text(menu_row.get("menu_xmlid") or menu_row.get("page_key") or menu_row.get("menu_key"))
     if not menu_xmlid:
         raise AssertionError("released menu is missing menu_xmlid/page_key: %s" % menu_row)
@@ -104,8 +116,6 @@ def _assert_menu_runtime(menu_row, visible_by_login):
         action = env.ref(expected_action_xmlid, raise_if_not_found=False)  # noqa: F821
     else:
         raise AssertionError("released menu xmlid does not resolve: %s" % menu_xmlid)
-    if menu and hasattr(menu, "active") and not bool(menu.active):
-        raise AssertionError("released menu is inactive: %s" % menu_xmlid)
     if not action:
         raise AssertionError("released product target has no action: %s" % menu_xmlid)
     actual_action_xmlid = _external_id(action)
@@ -125,17 +135,9 @@ def _assert_menu_runtime(menu_row, visible_by_login):
         raise AssertionError("released menu action has no res_model: %s" % menu_xmlid)
     if res_model not in env:  # noqa: F821
         raise AssertionError("released menu action model missing: %s -> %s" % (menu_xmlid, res_model))
-    if menu:
-        visible_logins = [login for login, visible_ids in visible_by_login.items() if int(menu.id) in visible_ids]
-    else:
-        visible_logins = []
-        action_groups = getattr(action, "groups_id", env["res.groups"])  # noqa: F821
-        for login in visible_by_login:
-            user = env["res.users"].sudo().search([("login", "=", login)], limit=1)  # noqa: F821
-            group_allowed = not action_groups or bool(action_groups & user.groups_id)
-            model_allowed = env[res_model].with_user(user).check_access_rights("read", raise_exception=False)  # noqa: F821
-            if group_allowed and model_allowed:
-                visible_logins.append(login)
+    visible_logins = [
+        login for login, action_ids in delivered_by_login.items() if int(action.id) in action_ids
+    ]
     if not visible_logins:
         groups = getattr(menu, "groups_id", env["res.groups"]) if menu else getattr(action, "groups_id", env["res.groups"])  # noqa: F821
         raise AssertionError(
@@ -156,7 +158,7 @@ def _assert_menu_runtime(menu_row, visible_by_login):
 
 def main():
     runtime_mode = _assert_product_navigation_mode()
-    visible_by_login = _visible_menu_ids_by_login()
+    delivered_by_login = _delivered_action_ids_by_login()
     product_counts = {}
     hidden_counts = {}
     audited = {}
@@ -169,7 +171,7 @@ def main():
             menu_xmlid = _text(row.get("menu_xmlid") or row.get("page_key") or row.get("menu_key"))
             if menu_xmlid in seen:
                 continue
-            audited[menu_xmlid] = _assert_menu_runtime(row, visible_by_login)
+            audited[menu_xmlid] = _assert_menu_runtime(row, delivered_by_login)
             seen.add(menu_xmlid)
 
     print(
@@ -181,7 +183,7 @@ def main():
                 "runtime_mode": runtime_mode,
                 "allowed_hidden_internal_menu_counts": hidden_counts,
                 "unique_released_menu_count": len(audited),
-                "visible_users": sorted(visible_by_login),
+                "visible_users": sorted(delivered_by_login),
                 "sample_menus": list(audited.values())[:20],
             },
             ensure_ascii=False,

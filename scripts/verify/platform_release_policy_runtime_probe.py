@@ -6,7 +6,8 @@ Run through Odoo shell:
 
 The probe is read-only. It validates that construction product editions resolve
 to a non-empty platform release policy surface and that delivery navigation is
-filtered by the current user's native authorized menu facts.
+authorized by either current-user native menu facts or an explicitly released
+inactive/action-only policy target whose action groups and model ACL permit it.
 """
 
 from __future__ import annotations
@@ -60,6 +61,19 @@ def _leaf_count(nodes) -> int:
         else:
             count += 1
     return count
+
+
+def _nav_action_ids(nodes) -> list[int]:
+    action_ids = set()
+    for node in nodes or []:
+        if not isinstance(node, dict):
+            continue
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        action_id = _to_int(node.get("action_id") or meta.get("action_id"))
+        if action_id:
+            action_ids.add(action_id)
+        action_ids.update(_nav_action_ids(node.get("children") or []))
+    return sorted(action_ids)
 
 
 def _menu_xmlid(menu) -> str:
@@ -175,6 +189,7 @@ def _delivery_summary(user_env, *, product_key: str, native_nav: list[dict], rol
         "native_preview_leaf_count": int(meta.get("native_preview_leaf_count") or 0),
         "delivered_menu_leaf_count": int(meta.get("stable_leaf_count") or 0)
         + int(meta.get("native_preview_leaf_count") or 0),
+        "delivered_action_ids": _nav_action_ids(nav),
         "nav_source_authority_kind": _text((meta.get("nav_source_authority") or {}).get("kind")),
         "capability_source_authority_kind": _text((meta.get("capability_source_authority") or {}).get("kind")),
         "group_count": int(meta.get("group_count") or 0),
@@ -437,6 +452,35 @@ def main():
             },
         )
 
+        # A released policy may deliberately project an inactive menu carrier
+        # or an action-only target into the product surface.  Derive the exact
+        # current-user allowlist through the same group + model ACL predicate
+        # used by MenuService; active menus remain native-fact-only.
+        runtime_menu_service = MenuService(user_env)
+        governed_non_native_action_ids = sorted(
+            {
+                _to_int(row.get("action_id"))
+                for row in runtime_menu_service._flatten_policy_menus(policy)
+                if runtime_menu_service._policy_target_is_runtime_allowed(row)
+                and _to_int(row.get("action_id"))
+            }
+        )
+        governed_non_native_set = set(governed_non_native_action_ids)
+        native_subset_action_ids = {
+            _to_int(row.get("action_id") or (row.get("meta") or {}).get("action_id"))
+            for row in native_subset
+            if isinstance(row, dict)
+        }
+        native_subset_action_ids.discard(0)
+        unexpected_no_native_action_ids = sorted(
+            set(no_native_delivery["delivered_action_ids"]) - governed_non_native_set
+        )
+        unexpected_subset_action_ids = sorted(
+            set(subset_delivery["delivered_action_ids"])
+            - governed_non_native_set
+            - native_subset_action_ids
+        )
+
         if source_kind not in allowed_policy_sources:
             failures.append("%s: unexpected policy_source_kind=%s" % (product_key, source_kind))
         if counts["menu_count"] <= 0:
@@ -449,10 +493,16 @@ def main():
             failures.append("%s: delivery product_policy menu keys empty" % product_key)
         if user_delivery["delivered_menu_leaf_count"] <= 0:
             failures.append("%s: user delivery nav leaf count is empty" % product_key)
-        if no_native_delivery["delivered_menu_leaf_count"] != 0:
-            failures.append("%s: non-admin without native authorization still sees policy menus" % product_key)
-        if subset_delivery["delivered_menu_leaf_count"] > 1:
-            failures.append("%s: native subset authorization leaked extra menus" % product_key)
+        if unexpected_no_native_action_ids:
+            failures.append(
+                "%s: no-native delivery contains targets outside governed released-policy authorization: %s"
+                % (product_key, unexpected_no_native_action_ids)
+            )
+        if unexpected_subset_action_ids:
+            failures.append(
+                "%s: native subset delivery leaked targets outside native facts and governed policy authorization: %s"
+                % (product_key, unexpected_subset_action_ids)
+            )
         if admin_delivery["stable_leaf_count"] < user_delivery["stable_leaf_count"]:
             failures.append("%s: platform admin policy surface smaller than user surface" % product_key)
         if user_delivery["nav_source_authority_kind"] != MenuService.SOURCE_KIND:
@@ -469,6 +519,9 @@ def main():
                     "no_native_delivery": no_native_delivery,
                     "subset_delivery": subset_delivery,
                     "admin_delivery": admin_delivery,
+                    "governed_non_native_action_ids": governed_non_native_action_ids,
+                    "unexpected_no_native_action_ids": unexpected_no_native_action_ids,
+                    "unexpected_subset_action_ids": unexpected_subset_action_ids,
                 },
             }
         )

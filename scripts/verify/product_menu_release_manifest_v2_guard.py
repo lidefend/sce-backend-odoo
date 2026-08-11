@@ -33,7 +33,7 @@ EXPECTED_CENTERS = [
     "施工管理", "财务中心", "税务中心", "报表中心", "组织行政",
 ]
 ALLOWED_MATURITY = {"GA", "PILOT", "ROADMAP", "INTERNAL"}
-EXPECTED_FORMAL_MENU_COUNT = 159
+EXPECTED_FORMAL_MENU_COUNT = 163
 REQUIRED_COST_XMLIDS = {
     "menu_sc_project_budget",
     "menu_sc_budget_alloc",
@@ -113,6 +113,10 @@ def main() -> int:
         "smart_construction_core.menu_sc_project_contract_section",
         "smart_construction_core.menu_sc_project_execution_scope",
         "smart_construction_core.menu_sc_project_boq_allocation",
+        "smart_construction_core.menu_sc_runtime_user_management",
+        "smart_construction_core.menu_sc_business_config_workbench",
+        "smart_construction_core.menu_sc_approval_policy",
+        "smart_construction_core.menu_ui_form_field_policy_business_config",
     }
     full_baseline_xmlids = set()
     for product in locked_baseline.get("products") or []:
@@ -150,8 +154,8 @@ def main() -> int:
     daily_navigation = (
         ((acceptance_environments.get("profiles") or {}).get("daily") or {}).get("navigation_policy") or {}
     )
-    if daily_navigation.get("max_actions") != 159:
-        errors.append("daily acceptance maximum must lock the 159-action full user surface")
+    if daily_navigation.get("max_actions") != 163:
+        errors.append("daily acceptance maximum must lock the 163-page full product surface")
     daily_required_paths = set(daily_navigation.get("required_paths") or [])
     for path in (
         "系统菜单 / 施工管理 / 质量管理 / 质量标准",
@@ -356,13 +360,20 @@ def main() -> int:
         errors.append("construction product policy sync must use the single locked baseline path")
     for token in (
         'native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)',
-        'native_group_label = native_path_parts[1]',
-        '"visible_menu_path": native_visible_menu_path or',
+        '"policy_group_label": str(group.get("group_label") or "").strip()',
+        '"visible_menu_path": str(menu.get("visible_menu_path") or "").strip()',
+        '"native_visible_menu_path": native_visible_menu_path',
         'def _node_followup_rank(self, node: dict) -> int:',
         'return (self._node_followup_rank(node), self._node_sequence(node) or 9999, index)',
     ):
         if token not in menu_service:
-            errors.append(f"native menu runtime authority missing: {token}")
+            errors.append(f"governed product navigation authority missing: {token}")
+    for forbidden in (
+        'native_group_label = native_path_parts[1]',
+        '"visible_menu_path": native_visible_menu_path or',
+    ):
+        if forbidden in menu_service:
+            errors.append(f"native menu ancestry must not override released product grouping: {forbidden}")
     for group in ("进度与施工", "质量管理", "安全管理", "行政审批", "人事薪酬"):
         if f'name="{group}"' not in xml:
             errors.append(f"level-two product group missing: {group}")

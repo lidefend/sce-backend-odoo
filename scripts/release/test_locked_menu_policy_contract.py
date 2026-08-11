@@ -49,11 +49,14 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertIn("def _resolve_runtime_target", source)
         self.assertIn('route = "/a/%s" % action_id', source)
         self.assertIn("_resolve_runtime_target(menu_xmlid, payload)", source)
+        self.assertIn("PRESERVED_INACTIVE_MENU_XMLIDS", source)
+        self.assertNotIn('menu_record.sudo().write({"active": True})', source)
 
     def test_runtime_release_audit_consumes_action_only_contract(self):
         source = self.runtime_audit.read_text(encoding="utf-8")
         self.assertIn("FORMAL_ACTION_ONLY_MENU_TARGETS", source)
-        self.assertIn('check_access_rights("read", raise_exception=False)', source)
+        self.assertIn("FinalMenuNavigationService", source)
+        self.assertIn('convergence.get("source") != "delivery_engine_v1"', source)
         self.assertIn('"menu_id": int(menu.id) if menu else 0', source)
 
     def test_contract_runtime_audit_consumes_locked_product_contract(self):
@@ -114,11 +117,27 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         self.assertEqual(
             contract["sha256"],
-            "28f021c3be9f09c4b430efdea9d5fd75a881d7bf381e86b1eba570339e5ca231",
+            "ebb8ddd3518a46ef4bb21cd8375b10c06ff875937ad45063c36a2a880e01ab9c",
         )
         for product_key in CONTRACT.REQUIRED_PRODUCT_KEYS:
             rows = CONTRACT.baseline_rows(contract, product_key)
-            self.assertEqual(len(rows), 159)
+            self.assertEqual(len(rows), 163)
+            self.assertIn(
+                (
+                    "配置中心",
+                    "表单配置",
+                    "smart_construction_core.menu_sc_business_config_workbench",
+                ),
+                rows,
+            )
+            self.assertIn(
+                (
+                    "组织行政",
+                    "人员档案",
+                    "smart_construction_core.menu_sc_runtime_user_management",
+                ),
+                rows,
+            )
             self.assertIn(
                 (
                     "财务中心",
@@ -209,7 +228,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             menu["menu_id"] = index
             menu["action_id"] = index + 10000
         result = CONTRACT.assert_policy_matches_locked_contract(contract, "construction.standard", groups)
-        self.assertEqual(result["menu_count"], 159)
+        self.assertEqual(result["menu_count"], 163)
         self.assertTrue(result["exact_match"])
 
     def test_full_baseline_rejects_every_out_of_band_addition(self):
@@ -237,7 +256,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         ]
         self.assertEqual(
             CONTRACT.assert_snapshot_matches_locked_contract(contract, "construction.standard", pages)["menu_count"],
-            159,
+            163,
         )
         pages.pop()
         with self.assertRaisesRegex(CONTRACT.LockedMenuPolicyContractError, "LOCKED_MENU_SNAPSHOT_MISMATCH"):
@@ -248,8 +267,8 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         standard = contract["products"]["construction.standard"]
         preview = contract["products"]["construction.preview"]
         self.assertIsNot(standard, preview)
-        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.standard")), 159)
-        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.preview")), 159)
+        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.standard")), 163)
+        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.preview")), 163)
         self.assertNotEqual(standard["product_key"], preview["product_key"])
 
 
