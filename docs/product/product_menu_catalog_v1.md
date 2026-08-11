@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T12:43:55.071823+00:00`
+- generated_at: `2026-08-11T12:55:40.472453+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -388,7 +388,7 @@
   - 项目中心 [`formal_product`]
     - 分包成本 [`formal_product`]
       - 分包成本登记 [`formal_product`] -> `sc.subcontract.register`
-      - 分包签证费用 [`formal_product`] -> `sc.subcontract.settlement`
+      - 分包签证费用 [`formal_product`] -> `sc.site.variation`
     - 劳务成本 [`formal_product`]
       - 劳务实名制 [`formal_product`] -> `sc.labor.worker`
       - 劳务成本登记 [`formal_product`] -> `sc.labor.usage`

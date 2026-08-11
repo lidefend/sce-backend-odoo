@@ -58,7 +58,7 @@ RELEASED_MENU_BINDINGS = (
     ("项目中心", "材料退货", "smart_construction_core.menu_sc_product_material_return_v1", "smart_construction_core.action_sc_material_supplier_return", "sc.material.supplier.return", ("材料成本", "材料退货")),
     ("项目中心", "机械台班登记", "smart_construction_core.menu_sc_product_equipment_shift_v1", "smart_construction_core.action_sc_equipment_usage", "sc.equipment.usage", ("机械成本", "机械台班登记")),
     ("项目中心", "分包成本登记", "smart_construction_core.menu_sc_product_subcontract_cost_v1", "smart_construction_core.action_sc_subcontract_register", "sc.subcontract.register", ("分包成本", "分包成本登记")),
-    ("项目中心", "分包签证费用", "smart_construction_core.menu_sc_product_subcontract_variation_v1", "smart_construction_core.action_sc_subcontract_settlement", "sc.subcontract.settlement", ("分包成本", "分包签证费用")),
+    ("项目中心", "分包签证费用", "smart_construction_core.menu_sc_product_subcontract_variation_v1", "smart_construction_core.action_sc_product_subcontract_variation_v1", "sc.site.variation", ("分包成本", "分包签证费用")),
     ("项目中心", "薪资核算清单", "smart_construction_core.menu_sc_product_project_payroll_v1", "smart_construction_core.action_sc_product_project_payroll_v1", "sc.hr.payroll.document", ("项目薪资", "薪资核算清单")),
     ("项目中心", "薪资发放登记", "smart_construction_core.menu_sc_product_project_salary_payment_v1", "smart_construction_core.action_sc_product_project_salary_payment_v1", "sc.hr.payroll.document", ("项目薪资", "薪资发放登记")),
     ("项目中心", "班组借/扣款登记", "smart_construction_core.menu_sc_product_team_loan_deduction_v1", "smart_construction_core.action_sc_product_team_loan_deduction_v1", "sc.expense.claim", ("班组借/扣款", "班组借/扣款登记")),

@@ -80,7 +80,7 @@
   - 机械台班登记 -> `sc.equipment.usage`
 - 分包成本
   - 分包成本登记 -> `sc.subcontract.register`
-  - 分包签证费用 -> `sc.subcontract.settlement`
+  - 分包签证费用 -> `sc.site.variation`
 - 项目薪资
   - 薪资核算清单 -> `sc.hr.payroll.document`
   - 薪资发放登记 -> `sc.hr.payroll.document`

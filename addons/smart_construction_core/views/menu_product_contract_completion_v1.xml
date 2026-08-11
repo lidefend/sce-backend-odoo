@@ -52,6 +52,13 @@
       <field name="context">{'search_default_group_project': 1}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
     </record>
+    <record id="action_sc_product_subcontract_variation_v1" model="ir.actions.act_window">
+      <field name="name">分包签证费用</field><field name="res_model">sc.site.variation</field><field name="view_mode">tree,form</field>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_site_variation_search"/>
+      <field name="domain">[('variation_scope', '=', 'subcontract')]</field>
+      <field name="context">{'default_variation_scope': 'subcontract', 'search_default_group_project': 1}</field>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
+    </record>
     <record id="action_sc_product_labor_realname_v1" model="ir.actions.act_window">
       <field name="name">劳务实名制</field><field name="res_model">sc.labor.worker</field><field name="view_mode">tree,form</field>
       <field name="search_view_id" ref="smart_construction_core.view_sc_labor_worker_search"/>
@@ -314,7 +321,7 @@
     <menuitem id="menu_sc_product_material_return_v1" name="材料退货" parent="smart_construction_core.menu_sc_material_center" action="smart_construction_core.action_sc_material_supplier_return" sequence="30" groups="smart_construction_core.group_sc_cap_material_read"/>
     <menuitem id="menu_sc_product_equipment_shift_v1" name="机械台班登记" parent="smart_construction_core.menu_sc_product_equipment_cost_group_v1" action="smart_construction_core.action_sc_equipment_usage" sequence="10" groups="smart_construction_core.group_sc_cap_project_read"/>
     <menuitem id="menu_sc_product_subcontract_cost_v1" name="分包成本登记" parent="smart_construction_core.menu_sc_product_subcontract_cost_group_v1" action="smart_construction_core.action_sc_subcontract_register" sequence="10" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
-    <menuitem id="menu_sc_product_subcontract_variation_v1" name="分包签证费用" parent="smart_construction_core.menu_sc_product_subcontract_cost_group_v1" action="smart_construction_core.action_sc_subcontract_settlement" sequence="20" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+    <menuitem id="menu_sc_product_subcontract_variation_v1" name="分包签证费用" parent="smart_construction_core.menu_sc_product_subcontract_cost_group_v1" action="smart_construction_core.action_sc_product_subcontract_variation_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_read"/>
     <menuitem id="menu_sc_product_project_payroll_v1" name="薪资核算清单" parent="smart_construction_core.menu_sc_product_project_payroll_group_v1" action="smart_construction_core.action_sc_product_project_payroll_v1" sequence="10" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
     <menuitem id="menu_sc_product_project_salary_payment_v1" name="薪资发放登记" parent="smart_construction_core.menu_sc_product_project_payroll_group_v1" action="smart_construction_core.action_sc_product_project_salary_payment_v1" sequence="20" groups="smart_construction_core.group_sc_cap_project_manager"/>
     <menuitem id="menu_sc_product_team_loan_deduction_v1" name="班组借/扣款登记" parent="smart_construction_core.menu_sc_product_team_loan_group_v1" action="smart_construction_core.action_sc_product_team_loan_deduction_v1" sequence="10" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 def _advisory_notification(title, advisories, completed_label):
@@ -55,6 +55,18 @@ class ScSiteVariation(models.Model):
         default="site_visa",
         required=True,
         tracking=True,
+    )
+    variation_scope = fields.Selection(
+        [
+            ("general", "项目签证变更"),
+            ("subcontract", "分包签证费用"),
+        ],
+        string="费用归属",
+        default="general",
+        required=True,
+        index=True,
+        tracking=True,
+        help="同一签证变更对象按业务归属投影到项目施工或分包成本工作区。",
     )
     event_date = fields.Date("发生日期", default=fields.Date.context_today, tracking=True)
     location = fields.Char("发生部位")
@@ -112,6 +124,7 @@ class ScSiteVariation(models.Model):
 
     @api.depends(
         "contract_id",
+        "variation_scope",
         "event_date",
         "location",
         "cause",
@@ -124,7 +137,11 @@ class ScSiteVariation(models.Model):
         for record in self:
             suggestions = []
             if not record.contract_id:
-                suggestions.append("建议关联受影响合同")
+                suggestions.append(
+                    "建议关联分包合同"
+                    if record.variation_scope == "subcontract"
+                    else "建议关联受影响合同"
+                )
             if not record.event_date:
                 suggestions.append("建议补充发生日期")
             if not record.location:
@@ -143,10 +160,22 @@ class ScSiteVariation(models.Model):
                 "；".join(suggestions) if suggestions else "当前签证资料已完善"
             )
 
+    @api.constrains("variation_scope", "contract_id")
+    def _check_variation_scope_contract(self):
+        for record in self:
+            if (
+                record.variation_scope == "subcontract"
+                and record.contract_id
+                and record.contract_id.expense_contract_category_id.sudo().code
+                not in ("subcontract", "labor")
+            ):
+                raise ValidationError(_("分包签证费用只能关联专业分包或劳务分包合同。"))
+
     def _sc_change_snapshot_fields(self):
         return (
             "project_id",
             "contract_id",
+            "variation_scope",
             "event_type",
             "event_date",
             "subject",

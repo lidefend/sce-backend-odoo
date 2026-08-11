@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -58,6 +59,18 @@ class TestVariationChangeChain(TransactionCase):
                 "amount_final": 1000,
             }
         )
+        subcontract = self.env["construction.contract"].create(
+            {
+                "subject": "签证变更链路专业分包合同",
+                "type": "in",
+                "project_id": project.id,
+                "partner_id": partner.id,
+                "expense_contract_category_id": self.env.ref(
+                    "smart_construction_core.dict_expense_contract_category_subcontract"
+                ).id,
+                "amount_final": 500,
+            }
+        )
 
         site_variation = self.env["sc.site.variation"].with_user(project_operator).create(
             {
@@ -112,3 +125,50 @@ class TestVariationChangeChain(TransactionCase):
             self.env.ref("smart_construction_core.action_sc_contract_change").res_model,
             "sc.contract.change",
         )
+
+        subcontract_variation = self.env["sc.site.variation"].with_context(
+            default_variation_scope="subcontract"
+        ).with_user(project_operator).create(
+            {
+                "project_id": project.id,
+                "contract_id": subcontract.id,
+                "subject": "分包范围新增排水沟",
+                "estimated_amount_delta": 80,
+            }
+        )
+        self.assertEqual(subcontract_variation.variation_scope, "subcontract")
+        subcontract_action = self.env.ref(
+            "smart_construction_core.action_sc_product_subcontract_variation_v1"
+        )
+        subcontract_menu = self.env.ref(
+            "smart_construction_core.menu_sc_product_subcontract_variation_v1"
+        )
+        self.assertEqual(subcontract_action.res_model, "sc.site.variation")
+        self.assertEqual(subcontract_action.domain, "[('variation_scope', '=', 'subcontract')]")
+        self.assertEqual(subcontract_menu.action, subcontract_action)
+
+        unanchored_subcontract_variation = self.env["sc.site.variation"].with_context(
+            default_variation_scope="subcontract"
+        ).with_user(project_operator).create(
+            {
+                "project_id": project.id,
+                "subject": "待补充分包合同的现场签证",
+            }
+        )
+        self.assertIn(
+            "建议关联分包合同",
+            unanchored_subcontract_variation.processing_advisory,
+        )
+        unanchored_subcontract_variation.with_user(project_operator).action_submit()
+        unanchored_subcontract_variation.with_user(project_manager).action_confirm()
+        self.assertEqual(unanchored_subcontract_variation.state, "confirmed")
+
+        with self.assertRaises(ValidationError):
+            self.env["sc.site.variation"].with_user(project_operator).create(
+                {
+                    "project_id": project.id,
+                    "contract_id": contract.id,
+                    "variation_scope": "subcontract",
+                    "subject": "错误归入分包费用的普通合同签证",
+                }
+            )
