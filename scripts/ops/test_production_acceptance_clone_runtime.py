@@ -84,6 +84,11 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         )
         self.assertIn("sc.production-acceptance-clone=true", command)
 
+    def test_filestore_mount_matches_explicit_odoo_data_dir(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('f"{filestore}:/var/lib/odoo/filestore"', source)
+        self.assertIn('"data_dir = /var/lib/odoo\\n"', source)
+
     def test_retry_removes_stopped_upgrade_from_exact_isolated_network(self) -> None:
         network = "sc_restore_20260808t102000z_4d7e91a2_internal"
         with mock.patch.object(
