@@ -70,3 +70,4 @@ from . import test_historical_payment_fact_boundaries
 from . import test_orphan_handoff_ui_migration
 from . import test_runtime_view_contract_cleanup_migration
 from . import test_material_supplier_return
+from . import test_equipment_usage_product
