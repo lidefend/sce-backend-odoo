@@ -79,3 +79,4 @@ from . import test_current_account_workspace
 from . import test_company_project_refund_workspace
 from . import test_project_special_tax_deduction
 from . import test_policy_document_capability
+from . import test_social_fund_capability

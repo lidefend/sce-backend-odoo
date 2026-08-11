@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="business_config_contract_social_fund_form_v1" model="ui.business.config.contract">
+    <field name="name">social_fund_form_v1</field>
+    <field name="model">sc.hr.payroll.document</field>
+    <field name="view_type">form</field>
+    <field name="action_id" ref="smart_construction_core.action_sc_product_social_fund_v1"/>
+    <field name="priority">800</field>
+    <field name="company_id" eval="False"/>
+    <field name="active" eval="True"/>
+    <field name="status">published</field>
+    <field name="version_no">1</field>
+    <field name="contract_json" eval="{
+      'view_orchestration': {
+        'context': {
+          'source': 'smart_construction_core.product_release',
+          'source_status': 'product_release',
+          'fact_authority': 'sc.hr.payroll.document',
+          'allowed_fact_types': ['social_person_registration', 'social_registration', 'provident_fund_registration']
+        },
+        'views': {'form': {
+          'title': '社保公积', 'composition_mode': 'entry_semantic_surface', 'columns': 2,
+          'sections': [
+            {'title': '办理主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'document_no', 'name', 'fact_type', 'business_date', 'department_id', 'requester_id']},
+            {'title': '人员与期间', 'sequence': 20, 'columns': 2, 'fields': ['employee_user_id', 'employee_name', 'id_number', 'period_year', 'period_month', 'payer_unit']},
+            {'title': '社保公积口径', 'sequence': 30, 'columns': 2, 'fields': ['social_security_base', 'provident_fund_account', 'provident_fund_base', 'company_contribution_rate', 'individual_contribution_rate', 'company_amount', 'individual_amount', 'currency_id']},
+            {'title': '办理与附件', 'sequence': 40, 'columns': 2, 'fields': ['handler_id', 'due_date', 'processing_advisory', 'description', 'result_note', 'attachment_ids']}
+          ],
+          'fields': [
+            {'name': 'state', 'sequence': 10, 'group_title': '办理主信息', 'readonly': True},
+            {'name': 'document_no', 'sequence': 20, 'group_title': '办理主信息'},
+            {'name': 'name', 'sequence': 30, 'group_title': '办理主信息'},
+            {'name': 'fact_type', 'sequence': 40, 'group_title': '办理主信息'},
+            {'name': 'business_date', 'sequence': 50, 'group_title': '办理主信息'},
+            {'name': 'department_id', 'sequence': 60, 'group_title': '办理主信息'},
+            {'name': 'requester_id', 'sequence': 70, 'group_title': '办理主信息'},
+            {'name': 'employee_user_id', 'sequence': 80, 'group_title': '人员与期间'},
+            {'name': 'employee_name', 'sequence': 90, 'group_title': '人员与期间'},
+            {'name': 'id_number', 'sequence': 100, 'group_title': '人员与期间'},
+            {'name': 'period_year', 'sequence': 110, 'group_title': '人员与期间'},
+            {'name': 'period_month', 'sequence': 120, 'group_title': '人员与期间'},
+            {'name': 'payer_unit', 'sequence': 130, 'group_title': '人员与期间'},
+            {'name': 'social_security_base', 'sequence': 140, 'group_title': '社保公积口径'},
+            {'name': 'provident_fund_account', 'sequence': 150, 'group_title': '社保公积口径'},
+            {'name': 'provident_fund_base', 'sequence': 160, 'group_title': '社保公积口径'},
+            {'name': 'company_contribution_rate', 'sequence': 170, 'group_title': '社保公积口径'},
+            {'name': 'individual_contribution_rate', 'sequence': 180, 'group_title': '社保公积口径'},
+            {'name': 'company_amount', 'sequence': 190, 'group_title': '社保公积口径'},
+            {'name': 'individual_amount', 'sequence': 200, 'group_title': '社保公积口径'},
+            {'name': 'currency_id', 'sequence': 210, 'group_title': '社保公积口径', 'readonly': True},
+            {'name': 'handler_id', 'sequence': 220, 'group_title': '办理与附件'},
+            {'name': 'due_date', 'sequence': 230, 'group_title': '办理与附件'},
+            {'name': 'processing_advisory', 'sequence': 240, 'group_title': '办理与附件', 'readonly': True},
+            {'name': 'description', 'sequence': 250, 'group_title': '办理与附件'},
+            {'name': 'result_note', 'sequence': 260, 'group_title': '办理与附件'},
+            {'name': 'attachment_ids', 'sequence': 270, 'group_title': '办理与附件'}
+          ]
+        }}
+      }
+    }"/>
+  </record>
+</odoo>

@@ -143,7 +143,8 @@
     </record>
     <record id="action_sc_product_social_fund_v1" model="ir.actions.act_window">
       <field name="name">社保公积</field><field name="res_model">sc.hr.payroll.document</field><field name="view_mode">tree,form</field>
-      <field name="domain">[('fact_type', 'in', ['social_person_registration', 'social_registration'])]</field>
+      <field name="search_view_id" ref="smart_construction_core.view_sc_hr_payroll_document_search"/>
+      <field name="domain">[('fact_type', 'in', ['social_person_registration', 'social_registration', 'provident_fund_registration'])]</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
     </record>
     <record id="action_sc_product_office_asset_v1" model="ir.actions.act_window">

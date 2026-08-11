@@ -248,6 +248,7 @@
         'data/company_project_refund_workspace_contract.xml',
         'data/project_special_tax_deduction_contract.xml',
         'data/policy_document_contract.xml',
+        'data/social_fund_contract.xml',
         'data/office_admin_form_productization_contract.xml',
         'data/document_admin_form_productization_contract.xml',
         'data/subcontract_request_form_productization_contract.xml',

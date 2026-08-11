@@ -386,6 +386,49 @@
       "frontend_policy": "contract_renderer_only"
     },
     {
+      "spec": "social_and_provident_fund_fact_scope",
+      "risk_family": "hr contribution semantic aliasing",
+      "business_object": "social_fund_contribution",
+      "fact_source_model": ["sc.hr.payroll.document"],
+      "allowed_support_models": ["res.users", "hr.department", "ir.attachment"],
+      "projection_models": [],
+      "boundary_rule": "Social insurance and provident fund records share the canonical HR payroll carrier but are backend-owned, mutually distinct fact types.",
+      "forbidden_drift": "Do not label a social-only action as social fund, create a second provident carrier, include salary facts in the entry, or calculate contributions in frontend code.",
+      "decision": "Add the missing provident fund fact type and fields, aggregate only the three contribution facts in one governed action, and render through an action-specific contract.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "single_carrier_multi_fact_entry",
+      "entry_bindings": [{
+        "intent": "social_and_provident_fund_maintenance",
+        "menu_xmlid": "smart_construction_core.menu_sc_product_social_fund_v1",
+        "action_xmlid": "smart_construction_core.action_sc_product_social_fund_v1",
+        "fact_model": "sc.hr.payroll.document",
+        "scope_field": "fact_type",
+        "scope_value": "social_person_registration|social_registration|provident_fund_registration",
+        "view_contract_xmlid": "smart_construction_core.business_config_contract_social_fund_form_v1"
+      }],
+      "source_isolation_actions": [{
+        "action_xmlid": "smart_construction_core.action_sc_product_social_fund_v1",
+        "required_domain_tokens": ["fact_type", "social_person_registration", "social_registration", "provident_fund_registration"]
+      }],
+      "conservation_invariants": [
+        "one_hr_document_has_exactly_one_fact_type",
+        "social_fund_entry_excludes_salary_subsidy_and_bonus",
+        "provident_rates_and_amounts_are_backend_fields",
+        "noncritical_completeness_is_advisory",
+        "operational_numeric_inconsistency_blocks_transition"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/core/hr_payroll_document.py",
+        "addons/smart_construction_core/views/core/hr_payroll_document_views.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/social_fund_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "projection_refresh_ownership",
       "risk_family": "projection and management visibility",
       "business_object": "projection",

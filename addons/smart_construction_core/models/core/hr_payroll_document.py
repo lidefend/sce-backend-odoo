@@ -14,6 +14,7 @@ class ScHrPayrollDocument(models.Model):
         return [
             ("social_person_registration", "社保人员登记"),
             ("social_registration", "社保登记"),
+            ("provident_fund_registration", "公积金登记"),
             ("salary_registration", "工资登记"),
             ("subsidy", "补助"),
             ("bonus", "奖金"),
@@ -34,6 +35,10 @@ class ScHrPayrollDocument(models.Model):
     payout_unit = fields.Char(string="发放单位", index=True)
     people_count = fields.Integer(string="人数")
     social_security_base = fields.Monetary(string="社保基数", currency_field="currency_id")
+    provident_fund_account = fields.Char(string="公积金账号", index=True, tracking=True)
+    provident_fund_base = fields.Monetary(string="公积金基数", currency_field="currency_id")
+    company_contribution_rate = fields.Float(string="单位缴存比例(%)", digits=(8, 4))
+    individual_contribution_rate = fields.Float(string="个人缴存比例(%)", digits=(8, 4))
     company_amount = fields.Monetary(string="公司承担", currency_field="currency_id")
     individual_amount = fields.Monetary(string="个人承担", currency_field="currency_id")
     salary_base = fields.Monetary(string="薪资基数", currency_field="currency_id")
@@ -132,6 +137,10 @@ class ScHrPayrollDocument(models.Model):
             "payout_unit",
             "people_count",
             "social_security_base",
+            "provident_fund_account",
+            "provident_fund_base",
+            "company_contribution_rate",
+            "individual_contribution_rate",
             "company_amount",
             "individual_amount",
             "salary_base",
@@ -161,6 +170,13 @@ class ScHrPayrollDocument(models.Model):
         "project_id",
         "department_id",
         "payout_unit",
+        "period_year",
+        "period_month",
+        "payer_unit",
+        "provident_fund_account",
+        "provident_fund_base",
+        "company_contribution_rate",
+        "individual_contribution_rate",
         "description",
         "attachment_ids",
     )
@@ -178,8 +194,19 @@ class ScHrPayrollDocument(models.Model):
                     suggestions.append("建议补充核算说明")
                 if not record.attachment_ids:
                     suggestions.append("建议上传薪资核算依据")
+            elif record.fact_type == "provident_fund_registration":
+                if not record.employee_user_id and not record.employee_name:
+                    suggestions.append("建议补充缴存人员")
+                if not record.period_year or not record.period_month:
+                    suggestions.append("建议补充缴存期间")
+                if not record.payer_unit:
+                    suggestions.append("建议补充缴存单位")
+                if not record.provident_fund_account:
+                    suggestions.append("建议补充公积金账号")
+                if not record.provident_fund_base:
+                    suggestions.append("建议补充公积金基数")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前薪资核算资料已完善"
+                "；".join(suggestions) if suggestions else "当前办理资料已完善"
             )
 
     @api.depends("net_salary", "paid_amount")
@@ -214,6 +241,14 @@ class ScHrPayrollDocument(models.Model):
                 if not record.employee_user_id and not record.employee_name:
                     raise ValidationError(_("请补齐人员后再办理。"))
                 record._require_fields(["department_id", "item_type", "amount", "occurrence_date"])
+
+            elif record.fact_type == "provident_fund_registration":
+                for field_name in ("provident_fund_base", "company_amount", "individual_amount"):
+                    if record[field_name] < 0:
+                        raise ValidationError(_("%s不能为负数。") % record._fields[field_name].string)
+                for field_name in ("company_contribution_rate", "individual_contribution_rate"):
+                    if record[field_name] < 0 or record[field_name] > 100:
+                        raise ValidationError(_("%s必须在 0 到 100 之间。") % record._fields[field_name].string)
 
             if record.period_month and (record.period_month < 1 or record.period_month > 12):
                 raise ValidationError(_("月份必须在 1 到 12 之间。"))

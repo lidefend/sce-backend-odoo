@@ -17,6 +17,7 @@
           <field name="period_month"/>
           <filter string="社保人员登记" name="social_person_registration" domain="[('fact_type', '=', 'social_person_registration')]"/>
           <filter string="社保登记" name="social_registration" domain="[('fact_type', '=', 'social_registration')]"/>
+          <filter string="公积金登记" name="provident_fund_registration" domain="[('fact_type', '=', 'provident_fund_registration')]"/>
           <filter string="工资登记" name="salary_registration" domain="[('fact_type', '=', 'salary_registration')]"/>
           <filter string="补助" name="subsidy" domain="[('fact_type', '=', 'subsidy')]"/>
           <filter string="奖金" name="bonus" domain="[('fact_type', '=', 'bonus')]"/>
@@ -57,6 +58,8 @@
           <field name="payout_unit" optional="show"/>
           <field name="people_count" optional="show" sum="人数合计"/>
           <field name="social_security_base" optional="show" sum="社保基数合计"/>
+          <field name="provident_fund_base" optional="hide" sum="公积金基数合计"/>
+          <field name="provident_fund_account" optional="hide"/>
           <field name="company_amount" optional="show" sum="公司承担合计"/>
           <field name="individual_amount" optional="show" sum="个人承担合计"/>
           <field name="salary_base" optional="show" sum="薪资基数合计"/>
@@ -130,6 +133,19 @@
                 <field name="payment_state" readonly="1"/>
                 <field name="paid_amount" readonly="1"/>
                 <field name="unpaid_amount" readonly="1"/>
+              </group>
+              <group string="公积金" invisible="fact_type != 'provident_fund_registration'">
+                <field name="period_year"/>
+                <field name="period_month"/>
+                <field name="payer_unit"/>
+                <field name="employee_user_id"/>
+                <field name="employee_name"/>
+                <field name="provident_fund_account"/>
+                <field name="provident_fund_base"/>
+                <field name="company_contribution_rate"/>
+                <field name="individual_contribution_rate"/>
+                <field name="company_amount"/>
+                <field name="individual_amount"/>
               </group>
               <group string="补助/奖金" invisible="fact_type not in ['subsidy', 'bonus']">
                 <field name="payout_unit"/>
