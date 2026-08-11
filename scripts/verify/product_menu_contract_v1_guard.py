@@ -36,8 +36,8 @@ def validate(contract: dict, baseline: dict, evolution_policy: dict | None = Non
     }.items():
         if contract.get(key) != expected:
             errors.append(f"contract.{key} must be {expected!r}")
-    if contract.get("runtime_migration_status") not in {"NOT_STARTED", "IN_PROGRESS", "ALIGNED"}:
-        errors.append("contract.runtime_migration_status must be a supported migration state")
+    if contract.get("runtime_migration_status") != "ALIGNED":
+        errors.append("contract.runtime_migration_status must remain ALIGNED after ten-center promotion")
     rules = contract.get("rules", {})
     if rules.get("maximum_business_depth") != 3 or not rules.get("project_center_is_only_center_with_level_three"):
         errors.append("only 项目中心 may use the locked third menu level")
@@ -94,7 +94,7 @@ def main() -> int:
     if errors:
         print("\n".join(f"[FAIL] {error}" for error in errors))
         return 1
-    print("[PASS] locked product menu contract is internally consistent and migration remains explicit")
+    print("[PASS] locked product menu contract is internally consistent and runtime-aligned")
     return 0
 
 

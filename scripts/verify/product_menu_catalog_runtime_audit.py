@@ -47,7 +47,7 @@ INTERNAL_HISTORY_PATH_TOKENS = (
     "系统配置",
     "历史财务事实（内部）",
 )
-BUSINESS_CONFIG_PATH_PREFIX = "智慧施工管理平台 / 配置中心"
+BUSINESS_CONFIG_PATH_PREFIX = "智慧施工管理平台 / 产品配置"
 PRODUCT_ROOT_LABEL = "智慧施工管理平台"
 CONFIG_ADMIN_GROUP_XMLIDS = (
     "smart_construction_core.group_sc_cap_business_config_admin",

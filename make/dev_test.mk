@@ -1465,7 +1465,9 @@ verify.product.menu.runtime_closeout.guard: guard.prod.forbid
 	@python3 scripts/verify/product_menu_runtime_closeout_guard.py
 
 verify.product.menu.release_manifest_v2.guard: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/product_menu_release_manifest_v2_guard.py
+	@python3 -m py_compile scripts/verify/product_menu_release_manifest_v2_guard.py scripts/ops/promote_product_ten_center_policy.py scripts/ops/test_promote_product_ten_center_policy.py
+	@python3 -m unittest scripts.ops.test_promote_product_ten_center_policy
+	@python3 scripts/ops/promote_product_ten_center_policy.py
 	@python3 scripts/verify/product_menu_release_manifest_v2_guard.py
 
 verify.product.menu.release.ready: guard.prod.forbid \

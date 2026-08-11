@@ -4,10 +4,10 @@
 
 ## 运行时来源
 
-- database: `sc_product_center`
-- generated_at: `2026-08-11T02:03:13.968127+00:00`
+- database: `sc_ten_center_clean`
+- generated_at: `2026-08-11T08:24:21.971678+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
-- visible_login_probe: `admin, wutao`
+- visible_login_probe: `admin`
 
 ## 总览
 
@@ -46,34 +46,34 @@
 | 入口 | XMLID | 可见性探针用户 |
 | --- | --- | --- |
 | 智慧施工管理平台 / 会计账务中心 | `smart_construction_core.menu_sc_accounting_center` |  |
-| 智慧施工管理平台 / 合同中心 | `smart_construction_core.menu_sc_contract_center` | wutao |
-| 智慧施工管理平台 / 工作台 | `smart_construction_core.menu_sc_workspace_center` | wutao |
-| 智慧施工管理平台 / 成本中心 | `smart_construction_core.menu_sc_cost_center` | wutao |
-| 智慧施工管理平台 / 报表中心 | `smart_construction_core.menu_sc_data_center` | wutao |
-| 智慧施工管理平台 / 税务中心 | `smart_construction_core.menu_sc_tax_center` | wutao |
-| 智慧施工管理平台 / 行政中心 | `smart_construction_core.menu_sc_hr_admin_center` | wutao |
-| 智慧施工管理平台 / 财务中心 | `smart_construction_core.menu_sc_finance_center` | wutao |
-| 智慧施工管理平台 / 项目中心 | `smart_construction_core.menu_sc_project_center` | wutao |
+| 智慧施工管理平台 / 合同中心 | `smart_construction_core.menu_sc_contract_center` |  |
+| 智慧施工管理平台 / 工作台 | `smart_construction_core.menu_sc_workspace_center` |  |
+| 智慧施工管理平台 / 成本中心 | `smart_construction_core.menu_sc_cost_center` |  |
+| 智慧施工管理平台 / 报表中心 | `smart_construction_core.menu_sc_data_center` |  |
+| 智慧施工管理平台 / 税务中心 | `smart_construction_core.menu_sc_tax_center` |  |
+| 智慧施工管理平台 / 行政中心 | `smart_construction_core.menu_sc_hr_admin_center` |  |
+| 智慧施工管理平台 / 财务中心 | `smart_construction_core.menu_sc_finance_center` |  |
+| 智慧施工管理平台 / 项目中心 | `smart_construction_core.menu_sc_project_center` |  |
 
 ## 顶层菜单
 
 | Menu | Layer | Visible Probe Logins | XMLID |
 | --- | --- | --- | --- |
-| 平台内核 | `dev_governance` |  | `smart_core.menu_smart_core_platform_root` |
-| 平台内核 / 产品发布 | `dev_governance` |  | `smart_core.menu_smart_core_release_root` |
-| 平台内核 / 公司访问 | `dev_governance` |  | `smart_core.menu_smart_core_company_access_root` |
-| 智慧施工管理平台 | `formal_product` | wutao | `smart_construction_core.menu_sc_root` |
-| 智慧施工管理平台 / 产品配置 | `system_config` | wutao | `smart_construction_core.menu_sc_business_config_center` |
+| 平台内核 | `dev_governance` | admin | `smart_core.menu_smart_core_platform_root` |
+| 平台内核 / 产品发布 | `dev_governance` | admin | `smart_core.menu_smart_core_release_root` |
+| 平台内核 / 公司访问 | `dev_governance` | admin | `smart_core.menu_smart_core_company_access_root` |
+| 智慧施工管理平台 | `formal_product` | admin | `smart_construction_core.menu_sc_root` |
+| 智慧施工管理平台 / 产品配置 | `system_config` |  | `smart_construction_core.menu_sc_business_config_center` |
 | 智慧施工管理平台 / 会计账务中心 | `formal_product` |  | `smart_construction_core.menu_sc_accounting_center` |
-| 智慧施工管理平台 / 合同中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_contract_center` |
-| 智慧施工管理平台 / 工作台 | `formal_product` | wutao | `smart_construction_core.menu_sc_workspace_center` |
-| 智慧施工管理平台 / 成本中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_cost_center` |
-| 智慧施工管理平台 / 报表中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_data_center` |
-| 智慧施工管理平台 / 税务中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_tax_center` |
-| 智慧施工管理平台 / 系统管理（内部） | `system_config` |  | `smart_construction_core.menu_sc_config_center` |
-| 智慧施工管理平台 / 行政中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_hr_admin_center` |
-| 智慧施工管理平台 / 财务中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_finance_center` |
-| 智慧施工管理平台 / 项目中心 | `formal_product` | wutao | `smart_construction_core.menu_sc_project_center` |
+| 智慧施工管理平台 / 合同中心 | `formal_product` |  | `smart_construction_core.menu_sc_contract_center` |
+| 智慧施工管理平台 / 工作台 | `formal_product` |  | `smart_construction_core.menu_sc_workspace_center` |
+| 智慧施工管理平台 / 成本中心 | `formal_product` |  | `smart_construction_core.menu_sc_cost_center` |
+| 智慧施工管理平台 / 报表中心 | `formal_product` |  | `smart_construction_core.menu_sc_data_center` |
+| 智慧施工管理平台 / 税务中心 | `formal_product` |  | `smart_construction_core.menu_sc_tax_center` |
+| 智慧施工管理平台 / 系统管理（内部） | `system_config` | admin | `smart_construction_core.menu_sc_config_center` |
+| 智慧施工管理平台 / 行政中心 | `formal_product` |  | `smart_construction_core.menu_sc_hr_admin_center` |
+| 智慧施工管理平台 / 财务中心 | `formal_product` |  | `smart_construction_core.menu_sc_finance_center` |
+| 智慧施工管理平台 / 项目中心 | `formal_product` |  | `smart_construction_core.menu_sc_project_center` |
 
 ## 产品菜单树
 

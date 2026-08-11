@@ -7,11 +7,11 @@
   "layer_target": "L2",
   "module": "smart_construction_core",
   "scope": "TARGET_INFORMATION_ARCHITECTURE",
-  "runtime_migration_status": "IN_PROGRESS",
+  "runtime_migration_status": "ALIGNED",
   "menu_contract": {
     "ref": "config/product_menu_contract_v1.json",
     "status": "LOCKED",
-    "runtime_alignment_status": "MIGRATION_PENDING"
+    "runtime_alignment_status": "ALIGNED"
   },
   "maximum_business_depth": 3,
   "center_level_maturity_policy": "CAPABILITY_LEVEL_ONLY",
@@ -28,8 +28,8 @@
     {"key": "product_configuration", "sequence": 100, "name": "产品配置", "responsibility": "菜单、表单、字段、审批、权限、字典与功能开关配置"}
   ],
   "current_runtime_primary_centers": [
-    "工作台", "项目中心", "合同中心", "成本中心", "物资与分包",
-    "施工管理", "财务中心", "税务中心", "报表中心", "组织行政"
+    "工作台", "项目中心", "合同中心", "成本中心", "财务中心",
+    "税务中心", "会计账务中心", "报表中心", "行政中心", "产品配置"
   ],
   "legacy_center_transitions": [
     {"source": "物资与分包", "target": "项目中心", "rule": "执行类能力默认归入项目中心；合同、成本和付款结果分别投影到合同、成本与财务中心"},
@@ -42,7 +42,7 @@
     {"name": "系统管理", "classification": "INTERNAL_GOVERNANCE"}
   ],
   "constraints": [
-    "本基线锁定目标信息架构，不声明现有运行时菜单已经迁移",
+    "本基线同时锁定目标信息架构与正式发布策略；运行时必须精确投影十个一级中心",
     "正式业务菜单最多三级，一级中心名称、顺序和数量不得由租户配置漂移",
     "迁移默认保留 XMLID、action、权限和业务语义；任何破坏性变化必须另立 ADR",
     "GA、PILOT 等成熟度只标注到二级或三级产品能力，不标注整个一级中心",

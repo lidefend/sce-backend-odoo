@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Final P1 primary-center candidate overlay. Runtime remains pending until controlled upgrade. -->
+    <!-- Final P1 primary-center runtime overlay. Product policy is the selection authority. -->
     <data>
         <record id="menu_sc_workspace_center" model="ir.ui.menu"><field name="name">工作台</field><field name="sequence">10</field><field name="active">True</field></record>
         <record id="menu_sc_project_center" model="ir.ui.menu"><field name="name">项目中心</field><field name="sequence">20</field><field name="active">True</field></record>

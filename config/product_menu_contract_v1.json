@@ -5,7 +5,7 @@
   "decision_date": "2026-08-10",
   "product_layer": "P1",
   "module": "smart_construction_core",
-  "runtime_migration_status": "IN_PROGRESS",
+  "runtime_migration_status": "ALIGNED",
   "rules": {
     "maximum_business_depth": 3,
     "project_center_is_only_center_with_level_three": true,
@@ -46,7 +46,7 @@
       {"name": "外经证", "delivery": "RELEASED_FOUNDATION"}, {"name": "预缴登记", "delivery": "RELEASED_FOUNDATION"}, {"name": "开票申请", "delivery": "RELEASED_FOUNDATION"}, {"name": "销项开票", "delivery": "RELEASED_FOUNDATION"}, {"name": "发票红冲", "delivery": "RELEASED_FOUNDATION"}, {"name": "进项发票", "delivery": "RELEASED_FOUNDATION"}, {"name": "税额抵扣", "delivery": "RELEASED_FOUNDATION"}, {"name": "项目专项抵扣", "delivery": "ADAPTATION_REQUIRED"}, {"name": "税务申报", "delivery": "NEW_CAPABILITY_REQUIRED"}
     ]},
     {"key": "accounting", "name": "会计账务中心", "sequence": 70, "level_two": [
-      {"name": "记账凭证", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "会计科目", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "账簿管理", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "期末结转", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "账务对账", "delivery": "NEW_CAPABILITY_REQUIRED"}
+      {"name": "记账凭证", "delivery": "RELEASED_FOUNDATION"}, {"name": "会计科目", "delivery": "RELEASED_FOUNDATION"}, {"name": "账簿管理", "delivery": "RELEASED_FOUNDATION"}, {"name": "期末结转", "delivery": "NEW_CAPABILITY_REQUIRED"}, {"name": "账务对账", "delivery": "ADAPTATION_REQUIRED"}
     ]},
     {"key": "reporting", "name": "报表中心", "sequence": 80, "level_two": [
       {"name": "项目报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "成本报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "资金报表", "delivery": "RELEASED_FOUNDATION"}, {"name": "税务报表", "delivery": "ADAPTATION_REQUIRED"}, {"name": "劳务分包报表", "delivery": "ADAPTATION_REQUIRED"}

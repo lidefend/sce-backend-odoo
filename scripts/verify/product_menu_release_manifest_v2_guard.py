@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/product_menu_release_manifest_v2.json"
 LOCKED_BASELINE = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
 MENU_XML = ROOT / "addons/smart_construction_core/views/menu_product_navigation_v2.xml"
+PRIMARY_CENTER_XML = ROOT / "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml"
 BASE_MENU_XML = ROOT / "addons/smart_construction_core/views/menu.xml"
 NATIVE_MENU_LOAD_ORDER = [
     ROOT / "addons/smart_construction_core/views/menu_business_taxonomy_groups.xml",
@@ -29,11 +30,11 @@ ODOO_SHELL_EXEC = ROOT / "scripts/ops/odoo_shell_exec.sh"
 ACCEPTANCE_ENVIRONMENTS = ROOT / "config/frontend/acceptance_environments_v1.json"
 
 EXPECTED_CENTERS = [
-    "工作台", "项目中心", "合同中心", "成本中心", "物资与分包",
-    "施工管理", "财务中心", "税务中心", "报表中心", "组织行政",
+    "工作台", "项目中心", "合同中心", "成本中心", "财务中心",
+    "税务中心", "会计账务中心", "报表中心", "行政中心", "产品配置",
 ]
 ALLOWED_MATURITY = {"GA", "PILOT", "ROADMAP", "INTERNAL"}
-EXPECTED_FORMAL_MENU_COUNT = 163
+EXPECTED_FORMAL_MENU_COUNT = 169
 REQUIRED_COST_XMLIDS = {
     "menu_sc_project_budget",
     "menu_sc_budget_alloc",
@@ -54,12 +55,24 @@ ALLOWED_PROJECT_RELEASE_STATUS = {"RELEASED", "READY_TO_CONVERGE", "FOLLOWUP"}
 EXPECTED_FOLLOWUP_BY_CENTER = {
     "合同中心": ["履约与预警"],
     "成本中心": ["成本预测", "现金流预测"],
-    "物资与分包": ["供应链协同"],
-    "施工管理": ["现场移动", "BIM协同"],
     "财务中心": ["资金预测"],
     "税务中心": ["税务申报", "发票查验"],
+    "会计账务中心": ["期末结转", "账务对账"],
     "报表中心": ["预测预警"],
-    "组织行政": ["人员生命周期", "资源能力"],
+    "行政中心": ["人员生命周期", "资源能力"],
+    "产品配置": [],
+}
+EXPECTED_PROJECT_OPERATIONAL_DOMAINS = [
+    "材料管理", "询价采购", "劳务管理", "机械管理", "周转材料", "分包执行",
+    "进度与施工", "质量管理", "安全管理", "供应链协同", "现场移动", "BIM协同",
+]
+REQUIRED_ACCOUNTING_XMLIDS = {
+    "account.menu_action_move_journal_line_form",
+    "account.menu_action_account_moves_all",
+    "account.menu_action_account_form",
+    "account.menu_action_account_journal_form",
+    "account.account_analytic_def_account",
+    "account.menu_analytic__distribution_model",
 }
 
 
@@ -87,6 +100,12 @@ def main() -> int:
         errors.append("locked product policy must record the exact full capability count")
     if "油卡管理：财务中心 -> 组织行政" not in strategy.get("responsibility_boundary_updates", []):
         errors.append("locked product policy must record the oil-card responsibility boundary move")
+    if not {
+        "物资与分包：撤销一级中心，入口按项目执行、合同、成本和资金权威归属",
+        "施工管理：撤销一级中心，现场履约能力归入项目中心",
+        "会计账务：准入 Odoo 原生模型、视图、动作和权限能力",
+    }.issubset(set(strategy.get("responsibility_boundary_updates", []))):
+        errors.append("locked product policy must record the approved ten-center convergence")
     required_full_scope_xmlids = {
         "smart_construction_core.menu_sc_workbench_my_todo_fact",
         "smart_construction_core.menu_sc_workbench_my_approval_fact",
@@ -117,7 +136,7 @@ def main() -> int:
         "smart_construction_core.menu_sc_business_config_workbench",
         "smart_construction_core.menu_sc_approval_policy",
         "smart_construction_core.menu_ui_form_field_policy_business_config",
-    }
+    } | REQUIRED_ACCOUNTING_XMLIDS
     full_baseline_xmlids = set()
     for product in locked_baseline.get("products") or []:
         rows = [menu for group in product.get("menu_groups") or [] for menu in group.get("menus") or []]
@@ -138,7 +157,7 @@ def main() -> int:
         oil_card_rows = [
             menu
             for group in product.get("menu_groups") or []
-            if group.get("group_label") == "组织行政"
+            if group.get("group_label") == "行政中心"
             for menu in group.get("menus") or []
             if menu.get("menu_xmlid") in {
                 "smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance",
@@ -146,7 +165,7 @@ def main() -> int:
             }
         ]
         if len(oil_card_rows) != 2 or any(
-            " / 组织行政 / 油卡管理 / " not in str(menu.get("visible_menu_path") or "")
+            " / 行政中心 / 油卡管理 / " not in str(menu.get("visible_menu_path") or "")
             or menu.get("product_domain") != "organization_fuel_card"
             for menu in oil_card_rows
         ):
@@ -154,17 +173,19 @@ def main() -> int:
     daily_navigation = (
         ((acceptance_environments.get("profiles") or {}).get("daily") or {}).get("navigation_policy") or {}
     )
-    if daily_navigation.get("max_actions") != 163:
-        errors.append("daily acceptance maximum must lock the 163-page full product surface")
+    if daily_navigation.get("max_actions") != EXPECTED_FORMAL_MENU_COUNT:
+        errors.append("daily acceptance maximum must lock the 169-page full product surface")
     daily_required_paths = set(daily_navigation.get("required_paths") or [])
     for path in (
-        "系统菜单 / 施工管理 / 质量管理 / 质量标准",
-        "系统菜单 / 施工管理 / 质量管理 / 现场影像",
-        "系统菜单 / 施工管理 / 安全管理 / 安全方案",
-        "系统菜单 / 施工管理 / 安全管理 / 安全巡检",
-        "系统菜单 / 施工管理 / 安全管理 / 安全复验",
-        "系统菜单 / 组织行政 / 油卡管理 / 油卡登记",
-        "系统菜单 / 组织行政 / 油卡管理 / 充值登记",
+        "系统菜单 / 项目中心 / 质量管理 / 质量标准",
+        "系统菜单 / 项目中心 / 质量管理 / 现场影像",
+        "系统菜单 / 项目中心 / 安全管理 / 安全方案",
+        "系统菜单 / 项目中心 / 安全管理 / 安全巡检",
+        "系统菜单 / 项目中心 / 安全管理 / 安全复验",
+        "系统菜单 / 行政中心 / 油卡管理 / 油卡登记",
+        "系统菜单 / 行政中心 / 油卡管理 / 充值登记",
+        "系统菜单 / 会计账务中心 / 凭证与分录 / 日记账分录",
+        "系统菜单 / 会计账务中心 / 会计科目 / 会计科目表",
     ):
         if path not in daily_required_paths:
             errors.append(f"daily acceptance missing full construction path: {path}")
@@ -186,6 +207,11 @@ def main() -> int:
             errors.append(f"project level-two[{index}] invalid release status")
         if status == "FOLLOWUP" and not row.get("launch_note"):
             errors.append(f"project level-two[{index}] follow-up item missing launch note")
+    operational_domains = project_ia.get("converged_operational_domains") or []
+    if [row.get("name") for row in operational_domains] != EXPECTED_PROJECT_OPERATIONAL_DOMAINS:
+        errors.append("project center converged operational-domain order mismatch")
+    if any(row.get("release_status") not in ALLOWED_PROJECT_RELEASE_STATUS for row in operational_domains):
+        errors.append("project center converged operational domains contain invalid release status")
 
     center_ia = payload.get("center_information_architecture") or {}
     if list(center_ia) != list(EXPECTED_FOLLOWUP_BY_CENTER):
@@ -204,12 +230,9 @@ def main() -> int:
                 errors.append(f"{center} invalid release status: {row.get('name')}")
             if row.get("release_status") == "FOLLOWUP" and not row.get("launch_note"):
                 errors.append(f"{center} follow-up item missing launch note: {row.get('name')}")
-    material_rows = (center_ia.get("物资与分包") or {}).get("level_two_order") or []
-    if any(row.get("name") == "材料计划" for row in material_rows):
-        errors.append("material plan must not remain a material-center level-two domain")
-    material_management = next((row for row in material_rows if row.get("name") == "材料管理"), {})
-    if "材料计划" not in (material_management.get("child_pages") or []):
-        errors.append("material plan must be locked as a child page of material management")
+    retired_centers = {"物资与分包", "施工管理", "组织行政", "配置中心"}
+    if retired_centers.intersection(center_ia):
+        errors.append("retired first-level centers must not remain in center information architecture")
 
     checklist = payload.get("capability_release_checklist") or []
     if not checklist:
@@ -227,6 +250,7 @@ def main() -> int:
         errors.append("benchmark gap backlog must retain real open P0 gaps")
 
     xml = MENU_XML.read_text(encoding="utf-8")
+    primary_center_xml = PRIMARY_CENTER_XML.read_text(encoding="utf-8")
     xml_root = ElementTree.fromstring(xml)
     base_menu_root = ElementTree.parse(BASE_MENU_XML).getroot()
     policy = POLICY_SYNC.read_text(encoding="utf-8")
@@ -235,8 +259,8 @@ def main() -> int:
     dev_make = DEV_MAKE.read_text(encoding="utf-8")
     shell_exec = ODOO_SHELL_EXEC.read_text(encoding="utf-8")
     for center in EXPECTED_CENTERS:
-        if f">{center}</field>" not in xml:
-            errors.append(f"visible menu XML missing center: {center}")
+        if f">{center}</field>" not in primary_center_xml:
+            errors.append(f"primary-center XML missing center: {center}")
     cost_records = [
         record for record in xml_root.findall("record")
         if record.get("id") == "menu_sc_cost_center"
@@ -397,10 +421,12 @@ def main() -> int:
     ):
         if token not in xml:
             errors.append(f"project roadmap admin visibility binding missing: {token}")
-    for center, names in EXPECTED_FOLLOWUP_BY_CENTER.items():
-        for name in names:
-            if f'name="{name}（后续上线）"' not in xml:
-                errors.append(f"{center} roadmap menu missing: {name}")
+    for name in (
+        "履约与预警", "成本预测", "现金流预测", "供应链协同", "现场移动", "BIM协同",
+        "资金预测", "税务申报", "发票查验", "预测预警", "人员生命周期", "资源能力",
+    ):
+        if f'name="{name}（后续上线）"' not in xml:
+            errors.append(f"roadmap menu missing: {name}")
     explicit_admin_bindings = sum(
         1 for record in xml_root.findall("record")
         if (record.get("id") or "").endswith("roadmap_v2")
@@ -411,7 +437,7 @@ def main() -> int:
     )
     if explicit_admin_bindings != 12:
         errors.append(f"cross-center roadmap menus require 12 explicit admin bindings, got {explicit_admin_bindings}")
-    expected_center_ranks = {"工作台": 5, "项目中心": 10, "合同中心": 20, "成本中心": 30, "物资与分包": 40, "施工管理": 50, "财务中心": 60, "税务中心": 70, "报表中心": 80, "组织行政": 90}
+    expected_center_ranks = {"工作台": 5, "项目中心": 10, "合同中心": 20, "成本中心": 30, "财务中心": 40, "税务中心": 50, "会计账务中心": 60, "报表中心": 80, "行政中心": 90, "产品配置": 100}
     for center, expected_rank in expected_center_ranks.items():
         if f'"{center}": {expected_rank}' not in hook_facts:
             errors.append(f"delivery center order missing: {center}")
