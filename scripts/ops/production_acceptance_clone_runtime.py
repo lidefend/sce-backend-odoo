@@ -142,6 +142,8 @@ def odoo_container_args(
         name,
         "--network",
         network,
+        "--label",
+        "sc.production-acceptance-clone=true",
         "--group-add",
         "0",
         "-v",
@@ -197,6 +199,36 @@ def container_endpoint(
         return "", False
     internal = f"http://{address}:{container_port}{path}"
     return (internal, False) if url_ready(internal, expected) else ("", False)
+
+
+def remove_verified_failed_upgrade(restore_id: str, network: str) -> bool:
+    """Remove only a stopped upgrade container inside the locked restore network."""
+    container = f"{restore_id}_acceptance_upgrade"
+    observed = run(
+        [
+            "docker",
+            "inspect",
+            container,
+            "--format",
+            '{{.State.Status}}|{{.State.Running}}|{{.HostConfig.NetworkMode}}|'
+            '{{index .Config.Labels "sc.production-acceptance-clone"}}',
+        ],
+        False,
+    )
+    if not observed:
+        return False
+    try:
+        status, running, observed_network, label = observed.split("|", 3)
+    except ValueError as exc:
+        raise CloneRuntimeError("stale acceptance upgrade identity is invalid") from exc
+    if running != "false" or status not in {"exited", "dead"}:
+        raise CloneRuntimeError("stale acceptance upgrade is not safely stopped")
+    # Empty label admits upgrade containers created by the governed tool before
+    # the label was introduced. The exact isolated network remains mandatory.
+    if observed_network != network or label not in {"", "true"}:
+        raise CloneRuntimeError("stale acceptance upgrade identity differs")
+    run(["docker", "rm", container])
+    return True
 
 
 def start_frontend(
@@ -395,8 +427,7 @@ def activate(
     modules = (*product_modules(), tenant_module)
     before = database_snapshot(str(db_container), database)
     upgrade_container = f"{restore_id}_acceptance_upgrade"
-    if run(["docker", "inspect", upgrade_container, "--format", "{{.Name}}"], False):
-        raise CloneRuntimeError("stale acceptance upgrade container exists")
+    remove_verified_failed_upgrade(restore_id, str(network))
     upgrade_args = odoo_container_args(
         name=upgrade_container,
         network=str(network),
