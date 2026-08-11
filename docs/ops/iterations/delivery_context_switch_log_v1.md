@@ -3559,3 +3559,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   frontend, customer module or business data is changed. Unit coverage and the
   daily `sc_demo` release audit prove the gate accepts only the two canonical
   delivery forms.
+
+## 2026-08-11 — P4-CONTRACT-CENTER-AUDIT-AUTHORITY-CONVERGENCE
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after
+  `9742275`.
+- Formal Product Layer / Layer Target / Module: P4 contract-center release
+  verification consuming the P1 locked menu contract.
+- Reason / Boundary: the contract-specific audit retained a second hardcoded
+  list of superseded contract and settlement menus. It now derives the exact
+  contract-center set from the checksum-locked product contract, requires
+  standard/preview parity, validates native group ownership, and checks the
+  non-roadmap pages for both real verification users.
+- Blast Radius / validation: audit authority only; no menu, action, frontend or
+  database fact is changed. The full 159-page audit remains the aggregate gate,
+  while this focused gate proves the current contract center's permission and
+  user visibility semantics.
