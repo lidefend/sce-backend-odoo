@@ -143,8 +143,13 @@
         <record id="group_sc_cap_finance_read" model="res.groups">
             <field name="name">SC 能力 - 财务中心只读</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+            <!-- 会计账务中心复用 Odoo 的只读数据权限；写入权限仍由
+                 Odoo 会计角色独立授予，产品导航不得绕过模型 ACL。 -->
             <field name="implied_ids" eval="[
-                (6, 0, [ref('smart_construction_core.group_sc_internal_user')])
+                (6, 0, [
+                    ref('smart_construction_core.group_sc_internal_user'),
+                    ref('account.group_account_readonly')
+                ])
             ]"/>
         </record>
 
