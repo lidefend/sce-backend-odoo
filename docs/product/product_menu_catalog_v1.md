@@ -5,7 +5,7 @@
 ## 运行时来源
 
 - database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T11:50:19.456414+00:00`
+- generated_at: `2026-08-11T12:07:46.662501+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
@@ -119,7 +119,7 @@
   - 合同中心 [`formal_product`]
     - 合同办理 [`formal_product` inactive] -> `construction.contract`
     - 合同办理 [`formal_product` inactive] -> `construction.contract`
-    - 合同变更 [`formal_product`] -> `sc.settlement.adjustment`
+    - 合同变更 [`formal_product`] -> `sc.contract.change`
     - 合同管理 [`formal_product` inactive] -> `sc.expense.contract.ledger`
       - 一般合同（公司） [`formal_product`] -> `sc.general.contract`
       - 其他合同 [`formal_product`] -> `construction.contract.expense`
@@ -422,7 +422,7 @@
       - 施工日志 [`formal_product`] -> `sc.construction.diary`
       - 施工进度 [`formal_product`] -> `project.progress.entry`
       - 现场移动（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
-      - 签证变更 [`formal_product`] -> `sc.settlement.adjustment`
+      - 签证变更 [`formal_product`] -> `sc.site.variation`
       - 质量管理 [`formal_product` inactive]
         - 现场影像 [`formal_product`] -> `sc.site.photo.batch`
         - 质量复验 [`formal_product`] -> `sc.quality.recheck`

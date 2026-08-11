@@ -18,7 +18,7 @@ from . import test_partner_blacklist_capability
 from . import test_tender_document_advisory
 from . import test_quality_acceptance_capability
 from . import test_labor_product_capability
-from . import test_project_site_variation_entry
+from . import test_variation_change_chain
 from . import test_fund_legacy_readonly_archive
 from . import test_install_gate
 from . import test_permission_matrix

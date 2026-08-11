@@ -24,6 +24,7 @@ from . import tender
 from . import tender_product
 from . import quality_acceptance
 from . import labor_product
+from . import variation_change
 from . import res_config_settings
 from . import tier_definition_ext
 from . import sc_workflow

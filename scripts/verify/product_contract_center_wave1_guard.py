@@ -15,7 +15,7 @@ MANIFEST_PATH = REPO_ROOT / "addons/smart_construction_core/__manifest__.py"
 EXPECTED = {
     "menu_sc_p1_income_contract": ("收入合同", "smart_construction_core.action_construction_contract_income", "10", "smart_construction_core.group_sc_cap_contract_read"),
     "menu_sc_p1_expense_contract": ("支出合同", "smart_construction_core.action_construction_contract_expense", "20", "smart_construction_core.group_sc_cap_contract_read"),
-    "menu_sc_p1_contract_change": ("合同变更", "smart_construction_core.action_sc_settlement_adjustment", "25", "smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_settlement_read,smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_cost_read,smart_construction_core.group_sc_cap_finance_read"),
+    "menu_sc_p1_contract_change": ("合同变更", "smart_construction_core.action_sc_contract_change", "25", "smart_construction_core.group_sc_cap_contract_read"),
     "menu_sc_p1_daily_contract": ("日常合同", "smart_construction_core.action_sc_general_contract", "30", "smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_contract_read,smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager"),
     "menu_sc_p1_income_settlement": ("收入结算", "smart_construction_core.action_sc_settlement_order_income", "50", "smart_construction_core.group_sc_cap_settlement_read"),
     "menu_sc_p1_expense_settlement": ("支出结算", "smart_construction_core.action_sc_settlement_order_expense", "60", "smart_construction_core.group_sc_cap_settlement_read"),

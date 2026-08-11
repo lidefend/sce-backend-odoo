@@ -67,7 +67,7 @@
   - 工程资料 -> `sc.project.document`
   - 施工日志 -> `sc.construction.diary`
   - 施工进度 -> `project.progress.entry`
-  - 签证变更 -> `sc.settlement.adjustment`
+  - 签证变更 -> `sc.site.variation`
 - 劳务成本
   - 劳务实名制 -> `sc.labor.worker`
   - 劳务成本登记 -> `sc.labor.usage`
@@ -95,7 +95,7 @@
 
 - 收入合同 -> `construction.contract.income`
 - 支出合同 -> `construction.contract.expense`
-- 合同变更 -> `sc.settlement.adjustment`
+- 合同变更 -> `sc.contract.change`
 - 日常合同 -> `sc.general.contract`
 - 收入结算 -> `sc.settlement.order`
 - 日常合同结算 -> `sc.settlement.order`

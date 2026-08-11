@@ -21,6 +21,7 @@ from . import equipment_management
 from . import subcontract_management
 from . import settlement_order
 from . import settlement_adjustment
+from . import variation_change_extension
 from . import settlement
 from . import funding_baseline
 from . import fund_account
