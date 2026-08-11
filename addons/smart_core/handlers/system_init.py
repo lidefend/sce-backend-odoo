@@ -802,6 +802,23 @@ def _filter_nav_by_release_gate(nav: list[dict], gate: dict, *, env=None) -> tup
     protected_menu_refs = _runtime_business_config_protected_menu_refs(env)
     acceptance_matchers = _acceptance_surface_matchers(_resolve_user_acceptance_nav_contract(env))
 
+    def _node_has_entry_target(node: dict) -> bool:
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
+        route = _text(node.get("route") or meta.get("route") or entry_target.get("route"))
+        target_type = _text(entry_target.get("type"))
+        return bool(
+            node.get("action_id")
+            or meta.get("action_id")
+            or node.get("scene_key")
+            or meta.get("scene_key")
+            or entry_target.get("scene_key")
+            or node.get("model")
+            or meta.get("model")
+            or target_type == "scene"
+            or (route and not route.startswith("/m/"))
+        )
+
     def _filter_node(node: dict):
         nonlocal kept_leaf_count, removed_leaf_count, runtime_business_config_count
         if not isinstance(node, dict):
@@ -811,28 +828,41 @@ def _filter_nav_by_release_gate(nav: list[dict], gate: dict, *, env=None) -> tup
             return None
         children = node.get("children") if isinstance(node.get("children"), list) else []
         next_node = dict(node)
+        runtime_business_config_entry = _node_is_runtime_business_config_entry(
+            node,
+            env=env,
+            productization_sources=runtime_business_config_sources,
+            protected_menu_refs=protected_menu_refs,
+            acceptance_matchers=acceptance_matchers,
+        )
+        released_entry = bool(_node_release_gate_keys(node) & allowed_values)
         if children:
             next_children = []
             for child in children:
                 filtered = _filter_node(child)
                 if filtered:
                     next_children.append(filtered)
-            if not next_children:
-                return None
-            next_node["children"] = next_children
-            return next_node
+            if next_children:
+                next_node["children"] = next_children
+                return next_node
+            # A released product entry may also be a tree parent. If every
+            # child is filtered out, preserve the parent's own executable
+            # target as a leaf instead of silently deleting a released page.
+            if _node_has_entry_target(node) and (runtime_business_config_entry or released_entry):
+                next_node["children"] = []
+                kept_leaf_count += 1
+                if runtime_business_config_entry:
+                    runtime_business_config_count += 1
+                return next_node
+            if _node_has_entry_target(node):
+                removed_leaf_count += 1
+            return None
 
-        if _node_is_runtime_business_config_entry(
-            node,
-            env=env,
-            productization_sources=runtime_business_config_sources,
-            protected_menu_refs=protected_menu_refs,
-            acceptance_matchers=acceptance_matchers,
-        ):
+        if runtime_business_config_entry:
             kept_leaf_count += 1
             runtime_business_config_count += 1
             return next_node
-        if _node_release_gate_keys(node) & allowed_values:
+        if released_entry:
             kept_leaf_count += 1
             return next_node
         removed_leaf_count += 1

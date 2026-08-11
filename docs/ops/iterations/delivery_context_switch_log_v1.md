@@ -3606,3 +3606,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   database-locked login shell with zero console warnings/errors; authenticated
   customer UX evidence is intentionally outside this platform-mechanism
   closure because no customer principal is seeded into the isolated database.
+
+## 2026-08-11 — P0-RELEASE-GATE-ACTION-PARENT-PRESERVATION
+
+- Branch / anchor: `feature/product-center-baseline-v1-integrated` after the
+  selective integration of contract-governance commit `74a44e4`.
+- Formal Product Layer / Layer Target / Module: P0 / L0-L1 released navigation
+  projection / `smart_core`; no construction label, model or customer identity
+  is introduced into the platform mechanism.
+- Reason / Boundary: a released navigation node may own both an executable
+  target and child nodes. The release gate previously treated every such node
+  as a pure directory and deleted its released target when all children were
+  filtered. The gate now preserves only an independently authorized executable
+  parent as a leaf; pure directories, unreleased targets and user-acceptance
+  surfaces remain fail-closed.
+- Blast Radius / validation: `system.init` navigation filtering and its focused
+  transaction tests only. The exact candidate is replayed on `sc_demo`, then
+  the 159-page release audit, contract-open matrix and authenticated browser
+  navigation acceptance are rerun before baseline promotion.
