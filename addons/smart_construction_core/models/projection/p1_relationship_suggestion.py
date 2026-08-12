@@ -5,7 +5,7 @@ from odoo.exceptions import UserError
 
 class ScP1RelationshipSuggestion(models.Model):
     _name = "sc.p1.relationship.suggestion"
-    _inherit = "sc.optional.customer.projection"
+    _inherit = "sc.optional.product.projection"
     _description = "P1关系建议"
     _auto = False
     _rec_name = "display_name"

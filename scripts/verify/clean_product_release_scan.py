@@ -17,6 +17,7 @@ BOUNDARY_CHECKS = (
     "scripts/verify/customer_module_extraction_guard.py",
     "scripts/verify/product_to_customer_dependency_guard.py",
     "scripts/verify/tenant_product_payload_boundary_guard.py",
+    "scripts/verify/product_customer_runtime_decoupling_guard.py",
     "scripts/verify/tenant_module_set_matrix.py",
     "scripts/verify/tenant_product_fresh_install.py",
     "scripts/verify/formal_product_field_purity_guard.py",

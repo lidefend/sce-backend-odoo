@@ -5,7 +5,7 @@ from odoo.exceptions import UserError
 
 class ScPartnerBusinessFactLine(models.Model):
     _name = "sc.partner.business.fact.line"
-    _inherit = "sc.optional.customer.projection"
+    _inherit = "sc.optional.product.projection"
     _description = "客户供应商关联业务明细"
     _auto = False
     _rec_name = "display_name"

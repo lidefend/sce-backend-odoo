@@ -10,7 +10,7 @@ from ..projection_relation_lifecycle import ensure_ar_ap_project_summary_provide
 
 class ScArApProjectSummary(models.Model):
     _name = "sc.ar.ap.project.summary"
-    _inherit = "sc.optional.customer.projection"
+    _inherit = "sc.optional.product.projection"
     _description = "应收应付报表（项目）"
     _auto = False
     _rec_name = "display_name"

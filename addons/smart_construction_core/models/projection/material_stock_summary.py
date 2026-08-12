@@ -5,7 +5,7 @@ from odoo.osv import expression
 
 class ScMaterialStockSummary(models.Model):
     _name = "sc.material.stock.summary"
-    _inherit = "sc.optional.customer.projection"
+    _inherit = "sc.optional.product.projection"
     _description = "库存统计表（新）"
     _auto = False
     _rec_name = "display_name"

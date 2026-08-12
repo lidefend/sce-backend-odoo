@@ -5,7 +5,7 @@ from odoo.exceptions import UserError
 
 class ScFundDailySummary(models.Model):
     _name = "sc.fund.daily.summary"
-    _inherit = "sc.optional.customer.projection"
+    _inherit = "sc.optional.product.projection"
     _description = "企业资金日报汇总"
     _auto = False
     _rec_name = "display_name"

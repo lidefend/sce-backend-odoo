@@ -5,7 +5,7 @@ from odoo.exceptions import UserError
 
 class ScComprehensiveCostSummary(models.Model):
     _name = "sc.comprehensive.cost.summary"
-    _inherit = "sc.optional.customer.projection"
+    _inherit = "sc.optional.product.projection"
     _description = "成本统计表（综合）"
     _auto = False
     _rec_name = "display_name"

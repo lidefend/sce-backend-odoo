@@ -7,7 +7,7 @@ from odoo.exceptions import UserError
 
 class ScCompanyOperationSummary(models.Model):
     _name = "sc.company.operation.summary"
-    _inherit = "sc.optional.customer.projection"
+    _inherit = "sc.optional.product.projection"
     _description = "公司经营情况表"
     _auto = False
     _rec_name = "period_label"
