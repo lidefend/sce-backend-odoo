@@ -105,6 +105,7 @@ Generated from repository source files. This report is informational during the 
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
+| 869 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 867 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 861 | Python source | `scripts/release/release_candidate.py` |
@@ -112,7 +113,6 @@ Generated from repository source files. This report is informational during the 
 | 857 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 855 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
-| 847 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
