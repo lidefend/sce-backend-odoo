@@ -424,8 +424,10 @@ def user_data_acceptance_nav_contract():
         "direct_acceptance_group_label": "直营项目数据核对",
         "joint_acceptance_group_label": "联营项目数据核对",
         "source_menu_group_labels_to_hide": ["用户核对菜单"],
-        "acceptance_surface_menu_ids": [727, 729, 735, 770],
-        "acceptance_surface_action_ids": [899],
+        # Runtime database ids are deliberately forbidden here.  They are
+        # allocation-local facts and can identify an unrelated released page
+        # after a backup is restored into another database.  Acceptance
+        # surfaces are identified by their stable XMLID/name tokens below.
         "acceptance_surface_tokens": [
             "用户验收",
             "用户数据验收",
