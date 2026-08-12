@@ -10,7 +10,7 @@
       <field name="active">True</field>
     </record>
 
-    <record id="sc_demo_wbs_078_single" model="project.wbs">
+    <record id="sc_demo_wbs_078_single" model="construction.work.breakdown">
       <field name="name">S78 园区二期单项工程</field>
       <field name="code">S78-SINGLE</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
@@ -19,7 +19,7 @@
       <field name="active">True</field>
     </record>
 
-    <record id="sc_demo_wbs_078_unit" model="project.wbs">
+    <record id="sc_demo_wbs_078_unit" model="construction.work.breakdown">
       <field name="name">S78 2# 研发楼单位工程</field>
       <field name="code">S78-UNIT</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
@@ -29,7 +29,7 @@
       <field name="active">True</field>
     </record>
 
-    <record id="sc_demo_wbs_078_sub_division" model="project.wbs">
+    <record id="sc_demo_wbs_078_sub_division" model="construction.work.breakdown">
       <field name="name">S78 主体结构分部工程</field>
       <field name="code">S78-SUBDIV</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
@@ -39,7 +39,7 @@
       <field name="active">True</field>
     </record>
 
-    <record id="sc_demo_wbs_078_inspection_lot" model="project.wbs">
+    <record id="sc_demo_wbs_078_inspection_lot" model="construction.work.breakdown">
       <field name="name">S78 三层梁板钢筋检验批</field>
       <field name="code">S78-INSP-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>

@@ -3726,3 +3726,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   primary-center overlay remains the naming/sequence authority. Acceptance
   requires the fresh-database chatter authorization ORM gate, focused
   manifest-order test, product menu release gate and protected PR checks.
+
+## 2026-08-12 — P1-DEMO-TENANT-LIFECYCLE-AND-COVERAGE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` from
+  `af117b49615e83b64b33927c1d76a2aa7050188d`.
+- Formal Product Layer / Layer Target / Module: P1 / construction product Demo
+  dataset / `smart_construction_demo`; P4 / isolated reset and verification /
+  `scripts/demo`, `deploy/demo-tenant`, and Make targets.
+- Standard vs User-Specific: platform-owned construction Demo only. It contains
+  no customer module, customer data, historical migration carrier or customer
+  path, and runs in its own exact-filtered `sc_demo_*` tenant database.
+- Reason / Why Here: the Demo module had drifted behind the governed BOQ, WBS,
+  execution-scope, cost-plan and formal ten-center surfaces. Current product
+  sample facts belong to the Demo module; destructive reset, purge, scheduling
+  and evidence generation remain delivery/runtime tooling.
+- Why Not Elsewhere: neither product core nor frontend may carry fake business
+  records; a customer module must not be required for the product Demo; P3
+  configuration is not a substitute for reproducible Demo data.
+- Blast Radius / validation: 89 locked formal capabilities, 65 unique page
+  models, 11 governed BOQ/WBS/cost backbone models, 390 Demo XMLIDs, scheduled
+  tenant reset and CI drift guard. A fresh exact-filtered database must resolve
+  all 89 entries, seed all mandatory business surfaces, classify only four safe
+  empty surfaces, install zero customer modules, and leave zero pending module
+  operations.

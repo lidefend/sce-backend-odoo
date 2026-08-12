@@ -71,7 +71,15 @@ def _ensure_settlement(env, project, contract):
         "date_settlement": fields.Date.context_today(env.user),
     }
     if settlement:
-        settlement.write(vals)
+        if settlement.state == "draft":
+            settlement.write(vals)
+        else:
+            mutable_vals = {
+                key: value
+                for key, value in vals.items()
+                if key not in {"project_id", "contract_id"}
+            }
+            settlement.write(mutable_vals)
     else:
         settlement = Settlement.create(vals)
 

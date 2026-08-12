@@ -41,5 +41,8 @@ run_stage upgrade_core make mod.upgrade MODULE=smart_construction_core DB_NAME="
 run_stage upgrade_demo make mod.upgrade MODULE=smart_construction_demo DB_NAME="$DB_NAME"
 run_stage load_all make demo.load.all DB_NAME="$DB_NAME"
 run_stage verify make demo.verify DB_NAME="$DB_NAME"
+run_stage load_release make demo.load.release DB_NAME="$DB_NAME" DEMO_RESTART_AFTER_LOAD=0
+run_stage verify_release make verify.demo.release.seed DB_NAME="$DB_NAME"
+run_stage verify_formal_product_coverage make verify.demo.formal_product_coverage DB_NAME="$DB_NAME"
 
 printf '🎉 demo.ci PASSED\n'

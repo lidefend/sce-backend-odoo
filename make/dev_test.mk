@@ -1314,12 +1314,17 @@ verify.product.delivery.role_home_openability: guard.prod.forbid
 verify.product.delivery.visibility: guard.prod.forbid
 	@python3 scripts/verify/visibility_filter_verification.py
 
-.PHONY: verify.product.delivery.demo_data verify.demo.release.seed
+.PHONY: verify.product.delivery.demo_data verify.demo.release.seed verify.demo.formal_product_coverage
 verify.product.delivery.demo_data: guard.prod.forbid
 	@python3 scripts/verify/demo_data_presence_report.py
 
 verify.demo.release.seed: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/demo_release_seed.sh
+
+verify.demo.formal_product_coverage: guard.prod.forbid check-compose-project check-compose-env
+	@mkdir -p artifacts/demo
+	@python3 -m py_compile scripts/verify/demo_formal_product_coverage_runtime.py
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/demo_formal_product_coverage_runtime.py
 
 .PHONY: verify.product.delivery.execute_button_whitelist
 verify.product.delivery.execute_button_whitelist: guard.prod.forbid

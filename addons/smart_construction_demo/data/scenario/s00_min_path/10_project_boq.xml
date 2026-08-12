@@ -2,8 +2,18 @@
 <odoo>
     <data noupdate="1">
 
+        <!-- Demo 清单必须服从正式产品的版本治理，不直接创建游离清单行。 -->
+        <record id="sc_demo_boq_version_contract_v1" model="project.boq.version">
+            <field name="name">示范项目合同清单 V1</field>
+            <field name="code">DEMO-CONTRACT-V1</field>
+            <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+            <field name="source_type">contract</field>
+            <field name="note">产品 Demo 租户的清单与成本计划演示基线。</field>
+        </record>
+
         <!-- 工程量清单 1：场地平整（土石方） -->
         <record id="sc_demo_boq_earthwork" model="project.boq.line">
+            <field name="version_id" ref="smart_construction_demo.sc_demo_boq_version_contract_v1"/>
             <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
             <field name="sequence">10</field>
             <field name="code">010101</field>
@@ -18,6 +28,7 @@
 
         <!-- 工程量清单 2：现浇混凝土框架 -->
         <record id="sc_demo_boq_concrete" model="project.boq.line">
+            <field name="version_id" ref="smart_construction_demo.sc_demo_boq_version_contract_v1"/>
             <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
             <field name="sequence">20</field>
             <field name="code">020202</field>

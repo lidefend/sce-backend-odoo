@@ -1317,13 +1317,19 @@ diag.nav_root: check-compose-project check-compose-env
 # ======================================================
 # ==================== DB / Demo =======================
 # ======================================================
-.PHONY: db.reset demo.reset db.branch db.create db.reset.manual
+.PHONY: db.reset demo.reset demo.tenant.reset demo.tenant.verify db.branch db.create db.reset.manual
 db.reset: guard.prod.forbid guard.daily_candidate.preserve check-compose-project check-compose-env diag.project
 	@$(RUN_ENV) bash scripts/db/reset.sh
 
 # demo.reset 必须走 scripts/demo/reset.sh（含 seed/demo 安装）
 demo.reset: guard.codex.fast.noheavy guard.prod.forbid guard.daily_candidate.preserve check-compose-project check-compose-env diag.project
 	@$(RUN_ENV) SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 bash scripts/demo/reset.sh
+
+demo.tenant.reset: guard.codex.fast.noheavy guard.prod.forbid check-compose-project check-compose-env
+	@$(RUN_ENV) SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 bash scripts/demo/tenant_lifecycle.sh reset
+
+demo.tenant.verify: guard.prod.forbid check-compose-project check-compose-env
+	@$(RUN_ENV) SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 bash scripts/demo/tenant_lifecycle.sh verify
 
 # 兼容旧快捷命令：固定 sc_demo
 .PHONY: db.demo.reset

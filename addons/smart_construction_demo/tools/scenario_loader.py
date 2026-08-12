@@ -361,8 +361,8 @@ def load_scenario(
         _ensure_s69_payment_ledger(env)
     if scenario == "s78_project_document_wbs_surface":
         _ensure_s78_project_document_wbs(env)
-    if scenario == "s79_execution_structure_surface":
-        _ensure_s79_execution_structure(env)
+    if scenario == "s85_admin_finance_surface":
+        _ensure_s85_payroll_lifecycle(env)
 
     if apply_passwords:
         apply_demo_user_passwords(env)
@@ -434,22 +434,19 @@ def _ensure_s78_project_document_wbs(env) -> None:
         doc.sudo().write({"attachment_ids": [(4, attachment.id)]})
 
 
-def _ensure_s79_execution_structure(env) -> None:
-    """Refresh stored execution-structure rollups after XML replay."""
-    structures = env["sc.project.structure"].sudo().search(
-        [
-            (
-                "code",
-                "in",
-                ("S79-SINGLE", "S79-UNIT-MEP", "S79-DIV-FIRE", "S79-ITEM-FIRE-PIPE"),
-            )
-        ],
-        order="id",
+def _ensure_s85_payroll_lifecycle(env) -> None:
+    """Advance project payroll through the same lifecycle used by operators."""
+    payroll = env.ref(
+        "smart_construction_demo.sc_demo_hr_payroll_085_salary",
+        raise_if_not_found=False,
     )
-    for node in structures:
-        node._compute_level()
-    for node in reversed(structures):
-        node._compute_totals()
+    if not payroll:
+        return
+    payroll = payroll.sudo()
+    if payroll.state == "draft":
+        payroll.action_submit()
+    if payroll.state == "in_progress":
+        payroll.action_done()
 
 
 def load_all(env, mode: str = "update") -> None:
