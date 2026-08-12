@@ -284,21 +284,40 @@ class ScEquipmentRequestLine(models.Model):
 
 class ScEquipmentUsage(models.Model):
     _name = "sc.equipment.usage"
-    _description = "设备使用登记"
+    _description = "机械台班登记"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "usage_date desc, id desc"
 
     name = fields.Char(string="登记单号", required=True, default="新建", tracking=True)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True, tracking=True)
+    company_id = fields.Many2one(
+        related="project_id.company_id", store=True, readonly=True, string="所属公司"
+    )
     request_id = fields.Many2one("sc.equipment.request", string="来源设备申请", index=True)
     usage_date = fields.Date(string="使用日期", required=True, default=fields.Date.context_today, index=True, tracking=True)
     equipment_name = fields.Char(string="设备名称", required=True, index=True, tracking=True)
     equipment_code = fields.Char(string="设备编号", index=True)
+    specification = fields.Char(string="规格型号")
+    uom_text = fields.Char(string="计量单位", default="台时")
     usage_location = fields.Char(string="使用地点", required=True, index=True)
     operator_name = fields.Char(string="操作人员", required=True, index=True)
     usage_qty = fields.Float(string="使用台数", required=True, default=1)
     usage_hours = fields.Float(string="使用台时", required=True)
     supplier_id = fields.Many2one("res.partner", string="供应单位", index=True)
+    currency_id = fields.Many2one(
+        "res.currency",
+        string="币种",
+        required=True,
+        default=lambda self: self.env.company.currency_id.id,
+    )
+    price_unit = fields.Monetary(string="台时单价", currency_field="currency_id")
+    amount = fields.Monetary(
+        string="使用金额",
+        currency_field="currency_id",
+        compute="_compute_amount",
+        store=True,
+        readonly=True,
+    )
     recorder_id = fields.Many2one("res.users", string="记录人", default=lambda self: self.env.user, index=True)
     state = fields.Selection(
         [("draft", "草稿"), ("submitted", "已提交"), ("confirmed", "已确认"), ("cancel", "已取消")],
@@ -315,6 +334,7 @@ class ScEquipmentUsage(models.Model):
         string="附件",
     )
     note = fields.Text(string="使用说明")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
@@ -328,10 +348,11 @@ class ScEquipmentUsage(models.Model):
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if vals.get("name", "新建") == "新建":
-                vals["name"] = seq.next_by_code("sc.equipment.usage") or _("设备使用登记")
+                vals["name"] = seq.next_by_code("sc.equipment.usage") or _("机械台班登记")
         return super().create(vals_list)
 
     def action_submit(self):
+        self._check_project_operator()
         for record in self:
             if record.state != "draft":
                 raise UserError(_("只有草稿状态的设备使用登记可以提交。"))
@@ -341,27 +362,110 @@ class ScEquipmentUsage(models.Model):
         return True
 
     def action_confirm(self):
+        self._check_project_manager()
         for record in self:
             if record.state != "submitted":
                 raise UserError(_("只有已提交状态的设备使用登记可以确认。"))
             record._check_business_anchor()
         self._check_values()
         self.write({"state": "confirmed"})
+        self._sync_project_cost_ledger()
         return True
 
     def action_cancel(self):
         for record in self:
             if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿或已提交状态的设备使用登记可以取消。"))
+            if record.state == "submitted":
+                record._check_project_manager()
+            else:
+                record._check_project_operator()
         self.write({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
+        self._check_project_manager()
         for record in self:
             if record.state != "cancel":
                 raise UserError(_("只有已取消状态的设备使用登记可以重置为草稿。"))
         self.write({"state": "draft"})
         return True
+
+    def _check_project_operator(self):
+        if self.env.su or self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_project_user"
+        ) or self.env.user.has_group("smart_construction_core.group_sc_super_admin"):
+            return
+        raise UserError(_("你没有权限办理机械台班登记。"))
+
+    def _check_project_manager(self):
+        if self.env.su or self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_project_manager"
+        ) or self.env.user.has_group("smart_construction_core.group_sc_super_admin"):
+            return
+        raise UserError(_("只有项目审批人员可以确认机械台班。"))
+
+    @api.depends("request_id", "supplier_id", "equipment_code", "specification", "attachment_ids")
+    def _compute_processing_advisory(self):
+        for record in self:
+            suggestions = []
+            if not record.request_id:
+                suggestions.append("建议关联来源设备申请")
+            if not record.supplier_id:
+                suggestions.append("建议补充供应单位")
+            if not record.equipment_code:
+                suggestions.append("建议补充设备编号")
+            if not record.specification:
+                suggestions.append("建议补充规格型号")
+            if not record.attachment_ids:
+                suggestions.append("建议上传台班依据")
+            record.processing_advisory = (
+                "；".join(suggestions) if suggestions else "当前台班资料已完善"
+            )
+
+    def _equipment_cost_code(self):
+        CostCode = self.env["project.cost.code"].sudo()
+        cost_code = CostCode.search([("code", "=", "MACH"), ("type", "=", "machine")], limit=1)
+        if not cost_code:
+            cost_code = CostCode.create(
+                {
+                    "code": "MACH",
+                    "name": "机械成本",
+                    "type": "machine",
+                    "note": "机械台班确认时自动归集的成本科目。",
+                }
+            )
+        return cost_code
+
+    def _sync_project_cost_ledger(self):
+        Ledger = self.env["project.cost.ledger"].sudo()
+        cost_code = self._equipment_cost_code()
+        for record in self:
+            values = {
+                "project_id": record.project_id.id,
+                "cost_code_id": cost_code.id,
+                "date": record.usage_date or fields.Date.context_today(record),
+                "qty": (record.usage_qty or 0.0) * (record.usage_hours or 0.0),
+                "amount": record.amount,
+                "currency_id": record.currency_id.id,
+                "partner_id": record.supplier_id.id,
+                "source_model": record._name,
+                "source_id": record.id,
+                "source_line_id": 0,
+                "note": "%s - %s" % (record.name, record.equipment_name),
+            }
+            ledger = Ledger.search(
+                [
+                    ("source_model", "=", record._name),
+                    ("source_id", "=", record.id),
+                    ("source_line_id", "=", 0),
+                ],
+                limit=1,
+            )
+            if ledger:
+                ledger.write(values)
+            else:
+                Ledger.create(values)
 
     def _check_business_anchor(self):
         for record in self:
@@ -373,6 +477,11 @@ class ScEquipmentUsage(models.Model):
                 raise UserError(_("设备使用登记只能引用已确认的设备申请。"))
             if record.supplier_id and record.request_id.supplier_id and record.supplier_id != record.request_id.supplier_id:
                 raise UserError(_("设备使用登记的供应单位必须与来源设备申请一致。"))
+
+    @api.depends("usage_qty", "usage_hours", "price_unit")
+    def _compute_amount(self):
+        for record in self:
+            record.amount = (record.usage_qty or 0.0) * (record.usage_hours or 0.0) * (record.price_unit or 0.0)
 
     @api.constrains("usage_qty", "usage_hours")
     def _check_values(self):

@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import build_intent_url, get_base_url, http_post_json, obtain_runtime_probe_token
 
 FORBIDDEN_USER_KEYS = {
     "action_xmlid",
@@ -93,19 +93,11 @@ def _require_scene_trace(meta: dict, *, label: str) -> dict:
 def main() -> None:
     base_url = get_base_url()
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
-    login = os.getenv("E2E_LOGIN") or "admin"
-    password = os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin"
-    intent_url = f"{base_url}/api/v1/intent"
-
-    status, login_resp = http_post_json(
-        intent_url,
-        {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1"},
-    )
-    require_ok(status, login_resp, "login")
-    token = (login_resp.get("data") or {}).get("token")
-    if not token:
-        raise RuntimeError("login response missing token")
+    probe_model = str(os.getenv("CONTRACT_SMOKE_MODEL") or "res.partner").strip()
+    intent_url = build_intent_url(base_url, db_name)
+    token_ok, token, auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    if not token_ok or not token:
+        raise RuntimeError(f"runtime probe authentication unavailable: source={auth_source}")
 
     status, user_init = _post_intent(
         intent_url,
@@ -164,7 +156,7 @@ def main() -> None:
         intent_url,
         token,
         "ui.contract",
-        {"op": "model", "model": "project.project", "view_type": "tree", "contract_mode": "user"},
+        {"op": "model", "model": probe_model, "view_type": "tree", "contract_mode": "user"},
     )
     require_ok(status, user_contract, "ui.contract user")
     user_contract_meta, _ = _extract_meta_data(user_contract)
@@ -175,7 +167,7 @@ def main() -> None:
         intent_url,
         token,
         "ui.contract",
-        {"op": "model", "model": "project.project", "view_type": "tree", "hud": 1},
+        {"op": "model", "model": probe_model, "view_type": "tree", "hud": 1},
     )
     require_ok(status, hud_contract, "ui.contract hud")
     hud_contract_meta, _ = _extract_meta_data(hud_contract)

@@ -11,12 +11,13 @@ type FieldPolicy = {
 };
 
 type ActionPolicy = {
+  visible?: boolean;
+  enabled?: boolean;
   visible_profiles?: string[];
   enabled_when?: {
     profiles?: string[];
     required_fields?: string[];
     required_capabilities?: string[];
-    required_groups?: string[];
     required_roles?: string[];
     conditions?: Array<{
       source?: string;
@@ -45,7 +46,6 @@ type PolicyContext = {
   profile: RenderProfile;
   formData: Record<string, unknown>;
   capabilities: Set<string>;
-  userGroups: string[];
   roleCode: string;
   roleCodes?: string[];
   submittedFields?: Set<string>;
@@ -151,7 +151,7 @@ export function evaluateFieldPolicy(
   const policy = getFieldPolicy(contract, fieldName);
   const requiredProfiles = policy.required_profiles;
   const readonlyProfiles = policy.readonly_profiles;
-  const visible = hasProfile(policy.visible_profiles, ctx.profile);
+  const visible = policy.visible !== false && hasProfile(policy.visible_profiles, ctx.profile);
   const required = matchesProfile(requiredProfiles, ctx.profile)
     || (!Array.isArray(requiredProfiles) && !!policy.source_required && ctx.profile !== 'readonly');
   const readonly = matchesProfile(readonlyProfiles, ctx.profile)
@@ -178,7 +178,7 @@ export function evaluateActionPolicy(
   if (!visible) {
     return { visible: false, enabled: false, reason: '', semantic: String(policy.semantic || '').trim().toLowerCase() || 'secondary' };
   }
-  let enabled = true;
+  let enabled = policy.enabled !== false;
   const enabledWhen = policy.enabled_when || {};
   if (!hasProfile(enabledWhen.profiles, ctx.profile)) {
     enabled = false;
@@ -196,15 +196,6 @@ export function evaluateActionPolicy(
   if (requiredCapabilities.length) {
     const missingCaps = requiredCapabilities.filter((key) => !ctx.capabilities.has(key));
     if (missingCaps.length) enabled = false;
-  }
-  const requiredGroups = Array.isArray(enabledWhen.required_groups)
-    ? enabledWhen.required_groups.map((x) => String(x || '').trim()).filter(Boolean)
-    : [];
-  if (requiredGroups.length) {
-    const userGroups = new Set((ctx.userGroups || []).map((x) => String(x || '').trim()).filter(Boolean));
-    if (!requiredGroups.some((key) => userGroups.has(key))) {
-      enabled = false;
-    }
   }
   const requiredRoles = Array.isArray(enabledWhen.required_roles)
     ? enabledWhen.required_roles.map((x) => String(x || '').trim().toLowerCase()).filter(Boolean)

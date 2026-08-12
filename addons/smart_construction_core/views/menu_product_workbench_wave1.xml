@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- P1 workbench wave one: direct personal/management work surfaces only. -->
+    <data>
+        <record id="menu_sc_workspace_my_project" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_workbench_my_approval_fact" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="action_sc_workbench_task_center" model="ir.actions.act_window">
+            <field name="name">待办事项</field>
+            <field name="res_model">sc.workbench.item</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="smart_construction_core.view_sc_workbench_item_search"/>
+            <field name="domain">[('fact_type', 'in', ['my_todo', 'my_approval'])]</field>
+            <field name="context">{'search_default_group_priority': 1}</field>
+        </record>
+        <record id="menu_sc_operating_metrics_project" model="ir.ui.menu">
+            <field name="name">数据总览</field><field name="parent_id" ref="smart_construction_core.menu_sc_workspace_center"/><field name="sequence">10</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_project_kanban" model="ir.ui.menu">
+            <field name="name">项目看板</field><field name="parent_id" ref="smart_construction_core.menu_sc_workspace_center"/><field name="sequence">20</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_workbench_my_todo_fact" model="ir.ui.menu">
+            <field name="name">待办事项</field><field name="parent_id" ref="smart_construction_core.menu_sc_workspace_center"/><field name="action" ref="smart_construction_core.action_sc_workbench_task_center"/><field name="sequence">30</field><field name="active">True</field>
+        </record>
+    </data>
+</odoo>

@@ -24,6 +24,7 @@ from ..core.request_params import parse_positive_int
 from ..utils.contract_governance import apply_contract_governance, resolve_contract_mode, resolve_contract_surface
 from ..utils.extension_hooks import call_extension_hook_first
 from . import ui_contract_v2_adapters as _adapters
+from . import ui_contract_v2_authority as _authority
 from . import ui_contract_v2_projection as _projection
 from .ui_contract import UiContractHandler
 from .ui_contract_preview import PreviewAccessDenied, build_projection_environments
@@ -31,6 +32,8 @@ _logger = logging.getLogger(__name__)
 
 REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
 REASON_SCENE_CONTRACT_READY = "SCENE_CONTRACT_READY"
+REASON_ACTION_GROUP_ACCESS_DENIED = _authority.REASON_ACTION_GROUP_ACCESS_DENIED
+REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INVALID
 BUSINESS_OPERATION_FIELD_PRIORITY = (
     "name",
     "document_no",
@@ -208,6 +211,13 @@ class UiContractV2Handler(BaseIntentHandler):
             "no_business_fact_authority": cls.NO_BUSINESS_FACT_AUTHORITY,
             "runtime_carrier": cls.INTENT_TYPE,
         }
+
+    def _project_action_group_entitlements(self, source_contract: dict[str, Any]) -> None:
+        _authority.project_action_group_entitlements(self.env, source_contract, _logger)
+
+    def _validate_scene_action_binding(self, params: dict[str, Any]):
+        payload = load_scenes_from_db_or_fallback(self.env, drift=None, logger=None) or {}
+        return _authority.validate_scene_action_binding(payload, params, self._err)
 
     def _set_v2_container_tree(self, contract: dict[str, Any], container_tree: list[Any]) -> None:
         _projection.set_v2_container_tree(contract, container_tree)
@@ -516,6 +526,9 @@ class UiContractV2Handler(BaseIntentHandler):
         # including entry-contract re-resolution and orchestration overlays.
         self.env = projection_env
         self.su_env = projection_su_env
+        scene_binding_error = self._validate_scene_action_binding(params)
+        if scene_binding_error is not None:
+            return scene_binding_error
         source_result = UiContractHandler(
             projection_env,
             su_env=projection_su_env,
@@ -532,11 +545,11 @@ class UiContractV2Handler(BaseIntentHandler):
         ui_data, ui_meta = self._resolve_entry_contract(ui_data, ui_meta, ui_params, ctx)
         model = params.get("model") or ui_data.get("model") or ui_meta.get("model") or ""
         view_type = params.get("view_type") or params.get("viewType") or ui_data.get("view_type") or ui_meta.get("view_type") or "form"
+        trace_id = _authority.resolve_trace_id(self.context, ui_meta)
         request_id = (
             params.get("request_id")
             or params.get("requestId")
-            or ui_meta.get("trace_id")
-            or ui_meta.get("traceId")
+            or trace_id
             or f"ui.contract.v2.{model or 'unknown'}.{view_type or 'form'}"
         )
 
@@ -666,11 +679,13 @@ class UiContractV2Handler(BaseIntentHandler):
             client_type=client_type,
             delivery_profile=delivery_profile,
         )
+        self._project_action_group_entitlements(source_contract)
         contract_v2 = assemble_unified_page_contract_v2(
             source_contract,
             source_type="ui.contract",
             client_type=client_type,
             request_id=str(request_id),
+            trace_id=trace_id,
         )
         self._apply_field_policies_to_v2_status(contract_v2, source_contract)
         self._ensure_native_layout_widget_status_visible(contract_v2)
@@ -710,6 +725,9 @@ class UiContractV2Handler(BaseIntentHandler):
             client_type=client_type,
             delivery_profile=delivery_profile,
             **limit_params,
+        )
+        contract_v2 = _authority.seal_runtime_contract(
+            self, contract_v2, source_contract, "ui.contract", str(request_id), trace_id, client_type
         )
 
         return IntentExecutionResult(
@@ -3253,17 +3271,23 @@ class UiContractV2Handler(BaseIntentHandler):
         if limit_error:
             return self._err(400, f"{limit_error} 无效")
         source_contract = self._scene_contract_source(scene_key)
+        trace_id = _authority.resolve_trace_id(self.context)
+        request_id = str(params.get("request_id") or params.get("requestId") or trace_id or f"ui.contract.v2.scene.{scene_key}")
         contract_v2 = assemble_unified_page_contract_v2(
             {"scene_contract_v1": source_contract},
             source_type="scene_contract_v1",
             client_type=client_type,
-            request_id=str(params.get("request_id") or params.get("requestId") or f"ui.contract.v2.scene.{scene_key}"),
+            request_id=request_id,
+            trace_id=trace_id,
         )
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
             delivery_profile=delivery_profile,
             **limit_params,
+        )
+        contract_v2 = _authority.seal_runtime_contract(
+            self, contract_v2, source_contract, "scene_contract_v1", request_id, trace_id, client_type
         )
         return IntentExecutionResult(
             ok=True,

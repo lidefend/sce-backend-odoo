@@ -17,7 +17,7 @@ guard_prod_forbid
 
 : "${DB_NAME:?DB_NAME is required}"
 
-ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH:-/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons,/mnt/addons_external/oca_server_ux}"
+ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH:-/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/addons_external/oca_server_ux}"
 DB_PASSWORD="${DB_PASSWORD:-${DB_USER}}"
 
 compose_dev exec -T \

@@ -31,23 +31,23 @@ MIN_RELEASED_POLICY_MENU_COUNT = 1
 FORBIDDEN_RUNTIME_LABEL_TOKENS = ("用户核对菜单",)
 FORBIDDEN_POLICY_PATH_TOKENS = ("用户核对菜单", "旧业务数据核对", "直营项目数据核对")
 EXPECTED_FORMAL_TOP_GROUPS = (
+    "工作台",
     "项目中心",
     "合同中心",
     "成本中心",
-    "物资与分包",
-    "施工管理",
     "财务中心",
     "税务中心",
+    "会计账务中心",
     "报表中心",
-    "组织行政",
-    "配置中心",
+    "行政中心",
+    "产品配置",
 )
 REQUIRED_FORMAL_MENU_XMLIDS = (
     "smart_construction_core.menu_sc_customer_partner",
     "smart_construction_core.menu_sc_supplier_partner",
 )
 FORMAL_MENU_CONFIG_MAX_EXTRA_MENU_COUNT = 80
-FULL_PRODUCT_LOGIN = str(os.getenv("PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN", "wutao") or "").strip()
+FULL_PRODUCT_LOGIN = str(os.getenv("PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN", "") or "").strip()
 def _text(value):
     return str(value or "").strip()
 
@@ -180,6 +180,10 @@ def _assert_platform_release_db() -> str:
 
 
 def _assert_runtime_gate(product_key: str, released_policy_count: int) -> dict:
+    if not FULL_PRODUCT_LOGIN:
+        raise AssertionError(
+            "PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN must explicitly name the release acceptance principal"
+        )
     snapshot = _active_snapshot(product_key)
     if not snapshot:
         raise AssertionError(f"{product_key} active released snapshot not found")

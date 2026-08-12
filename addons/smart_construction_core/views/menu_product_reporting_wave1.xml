@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- P1 report-center wave one: only unified, drillable report facts. -->
+    <data>
+        <record id="menu_sc_business_entity" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_report_prediction_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_projection_root" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_business_analysis_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_cost_report_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_finance_analysis_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_tax_finance_report_group" model="ir.ui.menu"><field name="active">False</field></record>
+
+        <record id="menu_sc_project_operation_statistics_report" model="ir.ui.menu">
+            <field name="name">项目报表</field><field name="parent_id" ref="smart_construction_core.menu_sc_data_center"/><field name="sequence">10</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_comprehensive_cost_statistics_report" model="ir.ui.menu">
+            <field name="name">成本报表</field><field name="parent_id" ref="smart_construction_core.menu_sc_data_center"/><field name="sequence">20</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_fund_daily_summary" model="ir.ui.menu">
+            <field name="name">资金报表</field><field name="parent_id" ref="smart_construction_core.menu_sc_data_center"/><field name="sequence">30</field><field name="active">True</field>
+        </record>
+    </data>
+</odoo>

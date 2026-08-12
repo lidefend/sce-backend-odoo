@@ -12,3 +12,4 @@ from . import ui_base_contract_asset_event_trigger
 from . import user_view_preference
 from . import tenant_payload_import_batch
 from . import user_activation
+from . import effective_document_change

@@ -15,10 +15,11 @@
     </record>
 
     <record id="action_sc_equipment_usage" model="ir.actions.act_window">
-        <field name="name">设备使用登记</field>
+        <field name="name">机械台班登记</field>
         <field name="res_model">sc.equipment.usage</field>
         <field name="view_mode">tree,form</field>
         <field name="context">{'search_default_group_project': 1}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
     </record>
 
     <record id="action_sc_equipment_settlement" model="ir.actions.act_window">
@@ -234,17 +235,21 @@
         <field name="name">sc.equipment.usage.tree</field>
         <field name="model">sc.equipment.usage</field>
         <field name="arch" type="xml">
-            <tree string="设备使用登记" default_order="usage_date desc">
+            <tree string="机械台班登记" default_order="usage_date desc">
                 <field name="name"/>
                 <field name="project_id"/>
                 <field name="request_id"/>
                 <field name="usage_date"/>
                 <field name="equipment_name"/>
                 <field name="equipment_code"/>
+                <field name="specification"/>
+                <field name="uom_text"/>
                 <field name="usage_location"/>
                 <field name="operator_name"/>
                 <field name="usage_qty" sum="使用台数合计"/>
                 <field name="usage_hours"/>
+                <field name="price_unit"/>
+                <field name="amount" sum="使用金额合计"/>
                 <field name="supplier_id"/>
                 <field name="recorder_id"/>
                 <field name="state"/>
@@ -256,12 +261,12 @@
         <field name="name">sc.equipment.usage.form</field>
         <field name="model">sc.equipment.usage</field>
         <field name="arch" type="xml">
-            <form string="设备使用登记">
+            <form string="机械台班登记">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_confirm" string="确认使用" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
-                    <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+                    <button name="action_confirm" string="确认台班" type="object" class="btn-primary" invisible="state != 'submitted'" groups="smart_construction_core.group_sc_cap_project_manager"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'" groups="smart_construction_core.group_sc_cap_project_manager"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
                 </header>
                 <sheet>
@@ -273,12 +278,17 @@
                             <field name="usage_date"/>
                             <field name="equipment_name"/>
                             <field name="equipment_code"/>
+                            <field name="specification"/>
+                            <field name="uom_text"/>
                         </group>
                         <group>
                             <field name="usage_location"/>
                             <field name="operator_name"/>
                             <field name="usage_qty"/>
                             <field name="usage_hours"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                            <field name="price_unit"/>
+                            <field name="amount" readonly="1"/>
                             <field name="supplier_id"/>
                             <field name="recorder_id"/>
                         </group>
@@ -290,9 +300,8 @@
                         <page string="附件">
                             <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
+                        <page string="办理提示">
+                            <field name="processing_advisory" readonly="1" nolabel="1"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -305,7 +314,7 @@
         <field name="name">sc.equipment.usage.search</field>
         <field name="model">sc.equipment.usage</field>
         <field name="arch" type="xml">
-            <search string="设备使用登记">
+            <search string="机械台班登记">
                 <field name="name"/>
                 <field name="project_id"/>
                 <field name="request_id"/>

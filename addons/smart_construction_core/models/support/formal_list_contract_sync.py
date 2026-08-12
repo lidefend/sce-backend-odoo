@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from odoo import api, fields, models
+from odoo import api, models
 
 
 SETTLEMENT_ACTION_XMLIDS = (
@@ -11,24 +11,27 @@ SETTLEMENT_ACTION_XMLIDS = (
     "smart_construction_core.action_sc_settlement_order_expense",
 )
 
+_SETTLEMENT_CANONICAL_FIELDS = {
+    "document_state": ("state", "单据状态"),
+    "document_no": ("name", "单据编号"),
+    "project_name": ("project_id", "项目名称"),
+    "document_date": ("document_date", "单据日期"),
+    "title": ("title", "标题/结算内容"),
+    "partner_name": ("settlement_unit_id", "结算单位"),
+    "amount": ("settlement_amount", "结算金额"),
+    "paid_amount": ("paid_amount", "已付款金额"),
+    "unpaid_amount": ("unpaid_amount", "未付款金额"),
+    "requested_amount": ("requested_fund_amount", "申请资金金额"),
+    "unrequested_amount": ("remaining_amount", "可付余额"),
+    "note": ("note", "备注"),
+    "attachment": ("attachment_ids", "附件"),
+    "creator": ("entry_user_id", "录入人"),
+    "created_at": ("create_date", "录入时间"),
+}
 SETTLEMENT_ACCEPTANCE_FIELD_MAP = {
-    "user_acceptance_document_state": ("settlement_acceptance_document_state", "单据状态"),
-    "user_acceptance_document_no": ("settlement_acceptance_document_no", "单据编号"),
-    "user_acceptance_project_name": ("settlement_acceptance_project_name", "项目名称"),
-    "user_acceptance_document_date": ("settlement_acceptance_document_date", "单据日期"),
-    "user_acceptance_title": ("settlement_acceptance_title", "标题/结算内容"),
-    "user_acceptance_partner_name": ("settlement_acceptance_partner_name", "结算单位"),
-    "user_acceptance_amount": ("settlement_acceptance_amount", "结算金额"),
-    "user_acceptance_payment_state": ("settlement_acceptance_payment_state", "付款状态"),
-    "user_acceptance_paid_amount": ("settlement_acceptance_paid_amount", "已付款金额"),
-    "user_acceptance_unpaid_amount": ("settlement_acceptance_unpaid_amount", "未付款金额"),
-    "user_acceptance_request_state": ("settlement_acceptance_request_state", "支付申请状态"),
-    "user_acceptance_requested_amount": ("settlement_acceptance_requested_amount", "已申请金额"),
-    "user_acceptance_unrequested_amount": ("settlement_acceptance_unrequested_amount", "未申请金额"),
-    "user_acceptance_note": ("settlement_acceptance_note", "结算说明/备注"),
-    "user_acceptance_attachment": ("settlement_acceptance_attachment", "附件"),
-    "user_acceptance_creator": ("settlement_acceptance_creator", "录入人"),
-    "user_acceptance_created_at": ("settlement_acceptance_created_at", "录入时间"),
+    f"{prefix}{suffix}": target
+    for prefix in ("user_acceptance_", "settlement_acceptance_")
+    for suffix, target in _SETTLEMENT_CANONICAL_FIELDS.items()
 }
 
 
@@ -59,13 +62,7 @@ class UIBusinessConfigContractSettlementFormalSync(models.Model):
                 next_payload = self._sc_settlement_formalize_contract_payload(payload)
                 if next_payload == payload:
                     continue
-                contract.write(
-                    {
-                        "contract_json": next_payload,
-                        "version_no": int(contract.version_no or 1) + 1,
-                        "published_at": fields.Datetime.now(),
-                    }
-                )
+                contract.replace_and_publish(next_payload)
                 changed += 1
         return changed
 

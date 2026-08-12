@@ -3,6 +3,10 @@ from __future__ import annotations
 
 import re
 import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 TOGGLE_PATTERN = re.compile(
@@ -106,6 +110,21 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
     def test_browser_matrix_rejects_persisted_relation_candidate_preload(self):
         source = "noEagerCandidateSurfaces.has(surface.name)"
         self.assertIn("noEagerCandidateSurfaces", source)
+
+    def test_browser_contract_target_uses_released_ten_center_entry(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_runtime_ids.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            '"contract": target("smart_construction_core.menu_sc_p1_daily_contract", '
+            '"smart_construction_acceptance_fixture.fe_general_contract_a")',
+            source,
+        )
+        self.assertNotIn(
+            '"contract": target("smart_construction_core.menu_sc_construction_contract"',
+            source,
+        )
 
 
 if __name__ == "__main__":

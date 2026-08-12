@@ -108,6 +108,18 @@
         <field name="context">{'active_test': False, 'sc_runtime_user_management': True}</field>
         <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_business_config_admin'),             ref('smart_core.group_smart_core_admin'),         ])]" />
     </record>
+    <record id="view_sc_data_permission_user_tree" model="ir.ui.view">
+        <field name="name">res.users.sc.data.permission.tree</field><field name="model">res.users</field>
+        <field name="arch" type="xml"><tree string="数据权限" create="0" delete="0"><field name="login"/><field name="name"/><field name="company_id"/><field name="company_ids" widget="many2many_tags"/><field name="sc_user_permission_group_ids" string="业务权限角色" widget="many2many_tags"/><field name="active"/></tree></field>
+    </record>
+    <record id="view_sc_data_permission_user_form" model="ir.ui.view">
+        <field name="name">res.users.sc.data.permission.form</field><field name="model">res.users</field>
+        <field name="arch" type="xml"><form string="数据权限" create="0" delete="0"><sheet><group><group string="用户"><field name="login" readonly="1"/><field name="name" readonly="1"/><field name="active" readonly="1"/></group><group string="公司范围"><field name="company_id"/><field name="company_ids" widget="many2many_tags" options="{'no_create': True}"/></group></group><group string="业务权限角色"><field name="sc_user_permission_group_ids" nolabel="1" widget="many2many_tags" domain="[('sc_assignable_user_permission', '=', True)]" options="{'no_create': True, 'no_open': True}"/></group><group string="项目数据范围"><field name="sc_project_member_assignment_ids" nolabel="1" context="{'default_user_id': id}"><tree editable="bottom" delete="0"><field name="project_id"/><field name="company_id"/><field name="source"/><field name="active"/><field name="note"/></tree></field></group></sheet></form></field>
+    </record>
+    <record id="view_sc_data_permission_user_search" model="ir.ui.view">
+        <field name="name">res.users.sc.data.permission.search</field><field name="model">res.users</field>
+        <field name="arch" type="xml"><search string="数据权限"><field name="login"/><field name="name"/><field name="company_id"/><field name="sc_user_permission_group_ids"/><filter name="active" string="启用" domain="[('active', '=', True)]"/><filter name="group_company" string="按公司" context="{'group_by': 'company_id'}"/></search></field>
+    </record>
     <menuitem id="menu_sc_runtime_user_management"
               name="公司内部人员维护"
               parent="smart_construction_core.menu_sc_business_base_config_group"

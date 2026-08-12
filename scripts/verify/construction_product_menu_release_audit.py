@@ -3,6 +3,12 @@ from __future__ import annotations
 
 import json
 
+from odoo import api
+from odoo.addons.smart_core.delivery.final_menu_navigation_service import FinalMenuNavigationService
+from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
+    FORMAL_ACTION_ONLY_MENU_TARGETS,
+)
+
 
 PRODUCT_KEYS = ("construction.standard", "construction.preview")
 VISIBLE_CHECK_USERS = ("wutao", "demo_role_project_read", "sc_fx_pm")
@@ -74,51 +80,77 @@ def _released_policy_menus(product_key):
     return rows, allowed_hidden
 
 
-def _visible_menu_ids_by_login():
+def _delivered_action_ids_by_login():
     out = {}
     for login in VISIBLE_CHECK_USERS:
         user = env["res.users"].sudo().search([("login", "=", login)], limit=1)  # noqa: F821
         if not user:
             continue
-        out[login] = set(env["ir.ui.menu"].with_user(user)._visible_menu_ids())  # noqa: F821
+        user_env = api.Environment(env.cr, int(user.id), dict(env.context or {}))  # noqa: F821
+        delivery = FinalMenuNavigationService(user_env).build()
+        convergence = (delivery.get("meta") or {}).get("delivery_convergence") or {}
+        if convergence.get("source") != "delivery_engine_v1":
+            raise AssertionError("%s did not resolve navigation through delivery_engine_v1" % login)
+        flat = (delivery.get("nav_fact") or {}).get("flat") or []
+        out[login] = {
+            int(row.get("action_id") or 0)
+            for row in flat
+            if isinstance(row, dict) and int(row.get("action_id") or 0) > 0
+        }
     if not out:
         raise AssertionError("no verification users exist: %s" % (VISIBLE_CHECK_USERS,))
     return out
 
 
-def _assert_menu_runtime(menu_row, visible_by_login):
+def _assert_menu_runtime(menu_row, delivered_by_login):
     menu_xmlid = _text(menu_row.get("menu_xmlid") or menu_row.get("page_key") or menu_row.get("menu_key"))
     if not menu_xmlid:
         raise AssertionError("released menu is missing menu_xmlid/page_key: %s" % menu_row)
     menu = env.ref(menu_xmlid, raise_if_not_found=False)  # noqa: F821
-    if not menu:
+    expected_action_xmlid = _text(menu_row.get("action_xmlid")) or FORMAL_ACTION_ONLY_MENU_TARGETS.get(
+        menu_xmlid, ""
+    )
+    if menu:
+        action = menu.action
+    elif menu_xmlid in FORMAL_ACTION_ONLY_MENU_TARGETS:
+        action = env.ref(expected_action_xmlid, raise_if_not_found=False)  # noqa: F821
+    else:
         raise AssertionError("released menu xmlid does not resolve: %s" % menu_xmlid)
-    if hasattr(menu, "active") and not bool(menu.active):
-        raise AssertionError("released menu is inactive: %s" % menu_xmlid)
-    if not menu.action:
-        raise AssertionError("released menu has no action: %s" % menu_xmlid)
+    if not action:
+        raise AssertionError("released product target has no action: %s" % menu_xmlid)
+    actual_action_xmlid = _external_id(action)
+    if expected_action_xmlid and actual_action_xmlid != expected_action_xmlid:
+        raise AssertionError(
+            "released product action identity drift: %s expected=%s actual=%s"
+            % (menu_xmlid, expected_action_xmlid, actual_action_xmlid)
+        )
     action_id = int(menu_row.get("action_id") or 0)
-    if action_id and int(menu.action.id or 0) != action_id:
+    if action_id and int(action.id or 0) != action_id:
         raise AssertionError(
             "released menu action drift: %s policy=%s actual=%s"
-            % (menu_xmlid, action_id, int(menu.action.id or 0))
+            % (menu_xmlid, action_id, int(action.id or 0))
         )
-    res_model = _text(getattr(menu.action, "res_model", "")) or _text(menu_row.get("res_model"))
+    res_model = _text(getattr(action, "res_model", "")) or _text(menu_row.get("res_model"))
     if not res_model:
         raise AssertionError("released menu action has no res_model: %s" % menu_xmlid)
     if res_model not in env:  # noqa: F821
         raise AssertionError("released menu action model missing: %s -> %s" % (menu_xmlid, res_model))
-    visible_logins = [login for login, visible_ids in visible_by_login.items() if int(menu.id) in visible_ids]
+    visible_logins = [
+        login for login, action_ids in delivered_by_login.items() if int(action.id) in action_ids
+    ]
     if not visible_logins:
+        groups = getattr(menu, "groups_id", env["res.groups"]) if menu else getattr(action, "groups_id", env["res.groups"])  # noqa: F821
         raise AssertionError(
-            "released menu is not visible to verification users: %s groups=%s"
-            % (menu_xmlid, sorted(_external_id(group) for group in menu.groups_id))
+            "released product target is not accessible to verification users: %s groups=%s"
+            % (menu_xmlid, sorted(_external_id(group) for group in groups))
         )
     return {
         "menu_xmlid": menu_xmlid,
-        "label": _text(menu.name),
+        "label": _text(menu.name) if menu else _text(menu_row.get("label") or action.name),
         "path": _text(menu_row.get("visible_menu_path")),
-        "action_id": int(menu.action.id or 0),
+        "menu_id": int(menu.id) if menu else 0,
+        "action_id": int(action.id or 0),
+        "action_xmlid": actual_action_xmlid,
         "res_model": res_model,
         "visible_logins": visible_logins,
     }
@@ -126,7 +158,7 @@ def _assert_menu_runtime(menu_row, visible_by_login):
 
 def main():
     runtime_mode = _assert_product_navigation_mode()
-    visible_by_login = _visible_menu_ids_by_login()
+    delivered_by_login = _delivered_action_ids_by_login()
     product_counts = {}
     hidden_counts = {}
     audited = {}
@@ -139,7 +171,7 @@ def main():
             menu_xmlid = _text(row.get("menu_xmlid") or row.get("page_key") or row.get("menu_key"))
             if menu_xmlid in seen:
                 continue
-            audited[menu_xmlid] = _assert_menu_runtime(row, visible_by_login)
+            audited[menu_xmlid] = _assert_menu_runtime(row, delivered_by_login)
             seen.add(menu_xmlid)
 
     print(
@@ -151,7 +183,7 @@ def main():
                 "runtime_mode": runtime_mode,
                 "allowed_hidden_internal_menu_counts": hidden_counts,
                 "unique_released_menu_count": len(audited),
-                "visible_users": sorted(visible_by_login),
+                "visible_users": sorted(delivered_by_login),
                 "sample_menus": list(audited.values())[:20],
             },
             ensure_ascii=False,

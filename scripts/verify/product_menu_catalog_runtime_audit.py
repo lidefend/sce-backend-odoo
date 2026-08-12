@@ -23,13 +23,13 @@ ROOT_XMLIDS = tuple(
     if item.strip()
 )
 OUTPUT_PATH = Path(os.getenv("PRODUCT_MENU_CATALOG_RUNTIME_PATH", "/tmp/product_menu_catalog_runtime_v1.json"))
-FULL_PRODUCT_LOGIN = str(os.getenv("PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN", "wutao") or "").strip()
+FULL_PRODUCT_LOGIN = str(os.getenv("PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN", "") or "").strip()
 VISIBLE_LOGINS = tuple(dict.fromkeys([
     *(
     item.strip()
     for item in os.getenv(
         "PRODUCT_MENU_CATALOG_VISIBLE_LOGINS",
-        "admin,wutao,demo_business_full,demo_role_project_manager,demo_role_finance,demo_role_executive",
+        "admin",
     ).split(",")
     if item.strip()
     ),
@@ -39,7 +39,7 @@ BUSINESS_VISIBLE_LOGINS = {
     item.strip()
     for item in os.getenv(
         "PRODUCT_MENU_CATALOG_BUSINESS_LOGINS",
-        "wutao,demo_business_full,demo_role_project_manager,demo_role_finance,demo_role_executive",
+        "",
     ).split(",")
     if item.strip()
 }
@@ -47,7 +47,7 @@ INTERNAL_HISTORY_PATH_TOKENS = (
     "系统配置",
     "历史财务事实（内部）",
 )
-BUSINESS_CONFIG_PATH_PREFIX = "智慧施工管理平台 / 配置中心"
+BUSINESS_CONFIG_PATH_PREFIX = "智慧施工管理平台 / 产品配置"
 PRODUCT_ROOT_LABEL = "智慧施工管理平台"
 CONFIG_ADMIN_GROUP_XMLIDS = (
     "smart_construction_core.group_sc_cap_business_config_admin",
@@ -58,7 +58,6 @@ CONFIG_ADMIN_GROUP_XMLIDS = (
 INTERNAL_ONLY_GROUP_XMLIDS = {"base.group_no_one"}
 
 SYSTEM_CONFIG_XMLIDS = set(LOWCODE_SYSTEM_CONFIG_MENU_XMLIDS) | {
-    "smart_construction_core.menu_sc_business_config_center",
     "smart_construction_core.menu_sc_config_center",
     "smart_construction_core.menu_sc_dictionary",
     "smart_construction_core.menu_sc_dictionary_root",
@@ -69,6 +68,15 @@ SYSTEM_CONFIG_XMLIDS = set(LOWCODE_SYSTEM_CONFIG_MENU_XMLIDS) | {
     "smart_construction_core.menu_sc_legacy_user_context",
     "smart_construction_core.menu_sc_runtime_user_management",
     "smart_construction_core.menu_sc_legacy_user_priority_menu_plan",
+}
+
+# Product Configuration is a formal product center.  Its protected low-code and
+# administration children remain system configuration entries, but the parent
+# itself must not be collapsed into that boundary: doing so would make the
+# catalog classifier a second permission/menu truth outside the SC capability
+# model.
+FORMAL_PRODUCT_CENTER_XMLIDS = {
+    "smart_construction_core.menu_sc_business_config_center",
 }
 
 LAYER_DEFINITIONS = {
@@ -296,6 +304,8 @@ def _classify(row: dict[str, object]) -> tuple[str, list[str], bool]:
     create_login = _text(create_user.get("login"))
     if not xmlid and create_login not in ("", "__system__"):
         return "user_config", ["runtime_user_menu_without_xmlid"], False
+    if xmlid in FORMAL_PRODUCT_CENTER_XMLIDS:
+        return "formal_product", ["explicit_formal_product_center_xmlid"], False
     if xmlid in SYSTEM_CONFIG_XMLIDS:
         return "system_config", ["explicit_system_config_xmlid"], False
     if xmlid in SCENE_ONLY_MENU_SCENE_KEYS:
@@ -534,6 +544,7 @@ def _export() -> dict[str, object]:
         and row.get("layer") == "formal_product"
         and bool(row.get("action_raw") or row.get("scene_key"))
         and not _is_intentionally_internal(row)
+        and FULL_PRODUCT_LOGIN
         and FULL_PRODUCT_LOGIN not in (row.get("visible_logins") or [])
     ]
     if full_product_missing:

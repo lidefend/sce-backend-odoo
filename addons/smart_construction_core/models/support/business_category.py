@@ -75,6 +75,7 @@ BUSINESS_CATEGORY_ACTION_BINDINGS = {
     "material.inbound": "smart_construction_core.action_sc_material_inbound_handling",
     "material.outbound": "smart_construction_core.action_sc_material_outbound",
     "material.return": "smart_construction_core.action_sc_material_return",
+    "material.supplier_return": "smart_construction_core.action_sc_material_supplier_return",
     "material.transfer": "smart_construction_core.action_sc_material_transfer",
     "material.loss": "smart_construction_core.action_sc_material_loss",
     "material.settlement": "smart_construction_core.action_sc_material_settlement",
@@ -178,6 +179,11 @@ BUSINESS_CATEGORY_LEDGER_POLICY_DEFAULTS = {
         "facts": ["sc.material.outbound", "sc.material.stock.summary"],
         "terminal_action": "action_issue",
         "cost_triggers": {"issue_project_cost_ledger": False},
+    },
+    "material.supplier_return": {
+        "facts": ["sc.material.supplier.return", "sc.material.inbound", "sc.material.stock.summary"],
+        "terminal_action": "action_confirm_return",
+        "cost_triggers": {"reverse_project_cost_ledger": False},
     },
     "material.transfer": {
         "facts": ["sc.material.outbound", "sc.material.inbound", "sc.material.stock.summary"],

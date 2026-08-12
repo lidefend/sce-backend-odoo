@@ -36,6 +36,8 @@ def validate(manifest: dict, policies: dict) -> list[str]:
 
     for manifest_role, policy_role in ROLE_MAP.items():
         expected_row = expected_roles.get(manifest_role) or {}
+        browser_keys = {str(key).strip() for key in expected_row.get("browser_leaf_keys") or []}
+        browser_count = int(expected_row.get("browser_expected_count") or 0)
         expected = {
             str(key).split("|", 1)[0]
             for key in expected_row.get("leaf_keys") or []
@@ -54,6 +56,17 @@ def validate(manifest: dict, policies: dict) -> list[str]:
         if declared_count != len(expected):
             errors.append(
                 f"{manifest_role}: expected_count={declared_count} identity_count={len(expected)}"
+            )
+        if browser_count != len(browser_keys) or not browser_keys:
+            errors.append(
+                f"{manifest_role}: browser_expected_count={browser_count} "
+                f"identity_count={len(browser_keys)}"
+            )
+        browser_menu_xmlids = {key.split("|", 1)[0] for key in browser_keys}
+        if not browser_menu_xmlids.issubset(expected):
+            errors.append(
+                f"{manifest_role}: browser projection outside released policy="
+                f"{sorted(browser_menu_xmlids - expected)}"
             )
         if released != expected:
             errors.append(

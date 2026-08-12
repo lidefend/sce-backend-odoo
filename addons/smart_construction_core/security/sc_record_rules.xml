@@ -1524,47 +1524,47 @@
         </record>
 
         <record id="rule_sc_internal_attendance_checkin" model="ir.rule">
-            <field name="name">SC Internal - sc.attendance.checkin own or project member</field>
+            <field name="name">SC Project - attendance checkin own or project member</field>
             <field name="model_id" ref="model_sc_attendance_checkin"/>
             <field name="domain_force">['|','|', ('create_uid', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
         </record>
 
         <record id="rule_sc_super_admin_attendance_checkin" model="ir.rule">
-            <field name="name">SC Super Admin - sc.attendance.checkin ALL</field>
+            <field name="name">SC Project Manager - attendance checkin ALL</field>
             <field name="model_id" ref="model_sc_attendance_checkin"/>
             <field name="domain_force">[(1,'=',1)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_super_admin'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
         <record id="rule_sc_internal_labor_usage" model="ir.rule">
-            <field name="name">SC Internal - sc.labor.usage own or project member</field>
+            <field name="name">SC Project - labor usage own or project member</field>
             <field name="model_id" ref="model_sc_labor_usage"/>
             <field name="domain_force">['|','|', ('create_uid', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
         </record>
 
         <record id="rule_sc_super_admin_labor_usage" model="ir.rule">
-            <field name="name">SC Super Admin - sc.labor.usage ALL</field>
+            <field name="name">SC Project Manager - labor usage ALL</field>
             <field name="model_id" ref="model_sc_labor_usage"/>
             <field name="domain_force">[(1,'=',1)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_super_admin'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
         <record id="rule_sc_internal_labor_request" model="ir.rule">
@@ -1810,14 +1810,32 @@
         </record>
 
         <record id="rule_sc_internal_equipment_usage" model="ir.rule">
-            <field name="name">SC Internal - sc.equipment.usage own or project member</field>
+            <field name="name">SC Project User - sc.equipment.usage own or project member</field>
             <field name="model_id" ref="model_sc_equipment_usage"/>
             <field name="domain_force">['|','|', ('create_uid', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_read_equipment_usage" model="ir.rule">
+            <field name="name">SC Project Read - sc.equipment.usage by project member</field>
+            <field name="model_id" ref="model_sc_equipment_usage"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_equipment_usage" model="ir.rule">
+            <field name="name">SC Project Manager - sc.equipment.usage ALL</field>
+            <field name="model_id" ref="model_sc_equipment_usage"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
         <record id="rule_sc_super_admin_equipment_usage" model="ir.rule">
@@ -1986,14 +2004,32 @@
         </record>
 
         <record id="rule_sc_internal_subcontract_register" model="ir.rule">
-            <field name="name">SC Internal - sc.subcontract.register own or project member</field>
+            <field name="name">SC Project User - sc.subcontract.register own or project member</field>
             <field name="model_id" ref="model_sc_subcontract_register"/>
             <field name="domain_force">['|','|', ('responsible_id', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_read_subcontract_register" model="ir.rule">
+            <field name="name">SC Project Read - sc.subcontract.register by project member</field>
+            <field name="model_id" ref="model_sc_subcontract_register"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_subcontract_register" model="ir.rule">
+            <field name="name">SC Project Manager - sc.subcontract.register ALL</field>
+            <field name="model_id" ref="model_sc_subcontract_register"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
         <record id="rule_sc_super_admin_subcontract_register" model="ir.rule">
@@ -2008,14 +2044,32 @@
         </record>
 
         <record id="rule_sc_internal_subcontract_register_line" model="ir.rule">
-            <field name="name">SC Internal - sc.subcontract.register.line own or project member</field>
+            <field name="name">SC Project User - sc.subcontract.register.line own or project member</field>
             <field name="model_id" ref="model_sc_subcontract_register_line"/>
             <field name="domain_force">['|','|', ('register_id.responsible_id', '=', user.id), ('register_id.project_id.user_id', '=', user.id), ('register_id.project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_read_subcontract_register_line" model="ir.rule">
+            <field name="name">SC Project Read - sc.subcontract.register.line by project member</field>
+            <field name="model_id" ref="model_sc_subcontract_register_line"/>
+            <field name="domain_force">['|', ('register_id.project_id.user_id', '=', user.id), ('register_id.project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_subcontract_register_line" model="ir.rule">
+            <field name="name">SC Project Manager - sc.subcontract.register.line ALL</field>
+            <field name="model_id" ref="model_sc_subcontract_register_line"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
         <record id="rule_sc_super_admin_subcontract_register_line" model="ir.rule">
@@ -2458,6 +2512,83 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_initiator'))]"/>
         </record>
 
+        <record id="rule_sc_project_user_financing_loan_contractor_borrow" model="ir.rule">
+            <field name="name">SC Project User - contractor borrowing by project membership</field>
+            <field name="model_id" ref="model_sc_financing_loan"/>
+            <field name="domain_force">['&amp;', ('business_category_id.code', '=', 'finance.loan.contractor_project_borrow'), '|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_financing_loan_contractor_borrow" model="ir.rule">
+            <field name="name">SC Project Manager - contractor borrowing</field>
+            <field name="model_id" ref="model_sc_financing_loan"/>
+            <field name="domain_force">[('business_category_id.code', '=', 'finance.loan.contractor_project_borrow')]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_expense_claim_company" model="ir.rule">
+            <field name="name">SC Expense Claim - allowed company</field>
+            <field name="model_id" ref="model_sc_expense_claim"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="rule_sc_project_user_expense_claim_deduction_bill" model="ir.rule">
+            <field name="name">SC Project User - deduction bill by project membership</field>
+            <field name="model_id" ref="model_sc_expense_claim"/>
+            <field name="domain_force">['&amp;', ('business_category_id.code', '=', 'finance.deduction.bill'), '|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_expense_claim_deduction_bill" model="ir.rule">
+            <field name="name">SC Project Manager - deduction bill</field>
+            <field name="model_id" ref="model_sc_expense_claim"/>
+            <field name="domain_force">[('business_category_id.code', '=', 'finance.deduction.bill')]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_project_user_interfund_movement_fact" model="ir.rule">
+            <field name="name">SC Project User - interfund facts by project membership</field>
+            <field name="model_id" ref="model_sc_interfund_movement_fact"/>
+            <field name="domain_force">['|','|','|','|','|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True), ('source_project_id.user_id', '=', user.id), ('source_project_id.message_is_follower', '=', True), ('target_project_id.user_id', '=', user.id), ('target_project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_interfund_movement_fact" model="ir.rule">
+            <field name="name">SC Project Manager - interfund facts</field>
+            <field name="model_id" ref="model_sc_interfund_movement_fact"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_project_user_finance_business_fact" model="ir.rule">
+            <field name="name">SC Project User - finance facts by project membership</field>
+            <field name="model_id" ref="model_sc_finance_business_fact"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_finance_business_fact" model="ir.rule">
+            <field name="name">SC Project Manager - finance facts</field>
+            <field name="model_id" ref="model_sc_finance_business_fact"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_project_user_finance_project_counterparty_position" model="ir.rule">
+            <field name="name">SC Project User - counterparty positions by project membership</field>
+            <field name="model_id" ref="model_sc_finance_project_counterparty_position"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+
+        <record id="rule_sc_project_manager_finance_project_counterparty_position" model="ir.rule">
+            <field name="name">SC Project Manager - counterparty positions</field>
+            <field name="model_id" ref="model_sc_finance_project_counterparty_position"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+
         <record id="rule_sc_project_cost_ledger_company" model="ir.rule">
             <field name="name">SC Project Cost Ledger - allowed company</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
@@ -2714,6 +2845,195 @@
             <field name="model_id" ref="model_project_cost_plan_node"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_tender_opportunity_company" model="ir.rule">
+            <field name="name">Tender opportunity: allowed companies</field>
+            <field name="model_id" ref="model_tender_opportunity"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_tender_document_company" model="ir.rule">
+            <field name="name">Tender document: allowed companies</field>
+            <field name="model_id" ref="model_tender_document"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_quality_acceptance_company" model="ir.rule">
+            <field name="name">Quality acceptance: allowed companies</field>
+            <field name="model_id" ref="model_sc_quality_acceptance"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_labor_worker_company" model="ir.rule">
+            <field name="name">Labor worker: allowed companies</field>
+            <field name="model_id" ref="model_sc_labor_worker"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_labor_deduction_company" model="ir.rule">
+            <field name="name">Labor deduction: allowed companies</field>
+            <field name="model_id" ref="model_sc_labor_deduction"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_site_variation_company" model="ir.rule">
+            <field name="name">Site variation: allowed companies</field>
+            <field name="model_id" ref="model_sc_site_variation"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_contract_change_company" model="ir.rule">
+            <field name="name">Contract change: allowed companies</field>
+            <field name="model_id" ref="model_sc_contract_change"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_material_supplier_return_company" model="ir.rule">
+            <field name="name">Material supplier return: allowed companies</field>
+            <field name="model_id" ref="model_sc_material_supplier_return"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_material_supplier_return_line_company" model="ir.rule">
+            <field name="name">Material supplier return line: allowed companies</field>
+            <field name="model_id" ref="model_sc_material_supplier_return_line"/>
+            <field name="domain_force">['|', ('return_id.company_id', '=', False), ('return_id.company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_material_read_supplier_return" model="ir.rule">
+            <field name="name">SC Material Read - supplier return by project member</field>
+            <field name="model_id" ref="model_sc_material_supplier_return"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_material_read'))]"/>
+        </record>
+        <record id="rule_sc_material_user_supplier_return" model="ir.rule">
+            <field name="name">SC Material User - supplier return own or project member</field>
+            <field name="model_id" ref="model_sc_material_supplier_return"/>
+            <field name="domain_force">['|','|', ('create_uid', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_material_user'))]"/>
+        </record>
+        <record id="rule_sc_material_manager_supplier_return" model="ir.rule">
+            <field name="name">SC Material Manager - supplier return ALL</field>
+            <field name="model_id" ref="model_sc_material_supplier_return"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_material_manager'))]"/>
+        </record>
+        <record id="rule_sc_material_read_supplier_return_line" model="ir.rule">
+            <field name="name">SC Material Read - supplier return line by project member</field>
+            <field name="model_id" ref="model_sc_material_supplier_return_line"/>
+            <field name="domain_force">['|', ('return_id.project_id.user_id', '=', user.id), ('return_id.project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_material_read'))]"/>
+        </record>
+        <record id="rule_sc_material_user_supplier_return_line" model="ir.rule">
+            <field name="name">SC Material User - supplier return line own or project member</field>
+            <field name="model_id" ref="model_sc_material_supplier_return_line"/>
+            <field name="domain_force">['|','|', ('return_id.create_uid', '=', user.id), ('return_id.project_id.user_id', '=', user.id), ('return_id.project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_material_user'))]"/>
+        </record>
+        <record id="rule_sc_material_manager_supplier_return_line" model="ir.rule">
+            <field name="name">SC Material Manager - supplier return line ALL</field>
+            <field name="model_id" ref="model_sc_material_supplier_return_line"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_material_manager'))]"/>
+        </record>
+
+        <record id="rule_sc_business_initiator_hr_payroll_document" model="ir.rule">
+            <field name="name">SC Business Initiator - payroll own documents</field>
+            <field name="model_id" ref="model_sc_hr_payroll_document"/>
+            <field name="domain_force">[('requester_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_initiator'))]"/>
+        </record>
+        <record id="rule_sc_business_config_hr_payroll_document" model="ir.rule">
+            <field name="name">SC Business Config - payroll ALL</field>
+            <field name="model_id" ref="model_sc_hr_payroll_document"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
+        </record>
+        <record id="rule_sc_project_user_hr_payroll_document" model="ir.rule">
+            <field name="name">SC Project User - project payroll own or project member</field>
+            <field name="model_id" ref="model_sc_hr_payroll_document"/>
+            <field name="domain_force">[('project_id', '!=', False), '|', '|', ('requester_id', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+        <record id="rule_sc_project_manager_hr_payroll_document" model="ir.rule">
+            <field name="name">SC Project Manager - project payroll ALL</field>
+            <field name="model_id" ref="model_sc_hr_payroll_document"/>
+            <field name="domain_force">[('project_id', '!=', False)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+        <record id="rule_sc_project_user_hr_salary_payment" model="ir.rule">
+            <field name="name">SC Project User - salary payment by project member</field>
+            <field name="model_id" ref="model_sc_hr_salary_payment"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_is_follower', '=', True)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user'))]"/>
+        </record>
+        <record id="rule_sc_project_manager_hr_salary_payment" model="ir.rule">
+            <field name="name">SC Project Manager - salary payment ALL</field>
+            <field name="model_id" ref="model_sc_hr_salary_payment"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
+        </record>
+        <record id="rule_sc_super_admin_hr_salary_payment" model="ir.rule">
+            <field name="name">SC Super Admin - salary payment ALL</field>
+            <field name="model_id" ref="model_sc_hr_salary_payment"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_super_admin'))]"/>
+        </record>
+        <record id="rule_sc_hr_payroll_document_company" model="ir.rule">
+            <field name="name">Payroll document: allowed companies</field>
+            <field name="model_id" ref="model_sc_hr_payroll_document"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_hr_salary_payment_company" model="ir.rule">
+            <field name="name">Salary payment: allowed companies</field>
+            <field name="model_id" ref="model_sc_hr_salary_payment"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_ir_sequence_sc_product_configurable" model="ir.rule">
+            <field name="name">行业配置管理员仅维护产品业务编码规则</field>
+            <field name="model_id" ref="base.model_ir_sequence"/>
+            <field name="domain_force">[('sc_product_configurable', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_config_admin'))]"/>
+            <field name="perm_read" eval="True"/><field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_hr_job_sc_business_config_company" model="ir.rule">
+            <field name="name">岗位管理仅限允许公司</field><field name="model_id" ref="hr.model_hr_job"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
+            <field name="perm_read" eval="True"/><field name="perm_write" eval="True"/><field name="perm_create" eval="True"/><field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_sc_office_asset_company" model="ir.rule">
+            <field name="name">办公资产仅限允许公司</field><field name="model_id" ref="model_sc_office_asset"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
+        </record>
+        <record id="rule_sc_product_mail_notification_recipient" model="ir.rule">
+            <field name="name">消息通知仅限当前收件人</field><field name="model_id" ref="mail.model_mail_notification"/>
+            <field name="domain_force">[('res_partner_id', '=', user.partner_id.id)]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]"/>
+            <field name="perm_read" eval="True"/><field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_sc_tax_filing_company" model="ir.rule">
+            <field name="name">税务申报仅限允许公司</field><field name="model_id" ref="model_sc_tax_filing"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_sc_labor_subcontract_report_company" model="ir.rule">
+            <field name="name">劳务分包报表仅限允许公司</field><field name="model_id" ref="model_sc_labor_subcontract_report"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
 
     </data>

@@ -86,11 +86,16 @@ def main() -> int:
         print(f" - missing source mix report: {source_mix_report_path.relative_to(ROOT).as_posix()}")
         return 1
 
+    source_errors = source_report.get("errors") if isinstance(source_report.get("errors"), list) else []
+    source_ok = source_report.get("ok") is True and not source_errors
+
     summary = _as_dict(source_report.get("summary"))
     counts = _as_dict(summary.get("source_kind_counts"))
     ratios = _as_dict(summary.get("source_kind_ratios"))
 
     scene_count = _safe_int(summary.get("scene_count"), 0)
+    source_thresholds = _as_dict(source_report.get("thresholds"))
+    min_scene_count = max(1, _safe_int(source_thresholds.get("min_scene_count"), 1))
     runtime_fallback_count = _safe_int(counts.get("runtime_fallback"), 0)
     runtime_minimal_count = _safe_int(counts.get("runtime_minimal"), 0)
     runtime_fallback_ratio = _safe_float(summary.get("runtime_fallback_ratio"), _safe_float(ratios.get("runtime_fallback"), 0.0))
@@ -109,6 +114,10 @@ def main() -> int:
     minimal_growth = runtime_minimal_count - prev_minimal
 
     errors: list[str] = []
+    if not source_ok:
+        errors.append("source mix report is not a passing evidence source")
+    if scene_count < min_scene_count:
+        errors.append(f"scene_count below evidence threshold: {scene_count} < {min_scene_count}")
     if runtime_fallback_ratio > max_runtime_fallback_ratio:
         errors.append(
             f"runtime_fallback_ratio {runtime_fallback_ratio:.4f} > {max_runtime_fallback_ratio:.4f}"
@@ -138,7 +147,8 @@ def main() -> int:
         "minimal_growth": minimal_growth,
         "source_report": source_mix_report_path.relative_to(ROOT).as_posix(),
     }
-    _write(state_path, json.dumps(state_payload, ensure_ascii=False, indent=2))
+    if not errors:
+        _write(state_path, json.dumps(state_payload, ensure_ascii=False, indent=2))
 
     report = {
         "ok": len(errors) == 0,
@@ -150,6 +160,7 @@ def main() -> int:
             "max_fallback_scene_growth_per_run": max_fallback_scene_growth_per_run,
             "max_minimal_scene_growth_per_run": max_minimal_scene_growth_per_run,
             "enforce_non_increasing": enforce_non_increasing,
+            "min_scene_count": min_scene_count,
         },
         "sources": {
             "baseline": BASELINE_PATH.relative_to(ROOT).as_posix(),
@@ -189,4 +200,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

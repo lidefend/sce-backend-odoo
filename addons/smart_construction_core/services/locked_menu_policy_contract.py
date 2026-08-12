@@ -19,12 +19,15 @@ BASELINE_CHECKSUM_FILE = f"{BASELINE_FILE}.sha256"
 BASELINE_SCHEMA = "formal_business_product_menu_policy.v1"
 IMAGE_CONTRACT_ROOT = Path("/opt/sce-product/contracts")
 REQUIRED_PRODUCT_KEYS = ("construction.standard", "construction.preview")
-CONFIG_CENTER_GROUP_LABEL = "配置中心"
-LEGACY_CONFIG_GROUP_LABELS = {"基础设置", "系统设置", "业务配置"}
+CONFIG_CENTER_GROUP_LABEL = "产品配置"
+LEGACY_CONFIG_GROUP_LABELS = {"配置中心", "基础设置", "系统设置", "业务配置"}
 PRODUCT_NAVIGATION_V2_GROUP_ALIASES = {
-    "基础资料": "组织行政",
-    "人事行政": "组织行政",
-    "资料证照": "组织行政",
+    "物资与分包": "项目中心",
+    "施工管理": "项目中心",
+    "组织行政": "行政中心",
+    "基础资料": "行政中心",
+    "人事行政": "行政中心",
+    "资料证照": "行政中心",
 }
 
 # These locked entries are intentionally delivered as action-only navigation

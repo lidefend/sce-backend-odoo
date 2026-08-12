@@ -27,16 +27,15 @@ CHECK_LOGIN = "wutao"
 FORBIDDEN_USER_VISIBLE_GROUPS = {"用户数据验收", "用户核对菜单", "产品发布面", "正式业务菜单"}
 EXPECTED_GROUP_COUNTS = {
     "工作台": 2,
-    "项目中心": 8,
+    "项目中心": 53,
     "合同中心": 7,
-    "成本中心": 8,
-    "物资与分包": 24,
-    "施工管理": 19,
-    "财务中心": 44,
+    "成本中心": 15,
+    "财务中心": 42,
     "税务中心": 8,
+    "会计账务中心": 6,
     "报表中心": 14,
-    "组织行政": 15,
-    "配置中心": 1,
+    "行政中心": 18,
+    "产品配置": 4,
 }
 FINANCE_INTERFUND_ANALYSIS_PRODUCT_MENU_XMLIDS = {
     "smart_construction_core.menu_sc_finance_project_capital_position",

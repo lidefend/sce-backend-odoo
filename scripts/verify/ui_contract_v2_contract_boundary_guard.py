@@ -10,6 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HANDLER = ROOT / "addons/smart_core/handlers/ui_contract_v2.py"
+PROJECTION = ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py"
+ADAPTERS = ROOT / "addons/smart_core/handlers/ui_contract_v2_adapters.py"
 ASSEMBLER = ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py"
 
 ALLOWED_FINAL_CONTRACT_WRITERS = {
@@ -136,6 +138,8 @@ def _contract_replacement_calls(tree: ast.AST) -> list[ast.Call]:
 
 def main() -> int:
     source = HANDLER.read_text(encoding="utf-8")
+    projection_source = PROJECTION.read_text(encoding="utf-8")
+    adapter_source = ADAPTERS.read_text(encoding="utf-8")
     tree = ast.parse(source)
     parents = _parent_map(tree)
     violations: list[str] = []
@@ -193,9 +197,9 @@ def main() -> int:
         violations.append(
             f"{ASSEMBLER.relative_to(ROOT)}: business_operation_profile, visible_fields and field_groups must project to formal V2 dataMeta"
         )
-    if "\"formal_projection\": True" not in assembler_source or "\"formal_projection\": True" not in source:
+    if "\"formal_projection\": True" not in assembler_source or "\"formal_projection\": True" not in adapter_source:
         violations.append(
-            f"{ASSEMBLER.relative_to(ROOT)} / {HANDLER.relative_to(ROOT)}: formal V2 projections must mark sourceAuthority.formal_projection"
+            f"{ASSEMBLER.relative_to(ROOT)} / {ADAPTERS.relative_to(ROOT)}: formal V2 projections must mark sourceAuthority.formal_projection"
         )
     if "\"deletePolicy\": {}" not in assembler_source or "\"surfacePolicies\": {}" not in assembler_source:
         violations.append(
@@ -210,22 +214,29 @@ def main() -> int:
         "contract[\"surface_policies\"]",
         "contract[\"list_profile\"]",
     ):
-        if re.search(rf"(?<![A-Za-z0-9_]){re.escape(forbidden)}", source):
+        if re.search(rf"(?<![A-Za-z0-9_]){re.escape(forbidden)}", source + projection_source):
             violations.append(
-                f"{HANDLER.relative_to(ROOT)}: final V2 contract must not emit root compatibility field {forbidden}"
+                f"{HANDLER.relative_to(ROOT)} / {PROJECTION.relative_to(ROOT)}: final V2 contract must not emit root compatibility field {forbidden}"
             )
-    if "action_contract[\"deletePolicy\"] = self._v2_policy_projection(" not in source:
+    if "action_contract[\"deletePolicy\"] = _adapters.v2_policy_projection(" not in projection_source:
         violations.append(
-            f"{HANDLER.relative_to(ROOT)}: delete_policy source field must project to actionContract.deletePolicy"
+            f"{PROJECTION.relative_to(ROOT)}: delete_policy source field must project to actionContract.deletePolicy"
         )
-    if "action_contract[\"surfacePolicies\"] = self._v2_policy_projection(" not in source:
+    if "action_contract[\"surfacePolicies\"] = _adapters.v2_policy_projection(" not in projection_source:
         violations.append(
-            f"{HANDLER.relative_to(ROOT)}: surface_policies source field must project to actionContract.surfacePolicies"
+            f"{PROJECTION.relative_to(ROOT)}: surface_policies source field must project to actionContract.surfacePolicies"
         )
-    if "layout_contract[\"listProfile\"] = self._v2_policy_projection(" not in source:
+    if "layout_contract[\"listProfile\"] = existing_profile" not in projection_source:
         violations.append(
-            f"{HANDLER.relative_to(ROOT)}: list_profile source field must project to layoutContract.listProfile"
+            f"{PROJECTION.relative_to(ROOT)}: list_profile source field must project to layoutContract.listProfile"
         )
+    for token in (
+        "_projection.project_v2_source_policies(",
+        "_projection.set_v2_container_tree(",
+        "_projection.set_v2_data_meta(",
+    ):
+        if token not in source:
+            violations.append(f"{HANDLER.relative_to(ROOT)}: handler must delegate V2 projection through {token}")
     runtime_path = ROOT / "addons/smart_core/core/unified_page_contract_v2_runtime.py"
     runtime_source = runtime_path.read_text(encoding="utf-8")
     if "def find_data_source_authority_issues(" not in runtime_source or "issues.extend(find_data_source_authority_issues(data))" not in runtime_source:

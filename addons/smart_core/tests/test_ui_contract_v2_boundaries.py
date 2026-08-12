@@ -162,6 +162,105 @@ class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
 
+    def test_group_entitlement_is_resolved_and_requirement_is_not_leaked(self):
+        user = types.SimpleNamespace(has_group=lambda xmlid: xmlid == "base.group_system")
+        handler = self.module.UiContractV2Handler(env=types.SimpleNamespace(user=user))
+        source = {
+            "action_policies": {
+                "approve": {
+                    "enabled_when": {
+                        "required_groups": ["base.group_system"],
+                        "profiles": ["edit"],
+                    }
+                }
+            }
+        }
+
+        handler._project_action_group_entitlements(source)
+
+        policy = source["action_policies"]["approve"]
+        self.assertTrue(policy["enabled"])
+        self.assertTrue(policy["entitlement_evaluated"])
+        self.assertNotIn("required_groups", policy["enabled_when"])
+
+    def test_group_entitlement_fails_closed(self):
+        user = types.SimpleNamespace(has_group=lambda _xmlid: False)
+        handler = self.module.UiContractV2Handler(env=types.SimpleNamespace(user=user))
+        source = {
+            "action_policies": {
+                "approve": {"enabled_when": {"required_groups": ["base.group_system"]}}
+            }
+        }
+
+        handler._project_action_group_entitlements(source)
+
+        policy = source["action_policies"]["approve"]
+        self.assertFalse(policy["enabled"])
+        self.assertEqual(policy["reason_code"], "ACTION_GROUP_ACCESS_DENIED")
+        self.assertNotIn("required_groups", policy["enabled_when"])
+
+    def test_scene_action_binding_accepts_authoritative_target(self):
+        self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
+            "scenes": [{"key": "contract.income", "target": {"action_id": 786}}]
+        }
+        handler = self.module.UiContractV2Handler(env=object())
+
+        result = handler._validate_scene_action_binding(
+            {"scene_key": "contract.income", "action_id": 786}
+        )
+
+        self.assertIsNone(result)
+
+    def test_scene_action_binding_accepts_semantic_hint_without_registry_authority(self):
+        self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
+            "scenes": [{"key": "workspace.home", "target": {"action_id": 1}}]
+        }
+        handler = self.module.UiContractV2Handler(env=object())
+
+        result = handler._validate_scene_action_binding(
+            {"scene_key": "projects.list", "action_id": 519}
+        )
+
+        self.assertIsNone(result)
+
+    def test_scene_action_binding_accepts_route_only_scene(self):
+        self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
+            "scenes": [{"key": "projects.list", "target": {"route": "/s/projects.list"}}]
+        }
+        handler = self.module.UiContractV2Handler(env=object())
+
+        result = handler._validate_scene_action_binding(
+            {"scene_key": "projects.list", "action_id": 519}
+        )
+
+        self.assertIsNone(result)
+
+    def test_scene_action_binding_rejects_missing_action_for_authoritative_target(self):
+        self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
+            "scenes": [{"key": "contract.income", "target": {"action_id": 786}}]
+        }
+        handler = self.module.UiContractV2Handler(env=object())
+
+        result = handler._validate_scene_action_binding({"scene_key": "contract.income"})
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.code, 409)
+        self.assertIn("SCENE_ACTION_BINDING_INVALID", result.error["message"])
+
+    def test_scene_action_binding_rejects_parallel_action(self):
+        self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
+            "scenes": [{"key": "contract.income", "target": {"action_id": 786}}]
+        }
+        handler = self.module.UiContractV2Handler(env=object())
+
+        result = handler._validate_scene_action_binding(
+            {"scene_key": "contract.income", "action_id": 999}
+        )
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.code, 409)
+        self.assertIn("SCENE_ACTION_BINDING_INVALID", result.error["message"])
+
     def test_rejects_invalid_max_widgets(self):
         handler = self.module.UiContractV2Handler(env=object())
 

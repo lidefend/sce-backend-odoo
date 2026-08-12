@@ -18,16 +18,16 @@
         <field name="name">方单</field>
         <field name="res_model">sc.labor.usage</field>
         <field name="view_mode">tree,form</field>
-        <field name="domain">[]</field>
-        <field name="context">{'search_default_group_project': 1}</field>
+        <field name="domain">[('usage_type', '=', 'ticket')]</field>
+        <field name="context">{'default_usage_type': 'ticket', 'search_default_group_project': 1}</field>
     </record>
 
     <record id="action_sc_labor_usage_casual" model="ir.actions.act_window">
         <field name="name">零星用工</field>
         <field name="res_model">sc.labor.usage</field>
         <field name="view_mode">tree,form</field>
-        <field name="domain">[]</field>
-        <field name="context">{'search_default_group_project': 1}</field>
+        <field name="domain">[('usage_type', '=', 'casual')]</field>
+        <field name="context">{'default_usage_type': 'casual', 'search_default_group_project': 1}</field>
     </record>
 
     <record id="action_sc_labor_request" model="ir.actions.act_window">
@@ -332,12 +332,17 @@
                 <field name="name"/>
                 <field name="project_id"/>
                 <field name="usage_date"/>
+                <field name="usage_type"/>
                 <field name="labor_team"/>
                 <field name="contractor_id"/>
                 <field name="work_content"/>
+                <field name="work_type"/>
+                <field name="construction_part"/>
                 <field name="worker_qty" sum="用工人数合计"/>
                 <field name="work_hours"/>
-                <field name="currency_id" invisible="1"/>
+                <field name="price_unit"/>
+                <field name="amount_total" sum="用工金额合计"/>
+                <field name="settlement_state"/>
                 <field name="foreman_name"/>
                 <field name="recorder_id"/>
                 <field name="state"/>
@@ -363,6 +368,7 @@
                             <field name="name"/>
                             <field name="project_id"/>
                             <field name="usage_date"/>
+                            <field name="usage_type"/>
                             <field name="labor_team"/>
                         </group>
                         <group>
@@ -371,11 +377,18 @@
                             <field name="recorder_id"/>
                             <field name="worker_qty"/>
                             <field name="work_hours"/>
-                            <field name="currency_id" invisible="1"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                            <field name="price_unit"/>
+                            <field name="amount_total" readonly="1"/>
+                            <field name="settlement_state"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="作业内容">
+                            <group>
+                                <field name="work_type"/>
+                                <field name="construction_part"/>
+                            </group>
                             <field name="work_content" nolabel="1"/>
                         </page>
                         <page string="用工说明">
@@ -409,13 +422,13 @@
                 <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="已提交" name="submitted" domain="[('state', '=', 'submitted')]"/>
                 <filter string="已确认" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
-                <filter string="历史已结算" name="legacy_settled" domain="[('legacy_settlement_state', '=', 'settled')]"/>
-                <filter string="历史未结算" name="legacy_unsettled" domain="[('legacy_settlement_state', '=', 'unsettled')]"/>
+                <filter string="已结算" name="settled" domain="[('settlement_state', '=', 'settled')]"/>
+                <filter string="未结算" name="unsettled" domain="[('settlement_state', '=', 'unsettled')]"/>
                 <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
                 <filter string="按日期" name="group_usage_date" context="{'group_by': 'usage_date'}"/>
                 <filter string="按班组" name="group_labor_team" context="{'group_by': 'labor_team'}"/>
                 <filter string="按劳务单位" name="group_contractor" context="{'group_by': 'contractor_id'}"/>
-                <filter string="按旧结算状态" name="group_legacy_settlement_state" context="{'group_by': 'legacy_settlement_state'}"/>
+                <filter string="按结算状态" name="group_settlement_state" context="{'group_by': 'settlement_state'}"/>
                 <filter string="按状态" name="group_state" context="{'group_by': 'state'}"/>
             </search>
         </field>

@@ -17,6 +17,7 @@ class ScFinanceBusinessFact(models.Model):
     }
 
     _BUSINESS_ENTRY_ACTION_BY_FACT_TYPE = {
+        "deduction_bill": "smart_construction_core.action_sc_expense_claim_deduction_bill",
         "deduction_paid": "smart_construction_core.action_sc_expense_claim_deduction_paid",
         "deduction_refund": "smart_construction_core.action_sc_expense_claim_deduction_paid_refund",
         "tax_deducted": "smart_construction_core.action_sc_tax_deduction_registration_user",
@@ -30,6 +31,7 @@ class ScFinanceBusinessFact(models.Model):
     business_domain = fields.Selection(
         [
             ("arrival_settlement", "到款确认"),
+            ("deduction_registration", "扣款登记"),
             ("deduction_clearing", "扣款实缴/退回"),
             ("tax_deduction", "抵扣登记"),
             ("self_funding", "自筹收入/退回"),
@@ -42,6 +44,7 @@ class ScFinanceBusinessFact(models.Model):
     fact_type = fields.Selection(
         [
             ("arrival_gross", "到款确认"),
+            ("deduction_bill", "扣款登记"),
             ("deduction_paid", "扣款实缴"),
             ("deduction_refund", "扣款退回"),
             ("tax_deducted", "税务抵扣"),
@@ -60,6 +63,7 @@ class ScFinanceBusinessFact(models.Model):
             ("canonical", "正式余额"),
             ("clearing_component", "清分组成"),
             ("noncash_tax", "非现金税务事实"),
+            ("noncash_deduction", "非现金扣款责任事实"),
             ("visible_reference", "可见追溯参考"),
             ("policy_required", "待口径确认"),
         ],
@@ -308,6 +312,43 @@ class ScFinanceBusinessFact(models.Model):
                     CROSS JOIN default_company dc
                     LEFT JOIN res_company c ON c.id = p.company_id
                 ),
+                deduction_bill AS (
+                    SELECT
+                        190000000 + c.id AS id,
+                        COALESCE(c.name, c.legacy_document_no, '扣款登记') AS display_name,
+                        'deduction_registration' AS business_domain,
+                        'deduction_bill' AS fact_type,
+                        'noncash_deduction' AS balance_policy,
+                        'canonical noncash deduction responsibility claim' AS classification_reason,
+                        'sc.expense.claim' AS source_model,
+                        c.id AS source_res_id,
+                        c.name AS source_record_name,
+                        COALESCE(c.legacy_document_no, c.name) AS source_document_no,
+                        '公司&项目扣款' AS source_menu_hint,
+                        c.date_claim AS document_date,
+                        c.company_id,
+                        c.currency_id,
+                        COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS amount,
+                        0.0 AS balance_effect,
+                        0.0 AS cash_in_amount,
+                        0.0 AS cash_out_amount,
+                        COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS deduction_amount,
+                        0.0 AS paid_amount,
+                        0.0 AS tax_amount,
+                        c.project_id,
+                        c.partner_id,
+                        COALESCE(rp.name, c.payee, c.applicant_name) AS partner_name,
+                        c.state,
+                        c.legacy_source_model,
+                        c.legacy_source_table,
+                        c.legacy_record_id,
+                        COALESCE(c.note, c.summary) AS source_note
+                    FROM sc_expense_claim c
+                    LEFT JOIN res_partner rp ON rp.id = c.partner_id
+                    LEFT JOIN sc_business_category bc ON bc.id = c.business_category_id
+                    WHERE c.active IS TRUE
+                      AND bc.code = 'finance.deduction.bill'
+                ),
                 deduction_paid AS (
                     SELECT
                         200000000 + c.id AS id,
@@ -488,7 +529,8 @@ class ScFinanceBusinessFact(models.Model):
                     LEFT JOIN project_company pc ON pc.project_id = b.project_id
                     LEFT JOIN res_partner rp ON rp.id = b.owner_id
                 )
-                SELECT * FROM deduction_paid
+                SELECT * FROM deduction_bill
+                UNION ALL SELECT * FROM deduction_paid
                 UNION ALL SELECT * FROM deduction_refund
                 UNION ALL SELECT * FROM tax_deduction
                 UNION ALL SELECT * FROM formal_self_funding

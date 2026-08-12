@@ -161,6 +161,7 @@ def _risk_for_entry(entry: dict, structure: dict | None, productized_contract: d
     evidence = []
     suggestions = []
     form_count = entry["form_field_count"]
+    productized_contract = productized_contract or {}
     is_productized = bool(productized_contract)
     if is_productized:
         evidence.append("productized_entry_semantic_surface")

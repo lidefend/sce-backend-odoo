@@ -16,13 +16,17 @@ case "${profile}" in
     expected_odoo_volume="sc_dev_odoo_data"
     ;;
   clean)
-    expected_project="sc-local-clean"
-    expected_db="sc_clean"
-    expected_filter='^sc_clean$'
-    expected_db_volume="sc_local_clean_db_data"
-    expected_redis_volume="sc_local_clean_redis_data"
-    expected_odoo_volume="sc_local_clean_odoo_data"
-    expected_product_module="sc_norm_engine"
+    if [[ "${ISOLATED_REHEARSAL_DATABASE:-0}" != "1" ]]; then
+      echo "[local.env.health] FAIL clean profile is not marked as an isolated rehearsal" >&2
+      exit 2
+    fi
+    expected_project="${COMPOSE_PROJECT_NAME}"
+    expected_db="${DB_NAME}"
+    expected_filter="^${DB_NAME}$"
+    expected_db_volume="${DB_DATA:-}"
+    expected_redis_volume="${REDIS_DATA:-}"
+    expected_odoo_volume="${ODOO_DATA:-}"
+    expected_product_modules="${LOCAL_CLEAN_HEALTH_MODULES:-${LOCAL_CLEAN_MODULES:-sc_norm_engine}}"
     ;;
   *)
     echo "usage: $0 persistent|clean" >&2
@@ -72,9 +76,16 @@ check_equal odoo_health "${odoo_state}" healthy
 check_equal runtime_database "${db_name}" "${expected_db}"
 check_equal base_module "${base_state}" installed
 check_equal rendered_dbfilter "${rendered_filter}" "${expected_filter}"
-if [[ -n "${expected_product_module:-}" ]]; then
-  product_state="$(docker exec -e PGPASSWORD="${DB_PASSWORD}" "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc "SELECT state FROM ir_module_module WHERE name='${expected_product_module}'")"
-  check_equal product_module "${product_state}" installed
+if [[ -n "${expected_product_modules:-}" ]]; then
+  IFS=',' read -r -a product_modules <<<"${expected_product_modules}"
+  for expected_product_module in "${product_modules[@]}"; do
+    expected_product_module="$(echo "${expected_product_module}" | xargs)"
+    [[ -n "${expected_product_module}" ]] || continue
+    product_state="$(docker exec -e PGPASSWORD="${DB_PASSWORD}" "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc "SELECT state FROM ir_module_module WHERE name='${expected_product_module}'")"
+    check_equal "product_module_${expected_product_module}" "${product_state}" installed
+  done
+fi
+if [[ ",${expected_product_modules:-}," == *",sc_norm_engine,"* ]]; then
   clean_counts="$(docker exec -e PGPASSWORD="${DB_PASSWORD}" "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc "SELECT (SELECT count(*) FROM project_project) || ',' || (SELECT count(*) FROM sc_norm_specialty) || ',' || (SELECT count(*) FROM sc_norm_chapter) || ',' || (SELECT count(*) FROM sc_norm_item)")"
   check_equal clean_business_counts "${clean_counts}" '0,0,0,0'
 fi

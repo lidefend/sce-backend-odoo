@@ -248,8 +248,8 @@ def main() -> int:
     }
     if set(contract.keys()) != expected_keys:
         _fail(errors, "v2 contract top-level keys drifted")
-    if contract.get("pageInfo", {}).get("contractVersion") != "2.1.0":
-        _fail(errors, "v2 contract version must stay 2.1.0")
+    if contract.get("pageInfo", {}).get("contractVersion") != "2.2.0":
+        _fail(errors, "v2 contract version must stay 2.2.0")
     if contract.get("pageInfo", {}).get("clientType") != "harmony_h5":
         _fail(errors, "harmony_h5 client type must survive v2 assembly and trimming")
     if contract.get("layoutContract", {}).get("adaptMode") != "mobile":

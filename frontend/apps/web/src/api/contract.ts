@@ -9,6 +9,7 @@ import { currentContextEpoch } from '../app/contextEpoch';
 import { useSessionStore } from '../stores/session';
 
 type LoadActionContractOptions = {
+  sceneKey?: string | null;
   viewId?: number | null;
   menuId?: number | null;
   viewType?: 'form' | 'tree' | 'list' | 'kanban' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | null;
@@ -121,6 +122,8 @@ function rethrowContractError(err: unknown, context: { op: 'action_open' | 'mode
 
 function buildActionContractParams(actionId: number, options?: LoadActionContractOptions) {
   const params: Record<string, unknown> = { op: 'action_open', action_id: actionId };
+  const sceneKey = String(options?.sceneKey || '').trim();
+  if (sceneKey) params.scene_key = sceneKey;
   const menuId = Number(options?.menuId || 0);
   if (Number.isFinite(menuId) && menuId > 0) {
     params.menu_id = menuId;
@@ -190,6 +193,8 @@ function buildModelContractParams(model: string, options?: LoadModelContractOpti
     model: String(model || '').trim(),
     view_type: options?.viewType || 'form',
   };
+  const sceneKey = String(options?.sceneKey || '').trim();
+  if (sceneKey) params.scene_key = sceneKey;
   const actionId = Number(options?.actionId || 0);
   if (Number.isFinite(actionId) && actionId > 0) {
     params.action_id = actionId;

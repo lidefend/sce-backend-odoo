@@ -1,6 +1,6 @@
 {
-  "registryVersion": "2.1.0",
-  "normativeStatus": "draft",
+  "registryVersion": "2.2.0",
+  "normativeStatus": "stable",
   "clientType": {
     "stable": [
       "web_pc",
@@ -17,7 +17,12 @@
     "table",
     "kanban",
     "tree",
+    "pivot",
+    "graph",
+    "calendar",
     "gantt",
+    "activity",
+    "dashboard",
     "combine"
   ],
   "layoutType": [
@@ -25,7 +30,12 @@
     "table",
     "kanban",
     "tree",
+    "pivot",
+    "graph",
+    "calendar",
     "gantt",
+    "activity",
+    "dashboard",
     "combine"
   ],
   "renderMode": [

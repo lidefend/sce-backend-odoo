@@ -98,11 +98,12 @@ class MenuService:
             if not isinstance(node, dict) or not cls._role_surface_menu_allowed(node, role_surface):
                 return None
             xmlid = cls._node_menu_xmlid(node)
-            # Native menu identity is authoritative. Missing XML-ID cannot be
-            # granted by label, route, action or model coincidence.
-            if not xmlid:
-                return None
             children = [kept for child in node.get("children") or [] if (kept := walk(child))]
+            # A cleaned adapter may emit a synthetic grouping ancestor without
+            # an XML-ID.  It can carry already-authorized children, but can
+            # never become an independently authorized route leaf.
+            if not xmlid and not children:
+                return None
             if not discovers_capabilities and xmlid not in exposed and not children:
                 return None
             candidate = dict(node)
@@ -271,6 +272,37 @@ class MenuService:
         except Exception:
             return False
 
+    def _policy_target_is_runtime_allowed(self, menu: dict, allowed_operation: str = "read") -> bool:
+        """Authorize a released target without treating its menu carrier as product policy."""
+        if self.env is None or not isinstance(menu, dict):
+            return False
+        menu_xmlid = str(menu.get("menu_xmlid") or "").strip()
+        menu_record = self.env.ref(menu_xmlid, raise_if_not_found=False) if menu_xmlid else None
+        if menu_record and str(getattr(menu_record, "_name", "") or "") == "ir.ui.menu":
+            # Active menus must still be authorized by the request user's
+            # native visible-menu facts, including their ancestor chain.
+            if bool(getattr(menu_record, "active", True)):
+                return False
+            menu_groups = getattr(menu_record.sudo(), "groups_id", self.env["res.groups"])
+            if menu_groups and not bool(menu_groups & self.env.user.groups_id):
+                return False
+        else:
+            menu_record = None
+
+        action_xmlid = str(menu.get("action_xmlid") or "").strip()
+        action = self.env.ref(action_xmlid, raise_if_not_found=False) if action_xmlid else None
+        if not action and menu_record:
+            action = menu_record.sudo().action
+        action_id = self._positive_int(menu.get("action_id"))
+        if not action and action_id:
+            action = self.env["ir.actions.actions"].sudo().browse(action_id).exists()
+        if not action:
+            return False
+        action_groups = getattr(action.sudo(), "groups_id", self.env["res.groups"])
+        if action_groups and not bool(action_groups & self.env.user.groups_id):
+            return False
+        return self._action_is_runtime_allowed(action, allowed_operation)
+
     def _route_entry_from_menu(self, row: dict, *, route_kind: str, source: str) -> dict | None:
         if not isinstance(row, dict) or not row.get("action_exists"):
             return None
@@ -321,7 +353,9 @@ class MenuService:
             return None
         menu_xmlid = str(row.get("menu_xmlid") or "").strip()
         menu = self.env.ref(menu_xmlid, raise_if_not_found=False) if menu_xmlid else None
-        menu_id = int(menu.id) if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" else 0
+        menu_id = self._positive_int(row.get("menu_id")) or (
+            int(menu.id) if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" else 0
+        )
         view_modes = [item.strip() for item in str(action.view_mode or "").split(",") if item.strip()]
         return {
             "action_xmlid": action_xmlid,
@@ -368,19 +402,81 @@ class MenuService:
         }
 
     @staticmethod
+    def _node_route_menu_id(node: dict) -> int:
+        """Return the real Odoo menu carrier id, never a synthetic tree id."""
+        if not isinstance(node, dict):
+            return 0
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        config_ref = (
+            node.get("config_ref") if isinstance(node.get("config_ref"), dict)
+            else meta.get("config_ref") if isinstance(meta.get("config_ref"), dict)
+            else {}
+        )
+        candidates = (
+            node.get("config_menu_id"),
+            meta.get("config_menu_id"),
+            config_ref.get("id") if str(config_ref.get("model") or "ir.ui.menu") == "ir.ui.menu" else 0,
+            0 if bool(node.get("synthetic") or meta.get("synthetic")) else node.get("menu_id"),
+            0 if bool(node.get("synthetic") or meta.get("synthetic")) else meta.get("menu_id"),
+        )
+        for candidate in candidates:
+            try:
+                menu_id = int(candidate or 0)
+            except (TypeError, ValueError):
+                menu_id = 0
+            if menu_id > 0:
+                return menu_id
+        return 0
+
+    @staticmethod
     def _walk_nav_action_refs(nodes: list[dict]):
         for node in nodes or []:
             if not isinstance(node, dict):
                 continue
             meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
             try:
-                menu_id = int(node.get("menu_id") or meta.get("menu_id") or 0)
+                menu_id = MenuService._node_route_menu_id(node)
                 action_id = int(node.get("action_id") or meta.get("action_id") or 0)
             except (TypeError, ValueError):
                 menu_id = action_id = 0
-            if menu_id > 0 and action_id > 0:
+            if action_id > 0:
                 yield menu_id, action_id
             yield from MenuService._walk_nav_action_refs(node.get("children") or [])
+
+    @staticmethod
+    def _walk_nav_action_specs(nodes: list[dict]):
+        for node in nodes or []:
+            if not isinstance(node, dict):
+                continue
+            meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+            try:
+                menu_id = MenuService._node_route_menu_id(node)
+                action_id = int(node.get("action_id") or meta.get("action_id") or 0)
+            except (TypeError, ValueError):
+                menu_id = action_id = 0
+            if action_id > 0:
+                yield {
+                    "menu_id": menu_id,
+                    "menu_xmlid": str(node.get("menu_xmlid") or meta.get("menu_xmlid") or "").strip(),
+                    "action_id": action_id,
+                    "action_xmlid": str(node.get("action_xmlid") or meta.get("action_xmlid") or "").strip(),
+                    "allowed_operation": "read",
+                    "required_capability": str(meta.get("capability_key") or "menu_action_read").strip(),
+                    "context_requirements": {},
+                    "source": "delivery_engine_v1.released_policy_nav",
+                }
+            yield from MenuService._walk_nav_action_specs(node.get("children") or [])
+
+    @staticmethod
+    def _native_route_discovery_blocked(
+        pair: tuple[int, int],
+        *,
+        existing_pairs: set[tuple[int, int]],
+        reserved_pairs: set[tuple[int, int]],
+        denied_action_ids: set[int],
+    ) -> bool:
+        """Keep stable menu identity while preserving action-level denials."""
+        return pair in existing_pairs or pair in reserved_pairs or pair[1] in denied_action_ids
 
     @staticmethod
     def _nav_target_index(nodes: list[dict]) -> dict[tuple[int, int], dict]:
@@ -391,12 +487,12 @@ class MenuService:
             meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
             try:
                 pair = (
-                    int(node.get("menu_id") or meta.get("menu_id") or 0),
+                    MenuService._node_route_menu_id(node),
                     int(node.get("action_id") or meta.get("action_id") or 0),
                 )
             except (TypeError, ValueError):
                 pair = (0, 0)
-            if pair[0] > 0 and pair[1] > 0:
+            if pair[1] > 0:
                 entry_target = (
                     node.get("entry_target") if isinstance(node.get("entry_target"), dict)
                     else meta.get("entry_target") if isinstance(meta.get("entry_target"), dict)
@@ -437,7 +533,7 @@ class MenuService:
                 or ""
             ).strip()
             try:
-                menu_id = int(node.get("menu_id") or meta.get("menu_id") or 0)
+                menu_id = MenuService._node_route_menu_id(node)
                 action_id = int(node.get("action_id") or meta.get("action_id") or 0)
             except (TypeError, ValueError):
                 menu_id = action_id = 0
@@ -541,10 +637,15 @@ class MenuService:
                 for row in facts.flat
                 if isinstance(row, dict)
             }
-            reserved_action_ids = {
-                int(item.get("action_id") or 0)
-                for bucket_name in ("contextual_actions", "admin_actions", "denied_actions")
+            reserved_pairs = {
+                (int(item.get("menu_id") or 0), int(item.get("action_id") or 0))
+                for bucket_name in ("contextual_actions", "admin_actions")
                 for item in buckets[bucket_name]
+                if isinstance(item, dict)
+            }
+            denied_action_ids = {
+                int(item.get("action_id") or 0)
+                for item in buckets["denied_actions"]
                 if isinstance(item, dict)
             }
             existing_pairs = {
@@ -555,7 +656,12 @@ class MenuService:
             }
             for menu_id, action_id in self._walk_nav_action_refs(nav):
                 pair = (menu_id, action_id)
-                if pair in existing_pairs or action_id in reserved_action_ids:
+                if self._native_route_discovery_blocked(
+                    pair,
+                    existing_pairs=existing_pairs,
+                    reserved_pairs=reserved_pairs,
+                    denied_action_ids=denied_action_ids,
+                ):
                     continue
                 entry = self._route_entry_from_menu(
                     visible_by_pair.get(pair),
@@ -565,6 +671,32 @@ class MenuService:
                 if entry:
                     buckets["primary_actions"].append(entry)
                     existing_pairs.add(pair)
+
+        # Released product policy may deliberately project an inactive Odoo
+        # menu, or an action-only page, into the product navigation. Authorize
+        # that exact runtime pair from action/model ACL facts; never revive the
+        # native menu tree as a second product-selection authority.
+        authorized_pairs = {
+            (int(item.get("menu_id") or 0), int(item.get("action_id") or 0))
+            for bucket_name in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
+            for item in buckets[bucket_name]
+            if isinstance(item, dict)
+        }
+        denied_action_ids = {
+            int(item.get("action_id") or 0)
+            for item in buckets["denied_actions"]
+            if isinstance(item, dict)
+        }
+        for spec in self._walk_nav_action_specs(nav if isinstance(nav, list) else []):
+            pair = (int(spec.get("menu_id") or 0), int(spec.get("action_id") or 0))
+            if pair in authorized_pairs or pair[1] in denied_action_ids:
+                continue
+            if not self._policy_target_is_runtime_allowed(spec):
+                continue
+            entry = self._route_entry_from_action_spec(spec, route_kind="PRIMARY_NAV")
+            if entry:
+                buckets["primary_actions"].append(entry)
+                authorized_pairs.add(pair)
 
         nav_targets = self._nav_target_index(nav if isinstance(nav, list) else [])
         for bucket_name in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
@@ -804,11 +936,21 @@ class MenuService:
 
     def _resolve_preview_group_anchor(self, ancestors: list[dict]) -> tuple[str, str, int]:
         skipped_labels = _PREVIEW_GROUP_ANCHOR_SKIPPED_LABELS
+        business_root_xmlid = ""
+        if self.env is not None:
+            business_root_xmlid = str(
+                call_extension_hook_first(self.env, "smart_core_business_root_menu_xmlid", self.env) or ""
+            ).strip().lower()
+
+        def is_root_ancestor(ancestor: dict) -> bool:
+            key = str(ancestor.get("key") or "").strip()
+            xmlid = self._node_menu_xmlid(ancestor)
+            return key.startswith("root:") or bool(business_root_xmlid and xmlid == business_root_xmlid)
+
         for ancestor in ancestors or []:
             if not isinstance(ancestor, dict):
                 continue
-            key = str(ancestor.get("key") or "").strip()
-            if key.startswith("root:"):
+            if is_root_ancestor(ancestor):
                 continue
             label = str(ancestor.get("label") or ancestor.get("title") or ancestor.get("name") or "").strip()
             if label in skipped_labels:
@@ -818,6 +960,8 @@ class MenuService:
                 return f"menu_{menu_id}", label, int(menu_id)
         for ancestor in ancestors or []:
             if not isinstance(ancestor, dict):
+                continue
+            if is_root_ancestor(ancestor):
                 continue
             label = str(ancestor.get("label") or ancestor.get("title") or ancestor.get("name") or "").strip()
             if label in skipped_labels:
@@ -990,7 +1134,7 @@ class MenuService:
         route = str(menu.get("route") or "").strip()
         if route and route in native_index.get("routes", set()):
             return True
-        return False
+        return self._policy_target_is_runtime_allowed(menu)
 
     def _flatten_policy_menus(self, policy: dict) -> list[dict]:
         out = []
@@ -1033,8 +1177,6 @@ class MenuService:
                 action_id = menu.get("action_id")
                 menu_xmlid = str(menu.get("menu_xmlid") or "").strip()
                 native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)
-                native_path_parts = self._policy_menu_path_parts({"visible_menu_path": native_visible_menu_path})
-                native_group_label = native_path_parts[1] if len(native_path_parts) >= 3 else ""
                 if route.startswith("/a/") and scene_key == menu_xmlid:
                     scene_key = ""
                 raw_anchor = scene_key or (str(menu_id) if isinstance(menu_id, int) and menu_id > 0 else str(menu.get("menu_key") or "").strip() or str(index))
@@ -1057,11 +1199,10 @@ class MenuService:
                     "view_modes": menu.get("view_modes") if isinstance(menu.get("view_modes"), list) else [],
                     "sequence": self._positive_int(menu.get("sequence")),
                     "scene_source": "delivery_policy",
-                    "policy_group_key": (
-                        f"native.center.{native_group_label}" if native_group_label else str(group.get("group_key") or "").strip()
-                    ),
-                    "policy_group_label": native_group_label or str(group.get("group_label") or "").strip(),
-                    "visible_menu_path": native_visible_menu_path or str(menu.get("visible_menu_path") or "").strip(),
+                    "policy_group_key": str(group.get("group_key") or "").strip(),
+                    "policy_group_label": str(group.get("group_label") or "").strip(),
+                    "visible_menu_path": str(menu.get("visible_menu_path") or "").strip(),
+                    "native_visible_menu_path": native_visible_menu_path,
                     "entry_target": menu.get("entry_target") if isinstance(menu.get("entry_target"), dict) else {},
                 }
                 for key in productization_keys:
@@ -1622,6 +1763,14 @@ class MenuService:
                         if isinstance(meta.get("view_modes"), list)
                         else (leaf.get("view_modes") if isinstance(leaf.get("view_modes"), list) else [])
                     ),
+                    "visible_menu_path": " / ".join(
+                        [
+                            str(node.get("label") or node.get("title") or node.get("name") or "").strip()
+                            for node in ancestors
+                            if str(node.get("label") or node.get("title") or node.get("name") or "").strip()
+                        ]
+                        + [label]
+                    ),
                 }
             )
         return [preview_menus_by_group[group_key] for group_key in group_order]
@@ -1816,7 +1965,7 @@ class MenuService:
             if policy_has_menu_surface
             else self._native_preview_menus(native_nav=primary_native_nav, policy=policy)
         )
-        if self.env is not None and (is_admin or is_business_config_admin):
+        if self.env is not None and (is_admin or is_business_config_admin) and not policy_has_menu_surface:
             grouped_native = native_config_delivery_groups(self.env) + list(grouped_native or [])
         groups_by_key = {}
         group_order = []

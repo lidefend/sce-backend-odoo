@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="business_config_contract_project_special_tax_deduction_form_v1" model="ui.business.config.contract">
+        <field name="name">project_special_tax_deduction_form_v1</field>
+        <field name="model">sc.tax.deduction.registration</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_sc_product_project_tax_deduction_v1"/>
+        <field name="priority">800</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {
+                    'source': 'smart_construction_core.product_release',
+                    'source_status': 'product_release',
+                    'fact_authority': 'sc.tax.deduction.registration',
+                    'deduction_scope_authority': 'project_special',
+                    'projection_authorities': ['sc.finance.business.fact', 'sc.finance.business.project.summary', 'sc.finance.project.capital.position']
+                },
+                'views': {'form': {
+                    'title': '项目专项抵扣',
+                    'composition_mode': 'entry_semantic_surface',
+                    'columns': 2,
+                    'sections': [
+                        {'title': '办理主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'name', 'deduction_flow_label', 'deduction_scope', 'business_category_id', 'source_origin']},
+                        {'title': '项目与往来单位', 'sequence': 20, 'columns': 2, 'fields': ['project_id', 'company_id', 'operation_strategy', 'partner_id', 'partner_name']},
+                        {'title': '发票与认证', 'sequence': 30, 'columns': 2, 'fields': ['document_no', 'document_date', 'invoice_no', 'invoice_code', 'invoice_date', 'deduction_confirm_date', 'tax_rate_text']},
+                        {'title': '专项抵扣金额', 'sequence': 40, 'columns': 2, 'fields': ['invoice_amount_untaxed', 'invoice_tax_amount', 'invoice_amount_total', 'deduction_amount', 'deduction_tax_amount', 'deduction_surcharge_amount', 'currency_id']},
+                        {'title': '办理依据', 'sequence': 50, 'columns': 2, 'fields': ['deduction_reason', 'note', 'attachment_ids']}
+                    ],
+                    'fields': [
+                        {'name': 'state', 'sequence': 10, 'group_title': '办理主信息', 'readonly': True},
+                        {'name': 'name', 'sequence': 20, 'group_title': '办理主信息', 'readonly': True},
+                        {'name': 'deduction_flow_label', 'sequence': 30, 'group_title': '办理主信息', 'readonly': True},
+                        {'name': 'deduction_scope', 'sequence': 40, 'group_title': '办理主信息', 'readonly': True},
+                        {'name': 'business_category_id', 'sequence': 50, 'group_title': '办理主信息', 'readonly': True},
+                        {'name': 'source_origin', 'sequence': 60, 'group_title': '办理主信息', 'readonly': True},
+                        {'name': 'project_id', 'sequence': 70, 'group_title': '项目与往来单位'},
+                        {'name': 'company_id', 'sequence': 80, 'group_title': '项目与往来单位', 'readonly': True},
+                        {'name': 'operation_strategy', 'sequence': 90, 'group_title': '项目与往来单位', 'readonly': True},
+                        {'name': 'partner_id', 'sequence': 100, 'group_title': '项目与往来单位'},
+                        {'name': 'partner_name', 'sequence': 110, 'group_title': '项目与往来单位', 'readonly': True},
+                        {'name': 'document_no', 'sequence': 120, 'group_title': '发票与认证'},
+                        {'name': 'document_date', 'sequence': 130, 'group_title': '发票与认证'},
+                        {'name': 'invoice_no', 'sequence': 140, 'group_title': '发票与认证'},
+                        {'name': 'invoice_code', 'sequence': 150, 'group_title': '发票与认证'},
+                        {'name': 'invoice_date', 'sequence': 160, 'group_title': '发票与认证'},
+                        {'name': 'deduction_confirm_date', 'sequence': 170, 'group_title': '发票与认证'},
+                        {'name': 'tax_rate_text', 'sequence': 180, 'group_title': '发票与认证', 'readonly': True},
+                        {'name': 'invoice_amount_untaxed', 'sequence': 190, 'group_title': '专项抵扣金额'},
+                        {'name': 'invoice_tax_amount', 'sequence': 200, 'group_title': '专项抵扣金额'},
+                        {'name': 'invoice_amount_total', 'sequence': 210, 'group_title': '专项抵扣金额'},
+                        {'name': 'deduction_amount', 'sequence': 220, 'group_title': '专项抵扣金额'},
+                        {'name': 'deduction_tax_amount', 'sequence': 230, 'group_title': '专项抵扣金额'},
+                        {'name': 'deduction_surcharge_amount', 'sequence': 240, 'group_title': '专项抵扣金额'},
+                        {'name': 'currency_id', 'sequence': 250, 'group_title': '专项抵扣金额', 'readonly': True},
+                        {'name': 'deduction_reason', 'sequence': 260, 'group_title': '办理依据'},
+                        {'name': 'note', 'sequence': 270, 'group_title': '办理依据'},
+                        {'name': 'attachment_ids', 'sequence': 280, 'group_title': '办理依据'}
+                    ]
+                }}
+            }
+        }"/>
+    </record>
+</odoo>

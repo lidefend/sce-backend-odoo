@@ -100,11 +100,16 @@ def main() -> int:
     for token in ('"action_id"', '"view_id"', '"company_id"'):
         _assert(token in field_policy, f"ui.form.field.policy must preserve {token} scope", errors)
     _assert(
-        "def scope_weight(policy) -> tuple[int, int, int]:" in field_policy
+        "def scope_weight(policy) -> tuple[int, int, int, int]:" in field_policy
         and "1 if policy.action_id else 0" in field_policy
         and "1 if policy.view_id else 0" in field_policy
         and "1 if policy.company_id else 0" in field_policy,
-        "ui.form.field.policy must keep deterministic action/view/company merge priority",
+        "ui.form.field.policy must keep deterministic action/view/company/role merge priority",
+        errors,
+    )
+    _assert(
+        "len(policy.role_group_ids)" in field_policy,
+        "ui.form.field.policy must include role-group specificity in merge priority",
         errors,
     )
 

@@ -19,8 +19,11 @@ RESTORE_ID = re.compile(r"^sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 IMAGE = re.compile(r"^sha256:[0-9a-f]{64}$")
 MODULE = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
+RELEASE_VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
 CONFIRMATION = "ACTIVATE_ISOLATED_PRODUCTION_ACCEPTANCE_CLONE"
 PUBLIC_CONFIRMATION = "PUBLISH_ISOLATED_ACCEPTANCE_FRONTEND_TO_APPROVED_PORT"
+PLATFORM_SNAPSHOT_CONFIRMATION = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION"
+PLATFORM_PRODUCT_KEY = "construction.standard"
 MODULE_SET_PATH = Path(__file__).resolve().parents[2] / "config/tenant/module_sets.v1.json"
 
 
@@ -142,6 +145,8 @@ def odoo_container_args(
         name,
         "--network",
         network,
+        "--label",
+        "sc.production-acceptance-clone=true",
         "--group-add",
         "0",
         "-v",
@@ -156,6 +161,70 @@ def odoo_container_args(
         "-c",
         "/etc/odoo/odoo.conf",
     ]
+
+
+def image_release_version(image: str) -> str:
+    version = run(
+        [
+            "docker",
+            "image",
+            "inspect",
+            image,
+            "--format",
+            '{{index .Config.Labels "org.opencontainers.image.version"}}',
+        ]
+    )
+    if not RELEASE_VERSION.fullmatch(version):
+        raise CloneRuntimeError("immutable image release version is unavailable")
+    return version
+
+
+def platform_snapshot_container_args(
+    *,
+    name: str,
+    network: str,
+    filestore: str,
+    tenant_root: Path,
+    config: Path,
+    image: str,
+    database: str,
+    version: str,
+) -> list[str]:
+    if not RELEASE_VERSION.fullmatch(version):
+        raise CloneRuntimeError("invalid platform snapshot release version")
+    args = odoo_container_args(
+        name=name,
+        network=network,
+        filestore=filestore,
+        tenant_root=tenant_root,
+        config=config,
+        image=image,
+    )
+    args.insert(2, "--rm")
+    entrypoint_index = args.index("--entrypoint")
+    args[entrypoint_index + 1] = "/bin/sh"
+    image_index = args.index(image)
+    args[image_index:image_index] = [
+        "-e",
+        f"SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY={PLATFORM_SNAPSHOT_CONFIRMATION}",
+        "-e",
+        f"PLATFORM_RELEASE_DB={database}",
+        "-e",
+        f"PLATFORM_RELEASE_PRODUCT_KEY={PLATFORM_PRODUCT_KEY}",
+        "-e",
+        f"PLATFORM_RELEASE_VERSION={version}",
+    ]
+    image_index = args.index(image)
+    del args[image_index + 1 :]
+    args.extend(
+        [
+            "-eu",
+            "-c",
+            "odoo shell -c /etc/odoo/odoo.conf -d \"$PLATFORM_RELEASE_DB\" --no-http "
+            "< /usr/local/share/sce/initialize_colocated_platform_snapshot.py",
+        ]
+    )
+    return args
 
 
 def url_ready(url: str, expected: str = "") -> bool:
@@ -197,6 +266,54 @@ def container_endpoint(
         return "", False
     internal = f"http://{address}:{container_port}{path}"
     return (internal, False) if url_ready(internal, expected) else ("", False)
+
+
+def remove_verified_failed_upgrade(restore_id: str, network: str) -> bool:
+    """Remove only a stopped upgrade container inside the locked restore network."""
+    container = f"{restore_id}_acceptance_upgrade"
+    observed = run(
+        [
+            "docker",
+            "inspect",
+            container,
+            "--format",
+            '{{.State.Status}}|{{.State.Running}}|{{.HostConfig.NetworkMode}}|'
+            '{{index .Config.Labels "sc.production-acceptance-clone"}}',
+        ],
+        False,
+    )
+    if not observed:
+        return False
+    try:
+        status, running, observed_network, label = observed.split("|", 3)
+    except ValueError as exc:
+        raise CloneRuntimeError("stale acceptance upgrade identity is invalid") from exc
+    if running != "false" or status not in {"exited", "dead"}:
+        raise CloneRuntimeError("stale acceptance upgrade is not safely stopped")
+    # Empty label admits upgrade containers created by the governed tool before
+    # the label was introduced. The exact isolated network remains mandatory.
+    if observed_network != network or label not in {"", "true"}:
+        raise CloneRuntimeError("stale acceptance upgrade identity differs")
+    run(["docker", "rm", container])
+    return True
+
+
+def ensure_retryable_runtime_root(runtime_root: Path) -> None:
+    """Create or admit only the incomplete runtime directory produced by this tool."""
+    if runtime_root.is_symlink():
+        raise CloneRuntimeError("acceptance runtime root must not be a symlink")
+    if not runtime_root.exists():
+        runtime_root.mkdir(mode=0o700, parents=True)
+        return
+    if not runtime_root.is_dir():
+        raise CloneRuntimeError("acceptance runtime root is not a directory")
+    entries = {entry.name: entry for entry in runtime_root.iterdir()}
+    if set(entries) - {"odoo.conf"}:
+        raise CloneRuntimeError("acceptance runtime root contains unmanaged files")
+    config = entries.get("odoo.conf")
+    if config is not None and (config.is_symlink() or not config.is_file()):
+        raise CloneRuntimeError("acceptance runtime config is unsafe")
+    runtime_root.chmod(0o700)
 
 
 def start_frontend(
@@ -375,7 +492,7 @@ def activate(
             raise CloneRuntimeError("replace requested but verified acceptance runtime is absent")
     else:
         replaced = False
-    runtime_root.mkdir(mode=0o700, parents=True, exist_ok=replace_existing)
+    ensure_retryable_runtime_root(runtime_root)
     config = runtime_root / "odoo.conf"
     config.write_text(
         "[options]\n"
@@ -388,6 +505,7 @@ def activate(
         "list_db = False\n"
         "workers = 0\n"
         "max_cron_threads = 0\n"
+        "data_dir = /var/lib/odoo\n"
         "smtp_server = 127.0.0.1\n",
         encoding="utf-8",
     )
@@ -395,8 +513,7 @@ def activate(
     modules = (*product_modules(), tenant_module)
     before = database_snapshot(str(db_container), database)
     upgrade_container = f"{restore_id}_acceptance_upgrade"
-    if run(["docker", "inspect", upgrade_container, "--format", "{{.Name}}"], False):
-        raise CloneRuntimeError("stale acceptance upgrade container exists")
+    remove_verified_failed_upgrade(restore_id, str(network))
     upgrade_args = odoo_container_args(
         name=upgrade_container,
         network=str(network),
@@ -419,6 +536,19 @@ def activate(
             "-u",
             ",".join(modules),
         ]
+    )
+    release_version = image_release_version(image)
+    run(
+        platform_snapshot_container_args(
+            name=f"{restore_id}_acceptance_snapshot",
+            network=str(network),
+            filestore=str(filestore),
+            tenant_root=tenant_root,
+            config=config,
+            image=image,
+            database=database,
+            version=release_version,
+        )
     )
     after = database_snapshot(str(db_container), database)
     if after != before:
@@ -487,6 +617,9 @@ def activate(
         "protected_counts_before": before,
         "protected_counts_after": after,
         "pending_modules": 0,
+        "platform_release_product_key": PLATFORM_PRODUCT_KEY,
+        "platform_release_version": release_version,
+        "platform_snapshot_refreshed": True,
         "http_health": 200,
         "external_egress": False,
         "replaced_existing_runtime": replaced,

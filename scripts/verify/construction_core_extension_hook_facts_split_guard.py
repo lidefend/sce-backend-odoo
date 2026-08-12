@@ -92,6 +92,11 @@ def main() -> int:
             errors.append("hook facts must preserve business config admin group")
         if facts.native_config_root_menu_xmlid() != "smart_construction_core.menu_sc_business_config_center":
             errors.append("hook facts must preserve native config root menu")
+        config_root = facts.native_config_root_menu_xmlid()
+        if config_root in facts.lowcode_system_config_menu_xmlids():
+            errors.append("formal product config root must not be classified as a protected system-config entry")
+        if config_root not in facts.lowcode_config_recovery_parent_menu_xmlids():
+            errors.append("formal product config root must remain the recovery parent for protected config children")
         if facts.product_policy_catalog_label({"edition_key": "preview"}) != "施工管理预览版":
             errors.append("hook facts must preserve preview product label")
         menu_policy = facts.menu_delivery_token_policy()

@@ -789,21 +789,7 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
             }
         except Exception as exc:
             _logger.debug("MENU_CONFIG_DELIVERY_NAVIGATION_STATE_FAILED error=%s", exc)
-            try:
-                from ..delivery.final_menu_navigation_service import FinalMenuNavigationService
-
-                navigation = FinalMenuNavigationService(self.env).build(scene_map={}, policy={})
-                nav_fact = navigation.get("nav_fact") if isinstance(navigation, dict) else {}
-                nav = nav_fact.get("tree") if isinstance(nav_fact, dict) and isinstance(nav_fact.get("tree"), list) else []
-                meta = navigation.get("meta") if isinstance(navigation, dict) and isinstance(navigation.get("meta"), dict) else {}
-                return nav, {
-                    "source": "final_menu_navigation_fallback",
-                    "error": "delivery_navigation_unavailable",
-                    "user_menu_config": meta.get("user_menu_config") if isinstance(meta.get("user_menu_config"), dict) else {},
-                }
-            except Exception as fallback_exc:
-                _logger.debug("MENU_CONFIG_RELEASE_NAVIGATION_STATE_FAILED error=%s", fallback_exc)
-                return [], {"source": "delivery_engine_v1", "error": "runtime_navigation_unavailable"}
+            return [], {"source": "delivery_engine_v1", "error": "runtime_navigation_unavailable"}
 
     def _runtime_navigation_state(self, configured_by_menu: dict[int, dict], menu_rows: list[dict] | None = None) -> dict:
         root_menu_id = 0
@@ -1704,12 +1690,7 @@ class MenuConfigurationRollbackHandler(MenuConfigurationLoadHandler):
             return self._err(400, "目标版本不是可恢复的菜单配置")
         scoped_snapshot = self._scope_contract_json(company_id, snapshot)
         restored = self._restore_policy_rows(company_id, scoped_snapshot)
-        contract.write({
-            "contract_json": scoped_snapshot,
-            "status": "published",
-            "version_no": int(target.version_no or contract.version_no or 1),
-        })
-        contract.action_publish()
+        contract.replace_and_publish(scoped_snapshot)
         return {
             "ok": True,
             "data": {

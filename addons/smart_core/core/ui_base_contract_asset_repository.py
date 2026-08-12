@@ -395,20 +395,17 @@ def upsert_asset(
         "code_version": _text(code_version),
         "payload_json": json.dumps(payload_body, ensure_ascii=False, default=str, separators=(",", ":")),
     }
-    with env.cr.savepoint():
-        try:
-            rec = model.search(
-                [
-                    ("contract_kind", "=", CONTRACT_KIND_UI_BASE),
-                    ("scene_key", "=", key),
-                    ("role_code", "=", role or False),
-                    ("company_id", "=", company or False),
-                    ("asset_version", "=", version),
-                ],
-                limit=1,
-            )
-        except Exception:
-            return {}
+    unique_domain = [
+        ("contract_kind", "=", CONTRACT_KIND_UI_BASE),
+        ("scene_key", "=", key),
+        ("role_code", "=", role or False),
+        ("company_id", "=", company or False),
+        ("asset_version", "=", version),
+    ]
+    try:
+        rec = model.search(unique_domain, limit=1)
+    except Exception:
+        return {}
     if state == "active":
         active_domain = [
             ("contract_kind", "=", CONTRACT_KIND_UI_BASE),
@@ -426,10 +423,23 @@ def upsert_asset(
                 return {}
         if existing_active:
             existing_active.write({"status": "archived"})
-    if rec:
+    try:
+        with env.cr.savepoint():
+            if rec:
+                rec.write(vals)
+            else:
+                rec = model.create(vals)
+    except Exception as error:
+        if _text(getattr(error, "pgcode", "")) != "23505":
+            raise
+        # Two system.init requests may build the same missing projection at
+        # once.  The unique constraint is the serialization authority.  The
+        # losing request must roll back only its savepoint, then reuse the
+        # committed winner instead of poisoning the whole request transaction.
+        rec = model.search(unique_domain, limit=1)
+        if not rec:
+            return {}
         rec.write(vals)
-    else:
-        rec = model.create(vals)
     return get_latest_asset(env, scene_key=key, role_code=role or None, company_id=company)
 
 

@@ -3647,12 +3647,7 @@ class BusinessConfigContractRollbackHandler(BaseIntentHandler):
             return self._err(400, "无可回滚版本", REASON_USER_ERROR)
         target = versions[0] if target_version_no else versions[1]
         try:
-            rec.write({
-                "contract_json": target.snapshot_json or {},
-                "status": "published",
-                "version_no": int(target.version_no or rec.version_no or 1),
-            })
-            rec.action_publish()
+            rec.restore_published_version(target)
         except ValidationError as exc:
             return self._err(400, str(exc), REASON_USER_ERROR)
         except Exception as exc:

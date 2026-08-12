@@ -657,7 +657,6 @@ import {
   buildRouteContractContext,
   collectPrimaryActionRequiredFields,
   collectRuntimeCapabilities,
-  collectRuntimeUserGroups,
   contractModelName,
   normalizeContractWarnings,
   normalizeSearchFilters,
@@ -1478,12 +1477,10 @@ const runtimeRoleCodes = computed(() => {
   return roles.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean);
 });
 const runtimeCapabilities = computed(() => collectRuntimeCapabilities(session));
-const runtimeUserGroups = computed(() => collectRuntimeUserGroups(session.user as { groups_xmlids?: unknown } | null));
 const policyContext = computed(() => ({
   profile: renderProfile.value,
   formData: formData as Record<string, unknown>,
   capabilities: runtimeCapabilities.value,
-  userGroups: runtimeUserGroups.value,
   roleCode: runtimeRoleCode.value,
   roleCodes: runtimeRoleCodes.value,
 }));

@@ -419,6 +419,11 @@ class ProjectProject(models.Model):
         tracking=True,
         help='驱动项目级联动控制：暂停/关闭禁止新增进度、成本等业务数据；结算中限制部分操作。'
     )
+    lifecycle_advisory = fields.Char(
+        string="完善提示",
+        compute="_compute_lifecycle_advisory",
+        help="仅提示建议完善的项目资料，不作为生命周期硬阻断条件。",
+    )
     sc_execution_state = fields.Selection(
         [
             ("ready", "执行就绪"),
@@ -1607,6 +1612,54 @@ class ProjectProject(models.Model):
         self.action_set_lifecycle_state(target_state)
         return True
 
+    def _check_lifecycle_transition_permission(self, target_state):
+        """Enforce lifecycle authority at the model boundary.
+
+        XML button groups and frontend capability hints are presentation
+        controls only.  Every RPC/write path must pass this same backend gate.
+        """
+        if self.env.su:
+            return
+        is_manager = (
+            self.env.user.has_group("smart_construction_core.group_sc_cap_project_manager")
+            or self.env.user.has_group("smart_construction_core.group_sc_super_admin")
+        )
+        is_operator = self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_project_user"
+        )
+        draft_start_only = bool(
+            target_state == "in_progress"
+            and self
+            and all(project.lifecycle_state == "draft" for project in self)
+        )
+        if is_manager or (is_operator and draft_start_only):
+            return
+        raise UserError("你没有权限变更项目生命周期。")
+
+    def action_sc_pause(self):
+        self.action_set_lifecycle_state("paused")
+        return True
+
+    def action_sc_resume(self):
+        self.action_set_lifecycle_state("in_progress")
+        return True
+
+    def action_sc_mark_done(self):
+        self.action_set_lifecycle_state("done")
+        return True
+
+    def action_sc_begin_closing(self):
+        self.action_set_lifecycle_state("closing")
+        return True
+
+    def action_sc_start_warranty(self):
+        self.action_set_lifecycle_state("warranty")
+        return True
+
+    def action_sc_close(self):
+        self.action_set_lifecycle_state("closed")
+        return True
+
     def action_sc_submit(self):
         """提交立项：从草稿进入在建。"""
         if not (
@@ -1615,35 +1668,43 @@ class ProjectProject(models.Model):
             or self.env.user.has_group("smart_construction_core.group_sc_super_admin")
         ):
             raise UserError("你没有权限推进项目阶段。")
+        advisories = self._sc_lifecycle_advisories("in_progress")
         self.action_set_lifecycle_state("in_progress")
+        if advisories:
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": "项目已启动",
+                    "message": "；".join(advisories),
+                    "type": "warning",
+                    "sticky": False,
+                },
+            }
         return True
 
-    def _sc_required_fields_for_transition(self, target_state):
-        return {
-            "in_progress": [
-                "name",
-                "owner_id",
-                "location",
-            ],
-        }.get(target_state, [])
-
-    def _sc_validate_for_transition(self, target_state):
-        required_fields = self._sc_required_fields_for_transition(target_state)
-        if not required_fields:
-            return
+    def _sc_lifecycle_advisories(self, target_state=None):
+        """Return non-blocking completeness suggestions for lifecycle work."""
+        suggestions = []
         for project in self:
             missing = []
-            for field_name in required_fields:
+            for field_name in ("owner_id", "location"):
                 if not project[field_name]:
                     field = project._fields.get(field_name)
                     missing.append(field.string if field else field_name)
             if not project.manager_id and not project.user_id:
                 missing.append("项目负责人/项目管理者")
             if missing:
-                raise ValidationError(
-                    "项目[%s] 立项前需补齐：%s。"
-                    % (project.display_name, "、".join(missing))
-                )
+                suggestions.append("建议完善：%s" % "、".join(missing))
+            if not (project.boq_line_count or 0):
+                suggestions.append("建议后续导入工程量清单，便于成本、进度和结算衔接")
+        return list(dict.fromkeys(suggestions))
+
+    @api.depends("owner_id", "location", "manager_id", "user_id", "boq_line_count")
+    def _compute_lifecycle_advisory(self):
+        for project in self:
+            suggestions = project._sc_lifecycle_advisories(project.lifecycle_state)
+            project.lifecycle_advisory = "；".join(suggestions) if suggestions else "项目资料已满足当前办理需要"
 
     def action_view_stage_requirements(self):
         """Open stage requirements wizard."""
@@ -1668,16 +1729,16 @@ class ProjectProject(models.Model):
                 target_state,
                 obj_display=project.display_name,
             )
-            if project.lifecycle_state == "draft" and target_state == "in_progress":
-                project._sc_validate_for_transition(target_state)
             if target_state in ("warranty", "closed"):
                 project._guard_project_close_by_settlement(target_state)
                 project._guard_project_close_by_payment(target_state)
-            if target_state in ("in_progress", "done", "closing", "warranty", "closed"):
-                project._guard_project_close_by_boq(target_state)
+            # Completeness such as BOQ availability is advisory.  Only
+            # conflicts that would strand executable settlement/payment data
+            # remain hard terminal guards above.
 
     def action_set_lifecycle_state(self, target_state):
         """项目状态切换入口，统一接入状态机校验。"""
+        self._check_lifecycle_transition_permission(target_state)
         self._validate_lifecycle_transition(target_state)
         self.write({'lifecycle_state': target_state})
         return True
@@ -1695,6 +1756,7 @@ class ProjectProject(models.Model):
                 vals = dict(vals)
                 vals["project_category_id"] = category.id
         if "lifecycle_state" in vals:
+            self._check_lifecycle_transition_permission(vals.get("lifecycle_state"))
             self._validate_lifecycle_transition(vals.get("lifecycle_state"))
             if "stage_id" not in vals:
                 stage = self._get_stage_for_lifecycle(vals.get("lifecycle_state"))
@@ -1756,18 +1818,6 @@ class ProjectProject(models.Model):
                 reasons=[f"存在未完结付款申请：{count} 条"],
                 hints=["请先完成审批或取消相关付款申请"],
             )
-
-    def _guard_project_close_by_boq(self, target_state):
-        if not (self.boq_line_count or 0):
-            label = ScStateMachine.label(ScStateMachine.PROJECT, target_state)
-            raise_guard(
-                "P0_BOQ_NOT_IMPORTED",
-                f"项目[{self.display_name}]",
-                f"进入“{label}”",
-                reasons=["项目 BOQ 未导入"],
-                hints=["请先导入 BOQ 清单后再推进状态"],
-            )
-
 
 # =========================
 # 项目责任矩阵

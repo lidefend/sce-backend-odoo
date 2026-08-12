@@ -62,8 +62,9 @@ def _project():
     return env["project.project"].sudo().create(  # noqa: F821
         {
             "name": "MODS Project %s" % _token(),
-            "manager_id": env.user.id,  # noqa: F821
+            "user_id": env.user.id,  # noqa: F821
             "company_id": env.company.id,  # noqa: F821
+            "operation_strategy": "direct",
         }
     )
 

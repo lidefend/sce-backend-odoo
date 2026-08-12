@@ -1,0 +1,72 @@
+{
+  "manifestVersion": "1.0.0",
+  "authorityLayer": "L0-L1",
+  "productLayer": "P0",
+  "scope": "platform_backend_contract_lifecycle",
+  "stages": [
+    {
+      "key": "definition",
+      "owner": "smart_core.contract_schema_authority",
+      "input": "protocol requirements and enum registry",
+      "output": "versioned closed JSON Schema with SHA-256 identity",
+      "failClosed": true,
+      "evidence": "unified_page_contract_v2.schema.json"
+    },
+    {
+      "key": "generation",
+      "owner": "smart_core.unified_page_contract_v2_assembler",
+      "input": "authoritative Odoo and Scene projections",
+      "output": "sealed Unified Page Contract v2.2",
+      "failClosed": true,
+      "evidence": "meta.lifecycle.generation"
+    },
+    {
+      "key": "validation",
+      "owner": "smart_core.contract_release_guards",
+      "input": "schema, examples and assembled fixtures",
+      "output": "machine-readable validation result",
+      "failClosed": true,
+      "evidence": "verify.backend.contract_lifecycle.authority"
+    },
+    {
+      "key": "persistence_versioning",
+      "owner": "ui.business.config.contract",
+      "input": "validated configuration definition",
+      "output": "append-only immutable publication snapshot",
+      "failClosed": true,
+      "evidence": "payload_sha256 and definition_sha256"
+    },
+    {
+      "key": "publication",
+      "owner": "ui.business.config.contract.action_publish",
+      "input": "draft or product-data contract",
+      "output": "idempotent row-locked publication",
+      "failClosed": true,
+      "evidence": "ui.business.config.contract.version"
+    },
+    {
+      "key": "runtime_resolution",
+      "owner": "smart_core.ui_contract_v2",
+      "input": "published authorities and request context",
+      "output": "client-trimmed runtime contract resealed after projection",
+      "failClosed": true,
+      "evidence": "meta.lifecycle.stage=runtime_delivery"
+    },
+    {
+      "key": "observability_integrity",
+      "owner": "smart_core.contract_lifecycle",
+      "input": "runtime contract and request trace",
+      "output": "request ID, trace ID, schema/source/contract SHA-256",
+      "failClosed": true,
+      "evidence": "meta.lifecycle.runtime and meta.lifecycle.integrity"
+    },
+    {
+      "key": "compatibility_release",
+      "owner": "product release governance",
+      "input": "backend producer and typed frontend consumer",
+      "output": "version-compatible release gate",
+      "failClosed": true,
+      "evidence": "verify.product.release.ready"
+    }
+  ]
+}

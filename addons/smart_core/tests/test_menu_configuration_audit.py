@@ -2619,6 +2619,83 @@ class TestMenuConfigurationAudit(unittest.TestCase):
         self.assertNotIn(151, runtime_ids)
         self.assertTrue(stats["config_only"])
 
+    def test_runtime_overlay_does_not_apply_legacy_same_label_policy_to_stable_product_menu_id(self):
+        module = _load_policy_model()
+        company = types.SimpleNamespace(id=7)
+        user = _User([])
+        legacy_income = _Menu(500, "收入合同")
+        released_income = _Menu(682, "收入合同")
+        env = _Env(
+            {"ir.ui.menu": _MenuModel([legacy_income, released_income])},
+            company=company,
+            user=user,
+        )
+        policy_model = object.__new__(module.UiMenuConfigPolicy)
+        policy_model.env = env
+        policy_model._runtime_menu_config_source_for_user = lambda user=None: (
+            {
+                500: {
+                    "active": True,
+                    "menu_id": 500,
+                    "menu_label": "收入合同",
+                    "visible": False,
+                }
+            },
+            "ui.menu.config.policy",
+        )
+        original_hook = module.call_extension_hook_first
+        module.call_extension_hook_first = lambda _env, hook_name, *_args, **_kwargs: (
+            ["smart_core.group_smart_core_admin"]
+            if hook_name == "smart_core_menu_config_only_exempt_group_xmlids"
+            else None
+        )
+        try:
+            overlaid, stats = policy_model.apply_runtime_overlay(
+                {
+                    "tree": [{"menu_id": 682, "name": "收入合同", "children": []}],
+                    "flat": [{"menu_id": 682, "name": "收入合同"}],
+                },
+                user=user,
+            )
+        finally:
+            module.call_extension_hook_first = original_hook
+
+        self.assertFalse(stats["config_only"])
+        self.assertEqual([node["menu_id"] for node in overlaid["tree"]], [682])
+        self.assertEqual([node["menu_id"] for node in overlaid["flat"]], [682])
+        self.assertEqual(stats["hidden_count"], 0)
+
+    def test_runtime_overlay_keeps_unconfigured_released_product_baseline_menu(self):
+        module = _load_policy_model()
+        company = types.SimpleNamespace(id=7)
+        user = _User([])
+        released_income = _Menu(682, "收入合同")
+        env = _Env(
+            {"ir.ui.menu": _MenuModel([released_income])},
+            company=company,
+            user=user,
+        )
+        policy_model = object.__new__(module.UiMenuConfigPolicy)
+        policy_model.env = env
+        policy_model._runtime_menu_config_source_for_user = lambda user=None: ({}, "ui.menu.config.policy")
+        nav = {
+            "tree": [
+                {
+                    "menu_id": 304,
+                    "name": "系统菜单",
+                    "meta": {"source": "delivery_engine_v1"},
+                    "children": [{"menu_id": 682, "name": "收入合同", "children": []}],
+                }
+            ],
+            "flat": [{"menu_id": 682, "name": "收入合同"}],
+        }
+
+        overlaid, stats = policy_model.apply_runtime_overlay(nav, user=user)
+
+        self.assertEqual(overlaid, nav)
+        self.assertFalse(stats["config_only"])
+        self.assertTrue(stats["product_baseline_authoritative"])
+
     def test_runtime_overlay_builds_children_for_missing_moved_group(self):
         module = _load_policy_model()
         company = types.SimpleNamespace(id=7)

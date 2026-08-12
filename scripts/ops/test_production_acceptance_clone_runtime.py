@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -71,6 +72,111 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         self.assertIn("smart_construction_bundle", modules)
         self.assertIn("smart_construction_seed", modules)
         self.assertEqual(len(modules), len(set(modules)))
+
+    def test_odoo_runtime_containers_have_acceptance_identity_label(self) -> None:
+        command = RUNTIME.odoo_container_args(
+            name="sc_restore_20260808t102000z_4d7e91a2_acceptance_upgrade",
+            network="sc_restore_20260808t102000z_4d7e91a2_internal",
+            filestore="sc_restore_20260808t102000z_4d7e91a2_filestore",
+            tenant_root=Path("/opt/sce/tenant-addons/acceptance/" + "1" * 40),
+            config=Path("/tmp/acceptance/odoo.conf"),
+            image="sha256:" + "2" * 64,
+        )
+        self.assertIn("sc.production-acceptance-clone=true", command)
+
+    def test_filestore_mount_matches_explicit_odoo_data_dir(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('f"{filestore}:/var/lib/odoo/filestore"', source)
+        self.assertIn('"data_dir = /var/lib/odoo\\n"', source)
+
+    def test_platform_snapshot_refresh_uses_locked_policy_and_image_version(self) -> None:
+        command = RUNTIME.platform_snapshot_container_args(
+            name="sc_restore_20260808t102000z_4d7e91a2_acceptance_snapshot",
+            network="sc_restore_20260808t102000z_4d7e91a2_internal",
+            filestore="sc_restore_20260808t102000z_4d7e91a2_filestore",
+            tenant_root=Path("/opt/sce/tenant-addons/acceptance/" + "1" * 40),
+            config=Path("/tmp/acceptance/odoo.conf"),
+            image="sha256:" + "2" * 64,
+            database="r10e_sc_restore_20260808t102000z_4d7e91a2",
+            version="1.0.0-rc.17",
+        )
+        self.assertEqual(command[2], "--rm")
+        self.assertIn(
+            "PLATFORM_RELEASE_PRODUCT_KEY=construction.standard",
+            command,
+        )
+        self.assertIn("PLATFORM_RELEASE_VERSION=1.0.0-rc.17", command)
+        self.assertIn("PLATFORM_RELEASE_DB=r10e_sc_restore_20260808t102000z_4d7e91a2", command)
+        self.assertIn("initialize_colocated_platform_snapshot.py", command[-1])
+
+    def test_platform_snapshot_version_comes_from_immutable_image_label(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="1.0.0-rc.17") as runner:
+            self.assertEqual(RUNTIME.image_release_version("sha256:" + "2" * 64), "1.0.0-rc.17")
+        self.assertIn("org.opencontainers.image.version", runner.call_args.args[0][-1])
+
+    def test_retry_removes_stopped_upgrade_from_exact_isolated_network(self) -> None:
+        network = "sc_restore_20260808t102000z_4d7e91a2_internal"
+        with mock.patch.object(
+            RUNTIME,
+            "run",
+            side_effect=[f"exited|false|{network}|", ""],
+        ) as runner:
+            self.assertTrue(
+                RUNTIME.remove_verified_failed_upgrade(
+                    "sc_restore_20260808t102000z_4d7e91a2", network
+                )
+            )
+        self.assertEqual(
+            runner.call_args_list[-1].args[0],
+            ["docker", "rm", "sc_restore_20260808t102000z_4d7e91a2_acceptance_upgrade"],
+        )
+
+    def test_retry_rejects_running_upgrade_container(self) -> None:
+        network = "sc_restore_20260808t102000z_4d7e91a2_internal"
+        with mock.patch.object(
+            RUNTIME,
+            "run",
+            return_value=f"running|true|{network}|true",
+        ):
+            with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "not safely stopped"):
+                RUNTIME.remove_verified_failed_upgrade(
+                    "sc_restore_20260808t102000z_4d7e91a2", network
+                )
+
+    def test_retry_rejects_upgrade_container_outside_restore_network(self) -> None:
+        with mock.patch.object(
+            RUNTIME,
+            "run",
+            return_value="exited|false|foreign_network|true",
+        ):
+            with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "identity differs"):
+                RUNTIME.remove_verified_failed_upgrade(
+                    "sc_restore_20260808t102000z_4d7e91a2",
+                    "sc_restore_20260808t102000z_4d7e91a2_internal",
+                )
+
+    def test_retry_admits_only_tool_generated_runtime_config(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime_root = Path(temporary) / "acceptance-runtime"
+            runtime_root.mkdir()
+            (runtime_root / "odoo.conf").write_text("[options]\n", encoding="utf-8")
+            RUNTIME.ensure_retryable_runtime_root(runtime_root)
+            self.assertEqual(runtime_root.stat().st_mode & 0o777, 0o700)
+
+    def test_retry_creates_missing_runtime_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime_root = Path(temporary) / "acceptance-runtime"
+            RUNTIME.ensure_retryable_runtime_root(runtime_root)
+            self.assertTrue(runtime_root.is_dir())
+            self.assertEqual(runtime_root.stat().st_mode & 0o777, 0o700)
+
+    def test_retry_rejects_unmanaged_runtime_root_content(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime_root = Path(temporary) / "acceptance-runtime"
+            runtime_root.mkdir()
+            (runtime_root / "foreign.txt").write_text("foreign", encoding="utf-8")
+            with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "unmanaged files"):
+                RUNTIME.ensure_retryable_runtime_root(runtime_root)
 
     def test_existing_tenant_package_still_consumes_archive_stream(self) -> None:
         source = RELEASE_MAKE.read_text(encoding="utf-8")

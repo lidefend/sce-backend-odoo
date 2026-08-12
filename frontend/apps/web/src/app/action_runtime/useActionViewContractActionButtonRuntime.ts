@@ -83,8 +83,8 @@ export function useActionViewContractActionButtonRuntime(options: UseActionViewC
     const selectionRaw = String(row.selection || 'none').toLowerCase();
     const selection: ContractActionSelection =
       selectionRaw === 'single' || selectionRaw === 'multi' ? selectionRaw : 'none';
-    const visibleProfiles = Array.isArray(row.visible_profiles)
-      ? (row.visible_profiles as unknown[])
+    const visibleProfiles = Array.isArray(row.visibleProfiles)
+      ? (row.visibleProfiles as unknown[])
         .map((item) => String(item || '').trim().toLowerCase())
         .filter(Boolean)
       : [];

@@ -46,10 +46,16 @@ def authoritative_navigation_counts() -> dict[str, int]:
     configured_roles = policy.get("roles") or {}
     counts: dict[str, int] = {}
     for role, row in configured_roles.items():
-        leaf_keys = (row or {}).get("leaf_keys") or []
-        count = int((row or {}).get("expected_count") or 0)
-        if count <= 0 or count != len(leaf_keys):
+        policy_leaf_keys = (row or {}).get("leaf_keys") or []
+        policy_count = int((row or {}).get("expected_count") or 0)
+        leaf_keys = (row or {}).get("browser_leaf_keys") or policy_leaf_keys
+        count = int((row or {}).get("browser_expected_count") or 0)
+        if policy_count <= 0 or policy_count != len(policy_leaf_keys):
             raise EvidenceError(f"AUTHORITATIVE_NAVIGATION_POLICY_INVALID:{role}")
+        if count <= 0 or count != len(leaf_keys):
+            raise EvidenceError(f"AUTHORITATIVE_BROWSER_NAVIGATION_POLICY_INVALID:{role}")
+        if not set(leaf_keys).issubset(set(policy_leaf_keys)):
+            raise EvidenceError(f"AUTHORITATIVE_BROWSER_NAVIGATION_NOT_POLICY_SUBSET:{role}")
         counts[str(role)] = count
     if not counts:
         raise EvidenceError("AUTHORITATIVE_NAVIGATION_POLICY_EMPTY")

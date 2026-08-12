@@ -1550,10 +1550,24 @@
         <field name="direction">noncash_tax</field>
         <field name="sequence">140</field>
         <field name="source_aliases">抵扣登记、进项抵扣、扣款抵扣</field>
-        <field name="default_values_json">{"is_transfer_out": false, "deduction_reason": "抵扣登记"}</field>
-        <field name="domain_json">[["is_transfer_out", "=", false]]</field>
+        <field name="default_values_json">{"deduction_scope": "general", "is_transfer_out": false, "deduction_reason": "抵扣登记"}</field>
+        <field name="domain_json">["&amp;", ["deduction_scope", "=", "general"], ["is_transfer_out", "=", false]]</field>
         <field name="required_fields_json">["project_id", "invoice_no", "deduction_confirm_date", "deduction_tax_amount"]</field>
         <field name="ledger_policy_json">{"facts": ["sc.finance.business.fact", "sc.finance.business.project.summary", "sc.finance.project.capital.position"], "balance_policy": "noncash_tax", "terminal_action": "action_deduct"}</field>
+        <field name="attachment_policy">recommended</field>
+    </record>
+    <record id="business_category_tax_deduction_project_special" model="sc.business.category">
+        <field name="name">项目专项抵扣</field>
+        <field name="code">tax.deduction.project_special</field>
+        <field name="domain">invoice_tax</field>
+        <field name="target_model">sc.tax.deduction.registration</field>
+        <field name="direction">noncash_tax</field>
+        <field name="sequence">141</field>
+        <field name="source_aliases">项目专项抵扣、项目专属抵扣</field>
+        <field name="default_values_json">{"deduction_scope": "project_special", "is_transfer_out": false, "deduction_reason": "项目专项抵扣"}</field>
+        <field name="domain_json">["&amp;", ["deduction_scope", "=", "project_special"], ["is_transfer_out", "=", false]]</field>
+        <field name="required_fields_json">["project_id", "invoice_no", "deduction_confirm_date", "deduction_tax_amount"]</field>
+        <field name="ledger_policy_json">{"facts": ["sc.finance.business.fact", "sc.finance.business.project.summary", "sc.finance.project.capital.position"], "balance_policy": "noncash_tax", "terminal_action": "action_deduct", "project_scope": "special"}</field>
         <field name="attachment_policy">recommended</field>
     </record>
     <record id="business_category_material_plan" model="sc.business.category">
@@ -1661,6 +1675,19 @@
         <field name="required_fields_json">["project_id", "warehouse_id", "source_location_id", "receiver_id", "line_ids", "qty"]</field>
         <field name="visible_groups_json">["outbound_header", "outbound_lines", "receiver", "stock"]</field>
         <field name="ledger_policy_json">{"facts": ["sc.material.outbound", "sc.material.inbound", "sc.material.stock.summary"], "terminal_action": "action_issue", "cost_triggers": {"issue_project_cost_ledger": false}}</field>
+        <field name="attachment_policy">recommended</field>
+    </record>
+    <record id="business_category_material_supplier_return" model="sc.business.category">
+        <field name="name">材料退货</field>
+        <field name="code">material.supplier_return</field>
+        <field name="domain">material</field>
+        <field name="target_model">sc.material.supplier.return</field>
+        <field name="direction">cost_reversal</field>
+        <field name="sequence">261</field>
+        <field name="source_aliases">退货、供应商退货、材料退货、退供</field>
+        <field name="required_fields_json">["project_id", "warehouse_id", "source_location_id", "line_ids", "qty"]</field>
+        <field name="visible_groups_json">["return_header", "return_lines", "supplier", "stock"]</field>
+        <field name="ledger_policy_json">{"facts": ["sc.material.supplier.return", "sc.material.inbound", "sc.material.stock.summary"], "terminal_action": "action_confirm_return", "cost_triggers": {"reverse_project_cost_ledger": false}}</field>
         <field name="attachment_policy">recommended</field>
     </record>
     <record id="business_category_material_transfer" model="sc.business.category">

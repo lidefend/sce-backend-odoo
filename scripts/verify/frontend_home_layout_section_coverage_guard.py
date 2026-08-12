@@ -3,13 +3,12 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-HOME = ROOT / "frontend/apps/web/src/components/role-home/ContractRoleHome.vue"
+HOME = ROOT / "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
 
 
 def main() -> int:
     text = HOME.read_text(encoding="utf-8", errors="ignore") if HOME.is_file() else ""
     required = [
-        'class="role-home-surface__header"',
         'class="role-home-surface__tasks"',
         'class="role-home-surface__overview"',
         'class="role-home-surface__access"',
@@ -21,7 +20,6 @@ def main() -> int:
     forbidden = [
         "role ===",
         "role_code ===",
-        "workspaceHome",
         "legacy_home",
         "HUD:",
         "contract-role-home__",

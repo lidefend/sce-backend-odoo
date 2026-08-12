@@ -98,9 +98,9 @@ export interface ContractV2ActionRule {
   visible?: ContractV2Dictionary;
   modifiers?: ContractV2Dictionary;
   invisible?: unknown;
-  visible_profiles?: string[];
+  visibleProfiles?: string[];
   presentation?: ContractV2Dictionary;
-  action_safety?: ContractV2Dictionary;
+  actionSafety?: ContractV2Dictionary;
   submitPolicy?: ContractV2Dictionary;
   tracePolicy?: ContractV2Dictionary;
 }
@@ -205,12 +205,42 @@ export interface ContractV2RuntimeContract {
   actionTarget?: string;
 }
 
+export interface ContractV2Lifecycle {
+  lifecycleVersion: string;
+  stage: string;
+  definition: {
+    schemaId: string;
+    schemaVersion: string;
+    schemaSha256: string;
+    contractVersion: string;
+    normativeStatus: string;
+  };
+  generation: {
+    generator: string;
+    generatorVersion: string;
+    sourceType: string;
+    sourceSha256: string;
+  };
+  runtime: {
+    requestId: string;
+    traceId: string;
+    clientType: string;
+    traceSource: string;
+  };
+  integrity: {
+    algorithm: string;
+    contractSha256: string;
+  };
+  authority: ContractV2Dictionary;
+}
+
 export interface ContractV2Meta {
   etag: string;
   snapshotId: string;
   traceId: string;
   requestId: string;
   sourceType: string;
+  lifecycle: ContractV2Lifecycle;
 }
 
 export interface ContractV2Snapshot {

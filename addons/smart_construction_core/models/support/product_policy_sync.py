@@ -21,6 +21,13 @@ from odoo.addons.smart_construction_core.services.locked_menu_policy_contract im
 
 
 FORMAL_CONTRACT_PRODUCT_MENU_XMLIDS = {
+    # Locked product-center contract entries. These direct P1 menus are the
+    # released product navigation contract; they must not depend on tenant or
+    # user-acceptance policy rows to remain visible in config-only mode.
+    "smart_construction_core.menu_sc_p1_income_contract",
+    "smart_construction_core.menu_sc_p1_expense_contract",
+    "smart_construction_core.menu_sc_p1_contract_change",
+    "smart_construction_core.menu_sc_p1_daily_contract",
     "smart_construction_core.menu_sc_construction_contract",
     "smart_construction_core.menu_sc_contract_handling",
     "smart_construction_core.menu_sc_contract_income",
@@ -34,6 +41,8 @@ FORMAL_CONTRACT_PRODUCT_MENU_XMLIDS = {
 }
 
 FORMAL_SETTLEMENT_PRODUCT_MENU_XMLIDS = {
+    "smart_construction_core.menu_sc_p1_income_settlement",
+    "smart_construction_core.menu_sc_p1_expense_settlement",
     "smart_construction_core.menu_sc_settlement_order",
     "smart_construction_core.menu_sc_settlement_adjustment",
     "smart_construction_core.menu_sc_income_contract_settlement",
@@ -48,6 +57,57 @@ FORMAL_SETTLEMENT_PRODUCT_MENU_XMLIDS = {
 USER_ACCEPTANCE_PRODUCT_MENU_XMLIDS = {
     "smart_construction_core.menu_sc_customer_partner",
     "smart_construction_core.menu_sc_supplier_partner",
+}
+
+# The locked ten-center product candidate deliberately keeps these legacy,
+# roadmap, duplicate or incomplete menu facts unpublished. They remain valid
+# XMLIDs/action authorities for migration and audit, but policy convergence
+# must not reactivate their native menu rows after the final XML overlay.
+LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS = {
+    "smart_construction_core.menu_sc_workbench_my_approval_fact",
+    "smart_construction_core.menu_sc_project_overview_group_v2",
+    "smart_construction_core.menu_sc_project_ledger_group_v2",
+    "smart_construction_core.menu_sc_project_planning_group_v2",
+    "smart_construction_core.menu_sc_project_organization_group_v2",
+    "smart_construction_core.menu_sc_project_milestone_group_v2",
+    "smart_construction_core.menu_sc_project_collaboration_group_v2",
+    "smart_construction_core.menu_sc_project_document_group_v2",
+    "smart_construction_core.menu_sc_project_risk_group_v2",
+    "smart_construction_core.menu_sc_project_closeout_group_v2",
+    "smart_construction_core.menu_sc_project_quick_create",
+    "smart_construction_core.menu_sc_tender_prepare",
+    "smart_construction_core.menu_sc_tender_registration",
+    "smart_construction_core.menu_sc_tender_registration_fee",
+    "smart_construction_core.menu_sc_tender_opening",
+    "smart_construction_core.menu_sc_field_mobile_roadmap_v2",
+    "smart_construction_core.menu_sc_bim_collaboration_roadmap_v2",
+    "smart_construction_core.menu_sc_schedule_delivery_group_v2",
+    "smart_construction_core.menu_sc_quality_delivery_group_v2",
+    "smart_construction_core.menu_sc_safety_delivery_group_v2",
+    "smart_construction_core.menu_sc_material_management_group",
+    "smart_construction_core.menu_sc_labor_management_group",
+    "smart_construction_core.menu_sc_equipment_management_group",
+    "smart_construction_core.menu_sc_material_rental_group",
+    "smart_construction_core.menu_sc_subcontract_management_group",
+    "smart_construction_core.menu_sc_supply_collaboration_roadmap_v2",
+    "smart_construction_core.menu_sc_construction_contract",
+    "smart_construction_core.menu_sc_contract_performance_roadmap_v2",
+    "smart_construction_core.menu_sc_project_wbs_cost",
+    "smart_construction_core.menu_sc_cost_forecast_roadmap_v2",
+    "smart_construction_core.menu_sc_cost_cashflow_roadmap_v2",
+    "smart_construction_core.menu_project_funding_actual_event_allocation",
+    "smart_construction_core.menu_sc_noncash_business_group",
+    "smart_construction_core.menu_sc_historical_payment_fact",
+    "smart_construction_core.menu_sc_arrival_confirmation",
+    "smart_construction_core.menu_sc_finance_interfund_analysis",
+    "smart_construction_core.menu_sc_fund_forecast_roadmap_v2",
+    "smart_construction_core.menu_sc_tax_filing_roadmap_v2",
+    "smart_construction_core.menu_sc_invoice_verification_roadmap_v2",
+    "smart_construction_core.menu_sc_business_entity",
+    "smart_construction_core.menu_sc_report_prediction_roadmap_v2",
+    "smart_construction_core.menu_sc_fuel_card_archive_group",
+    "smart_construction_core.menu_sc_people_lifecycle_roadmap_v2",
+    "smart_construction_core.menu_sc_resource_capacity_roadmap_v2",
 }
 
 TAX_CENTER_PRODUCT_MENU_XMLIDS = {
@@ -473,7 +533,11 @@ class ScProductPolicy(models.Model):
                         "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
                         f"{product_key} unresolved menu without stable action target {menu_xmlid}",
                     )
-                if hasattr(menu_rec, "active") and not menu_rec.active:
+                if (
+                    hasattr(menu_rec, "active")
+                    and not menu_rec.active
+                    and menu_xmlid not in LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS
+                ):
                     menu_rec.sudo().write({"active": True})
                 if not action:
                     raise LockedMenuPolicyContractError(

@@ -91,7 +91,7 @@ for alias in ("--sc-app-selected-bg", "--sc-app-selected-border", "--sc-app-sele
     assert alias in design_system, f"missing selected semantic alias: {alias}"
 
 surface_files = {
-    "home": read(WEB / "components/role-home/ContractRoleHome.vue"),
+    "home": read(WEB / "components/role-home/WorkspaceHome.vue"),
     "toolbar": read(WEB / "components/action/ActionSurfaceToolbar.vue"),
     "shell": read(WEB / "layouts/AppShell.css"),
 }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="business_config_contract_data_permission_form_v1" model="ui.business.config.contract">
+    <field name="name">data_permission_form_v1</field><field name="model">res.users</field><field name="view_type">form</field>
+    <field name="action_id" ref="smart_construction_core.action_sc_product_data_permission_v1"/><field name="priority">800</field>
+    <field name="company_id" eval="False"/><field name="active" eval="True"/><field name="status">published</field><field name="version_no">1</field>
+    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'identity_authority': 'res.users', 'role_authority': 'res.groups', 'project_scope_authority': 'sc.project.member.assignment'}, 'views': {'form': {'title': '数据权限', 'composition_mode': 'entry_semantic_surface', 'columns': 2, 'sections': [{'title': '用户', 'sequence': 10, 'columns': 2, 'fields': ['login', 'name', 'active']}, {'title': '公司范围', 'sequence': 20, 'columns': 2, 'fields': ['company_id', 'company_ids']}, {'title': '业务权限角色', 'sequence': 30, 'columns': 1, 'fields': ['sc_user_permission_group_ids']}, {'title': '项目数据范围', 'sequence': 40, 'columns': 1, 'fields': ['sc_project_member_assignment_ids']}], 'fields': [{'name': 'login', 'sequence': 10, 'group_title': '用户', 'readonly': True}, {'name': 'name', 'sequence': 20, 'group_title': '用户', 'readonly': True}, {'name': 'active', 'sequence': 30, 'group_title': '用户', 'readonly': True}, {'name': 'company_id', 'sequence': 40, 'group_title': '公司范围'}, {'name': 'company_ids', 'sequence': 50, 'group_title': '公司范围'}, {'name': 'sc_user_permission_group_ids', 'sequence': 60, 'group_title': '业务权限角色'}, {'name': 'sc_project_member_assignment_ids', 'sequence': 70, 'group_title': '项目数据范围'}]}}}}"/>
+  </record>
+</odoo>

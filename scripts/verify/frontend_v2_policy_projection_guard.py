@@ -18,7 +18,8 @@ STRICT_STORE = ROOT / "frontend/apps/web/src/app/contracts/v2/store.ts"
 CONSUMER_FILES = [
     ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewPageDisplayStateRuntime.ts",
     ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
-    ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewSurfaceDisplayRuntime.ts",
+    ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewContentDisplayRuntime.ts",
+    ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewDisplayComputedRuntime.ts",
     ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewSurfaceIntentRuntime.ts",
     ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
     ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
@@ -96,8 +97,8 @@ FORBIDDEN_STRICT_TYPE_COMPAT_ALIASES = (
 )
 
 REQUIRED_STRICT_ENUM_TYPE_TOKENS = (
-    "export type ContractV2ViewType = 'form' | 'list' | 'table' | 'kanban' | 'tree' | 'gantt' | 'combine'",
-    "export type ContractV2LayoutType = 'form' | 'table' | 'kanban' | 'tree' | 'gantt' | 'combine'",
+    "export type ContractV2ViewType = 'form' | 'list' | 'table' | 'kanban' | 'tree' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | 'combine'",
+    "export type ContractV2LayoutType = 'form' | 'table' | 'kanban' | 'tree' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | 'combine'",
     "export type ContractV2AdaptMode = 'pc' | 'mobile'",
     "export type ContractV2TriggerType = 'change' | 'click' | 'select' | 'refresh' | 'add' | 'delete' | 'confirm' | 'submit' | 'blur' | 'focus'",
     "export type ContractV2DispatchMode = 'local' | 'server' | 'serverDebounced' | 'serverBlocking'",
@@ -363,7 +364,6 @@ ALLOWED_STRICT_SCHEMA_EXTENSION_FIELDS = {
     "ContractV2Widget": {"fieldType", "relation"},
     # Action presentation keeps UI/navigation metadata outside the formal rule
     # execution contract.
-    "ContractV2ActionRule": {"actionKey", "button", "intent", "label", "target"},
 }
 
 STRICT_TYPE_ENUM_REGISTRY_MAP = {

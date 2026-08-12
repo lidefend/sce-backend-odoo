@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sc_team_loan_deduction_workspace_form" model="ir.ui.view">
+        <field name="name">sc.team.loan.deduction.workspace.form</field>
+        <field name="model">sc.team.loan.deduction.workspace</field>
+        <field name="arch" type="xml">
+            <form string="班组借/扣款登记" edit="1" delete="0">
+                <header>
+                    <button name="action_register_loan" type="object" string="登记借款" class="btn-primary"/>
+                    <button name="action_register_deduction" type="object" string="登记扣款" class="btn-secondary"/>
+                    <button name="action_view_account" type="object" string="查看借扣款台账" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <group string="办理上下文" col="2">
+                        <field name="project_id"/>
+                        <field name="partner_id"/>
+                        <field name="business_date"/>
+                        <field name="processing_advisory" readonly="1"/>
+                    </group>
+                    <group string="办理说明">
+                        <field name="note" placeholder="可补充本次借款或扣款的业务背景；具体金额和明细在正式单据中填写。"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

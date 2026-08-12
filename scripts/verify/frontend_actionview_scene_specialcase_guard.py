@@ -43,7 +43,7 @@ def main() -> int:
     action_view_text = _read(ACTION_VIEW)
 
     required_action_view_tokens = [
-        "let loadPageInvoker: () => Promise<void> = async () => {};",
+        "let loadPageInvoker: (loadGeneration: number) => Promise<void> = async () => {};",
         "function requestLoadPage(): Promise<void>",
         "let clearSelectionInvoker: () => void = () => {};",
         "function clearSelection(): void",

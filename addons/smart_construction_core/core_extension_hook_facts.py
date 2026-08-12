@@ -54,18 +54,15 @@ def native_config_delivery_excluded_menu_xmlids():
 
 def lowcode_system_config_menu_xmlids():
     return [
-        "smart_construction_core.menu_sc_business_config_center",
         "smart_construction_core.menu_sc_business_base_config_group",
         "smart_construction_core.menu_sc_runtime_user_management",
         "smart_construction_core.menu_sc_lowcode_system_config_group",
         "smart_construction_core.menu_sc_business_category",
         "smart_construction_core.menu_sc_dictionary",
-        "smart_construction_core.menu_sc_organization_department",
         "smart_construction_core.menu_sc_approval_scope",
         "smart_construction_core.menu_sc_approval_policy",
         "smart_construction_core.menu_sc_project_stage_requirement_items",
         "smart_construction_core.menu_sc_project_cost_code",
-        "smart_construction_core.menu_sc_company_document_archive",
         "smart_construction_core.menu_sc_business_config_workbench",
         "smart_construction_core.menu_ui_menu_config_policy_business_config",
         "smart_construction_core.menu_ui_form_field_policy_business_config",
@@ -200,7 +197,6 @@ def menu_delivery_token_policy():
         ],
         "rename_labels": {
             "项目台账（试点）": "项目台账",
-            "开票申请": "销项开票申请",
             "开票登记": "销项发票登记",
             "进项上报": "进项税额上报",
         },
@@ -212,16 +208,18 @@ def business_nav_group_display_order():
         "项目中心": 10,
         "合同中心": 20,
         "成本中心": 30,
-        "物资与分包": 40,
-        "施工管理": 50,
-        "财务中心": 60,
-        "税务中心": 70,
+        "财务中心": 40,
+        "税务中心": 50,
+        "会计账务中心": 60,
         "报表中心": 80,
-        "组织行政": 90,
-        "基础资料": 905,
-        "人事行政": 910,
-        "资料证照": 920,
-        "产品配置": 980,
+        "行政中心": 90,
+        "产品配置": 100,
+        "物资与分包": 910,
+        "施工管理": 920,
+        "组织行政": 930,
+        "基础资料": 935,
+        "人事行政": 940,
+        "资料证照": 950,
         "配置中心": 990,
         "配置": 990,
         "系统配置": 990,
@@ -414,7 +412,7 @@ def scene_entry_orchestrator_specs():
 def user_data_acceptance_nav_contract():
     return {
         "formal_group_child_labels": ["客户", "供应商"],
-        "formal_group_labels": ["配置中心"],
+        "formal_group_labels": ["产品配置"],
         "old_acceptance_group_labels": ["用户核对菜单", "旧业务数据核对"],
         "direct_acceptance_group_labels": ["直营项目数据核对", "直营项目系统菜单"],
         "joint_acceptance_group_labels": ["联营项目数据核对", "联营项目系统菜单"],
@@ -425,8 +423,10 @@ def user_data_acceptance_nav_contract():
         "direct_acceptance_group_label": "直营项目数据核对",
         "joint_acceptance_group_label": "联营项目数据核对",
         "source_menu_group_labels_to_hide": ["用户核对菜单"],
-        "acceptance_surface_menu_ids": [727, 729, 735, 770],
-        "acceptance_surface_action_ids": [899],
+        # Runtime database ids are deliberately forbidden here.  They are
+        # allocation-local facts and can identify an unrelated released page
+        # after a backup is restored into another database.  Acceptance
+        # surfaces are identified by their stable XMLID/name tokens below.
         "acceptance_surface_tokens": [
             "用户验收",
             "用户数据验收",

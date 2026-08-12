@@ -15,6 +15,7 @@
                     <filter string="公司资料存档" name="company_document_archive" domain="[('fact_type', '=', 'company_document_archive')]" />
                     <filter string="证照登记" name="certificate_registration" domain="[('fact_type', '=', 'certificate_registration')]" />
                     <filter string="借阅申请" name="document_borrow" domain="[('fact_type', '=', 'document_borrow')]" />
+                    <filter string="制度文件" name="policy_document" domain="[('fact_type', '=', 'policy_document')]" />
                     <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]" />
                     <filter string="办理中" name="in_progress" domain="[('state', '=', 'in_progress')]" />
                     <filter string="已完成" name="done" domain="[('state', '=', 'done')]" />
@@ -43,6 +44,11 @@
                     <field name="holder_name" optional="show" />
                     <field name="valid_until" optional="show" />
                     <field name="document_title" optional="show" />
+                    <field name="policy_category" optional="hide" />
+                    <field name="policy_version" optional="hide" />
+                    <field name="issuing_department" optional="hide" />
+                    <field name="policy_effective_date" optional="hide" />
+                    <field name="policy_expiry_date" optional="hide" />
                     <field name="borrow_user_id" optional="show" />
                     <field name="borrow_department_name" optional="hide" />
                     <field name="borrower_name" optional="hide" />
@@ -114,6 +120,16 @@
                                 <field name="review_time" />
                                 <field name="review_opinion" />
                             </group>
+                            <group string="制度文件" invisible="fact_type != 'policy_document'">
+                                <field name="document_title" />
+                                <field name="policy_category" />
+                                <field name="policy_version" />
+                                <field name="issuing_department" />
+                                <field name="policy_issue_date" />
+                                <field name="policy_effective_date" />
+                                <field name="policy_expiry_date" />
+                                <field name="confidentiality_level" />
+                            </group>
                         </group>
                         <group>
                             <group string="办理">
@@ -136,6 +152,24 @@
                     </sheet>
                     <chatter />
                 </form>
+            </field>
+        </record>
+        <record id="view_sc_policy_document_tree" model="ir.ui.view">
+            <field name="name">sc.document.admin.document.policy.tree</field>
+            <field name="model">sc.document.admin.document</field>
+            <field name="arch" type="xml">
+                <tree string="制度文件" default_order="policy_effective_date desc, business_date desc, id desc">
+                    <field name="document_no" />
+                    <field name="document_title" string="制度名称" />
+                    <field name="policy_category" />
+                    <field name="policy_version" />
+                    <field name="issuing_department" />
+                    <field name="policy_issue_date" optional="hide" />
+                    <field name="policy_effective_date" />
+                    <field name="policy_expiry_date" optional="show" />
+                    <field name="confidentiality_level" optional="show" />
+                    <field name="state" />
+                </tree>
             </field>
         </record>
         <record id="action_sc_certificate_registration" model="ir.actions.act_window">

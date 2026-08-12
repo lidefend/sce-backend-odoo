@@ -48,6 +48,489 @@
       "decision": "Keep request, claim, and execution separate, with projections aggregating their state instead of replacing them."
     },
     {
+      "spec": "project_salary_calculation_payment_split",
+      "risk_family": "project salary calculation and payment",
+      "business_object": "expense",
+      "fact_source_model": ["sc.hr.payroll.document", "sc.hr.salary.payment"],
+      "allowed_support_models": ["project.project", "res.users"],
+      "projection_models": ["sc.salary.summary", "sc.comprehensive.cost.summary"],
+      "boundary_rule": "Payroll calculation owns the recognized project salary cost and payable amount; salary payment owns each confirmed cash-payment evidence row and may only reduce the payable balance through a conserved relation to a completed calculation.",
+      "forbidden_drift": "Do not reuse payroll calculation as a payment register, write payment facts directly into summary projections, let a menu or frontend contract choose another fact owner, or recognize draft calculations as project cost.",
+      "decision": "Keep calculation and payment as separate P1 fact models linked one-to-many; expose them through distinct governed entries and action-scoped rendering contracts.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "distinct_fact_models",
+      "fact_roles": {
+        "calculation": "recognized_salary_cost_and_payable_authority",
+        "payment": "confirmed_salary_payment_evidence_authority",
+        "projection": "rebuildable_management_visibility_only",
+        "contract": "action_scoped_rendering_only"
+      },
+      "entry_bindings": [
+        {
+          "intent": "salary_calculation",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_project_payroll_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_project_payroll_v1",
+          "fact_model": "sc.hr.payroll.document",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_project_payroll_productized_form_v1"
+        },
+        {
+          "intent": "salary_payment",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_project_salary_payment_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_project_salary_payment_v1",
+          "fact_model": "sc.hr.salary.payment",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_project_salary_payment_productized_form_v1"
+        }
+      ],
+      "conservation_invariants": [
+        "confirmed_payment_total_must_not_exceed_completed_payroll_net_salary",
+        "calculation_cost_recognition_requires_done_state",
+        "payment_cancellation_recomputes_payroll_payment_balance"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/core/hr_payroll_document.py",
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/hr_payroll_form_productization_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "daily_contract_settlement_source_bridge",
+      "risk_family": "general contract and settlement execution",
+      "business_object": "bilateral_mixed",
+      "fact_source_model": ["sc.general.contract", "sc.settlement.order"],
+      "allowed_support_models": ["sc.settlement.order.line", "payment.request", "sc.invoice.registration"],
+      "projection_models": ["sc.expense.contract.ledger", "sc.income.contract.ledger"],
+      "boundary_rule": "General contract owns the daily contract commitment; settlement order owns settlement workflow and amounts. The two explicit source relations are mutually exclusive and downstream payment or invoice documents identify the general contract through the settlement source projection.",
+      "forbidden_drift": "Do not cast a general contract into construction.contract, create a parallel daily settlement model, allow both source relations on one settlement, or infer the source model in frontend code.",
+      "decision": "Extend the canonical settlement order with an explicit general-contract source while preserving the existing construction-contract relation and one settlement workflow.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "entry_bindings": [
+        {
+          "intent": "daily_contract_settlement",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_general_contract_settlement_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_general_contract_settlement_v1",
+          "fact_model": "sc.settlement.order",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_daily_contract_settlement_form_v1"
+        }
+      ],
+      "source_isolation_actions": [
+        {
+          "action_xmlid": "smart_construction_core.action_sc_settlement_order_income",
+          "required_domain_tokens": ["contract_source_kind", "general_contract"]
+        },
+        {
+          "action_xmlid": "smart_construction_core.action_sc_settlement_order_expense",
+          "required_domain_tokens": ["contract_source_kind", "general_contract"]
+        }
+      ],
+      "conservation_invariants": [
+        "one_settlement_has_exactly_one_contract_source_when_submitted",
+        "general_contract_direction_determines_settlement_direction",
+        "project_company_partner_and_currency_match_the_source_contract",
+        "payment_and_invoice_retain_the_settlement_contract_source_identity"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/core/daily_contract_settlement.py",
+        "addons/smart_construction_core/security/contract_settlement_capability_bridge.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/daily_contract_settlement_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "team_loan_deduction_context_entry",
+      "risk_family": "project contextual initiation and finance authority",
+      "business_object": "bilateral_mixed",
+      "fact_source_model": ["sc.financing.loan", "sc.expense.claim"],
+      "allowed_support_models": ["sc.team.loan.deduction.workspace", "project.project", "res.partner"],
+      "projection_models": ["sc.interfund.movement.fact", "sc.finance.business.fact", "sc.finance.project.counterparty.position"],
+      "boundary_rule": "Project Center owns only project-and-counterparty context collection and dispatch; financing loan owns contractor borrowing, expense claim owns deduction registration, and Finance Center exclusively owns approval, completion and accounting consequences.",
+      "forbidden_drift": "Do not persist borrowing or deduction facts in the workspace, let frontend choose a fact model, let project roles complete financial facts, or create another project-local borrowing/deduction model.",
+      "decision": "Use one transient P1 orchestration entry to dispatch into two canonical fact models; keep all business state and downstream projections under their existing owners.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "transient_dispatch_only",
+      "entry_bindings": [
+        {
+          "intent": "team_loan_deduction_context_entry",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_team_loan_deduction_v1",
+          "entry_model": "sc.team.loan.deduction.workspace",
+          "fact_models": ["sc.financing.loan", "sc.expense.claim"],
+          "orchestration_policy": "transient_dispatch_only",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_team_loan_deduction_workspace_form_v1"
+        }
+      ],
+      "conservation_invariants": [
+        "workspace_must_not_persist_business_amount_or_state",
+        "project_role_may_initiate_only_within_visible_project_scope",
+        "financial_fact_completion_requires_finance_authority"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/support/team_loan_deduction_workspace.py",
+        "addons/smart_construction_core/models/core/financing_loan.py",
+        "addons/smart_construction_core/models/core/expense_claim.py",
+        "addons/smart_construction_core/models/projection/finance_business_fact.py",
+        "addons/smart_construction_core/models/projection/finance_project_counterparty_position.py",
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/team_loan_deduction_workspace_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "current_account_context_entry",
+      "risk_family": "multi-fact dispatch and interfund conservation",
+      "business_object": "bilateral_mixed",
+      "fact_source_model": ["sc.financing.loan", "sc.expense.claim", "sc.fund.account.operation"],
+      "allowed_support_models": ["sc.current.account.workspace", "project.project", "res.partner"],
+      "projection_models": ["sc.interfund.movement.fact", "sc.treasury.ledger", "sc.finance.project.counterparty.position"],
+      "boundary_rule": "Finance Center owns the current-account context entry; canonical loan, repayment and account-operation models own facts, while the project-counterparty position remains a read-only projection.",
+      "forbidden_drift": "Do not persist amounts or workflow state in the workspace, flatten all current-account intents into fund account operations, let frontend select fact models, or write business facts into the projection.",
+      "decision": "Use one transient P1 dispatch entry for the five governed interfund intents and one read-only drill-down; preserve each existing fact owner and its capability controls.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "transient_dispatch_only",
+      "entry_bindings": [
+        {
+          "intent": "current_account_context_entry",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_current_account_v1",
+          "entry_model": "sc.current.account.workspace",
+          "fact_models": ["sc.financing.loan", "sc.expense.claim", "sc.fund.account.operation"],
+          "projection_model": "sc.finance.project.counterparty.position",
+          "orchestration_policy": "transient_dispatch_only",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_current_account_workspace_form_v1"
+        }
+      ],
+      "conservation_invariants": [
+        "workspace_must_not_persist_business_amount_or_state",
+        "each_intent_dispatches_to_exactly_one_canonical_fact_model",
+        "interfund_cash_effects_are_traceable_in_treasury_ledger",
+        "current_account_summary_remains_read_only",
+        "finance_capability_is_required_for_product_entry"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/support/current_account_workspace.py",
+        "addons/smart_construction_core/models/core/financing_loan.py",
+        "addons/smart_construction_core/models/core/expense_claim.py",
+        "addons/smart_construction_core/models/core/fund_account_operation.py",
+        "addons/smart_construction_core/models/projection/finance_project_counterparty_position.py",
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/current_account_workspace_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "company_project_refund_context_entry",
+      "risk_family": "refund classification and cash-responsibility conservation",
+      "business_object": "bilateral_mixed",
+      "fact_source_model": ["sc.expense.claim", "sc.self.funding.registration"],
+      "allowed_support_models": ["sc.company.project.refund.workspace", "project.project", "res.partner"],
+      "projection_models": ["sc.finance.business.fact", "sc.company.contractor.responsibility.fact", "sc.treasury.ledger", "sc.finance.project.counterparty.position"],
+      "boundary_rule": "Finance Center owns refund context dispatch; expense claims own deduction and deposit returns, self-funding registration owns contractor self-funding refunds, and projections remain read-only.",
+      "forbidden_drift": "Do not create a generic refund fact, persist amounts or state in the workspace, merge responsibility refunds with deposit returns, let frontend choose the fact owner, or write into projections.",
+      "decision": "Use one transient P1 refund entry that dispatches four explicit intents to two canonical fact models and retains their distinct cash and responsibility semantics.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "transient_dispatch_only",
+      "entry_bindings": [
+        {
+          "intent": "company_project_refund_context_entry",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_company_project_refund_v1",
+          "entry_model": "sc.company.project.refund.workspace",
+          "fact_models": ["sc.expense.claim", "sc.self.funding.registration"],
+          "projection_model": "sc.finance.project.counterparty.position",
+          "orchestration_policy": "transient_dispatch_only",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_company_project_refund_workspace_form_v1"
+        }
+      ],
+      "conservation_invariants": [
+        "workspace_must_not_persist_business_amount_or_state",
+        "each_refund_intent_dispatches_to_exactly_one_canonical_fact_model",
+        "self_funding_refund_requires_a_counterparty_identity",
+        "cash_effects_are_traceable_in_treasury_ledger",
+        "refund_summary_remains_read_only"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/support/company_project_refund_workspace.py",
+        "addons/smart_construction_core/models/core/expense_claim.py",
+        "addons/smart_construction_core/models/core/self_funding_registration.py",
+        "addons/smart_construction_core/models/projection/finance_project_counterparty_position.py",
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/company_project_refund_workspace_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "project_special_tax_deduction_scope",
+      "risk_family": "tax entry overlap and noncash conservation",
+      "business_object": "tax_deduction",
+      "fact_source_model": ["sc.tax.deduction.registration"],
+      "allowed_support_models": ["sc.business.category", "project.project", "res.partner"],
+      "projection_models": ["sc.finance.business.fact", "sc.finance.business.project.summary", "sc.finance.project.capital.position"],
+      "boundary_rule": "The canonical tax deduction model owns both general and project-special deductions; deduction_scope and business category form one backend-owned, mutually exclusive entry contract.",
+      "forbidden_drift": "Do not create a second project tax deduction model, expose overlapping general and project-special actions, let frontend infer scope, or post tax deductions into cash ledgers.",
+      "decision": "Add an explicit project-special scope and category to the existing deduction fact, isolate the two actions, and retain the established noncash tax projection chain.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "single_fact_scoped_entries",
+      "entry_bindings": [
+        {
+          "intent": "project_special_tax_deduction",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_project_tax_deduction_v1",
+          "fact_model": "sc.tax.deduction.registration",
+          "scope_field": "deduction_scope",
+          "scope_value": "project_special",
+          "business_category_code": "tax.deduction.project_special",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_project_special_tax_deduction_form_v1"
+        }
+      ],
+      "source_isolation_actions": [
+        {
+          "action_xmlid": "smart_construction_core.action_sc_tax_deduction_registration_user",
+          "required_domain_tokens": ["deduction_scope", "general", "tax.deduction.registration"]
+        },
+        {
+          "action_xmlid": "smart_construction_core.action_sc_product_project_tax_deduction_v1",
+          "required_domain_tokens": ["deduction_scope", "project_special", "tax.deduction.project_special"]
+        }
+      ],
+      "conservation_invariants": [
+        "one_deduction_has_exactly_one_scope",
+        "scope_and_business_category_are_consistent",
+        "general_and_project_special_actions_do_not_overlap",
+        "project_special_deduction_uses_the_existing_noncash_tax_fact_chain",
+        "tax_deduction_balance_effect_remains_zero"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/core/tax_deduction_registration.py",
+        "addons/smart_construction_core/data/business_category_seed.xml",
+        "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml",
+        "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/project_special_tax_deduction_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "policy_document_fact_scope",
+      "risk_family": "document semantic aliasing and entry overlap",
+      "business_object": "policy_document",
+      "fact_source_model": ["sc.document.admin.document"],
+      "allowed_support_models": ["ir.attachment", "hr.department", "res.users"],
+      "projection_models": [],
+      "boundary_rule": "The shared document carrier owns distinct backend fact types; policy documents use policy_document and never inherit company archive semantics from a renamed menu.",
+      "forbidden_drift": "Do not bind the policy menu to the company archive action, expose overlapping domains, create a second document carrier, or let frontend text infer fact_type.",
+      "decision": "Keep one document carrier, add an explicit policy fact type and metadata, isolate actions, and publish an action-specific rendering contract.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "single_carrier_scoped_entries",
+      "entry_bindings": [
+        {
+          "intent": "policy_document_maintenance",
+          "menu_xmlid": "smart_construction_core.menu_sc_product_policy_document_v1",
+          "action_xmlid": "smart_construction_core.action_sc_product_policy_document_v1",
+          "fact_model": "sc.document.admin.document",
+          "scope_field": "fact_type",
+          "scope_value": "policy_document",
+          "view_contract_xmlid": "smart_construction_core.business_config_contract_policy_document_form_v1"
+        }
+      ],
+      "source_isolation_actions": [
+        {
+          "action_xmlid": "smart_construction_core.action_sc_company_document_archive",
+          "required_domain_tokens": ["fact_type", "company_document_archive"]
+        },
+        {
+          "action_xmlid": "smart_construction_core.action_sc_product_policy_document_v1",
+          "required_domain_tokens": ["fact_type", "policy_document"]
+        }
+      ],
+      "conservation_invariants": [
+        "one_document_fact_has_exactly_one_fact_type",
+        "company_archive_and_policy_actions_do_not_overlap",
+        "policy_metadata_is_owned_by_backend_fields",
+        "attachments_remain_on_the_canonical_document_fact",
+        "only_operational_date_inconsistency_hard_blocks_completion"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/core/document_admin_document.py",
+        "addons/smart_construction_core/views/core/document_admin_document_views.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/policy_document_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "social_and_provident_fund_fact_scope",
+      "risk_family": "hr contribution semantic aliasing",
+      "business_object": "social_fund_contribution",
+      "fact_source_model": ["sc.hr.payroll.document"],
+      "allowed_support_models": ["res.users", "hr.department", "ir.attachment"],
+      "projection_models": [],
+      "boundary_rule": "Social insurance and provident fund records share the canonical HR payroll carrier but are backend-owned, mutually distinct fact types.",
+      "forbidden_drift": "Do not label a social-only action as social fund, create a second provident carrier, include salary facts in the entry, or calculate contributions in frontend code.",
+      "decision": "Add the missing provident fund fact type and fields, aggregate only the three contribution facts in one governed action, and render through an action-specific contract.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "single_carrier_multi_fact_entry",
+      "entry_bindings": [{
+        "intent": "social_and_provident_fund_maintenance",
+        "menu_xmlid": "smart_construction_core.menu_sc_product_social_fund_v1",
+        "action_xmlid": "smart_construction_core.action_sc_product_social_fund_v1",
+        "fact_model": "sc.hr.payroll.document",
+        "scope_field": "fact_type",
+        "scope_value": "social_person_registration|social_registration|provident_fund_registration",
+        "view_contract_xmlid": "smart_construction_core.business_config_contract_social_fund_form_v1"
+      }],
+      "source_isolation_actions": [{
+        "action_xmlid": "smart_construction_core.action_sc_product_social_fund_v1",
+        "required_domain_tokens": ["fact_type", "social_person_registration", "social_registration", "provident_fund_registration"]
+      }],
+      "conservation_invariants": [
+        "one_hr_document_has_exactly_one_fact_type",
+        "social_fund_entry_excludes_salary_subsidy_and_bonus",
+        "provident_rates_and_amounts_are_backend_fields",
+        "noncritical_completeness_is_advisory",
+        "operational_numeric_inconsistency_blocks_transition"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/core/hr_payroll_document.py",
+        "addons/smart_construction_core/views/core/hr_payroll_document_views.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/social_fund_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "product_system_parameter_write_facade",
+      "risk_family": "configuration overlap and secret exposure",
+      "business_object": "product_system_parameter",
+      "fact_source_model": ["sc.product.system.settings", "ir.config_parameter"],
+      "allowed_support_models": ["sc.product.system.settings", "res.company"],
+      "projection_models": [],
+      "boundary_rule": "ir.config_parameter remains runtime authority; the product exposes only approved parameters through a typed transient facade.",
+      "forbidden_drift": "Do not reuse UI contracts as parameters, expose raw parameter rows, persist secrets in product models, or let frontend write parameter keys.",
+      "decision": "Replace the overlapping contract action with an allowlisted settings facade and map one typed choice to existing cost-source parameters.",
+      "formal_product_layer": "P1",
+      "layer_target": "L2_industry_standard",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "construction_industry_standard",
+      "separation_policy": "typed_transient_write_facade",
+      "entry_bindings": [{
+        "intent": "product_system_parameter_configuration",
+        "menu_xmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
+        "action_xmlid": "smart_construction_core.action_sc_product_system_parameter_v1",
+        "entry_model": "sc.product.system.settings",
+        "fact_model": "sc.product.system.settings",
+        "parameter_authority_model": "ir.config_parameter",
+        "orchestration_policy": "allowlisted_parameter_mapping",
+        "view_contract_xmlid": "smart_construction_core.business_config_contract_product_system_settings_form_v1"
+      }],
+      "conservation_invariants": [
+        "runtime_parameter_has_one_authority",
+        "product_ui_never_exposes_arbitrary_keys",
+        "deployment_secrets_are_not_product_fields",
+        "cost_ledger_source_is_mutually_exclusive",
+        "only_config_admin_can_apply_parameters"
+      ],
+      "authority_carriers": [
+        "addons/smart_construction_core/models/support/product_system_settings.py",
+        "addons/smart_construction_core/models/support/res_config_settings.py",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/product_system_settings_contract.xml"
+      ],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "product_data_permission_surface",
+      "risk_family": "permission model bypass and configuration overlap",
+      "business_object": "data_permission_assignment",
+      "fact_source_model": ["res.users"],
+      "allowed_support_models": ["res.groups", "res.company", "sc.project.member.assignment"],
+      "projection_models": [],
+      "boundary_rule": "Data permission configuration reuses user identity, assignable capability groups and project membership authorities through the guarded runtime-user context.",
+      "forbidden_drift": "Do not model permissions as UI contracts, expose raw ACL or record-rule editing, bypass capability groups, or allow privileged-user targets.",
+      "decision": "Bind the product entry to a dedicated res.users permission surface with company, role and project scopes only.",
+      "formal_product_layer": "P1", "layer_target": "L2_industry_standard", "module": "smart_construction_core", "standard_vs_user_specific": "construction_industry_standard", "separation_policy": "existing_authority_guarded_surface",
+      "entry_bindings": [{"intent": "data_permission_assignment", "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1", "action_xmlid": "smart_construction_core.action_sc_product_data_permission_v1", "fact_model": "res.users", "view_contract_xmlid": "smart_construction_core.business_config_contract_data_permission_form_v1"}],
+      "conservation_invariants": ["identity_remains_res_users", "roles_are_limited_to_assignable_capability_groups", "project_scope_remains_project_membership", "privileged_users_are_excluded", "frontend_does_not_edit_acl_or_record_rules"],
+      "authority_carriers": ["addons/smart_construction_core/models/support/runtime_user_management.py", "addons/smart_construction_core/views/support/runtime_user_management_views.xml", "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml", "addons/smart_construction_core/data/data_permission_contract.xml"],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "product_numbering_rule_authority",
+      "risk_family": "sequence authority duplication and technical exposure",
+      "business_object": "numbering_rule",
+      "fact_source_model": ["ir.sequence"],
+      "allowed_support_models": ["res.company"], "projection_models": [],
+      "boundary_rule": "Odoo ir.sequence remains the single numbering authority; product configuration exposes only backend-classified business sequences and safe format fields.",
+      "forbidden_drift": "Do not create another counter model, expose technical sequences, allow key mutation, or generate numbers in frontend code.",
+      "decision": "Extend ir.sequence with a computed product scope, enforce a capability record rule and safe write whitelist, and bind the formal entry directly to it.",
+      "formal_product_layer": "P1", "layer_target": "L2_industry_standard", "module": "smart_construction_core", "standard_vs_user_specific": "construction_industry_standard", "separation_policy": "native_authority_scoped_configuration",
+      "entry_bindings": [{"intent": "product_numbering_rule_configuration", "menu_xmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1", "action_xmlid": "smart_construction_core.action_sc_product_numbering_rule_v1", "fact_model": "ir.sequence", "view_contract_xmlid": "smart_construction_core.business_config_contract_product_numbering_rule_form_v1"}],
+      "source_isolation_actions": [{"action_xmlid": "smart_construction_core.action_sc_product_numbering_rule_v1", "required_domain_tokens": ["sc_product_configurable", "True"]}],
+      "conservation_invariants": ["ir_sequence_is_single_counter_authority", "technical_sequences_are_hidden", "sequence_code_is_immutable_for_config_admin", "create_and_delete_are_release_owned", "frontend_never_generates_business_numbers"],
+      "authority_carriers": ["addons/smart_construction_core/models/support/product_numbering_rule.py", "addons/smart_construction_core/security/ir.model.access.csv", "addons/smart_construction_core/security/sc_record_rules.xml", "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml", "addons/smart_construction_core/data/product_numbering_rule_contract.xml"],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "product_job_master_authority",
+      "risk_family": "duplicate organization master data",
+      "business_object": "job_position",
+      "fact_source_model": ["hr.job"],
+      "allowed_support_models": ["hr.department", "hr.employee", "res.company"], "projection_models": [],
+      "boundary_rule": "Odoo hr.job is the single position master and employee job_id remains the assignment authority.",
+      "forbidden_drift": "Do not create a parallel position table, duplicate employee assignments, bypass company scope, or delete referenced jobs from the product surface.",
+      "decision": "Extend hr.job with construction-standard metadata and publish dedicated company-scoped views and contract.",
+      "formal_product_layer": "P1", "layer_target": "L2_industry_standard", "module": "smart_construction_core", "standard_vs_user_specific": "construction_industry_standard", "separation_policy": "native_master_extension",
+      "entry_bindings": [{"intent": "job_master_maintenance", "menu_xmlid": "smart_construction_core.menu_sc_product_job_management_v1", "action_xmlid": "smart_construction_core.action_sc_product_job_management_v1", "fact_model": "hr.job", "view_contract_xmlid": "smart_construction_core.business_config_contract_product_job_form_v1"}],
+      "conservation_invariants": ["hr_job_is_single_master", "employee_assignment_remains_hr_employee_job_id", "job_code_is_unique_per_company", "company_scope_is_enforced", "product_surface_does_not_delete_jobs"],
+      "authority_carriers": ["addons/smart_construction_core/models/support/product_job.py", "addons/smart_construction_core/security/ir.model.access.csv", "addons/smart_construction_core/security/sc_record_rules.xml", "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml", "addons/smart_construction_core/data/product_job_contract.xml"],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
+      "spec": "office_asset_master_and_lifecycle",
+      "risk_family": "asset master aliased to approval documents",
+      "business_object": "office_asset",
+      "fact_source_model": ["sc.office.asset"],
+      "allowed_support_models": ["hr.employee", "hr.department", "res.company", "ir.attachment"], "projection_models": [],
+      "boundary_rule": "Office assets are durable master records with custody lifecycle; leave and seal approval documents cannot own asset state.",
+      "forbidden_drift": "Do not bind the asset menu to office approval documents, duplicate employee identity, or manage lifecycle in frontend code.",
+      "decision": "Create a dedicated company-scoped asset master and backend lifecycle while reusing employee and attachment authorities.",
+      "formal_product_layer": "P1", "layer_target": "L2_industry_standard", "module": "smart_construction_core", "standard_vs_user_specific": "construction_industry_standard", "separation_policy": "dedicated_durable_master",
+      "entry_bindings": [{"intent": "office_asset_maintenance", "menu_xmlid": "smart_construction_core.menu_sc_product_office_asset_v1", "action_xmlid": "smart_construction_core.action_sc_product_office_asset_v1", "fact_model": "sc.office.asset", "view_contract_xmlid": "smart_construction_core.business_config_contract_office_asset_form_v1"}],
+      "conservation_invariants": ["asset_code_is_unique_per_company", "custodian_is_hr_employee", "custody_state_changes_are_backend_actions", "retired_asset_cannot_be_reassigned", "office_approval_documents_do_not_own_assets"],
+      "authority_carriers": ["addons/smart_construction_core/models/support/office_asset.py", "addons/smart_construction_core/security/ir.model.access.csv", "addons/smart_construction_core/security/sc_record_rules.xml", "addons/smart_construction_core/views/support/office_asset_views.xml", "addons/smart_construction_core/data/office_asset_contract.xml"],
+      "frontend_policy": "contract_renderer_only"
+    },
+    {
       "spec": "projection_refresh_ownership",
       "risk_family": "projection and management visibility",
       "business_object": "projection",
