@@ -36,6 +36,12 @@ export interface ChatterTimelineResponse {
     audit?: number;
     total?: number;
   };
+  paging?: {
+    offset?: number;
+    limit?: number;
+    next_offset?: number | null;
+    has_more?: boolean;
+  };
 }
 
 export interface CollaborationUserOption {
@@ -114,6 +120,7 @@ export async function fetchChatterTimeline(params: {
   model: string;
   res_id: number;
   limit?: number;
+  offset?: number;
   include_audit?: boolean;
 }) {
   return intentRequest<ChatterTimelineResponse>({
@@ -121,7 +128,8 @@ export async function fetchChatterTimeline(params: {
     params: {
       model: params.model,
       res_id: params.res_id,
-      limit: params.limit ?? 40,
+      limit: params.limit,
+      offset: params.offset ?? 0,
       include_audit: params.include_audit ?? true,
     },
   });

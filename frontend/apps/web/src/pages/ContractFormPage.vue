@@ -861,10 +861,12 @@ const {
   loading: chatterLoading,
   error: chatterError,
   timeline: chatterTimeline,
+  timelineHasMore: chatterTimelineHasMore,
   activityUpdatingIds,
   clearForRecordLoad: clearNativeChatterForRecordLoad,
   closeComposer: closeNativeChatterComposer,
   loadTimeline: loadNativeChatterTimeline,
+  loadMoreTimeline: loadMoreNativeChatterTimeline,
   loadUsers: loadCollaborationUsers,
   selectMentionUser,
   removeMentionUser,
@@ -877,6 +879,7 @@ const {
   activeActivityAction: () => activeActivityAction.value,
 });
 const attachmentViewerRef = ref<NativeAttachmentViewerLike | null>(null);
+const chatterTimelineLoading = chatterLoading;
 const {
   uploading: attachmentUploading,
   error: attachmentError,
@@ -1573,7 +1576,7 @@ const {
   applyWorkflowAvailability, attachmentError, attachmentUploading,
   buildContractFormActions, busy, busyKind,
   canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft,
-  chatterError, chatterPosting, chatterTimeline,
+  chatterError, chatterPosting, chatterTimeline, chatterTimelineHasMore, chatterTimelineLoading,
   closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions,
   collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById,
   collectSceneValidationPrecheckErrorsFromRules, collectUnifiedPageContractV2ButtonStatus, commitMany2oneInline: (...args: Parameters<typeof commitMany2oneInline>) => commitMany2oneInline(...args),
@@ -1586,7 +1589,7 @@ const {
   formData, formLayoutColumnsDraft, inputFieldValue,
   intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue,
   isIntakeCreateMode, isQuickIntakeMode, isTierValidationActionHidden: (methodName: string) => isTierValidationActionHidden(methodName),
-  layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase,
+  layoutContainsType, loadCollaborationUsers, loadMoreNativeChatterTimeline, lowCodeFormLayoutBase,
   many2oneValue, markFieldChanged, model,
   nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision,
   navigateActionResponseResult, normalizeActionKind, normalizeActionSafety,

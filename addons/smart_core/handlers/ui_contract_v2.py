@@ -2931,6 +2931,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "enabled": True,
             "intent": "chatter.timeline",
             "include_audit": True,
+            "page_size": 40,
         }
         collaboration["sourceAuthority"] = {
             "kind": "ui_contract_v2_collaboration_projection",

@@ -170,6 +170,15 @@
         </button>
       </li>
     </ul>
+    <button
+      v-if="!unavailableMessage && timelineHasMore"
+      class="ghost native-chatter-load-more"
+      type="button"
+      :disabled="timelineLoading"
+      @click="$emit('load-more-timeline')"
+    >
+      {{ timelineLoading ? '加载中...' : '加载更多' }}
+    </button>
   </section>
 </template>
 
@@ -221,6 +230,8 @@ export type NativeCollaborationPanelProps = {
   attachmentError: string;
   pendingAttachments: PendingNativeAttachment[];
   timeline: ChatterTimelineEntry[];
+  timelineHasMore: boolean;
+  timelineLoading: boolean;
   activityUpdatingIds: number[];
 };
 
@@ -241,6 +252,7 @@ export type NativeCollaborationPanelListeners = {
   'remove-pending-attachment': (key: string) => void;
   'update-activity': (entry: ChatterTimelineEntry, action: 'done' | 'cancel') => void;
   'open-attachment': (attachment: NonNullable<ChatterTimelineEntry['attachment']>) => void;
+  'load-more-timeline': () => void;
 };
 
 const props = defineProps<NativeCollaborationPanelProps>();
@@ -262,6 +274,7 @@ const emit = defineEmits<{
   'remove-pending-attachment': [key: string];
   'update-activity': [entry: ChatterTimelineEntry, action: 'done' | 'cancel'];
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
+  'load-more-timeline': [];
 }>();
 
 function inputValue(event: Event) {
