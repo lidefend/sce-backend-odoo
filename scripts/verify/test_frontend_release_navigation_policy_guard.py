@@ -51,6 +51,23 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         self.assertTrue(any("owner: released/contextual overlap" in row for row in errors))
         self.assertTrue(any("pm: released/denied overlap" in row for row in errors))
 
+    def test_formal_daily_contract_identity_replaces_legacy_construction_contract(self):
+        manifest, policies = _fixture()
+        formal_menu = "smart_construction_core.menu_sc_p1_daily_contract"
+        legacy_menu = "smart_construction_core.menu_sc_construction_contract"
+        manifest["roles"]["pm"] = {
+            "expected_count": 1,
+            "leaf_keys": [
+                f"{formal_menu}|smart_construction_core.action_sc_general_contract|sc.general.contract"
+            ],
+        }
+        policies["pm"]["primary_menu_xmlids"] = [formal_menu]
+        self.assertEqual(validate(manifest, policies), [])
+
+        policies["pm"]["primary_menu_xmlids"] = [legacy_menu]
+        errors = validate(manifest, policies)
+        self.assertTrue(any(formal_menu in row and legacy_menu in row for row in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

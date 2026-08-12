@@ -70,7 +70,7 @@
       "leaf_keys": [
         "smart_construction_core.menu_sc_boq_analysis|smart_construction_core.action_project_boq_analysis|project.boq.analysis",
         "smart_construction_core.menu_sc_boq_version|smart_construction_core.action_project_boq_version|project.boq.version",
-        "smart_construction_core.menu_sc_construction_contract|smart_construction_core.action_construction_contract_handling|construction.contract",
+        "smart_construction_core.menu_sc_p1_daily_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
         "smart_construction_core.menu_sc_construction_diary|smart_construction_core.action_sc_construction_diary|sc.construction.diary",
         "smart_construction_core.menu_sc_expense_contract_settlement|smart_construction_core.action_sc_settlement_order_expense|sc.settlement.order",
         "smart_construction_core.menu_sc_expense_contract_variation|smart_construction_core.action_sc_expense_contract_variation|sc.settlement.adjustment",
@@ -99,7 +99,7 @@
       "leaf_keys": [
         "smart_construction_core.menu_sc_certificate_registration|smart_construction_core.action_sc_certificate_registration|sc.document.admin.document",
         "smart_construction_core.menu_sc_company_document_archive|smart_construction_core.action_sc_company_document_archive|sc.document.admin.document",
-        "smart_construction_core.menu_sc_construction_contract|smart_construction_core.action_construction_contract_handling|construction.contract",
+        "smart_construction_core.menu_sc_p1_daily_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
         "smart_construction_core.menu_sc_construction_diary|smart_construction_core.action_sc_construction_diary|sc.construction.diary",
         "smart_construction_core.menu_sc_document_borrow|smart_construction_core.action_sc_document_borrow|sc.document.admin.document",
         "smart_construction_core.menu_sc_general_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
