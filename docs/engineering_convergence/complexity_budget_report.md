@@ -109,7 +109,7 @@ Generated from repository source files. This report is informational during the 
 | 867 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 861 | Python source | `scripts/release/release_candidate.py` |
-| 860 | Python source | `addons/smart_construction_core/models/support/tender.py` |
+| 859 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 858 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 857 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |

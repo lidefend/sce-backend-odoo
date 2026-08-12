@@ -3791,3 +3791,38 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Exact path/blob/classification matching suppresses only `PD002`; wrong paths,
   wrong blob identities and a `PD001` match in the same object remain reportable.
   Unit tests and the real `make verify.repository.clean_history` gate pass.
+
+## 2026-08-13 — P1-DEMO-TENDER-STANDARD-DOCUMENT-NUMBER-CLOSURE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` after `e880dd5`.
+- Formal Product Layer / Layer Target / Module: P1 / construction tender
+  guarantee visible-field semantics / `smart_construction_core`.
+- Standard vs User-Specific: construction product standard. The visible
+  document number falls back to the governed tender bid number, never to a
+  customer-history compatibility field.
+- Reason / Boundary: the Demo branch's guarantee fallback read
+  `legacy_visible_document_no` before `tender.bid.name`, leaking historical
+  compatibility semantics into the product runtime and failing the tenant
+  product legacy boundary gate.
+- Why Here / Why Not Elsewhere: the P1 tender model owns the standard fallback;
+  Demo fixtures, frontend rendering and customer modules must not redefine it.
+- Blast Radius / validation: only the computed guarantee document number when
+  no payload value exists. A focused ORM test supplies a conflicting legacy
+  value and requires the standard bid number; the tenant legacy boundary and
+  local quick CI gates prove containment.
+
+## 2026-08-13 — P4-HOOK-FACTS-GUARD-CURRENT-LABEL-CLOSURE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` after `e880dd5`.
+- Formal Product Layer / Layer Target / Module: P4 / static architecture
+  verification / `construction_core_extension_hook_facts_split_guard.py`.
+- Standard vs User-Specific: generic product CI governance.
+- Reason / Boundary: the guard still required the legacy `开票申请` rename
+  removed by merged PR #179, while the current P1 policy deliberately prevents
+  legacy aliases from overriding locked product labels.
+- Why Here / Why Not Elsewhere: the stale expectation belongs to its P4 static
+  guard; restoring the removed alias in P1 runtime would reverse the product
+  navigation boundary.
+- Blast Radius / validation: one static assertion now locks the retained
+  `开票登记` to `销项发票登记` mapping. The focused hook-facts guard and
+  full local quick CI gate prove containment.

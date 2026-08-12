@@ -795,7 +795,6 @@ class TenderGuarantee(models.Model):
             record.deposit_kingdee_document_no = value("金蝶单据编号")
             record.deposit_document_no = (
                 value("单据编号")
-                or record.legacy_visible_document_no
                 or record.bid_id.name
                 or ""
             )

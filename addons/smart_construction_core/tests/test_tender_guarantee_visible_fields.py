@@ -18,6 +18,7 @@ class TestTenderGuaranteeVisibleFields(TransactionCase):
                 "bid_id": bid.id,
                 "type": "out",
                 "amount": 1000,
+                "legacy_visible_document_no": "LEGACY-GUARANTEE-001",
             }
         )
 
