@@ -1495,7 +1495,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertFalse(hasattr(self.module, "BUSINESS_FORM_SECTION_ALIASES_BY_MODEL"))
         self.assertFalse(hasattr(self.module, "BUSINESS_FORM_STRUCTURE_P1_VISIBLE_FIELD_MODELS"))
 
-    def test_form_structure_contract_places_history_fields_in_check_group(self):
+    def test_form_structure_contract_keeps_history_fields_on_audit_only_surface(self):
         handler = self.module.UiContractV2Handler(env=object())
         field_types = {
             "project_id": "many2one",
@@ -1535,25 +1535,20 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             unique=unique,
         )
 
-        history_group = None
         primary_refs = []
         for slot in structure["slots"]:
             if slot["slot"] == "primary_facts":
                 for group in slot.get("groups") or []:
                     primary_refs.extend(group.get("fieldRefs") or [])
-            if slot["slot"] == "details_source":
-                history_group = next(
-                    (group for group in slot.get("groups") or [] if group.get("name") == "history_check"),
-                    None,
-                )
-
-        self.assertIsNotNone(history_group)
         self.assertEqual(
-            history_group["fieldRefs"],
+            structure["internalAudit"]["fieldRefs"],
             ["legacy_document_no", "legacy_project_name", "legacy_status"],
         )
+        self.assertEqual(structure["internalAudit"]["surface"], "audit_only")
+        self.assertEqual(structure["presentationPolicy"]["technicalFieldPolicy"], "fail_closed")
         self.assertNotIn("legacy_document_no", primary_refs)
         self.assertNotIn("legacy_status", primary_refs)
+        self.assertNotIn("legacy_document_no", structure["fieldRoles"])
 
     def test_form_structure_contract_promotes_formalized_migration_business_fields(self):
         handler = self.module.UiContractV2Handler(env=object())
@@ -1598,10 +1593,12 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         roles = structure["fieldRoles"]
         self.assertEqual(roles["legacy_owner_unit"]["slot"], "primary_facts")
         self.assertEqual(roles["legacy_owner_unit"]["group"], "other_facts")
-        self.assertEqual(roles["legacy_source_created_at"]["slot"], "details_source")
-        self.assertEqual(roles["legacy_source_created_at"]["group"], "history_check")
-        self.assertEqual(roles["legacy_attachment_ref"]["slot"], "details_source")
-        self.assertEqual(roles["legacy_attachment_ref"]["group"], "history_check")
+        self.assertNotIn("legacy_source_created_at", roles)
+        self.assertNotIn("legacy_attachment_ref", roles)
+        self.assertEqual(
+            structure["internalAudit"]["fieldRefs"],
+            ["legacy_source_created_at", "legacy_attachment_ref"],
+        )
 
     def test_form_structure_governance_hidden_rows_override_duplicate_migration_fields(self):
         class _Field:

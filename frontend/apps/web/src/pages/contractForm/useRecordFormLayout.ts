@@ -6,6 +6,7 @@ import type { NativeFormLayoutNode } from '../../components/template/NativeFormT
 import { buildRuntimeFieldStates } from '../../app/modifierEngine';
 import {
   collectContractV2FieldStatusByCode, resolveContractV2ContainerTree, resolveContractV2MainData,
+  resolveContractV2ValueSource,
 } from '../../app/contracts/v2';
 import {
   collectUnifiedPageContractV2FieldStatus, collectUnifiedPageContractV2FieldWidgets,
@@ -18,7 +19,8 @@ import {
   collectNativeVisibleFieldNames, collectNativeVisibleFieldOrder, collectNativeVisibleSectionTitles,
   countNativeNodesByType, evaluateNativeModifierValue as evaluateNativeModifierValueWithResolver,
   filterVisibleNativeLayoutNodes as filterVisibleNativeLayoutNodesFromTree, isCreateWorkflowStateField,
-  isNativeActionVisible, isNativeFieldVisible as isNativeFieldVisibleFromNativeLayout,
+  isNativeActionVisible, isNativeFieldLayoutNode, isNativeFieldVisible as isNativeFieldVisibleFromNativeLayout,
+  isOrdinaryFormInternalField, isReadonlyEmptyBusinessValue,
   isNativeLayoutNodeVisible as isNativeLayoutNodeVisibleFromNativeLayout,
   normalizeContractV2ContainersForNativeForm as normalizeContractV2ContainersForNativeFormFromTree,
   resolveNativeButtonLabel as resolveNativeButtonLabelFromNode, resolveNativeFormRootColumns,
@@ -72,14 +74,24 @@ export function useRecordFormLayout(context: {
     });
   });
   const runtimeState = (name: string) => runtimeFieldStates.value[name] || { invisible:false, readonly:false, required:false };
+  const fieldRuntimeValue = (name: string) => {
+    if (Object.prototype.hasOwnProperty.call(context.formData, name)) return context.formData[name];
+    const storeValues = resolveContractV2ValueSource(context.v2ContractStore.value).values;
+    if (Object.prototype.hasOwnProperty.call(storeValues, name)) return storeValues[name];
+    const storeMain = resolveContractV2MainData(context.v2ContractStore.value);
+    if (Object.prototype.hasOwnProperty.call(storeMain, name)) return storeMain[name];
+    const unifiedMain = resolveUnifiedPageContractV2MainData(context.contract.value);
+    return unifiedMain[name];
+  };
   const isFieldVisible = (name: string) => {
     const descriptor = context.contract.value?.fields?.[String(name || '').trim()];
     if (isCreateWorkflowStateField(name, context.contractFieldLabel(name) || descriptor?.string || '', !context.recordId.value)) return false;
     if (nativeStatusbar.value.field === String(name || '').trim()) return false;
     const semantic = context.fieldSemanticMeta(name);
-    if ((semantic.technical || semantic.semantic_type === 'technical') && !context.showHud.value) return false;
-    if (semantic.surface_role === 'hidden' && !context.showHud.value) return false;
+    if (isOrdinaryFormInternalField(name, semantic) && !context.showHud.value) return false;
     if (runtimeState(name).invisible) return false;
+    if (context.renderProfile.value === 'readonly' && !context.showHud.value && !descriptor?.required
+      && isReadonlyEmptyBusinessValue(fieldRuntimeValue(name), String(descriptor?.type || ''))) return false;
     if (context.contractVisibleFields.value.length && !context.contractVisibleFields.value.includes(name)) return false;
     if (semantic.surface_role === 'core') return true;
     if (semantic.surface_role === 'advanced') return context.advancedExpanded.value;
@@ -90,10 +102,24 @@ export function useRecordFormLayout(context: {
     if (!core.length) return true;
     return context.renderProfile.value !== 'create';
   };
-  const filterVisibleNativeLayoutNodes = (nodes: NativeFormLayoutNode[]) => filterVisibleNativeLayoutNodesFromTree({
-    nodes, isNodeVisible: isNativeLayoutNodeVisible, groupVisibilityEditable: context.isContractFieldOrderEditable.value,
-    normalizeGroupTitle: normalizeFieldGroupTitle, isGroupVisible: context.effectiveGroupVisible,
-  });
+  const filterVisibleNativeLayoutNodes = (nodes: NativeFormLayoutNode[]) => {
+    const seenFields = new Set<string>();
+    return filterVisibleNativeLayoutNodesFromTree({
+      nodes,
+      isNodeVisible: (node) => {
+        if (!isNativeLayoutNodeVisible(node)) return false;
+        if (!isNativeFieldLayoutNode(node)) return true;
+        const name = String(node.name || '').trim();
+        if (!isNativeFieldVisible(name, node)) return false;
+        if (!context.isContractFieldOrderEditable.value && seenFields.has(name)) return false;
+        seenFields.add(name);
+        return true;
+      },
+      groupVisibilityEditable: context.isContractFieldOrderEditable.value,
+      normalizeGroupTitle: normalizeFieldGroupTitle,
+      isGroupVisible: context.effectiveGroupVisible,
+    });
+  };
   const applyNativeFieldOrderPreview = (nodes: NativeFormLayoutNode[]) => applyNativeFieldOrderPreviewFromTree({
     nodes, fieldOrder: context.fieldOrderDraft.value, movedGroups: context.changedFieldGroupDraft(),
     moveTargetDraft: context.fieldMoveTargetDraft, normalizeGroupTitle: normalizeFieldGroupTitle,
@@ -145,7 +171,7 @@ export function useRecordFormLayout(context: {
   const evaluateNativeModifierValue=(value:unknown)=>evaluateNativeModifierValueWithResolver(value,(field)=>context.formData[field]);
   const evaluateNativeActionVisibility=(row:Record<string,unknown>)=>isNativeActionVisible({row,currentState:String(context.formData.state||'').trim(),evaluateModifier:evaluateNativeModifierValue,resolveAction:context.contractActionFromNativeRow});
   function isNativeLayoutNodeVisible(node:NativeFormLayoutNode){return isNativeLayoutNodeVisibleFromNativeLayout({node,editable:context.isContractFieldOrderEditable.value,evaluateModifier:evaluateNativeModifierValue,normalizeGroupTitle:normalizeFieldGroupTitle,isGroupVisible:context.effectiveGroupVisible,isFieldVisibleInDraft:(name)=>Object.prototype.hasOwnProperty.call(context.fieldVisibilityDraft,name)?context.fieldVisibilityDraft[name]:undefined,resolveAction:context.contractActionFromNativeRow});}
-  function isNativeFieldVisible(name:string,node?:NativeFormLayoutNode){return isNativeFieldVisibleFromNativeLayout({name,node,statusField:nativeStatusbar.value.field,showHud:context.showHud.value,renderProfile:context.renderProfile.value,isCreate:!context.recordId.value,isNodeVisible:(item)=>isNativeLayoutNodeVisible(item as NativeFormLayoutNode),resolveDescriptor:(field,item)=>item?(item as any).descriptor||context.contract.value?.fields?.[field]:context.contract.value?.fields?.[field],resolveFieldLabel:context.contractFieldLabel,semantic:context.fieldSemanticMeta,runtimeState,evaluatePolicy:(field,descriptor)=>evaluateFieldPolicy(context.contract.value,field,{required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)},context.policyContext.value)});}
+  function isNativeFieldVisible(name:string,node?:NativeFormLayoutNode){return isNativeFieldVisibleFromNativeLayout({name,node,statusField:nativeStatusbar.value.field,showHud:context.showHud.value,renderProfile:context.renderProfile.value,isCreate:!context.recordId.value,isNodeVisible:(item)=>isNativeLayoutNodeVisible(item as NativeFormLayoutNode),resolveDescriptor:(field,item)=>item?(item as any).descriptor||context.contract.value?.fields?.[field]:context.contract.value?.fields?.[field],resolveFieldLabel:context.contractFieldLabel,semantic:context.fieldSemanticMeta,runtimeState,evaluatePolicy:(field,descriptor)=>evaluateFieldPolicy(context.contract.value,field,{required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)},context.policyContext.value),value:fieldRuntimeValue(name)});}
   const isWritableFieldVisible=(name:string)=>useNativeFormTree.value?nativeVisibleFieldNames.value.has(String(name||'').trim()):isFieldVisible(name);
   const currentNativeFieldOrder=()=>collectNativeVisibleFieldOrder(nativeFormLayoutNodes.value as NativeLayoutLikeNode[],(name,node)=>isNativeFieldVisible(name,node as NativeFormLayoutNode));
   const ensureFieldOrderDraftStartsFromCurrentLayout=()=>{if(!useNativeFormTree.value||context.fieldOrderPreviewActive.value)return;const current=currentNativeFieldOrder();if(!current.length)return;const known=new Set(current);context.fieldOrderDraft.value=[...current,...context.fieldOrderDraft.value.filter(name=>name&&!known.has(name))];};

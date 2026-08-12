@@ -3726,3 +3726,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   primary-center overlay remains the naming/sequence authority. Acceptance
   requires the fresh-database chatter authorization ORM gate, focused
   manifest-order test, product menu release gate and protected PR checks.
+
+## 2026-08-13 — P0-FORM-INFORMATION-ARCHITECTURE-V2
+
+- Branch / anchor: `refactor/form-information-architecture-v2` from
+  `af117b49615e83b64b33927c1d76a2aa7050188d`.
+- Formal Product Layer / Layer Target / Module: P0 / L0-L1 generic form
+  contract orchestration and renderer / `smart_core` plus the generic frontend
+  contract-form canvas; P1 supplies only construction-standard layout defaults
+  through `smart_construction_core`.
+- Standard vs User-Specific: common platform presentation semantics with
+  construction-industry defaults. No customer wording, tenant preference,
+  customer data or frontend-owned business rule is introduced.
+- Reason / Why Here: the still-missing form information-architecture work is
+  replayed directly on the latest mainline so section grouping, visual tone,
+  density and column-span metadata remain one typed contract without carrying
+  forward the superseded TDesign/base branch history.
+- Why Not Elsewhere: P1 may declare governed industry defaults and P2/P3 may
+  configure allowed presentation values, but neither may redefine the generic
+  protocol or make the renderer infer business semantics.
+- Blast Radius / validation: form-contract metadata generation, section layout
+  normalization, native canvas grouping and the payment request, settlement
+  order and remaining P3 construction defaults. Focused contract, audit,
+  orchestrator and boundary tests lock the behavior; customer semantics and
+  model workflow authority remain unchanged.

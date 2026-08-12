@@ -2307,8 +2307,10 @@ class UiContractV2Handler(BaseIntentHandler):
             if name in business_common_fields or name in attachment_fields
         ])
         detail_fields = claim_slot_fields(detail_fields)
-        source_fields = claim_slot_fields(source_fields_candidates)
-        history_check_fields = claim_slot_fields(history_check_fields)
+        # Provenance and migration history are retained as audit metadata, not
+        # projected into the ordinary business form surface.
+        source_fields = fields_for(source_fields_candidates)
+        history_check_fields = fields_for(history_check_fields)
         field_roles: dict[str, dict[str, Any]] = {}
 
         def labels_for(items: list[str]) -> dict[str, str]:
@@ -2329,14 +2331,14 @@ class UiContractV2Handler(BaseIntentHandler):
             + amount_fields
             + status_fields
             + collaboration_fields
-            + source_fields
             + detail_fields
-            + history_check_fields
         )
         other_fact_fields = fields_for([
             name
             for name in business_common_fields
-            if name not in assigned and field_type(name) not in {"one2many", "many2many"}
+            if name not in assigned
+            and name not in set(source_fields_candidates)
+            and field_type(name) not in {"one2many", "many2many"}
         ])
         assign_role(identity_fields, role="identity", slot="primary_facts", group="identity")
         assign_role(relation_fields, role="relation", slot="primary_facts", group="relations")
@@ -2346,8 +2348,6 @@ class UiContractV2Handler(BaseIntentHandler):
         assign_role(status_fields, role="status_or_date", slot="amount_progress", group="status_dates")
         assign_role(collaboration_fields, role="collaboration", slot="collaboration", group="approval_remarks")
         assign_role(detail_fields, role="detail", slot="details_source", group="details")
-        assign_role(source_fields, role="provenance", slot="details_source", group="provenance")
-        assign_role(history_check_fields, role="history_check", slot="details_source", group="history_check")
 
         summary_fields = fields_for(
             [status_field]
@@ -2409,9 +2409,7 @@ class UiContractV2Handler(BaseIntentHandler):
             ], role="collaboration"),
             slot("details_source", "明细与来源", [
                 group("details", "业务明细", detail_fields, role="details"),
-                group("provenance", "录入与归档", source_fields, role="provenance"),
-                group("history_check", "历史核对信息", history_check_fields, role="history_check"),
-            ], role="provenance"),
+            ], role="details"),
         ]
         slots = [
             item
@@ -2435,6 +2433,21 @@ class UiContractV2Handler(BaseIntentHandler):
             "sourceSectionTitles": source_section_titles,
             "slots": slots,
             "fieldRoles": field_roles,
+            "presentationPolicy": {
+                "ordinarySurface": "business_only",
+                "technicalFieldPolicy": "fail_closed",
+                "readonlyProjection": "document_summary_then_nonempty_sections",
+                "emptyValuePolicy": "hide_optional_empty_in_readonly",
+            },
+            "internalAudit": {
+                "surface": "audit_only",
+                "audience": ["auditor", "administrator"],
+                "fieldRefs": unique(source_fields + history_check_fields),
+                "groups": {
+                    "provenance": source_fields,
+                    "migrationHistory": history_check_fields,
+                },
+            },
             "sourceAuthority": {
                 "kind": self.SOURCE_KIND,
                 "runtime_carrier": "ui.contract.v2.form_structure_contract",

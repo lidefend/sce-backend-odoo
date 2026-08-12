@@ -1846,6 +1846,19 @@ verify.frontend.core_record_form.audit: guard.prod.forbid check-compose-project 
 	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) FE_PRO_03_PHASE=$${FE_PRO_03_PHASE:-final} FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON="$$FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON" node scripts/verify/frontend_core_record_form_professional_audit.mjs
 
+.PHONY: verify.frontend.form_information_architecture.browser
+verify.frontend.form_information_architecture.browser: guard.prod.forbid check-compose-project check-compose-env
+	@set -eu; \
+	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_financial_workspace_runtime_ids.py 2>&1 )"; \
+	FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON="$$(printf '%s\n' "$$target_output" | sed -n 's/^FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON=//p' | tail -n 1)"; \
+	test -n "$$FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON" || { printf '%s\n' "$$target_output"; exit 2; }; \
+	$(MAKE) --no-print-directory backend.acceptance.up; \
+	printf '%s\n' "env['sc.business.category']._sync_seed_form_policies()" | $(RUN_ENV) ODOO_SHELL_RUN_ISOLATED=1 DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh >/dev/null; \
+	$(MAKE) --no-print-directory frontend.acceptance.up; \
+	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
+	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON="$$FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON" node scripts/verify/frontend_form_information_architecture_browser.mjs
+
 verify.frontend.core_record_form.journeys: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
@@ -1933,7 +1946,7 @@ verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-comp
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_PERF_ONLY=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_SKIP_PERF=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs
 
-verify.frontend.release.unit: verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.navigation_initialization_race.unit verify.frontend.action_view_route_lease_race.unit verify.frontend.runtime_environment.unit
+verify.frontend.release.unit: verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.navigation_initialization_race.unit verify.frontend.action_view_route_lease_race.unit verify.frontend.runtime_environment.unit verify.frontend.form_information_architecture.unit
 	@node scripts/verify/frontend_navigation_audit.test.mjs
 	@node scripts/verify/frontend_performance_budget.test.mjs
 	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py
