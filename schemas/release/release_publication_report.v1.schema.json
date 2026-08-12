@@ -19,6 +19,7 @@
     "failure",
     "evidence",
     "publication_manifest",
+    "recovery_tool",
     "history"
   ],
   "properties": {
@@ -183,6 +184,17 @@
       "properties": {
         "path": {"const": "publication-manifest.json"},
         "sha256": {"pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "recovery_tool": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["source_sha", "source_tree", "contract_sha256", "previous_tool_source_sha"],
+      "properties": {
+        "source_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "source_tree": {"pattern": "^[0-9a-f]{40}$"},
+        "contract_sha256": {"pattern": "^[0-9a-f]{64}$"},
+        "previous_tool_source_sha": {"pattern": "^[0-9a-f]{40}$"}
       }
     },
     "history": {
