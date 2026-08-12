@@ -79,7 +79,7 @@ class ScLaborSubcontractReport(models.Model):
                        'subcontract_register'::varchar,
                        r.name::varchar,
                        r.register_date,
-                       r.company_id,
+                       p.company_id,
                        r.project_id,
                        r.subcontractor_id,
                        NULL::varchar,
@@ -95,6 +95,7 @@ class ScLaborSubcontractReport(models.Model):
                        'sc.subcontract.register'::varchar,
                        r.id
                   FROM sc_subcontract_register r
+                  JOIN project_project p ON p.id = r.project_id
                 UNION ALL
                 SELECT (s.id * 10 + 3)::integer,
                        'subcontract_settlement'::varchar,

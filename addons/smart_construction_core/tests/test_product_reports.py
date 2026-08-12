@@ -18,6 +18,7 @@ class TestProductReports(TransactionCase):
         register_row = self.env["sc.labor.subcontract.report"].search([("source_model", "=", "sc.subcontract.register"), ("source_res_id", "=", register.id)], limit=1)
         settlement_row = self.env["sc.labor.subcontract.report"].search([("source_model", "=", "sc.subcontract.settlement"), ("source_res_id", "=", settlement.id)], limit=1)
         self.assertEqual(register_row.subcontract_registered_amount, 1200)
+        self.assertEqual(register_row.company_id, project.company_id)
         self.assertEqual(settlement_row.subcontract_settled_amount, 900)
         labor_action = self.env.ref("smart_construction_core.action_sc_product_labor_subcontract_report_v1")
         tax_action = self.env.ref("smart_construction_core.action_sc_product_tax_report_v1")
