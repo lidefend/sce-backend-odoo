@@ -10,7 +10,7 @@ class ScOperatingMetricsProject(models.Model):
     """
 
     _name = "sc.operating.metrics.project"
-    _inherit = "sc.optional.customer.projection"
+    _inherit = "sc.optional.product.projection"
     _description = "经营指标（项目）"
     _rec_name = "project_id"
     _order = "project_id desc"

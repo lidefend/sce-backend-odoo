@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import importlib.util
-import os
 import sys
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 
 def _load_lifecycle():
@@ -248,99 +246,26 @@ def _load_optional_projection():
     odoo.tools = types.SimpleNamespace(drop_view_if_exists=lambda *_args: None)
     sys.modules["odoo"] = odoo
     spec = importlib.util.spec_from_file_location(
-        "sc_optional_customer_projection",
+        "sc_optional_product_projection",
         Path(__file__).resolve().parents[1]
         / "models"
-        / "optional_customer_projection.py",
+        / "optional_product_projection.py",
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-class OptionalProjectionHandoffContractTests(unittest.TestCase):
-    def test_environment_flag_alone_never_proves_external_ownership(self):
-        module = _load_optional_projection()
-        with patch.dict(
-            os.environ,
-            {"SC_ALLOW_EXTERNAL_PROJECTION_HANDOFF": "1"},
-            clear=True,
-        ):
-            with self.assertRaisesRegex(RuntimeError, "CONTRACT_MISSING"):
-                module._load_handoff_contract("sc_ar_ap_project_summary")
-
-    def test_incomplete_contract_fails_closed(self):
-        module = _load_optional_projection()
-        with patch.dict(
-            os.environ,
-            {
-                "SC_EXTERNAL_PROJECTION_HANDOFF_CONTRACT": (
-                    '{"sc_external_projection": {"readiness": true}}'
-                )
-            },
-            clear=True,
-        ):
-            with self.assertRaisesRegex(RuntimeError, "CONTRACT_INCOMPLETE"):
-                module._load_handoff_contract("sc_external_projection")
-
-    def test_complete_contract_is_machine_readable(self):
-        module = _load_optional_projection()
-        contract = {
-            "module_technical_name": "verified_external_provider",
-            "minimum_version": "17.0.1.0",
-            "provider_schema_version": "1",
-            "owner_marker": "verified_external_provider",
-            "relation_contract_version": "1",
-            "expected_structure_fingerprint": "a" * 64,
-            "readiness": True,
-        }
-        import json
-
-        with patch.dict(
-            os.environ,
-            {
-                "SC_EXTERNAL_PROJECTION_HANDOFF_CONTRACT": json.dumps(
-                    {"sc_external_projection": contract}
-                )
-            },
-            clear=True,
-        ):
-            self.assertEqual(
-                module._load_handoff_contract("sc_external_projection"), contract
-            )
-
-        marker = {
-            "module_technical_name": contract["module_technical_name"],
-            "owner_marker": contract["owner_marker"],
-            "provider_schema_version": contract["provider_schema_version"],
-            "relation_contract_version": contract["relation_contract_version"],
-            "readiness": True,
-        }
-        module._verify_relation_owner_marker(
-            "sc_external_projection",
-            module._HANDOFF_COMMENT_PREFIX + json.dumps(marker, sort_keys=True),
-            contract,
-        )
-
-    def test_owner_marker_must_match_the_complete_contract(self):
-        module = _load_optional_projection()
-        contract = {
-            "module_technical_name": "verified_external_provider",
-            "minimum_version": "17.0.1.0",
-            "provider_schema_version": "1",
-            "owner_marker": "verified_external_provider",
-            "relation_contract_version": "1",
-            "expected_structure_fingerprint": "a" * 64,
-            "readiness": True,
-        }
-        incomplete_marker = (
-            module._HANDOFF_COMMENT_PREFIX
-            + '{"owner_marker":"verified_external_provider"}'
-        )
-        with self.assertRaisesRegex(RuntimeError, "OWNER_MARKER_MISMATCH"):
-            module._verify_relation_owner_marker(
-                "sc_external_projection", incomplete_marker, contract
-            )
+class OptionalProjectionProductIndependenceTests(unittest.TestCase):
+    def test_product_projection_never_reads_customer_handoff_contracts(self):
+        source = (
+            Path(__file__).resolve().parents[1]
+            / "models"
+            / "optional_product_projection.py"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("SC_EXTERNAL_PROJECTION", source)
+        self.assertNotIn("ir_module_module", source)
+        self.assertIn("PRODUCT_PROJECTION_RELATION_CONFLICT", source)
 
 
 if __name__ == "__main__":

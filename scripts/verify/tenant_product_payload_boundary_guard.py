@@ -43,6 +43,8 @@ NEGATIVE_POLICY_FILES = {
     "config/security/repository_clean_history_policy.v1.json",
     "scripts/verify/tenant_product_payload_boundary_guard.py",
     "scripts/verify/test_tenant_product_payload_boundary_guard.py",
+    "scripts/verify/product_customer_runtime_decoupling_guard.py",
+    "scripts/verify/test_product_customer_runtime_decoupling_guard.py",
 }
 FIXED_IDENTIFIER_RULES = {
     "customer_identity_or_brand_reference",

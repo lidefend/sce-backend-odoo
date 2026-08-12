@@ -7,7 +7,7 @@ from odoo.exceptions import UserError
 
 class ScArApReportSummary(models.Model):
     _name = "sc.ar.ap.report.summary"
-    _inherit = "sc.optional.customer.projection"
+    _inherit = "sc.optional.product.projection"
     _description = "应收应付报表"
     _auto = False
     _rec_name = "project_name"
