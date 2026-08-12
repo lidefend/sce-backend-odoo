@@ -3750,3 +3750,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   all 89 entries, seed all mandatory business surfaces, classify only four safe
   empty surfaces, install zero customer modules, and leave zero pending module
   operations.
+
+## 2026-08-12 — P4-PERSONAL-DATA-HISTORY-FALSE-POSITIVE-GOVERNANCE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` after `66bff58`.
+- Formal Product Layer / Layer Target / Module: P4 / release security
+  verification / `scripts/ci`.
+- Standard vs User-Specific: product release governance only. No customer data,
+  tenant configuration or runtime product behavior is introduced.
+- Reason / Boundary: the all-history personal-data gate found a synthetic Demo
+  placeholder in an already-pushed immutable Git blob. The current source removes
+  the phone-shaped placeholder, while the scanner may suppress only an exact
+  rule, repository path, full blob SHA-1 and classification tuple recorded with
+  an auditable reason.
+- Why Not Elsewhere: rewriting published history would violate protected-branch
+  workflow, and weakening the phone detector or excluding the Demo directory
+  would create an uncontrolled security blind spot.
+- Blast Radius / validation: one historical synthetic blob only. Registry schema
+  validation rejects short blob identities and unsafe paths; an exact-match unit
+  test proves that a different path remains reportable. The full all-history
+  personal-data scan and PR public guard must pass without recording matched
+  personal-data values.
