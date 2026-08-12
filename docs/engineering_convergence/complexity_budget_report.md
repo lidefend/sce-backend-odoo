@@ -111,6 +111,7 @@ Generated from repository source files. This report is informational during the 
 | 861 | Python source | `scripts/release/release_candidate.py` |
 | 858 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 857 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 857 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 855 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |

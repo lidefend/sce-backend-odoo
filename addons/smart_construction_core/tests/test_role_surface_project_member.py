@@ -147,6 +147,16 @@ class TestProjectMemberRoleSurface(TransactionCase):
             "legacy navigation aliases must not rename a locked P1 product label",
         )
 
+    def test_contract_capable_role_surfaces_use_released_daily_contract_identity(self):
+        released_contract = "smart_construction_core.menu_sc_p1_daily_contract"
+        unpublished_legacy_contract = "smart_construction_core.menu_sc_construction_contract"
+
+        for role in ("project_member", "pm"):
+            with self.subTest(role=role):
+                primary = set(ROLE_SURFACE_OVERRIDES[role]["primary_menu_xmlids"])
+                self.assertIn(released_contract, primary)
+                self.assertNotIn(unpublished_legacy_contract, primary)
+
     def test_historical_payment_is_explicit_for_authorized_uat_roles(self):
         history_xmlid = "smart_construction_core.menu_sc_historical_payment_fact"
         for role in ("finance", "executive", "business_config_admin"):

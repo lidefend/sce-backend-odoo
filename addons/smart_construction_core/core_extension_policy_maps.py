@@ -19,7 +19,7 @@ ROLE_SURFACE_OVERRIDES = {
         "primary_menu_xmlids": [
             "smart_construction_core.menu_sc_project_project",
             "smart_construction_core.menu_sc_general_contract",
-            "smart_construction_core.menu_sc_construction_contract",
+            "smart_construction_core.menu_sc_p1_daily_contract",
             "smart_construction_core.menu_sc_plan",
             "smart_construction_core.menu_sc_plan_report",
             "smart_construction_core.menu_sc_construction_diary",
@@ -225,7 +225,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_project_execution_scope",
             "smart_construction_core.menu_sc_project_boq_allocation",
             "smart_construction_core.menu_sc_general_contract",
-            "smart_construction_core.menu_sc_construction_contract",
+            "smart_construction_core.menu_sc_p1_daily_contract",
             "smart_construction_core.menu_sc_plan",
             "smart_construction_core.menu_sc_plan_report",
             "smart_construction_core.menu_sc_construction_diary",

@@ -20,7 +20,7 @@ export function compareNavigation(manifest, rows, roleLogins) {
     const role = String(login || '').replace(/^(?:demo|fixture)_role_/, '');
     const expected = manifest?.roles?.[role];
     if (!expected) throw new Error(`NAVIGATION_MANIFEST_ROLE_MISSING:${role}`);
-    const expectedKeys = [...(expected.leaf_keys || [])].sort();
+    const expectedKeys = [...(expected.browser_leaf_keys || expected.leaf_keys || [])].sort();
     const actualKeys = rows.filter((row) => row.role === login).map(stableLeafKey).sort();
     const invalid = actualKeys.filter((key) => key.split('|').some((part) => !part));
     const expectedSet = new Set(expectedKeys);
@@ -30,7 +30,7 @@ export function compareNavigation(manifest, rows, roleLogins) {
     const duplicate = duplicates(actualKeys);
     const matched = expectedKeys.filter((key) => actualSet.has(key)).length;
     const result = (
-      Number(expected.expected_count) === expectedKeys.length
+      Number(expected.browser_expected_count ?? expected.expected_count) === expectedKeys.length
       && actualKeys.length === expectedKeys.length
       && !missing.length
       && !unexpected.length
