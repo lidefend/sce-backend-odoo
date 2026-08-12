@@ -140,7 +140,7 @@ class ScOptionalCustomerProjection(models.AbstractModel):
                     SELECT latest_version
                       FROM ir_module_module
                      WHERE name = %s
-                       AND state = 'installed'
+                       AND state IN ('installed', 'to upgrade')
                     """,
                     (contract["module_technical_name"],),
                 )

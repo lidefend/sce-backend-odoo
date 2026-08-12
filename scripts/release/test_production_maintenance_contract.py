@@ -140,6 +140,12 @@ class MaintenanceConfigTest(unittest.TestCase):
         self.assertIn("production-db-manage odoo upgrade", makefile)
         self.assertIn("release.production.customer_module.upgrade", policy)
 
+    def test_module_lifecycle_rejects_odoo_false_success(self):
+        manager = (ROOT / "scripts/release/production_db_manage.sh").read_text()
+        self.assertIn("verify_module_change", manager)
+        self.assertIn("module lifecycle did not commit", manager)
+        self.assertNotIn('upgrade) readonly_probe; exec odoo', manager)
+
     def test_payload_runner_mounts_only_immutable_maintenance_validator(self):
         source = (ROOT / "scripts/release/run_production_tenant_payload.sh").read_text()
         compose = (ROOT / "docker-compose.tenant-payload.yml").read_text()

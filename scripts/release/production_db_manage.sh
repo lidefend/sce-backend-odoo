@@ -51,12 +51,52 @@ finally:
 PY
 }
 
+verify_module_change() {
+  python3 - "$DB" "$TARGET_MODULE" "$CONF" <<'PY'
+import ast, os, sys, psycopg2
+from pathlib import Path
+
+db, module, config = sys.argv[1:]
+addons = []
+for line in Path(config).read_text().splitlines():
+    if line.strip().startswith("addons_path") and "=" in line:
+        addons = [Path(item.strip()) for item in line.split("=", 1)[1].split(",")]
+        break
+versions = []
+for root in addons:
+    manifest = root / module / "__manifest__.py"
+    if manifest.is_file():
+        versions.append(str(ast.literal_eval(manifest.read_text())["version"]))
+if len(set(versions)) != 1:
+    raise SystemExit("module manifest identity is missing or ambiguous")
+conn = psycopg2.connect(
+    host=os.environ.get("DB_HOST", "db"), port=int(os.environ.get("DB_PORT", "5432")),
+    user=os.environ.get("DB_USER"), password=os.environ.get("DB_PASSWORD"), dbname=db,
+)
+try:
+    with conn.cursor() as cr:
+        cr.execute("SELECT state, latest_version FROM ir_module_module WHERE name=%s", (module,))
+        row = cr.fetchone()
+    if row != ("installed", versions[0]):
+        raise SystemExit("module lifecycle did not commit: %s" % (row,))
+finally:
+    conn.rollback(); conn.close()
+PY
+}
+
+run_module_change() {
+  mode="$1"
+  odoo -c "$CONF" -d "$DB" --no-http --workers=0 --max-cron-threads=0 \
+    "$mode" "$TARGET_MODULE" --without-demo=all --stop-after-init
+  verify_module_change
+}
+
 case "$ACTION" in
   preflight|health) readonly_probe; platform_contract_probe ;;
   init)
     exec python3 /usr/local/bin/production_db_init.py "$CONF" ;;
-  install) readonly_probe; exec odoo -c "$CONF" -d "$DB" --no-http --workers=0 --max-cron-threads=0 -i "$TARGET_MODULE" --without-demo=all --stop-after-init ;;
-  upgrade) readonly_probe; exec odoo -c "$CONF" -d "$DB" --no-http --workers=0 --max-cron-threads=0 -u "$TARGET_MODULE" --without-demo=all --stop-after-init ;;
+  install) readonly_probe; run_module_change -i ;;
+  upgrade) readonly_probe; run_module_change -u ;;
   configure-platform) readonly_probe; exec odoo shell -c "$CONF" -d "$DB" < /usr/local/share/sce/configure_colocated_platform_core.py ;;
   initialize-platform-snapshot) readonly_probe; platform_contract_probe; exec odoo shell -c "$CONF" -d "$DB" < /usr/local/share/sce/initialize_colocated_platform_snapshot.py ;;
 esac

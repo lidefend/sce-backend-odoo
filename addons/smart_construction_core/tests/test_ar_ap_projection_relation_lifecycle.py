@@ -259,6 +259,14 @@ def _load_optional_projection():
 
 
 class OptionalProjectionHandoffContractTests(unittest.TestCase):
+    def test_owner_lookup_accepts_odoo_dependency_upgrade_transition(self):
+        source = (
+            Path(__file__).resolve().parents[1]
+            / "models"
+            / "optional_customer_projection.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("state IN ('installed', 'to upgrade')", source)
+
     def test_environment_flag_alone_never_proves_external_ownership(self):
         module = _load_optional_projection()
         with patch.dict(
