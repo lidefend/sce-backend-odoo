@@ -92,17 +92,32 @@ def resume_failed_mode(action: str) -> str:
 
 
 def database_fingerprint(db_container: str, database: str) -> str:
-    dump = run(
-        [
-            "docker", "exec", db_container, "pg_dump", "-U", "odoo", "-d", database,
-            "--no-owner", "--no-privileges",
-        ]
+    command = [
+        "docker", "exec", db_container, "pg_dump", "-U", "odoo", "-d", database,
+        "--no-owner", "--no-privileges",
+    ]
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
-    normalized = "\n".join(
-        row for row in dump.splitlines()
-        if not row.startswith("\\restrict ") and not row.startswith("\\unrestrict ")
-    ) + "\n"
-    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    if process.stdout is None or process.stderr is None:
+        process.kill()
+        raise PayloadRuntimeError("database fingerprint stream is unavailable")
+    digest = hashlib.sha256()
+    for row in process.stdout:
+        if row.startswith((b"\\restrict ", b"\\unrestrict ")):
+            continue
+        digest.update(row.rstrip(b"\r\n"))
+        digest.update(b"\n")
+    stderr = process.stderr.read()
+    returncode = process.wait()
+    if returncode:
+        detail = stderr.decode("utf-8", errors="replace").strip()
+        raise PayloadRuntimeError(
+            (detail.splitlines()[-1] if detail else "database fingerprint failed")[:500]
+        )
+    return digest.hexdigest()
 
 
 def protected_counts(db_container: str, database: str) -> tuple[int, int]:
