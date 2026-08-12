@@ -283,6 +283,42 @@ make workspace.worktree.create \
   CREATE_WORKTREE_CONFIRM=CREATE_GOVERNED_WORKTREE
 ```
 
+已注销且原路径不存在的部分清理残留，只能通过同一治理入口按完整 SHA 恢复：
+
+```bash
+make workspace.worktree.cleanup \
+  CLEAN_WORKTREE=/absolute/missing/path \
+  CLEAN_WORKTREE_BRANCH=fix/example \
+  CLEAN_WORKTREE_EXPECTED_HEAD=<full-40-character-sha> \
+  APPLY=1 \
+  CLEAN_WORKTREE_CONFIRM=DELETE_VERIFIED_ORPHAN_BRANCH
+```
+
+该模式只删除经 `origin/main` 吸收证明验证的本地孤立分支引用，不修改远端。
+
+不再被任何工作树占用的已合并本地分支，可通过独立入口清理：
+
+```bash
+make workspace.branch.cleanup.local \
+  LOCAL_CLEAN_BRANCH=fix/example \
+  LOCAL_CLEAN_EXPECTED_HEAD=<full-40-character-sha> \
+  APPLY=1 \
+  LOCAL_CLEAN_CONFIRM=DELETE_VERIFIED_LOCAL_BRANCH
+```
+
+该入口同样只更新本地引用；分支仍被工作树占用、SHA 漂移或缺少主线吸收证据时均拒绝执行。
+
+大量 squash 合并残留可用批量入口一次刷新并先整批验证：
+
+```bash
+make workspace.branch.cleanup.local.batch \
+  LOCAL_CLEAN_SPECS='fix/one=<full-sha>,feature/two=<full-sha>' \
+  APPLY=1 \
+  LOCAL_CLEAN_CONFIRM=DELETE_VERIFIED_LOCAL_BRANCH
+```
+
+批量模式在删除任何引用前验证全部分支；任一分支仍被占用、SHA 漂移或未被主线吸收时整体拒绝。
+
 目标必须是主仓库同级且以 `<repository-name>-` 开头的新目录；目标分支必须符合
 自治写入分支规则且尚不存在；基线必须是本地或 `origin` 分支可达的既有提交。
 

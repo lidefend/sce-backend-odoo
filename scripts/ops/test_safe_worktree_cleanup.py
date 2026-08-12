@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import safe_worktree_cleanup as cleanup
@@ -53,6 +54,64 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         self.assertFalse(path.exists())
         self.assertNotIn("fix/merged", git(self.root, "branch", "--format=%(refname:short)").splitlines())
 
+    def test_cleanup_uses_verified_origin_main_when_controller_head_is_behind(self) -> None:
+        path = self.add_worktree("fix/remote-merged")
+        (path / "README").write_text("merged remotely\n", encoding="utf-8")
+        git(path, "add", "README")
+        git(path, "commit", "-m", "remote merged")
+        branch_head = git(path, "rev-parse", "HEAD")
+        git(path, "push", "origin", "HEAD:main")
+
+        self.assertNotEqual(git(self.root, "rev-parse", "HEAD"), branch_head)
+        selected = cleanup.cleanup(self.root, path, apply=True)
+
+        self.assertEqual(selected.head, branch_head)
+        self.assertFalse(path.exists())
+        self.assertNotIn("fix/remote-merged", git(self.root, "branch", "--format=%(refname:short)").splitlines())
+
+    def test_squash_equivalent_worktree_is_cleanup_eligible(self) -> None:
+        path = self.add_worktree("fix/squash-equivalent")
+        (path / "squash.txt").write_text("same patch\n", encoding="utf-8")
+        git(path, "add", "squash.txt")
+        git(path, "commit", "-m", "feature patch")
+
+        (self.root / "squash.txt").write_text("same patch\n", encoding="utf-8")
+        git(self.root, "add", "squash.txt")
+        git(self.root, "commit", "-m", "squashed upstream patch")
+        git(self.root, "push", "origin", "main")
+
+        self.assertTrue(git(self.root, "cherry", "origin/main", "fix/squash-equivalent").startswith("-"))
+        cleanup.cleanup(self.root, path, apply=True)
+
+        self.assertFalse(path.exists())
+        self.assertNotIn("fix/squash-equivalent", git(self.root, "branch", "--format=%(refname:short)").splitlines())
+
+    def test_historical_main_tree_allows_multi_commit_squash_cleanup(self) -> None:
+        path = self.add_worktree("fix/squashed-tree")
+        (path / "first.txt").write_text("first\n", encoding="utf-8")
+        git(path, "add", "first.txt")
+        git(path, "commit", "-m", "first feature commit")
+        (path / "second.txt").write_text("second\n", encoding="utf-8")
+        git(path, "add", "second.txt")
+        git(path, "commit", "-m", "second feature commit")
+        branch_tree = git(path, "rev-parse", "HEAD^{tree}")
+
+        (self.root / "first.txt").write_text("first\n", encoding="utf-8")
+        (self.root / "second.txt").write_text("second\n", encoding="utf-8")
+        git(self.root, "add", "first.txt", "second.txt")
+        git(self.root, "commit", "-m", "squashed feature")
+        self.assertEqual(git(self.root, "rev-parse", "HEAD^{tree}"), branch_tree)
+        (self.root / "later.txt").write_text("main evolved\n", encoding="utf-8")
+        git(self.root, "add", "later.txt")
+        git(self.root, "commit", "-m", "later main change")
+        git(self.root, "push", "origin", "main")
+
+        self.assertTrue(all(line.startswith("+") for line in git(self.root, "cherry", "origin/main", "fix/squashed-tree").splitlines()))
+        cleanup.cleanup(self.root, path, apply=True)
+
+        self.assertFalse(path.exists())
+        self.assertNotIn("fix/squashed-tree", git(self.root, "branch", "--format=%(refname:short)").splitlines())
+
     def test_dry_run_preserves_worktree(self) -> None:
         path = self.add_worktree()
         cleanup.cleanup(self.root, path, apply=False)
@@ -64,6 +123,27 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         with self.assertRaisesRegex(cleanup.CleanupError, "not clean"):
             cleanup.cleanup(self.root, path, apply=True)
         self.assertTrue(path.is_dir())
+
+    def test_non_removable_directory_is_denied_before_worktree_removal(self) -> None:
+        path = self.add_worktree("fix/non-removable")
+        locked = path / "locked"
+        locked.mkdir()
+        (locked / "tracked.txt").write_text("keep\n", encoding="utf-8")
+        git(path, "add", "locked/tracked.txt")
+        git(path, "commit", "-m", "merged with locked artifact")
+        git(path, "push", "origin", "HEAD:main")
+
+        real_access = cleanup.os.access
+        with mock.patch.object(
+            cleanup.os,
+            "access",
+            side_effect=lambda target, mode: False if Path(target) == locked else real_access(target, mode),
+        ):
+            with self.assertRaisesRegex(cleanup.CleanupError, "non-removable"):
+                cleanup.cleanup(self.root, path, apply=True)
+
+        self.assertTrue(path.is_dir())
+        self.assertIn("fix/non-removable", git(self.root, "branch", "--format=%(refname:short)").splitlines())
 
     def test_unmerged_worktree_is_denied(self) -> None:
         path = self.add_worktree("fix/unmerged")
@@ -77,6 +157,132 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
     def test_primary_worktree_is_denied(self) -> None:
         with self.assertRaisesRegex(cleanup.CleanupError, "primary"):
             cleanup.cleanup(self.root, self.root, apply=True)
+
+    def test_primary_worktree_is_denied_when_called_from_linked_worktree(self) -> None:
+        caller = self.add_worktree("fix/linked-caller")
+
+        with self.assertRaisesRegex(cleanup.CleanupError, "primary"):
+            cleanup.cleanup(caller, self.root, apply=True)
+
+        self.assertTrue(self.root.is_dir())
+
+    def test_verified_orphan_branch_recovery_deletes_only_exact_local_ref(self) -> None:
+        path = self.add_worktree("fix/orphaned")
+        expected_head = git(path, "rev-parse", "HEAD")
+        git(self.root, "worktree", "remove", str(path))
+
+        selected = cleanup.cleanup_orphan_branch(
+            self.root,
+            path,
+            branch="fix/orphaned",
+            expected_head=expected_head,
+            apply=False,
+            confirmation="",
+        )
+        self.assertEqual(selected.head, expected_head)
+        self.assertIn("fix/orphaned", git(self.root, "branch", "--format=%(refname:short)").splitlines())
+
+        cleanup.cleanup_orphan_branch(
+            self.root,
+            path,
+            branch="fix/orphaned",
+            expected_head=expected_head,
+            apply=True,
+            confirmation=cleanup.ORPHAN_CONFIRMATION,
+        )
+        self.assertNotIn("fix/orphaned", git(self.root, "branch", "--format=%(refname:short)").splitlines())
+
+    def test_orphan_branch_recovery_rejects_changed_head(self) -> None:
+        path = self.add_worktree("fix/orphan-head-changed")
+        git(self.root, "worktree", "remove", str(path))
+
+        with self.assertRaisesRegex(cleanup.CleanupError, "branch HEAD changed"):
+            cleanup.cleanup_orphan_branch(
+                self.root,
+                path,
+                branch="fix/orphan-head-changed",
+                expected_head="0" * 40,
+                apply=True,
+                confirmation=cleanup.ORPHAN_CONFIRMATION,
+            )
+
+    def test_verified_local_branch_cleanup_requires_exact_confirmation(self) -> None:
+        path = self.add_worktree("fix/local-only")
+        expected_head = git(path, "rev-parse", "HEAD")
+        git(self.root, "worktree", "remove", str(path))
+
+        with self.assertRaisesRegex(cleanup.CleanupError, "requires confirmation"):
+            cleanup.cleanup_local_branch(
+                self.root,
+                branch="fix/local-only",
+                expected_head=expected_head,
+                apply=True,
+                confirmation="wrong",
+            )
+        self.assertIn("fix/local-only", git(self.root, "branch", "--format=%(refname:short)").splitlines())
+
+        cleanup.cleanup_local_branch(
+            self.root,
+            branch="fix/local-only",
+            expected_head=expected_head,
+            apply=True,
+            confirmation=cleanup.LOCAL_BRANCH_CONFIRMATION,
+        )
+        self.assertNotIn("fix/local-only", git(self.root, "branch", "--format=%(refname:short)").splitlines())
+
+    def test_local_branch_cleanup_rejects_checked_out_branch(self) -> None:
+        path = self.add_worktree("fix/still-checked-out")
+        expected_head = git(path, "rev-parse", "HEAD")
+
+        with self.assertRaisesRegex(cleanup.CleanupError, "still checked out"):
+            cleanup.cleanup_local_branch(
+                self.root,
+                branch="fix/still-checked-out",
+                expected_head=expected_head,
+                apply=False,
+                confirmation="",
+            )
+
+    def test_local_branch_batch_validates_all_before_deleting(self) -> None:
+        first = self.add_worktree("fix/batch-first")
+        first_head = git(first, "rev-parse", "HEAD")
+        git(self.root, "worktree", "remove", str(first))
+        checked_out = self.add_worktree("fix/batch-checked-out")
+        checked_out_head = git(checked_out, "rev-parse", "HEAD")
+
+        with self.assertRaisesRegex(cleanup.CleanupError, "still checked out"):
+            cleanup.cleanup_local_branches(
+                self.root,
+                [
+                    ("fix/batch-first", first_head),
+                    ("fix/batch-checked-out", checked_out_head),
+                ],
+                apply=True,
+                confirmation=cleanup.LOCAL_BRANCH_CONFIRMATION,
+            )
+
+        branches = git(self.root, "branch", "--format=%(refname:short)").splitlines()
+        self.assertIn("fix/batch-first", branches)
+        self.assertIn("fix/batch-checked-out", branches)
+
+    def test_local_branch_batch_deletes_verified_refs(self) -> None:
+        specs = []
+        for branch in ("fix/batch-one", "fix/batch-two"):
+            path = self.add_worktree(branch)
+            specs.append((branch, git(path, "rev-parse", "HEAD")))
+            git(self.root, "worktree", "remove", str(path))
+
+        selected = cleanup.cleanup_local_branches(
+            self.root,
+            specs,
+            apply=True,
+            confirmation=cleanup.LOCAL_BRANCH_CONFIRMATION,
+        )
+
+        self.assertEqual([item.branch for item in selected], ["fix/batch-one", "fix/batch-two"])
+        branches = git(self.root, "branch", "--format=%(refname:short)").splitlines()
+        self.assertNotIn("fix/batch-one", branches)
+        self.assertNotIn("fix/batch-two", branches)
 
     def test_governed_branch_cleanup_force_uses_explicit_force_delete(self) -> None:
         source = (

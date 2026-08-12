@@ -410,6 +410,13 @@ CREATE_WORKTREE ?=
 CREATE_WORKTREE_BRANCH ?=
 CREATE_WORKTREE_BASE ?=
 CREATE_WORKTREE_CONFIRM ?=
+CLEAN_WORKTREE_BRANCH ?=
+CLEAN_WORKTREE_EXPECTED_HEAD ?=
+CLEAN_WORKTREE_CONFIRM ?=
+LOCAL_CLEAN_BRANCH ?=
+LOCAL_CLEAN_EXPECTED_HEAD ?=
+LOCAL_CLEAN_CONFIRM ?=
+LOCAL_CLEAN_SPECS ?=
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -455,7 +462,29 @@ workspace.worktree.create: guard.prod.forbid
 
 workspace.worktree.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_WORKTREE)" ]; then echo "❌ CLEAN_WORKTREE is required"; exit 2; fi
-	@python3 scripts/ops/safe_worktree_cleanup.py --path "$(CLEAN_WORKTREE)" $(if $(filter 1,$(APPLY)),--apply,)
+	@python3 scripts/ops/safe_worktree_cleanup.py \
+		--path "$(CLEAN_WORKTREE)" \
+		$(if $(filter 1,$(APPLY)),--apply,) \
+		$(if $(CLEAN_WORKTREE_BRANCH),--orphan-branch "$(CLEAN_WORKTREE_BRANCH)" --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)" --confirm "$(CLEAN_WORKTREE_CONFIRM)",)
+
+.PHONY: workspace.branch.cleanup.local
+workspace.branch.cleanup.local: guard.prod.forbid
+	@test -n "$(LOCAL_CLEAN_BRANCH)" || { echo "❌ LOCAL_CLEAN_BRANCH is required"; exit 2; }
+	@python3 scripts/ops/safe_worktree_cleanup.py \
+		--path "$(CURDIR)" \
+		--local-branch "$(LOCAL_CLEAN_BRANCH)" \
+		--expected-head "$(LOCAL_CLEAN_EXPECTED_HEAD)" \
+		--confirm "$(LOCAL_CLEAN_CONFIRM)" \
+		$(if $(filter 1,$(APPLY)),--apply,)
+
+.PHONY: workspace.branch.cleanup.local.batch
+workspace.branch.cleanup.local.batch: guard.prod.forbid
+	@test -n "$(LOCAL_CLEAN_SPECS)" || { echo "❌ LOCAL_CLEAN_SPECS is required"; exit 2; }
+	@python3 scripts/ops/safe_worktree_cleanup.py \
+		--path "$(CURDIR)" \
+		--local-branch-specs "$(LOCAL_CLEAN_SPECS)" \
+		--confirm "$(LOCAL_CLEAN_CONFIRM)" \
+		$(if $(filter 1,$(APPLY)),--apply,)
 
 verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/safe_worktree_create.py scripts/ops/test_safe_worktree_create.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py
