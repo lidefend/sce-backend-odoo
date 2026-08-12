@@ -48,10 +48,30 @@ def _ensure_boq(env, project, idx):
     Boq = env["project.boq.line"].sudo()
     if Boq.search_count([("project_id", "=", project.id)]) > 0:
         return
+    Version = env["project.boq.version"].sudo()
+    version = Version.search(
+        [
+            ("project_id", "=", project.id),
+            ("source_type", "=", "contract"),
+            ("code", "=", "SHOWROOM-V1"),
+        ],
+        limit=1,
+    )
+    if not version:
+        version = Version.create(
+            {
+                "name": "展厅合同清单 V1",
+                "code": "SHOWROOM-V1",
+                "project_id": project.id,
+                "source_type": "contract",
+                "note": "产品 Demo 展厅的可重放清单版本。",
+            }
+        )
     uom_unit = env.ref("uom.product_uom_unit")
     code_prefix = f"SR-{idx:02d}"
     Boq.create(
         {
+            "version_id": version.id,
             "project_id": project.id,
             "code": f"{code_prefix}-001",
             "name": f"{project.name}-清单项",
@@ -61,6 +81,10 @@ def _ensure_boq(env, project, idx):
             "section_type": "building",
         }
     )
+    if version.state == "draft":
+        version.action_validate()
+    if version.state == "validated":
+        version.action_publish()
 
 
 def _ensure_tasks(env, project, user, target):
@@ -261,6 +285,12 @@ def run(env):
             _ensure_lifecycle(project, spec["state"])
         if spec["with_chain"]:
             _ensure_contract_chain(env, project, idx)
+
+    # The cockpit scenario is loaded before the showroom projects exist on a
+    # freshly created tenant.  Reconcile its business facts only after the
+    # authoritative showroom set has been established.  The model method is
+    # idempotent and remains the single owner of those facts.
+    Project.sc_demo_seed_cockpit_round2()
 
     env["ir.config_parameter"].sudo().set_param("sc.seed.demo_showroom", "1")
     return {"ok": True, "projects": len(SHOWROOM_PROJECTS)}

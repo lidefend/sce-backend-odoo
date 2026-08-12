@@ -793,7 +793,11 @@ class TenderGuarantee(models.Model):
             record.deposit_status_display = status
             record.deposit_push_result = value("推送结果")
             record.deposit_kingdee_document_no = value("金蝶单据编号")
-            record.deposit_document_no = value("单据编号") or record.name or ""
+            record.deposit_document_no = (
+                value("单据编号")
+                or record.bid_id.name
+                or ""
+            )
             record.deposit_bid_project_title = value("投标项目名称") or project_name
             record.deposit_bid_project_name = value("投标项目") or project_name
             record.deposit_engineering_project_name = value("工程项目") or project_name

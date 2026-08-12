@@ -131,7 +131,7 @@
       <field name="deduction_amount">2300.0</field>
       <field name="net_salary">16200.0</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">done</field>
+      <field name="state">draft</field>
       <field name="description">S85 薪酬办理样例</field>
       <field name="result_note">工资登记完成。</field>
     </record>
@@ -202,10 +202,26 @@
       <field name="estimated_amount">280000.0</field>
     </record>
 
+    <record id="sc_demo_subcontract_contract_085_fitout" model="construction.contract">
+      <field name="subject">S85 样板区精装修分包合同</field>
+      <field name="type">in</field>
+      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_subcontract_085_fitout"/>
+      <field name="date_contract">2025-05-18</field>
+    </record>
+
+    <record id="sc_demo_subcontract_contract_line_085_fitout" model="construction.contract.line">
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_subcontract_contract_085_fitout"/>
+      <field name="qty_contract">1.0</field>
+      <field name="price_contract">280000.0</field>
+      <field name="note">S85 分包登记与结算正式依据。</field>
+    </record>
+
     <record id="sc_demo_subcontract_register_085_fitout" model="sc.subcontract.register">
       <field name="name">S85-SREG-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="request_id" ref="smart_construction_demo.sc_demo_subcontract_request_085_fitout"/>
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_subcontract_contract_085_fitout"/>
       <field name="register_date">2025-05-18</field>
       <field name="start_date">2025-05-20</field>
       <field name="end_date">2025-06-20</field>
@@ -228,7 +244,6 @@
     <record id="sc_demo_subcontract_settlement_085_fitout" model="sc.subcontract.settlement">
       <field name="name">S85-SSET-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-      <field name="register_id" ref="smart_construction_demo.sc_demo_subcontract_register_085_fitout"/>
       <field name="subcontractor_id" ref="smart_construction_demo.sc_demo_partner_subcontract_085_fitout"/>
       <field name="settlement_date">2025-06-25</field>
       <field name="currency_id" ref="base.CNY"/>
@@ -238,11 +253,12 @@
 
     <record id="sc_demo_subcontract_settlement_line_085_fitout" model="sc.subcontract.settlement.line">
       <field name="settlement_id" ref="smart_construction_demo.sc_demo_subcontract_settlement_085_fitout"/>
+      <field name="register_line_id" ref="smart_construction_demo.sc_demo_subcontract_register_line_085_fitout"/>
       <field name="work_scope">样板区精装修工程</field>
       <field name="work_content">墙地面、吊顶、样板间收口</field>
       <field name="qty">1.0</field>
       <field name="unit_name">项</field>
-      <field name="unit_price">280000.0</field>
+      <field name="unit_price">256880.73</field>
       <field name="tax_rate">9.0</field>
       <field name="note">按登记范围一次性结算</field>
     </record>

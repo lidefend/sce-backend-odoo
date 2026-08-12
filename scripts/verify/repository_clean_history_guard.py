@@ -43,9 +43,17 @@ SECRET_PATTERNS = (
     re.compile(rb"(?<![A-Z0-9])(?:AKIA|ASIA)[A-Z0-9]{16}(?![A-Z0-9])"),
     re.compile(rb"-----BEGIN (?:RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----"),
 )
-PERSONAL_DATA_PATTERNS = (
-    re.compile(rb"(?<![0-9A-Za-z])[1-9]\d{5}(?:18|19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[0-9Xx](?![0-9A-Za-z])"),
-    re.compile(rb"(?<![0-9A-Za-z])1[3-9]\d{9}(?![0-9A-Za-z])"),
+PERSONAL_DATA_RULES = (
+    (
+        "PD001",
+        "GOVERNMENT_ID_PATTERN",
+        re.compile(rb"(?<![0-9A-Za-z])[1-9]\d{5}(?:18|19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[0-9Xx](?![0-9A-Za-z])"),
+    ),
+    (
+        "PD002",
+        "MOBILE_PHONE_PATTERN",
+        re.compile(rb"(?<![0-9A-Za-z])1[3-9]\d{9}(?![0-9A-Za-z])"),
+    ),
 )
 
 
@@ -92,6 +100,40 @@ def load_policy(path: Path) -> dict[str, object]:
     if payload.get("schema_version") != "sce.repository_clean_history_policy.v1":
         raise ValueError("unsupported clean-history policy")
     return payload
+
+
+def load_personal_data_false_positives(
+    root: Path,
+    rules: dict[str, object],
+) -> set[tuple[str, str, str, str]]:
+    relative = str(rules.get("personal_data_false_positive_registry") or "")
+    if not relative:
+        return set()
+    registry_path = Path(relative)
+    if registry_path.is_absolute() or ".." in registry_path.parts:
+        raise ValueError("personal-data false-positive registry path must be repository-relative")
+    payload = json.loads((root / registry_path).read_text(encoding="utf-8"))
+    if payload.get("schema_version") != 1 or not isinstance(payload.get("entries"), list):
+        raise ValueError("personal-data false-positive registry schema is invalid")
+    known_rules = {
+        (rule_id, classification)
+        for rule_id, classification, _pattern in PERSONAL_DATA_RULES
+    }
+    allowed: set[tuple[str, str, str, str]] = set()
+    for entry in payload["entries"]:
+        rule_id = str(entry.get("rule_id") or "")
+        path = str(entry.get("path") or "")
+        blob_id = str(entry.get("blob_id") or "")
+        classification = str(entry.get("classification") or "")
+        reason = str(entry.get("reason") or "")
+        if not re.fullmatch(r"[0-9a-f]{40}", blob_id):
+            raise ValueError("personal-data false-positive blob_id must be a full SHA-1")
+        if not path or path.startswith("/") or ".." in Path(path).parts:
+            raise ValueError("personal-data false-positive path must be repository-relative")
+        if (rule_id, classification) not in known_rules or not reason:
+            raise ValueError("personal-data false-positive entry is incomplete")
+        allowed.add((rule_id, path, blob_id, classification))
+    return allowed
 
 
 def object_rows(root: Path, revision_args: tuple[str, ...]) -> list[ObjectRow]:
@@ -192,8 +234,17 @@ def blob_findings(
         findings.add(Finding("RH016", display, f"{rule_prefix}CUSTOMER_LEGACY_MODEL"))
     if DATABASE_URL_CREDENTIALS.search(data) or any(pattern.search(data) for pattern in SECRET_PATTERNS):
         findings.add(Finding("RH017", display, f"{rule_prefix}SECRET_MATERIAL"))
-    if any(pattern.search(data) for pattern in PERSONAL_DATA_PATTERNS):
-        findings.add(Finding("RH018", display, f"{rule_prefix}PERSONAL_DATA"))
+    false_positives = rules.get("_personal_data_false_positives", set())
+    for rule_id, classification, pattern in PERSONAL_DATA_RULES:
+        if pattern.search(data) and (
+            rule_id,
+            row.path,
+            row.object_id,
+            classification,
+        ) not in false_positives:
+            findings.add(
+                Finding("RH018", display, f"{rule_prefix}PERSONAL_DATA:{classification}")
+            )
     return findings
 
 
@@ -292,6 +343,9 @@ def main(argv: list[str] | None = None) -> int:
     root = args.root.resolve()
     try:
         rules = load_policy(args.policy.resolve())
+        rules["_personal_data_false_positives"] = load_personal_data_false_positives(
+            root, rules
+        )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"[repository_clean_history_guard] FAIL rule=RH000 classification={type(exc).__name__}", file=sys.stderr)
         return 2

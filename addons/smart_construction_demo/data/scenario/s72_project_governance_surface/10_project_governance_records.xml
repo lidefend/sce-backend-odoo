@@ -44,31 +44,11 @@
       <field name="hint_template">当前项目已有 {cost_count} 条成本台账。</field>
     </record>
 
-    <record id="sc_demo_project_member_staging_072_pm" model="sc.project.member.staging">
-      <field name="legacy_member_id">S72-MEMBER-001</field>
-      <field name="legacy_project_id">S65-COST-2025-001</field>
-      <field name="legacy_user_ref">admin</field>
+    <record id="sc_demo_project_member_assignment_072_pm" model="sc.project.member.assignment">
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="user_id" ref="base.user_admin"/>
-      <field name="legacy_role_text">项目负责人</field>
-      <field name="role_fact_status">resolved</field>
-      <field name="import_batch">s72_project_governance_surface</field>
-      <field name="evidence">S72 demo 成员暂存样例。</field>
-      <field name="notes">用于项目成员导入暂存和角色事实解析表单演示。</field>
-      <field name="active">True</field>
-    </record>
-
-    <record id="sc_demo_project_member_staging_072_cost" model="sc.project.member.staging">
-      <field name="legacy_member_id">S72-MEMBER-002</field>
-      <field name="legacy_project_id">S65-COST-2025-001</field>
-      <field name="legacy_user_ref">cost.manager.demo</field>
-      <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
-      <field name="user_id" ref="base.user_admin"/>
-      <field name="legacy_role_text">成本经理</field>
-      <field name="role_fact_status">missing</field>
-      <field name="import_batch">s72_project_governance_surface</field>
-      <field name="evidence">S72 demo 成员角色待补齐样例。</field>
-      <field name="notes">用于展示成员暂存中未解析角色的治理状态。</field>
+      <field name="source">manual</field>
+      <field name="note">S72 Demo 正式项目成员授权。</field>
       <field name="active">True</field>
     </record>
 

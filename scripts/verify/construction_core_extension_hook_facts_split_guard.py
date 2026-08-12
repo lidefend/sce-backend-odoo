@@ -104,7 +104,7 @@ def main() -> int:
             errors.append("hook facts must preserve hidden technical menu token")
         if "直营项目系统菜单" not in menu_policy.get("user_allowed_path_tokens", []):
             errors.append("hook facts must preserve user menu delivery tokens")
-        if menu_policy.get("rename_labels", {}).get("开票申请") != "销项开票申请":
+        if menu_policy.get("rename_labels", {}).get("开票登记") != "销项发票登记":
             errors.append("hook facts must preserve menu delivery label rename")
         if facts.app_shell_contract().get("taxonomy", {}).get("projects", {}).get("primary_scene") != "projects.list":
             errors.append("hook facts must preserve app shell project scene")

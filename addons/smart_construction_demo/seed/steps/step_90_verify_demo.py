@@ -102,26 +102,20 @@ def _collect_missing(env, project):
 
     Boq = env["project.boq.line"].sudo()
     Work = env["construction.work.breakdown"].sudo()
-    Structure = env["sc.project.structure"].sudo()
+    Scope = env["construction.execution.scope"].sudo()
     if Boq.search_count([("project_id", "=", project.id)]) == 0:
         missing.append("boq")
     if Boq.search_count([("project_id", "=", project.id), ("work_id", "!=", False)]) > 0:
         missing.append("boq_has_wbs")
-    boq_no_structure_domain = [("project_id", "=", project.id), ("structure_id", "=", False)]
-    if "is_group" in Boq._fields:
-        boq_no_structure_domain.append(("is_group", "=", False))
-    if Boq.search_count(boq_no_structure_domain) > 0:
-        missing.append("boq_no_structure")
+    if Boq.search_count([("project_id", "=", project.id), ("version_id", "=", False)]) > 0:
+        missing.append("boq_without_version")
     work_count = Work.search_count([("project_id", "=", project.id)])
     if work_count == 0:
         missing.append("wbs")
     elif work_count < 3:
         missing.append("wbs_lt_3")
-    structure_count = Structure.search_count([("project_id", "=", project.id)])
-    if structure_count == 0:
-        missing.append("structure")
-    elif structure_count < 3:
-        missing.append("structure_lt_3")
+    if Scope.search_count([("project_id", "=", project.id), ("active", "=", True)]) == 0:
+        missing.append("execution_scope")
 
     Document = env["sc.project.document"].sudo()
     if Document.search_count([("project_id", "=", project.id)]) == 0:

@@ -3726,3 +3726,103 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   primary-center overlay remains the naming/sequence authority. Acceptance
   requires the fresh-database chatter authorization ORM gate, focused
   manifest-order test, product menu release gate and protected PR checks.
+
+## 2026-08-12 — P1-DEMO-TENANT-LIFECYCLE-AND-COVERAGE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` from
+  `af117b49615e83b64b33927c1d76a2aa7050188d`.
+- Formal Product Layer / Layer Target / Module: P1 / construction product Demo
+  dataset / `smart_construction_demo`; P4 / isolated reset and verification /
+  `scripts/demo`, `deploy/demo-tenant`, and Make targets.
+- Standard vs User-Specific: platform-owned construction Demo only. It contains
+  no customer module, customer data, historical migration carrier or customer
+  path, and runs in its own exact-filtered `sc_demo_*` tenant database.
+- Reason / Why Here: the Demo module had drifted behind the governed BOQ, WBS,
+  execution-scope, cost-plan and formal ten-center surfaces. Current product
+  sample facts belong to the Demo module; destructive reset, purge, scheduling
+  and evidence generation remain delivery/runtime tooling.
+- Why Not Elsewhere: neither product core nor frontend may carry fake business
+  records; a customer module must not be required for the product Demo; P3
+  configuration is not a substitute for reproducible Demo data.
+- Blast Radius / validation: 89 locked formal capabilities, 65 unique page
+  models, 11 governed BOQ/WBS/cost backbone models, 390 Demo XMLIDs, scheduled
+  tenant reset and CI drift guard. A fresh exact-filtered database must resolve
+  all 89 entries, seed all mandatory business surfaces, classify only four safe
+  empty surfaces, install zero customer modules, and leave zero pending module
+  operations.
+
+## 2026-08-12 — P4-PERSONAL-DATA-HISTORY-FALSE-POSITIVE-GOVERNANCE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` after `66bff58`.
+- Formal Product Layer / Layer Target / Module: P4 / release security
+  verification / `scripts/ci`.
+- Standard vs User-Specific: product release governance only. No customer data,
+  tenant configuration or runtime product behavior is introduced.
+- Reason / Boundary: the all-history personal-data gate found a synthetic Demo
+  placeholder in an already-pushed immutable Git blob. The current source removes
+  the phone-shaped placeholder, while the scanner may suppress only an exact
+  rule, repository path, full blob SHA-1 and classification tuple recorded with
+  an auditable reason.
+- Why Not Elsewhere: rewriting published history would violate protected-branch
+  workflow, and weakening the phone detector or excluding the Demo directory
+  would create an uncontrolled security blind spot.
+- Blast Radius / validation: one historical synthetic blob only. Registry schema
+  validation rejects short blob identities and unsafe paths; an exact-match unit
+  test proves that a different path remains reportable. The full all-history
+  personal-data scan and PR public guard must pass without recording matched
+  personal-data values.
+
+## 2026-08-13 — P4-CLEAN-HISTORY-EXACT-FALSE-POSITIVE-CLOSURE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` after `26658a7`.
+- Formal Product Layer / Layer Target / Module: P4 / release security history
+  verification / `scripts/verify/repository_clean_history_guard.py`.
+- Standard vs User-Specific: generic repository security governance. The
+  registered object is a synthetic product Demo fixture, not customer data.
+- Reason / Boundary: the worktree/history personal-data scanner already bound
+  its exception to an exact rule, path, full blob SHA-1 and classification, but
+  the repository clean-history guard independently reclassified the same blob
+  without consuming that registry. Both public CI gates therefore rejected the
+  governed immutable object.
+- Why Here / Why Not Elsewhere: the clean-history guard owns reachable-object
+  admission. Rewriting published history, excluding the Demo tree or weakening
+  the global detector would widen the security boundary and is forbidden.
+- Blast Radius / validation: one existing registry and the RH018 classifier.
+  Exact path/blob/classification matching suppresses only `PD002`; wrong paths,
+  wrong blob identities and a `PD001` match in the same object remain reportable.
+  Unit tests and the real `make verify.repository.clean_history` gate pass.
+
+## 2026-08-13 — P1-DEMO-TENDER-STANDARD-DOCUMENT-NUMBER-CLOSURE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` after `e880dd5`.
+- Formal Product Layer / Layer Target / Module: P1 / construction tender
+  guarantee visible-field semantics / `smart_construction_core`.
+- Standard vs User-Specific: construction product standard. The visible
+  document number falls back to the governed tender bid number, never to a
+  customer-history compatibility field.
+- Reason / Boundary: the Demo branch's guarantee fallback read
+  `legacy_visible_document_no` before `tender.bid.name`, leaking historical
+  compatibility semantics into the product runtime and failing the tenant
+  product legacy boundary gate.
+- Why Here / Why Not Elsewhere: the P1 tender model owns the standard fallback;
+  Demo fixtures, frontend rendering and customer modules must not redefine it.
+- Blast Radius / validation: only the computed guarantee document number when
+  no payload value exists. A focused ORM test supplies a conflicting legacy
+  value and requires the standard bid number; the tenant legacy boundary and
+  local quick CI gates prove containment.
+
+## 2026-08-13 — P4-HOOK-FACTS-GUARD-CURRENT-LABEL-CLOSURE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` after `e880dd5`.
+- Formal Product Layer / Layer Target / Module: P4 / static architecture
+  verification / `construction_core_extension_hook_facts_split_guard.py`.
+- Standard vs User-Specific: generic product CI governance.
+- Reason / Boundary: the guard still required the legacy `开票申请` rename
+  removed by merged PR #179, while the current P1 policy deliberately prevents
+  legacy aliases from overriding locked product labels.
+- Why Here / Why Not Elsewhere: the stale expectation belongs to its P4 static
+  guard; restoring the removed alias in P1 runtime would reverse the product
+  navigation boundary.
+- Blast Radius / validation: one static assertion now locks the retained
+  `开票登记` to `销项发票登记` mapping. The focused hook-facts guard and
+  full local quick CI gate prove containment.

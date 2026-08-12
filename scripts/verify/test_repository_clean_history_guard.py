@@ -130,6 +130,78 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("PERSONAL_DATA", result.stderr)
 
+    def register_false_positive(
+        self,
+        *,
+        path: str,
+        blob_id: str,
+        rule_id: str = "PD002",
+        classification: str = "MOBILE_PHONE_PATTERN",
+    ) -> None:
+        registry = "personal-data-false-positives.json"
+        policy = json.loads(self.policy.read_text(encoding="utf-8"))
+        policy["personal_data_false_positive_registry"] = registry
+        self.policy.write_text(json.dumps(policy) + "\n", encoding="utf-8")
+        (self.root / registry).write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "entries": [
+                        {
+                            "rule_id": rule_id,
+                            "path": path,
+                            "blob_id": blob_id,
+                            "classification": classification,
+                            "reason": "verified_synthetic_fixture",
+                        }
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    def test_exact_registered_synthetic_mobile_history_is_suppressed(self) -> None:
+        path = "addons/smart_construction_demo/demo.py"
+        self.write(path, "phone = '138" + "00000001'\n")
+        blob_id = self.git("hash-object", path).stdout.strip()
+        self.register_false_positive(path=path, blob_id=blob_id)
+        self.commit("add governed synthetic fixture")
+        result = self.run_guard()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_registered_mobile_does_not_suppress_other_personal_data(self) -> None:
+        path = "addons/smart_construction_demo/demo.py"
+        self.write(
+            path,
+            "phone = '138" + "00000001'\nid_number = '110105" + "19491231002X'\n",
+        )
+        blob_id = self.git("hash-object", path).stdout.strip()
+        self.register_false_positive(path=path, blob_id=blob_id)
+        self.commit("add mixed synthetic fixture")
+        result = self.run_guard()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("GOVERNMENT_ID_PATTERN", result.stderr)
+
+    def test_false_positive_with_wrong_blob_does_not_suppress(self) -> None:
+        path = "addons/smart_construction_demo/demo.py"
+        self.write(path, "phone = '138" + "00000001'\n")
+        self.register_false_positive(path=path, blob_id="a" * 40)
+        self.commit("add unmatched synthetic fixture")
+        result = self.run_guard()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("MOBILE_PHONE_PATTERN", result.stderr)
+
+    def test_false_positive_with_wrong_path_does_not_suppress(self) -> None:
+        path = "addons/smart_construction_demo/demo.py"
+        self.write(path, "phone = '138" + "00000001'\n")
+        blob_id = self.git("hash-object", path).stdout.strip()
+        self.register_false_positive(path="other.py", blob_id=blob_id)
+        self.commit("add path-mismatched synthetic fixture")
+        result = self.run_guard()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("MOBILE_PHONE_PATTERN", result.stderr)
+
     def test_current_old_repository_identity_is_rejected(self) -> None:
         self.write("scripts/checkout.sh", "git clone old-private-repository\n")
         self.commit("add stale executable repository identity")

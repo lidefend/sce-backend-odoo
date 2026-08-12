@@ -13,7 +13,7 @@ import json
 import re
 import subprocess
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -25,6 +25,7 @@ TEXT_SUFFIXES = {
 }
 TEXT_NAMES = {"Dockerfile", "Makefile", ".dockerignore", ".gitignore"}
 MAX_TEXT_BLOB_BYTES = 8 * 1024 * 1024
+FALSE_POSITIVE_FILE = ROOT / "scripts" / "ci" / "personal_data_false_positives.json"
 
 RULES: tuple[tuple[str, str, re.Pattern[str]], ...] = (
     (
@@ -53,8 +54,43 @@ RULES: tuple[tuple[str, str, re.Pattern[str]], ...] = (
 class Finding:
     rule_id: str
     path: str
-    blob_prefix: str
+    blob_id: str
     classification: str
+
+    @property
+    def blob_prefix(self) -> str:
+        return self.blob_id[:12]
+
+    def public_metadata(self) -> dict[str, str]:
+        return {
+            "rule_id": self.rule_id,
+            "path": self.path,
+            "blob_prefix": self.blob_prefix,
+            "classification": self.classification,
+        }
+
+
+def load_false_positives() -> set[tuple[str, str, str, str]]:
+    if not FALSE_POSITIVE_FILE.is_file():
+        return set()
+    payload = json.loads(FALSE_POSITIVE_FILE.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != 1 or not isinstance(payload.get("entries"), list):
+        raise ValueError("personal data false-positive registry schema is invalid")
+    allowed: set[tuple[str, str, str, str]] = set()
+    for entry in payload["entries"]:
+        blob_id = str(entry.get("blob_id") or "")
+        path = str(entry.get("path") or "")
+        rule_id = str(entry.get("rule_id") or "")
+        classification = str(entry.get("classification") or "")
+        reason = str(entry.get("reason") or "")
+        if not re.fullmatch(r"[0-9a-f]{40}", blob_id):
+            raise ValueError("personal data false-positive blob_id must be a full SHA-1")
+        if not path or path.startswith("/") or ".." in Path(path).parts:
+            raise ValueError("personal data false-positive path must be repository-relative")
+        if rule_id not in {item[0] for item in RULES} or not classification or not reason:
+            raise ValueError("personal data false-positive entry is incomplete")
+        allowed.add((rule_id, path, blob_id, classification))
+    return allowed
 
 
 def git(*args: str, input_text: str | None = None, check: bool = True) -> str:
@@ -94,7 +130,7 @@ def scan_text(text: str, path: str, blob_id: str) -> list[Finding]:
     findings: list[Finding] = []
     for rule_id, classification, pattern in RULES:
         if pattern.search(text):
-            findings.append(Finding(rule_id, path, blob_id[:12], classification))
+            findings.append(Finding(rule_id, path, blob_id, classification))
     return findings
 
 
@@ -188,26 +224,38 @@ def main(argv: list[str] | None = None) -> int:
     if args.scope in {"history", "all"}:
         findings.update(history_findings())
     ordered = sorted(findings)
+    false_positives = load_false_positives()
+    confirmed = [
+        finding
+        for finding in ordered
+        if (finding.rule_id, finding.path, finding.blob_id, finding.classification)
+        not in false_positives
+    ]
+    suppressed = len(ordered) - len(confirmed)
     report = {
         "schema_version": 1,
         "scope": args.scope,
-        "confirmed_matches": len(ordered),
-        "matches": [asdict(item) for item in ordered],
+        "confirmed_matches": len(confirmed),
+        "suppressed_false_positives": suppressed,
+        "matches": [item.public_metadata() for item in confirmed],
         "personal_data_values_recorded": False,
     }
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    if ordered:
+    if confirmed:
         print("[personal_data_scan] FAIL", file=sys.stderr)
-        for item in ordered:
+        for item in confirmed:
             print(
                 f"- rule={item.rule_id} path={item.path} blob={item.blob_prefix} classification={item.classification}",
                 file=sys.stderr,
             )
         print("personal_data_values_recorded=false", file=sys.stderr)
         return 1
-    print("[personal_data_scan] PASS confirmed_matches=0 values_recorded=false")
+    print(
+        f"[personal_data_scan] PASS confirmed_matches=0 "
+        f"suppressed_false_positives={suppressed} values_recorded=false"
+    )
     return 0
 
 

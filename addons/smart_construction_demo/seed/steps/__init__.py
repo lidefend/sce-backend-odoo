@@ -12,6 +12,7 @@ from . import step_boq_sample  # noqa: F401
 from . import step_metrics_smoke  # noqa: F401
 from . import step_company_currency  # noqa: F401
 from . import step_demo_showroom  # noqa: F401
+from . import step_formal_product_surfaces  # noqa: F401
 from . import step_demo_user_prefs  # noqa: F401
 from . import step_users_bootstrap  # noqa: F401
 from . import step_project_stage_sync  # noqa: F401

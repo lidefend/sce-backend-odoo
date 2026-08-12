@@ -34,6 +34,11 @@ _pre_COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-}"
 _pre_PROJECT="${PROJECT:-}"
 _pre_ODOO_CONF="${ODOO_CONF:-}"
 _pre_BD="${BD:-}"
+_pre_SC_ENVIRONMENT="${SC_ENVIRONMENT:-}"
+_pre_SC_ALLOW_DEMO_DATA="${SC_ALLOW_DEMO_DATA:-}"
+_pre_SC_DEMO_USER_PASSWORD="${SC_DEMO_USER_PASSWORD:-}"
+_pre_SC_DEMO_TENANT_LIFECYCLE="${SC_DEMO_TENANT_LIFECYCLE:-}"
+_pre_ISOLATED_DEMO_TENANT="${ISOLATED_DEMO_TENANT:-}"
 
 # ---- Load .env defaults ----
 # shellcheck disable=SC1090
@@ -52,6 +57,11 @@ set +a
 [[ -n "${_pre_PROJECT}" ]] && PROJECT="${_pre_PROJECT}"
 [[ -n "${_pre_ODOO_CONF}" ]] && ODOO_CONF="${_pre_ODOO_CONF}"
 [[ -n "${_pre_BD}" ]] && BD="${_pre_BD}"
+[[ -n "${_pre_SC_ENVIRONMENT}" ]] && SC_ENVIRONMENT="${_pre_SC_ENVIRONMENT}"
+[[ -n "${_pre_SC_ALLOW_DEMO_DATA}" ]] && SC_ALLOW_DEMO_DATA="${_pre_SC_ALLOW_DEMO_DATA}"
+[[ -n "${_pre_SC_DEMO_USER_PASSWORD}" ]] && SC_DEMO_USER_PASSWORD="${_pre_SC_DEMO_USER_PASSWORD}"
+[[ -n "${_pre_SC_DEMO_TENANT_LIFECYCLE}" ]] && SC_DEMO_TENANT_LIFECYCLE="${_pre_SC_DEMO_TENANT_LIFECYCLE}"
+[[ -n "${_pre_ISOLATED_DEMO_TENANT}" ]] && ISOLATED_DEMO_TENANT="${_pre_ISOLATED_DEMO_TENANT}"
 
 # =========================================================
 # Compose / Project identity (Single Source of Truth)

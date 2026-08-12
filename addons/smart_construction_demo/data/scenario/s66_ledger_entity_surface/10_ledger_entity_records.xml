@@ -2,10 +2,26 @@
 <odoo>
   <data noupdate="1">
 
+    <record id="sc_demo_contract_066_income" model="construction.contract">
+      <field name="subject">S66 运营服务收入合同</field>
+      <field name="type">out</field>
+      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
+      <field name="date_contract">2025-08-15</field>
+    </record>
+
+    <record id="sc_demo_contract_066_income_line" model="construction.contract.line">
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_066_income"/>
+      <field name="qty_contract">1.0</field>
+      <field name="price_contract">680000.0</field>
+      <field name="note">S66 收款及发票归集依据。</field>
+    </record>
+
     <record id="sc_demo_payment_request_066_receipt" model="payment.request">
       <field name="type">receive</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_066_income"/>
       <field name="amount">360000.0</field>
       <field name="currency_id" ref="base.CNY"/>
       <field name="date_request">2025-08-18</field>
@@ -92,81 +108,7 @@
       <field name="company_id" ref="base.main_company"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="entity_type">project_carrier</field>
-      <field name="mapping_state">confirmed</field>
-      <field name="legacy_xmid">S66-XMID-001</field>
-      <field name="legacy_xmmc">旧库-德阳项目经营主体</field>
-      <field name="legacy_company_id">S66-COMP-001</field>
-      <field name="legacy_company_name">旧库-智慧建造公司</field>
       <field name="note">S66 业务核算主体样例。</field>
-      <field name="active">True</field>
-    </record>
-
-    <record id="sc_demo_legacy_business_entity_map_066" model="sc.legacy.business.entity.map">
-      <field name="source_table">S66_LEGACY_SOURCE_ENTITY_CANDIDATE</field>
-      <field name="source_domain">LEGACY_SOURCE</field>
-      <field name="legacy_xmid">S66-XMID-001</field>
-      <field name="legacy_xmmc">旧库-德阳项目经营主体</field>
-      <field name="legacy_company_id">S66-COMP-001</field>
-      <field name="legacy_company_name">旧库-智慧建造公司</field>
-      <field name="company_id" ref="base.main_company"/>
-      <field name="business_entity_id" ref="smart_construction_demo.sc_demo_business_entity_066_project_carrier"/>
-      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
-      <field name="mapping_state">confirmed</field>
-      <field name="suggested_entity_type">project_carrier</field>
-      <field name="confidence">0.96</field>
-      <field name="source_count">3</field>
-      <field name="rows_total">128</field>
-      <field name="amount_total">680000.0</field>
-      <field name="evidence">项目名称、往来单位和合同流水均匹配。</field>
-      <field name="note">S66 旧主体映射样例。</field>
-      <field name="active">True</field>
-    </record>
-
-    <record id="sc_demo_legacy_project_map_066" model="sc.legacy.project.map">
-      <field name="source_table">S66_LEGACY_SOURCE_PROJECT_CANDIDATE</field>
-      <field name="source_domain">LEGACY_SOURCE</field>
-      <field name="legacy_gcmc">旧库-德阳智能制造产教融合项目</field>
-      <field name="company_id" ref="base.main_company"/>
-      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-      <field name="mapping_state">confirmed</field>
-      <field name="suggested_state">project_candidate</field>
-      <field name="match_method">manual</field>
-      <field name="confidence">0.94</field>
-      <field name="source_count">4</field>
-      <field name="rows_total">256</field>
-      <field name="amount_total">980000.0</field>
-      <field name="min_date">2025-01-01</field>
-      <field name="max_date">2025-08-31</field>
-      <field name="payment_rows">12</field>
-      <field name="payment_amount">300000.0</field>
-      <field name="contract_rows">2</field>
-      <field name="contract_amount">1100000.0</field>
-      <field name="evidence">旧库工程名称与目标项目人工确认匹配。</field>
-      <field name="note">S66 旧项目映射样例。</field>
-      <field name="active">True</field>
-    </record>
-
-    <record id="sc_demo_legacy_partner_map_066" model="sc.legacy.partner.map">
-      <field name="source_table">S66_LEGACY_SOURCE_PARTNER_DUPLICATE</field>
-      <field name="source_domain">LEGACY_SOURCE</field>
-      <field name="legacy_key">S66-PARTNER-OWNER-001</field>
-      <field name="legacy_partner_name">旧库-四川智慧建设业主有限公司</field>
-      <field name="legacy_tax_code">91510000S66DEMO</field>
-      <field name="company_id" ref="base.main_company"/>
-      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
-      <field name="mapping_state">confirmed</field>
-      <field name="suggested_state">duplicate_across_carriers</field>
-      <field name="match_method">manual</field>
-      <field name="confidence">0.93</field>
-      <field name="legacy_rows">18</field>
-      <field name="active_rows">17</field>
-      <field name="tax_code_count">1</field>
-      <field name="carrier_count">2</field>
-      <field name="sample_carrier">旧库-德阳项目经营主体</field>
-      <field name="max_carrier">旧库-智慧建造公司</field>
-      <field name="target_partner_count">1</field>
-      <field name="evidence">税号、名称和项目流水人工确认匹配。</field>
-      <field name="note">S66 旧往来单位映射样例。</field>
       <field name="active">True</field>
     </record>
 

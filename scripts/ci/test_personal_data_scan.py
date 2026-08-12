@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
+import tempfile
 import sys
 import unittest
 from pathlib import Path
@@ -50,6 +52,50 @@ class PersonalDataScanTests(unittest.TestCase):
             self.assertEqual(personal_data_scan.main(["--scope", "all"]), 1)
         self.assertNotIn(sensitive, stderr.getvalue())
         self.assertIn("rule=PD002", stderr.getvalue())
+
+    def test_exact_false_positive_suppresses_only_matching_blob_and_path(self) -> None:
+        finding = personal_data_scan.Finding(
+            "PD002", "demo.py", "a" * 40, "MOBILE_PHONE_PATTERN"
+        )
+        registry = {
+            "schema_version": 1,
+            "entries": [
+                {
+                    "rule_id": "PD002",
+                    "path": "demo.py",
+                    "blob_id": "a" * 40,
+                    "classification": "MOBILE_PHONE_PATTERN",
+                    "reason": "verified_synthetic_fixture",
+                }
+            ],
+        }
+        with self.subTest("exact match"), tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "registry.json"
+            path.write_text(json.dumps(registry), encoding="utf-8")
+            with mock.patch.object(personal_data_scan, "FALSE_POSITIVE_FILE", path):
+                allowed = personal_data_scan.load_false_positives()
+            self.assertIn((finding.rule_id, finding.path, finding.blob_id, finding.classification), allowed)
+            self.assertNotIn((finding.rule_id, "other.py", finding.blob_id, finding.classification), allowed)
+
+    def test_false_positive_registry_rejects_short_blob_identity(self) -> None:
+        registry = {
+            "schema_version": 1,
+            "entries": [{
+                "rule_id": "PD002",
+                "path": "demo.py",
+                "blob_id": "a" * 12,
+                "classification": "MOBILE_PHONE_PATTERN",
+                "reason": "too_broad",
+            }],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "registry.json"
+            path.write_text(json.dumps(registry), encoding="utf-8")
+            with (
+                mock.patch.object(personal_data_scan, "FALSE_POSITIVE_FILE", path),
+                self.assertRaisesRegex(ValueError, "full SHA-1"),
+            ):
+                personal_data_scan.load_false_positives()
 
 
 if __name__ == "__main__":

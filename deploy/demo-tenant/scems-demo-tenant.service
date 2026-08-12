@@ -1,0 +1,13 @@
+[Unit]
+Description=SCEMS isolated public demo tenant reset
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/scems/demo-tenant.env
+WorkingDirectory=/opt/sce/demo-product
+ExecStart=/usr/bin/make demo.tenant.reset ENV=demo ENV_FILE=/etc/scems/demo-tenant.env
+User=root
+Group=root
+UMask=0077

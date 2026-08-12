@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic reset of the isolated SCEMS public demo tenant
+
+[Timer]
+OnCalendar=*-*-* 04,16:00:00 Asia/Shanghai
+Persistent=true
+RandomizedDelaySec=5m
+Unit=scems-demo-tenant.service
+
+[Install]
+WantedBy=timers.target

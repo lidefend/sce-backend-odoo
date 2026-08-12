@@ -86,37 +86,31 @@ def _ensure_wbs(env, project, code, name, level_type, parent=None):
     return node
 
 
-def _ensure_structure(env, project, code, name, structure_type, parent=None):
-    Structure = env["sc.project.structure"].sudo()
-    domain = [
-        ("project_id", "=", project.id),
-        ("code", "=", code),
-        ("structure_type", "=", structure_type),
-    ]
-    node = Structure.search(domain, limit=1)
-    vals = {
-        "project_id": project.id,
-        "code": code,
-        "name": name,
-        "structure_type": structure_type,
-        "biz_scope": "work",
-        "parent_id": parent.id if parent else False,
-    }
-    if node:
-        node.write(vals)
-    else:
-        node = Structure.create(vals)
-    return node
-
-
 def _ensure_boq(env, project, code_prefix, uom_unit):
-    unit = _ensure_structure(env, project, f"{code_prefix}-S-UNIT", "基础单位工程", "unit", None)
-    item = _ensure_structure(env, project, f"{code_prefix}-S-ITEM", "基础清单项目", "item", unit)
+    Version = env["project.boq.version"].sudo()
+    version = Version.search(
+        [
+            ("project_id", "=", project.id),
+            ("source_type", "=", "contract"),
+            ("code", "=", "DEMO-V1"),
+        ],
+        limit=1,
+    )
+    if not version:
+        version = Version.create(
+            {
+                "name": "Demo 合同清单 V1",
+                "code": "DEMO-V1",
+                "project_id": project.id,
+                "source_type": "contract",
+            }
+        )
     Boq = env["project.boq.line"].sudo()
     header = Boq.search(
         [("project_id", "=", project.id), ("code", "=", f"{code_prefix}-G")], limit=1
     )
     header_vals = {
+        "version_id": version.id,
         "project_id": project.id,
         "code": f"{code_prefix}-G",
         "name": "基础清单",
@@ -125,8 +119,7 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
         "uom_id": uom_unit.id if uom_unit else False,
         "quantity": 0.0,
         "price": 0.0,
-        "structure_id": item.id,
-        "work_id": False,
+        "line_type": "heading",
     }
     if header:
         header.write(header_vals)
@@ -134,6 +127,7 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
         header = Boq.create(header_vals)
 
     leaf_vals = {
+        "version_id": version.id,
         "project_id": project.id,
         "parent_id": header.id,
         "code": f"{code_prefix}-001",
@@ -142,8 +136,7 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
         "uom_id": uom_unit.id if uom_unit else False,
         "quantity": 120,
         "price": 3200.0,
-        "structure_id": item.id,
-        "work_id": False,
+        "line_type": "item",
     }
     existing = Boq.search(
         [("project_id", "=", project.id), ("code", "=", leaf_vals["code"])], limit=1
@@ -152,6 +145,10 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
         existing.write(leaf_vals)
     else:
         Boq.create(leaf_vals)
+    if version.state == "draft":
+        version.action_validate()
+    if version.state == "validated":
+        version.action_publish()
 
 
 def _ensure_budget(env, project, uom_unit, work_node):
@@ -390,9 +387,9 @@ def run(env):
         },
     )
 
-    root = _ensure_wbs(env, exec_project, "WBS-001", "道路工程", "unit", None)
-    sub = _ensure_wbs(env, exec_project, "WBS-001-01", "桥梁结构", "sub_division", root)
-    leaf = _ensure_wbs(env, exec_project, "WBS-001-01-01", "桩基施工", "sub_section", sub)
+    root = _ensure_wbs(env, exec_project, "WBS-001", "道路实施阶段", "phase", None)
+    sub = _ensure_wbs(env, exec_project, "WBS-001-01", "桥梁结构控制账户", "control_account", root)
+    leaf = _ensure_wbs(env, exec_project, "WBS-001-01-01", "桩基施工工作包", "work_package", sub)
 
     Budget = env["project.budget"].sudo()
     budget = Budget.search(
@@ -590,7 +587,7 @@ def run(env):
                 "start_date": today,
             },
         )
-        stage_root = _ensure_wbs(env, project, f"{code}-WBS", "演示结构", "unit", None)
+        stage_root = _ensure_wbs(env, project, f"{code}-WBS", "演示管理阶段", "phase", None)
         _ensure_boq(env, project, code, uom_unit)
         _ensure_budget(env, project, uom_unit, stage_root)
         _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, stage_root)

@@ -63,18 +63,18 @@
         <field name="company_id" ref="base.main_company"/>
     </record>
 
-    <record id="sc_demo_wbs_root" model="project.wbs">
+    <record id="sc_demo_wbs_root" model="construction.work.breakdown">
         <field name="name">路基工程</field>
         <field name="code">WBS-001</field>
         <field name="project_id" ref="sc_demo_project"/>
-        <field name="level">1</field>
+        <field name="level_type">control_account</field>
     </record>
-    <record id="sc_demo_wbs_sub" model="project.wbs">
+    <record id="sc_demo_wbs_sub" model="construction.work.breakdown">
         <field name="name">桥梁结构</field>
         <field name="code">WBS-002</field>
         <field name="project_id" ref="sc_demo_project"/>
         <field name="parent_id" ref="sc_demo_wbs_root"/>
-        <field name="level">2</field>
+        <field name="level_type">work_package</field>
     </record>
 
     <record id="sc_demo_budget_control" model="project.budget">
