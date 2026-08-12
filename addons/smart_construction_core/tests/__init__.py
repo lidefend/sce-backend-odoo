@@ -38,6 +38,7 @@ from . import test_capability_registry_service
 from . import test_capability_contract_backend
 from . import test_api_data_batch_contract_backend
 from . import test_api_data_search_fields_extension
+from . import test_tender_guarantee_visible_fields
 from . import test_core_extension_v2_finalize
 from . import test_api_data_write_unlink_idempotency_backend
 from . import test_project_context_resolver
