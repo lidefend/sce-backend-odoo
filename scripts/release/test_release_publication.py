@@ -735,6 +735,46 @@ class PublicationContractTests(unittest.TestCase):
         self.assertEqual(result["state"], "PUBLICATION_COMPLETE")
         self.assertEqual(self.backend.events.count("release_create"), 1)
 
+    def test_published_release_resumes_final_verification_without_external_writes(self):
+        pipe = self.pipeline()
+        pipe.acquire_lock()
+        try:
+            pipe.create_or_resume()
+            plan = pipe.build_plan()
+            pipe.state = pipe.initial_report(plan)
+            publication.atomic_state(pipe.report_path, pipe.state, root=self.root)
+            pipe.transition("PREFLIGHT_PASSED")
+            pipe.identity = publication.candidate_identity(
+                VERSION, CANDIDATE_ATTEMPT, SOURCE, root=self.root
+            )
+            digest = self.backend.push_registry(pipe.identity["image_tags"])
+            registry = {"digest": digest, "tags": pipe.identity["image_tags"]}
+            tags = self.backend.ensure_tags(
+                f"v{VERSION}", SOURCE, "test", pipe.state["created_at"]
+            )
+            notes = pipe.release_notes(plan, digest)
+            release = self.backend.create_release(
+                f"v{VERSION}", f"{VERSION} release candidate", notes
+            )
+            pipe.transition(
+                "RELEASE_PUBLISHED",
+                external={
+                    "registry": registry,
+                    "tags": tags,
+                    "release": {"tag": f"v{VERSION}", "url": release["url"]},
+                },
+            )
+            attempt_id = pipe.attempt_dir.name
+        finally:
+            pipe.release_lock()
+
+        events = list(self.backend.events)
+        result = self.pipeline(
+            requested_publication_attempt_id=attempt_id
+        ).execute()
+        self.assertEqual(result["state"], "PUBLICATION_COMPLETE")
+        self.assertEqual(events, self.backend.events)
+
     def test_resume_identity_mismatch_does_not_modify_old_evidence(self):
         self.backend.fail_tag_once = True
         pipe = self.pipeline()
