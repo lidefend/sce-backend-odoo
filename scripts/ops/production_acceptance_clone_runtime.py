@@ -152,7 +152,7 @@ def tenant_module_operation(db_container: str, database: str, tenant_module: str
     )
     if state == "installed":
         return "upgrade"
-    if state == "uninstalled":
+    if state in {"", "uninstalled"}:
         return "install"
     raise CloneRuntimeError("tenant module state is not eligible for controlled activation")
 

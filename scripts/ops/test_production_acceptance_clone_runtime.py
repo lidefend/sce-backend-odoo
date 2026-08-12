@@ -74,6 +74,13 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         self.assertEqual(operation, "install")
         self.assertIn("WHERE name = 'sce_customer_sample'", runner.call_args.args[0][-1])
 
+    def test_new_locked_tenant_module_is_explicitly_installed(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value=""):
+            operation = RUNTIME.tenant_module_operation(
+                "restore_db", "r10e_restore", "sce_customer_sample"
+            )
+        self.assertEqual(operation, "install")
+
     def test_installed_tenant_module_is_upgraded(self) -> None:
         with mock.patch.object(RUNTIME, "run", return_value="installed"):
             operation = RUNTIME.tenant_module_operation(
