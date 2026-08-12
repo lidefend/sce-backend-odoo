@@ -938,8 +938,9 @@ class Publication:
             },
             "failure": None,
             "evidence": {"log": "logs/publication.log"},
-            "publication_manifest": None,
-            "history": [
+                "publication_manifest": None,
+                "recovery_tool": None,
+                "history": [
                 {
                     "state": "PLANNED",
                     "previous_state": None,
@@ -957,6 +958,41 @@ class Publication:
             root=self.root,
         )
         expected = plan.get("identity") or {}
+        frozen_tool_sha = str(plan["identity"]["publication_tool_source_sha"])
+        frozen_live_sha = str(plan["identity"]["expected_live_main_sha"])
+        recovery_tool = None
+        if (
+            self.state.get("state") == "RELEASE_PUBLISHED"
+            and self.expected_publication_tool_sha != frozen_tool_sha
+        ):
+            tool_sha, tool_tree = self.backend.publication_tool_identity()
+            github_sha, github_tree = self.backend.remote_main(GITHUB_REMOTE)
+            gitee_sha, gitee_tree = self.backend.remote_main(GITEE_REMOTE)
+            if (
+                self.expected_publication_tool_sha != tool_sha
+                or self.expected_live_main_sha != tool_sha
+                or (github_sha, github_tree) != (tool_sha, tool_tree)
+                or (gitee_sha, gitee_tree) != (tool_sha, tool_tree)
+                or not self.backend.candidate_is_first_parent_ancestor(
+                    frozen_tool_sha, tool_sha
+                )
+            ):
+                raise PublicationError(
+                    "publication recovery tool identity differs", stage="identity"
+                )
+            recovery_tool = {
+                "source_sha": tool_sha,
+                "source_tree": tool_tree,
+                "contract_sha256": workflow_digest(self.root),
+                "previous_tool_source_sha": frozen_tool_sha,
+            }
+        elif (
+            self.expected_publication_tool_sha != frozen_tool_sha
+            or self.expected_live_main_sha != frozen_live_sha
+        ):
+            raise PublicationError(
+                "publication resume identity differs", stage="identity"
+            )
         comparisons = {
             "version": self.version,
             "candidate_attempt_id": self.candidate_attempt_id,
@@ -987,12 +1023,14 @@ class Publication:
             "candidate_tool_contract_sha256": identity[
                 "candidate_tool_contract_sha256"
             ],
-            "publication_tool_source_sha": self.expected_publication_tool_sha,
+            "publication_tool_source_sha": frozen_tool_sha,
             "publication_tool_source_tree": plan["identity"][
                 "publication_tool_source_tree"
             ],
-            "publication_tool_contract_sha256": workflow_digest(self.root),
-            "expected_live_main_sha": self.expected_live_main_sha,
+            "publication_tool_contract_sha256": plan["identity"][
+                "publication_tool_contract_sha256"
+            ],
+            "expected_live_main_sha": frozen_live_sha,
             "live_github_main_sha": plan["identity"]["live_github_main_sha"],
             "live_github_main_tree": plan["identity"]["live_github_main_tree"],
             "live_gitee_main_sha": plan["identity"]["live_gitee_main_sha"],
@@ -1004,6 +1042,9 @@ class Publication:
                 "publication resume identity differs", stage="identity"
             )
         self.identity = identity
+        if recovery_tool is not None:
+            self.state["recovery_tool"] = recovery_tool
+            atomic_state(self.report_path, self.state, root=self.root)
         return plan
 
     def transition(self, state: str, **updates) -> None:
@@ -1146,6 +1187,7 @@ class Publication:
             "publication_tool_source_sha": plan["identity"][
                 "publication_tool_source_sha"
             ],
+            "recovery_tool": self.state.get("recovery_tool"),
             "live_main_sha": plan["identity"]["expected_live_main_sha"],
             "candidate_manifest_sha256": plan["identity"][
                 "candidate_manifest_sha256"
@@ -1222,6 +1264,7 @@ class Publication:
                                 "failure": None,
                                 "evidence": {"log": "logs/publication.log"},
                                 "publication_manifest": None,
+                                "recovery_tool": None,
                                 "history": [
                                     {
                                         "state": "PLANNED",

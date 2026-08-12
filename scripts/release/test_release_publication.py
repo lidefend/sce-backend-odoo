@@ -775,6 +775,65 @@ class PublicationContractTests(unittest.TestCase):
         self.assertEqual(result["state"], "PUBLICATION_COMPLETE")
         self.assertEqual(events, self.backend.events)
 
+    def test_published_release_allows_audited_first_parent_recovery_tool(self):
+        pipe = self.pipeline()
+        pipe.acquire_lock()
+        try:
+            pipe.create_or_resume()
+            plan = pipe.build_plan()
+            pipe.state = pipe.initial_report(plan)
+            publication.atomic_state(pipe.report_path, pipe.state, root=self.root)
+            pipe.transition("PREFLIGHT_PASSED")
+            pipe.identity = publication.candidate_identity(
+                VERSION, CANDIDATE_ATTEMPT, SOURCE, root=self.root
+            )
+            digest = self.backend.push_registry(pipe.identity["image_tags"])
+            registry = {"digest": digest, "tags": pipe.identity["image_tags"]}
+            tags = self.backend.ensure_tags(
+                f"v{VERSION}", SOURCE, "test", pipe.state["created_at"]
+            )
+            notes = pipe.release_notes(plan, digest)
+            release = self.backend.create_release(
+                f"v{VERSION}", f"{VERSION} release candidate", notes
+            )
+            pipe.transition(
+                "RELEASE_PUBLISHED",
+                external={
+                    "registry": registry,
+                    "tags": tags,
+                    "release": {"tag": f"v{VERSION}", "url": release["url"]},
+                },
+            )
+            attempt_id = pipe.attempt_dir.name
+        finally:
+            pipe.release_lock()
+
+        successor_sha = "3" * 40
+        successor_tree = "4" * 40
+        self.backend.github_main = successor_sha
+        self.backend.gitee_main = successor_sha
+        self.backend.tree = successor_tree
+        self.backend.tool_sha = successor_sha
+        self.backend.tool_tree = successor_tree
+        events = list(self.backend.events)
+        with mock.patch.object(
+            self.backend,
+            "candidate_is_first_parent_ancestor",
+            return_value=True,
+        ):
+            result = self.pipeline(
+                expected_publication_tool_sha=successor_sha,
+                expected_live_main_sha=successor_sha,
+                requested_publication_attempt_id=attempt_id,
+            ).execute()
+        self.assertEqual(result["state"], "PUBLICATION_COMPLETE")
+        self.assertEqual(result["identity"]["publication_tool_source_sha"], LIVE_MAIN)
+        self.assertEqual(result["recovery_tool"]["source_sha"], successor_sha)
+        self.assertEqual(
+            result["recovery_tool"]["previous_tool_source_sha"], LIVE_MAIN
+        )
+        self.assertEqual(events, self.backend.events)
+
     def test_resume_identity_mismatch_does_not_modify_old_evidence(self):
         self.backend.fail_tag_once = True
         pipe = self.pipeline()
