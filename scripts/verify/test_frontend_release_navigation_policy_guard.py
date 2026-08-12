@@ -10,7 +10,12 @@ def _fixture():
     policies = {}
     for manifest_role, policy_role in ROLE_MAP.items():
         key = f"x.menu_{policy_role}|x.action_{policy_role}|x.model"
-        roles[manifest_role] = {"expected_count": 1, "leaf_keys": [key]}
+        roles[manifest_role] = {
+            "expected_count": 1,
+            "leaf_keys": [key],
+            "browser_expected_count": 1,
+            "browser_leaf_keys": [key],
+        }
         policies[policy_role] = {
             "primary_menu_xmlids": [f"x.menu_{policy_role}"],
             "role_home_menu_xmlids": [],
@@ -39,6 +44,8 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
                 "x.menu_finance|x.action_finance|x.model",
                 f"{historical_menu}|smart_construction_core.action_sc_historical_payment_fact|sc.historical.payment.fact",
             ],
+            "browser_expected_count": 1,
+            "browser_leaf_keys": ["x.menu_finance|x.action_finance|x.model"],
         }
         policies["finance"]["primary_menu_xmlids"].append(historical_menu)
         self.assertEqual(validate(manifest, policies), [])
@@ -58,6 +65,10 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         manifest["roles"]["pm"] = {
             "expected_count": 1,
             "leaf_keys": [
+                f"{formal_menu}|smart_construction_core.action_sc_general_contract|sc.general.contract"
+            ],
+            "browser_expected_count": 1,
+            "browser_leaf_keys": [
                 f"{formal_menu}|smart_construction_core.action_sc_general_contract|sc.general.contract"
             ],
         }
