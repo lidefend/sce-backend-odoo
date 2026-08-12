@@ -257,6 +257,10 @@ class StaticContractTests(unittest.TestCase):
 
     def test_runtime_receives_frontend_build_identity(self):
         self.assertIn(
+            'FRONTEND_BUILD_SHA256="${FRONTEND_BUILD_SHA256}"',
+            self.dockerfile,
+        )
+        self.assertIn(
             "FRONTEND_BUILD_SHA256: ${FRONTEND_BUILD_SHA256:?FRONTEND_BUILD_SHA256 is required}",
             self.compose,
         )
