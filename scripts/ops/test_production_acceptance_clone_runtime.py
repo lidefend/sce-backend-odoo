@@ -66,6 +66,28 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             )
         self.assertEqual(result, {"installed": 2, "pending": 0})
 
+    def test_uninstalled_tenant_module_is_explicitly_installed(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="uninstalled") as runner:
+            operation = RUNTIME.tenant_module_operation(
+                "restore_db", "r10e_restore", "sce_customer_sample"
+            )
+        self.assertEqual(operation, "install")
+        self.assertIn("WHERE name = 'sce_customer_sample'", runner.call_args.args[0][-1])
+
+    def test_installed_tenant_module_is_upgraded(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="installed"):
+            operation = RUNTIME.tenant_module_operation(
+                "restore_db", "r10e_restore", "sce_customer_sample"
+            )
+        self.assertEqual(operation, "upgrade")
+
+    def test_pending_tenant_module_state_fails_closed(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="to install"):
+            with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "not eligible"):
+                RUNTIME.tenant_module_operation(
+                    "restore_db", "r10e_restore", "sce_customer_sample"
+                )
+
     def test_runtime_has_one_authoritative_product_module_set(self) -> None:
         modules = RUNTIME.product_modules()
         self.assertIn("smart_construction_core", modules)

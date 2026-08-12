@@ -129,6 +129,34 @@ def module_state(db_container: str, database: str, modules: tuple[str, ...]) -> 
     return {"installed": installed, "pending": pending}
 
 
+def tenant_module_operation(db_container: str, database: str, tenant_module: str) -> str:
+    if not MODULE.fullmatch(tenant_module):
+        raise CloneRuntimeError("invalid tenant module identity")
+    state = run(
+        [
+            "docker",
+            "exec",
+            db_container,
+            "psql",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-U",
+            "odoo",
+            "-d",
+            database,
+            "-At",
+            "-c",
+            "SELECT state FROM ir_module_module "
+            f"WHERE name = '{tenant_module}';",
+        ]
+    )
+    if state == "installed":
+        return "upgrade"
+    if state == "uninstalled":
+        return "install"
+    raise CloneRuntimeError("tenant module state is not eligible for controlled activation")
+
+
 def odoo_container_args(
     *,
     name: str,
@@ -510,7 +538,9 @@ def activate(
         encoding="utf-8",
     )
     config.chmod(0o640)
-    modules = (*product_modules(), tenant_module)
+    product_module_set = product_modules()
+    modules = (*product_module_set, tenant_module)
+    tenant_operation = tenant_module_operation(str(db_container), database, tenant_module)
     before = database_snapshot(str(db_container), database)
     upgrade_container = f"{restore_id}_acceptance_upgrade"
     remove_verified_failed_upgrade(restore_id, str(network))
@@ -521,6 +551,10 @@ def activate(
         tenant_root=tenant_root,
         config=config,
         image=image,
+    )
+    module_args = ["-u", ",".join(product_module_set)]
+    module_args.extend(
+        ["-i" if tenant_operation == "install" else "-u", tenant_module]
     )
     run(
         [
@@ -533,8 +567,7 @@ def activate(
             "--max-cron-threads=0",
             "--without-demo=all",
             "--stop-after-init",
-            "-u",
-            ",".join(modules),
+            *module_args,
         ]
     )
     release_version = image_release_version(image)
@@ -613,6 +646,7 @@ def activate(
         "exact_dbfilter": True,
         "tenant_sha": tenant_sha,
         "tenant_module": tenant_module,
+        "tenant_module_operation": tenant_operation,
         "upgraded_modules": list(modules),
         "protected_counts_before": before,
         "protected_counts_after": after,
