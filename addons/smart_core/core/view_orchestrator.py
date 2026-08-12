@@ -22,6 +22,27 @@ class ViewOrchestrator:
         "odoo_native_view_parse_snapshot",
     )
     NO_BUSINESS_FACT_AUTHORITY = True
+    ORDINARY_FORM_INTERNAL_FIELD_NAMES = {
+        "active", "create_uid", "create_date", "write_uid", "write_date", "__last_update",
+        "message_needaction", "message_has_error", "message_has_sms_error",
+        "can_review", "reviewer_ids", "review_ids", "next_review", "need_validation",
+        "validated", "rejected", "has_comment",
+        "source_created_by", "source_created_at", "entry_user_id", "entry_user_text",
+        "entry_time", "creator_name", "created_time", "archived",
+    }
+    ORDINARY_FORM_INTERNAL_FIELD_PREFIXES = (
+        "legacy_source_", "carrier_", "migration_", "replay_", "technical_", "audit_",
+    )
+    ORDINARY_FORM_INTERNAL_SECTION_TOKENS = (
+        "来源追溯", "来源信息", "录入与归档", "历史核对", "系统信息", "系统办理信息",
+        "source trace", "provenance", "audit", "technical",
+    )
+    ORDINARY_FORM_NARRATIVE_FIELD_TOKENS = (
+        "note", "remark", "description", "content", "instruction", "reason", "memo", "说明", "备注",
+    )
+    ORDINARY_FORM_ATTACHMENT_FIELD_TOKENS = (
+        "attachment", "file", "document_ids", "附件", "凭证",
+    )
 
     def __init__(self, env):
         self.env = env
@@ -329,7 +350,11 @@ class ViewOrchestrator:
         rows = self._normalized_rows(spec.get("fields") or spec.get("field_slots"))
         if rows:
             fields_meta = self.env[model_name].fields_get() if model_name in self.env else {}
-            effective = {row["name"]: row for row in rows if row.get("name") in fields_meta}
+            effective = {
+                row["name"]: row
+                for row in rows
+                if row.get("name") in fields_meta and not self._is_ordinary_form_internal_field(row["name"], row, fields_meta)
+            }
             if effective:
                 hidden = {name for name, row in effective.items() if row.get("visible") is False}
                 if self._is_entry_semantic_surface(spec):
@@ -350,6 +375,40 @@ class ViewOrchestrator:
     def _is_entry_semantic_surface(self, spec: dict) -> bool:
         mode = str(spec.get("composition_mode") or spec.get("compositionMode") or "").strip()
         return mode in {"entry_semantic_surface", "semantic_entry_surface"}
+
+    def _is_ordinary_form_internal_field(self, name: str, row: dict, fields_meta: dict) -> bool:
+        value = str(name or "").strip().lower()
+        if not value:
+            return True
+        if value in self.ORDINARY_FORM_INTERNAL_FIELD_NAMES:
+            return True
+        if value.startswith(self.ORDINARY_FORM_INTERNAL_FIELD_PREFIXES):
+            return True
+        meta = fields_meta.get(name, {}) if isinstance(fields_meta, dict) else {}
+        semantic = str(row.get("semantic_type") or row.get("semanticType") or meta.get("semantic_type") or "").strip().lower()
+        surface = str(row.get("surface_role") or row.get("surfaceRole") or meta.get("surface_role") or "").strip().lower()
+        return bool(row.get("technical") or meta.get("technical") or semantic == "technical" or surface in {"hidden", "audit_only"})
+
+    def _ordinary_form_field_role(self, name: str, row: dict, fields_meta: dict) -> str:
+        value = str(name or "").strip().lower()
+        label = str(row.get("label") or fields_meta.get(name, {}).get("string") or "").strip().lower()
+        haystack = f"{value} {label}"
+        if any(token in haystack for token in self.ORDINARY_FORM_ATTACHMENT_FIELD_TOKENS):
+            return "evidence"
+        if any(token in haystack for token in self.ORDINARY_FORM_NARRATIVE_FIELD_TOKENS):
+            return "narrative"
+        return "business_fact"
+
+    def _ordinary_form_section_kind(self, title: str, field_roles: list[str]) -> str:
+        normalized = str(title or "").strip().lower()
+        if any(token in normalized for token in self.ORDINARY_FORM_INTERNAL_SECTION_TOKENS):
+            return "internal_audit"
+        roles = set(field_roles)
+        if roles == {"evidence"}:
+            return "evidence"
+        if roles == {"narrative"}:
+            return "narrative"
+        return "business_facts"
 
     def _entry_semantic_surface_layout(self, effective: dict[str, dict[str, Any]], spec: dict, fields_meta: dict) -> list:
         sections = spec.get("sections") if isinstance(spec.get("sections"), list) else []
@@ -379,14 +438,28 @@ class ViewOrchestrator:
             names = [name for name in section_fields(section) if name not in emitted]
             if not title or not names:
                 continue
+            roles = [self._ordinary_form_field_role(name, effective[name], fields_meta) for name in names]
+            if self._ordinary_form_section_kind(title, roles) == "internal_audit":
+                emitted.update(names)
+                continue
+            if not layout and title in {"办理主信息", "基本信息", "业务信息", "主信息"}:
+                title = f"{str(spec.get('title') or '业务').strip()}概要"
             emitted.update(names)
-            layout.append({
-                "type": "group",
-                "string": title,
-                "label": title,
-                **({"columns": section.get("columns")} if section.get("columns") else {}),
-                "children": [self._form_field_node(name, effective[name], fields_meta) for name in names],
-            })
+            grouped_names = []
+            for role, suffix in (("business_fact", ""), ("narrative", "办理说明"), ("evidence", "附件凭证")):
+                selected = [name for name in names if self._ordinary_form_field_role(name, effective[name], fields_meta) == role]
+                if selected:
+                    grouped_names.append((role, suffix or title, selected))
+            for role, group_title, selected in grouped_names:
+                layout.append({
+                    "type": "group",
+                    "string": group_title,
+                    "label": group_title,
+                    "sectionKind": role,
+                    "audience": ["handler", "reviewer", "finance"],
+                    **({"columns": section.get("columns")} if section.get("columns") else {}),
+                    "children": [self._form_field_node(name, effective[name], fields_meta) for name in selected],
+                })
 
         remaining = [
             name
@@ -398,6 +471,7 @@ class ViewOrchestrator:
                 "type": "group",
                 "string": "业务配置字段",
                 "label": "业务配置字段",
+                "sectionKind": "business_facts",
                 "children": [self._form_field_node(name, effective[name], fields_meta) for name in remaining],
             })
         return layout
@@ -825,6 +899,7 @@ class ViewOrchestrator:
 
     def _form_field_node(self, name: str, row: dict[str, Any], fields_meta: dict) -> dict:
         label = row.get("label") or fields_meta.get(name, {}).get("string") or name
+        presentation_role = self._ordinary_form_field_role(name, row, fields_meta)
         return {
             "type": "field",
             "name": name,
@@ -832,6 +907,12 @@ class ViewOrchestrator:
                 "name": name,
                 "label": label,
                 "type": fields_meta.get(name, {}).get("type") or "char",
+            },
+            "formPresentation": {
+                "fieldRole": presentation_role,
+                "audience": ["handler", "reviewer", "finance"],
+                "renderProfiles": ["create", "edit", "readonly"],
+                "emptyValuePolicy": "hide_when_empty_in_readonly",
             },
             **({"string": row["label"], "label": row["label"]} if row.get("label") else {}),
             **({"readonly": bool(row["readonly"])} if isinstance(row.get("readonly"), bool) else {}),

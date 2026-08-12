@@ -23,15 +23,16 @@
                             'composition_mode': 'entry_semantic_surface',
                             'columns': 2,
                             'sections': [
-                                {'title': '办理主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'validation_status', 'name', 'settlement_flow_label', 'settlement_type', 'business_category_id', 'document_date', 'date_settlement']},
+                                {'title': '结算概要', 'sequence': 10, 'columns': 2, 'fields': ['state', 'validation_status', 'name', 'settlement_flow_label', 'settlement_type', 'business_category_id', 'document_date', 'date_settlement']},
                                 {'title': '项目与合同', 'sequence': 20, 'columns': 2, 'fields': ['project_id', 'operation_strategy', 'contract_id', 'partner_id', 'settlement_unit_id', 'company_id', 'currency_id']},
                                 {'title': '结算分类与周期', 'sequence': 30, 'columns': 2, 'fields': ['title', 'settlement_category_id', 'settlement_category_display', 'settlement_stage_id', 'planned_settlement_date', 'declared_date', 'final_approved_date', 'approved_date', 'settlement_period_start', 'settlement_period_end']},
                                 {'title': '结算金额与明细', 'sequence': 40, 'columns': 2, 'fields': ['settlement_amount', 'amount_total', 'submitted_amount', 'approved_amount', 'deduction_amount', 'adjustment_total', 'amount_after_adjustment', 'line_ids']},
                                 {'title': '收付执行', 'sequence': 50, 'columns': 2, 'fields': ['requested_fund_amount', 'paid_amount', 'remaining_amount', 'amount_paid', 'unpaid_amount', 'amount_payable', 'payment_request_ids', 'payment_request_line_ids']},
                                 {'title': '发票与采购关联', 'sequence': 60, 'columns': 2, 'fields': ['invoice_ref', 'invoice_date', 'invoice_amount', 'purchase_order_ids']},
-                                {'title': '说明与附件', 'sequence': 70, 'columns': 2, 'fields': ['settlement_description', 'note', 'attachment_ids', 'attachment_count']},
-                                {'title': '匹配与调整', 'sequence': 80, 'columns': 2, 'fields': ['compliance_state', 'compliance_message', 'adjustment_ids', 'reject_reason']},
-                                {'title': '来源追溯', 'sequence': 90, 'columns': 2, 'fields': ['legacy_fact_model', 'legacy_fact_id', 'legacy_fact_type', 'legacy_document_state', 'legacy_contract_no', 'legacy_counterparty_name', 'source_created_by', 'source_created_at', 'entry_user_id', 'entry_data']}
+                                {'title': '办理说明', 'sequence': 70, 'columns': 1, 'fields': ['settlement_description', 'note']},
+                                {'title': '附件凭证', 'sequence': 80, 'columns': 1, 'fields': ['attachment_ids', 'attachment_count']},
+                                {'title': '匹配与调整', 'sequence': 90, 'columns': 2, 'fields': ['compliance_state', 'compliance_message', 'adjustment_ids', 'reject_reason']},
+                                {'title': '来源追溯', 'sequence': 100, 'columns': 2, 'fields': ['legacy_fact_model', 'legacy_fact_id', 'legacy_fact_type', 'legacy_document_state', 'legacy_contract_no', 'legacy_counterparty_name', 'source_created_by', 'source_created_at', 'entry_user_id', 'entry_data']}
                             ],
                             'fields': [
                                 {'name': 'state', 'sequence': 10, 'group_title': '办理主信息', 'readonly': True},

@@ -36,7 +36,10 @@ verify.frontend.typecheck.strict: guard.prod.forbid
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 
-.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.action_surface_renderer_registry.unit verify.frontend.all_list_visual.audit verify.frontend.runtime_environment.unit audit.frontend.form_information_architecture audit.frontend.industry_agnostic verify.frontend.industry_agnostic.guard
+.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_information_architecture.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.action_surface_renderer_registry.unit verify.frontend.all_list_visual.audit verify.frontend.runtime_environment.unit audit.frontend.form_information_architecture audit.frontend.industry_agnostic verify.frontend.industry_agnostic.guard
+
+verify.frontend.form_information_architecture.unit: guard.prod.forbid
+	@node --experimental-strip-types scripts/verify/frontend_form_information_architecture_contract_test.ts
 
 audit.frontend.form_information_architecture: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_form_information_architecture_audit

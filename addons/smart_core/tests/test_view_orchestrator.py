@@ -42,6 +42,8 @@ class _Config:
     id = 9
     name = "demo"
     version_no = 3
+    status = "published"
+    source_kind = "published"
 
     def __init__(self, payload):
         self.contract_json = payload
@@ -95,12 +97,20 @@ class _Model:
         "end_date": object(),
         "user_id": object(),
         "state": object(),
+        "note": object(),
+        "attachment_ids": object(),
+        "legacy_source_created_at": object(),
+        "create_uid": object(),
     }
 
     def fields_get(self):
         return {
             "name": {"string": "Name", "type": "char"},
             "email": {"string": "Email", "type": "char"},
+            "note": {"string": "办理说明", "type": "text"},
+            "attachment_ids": {"string": "附件", "type": "many2many"},
+            "legacy_source_created_at": {"string": "历史录入时间", "type": "char"},
+            "create_uid": {"string": "创建人", "type": "many2one"},
         }
 
 
@@ -274,6 +284,41 @@ class TestViewOrchestrator(unittest.TestCase):
         self.assertEqual(result["layout"][0]["children"][0].get("label"), "Partner Name")
         self.assertEqual([field.get("name") for field in result["layout"][1]["children"]], ["email"])
         self.assertNotIn("native_group", str(result["layout"]))
+
+    def test_entry_semantic_surface_is_business_only_and_splits_narrative_from_evidence(self):
+        payload = {
+            "view_orchestration": {"views": {"form": {
+                "title": "付款申请",
+                "composition_mode": "entry_semantic_surface",
+                "sections": [
+                    {"title": "办理主信息", "sequence": 10, "fields": ["name"]},
+                    {"title": "说明与附件", "sequence": 20, "fields": ["note", "attachment_ids"]},
+                    {"title": "来源追溯", "sequence": 30, "fields": ["legacy_source_created_at", "create_uid"]},
+                ],
+                "fields": [
+                    {"name": "name", "sequence": 10},
+                    {"name": "note", "sequence": 20},
+                    {"name": "attachment_ids", "sequence": 30},
+                    {"name": "legacy_source_created_at", "sequence": 40},
+                    {"name": "create_uid", "sequence": 50},
+                ],
+            }}}
+        }
+
+        result, _calls = self._compose(payload, {"layout": []}, "form")
+
+        self.assertEqual(
+            [group.get("string") for group in result["layout"]],
+            ["付款申请概要", "办理说明", "附件凭证"],
+        )
+        self.assertNotIn("legacy_source_created_at", str(result["layout"]))
+        self.assertNotIn("create_uid", str(result["layout"]))
+        self.assertEqual(result["layout"][1]["sectionKind"], "narrative")
+        self.assertEqual(result["layout"][2]["sectionKind"], "evidence")
+        self.assertEqual(
+            result["layout"][2]["children"][0]["formPresentation"]["emptyValuePolicy"],
+            "hide_when_empty_in_readonly",
+        )
 
     def test_pivot_view_uses_business_config_measures_dimensions_and_defaults(self):
         payload = {

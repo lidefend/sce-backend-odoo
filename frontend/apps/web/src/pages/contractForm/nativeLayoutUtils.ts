@@ -8,6 +8,12 @@ import {
   toDatetimeInputValue,
 } from './fieldUtils';
 import type { LayoutNode, LowCodeFieldSize } from './types';
+import {
+  isOrdinaryFormInternalField,
+  isOrdinaryFormInternalSection,
+  isReadonlyEmptyBusinessValue,
+} from './formInformationArchitecture';
+export { isOrdinaryFormInternalField, isOrdinaryFormInternalSection, isReadonlyEmptyBusinessValue };
 
 export type NativeLayoutLikeNode = Record<string, unknown> & {
   children?: unknown;
@@ -113,7 +119,7 @@ export type FieldPolicyLike = {
 export function filterVisibleNativeLayoutNodes<T extends NativeLayoutLikeNode>(
   params: VisibleNativeLayoutFilterInput<T>,
 ): T[] {
-  return params.nodes
+  const filtered = params.nodes
     .filter((node) => params.isNodeVisible(node))
     .map((node) => {
       const next = { ...node } as Record<string, unknown>;
@@ -122,17 +128,48 @@ export function filterVisibleNativeLayoutNodes<T extends NativeLayoutLikeNode>(
         const title = params.normalizeGroupTitle(next.string || next.label || next.title);
         if (title && !params.isGroupVisible(title)) next.visible = false;
       }
+      let hadChildCollection = false;
+      let visibleChildCount = 0;
       (['children', 'pages', 'tabs', 'nodes', 'items'] as const).forEach((key) => {
         const value = next[key];
         if (Array.isArray(value)) {
-          next[key] = filterVisibleNativeLayoutNodes({
+          hadChildCollection = true;
+          const filtered = filterVisibleNativeLayoutNodes({
             ...params,
             nodes: value as T[],
           });
+          next[key] = filtered;
+          visibleChildCount += filtered.length;
         }
       });
+      if (
+        hadChildCollection
+        && visibleChildCount === 0
+        && !params.groupVisibilityEditable
+        && ['group', 'page', 'tab', 'notebook', 'sheet'].includes(nodeType)
+      ) return null;
       return next as T;
-    });
+    })
+    .filter((node): node is T => Boolean(node));
+  if (params.groupVisibilityEditable) return filtered;
+  const merged: T[] = [];
+  filtered.forEach((node) => {
+    const previous = merged[merged.length - 1];
+    const previousTitle = params.normalizeGroupTitle(previous?.string || previous?.label || previous?.title);
+    const currentTitle = params.normalizeGroupTitle(node.string || node.label || node.title);
+    if (previous && previousTitle === '收款账户' && currentTitle === '付款单位') {
+      const next = { ...previous, string: '收付款账户', label: '收付款账户', title: '收付款账户' } as Record<string, unknown>;
+      CHILD_KEYS.forEach((key) => {
+        const left = Array.isArray(next[key]) ? next[key] as T[] : [];
+        const right = Array.isArray(node[key]) ? node[key] as T[] : [];
+        if (left.length || right.length) next[key] = [...left, ...right];
+      });
+      merged[merged.length - 1] = next as T;
+      return;
+    }
+    merged.push(node);
+  });
+  return merged;
 }
 
 export function applyNativeFieldOrderPreview<T extends NativeLayoutLikeNode>(
@@ -386,6 +423,7 @@ export type NativeFieldVisibilityInput = {
   semantic: (name: string) => FieldSemanticMeta;
   runtimeState: (name: string) => RuntimeFieldStateLike;
   evaluatePolicy: (name: string, descriptor: FieldDescriptor) => FieldPolicyLike;
+  value?: unknown;
 };
 
 export type NativeLayoutNodeVisibilityInput = {
@@ -422,6 +460,7 @@ export function nativeLayoutNodeType(node: NativeLayoutLikeNode) {
 export function isNativeFieldLayoutNode(node: NativeLayoutLikeNode) {
   return nativeLayoutNodeType(node) === 'field' && Boolean(String(node?.name || '').trim());
 }
+
 
 export function nativeNodeFieldInfo(node?: NativeLayoutLikeNode | null): Record<string, unknown> {
   const fieldInfo = node?.fieldInfo && typeof node.fieldInfo === 'object' && !Array.isArray(node.fieldInfo)
@@ -797,12 +836,17 @@ export function isNativeFieldVisible(input: NativeFieldVisibilityInput) {
   if (statusField && normalized === statusField) return false;
   if (normalized === 'message_needaction') return false;
   const semantic = input.semantic(normalized);
-  if ((semantic.technical || semantic.semantic_type === 'technical') && !input.showHud) return false;
-  if (semantic.surface_role === 'hidden' && !input.showHud) return false;
+  if (isOrdinaryFormInternalField(normalized, semantic) && !input.showHud) return false;
   const state = input.runtimeState(normalized);
   if (state.invisible) return false;
   const descriptor = input.resolveDescriptor(normalized, input.node);
   if (!descriptor) return false;
+  if (
+    input.renderProfile === 'readonly'
+    && !input.showHud
+    && !descriptor.required
+    && isReadonlyEmptyBusinessValue(input.value, String(descriptor.type || ''))
+  ) return false;
   if (isCreateWorkflowStateField(
     normalized,
     nativeFieldLabel(input.node || {}, descriptor, input.resolveFieldLabel),
@@ -824,6 +868,10 @@ export function isNativeLayoutNodeVisible(input: NativeLayoutNodeVisibilityInput
   const node = nodeRaw as Record<string, unknown>;
   const nodeType = String(node.type || '').trim().toLowerCase();
   if (node.visible === false && !(input.editable && nodeType === 'group')) return false;
+  if (['group', 'page', 'tab', 'notebook', 'sheet'].includes(nodeType)) {
+    const title = input.normalizeGroupTitle(node.string || node.label || node.title);
+    if (isOrdinaryFormInternalSection(title) && !input.editable) return false;
+  }
   if (nodeType === 'group') {
     const title = input.normalizeGroupTitle(node.string || node.label || node.title);
     if (title && !input.isGroupVisible(title) && !input.editable) return false;

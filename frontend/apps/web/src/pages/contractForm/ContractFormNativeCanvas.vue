@@ -22,6 +22,18 @@
       </div>
       <em>{{ rootColumns }} 栏布局</em>
     </header>
+    <section v-if="mode === 'readonly' && readonlySummaryFields.length" class="form-readonly-summary" aria-label="业务摘要">
+      <header>
+        <strong>业务摘要</strong>
+        <span>关键信息</span>
+      </header>
+      <dl>
+        <div v-for="field in readonlySummaryFields" :key="field.name">
+          <dt>{{ field.label }}</dt>
+          <dd><FieldValue :value="field.value" :field="field.descriptor" /></dd>
+        </div>
+      </dl>
+    </section>
     <div
       v-if="sectionItems.length > 2"
       class="form-section-nav-shell"
@@ -161,6 +173,34 @@ const activeSection = ref('');
 const sectionHasMoreBefore = ref(false);
 const sectionHasMoreAfter = ref(false);
 const activeSectionIndex = computed(() => Math.max(0, sectionItems.value.findIndex((item) => item.title === activeSection.value)));
+const SUMMARY_FIELD_PRIORITY = [
+  'document_no', 'name', 'subject', 'title', 'project_id', 'partner_id', 'contract_id',
+  'settlement_id', 'amount_total', 'amount', 'settlement_amount', 'date_contract', 'document_date',
+  'date_request', 'date_receipt',
+];
+function flattenNativeFieldNodes(nodes: NativeFormLayoutNode[]): NativeFormLayoutNode[] {
+  const fields: NativeFormLayoutNode[] = [];
+  const visit = (rows: NativeFormLayoutNode[]) => rows.forEach((node) => {
+    if (String(node.type || '').trim().toLowerCase() === 'field' && String(node.name || '').trim()) fields.push(node);
+    (['children', 'pages', 'tabs', 'nodes', 'items'] as const).forEach((key) => {
+      const children = node[key];
+      if (Array.isArray(children)) visit(children as NativeFormLayoutNode[]);
+    });
+  });
+  visit(nodes);
+  return fields;
+}
+const readonlySummaryFields = computed(() => {
+  if (props.mode !== 'readonly') return [];
+  const fields = props.fieldSchemasForNodes(flattenNativeFieldNodes(props.layoutNodes))
+    .filter((field) => !isEmptyValue(field.value, field.type));
+  const priority = new Map(SUMMARY_FIELD_PRIORITY.map((name, index) => [name, index]));
+  return fields.sort((left, right) => {
+    const leftRank = priority.get(left.name) ?? Number.MAX_SAFE_INTEGER;
+    const rightRank = priority.get(right.name) ?? Number.MAX_SAFE_INTEGER;
+    return leftRank - rightRank;
+  }).slice(0, 6);
+});
 let sectionObserver: IntersectionObserver | null = null;
 let sectionMutationObserver: MutationObserver | null = null;
 let sectionNavResizeObserver: ResizeObserver | null = null;
@@ -177,7 +217,8 @@ function refreshSectionNavigation() {
   const seen = new Set<string>();
   const next = elements.reduce<SectionItem[]>((items, element) => {
     const title = String(element.dataset.groupTitle || '').trim();
-    if (!title || /^默认分组\s+\d+$/.test(title) || ['header', 'footer'].includes(title.toLowerCase()) || seen.has(title)) return items;
+    if (!title || /^默认分组\s+\d+$/.test(title) || ['header', 'footer'].includes(title.toLowerCase())
+      || /来源追溯|来源信息|录入与归档|历史核对|系统信息|系统办理信息/i.test(title) || seen.has(title)) return items;
     seen.add(title);
     items.push({ title, hasError: Boolean(element.querySelector('[aria-invalid="true"], .field-error-text')) });
     return items;
@@ -314,6 +355,48 @@ const emit = defineEmits<{
 </script>
 
 <style scoped>
+.form-readonly-summary {
+  margin-bottom: 12px;
+  border-block: 1px solid var(--sc-app-border);
+  background: var(--sc-app-panel);
+}
+
+.form-readonly-summary > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px 6px;
+}
+
+.form-readonly-summary > header span,
+.form-readonly-summary dt {
+  color: var(--sc-app-text-muted);
+  font-size: 12px;
+}
+
+.form-readonly-summary dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+  padding: 8px 14px 14px;
+}
+
+.form-readonly-summary dl > div {
+  min-width: 0;
+}
+
+.form-readonly-summary dt {
+  margin-bottom: 4px;
+}
+
+.form-readonly-summary dd {
+  margin: 0;
+  color: var(--sc-app-text-primary);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .form-section-nav-shell {
   position: sticky;
   top: calc(var(--sc-form-command-bar-height, 72px) + var(--sc-form-sticky-gap, 8px));
@@ -420,6 +503,11 @@ const emit = defineEmits<{
 }
 
 @media (max-width: 860px) {
+  .form-readonly-summary dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+  }
+
   .form-section-nav-shell {
     position: relative;
     top: auto;
