@@ -24,6 +24,7 @@
     "c93e40c5e2613c0b9389492f185365c1d498e7d2",
     "e8cbc880f692d504f2849f75d099aeabd0fb7220"
   ],
+  "personal_data_false_positive_registry": "scripts/ci/personal_data_false_positives.json",
   "forbidden_path_prefixes": [
     "addons/smart_construction_custom/",
     "artifacts/migration/",

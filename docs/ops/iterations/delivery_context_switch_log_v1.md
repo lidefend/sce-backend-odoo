@@ -3771,3 +3771,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   test proves that a different path remains reportable. The full all-history
   personal-data scan and PR public guard must pass without recording matched
   personal-data values.
+
+## 2026-08-13 — P4-CLEAN-HISTORY-EXACT-FALSE-POSITIVE-CLOSURE
+
+- Branch / anchor: `feature/demo-tenant-lifecycle` after `26658a7`.
+- Formal Product Layer / Layer Target / Module: P4 / release security history
+  verification / `scripts/verify/repository_clean_history_guard.py`.
+- Standard vs User-Specific: generic repository security governance. The
+  registered object is a synthetic product Demo fixture, not customer data.
+- Reason / Boundary: the worktree/history personal-data scanner already bound
+  its exception to an exact rule, path, full blob SHA-1 and classification, but
+  the repository clean-history guard independently reclassified the same blob
+  without consuming that registry. Both public CI gates therefore rejected the
+  governed immutable object.
+- Why Here / Why Not Elsewhere: the clean-history guard owns reachable-object
+  admission. Rewriting published history, excluding the Demo tree or weakening
+  the global detector would widen the security boundary and is forbidden.
+- Blast Radius / validation: one existing registry and the RH018 classifier.
+  Exact path/blob/classification matching suppresses only `PD002`; wrong paths,
+  wrong blob identities and a `PD001` match in the same object remain reportable.
+  Unit tests and the real `make verify.repository.clean_history` gate pass.
