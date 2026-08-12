@@ -3,7 +3,13 @@ from odoo.tests.common import TransactionCase
 
 from odoo.addons.smart_construction_core.core_extension_actor_roles import resolve_release_actor_role_codes
 from odoo.addons.smart_construction_core.core_extension import get_system_init_fact_contributions
-from odoo.addons.smart_construction_core.core_extension_hook_facts import lowcode_system_config_menu_xmlids
+from odoo.addons.smart_construction_core.core_extension_hook_facts import (
+    lowcode_system_config_menu_xmlids,
+    menu_delivery_token_policy,
+)
+from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
+    load_locked_menu_policy_contract,
+)
 from odoo.addons.smart_construction_core.core_extension_policy_maps import (
     ROLE_GROUPS_CAPABILITY_FALLBACK,
     ROLE_GROUPS_EXPLICIT,
@@ -124,6 +130,22 @@ class TestProjectMemberRoleSurface(TransactionCase):
                 denied = set(policy.get("denied_menu_xmlids") or [])
                 self.assertFalse(exposed & denied)
                 self.assertTrue(all(xmlid.startswith("smart_construction_core.menu_") for xmlid in exposed | denied))
+
+    def test_legacy_label_aliases_cannot_override_locked_product_labels(self):
+        contract = load_locked_menu_policy_contract()
+        locked_labels = {
+            str(menu.get("label") or "").strip()
+            for product in contract["products"].values()
+            for group in product.get("menu_groups") or []
+            for menu in group.get("menus") or []
+            if str(menu.get("label") or "").strip()
+        }
+        rename_labels = set((menu_delivery_token_policy().get("rename_labels") or {}).keys())
+
+        self.assertFalse(
+            locked_labels & rename_labels,
+            "legacy navigation aliases must not rename a locked P1 product label",
+        )
 
     def test_contract_capable_role_surfaces_use_released_daily_contract_identity(self):
         released_contract = "smart_construction_core.menu_sc_p1_daily_contract"
