@@ -3647,6 +3647,46 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   exact-source replay and authenticated browser/contract verification reproduce
   those bounds.
 
+## 2026-08-13 — P4-WORKTREE-CLEANUP-EXACT-REF-CLOSURE
+
+- Branch / anchor: `fix/worktree-cleanup-exact-ref` from
+  `af117b49615e83b64b33927c1d76a2aa7050188d`.
+- Formal Product Layer / Layer Target / Module: P4 / local delivery workspace
+  governance / `scripts/ops/safe_worktree_cleanup.py`.
+- Standard vs User-Specific: repository-wide delivery safety mechanism; no
+  product, customer, tenant, database or runtime behavior is changed.
+- Reason / Why Here: cleanup verifies a candidate against `origin/main`,
+  including an exact historical main-tree match or all-minus `git cherry`
+  evidence for squash-equivalent branches, so its branch deletion must use the
+  same verified commit instead of re-evaluating merge state against an
+  independently stale controller-worktree HEAD.
+- Why Not Elsewhere: product modules and runtime configuration do not own local
+  Git lifecycle safety, and bypassing the governed Make entry would weaken the
+  repository execution contract.
+- Blast Radius / validation: governed cleanup of clean linked worktrees only.
+  The first Git worktree-list entry remains the protected primary checkout even
+  when cleanup is invoked from a linked worktree. Directory removal permissions
+  are checked before Git deregistration, and exact old-object ref deletion fails
+  closed if the branch advances after verification. A separately confirmed
+  recovery mode removes only an orphaned local branch whose original path is
+  absent, expected full SHA is unchanged, branch is not checked out, and the
+  same main-integration proof succeeds. A separate local-only branch cleanup
+  entry applies the same SHA, checkout and integration guards without deleting
+  a remote ref. Regression tests cover linked-caller primary protection,
+  checked-out-branch rejection, exact confirmation, non-removable artifact
+  directories, orphan recovery and changed-head rejection, a controller HEAD
+  behind an already advanced `origin/main`, a multi-commit branch represented
+  by one historical main-tree snapshot, squash-equivalent commits, and
+  rejection of any remaining unique patch. Batch local cleanup refreshes once
+  and validates the complete branch/SHA set before deleting its first ref, so a
+  bad member cannot partially consume an otherwise valid batch.
+- Superseded-PR cleanup remains local-only and adds a separate exact
+  confirmation. It requires live GitHub evidence that the PR is merged into
+  `main`, exact PR-head identity, containment of the reported merge commit in
+  `origin/main`, and local-tip ancestry under that PR head before exact-old-SHA
+  deletion. This closes early-branch leftovers without treating a title,
+  similar patch, or merely closed PR as integration evidence.
+
 ## 2026-08-11 — P0-SINGLE-NAVIGATION-AUTHORITY-CLOSURE
 
 - Formal Product Layer / Layer Target / Module: P0 / L0-L1 navigation authority
@@ -3726,43 +3766,3 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   primary-center overlay remains the naming/sequence authority. Acceptance
   requires the fresh-database chatter authorization ORM gate, focused
   manifest-order test, product menu release gate and protected PR checks.
-
-## 2026-08-13 — P4-WORKTREE-CLEANUP-EXACT-REF-CLOSURE
-
-- Branch / anchor: `fix/worktree-cleanup-exact-ref` from
-  `af117b49615e83b64b33927c1d76a2aa7050188d`.
-- Formal Product Layer / Layer Target / Module: P4 / local delivery workspace
-  governance / `scripts/ops/safe_worktree_cleanup.py`.
-- Standard vs User-Specific: repository-wide delivery safety mechanism; no
-  product, customer, tenant, database or runtime behavior is changed.
-- Reason / Why Here: cleanup verifies a candidate against `origin/main`,
-  including an exact historical main-tree match or all-minus `git cherry`
-  evidence for squash-equivalent branches, so its branch deletion must use the
-  same verified commit instead of re-evaluating merge state against an
-  independently stale controller-worktree HEAD.
-- Why Not Elsewhere: product modules and runtime configuration do not own local
-  Git lifecycle safety, and bypassing the governed Make entry would weaken the
-  repository execution contract.
-- Blast Radius / validation: governed cleanup of clean linked worktrees only.
-  The first Git worktree-list entry remains the protected primary checkout even
-  when cleanup is invoked from a linked worktree. Directory removal permissions
-  are checked before Git deregistration, and exact old-object ref deletion fails
-  closed if the branch advances after verification. A separately confirmed
-  recovery mode removes only an orphaned local branch whose original path is
-  absent, expected full SHA is unchanged, branch is not checked out, and the
-  same main-integration proof succeeds. A separate local-only branch cleanup
-  entry applies the same SHA, checkout and integration guards without deleting
-  a remote ref. Regression tests cover linked-caller primary protection,
-  checked-out-branch rejection, exact confirmation, non-removable artifact
-  directories, orphan recovery and changed-head rejection, a controller HEAD
-  behind an already advanced `origin/main`, a multi-commit branch represented
-  by one historical main-tree snapshot, squash-equivalent commits, and
-  rejection of any remaining unique patch. Batch local cleanup refreshes once
-  and validates the complete branch/SHA set before deleting its first ref, so a
-  bad member cannot partially consume an otherwise valid batch.
-- Superseded-PR cleanup remains local-only and adds a separate exact
-  confirmation. It requires live GitHub evidence that the PR is merged into
-  `main`, exact PR-head identity, containment of the reported merge commit in
-  `origin/main`, and local-tip ancestry under that PR head before exact-old-SHA
-  deletion. This closes early-branch leftovers without treating a title,
-  similar patch, or merely closed PR as integration evidence.
