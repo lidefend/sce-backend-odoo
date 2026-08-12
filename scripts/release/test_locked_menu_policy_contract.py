@@ -117,7 +117,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         self.assertEqual(
             contract["sha256"],
-            "0faff35011eb8f4146a58f444e2812e1178eba92056c2ecf79bafc205a79fb76",
+            "80b5c7d5bbfe69dc5bd26588cbea4f40dbed1a205f9831d890bb8394e8a1ad24",
         )
         for product_key in CONTRACT.REQUIRED_PRODUCT_KEYS:
             rows = CONTRACT.baseline_rows(contract, product_key)

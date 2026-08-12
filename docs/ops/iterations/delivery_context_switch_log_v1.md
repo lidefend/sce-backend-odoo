@@ -3826,3 +3826,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast Radius / validation: one static assertion now locks the retained
   `开票登记` to `销项发票登记` mapping. The focused hook-facts guard and
   full local quick CI gate prove containment.
+
+## 2026-08-13 — P4-RC20-CUSTOMER-INDEPENDENT-RELEASE
+
+- Branch / anchor: `release/rc20-version-v2` at `e8555f4`.
+- Formal Product Layer / Layer Target / Module: P4 / immutable standard-product
+  release identity / `VERSION` and release tooling.
+- Standard vs User-Specific: standard product release only. Customer projection
+  carriers, history data and tenant-specific migrations remain in the private
+  P2 package and are not consulted by the product runtime.
+- Reason / Why Here: merged PR #188 already enforces product/P2 projection
+  decoupling. RC20 freezes that customer-independent product state for a new
+  candidate build after RC19 was superseded operationally.
+- Why Not Elsewhere: no P0/P1 business mechanism changes are needed; P2 repairs
+  its own historical carriers independently; P3 and frontend are unaffected.
+- Blast Radius / validation: version identity, immutable candidate manifests,
+  release-contract guards and candidate image build. The customer package is
+  validated and versioned in its separate private repository.
