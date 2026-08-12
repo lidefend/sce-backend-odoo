@@ -3726,3 +3726,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   primary-center overlay remains the naming/sequence authority. Acceptance
   requires the fresh-database chatter authorization ORM gate, focused
   manifest-order test, product menu release gate and protected PR checks.
+
+## 2026-08-13 — P1-LOCKED-MENU-BASELINE-HASH-GUARD-CLOSURE
+
+- Branch / anchor: `fix/locked-menu-baseline-hash-guard` from `af117b4`.
+- Formal Product Layer / Layer Target / Module: P1 / formal product menu lock
+  release verification / `scripts/release/test_locked_menu_policy_contract.py`.
+- Standard vs User-Specific: construction-industry release evidence only; no
+  menu definition, customer preference, database state or runtime behavior is
+  changed.
+- Reason / Why Here: the 89-entry locked JSON and its independent SHA-256 lock
+  agree on `80b5c7d5...`, while the semantic regression test retained a stale
+  hard-coded digest from the same baseline transition. The test remains an
+  independent exact-byte assertion and is aligned to the committed lock.
+- Why Not Elsewhere: changing the product baseline or runtime loader would hide
+  a test-evidence defect and unnecessarily alter the released P1 contract.
+- Blast Radius / validation: one expected test digest. Validation recomputes the
+  JSON checksum, loads and validates both required product keys, asserts all 89
+  stable menu identities and runs the complete production release contract.
