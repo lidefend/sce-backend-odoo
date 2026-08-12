@@ -92,13 +92,45 @@ class ProductionAcceptancePayloadRuntimeTests(unittest.TestCase):
         self.assertEqual(RUNTIME.resume_failed_mode("verify"), "0")
 
     def test_database_fingerprint_ignores_pg_dump_restrict_nonce(self) -> None:
-        first = "\\restrict abc\nCREATE TABLE x();\n\\unrestrict abc\n"
-        second = "\\restrict xyz\nCREATE TABLE x();\n\\unrestrict xyz\n"
-        with mock.patch.object(RUNTIME, "run", side_effect=[first, second]):
+        first = mock.Mock(
+            stdout=iter([b"\\restrict abc\n", b"CREATE TABLE x();\n", b"\\unrestrict abc\n"]),
+            stderr=mock.Mock(read=mock.Mock(return_value=b"")),
+            wait=mock.Mock(return_value=0),
+        )
+        second = mock.Mock(
+            stdout=iter([b"\\restrict xyz\n", b"CREATE TABLE x();\n", b"\\unrestrict xyz\n"]),
+            stderr=mock.Mock(read=mock.Mock(return_value=b"")),
+            wait=mock.Mock(return_value=0),
+        )
+        with mock.patch.object(RUNTIME.subprocess, "Popen", side_effect=[first, second]):
             self.assertEqual(
                 RUNTIME.database_fingerprint("restore_db", "isolated"),
                 RUNTIME.database_fingerprint("restore_db", "isolated"),
             )
+
+    def test_database_fingerprint_streams_without_buffering_dump(self) -> None:
+        process = mock.Mock(
+            stdout=iter([b"CREATE TABLE x();\n", b"COPY x FROM stdin;\n"]),
+            stderr=mock.Mock(read=mock.Mock(return_value=b"")),
+            wait=mock.Mock(return_value=0),
+        )
+        with mock.patch.object(RUNTIME.subprocess, "Popen", return_value=process) as popen:
+            observed = RUNTIME.database_fingerprint("restore_db", "isolated")
+        self.assertEqual(
+            observed,
+            RUNTIME.hashlib.sha256(b"CREATE TABLE x();\nCOPY x FROM stdin;\n").hexdigest(),
+        )
+        self.assertIs(popen.call_args.kwargs["stdout"], RUNTIME.subprocess.PIPE)
+
+    def test_database_fingerprint_rejects_failed_dump(self) -> None:
+        process = mock.Mock(
+            stdout=iter([]),
+            stderr=mock.Mock(read=mock.Mock(return_value=b"pg_dump: failed\n")),
+            wait=mock.Mock(return_value=1),
+        )
+        with mock.patch.object(RUNTIME.subprocess, "Popen", return_value=process):
+            with self.assertRaisesRegex(RUNTIME.PayloadRuntimeError, "pg_dump: failed"):
+                RUNTIME.database_fingerprint("restore_db", "isolated")
 
     def test_protected_counts_require_exact_two_integer_rows(self) -> None:
         with mock.patch.object(RUNTIME, "run", return_value="4\n9\n"):
