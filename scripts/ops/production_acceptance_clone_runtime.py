@@ -129,6 +129,47 @@ def module_state(db_container: str, database: str, modules: tuple[str, ...]) -> 
     return {"installed": installed, "pending": pending}
 
 
+def rebind_platform_release_database(db_container: str, database: str) -> bool:
+    """Bind a renamed isolated restore to its own release snapshot authority."""
+    if not re.fullmatch(r"r10e_sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}", database):
+        raise CloneRuntimeError("acceptance platform database identity is invalid")
+    output = run(
+        [
+            "docker",
+            "exec",
+            db_container,
+            "psql",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-v",
+            f"target_db={database}",
+            "-U",
+            "odoo",
+            "-d",
+            database,
+            "-At",
+            "-F",
+            "|",
+            "-c",
+            "WITH current AS ("
+            "SELECT count(*) AS record_count,"
+            "coalesce(bool_and(value = :'target_db')::int, 0) AS already_bound "
+            "FROM ir_config_parameter WHERE key='smart_core.platform_release_db'"
+            "), rebound AS ("
+            "UPDATE ir_config_parameter SET value=:'target_db', write_date=now() "
+            "WHERE key='smart_core.platform_release_db' AND value <> :'target_db' "
+            "RETURNING value"
+            ") SELECT current.record_count,current.already_bound,"
+            "(SELECT count(*) FROM rebound),"
+            "coalesce((SELECT bool_and(value = :'target_db')::int FROM rebound),"
+            "current.already_bound) FROM current;",
+        ]
+    )
+    if output not in {"1|0|1|1", "1|1|0|1"}:
+        raise CloneRuntimeError("acceptance platform release database was not rebound")
+    return output == "1|0|1|1"
+
+
 def tenant_module_operation(db_container: str, database: str, tenant_module: str) -> str:
     if not MODULE.fullmatch(tenant_module):
         raise CloneRuntimeError("invalid tenant module identity")
@@ -570,6 +611,9 @@ def activate(
             *module_args,
         ]
     )
+    platform_release_db_rebound = rebind_platform_release_database(
+        str(db_container), database,
+    )
     release_version = image_release_version(image)
     run(
         platform_snapshot_container_args(
@@ -653,6 +697,7 @@ def activate(
         "pending_modules": 0,
         "platform_release_product_key": PLATFORM_PRODUCT_KEY,
         "platform_release_version": release_version,
+        "platform_release_db_rebound": platform_release_db_rebound,
         "platform_snapshot_refreshed": True,
         "http_health": 200,
         "external_egress": False,

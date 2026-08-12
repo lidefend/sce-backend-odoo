@@ -3863,3 +3863,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   security policy, dual-remote authority, required checks and zero-write
   preflight ordering remain fail-closed and are covered by the complete
   publication and production release-contract suites.
+## 2026-08-13 — P4-ACCEPTANCE-CLONE-DATABASE-AUTHORITY-CLOSURE
+
+- Branch / anchor: `fix/acceptance-clone-db-authority-v2` from `af117b4`.
+- Formal Product Layer / Layer Target / Module: P4 / isolated production-restore
+  acceptance orchestration / `scripts/ops/production_acceptance_clone_runtime.py`.
+- Standard vs User-Specific: generic delivery safety mechanism; no platform,
+  construction-industry, customer preference or business-data semantics change.
+- Reason / Why Here: a renamed isolated restore retains its source
+  `smart_core.platform_release_db` value, while the locked snapshot initializer
+  correctly requires that authority to equal the exact current database. The
+  acceptance orchestrator owns the explicit, fail-closed rebind immediately
+  before refreshing the snapshot.
+- Why Not Elsewhere: P0-P3 must not silently rewrite database identity during
+  normal runtime, installation or configuration; the frontend has no database
+  authority. This is an isolated restore transition owned by P4.
+- Blast Radius / validation: only the exact
+  `r10e_sc_restore_<timestamp>_<suffix>` database inside the verified restore
+  namespace and its single release-database parameter row. Unit tests lock
+  identity rejection, parameterized SQL, idempotence, missing/duplicate-row
+  failure and ordering before the snapshot initializer; no database is touched
+  during local validation.
