@@ -3709,24 +3709,6 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `sc_ten_center_clean` passed module upgrade, project salary lifecycle tests,
   ACL/record-rule gates, and the full 10-center/89-page/245-contract release gate.
 
-## 2026-08-12 — P1-VARIATION-VIEW-LOAD-ORDER-CLOSURE
-
-- Branch / anchor: `fix/product-ten-center-runtime-closure` at `6cf86f7`.
-- Formal Product Layer / Layer Target / Module: P1 / L2 native view dependency
-  order / `smart_construction_core`.
-- Standard vs User-Specific: construction-industry standard; no customer data,
-  preference, low-code state or frontend behavior is involved.
-- Reason / Boundary: the variation lineage form inherits the standard settlement
-  adjustment form, so its XML must load only after the base form external ID is
-  registered. The manifest now expresses that dependency directly and a static
-  regression test locks the order.
-- Blast Radius / validation: module installation order for the inherited
-  settlement view and the accounting-center parent identity. The navigation
-  baseline now creates that parent before accounting children, while the final
-  primary-center overlay remains the naming/sequence authority. Acceptance
-  requires the fresh-database chatter authorization ORM gate, focused
-  manifest-order test, product menu release gate and protected PR checks.
-
 ## 2026-08-13 — P1-LOCKED-MENU-BASELINE-HASH-GUARD-CLOSURE
 
 - Branch / anchor: `fix/locked-menu-baseline-hash-guard` from `af117b4`.
@@ -3744,3 +3726,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast Radius / validation: one expected test digest. Validation recomputes the
   JSON checksum, loads and validates both required product keys, asserts all 89
   stable menu identities and runs the complete production release contract.
+
+## 2026-08-12 — P1-VARIATION-VIEW-LOAD-ORDER-CLOSURE
+
+- Branch / anchor: `fix/product-ten-center-runtime-closure` at `6cf86f7`.
+- Formal Product Layer / Layer Target / Module: P1 / L2 native view dependency
+  order / `smart_construction_core`.
+- Standard vs User-Specific: construction-industry standard; no customer data,
+  preference, low-code state or frontend behavior is involved.
+- Reason / Boundary: the variation lineage form inherits the standard settlement
+  adjustment form, so its XML must load only after the base form external ID is
+  registered. The manifest now expresses that dependency directly and a static
+  regression test locks the order.
+- Blast Radius / validation: module installation order for the inherited
+  settlement view and the accounting-center parent identity. The navigation
+  baseline now creates that parent before accounting children, while the final
+  primary-center overlay remains the naming/sequence authority. Acceptance
+  requires the fresh-database chatter authorization ORM gate, focused
+  manifest-order test, product menu release gate and protected PR checks.
