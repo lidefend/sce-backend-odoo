@@ -417,6 +417,11 @@ LOCAL_CLEAN_BRANCH ?=
 LOCAL_CLEAN_EXPECTED_HEAD ?=
 LOCAL_CLEAN_CONFIRM ?=
 LOCAL_CLEAN_SPECS ?=
+SUPERSEDED_LOCAL_BRANCH ?=
+SUPERSEDED_LOCAL_EXPECTED_HEAD ?=
+SUPERSEDING_MERGED_PR ?=
+SUPERSEDING_PR_EXPECTED_HEAD ?=
+SUPERSEDED_LOCAL_CONFIRM ?=
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -484,6 +489,19 @@ workspace.branch.cleanup.local.batch: guard.prod.forbid
 		--path "$(CURDIR)" \
 		--local-branch-specs "$(LOCAL_CLEAN_SPECS)" \
 		--confirm "$(LOCAL_CLEAN_CONFIRM)" \
+		$(if $(filter 1,$(APPLY)),--apply,)
+
+.PHONY: workspace.branch.cleanup.local.superseded-pr
+workspace.branch.cleanup.local.superseded-pr: guard.prod.forbid
+	@test -n "$(SUPERSEDED_LOCAL_BRANCH)" || { echo "❌ SUPERSEDED_LOCAL_BRANCH is required"; exit 2; }
+	@test -n "$(SUPERSEDING_MERGED_PR)" || { echo "❌ SUPERSEDING_MERGED_PR is required"; exit 2; }
+	@python3 scripts/ops/safe_worktree_cleanup.py \
+		--path "$(CURDIR)" \
+		--superseded-local-branch "$(SUPERSEDED_LOCAL_BRANCH)" \
+		--expected-head "$(SUPERSEDED_LOCAL_EXPECTED_HEAD)" \
+		--merged-pr "$(SUPERSEDING_MERGED_PR)" \
+		--expected-pr-head "$(SUPERSEDING_PR_EXPECTED_HEAD)" \
+		--confirm "$(SUPERSEDED_LOCAL_CONFIRM)" \
 		$(if $(filter 1,$(APPLY)),--apply,)
 
 verify.workspace.worktree.guard: guard.prod.forbid

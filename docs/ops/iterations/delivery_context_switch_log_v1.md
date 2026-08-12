@@ -3760,3 +3760,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   rejection of any remaining unique patch. Batch local cleanup refreshes once
   and validates the complete branch/SHA set before deleting its first ref, so a
   bad member cannot partially consume an otherwise valid batch.
+- Superseded-PR cleanup remains local-only and adds a separate exact
+  confirmation. It requires live GitHub evidence that the PR is merged into
+  `main`, exact PR-head identity, containment of the reported merge commit in
+  `origin/main`, and local-tip ancestry under that PR head before exact-old-SHA
+  deletion. This closes early-branch leftovers without treating a title,
+  similar patch, or merely closed PR as integration evidence.

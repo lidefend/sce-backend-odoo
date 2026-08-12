@@ -319,6 +319,22 @@ make workspace.branch.cleanup.local.batch \
 
 批量模式在删除任何引用前验证全部分支；任一分支仍被占用、SHA 漂移或未被主线吸收时整体拒绝。
 
+已合并 PR 的早期本地分支可通过精确 supersession 入口清理：
+
+```bash
+make workspace.branch.cleanup.local.superseded-pr \
+  SUPERSEDED_LOCAL_BRANCH=codex/example \
+  SUPERSEDED_LOCAL_EXPECTED_HEAD=<full-local-sha> \
+  SUPERSEDING_MERGED_PR=<number> \
+  SUPERSEDING_PR_EXPECTED_HEAD=<full-pr-head-sha> \
+  APPLY=1 \
+  SUPERSEDED_LOCAL_CONFIRM=DELETE_VERIFIED_SUPERSEDED_LOCAL_BRANCH
+```
+
+该入口实时读取 GitHub PR 的合并状态、`main` base、精确 head 和 merge commit，
+确认 merge commit 已进入 `origin/main`，并证明本地分支 tip 是该 PR head 的祖先后，
+才以精确旧 SHA 删除本地引用。它不删除或修改任何远端引用。
+
 目标必须是主仓库同级且以 `<repository-name>-` 开头的新目录；目标分支必须符合
 自治写入分支规则且尚不存在；基线必须是本地或 `origin` 分支可达的既有提交。
 

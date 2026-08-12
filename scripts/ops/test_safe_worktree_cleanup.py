@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
+import json
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import safe_worktree_cleanup as cleanup
@@ -283,6 +284,89 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         branches = git(self.root, "branch", "--format=%(refname:short)").splitlines()
         self.assertNotIn("fix/batch-one", branches)
         self.assertNotIn("fix/batch-two", branches)
+
+    def _superseded_fixture(self):
+        path = self.add_worktree("fix/superseding-pr-head")
+        (path / "feature.txt").write_text("first\n", encoding="utf-8")
+        git(path, "add", "feature.txt")
+        git(path, "commit", "-m", "first PR commit")
+        candidate_head = git(path, "rev-parse", "HEAD")
+        git(self.root, "branch", "codex/superseded", candidate_head)
+        (path / "feature.txt").write_text("first\nsecond\n", encoding="utf-8")
+        git(path, "add", "feature.txt")
+        git(path, "commit", "-m", "complete PR")
+        pr_head = git(path, "rev-parse", "HEAD")
+        git(self.root, "worktree", "remove", str(path))
+
+        (self.root / "feature.txt").write_text("first\nsecond\n", encoding="utf-8")
+        git(self.root, "add", "feature.txt")
+        git(self.root, "commit", "-m", "squash merged PR")
+        merge_sha = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "push", "origin", "main")
+        payload = {
+            "state": "MERGED",
+            "mergedAt": "2026-08-06T00:22:49Z",
+            "baseRefName": "main",
+            "headRefOid": pr_head,
+            "mergeCommit": {"oid": merge_sha},
+        }
+        return candidate_head, pr_head, payload
+
+    def test_superseded_local_branch_requires_merged_pr_ancestry(self) -> None:
+        candidate_head, pr_head, payload = self._superseded_fixture()
+        gh_result = subprocess.CompletedProcess([], 0, json.dumps(payload), "")
+        with mock.patch.object(cleanup, "run_gh", return_value=gh_result), mock.patch.object(
+            cleanup, "fetch_pr_head", return_value=pr_head
+        ):
+            selected = cleanup.cleanup_superseded_local_branch(
+                self.root,
+                branch="codex/superseded",
+                expected_head=candidate_head,
+                pr_number=128,
+                expected_pr_head=pr_head,
+                apply=True,
+                confirmation=cleanup.SUPERSEDED_BRANCH_CONFIRMATION,
+            )
+        self.assertEqual(selected.head, candidate_head)
+        self.assertNotIn("codex/superseded", git(self.root, "branch", "--format=%(refname:short)").splitlines())
+
+    def test_superseded_local_branch_rejects_pr_identity_drift(self) -> None:
+        candidate_head, pr_head, payload = self._superseded_fixture()
+        for key, value in (("state", "OPEN"), ("baseRefName", "release"), ("headRefOid", "0" * 40)):
+            drifted = {**payload, key: value}
+            gh_result = subprocess.CompletedProcess([], 0, json.dumps(drifted), "")
+            with self.subTest(key=key), mock.patch.object(
+                cleanup, "run_gh", return_value=gh_result
+            ):
+                with self.assertRaisesRegex(cleanup.CleanupError, "identity"):
+                    cleanup.cleanup_superseded_local_branch(
+                        self.root,
+                        branch="codex/superseded",
+                        expected_head=candidate_head,
+                        pr_number=128,
+                        expected_pr_head=pr_head,
+                        apply=False,
+                        confirmation="",
+                    )
+
+    def test_superseded_local_branch_rejects_unrelated_candidate(self) -> None:
+        _candidate_head, pr_head, payload = self._superseded_fixture()
+        git(self.root, "branch", "fix/unrelated", "main")
+        unrelated = git(self.root, "rev-parse", "fix/unrelated")
+        gh_result = subprocess.CompletedProcess([], 0, json.dumps(payload), "")
+        with mock.patch.object(cleanup, "run_gh", return_value=gh_result), mock.patch.object(
+            cleanup, "fetch_pr_head", return_value=pr_head
+        ):
+            with self.assertRaisesRegex(cleanup.CleanupError, "not an ancestor"):
+                cleanup.cleanup_superseded_local_branch(
+                    self.root,
+                    branch="fix/unrelated",
+                    expected_head=unrelated,
+                    pr_number=128,
+                    expected_pr_head=pr_head,
+                    apply=False,
+                    confirmation="",
+                )
 
     def test_governed_branch_cleanup_force_uses_explicit_force_delete(self) -> None:
         source = (

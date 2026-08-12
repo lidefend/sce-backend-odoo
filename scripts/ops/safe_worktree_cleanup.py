@@ -8,6 +8,7 @@ standalone clones.  The caller must opt in with ``--apply``.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -20,6 +21,7 @@ ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|codex)/.+$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 ORPHAN_CONFIRMATION = "DELETE_VERIFIED_ORPHAN_BRANCH"
 LOCAL_BRANCH_CONFIRMATION = "DELETE_VERIFIED_LOCAL_BRANCH"
+SUPERSEDED_BRANCH_CONFIRMATION = "DELETE_VERIFIED_SUPERSEDED_LOCAL_BRANCH"
 
 
 class CleanupError(RuntimeError):
@@ -44,6 +46,20 @@ def run(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProce
     )
     if check and process.returncode:
         raise CleanupError(f"git {' '.join(args)} failed: {process.stdout.strip()}")
+    return process
+
+
+def run_gh(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    process = subprocess.run(
+        ["gh", *args],
+        cwd=root,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if process.returncode:
+        raise CleanupError(f"gh {' '.join(args)} failed: {process.stdout.strip()}")
     return process
 
 
@@ -247,6 +263,88 @@ def cleanup_local_branches(
     return selected
 
 
+def fetch_pr_head(root: Path, pr_number: int) -> str:
+    run(root, "fetch", "origin", f"pull/{pr_number}/head")
+    return run(root, "rev-parse", "FETCH_HEAD").stdout.strip()
+
+
+def cleanup_superseded_local_branch(
+    root: Path,
+    *,
+    branch: str,
+    expected_head: str,
+    pr_number: int,
+    expected_pr_head: str,
+    apply: bool,
+    confirmation: str,
+) -> Worktree:
+    root = root.resolve()
+    if not ALLOWED_BRANCH.fullmatch(branch):
+        raise CleanupError(f"branch is not cleanup-eligible: {branch}")
+    if not FULL_SHA.fullmatch(expected_head) or not FULL_SHA.fullmatch(expected_pr_head):
+        raise CleanupError("superseded cleanup requires full lowercase branch and PR head SHAs")
+    if pr_number <= 0:
+        raise CleanupError("superseded cleanup requires a positive merged PR number")
+    worktrees = parse_worktrees(run(root, "worktree", "list", "--porcelain").stdout)
+    if any(item.branch == branch for item in worktrees):
+        raise CleanupError(f"branch is still checked out in a worktree: {branch}")
+    ref = f"refs/heads/{branch}"
+    actual_head = run(root, "rev-parse", "--verify", ref).stdout.strip()
+    if actual_head != expected_head:
+        raise CleanupError(
+            f"branch HEAD changed: expected={expected_head} actual={actual_head}"
+        )
+
+    try:
+        evidence = json.loads(
+            run_gh(
+                root,
+                "pr",
+                "view",
+                str(pr_number),
+                "--json",
+                "state,mergedAt,baseRefName,headRefOid,mergeCommit",
+            ).stdout
+        )
+    except json.JSONDecodeError as exc:
+        raise CleanupError("merged PR evidence is not valid JSON") from exc
+    merge_commit = evidence.get("mergeCommit")
+    merge_sha = merge_commit.get("oid") if isinstance(merge_commit, dict) else ""
+    if (
+        evidence.get("state") != "MERGED"
+        or not evidence.get("mergedAt")
+        or evidence.get("baseRefName") != "main"
+        or evidence.get("headRefOid") != expected_pr_head
+        or not FULL_SHA.fullmatch(str(merge_sha or ""))
+    ):
+        raise CleanupError("merged PR identity does not match the requested supersession")
+
+    run(root, "fetch", "--prune", "origin")
+    fetched_pr_head = fetch_pr_head(root, pr_number)
+    if fetched_pr_head != expected_pr_head:
+        raise CleanupError(
+            f"PR head changed: expected={expected_pr_head} actual={fetched_pr_head}"
+        )
+    if run(
+        root, "merge-base", "--is-ancestor", str(merge_sha), "origin/main", check=False
+    ).returncode:
+        raise CleanupError(f"merged PR commit is not contained in origin/main: {merge_sha}")
+    if run(
+        root, "merge-base", "--is-ancestor", actual_head, expected_pr_head, check=False
+    ).returncode:
+        raise CleanupError(
+            f"local branch is not an ancestor of merged PR head: {actual_head}"
+        )
+    if apply:
+        if confirmation != SUPERSEDED_BRANCH_CONFIRMATION:
+            raise CleanupError(
+                "superseded cleanup apply requires "
+                f"confirmation={SUPERSEDED_BRANCH_CONFIRMATION}"
+            )
+        run(root, "update-ref", "-d", ref, actual_head)
+    return Worktree(path=root, branch=branch, head=actual_head)
+
+
 def parse_local_branch_specs(value: str) -> list[tuple[str, str]]:
     specs: list[tuple[str, str]] = []
     for raw in value.split(","):
@@ -287,6 +385,9 @@ def main() -> int:
     parser.add_argument("--orphan-branch")
     parser.add_argument("--local-branch")
     parser.add_argument("--local-branch-specs", default="")
+    parser.add_argument("--superseded-local-branch")
+    parser.add_argument("--merged-pr", type=int, default=0)
+    parser.add_argument("--expected-pr-head", default="")
     parser.add_argument("--expected-head", default="")
     parser.add_argument("--confirm", default="")
     args = parser.parse_args()
@@ -299,7 +400,15 @@ def main() -> int:
                 stdout=subprocess.PIPE,
             ).stdout.strip()
         )
-        selected_modes = sum(bool(value) for value in (args.orphan_branch, args.local_branch, args.local_branch_specs))
+        selected_modes = sum(
+            bool(value)
+            for value in (
+                args.orphan_branch,
+                args.local_branch,
+                args.local_branch_specs,
+                args.superseded_local_branch,
+            )
+        )
         if selected_modes > 1:
             raise CleanupError("choose one cleanup mode")
         if args.local_branch_specs:
@@ -316,7 +425,17 @@ def main() -> int:
                     f"branch={selected.branch} head={selected.head}"
                 )
             return 0
-        if args.local_branch:
+        if args.superseded_local_branch:
+            selected = cleanup_superseded_local_branch(
+                root,
+                branch=args.superseded_local_branch,
+                expected_head=args.expected_head,
+                pr_number=args.merged_pr,
+                expected_pr_head=args.expected_pr_head,
+                apply=args.apply,
+                confirmation=args.confirm,
+            )
+        elif args.local_branch:
             selected = cleanup_local_branch(
                 root,
                 branch=args.local_branch,
