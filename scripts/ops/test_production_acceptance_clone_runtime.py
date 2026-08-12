@@ -246,6 +246,14 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
                 ("", False),
             )
 
+    def test_url_readiness_treats_connection_reset_as_not_ready(self) -> None:
+        with mock.patch.object(
+            RUNTIME.urllib.request,
+            "urlopen",
+            side_effect=ConnectionResetError(104, "reset"),
+        ):
+            self.assertFalse(RUNTIME.url_ready("http://127.0.0.1:18081/"))
+
     def test_public_frontend_binds_only_the_approved_port(self) -> None:
         with mock.patch.object(RUNTIME, "run") as runner:
             RUNTIME.start_frontend(

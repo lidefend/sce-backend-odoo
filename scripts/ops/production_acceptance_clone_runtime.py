@@ -260,7 +260,7 @@ def url_ready(url: str, expected: str = "") -> bool:
         with urllib.request.urlopen(url, timeout=2) as response:
             body = response.read().decode("utf-8", errors="replace")
             return response.status == 200 and (not expected or expected in body)
-    except (urllib.error.URLError, TimeoutError):
+    except (urllib.error.URLError, ConnectionError, TimeoutError):
         return False
 
 
