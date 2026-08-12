@@ -58,7 +58,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 1738 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
-| 1453 | Python source | `scripts/release/release_publication.py` |
+| 1454 | Python source | `scripts/release/release_publication.py` |
 | 1442 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1441 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
@@ -96,10 +96,10 @@ Generated from repository source files. This report is informational during the 
 | 956 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 952 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
+| 939 | Python source | `scripts/release/test_release_publication.py` |
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
-| 899 | Python source | `scripts/release/test_release_publication.py` |
 | 899 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 895 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
@@ -170,7 +170,7 @@ Generated from repository source files. This report is informational during the 
 | 1512 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1511 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
-| 1453 | warning | Python source | `scripts/release/release_publication.py` |
+| 1454 | warning | Python source | `scripts/release/release_publication.py` |
 | 1442 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1441 | warning | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
@@ -210,7 +210,7 @@ Generated from repository source files. This report is informational during the 
 | 956 | warning | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 952 | warning | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 950 | warning | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
-| 916 | warning | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
+| 939 | warning | Python source | `scripts/release/test_release_publication.py` |
 
 ## Interpretation
 
