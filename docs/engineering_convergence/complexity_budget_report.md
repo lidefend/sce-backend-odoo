@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3761`
+- Scanned files: `3767`
 - Files requiring split plan: `39`
 - Files above warning threshold: `70`
 
@@ -109,9 +109,9 @@ Generated from repository source files. This report is informational during the 
 | 867 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 861 | Python source | `scripts/release/release_candidate.py` |
+| 860 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 858 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 857 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 855 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
@@ -121,7 +121,7 @@ Generated from repository source files. This report is informational during the 
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 810 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
-| 426 | Shell script | `scripts/demo/verify.sh` |
+| 423 | Shell script | `scripts/demo/verify.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 313 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
