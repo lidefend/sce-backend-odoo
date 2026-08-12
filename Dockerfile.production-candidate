@@ -78,7 +78,8 @@ ARG NODE_VERSION
 ARG PNPM_VERSION
 
 ENV SC_PRODUCT_VERSION="${PRODUCT_VERSION}" \
-    SC_SOURCE_REVISION="${SOURCE_SHA}"
+    SC_SOURCE_REVISION="${SOURCE_SHA}" \
+    FRONTEND_BUILD_SHA256="${FRONTEND_BUILD_SHA256}"
 
 LABEL org.opencontainers.image.revision="${SOURCE_SHA}" \
       org.opencontainers.image.created="${BUILD_TIME}" \
