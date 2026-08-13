@@ -501,7 +501,7 @@ def main() -> int:
                     f"branch={selected.branch} head={selected.head}"
                 )
             return 0
-        if args.superseded_local_branch:
+        elif args.superseded_local_branch:
             selected = cleanup_superseded_local_branch(
                 root,
                 branch=args.superseded_local_branch,
