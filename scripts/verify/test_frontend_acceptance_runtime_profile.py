@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -70,6 +72,7 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         for marker in (
             "/mnt/source-addons",
             "SC_SOURCE_REVISION",
+            "SC_SOURCE_FINGERPRINT",
             "ODOO_DBFILTER",
             "LIST_DB",
             "docker port",
@@ -80,11 +83,54 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             "POSTGRES_PASSWORD",
         ):
             self.assertIn(marker, runtime)
-        for key in ("SC_SOURCE_REVISION", "ODOO_DB", "DB_NAME", "ODOO_DBFILTER", "LIST_DB"):
+        for key in (
+            "SC_SOURCE_REVISION",
+            "SC_SOURCE_FINGERPRINT",
+            "ODOO_DB",
+            "DB_NAME",
+            "ODOO_DBFILTER",
+            "LIST_DB",
+        ):
             self.assertRegex(
                 runtime,
                 rf'require_container_env \"\$container\" {key} .* \|\| return 1',
             )
+        self.assertIn("REUSED governed pid=", runtime)
+
+    def test_source_fingerprint_covers_dirty_and_untracked_addons(self):
+        helper = ROOT / "scripts/dev/acceptance_source_fingerprint.sh"
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            (repo / "addons").mkdir()
+            tracked = repo / "addons/example.py"
+            tracked.write_text("VALUE = 1\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+            subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Acceptance Test"], cwd=repo, check=True)
+            subprocess.run(["git", "add", "addons/example.py"], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-m", "fixture"], cwd=repo, check=True, capture_output=True)
+
+            def fingerprint() -> str:
+                env = dict(os.environ, ROOT_DIR=str(repo))
+                return subprocess.run(
+                    ["bash", str(helper)],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                ).stdout.strip()
+
+            clean = fingerprint()
+            tracked.write_text("VALUE = 2\n", encoding="utf-8")
+            dirty = fingerprint()
+            subprocess.run(["git", "add", "addons/example.py"], cwd=repo, check=True)
+            staged = fingerprint()
+            (repo / "addons/untracked.xml").write_text("<odoo/>\n", encoding="utf-8")
+            untracked = fingerprint()
+
+            self.assertNotEqual(clean, dirty)
+            self.assertEqual(dirty, staged)
+            self.assertNotEqual(staged, untracked)
 
 
 if __name__ == "__main__":

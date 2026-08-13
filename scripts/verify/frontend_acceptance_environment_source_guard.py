@@ -43,8 +43,10 @@ def main() -> int:
         "validate_backend_runtime",
         "validate_frontend_runtime",
         "SC_SOURCE_REVISION",
+        "SC_SOURCE_FINGERPRINT",
         "/mnt/source-addons",
         "POSTGRES_PASSWORD",
+        "REUSED governed pid=",
     ):
         if marker not in runtime_entry:
             errors.append(f"managed runtime entry missing marker: {marker}")
