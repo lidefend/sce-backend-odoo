@@ -132,6 +132,31 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
                     "restore_db", "r10e_restore", "sce_customer_sample"
                 )
 
+    def test_installed_tenant_uses_one_combined_upgrade_option(self) -> None:
+        args = RUNTIME.module_operation_args(
+            ("smart_core", "smart_construction_core"),
+            "sce_customer_sample",
+            "upgrade",
+        )
+        self.assertEqual(
+            args,
+            [
+                "-u",
+                "smart_core,smart_construction_core,sce_customer_sample",
+            ],
+        )
+
+    def test_new_tenant_is_installed_while_products_are_upgraded(self) -> None:
+        args = RUNTIME.module_operation_args(
+            ("smart_core", "smart_construction_core"),
+            "sce_customer_sample",
+            "install",
+        )
+        self.assertEqual(
+            args,
+            ["-u", "smart_core,smart_construction_core", "-i", "sce_customer_sample"],
+        )
+
     def test_runtime_has_one_authoritative_product_module_set(self) -> None:
         modules = RUNTIME.product_modules()
         self.assertIn("smart_construction_core", modules)

@@ -197,6 +197,21 @@ def tenant_module_operation(db_container: str, database: str, tenant_module: str
     raise CloneRuntimeError("tenant module state is not eligible for controlled activation")
 
 
+def module_operation_args(
+    product_modules: tuple[str, ...], tenant_module: str, tenant_operation: str
+) -> list[str]:
+    """Build one value per Odoo module operation; repeated -u options overwrite."""
+    upgrade_modules = list(product_modules)
+    args: list[str] = []
+    if tenant_operation == "upgrade":
+        upgrade_modules.append(tenant_module)
+    elif tenant_operation == "install":
+        args.extend(["-i", tenant_module])
+    else:
+        raise CloneRuntimeError("invalid tenant module operation")
+    return ["-u", ",".join(upgrade_modules), *args]
+
+
 def odoo_container_args(
     *,
     name: str,
@@ -606,9 +621,8 @@ def activate(
         config=config,
         image=image,
     )
-    module_args = ["-u", ",".join(product_module_set)]
-    module_args.extend(
-        ["-i" if tenant_operation == "install" else "-u", tenant_module]
+    module_args = module_operation_args(
+        product_module_set, tenant_module, tenant_operation
     )
     run(
         [
