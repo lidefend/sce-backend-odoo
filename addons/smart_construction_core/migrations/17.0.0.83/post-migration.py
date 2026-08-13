@@ -89,7 +89,15 @@ def migrate(cr, installed_version):
         },
     }
     if invalid:
-        invalid.write({"active": False})
+        # These rows are retired precisely because their historical payload is
+        # invalid under the current contract schema.  Calling ``write`` would
+        # revalidate that payload before it can be archived and can therefore
+        # make an old-database upgrade impossible.  Limit the SQL mutation to
+        # the archive flag of the records classified above.
+        cr.execute(
+            "UPDATE ui_business_config_contract SET active = FALSE WHERE id = ANY(%s)",
+            [invalid.ids],
+        )
     env.invalidate_all()
 
     remaining_invalid = []
