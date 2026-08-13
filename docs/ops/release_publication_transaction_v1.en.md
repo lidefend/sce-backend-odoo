@@ -39,7 +39,10 @@ The old `immutable_candidate_publish.sh` denies direct execution.
 
 Before any external write, the workflow verifies:
 
-1. candidate readiness and all frozen hashes;
+1. candidate readiness and all frozen hashes; product candidate evidence
+   consists only of standard-product source, image, scan, SBOM, and publication
+   contracts and never reads or requires a P2 user module, tenant payload,
+   customer data, or customer acceptance plan;
 2. candidate-creation GitHub/Gitee main identity and successful required-check evidence;
 3. matching live GitHub/Gitee main SHA/tree equal to `EXPECTED_LIVE_MAIN_SHA`,
    with the candidate source in its first-parent history;

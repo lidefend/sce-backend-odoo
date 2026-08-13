@@ -36,7 +36,9 @@ ENV=dev make release.publish \
 
 任何外部写入前必须一次性通过：
 
-1. candidate ready 与全部固定哈希；
+1. candidate ready 与全部固定哈希；产品候选证据仅由标准产品源码、镜像、
+   扫描、SBOM 和发布合同组成，不读取或要求任何 P2 用户模块、租户 payload、
+   客户数据或客户验收计划；
 2. 候选创建时 GitHub/Gitee main 均等于 candidate source，且 required checks
    证据仍为成功；
 3. 发布时 GitHub/Gitee main SHA/tree 相同、精确等于
