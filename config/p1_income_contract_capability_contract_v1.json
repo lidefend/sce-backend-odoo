@@ -1,0 +1,37 @@
+{
+  "schema_version": "p1_income_contract_capability_contract.v1",
+  "product_stage": "P1_construction_industry_standard_product",
+  "specific_customer_or_tenant_scope": "forbidden",
+  "representative_object": {
+    "label": "收入合同",
+    "model": "construction.contract.income",
+    "authoritative_model": "construction.contract",
+    "business_category": "contract.income",
+    "menu": "smart_construction_core.menu_sc_contract_income",
+    "action": "smart_construction_core.action_construction_contract_income"
+  },
+  "business_boundary": {
+    "included": ["contract_identity", "parties", "amount_and_tax", "term", "boq_lines", "approval_lifecycle", "settlement_invoice_receipt_navigation", "reference_protection"],
+    "excluded": ["customer_specific_terms", "tenant_specific_approval", "frontend_component_selection", "accounting_voucher_design"]
+  },
+  "capabilities": [
+    {"key":"identity_and_parties","status":"implemented","evidence":["construction.contract.name","subject","project_id","partner_id","company_id"]},
+    {"key":"amount_and_tax_authority","status":"implemented","evidence":["amount_untaxed","amount_tax","amount_total","amount_final","_check_tax_type"]},
+    {"key":"term_and_scope","status":"implemented","evidence":["date_contract","date_start","date_end","engineering_content","contract_duration_text"]},
+    {"key":"structured_lines_and_boq","status":"implemented","evidence":["construction.contract.line","boq_line_id","action_generate_lines_from_budget"]},
+    {"key":"model_specific_lifecycle","status":"implemented","evidence":["ScStateMachine.CONTRACT","action_confirm","action_set_running","action_close","action_cancel"]},
+    {"key":"counterparty_eligibility","status":"implemented","evidence":["construction.contract.action_confirm calls res.partner._sc_assert_transaction_eligible"]},
+    {"key":"execution_amounts","status":"implemented","evidence":["settlement_amount","invoice_amount","uninvoiced_amount","received_amount","unreceived_amount"]},
+    {"key":"cross_document_navigation","status":"implemented","evidence":["action_open_settlements","action_open_payment_requests","action_open_invoice_registrations","action_open_receipt_incomes","four native form stat buttons"]},
+    {"key":"reference_protection","status":"implemented","evidence":["is_locked","unlink","action_cancel","action_reset_draft","sc.delete.guard.mixin"]},
+    {"key":"runtime_states","status":"runtime_verification_required","evidence":["representative_page_contracts_v01 income contract acceptance"],"gap":"empty, forbidden, archived, readonly and mobile states require authenticated browser evidence"}
+  ],
+  "implementation_sequence": [
+    {"id":"P1-IC-001","status":"completed","title":"enforce counterparty eligibility before contract activation"},
+    {"id":"P1-IC-002","status":"completed","title":"add source-to-result drilldowns for settlement payment invoice and receipt"},
+    {"id":"P1-IC-003","status":"in_progress","title":"restructure native form around contract summary and semantic sections"},
+    {"id":"P1-IC-004","status":"pending_runtime","title":"accept empty forbidden readonly and mobile states"},
+    {"id":"P1-IC-005","status":"blocked_until_business_acceptance","title":"evaluate component requirements"}
+  ],
+  "release_rule": "business controls and authenticated runtime acceptance precede component evaluation"
+}

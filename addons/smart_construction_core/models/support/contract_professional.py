@@ -130,6 +130,18 @@ class _ConstructionContractProfessionalMixin(models.AbstractModel):
     def action_reset_draft(self):
         return self._delegate_contract_action("action_reset_draft")
 
+    def action_open_payment_requests(self):
+        return self._delegate_contract_action("action_open_payment_requests")
+
+    def action_open_settlements(self):
+        return self._delegate_contract_action("action_open_settlements")
+
+    def action_open_invoice_registrations(self):
+        return self._delegate_contract_action("action_open_invoice_registrations")
+
+    def action_open_receipt_incomes(self):
+        return self._delegate_contract_action("action_open_receipt_incomes")
+
 
 class ConstructionContractIncome(models.Model):
     _name = "construction.contract.income"

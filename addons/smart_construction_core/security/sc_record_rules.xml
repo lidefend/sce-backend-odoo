@@ -3035,6 +3035,13 @@
             <field name="name">劳务分包报表仅限允许公司</field><field name="model_id" ref="model_sc_labor_subcontract_report"/>
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
+        <record id="rule_sc_partner_business_fact_line_company" model="ir.rule">
+            <field name="name">客商关联业务仅限允许公司</field>
+            <field name="model_id" ref="model_sc_partner_business_fact_line"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+        </record>
 
     </data>
 </odoo>

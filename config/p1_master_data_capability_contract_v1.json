@@ -1,0 +1,50 @@
+{
+  "schema_version": "p1_master_data_capability_contract.v1",
+  "product_stage": "P1_construction_industry_standard_product",
+  "specific_customer_or_tenant_scope": "forbidden",
+  "representative_object": {
+    "label": "客户档案",
+    "meaning": "system_business_role_view_of_counterparty_master_data",
+    "not_meaning": "specific_customer_delivery_or_customization",
+    "model": "res.partner",
+    "role_domain": "customer_rank > 0",
+    "menu": "smart_construction_core.menu_sc_customer_partner",
+    "action": "smart_construction_core.action_sc_customer_partner"
+  },
+  "business_outcomes": [
+    "uniquely_identify_counterparty",
+    "reuse_contact_tax_bank_and_settlement_facts",
+    "distinguish_customer_and_supplier_business_roles",
+    "trace_referenced_business_documents",
+    "archive_instead_of_deleting_referenced_master_data",
+    "explain_maintenance_permission_and_governance_state"
+  ],
+  "capabilities": [
+    {"key":"identity_and_role","status":"implemented","evidence":["res.partner.name","res.partner.company_type","res.partner.customer_rank","res.partner.vat","action_sc_customer_partner.domain"]},
+    {"key":"contact_and_address","status":"implemented","evidence":["res.partner.child_ids","res.partner.phone","res.partner.mobile","res.partner.email","res.partner.street","res.partner.country_id"]},
+    {"key":"tax_bank_and_settlement_profile","status":"implemented","evidence":["res.partner.vat","res.partner.bank_ids","res.partner.property_payment_term_id","res.partner.property_account_position_id","res.partner.sc_default_tax_rate"]},
+    {"key":"evidence_and_notes","status":"implemented","evidence":["res.partner.sc_attachment_ids uses counterparty-neutral label","res.partner.comment","view_sc_customer_partner_form evidence section"]},
+    {"key":"lifecycle_and_reference_protection","status":"implemented","evidence":["res.partner.active","sc.delete.guard.mixin","ResPartner._sc_delete_guard_blocker_models"]},
+    {"key":"permission_and_risk_governance","status":"implemented","evidence":["group_sc_cap_contact_manager","res.partner.sc_blacklisted","action_sc_add_blacklist","action_sc_remove_blacklist"]},
+    {"key":"transaction_eligibility_control","status":"implemented","evidence":["res.partner.sc_transaction_eligibility","res.partner._sc_assert_transaction_eligible","construction.contract.action_confirm","TestP1MasterDataCapability.test_blocked_counterparty_cannot_activate_new_contract"]},
+    {"key":"duplicate_identification","status":"implemented","evidence":["res.partner.same_vat_partner_id","view_sc_customer_partner_form duplicate warning","TestP1MasterDataCapability.test_duplicate_tax_identity_warns_without_destroying_recovery_path"]},
+    {"key":"related_business_trace","status":"implemented","evidence":["sc.partner.business.fact.line authoritative contract/settlement/receipt/request/invoice projection","company-scoped record rule","res.partner.sc_business_fact_line_ids","res.partner.sc_source_fact_count","action_open_sc_partner_business_fact_lines","TestP1MasterDataCapability"]},
+    {"key":"task_first_native_form","status":"implemented","evidence":["view_sc_customer_partner_form business summary","transaction eligibility and business fact navigation","archive and restore actions","progressive semantic sections"]},
+    {"key":"search_and_recovery","status":"partial","evidence":["view_sc_customer_partner_search","customer_inactive","group_user","group_region"],"gap":"authenticated empty, forbidden, archived recovery, and mobile behavior remain unverified"}
+  ],
+  "benchmark_assessment": {
+    "source": "config/industry_benchmark_page_quality_v01.json",
+    "information_completeness": {"identity":2,"lifecycle":2,"source_to_result":2,"evidence":1,"permission_and_scope":2},
+    "handling_convenience": {"task_first_screen":2,"one_time_entry":2,"progressive_disclosure":2,"search_and_batch":2,"exception_recovery":2,"cross_document_navigation":2,"mobile_handling":0},
+    "score_authority": "source_only_provisional",
+    "runtime_level_three_forbidden_without_authenticated_browser_evidence": true
+  },
+  "implementation_sequence": [
+    {"id":"P1-MD-001","priority":"P0","status":"completed","title":"source-close related business trace","allowed_layers":["model","native_view","backend_test"]},
+    {"id":"P1-MD-002","priority":"P0","status":"completed","title":"replace dense empty form with business-summary native structure","allowed_layers":["native_view","backend_semantic_contract","backend_test"]},
+    {"id":"P1-MD-003","priority":"P1","status":"completed","title":"verify duplicate warning and recoverable save path","allowed_layers":["model","native_view","runtime_acceptance"]},
+    {"id":"P1-MD-004","priority":"P1","title":"verify empty forbidden archived and mobile states","allowed_layers":["runtime_acceptance"]},
+    {"id":"P1-MD-005","priority":"blocked_until_business_acceptance","title":"evaluate component requirements","allowed_layers":["component_evaluation"]}
+  ],
+  "release_rule": "all applicable benchmark dimensions must reach level 2 before component evaluation"
+}

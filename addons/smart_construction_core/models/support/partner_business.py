@@ -2,7 +2,7 @@
 
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 SUPPLIER_TYPE_SELECTION = [
@@ -120,12 +120,39 @@ class ResPartner(models.Model):
         compute="_compute_sc_blacklist_advisory",
         help="黑名单原因和复核日期仅作治理提示，不作为操作硬阻断条件。",
     )
+    sc_transaction_eligibility = fields.Selection(
+        [
+            ("eligible", "可办理"),
+            ("review_required", "需风险复核"),
+            ("blocked", "禁止新业务"),
+        ],
+        string="交易资格",
+        compute="_compute_sc_transaction_eligibility",
+        store=True,
+        index=True,
+        help="由档案启用状态和客商风险级别统一判定，供合同、结算、资金和税务单据复用。",
+    )
+    sc_transaction_eligibility_reason = fields.Char(
+        string="交易资格说明",
+        compute="_compute_sc_transaction_eligibility",
+        store=True,
+    )
     sc_attachment_ids = fields.Many2many(
         "ir.attachment",
         "sc_res_partner_supplier_attachment_rel",
         "partner_id",
         "attachment_id",
-        string="供应商附件",
+        string="客商附件",
+    )
+    sc_business_fact_line_ids = fields.One2many(
+        "sc.partner.business.fact.line",
+        "partner_id",
+        string="关联业务明细",
+        readonly=True,
+    )
+    sc_source_fact_count = fields.Integer(
+        string="关联业务数",
+        compute="_compute_sc_source_fact_count",
     )
 
     # Historical identity carrier fields for idempotent migration replay.
@@ -149,6 +176,69 @@ class ResPartner(models.Model):
             if partner.sc_blacklisted and not partner.sc_blacklist_review_date:
                 suggestions.append("建议设置复核日期")
             partner.sc_blacklist_advisory = "；".join(suggestions) if suggestions else "治理信息已完善"
+
+    @api.depends("active", "sc_blacklisted", "sc_blacklist_level", "sc_blacklist_reason")
+    def _compute_sc_transaction_eligibility(self):
+        for partner in self:
+            if not partner.active:
+                partner.sc_transaction_eligibility = "blocked"
+                partner.sc_transaction_eligibility_reason = "档案已归档，不允许发起新业务。"
+            elif partner.sc_blacklisted and partner.sc_blacklist_level == "blocked":
+                partner.sc_transaction_eligibility = "blocked"
+                partner.sc_transaction_eligibility_reason = partner.sc_blacklist_reason or "风险级别为停止合作。"
+            elif partner.sc_blacklisted:
+                partner.sc_transaction_eligibility = "review_required"
+                partner.sc_transaction_eligibility_reason = partner.sc_blacklist_reason or "客商处于风险关注或限制合作状态。"
+            else:
+                partner.sc_transaction_eligibility = "eligible"
+                partner.sc_transaction_eligibility_reason = "档案有效，可正常发起业务。"
+
+    @api.constrains("sc_default_tax_rate")
+    def _check_sc_default_tax_rate(self):
+        for partner in self:
+            if partner.sc_default_tax_rate < 0 or partner.sc_default_tax_rate > 100:
+                raise ValidationError(_("默认税率必须在 0% 到 100% 之间。"))
+
+    def _sc_assert_transaction_eligible(self, business_label=None):
+        """Reusable P1 guard for documents that start a new counterparty transaction."""
+        label = business_label or _("业务")
+        blocked = self.filtered(lambda partner: partner.sc_transaction_eligibility == "blocked")
+        if blocked:
+            details = "；".join(
+                _("%(name)s：%(reason)s", name=partner.display_name, reason=partner.sc_transaction_eligibility_reason)
+                for partner in blocked
+            )
+            raise UserError(_("无法发起%(label)s。%(details)s", label=label, details=details))
+        return True
+
+    def _compute_sc_source_fact_count(self):
+        persisted_ids = self.ids
+        grouped = self.env["sc.partner.business.fact.line"].read_group(
+            [("partner_id", "in", persisted_ids)],
+            ["partner_id"],
+            ["partner_id"],
+        ) if persisted_ids else []
+        counts = {
+            row["partner_id"][0]: row["partner_id_count"]
+            for row in grouped
+            if row.get("partner_id")
+        }
+        for partner in self:
+            partner.sc_source_fact_count = counts.get(partner.id, 0)
+
+    def action_open_sc_partner_business_fact_lines(self):
+        self.ensure_one()
+        action = self.env["ir.actions.actions"]._for_xml_id(
+            "smart_construction_core.action_sc_partner_business_fact_line"
+        )
+        action["domain"] = [("partner_id", "=", self.id)]
+        action["context"] = {
+            "create": False,
+            "edit": False,
+            "delete": False,
+            "search_default_group_source_label": 1,
+        }
+        return action
 
     def _check_sc_blacklist_permission(self):
         if self.env.su or self.env.user.has_group(
@@ -255,4 +345,3 @@ class ResPartnerBank(models.Model):
 
     sc_account_holder_name = fields.Char(string="账户名称")
     sc_bank_name = fields.Char(string="开户银行", index=True)
-
