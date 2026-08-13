@@ -38,7 +38,7 @@
     "直营项目系统菜单"
   ],
   "required_navigation_fragments": [
-    "项目台账",
+    "新项目立项",
     "合同",
     "付款"
   ],

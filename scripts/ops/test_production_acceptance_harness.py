@@ -76,7 +76,10 @@ class FakeAcceptanceHandler(BaseHTTPRequestHandler):
                                 "label": "智慧施工管理平台",
                                 "children": [
                                     {"label": "我的工作"},
-                                    {"label": "项目台账"},
+                                    {
+                                        "label": "项目创建",
+                                        "children": [{"label": "新项目立项"}],
+                                    },
                                     {"label": "合同中心"},
                                     {"label": "付款办理"},
                                 ],
@@ -147,7 +150,10 @@ class ProductionAcceptanceHarnessTest(unittest.TestCase):
                         {
                             "label": "智慧施工管理平台",
                             "children": [
-                                {"label": "项目台账"},
+                                {
+                                    "label": "项目创建",
+                                    "children": [{"label": "新项目立项"}],
+                                },
                                 {"label": "合同中心"},
                                 {"label": "付款办理"},
                             ],
@@ -160,7 +166,8 @@ class ProductionAcceptanceHarnessTest(unittest.TestCase):
             paths,
             [
                 "智慧施工管理平台",
-                "智慧施工管理平台 / 项目台账",
+                "智慧施工管理平台 / 项目创建",
+                "智慧施工管理平台 / 项目创建 / 新项目立项",
                 "智慧施工管理平台 / 合同中心",
                 "智慧施工管理平台 / 付款办理",
             ],
