@@ -89,11 +89,11 @@ validate_backend_runtime() {
     echo "[acceptance.runtime] DENY managed backend port mapping differs from profile" >&2
     return 1
   }
-  require_container_env "$container" SC_SOURCE_REVISION "$expected_revision"
-  require_container_env "$container" ODOO_DB "$BACKEND_ACCEPTANCE_DB"
-  require_container_env "$container" DB_NAME "$BACKEND_ACCEPTANCE_DB"
-  require_container_env "$container" ODOO_DBFILTER "^${BACKEND_ACCEPTANCE_DB}$"
-  require_container_env "$container" LIST_DB false
+  require_container_env "$container" SC_SOURCE_REVISION "$expected_revision" || return 1
+  require_container_env "$container" ODOO_DB "$BACKEND_ACCEPTANCE_DB" || return 1
+  require_container_env "$container" DB_NAME "$BACKEND_ACCEPTANCE_DB" || return 1
+  require_container_env "$container" ODOO_DBFILTER "^${BACKEND_ACCEPTANCE_DB}$" || return 1
+  require_container_env "$container" LIST_DB false || return 1
 }
 
 validate_frontend_runtime() {

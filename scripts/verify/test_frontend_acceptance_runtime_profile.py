@@ -80,6 +80,11 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             "POSTGRES_PASSWORD",
         ):
             self.assertIn(marker, runtime)
+        for key in ("SC_SOURCE_REVISION", "ODOO_DB", "DB_NAME", "ODOO_DBFILTER", "LIST_DB"):
+            self.assertRegex(
+                runtime,
+                rf'require_container_env \"\$container\" {key} .* \|\| return 1',
+            )
 
 
 if __name__ == "__main__":
