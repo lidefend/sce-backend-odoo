@@ -12,6 +12,7 @@
     <menuitem id="menu_sc_norm_specialty" name="专业维护" parent="menu_sc_norm_root" action="action_sc_norm_specialty" sequence="40" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
     <menuitem id="menu_sc_norm_chapter" name="章节维护" parent="menu_sc_norm_root" action="action_sc_norm_chapter" sequence="50" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
     <menuitem id="menu_sc_norm_item" name="定额项维护" parent="menu_sc_norm_root" action="action_sc_norm_item" sequence="60" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_norm_rule" name="说明与计算规则" parent="menu_sc_norm_root" action="action_sc_norm_rule" sequence="65" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
 
     <menuitem id="menu_sc_norm_import" name="导入定额" parent="menu_sc_norm_root" action="action_sc_norm_import_wizard" sequence="70" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
 </odoo>

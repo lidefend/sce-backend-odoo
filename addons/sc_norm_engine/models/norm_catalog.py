@@ -77,6 +77,8 @@ class ScNormCatalog(models.Model):
     specialty_count = fields.Integer("专业数", compute="_compute_data_counts")
     chapter_count = fields.Integer("章节数", compute="_compute_data_counts")
     item_count = fields.Integer("定额项数", compute="_compute_data_counts")
+    resource_count = fields.Integer("资源数", compute="_compute_data_counts")
+    rule_count = fields.Integer("规则数", compute="_compute_data_counts")
 
     _sql_constraints = [
         ("catalog_code_uniq", "unique(code)", "定额库编码必须唯一！"),
@@ -97,6 +99,8 @@ class ScNormCatalog(models.Model):
         Specialty = self.env["sc.norm.specialty"]
         Chapter = self.env["sc.norm.chapter"]
         Item = self.env["sc.norm.item"]
+        Resource = self.env["sc.norm.resource"]
+        Rule = self.env["sc.norm.rule"]
         for record in self:
             specialties = Specialty.with_context(active_test=False).search(
                 [("catalog_id", "=", record.id)]
@@ -106,6 +110,8 @@ class ScNormCatalog(models.Model):
                 [("specialty_id", "in", specialties.ids)]
             )
             record.item_count = Item.search_count([("catalog_id", "=", record.id)])
+            record.resource_count = Resource.search_count([("catalog_id", "=", record.id)])
+            record.rule_count = Rule.search_count([("catalog_id", "=", record.id)])
 
     @api.onchange("region_id")
     def _onchange_region_currency(self):

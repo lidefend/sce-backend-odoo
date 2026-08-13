@@ -45,6 +45,7 @@
                 <field name="edition_year"/><field name="version"/><field name="catalog_type"/>
                 <field name="state"/><field name="effective_date"/><field name="expiry_date"/>
                 <field name="specialty_count"/><field name="chapter_count"/><field name="item_count"/>
+                <field name="resource_count"/><field name="rule_count"/>
             </tree>
         </field>
     </record>
@@ -66,7 +67,7 @@
                         <group><field name="edition_year"/><field name="version"/><field name="currency_id"/></group>
                     </group>
                     <group string="有效期"><field name="effective_date"/><field name="expiry_date"/></group>
-                    <group string="数据规模"><field name="specialty_count"/><field name="chapter_count"/><field name="item_count"/></group>
+                    <group string="数据规模"><field name="specialty_count"/><field name="chapter_count"/><field name="item_count"/><field name="resource_count"/><field name="rule_count"/></group>
                     <group string="说明"><field name="note" nolabel="1" colspan="4"/></group>
                 </sheet>
             </form>
@@ -272,14 +273,37 @@
                     <group string="工作内容">
                         <field name="work_desc" nolabel="1" colspan="4"/>
                     </group>
+                    <notebook>
+                        <page string="人材机消耗">
+                            <field name="resource_ids" readonly="1">
+                                <tree><field name="sequence"/><field name="resource_type"/><field name="name"/><field name="unit_raw"/><field name="unit_price"/><field name="quantity"/><field name="quantity_confidence"/></tree>
+                            </field>
+                        </page>
+                    </notebook>
                     <group string="数据来源">
                         <field name="source_sheet" readonly="1"/>
                         <field name="line_no" readonly="1"/>
+                        <field name="source_file" readonly="1"/>
+                        <field name="source_pdf_page" readonly="1"/>
+                        <field name="source_printed_page" readonly="1"/>
+                        <field name="source_confidence" readonly="1"/>
+                        <field name="source_bbox" readonly="1"/>
+                        <field name="source_digest" readonly="1"/>
                     </group>
                 </sheet>
             </form>
         </field>
     </record>
+
+    <record id="view_sc_norm_rule_tree" model="ir.ui.view">
+        <field name="name">sc.norm.rule.tree</field><field name="model">sc.norm.rule</field>
+        <field name="arch" type="xml"><tree string="说明与计算规则"><field name="catalog_id"/><field name="specialty_id"/><field name="chapter_id"/><field name="code"/><field name="title"/><field name="rule_type"/><field name="source_file"/><field name="source_pdf_page"/><field name="source_confidence"/></tree></field>
+    </record>
+    <record id="view_sc_norm_rule_form" model="ir.ui.view">
+        <field name="name">sc.norm.rule.form</field><field name="model">sc.norm.rule</field>
+        <field name="arch" type="xml"><form string="说明与计算规则"><sheet><group><field name="catalog_id"/><field name="specialty_id"/><field name="chapter_id"/><field name="code"/><field name="title"/><field name="rule_type"/></group><group string="正文"><field name="content" nolabel="1" colspan="4"/></group><group string="来源"><field name="source_file"/><field name="source_pdf_page"/><field name="source_printed_page"/><field name="source_confidence"/><field name="source_digest"/></group></sheet></form></field>
+    </record>
+    <record id="action_sc_norm_rule" model="ir.actions.act_window"><field name="name">说明与计算规则</field><field name="res_model">sc.norm.rule</field><field name="view_mode">tree,form</field><field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/></record>
 
     <record id="action_sc_norm_item" model="ir.actions.act_window">
         <field name="name">定额子目</field>

@@ -17,4 +17,16 @@
         <field name="currency_id" ref="base.CNY"/>
         <field name="note">四川省2015版建设工程预算定额电子版汇编。</field>
     </record>
+
+    <record id="catalog_sc_2020" model="sc.norm.catalog">
+        <field name="code">CN-SC-2020-VALUATION</field>
+        <field name="name">四川省2020建设工程工程量清单计价定额</field>
+        <field name="region_id" ref="region_cn_sc"/>
+        <field name="edition_year">2020</field>
+        <field name="version">2020版数字化第1版</field>
+        <field name="catalog_type">valuation</field>
+        <field name="state">draft</field>
+        <field name="currency_id" ref="base.CNY"/>
+        <field name="note">扫描原册经结构化、质量门禁和人工复核后导入；启用前必须完成发布验收。</field>
+    </record>
 </odoo>

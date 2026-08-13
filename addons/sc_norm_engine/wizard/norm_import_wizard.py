@@ -1,6 +1,7 @@
 import base64
 import bisect
 import hashlib
+import json
 import re
 from collections import defaultdict
 
@@ -117,7 +118,7 @@ class ScNormImportWizard(models.TransientModel):
         ):
             raise AccessError(_("仅业务配置管理员可以导入定额库。"))
         self.env["sc.norm.catalog"].check_access_rights("read")
-        for model_name in ("sc.norm.specialty", "sc.norm.chapter", "sc.norm.item"):
+        for model_name in ("sc.norm.specialty", "sc.norm.chapter", "sc.norm.item", "sc.norm.resource", "sc.norm.rule"):
             model = self.env[model_name]
             for operation in ("read", "write", "create"):
                 model.check_access_rights(operation)
@@ -135,8 +136,8 @@ class ScNormImportWizard(models.TransientModel):
         self.ensure_one()
         if not self.data_file:
             raise UserError(_("请先上传定额文件。"))
-        if not _clean(self.filename).lower().endswith(SUPPORTED_EXTENSIONS):
-            raise UserError(_("仅支持 .xls、.xlsx 或 .xlsm 文件。"))
+        if not _clean(self.filename).lower().endswith(SUPPORTED_EXTENSIONS + (".json",)):
+            raise UserError(_("仅支持 .xls、.xlsx、.xlsm 或正式定额 JSON 数据包。"))
         try:
             data = base64.b64decode(self.data_file, validate=True)
         except Exception as exc:
@@ -359,6 +360,79 @@ class ScNormImportWizard(models.TransientModel):
             if callable(close):
                 close()
 
+    def _parse_payload(self, data):
+        if _clean(self.filename).lower().endswith(".json"):
+            return self._parse_norm_dataset(data)
+        return self._parse_workbook(data)
+
+    def _parse_norm_dataset(self, data):
+        try:
+            payload = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise UserError(_("定额 JSON 数据包无法解析：%s") % exc) from exc
+        if payload.get("schema") != "sce.norm.dataset/v1":
+            raise UserError(_("不支持的定额数据包 Schema。"))
+        claimed_digest = payload.pop("dataset_sha256", "")
+        actual_digest = hashlib.sha256(
+            json.dumps(
+                payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
+        payload["dataset_sha256"] = claimed_digest
+        if not claimed_digest or claimed_digest != actual_digest:
+            raise UserError(_("定额数据包摘要不一致，文件可能被修改或不完整。"))
+        catalog = payload.get("catalog") or {}
+        if catalog.get("code") != self.catalog_id.code:
+            raise UserError(_("数据包定额库编码 %s 与目标 %s 不一致。") % (catalog.get("code"), self.catalog_id.code))
+        errors, warnings = [], []
+        specialties = {
+            row["code"]: {"name": row["name"], "sheet_name": row["code"], "chapters": {}}
+            for row in payload.get("specialties", [])
+        }
+        for sequence, row in enumerate(payload.get("chapters", []), start=1):
+            specialty = specialties.get(row.get("specialty_code"))
+            if not specialty:
+                errors.append("章节 %s 引用了不存在的专业。" % row.get("code"))
+                continue
+            specialty["chapters"][row["code"]] = {
+                "name": row["name"], "parent_code": row.get("parent_code") or "",
+                "level": int(row.get("level") or 1), "sequence": sequence * 10,
+                "norm_code_start": row.get("norm_code_start") or "", "source_row": sequence,
+            }
+        items = []
+        allowed = {
+            "specialty_code", "chapter_code", "code", "name", "unit_raw", "price_total",
+            "cost_direct", "cost_labor", "cost_material", "cost_machine", "cost_misc", "work_desc",
+            "source_file", "source_pdf_page", "source_printed_page", "source_confidence", "source_digest",
+        }
+        for row in payload.get("items", []):
+            item = {key: value for key, value in row.items() if key in allowed}
+            item["source_sheet"] = row.get("book_id") or ""
+            item["line_no"] = int(row.get("source_pdf_page") or 0)
+            item["source_bbox"] = json.dumps(row.get("source_bbox") or [], ensure_ascii=False)
+            item["_resources"] = row.get("resources") or []
+            if item.get("specialty_code") not in specialties:
+                errors.append("定额 %s 引用了不存在的专业。" % item.get("code"))
+            elif item.get("chapter_code") not in specialties[item["specialty_code"]]["chapters"]:
+                errors.append("定额 %s 引用了不存在的章节。" % item.get("code"))
+            component_total = sum(
+                float(item.get(field_name) or 0.0)
+                for field_name in ("cost_labor", "cost_material", "cost_machine", "cost_misc")
+            )
+            if component_total and abs(float(item.get("price_total") or 0.0) - component_total) > 0.05:
+                errors.append("定额 %s 的综合单价与费用构成不一致。" % item.get("code"))
+            items.append(item)
+        rules = payload.get("rules") or []
+        blocking = [row for row in payload.get("review_issues", []) if row.get("severity") == "error"]
+        if blocking:
+            errors.append("数据包仍有 %s 个阻断复核项。" % len(blocking))
+        return {
+            "specialties": specialties, "items": items, "rules": rules,
+            "sheets": [row.get("book_id") for row in payload.get("source_books", [])],
+            "warnings": warnings, "errors": errors,
+            "chapter_count": sum(len(row["chapters"]) for row in specialties.values()),
+        }
+
     def _preview_text(self, plan):
         lines = [
             "【目标定额库】%s" % self.catalog_id.display_name,
@@ -383,7 +457,7 @@ class ScNormImportWizard(models.TransientModel):
         if not self.catalog_id or self.catalog_id.state == "archived":
             raise UserError(_("请选择一个可用且未归档的目标定额库。"))
         data = self._decode_file()
-        plan = self._parse_workbook(data)
+        plan = self._parse_payload(data)
         self.write({
             "state": "preview", "preview_digest": hashlib.sha256(data).hexdigest(),
             "preview_catalog_id": self.catalog_id.id,
@@ -415,14 +489,14 @@ class ScNormImportWizard(models.TransientModel):
         data = self._decode_file()
         if hashlib.sha256(data).hexdigest() != self.preview_digest:
             raise UserError(_("文件已变更，请重新预检。"))
-        plan = self._parse_workbook(data)
+        plan = self._parse_payload(data)
         if plan["errors"]:
             self.write({"preview_error_count": len(plan["errors"]), "preview_log": self._preview_text(plan)})
             raise UserError(_("预检未通过，请根据“必须修复”明细调整文件。"))
 
-        Specialty, Chapter, Item = (
+        Specialty, Chapter, Item, Resource, Rule = (
             self.env[name]
-            for name in ("sc.norm.specialty", "sc.norm.chapter", "sc.norm.item")
+            for name in ("sc.norm.specialty", "sc.norm.chapter", "sc.norm.item", "sc.norm.resource", "sc.norm.rule")
         )
         target_catalog = self.catalog_id
         if self.import_mode == "replace":
@@ -432,6 +506,7 @@ class ScNormImportWizard(models.TransientModel):
             target_specialties = Specialty.sudo().search(
                 [("catalog_id", "=", target_catalog.id)]
             )
+            Rule.sudo().search([("catalog_id", "=", target_catalog.id)]).unlink()
             Item.sudo().search([("specialty_id", "in", target_specialties.ids)]).unlink()
             Chapter.sudo().search([("specialty_id", "in", target_specialties.ids)]).unlink()
             target_specialties.unlink()
@@ -490,10 +565,12 @@ class ScNormImportWizard(models.TransientModel):
             for item in Item.search([("specialty_id", "in", [record.id for record in specialty_records.values()])])
         }
         create_values = []
+        pending_resources = []
         for row in plan["items"]:
             specialty = specialty_records[row["specialty_code"]]
             chapter = chapter_records[(row["specialty_code"], row["chapter_code"])]
-            values = {key: value for key, value in row.items() if key not in ("specialty_code", "chapter_code")}
+            resources = row.get("_resources") or []
+            values = {key: value for key, value in row.items() if key not in ("specialty_code", "chapter_code", "_resources")}
             values.update({"specialty_id": specialty.id, "chapter_id": chapter.id})
             item = existing_items.get((specialty.id, row["code"]))
             if item:
@@ -502,12 +579,39 @@ class ScNormImportWizard(models.TransientModel):
                     item.write(changes); stats["item_updated"] += 1
                 else:
                     stats["item_unchanged"] += 1
+                if resources:
+                    item.resource_ids.sudo().unlink()
+                    pending_resources.extend((item, resource) for resource in resources)
             else:
-                create_values.append(values)
-        for offset in range(0, len(create_values), 500):
-            batch = create_values[offset:offset + 500]
-            Item.create(batch)
-            stats["item_created"] += len(batch)
+                item = Item.create(values)
+                stats["item_created"] += 1
+                pending_resources.extend((item, resource) for resource in resources)
+        for item, resource in pending_resources:
+            Resource.create({
+                "item_id": item.id, "sequence": resource.get("sequence") or 10,
+                "resource_type": resource.get("resource_type") or "other", "name": resource.get("name"),
+                "unit_raw": resource.get("unit_raw"), "unit_price": resource.get("unit_price") or 0.0,
+                "quantity": resource.get("quantity") or 0.0,
+                "quantity_confidence": resource.get("quantity_confidence") or 0.0,
+                "source_bbox": json.dumps(resource.get("source_bbox") or [], ensure_ascii=False),
+            })
+        for row in plan.get("rules", []):
+            specialty = specialty_records.get(row.get("specialty_code"))
+            chapter = chapter_records.get((row.get("specialty_code"), row.get("chapter_code")))
+            values = {
+                "catalog_id": target_catalog.id, "specialty_id": specialty.id if specialty else False,
+                "chapter_id": chapter.id if chapter else False, "code": row["code"], "title": row["title"],
+                "rule_type": row["rule_type"], "content": row["content"], "source_file": row["source_file"],
+                "source_pdf_page": row["source_pdf_page"], "source_printed_page": row.get("source_printed_page"),
+                "source_confidence": row.get("source_confidence") or 0.0, "source_digest": row.get("source_digest"),
+            }
+            rule = Rule.search([("catalog_id", "=", target_catalog.id), ("code", "=", row["code"])], limit=1)
+            if rule:
+                changes = _changed_values(rule, values)
+                if changes: rule.write(changes); stats["rule_updated"] += 1
+                else: stats["rule_unchanged"] += 1
+            else:
+                Rule.create(values); stats["rule_created"] += 1
         self.write({
             "state": "done",
             "log": "\n".join([

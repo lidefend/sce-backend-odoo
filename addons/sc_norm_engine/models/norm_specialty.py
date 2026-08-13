@@ -135,6 +135,13 @@ class ScNormItem(models.Model):
     work_desc = fields.Text("工作内容")
     source_sheet = fields.Char("来源工作表", index=True)
     line_no = fields.Integer("来源行号")
+    source_file = fields.Char("来源文件", index=True, readonly=True)
+    source_pdf_page = fields.Integer("PDF页码", index=True, readonly=True)
+    source_printed_page = fields.Char("印刷页码", readonly=True)
+    source_confidence = fields.Float("识别置信度", digits=(8, 6), readonly=True)
+    source_bbox = fields.Char("来源坐标", readonly=True)
+    source_digest = fields.Char("来源摘要", size=64, index=True, readonly=True)
+    resource_ids = fields.One2many("sc.norm.resource", "item_id", string="人材机消耗")
 
     _sql_constraints = [
         (
@@ -175,3 +182,47 @@ class ScNormItem(models.Model):
             record.material_share = record.cost_material / denominator if denominator else 0.0
             record.machine_share = record.cost_machine / denominator if denominator else 0.0
             record.misc_share = record.cost_misc / denominator if denominator else 0.0
+
+
+class ScNormResource(models.Model):
+    _name = "sc.norm.resource"
+    _description = "定额人材机消耗"
+    _order = "item_id, sequence, id"
+
+    item_id = fields.Many2one("sc.norm.item", string="定额子目", required=True, ondelete="cascade", index=True)
+    catalog_id = fields.Many2one(related="item_id.catalog_id", store=True, index=True)
+    sequence = fields.Integer("序号", default=10)
+    resource_type = fields.Selection(
+        [("labor", "人工"), ("material", "材料"), ("machine", "机械"), ("other", "其他")],
+        string="资源类型", required=True, default="other", index=True,
+    )
+    name = fields.Char("资源名称", required=True, index=True)
+    unit_raw = fields.Char("单位")
+    unit_price = fields.Float("单价")
+    quantity = fields.Float("消耗量", required=True)
+    quantity_confidence = fields.Float("数量识别置信度", digits=(8, 6), readonly=True)
+    source_bbox = fields.Char("来源坐标", readonly=True)
+
+
+class ScNormRule(models.Model):
+    _name = "sc.norm.rule"
+    _description = "定额说明与计算规则"
+    _order = "catalog_id, source_file, source_pdf_page, code"
+
+    catalog_id = fields.Many2one("sc.norm.catalog", string="定额库", required=True, ondelete="cascade", index=True)
+    specialty_id = fields.Many2one("sc.norm.specialty", string="专业", ondelete="set null", index=True)
+    chapter_id = fields.Many2one("sc.norm.chapter", string="章节", ondelete="set null", index=True)
+    code = fields.Char("规则编码", required=True, index=True)
+    title = fields.Char("标题", required=True, index=True)
+    rule_type = fields.Selection(
+        [("general", "总说明"), ("volume", "分册说明"), ("chapter", "章节说明"), ("calculation", "计算规则")],
+        string="规则类型", required=True, default="chapter", index=True,
+    )
+    content = fields.Text("规则正文", required=True)
+    source_file = fields.Char("来源文件", required=True, index=True, readonly=True)
+    source_pdf_page = fields.Integer("PDF页码", required=True, index=True, readonly=True)
+    source_printed_page = fields.Char("印刷页码", readonly=True)
+    source_confidence = fields.Float("识别置信度", digits=(8, 6), readonly=True)
+    source_digest = fields.Char("来源摘要", size=64, index=True, readonly=True)
+
+    _sql_constraints = [("catalog_rule_code_uniq", "unique(catalog_id, code)", "同一定额库规则编码必须唯一！")]

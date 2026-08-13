@@ -1,6 +1,6 @@
 {
     "name": "SC Norm Engine",
-    "version": "17.0.1.4.2",
+    "version": "17.0.1.5.0",
     "summary": "Regional, versioned construction norm library and import engine",
     "category": "Construction",
     "author": "lidefend",
