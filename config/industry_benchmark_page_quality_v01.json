@@ -1,0 +1,72 @@
+{
+  "schema_version": "industry_benchmark_page_quality.v0.1",
+  "positioning": "public_official_material_pattern_extraction_not_product_ranking",
+  "evidence_limit": "official_public_descriptions_only; no hands-on competitor runtime test; no score or parity claim",
+  "benchmarks": [
+    {
+      "vendor": "广联达",
+      "official_url": "https://www.glodon.com/product/375",
+      "observed_patterns": ["合同物资分包资税覆盖", "业务标准化", "管理流程化", "作业移动化", "字段自主配置"]
+    },
+    {
+      "vendor": "广联达",
+      "official_url": "https://www.glodon.com/case/357.html",
+      "observed_patterns": ["表单间逻辑关系", "移动审批", "自动生成合同成本材料分析", "主数据与价格数据沉淀"]
+    },
+    {
+      "vendor": "明源云",
+      "official_url": "https://www.mingyuanyun.com/solutions/urban-development/project-management",
+      "observed_patterns": ["合同签约变更付款结算全链条档案", "付款产值联动", "移动协同", "风险预警"]
+    },
+    {
+      "vendor": "明源云",
+      "official_url": "https://www.mingyuanyun.com/products/project-construction-management/cost-control",
+      "observed_patterns": ["全成本闭环", "合同360度管理", "进度款有依据", "动态成本异常分析", "成本指标沉淀"]
+    },
+    {
+      "vendor": "金蝶",
+      "official_url": "https://www.kingdee.com/solutions/architecture0.html",
+      "observed_patterns": ["项目财务资源税务一体化", "多角色移动应用", "成本多算与多维分析", "合同结算发票资金税务贯通"]
+    },
+    {
+      "vendor": "用友",
+      "official_url": "https://www.yonyou.com/subject/xmy?withYonyouMenu=&zixun=0",
+      "observed_patterns": ["成本过程动态管理", "财务项目供应链资产贯通", "全生命周期与全员协同", "经营决策数据服务"]
+    }
+  ],
+  "information_completeness_dimensions": [
+    {"key":"identity","question":"能否唯一识别业务对象、公司、项目、相对方和责任人？"},
+    {"key":"lifecycle","question":"状态、当前节点、下一动作、锁定及变更/冲销路径是否完整？"},
+    {"key":"source_to_result","question":"来源申请、合同、预算、结算、付款、发票、税务和账务结果能否追溯？"},
+    {"key":"lines_and_totals","question":"明细、数量、单价、税率、金额、舍入与合计口径是否一致？"},
+    {"key":"evidence","question":"附件、票据、现场照片、审批轨迹和业务说明是否按业务类别组织？"},
+    {"key":"control_baseline","question":"预算、合同、计划、已发生、余额和风险阈值是否同时可见？"},
+    {"key":"permission_and_scope","question":"公司、项目、角色、记录范围和不可执行原因是否可解释？"},
+    {"key":"report_definition","question":"指标定义、期间、维度、来源、更新时间和下钻是否完整？"}
+  ],
+  "handling_convenience_dimensions": [
+    {"key":"task_first_screen","question":"首屏是否直接回答当前办理事项、关键事实和下一步？"},
+    {"key":"one_time_entry","question":"来源单据能否选择带入，避免重复录入项目、相对方、合同和金额？"},
+    {"key":"document_generation","question":"审批或确认后能否按后端规则生成后续单据并保留关联？"},
+    {"key":"progressive_disclosure","question":"低频、审计和技术字段是否后置，复杂度是否按角色展开？"},
+    {"key":"search_and_batch","question":"高频筛选、保存条件、批量动作和导出是否只在能力存在时提供？"},
+    {"key":"mobile_handling","question":"390px 下是否可查看摘要、填写核心字段、上传证据和执行授权动作？"},
+    {"key":"exception_recovery","question":"校验失败、并发冲突、附件失败和流程驳回是否给出可恢复路径？"},
+    {"key":"cross_document_navigation","question":"是否能从当前单据低成本到达合同、结算、付款、发票和报表事实？"}
+  ],
+  "acceptance_scale": {
+    "0": "无证据或不适用未说明",
+    "1": "信息存在但分散、重复或依赖人工解释",
+    "2": "契约完整且主路径可办理",
+    "3": "跨单据贯通、移动可办、异常可恢复并有运行证据"
+  },
+  "release_rule": "six representative pages require every applicable dimension >= 2; score 3 requires authenticated browser/runtime evidence",
+  "page_focus": {
+    "PFL-010": ["identity", "permission_and_scope", "task_first_screen", "one_time_entry", "search_and_batch"],
+    "PFL-027": ["lifecycle", "source_to_result", "control_baseline", "cross_document_navigation", "progressive_disclosure"],
+    "PFL-019": ["lines_and_totals", "evidence", "control_baseline", "one_time_entry", "mobile_handling"],
+    "PFL-035": ["lifecycle", "source_to_result", "permission_and_scope", "document_generation", "exception_recovery", "mobile_handling"],
+    "PFL-067": ["source_to_result", "lines_and_totals", "evidence", "one_time_entry", "document_generation", "exception_recovery"],
+    "DERIVED-COST-001": ["control_baseline", "report_definition", "task_first_screen", "cross_document_navigation", "search_and_batch"]
+  }
+}
