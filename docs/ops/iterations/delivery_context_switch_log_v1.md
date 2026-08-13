@@ -3926,3 +3926,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast radius / validation: local linked-worktree metadata and directories.
   Tests cover unmerged and release branch retention, dirty refusal, SHA drift,
   confirmation failure, and primary-worktree protection.
+
+# Product baseline 17.0.0.75 upgrade recovery (2026-08-13)
+
+- Branch / base SHA: `fix/product-baseline-upgrade-075-current-v1` /
+  `9e2d2cb2e57d0465734cbc5900857a935fb88c51`.
+- Formal Product Layer: P1 product-baseline migration.
+- Layer Target: historical metadata compatibility for an in-place
+  `smart_construction_core` upgrade from `17.0.0.75`.
+- Boundary: no payment-request capability, frontend component, environment
+  topology, customer data, action, menu, permission, or model-field change.
+- Repair: retire the removed `view_p1_daily_business_visible_*` inherited-view
+  namespace by XML ID before registry validation; archive invalid historical
+  runtime contracts without invoking the current payload validator.
+- Runtime evidence: governed `sc_frontend_acceptance` upgraded to
+  `smart_core=17.0.1.1.9` and `smart_construction_core=17.0.0.130`; retired XML
+  IDs, stale view `1976`, and null `ir_model_inherit.parent_id` rows are all
+  zero. The focused runtime-contract migration test completed with
+  `0 failed / 0 errors`.
