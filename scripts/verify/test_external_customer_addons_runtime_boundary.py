@@ -93,6 +93,14 @@ class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
         self.assertIn("key='sc.login.custom_enabled'),'1'", text)
         self.assertIn("key='sc.login.env'),'prod'", text)
 
+    def test_p0_keeps_user_data_out_of_production_product_gate(self):
+        text = (ROOT / "scripts/verify/p0_base.sh").read_text(encoding="utf-8")
+        self.assertIn("SC_P0_VERIFY_USER_DATA_BASELINE", text)
+        self.assertIn('LOGIN_ENV_EXPECTED}" == "prod', text)
+        self.assertIn("user data dictionary baseline owner=P2", text)
+        flow = (ROOT / "scripts/verify/p0_flow.sh").read_text(encoding="utf-8")
+        self.assertIn("SC_P0_VERIFY_USER_DATA_BASELINE=1", flow)
+
 
 if __name__ == "__main__":
     unittest.main()

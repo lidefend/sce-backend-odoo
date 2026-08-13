@@ -8,6 +8,18 @@ source "$(dirname "$0")/../_lib/common.sh"
 
 DB_PASSWORD=${DB_PASSWORD:-${DB_USER}}
 LOGIN_ENV_EXPECTED=${SC_LOGIN_ENV_EXPECTED:-demo}
+VERIFY_USER_DATA_BASELINE=${SC_P0_VERIFY_USER_DATA_BASELINE:-}
+if [[ -z "${VERIFY_USER_DATA_BASELINE}" ]]; then
+  if [[ "${LOGIN_ENV_EXPECTED}" == "prod" ]]; then
+    VERIFY_USER_DATA_BASELINE=0
+  else
+    VERIFY_USER_DATA_BASELINE=1
+  fi
+fi
+if [[ ! "${VERIFY_USER_DATA_BASELINE}" =~ ^[01]$ ]]; then
+  echo "[verify.p0] FAIL SC_P0_VERIFY_USER_DATA_BASELINE must be 0 or 1" >&2
+  exit 2
+fi
 
 psql_cmd() {
   compose ${COMPOSE_FILES} exec -T db psql -U "${DB_USER}" -d "${DB_NAME}" -At -c "$1"
@@ -58,11 +70,15 @@ check_ge "dict project_type" "1" "SELECT count(1) FROM sc_dictionary WHERE type=
 check_ge "dict project_category" "1" "SELECT count(1) FROM sc_dictionary WHERE type='project_category' AND active IS TRUE;"
 check_ge "dict contract_category" "1" "SELECT count(1) FROM sc_dictionary WHERE type='contract_category' AND active IS TRUE;"
 check_ge "dict contract_type" "1" "SELECT count(1) FROM sc_dictionary WHERE type='contract_type' AND active IS TRUE;"
-check_ge "dict doc_type" "1" "SELECT count(1) FROM sc_dictionary WHERE type='doc_type' AND active IS TRUE;"
-check_ge "dict doc_subtype" "1" "SELECT count(1) FROM sc_dictionary WHERE type='doc_subtype' AND active IS TRUE;"
-check_ge "dict fee_type" "1" "SELECT count(1) FROM sc_dictionary WHERE type='fee_type' AND active IS TRUE;"
-check_ge "dict tax_type" "1" "SELECT count(1) FROM sc_dictionary WHERE type='tax_type' AND active IS TRUE;"
-check_ge "dict cost_item" "1" "SELECT count(1) FROM sc_dictionary WHERE type='cost_item' AND active IS TRUE;"
+if [[ "${VERIFY_USER_DATA_BASELINE}" == "1" ]]; then
+  check_ge "dict doc_type" "1" "SELECT count(1) FROM sc_dictionary WHERE type='doc_type' AND active IS TRUE;"
+  check_ge "dict doc_subtype" "1" "SELECT count(1) FROM sc_dictionary WHERE type='doc_subtype' AND active IS TRUE;"
+  check_ge "dict fee_type" "1" "SELECT count(1) FROM sc_dictionary WHERE type='fee_type' AND active IS TRUE;"
+  check_ge "dict tax_type" "1" "SELECT count(1) FROM sc_dictionary WHERE type='tax_type' AND active IS TRUE;"
+  check_ge "dict cost_item" "1" "SELECT count(1) FROM sc_dictionary WHERE type='cost_item' AND active IS TRUE;"
+else
+  echo "[verify.p0] SKIP item=user data dictionary baseline owner=P2"
+fi
 
 if [[ "${SC_BOOTSTRAP_USERS:-}" =~ ^(1|true|True|yes|YES)$ ]]; then
   BOOT_LOGIN="${SC_BOOTSTRAP_ADMIN_LOGIN:-pm_admin}"

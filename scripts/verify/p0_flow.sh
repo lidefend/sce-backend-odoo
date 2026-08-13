@@ -17,6 +17,7 @@ log "[verify.p0.flow] restart odoo to load newly installed modules"
 compose up -d odoo
 
 log "[verify.p0.flow] run p0 verification"
-SC_LOGIN_ENV_EXPECTED=prod DB_NAME="${DB_NAME}" bash scripts/verify/p0_base.sh
+SC_LOGIN_ENV_EXPECTED=prod SC_P0_VERIFY_USER_DATA_BASELINE=1 \
+  DB_NAME="${DB_NAME}" bash scripts/verify/p0_base.sh
 
 log "[verify.p0.flow] done db=${DB_NAME}"
