@@ -3890,3 +3890,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   security policy, dual-remote authority, required checks and zero-write
   preflight ordering remain fail-closed and are covered by the complete
   publication and production release-contract suites.
+
+## 2026-08-13 — P4-PRODUCTION-READONLY-CLOSEOUT-CONTRACT
+
+- Branch / anchor: `fix/production-readonly-closeout-contract` from
+  `0b37864e`.
+- Formal Product Layer / Layer Target / Module: P4 / production read-only
+  verification transport / `p0_base.sh` and `odoo_shell_exec.sh`.
+- Standard vs User-Specific: generic product and delivery verification; no
+  customer identity, preference, module or business-data rule is introduced.
+- Reason / Boundary: the RC20 runtime renders its Odoo config at
+  `/opt/sce-runtime/config/odoo.conf`, while the legacy shell helper fixed the
+  retired `/var/lib/odoo/odoo.conf` path. The P0 probe also required physical
+  parameter rows even where the product runtime deliberately supplies stable
+  defaults.
+- Why Here / Why Not Elsewhere: read-only verification must observe the same
+  effective semantics and runtime config as the product. Writing redundant
+  parameters into production or changing P2 data would mask verifier drift.
+- Blast Radius / validation: production selects only the rendered config path;
+  non-production keeps its prior default and explicit overrides remain
+  available. P0 uses the exact defaults already declared by product views and
+  seed policy while still rejecting conflicting stored values.
