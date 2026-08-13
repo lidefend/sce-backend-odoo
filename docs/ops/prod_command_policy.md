@@ -189,6 +189,13 @@ Makefile guards and script-level guards.
   bound release-set lock with the immutable deployment tool; it changes no
   database, service, container, product image, product filestore, or historical
   attachment binary)
+- `make production.customer.runtime.config.promote` (requires
+  `CONFIRM_PRODUCTION_CUSTOMER_RUNTIME_CONFIG_PROMOTE=PROMOTE_VERIFIED_PRODUCTION_CUSTOMER_RUNTIME_CONFIG`;
+  after signed P2 preparation, module upgrade, and runtime activation, verifies
+  the immutable release set and the live `/mnt/customer-addons` mount, then
+  atomically advances only `SC_CUSTOMER_ADDONS_ROOT` with a root-only rollback
+  copy and evidence; it changes no database, product identity, image, service,
+  filestore, payload, or historical attachment binary)
 - `make production.release.config.promote` (requires
   `CONFIRM_PRODUCTION_RELEASE_CONFIG_PROMOTE=YES_PROMOTE_VERIFIED_PRODUCTION_RELEASE_CONFIG`;
   verifies the current running image, current runtime identity, next cached
