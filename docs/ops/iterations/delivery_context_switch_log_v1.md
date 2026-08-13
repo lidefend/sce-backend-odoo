@@ -3911,3 +3911,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   non-production keeps its prior default and explicit overrides remain
   available. P0 uses the exact defaults already declared by product views and
   seed policy while still rejecting conflicting stored values.
+
+## 2026-08-13 — LOCAL-WORKTREE-BASELINE-CONSOLIDATION
+
+- Branch / anchor: `fix/worktree-consolidation-v2` from stable product main
+  `7ba2d73`.
+- Formal Product Layer / Layer Target / Module: P4 / local workspace lifecycle /
+  governed worktree cleanup tool and Make entry.
+- Standard vs User-Specific: generic engineering operations; no product,
+  tenant, database or production-runtime behavior is involved.
+- Reason / boundary: post-release operation needs one canonical product
+  directory without deleting unfinished branch history. Detach removes only a
+  clean non-primary worktree at an exact SHA and proves its branch ref remains.
+- Blast radius / validation: local linked-worktree metadata and directories.
+  Tests cover unmerged and release branch retention, dirty refusal, SHA drift,
+  confirmation failure, and primary-worktree protection.
