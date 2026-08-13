@@ -3926,3 +3926,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast radius / validation: local linked-worktree metadata and directories.
   Tests cover unmerged and release branch retention, dirty refusal, SHA drift,
   confirmation failure, and primary-worktree protection.
+
+## 2026-08-13 — PRODUCT-FORM-LIST-REQUIREMENTS-DRAFT-V01
+
+- Branch / anchor: `audit/product-form-list-requirements-v01` from product main
+  `9e2d2cb`.
+- Formal Product Layer / Layer Target / Module: P1 with declared P0 dependencies /
+  product fact audit and semantic page-contract design / `docs/product`, `config`
+  and a static verification target.
+- Standard vs User-Specific: standard construction-product candidates only; no
+  P2 customer preferences and no P3 runtime configuration are written.
+- Reason / Why Here: the 71-item visual specification mixes implemented facts,
+  contract gaps, plans, and duplicate ledgers/reports. The matrix binds each
+  source item to the ten-center product structure before component work starts.
+- Why Not Elsewhere: construction semantics do not enter `smart_core` or shared
+  frontend code, and unverified fields do not become low-code runtime facts.
+- Blast Radius / validation: documentation, three machine-readable contracts,
+  an official-public-material benchmark baseline, and a fail-closed static guard
+  only. Menus, Actions, models, runtime contracts,
+  dependencies, databases and frontend behavior remain unchanged. Runtime
+  evidence is explicitly `unverified` until later browser acceptance.
