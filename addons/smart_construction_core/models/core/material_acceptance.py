@@ -1185,7 +1185,47 @@ class ScMaterialInbound(models.Model):
         domain="[('state', '=', 'accepted')]",
         index=True,
     )
+    source_type = fields.Selection(
+        [
+            ("contract_execution", "合同内执行"),
+            ("spot_purchase", "零星采购"),
+            ("site_variation", "现场签证"),
+            ("provisional_pending_contract", "暂估待补合同"),
+            ("adjustment_reversal", "调整或冲销"),
+            ("internal_transfer", "内部调拨"),
+        ],
+        string="来源类型",
+        required=True,
+        default="spot_purchase",
+        index=True,
+        tracking=True,
+        help="决定入库单需要提供的业务依据；仅合同内执行强制关联支出合同。",
+    )
+    contract_id = fields.Many2one(
+        "construction.contract",
+        string="支出合同",
+        index=True,
+        ondelete="restrict",
+        domain="[('type', '=', 'in'), ('project_id', '=', project_id), ('state', 'in', ['confirmed', 'running'])]",
+    )
+    origin_inbound_id = fields.Many2one(
+        "sc.material.inbound",
+        string="调整原入库单",
+        index=True,
+        ondelete="restrict",
+        domain="[('id', '!=', id), ('project_id', '=', project_id), ('state', '=', 'received')]",
+    )
     supplier_id = fields.Many2one("res.partner", string="供应商", index=True)
+    supplier_transaction_eligibility = fields.Selection(
+        related="supplier_id.sc_transaction_eligibility",
+        string="供应商交易资格",
+        readonly=True,
+    )
+    supplier_transaction_eligibility_reason = fields.Char(
+        related="supplier_id.sc_transaction_eligibility_reason",
+        string="交易资格说明",
+        readonly=True,
+    )
     warehouse_id = fields.Many2one(
         "stock.warehouse",
         string="入库仓库",
@@ -1436,12 +1476,16 @@ class ScMaterialInbound(models.Model):
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             vals.setdefault("business_category_id", self._sc_resolve_material_business_category_id(vals))
+            self._apply_inbound_source_defaults(vals)
+            default_mapping = {
+                "project_id": "_sc_default_project_id",
+                "warehouse_id": "_sc_default_warehouse_id",
+            }
+            if vals.get("source_type", "spot_purchase") != "internal_transfer":
+                default_mapping["supplier_id"] = "_sc_default_supplier_id"
             self._sc_apply_system_defaults(
                 vals,
-                {
-                    "project_id": "_sc_default_project_id",
-                    "warehouse_id": "_sc_default_warehouse_id",
-                },
+                default_mapping,
             )
             if not vals.get("dest_location_id"):
                 vals["dest_location_id"] = self._sc_default_location_id(vals.get("warehouse_id"))
@@ -1450,7 +1494,87 @@ class ScMaterialInbound(models.Model):
                 vals["name"] = seq.next_by_code("sc.material.inbound") or _("材料入库单")
         return super().create(vals_list)
 
+    @api.model
+    def _apply_inbound_source_defaults(self, vals):
+        contract = self.env["construction.contract"].browse(vals.get("contract_id")).exists()
+        acceptance = self.env["sc.material.acceptance"].browse(vals.get("acceptance_id")).exists()
+        origin = self.env["sc.material.inbound"].browse(vals.get("origin_inbound_id")).exists()
+        source = contract or acceptance or origin
+        if source:
+            vals.setdefault("project_id", source.project_id.id)
+            vals.setdefault("supplier_id", source.partner_id.id if contract else source.supplier_id.id)
+        return vals
+
+    @api.constrains(
+        "source_type",
+        "contract_id",
+        "origin_inbound_id",
+        "source_transfer_outbound_id",
+        "project_id",
+        "supplier_id",
+        "acceptance_id",
+    )
+    def _check_source_relationship_consistency(self):
+        for record in self:
+            record._validate_source_relationships(final=False)
+
+    def _validate_source_relationships(self, final=False):
+        for record in self:
+            contract = record.contract_id
+            acceptance = record.acceptance_id
+            origin = record.origin_inbound_id
+            if contract:
+                if contract.type != "in":
+                    raise ValidationError(_("材料入库只能关联支出合同。"))
+                if record.project_id and contract.project_id != record.project_id:
+                    raise ValidationError(_("支出合同所属项目与入库项目不一致。"))
+                if record.supplier_id and contract.partner_id != record.supplier_id:
+                    raise ValidationError(_("支出合同往来单位与入库供应商不一致。"))
+            if acceptance:
+                if record.project_id and acceptance.project_id != record.project_id:
+                    raise ValidationError(_("来源验收单所属项目与入库项目不一致。"))
+                if record.supplier_id and acceptance.supplier_id and acceptance.supplier_id != record.supplier_id:
+                    raise ValidationError(_("来源验收单供应商与入库供应商不一致。"))
+            if origin:
+                if origin == record:
+                    raise ValidationError(_("调整原入库单不能选择当前单据。"))
+                if record.project_id and origin.project_id != record.project_id:
+                    raise ValidationError(_("调整原入库单所属项目与当前入库项目不一致。"))
+                if origin.state != "received":
+                    raise ValidationError(_("只有已入库单据可以作为调整或冲销依据。"))
+            if not final:
+                continue
+            if record.source_type == "contract_execution":
+                if not contract:
+                    raise ValidationError(_("合同内执行的材料入库必须关联支出合同。"))
+                if contract.state not in ("confirmed", "running"):
+                    raise ValidationError(_("合同内执行只能关联已确认或执行中的支出合同。"))
+            elif contract:
+                raise ValidationError(_("只有合同内执行允许关联支出合同；请调整来源类型或清空合同。"))
+            if record.source_type == "adjustment_reversal" and not origin:
+                raise ValidationError(_("调整或冲销入库必须关联原入库单。"))
+            if record.source_type != "adjustment_reversal" and origin:
+                raise ValidationError(_("只有调整或冲销入库允许关联原入库单。"))
+            if record.source_type == "internal_transfer":
+                if not record.source_transfer_outbound_id:
+                    raise ValidationError(_("内部调拨入库必须关联来源调拨出库单。"))
+            elif record.source_transfer_outbound_id:
+                raise ValidationError(_("来源调拨出库单只能用于内部调拨入库。"))
+            if record.source_type != "internal_transfer" and not record.supplier_id:
+                raise ValidationError(_("外部材料入库必须选择供应商。"))
+        return True
+
     def init(self):
+        self.env.cr.execute(
+            """
+            UPDATE sc_material_inbound
+               SET source_type = CASE
+                       WHEN source_transfer_outbound_id IS NOT NULL THEN 'internal_transfer'
+                       ELSE 'spot_purchase'
+                   END
+             WHERE source_type IS NULL
+            """
+        )
         self.env.cr.execute(
             """
             UPDATE sc_material_inbound inbound
@@ -1506,6 +1630,20 @@ class ScMaterialInbound(models.Model):
                 if line.result in ("accepted", "partial") and (line.accepted_qty or line.received_qty)
             ]
 
+    @api.onchange("contract_id")
+    def _onchange_contract_id(self):
+        for record in self:
+            if record.contract_id:
+                record.project_id = record.contract_id.project_id
+                record.supplier_id = record.contract_id.partner_id
+
+    @api.onchange("origin_inbound_id")
+    def _onchange_origin_inbound_id(self):
+        for record in self:
+            if record.origin_inbound_id:
+                record.project_id = record.origin_inbound_id.project_id
+                record.supplier_id = record.origin_inbound_id.supplier_id
+
     def action_load_acceptance_lines(self):
         for record in self:
             record._onchange_acceptance_id()
@@ -1515,6 +1653,9 @@ class ScMaterialInbound(models.Model):
         self._sc_require_material_user(_("提交材料入库"))
         for record in self:
             record._sc_require_state({"draft"}, _("提交材料入库"))
+            record._validate_source_relationships(final=True)
+            if record.supplier_id:
+                record.supplier_id._sc_assert_transaction_eligible(_("材料入库"))
             if not record.line_ids:
                 raise ValidationError(_("提交入库前必须维护入库明细。"))
             record.line_ids._check_qty()
@@ -1924,6 +2065,7 @@ class ScMaterialOutbound(models.Model):
             raise ValidationError(_("材料调拨必须维护调入库位。"))
         return {
             "project_id": self.project_id.id,
+            "source_type": "internal_transfer",
             "inbound_date": self.outbound_date or fields.Date.context_today(self),
             "warehouse_id": self.dest_warehouse_id.id,
             "dest_location_id": dest_location_id,

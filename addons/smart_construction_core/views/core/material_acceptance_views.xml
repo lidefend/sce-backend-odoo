@@ -386,6 +386,7 @@
                 <field name="project_id"/>
                 <field name="business_category_id" optional="hide"/>
                 <field name="operation_strategy"/>
+                <field name="source_type"/>
                 <field name="inbound_date"/>
                 <field name="material_name_summary"/>
                 <field name="material_spec_summary"/>
@@ -393,6 +394,8 @@
                 <field name="total_qty" sum="入库数量合计"/>
                 <field name="unit_price_summary"/>
                 <field name="acceptance_id"/>
+                <field name="contract_id" optional="hide"/>
+                <field name="origin_inbound_id" optional="hide"/>
                 <field name="supplier_id"/>
                 <field name="warehouse_id"/>
                 <field name="dest_location_id"/>
@@ -418,18 +421,32 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,received"/>
                 </header>
                 <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="入库单号"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="supplier_transaction_eligibility != 'blocked'">
+                        当前供应商禁止发起新业务：<field name="supplier_transaction_eligibility_reason" readonly="1" class="oe_inline"/>
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="supplier_transaction_eligibility != 'review_required'">
+                        当前供应商需要风险复核：<field name="supplier_transaction_eligibility_reason" readonly="1" class="oe_inline"/>
+                    </div>
                     <group>
-                        <group>
-                            <field name="name"/>
+                        <group string="业务来源">
                             <field name="project_id"/>
                             <field name="business_category_id" readonly="1"/>
                             <field name="operation_strategy" readonly="1"/>
+                            <field name="source_type" required="1"/>
+                            <field name="contract_id" invisible="source_type != 'contract_execution'" required="source_type == 'contract_execution'"/>
+                            <field name="origin_inbound_id" invisible="source_type != 'adjustment_reversal'" required="source_type == 'adjustment_reversal'"/>
+                            <field name="source_transfer_outbound_id" readonly="1" invisible="source_type != 'internal_transfer'"/>
                             <field name="inbound_date"/>
                             <field name="acceptance_id"/>
                             <button name="action_load_acceptance_lines" string="带入验收明细" type="object" class="btn-secondary" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager"/>
                         </group>
-                        <group>
-                            <field name="supplier_id"/>
+                        <group string="收货与金额">
+                            <field name="supplier_id" invisible="source_type == 'internal_transfer'" required="source_type != 'internal_transfer'"/>
+                            <field name="supplier_transaction_eligibility" widget="badge" readonly="1" invisible="not supplier_id"/>
                             <field name="warehouse_id"/>
                             <field name="dest_location_id"/>
                             <field name="keeper_id"/>
@@ -469,6 +486,10 @@
                         </page>
                         <page string="来源追溯">
                             <group>
+                                <field name="source_type" readonly="1"/>
+                                <field name="contract_id" readonly="1"/>
+                                <field name="origin_inbound_id" readonly="1"/>
+                                <field name="acceptance_id" readonly="1"/>
                                 <field name="source_transfer_outbound_id" readonly="1"/>
                             </group>
                         </page>
@@ -488,17 +509,24 @@
                 <field name="project_id"/>
                 <field name="business_category_id"/>
                 <field name="operation_strategy"/>
+                <field name="source_type"/>
+                <field name="contract_id"/>
                 <field name="acceptance_id"/>
                 <field name="supplier_id"/>
                 <field name="warehouse_id"/>
                 <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="待入库" name="submitted" domain="[('state', '=', 'submitted')]"/>
                 <filter string="已入库" name="received" domain="[('state', '=', 'received')]"/>
+                <filter string="合同内执行" name="source_contract_execution" domain="[('source_type', '=', 'contract_execution')]"/>
+                <filter string="零星采购" name="source_spot_purchase" domain="[('source_type', '=', 'spot_purchase')]"/>
+                <filter string="暂估待补合同" name="source_provisional" domain="[('source_type', '=', 'provisional_pending_contract')]"/>
+                <filter string="调整或冲销" name="source_adjustment" domain="[('source_type', '=', 'adjustment_reversal')]"/>
                 <filter string="公司直营" name="operation_direct" domain="[('operation_strategy', '=', 'direct')]"/>
                 <filter string="联营项目" name="operation_joint" domain="[('operation_strategy', '=', 'joint')]"/>
                 <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
                 <filter string="按业务分类" name="group_business_category" context="{'group_by': 'business_category_id'}"/>
                 <filter string="按经营策略" name="group_operation_strategy" context="{'group_by': 'operation_strategy'}"/>
+                <filter string="按来源类型" name="group_source_type" context="{'group_by': 'source_type'}"/>
                 <filter string="按入库日期" name="group_inbound_date" context="{'group_by': 'inbound_date'}"/>
                 <filter string="按供应商" name="group_supplier" context="{'group_by': 'supplier_id'}"/>
                 <filter string="按仓库" name="group_warehouse" context="{'group_by': 'warehouse_id'}"/>

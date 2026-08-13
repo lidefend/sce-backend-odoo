@@ -17,6 +17,7 @@ from . import test_project_state_transition_validation
 from . import test_partner_blacklist_capability
 from . import test_p1_master_data_capability
 from . import test_p1_income_contract_capability
+from . import test_p1_material_inbound_capability
 from . import test_tender_document_advisory
 from . import test_quality_acceptance_capability
 from . import test_labor_product_capability

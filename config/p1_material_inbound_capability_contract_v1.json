@@ -1,0 +1,43 @@
+{
+  "schema_version": "p1_material_inbound_capability_contract.v1",
+  "product_stage": "P1_construction_industry_standard_product",
+  "specific_customer_or_tenant_scope": "forbidden",
+  "representative_object": {
+    "label": "材料入库",
+    "model": "sc.material.inbound",
+    "menu": "smart_construction_core.menu_sc_material_inbound",
+    "action": "smart_construction_core.action_sc_material_inbound_handling"
+  },
+  "business_boundary": {
+    "included": ["source_classification", "conditional_contract_relation", "acceptance_trace", "adjustment_origin", "internal_transfer", "supplier_eligibility", "warehouse_and_lines", "receipt_lifecycle"],
+    "excluded": ["customer_specific_procurement_policy", "tenant_specific_required_fields", "frontend_component_selection", "accounting_posting_design"]
+  },
+  "source_types": {
+    "contract_execution": {"contract_required": true, "supplier_required": true},
+    "spot_purchase": {"contract_required": false, "supplier_required": true},
+    "site_variation": {"contract_required": false, "supplier_required": true},
+    "provisional_pending_contract": {"contract_required": false, "supplier_required": true},
+    "adjustment_reversal": {"contract_required": false, "supplier_required": true, "origin_inbound_required": true},
+    "internal_transfer": {"contract_required": false, "supplier_required": false, "transfer_outbound_required": true}
+  },
+  "capabilities": [
+    {"key":"source_classification","status":"implemented","evidence":["sc.material.inbound.source_type","six P1 source types"]},
+    {"key":"conditional_contract_relation","status":"implemented","evidence":["contract_id","_validate_source_relationships","contract required only for contract_execution"]},
+    {"key":"source_identity_consistency","status":"implemented","evidence":["project supplier acceptance contract and origin consistency checks"]},
+    {"key":"source_default_convenience","status":"implemented","evidence":["_apply_inbound_source_defaults","contract acceptance and origin onchange defaults"]},
+    {"key":"supplier_eligibility","status":"implemented","evidence":["supplier_transaction_eligibility","action_submit transaction guard"]},
+    {"key":"warehouse_and_material_lines","status":"implemented","evidence":["warehouse_id","dest_location_id","line_ids","amount_total"]},
+    {"key":"model_specific_lifecycle","status":"implemented","evidence":["draft submitted received cancel","action_submit","action_receive"]},
+    {"key":"evidence_and_trace","status":"implemented","evidence":["attachment_ids","acceptance_id","contract_id","origin_inbound_id","source_transfer_outbound_id"]},
+    {"key":"task_first_native_form","status":"implemented","evidence":["business source section","conditional source fields","supplier eligibility alerts","line and evidence pages"]},
+    {"key":"runtime_states","status":"runtime_verification_required","evidence":["representative_page_contracts_v01 material inbound acceptance"],"gap":"empty forbidden readonly and mobile states require authenticated browser evidence"}
+  ],
+  "implementation_sequence": [
+    {"id":"P1-MI-001","status":"completed","title":"classify inbound source and enforce conditional evidence"},
+    {"id":"P1-MI-002","status":"completed","title":"enforce source identity and supplier eligibility"},
+    {"id":"P1-MI-003","status":"completed","title":"expose source-first native handling form"},
+    {"id":"P1-MI-004","status":"pending_runtime","title":"accept empty forbidden readonly and mobile states"},
+    {"id":"P1-MI-005","status":"blocked_until_business_acceptance","title":"evaluate component requirements"}
+  ],
+  "release_rule": "business controls and authenticated runtime acceptance precede component evaluation"
+}

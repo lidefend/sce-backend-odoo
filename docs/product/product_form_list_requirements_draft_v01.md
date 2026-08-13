@@ -15,6 +15,7 @@
 - [行业标杆页面质量基线](../../config/industry_benchmark_page_quality_v01.json)
 - [P1 主数据型产品能力契约](../../config/p1_master_data_capability_contract_v1.json)
 - [P1 收入合同产品能力契约](../../config/p1_income_contract_capability_contract_v1.json)
+- [P1 材料入库产品能力契约](../../config/p1_material_inbound_capability_contract_v1.json)
 
 ## 行业标杆对比门槛
 
