@@ -66,6 +66,43 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             )
         self.assertEqual(result, {"installed": 2, "pending": 0})
 
+    def test_restore_rebinds_single_database_release_snapshot_authority(self) -> None:
+        database = "r10e_sc_restore_20260810t093000z_352c22d4"
+        with mock.patch.object(RUNTIME, "run", return_value="1|0|1|1") as runner:
+            self.assertTrue(
+                RUNTIME.rebind_platform_release_database("restore_db", database)
+            )
+        command = runner.call_args.args[0]
+        self.assertEqual(command[:3], ["docker", "exec", "restore_db"])
+        self.assertNotIn(f"target_db={database}", command)
+        self.assertIn(f"'{database}'", command[-1])
+        self.assertIn("smart_core.platform_release_db", command[-1])
+
+    def test_restore_release_snapshot_rebind_is_idempotent(self) -> None:
+        with mock.patch.object(RUNTIME, "run", return_value="1|1|0|1"):
+            self.assertFalse(
+                RUNTIME.rebind_platform_release_database(
+                    "restore_db",
+                    "r10e_sc_restore_20260810t093000z_352c22d4",
+                )
+            )
+
+    def test_restore_release_snapshot_rebind_fails_closed(self) -> None:
+        for observed in ("0|0|0|0", "2|0|2|1"):
+            with self.subTest(observed=observed):
+                with mock.patch.object(RUNTIME, "run", return_value=observed):
+                    with self.assertRaisesRegex(
+                        RUNTIME.CloneRuntimeError, "was not rebound"
+                    ):
+                        RUNTIME.rebind_platform_release_database(
+                            "restore_db",
+                            "r10e_sc_restore_20260810t093000z_352c22d4",
+                        )
+        with self.assertRaisesRegex(
+            RUNTIME.CloneRuntimeError, "database identity is invalid"
+        ):
+            RUNTIME.rebind_platform_release_database("restore_db", "sc_production")
+
     def test_uninstalled_tenant_module_is_explicitly_installed(self) -> None:
         with mock.patch.object(RUNTIME, "run", return_value="uninstalled") as runner:
             operation = RUNTIME.tenant_module_operation(
@@ -94,6 +131,31 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
                 RUNTIME.tenant_module_operation(
                     "restore_db", "r10e_restore", "sce_customer_sample"
                 )
+
+    def test_installed_tenant_uses_one_combined_upgrade_option(self) -> None:
+        args = RUNTIME.module_operation_args(
+            ("smart_core", "smart_construction_core"),
+            "sce_customer_sample",
+            "upgrade",
+        )
+        self.assertEqual(
+            args,
+            [
+                "-u",
+                "smart_core,smart_construction_core,sce_customer_sample",
+            ],
+        )
+
+    def test_new_tenant_is_installed_while_products_are_upgraded(self) -> None:
+        args = RUNTIME.module_operation_args(
+            ("smart_core", "smart_construction_core"),
+            "sce_customer_sample",
+            "install",
+        )
+        self.assertEqual(
+            args,
+            ["-u", "smart_core,smart_construction_core", "-i", "sce_customer_sample"],
+        )
 
     def test_runtime_has_one_authoritative_product_module_set(self) -> None:
         modules = RUNTIME.product_modules()
@@ -142,6 +204,14 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
         with mock.patch.object(RUNTIME, "run", return_value="1.0.0-rc.17") as runner:
             self.assertEqual(RUNTIME.image_release_version("sha256:" + "2" * 64), "1.0.0-rc.17")
         self.assertIn("org.opencontainers.image.version", runner.call_args.args[0][-1])
+
+    def test_platform_database_rebind_precedes_module_upgrade(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        activate_source = source[source.index("def activate(") :]
+        self.assertLess(
+            activate_source.index("rebind_platform_release_database("),
+            activate_source.index("upgrade_args = odoo_container_args("),
+        )
 
     def test_retry_removes_stopped_upgrade_from_exact_isolated_network(self) -> None:
         network = "sc_restore_20260808t102000z_4d7e91a2_internal"
@@ -293,8 +363,8 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             RUNTIME,
             "run",
             side_effect=[
-                f"true|{network}",
-                "true|sc_restore_20260808t102000z_4d7e91a2_public_ingress",
+                f"true||{network}",
+                "true||sc_restore_20260808t102000z_4d7e91a2_public_ingress",
                 "",
                 "",
             ],
@@ -313,8 +383,26 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             ],
         )
 
+    def test_replace_accepts_legacy_label_only_on_exact_isolated_network(self) -> None:
+        network = "sc_restore_20260808t102000z_4d7e91a2_net"
+        with mock.patch.object(
+            RUNTIME,
+            "run",
+            side_effect=[
+                f"|true|{network}",
+                f"|true|{network}",
+                "",
+                "",
+            ],
+        ):
+            self.assertTrue(
+                RUNTIME.remove_verified_runtime(
+                    "sc_restore_20260808t102000z_4d7e91a2", network
+                )
+            )
+
     def test_replace_rejects_unlabelled_backend(self) -> None:
-        with mock.patch.object(RUNTIME, "run", return_value="|foreign_network"):
+        with mock.patch.object(RUNTIME, "run", return_value="||foreign_network"):
             with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "backend identity"):
                 RUNTIME.remove_verified_runtime(
                     "sc_restore_20260808t102000z_4d7e91a2",

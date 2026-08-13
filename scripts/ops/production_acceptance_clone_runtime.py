@@ -129,6 +129,46 @@ def module_state(db_container: str, database: str, modules: tuple[str, ...]) -> 
     return {"installed": installed, "pending": pending}
 
 
+def rebind_platform_release_database(db_container: str, database: str) -> bool:
+    """Bind a renamed isolated restore to its own release snapshot authority."""
+    if not re.fullmatch(r"r10e_sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}", database):
+        raise CloneRuntimeError("acceptance platform database identity is invalid")
+    database_literal = f"'{database}'"
+    output = run(
+        [
+            "docker",
+            "exec",
+            db_container,
+            "psql",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-U",
+            "odoo",
+            "-d",
+            database,
+            "-At",
+            "-F",
+            "|",
+            "-c",
+            "WITH current AS ("
+            "SELECT count(*) AS record_count,"
+            f"coalesce(bool_and(value = {database_literal})::int, 0) AS already_bound "
+            "FROM ir_config_parameter WHERE key='smart_core.platform_release_db'"
+            "), rebound AS ("
+            f"UPDATE ir_config_parameter SET value={database_literal}, write_date=now() "
+            f"WHERE key='smart_core.platform_release_db' AND value <> {database_literal} "
+            "RETURNING value"
+            ") SELECT current.record_count,current.already_bound,"
+            "(SELECT count(*) FROM rebound),"
+            f"coalesce((SELECT bool_and(value = {database_literal})::int FROM rebound),"
+            "current.already_bound) FROM current;",
+        ]
+    )
+    if output not in {"1|0|1|1", "1|1|0|1"}:
+        raise CloneRuntimeError("acceptance platform release database was not rebound")
+    return output == "1|0|1|1"
+
+
 def tenant_module_operation(db_container: str, database: str, tenant_module: str) -> str:
     if not MODULE.fullmatch(tenant_module):
         raise CloneRuntimeError("invalid tenant module identity")
@@ -155,6 +195,21 @@ def tenant_module_operation(db_container: str, database: str, tenant_module: str
     if state in {"", "uninstalled"}:
         return "install"
     raise CloneRuntimeError("tenant module state is not eligible for controlled activation")
+
+
+def module_operation_args(
+    product_modules: tuple[str, ...], tenant_module: str, tenant_operation: str
+) -> list[str]:
+    """Build one value per Odoo module operation; repeated -u options overwrite."""
+    upgrade_modules = list(product_modules)
+    args: list[str] = []
+    if tenant_operation == "upgrade":
+        upgrade_modules.append(tenant_module)
+    elif tenant_operation == "install":
+        args.extend(["-i", tenant_module])
+    else:
+        raise CloneRuntimeError("invalid tenant module operation")
+    return ["-u", ",".join(upgrade_modules), *args]
 
 
 def odoo_container_args(
@@ -448,13 +503,19 @@ def remove_verified_runtime(restore_id: str, network: str) -> bool:
             "inspect",
             backend,
             "--format",
-            '{{index .Config.Labels "sc.production-acceptance-clone"}}|{{.HostConfig.NetworkMode}}',
+            '{{index .Config.Labels "sc.production-acceptance-clone"}}|'
+            '{{index .Config.Labels "com.sce.production-acceptance-clone"}}|'
+            "{{.HostConfig.NetworkMode}}",
         ],
         False,
     )
     if not backend_identity:
         return False
-    if backend_identity != f"true|{network}":
+    backend_label, legacy_backend_label, backend_network = backend_identity.split("|", 2)
+    if (
+        "true" not in {backend_label, legacy_backend_label}
+        or backend_network != network
+    ):
         raise CloneRuntimeError("existing acceptance backend identity differs")
     frontend_identity = run(
         [
@@ -462,14 +523,19 @@ def remove_verified_runtime(restore_id: str, network: str) -> bool:
             "inspect",
             frontend,
             "--format",
-            '{{index .Config.Labels "sc.production-acceptance-clone"}}|{{.HostConfig.NetworkMode}}',
+            '{{index .Config.Labels "sc.production-acceptance-clone"}}|'
+            '{{index .Config.Labels "com.sce.production-acceptance-clone"}}|'
+            "{{.HostConfig.NetworkMode}}",
         ],
         False,
     )
     allowed_frontend_networks = {network, f"{restore_id}_public_ingress"}
     if frontend_identity:
-        label, separator, frontend_network = frontend_identity.partition("|")
-        if label != "true" or not separator or frontend_network not in allowed_frontend_networks:
+        label, legacy_label, frontend_network = frontend_identity.split("|", 2)
+        if (
+            "true" not in {label, legacy_label}
+            or frontend_network not in allowed_frontend_networks
+        ):
             raise CloneRuntimeError("existing acceptance frontend identity differs")
         run(["docker", "rm", "-f", frontend])
     run(["docker", "rm", "-f", backend])
@@ -542,6 +608,9 @@ def activate(
     modules = (*product_module_set, tenant_module)
     tenant_operation = tenant_module_operation(str(db_container), database, tenant_module)
     before = database_snapshot(str(db_container), database)
+    platform_release_db_rebound = rebind_platform_release_database(
+        str(db_container), database,
+    )
     upgrade_container = f"{restore_id}_acceptance_upgrade"
     remove_verified_failed_upgrade(restore_id, str(network))
     upgrade_args = odoo_container_args(
@@ -552,9 +621,8 @@ def activate(
         config=config,
         image=image,
     )
-    module_args = ["-u", ",".join(product_module_set)]
-    module_args.extend(
-        ["-i" if tenant_operation == "install" else "-u", tenant_module]
+    module_args = module_operation_args(
+        product_module_set, tenant_module, tenant_operation
     )
     run(
         [
@@ -653,6 +721,7 @@ def activate(
         "pending_modules": 0,
         "platform_release_product_key": PLATFORM_PRODUCT_KEY,
         "platform_release_version": release_version,
+        "platform_release_db_rebound": platform_release_db_rebound,
         "platform_snapshot_refreshed": True,
         "http_health": 200,
         "external_egress": False,
