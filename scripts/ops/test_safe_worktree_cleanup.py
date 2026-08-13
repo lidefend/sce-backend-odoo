@@ -78,6 +78,60 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         with self.assertRaisesRegex(cleanup.CleanupError, "primary"):
             cleanup.cleanup(self.root, self.root, apply=True)
 
+    def test_detach_unmerged_worktree_keeps_exact_branch(self) -> None:
+        path = self.add_worktree("feature/retained-unmerged")
+        (path / "retained.txt").write_text("unique work\n", encoding="utf-8")
+        git(path, "add", "retained.txt")
+        git(path, "commit", "-m", "retain unique work")
+        expected_head = git(path, "rev-parse", "HEAD")
+
+        selected = cleanup.detach_worktree(
+            self.root,
+            path,
+            expected_head=expected_head,
+            apply=True,
+            confirmation=cleanup.DETACH_CONFIRMATION,
+        )
+
+        self.assertEqual(selected.head, expected_head)
+        self.assertFalse(path.exists())
+        self.assertEqual(git(self.root, "rev-parse", selected.branch), expected_head)
+
+    def test_detach_release_worktree_is_allowed_but_primary_is_denied(self) -> None:
+        path = self.add_worktree("release/retained-record")
+        expected_head = git(path, "rev-parse", "HEAD")
+        cleanup.detach_worktree(
+            self.root,
+            path,
+            expected_head=expected_head,
+            apply=True,
+            confirmation=cleanup.DETACH_CONFIRMATION,
+        )
+        self.assertEqual(git(self.root, "rev-parse", "release/retained-record"), expected_head)
+        with self.assertRaisesRegex(cleanup.CleanupError, "primary"):
+            cleanup.plan_detach(
+                self.root, self.root, expected_head=git(self.root, "rev-parse", "HEAD")
+            )
+
+    def test_detach_rejects_dirty_sha_drift_and_bad_confirmation(self) -> None:
+        path = self.add_worktree("fix/retained-dirty")
+        expected_head = git(path, "rev-parse", "HEAD")
+        (path / "dirty.txt").write_text("not committed\n", encoding="utf-8")
+        with self.assertRaisesRegex(cleanup.CleanupError, "not clean"):
+            cleanup.plan_detach(self.root, path, expected_head=expected_head)
+        with self.assertRaisesRegex(cleanup.CleanupError, "HEAD changed"):
+            cleanup.plan_detach(self.root, path, expected_head="0" * 40)
+        (path / "dirty.txt").unlink()
+        with self.assertRaisesRegex(cleanup.CleanupError, "requires confirmation"):
+            cleanup.detach_worktree(
+                self.root,
+                path,
+                expected_head=expected_head,
+                apply=True,
+                confirmation="wrong",
+            )
+        self.assertTrue(path.is_dir())
+
     def test_governed_branch_cleanup_force_uses_explicit_force_delete(self) -> None:
         source = (
             Path(__file__).resolve().parent / "branch_cleanup_safe.sh"

@@ -286,6 +286,20 @@ make workspace.worktree.create \
 目标必须是主仓库同级且以 `<repository-name>-` 开头的新目录；目标分支必须符合
 自治写入分支规则且尚不存在；基线必须是本地或 `origin` 分支可达的既有提交。
 
+仍需保留分支成果但不再需要常驻目录的干净工作树，可按精确 HEAD 解除挂载：
+
+```bash
+make workspace.worktree.cleanup \
+  CLEAN_WORKTREE=/absolute/linked/path \
+  CLEAN_WORKTREE_KEEP_BRANCH=1 \
+  CLEAN_WORKTREE_EXPECTED_HEAD=<full-40-character-sha> \
+  APPLY=1 \
+  CLEAN_WORKTREE_CONFIRM=DETACH_VERIFIED_WORKTREE_KEEP_BRANCH
+```
+
+该模式只删除工作树目录并验证本地分支引用保持不变，因此允许未合并分支和受保护的
+`release/main` 分支；目标为主工作树、状态非干净或 SHA 漂移时均拒绝执行。
+
 > 解释：
 > PR 的代码更新 **必须通过 `make pr.push`**，
 > 以便统一注入分支校验、GitHub/Gitee 双远端同步、远端保护与审计日志。

@@ -410,6 +410,9 @@ CREATE_WORKTREE ?=
 CREATE_WORKTREE_BRANCH ?=
 CREATE_WORKTREE_BASE ?=
 CREATE_WORKTREE_CONFIRM ?=
+CLEAN_WORKTREE_KEEP_BRANCH ?=
+CLEAN_WORKTREE_EXPECTED_HEAD ?=
+CLEAN_WORKTREE_CONFIRM ?=
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -455,7 +458,10 @@ workspace.worktree.create: guard.prod.forbid
 
 workspace.worktree.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_WORKTREE)" ]; then echo "❌ CLEAN_WORKTREE is required"; exit 2; fi
-	@python3 scripts/ops/safe_worktree_cleanup.py --path "$(CLEAN_WORKTREE)" $(if $(filter 1,$(APPLY)),--apply,)
+	@python3 scripts/ops/safe_worktree_cleanup.py \
+		--path "$(CLEAN_WORKTREE)" \
+		$(if $(filter 1,$(APPLY)),--apply,) \
+		$(if $(filter 1,$(CLEAN_WORKTREE_KEEP_BRANCH)),--detach-keep-branch --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)" --confirm "$(CLEAN_WORKTREE_CONFIRM)",)
 
 verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/safe_worktree_create.py scripts/ops/test_safe_worktree_create.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py
