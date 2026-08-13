@@ -158,6 +158,7 @@ def pre_init_hook(env):
 def post_init_hook(env):
     """Install-time hook to ensure core taxes are present."""
     ensure_core_taxes(env)
+    env["sc.partner.business.fact.line"].init()
     _ensure_signup_defaults(env)
     _task_sc_state_backfill(env)
     _backfill_lowcode_contract_source_status(env)

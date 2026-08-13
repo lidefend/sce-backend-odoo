@@ -136,6 +136,20 @@ def validate_data(
 
     if pages.get("ui_framework_policy", "").startswith("not_selected") is False:
         errors.append("this topic must not select a UI framework")
+    product_stage = pages.get("product_stage", {})
+    if product_stage.get("layer") != "P1_construction_industry_standard_product":
+        errors.append("representative work must remain in the P1 standard-product layer")
+    if product_stage.get("specific_customer_or_tenant_scope") != "forbidden":
+        errors.append("specific customer or tenant scope must remain forbidden")
+    if product_stage.get("decision_authority") != "reusable_product_capability_and_repository_facts":
+        errors.append("product decisions must be based on reusable capability and repository facts")
+    if product_stage.get("sequence") != [
+        "business_capability",
+        "backend_and_native_contract",
+        "runtime_acceptance",
+        "component_evaluation",
+    ]:
+        errors.append("business capability must precede component evaluation")
     benchmark_contract = pages.get("benchmark_contract", {})
     if benchmark_contract.get("minimum_before_rollout") != 2:
         errors.append("representative rollout must require benchmark level 2")

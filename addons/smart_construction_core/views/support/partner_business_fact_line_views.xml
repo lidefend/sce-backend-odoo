@@ -5,10 +5,12 @@
         <field name="arch" type="xml">
             <search string="关联业务明细">
                 <field name="partner_id"/>
+                <field name="company_id"/>
                 <field name="project_name"/>
                 <field name="document_no"/>
                 <field name="source_label"/>
                 <field name="business_role"/>
+                <field name="company_id" optional="hide"/>
                 <field name="document_state"/>
                 <field name="creator_name"/>
                 <filter string="客户业务" name="customer_role" domain="[('business_role', '=', 'customer')]"/>
@@ -56,6 +58,7 @@
                     <group>
                         <group string="业务定位">
                             <field name="partner_id"/>
+                            <field name="company_id"/>
                             <field name="business_role"/>
                             <field name="source_label"/>
                             <field name="project_id"/>

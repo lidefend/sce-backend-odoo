@@ -58,20 +58,43 @@
         <field name="name">res.partner.sc.customer.form</field>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
-            <form string="客户">
+            <form string="客户档案">
+                <header>
+                    <button name="toggle_active" type="object" string="归档" class="btn-secondary" invisible="not active" />
+                    <button name="toggle_active" type="object" string="恢复使用" class="btn-primary" invisible="active" />
+                </header>
                 <sheet>
-                    <group col="3">
-                        <group string="客户身份" col="3">
-                            <field name="name" string="客户名称" />
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_sc_partner_business_fact_lines" type="object" class="oe_stat_button" icon="fa-exchange">
+                            <field name="sc_source_fact_count" string="关联业务数" widget="statinfo" />
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="已归档" bg_color="text-bg-warning" invisible="active" />
+                    <div class="oe_title">
+                        <label for="name" string="客户名称" />
+                        <h1><field name="name" placeholder="请输入企业、组织或个人名称" /></h1>
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="not same_vat_partner_id">
+                        统一社会信用代码可能与现有客商重复，请先核对
+                        <field name="same_vat_partner_id" readonly="1" class="oe_inline" />。
+                    </div>
+                    <group string="业务摘要" col="2">
+                        <group>
                             <field name="company_type" string="客户类型" />
                             <field name="is_company" string="企业/组织" />
-                            <field name="active" string="启用" />
                             <field name="user_id" string="负责人" />
                             <field name="category_id" widget="many2many_tags" string="标签" />
+                        </group>
+                        <group>
+                            <field name="active" string="启用" readonly="1" />
+                            <field name="vat" string="统一社会信用代码" />
+                            <field name="sc_contact_name" />
+                            <field name="phone" string="联系电话" />
                             <field name="sc_supplier_type_label" string="供应商类型" readonly="1" />
                         </group>
-                        <group string="企业资质与联系" col="3">
-                            <field name="vat" string="统一社会信用代码" />
+                    </group>
+                    <group string="主体资质与联系" col="2">
+                        <group string="主体资质">
                             <field name="company_registry" string="工商注册号" />
                             <field name="industry_id" string="行业" />
                             <field name="sc_region" />
@@ -79,8 +102,9 @@
                             <field name="sc_establishment_date" />
                             <field name="sc_business_term" />
                             <field name="sc_legal_representative" />
-                            <field name="sc_contact_name" />
-                            <field name="phone" string="电话" />
+                            <field name="sc_business_scope" />
+                        </group>
+                        <group string="联系方式与地址">
                             <field name="mobile" string="手机" />
                             <field name="email" string="电子邮件" />
                             <field name="website" string="网站" />
@@ -90,12 +114,15 @@
                             <field name="state_id" string="省/州" />
                             <field name="zip" string="邮编" />
                             <field name="country_id" string="国家/地区" />
-                            <field name="sc_business_scope" />
                         </group>
-                        <group string="账户与业务画像" col="3">
+                    </group>
+                    <group string="结算与税务资料" col="2">
+                        <group string="默认收款资料">
                             <field name="sc_account_name" string="账户名称" />
                             <field name="sc_bank_name" string="开户银行" />
                             <field name="sc_bank_account" string="银行账号" />
+                        </group>
+                        <group string="结算规则">
                             <field name="property_payment_term_id" string="客户付款条件" />
                             <field name="property_account_position_id" string="财政状况" />
                             <field name="property_account_receivable_id" string="应收账款科目" />
@@ -103,8 +130,8 @@
                             <field name="sc_default_tax_rate_text" string="主税率" />
                         </group>
                     </group>
-                    <group col="3">
-                        <group string="联系人" col="3">
+                    <group string="联系人与银行账户" col="2">
+                        <group string="联系人">
                             <field name="child_ids" mode="tree,form" context="{'default_parent_id': id}" nolabel="1">
                                 <tree editable="bottom">
                                     <field name="name" />
@@ -115,7 +142,7 @@
                                 </tree>
                                 <form>
                                     <sheet>
-                                        <group col="3">
+                                        <group col="2">
                                             <field name="name" />
                                             <field name="function" />
                                             <field name="phone" />
@@ -128,7 +155,7 @@
                                 </form>
                             </field>
                         </group>
-                        <group string="账户明细" col="3">
+                        <group string="银行账户">
                             <field name="bank_ids" nolabel="1">
                                 <tree editable="bottom">
                                     <field name="acc_number" />
@@ -137,16 +164,40 @@
                                 </tree>
                             </field>
                         </group>
-                        <group string="附件与备注" col="3">
-                            <field name="sc_attachment_ids" widget="many2many_binary" string="附件" />
-                            <field name="comment" nolabel="1" />
+                    </group>
+                    <group string="风险与业务状态" col="2">
+                        <group>
+                            <field name="sc_source_fact_count" string="关联业务数" readonly="1" />
+                            <field name="sc_transaction_eligibility" widget="badge" readonly="1" />
+                            <field name="sc_transaction_eligibility_reason" readonly="1" />
+                            <field name="sc_blacklisted" readonly="1" />
+                        </group>
+                        <group invisible="not sc_blacklisted">
+                            <field name="sc_blacklist_level" readonly="1" />
+                            <field name="sc_blacklist_advisory" readonly="1" />
                         </group>
                     </group>
-                    <group string="业务信息" col="3">
-                        </group>
-                    <group string="关联业务明细" col="3">
-                        </group>
+                    <group string="关联业务明细" col="1">
+                        <field name="sc_business_fact_line_ids" nolabel="1" readonly="1">
+                            <tree create="false" edit="false" delete="false" default_order="document_date desc, id desc">
+                                <button name="action_open_source_record" type="object" string="打开" class="btn-link" />
+                                <field name="business_role" />
+                                <field name="source_label" />
+                                <field name="project_name" />
+                                <field name="document_no" />
+                                <field name="document_date" />
+                                <field name="amount" sum="金额合计" />
+                                <field name="currency_id" invisible="1" />
+                                <field name="document_state" />
+                            </tree>
+                        </field>
+                    </group>
+                    <group string="说明与证据" col="1">
+                        <field name="sc_attachment_ids" widget="many2many_binary" string="附件" />
+                        <field name="comment" placeholder="记录合作背景、沟通要点或其他业务说明" />
+                    </group>
                 </sheet>
+                <chatter />
             </form>
         </field>
     </record>

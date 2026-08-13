@@ -13,6 +13,8 @@
 - [71 项事实矩阵](../../config/product_form_list_requirement_matrix_v01.json)
 - [六类代表页面契约](../../config/representative_page_contracts_v01.json)
 - [行业标杆页面质量基线](../../config/industry_benchmark_page_quality_v01.json)
+- [P1 主数据型产品能力契约](../../config/p1_master_data_capability_contract_v1.json)
+- [P1 收入合同产品能力契约](../../config/p1_income_contract_capability_contract_v1.json)
 
 ## 行业标杆对比门槛
 
@@ -30,6 +32,7 @@
 ## 架构边界
 
 - Formal Product Layer：P1 施工行业产品事实为主，登记 P0 通用契约与渲染机制依赖。
+- Product Stage：当前只建设可被标准施工企业复用的产品功能；没有特定客户、种子客户或租户定制的决策空间。“客户档案”仅指系统内的业务主数据对象，不代表本专题存在客户交付口径。
 - Layer Target：产品事实审计、原生视图映射和页面语义契约设计。
 - Module：`docs/product`、`config` 与只读静态验证。
 - Standard vs User-Specific：只定义标准产品候选；不写 P2 客户偏好，不生成 P3 租户配置。
@@ -105,11 +108,11 @@
 
 ## 与组件专题的交付顺序
 
-1. 本专题矩阵和代表页面契约先合入。
-2. 从届时最新主线新建组件底座分支。
-3. 保持 `Sc*` 业务语义组件；任何第三方 UI 框架只能位于底层实现。
-4. 基于组件分支建立六页面堆叠分支并联合验收。
-5. 组件底座先合并，六页面随后整理合并。
+1. 先完成六类代表对象的标准业务能力、后端事实、状态、权限和原生办理闭环。
+2. 再补齐后端页面语义契约，并完成登录态运行验收。
+3. 六类代表能力达到准入门槛后，才从届时最新主线评估组件底座分支。
+4. 保持 `Sc*` 业务语义组件；任何第三方 UI 框架只能位于底层实现。
+5. 组件底座稳定后，六类能力再建立消费分支并联合验收。
 6. 按十中心小批量推广，不一次重写 71 页。
 7. 会计账务另立专题。
 

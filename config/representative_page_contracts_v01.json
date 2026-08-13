@@ -2,6 +2,13 @@
   "schema_version": "representative_page_contracts.v0.1",
   "baseline_commit": "9e2d2cb2e57d0465734cbc5900857a935fb88c51",
   "status": "design_contract_not_runtime_release",
+  "product_stage": {
+    "layer": "P1_construction_industry_standard_product",
+    "decision_authority": "reusable_product_capability_and_repository_facts",
+    "specific_customer_or_tenant_scope": "forbidden",
+    "benchmark_role": "standard_product_quality_input_not_customer_requirement",
+    "sequence": ["business_capability", "backend_and_native_contract", "runtime_acceptance", "component_evaluation"]
+  },
   "ui_framework_policy": "not_selected; preserve Sc* semantic components and keep any widget framework behind them",
   "benchmark_contract": {
     "source": "config/industry_benchmark_page_quality_v01.json",

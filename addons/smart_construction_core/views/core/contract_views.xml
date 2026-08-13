@@ -248,6 +248,20 @@
                 </header>
                 <sheet>
                     <field name="contract_id" invisible="1" />
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_settlements" type="object" class="oe_stat_button" icon="fa-balance-scale">
+                            <field name="settlement_count" string="结算单" widget="statinfo" />
+                        </button>
+                        <button name="action_open_payment_requests" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="payment_request_count" string="收付款申请" widget="statinfo" />
+                        </button>
+                        <button name="action_open_invoice_registrations" type="object" class="oe_stat_button" icon="fa-ticket">
+                            <field name="invoice_registration_count" string="发票" widget="statinfo" />
+                        </button>
+                        <button name="action_open_receipt_incomes" type="object" class="oe_stat_button" icon="fa-money">
+                            <field name="receipt_income_count" string="收款" widget="statinfo" />
+                        </button>
+                    </div>
                     <group>
                         <group>
                             <field name="name" />
