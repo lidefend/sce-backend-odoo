@@ -34,7 +34,18 @@ def main() -> int:
     if managed.get("credential_container") != f'{managed.get("compose_project")}-odoo-1':
         errors.append("local credential authority must be the managed compose Odoo container")
     runtime_entry = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(encoding="utf-8")
-    for marker in ("preflight", "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER"):
+    for marker in (
+        "preflight",
+        "DB_DATA",
+        "REDIS_DATA",
+        "ODOO_DATA",
+        "ODOO_DBFILTER",
+        "validate_backend_runtime",
+        "validate_frontend_runtime",
+        "SC_SOURCE_REVISION",
+        "/mnt/source-addons",
+        "POSTGRES_PASSWORD",
+    ):
         if marker not in runtime_entry:
             errors.append(f"managed runtime entry missing marker: {marker}")
     smart_core_upgrade = runtime_entry.find('MODULE=smart_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"')

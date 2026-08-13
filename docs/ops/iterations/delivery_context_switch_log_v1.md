@@ -3951,3 +3951,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   first governed upgrade exposed a separate historical product-baseline
   migration gap; that repair is isolated in the P1 baseline-recovery topic and
   is not implemented in this P4 environment layer.
+- Independent gate correction: a healthy response alone no longer permits
+  backend reuse. Reuse and health now require the current worktree source mount,
+  exact source SHA, database/filter/list policy, host port and filestore volume.
+  Frontend health requires its governed PID, worktree and locked database/proxy
+  environment. PostgreSQL credentials must match the credential authority.

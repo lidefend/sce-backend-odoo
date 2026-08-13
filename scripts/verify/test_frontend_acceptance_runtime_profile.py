@@ -61,6 +61,26 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no managed_runtime"):
             PROFILE.resolve("test")
 
+    def test_runtime_entry_validates_reused_process_identity(self):
+        runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertGreaterEqual(runtime.count("validate_backend_runtime"), 4)
+        self.assertGreaterEqual(runtime.count("validate_frontend_runtime"), 3)
+        for marker in (
+            "/mnt/source-addons",
+            "SC_SOURCE_REVISION",
+            "ODOO_DBFILTER",
+            "LIST_DB",
+            "docker port",
+            "/var/lib/odoo",
+            "/proc/$pid/environ",
+            "VITE_API_PROXY_TARGET",
+            "VITE_ODOO_DB_LOCKED=1",
+            "POSTGRES_PASSWORD",
+        ):
+            self.assertIn(marker, runtime)
+
 
 if __name__ == "__main__":
     unittest.main()

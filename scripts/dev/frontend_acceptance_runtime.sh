@@ -49,6 +49,86 @@ volume_of() {
   docker inspect "$1" --format '{{range .Mounts}}{{if eq .Destination "'"$2"'"}}{{.Name}}{{end}}{{end}}'
 }
 
+mount_source_of() {
+  docker inspect "$1" --format '{{range .Mounts}}{{if eq .Destination "'"$2"'"}}{{.Source}}{{end}}{{end}}'
+}
+
+require_container_env() {
+  local container="$1"
+  local key="$2"
+  local expected="$3"
+  [[ "$(container_env_value "$container" "$key")" == "$expected" ]] || {
+    echo "[acceptance.runtime] DENY container=$container environment identity mismatch: $key" >&2
+    return 1
+  }
+}
+
+validate_backend_runtime() {
+  local container="$BACKEND_ACCEPTANCE_NAME"
+  local expected_source expected_revision published_port
+  docker inspect "$container" >/dev/null 2>&1 || {
+    echo "[acceptance.runtime] DENY missing managed backend container: $container" >&2
+    return 1
+  }
+  [[ "$(docker inspect "$container" --format '{{.State.Running}}')" == "true" ]] || {
+    echo "[acceptance.runtime] DENY managed backend is not running: $container" >&2
+    return 1
+  }
+  expected_source="$(readlink -f "$ROOT_DIR/addons")"
+  expected_revision="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+  published_port="$(docker port "$container" 8069/tcp 2>/dev/null || true)"
+  [[ "$(mount_source_of "$container" /mnt/source-addons)" == "$expected_source" ]] || {
+    echo "[acceptance.runtime] DENY managed backend source mount differs from current worktree" >&2
+    return 1
+  }
+  [[ "$(volume_of "$container" /var/lib/odoo)" == "$ODOO_DATA" ]] || {
+    echo "[acceptance.runtime] DENY managed backend filestore differs from profile" >&2
+    return 1
+  }
+  [[ "$published_port" == "127.0.0.1:${BACKEND_ACCEPTANCE_PORT}" ]] || {
+    echo "[acceptance.runtime] DENY managed backend port mapping differs from profile" >&2
+    return 1
+  }
+  require_container_env "$container" SC_SOURCE_REVISION "$expected_revision"
+  require_container_env "$container" ODOO_DB "$BACKEND_ACCEPTANCE_DB"
+  require_container_env "$container" DB_NAME "$BACKEND_ACCEPTANCE_DB"
+  require_container_env "$container" ODOO_DBFILTER "^${BACKEND_ACCEPTANCE_DB}$"
+  require_container_env "$container" LIST_DB false
+}
+
+validate_frontend_runtime() {
+  local pid process_env process_root
+  [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" ]] || {
+    echo "[acceptance.runtime] DENY missing managed frontend pidfile" >&2
+    return 1
+  }
+  pid="$(<"$FRONTEND_ACCEPTANCE_PIDFILE")"
+  [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null || {
+    echo "[acceptance.runtime] DENY managed frontend pid is not live" >&2
+    return 1
+  }
+  [[ -r "/proc/$pid/environ" ]] || {
+    echo "[acceptance.runtime] DENY managed frontend environment is unreadable" >&2
+    return 1
+  }
+  process_root="$(readlink -f "/proc/$pid/cwd")"
+  [[ "$process_root" == "$(readlink -f "$ROOT_DIR")" ]] || {
+    echo "[acceptance.runtime] DENY managed frontend belongs to another worktree" >&2
+    return 1
+  }
+  process_env="$(tr '\0' '\n' < "/proc/$pid/environ")"
+  for expected in \
+    "VITE_API_PROXY_TARGET=$VITE_API_PROXY_TARGET" \
+    "VITE_ODOO_DB=$FRONTEND_ACCEPTANCE_DB" \
+    "VITE_ODOO_DB_LOCKED=1" \
+    "VITE_APP_ENV=acceptance"; do
+    grep -Fqx "$expected" <<<"$process_env" || {
+      echo "[acceptance.runtime] DENY managed frontend environment identity mismatch" >&2
+      return 1
+    }
+  done
+}
+
 preflight() {
   local db_container="${COMPOSE_PROJECT_NAME}-db-1"
   local redis_container="${COMPOSE_PROJECT_NAME}-redis-1"
@@ -64,6 +144,12 @@ preflight() {
   done
   docker inspect "$db_container" >/dev/null 2>&1 || { echo "[acceptance.runtime] DENY missing db container: $db_container" >&2; exit 2; }
   docker inspect "$redis_container" >/dev/null 2>&1 || { echo "[acceptance.runtime] DENY missing redis container: $redis_container" >&2; exit 2; }
+  [[ "$(container_env_value "$db_container" POSTGRES_USER)" == "$DB_USER" ]] || {
+    echo "[acceptance.runtime] DENY database credential user differs from authority" >&2; exit 2;
+  }
+  [[ "$(container_env_value "$db_container" POSTGRES_PASSWORD)" == "$DB_PASSWORD" ]] || {
+    echo "[acceptance.runtime] DENY database credential secret differs from authority" >&2; exit 2;
+  }
   [[ "$(volume_of "$db_container" /var/lib/postgresql/data)" == "$DB_DATA" ]] || {
     echo "[acceptance.runtime] DENY db container is attached to a non-profile volume" >&2; exit 2;
   }
@@ -89,25 +175,33 @@ case "$command" in
     ;;
   backend-up)
     preflight
+    if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1 && ! validate_backend_runtime; then
+      echo "[backend.acceptance.up] replacing backend with mismatched managed identity" >&2
+      docker rm -f "$BACKEND_ACCEPTANCE_NAME" >/dev/null
+    fi
     bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
+    validate_backend_runtime
     ;;
   backend-down)
     bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
     ;;
   backend-health)
     preflight
+    validate_backend_runtime
     curl -fsS "http://127.0.0.1:${BACKEND_ACCEPTANCE_PORT}/web/login" >/dev/null
     echo "[backend.acceptance.health] PASS db=$BACKEND_ACCEPTANCE_DB url=http://127.0.0.1:$BACKEND_ACCEPTANCE_PORT"
     ;;
   frontend-up)
     preflight
     bash "$ROOT_DIR/scripts/dev/frontend_acceptance_up.sh"
+    validate_frontend_runtime
     ;;
   frontend-down)
     bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"
     ;;
   frontend-health)
     preflight
+    validate_frontend_runtime
     curl -fsS "http://127.0.0.1:${FRONTEND_ACCEPTANCE_PORT}/login" >/dev/null
     echo "[frontend.acceptance.health] PASS url=http://127.0.0.1:$FRONTEND_ACCEPTANCE_PORT db=$FRONTEND_ACCEPTANCE_DB"
     ;;
