@@ -127,6 +127,69 @@ Use Makefile only for runtime-changing actions:
 - module install/upgrade: `make mod.install`, `make mod.upgrade`
 - verifications/gates: `make verify.*`, `make gate.*`
 
+## Managed Frontend Acceptance Runtime
+
+The local managed frontend acceptance runtime is a complete versioned identity,
+not merely a database name. Its authority is
+`config/frontend/acceptance_environments_v1.json` under
+`profiles.local.managed_runtime`. The contract locks all of the following as
+one lifecycle unit:
+
+- database `sc_frontend_acceptance` and exact filter
+  `^sc_frontend_acceptance$`;
+- Compose project, PostgreSQL volume, Redis volume, and Odoo filestore volume;
+- the existing Odoo container that owns the database credentials and filestore;
+- backend port `18082`, frontend port `5175`, and frontend process identity;
+- the candidate worktree source mount and served source SHA.
+
+The primary worktree `.env.dev` remains the secret source. Non-secret runtime
+topology always comes from the versioned acceptance profile and has higher
+precedence than `.env.dev`. `scripts/common/env.sh` preserves these explicit
+topology overrides when lower-level scripts load the base environment again.
+
+Use only these entries for the managed acceptance lifecycle:
+
+```bash
+make acceptance.runtime.preflight
+make acceptance.runtime.infrastructure.restore
+make backend.acceptance.up
+make frontend.acceptance.up
+make acceptance.frontend.fixture
+make acceptance.baseline.upgrade \
+  CODEX_NEED_UPGRADE=1 \
+  CODEX_MODULES=smart_core,smart_construction_core
+make acceptance.module.upgrade \
+  MODULE=smart_construction_core \
+  CODEX_NEED_UPGRADE=1 \
+  CODEX_MODULES=smart_construction_core
+```
+
+`acceptance.runtime.preflight` is mandatory before every managed write. It
+fails closed if the database/filter, any named volume, the mounted database or
+Redis volume, the credential authority, or the Odoo filestore differs from the
+profile. `acceptance.runtime.infrastructure.restore` only reconnects the
+already-declared managed volumes; it does not create a database or fixture.
+For a recovered or version-lagged acceptance database,
+`acceptance.baseline.upgrade` fixes the dependency order to `smart_core` first
+and `smart_construction_core` second. The single-module target is reserved for
+incremental upgrades whose dependency baseline is already current.
+
+Database architecture declaration for this profile:
+
+```text
+TARGET_DATABASE_ROLE=isolated_acceptance_fixture_database
+TARGET_TENANT_ID=platform_internal_acceptance
+TARGET_ENVIRONMENT_ID=frontend_acceptance_local
+IS_PLATFORM_CONTROL_DATABASE=false
+IS_INDUSTRY_CATALOG_DATABASE=false
+IS_CUSTOMER_TENANT_DATABASE=false
+IS_ISOLATED_REHEARSAL_DATABASE=true
+CUSTOMER_BUSINESS_DATA_ALLOWED=false
+FIXTURE_ALLOWED=true
+EXACT_DATABASE_FILTER_CONFIRMED=true
+FILESTORE_IDENTITY_CONFIRMED=true
+```
+
 ## Forbidden Usage
 
 Do not use ad-hoc direct commands for state mutation:

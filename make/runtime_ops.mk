@@ -1729,11 +1729,17 @@ gate.demo: guard.codex.fast.noheavy guard.prod.forbid check-compose-project chec
 # ======================================================
 # ==================== Module Ops ======================
 # ======================================================
-.PHONY: mod.install mod.upgrade
+.PHONY: mod.install mod.upgrade acceptance.module.upgrade acceptance.baseline.upgrade
 mod.install: guard.prod.danger check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/mod/install.sh
 mod.upgrade: guard.codex.fast.upgrade guard.prod.danger check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/mod/upgrade.sh
+
+acceptance.module.upgrade: guard.codex.fast.upgrade guard.prod.danger
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" MODULE="$(MODULE)" ODOO_ARGS="$(ODOO_ARGS)" bash scripts/dev/frontend_acceptance_runtime.sh module-upgrade
+
+acceptance.baseline.upgrade: guard.codex.fast.upgrade guard.prod.danger
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" ODOO_ARGS="$(ODOO_ARGS)" bash scripts/dev/frontend_acceptance_runtime.sh baseline-upgrade
 
 # ======================================================
 # ==================== Policy Ops ======================
@@ -1744,15 +1750,14 @@ verify.frontend.dynamic_list_optional_columns.browser: guard.prod.forbid
 	@BASE_URL="$${BASE_URL:-}" DB_NAME="$${DB_NAME:-}" E2E_LOGIN="$${E2E_LOGIN:-}" E2E_PASSWORD="$${E2E_PASSWORD:-}" ARTIFACTS_DIR="$${ARTIFACTS_DIR:-}" DYNAMIC_LIST_TARGETS_JSON="$${DYNAMIC_LIST_TARGETS_JSON:-}" node scripts/verify/frontend_dynamic_list_optional_columns_browser.mjs
 FRONTEND_ACCEPTANCE_DB := $(if $(filter command line,$(origin DB_NAME)),$(DB_NAME),sc_frontend_acceptance)
 
-db.frontend.acceptance.ensure: guard.prod.forbid check-compose-project check-compose-env
-	@$(RUN_ENV) $(COMPOSE_BASE) up -d --wait db redis odoo
-	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/test/frontend_acceptance_db_ensure.sh
+db.frontend.acceptance.ensure: guard.prod.forbid
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh db-ensure
 
-acceptance.frontend.fixture: guard.prod.forbid check-compose-project check-compose-env
-	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" bash scripts/test/frontend_productization_fixture.sh
+acceptance.frontend.fixture: guard.prod.forbid
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" bash scripts/dev/frontend_acceptance_runtime.sh fixture
 
-acceptance.frontend.release_snapshot: guard.prod.forbid check-compose-project check-compose-env
-	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 bash scripts/ops/odoo_shell_exec.sh < scripts/test/frontend_acceptance_release_snapshot.py
+acceptance.frontend.release_snapshot: guard.prod.forbid
+	@SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh release-snapshot
 
 frontend.acceptance.release.build:
 	@VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB) VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance scripts/dev/pnpm_exec.sh -C frontend/apps/web exec vite build --outDir dist-release

@@ -3926,3 +3926,33 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast radius / validation: local linked-worktree metadata and directories.
   Tests cover unmerged and release branch retention, dirty refusal, SHA drift,
   confirmation failure, and primary-worktree protection.
+# Frontend acceptance managed-runtime profile closeout (2026-08-13)
+
+- Branch / SHA: `fix/frontend-acceptance-profile-closeout-v1` / `9e2d2cb`.
+- Formal Product Layer: P4 ops delivery tool.
+- Layer Target: managed acceptance profile resolution, Make entrypoints, and
+  fail-closed topology preflight.
+- Module: `config/frontend`, `make`, `scripts/dev`, `scripts/common`, and P4
+  verification/runbook assets.
+- Reason: the former entrypoints locked the frontend database and ports but
+  still inherited Compose project, volume, filter, and credentials from an
+  arbitrary `.env.dev`, allowing an acceptance operation to attach development
+  volumes before Odoo started.
+- Boundary: no P0/P1/P2/P3 product semantics, model, action, view, permission,
+  frontend renderer, customer data, or production policy change.
+- Database identity: isolated `sc_frontend_acceptance`, exact filter
+  `^sc_frontend_acceptance$`, fixture allowed, customer business data forbidden,
+  and filestore locked to `sc_fe_r2_p1_01_odoo`.
+- Validation: resolver unit tests cover complete identity plus database-filter,
+  shared-volume, frontend-port, and unmanaged-profile rejection; shell
+  regression proves explicit topology overrides survive base environment
+  loading; live preflight proves DB/Redis/Odoo volume identity; managed backend
+  and frontend entries pass on ports 18082/5175 with the database lock. The
+  first governed upgrade exposed a separate historical product-baseline
+  migration gap; that repair is isolated in the P1 baseline-recovery topic and
+  is not implemented in this P4 environment layer.
+- Independent gate correction: a healthy response alone no longer permits
+  backend reuse. Reuse and health now require the current worktree source mount,
+  exact source SHA, database/filter/list policy, host port and filestore volume.
+  Frontend health requires its governed PID, worktree and locked database/proxy
+  environment. PostgreSQL credentials must match the credential authority.

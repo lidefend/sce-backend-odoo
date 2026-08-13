@@ -1,7 +1,7 @@
 # ======================================================
 # ==================== Dev =============================
 # ======================================================
-.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish release.daily_product_navigation.snapshot local.dev.snapshot local.dev.health local.clean.prepare local.clean.up local.clean.frontend local.clean.install local.clean.rebuild local.clean.health local.env.status
+.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish release.daily_product_navigation.snapshot local.dev.snapshot local.dev.health local.clean.prepare local.clean.up local.clean.frontend local.clean.install local.clean.rebuild local.clean.health local.env.status
 up: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/up.sh
 down: check-compose-project check-compose-env
@@ -118,24 +118,29 @@ BACKEND_ACCEPTANCE_NAME ?= sc-backend-odoo-acceptance
 BACKEND_ACCEPTANCE_PORT ?= 18082
 BACKEND_ACCEPTANCE_DB ?= sc_frontend_acceptance
 BACKEND_ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(BACKEND_ACCEPTANCE_PORT)
+SC_ACCEPTANCE_RUNTIME_PROFILE ?= local
+
+acceptance.runtime.preflight: guard.prod.forbid
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh preflight
+
+acceptance.runtime.infrastructure.restore: guard.prod.forbid
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh infrastructure-restore
 
 frontend.acceptance.up: guard.prod.forbid
-	@FRONTEND_ACCEPTANCE_PORT="$(FRONTEND_ACCEPTANCE_PORT)" FRONTEND_ACCEPTANCE_DB="$(FRONTEND_ACCEPTANCE_DB)" bash scripts/dev/frontend_acceptance_up.sh
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-up
 
 frontend.acceptance.down: guard.prod.forbid
-	@FRONTEND_ACCEPTANCE_PORT="$(FRONTEND_ACCEPTANCE_PORT)" bash scripts/dev/frontend_acceptance_down.sh
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-down
 
 frontend.acceptance.health:
-	@curl -fsS "$(FRONTEND_ACCEPTANCE_BASE_URL)/login" >/dev/null
-	@echo "[frontend.acceptance.health] PASS url=$(FRONTEND_ACCEPTANCE_BASE_URL) db=$(FRONTEND_ACCEPTANCE_DB)"
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-health
 
-backend.acceptance.up: guard.prod.forbid check-compose-project check-compose-env
-	@BACKEND_ACCEPTANCE_NAME="$(BACKEND_ACCEPTANCE_NAME)" BACKEND_ACCEPTANCE_PORT="$(BACKEND_ACCEPTANCE_PORT)" BACKEND_ACCEPTANCE_DB="$(BACKEND_ACCEPTANCE_DB)" bash scripts/dev/backend_acceptance_up.sh
+backend.acceptance.up: guard.prod.forbid
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-up
 backend.acceptance.down:
-	@BACKEND_ACCEPTANCE_NAME="$(BACKEND_ACCEPTANCE_NAME)" bash scripts/dev/backend_acceptance_down.sh
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-down
 backend.acceptance.health:
-	@curl -fsS "$(BACKEND_ACCEPTANCE_BASE_URL)/web/login" >/dev/null
-	@echo "[backend.acceptance.health] PASS db=$(BACKEND_ACCEPTANCE_DB) url=$(BACKEND_ACCEPTANCE_BASE_URL)"
+	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-health
 
 backend.collection.acceptance.up: guard.prod.forbid check-compose-project check-compose-env
 	@BACKEND_ACCEPTANCE_NAME=sc-backend-odoo-collection-view-semantics BACKEND_ACCEPTANCE_PORT=18102 bash scripts/dev/backend_acceptance_up.sh

@@ -70,6 +70,9 @@ services:
       DB_PORT: 5432
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      ODOO_DBFILTER: ${ODOO_DBFILTER}
+      LIST_DB: ${LIST_DB:-false}
 
       ADMIN_PASSWD: ${ADMIN_PASSWD}
       JWT_SECRET: ${JWT_SECRET}
