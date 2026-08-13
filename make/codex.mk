@@ -413,6 +413,7 @@ CREATE_WORKTREE_CONFIRM ?=
 CLEAN_WORKTREE_BRANCH ?=
 CLEAN_WORKTREE_EXPECTED_HEAD ?=
 CLEAN_WORKTREE_CONFIRM ?=
+CLEAN_WORKTREE_KEEP_BRANCH ?=
 LOCAL_CLEAN_BRANCH ?=
 LOCAL_CLEAN_EXPECTED_HEAD ?=
 LOCAL_CLEAN_CONFIRM ?=
@@ -470,6 +471,7 @@ workspace.worktree.cleanup: guard.prod.forbid
 	@python3 scripts/ops/safe_worktree_cleanup.py \
 		--path "$(CLEAN_WORKTREE)" \
 		$(if $(filter 1,$(APPLY)),--apply,) \
+		$(if $(filter 1,$(CLEAN_WORKTREE_KEEP_BRANCH)),--detach-keep-branch --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)" --confirm "$(CLEAN_WORKTREE_CONFIRM)",) \
 		$(if $(CLEAN_WORKTREE_BRANCH),--orphan-branch "$(CLEAN_WORKTREE_BRANCH)" --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)" --confirm "$(CLEAN_WORKTREE_CONFIRM)",)
 
 .PHONY: workspace.branch.cleanup.local

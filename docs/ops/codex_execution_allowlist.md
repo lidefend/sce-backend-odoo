@@ -296,6 +296,20 @@ make workspace.worktree.cleanup \
 
 该模式只删除经 `origin/main` 吸收证明验证的本地孤立分支引用，不修改远端。
 
+仍需保留分支成果但不再需要常驻目录的干净工作树，可按精确 HEAD 解除挂载：
+
+```bash
+make workspace.worktree.cleanup \
+  CLEAN_WORKTREE=/absolute/linked/path \
+  CLEAN_WORKTREE_KEEP_BRANCH=1 \
+  CLEAN_WORKTREE_EXPECTED_HEAD=<full-40-character-sha> \
+  APPLY=1 \
+  CLEAN_WORKTREE_CONFIRM=DETACH_VERIFIED_WORKTREE_KEEP_BRANCH
+```
+
+该模式允许未合并及受保护的 `release/main` 分支，因为它不删除或移动分支引用；
+工作树非干净、目标为主工作树或 SHA 漂移时均拒绝执行。
+
 不再被任何工作树占用的已合并本地分支，可通过独立入口清理：
 
 ```bash

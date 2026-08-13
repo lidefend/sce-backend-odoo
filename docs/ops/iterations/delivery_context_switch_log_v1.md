@@ -3766,3 +3766,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   primary-center overlay remains the naming/sequence authority. Acceptance
   requires the fresh-database chatter authorization ORM gate, focused
   manifest-order test, product menu release gate and protected PR checks.
+
+## 2026-08-13 — LOCAL-WORKTREE-BASELINE-CONSOLIDATION
+
+- Branch / anchor: `fix/worktree-cleanup-exact-ref` at `61f1ed3`.
+- Formal Product Layer / Layer Target / Module: P4 / local workspace lifecycle /
+  `safe_worktree_cleanup.py` and governed Make entry.
+- Standard vs User-Specific: generic engineering operations; no product or
+  tenant behavior and no production data are involved.
+- Reason / boundary: stable post-release operation needs one canonical product
+  directory without deleting unfinished branch history. The new detach mode
+  removes only a clean, non-primary worktree at an exact SHA and verifies that
+  the branch ref remains unchanged.
+- Blast radius / validation: local linked-worktree metadata and directories
+  only. Unit tests cover clean unmerged retention, protected release branch
+  retention, dirty refusal, exact-SHA drift refusal, and primary-worktree guard.
