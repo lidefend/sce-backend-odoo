@@ -28,7 +28,7 @@ class PromoteError(RuntimeError):
 
 
 REMOTE_PROMOTE = r'''
-import json, os, shutil, stat, subprocess, sys, tempfile
+import json, os, re, shutil, stat, subprocess, sys, tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -39,15 +39,15 @@ current_root = Path(current_value)
 next_root = Path(next_value)
 evidence = Path(evidence_value)
 runtime = Path("/opt/sce/config/sc_production/runtime.env")
-modules = {"sce_customer_baosheng", "sce_customer_baosheng_legacy", "sce_customer_baosheng_history_attachments"}
-
 if tool.is_symlink() or not tool.is_dir() or (tool / "DEPLOYMENT_TOOL_SHA").read_text().strip() != tool_sha:
     raise SystemExit("CUSTOMER_RUNTIME_TOOL_IDENTITY_INVALID")
 sys.path.insert(0, str(tool / "scripts/release"))
 import production_release_set
 lock = production_release_set.load_lock(release_set)
 production_release_set.verify_bound_files(lock)
-if lock.get("customer_sha") != customer_sha or set(lock.get("customer_modules") or []) != modules:
+modules = set(lock.get("customer_modules") or [])
+if (lock.get("customer_sha") != customer_sha or not modules
+        or any(not re.fullmatch(r"[a-z][a-z0-9_]{2,63}", module) for module in modules)):
     raise SystemExit("CUSTOMER_RUNTIME_RELEASE_SET_IDENTITY_MISMATCH")
 
 runtime_meta = runtime.stat()

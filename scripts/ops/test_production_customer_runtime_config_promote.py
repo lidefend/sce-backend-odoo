@@ -13,6 +13,7 @@ class ProductionCustomerRuntimeConfigPromoteTests(unittest.TestCase):
         self.assertIn('"SC_CUSTOMER_ADDONS_ROOT=" + str(next_root)', source)
         self.assertIn('"/mnt/customer-addons"', source)
         self.assertIn("production_release_set.verify_bound_files(lock)", source)
+        self.assertIn('modules = set(lock.get("customer_modules") or [])', source)
         self.assertIn('git("branch", "--show-current") != "main"', source)
         self.assertIn('for remote in ("origin", "gitee-mirror")', source)
         self.assertIn("CUSTOMER_RUNTIME_ACTIVE_MOUNT_MISMATCH", source)
