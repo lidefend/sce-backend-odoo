@@ -60,6 +60,24 @@ def verify_release(dataset: dict, *, require_source_hashes: bool) -> list[str]:
     return errors
 
 
+def electronic_review_rows(dataset: dict) -> list[dict]:
+    rows = list(dataset.get("review_issues") or [])
+    for item in dataset["items"]:
+        component_total = sum(
+            float(item[field] or 0.0)
+            for field in ("cost_labor", "cost_material", "cost_machine", "cost_misc")
+        )
+        delta = abs(float(item["price_total"] or 0.0) - component_total)
+        if component_total and delta > 0.05:
+            rows.append({
+                "severity": "review", "code": "price_component_mismatch",
+                "book_id": item["book_id"], "pdf_page": item["source_pdf_page"],
+                "quota_code": item["code"], "field": "cost_components",
+                "message": f"综合单价与费用分项合计相差 {delta:.2f}，综合单价保留，费用分项待人工复核。",
+            })
+    return rows
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ocr-dir", type=Path, required=True)
@@ -104,6 +122,19 @@ def main() -> int:
         ],
     )
     report = {"status": "PASS" if not errors else "FAIL", "errors": errors, "metrics": dataset["metrics"]}
+    review_rows = electronic_review_rows(dataset)
+    _write_csv(
+        args.output / "review-queue.csv", review_rows,
+        ["severity", "code", "book_id", "pdf_page", "quota_code", "field", "message", "confidence"],
+    )
+    (args.output / "review-queue.json").write_text(
+        json.dumps(review_rows, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    report["electronic_archive"] = {
+        "status": "COMPLETE_WITH_REVIEW_QUEUE",
+        "review_count": len(review_rows),
+        "blocking_for_system_activation": bool(errors),
+    }
     (args.output / "release-report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )
