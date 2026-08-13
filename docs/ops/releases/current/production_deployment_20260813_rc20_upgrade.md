@@ -18,11 +18,11 @@
 
 ## 2. 边界与范围
 
-产品发布与用户模块独立。RC20 产品发布不依赖 P2 数据完整性；生产随后只对
-`sce_customer_baosheng_legacy` 做增量升级，移除它误写入产品策略的一个客户菜单。
+产品发布与用户模块独立。RC20 产品发布不依赖 P2 数据完整性；生产随后只对签名发布锁
+声明的 P2 客户模块做增量升级，移除它误写入产品策略的一个客户菜单。
 
 - 产品模块：`smart_core=17.0.1.1.9`、`smart_construction_core=17.0.0.129`。
-- P2 模块：`sce_customer_baosheng_legacy=17.0.3.1.8`。
+- P2 模块：签名发布锁声明的客户模块，版本 `17.0.3.1.8`。
 - 未导入租户 payload，未补用户字典数据，未用 demo seed，未升级产品模块。
 - P2 原生历史入口仍由 P2 持有，但不进入标准版/预览版产品策略和快照。
 
@@ -74,7 +74,7 @@ P2 签名包与发布锁：
 
 ```text
 package sha256=229caf5898b4068ea00e4fdfdd1c228c8c3ccc1c00de877c8f25c0611eda5dd8
-/data/backups/production_acceptance/tenant-deliveries/baosheng-rc20-p2-318-20260813-v2/production-release-set.json
+/data/backups/production_acceptance/tenant-deliveries/<signed-tenant-release>/production-release-set.json
 ```
 
 受控步骤：
@@ -82,7 +82,7 @@ package sha256=229caf5898b4068ea00e4fdfdd1c228c8c3ccc1c00de877c8f25c0611eda5dd8
 ```text
 production.tenant.delivery.artifacts.sync: PASS
 release.production.customer_package.prepare: PASS
-release.production.customer_module.upgrade TARGET_MODULE=sce_customer_baosheng_legacy: PASS
+release.production.customer_module.upgrade TARGET_MODULE=<from-signed-release-lock>: PASS
 release.production.customer_runtime.activate: PASS
 release.production.platform.snapshot.initialize construction.standard: PASS
 release.production.platform.snapshot.initialize construction.preview: PASS
