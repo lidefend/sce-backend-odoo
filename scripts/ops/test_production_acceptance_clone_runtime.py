@@ -180,12 +180,12 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             self.assertEqual(RUNTIME.image_release_version("sha256:" + "2" * 64), "1.0.0-rc.17")
         self.assertIn("org.opencontainers.image.version", runner.call_args.args[0][-1])
 
-    def test_platform_database_rebind_precedes_snapshot_refresh(self) -> None:
+    def test_platform_database_rebind_precedes_module_upgrade(self) -> None:
         source = SCRIPT.read_text(encoding="utf-8")
         activate_source = source[source.index("def activate(") :]
         self.assertLess(
             activate_source.index("rebind_platform_release_database("),
-            activate_source.index("platform_snapshot_container_args("),
+            activate_source.index("upgrade_args = odoo_container_args("),
         )
 
     def test_retry_removes_stopped_upgrade_from_exact_isolated_network(self) -> None:

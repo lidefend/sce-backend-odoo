@@ -583,6 +583,9 @@ def activate(
     modules = (*product_module_set, tenant_module)
     tenant_operation = tenant_module_operation(str(db_container), database, tenant_module)
     before = database_snapshot(str(db_container), database)
+    platform_release_db_rebound = rebind_platform_release_database(
+        str(db_container), database,
+    )
     upgrade_container = f"{restore_id}_acceptance_upgrade"
     remove_verified_failed_upgrade(restore_id, str(network))
     upgrade_args = odoo_container_args(
@@ -610,9 +613,6 @@ def activate(
             "--stop-after-init",
             *module_args,
         ]
-    )
-    platform_release_db_rebound = rebind_platform_release_database(
-        str(db_container), database,
     )
     release_version = image_release_version(image)
     run(
