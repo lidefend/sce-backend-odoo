@@ -23,13 +23,14 @@
     {"key":"counterparty_eligibility","status":"implemented","evidence":["construction.contract.action_confirm calls res.partner._sc_assert_transaction_eligible"]},
     {"key":"execution_amounts","status":"implemented","evidence":["settlement_amount","invoice_amount","uninvoiced_amount","received_amount","unreceived_amount"]},
     {"key":"cross_document_navigation","status":"implemented","evidence":["action_open_settlements","action_open_payment_requests","action_open_invoice_registrations","action_open_receipt_incomes","four native form stat buttons"]},
+    {"key":"task_first_native_form","status":"implemented","evidence":["contract title and status summary","counterparty eligibility alerts","contract summary","semantic party term amount line evidence and audit sections"]},
     {"key":"reference_protection","status":"implemented","evidence":["is_locked","unlink","action_cancel","action_reset_draft","sc.delete.guard.mixin"]},
     {"key":"runtime_states","status":"runtime_verification_required","evidence":["representative_page_contracts_v01 income contract acceptance"],"gap":"empty, forbidden, archived, readonly and mobile states require authenticated browser evidence"}
   ],
   "implementation_sequence": [
     {"id":"P1-IC-001","status":"completed","title":"enforce counterparty eligibility before contract activation"},
     {"id":"P1-IC-002","status":"completed","title":"add source-to-result drilldowns for settlement payment invoice and receipt"},
-    {"id":"P1-IC-003","status":"in_progress","title":"restructure native form around contract summary and semantic sections"},
+    {"id":"P1-IC-003","status":"completed","title":"restructure native form around contract summary and semantic sections"},
     {"id":"P1-IC-004","status":"pending_runtime","title":"accept empty forbidden readonly and mobile states"},
     {"id":"P1-IC-005","status":"blocked_until_business_acceptance","title":"evaluate component requirements"}
   ],

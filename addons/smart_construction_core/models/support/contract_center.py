@@ -134,6 +134,16 @@ class ConstructionContract(models.Model):
         index=True,
         tracking=True,
     )
+    partner_transaction_eligibility = fields.Selection(
+        related="partner_id.sc_transaction_eligibility",
+        string="发包人交易资格",
+        readonly=True,
+    )
+    partner_transaction_eligibility_reason = fields.Char(
+        related="partner_id.sc_transaction_eligibility_reason",
+        string="交易资格说明",
+        readonly=True,
+    )
     category_id = fields.Many2one(
         "sc.dictionary",
         string="合同类别",

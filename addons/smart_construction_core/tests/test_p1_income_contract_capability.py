@@ -73,3 +73,14 @@ class TestP1IncomeContractCapability(TransactionCase):
             "action_open_receipt_incomes",
         ):
             self.assertIn(f'name="{method_name}"', form.arch_db)
+        for section in (
+            "合同摘要",
+            "主体与条款",
+            "价税与执行",
+            "合同清单",
+            "说明与证据",
+            "流程与审计",
+        ):
+            self.assertIn(section, form.arch_db)
+        self.assertIn('name="partner_transaction_eligibility"', form.arch_db)
+        self.assertIn('name="attachment_ids"', form.arch_db)

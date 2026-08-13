@@ -26,8 +26,8 @@ def main() -> int:
         errors.append("component selection is no longer excluded")
     capabilities = contract.get("capabilities", [])
     keys = [row.get("key") for row in capabilities]
-    if len(keys) != len(set(keys)) or len(keys) != 10:
-        errors.append("income-contract capability set must contain ten unique keys")
+    if len(keys) != len(set(keys)) or len(keys) != 11:
+        errors.append("income-contract capability set must contain eleven unique keys")
     for row in capabilities:
         if not row.get("evidence"):
             errors.append(f"{row.get('key')} has no evidence")

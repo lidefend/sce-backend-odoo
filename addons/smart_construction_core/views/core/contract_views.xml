@@ -262,61 +262,80 @@
                             <field name="receipt_income_count" string="收款" widget="statinfo" />
                         </button>
                     </div>
-                    <group>
+                    <div class="oe_title">
+                        <label for="subject" string="合同标题" />
+                        <h1><field name="subject" placeholder="请输入收入合同标题" /></h1>
+                        <div>
+                            <field name="name" readonly="1" class="oe_inline" />
+                            <field name="document_status" readonly="1" class="oe_inline" />
+                        </div>
+                    </div>
+                    <field name="type" readonly="1" invisible="1" />
+                    <field name="currency_id" invisible="1" />
+                    <div class="alert alert-danger" role="alert" invisible="partner_transaction_eligibility != 'blocked'">
+                        当前发包人禁止发起新业务：<field name="partner_transaction_eligibility_reason" readonly="1" class="oe_inline" />
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="partner_transaction_eligibility != 'review_required'">
+                        当前发包人需要风险复核：<field name="partner_transaction_eligibility_reason" readonly="1" class="oe_inline" />
+                    </div>
+                    <group string="合同摘要" col="2">
                         <group>
-                            <field name="name" />
-                            <field name="document_status" />
-                            <field name="subject" />
-                            <field name="business_category_id" />
-                            <field name="type" readonly="1" invisible="1" />
                             <field name="project_id" required="1" />
-                            <field name="operation_strategy" readonly="1" />
                             <field name="partner_id" string="发包人" required="1" />
-                            <field name="category_id" />
-                            <field name="contract_type_id" />
-                            <field name="engineering_address" />
-                            <field name="engineering_category_text" />
-                            <field name="affiliated_person" />
-                            <field name="engineering_content" />
-                            <field name="contract_duration_text" />
-                            <field name="contract_payment_method_text" />
-                            <field name="attachment_text" />
+                            <field name="partner_transaction_eligibility" widget="badge" readonly="1" />
+                            <field name="handler_id" />
                         </group>
                         <group>
-                            <field name="company_id" readonly="1" />
-                            <field name="reject_reason" readonly="1" modifiers="{&quot;invisible&quot;: [[&quot;reject_reason&quot;,&quot;=&quot;,false]]}" />
-                            <field name="currency_id" invisible="1" />
-                            <field name="date_contract" />
-                            <field name="date_start" />
-                            <field name="date_end" />
-                            <field name="budget_id" />
-                            <field name="analytic_id" />
-                            <field name="handler_id" />
-                            <field name="entry_user_id" />
-                            <field name="entry_user_text" />
-                            <field name="entry_time" />
-                            <field name="archived" />
+                            <field name="amount_final" readonly="1" />
+                            <field name="settlement_amount" readonly="1" />
+                            <field name="invoice_amount" readonly="1" />
+                            <field name="received_amount" readonly="1" />
                         </group>
-                    </group>
-                    <group string="收入金额概览" colspan="2">
-                        <field name="tax_id" />
-                        <field name="visible_contract_amount" readonly="1" />
-                        <field name="amount_untaxed" readonly="1" />
-                        <field name="amount_tax" readonly="1" />
-                        <field name="amount_total" readonly="1" />
-                        <field name="amount_final" readonly="1" />
-                        <field name="settlement_amount" readonly="1" />
-                        <field name="invoice_amount" readonly="1" />
-                        <field name="uninvoiced_amount" readonly="1" />
-                        <field name="received_amount" readonly="1" />
-                        <field name="unreceived_amount" readonly="1" />
-                        <field name="visible_invoice_amount" />
-                        <field name="visible_received_amount" />
-                        <field name="visible_unreceived_amount" />
-                        <field name="visible_unreceived_rate" />
                     </group>
                     <notebook>
-                        <page string="合同明细">
+                        <page string="主体与条款">
+                            <group col="2">
+                                <group string="主体与分类">
+                                    <field name="company_id" readonly="1" />
+                                    <field name="business_category_id" options="{'no_create': True}" />
+                                    <field name="category_id" />
+                                    <field name="contract_type_id" />
+                                    <field name="operation_strategy" readonly="1" />
+                                    <field name="affiliated_person" />
+                                </group>
+                                <group string="期间与工程范围">
+                                    <field name="date_contract" />
+                                    <field name="date_start" />
+                                    <field name="date_end" />
+                                    <field name="contract_duration_text" />
+                                    <field name="engineering_address" />
+                                    <field name="engineering_category_text" />
+                                    <field name="engineering_content" />
+                                    <field name="contract_payment_method_text" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="价税与执行">
+                            <group col="2">
+                                <group string="合同价税">
+                                    <field name="tax_id" />
+                                    <field name="visible_contract_amount" readonly="1" />
+                                    <field name="amount_untaxed" readonly="1" />
+                                    <field name="amount_tax" readonly="1" />
+                                    <field name="amount_total" readonly="1" />
+                                    <field name="amount_final" readonly="1" />
+                                </group>
+                                <group string="履约结果">
+                                    <field name="settlement_amount" readonly="1" />
+                                    <field name="invoice_amount" readonly="1" />
+                                    <field name="uninvoiced_amount" readonly="1" />
+                                    <field name="received_amount" readonly="1" />
+                                    <field name="unreceived_amount" readonly="1" />
+                                    <field name="visible_unreceived_rate" readonly="1" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="合同清单">
                             <field name="line_ids" context="{'default_contract_id': contract_id}">
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle" />
@@ -332,12 +351,28 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="审批信息">
-                            <field name="approval_info" />
-                            <field name="attachment_text" />
+                        <page string="说明与证据">
+                            <group col="1">
+                                <field name="attachment_ids" widget="many2many_binary" string="合同附件" />
+                                <field name="attachment_text" string="历史附件说明" />
+                                <field name="note" placeholder="记录合同特殊约定、履约提醒或其他说明" />
+                            </group>
                         </page>
-                        <page string="备注">
-                            <field name="note" />
+                        <page string="流程与审计">
+                            <group col="2">
+                                <group string="流程结果">
+                                    <field name="approval_info" />
+                                    <field name="reject_reason" readonly="1" invisible="not reject_reason" />
+                                    <field name="archived" />
+                                </group>
+                                <group string="录入信息">
+                                    <field name="budget_id" />
+                                    <field name="analytic_id" />
+                                    <field name="entry_user_id" />
+                                    <field name="entry_user_text" />
+                                    <field name="entry_time" />
+                                </group>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
