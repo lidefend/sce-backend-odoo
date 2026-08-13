@@ -74,8 +74,8 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             )
         command = runner.call_args.args[0]
         self.assertEqual(command[:3], ["docker", "exec", "restore_db"])
-        self.assertIn(f"target_db={database}", command)
-        self.assertNotIn(database, command[-1])
+        self.assertNotIn(f"target_db={database}", command)
+        self.assertIn(f"'{database}'", command[-1])
         self.assertIn("smart_core.platform_release_db", command[-1])
 
     def test_restore_release_snapshot_rebind_is_idempotent(self) -> None:

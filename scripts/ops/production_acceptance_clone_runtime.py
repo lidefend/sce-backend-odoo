@@ -133,6 +133,7 @@ def rebind_platform_release_database(db_container: str, database: str) -> bool:
     """Bind a renamed isolated restore to its own release snapshot authority."""
     if not re.fullmatch(r"r10e_sc_restore_[0-9]{8}t[0-9]{6}z_[0-9a-f]{8}", database):
         raise CloneRuntimeError("acceptance platform database identity is invalid")
+    database_literal = f"'{database}'"
     output = run(
         [
             "docker",
@@ -141,8 +142,6 @@ def rebind_platform_release_database(db_container: str, database: str) -> bool:
             "psql",
             "-v",
             "ON_ERROR_STOP=1",
-            "-v",
-            f"target_db={database}",
             "-U",
             "odoo",
             "-d",
@@ -153,15 +152,15 @@ def rebind_platform_release_database(db_container: str, database: str) -> bool:
             "-c",
             "WITH current AS ("
             "SELECT count(*) AS record_count,"
-            "coalesce(bool_and(value = :'target_db')::int, 0) AS already_bound "
+            f"coalesce(bool_and(value = {database_literal})::int, 0) AS already_bound "
             "FROM ir_config_parameter WHERE key='smart_core.platform_release_db'"
             "), rebound AS ("
-            "UPDATE ir_config_parameter SET value=:'target_db', write_date=now() "
-            "WHERE key='smart_core.platform_release_db' AND value <> :'target_db' "
+            f"UPDATE ir_config_parameter SET value={database_literal}, write_date=now() "
+            f"WHERE key='smart_core.platform_release_db' AND value <> {database_literal} "
             "RETURNING value"
             ") SELECT current.record_count,current.already_bound,"
             "(SELECT count(*) FROM rebound),"
-            "coalesce((SELECT bool_and(value = :'target_db')::int FROM rebound),"
+            f"coalesce((SELECT bool_and(value = {database_literal})::int FROM rebound),"
             "current.already_bound) FROM current;",
         ]
     )
