@@ -338,8 +338,8 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             RUNTIME,
             "run",
             side_effect=[
-                f"true|{network}",
-                "true|sc_restore_20260808t102000z_4d7e91a2_public_ingress",
+                f"true||{network}",
+                "true||sc_restore_20260808t102000z_4d7e91a2_public_ingress",
                 "",
                 "",
             ],
@@ -358,8 +358,26 @@ class ProductionAcceptanceCloneRuntimeTests(unittest.TestCase):
             ],
         )
 
+    def test_replace_accepts_legacy_label_only_on_exact_isolated_network(self) -> None:
+        network = "sc_restore_20260808t102000z_4d7e91a2_net"
+        with mock.patch.object(
+            RUNTIME,
+            "run",
+            side_effect=[
+                f"|true|{network}",
+                f"|true|{network}",
+                "",
+                "",
+            ],
+        ):
+            self.assertTrue(
+                RUNTIME.remove_verified_runtime(
+                    "sc_restore_20260808t102000z_4d7e91a2", network
+                )
+            )
+
     def test_replace_rejects_unlabelled_backend(self) -> None:
-        with mock.patch.object(RUNTIME, "run", return_value="|foreign_network"):
+        with mock.patch.object(RUNTIME, "run", return_value="||foreign_network"):
             with self.assertRaisesRegex(RUNTIME.CloneRuntimeError, "backend identity"):
                 RUNTIME.remove_verified_runtime(
                     "sc_restore_20260808t102000z_4d7e91a2",

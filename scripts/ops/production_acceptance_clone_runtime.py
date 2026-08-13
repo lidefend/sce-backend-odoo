@@ -489,13 +489,19 @@ def remove_verified_runtime(restore_id: str, network: str) -> bool:
             "inspect",
             backend,
             "--format",
-            '{{index .Config.Labels "sc.production-acceptance-clone"}}|{{.HostConfig.NetworkMode}}',
+            '{{index .Config.Labels "sc.production-acceptance-clone"}}|'
+            '{{index .Config.Labels "com.sce.production-acceptance-clone"}}|'
+            "{{.HostConfig.NetworkMode}}",
         ],
         False,
     )
     if not backend_identity:
         return False
-    if backend_identity != f"true|{network}":
+    backend_label, legacy_backend_label, backend_network = backend_identity.split("|", 2)
+    if (
+        "true" not in {backend_label, legacy_backend_label}
+        or backend_network != network
+    ):
         raise CloneRuntimeError("existing acceptance backend identity differs")
     frontend_identity = run(
         [
@@ -503,14 +509,19 @@ def remove_verified_runtime(restore_id: str, network: str) -> bool:
             "inspect",
             frontend,
             "--format",
-            '{{index .Config.Labels "sc.production-acceptance-clone"}}|{{.HostConfig.NetworkMode}}',
+            '{{index .Config.Labels "sc.production-acceptance-clone"}}|'
+            '{{index .Config.Labels "com.sce.production-acceptance-clone"}}|'
+            "{{.HostConfig.NetworkMode}}",
         ],
         False,
     )
     allowed_frontend_networks = {network, f"{restore_id}_public_ingress"}
     if frontend_identity:
-        label, separator, frontend_network = frontend_identity.partition("|")
-        if label != "true" or not separator or frontend_network not in allowed_frontend_networks:
+        label, legacy_label, frontend_network = frontend_identity.split("|", 2)
+        if (
+            "true" not in {label, legacy_label}
+            or frontend_network not in allowed_frontend_networks
+        ):
             raise CloneRuntimeError("existing acceptance frontend identity differs")
         run(["docker", "rm", "-f", frontend])
     run(["docker", "rm", "-f", backend])
