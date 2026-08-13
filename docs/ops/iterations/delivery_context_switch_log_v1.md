@@ -3843,3 +3843,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast Radius / validation: version identity, immutable candidate manifests,
   release-contract guards and candidate image build. The customer package is
   validated and versioned in its separate private repository.
+
+## 2026-08-13 — P4-PRODUCT-PUBLICATION-CUSTOMER-DECOUPLING
+
+- Branch / anchor: `fix/product-publication-customer-decoupling` from
+  `bd5a6e6`.
+- Formal Product Layer / Layer Target / Module: P4 / immutable standard-product
+  publication transaction / `scripts/release/release_publication.py`.
+- Standard vs User-Specific: standard product release governance only.
+- Reason / Boundary: the publication preflight still required a tenant payload
+  real-plan artifact, making standard-product publication depend on P2 customer
+  data despite the runtime boundary already being decoupled by PR #188.
+- Why Here / Why Not Elsewhere: product publication must prove its own source,
+  image, scan, SBOM, remote and check identities. Customer-module repair and
+  customer-data acceptance remain independent P2/P4 delivery workflows and do
+  not belong in the product publication transaction.
+- Blast Radius / validation: removes only the customer real-plan read from
+  publication identity. Candidate readiness, artifact hashes, image identity,
+  security policy, dual-remote authority, required checks and zero-write
+  preflight ordering remain fail-closed and are covered by the complete
+  publication and production release-contract suites.
