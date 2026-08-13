@@ -82,6 +82,17 @@ class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
         text = (ROOT / "scripts/ops/odoo_shell_exec.sh").read_text(encoding="utf-8")
         self.assertIn("SC_CONFIRM_*", text)
 
+    def test_odoo_shell_uses_rendered_production_config(self):
+        text = (ROOT / "scripts/ops/odoo_shell_exec.sh").read_text(encoding="utf-8")
+        self.assertIn('if [[ "${ENV:-}" == "prod" ]]', text)
+        self.assertIn('ODOO_SHELL_CONFIG="/opt/sce-runtime/config/odoo.conf"', text)
+        self.assertEqual(text.count('-c "$ODOO_SHELL_CONFIG"'), 2)
+
+    def test_p0_defaults_match_product_runtime_fallbacks(self):
+        text = (ROOT / "scripts/verify/p0_base.sh").read_text(encoding="utf-8")
+        self.assertIn("key='sc.login.custom_enabled'),'1'", text)
+        self.assertIn("key='sc.login.env'),'prod'", text)
+
 
 if __name__ == "__main__":
     unittest.main()

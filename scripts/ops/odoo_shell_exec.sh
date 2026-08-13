@@ -8,6 +8,15 @@ if [[ -z "$DB_NAME" ]]; then
   exit 2
 fi
 
+ODOO_SHELL_CONFIG="${ODOO_SHELL_CONFIG:-}"
+if [[ -z "$ODOO_SHELL_CONFIG" ]]; then
+  if [[ "${ENV:-}" == "prod" ]]; then
+    ODOO_SHELL_CONFIG="/opt/sce-runtime/config/odoo.conf"
+  else
+    ODOO_SHELL_CONFIG="/var/lib/odoo/odoo.conf"
+  fi
+fi
+
 ENV_FORWARD_ARGS=()
 while IFS='=' read -r env_name _; do
   case "$env_name" in
@@ -30,8 +39,8 @@ if [[ "${ODOO_SHELL_RUN_ISOLATED:-0}" == "1" ]]; then
     -e DB_HOST="${DB_HOST:-db}" -e DB_PORT="${DB_PORT:-5432}" \
     -e DB_USER="$DB_USER" -e DB_PASSWORD="$DB_PASSWORD" \
     -e ADMIN_PASSWD="$ADMIN_PASSWD" -e JWT_SECRET="$JWT_SECRET" \
-    odoo shell -d "$DB_NAME" -c /var/lib/odoo/odoo.conf
+    odoo shell -d "$DB_NAME" -c "$ODOO_SHELL_CONFIG"
 else
   # shellcheck disable=SC2086
-  compose ${COMPOSE_FILES} exec -T "${ENV_FORWARD_ARGS[@]}" odoo odoo shell -d "$DB_NAME" -c /var/lib/odoo/odoo.conf
+  compose ${COMPOSE_FILES} exec -T "${ENV_FORWARD_ARGS[@]}" odoo odoo shell -d "$DB_NAME" -c "$ODOO_SHELL_CONFIG"
 fi

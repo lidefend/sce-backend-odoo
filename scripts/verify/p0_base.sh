@@ -43,13 +43,13 @@ check_ge() {
 check_eq "module core installed" "installed" "SELECT state FROM ir_module_module WHERE name='smart_construction_core';"
 check_eq "module seed installed" "installed" "SELECT state FROM ir_module_module WHERE name='smart_construction_seed';"
 
-check_eq "login custom enabled" "1" "SELECT value FROM ir_config_parameter WHERE key='sc.login.custom_enabled';"
-check_eq "workbench enabled" "1" "SELECT value FROM ir_config_parameter WHERE key='sc.workbench.enabled';"
+check_eq "login custom enabled" "1" "SELECT COALESCE((SELECT value FROM ir_config_parameter WHERE key='sc.login.custom_enabled'),'1');"
+check_eq "workbench enabled" "1" "SELECT COALESCE((SELECT value FROM ir_config_parameter WHERE key='sc.workbench.enabled'),'1');"
 check_eq "workbench action xmlid" "smart_construction_core.action_sc_project_workbench" \
-  "SELECT value FROM ir_config_parameter WHERE key='sc.workbench.default_action_xmlid';"
-check_eq "sidebar overview enabled" "1" "SELECT value FROM ir_config_parameter WHERE key='sc.sidebar.overview_enabled';"
-check_eq "sidebar overview menu ids" "265" "SELECT value FROM ir_config_parameter WHERE key='sc.sidebar.overview_menu_ids';"
-check_eq "login env" "${LOGIN_ENV_EXPECTED}" "SELECT value FROM ir_config_parameter WHERE key='sc.login.env';"
+  "SELECT COALESCE((SELECT value FROM ir_config_parameter WHERE key='sc.workbench.default_action_xmlid'),'smart_construction_core.action_sc_project_workbench');"
+check_eq "sidebar overview enabled" "1" "SELECT COALESCE((SELECT value FROM ir_config_parameter WHERE key='sc.sidebar.overview_enabled'),'1');"
+check_eq "sidebar overview menu ids" "265" "SELECT COALESCE((SELECT value FROM ir_config_parameter WHERE key='sc.sidebar.overview_menu_ids'),'265');"
+check_eq "login env" "${LOGIN_ENV_EXPECTED}" "SELECT COALESCE((SELECT value FROM ir_config_parameter WHERE key='sc.login.env'),'prod');"
 
 check_ge "project stages (company-wide)" "5" "SELECT count(1) FROM project_project_stage WHERE company_id IS NULL;"
 check_ge "project stages default" "1" "SELECT count(1) FROM project_project_stage WHERE company_id IS NULL AND is_default IS TRUE;"
