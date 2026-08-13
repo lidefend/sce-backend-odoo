@@ -3704,10 +3704,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   authority. This is an isolated restore transition owned by P4.
 - Blast Radius / validation: only the exact
   `r10e_sc_restore_<timestamp>_<suffix>` database inside the verified restore
-  namespace and its single release-database parameter row. Unit tests lock
-  identity rejection, parameterized SQL, idempotence, missing/duplicate-row
-  failure and ordering before the snapshot initializer; no database is touched
-  during local validation.
+  namespace and its single release-database parameter row. The replacement path
+  also admits the legacy clone label only on the exact isolated network and
+  combines product and installed-tenant module names into one Odoo `-u` value
+  because repeated options overwrite. Unit tests lock identity rejection,
+  validated SQL identity, idempotence, missing/duplicate-row failure and upgrade
+  ordering. The production clone rehearsal upgraded `smart_construction_core`
+  from `17.0.0.127` to `17.0.0.129`, retained the P2 module at `17.0.3.1.7`,
+  preserved protected business-data counts, and passed the RC20 acceptance
+  package twice without connecting to the production database.
 
 ## 2026-08-11 — P1-PROJECT-SALARY-FACT-OWNERSHIP-CLOSURE
 
@@ -3885,25 +3890,3 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   security policy, dual-remote authority, required checks and zero-write
   preflight ordering remain fail-closed and are covered by the complete
   publication and production release-contract suites.
-
-## 2026-08-13 — P4-ACCEPTANCE-CLONE-DATABASE-AUTHORITY-CLOSURE
-
-- Branch / anchor: `fix/acceptance-clone-db-authority-v2` from `af117b4`.
-- Formal Product Layer / Layer Target / Module: P4 / isolated production-restore
-  acceptance orchestration / `scripts/ops/production_acceptance_clone_runtime.py`.
-- Standard vs User-Specific: generic delivery safety mechanism; no platform,
-  construction-industry, customer preference or business-data semantics change.
-- Reason / Why Here: a renamed isolated restore retains its source
-  `smart_core.platform_release_db` value, while the locked snapshot initializer
-  correctly requires that authority to equal the exact current database. The
-  acceptance orchestrator owns the explicit, fail-closed rebind immediately
-  before refreshing the snapshot.
-- Why Not Elsewhere: P0-P3 must not silently rewrite database identity during
-  normal runtime, installation or configuration; the frontend has no database
-  authority. This is an isolated restore transition owned by P4.
-- Blast Radius / validation: only the exact
-  `r10e_sc_restore_<timestamp>_<suffix>` database inside the verified restore
-  namespace and its single release-database parameter row. Unit tests lock
-  identity rejection, parameterized SQL, idempotence, missing/duplicate-row
-  failure and ordering before the snapshot initializer; no database is touched
-  during local validation.
