@@ -25,6 +25,28 @@ def main() -> int:
         errors.append("production profile must not embed a deployment address")
     if tools["tools"]["form-system-audit"]["profiles"] != ["local", "test"]:
         errors.append("full form-system audit must remain isolated from daily/production")
+    managed = environments["profiles"]["local"].get("managed_runtime") or {}
+    if managed.get("database_filter") != "^sc_frontend_acceptance$":
+        errors.append("local managed runtime must exact-lock sc_frontend_acceptance")
+    volumes = managed.get("volumes") or {}
+    if len({volumes.get("database"), volumes.get("redis"), volumes.get("odoo")}) != 3:
+        errors.append("local managed runtime must declare three distinct volume identities")
+    if managed.get("credential_container") != f'{managed.get("compose_project")}-odoo-1':
+        errors.append("local credential authority must be the managed compose Odoo container")
+    runtime_entry = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(encoding="utf-8")
+    for marker in ("preflight", "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER"):
+        if marker not in runtime_entry:
+            errors.append(f"managed runtime entry missing marker: {marker}")
+    smart_core_upgrade = runtime_entry.find('MODULE=smart_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"')
+    construction_upgrade = runtime_entry.find(
+        'MODULE=smart_construction_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"'
+    )
+    if smart_core_upgrade < 0 or construction_upgrade < 0 or smart_core_upgrade >= construction_upgrade:
+        errors.append("managed baseline upgrade must run smart_core before smart_construction_core")
+    compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    for marker in ("DB_NAME: ${DB_NAME}", "ODOO_DBFILTER: ${ODOO_DBFILTER}", "LIST_DB: ${LIST_DB:-false}"):
+        if marker not in compose:
+            errors.append(f"Odoo compose environment missing managed identity marker: {marker}")
     for relative in MIGRATED:
         source = (ROOT / relative).read_text(encoding="utf-8")
         checks = {

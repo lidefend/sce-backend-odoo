@@ -8,6 +8,25 @@
       "target_mode": "managed",
       "base_url": "http://127.0.0.1:5175",
       "database": "sc_frontend_acceptance",
+      "managed_runtime": {
+        "base_env_file": ".env.dev",
+        "compose_project": "sc-fe-r2-p1-01",
+        "credential_container": "sc-fe-r2-p1-01-odoo-1",
+        "database_filter": "^sc_frontend_acceptance$",
+        "volumes": {
+          "database": "sc_fe_r2_p1_01_db",
+          "redis": "sc_fe_r2_p1_01_redis",
+          "odoo": "sc_fe_r2_p1_01_odoo"
+        },
+        "services": {
+          "compose_backend_port": 19083,
+          "backend_container": "sc-backend-odoo-acceptance",
+          "backend_port": 18082,
+          "frontend_port": 5175,
+          "frontend_pidfile": "/tmp/sc-frontend-acceptance.pid",
+          "frontend_logfile": "/tmp/sc-frontend-acceptance.log"
+        }
+      },
       "allowed_operations": ["readonly", "simulated-write", "isolated-write", "managed-service"],
       "fixture_required_for_write": true,
       "credential_env": {"login": "E2E_LOGIN", "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"},
