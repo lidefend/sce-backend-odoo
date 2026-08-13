@@ -13,6 +13,13 @@ import production_promotion_config_preflight as preflight
 
 
 class ProductionPromotionConfigPreflightTest(unittest.TestCase):
+    def test_promotion_contract_locks_current_acceptance_package(self) -> None:
+        contract = preflight.load_contract(preflight.DEFAULT_CONTRACT)
+        self.assertEqual(
+            contract["acceptance_package_digest"],
+            preflight.acceptance.package_digest(),
+        )
+
     def setUp(self) -> None:
         self.contract = preflight.load_contract(preflight.DEFAULT_CONTRACT)
         self.config = {

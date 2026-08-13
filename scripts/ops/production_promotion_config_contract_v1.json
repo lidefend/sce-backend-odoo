@@ -1,6 +1,6 @@
 {
   "acceptance_contract_path": "scripts/ops/production_acceptance_contract_v1.json",
-  "acceptance_package_digest": "bd890cb25007f735c911c4001eca76820cbf16d3201f2989ebc5eed89a4a2653",
+  "acceptance_package_digest": "0f98868b92402e469923f32f15065fb9a5856d13c7562a05b9cceea8c95af87a",
   "expected_product_key": "sce-product",
   "expected_role_code": "business_config_admin",
   "forbidden_login_values": [
