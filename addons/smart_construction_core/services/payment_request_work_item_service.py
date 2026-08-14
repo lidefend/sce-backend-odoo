@@ -40,7 +40,6 @@ class PaymentRequestWorkItemService:
         self.PaymentRequest = env[self.MODEL]
         self._action_handler = PaymentRequestAvailableActionsHandler(env, payload={})
         self._action_specs = list(self._action_handler._ACTION_SPECS)
-        self._group_xmlids = self._action_handler._current_user_group_xmlids()
         self._state_labels = dict(self.PaymentRequest._fields["state"].selection or [])
 
     def _active_company_id(self):
@@ -86,11 +85,7 @@ class PaymentRequestWorkItemService:
     def _allowed_actions(self, record):
         rows = []
         for spec in self._action_specs:
-            action = self._action_handler._action_entry(
-                record,
-                spec,
-                user_group_xmlids=self._group_xmlids,
-            )
+            action = self._action_handler._action_entry(record, spec)
             if action.get("allowed") and action.get("actor_matches_required_role"):
                 rows.append(
                     {
