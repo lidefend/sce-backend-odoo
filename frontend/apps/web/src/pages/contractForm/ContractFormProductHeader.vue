@@ -20,8 +20,8 @@
         <section v-else-if="statusbar.visible" class="native-statusbar native-statusbar--header" aria-label="业务状态流程">
           <p class="native-statusbar-mobile-summary">
             <span>当前状态</span><strong>{{ currentStatusLabel }}</strong>
-            <span v-if="nextStatusLabel">下一步 {{ nextStatusLabel }}</span>
-            <span class="native-statusbar-progress">{{ currentStatusPosition }}/{{ statusbar.states.length }} · 左右滑动查看全部</span>
+            <span v-if="nextActionLabel">下一步 {{ nextActionLabel }}</span>
+            <span class="native-statusbar-progress">状态 {{ currentStatusPosition }}/{{ statusbar.states.length }}</span>
           </p>
           <ol
             ref="statusTrackRef"
@@ -76,6 +76,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
+import { nextBusinessActionLabel } from './nativeSectionNavigation';
 
 const props = defineProps<{
   title: string; subtitle: string; hideTitle: boolean; showHud: boolean; model: string; recordIdDisplay: string;
@@ -93,7 +94,7 @@ const props = defineProps<{
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
 const currentStatusPosition = computed(() => Math.max(1, currentStatusIndex.value + 1));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');
-const nextStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value + 1]?.label || '');
+const nextActionLabel = computed(() => nextBusinessActionLabel(props.primaryAction, props.directActions));
 const statusTrackRef = ref<HTMLOListElement | null>(null);
 const workflowHasMoreBefore = ref(false);
 const workflowHasMoreAfter = ref(false);
@@ -269,8 +270,7 @@ function buttonClass(action: ContractAction) {
     text-align: right;
   }
   .native-statusbar-track {
-    gap: 0;
-    padding: 0 38px 3px 0;
+    display: none;
   }
   .native-statusbar--header .native-statusbar-step,
   .native-statusbar--header .native-statusbar-step:first-child,
