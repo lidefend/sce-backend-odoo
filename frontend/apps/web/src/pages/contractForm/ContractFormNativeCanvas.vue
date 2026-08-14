@@ -169,6 +169,7 @@ let refreshQueued = false;
 
 function visibleSectionElements() {
   return [...(canvasRef.value?.querySelectorAll<HTMLElement>('[data-group-title]') || [])]
+    .filter((element) => element.dataset.sectionNavigationRole !== 'subordinate')
     .filter((element) => Boolean(element.dataset.groupTitle?.trim()) && element.getClientRects().length > 0);
 }
 

@@ -6,6 +6,7 @@
         v-if="isContainerNode(node)"
         :class="containerClass(node)"
         :data-group-title="containerPolicyTitle(node, index)"
+        :data-section-navigation-role="nativeSectionNavigationRole(node)"
         @dragover.prevent
         @drop.prevent.stop="emitGroupFieldOrderDrop(node, $event, index)"
         @mouseup.self="emitGroupFieldOrderPointerDrop(node, index)"
@@ -348,6 +349,7 @@
 import { computed, ref } from 'vue';
 import FormSection from './FormSection.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -379,6 +381,8 @@ export type NativeFormLayoutNode = {
   attributes?: Record<string, unknown>;
   fieldInfo?: Record<string, unknown>;
   field_info?: Record<string, unknown>;
+  sourceAuthority?: Record<string, unknown>;
+  source_authority?: Record<string, unknown>;
   buttonType?: string;
   action?: Record<string, unknown> | null;
   modifiers?: Record<string, unknown>;
