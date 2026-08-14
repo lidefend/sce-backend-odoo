@@ -258,19 +258,21 @@ class FrontendReleaseCIIdentityTests(unittest.TestCase):
             source.index('bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"'),
         )
 
-    def test_ci_operation_projects_validated_database_aliases_before_dispatch(self) -> None:
-        source = (ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh").read_text(
+    def test_ci_frozen_identity_keeps_db_name_as_the_only_database_authority(self) -> None:
+        identity = (ROOT / "scripts/common/frontend_release_ci_identity.sh").read_text(
             encoding="utf-8"
         )
-        verify = source.index('verify_frozen_frontend_release_ci_identity "$ROOT_DIR"')
-        project_db = source.index('export ODOO_DB="$DB_NAME"')
-        project_list = source.index("export LIST_DB=0")
-        dispatch = source.index('case "$operation" in')
-        self.assertLess(verify, project_db)
-        self.assertLess(project_db, dispatch)
-        self.assertLess(project_list, dispatch)
-        self.assertIn('"$ODOO_DB" == "$DB_NAME"', source)
-        self.assertIn('"$LIST_DB" == "0"', source)
+        freeze = identity.split("freeze_frontend_release_ci_identity()", 1)[1].split(
+            "verify_frozen_frontend_release_ci_identity()", 1
+        )[0]
+        workflow = (ROOT / ".github/workflows/frontend_release_gate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("printf 'DB_NAME=%s", freeze)
+        self.assertNotIn("printf 'ODOO_DB=", freeze)
+        self.assertNotIn("printf 'LIST_DB=", freeze)
+        self.assertNotIn("printf 'ODOO_DB=", workflow)
+        self.assertNotIn("printf 'LIST_DB=", workflow)
 
     def install_fake_docker(self, state: dict[str, object]) -> tuple[Path, Path]:
         bin_dir = Path(self.temp.name) / "resource-bin"

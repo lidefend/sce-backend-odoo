@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -52,11 +55,12 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             '"DB_USER=$DB_USER"',
             '"DB_PASSWORD=$DB_PASSWORD"',
             '"DB_NAME=$DB_NAME"',
-            '"ODOO_DB=$ODOO_DB"',
+            '"ODOO_DB=$DB_NAME"',
             '"ODOO_DBFILTER=$ODOO_DBFILTER"',
             '"DB_DATA=$DB_DATA"',
             '"REDIS_DATA=$REDIS_DATA"',
             '"ODOO_DATA=$ODOO_DATA"',
+            '"LIST_DB=false"',
         )
         for item in required:
             self.assertIn(item, adapter)
@@ -74,6 +78,65 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         self.assertIn("error_code=", login)
         self.assertNotIn("postData()", login.split("login intent rejected", 1)[1])
         self.assertNotIn("PASSWORD", login.split("login intent rejected", 1)[1])
+
+    def test_make_adapter_derives_aliases_and_rejects_external_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            capture = root / "make-args"
+            fake_make = root / "make"
+            fake_make.write_text(
+                "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$CAPTURE\"\n",
+                encoding="utf-8",
+            )
+            fake_make.chmod(0o755)
+            managed = {
+                "COMPOSE_PROJECT_NAME": "sc-fe-release-123-1",
+                "ENV_FILE": str(root / "acceptance.env"),
+                "DB_USER": "odoo",
+                "DB_PASSWORD": "secret",
+                "DB_NAME": "sc_frontend_acceptance",
+                "ODOO_DBFILTER": "^sc_frontend_acceptance$",
+                "ODOO_PORT": "18082",
+                "DB_DATA": "sc-fe-release-123-1-db-data",
+                "REDIS_DATA": "sc-fe-release-123-1-redis-data",
+                "ODOO_DATA": "sc-fe-release-123-1-odoo-data",
+                "SC_ENVIRONMENT": "acceptance",
+                "SC_ALLOW_DEMO_DATA": "1",
+                "CAPTURE": str(capture),
+                "PATH": f"{root}:{os.environ['PATH']}",
+            }
+            command = (
+                f'source "{ROOT / "scripts/common/frontend_acceptance_make_identity.sh"}"; '
+                "frontend_acceptance_make db.create; "
+                "frontend_acceptance_make mod.install MODULE=smart_core"
+            )
+            clean_environment = dict(os.environ)
+            clean_environment.pop("ODOO_DB", None)
+            clean_environment.pop("LIST_DB", None)
+            result = subprocess.run(
+                ["/bin/bash", "-c", command], env={**clean_environment, **managed},
+                text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            calls = capture.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(calls), 2)
+            for call in calls:
+                self.assertIn("PROJECT=sc-fe-release-123-1", call)
+                self.assertIn("DB_NAME=sc_frontend_acceptance", call)
+                self.assertIn("ODOO_DB=sc_frontend_acceptance", call)
+                self.assertIn("LIST_DB=false", call)
+                self.assertIn("DB_DATA=sc-fe-release-123-1-db-data", call)
+                self.assertIn("REDIS_DATA=sc-fe-release-123-1-redis-data", call)
+                self.assertIn("ODOO_DATA=sc-fe-release-123-1-odoo-data", call)
+
+            for drift in ({"ODOO_DB": "foreign"}, {"LIST_DB": "0"}):
+                capture.unlink(missing_ok=True)
+                rejected = subprocess.run(
+                    ["/bin/bash", "-c", command],
+                    env={**clean_environment, **managed, **drift}, text=True, capture_output=True,
+                )
+                self.assertEqual(rejected.returncode, 2, rejected.stderr)
+                self.assertFalse(capture.exists())
 
 
 if __name__ == "__main__":
