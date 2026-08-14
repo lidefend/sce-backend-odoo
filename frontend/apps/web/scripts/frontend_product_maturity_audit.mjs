@@ -265,6 +265,27 @@ async function main() {
   const leafCounts = Object.fromEntries(roles.map((role) => [role, navigationRows.filter((row) => row.role === role).length]));
   const navigationAudit = compareNavigation(navigationManifest, navigationRows, roles);
   const failed = normalized.filter((row) => row.reachable === false || row.identity_result !== 'PASS');
+  const failureSummary = failed.map((row) => ({
+    surface_id: row.surface_id || '',
+    role: row.role || '',
+    menu_xmlid: row.menu_xmlid || '',
+    action_xmlid: row.action_xmlid || '',
+    model: row.model || '',
+    title: row.title || '',
+    document_title: row.document_title || '',
+    identity_source: row.identity_source || '',
+    identity_result: row.identity_result || 'FAIL',
+    reachable: row.reachable !== false,
+    load_result: row.load_result || '',
+    technical_leak: row.technical_leak === true,
+    generic_title: row.generic_title === true,
+    console_error_count: Array.isArray(row.console_errors) ? row.console_errors.length : 0,
+    page_error_count: Array.isArray(row.page_errors) ? row.page_errors.length : 0,
+    http_statuses: Array.isArray(row.http_errors)
+      ? [...new Set(row.http_errors.map((item) => Number(item?.status || 0)).filter(Boolean))].sort((a, b) => a - b)
+      : [],
+    notes_code: row.notes === 'UNRESOLVED_NAVIGATION_TARGET' ? row.notes : '',
+  }));
   const coverage = Object.fromEntries(roles.map((role) => { const all = normalized.filter((row) => row.role === role); return [role, { denominator: all.length, reachable: all.filter((row) => row.reachable).length, rate: all.length ? all.filter((row) => row.reachable).length / all.length : 0, failures: all.filter((row) => !row.reachable).map((row) => row.notes || row.title) }]; }));
   const genericBusinessActionTitle = normalized.filter((row) => row.generic_title).length;
   const technicalModelTitle = normalized.filter((row) => /(?:[a-z_][a-z0-9_]*\.)+[a-z_][a-z0-9_]*/i.test(`${row.title || ''} ${row.document_title || ''}`)).length;
@@ -295,6 +316,7 @@ async function main() {
     environment: { database: dbName, base_url: baseUrl },
   };
   fs.writeFileSync(path.join(outputDir, 'full-surface-report.json'), `${JSON.stringify({ ...reportMeta, roles, role_bindings: roleBindings, viewports, leaf_counts: leafCounts, summary, coverage, navigation_audit: navigationAudit, rows: normalized }, null, 2)}\n`);
+  fs.writeFileSync(path.join(outputDir, 'failure-summary.json'), `${JSON.stringify({ ...reportMeta, failures: failureSummary }, null, 2)}\n`);
   fs.writeFileSync(path.join(outputDir, 'navigation-report.json'), `${JSON.stringify({ ...reportMeta, ...navigationAudit }, null, 2)}\n`);
   fs.writeFileSync(path.join(outputDir, 'journeys.json'), `${JSON.stringify({ journeys: journeyRows }, null, 2)}\n`);
   fs.writeFileSync(path.join(outputDir, 'responsive-report.json'), `${JSON.stringify({ viewports, rows: responsiveRows }, null, 2)}\n`);
@@ -319,7 +341,7 @@ async function main() {
     && summary.unresolved === 0
     && failed.length === 0
     && journeyRows.length === roles.length * 8;
-  console.log(JSON.stringify({ pass, surfaces: normalized.length, failed: failed.length, outputDir }, null, 2));
+  console.log(JSON.stringify({ pass, surfaces: normalized.length, failed: failed.length, failures: failureSummary, outputDir }, null, 2));
   if (!pass) process.exitCode = 2;
 }
 
