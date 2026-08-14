@@ -127,6 +127,8 @@ verify.frontend.relation_entry.contract_guard: guard.prod.forbid
 	@python3 scripts/verify/relation_entry_contract_guard.py
 
 verify.frontend.relation_read_closure.guard: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/relation_read_closure_test.ts --bundle --platform=node --format=esm --outfile=/tmp/relation-read-closure-test.mjs >/dev/null
+	@node /tmp/relation-read-closure-test.mjs
 	@python3 scripts/verify/relation_read_closure_guard.py
 
 verify.frontend.modifiers_runtime.guard: guard.prod.forbid

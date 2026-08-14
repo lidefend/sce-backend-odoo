@@ -12,6 +12,7 @@ FRONTEND_PATHS = [
     ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue",
     ROOT / "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
 ]
@@ -58,6 +59,8 @@ def main() -> int:
     frontend_required = [
         "canRead: row.can_read !== false,",
         "if (entry && entry.canRead === false)",
+        "if (!params.canRead) {",
+        "if (!relation || !params.canRead || deniedRelationModels.has(relation)) return [];",
         "const contractAccessPolicy = computed<ContractAccessPolicy>(() => {",
         "if (policy.mode === 'block') {",
         "throw new ContractAccessPolicyError(",
@@ -66,9 +69,10 @@ def main() -> int:
         if marker not in frontend:
             errors.append(f"frontend missing marker: {marker}")
 
-    # Both query paths must enforce relation_entry.can_read guard.
-    if frontend.count("if (entry && entry.canRead === false)") < 2:
-        errors.append("frontend missing canRead guard in one of relation query paths")
+    # Both candidate-query callsites must pass the backend projection into the
+    # shared runtime, whose query and fetch paths each fail closed before I/O.
+    if frontend.count("canRead: entry?.canRead !== false,") < 2:
+        errors.append("frontend missing canRead propagation in one of relation query paths")
 
     # Frontend must not re-introduce hardcoded model-level ACL inference.
     frontend_forbidden = [

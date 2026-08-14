@@ -3974,3 +3974,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   IDs, stale view `1976`, and null `ir_model_inherit.parent_id` rows are all
   zero. The focused runtime-contract migration test completed with
   `0 failed / 0 errors`.
+
+## 2026-08-14 — P0-RELATION-READ-CLOSURE
+
+- Branch / anchor: `fix/p0-relation-read-closure-v1` from `d7ae51b`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / generic
+  relation-access projection and frontend runtime / `smart_core`, the contract
+  form relation runtime, and its verification entry.
+- Standard vs User-Specific: platform-wide access enforcement only; no
+  construction-industry, customer, low-code, or environment semantics.
+- Reason / Boundary: the existing runtime already fails closed before relation
+  query and record-fetch I/O, but the static guard still required an obsolete
+  inline implementation shape and omitted the shared runtime. The guard now
+  follows the actual responsibility boundary and a bundled behavior test proves
+  both denied paths issue zero requests while an allowed fetch remains usable.
+- Why Here / Why Not Elsewhere: `relation_entry.can_read` is a backend-owned
+  permission fact consumed by the generic frontend runtime. It must not be
+  inferred by P1 business code, page-specific rendering, customer config, or
+  P4 environment tooling.
+- Blast Radius / validation: only the generic relation-read verification path
+  and its Make target change. The focused query/fetch behavior test, static
+  closure guard, strict typecheck, static build, and complete frontend quick
+  gate pass; no database, container, service, or acceptance fixture is touched.
