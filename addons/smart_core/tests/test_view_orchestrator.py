@@ -58,12 +58,35 @@ class _ConfigModel:
 
 
 class _LegacyPolicyModel:
-    def apply_to_view_contract(self, contract, *, model_name, view_type, action_id=None, view_id=None, excluded_field_names=None):
+    def __init__(self):
+        self.calls = []
+
+    def apply_to_view_contract(
+        self,
+        contract,
+        *,
+        model_name,
+        view_type,
+        action_id=None,
+        view_id=None,
+        excluded_field_names=None,
+        allow_layout_append=True,
+    ):
+        self.calls.append({"allow_layout_append": bool(allow_layout_append)})
         excluded = {str(name or "").strip() for name in (excluded_field_names or []) if str(name or "").strip()}
         out = dict(contract or {})
         layout = out.get("layout")
         if isinstance(layout, list):
             out["layout"] = self._filter_layout(layout, excluded)
+            if allow_layout_append and "email" not in excluded:
+                out["layout"].append({
+                    "type": "sheet",
+                    "children": [{
+                        "type": "group",
+                        "string": "Legacy Contact",
+                        "children": [{"type": "field", "name": "email"}],
+                    }],
+                })
         return out
 
     def _filter_layout(self, nodes, excluded):
@@ -123,6 +146,54 @@ class TestViewOrchestrator(unittest.TestCase):
             view_id=22,
         )
         return result, env["ui.business.config.contract"].calls
+
+    def test_entry_semantic_surface_blocks_legacy_root_layout_append(self):
+        payload = {
+            "view_orchestration": {
+                "views": {
+                    "form": {
+                        "composition_mode": "entry_semantic_surface",
+                        "sections": [{"title": "Identity", "fields": ["name"]}],
+                        "fields": [{"name": "name", "label": "Name"}],
+                    }
+                }
+            }
+        }
+        env = _Env({
+            "ui.business.config.contract": _ConfigModel(payload),
+            "ui.form.field.policy": _LegacyPolicyModel(),
+            "res.partner": _Model(),
+        })
+        source = {
+            "layout": [{
+                "type": "notebook",
+                "tabs": [{
+                    "type": "page",
+                    "string": "Relations",
+                    "children": [{
+                        "type": "field",
+                        "name": "line_ids",
+                        "widget": "one2many_list",
+                        "subview": {"tree": {"columns": ["display_name"]}},
+                    }],
+                }],
+            }],
+        }
+
+        result = self.ViewOrchestrator(env).compose(
+            source,
+            model_name="res.partner",
+            view_type="form",
+            action_id=81,
+        )
+
+        self.assertNotIn("Legacy Contact", str(result["layout"]))
+        self.assertEqual(
+            [row.get("string") for row in result["layout"] if row.get("type") == "group"],
+            ["Identity"],
+        )
+        self.assertIn("one2many_list", str(result["layout"]))
+        self.assertEqual(env["ui.form.field.policy"].calls, [{"allow_layout_append": False}])
 
     def test_search_view_uses_business_config_filters_and_group_by(self):
         payload = {

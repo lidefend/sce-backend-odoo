@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `3795`
 - Files requiring split plan: `40`
-- Files above warning threshold: `72`
+- Files above warning threshold: `73`
 
 ## Split Plan Required
 
@@ -42,7 +42,7 @@ Generated from repository source files. This report is informational during the 
 | 1744 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1740 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1713 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
-| 1672 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
+| 1704 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 1634 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1632 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
@@ -86,7 +86,7 @@ Generated from repository source files. This report is informational during the 
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1138 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
-| 1107 | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 1108 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1093 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1092 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1073 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
@@ -117,6 +117,7 @@ Generated from repository source files. This report is informational during the 
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
+| 831 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
@@ -165,7 +166,7 @@ Generated from repository source files. This report is informational during the 
 | 1740 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1738 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1713 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
-| 1672 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
+| 1704 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 1634 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1632 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
@@ -202,7 +203,7 @@ Generated from repository source files. This report is informational during the 
 | 1138 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1121 | warning | Python source | `scripts/release/production_backup_restore.py` |
 | 1111 | within_budget | XML data/view | `addons/smart_construction_core/views/menu_business_taxonomy.xml` |
-| 1107 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 1108 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1093 | warning | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1092 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1073 | warning | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |

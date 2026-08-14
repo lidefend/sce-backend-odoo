@@ -322,6 +322,7 @@ class UIFormFieldPolicy(models.Model):
         action_id: int | None = None,
         view_id: int | None = None,
         excluded_field_names: set[str] | list[str] | tuple[str, ...] | None = None,
+        allow_layout_append: bool = True,
     ) -> dict:
         if view_type != "form" or not isinstance(contract, dict) or not model_name:
             return contract or {}
@@ -375,7 +376,8 @@ class UIFormFieldPolicy(models.Model):
         layout = contract.get("layout")
         if isinstance(layout, list):
             layout = self._apply_layout_policy(layout, effective)
-            self._append_visible_policy_fields(layout, visible, effective)
+            if allow_layout_append:
+                self._append_visible_policy_fields(layout, visible, effective)
             contract["layout"] = layout
 
         field_modifiers = contract.get("field_modifiers")
@@ -395,6 +397,7 @@ class UIFormFieldPolicy(models.Model):
             "visible_fields": sorted(visible),
             "hidden_fields": sorted(hidden),
             "role_group_scoped": any(bool(rule.get("role_group_ids")) for rule in effective.values()),
+            "layout_append_allowed": bool(allow_layout_append),
             "skipped_by_business_config_fields": sorted(set(skipped_by_business_config)),
         }
         contract["governance"] = meta
