@@ -79,6 +79,28 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         self.assertNotIn("postData()", login.split("login intent rejected", 1)[1])
         self.assertNotIn("PASSWORD", login.split("login intent rejected", 1)[1])
 
+    def test_release_probes_fixture_and_http_credentials_before_frontend(self) -> None:
+        fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('env["res.users"].sudo().authenticate(', fixture)
+        self.assertIn("[acceptance.frontend.fixture.auth] PASS", fixture)
+        self.assertNotIn("print(os.environ", fixture)
+
+        source = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        for target in (
+            "verify.frontend.page_identity.browser:",
+            "verify.frontend.delivery_hardening.release.browser:",
+        ):
+            block = source.rsplit(target, 1)[1].split("\n\n", 1)[0]
+            backend = block.index("backend.acceptance.up")
+            login_probe = block.index("frontend_acceptance_login_probe.py")
+            frontend = block.index("frontend.acceptance.up")
+            cleanup = block.index("trap '")
+            self.assertLess(cleanup, backend, target)
+            self.assertLess(backend, login_probe, target)
+            self.assertLess(login_probe, frontend, target)
+
     def test_make_adapter_derives_aliases_and_rejects_external_drift(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

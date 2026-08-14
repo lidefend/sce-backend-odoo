@@ -21,10 +21,21 @@ export DB_NAME SC_ENVIRONMENT SC_ALLOW_DEMO_DATA SC_ACCEPTANCE_FIXTURE_PASSWORD
 
 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'
 import json
+import os
 from odoo.addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture import ensure_fixture
 
 summary = ensure_fixture(env)
 env.cr.commit()
+finance = env.ref("smart_construction_acceptance_fixture.fe_user_finance")
+authenticated_uid = env["res.users"].sudo().authenticate(
+    env.cr.dbname,
+    finance.login,
+    os.environ["SC_ACCEPTANCE_FIXTURE_PASSWORD"],
+    {"interactive": True},
+)
+if int(authenticated_uid or 0) != finance.id:
+    raise RuntimeError("frontend acceptance fixture credential verification failed")
 print("[acceptance.frontend.fixture] PASS")
+print("[acceptance.frontend.fixture.auth] PASS login=fixture_role_finance")
 print(json.dumps(summary, ensure_ascii=False, indent=2))
 PY

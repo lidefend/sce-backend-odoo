@@ -1808,9 +1808,10 @@ verify.frontend.page_identity.browser: guard.prod.forbid check-compose-project c
 	runtime_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_page_identity_runtime_metadata.py 2>&1 )"; \
 	action_xmlids_line="$$(echo "$$runtime_output" | grep '^FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON=' | tail -1)"; \
 	test -n "$$action_xmlids_line"; export "$$action_xmlids_line"; \
-	$(MAKE) --no-print-directory backend.acceptance.up; \
-	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
 	trap '$(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
+	$(MAKE) --no-print-directory backend.acceptance.up; \
+	DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" python3 scripts/verify/frontend_acceptance_login_probe.py; \
+	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} ROLE_SMOKE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-page-identity FRONTEND_NAVIGATION_MANIFEST=config/frontend/authoritative_navigation_v1.json FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON="$${FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON}" node frontend/apps/web/scripts/frontend_product_maturity_audit.mjs
 
 verify.frontend.page_identity.deep.browser: guard.prod.forbid check-compose-project check-compose-env
@@ -1938,8 +1939,10 @@ verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-comp
 	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_delivery_hardening_runtime_ids.py 2>&1 )"; \
 	targets_line="$$(echo "$$target_output" | grep '^FRONTEND_DELIVERY_HARDENING_TARGETS_JSON=' | tail -1)"; test -n "$$targets_line"; export "$$targets_line"; \
 	test -n "$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}"; \
-	$(MAKE) --no-print-directory backend.acceptance.up; FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
 	trap '$(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
+	$(MAKE) --no-print-directory backend.acceptance.up; \
+	DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" python3 scripts/verify/frontend_acceptance_login_probe.py; \
+	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
 	rm -f artifacts/frontend-delivery-hardening/performance.json artifacts/frontend-delivery-hardening/performance-probe.json; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_PERF_ONLY=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_SKIP_PERF=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs
@@ -1948,6 +1951,8 @@ verify.frontend.release.unit: verify.frontend.localized_display.unit verify.fron
 	@node scripts/verify/frontend_navigation_audit.test.mjs
 	@node scripts/verify/frontend_performance_budget.test.mjs
 	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py
+	@python3 scripts/verify/test_frontend_acceptance_login_probe.py
+	@python3 scripts/verify/test_frontend_release_local_entry.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_audit.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_gate.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_ci_guard.py
