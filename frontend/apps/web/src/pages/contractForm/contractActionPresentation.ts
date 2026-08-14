@@ -101,14 +101,17 @@ export function buildContractFormActions(params: {
       const button = parseMaybeJsonRecord(row.button);
       const clientMode = String(target.mode || target.client_mode || '').trim();
       const buttonName = String(button.name || button.method || '').trim();
-      if (sourceWidgetId !== 'page.header' && targetScope !== 'footer' && !(sourceWidgetId === 'page.root' && buttonName)) return;
+      const isHeaderAction = sourceWidgetId === 'page.header'
+        || (sourceWidgetId === 'page.root' && targetScope === 'header');
+      const isFooterAction = targetScope === 'footer';
+      if (!isHeaderAction && !isFooterAction) return;
       const buttonType = String(button.type || button.buttonType || '').trim();
       merged.push({
         key,
         label: String(row.label || key).trim() || key,
         kind: buttonType === 'server' || buttonType === 'server_action' ? 'server' : buttonName ? 'object' : clientMode ? 'client' : 'open',
         intent: String(row.intent || '').trim(),
-        level: targetScope === 'footer' ? 'footer' : 'header',
+        level: isFooterAction ? 'footer' : 'header',
         selection: 'none',
         sourceWidgetId,
         target,
