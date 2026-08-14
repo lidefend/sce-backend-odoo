@@ -2350,6 +2350,9 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                     "label": label,
                     "sourceChannel": _text(row.get("source_channel"), "contract_action"),
                     "presentationAuthority": _text(row.get("presentation_authority"), "native_contract"),
+                    "businessAvailable": row.get("business_available"),
+                    "authorizationAllowed": row.get("authorization_allowed"),
+                    "entitlementEvaluated": bool(row.get("entitlement_evaluated")),
                 }],
             }
         # Native visibility/safety remains declarative.  Preserve it so the
@@ -2473,8 +2476,7 @@ def _action_permission_clause(row: dict[str, Any]) -> dict[str, Any]:
             "groups", "groups_id", "groups_xmlids",
         ),
         "allowedRoles": (
-            "allowedRoles", "allowed_roles", "allowed_role_codes", "required_roles",
-            "required_role_keys", "required_role_key", "required_role_code",
+            "allowedRoles", "allowed_roles", "allowed_role_codes",
         ),
         "allowedUsers": (
             "allowedUsers", "allowed_users", "allowed_user_ids",
@@ -2526,10 +2528,15 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             "target": deepcopy(_dict(row.get("target"))),
             "constraints": {
                 key: deepcopy(row.get(key))
-                for key in ("allowed", "enabled", "disabled", "visible", "modifiers", "invisible", "visibleProfiles")
+                for key in (
+                    "allowed", "enabled", "disabled", "business_available", "authorization_allowed",
+                    "visible", "modifiers", "invisible", "visibleProfiles",
+                )
                 if row.get(key) is not None
             },
             "permissionConstraints": deepcopy(_dict(row.get("permissionConstraints"))),
+            "entitlementEvaluated": bool(row.get("entitlement_evaluated")),
+            "reasonCode": _text(row.get("reasonCode") or row.get("reason_code")),
         }
         existing_trace = [
             {**synthesized_trace, **deepcopy(item)}
@@ -2682,7 +2689,17 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
         if denied:
             status["visible"] = status.get("visible", True) is not False and rule.get("allowed") is not False
             status["disabled"] = True
-            status.setdefault("reasonCode", "ACTION_NOT_ALLOWED")
+            trace_reason = next(
+                (
+                    _text(trace.get("reasonCode") or trace.get("reason_code"))
+                    for trace in _list(rule.get("sourceTrace"))
+                    if isinstance(trace, dict)
+                    and _text(trace.get("reasonCode") or trace.get("reason_code")) not in {"", "OK"}
+                ),
+                "",
+            )
+            if _text(status.get("reasonCode")) in {"", "OK"}:
+                status["reasonCode"] = trace_reason or "ACTION_NOT_ALLOWED"
     contract["statusContract"]["buttonStatus"] = [*status_by_identity.values(), *passthrough_statuses]
     _enforce_single_effective_primary_action(contract)
 
@@ -2888,8 +2905,7 @@ def _append_ui_contract_actions(
             )
             for constraint_key in (
                 "required_groups", "required_groups_xmlids", "groups", "groups_id", "groups_xmlids",
-                "allowed_roles", "allowed_role_codes", "required_roles", "required_role_keys",
-                "required_role_key", "required_role_code",
+                "allowed_roles", "allowed_role_codes",
                 "allowed_users", "allowed_user_ids", "required_users", "required_user_ids",
                 "required_user_id", "required_user",
             )
@@ -2997,6 +3013,8 @@ def _append_ui_contract_actions(
                 "allowed": False if permission_unresolved or policy.get("allowed") is False or row.get("allowed") is False else row.get("allowed", policy.get("allowed")),
                 "enabled": False if permission_unresolved or policy.get("enabled") is False or row.get("enabled") is False else row.get("enabled", policy.get("enabled")),
                 "disabled": True if policy.get("disabled") is True or row.get("disabled") is True else row.get("disabled", policy.get("disabled")),
+                "business_available": row.get("business_available"),
+                "authorization_allowed": row.get("authorization_allowed"),
                 "reason_code": (
                     policy.get("reason_code")
                     or policy.get("disabled_reason_code")
@@ -3056,8 +3074,7 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
             )
             for constraint_key in (
                 "required_groups", "required_groups_xmlids", "groups", "groups_id", "groups_xmlids",
-                "allowed_roles", "allowed_role_codes", "required_roles", "required_role_keys",
-                "required_role_key", "required_role_code",
+                "allowed_roles", "allowed_role_codes",
                 "allowed_users", "allowed_user_ids", "required_users", "required_user_ids",
                 "required_user_id", "required_user",
             )

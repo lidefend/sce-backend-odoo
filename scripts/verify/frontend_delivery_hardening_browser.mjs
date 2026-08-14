@@ -168,6 +168,8 @@ async function normalizedSubmitEvidence(response, evidenceLabel) {
         disabled: trace?.disabled,
         reasonCode: trace?.reasonCode || trace?.reason_code || '',
         entitlementEvaluated: trace?.entitlementEvaluated ?? trace?.entitlement_evaluated,
+        businessAvailable: trace?.businessAvailable ?? trace?.business_available,
+        authorizationAllowed: trace?.authorizationAllowed ?? trace?.authorization_allowed,
         permissionConstraints: trace?.permissionConstraints || trace?.permission_constraints || {},
         constraints: trace?.constraints || {},
       })) : [],

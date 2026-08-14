@@ -382,6 +382,9 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "visible_profiles": ["edit", "readonly"],
                 "allowed": True,
                 "enabled": True,
+                "business_available": True,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
                 "required_groups": ["base.group_user"],
                 "action_safety": {"classification": "safe", "requires_confirm": False},
             }]},},
@@ -479,6 +482,9 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "payload": {"method": "action_submit", "type": "object"},
                 "allowed": True,
                 "enabled": True,
+                "business_available": True,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
                 "presentation": {"tier": "primary"},
             }],
         }
@@ -631,6 +637,9 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "payload": {"method": "action_submit", "type": "object"},
                 "allowed": True,
                 "enabled": True,
+                "business_available": True,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
             }]}},
             "business_actions": [{
                 "key": "semantic_submit",
@@ -639,6 +648,9 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "payload": {"method": "action_submit", "type": "object"},
                 "allowed": True,
                 "enabled": True,
+                "business_available": True,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
                 "presentation": {"tier": "primary"},
             }],
         }
@@ -655,6 +667,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "method": "action_submit",
             "allowed": True,
             "enabled": False,
+            "business_available": True,
+            "authorization_allowed": True,
             "reason_code": "RUNTIME_PRECONDITION_BLOCKED",
             "presentation": {"tier": "primary"},
             "action_safety": {"classification": "danger", "requires_confirm": True},
@@ -668,6 +682,10 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(rules[0]["actionSafety"]["classification"], "danger")
         self.assertTrue(rules[0]["actionSafety"]["requires_confirm"])
         self.assertEqual(len(rules[0]["sourceTrace"]), 3)
+        self.assertTrue(all(
+            trace.get("authorizationAllowed") is True
+            for trace in rules[0]["sourceTrace"]
+        ), rules[0]["sourceTrace"])
         primary = [
             row for row in contract["actionContract"]["actionRuleList"]
             if (row.get("presentation") or {}).get("tier") == "primary"
@@ -820,7 +838,11 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "fields": {},
             "business_actions": [
                 {"key": "publish", "label": "发布", "kind": "object", "payload": {"method": "action_publish", "type": "object"}},
-                {"key": "export", "label": "导出", "kind": "object", "payload": {"method": "action_export", "type": "object"}, "required_role_key": "auditor"},
+                {
+                    "key": "export", "label": "导出", "kind": "object",
+                    "payload": {"method": "action_export", "type": "object"},
+                    "required_role_key": "auditor", "allowed": True, "enabled": True,
+                },
             ],
             "action_policies": {
                 "publish": {
@@ -848,14 +870,14 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         statuses = {row["backendIdentity"]: row for row in full["statusContract"]["buttonStatus"]}
         status = statuses["button:object:action_publish"]
         self.assertFalse(status["visible"])
+        self.assertNotEqual(status.get("reasonCode"), "OK")
         self.assertTrue(status["disabled"])
         self.assertEqual(status["reasonCode"], "ACTION_GROUP_ACCESS_DENIED")
         unresolved = rules["button:object:action_export"]
-        self.assertFalse(unresolved["allowed"])
-        self.assertFalse(unresolved["enabled"])
+        self.assertTrue(unresolved["allowed"])
+        self.assertTrue(unresolved["enabled"])
         unresolved_status = statuses["button:object:action_export"]
-        self.assertTrue(unresolved_status["disabled"])
-        self.assertEqual(unresolved_status["reasonCode"], "ACTION_PERMISSION_UNRESOLVED")
+        self.assertFalse(unresolved_status["disabled"])
 
     def test_window_and_url_actions_use_stable_distinct_identity(self):
         source = {
@@ -928,7 +950,6 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
     def test_evaluated_entitlement_without_explicit_verdict_fails_closed(self):
         for constraint_key, constraint_value in (
-            ("required_role_key", "reviewer"),
             ("required_groups", ["base.group_system"]),
             ("required_user_id", 42),
         ):
@@ -960,6 +981,32 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 status = full["statusContract"]["buttonStatus"][0]
                 self.assertTrue(status["disabled"])
                 self.assertEqual(status["reasonCode"], "ACTION_PERMISSION_UNRESOLVED")
+
+    def test_role_hint_is_advisory_and_does_not_create_permission_constraint(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {},
+            "business_actions": [{
+                "key": "submit",
+                "kind": "object",
+                "label": "Submit",
+                "payload": {"method": "action_submit", "type": "object"},
+                "required_role_key": "finance",
+                "allowed": True,
+                "enabled": True,
+            }],
+        }
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.action.role.hint.advisory",
+        )
+        rule = full["actionContract"]["actionRuleList"][0]
+        self.assertTrue(rule["allowed"])
+        self.assertTrue(rule["enabled"])
+        self.assertFalse(rule.get("permissionConstraints", {}).get("clauses"))
 
     def test_three_generic_page_samples_preserve_platform_boundaries(self):
         parser = _NativeTreeFormFixtureParser()
