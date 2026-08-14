@@ -10,6 +10,11 @@ import { applyReleasedNavigationTarget, captureReleasedNavigation } from './rele
 import { evaluateRelativePerformanceBudget } from './frontend_performance_budget.mjs';
 import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
+import {
+  captureEvidenceScreenshot,
+  installEvidenceSensitivityTracker,
+  stopEvidenceTrace,
+} from './frontend_evidence_capture_guard.mjs';
 
 const require = createRequire(import.meta.url);
 const axeModule = require(require.resolve('@axe-core/playwright', { paths: [path.resolve('frontend/apps/web/node_modules')] }));
@@ -465,6 +470,7 @@ async function main() {
   let context;
   try {
     context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
+    await installEvidenceSensitivityTracker(context);
     await context.tracing.start({ screenshots: true, snapshots: true, sources: false });
     let page = await context.newPage();
     let runtime = capture(page);
@@ -658,7 +664,7 @@ async function main() {
         }
         await assertNoOverflow(page, `${surface.name}-${viewport.width}`);
         const shot = path.join(SCREENSHOTS, `${surface.name}-${viewport.width}x${viewport.height}.png`);
-        const screenshot = await page.screenshot({ path: shot, fullPage: false });
+        const screenshot = await captureEvidenceScreenshot(page, { path: shot, fullPage: false });
         const visual = await assertMeaningfulScreenshot(page, screenshot, `${surface.name}-${viewport.width}x${viewport.height}`);
         responsive.pages.push({ name: surface.name, role: surface.role || 'anonymous', viewport, pass: true, screenshot: shot, visual });
         if (viewport.width === 1440) {
@@ -879,7 +885,7 @@ async function main() {
       unhandled: runtime.unhandled,
       http: runtime.http,
     };
-    await context.tracing.stop({ path: path.join(TRACES, 'j09-j11-responsive-performance.zip') });
+    await stopEvidenceTrace(context, context.pages(), path.join(TRACES, 'j09-j11-responsive-performance.zip'));
     fs.writeFileSync(path.join(OUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
     fs.writeFileSync(path.join(OUT, 'performance.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);
     fs.writeFileSync(path.join(OUT, 'accessibility.json'), `${JSON.stringify(accessibility, null, 2)}\n`);
@@ -889,7 +895,7 @@ async function main() {
   } catch (error) {
     if (context) {
       const pages = context.pages();
-      if (pages[0]) await pages[0].screenshot({ path: path.join(SCREENSHOTS, 'failure.png'), fullPage: true }).catch(() => {});
+      if (pages[0]) await captureEvidenceScreenshot(pages[0], { path: path.join(SCREENSHOTS, 'failure.png'), fullPage: true }).catch(() => {});
     }
     accessibility.violations = accessibility.scans.reduce((sum, row) => sum + row.violations.length, 0);
     accessibility.critical = accessibility.scans.reduce((sum, row) => sum + row.violations.filter((item) => item.impact === 'critical').length, 0);
@@ -905,7 +911,7 @@ async function main() {
     fs.writeFileSync(path.join(OUT, 'responsive.json'), `${JSON.stringify(responsive, null, 2)}\n`);
     fs.writeFileSync(path.join(OUT, 'error-recovery.json'), `${JSON.stringify(errorRecovery, null, 2)}\n`);
     fs.writeFileSync(path.join(OUT, 'failure.json'), `${JSON.stringify({ report, accessibility, error: error.stack || error.message }, null, 2)}\n`);
-    await context?.tracing.stop({ path: path.join(TRACES, 'failure.zip') }).catch(() => {});
+    if (context) await stopEvidenceTrace(context, context.pages(), path.join(TRACES, 'failure.zip')).catch(() => {});
     throw error;
   } finally {
     await context?.close(); await browser.close();

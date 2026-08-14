@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3792`
+- Scanned files: `3794`
 - Files requiring split plan: `39`
 - Files above warning threshold: `73`
 
@@ -24,7 +24,7 @@ Generated from repository source files. This report is informational during the 
 | 3016 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2542 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 2509 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2451 | Python source | `addons/smart_core/handlers/api_data.py` |
+| 2455 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2421 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2301 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2291 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
@@ -97,8 +97,8 @@ Generated from repository source files. This report is informational during the 
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 952 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
+| 922 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
-| 916 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 895 | Python source | `addons/smart_core/core/view_orchestrator.py` |
@@ -146,7 +146,7 @@ Generated from repository source files. This report is informational during the 
 | 3016 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2542 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 2509 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2451 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
+| 2455 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2421 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2301 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2291 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |

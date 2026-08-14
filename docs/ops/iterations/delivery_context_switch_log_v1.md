@@ -4052,7 +4052,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   all registered handler machine metadata, `chatter.post`, `global.message.send`,
   `global.message.read`, dynamic `api.data` operations, duplicate native indexes,
   concurrent creation, expiry projection and single-event expiry audit. The
-  prior focused suite completed `26 tests / 0 failed / 0 errors`; password
+  current focused suite completes `27 tests / 0 failed / 0 errors`; password
   compatibility completed `4 tests / 0 failed / 0 errors`, and evidence-bundle
   tests completed `10 tests / 0 failed / 0 errors`. These results must be rerun
   on the exact frozen candidate SHA before publication.

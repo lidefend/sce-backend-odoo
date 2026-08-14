@@ -249,6 +249,33 @@ class TestAuthCredentialFramework(HttpCase):
             params={"model": "res.partner", "op": "list"},
         ))
 
+    def test_api_data_machine_scope_uses_same_top_level_precedence_as_handler(self):
+        _policy, secret = self._issue()
+        read_principal = self._authenticate(secret)
+        conflicting = {
+            "model": "res.partner",
+            "op": "write",
+            "payload": {"op": "list"},
+        }
+
+        with self.assertRaises(AccessError):
+            assert_principal_scope(
+                read_principal,
+                intent_name="api.data",
+                params=conflicting,
+            )
+
+        _write_policy, write_secret = self._issue(scopes=["intent.write"])
+        write_principal = self._authenticate(
+            write_secret,
+            requested_scopes=["intent.write"],
+        )
+        self.assertTrue(assert_principal_scope(
+            write_principal,
+            intent_name="api.data",
+            params=conflicting,
+        ))
+
     def test_machine_access_uses_explicit_handler_metadata_and_unknown_denies(self):
         _policy, secret = self._issue()
         principal = self._authenticate(secret)

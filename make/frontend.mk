@@ -49,6 +49,7 @@ verify.frontend.lint.src: guard.prod.forbid
 
 verify.frontend.auth_credential.guard: guard.prod.forbid
 	@python3 scripts/verify/auth_credential_frontend_guard.py
+	@node scripts/verify/frontend_evidence_capture_guard.test.mjs
 
 audit.frontend.industry_agnostic: guard.prod.forbid
 	@python3 scripts/verify/frontend_industry_agnostic_audit.py

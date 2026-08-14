@@ -74,10 +74,14 @@ class ApiDataHandler(BaseIntentHandler):
     @classmethod
     def machine_access_for(cls, params=None) -> str:
         root = params if isinstance(params, dict) else {}
-        for key in ("params", "payload", "data", "args"):
-            if isinstance(root.get(key), dict):
-                root = {**root, **root[key]}
-        operation = str(root.get("op") or "list").strip().lower()
+        operation = root.get("op") if "op" in root else None
+        if "op" not in root:
+            for key in ("payload", "params", "data", "args"):
+                nested = root.get(key)
+                if isinstance(nested, dict) and "op" in nested:
+                    operation = nested.get("op")
+                    break
+        operation = str(operation or "list").strip().lower()
         if operation in {"list", "read", "default_get", "defaults", "count", "search_count", "export_csv"}:
             return "read"
         if operation in {"create", "write"}:
