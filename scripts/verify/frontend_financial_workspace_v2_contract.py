@@ -32,6 +32,8 @@ assert workspace.get("version") == "2.0"
 assert (workspace.get("identity") or {}).get("object_label") == "付款申请"
 assert (workspace.get("state") or {}).get("semantic")
 assert submit and submit.get("allowed") is True
+assert submit.get("enabled") is True and submit.get("disabled") is False
+assert submit.get("business_available") is True and submit.get("authorization_allowed") is True
 assert (submit.get("presentation") or {}).get("tier") == "primary"
 assert (submit.get("mutation") or {}).get("operation") == "submit"
 assert (submit.get("action_safety") or {}).get("requires_confirm") is True
@@ -60,7 +62,27 @@ assert create_payment.get("source_widget_id") == "page.header"
 assert (create_payment.get("presentation") or {}).get("tier") == "secondary"
 assert create_payment.get("target") == "self"
 assert create_payment.get("visible_profiles") == ["readonly"]
+assert create_payment.get("allowed") is True and create_payment.get("enabled") is True
+assert create_payment.get("disabled") is False
 assert str(create_payment.get("url") or "").startswith("/f/payment.request/new?")
 assert "default_settlement_id=%s" % settlement.id in create_payment["url"]
+
+approval_request = env.ref("smart_construction_acceptance_fixture.fe_journey_payment_request_approval_a")
+approval_params = {**params, "record_id": int(approval_request.id), "render_profile": "readonly"}
+approval_result = UiContractV2Handler(finance_env, payload=approval_params).run(payload=approval_params)
+approval_data = approval_result.data if hasattr(approval_result, "data") and isinstance(approval_result.data, dict) else (
+    approval_result.get("data") if isinstance(approval_result, dict) else {}
+)
+approval_runtime = approval_data.get("runtimeContract") if isinstance(approval_data.get("runtimeContract"), dict) else {}
+approval_actions = approval_runtime.get("businessActions") if isinstance(approval_runtime.get("businessActions"), list) else []
+approve = next((row for row in approval_actions if row.get("action_key") == "approve" and row.get("method") == "action_approval_decision"), None)
+assert approve and approve.get("business_available") is True
+assert approve.get("authorization_allowed") is False and approve.get("handoff_required") is True
+assert approve.get("allowed") is False and approve.get("enabled") is False and approve.get("disabled") is True
+assert approve.get("reason_code") == "ROLE_HANDOFF_REQUIRED" and approve.get("blocked_message")
+
+done_on_draft = next((row for row in actions if row.get("action_key") == "done" and row.get("method") == "action_done"), None)
+assert done_on_draft and done_on_draft.get("business_available") is False
+assert done_on_draft.get("allowed") is False and done_on_draft.get("enabled") is False and done_on_draft.get("disabled") is True
 print("[verify.frontend.financial_workspace.v2_contract] PASS")
 print(json.dumps({"runtime_keys": sorted(runtime), "submit": submit, "create_payment": create_payment}, ensure_ascii=False, indent=2, default=str))
