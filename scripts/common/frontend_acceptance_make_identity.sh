@@ -14,6 +14,7 @@ frontend_acceptance_make() {
   [[ "$DB_NAME" == "sc_frontend_acceptance" \
     && "$ODOO_DB" == "$DB_NAME" \
     && "$ODOO_DBFILTER" == "^${DB_NAME}$" \
+    && "$LIST_DB" == "0" \
     && "$SC_ENVIRONMENT" == "acceptance" \
     && "$SC_ALLOW_DEMO_DATA" == "1" ]] || {
     echo "[acceptance.make] DENY managed acceptance identity drift" >&2

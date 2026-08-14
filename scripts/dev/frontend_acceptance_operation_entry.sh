@@ -14,6 +14,16 @@ fi
 
 source "$ROOT_DIR/scripts/common/frontend_release_ci_identity.sh"
 verify_frozen_frontend_release_ci_identity "$ROOT_DIR"
+[[ -z "${ODOO_DB:-}" || "$ODOO_DB" == "$DB_NAME" ]] || {
+  echo "DENY: isolated CI Odoo database alias mismatch" >&2
+  exit 2
+}
+[[ -z "${LIST_DB:-}" || "$LIST_DB" == "0" ]] || {
+  echo "DENY: isolated CI database listing policy mismatch" >&2
+  exit 2
+}
+export ODOO_DB="$DB_NAME"
+export LIST_DB=0
 
 ci_frontend_pidfile="$RUNNER_TEMP/sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.pid"
 ci_frontend_logfile="$RUNNER_TEMP/sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.log"

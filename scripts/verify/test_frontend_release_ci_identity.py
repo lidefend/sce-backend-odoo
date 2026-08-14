@@ -258,6 +258,20 @@ class FrontendReleaseCIIdentityTests(unittest.TestCase):
             source.index('bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"'),
         )
 
+    def test_ci_operation_projects_validated_database_aliases_before_dispatch(self) -> None:
+        source = (ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh").read_text(
+            encoding="utf-8"
+        )
+        verify = source.index('verify_frozen_frontend_release_ci_identity "$ROOT_DIR"')
+        project_db = source.index('export ODOO_DB="$DB_NAME"')
+        project_list = source.index("export LIST_DB=0")
+        dispatch = source.index('case "$operation" in')
+        self.assertLess(verify, project_db)
+        self.assertLess(project_db, dispatch)
+        self.assertLess(project_list, dispatch)
+        self.assertIn('"$ODOO_DB" == "$DB_NAME"', source)
+        self.assertIn('"$LIST_DB" == "0"', source)
+
     def install_fake_docker(self, state: dict[str, object]) -> tuple[Path, Path]:
         bin_dir = Path(self.temp.name) / "resource-bin"
         bin_dir.mkdir(exist_ok=True)
