@@ -66,6 +66,7 @@ class ApiDataWriteHandler(BaseIntentHandler):
     VERSION = "0.6.0"
     ETAG_ENABLED = False
     REQUIRED_GROUPS = ["smart_core.group_smart_core_data_operator"]
+    MACHINE_ACCESS = "write"
     ACL_MODE = "explicit_check"
     SOURCE_KIND = "odoo_orm_write_proxy"
     SOURCE_AUTHORITIES = ("odoo.orm", "ir.model.access", "ir.rule", "ir.model.fields")

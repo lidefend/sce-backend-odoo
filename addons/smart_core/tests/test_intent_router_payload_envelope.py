@@ -169,6 +169,24 @@ class TestIntentRouterPayloadEnvelope(unittest.TestCase):
         self.assertEqual(seen["run_payload"], expected)
         self.assertEqual(seen["ctx"], {"trace": "t"})
 
+    def test_machine_credential_payload_cannot_select_another_registry(self):
+        class Handler:
+            pass
+
+        router = _load_router(_FakeRequest(), Handler)
+        registry_calls = []
+        router.odoo.registry = lambda db: registry_calls.append(db)
+
+        env, _su_env, cursor = router._build_envs(
+            {"db": "other_database"},
+            {},
+            intent="auth.machine.token",
+        )
+
+        self.assertEqual(env.cr.dbname, "test_db")
+        self.assertIsNone(cursor)
+        self.assertEqual(registry_calls, [])
+
     def test_extra_cursor_rolls_back_when_handler_returns_error_result(self):
         class Handler:
             def __init__(self, **kwargs):
@@ -185,7 +203,7 @@ class TestIntentRouterPayloadEnvelope(unittest.TestCase):
         env = _FakeEnv()
         env.cr = tracking_cr
         env.registry = object()
-        router._build_envs = lambda params, context: (env, object(), tracking_cr)
+        router._build_envs = lambda params, context, intent="": (env, object(), tracking_cr)
 
         result = router._dispatch("demo.intent", {"x": 1}, {})
 
@@ -210,7 +228,7 @@ class TestIntentRouterPayloadEnvelope(unittest.TestCase):
         env = _FakeEnv()
         env.cr = tracking_cr
         env.registry = object()
-        router._build_envs = lambda params, context: (env, object(), tracking_cr)
+        router._build_envs = lambda params, context, intent="": (env, object(), tracking_cr)
 
         result = router._dispatch("demo.intent", {"x": 1}, {})
 
@@ -235,7 +253,7 @@ class TestIntentRouterPayloadEnvelope(unittest.TestCase):
         env = _FakeEnv()
         env.cr = tracking_cr
         env.registry = object()
-        router._build_envs = lambda params, context: (env, object(), tracking_cr)
+        router._build_envs = lambda params, context, intent="": (env, object(), tracking_cr)
 
         with self.assertRaises(RuntimeError):
             router._dispatch("demo.intent", {"x": 1}, {})
@@ -260,7 +278,7 @@ class TestIntentRouterPayloadEnvelope(unittest.TestCase):
         env = _FakeEnv()
         env.cr = tracking_cr
         env.registry = object()
-        router._build_envs = lambda params, context: (env, object(), tracking_cr)
+        router._build_envs = lambda params, context, intent="": (env, object(), tracking_cr)
 
         result = router._dispatch("demo.intent", {"x": 1}, {})
 

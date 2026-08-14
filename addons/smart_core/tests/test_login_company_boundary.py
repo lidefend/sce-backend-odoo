@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -31,6 +32,28 @@ class _Env(dict):
         if route is not None:
             data["sc.login.route"] = route
         super().__init__(data)
+
+
+@dataclass(frozen=True)
+class _Principal:
+    principal_type: str = "human"
+    auth_method: str = "password"
+    credential_id: str = ""
+    scopes: tuple = ("interactive",)
+    company_id: int = 1
+    allowed_company_ids: tuple = (1, 2)
+    role_xmlids: tuple = ("base.group_user",)
+
+
+def _principal(company_id=1):
+    return _Principal(
+        principal_type="human",
+        auth_method="password",
+        credential_id="",
+        scopes=("interactive",),
+        company_id=company_id,
+        allowed_company_ids=(1, 2),
+    )
 
 
 class _RouteRecord:
@@ -83,8 +106,8 @@ def _load_handler():
     _install_module("odoo.addons.smart_core.core.handler_registry", HANDLER_REGISTRY={})
     _install_module(
         "odoo.addons.smart_core.security.auth",
-        authenticate_user=lambda login, password, db=None: {"id": 5, "db": db or "test"},
-        generate_token=lambda user_id, token_version=0, db=None: "token",
+        authenticate_user=lambda login, password, db=None: {"id": 5, "db": db or "test", "principal": _principal()},
+        generate_token=lambda user_id=None, token_version=0, db=None, **kwargs: "token",
         get_token_exp_seconds=lambda: 3600,
         get_user_from_token=lambda: None,
     )
@@ -176,7 +199,7 @@ class TestLoginCompanyBoundary(unittest.TestCase):
 
         def _auth(login, password, db=None):
             seen["db"] = db
-            return {"id": 5, "db": db or "missing"}
+            return {"id": 5, "db": db or "missing", "principal": _principal()}
 
         module.authenticate_user = _auth
         handler = module.LoginHandler(env=_Env(route=_RouteModel()), params={"login": "demo", "password": "pw"})

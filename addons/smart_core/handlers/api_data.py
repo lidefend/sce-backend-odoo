@@ -64,11 +64,29 @@ class ApiDataHandler(BaseIntentHandler):
     DESCRIPTION = "通用数据读取：list/read/count（P0 可用版）"
     VERSION = "2.1.1"
     REQUIRED_GROUPS = ["base.group_user"]
+    MACHINE_ACCESS = "dynamic"
     ETAG_ENABLED = False  # 列表不缓存，避免错判
     GROUP_WINDOW_IDENTITY_VERSION = "v1"
     GROUP_WINDOW_IDENTITY_ALGO = "sha1"
     SOURCE_KIND = "odoo_orm_proxy"
     SOURCE_AUTHORITIES = ("odoo.orm", "ir.model.access", "ir.rule", "ir.model.fields")
+
+    @classmethod
+    def machine_access_for(cls, params=None) -> str:
+        root = params if isinstance(params, dict) else {}
+        operation = root.get("op") if "op" in root else None
+        if "op" not in root:
+            for key in ("payload", "params", "data", "args"):
+                nested = root.get(key)
+                if isinstance(nested, dict) and "op" in nested:
+                    operation = nested.get("op")
+                    break
+        operation = str(operation or "list").strip().lower()
+        if operation in {"list", "read", "default_get", "defaults", "count", "search_count", "export_csv"}:
+            return "read"
+        if operation in {"create", "write"}:
+            return "write"
+        return "deny"
 
     # ----------------- 通用取参 -----------------
 

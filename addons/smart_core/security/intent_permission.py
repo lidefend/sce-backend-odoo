@@ -210,7 +210,16 @@ def _effective_flags(Entitlement, company):
 
 def _sync_authenticated_identity(ctx, user):
     user_id = identity_id(user)
-    request.env = request.env(user=user_id)
+    principal = getattr(ctx, "principal", None) or {}
+    allowed = list(principal.get("allowed_company_ids") or []) if isinstance(principal, dict) else []
+    company_id = int(principal.get("company_id") or 0) if isinstance(principal, dict) else 0
+    ordered_companies = ([company_id] if company_id else []) + [
+        value for value in allowed if int(value) != company_id
+    ]
+    context = dict(request.env.context or {})
+    if ordered_companies:
+        context["allowed_company_ids"] = ordered_companies
+    request.env = request.env(user=user_id, context=context)
     env = request.env
     try:
         request.uid = user_id
@@ -266,6 +275,20 @@ def check_intent_permission(ctx):
         return True
 
     user = getattr(ctx, "user", None) or get_user_from_token()
+    principal = getattr(ctx, "principal", None)
+    if principal:
+        token_database = str((principal.get("payload") or {}).get("db") or "").strip()
+        requested_database = str(
+            _param_value(ctx_params, "db") or _param_value(ctx_params, "database") or ""
+        ).strip()
+        if token_database and requested_database and token_database != requested_database:
+            raise AccessError("Token 数据库与目标数据库不一致")
+        from .credential_service import assert_principal_scope
+        assert_principal_scope(
+            principal,
+            intent_name=intent_name,
+            params=ctx_params,
+        )
     if not user:
         raise AccessError("Token 无效或缺少 user_id")
     # 2. 切换并同步 request/ctx 身份，避免后续跨库分发读取到 public uid。

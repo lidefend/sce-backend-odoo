@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-ANONYMOUS_INTENTS = frozenset({"login", "auth.login", "sys.intents", "session.bootstrap"})
+ANONYMOUS_INTENTS = frozenset({"login", "auth.login", "auth.machine.token", "sys.intents", "session.bootstrap"})
 PUBLIC_CONTEXT_INTENTS = ANONYMOUS_INTENTS | frozenset({"bootstrap", "permission.check"})
 
 

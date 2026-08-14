@@ -519,6 +519,16 @@ class FrontendReleaseEvidenceBundleTests(unittest.TestCase):
             with self.assertRaisesRegex(EvidenceBundleError, "SENSITIVE_FILE_FORBIDDEN"):
                 scan_sensitive_paths([root])
 
+    def test_sensitive_path_scanner_rejects_serialized_odoo_api_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "network-response.json").write_text(
+                '{"data":{"api_key":"' + ("5a" * 20) + '"}}',
+                encoding="utf-8",
+            )
+            with self.assertRaises(EvidenceBundleError):
+                scan_sensitive_paths([root])
+
     def test_archive_traversal_symlink_duplicate_and_compression_bomb_fail(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
