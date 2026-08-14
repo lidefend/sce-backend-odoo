@@ -15,9 +15,35 @@ fi
 source "$ROOT_DIR/scripts/common/frontend_release_ci_identity.sh"
 verify_frozen_frontend_release_ci_identity "$ROOT_DIR"
 
+ci_frontend_pidfile="$RUNNER_TEMP/sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.pid"
+ci_frontend_logfile="$RUNNER_TEMP/sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.log"
+ci_frontend_dist="$ROOT_DIR/frontend/apps/web/dist-release"
+for requested_pair in \
+  "${FRONTEND_ACCEPTANCE_MODE:-}=production" \
+  "${FRONTEND_ACCEPTANCE_STATIC_DIST:-}=$ci_frontend_dist" \
+  "${FRONTEND_ACCEPTANCE_PORT:-}=5175" \
+  "${FRONTEND_ACCEPTANCE_PIDFILE:-}=$ci_frontend_pidfile" \
+  "${FRONTEND_ACCEPTANCE_LOGFILE:-}=$ci_frontend_logfile" \
+  "${VITE_API_PROXY_TARGET:-}=http://127.0.0.1:18082" \
+  "${FRONTEND_ACCEPTANCE_DB:-}=sc_frontend_acceptance"; do
+  requested="${requested_pair%%=*}"
+  expected="${requested_pair#*=}"
+  [[ -z "$requested" || "$requested" == "$expected" ]] || {
+    echo "DENY: isolated CI frontend process override mismatch" >&2
+    exit 2
+  }
+done
+export FRONTEND_ACCEPTANCE_MODE=production
+export FRONTEND_ACCEPTANCE_STATIC_DIST="$ci_frontend_dist"
+export FRONTEND_ACCEPTANCE_PORT=5175
+export FRONTEND_ACCEPTANCE_PIDFILE="$ci_frontend_pidfile"
+export FRONTEND_ACCEPTANCE_LOGFILE="$ci_frontend_logfile"
+export VITE_API_PROXY_TARGET=http://127.0.0.1:18082
+export FRONTEND_ACCEPTANCE_DB=sc_frontend_acceptance
+
 validate_ci_frontend_process_identity() {
   local expected_dist
-  expected_dist="$(readlink -f "$ROOT_DIR/frontend/apps/web/dist-release")"
+  expected_dist="$(readlink -f "$ci_frontend_dist")"
   [[ "${FRONTEND_ACCEPTANCE_MODE:-development}" == "production" ]] || {
     echo "DENY: isolated CI frontend must use production mode" >&2; return 2;
   }
@@ -25,11 +51,64 @@ validate_ci_frontend_process_identity() {
     echo "DENY: isolated CI frontend dist identity mismatch" >&2; return 2;
   }
   [[ "${FRONTEND_ACCEPTANCE_PORT:-5175}" == "5175" \
-    && "${FRONTEND_ACCEPTANCE_PIDFILE:-/tmp/sc-frontend-acceptance.pid}" == "/tmp/sc-frontend-acceptance.pid" \
-    && "${FRONTEND_ACCEPTANCE_LOGFILE:-/tmp/sc-frontend-acceptance.log}" == "/tmp/sc-frontend-acceptance.log" \
+    && "$FRONTEND_ACCEPTANCE_PIDFILE" == "$ci_frontend_pidfile" \
+    && "$FRONTEND_ACCEPTANCE_LOGFILE" == "$ci_frontend_logfile" \
     && "${VITE_API_PROXY_TARGET:-http://127.0.0.1:18082}" == "http://127.0.0.1:18082" \
     && "${FRONTEND_ACCEPTANCE_DB:-sc_frontend_acceptance}" == "sc_frontend_acceptance" ]] || {
     echo "DENY: isolated CI frontend process identity mismatch" >&2; return 2;
+  }
+}
+
+ci_frontend_port_open() {
+  (exec 3<>"/dev/tcp/127.0.0.1/${FRONTEND_ACCEPTANCE_PORT}") >/dev/null 2>&1
+}
+
+validate_ci_frontend_pidfile() {
+  [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" && ! -L "$FRONTEND_ACCEPTANCE_PIDFILE" \
+    && "$(stat -c %u "$FRONTEND_ACCEPTANCE_PIDFILE")" == "$(id -u)" ]] || {
+    echo "DENY: isolated CI frontend pidfile identity mismatch" >&2
+    return 2
+  }
+  local pid
+  pid="$(<"$FRONTEND_ACCEPTANCE_PIDFILE")"
+  [[ "$pid" =~ ^[0-9]+$ ]] || {
+    echo "DENY: isolated CI frontend pid is invalid" >&2
+    return 2
+  }
+  printf '%s\n' "$pid"
+}
+
+validate_ci_frontend_live_process() {
+  local pid="$1" proc_env proc_cmd
+  kill -0 "$pid" 2>/dev/null || return 1
+  [[ "$(stat -c %u "/proc/$pid")" == "$(id -u)" \
+    && "$(readlink -f "/proc/$pid/cwd")" == "$ROOT_DIR" ]] || {
+    echo "DENY: isolated CI frontend owner/cwd mismatch" >&2
+    return 2
+  }
+  proc_cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline")"
+  [[ "$proc_cmd" == *"$ROOT_DIR/scripts/release/release_static_server.mjs"* ]] || {
+    echo "DENY: isolated CI frontend command mismatch" >&2
+    return 2
+  }
+  proc_env="$(tr '\0' '\n' < "/proc/$pid/environ")"
+  for expected_env in \
+    "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
+    "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT" \
+    "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
+    "SC_SOURCE_REVISION=$SC_SOURCE_REVISION" \
+    "SC_FRONTEND_RELEASE_IDENTITY_FILE=$SC_FRONTEND_RELEASE_IDENTITY_FILE" \
+    "STATIC_ROOT=$FRONTEND_ACCEPTANCE_STATIC_DIST" \
+    "STATIC_PORT=$FRONTEND_ACCEPTANCE_PORT" \
+    "API_PROXY_TARGET=$VITE_API_PROXY_TARGET"; do
+    grep -Fxq "$expected_env" <<<"$proc_env" || {
+      echo "DENY: isolated CI frontend environment mismatch" >&2
+      return 2
+    }
+  done
+  curl -fsS "http://127.0.0.1:${FRONTEND_ACCEPTANCE_PORT}/login" >/dev/null || {
+    echo "DENY: isolated CI frontend process is unhealthy" >&2
+    return 2
   }
 }
 
@@ -72,10 +151,26 @@ case "$operation" in
     ;;
   frontend-up)
     validate_ci_frontend_process_identity
+    if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
+      frontend_pid="$(validate_ci_frontend_pidfile)"
+      if kill -0 "$frontend_pid" 2>/dev/null; then
+        validate_ci_frontend_live_process "$frontend_pid"
+        export FRONTEND_ACCEPTANCE_ALLOW_REUSE=1
+      fi
+    fi
     bash "$ROOT_DIR/scripts/dev/frontend_acceptance_up.sh"
     ;;
   frontend-down)
     validate_ci_frontend_process_identity
+    if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
+      frontend_pid="$(validate_ci_frontend_pidfile)"
+      if kill -0 "$frontend_pid" 2>/dev/null; then
+        validate_ci_frontend_live_process "$frontend_pid"
+      fi
+    elif ci_frontend_port_open; then
+      echo "DENY: isolated CI frontend port is owned without this run identity" >&2
+      exit 2
+    fi
     bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"
     ;;
   *)

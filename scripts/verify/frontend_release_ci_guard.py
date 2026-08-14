@@ -83,6 +83,21 @@ def findings(root: Path = ROOT) -> list[str]:
         "frontend-down)",
     )
     errors.extend(f"CI_OPERATION_ROUTE_MISSING:{marker}" for marker in route_markers if marker not in operation_text)
+    process_identity_markers = (
+        "sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.pid",
+        "validate_ci_frontend_pidfile",
+        "validate_ci_frontend_live_process",
+        "GITHUB_RUN_ID=$GITHUB_RUN_ID",
+        "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME",
+        "SC_SOURCE_REVISION=$SC_SOURCE_REVISION",
+        "FRONTEND_ACCEPTANCE_ALLOW_REUSE=1",
+        "isolated CI frontend port is owned without this run identity",
+    )
+    errors.extend(
+        f"CI_FRONTEND_PROCESS_IDENTITY_MISSING:{marker}"
+        for marker in process_identity_markers
+        if marker not in operation_text
+    )
     for target in ("frontend.acceptance.up", "frontend.acceptance.down", "backend.acceptance.up", "backend.acceptance.down"):
         if target not in dev_make_text or "frontend_acceptance_operation_entry.sh" not in dev_make_text:
             errors.append(f"CI_MAKE_ROUTE_MISSING:{target}")

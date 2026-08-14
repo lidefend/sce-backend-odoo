@@ -239,6 +239,25 @@ class FrontendReleaseCIIdentityTests(unittest.TestCase):
             f"local|{ROOT / 'scripts/dev/frontend_acceptance_runtime.sh'}|fixture",
         )
 
+    def test_ci_frontend_lifecycle_is_bound_to_frozen_run_process_identity(self) -> None:
+        source = (ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.pid",
+            source,
+        )
+        self.assertIn("validate_ci_frontend_live_process \"$frontend_pid\"", source)
+        self.assertIn('"GITHUB_RUN_ID=$GITHUB_RUN_ID"', source)
+        self.assertIn('"GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT"', source)
+        self.assertIn('"COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME"', source)
+        self.assertIn('"SC_SOURCE_REVISION=$SC_SOURCE_REVISION"', source)
+        self.assertIn("export FRONTEND_ACCEPTANCE_ALLOW_REUSE=1", source)
+        self.assertLess(
+            source.index("validate_ci_frontend_live_process \"$frontend_pid\"", source.index("frontend-down)")),
+            source.index('bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"'),
+        )
+
     def install_fake_docker(self, state: dict[str, object]) -> tuple[Path, Path]:
         bin_dir = Path(self.temp.name) / "resource-bin"
         bin_dir.mkdir(exist_ok=True)
