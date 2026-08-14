@@ -129,6 +129,7 @@ def assert_action_role_hints(action_by_key: dict[str, dict], *, actor_label: str
         handoff_hint = str(item.get("handoff_hint") or "").strip()
         delivery_priority = int(item.get("delivery_priority") or 0)
         actor_matches = bool(item.get("actor_matches_required_role"))
+        authorization_allowed = bool(item.get("authorization_allowed"))
         handoff_required = bool(item.get("handoff_required"))
         if not role_key:
             raise AssertionError(f"{actor_label}:{key} missing required_role_key")
@@ -140,9 +141,9 @@ def assert_action_role_hints(action_by_key: dict[str, dict], *, actor_label: str
             raise AssertionError(f"{actor_label}:{key} missing handoff_hint")
         if delivery_priority <= 0:
             raise AssertionError(f"{actor_label}:{key} missing/invalid delivery_priority")
-        if handoff_required == actor_matches:
+        if handoff_required == authorization_allowed:
             raise AssertionError(
-                f"{actor_label}:{key} invalid handoff_required/actor_matches pair "
+                f"{actor_label}:{key} invalid handoff_required/authorization_allowed pair "
                 f"(handoff_required={handoff_required}, actor_matches={actor_matches})"
             )
 

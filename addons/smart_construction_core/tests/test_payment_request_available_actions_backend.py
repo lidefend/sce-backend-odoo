@@ -82,6 +82,7 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         self.assertTrue(bool(submit.get("idempotency_required")))
         self.assertEqual(submit.get("reason_code"), REASON_OK)
         self.assertTrue(bool(submit.get("allowed")))
+        self.assertTrue(bool(submit.get("business_available")))
         self.assertEqual(submit.get("current_state"), "draft")
         self.assertEqual(submit.get("next_state_hint"), "submit")
         self.assertTrue(bool(submit.get("allowed_by_state")))
@@ -100,6 +101,7 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         self.assertEqual((reject.get("presentation") or {}).get("semantic"), "destructive")
         self.assertTrue((reject.get("presentation") or {}).get("requires_reason"))
         self.assertIsInstance(submit.get("actor_matches_required_role"), bool)
+        self.assertIsInstance(submit.get("authorization_allowed"), bool)
         self.assertIsInstance(submit.get("handoff_required"), bool)
         self.assertEqual(int(submit.get("delivery_priority") or 0), 10)
         reject = by_key.get("reject") or {}
@@ -129,4 +131,21 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         submit = next(row for row in (result.get("data") or {}).get("actions", []) if row.get("key") == "submit")
         self.assertTrue(submit.get("allowed"))
         self.assertTrue(submit.get("actor_matches_required_role"))
+        self.assertTrue(submit.get("authorization_allowed"))
         self.assertFalse(submit.get("handoff_required"))
+
+    def test_submit_authorization_uses_execution_capability_not_role_label(self):
+        payment = self._create_payment_request_minimal()
+        initiator = self._create_user(
+            "payment_submit_business_initiator",
+            ["base.group_user", "smart_construction_core.group_sc_cap_business_initiator"],
+        )
+        result = PaymentRequestAvailableActionsHandler(
+            self.env(user=initiator.id), payload={"id": payment.id}
+        ).handle({"id": payment.id})
+        self.assertTrue(result.get("ok"))
+        submit = next(row for row in (result.get("data") or {}).get("actions", []) if row.get("key") == "submit")
+        self.assertFalse(submit.get("allowed"))
+        self.assertTrue(submit.get("business_available"))
+        self.assertFalse(submit.get("authorization_allowed"))
+        self.assertTrue(submit.get("handoff_required"))

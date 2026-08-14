@@ -131,6 +131,23 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         except Exception:
             return False
 
+    def _actor_can_execute(self, action_key: str) -> bool:
+        from odoo.addons.smart_construction_core.handlers.payment_request_approval import (
+            PaymentRequestApproveHandler,
+            PaymentRequestDoneHandler,
+            PaymentRequestRejectHandler,
+            PaymentRequestSubmitHandler,
+        )
+
+        handler_by_action = {
+            "submit": PaymentRequestSubmitHandler,
+            "approve": PaymentRequestApproveHandler,
+            "reject": PaymentRequestRejectHandler,
+            "done": PaymentRequestDoneHandler,
+        }
+        handler = handler_by_action.get(str(action_key or "").strip())
+        return bool(handler and handler.actor_has_execution_capability(self.env.user))
+
     def _reason_from_exception(self, exc: Exception) -> str:
         match = re.search(r"\[SC_GUARD:([A-Z0-9_]+)\]", str(exc or ""))
         if match:
@@ -216,8 +233,8 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         state_ok = state in set(spec.get("allowed_states") or [])
         advisories = self._advisories_for_action(record, action_key)
         precheck_ok, precheck_reason = self._evaluate_prerequisites(record, action_key)
-        allowed = bool(method_ok and state_ok and precheck_ok)
-        if allowed:
+        business_available = bool(method_ok and state_ok and precheck_ok)
+        if business_available:
             reason_code = REASON_OK
         elif not method_ok or not state_ok:
             reason_code = REASON_BUSINESS_RULE_FAILED
@@ -232,14 +249,14 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             for item in advisories
             if str(item.get("reason_code") or "").strip()
         ]
-        if allowed and advisories:
+        if business_available and advisories:
             warning_message = "\n".join(
                 str(item.get("message") or item.get("reason_code") or "").strip()
                 for item in advisories
                 if str(item.get("message") or item.get("reason_code") or "").strip()
             )
             suggested_action = str(advisories[0].get("suggested_action") or "")
-        if not allowed:
+        if not business_available:
             blocked_message = str(reason_meta.get("message") or reason_code)
             suggested_action = str(reason_meta.get("suggested_action") or "")
         execute_payload = {
@@ -250,7 +267,14 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         role_hint = self._ACTION_ROLE_HINTS.get(action_key) or {}
         required_group_xmlid = str(role_hint.get("required_group_xmlid") or "")
         actor_matches_required_role = self._actor_has_capability(required_group_xmlid)
-        handoff_required = bool(required_group_xmlid and not actor_matches_required_role)
+        authorization_allowed = self._actor_can_execute(action_key)
+        handoff_required = bool(not authorization_allowed)
+        allowed = bool(business_available and authorization_allowed)
+        if business_available and not authorization_allowed:
+            reason_code = REASON_PERMISSION_DENIED
+            reason_meta = failure_meta_for_reason(reason_code)
+            blocked_message = str(reason_meta.get("message") or reason_code)
+            suggested_action = str(role_hint.get("handoff_hint") or reason_meta.get("suggested_action") or "")
         return {
             "key": action_key,
             "label": str(spec.get("label") or ""),
@@ -258,6 +282,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "method": method_name,
             "required_params": required_params,
             "allowed": allowed,
+            "business_available": business_available,
             "reason_code": reason_code,
             "state_required": sorted(list(spec.get("allowed_states") or [])),
             "current_state": state,
@@ -280,6 +305,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "required_group_xmlid": required_group_xmlid,
             "handoff_hint": str(role_hint.get("handoff_hint") or ""),
             "actor_matches_required_role": actor_matches_required_role,
+            "authorization_allowed": authorization_allowed,
             "handoff_required": handoff_required,
             "delivery_priority": int(spec.get("delivery_priority") or 100),
             "presentation": {

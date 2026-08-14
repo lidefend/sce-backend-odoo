@@ -49,7 +49,7 @@ try:
     ).run(payload={"id": journey.id})
     rows = (available.get("data") or {}).get("actions") or []
     submit = next((row for row in rows if row.get("key") == "submit"), None)
-    if not submit or not submit.get("allowed") or not submit.get("actor_matches_required_role"):
+    if not submit or not submit.get("allowed") or not submit.get("authorization_allowed"):
         fail("finance submit action is not authoritatively available: %s" % submit)
 
     unauthorized_before = (journey.state, len(journey.ledger_line_ids))

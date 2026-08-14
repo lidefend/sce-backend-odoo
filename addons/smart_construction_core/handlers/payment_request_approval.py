@@ -68,18 +68,25 @@ class _BasePaymentApprovalHandler(BaseIntentHandler):
 
     def _assert_required_groups(self):
         user = self.env.user
-        if not user:
-            raise AccessError("PERMISSION_DENIED: missing required group")
-        if user_is_platform_admin(user):
+        if self.actor_has_execution_capability(user):
             return
-        required = [str(x).strip() for x in (getattr(self, "ACCESS_GROUPS", []) or []) if str(x).strip()]
+        raise AccessError("PERMISSION_DENIED: missing required group")
+
+    @classmethod
+    def actor_has_execution_capability(cls, user) -> bool:
+        """Return the same capability verdict used by the execution gate."""
+        if not user:
+            return False
+        if user_is_platform_admin(user):
+            return True
+        required = [str(x).strip() for x in (getattr(cls, "ACCESS_GROUPS", []) or []) if str(x).strip()]
         for xmlid in required:
             try:
                 if user.has_group(xmlid):
-                    return
+                    return True
             except Exception:
                 continue
-        raise AccessError("PERMISSION_DENIED: missing required group")
+        return False
 
     def _extract_reason(self, params: dict) -> str:
         for key in ("reason", "reject_reason", "note", "comment"):

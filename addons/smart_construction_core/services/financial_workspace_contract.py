@@ -592,9 +592,9 @@ def build_financial_form_business_actions(env, model_name, record_id):
             methods = ["action_approval_decision", *methods]
         for method in filter(None, methods):
             label = str(row.get("label") or action_key)
-            business_available = bool(row.get("allowed"))
-            authorization_allowed = bool(row.get("actor_matches_required_role"))
-            executable = bool(business_available and authorization_allowed)
+            business_available = bool(row.get("business_available"))
+            authorization_allowed = bool(row.get("authorization_allowed"))
+            executable = bool(row.get("allowed"))
             reason_code = str(row.get("reason_code") or "")
             blocked_message = str(row.get("blocked_message") or "")
             if business_available and not authorization_allowed:

@@ -158,6 +158,7 @@ def assert_role_hints(resp: dict, *, actor: str):
         handoff_hint = str(item.get("handoff_hint") or "").strip()
         delivery_priority = int(item.get("delivery_priority") or 0)
         actor_matches = bool(item.get("actor_matches_required_role"))
+        authorization_allowed = bool(item.get("authorization_allowed"))
         handoff_required = bool(item.get("handoff_required"))
         if key in ("submit", "done") and role_key != "finance":
             raise AssertionError(f"action={key} expected required_role_key=finance, got={role_key!r}")
@@ -170,10 +171,11 @@ def assert_role_hints(resp: dict, *, actor: str):
         if delivery_priority <= 0:
             raise AssertionError(f"action={key} missing/invalid delivery_priority")
         if required_group_xmlid := str(item.get("required_group_xmlid") or "").strip():
-            if handoff_required == actor_matches:
+            if handoff_required == authorization_allowed:
                 raise AssertionError(
-                    f"actor={actor} action={key} expected handoff_required == (not actor_matches_required_role), "
-                    f"got handoff_required={handoff_required} actor_matches={actor_matches} group={required_group_xmlid}"
+                    f"actor={actor} action={key} expected handoff_required == (not authorization_allowed), "
+                    f"got handoff_required={handoff_required} authorization_allowed={authorization_allowed} "
+                    f"actor_matches={actor_matches} group={required_group_xmlid}"
                 )
 
 
