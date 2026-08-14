@@ -684,6 +684,68 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         }
         self.assertEqual(dependency_targets, {rules[0]["actionId"]})
 
+    def test_runtime_action_merges_with_entitled_native_payload_button(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "views": {"form": {"layout": [], "header_buttons": [{
+                "key": "payment_submit",
+                "label": "Submit for approval",
+                "kind": "object",
+                "payload": {
+                    "method": "action_submit",
+                    "type": "object",
+                    "groups_xmlids": ["x.group_finance_user"],
+                },
+            }]}},
+            "action_policies": {
+                "payment_submit": {
+                    "enabled": True,
+                    "entitlement_evaluated": True,
+                    "enabled_when": {"required_groups": ["x.group_finance_user"]},
+                },
+            },
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.entitled.native.payload",
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "payment_submit",
+            "label": "Submit",
+            "kind": "mutation",
+            "method": "action_submit",
+            "level": "header",
+            "source_widget_id": "page.header",
+            "target_scope": "page",
+            "visible_profiles": ["edit", "readonly"],
+            "allowed": True,
+            "enabled": True,
+            "disabled": False,
+            "presentation": {"tier": "primary"},
+        }]
+
+        assembler.project_runtime_business_actions(contract)
+        rules = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("backendIdentity") == "button:object:action_submit"
+        ]
+        statuses = [
+            row for row in contract["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity") == "button:object:action_submit"
+        ]
+
+        self.assertEqual(len(rules), 1)
+        self.assertTrue(rules[0]["allowed"])
+        self.assertTrue(rules[0]["enabled"])
+        self.assertFalse(rules[0]["disabled"])
+        self.assertEqual(rules[0]["label"], "Submit")
+        self.assertEqual(len(statuses), 1)
+        self.assertTrue(statuses[0]["visible"])
+        self.assertFalse(statuses[0]["disabled"])
+
     def test_runtime_business_action_identity_matrix_and_final_seal(self):
         contract = assembler.assemble_unified_page_contract_v2(
             {"model": "x.document", "view_type": "form", "views": {"form": {"layout": []}}},

@@ -268,10 +268,15 @@ def build_form_action_policies(
             if _safe_text(item).lower() in _RENDER_PROFILES
         ]
         policy = default_action_policy(semantic, normalized_visible, required_fields)
-        row_groups = row.get("groups_xmlids") if isinstance(row.get("groups_xmlids"), list) else []
+        payload = _as_dict(row.get("payload"))
+        row_groups = []
+        for candidate in (row.get("groups_xmlids"), payload.get("groups_xmlids")):
+            if not isinstance(candidate, list):
+                continue
+            row_groups.extend(candidate)
         required_groups = [
             _safe_text(item)
-            for item in row_groups
+            for item in dict.fromkeys(row_groups)
             if _safe_text(item)
         ]
         required_roles_raw = row.get("required_roles") if isinstance(row.get("required_roles"), list) else []

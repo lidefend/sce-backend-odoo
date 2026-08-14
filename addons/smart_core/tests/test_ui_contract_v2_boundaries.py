@@ -204,6 +204,45 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(policy["reason_code"], "ACTION_GROUP_ACCESS_DENIED")
         self.assertNotIn("required_groups", policy["enabled_when"])
 
+    def test_native_button_payload_groups_enter_authoritative_policy(self):
+        root = Path(__file__).resolve().parents[1]
+        module_name = "test.contract_governance_form_actions"
+        spec = importlib.util.spec_from_file_location(
+            module_name,
+            root / "utils" / "contract_governance_form_actions.py",
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        policies = module.build_form_action_policies(
+            {
+                "fields": {},
+                "buttons": [{
+                    "key": "payment_submit",
+                    "label": "提交",
+                    "semantic": "primary_action",
+                    "payload": {
+                        "method": "action_submit",
+                        "type": "object",
+                        "groups_xmlids": [
+                            "smart_construction_core.group_sc_cap_business_initiator",
+                            "smart_construction_core.group_sc_cap_finance_user",
+                        ],
+                    },
+                }],
+            },
+            required_fields=[],
+            scene_profile="",
+        )
+
+        required = policies["payment_submit"]["enabled_when"]["required_groups"]
+        self.assertEqual(
+            required,
+            [
+                "smart_construction_core.group_sc_cap_business_initiator",
+                "smart_construction_core.group_sc_cap_finance_user",
+            ],
+        )
+
     def test_scene_action_binding_accepts_authoritative_target(self):
         self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
             "scenes": [{"key": "contract.income", "target": {"action_id": 786}}]
