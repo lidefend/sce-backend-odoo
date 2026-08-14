@@ -22,12 +22,14 @@ function fakeContext() {
 }
 
 function makePage(context, sensitive = false) {
+  const mainFrame = { evaluate: async () => sensitive };
   const page = {
     screenshotCalls: 0,
     closed: false,
     context: () => context,
     isClosed: () => page.closed,
-    evaluate: async () => sensitive,
+    evaluate: mainFrame.evaluate,
+    frames: () => [mainFrame],
     screenshot: async () => {
       page.screenshotCalls += 1;
       return Buffer.from('image');
@@ -76,4 +78,34 @@ await assert.rejects(
 );
 assert.deepEqual(context.traceCalls, [null]);
 
-console.log('[frontend_evidence_capture_guard.test] PASS sensitive_screenshot=0 sensitive_trace_export=0 navigation_close_frame=denied ordinary_capture=2');
+// A currently-sensitive child frame must deny capture before its asynchronous
+// binding report has reached the Node-side context state.
+context = fakeContext();
+await installEvidenceSensitivityTracker(context);
+const framedPage = makePage(context, false);
+framedPage.frames = () => [
+  { evaluate: async () => false },
+  { evaluate: async () => true },
+];
+await assert.rejects(
+  captureEvidenceScreenshot(framedPage, { path: 'frame-secret.png' }),
+  /EVIDENCE_SENSITIVE_CAPTURE_DENIED kind=screenshot/,
+);
+assert.equal(framedPage.screenshotCalls, 0);
+await assert.rejects(
+  stopEvidenceTrace(context, [framedPage], 'frame-secret.zip'),
+  /EVIDENCE_SENSITIVE_CAPTURE_DENIED kind=trace/,
+);
+assert.deepEqual(context.traceCalls, [null]);
+
+context = fakeContext();
+await installEvidenceSensitivityTracker(context);
+const unresolvedPage = makePage(context, false);
+unresolvedPage.frames = () => [{ evaluate: async () => { throw new Error('detached frame'); } }];
+await assert.rejects(
+  stopEvidenceTrace(context, [unresolvedPage], 'unresolved.zip'),
+  /EVIDENCE_SENSITIVITY_UNRESOLVED/,
+);
+assert.deepEqual(context.traceCalls, [null]);
+
+console.log('[frontend_evidence_capture_guard.test] PASS sensitive_screenshot=0 sensitive_trace_export=0 navigation_close_frame=denied iframe_race=denied unresolved=denied ordinary_capture=2');

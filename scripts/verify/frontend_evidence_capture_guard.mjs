@@ -1,5 +1,6 @@
 const SENSITIVE_SELECTOR = '[data-evidence-sensitive]';
 const REPORT_BINDING = '__scReportEvidenceSensitive';
+const FRAME_TRACKER_KEY = '__scEvidenceSensitiveObserved';
 const contextSensitivity = new WeakMap();
 
 function sensitivityState(context) {
@@ -17,9 +18,10 @@ export async function installEvidenceSensitivityTracker(context) {
       page_url: typeof page?.url === 'function' ? page.url() : '',
     });
   });
-  await context.addInitScript(({ selector, reportBinding }) => {
+  await context.addInitScript(({ selector, reportBinding, frameTrackerKey }) => {
     const reportSensitive = () => {
       if (!document.querySelector(selector)) return;
+      window[frameTrackerKey] = true;
       const report = window[reportBinding];
       if (typeof report === 'function') void report().catch(() => {});
     };
@@ -38,7 +40,11 @@ export async function installEvidenceSensitivityTracker(context) {
     } else {
       observe();
     }
-  }, { selector: SENSITIVE_SELECTOR, reportBinding: REPORT_BINDING });
+  }, {
+    selector: SENSITIVE_SELECTOR,
+    reportBinding: REPORT_BINDING,
+    frameTrackerKey: FRAME_TRACKER_KEY,
+  });
 }
 
 export async function evidenceSensitivityObserved(page) {
@@ -47,7 +53,18 @@ export async function evidenceSensitivityObserved(page) {
   if (context && sensitivityState(context)?.observed) return true;
   if (typeof page.isClosed === 'function' && page.isClosed()) return false;
   try {
-    return await page.evaluate((selector) => Boolean(document.querySelector(selector)), SENSITIVE_SELECTOR);
+    const frames = typeof page.frames === 'function' ? page.frames() : [page];
+    for (const frame of frames) {
+      const observed = await frame.evaluate(({ selector, frameTrackerKey }) => (
+        Boolean(window[frameTrackerKey]) || Boolean(document.querySelector(selector))
+      ), { selector: SENSITIVE_SELECTOR, frameTrackerKey: FRAME_TRACKER_KEY });
+      if (observed) {
+        const state = context ? sensitivityState(context) : null;
+        if (state) state.observed = true;
+        return true;
+      }
+    }
+    return false;
   } catch (error) {
     throw new Error(`EVIDENCE_SENSITIVITY_UNRESOLVED: ${error?.message || error}`);
   }
@@ -74,11 +91,15 @@ export async function stopEvidenceTrace(context, pages, outputPath) {
     await context.tracing.stop();
     throw new Error('EVIDENCE_SENSITIVE_CAPTURE_DENIED kind=trace');
   }
-  for (const page of pages || []) {
-    if (await evidenceSensitivityObserved(page)) {
+  try {
+    for (const page of pages || []) {
+      if (!(await evidenceSensitivityObserved(page))) continue;
       await context.tracing.stop();
       throw new Error('EVIDENCE_SENSITIVE_CAPTURE_DENIED kind=trace');
     }
+  } catch (error) {
+    if (!state.observed) await context.tracing.stop().catch(() => {});
+    throw error;
   }
   await context.tracing.stop({ path: outputPath });
 }
