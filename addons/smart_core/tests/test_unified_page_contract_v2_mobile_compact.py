@@ -458,6 +458,55 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertIn("button:object:action_set_approved", identities)
         self.assertEqual(len(identities), 2)
 
+    def test_disabled_source_keeps_canonical_action_visible_with_reason(self):
+        source = {
+            "model": "x.approval",
+            "view_type": "form",
+            "fields": {},
+            "views": {"form": {"layout": [], "header_buttons": [{
+                "key": "submit_native",
+                "label": "提交",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True,
+                "enabled": False,
+                "reason_code": "WAITING_FOR_REQUIRED_FACTS",
+            }]}},
+            "business_actions": [{
+                "key": "submit_product",
+                "label": "提交审批",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True,
+                "enabled": True,
+                "presentation": {"tier": "primary"},
+            }],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.disabled.visible"
+        )
+
+        rules = full["actionContract"]["actionRuleList"]
+        self.assertEqual(len(rules), 1)
+        rule = rules[0]
+        self.assertEqual(rule["backendIdentity"], "button:object:action_submit")
+        self.assertTrue(rule["allowed"])
+        self.assertFalse(rule["enabled"])
+        self.assertFalse(rule.get("disabled", False))
+        self.assertNotEqual(
+            ((rule.get("visible") or {}).get("attrs") or {}).get("invisible"),
+            {"kind": "static", "value": True},
+        )
+        statuses = [
+            row for row in full["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity") == "button:object:action_submit"
+        ]
+        self.assertEqual(len(statuses), 1)
+        self.assertTrue(statuses[0]["visible"])
+        self.assertTrue(statuses[0]["disabled"])
+        self.assertEqual(statuses[0]["reasonCode"], "WAITING_FOR_REQUIRED_FACTS")
+
     def test_same_action_key_with_different_backend_methods_keeps_both_sources(self):
         source = {
             "model": "x.document",

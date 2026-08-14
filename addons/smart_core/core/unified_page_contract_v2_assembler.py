@@ -2433,8 +2433,6 @@ def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
             return deepcopy(value)
     if (
         rule.get("allowed") is False
-        or rule.get("enabled") is False
-        or rule.get("disabled") is True
         or rule.get("visible") is False
     ):
         return {"kind": "static", "value": True}
