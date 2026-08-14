@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { buildContractFormActions } from '../src/pages/contractForm/contractActionPresentation';
-import { decodeContractV2ActionRule } from '../src/app/contracts/v2/schema';
+import { decodeContractV2ActionRule, decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { resolvePrimaryCreateFooterAction } from '../src/pages/contractForm/actionContract';
 import { groupContractHeaderActions } from '../src/pages/contractForm/contractHeaderActionPresentation';
 import { presentContractHeaderActions } from '../src/pages/contractForm/headerActionPresentation';
@@ -28,6 +28,30 @@ const rule = (key: string, sourceWidgetId: string, targetScope: string, override
   button: { name: `action_${key}`, type: 'object' },
   presentation: { tier: 'primary' },
   ...overrides,
+});
+
+const decodeSnapshotWithActions = (actionRuleList: Array<Record<string, unknown>>) => decodeContractV2Snapshot({
+  pageInfo: {
+    pageId: 'x.document.form', sceneKey: 'x.document.form', pageName: 'Document', model: 'x.document',
+    viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.2.0', clientType: 'web_pc',
+  },
+  layoutContract: {
+    pageId: 'x.document.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {}, componentRegistry: {},
+  },
+  statusContract: { globalStatus: { pageVisible: true }, widgetStatus: [], buttonStatus: [], containerStatus: [], selectorStatus: [] },
+  actionContract: { actionRuleList, dependencyGraph: {} },
+  dataContract: { mainData: {}, tableRows: {}, relationRows: {}, dictData: {}, pagination: {}, dataSource: {}, dataMeta: {} },
+  runtimeContract: { patchStrategy: 'incremental', cachePolicy: 'etag', optimistic: false, lazyContainer: [], virtualization: {}, retryPolicy: {} },
+  meta: {
+    etag: 'upc-v2-sha256-test', snapshotId: 'snapshot.upc.v2.test', traceId: 'trace.test', requestId: 'request.test', sourceType: 'ui.contract',
+    lifecycle: {
+      lifecycleVersion: '1.0.0', stage: 'runtime_delivery',
+      definition: { schemaId: 'smart_core.unified_page_contract_v2', schemaVersion: '2.2.0', schemaSha256: 'test', contractVersion: '2.2.0', normativeStatus: 'stable' },
+      generation: { generator: 'test', generatorVersion: '2.2.0', sourceType: 'ui.contract', sourceSha256: 'test' },
+      runtime: { requestId: 'request.test', traceId: 'trace.test', clientType: 'web_pc', traceSource: 'request_context' },
+      integrity: { algorithm: 'sha256', contractSha256: 'test' }, authority: {},
+    },
+  },
 });
 
 const built = buildContractFormActions({
@@ -137,6 +161,62 @@ const legacyFallback = buildContractFormActions({
   isTierValidationActionHidden: () => false,
 });
 assert.equal(legacyFallback[0]?.key, 'legacy-only');
+
+const normalizedRecordHandoff = buildContractFormActions({
+  contract: null,
+  model: 'x.document',
+  recordId: 81,
+  renderProfile: 'readonly',
+  sceneReadyActions: [],
+  v2ButtonStatus: {},
+  workflowActionRows: [],
+  v2ActionRuleList: [rule('open_followup', 'page.header', 'header', {
+    label: 'Open follow-up',
+    button: {},
+    target: { url: '/f/x.followup/new', target: 'self' },
+    visibleProfiles: ['readonly'],
+    presentation: { tier: 'secondary' },
+    allowed: true,
+    enabled: true,
+  })],
+  policyContext: {} as never,
+  evaluateNativeActionVisibility: () => true,
+  isTierValidationActionHidden: () => false,
+});
+assert.equal(normalizedRecordHandoff.length, 1);
+assert.equal(normalizedRecordHandoff[0]?.label, 'Open follow-up');
+assert.equal(normalizedRecordHandoff[0]?.url, '/f/x.followup/new');
+assert.equal(normalizedRecordHandoff[0]?.enabled, true);
+assert.deepEqual(normalizedRecordHandoff[0]?.visibleProfiles, ['readonly']);
+
+const decodedRuntimeOpenSnapshot = decodeSnapshotWithActions([{
+  ...rule('open-runtime-followup', 'page.header', 'page', {
+    button: {},
+    target: { url: '/f/x.followup/new', target: 'self' },
+    presentation: { tier: 'secondary' },
+    allowed: true,
+    enabled: true,
+  }),
+  actionId: 'action.open-runtime-followup',
+  targetIds: [],
+  dispatchMode: 'server',
+  refreshMode: 'partial',
+}]);
+const decodedRuntimeOpenActions = buildContractFormActions({
+  contract: null,
+  model: 'x.document',
+  recordId: 7,
+  renderProfile: 'readonly',
+  sceneReadyActions: [],
+  v2ButtonStatus: {},
+  workflowActionRows: [],
+  v2ActionRuleList: decodedRuntimeOpenSnapshot.actionContract.actionRuleList as unknown as Array<Record<string, unknown>>,
+  policyContext: {} as never,
+  evaluateNativeActionVisibility: () => true,
+  isTierValidationActionHidden: () => false,
+});
+assert.equal(decodedRuntimeOpenActions[0]?.kind, 'open');
+assert.equal(decodedRuntimeOpenActions[0]?.url, '/f/x.followup/new');
 const explicitEmptyNormalizedAuthority = buildContractFormActions({
   contract: null,
   model: 'res.partner',
@@ -306,4 +386,4 @@ const intake = groupContractHeaderActions({
 });
 assert.deepEqual(intake, { direct: [], overflow: [], configuration: [] });
 
-console.log('[contract_header_action_presentation_test] PASS real_builder_chain=1 normalized_authority=1 danger_decode=1 submit_true=1 native_fallback=1 root_header_page_object_url=4 body_widget_row_hidden=3 primary=1 config_primary=0 denied_io=0');
+console.log('[contract_header_action_presentation_test] PASS real_builder_chain=1 normalized_authority=1 full_snapshot_decode=1 danger_decode=1 submit_true=1 native_fallback=1 root_header_page_object_url=4 body_widget_row_hidden=3 primary=1 config_primary=0 denied_io=0');

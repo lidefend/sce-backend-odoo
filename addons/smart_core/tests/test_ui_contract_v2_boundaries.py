@@ -96,10 +96,15 @@ def _load_handler():
         captured["assembler_source"] = dict(source or {})
         return {"pageInfo": {}, "meta": {}}
 
+    def _project_runtime_business_actions(contract):
+        captured["runtime_business_actions_projected"] = True
+        return contract
+
     _install_module(
         "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
         CONTRACT_VERSION="2.0",
         assemble_unified_page_contract_v2=_assemble_unified_page_contract_v2,
+        project_runtime_business_actions=_project_runtime_business_actions,
     )
 
     def _trim_unified_page_contract_v2(contract, **kwargs):
@@ -308,6 +313,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(trim_kwargs["max_widgets"], 8)
         self.assertEqual(trim_kwargs["max_actions"], 3)
         self.assertEqual(trim_kwargs["max_containers"], 2)
+        self.assertTrue(self.module._captured["runtime_business_actions_projected"])
 
     def test_request_adapter_merges_nested_params_over_top_level_payload(self):
         handler = self.module.UiContractV2Handler(

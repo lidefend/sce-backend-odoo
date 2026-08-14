@@ -507,6 +507,223 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(statuses[0]["disabled"])
         self.assertEqual(statuses[0]["reasonCode"], "WAITING_FOR_REQUIRED_FACTS")
 
+    def test_runtime_business_action_is_promoted_to_normalized_authority(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "views": {"form": {"layout": []}},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action",
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "open_followup",
+            "label": "Open follow-up",
+            "kind": "open",
+            "level": "header",
+            "source_widget_id": "page.header",
+            "target": "self",
+            "url": "/f/x.followup/new",
+            "visible_profiles": ["readonly"],
+            "presentation": {"tier": "secondary"},
+            "allowed": True,
+            "enabled": True,
+        }]
+
+        assembler.project_runtime_business_actions(contract)
+        promoted = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("actionKey") == "open_followup"
+        ]
+
+        self.assertEqual(len(promoted), 1)
+        self.assertEqual(promoted[0]["target"]["url"], "/f/x.followup/new")
+        self.assertEqual(promoted[0]["target"]["target"], "self")
+        self.assertEqual(promoted[0]["sourceChannel"], "runtime_business_action")
+        self.assertEqual(promoted[0]["presentationAuthority"], "product_contract")
+        self.assertEqual(promoted[0]["visibleProfiles"], ["readonly"])
+        self.assertEqual(promoted[0]["targetScope"], "page")
+
+        assembler.project_runtime_business_actions(contract)
+        promoted_again = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("actionKey") == "open_followup"
+        ]
+        self.assertEqual(len(promoted_again), 1)
+
+    def test_runtime_business_action_without_explicit_permission_fails_closed(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {"model": "x.document", "view_type": "form", "views": {"form": {"layout": []}}},
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.permission",
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "open_followup",
+            "label": "Open follow-up",
+            "kind": "open",
+            "url": "/f/x.followup/new",
+        }]
+
+        assembler.project_runtime_business_actions(contract)
+        rule = next(row for row in contract["actionContract"]["actionRuleList"] if row["actionKey"] == "open_followup")
+        status = next(row for row in contract["statusContract"]["buttonStatus"] if row.get("backendIdentity") == rule["backendIdentity"])
+
+        self.assertFalse(rule["allowed"])
+        self.assertFalse(rule["enabled"])
+        self.assertTrue(rule["disabled"])
+        self.assertFalse(status["visible"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "ACTION_PERMISSION_UNRESOLVED")
+
+    def test_runtime_business_action_key_collision_remains_idempotent(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "views": {"form": {"layout": [], "header_buttons": [{
+                    "key": "approve",
+                    "label": "Native approve",
+                    "kind": "object",
+                    "payload": {"method": "action_native", "type": "object"},
+                    "allowed": True,
+                    "enabled": True,
+                }]}},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.key.collision",
+        )
+        contract["runtimeContract"]["businessActions"] = [
+            {"key": "approve", "label": "Runtime approve", "kind": "object", "method": "action_runtime", "allowed": True, "enabled": True},
+            {"key": "approve", "label": "Duplicate key", "kind": "object", "method": "action_duplicate", "allowed": True, "enabled": True},
+        ]
+
+        assembler.project_runtime_business_actions(contract)
+        assembler.project_runtime_business_actions(contract)
+
+        runtime_rules = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("backendIdentity") == "button:object:action_runtime"
+        ]
+        self.assertEqual(len(runtime_rules), 1)
+        runtime_trace = [
+            row for row in runtime_rules[0]["sourceTrace"]
+            if row.get("sourceChannel") == "runtime_business_action"
+        ]
+        self.assertEqual(len(runtime_trace), 1)
+        self.assertEqual(runtime_trace[0]["sourceActionKey"], "approve")
+        self.assertFalse(any(
+            row.get("backendIdentity") == "button:object:action_duplicate"
+            for row in contract["actionContract"]["actionRuleList"]
+        ))
+
+    def test_runtime_business_action_merges_three_sources_fail_closed(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "views": {"form": {"layout": [], "header_buttons": [{
+                "key": "native_submit",
+                "label": "Submit",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True,
+                "enabled": True,
+            }]}},
+            "business_actions": [{
+                "key": "semantic_submit",
+                "label": "Submit document",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True,
+                "enabled": True,
+                "presentation": {"tier": "primary"},
+            }],
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.merge",
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "runtime_submit",
+            "label": "Submit safely",
+            "kind": "object",
+            "method": "action_submit",
+            "allowed": True,
+            "enabled": False,
+            "reason_code": "RUNTIME_PRECONDITION_BLOCKED",
+            "presentation": {"tier": "primary"},
+            "action_safety": {"classification": "danger", "requires_confirm": True},
+        }]
+
+        assembler.project_runtime_business_actions(contract)
+        rules = [row for row in contract["actionContract"]["actionRuleList"] if row.get("backendIdentity") == "button:object:action_submit"]
+
+        self.assertEqual(len(rules), 1)
+        self.assertFalse(rules[0]["enabled"])
+        self.assertEqual(rules[0]["actionSafety"]["classification"], "danger")
+        self.assertTrue(rules[0]["actionSafety"]["requires_confirm"])
+        self.assertEqual(len(rules[0]["sourceTrace"]), 3)
+        primary = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if (row.get("presentation") or {}).get("tier") == "primary"
+        ]
+        self.assertEqual(len(primary), 1)
+        status = next(row for row in contract["statusContract"]["buttonStatus"] if row.get("backendIdentity") == "button:object:action_submit")
+        self.assertTrue(status["visible"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "RUNTIME_PRECONDITION_BLOCKED")
+        dependency_targets = {
+            target
+            for targets in contract["actionContract"]["dependencyGraph"].values()
+            for target in targets
+        }
+        self.assertEqual(dependency_targets, {rules[0]["actionId"]})
+
+    def test_runtime_business_action_identity_matrix_and_final_seal(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {"model": "x.document", "view_type": "form", "views": {"form": {"layout": []}}},
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.identity",
+        )
+        contract["runtimeContract"]["businessActions"] = [
+            {"key": "window", "label": "Open", "kind": "open", "action_id": 81, "allowed": True, "enabled": True},
+            {"key": "object_a", "label": "Review", "kind": "object", "method": "action_review_a", "allowed": True, "enabled": True},
+            {"key": "object_b", "label": "Review", "kind": "object", "method": "action_review_b", "allowed": True, "enabled": True},
+            {"key": "url", "label": "Open", "kind": "open", "url": "/x/status", "allowed": True, "enabled": True},
+            {"key": "client", "label": "Configure", "kind": "client", "target": {"mode": "configure"}, "allowed": True, "enabled": True},
+        ]
+
+        assembler.project_runtime_business_actions(contract)
+        identities = {row["backendIdentity"] for row in contract["actionContract"]["actionRuleList"]}
+        self.assertIn("window_action:81", identities)
+        self.assertIn("button:object:action_review_a", identities)
+        self.assertIn("button:object:action_review_b", identities)
+        self.assertIn("url:/x/status", identities)
+        self.assertTrue(any(identity.startswith("target:") for identity in identities))
+
+        sealed = assembler.seal_unified_page_contract(
+            contract,
+            source_payload={"model": "x.document"},
+            source_type="ui.contract",
+            request_id="test.runtime.business.action.identity.sealed",
+            trace_id="trace.runtime.business.action.identity",
+            client_type="web_pc",
+            stage="runtime_delivery",
+            generator="test.runtime",
+            generator_version="2.2.0",
+            source_authority=assembler.source_authority_contract(),
+        )
+        digest = sealed["meta"]["lifecycle"]["integrity"]["contractSha256"]
+        semantic = {key: value for key, value in sealed.items() if key != "meta"}
+        self.assertEqual(digest, assembler.payload_sha256(semantic))
+        self.assertTrue(any(row.get("actionKey") == "window" for row in sealed["actionContract"]["actionRuleList"]))
+
     def test_same_action_key_with_different_backend_methods_keeps_both_sources(self):
         source = {
             "model": "x.document",
