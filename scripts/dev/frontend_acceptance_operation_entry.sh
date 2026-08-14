@@ -119,6 +119,13 @@ case "$operation" in
     compose_dev up -d --wait db redis odoo
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     bash "$ROOT_DIR/scripts/test/frontend_acceptance_db_ensure.sh"
+    # Module installation runs in a disposable Odoo process. Recycle the
+    # already-running HTTP carrier so its registry reflects the installed
+    # modules before any fixture or login request can reach it.
+    compose_dev restart odoo
+    compose_dev up -d --wait odoo
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    echo "[frontend.acceptance.registry] RELOADED isolated_ci project=$COMPOSE_PROJECT_NAME sha=$SC_SOURCE_REVISION"
     ;;
   fixture)
     [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || {

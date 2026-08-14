@@ -101,6 +101,30 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             self.assertLess(backend, login_probe, target)
             self.assertLess(login_probe, frontend, target)
 
+    def test_ci_reloads_registry_after_install_and_release_stops_after_first_browser_failure(self) -> None:
+        operation = (
+            ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh"
+        ).read_text(encoding="utf-8")
+        db_ensure = operation.split("  db-ensure)", 1)[1].split("    ;;", 1)[0]
+        install = db_ensure.index("frontend_acceptance_db_ensure.sh")
+        restart = db_ensure.index("compose_dev restart odoo")
+        healthy = db_ensure.index("compose_dev up -d --wait odoo", restart)
+        final_identity = db_ensure.index(
+            'validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required',
+            healthy,
+        )
+        self.assertLess(install, restart)
+        self.assertLess(restart, healthy)
+        self.assertLess(healthy, final_identity)
+
+        runtime = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        audit = runtime.split("verify.frontend.release.audit:", 1)[1].split("\n\n", 1)[0]
+        page = audit.index("verify.frontend.page_identity.browser")
+        second_gate = audit.index('if [ "$$status" -eq 0 ]', page)
+        delivery = audit.index("verify.frontend.delivery_hardening.release.browser")
+        self.assertLess(page, second_gate)
+        self.assertLess(second_gate, delivery)
+
     def test_make_adapter_derives_aliases_and_rejects_external_drift(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
