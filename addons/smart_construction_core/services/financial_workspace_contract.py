@@ -462,6 +462,7 @@ def _build_settlement_entry_actions(env, record):
         "visible_profiles": ["readonly"],
         "allowed": True,
         "enabled": True,
+        "disabled": False,
         "route": {
             "name": "model-form",
             "params": {"model": "payment.request", "id": "new"},
@@ -591,14 +592,23 @@ def build_financial_form_business_actions(env, model_name, record_id):
             methods = ["action_approval_decision", *methods]
         for method in filter(None, methods):
             label = str(row.get("label") or action_key)
+            business_available = bool(row.get("allowed"))
+            authorization_allowed = bool(row.get("actor_matches_required_role"))
+            executable = bool(business_available and authorization_allowed)
+            reason_code = str(row.get("reason_code") or "")
+            blocked_message = str(row.get("blocked_message") or "")
+            if business_available and not authorization_allowed:
+                reason_code = "ROLE_HANDOFF_REQUIRED"
+                blocked_message = str(row.get("handoff_hint") or "当前角色无权执行该动作。")
             actions.append({
                 "key": f"payment_{action_key}", "action_key": action_key, "label": label,
                 "kind": "mutation", "level": "header", "source_widget_id": "page.header",
                 "selection": "none", "visible_profiles": ["edit", "readonly"], "method": method,
                 "intent": str(row.get("execute_intent") or row.get("intent") or "payment.request.execute"),
-                "allowed": bool(row.get("allowed")), "enabled": bool(row.get("allowed")),
-                "disabled": not bool(row.get("allowed")), "reason_code": str(row.get("reason_code") or ""),
-                "blocked_message": str(row.get("blocked_message") or ""),
+                "allowed": executable, "enabled": executable, "disabled": not executable,
+                "business_available": business_available,
+                "authorization_allowed": authorization_allowed,
+                "reason_code": reason_code, "blocked_message": blocked_message,
                 "warning_message": str(row.get("warning_message") or ""),
                 "advisory_warnings": list(row.get("advisory_warnings") or []),
                 "advisory_reason_codes": list(row.get("advisory_reason_codes") or []),
