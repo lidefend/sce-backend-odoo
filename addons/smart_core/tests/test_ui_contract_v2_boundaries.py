@@ -2302,6 +2302,50 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertIn("产品主章节", str(contract["layoutContract"]["containerTree"]))
         self.assertNotIn("分类模板章节", str(contract["layoutContract"]["containerTree"]))
 
+    def test_published_semantic_contract_rebuilds_runtime_structure_authority(self):
+        class _Config:
+            id = 91
+            name = "Published semantic form"
+            priority = 700
+            view_type = "form"
+            contract_json = {
+                "view_orchestration": {
+                    "views": {
+                        "form": {
+                            "composition_mode": "entry_semantic_surface",
+                            "columns": 2,
+                            "sections": [{"title": "产品主章节", "fields": ["name"]}],
+                            "fields": [{"name": "name"}],
+                        },
+                    },
+                },
+            }
+
+        class _ConfigModel:
+            def _effective_view_orchestration_contracts(self, *args, **kwargs):
+                return [_Config()]
+
+        class _Env:
+            def __getitem__(self, model):
+                if model == "ui.business.config.contract":
+                    return _ConfigModel()
+                raise KeyError(model)
+
+        handler = self.module.UiContractV2Handler(env=_Env())
+        source = {
+            "fields": {"name": {"name": "name", "type": "char", "string": "名称"}},
+            "views": {"form": {"layout": []}},
+        }
+
+        governance = handler._form_structure_governance(
+            source,
+            model="demo.business",
+            view_type="form",
+        )
+
+        self.assertEqual(governance["form_structure_authority"], "entry_semantic_surface")
+        self.assertEqual(governance["section_titles"], ["产品主章节"])
+
     def test_tree_projection_does_not_import_form_structure_fields_into_list_profile(self):
         class _Field:
             def __init__(self, field_type, string="", relation=""):

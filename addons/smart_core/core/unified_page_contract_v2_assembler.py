@@ -762,9 +762,12 @@ def _has_governed_form_layout_overlay(source: dict[str, Any]) -> bool:
     view_governance = _dict(governance.get("view_orchestration"))
     source_trace = _dict(source.get("source_trace"))
     view_trace = _dict(source_trace.get("view_orchestration"))
+    business_profile = _dict(source.get("business_operation_profile"))
+    runtime_form_governance = _dict(business_profile.get("form_structure_governance"))
     form_structure_authority = _text(
         view_trace.get("form_structure_authority")
         or view_governance.get("form_structure_authority")
+        or runtime_form_governance.get("form_structure_authority")
     )
     return bool(
         view_trace.get("form_layout_overlay")
