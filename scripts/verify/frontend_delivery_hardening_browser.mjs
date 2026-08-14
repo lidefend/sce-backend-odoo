@@ -132,6 +132,21 @@ function waitForRecordContractResponse(page, target) {
     }
   }, { timeout: 45000 });
 }
+async function intentRequestFromPage(page, intent, params) {
+  return page.evaluate(async ({ dbName, intentName, payload }) => {
+    const bearer = sessionStorage.getItem(`sc_auth_token:${dbName}`) || '';
+    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(dbName)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: bearer ? `Bearer ${bearer}` : '',
+        'X-Odoo-DB': dbName,
+      },
+      body: JSON.stringify({ intent: intentName, params: payload }),
+    });
+    return { status: response.status, body: await response.json().catch(() => ({})) };
+  }, { dbName: DB_NAME, intentName: intent, payload: params });
+}
 async function normalizedSubmitEvidence(response, evidenceLabel) {
   const envelope = await response.json();
   const data = envelope?.data || envelope?.result?.data || envelope?.result || {};
@@ -144,6 +159,18 @@ async function normalizedSubmitEvidence(response, evidenceLabel) {
       actionKey: row.actionKey || '', backendIdentity: row.backendIdentity || '', label: row.label || '',
       allowed: row.allowed, enabled: row.enabled, disabled: row.disabled,
       visibleProfiles: row.visibleProfiles || [], presentation: row.presentation || {},
+      permissionConstraints: row.permissionConstraints || {},
+      sourceTrace: Array.isArray(row.sourceTrace) ? row.sourceTrace.map((trace) => ({
+        sourceChannel: trace?.sourceChannel || trace?.source || '',
+        sourceActionKey: trace?.sourceActionKey || trace?.actionKey || '',
+        allowed: trace?.allowed,
+        enabled: trace?.enabled,
+        disabled: trace?.disabled,
+        reasonCode: trace?.reasonCode || trace?.reason_code || '',
+        entitlementEvaluated: trace?.entitlementEvaluated ?? trace?.entitlement_evaluated,
+        permissionConstraints: trace?.permissionConstraints || trace?.permission_constraints || {},
+        constraints: trace?.constraints || {},
+      })) : [],
     })),
     statuses: submitStatuses.map((row) => ({
       visible: row.visible, disabled: row.disabled, reasonCode: row.reasonCode || '',
@@ -504,6 +531,7 @@ async function main() {
     pass: false,
     journeys: {},
     runtime: {},
+    action_diagnostics: {},
   };
   const errorRecovery = {
     schema_version: 'frontend-error-recovery/v2',
@@ -633,6 +661,25 @@ async function main() {
     await detailIdentity.waitFor({ timeout: 45000 });
     check((await page.title()).startsWith(`${journeyIdentity} - `), 'detail document title did not use the concise stable record identity');
     const submitContractResponse = waitForRecordContractResponse(page, TARGETS.journey_request);
+    const directActions = await intentRequestFromPage(page, 'payment.request.available_actions', {
+      id: Number(TARGETS.journey_request.record_id),
+    });
+    const directEnvelope = directActions.body?.data || directActions.body?.result?.data || directActions.body?.result || {};
+    const directSubmit = (Array.isArray(directEnvelope?.actions) ? directEnvelope.actions : [])
+      .find((row) => row?.key === 'submit') || {};
+    report.action_diagnostics.direct_available_actions_submit = {
+      http_status: directActions.status,
+      allowed: directSubmit.allowed,
+      business_available: directSubmit.business_available,
+      authorization_allowed: directSubmit.authorization_allowed,
+      actor_matches_required_role: directSubmit.actor_matches_required_role,
+      handoff_required: directSubmit.handoff_required,
+      reason_code: directSubmit.reason_code || '',
+      allowed_by_state: directSubmit.allowed_by_state,
+      allowed_by_method: directSubmit.allowed_by_method,
+      allowed_by_precheck: directSubmit.allowed_by_precheck,
+    };
+    console.log(`[frontend_delivery_hardening] DIRECT_AVAILABLE_ACTION_DIAGNOSTIC J10 ${JSON.stringify(report.action_diagnostics.direct_available_actions_submit)}`);
     await open(page, recordRoute(TARGETS.journey_request));
     const submitEvidence = submitContractResponse.then((response) => normalizedSubmitEvidence(response, 'J10'));
     const submit = await canonicalSubmitAction(page, 'J10', submitEvidence);
