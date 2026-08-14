@@ -929,6 +929,38 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual([node.get("string") for node in appended], ["联系字段", "扩展字段"])
         self.assertEqual([[child.get("name") for child in node.get("children", [])] for node in appended], [["phone"], ["email"]])
 
+    def test_form_field_policy_does_not_append_under_semantic_structure_authority(self):
+        Policy = self.env["ui.form.field.policy"].sudo()
+        Policy.create({
+            "model": "res.partner",
+            "field_name": "phone",
+            "visible": True,
+            "group_title": "旧字段分组",
+            "sequence": 10,
+        })
+        contract = {
+            "layout": [{
+                "type": "group",
+                "string": "产品主信息",
+                "children": [{"type": "field", "name": "name"}],
+            }],
+        }
+
+        result = Policy.apply_to_view_contract(
+            contract,
+            model_name="res.partner",
+            view_type="form",
+            allow_layout_append=False,
+        )
+
+        self.assertEqual(
+            [node.get("string") for node in result.get("layout") or []],
+            ["产品主信息"],
+        )
+        self.assertNotIn("phone", Policy._collect_contract_field_nodes(result.get("layout") or []))
+        governance = (result.get("governance") or {}).get("form_field_policy") or {}
+        self.assertFalse(governance.get("layout_append_allowed"))
+
     def test_view_orchestrator_consumes_business_config_contract_for_form(self):
         self.env["ui.business.config.contract"].sudo().create({
             "name": "Partner Form Orchestration",

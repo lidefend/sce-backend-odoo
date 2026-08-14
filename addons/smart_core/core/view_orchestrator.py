@@ -132,6 +132,7 @@ class ViewOrchestrator:
                 action_id=action_id,
                 view_id=view_id,
                 excluded_field_names=business_config_form_fields,
+                allow_layout_append=not semantic_entry_surface_applied,
             )
             legacy_policy_applied = legacy_policy_applied or out != before
 
