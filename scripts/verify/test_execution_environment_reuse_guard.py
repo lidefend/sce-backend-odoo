@@ -83,6 +83,9 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
             ("scripts/dev/frontend_acceptance_runtime.sh", ("preflight",), "direct runtime script execution is forbidden"),
             ("scripts/dev/frontend_acceptance_db_ensure_entry.sh", (), "direct entry execution is forbidden"),
             ("scripts/dev/frontend_acceptance_operation_entry.sh", ("fixture",), "direct operation execution is forbidden"),
+            ("scripts/mod/install.sh", (), "direct module install is forbidden"),
+            ("scripts/mod/upgrade.sh", (), "direct module upgrade is forbidden"),
+            ("scripts/test/frontend_productization_fixture.sh", (), "direct fixture execution is forbidden"),
             ("scripts/test/frontend_acceptance_db_ensure.sh", (), "direct database ensure execution is forbidden"),
             ("scripts/dev/backend_acceptance_up.sh", (), "direct backend acceptance startup is forbidden"),
             ("scripts/dev/backend_acceptance_down.sh", (), "direct backend acceptance shutdown is forbidden"),
@@ -118,6 +121,9 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
             ("scripts/dev/frontend_acceptance_down.sh", {"SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY": "1", "FRONTEND_ACCEPTANCE_PIDFILE": "/tmp/parallel.pid"}),
             ("scripts/dev/frontend_acceptance_db_ensure_entry.sh", {"SC_GOVERNED_FRONTEND_DB_ENSURE_ENTRY": "1"}),
             ("scripts/test/frontend_acceptance_db_ensure.sh", {"SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY": "1"}),
+            ("scripts/mod/install.sh", {"SC_GOVERNED_MODULE_LIFECYCLE_ENTRY": "1"}),
+            ("scripts/mod/upgrade.sh", {"SC_GOVERNED_MODULE_LIFECYCLE_ENTRY": "1"}),
+            ("scripts/test/frontend_productization_fixture.sh", {"SC_GOVERNED_FRONTEND_FIXTURE_LOWER_ENTRY": "1"}),
         )
         for relative, env in cases:
             with self.subTest(relative=relative):

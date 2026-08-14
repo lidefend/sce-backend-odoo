@@ -100,7 +100,7 @@ Generated from repository source files. This report is informational during the 
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
-| 899 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
+| 905 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 895 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |

@@ -81,11 +81,9 @@ else ifneq (,$(wildcard .env))
 ENV_FILE_RESOLVED := .env
 endif
 ENV_FILE := $(ENV_FILE_RESOLVED)
-ifneq ($(strip $(ENV_FILE_RESOLVED)),)
-ifeq ($(and $(filter true,$(GITHUB_ACTIONS)),$(filter lidefend/sce-backend-odoo,$(GITHUB_REPOSITORY)),$(filter sc-fe-release-$(GITHUB_RUN_ID),$(CI_PROJECT_NAME))),)
+ifneq ($(and $(strip $(ENV_FILE_RESOLVED)),$(if $(and $(filter true,$(GITHUB_ACTIONS)),$(filter lidefend/sce-backend-odoo,$(GITHUB_REPOSITORY)),$(filter sc-fe-release-$(GITHUB_RUN_ID),$(CI_PROJECT_NAME))),,1)),)
 include $(ENV_FILE_RESOLVED)
 export
-endif
 endif
 ifneq (,$(filter command line environment environment\ override,$(REQUESTED_ENV_FILE_ORIGIN)))
 ENV_FILE := $(REQUESTED_ENV_FILE)

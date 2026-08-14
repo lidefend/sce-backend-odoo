@@ -64,12 +64,19 @@ function navigationFromPayload(payload) {
 
 async function login(page, loginName) {
   let resolveNavigation;
+  const loginTrace = [];
   const navigationReady = new Promise((resolve) => { resolveNavigation = resolve; });
   const onIntentResponse = async (response) => {
     if (!response.url().includes('/api/v1/intent')) return;
     try {
       const requestPayload = JSON.parse(response.request().postData() || '{}');
       const payload = await response.json();
+      loginTrace.push({
+        intent: String(requestPayload.intent || ''),
+        status: response.status(),
+        error_code: String(payload?.error?.code || payload?.code || ''),
+        error_message: String(payload?.error?.message || payload?.message || '').slice(0, 240),
+      });
       const candidate = navigationFromPayload(payload);
       if (candidate) {
         if (process.env.AUDIT_DEBUG_NAVIGATION === '1') {
@@ -87,7 +94,12 @@ async function login(page, loginName) {
     await inputs.nth(1).fill(password);
     if (await inputs.nth(2).isEnabled()) await inputs.nth(2).fill(dbName);
     await page.getByRole('button', { name: /^登录$/ }).click();
-    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
+    try {
+      await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
+    } catch (error) {
+      const visibleError = String(await page.locator('#login-error').textContent().catch(() => '')).replace(/\s+/g, ' ').trim();
+      throw new Error(`LOGIN_TIMEOUT:${loginName}:visible_error=${visibleError || '<none>'}:trace=${JSON.stringify(loginTrace)}:${error.message}`);
+    }
     await page.locator('.layout-shell').waitFor({ timeout: 45000 });
     return await Promise.race([
       navigationReady,

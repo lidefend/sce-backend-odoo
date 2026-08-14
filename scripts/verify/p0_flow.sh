@@ -8,10 +8,10 @@ log "[verify.p0.flow] reset db=${DB_NAME}"
 DB_NAME="${DB_NAME}" bash scripts/db/reset.sh
 
 log "[verify.p0.flow] install core"
-DB_NAME="${DB_NAME}" MODULE="smart_construction_core" bash scripts/mod/install.sh
+SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 DB_NAME="${DB_NAME}" MODULE="smart_construction_core" bash scripts/mod/install.sh
 
 log "[verify.p0.flow] install seed"
-SC_SEED_ENABLED=1 SC_BOOTSTRAP_MODE=demo DB_NAME="${DB_NAME}" MODULE="smart_construction_seed" bash scripts/mod/install.sh
+SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 SC_SEED_ENABLED=1 SC_BOOTSTRAP_MODE=demo DB_NAME="${DB_NAME}" MODULE="smart_construction_seed" bash scripts/mod/install.sh
 
 log "[verify.p0.flow] restart odoo to load newly installed modules"
 compose up -d odoo

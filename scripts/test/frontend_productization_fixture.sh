@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+: "${SC_GOVERNED_FRONTEND_FIXTURE_LOWER_ENTRY:?DENY: use make acceptance.frontend.fixture; direct fixture execution is forbidden}"
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 export ROOT_DIR
+source "$ROOT_DIR/scripts/common/governed_make_entry.sh"
+require_governed_make_ancestor "frontend fixture" "$ROOT_DIR" "acceptance.frontend.fixture"
 
 source "$ROOT_DIR/scripts/common/frontend_acceptance_guard.sh"
 guard_frontend_acceptance_scope
@@ -28,3 +31,4 @@ env.cr.commit()
 print("[acceptance.frontend.fixture] PASS")
 print(json.dumps(summary, ensure_ascii=False, indent=2))
 PY
+DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_productization_fixture.py

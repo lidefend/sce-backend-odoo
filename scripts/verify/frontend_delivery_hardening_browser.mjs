@@ -248,7 +248,13 @@ async function login(page, user, keyboard = false) {
   if (await db.isEnabled()) await db.fill(DB_NAME);
   if (keyboard) await password.press('Enter');
   else await page.getByRole('button', { name: /^登录$/ }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
+  try {
+    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
+  } catch (error) {
+    const state = runtimeByPage.get(page);
+    const visibleError = String(await page.locator('#login-error').textContent().catch(() => '')).replace(/\s+/g, ' ').trim();
+    throw new Error(`login did not leave /login user=${user} visible_error=${visibleError || '<none>'} network=${JSON.stringify(state?.network || [])} http=${JSON.stringify(state?.http || [])} console=${JSON.stringify(state?.console || [])}; ${error.message}`);
+  }
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
 }
 async function logout(page) {

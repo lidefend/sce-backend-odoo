@@ -1362,7 +1362,7 @@ verify.demo: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=sc_demo bash scripts/verify/demo.sh
 verify.p0: guard.prod.danger check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/p0_base.sh
-verify.p0.flow: guard.prod.danger check-compose-project check-compose-env
+verify.p0.flow: guard.prod.danger check-compose-project check-compose-env environment.capability.inventory
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/p0_flow.sh
 verify.platform_baseline: verify.baseline
 	@echo "[OK] verify.platform_baseline done (env/platform baseline)"
@@ -1716,7 +1716,7 @@ gate.baseline: guard.codex.fast.noheavy guard.prod.forbid check-compose-project 
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/baseline.sh
 gate.platform_baseline: gate.baseline
 	@echo "[OK] gate.platform_baseline done"
-gate.business_baseline: guard.codex.fast.noheavy guard.prod.forbid check-compose-project check-compose-env
+gate.business_baseline: guard.codex.fast.noheavy guard.prod.forbid check-compose-project check-compose-env environment.capability.inventory
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/p0_flow.sh
 	@echo "[OK] gate.business_baseline done"
 gate.baseline.all: gate.platform_baseline gate.business_baseline
@@ -1730,10 +1730,10 @@ gate.demo: guard.codex.fast.noheavy guard.prod.forbid check-compose-project chec
 # ==================== Module Ops ======================
 # ======================================================
 .PHONY: mod.install mod.upgrade acceptance.module.upgrade acceptance.baseline.upgrade
-mod.install: guard.prod.danger check-compose-project check-compose-env
-	@$(RUN_ENV) bash scripts/mod/install.sh
-mod.upgrade: guard.codex.fast.upgrade guard.prod.danger check-compose-project check-compose-env
-	@$(RUN_ENV) bash scripts/mod/upgrade.sh
+mod.install: guard.prod.danger check-compose-project check-compose-env environment.capability.inventory
+	@$(RUN_ENV) SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 bash scripts/mod/install.sh
+mod.upgrade: guard.codex.fast.upgrade guard.prod.danger check-compose-project check-compose-env environment.capability.inventory
+	@$(RUN_ENV) SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 bash scripts/mod/upgrade.sh
 
 acceptance.module.upgrade: guard.codex.fast.upgrade guard.prod.danger environment.capability.inventory
 	@SC_GOVERNED_ACCEPTANCE_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" MODULE="$(MODULE)" ODOO_ARGS="$(ODOO_ARGS)" bash scripts/dev/frontend_acceptance_runtime.sh module-upgrade
@@ -2152,8 +2152,8 @@ audit.nav.role_diff: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) $(COMPOSE_BASE) exec -T $(ODOO_SERVICE) sh -lc "BASE_URL=http://localhost:8069 DB_NAME=$(DB_NAME) ROOT_XMLID=$(ROOT_XMLID) ROLE_OWNER_LOGIN=$(or $(ROLE_OWNER_LOGIN),demo_role_owner) ROLE_OWNER_PASSWORD=$(or $(ROLE_OWNER_PASSWORD),demo) ROLE_PM_LOGIN=$(or $(ROLE_PM_LOGIN),demo_role_pm) ROLE_PM_PASSWORD=$(or $(ROLE_PM_PASSWORD),demo) ROLE_FINANCE_LOGIN=$(or $(ROLE_FINANCE_LOGIN),demo_role_finance) ROLE_FINANCE_PASSWORD=$(or $(ROLE_FINANCE_PASSWORD),demo) ROLE_EXECUTIVE_LOGIN=$(or $(ROLE_EXECUTIVE_LOGIN),demo_role_executive) ROLE_EXECUTIVE_PASSWORD=$(or $(ROLE_EXECUTIVE_PASSWORD),demo) python3 /mnt/scripts/audit/role_nav_diff.py"
 
 .PHONY: prod.upgrade.core
-prod.upgrade.core: guard.prod.danger check-compose-project check-compose-env
-	@$(RUN_ENV) MODULE=smart_construction_core DB_NAME=$(DB_NAME) bash scripts/mod/upgrade.sh
+prod.upgrade.core: guard.prod.danger check-compose-project check-compose-env environment.capability.inventory
+	@$(RUN_ENV) SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 MODULE=smart_construction_core DB_NAME=$(DB_NAME) bash scripts/mod/upgrade.sh
 	@$(MAKE) restart
 
 .PHONY: audit.pull

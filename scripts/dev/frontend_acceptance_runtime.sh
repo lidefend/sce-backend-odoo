@@ -252,7 +252,7 @@ case "$command" in
     ;;
   fixture)
     preflight
-    bash "$ROOT_DIR/scripts/test/frontend_productization_fixture.sh"
+    SC_GOVERNED_FRONTEND_FIXTURE_LOWER_ENTRY=1 bash "$ROOT_DIR/scripts/test/frontend_productization_fixture.sh"
     ;;
   db-ensure)
     preflight
@@ -275,12 +275,12 @@ case "$command" in
   module-upgrade)
     preflight
     : "${MODULE:?MODULE is required}"
-    bash "$ROOT_DIR/scripts/mod/upgrade.sh"
+    SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 bash "$ROOT_DIR/scripts/mod/upgrade.sh"
     ;;
   baseline-upgrade)
     preflight
-    MODULE=smart_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"
-    MODULE=smart_construction_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"
+    SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 MODULE=smart_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"
+    SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 MODULE=smart_construction_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"
     ;;
   release-snapshot)
     preflight

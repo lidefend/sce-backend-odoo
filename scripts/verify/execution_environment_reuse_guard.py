@@ -121,6 +121,9 @@ def verify() -> list[str]:
         "scripts/ci/upgrade_gate.sh": (ROOT / "scripts/ci/upgrade_gate.sh").read_text(encoding="utf-8"),
         "scripts/ci/install_gate.sh": (ROOT / "scripts/ci/install_gate.sh").read_text(encoding="utf-8"),
         "scripts/common/governed_make_entry.sh": (ROOT / "scripts/common/governed_make_entry.sh").read_text(encoding="utf-8"),
+        "scripts/mod/install.sh": (ROOT / "scripts/mod/install.sh").read_text(encoding="utf-8"),
+        "scripts/mod/upgrade.sh": (ROOT / "scripts/mod/upgrade.sh").read_text(encoding="utf-8"),
+        "scripts/test/frontend_productization_fixture.sh": (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(encoding="utf-8"),
         "scripts/verify/collection_view_semantics_browser.mjs": (ROOT / "scripts/verify/collection_view_semantics_browser.mjs").read_text(encoding="utf-8"),
     }
     required = {
@@ -147,6 +150,9 @@ def verify() -> list[str]:
         "scripts/ci/upgrade_gate.sh": ("SC_GOVERNED_GATE_ENTRY", "SC_GOVERNED_CI_ENTRY=1", "require_governed_make_ancestor"),
         "scripts/ci/install_gate.sh": ("SC_GOVERNED_GATE_ENTRY", "require_governed_make_ancestor"),
         "scripts/common/governed_make_entry.sh": ("require_governed_make_ancestor", "allowed make targets required", "GNU long-option abbreviations", "-*) injected=1", "MAKEFILES", "MAKEFLAGS=*|GNUMAKEFLAGS=*", "mapfile -d '' -t argv", '"${#goals[@]}" == "1"', '"${goals[0]}" == "$target"'),
+        "scripts/mod/install.sh": ("SC_GOVERNED_MODULE_LIFECYCLE_ENTRY", "direct module install is forbidden", "require_governed_make_ancestor"),
+        "scripts/mod/upgrade.sh": ("SC_GOVERNED_MODULE_LIFECYCLE_ENTRY", "direct module upgrade is forbidden", "require_governed_make_ancestor"),
+        "scripts/test/frontend_productization_fixture.sh": ("SC_GOVERNED_FRONTEND_FIXTURE_LOWER_ENTRY", "direct fixture execution is forbidden", "require_governed_make_ancestor"),
         "scripts/verify/collection_view_semantics_browser.mjs": ("SC_GOVERNED_BROWSER_ENTRY", "direct browser execution is forbidden", "require_governed_make_ancestor", "SC_ACCEPTANCE_FRONTEND_URL: 'http://127.0.0.1:5175'", "SC_ACCEPTANCE_API_URL: 'http://127.0.0.1:5175'", "SC_ACCEPTANCE_DATABASE: 'sc_frontend_acceptance'", "acquireAcceptanceLease"),
     }
     for path, markers in required.items():
@@ -176,6 +182,7 @@ def verify() -> list[str]:
         "backend.collection.acceptance.up", "backend.collection.acceptance.down",
         "frontend.collection.acceptance.up", "frontend.collection.acceptance.down",
         "acceptance.module.upgrade", "acceptance.baseline.upgrade",
+        "mod.install", "mod.upgrade", "verify.p0.flow", "gate.business_baseline", "prod.upgrade.core",
         "db.frontend.acceptance.ensure", "acceptance.frontend.fixture",
         "acceptance.frontend.release_snapshot", "test-install-gate", "test-upgrade-gate",
         "verify.frontend.collection_view_semantics.browser",
@@ -223,6 +230,14 @@ def verify() -> list[str]:
             if re.search(invocation + r".*(?:backend|frontend)_acceptance_(?:up|down)\.sh", line):
                 if relative not in {"scripts/dev/frontend_acceptance_runtime.sh", "scripts/dev/frontend_acceptance_operation_entry.sh"} or "SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1" not in line:
                     errors.append(f"ungoverned lower acceptance call: {relative}: {line.strip()}")
+            if re.search(invocation + r".*scripts/mod/(?:install|upgrade)\.sh", line):
+                allowed_module_callers = {"make/runtime_ops.mk", "scripts/dev/frontend_acceptance_runtime.sh", "scripts/verify/p0_flow.sh", "scripts/verify/frontend_acceptance_environment_source_guard.py"}
+                if relative not in allowed_module_callers or "SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1" not in line:
+                    errors.append(f"ungoverned module lifecycle call: {relative}: {line.strip()}")
+            if re.search(invocation + r".*scripts/test/frontend_productization_fixture\.sh", line):
+                allowed_fixture_callers = {"scripts/dev/frontend_acceptance_runtime.sh", "scripts/dev/frontend_acceptance_operation_entry.sh"}
+                if relative not in allowed_fixture_callers or "SC_GOVERNED_FRONTEND_FIXTURE_LOWER_ENTRY=1" not in line:
+                    errors.append(f"ungoverned frontend fixture call: {relative}: {line.strip()}")
     return errors
 
 

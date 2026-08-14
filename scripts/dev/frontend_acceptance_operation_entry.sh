@@ -17,7 +17,7 @@ source "$ROOT_DIR/scripts/common/frontend_release_ci_identity.sh"
 validate_frontend_release_ci_identity "$ROOT_DIR"
 case "$operation" in
   fixture)
-    bash "$ROOT_DIR/scripts/test/frontend_productization_fixture.sh"
+    SC_GOVERNED_FRONTEND_FIXTURE_LOWER_ENTRY=1 bash "$ROOT_DIR/scripts/test/frontend_productization_fixture.sh"
     ;;
   release-snapshot)
     bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
