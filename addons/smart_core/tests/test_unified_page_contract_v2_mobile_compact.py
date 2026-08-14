@@ -1225,6 +1225,50 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(statuses["field.name"]["required"])
         self.assertTrue(statuses["field.line_ids"]["readonly"])
 
+    def test_runtime_form_governance_restores_semantic_authority_when_root_trace_is_absent(self):
+        source = {
+            "model": "x.business.document",
+            "view_type": "form",
+            "business_operation_profile": {
+                "form_structure_governance": {
+                    "form_structure_authority": "entry_semantic_surface",
+                },
+            },
+            "fields": {
+                "name": {"name": "name", "type": "char"},
+                "line_ids": {"name": "line_ids", "type": "one2many", "readonly": True},
+            },
+            "views": {"form": {"layout": [
+                {"type": "group", "string": "产品主信息", "children": [{"type": "field", "name": "name"}]},
+                {"type": "notebook", "string": "从属关系", "tabs": [{
+                    "type": "page",
+                    "string": "明细",
+                    "children": [{"type": "field", "name": "line_ids", "readonly": True}],
+                }]},
+            ]}},
+            "form_structure_contract": {
+                "source": "ui.contract.v2.business_category_form_policy",
+                "slots": [{
+                    "slot": "legacy_group",
+                    "title": "旧分类模板",
+                    "groups": [{"name": "legacy_group", "title": "旧分类模板", "fieldRefs": ["name"]}],
+                }],
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.semantic.runtime.authority",
+        )
+
+        tree = full["layoutContract"]["containerTree"]
+        self.assertIn("产品主信息", str(tree))
+        self.assertIn("从属关系", str(tree))
+        self.assertIn("line_ids", str(tree))
+        self.assertNotIn("旧分类模板", str(tree))
+
     def test_data_source_and_formal_metadata_projection_carry_source_authority(self):
         source = {
             "model": "project.project",

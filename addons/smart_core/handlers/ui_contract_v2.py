@@ -2026,6 +2026,17 @@ class UiContractV2Handler(BaseIntentHandler):
             orchestration = payload.get("view_orchestration") if isinstance(payload.get("view_orchestration"), dict) else {}
             views = orchestration.get("views") if isinstance(orchestration.get("views"), dict) else {}
             form_spec = views.get("form") if isinstance(views.get("form"), dict) else {}
+            composition_mode = str(
+                form_spec.get("composition_mode")
+                or form_spec.get("compositionMode")
+                or ""
+            ).strip()
+            if (
+                composition_mode in {"entry_semantic_surface", "semantic_entry_surface"}
+                and isinstance(form_spec.get("sections"), list)
+                and form_spec.get("sections")
+            ):
+                form_structure_authority = "entry_semantic_surface"
             form_columns = normalize_columns(form_spec.get("columns")) or normalize_columns(form_spec.get("cols")) or form_columns
             if isinstance(form_spec.get("layout"), list) and form_spec.get("layout"):
                 form_layout_overlay = True
