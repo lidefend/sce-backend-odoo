@@ -246,8 +246,25 @@ async function login(page, user, keyboard = false) {
   await password.fill(PASSWORD);
   const db = page.locator('input').nth(2);
   if (await db.isEnabled()) await db.fill(DB_NAME);
+  const loginResponsePromise = page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try {
+      return JSON.parse(response.request().postData() || '{}').intent === 'login';
+    } catch {
+      return false;
+    }
+  }, { timeout: 45000 });
   if (keyboard) await password.press('Enter');
   else await page.getByRole('button', { name: /^登录$/ }).click();
+  const loginResponse = await loginResponsePromise;
+  let loginEnvelope = {};
+  try { loginEnvelope = await loginResponse.json(); } catch {}
+  const envelopeCode = Number(loginEnvelope?.code || loginEnvelope?.error?.code || 0);
+  const rejected = !loginResponse.ok() || loginEnvelope?.ok === false || envelopeCode >= 400;
+  check(
+    !rejected,
+    `login intent rejected http=${loginResponse.status()} code=${envelopeCode || 'unknown'} error_code=${String(loginEnvelope?.error?.error_code || loginEnvelope?.error_code || 'unknown')}`,
+  );
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
 }

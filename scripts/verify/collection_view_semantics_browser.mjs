@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { launchChromium } from './playwright_runtime.mjs';
 
-const BASE_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5192';
+const BASE_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5175';
 const DB_NAME = process.env.DB_NAME || 'sc_frontend_acceptance';
 const PASSWORD = process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const SHA = process.env.GIT_SHA || '';
