@@ -1,16 +1,56 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { launchChromium } from './playwright_runtime.mjs';
+import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 
-const BASE_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5192';
-const DB_NAME = process.env.DB_NAME || 'sc_frontend_acceptance';
-const PASSWORD = process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+if (process.env.SC_GOVERNED_BROWSER_ENTRY !== '1') {
+  throw new Error('DENY: use make verify.frontend.collection_view_semantics.browser; direct browser execution is forbidden');
+}
+const ancestry = spawnSync(
+  'bash',
+  [
+    '-c',
+    'source "$1"; require_governed_make_ancestor "collection_view_semantics_browser.mjs" "$2" "verify.frontend.collection_view_semantics.browser"',
+    '_',
+    path.join(ROOT, 'scripts/common/governed_make_entry.sh'),
+    ROOT,
+  ],
+  { cwd: ROOT, env: process.env, encoding: 'utf8' },
+);
+if (ancestry.status !== 0) {
+  throw new Error((ancestry.stderr || ancestry.stdout || 'DENY: missing governed Make ancestry').trim());
+}
+
+const acceptance = resolveAcceptanceEnvironment({
+  tool: 'collection-view-semantics',
+  env: {
+    ...process.env,
+    SC_ACCEPTANCE_PROFILE: 'local',
+    SC_ACCEPTANCE_TARGET_MODE: 'managed',
+    SC_ACCEPTANCE_FRONTEND_URL: 'http://127.0.0.1:5175',
+    SC_ACCEPTANCE_API_URL: 'http://127.0.0.1:5175',
+    SC_ACCEPTANCE_DATABASE: 'sc_frontend_acceptance',
+  },
+});
+const BASE_URL = acceptance.baseUrl;
+const DB_NAME = acceptance.database;
+if (BASE_URL !== 'http://127.0.0.1:5175' || acceptance.apiUrl !== 'http://127.0.0.1:5175' || DB_NAME !== 'sc_frontend_acceptance') {
+  throw new Error('collection view semantics requires the canonical managed acceptance identity');
+}
+if (process.env.SC_COLLECTION_ENVIRONMENT_PROBE === '1') {
+  console.log(JSON.stringify({ baseUrl: BASE_URL, apiUrl: acceptance.apiUrl, database: DB_NAME, profile: acceptance.profile, mode: acceptance.target.mode, targetKey: acceptance.concurrency.targetKey }));
+  process.exit(0);
+}
+const PASSWORD = acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const SHA = process.env.GIT_SHA || '';
 const TARGETS = JSON.parse(process.env.COLLECTION_VIEW_SEMANTICS_TARGETS_JSON || '{}');
-const OUT = process.env.ARTIFACTS_DIR || '.runtime/final-acceptance/collection-view-semantics';
+const OUT = process.env.ARTIFACTS_DIR || acceptance.runArtifactRoot;
 const shots = path.join(OUT, 'screenshots');
-fs.mkdirSync(shots, { recursive: true });
 
 function check(value, message) { if (!value) throw new Error(message); }
 function listRoute(target, query = '') {
@@ -59,6 +99,8 @@ async function switchToCard(page) {
   await page.locator('button:visible').filter({ hasText: /^卡片$/ }).first().click();
 }
 
+const acceptanceLease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'collection-view-semantics', profile: acceptance.profile, source_sha: SHA } });
+fs.mkdirSync(shots, { recursive: true });
 const browser = await launchChromium({ headless: true });
 const report = { schema_version: 'collection-view-semantics.v1', git_sha: SHA, base_url: BASE_URL, assertions: [], screenshots: [], viewports: [] };
 const pass = (name, details = {}) => report.assertions.push({ name, status: 'pass', ...details });
@@ -179,5 +221,6 @@ try {
   const images = report.screenshots.map((src) => `<figure><img src="${src}" style="max-width:100%"><figcaption>${src}</figcaption></figure>`).join('');
   fs.writeFileSync(path.join(OUT, 'index.html'), `<!doctype html><meta charset="utf-8"><title>Collection view semantics</title><h1>Collection view semantics</h1><p>SHA ${SHA}</p><ul>${rows}</ul>${images}`);
   await browser.close();
+  await acceptanceLease.release();
 }
 console.log(`[collection-view-semantics-browser] PASS report=${path.join(OUT, 'report.json')}`);

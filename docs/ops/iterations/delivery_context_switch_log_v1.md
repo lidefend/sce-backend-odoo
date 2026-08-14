@@ -3974,3 +3974,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   IDs, stale view `1976`, and null `ir_model_inherit.parent_id` rows are all
   zero. The focused runtime-contract migration test completed with
   `0 failed / 0 errors`.
+# 2026-08-14 — Environment capability inventory and reuse hard guard
+
+- Formal Product Layer: P4 operations governance.
+- Layer Target / Module: existing Make execution entries, environment policy, and static verification only.
+- Reason / Why Here: repeated product-topic attempts bypassed already-governed CI and acceptance capabilities by inventing temporary environment parameters. Environment selection and entry governance belong to P4, not P0/P1 product code.
+- Why Not Elsewhere: no Compose topology, port, database, volume, filestore, fixture, product module, frontend renderer, or business semantic changes are included.
+- Reuse baseline: governed worktrees; `make test.safe` and `make ci.*`; managed `sc_frontend_acceptance` with exact filter, ports 18082/5175 and independent volumes; controlled module upgrades and fixture; source revision/fingerprint checks; browser leases; install/upgrade gates.
+- Enforcement: `make environment.capability.inventory` is the mandatory read-only first step for formal entries that select or mutate an environment identity; pure host-only static/unit checks are excluded. Direct calls to the lower CI and managed acceptance runtime scripts fail closed; P0-P3 topics must consume existing entries and cannot create or override environment identities.
+- Blast Radius / Validation: Make callers only. Unit/static tests prove the frozen inventory and both bypass denials before any container or database action.
+- Correction closeout: install/upgrade gates now require their Make parent; lower backend/frontend lifecycle helpers reject non-canonical name, port, database, pid/log path and backend target overrides; destructive down paths verify the live source/database/filter/port or process cwd/environment identity before removal. Collection browser acceptance consumes the canonical profile and shared-read lease; legacy collection down aliases refuse implicit shutdown of the shared managed service.

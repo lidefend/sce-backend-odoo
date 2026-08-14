@@ -22,7 +22,7 @@ verify.frontend.action_surface_renderer.architecture.guard: guard.prod.forbid
 verify.frontend.table_primitive.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_table_primitive_guard.py
 
-ci.preflight.contract: guard.prod.forbid verify.product.client_action_boundary.guard verify.frontend.hierarchy_browser.architecture.guard verify.frontend.action_surface_renderer.architecture.guard verify.frontend.table_primitive.guard
+ci.preflight.contract: guard.prod.forbid environment.capability.inventory verify.product.client_action_boundary.guard verify.frontend.hierarchy_browser.architecture.guard verify.frontend.action_surface_renderer.architecture.guard verify.frontend.table_primitive.guard
 	@$(MAKE) --no-print-directory verify.contract.preflight
 	@$(MAKE) --no-print-directory verify.frontend.home_suggestion_semantics.guard
 	@$(MAKE) --no-print-directory verify.frontend.page_contract_boundary.guard
@@ -51,24 +51,24 @@ ci.scene.delivery.readiness: guard.prod.forbid
 
 # 只跑守门：权限/绕过（最快定位安全回归）
 ci.gate: guard.prod.forbid ci.preflight.contract
-	@$(RUN_ENV) TEST_TAGS="sc_gate,sc_perm" bash scripts/ci/run_ci.sh
+	@$(RUN_ENV) SC_GOVERNED_CI_ENTRY=1 TEST_TAGS="sc_gate,sc_perm" bash scripts/ci/run_ci.sh
 
 # 冒烟：基础链路 + 守门
 ci.smoke: guard.prod.forbid ci.preflight.contract
-	@$(RUN_ENV) TEST_TAGS="sc_smoke,sc_gate" bash scripts/ci/run_ci.sh
+	@$(RUN_ENV) SC_GOVERNED_CI_ENTRY=1 TEST_TAGS="sc_smoke,sc_gate" bash scripts/ci/run_ci.sh
 
 # 全量：用 TEST_TAGS（默认 sc_smoke,sc_gate，也可你自定义覆盖）
 ci.full: guard.prod.forbid ci.preflight.contract
-	@$(RUN_ENV) bash scripts/ci/run_ci.sh
+	@$(RUN_ENV) SC_GOVERNED_CI_ENTRY=1 bash scripts/ci/run_ci.sh
 
 # 复现：不清理 artifacts，保留现场
 ci.repro: guard.prod.forbid ci.preflight.contract
-	@$(RUN_ENV) CI_ARTIFACT_PURGE=0 bash scripts/ci/run_ci.sh
+	@$(RUN_ENV) SC_GOVERNED_CI_ENTRY=1 CI_ARTIFACT_PURGE=0 bash scripts/ci/run_ci.sh
 
-test-install-gate:
-	@$(RUN_ENV) bash scripts/ci/install_gate.sh
-test-upgrade-gate:
-	@$(RUN_ENV) bash scripts/ci/upgrade_gate.sh
+test-install-gate: environment.capability.inventory
+	@$(RUN_ENV) SC_GOVERNED_GATE_ENTRY=1 bash scripts/ci/install_gate.sh
+test-upgrade-gate: environment.capability.inventory
+	@$(RUN_ENV) SC_GOVERNED_GATE_ENTRY=1 bash scripts/ci/upgrade_gate.sh
 
 ci.clean: guard.prod.forbid
 	@$(RUN_ENV) bash scripts/ci/ci_clean.sh
@@ -827,7 +827,7 @@ test.e2e.preflight: guard.prod.forbid
 	@echo "[OK] v1.1 E2E preflight passed"
 
 test.e2e.fixed_data.odoo: guard.prod.forbid
-	@$(RUN_ENV) DB_CI=sc_test_e2e_fixed TEST_TAGS=e2e_fixed_journey CI_LOG=test-e2e-fixed.log CI_ARTIFACT_PURGE=0 bash scripts/ci/run_ci.sh
+	@$(RUN_ENV) SC_GOVERNED_CI_ENTRY=1 DB_CI=sc_test_e2e_fixed TEST_TAGS=e2e_fixed_journey CI_LOG=test-e2e-fixed.log CI_ARTIFACT_PURGE=0 bash scripts/ci/run_ci.sh
 
 test.e2e: guard.prod.forbid
 	@$(MAKE) --no-print-directory verify.system_user_experience.full_browser

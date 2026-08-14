@@ -4,7 +4,7 @@
 .PHONY: test test.safe test.admin-vis-p3.project-record-rule-orm test.chatter-timeline.authorization.orm
 test: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/test/test.sh
-test.safe: guard.prod.forbid check-compose-project check-compose-env
+test.safe: guard.prod.forbid environment.capability.inventory check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/test/test_safe.sh
 test.admin-vis-p3.project-record-rule-orm: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/test/admin_vis_p3_project_record_rule_orm.sh

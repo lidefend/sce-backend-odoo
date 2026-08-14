@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3776`
+- Scanned files: `3779`
 - Files requiring split plan: `39`
 - Files above warning threshold: `72`
 
@@ -127,7 +127,7 @@ Generated from repository source files. This report is informational during the 
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 313 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
-| 259 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 293 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 
 ## Largest Files
 

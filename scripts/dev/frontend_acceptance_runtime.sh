@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+: "${SC_GOVERNED_ACCEPTANCE_ENTRY:?DENY: use a governed make acceptance.* or *.acceptance.* entry; direct runtime script execution is forbidden}"
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 export ROOT_DIR
+source "$ROOT_DIR/scripts/common/governed_make_entry.sh"
+require_governed_make_ancestor "frontend_acceptance_runtime.sh" "$ROOT_DIR" "acceptance.runtime.preflight,acceptance.runtime.infrastructure.restore,frontend.acceptance.up,frontend.acceptance.down,frontend.acceptance.health,backend.acceptance.up,backend.acceptance.down,backend.acceptance.health,acceptance.module.upgrade,acceptance.baseline.upgrade,db.frontend.acceptance.ensure,acceptance.frontend.fixture,acceptance.frontend.release_snapshot"
 PROFILE="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}"
 PROFILE_RESOLVER="$ROOT_DIR/scripts/dev/frontend_acceptance_runtime_profile.py"
 
@@ -99,7 +102,7 @@ validate_backend_runtime() {
 }
 
 validate_frontend_runtime() {
-  local pid process_env process_root
+  local pid process_env process_root process_cmd
   [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" ]] || {
     echo "[acceptance.runtime] DENY missing managed frontend pidfile" >&2
     return 1
@@ -119,6 +122,7 @@ validate_frontend_runtime() {
     return 1
   }
   process_env="$(tr '\0' '\n' < "/proc/$pid/environ")"
+  process_cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline")"
   for expected in \
     "VITE_API_PROXY_TARGET=$VITE_API_PROXY_TARGET" \
     "VITE_ODOO_DB=$FRONTEND_ACCEPTANCE_DB" \
@@ -129,6 +133,22 @@ validate_frontend_runtime() {
       return 1
     }
   done
+  if [[ "$process_cmd" == *"release_static_server.mjs"* ]]; then
+    for expected in \
+      "STATIC_ROOT=$ROOT_DIR/frontend/apps/web/dist-release" \
+      "STATIC_PORT=$FRONTEND_ACCEPTANCE_PORT" \
+      "API_PROXY_TARGET=$VITE_API_PROXY_TARGET"; do
+      grep -Fqx "$expected" <<<"$process_env" || {
+        echo "[acceptance.runtime] DENY managed production frontend identity mismatch" >&2
+        return 1
+      }
+    done
+  elif [[ "$process_cmd" == *"frontend/apps/web"* && "$process_cmd" == *"--port $FRONTEND_ACCEPTANCE_PORT"* ]]; then
+    :
+  else
+    echo "[acceptance.runtime] DENY managed frontend command identity mismatch" >&2
+    return 1
+  fi
 }
 
 preflight() {
@@ -181,11 +201,15 @@ case "$command" in
       echo "[backend.acceptance.up] replacing backend with mismatched managed identity" >&2
       docker rm -f "$BACKEND_ACCEPTANCE_NAME" >/dev/null
     fi
-    bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
+    SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1 bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
     validate_backend_runtime
     ;;
   backend-down)
-    bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
+    preflight
+    if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
+      validate_backend_runtime
+    fi
+    SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1 bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
     ;;
   backend-health)
     preflight
@@ -197,18 +221,28 @@ case "$command" in
     preflight
     frontend_pid=""
     [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" ]] && frontend_pid="$(<"$FRONTEND_ACCEPTANCE_PIDFILE")"
-    if [[ "$frontend_pid" =~ ^[0-9]+$ ]] \
-      && kill -0 "$frontend_pid" 2>/dev/null \
-      && curl -fsS "http://127.0.0.1:${FRONTEND_ACCEPTANCE_PORT}/login" >/dev/null 2>&1; then
+    if [[ "$frontend_pid" =~ ^[0-9]+$ ]] && kill -0 "$frontend_pid" 2>/dev/null; then
       validate_frontend_runtime
-      echo "[frontend.acceptance.up] REUSED governed pid=$frontend_pid port=$FRONTEND_ACCEPTANCE_PORT db=$FRONTEND_ACCEPTANCE_DB"
+      if curl -fsS "http://127.0.0.1:${FRONTEND_ACCEPTANCE_PORT}/login" >/dev/null 2>&1; then
+        echo "[frontend.acceptance.up] REUSED governed pid=$frontend_pid port=$FRONTEND_ACCEPTANCE_PORT db=$FRONTEND_ACCEPTANCE_DB"
+      else
+        echo "[frontend.acceptance.up] DENY governed pid is live but unhealthy; run make frontend.acceptance.down before restart" >&2
+        exit 2
+      fi
     else
-      bash "$ROOT_DIR/scripts/dev/frontend_acceptance_up.sh"
+      SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1 bash "$ROOT_DIR/scripts/dev/frontend_acceptance_up.sh"
       validate_frontend_runtime
     fi
     ;;
   frontend-down)
-    bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"
+    preflight
+    if [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
+      frontend_pid="$(<"$FRONTEND_ACCEPTANCE_PIDFILE")"
+      if [[ "$frontend_pid" =~ ^[0-9]+$ ]] && kill -0 "$frontend_pid" 2>/dev/null; then
+        validate_frontend_runtime
+      fi
+    fi
+    SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1 bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"
     ;;
   frontend-health)
     preflight

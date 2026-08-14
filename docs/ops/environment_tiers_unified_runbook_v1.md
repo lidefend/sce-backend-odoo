@@ -108,8 +108,18 @@ Do not deploy from scratch worktrees or archived runtime directories.
 Always run before operations:
 
 ```bash
+make environment.capability.inventory
 make env.matrix.check
 ```
+
+The inventory is a fail-closed reuse decision, not an environment setup step.
+P0-P3 product topics consume the listed governed entries and must not invent a
+Compose project, port, database, volume, filestore, fixture identity, or
+temporary environment file. Only an explicitly scoped P4 environment topic may
+change topology, and only after this inventory proves the required capability
+is absent. A missing local `.env` in a topic worktree is not such proof; the
+managed acceptance resolver deliberately consumes the primary worktree's
+credential authority.
 
 This command checks:
 

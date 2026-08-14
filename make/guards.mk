@@ -2,6 +2,7 @@
 # ==================== Guards ==========================
 # ======================================================
 .PHONY: check-compose-project check.compose.project check-compose-env check-external-addons check-odoo-conf diag.project gate.compose.config env.print.db env.print.compose_files env.matrix.check verify.environment.topology.guard verify.frontend.acceptance.environment.guard verify.daily_dev.customer_addons.runtime verify.daily_dev.runtime_repo.clean verify.daily_dev.acceptance.env.guard
+.PHONY: environment.capability.inventory environment.make_ancestry.probe verify.environment.reuse.guard
 
 IS_PROD := 0
 ifneq (,$(filter prod,$(ENV)))
@@ -83,6 +84,17 @@ env.print.db:
 
 env.print.compose_files:
 	@echo "$(strip $(COMPOSE_FILES))"
+
+environment.capability.inventory: guard.prod.forbid
+	@python3 scripts/verify/execution_environment_reuse_guard.py --inventory
+
+environment.make_ancestry.probe: guard.prod.forbid
+	@source scripts/common/governed_make_entry.sh; require_governed_make_ancestor "make ancestry probe" "$(ROOT_DIR)" "environment.make_ancestry.probe"
+
+verify.environment.reuse.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/execution_environment_reuse_guard.py scripts/verify/test_execution_environment_reuse_guard.py
+	@python3 -m unittest scripts.verify.test_execution_environment_reuse_guard
+	@python3 scripts/verify/execution_environment_reuse_guard.py --verify
 
 env.matrix.check:
 	@set -e; \
