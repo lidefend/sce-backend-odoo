@@ -69,7 +69,7 @@ require_container_env() {
 
 validate_backend_identity() {
   local container="$BACKEND_ACCEPTANCE_NAME"
-  local expected_fingerprint expected_source expected_revision published_port
+  local expected_fingerprint expected_product_version expected_source expected_revision published_port
   docker inspect "$container" >/dev/null 2>&1 || {
     echo "[acceptance.runtime] DENY missing managed backend container: $container" >&2
     return 1
@@ -77,6 +77,7 @@ validate_backend_identity() {
   expected_source="$(readlink -f "$ROOT_DIR/addons")"
   expected_revision="$(git -C "$ROOT_DIR" rev-parse HEAD)"
   expected_fingerprint="$(ROOT_DIR="$ROOT_DIR" bash "$ROOT_DIR/scripts/dev/acceptance_source_fingerprint.sh")"
+  expected_product_version="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
   published_port="$(docker port "$container" 8069/tcp 2>/dev/null || true)"
   [[ "$(mount_source_of "$container" /mnt/source-addons)" == "$expected_source" ]] || {
     echo "[acceptance.runtime] DENY managed backend source mount differs from current worktree" >&2
@@ -92,6 +93,7 @@ validate_backend_identity() {
   }
   require_container_env "$container" SC_SOURCE_REVISION "$expected_revision" || return 1
   require_container_env "$container" SC_SOURCE_FINGERPRINT "$expected_fingerprint" || return 1
+  require_container_env "$container" SC_PRODUCT_VERSION "$expected_product_version" || return 1
   require_container_env "$container" ODOO_DB "$BACKEND_ACCEPTANCE_DB" || return 1
   require_container_env "$container" DB_NAME "$BACKEND_ACCEPTANCE_DB" || return 1
   require_container_env "$container" ODOO_DBFILTER "^${BACKEND_ACCEPTANCE_DB}$" || return 1
@@ -129,20 +131,33 @@ validate_frontend_runtime() {
   }
   process_env="$(tr '\0' '\n' < "/proc/$pid/environ")"
   process_cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline")"
-  [[ "$process_cmd" == *"frontend/apps/web"* && "$process_cmd" == *"--port $FRONTEND_ACCEPTANCE_PORT"* ]] || {
+  if [[ "$process_cmd" == *"scripts/release/release_static_server.mjs"* ]]; then
+    validated_frontend_mode=production
+    for expected in \
+      "STATIC_ROOT=$(readlink -f "$ROOT_DIR/frontend/apps/web/dist-release")" \
+      "STATIC_PORT=$FRONTEND_ACCEPTANCE_PORT" \
+      "API_PROXY_TARGET=$VITE_API_PROXY_TARGET"; do
+      grep -Fqx "$expected" <<<"$process_env" || {
+        echo "[acceptance.runtime] DENY managed production frontend environment identity mismatch" >&2
+        return 1
+      }
+    done
+  elif [[ "$process_cmd" == *"frontend/apps/web"* && "$process_cmd" == *"--port $FRONTEND_ACCEPTANCE_PORT"* ]]; then
+    validated_frontend_mode=development
+    for expected in \
+      "VITE_API_PROXY_TARGET=$VITE_API_PROXY_TARGET" \
+      "VITE_ODOO_DB=$FRONTEND_ACCEPTANCE_DB" \
+      "VITE_ODOO_DB_LOCKED=1" \
+      "VITE_APP_ENV=acceptance"; do
+      grep -Fqx "$expected" <<<"$process_env" || {
+        echo "[acceptance.runtime] DENY managed development frontend environment identity mismatch" >&2
+        return 1
+      }
+    done
+  else
     echo "[acceptance.runtime] DENY managed frontend command identity mismatch" >&2
     return 1
-  }
-  for expected in \
-    "VITE_API_PROXY_TARGET=$VITE_API_PROXY_TARGET" \
-    "VITE_ODOO_DB=$FRONTEND_ACCEPTANCE_DB" \
-    "VITE_ODOO_DB_LOCKED=1" \
-    "VITE_APP_ENV=acceptance"; do
-    grep -Fqx "$expected" <<<"$process_env" || {
-      echo "[acceptance.runtime] DENY managed frontend environment identity mismatch" >&2
-      return 1
-    }
-  done
+  fi
   listener="$(ss -H -ltnp "sport = :$FRONTEND_ACCEPTANCE_PORT" 2>/dev/null || true)"
   listener_pid="$(sed -nE 's/.*pid=([0-9]+).*/\1/p' <<<"$listener" | head -n 1)"
   [[ "$listener_pid" =~ ^[0-9]+$ && -d "/proc/$listener_pid" \
@@ -155,6 +170,28 @@ validate_frontend_runtime() {
     echo "[acceptance.runtime] DENY managed frontend process group does not own port=$FRONTEND_ACCEPTANCE_PORT" >&2
     return 1
   }
+}
+
+validate_frontend_launch_contract() {
+  local requested_mode="${FRONTEND_ACCEPTANCE_MODE:-development}"
+  case "$requested_mode" in
+    development)
+      ;;
+    production)
+      local expected_dist requested_dist
+      expected_dist="$(readlink -f "$ROOT_DIR/frontend/apps/web/dist-release")"
+      requested_dist="$(readlink -f "${FRONTEND_ACCEPTANCE_STATIC_DIST:-$expected_dist}")"
+      [[ "$requested_dist" == "$expected_dist" && -f "$expected_dist/index.html" ]] || {
+        echo "[acceptance.runtime] DENY production frontend dist identity mismatch" >&2
+        return 2
+      }
+      export FRONTEND_ACCEPTANCE_STATIC_DIST="$expected_dist"
+      ;;
+    *)
+      echo "[acceptance.runtime] DENY unsupported frontend mode=$requested_mode" >&2
+      return 2
+      ;;
+  esac
 }
 
 preflight() {
@@ -231,10 +268,15 @@ case "$command" in
     echo "[backend.acceptance.health] PASS db=$BACKEND_ACCEPTANCE_DB url=http://127.0.0.1:$BACKEND_ACCEPTANCE_PORT"
     ;;
   frontend-up)
+    validate_frontend_launch_contract
     preflight
     if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
       validate_frontend_runtime || {
         echo "[frontend.acceptance.up] DENY existing frontend identity mismatch" >&2
+        exit 2
+      }
+      [[ "$validated_frontend_mode" == "${FRONTEND_ACCEPTANCE_MODE:-development}" ]] || {
+        echo "[frontend.acceptance.up] DENY existing frontend mode mismatch" >&2
         exit 2
       }
       frontend_pid="$(<"$FRONTEND_ACCEPTANCE_PIDFILE")"

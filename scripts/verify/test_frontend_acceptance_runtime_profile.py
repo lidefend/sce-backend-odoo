@@ -74,6 +74,7 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             "/mnt/source-addons",
             "SC_SOURCE_REVISION",
             "SC_SOURCE_FINGERPRINT",
+            "SC_PRODUCT_VERSION",
             "ODOO_DBFILTER",
             "LIST_DB",
             "docker port",
@@ -83,6 +84,10 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             "ss -H -ltnp",
             "VITE_API_PROXY_TARGET",
             "VITE_ODOO_DB_LOCKED=1",
+            "release_static_server.mjs",
+            "STATIC_ROOT=",
+            "STATIC_PORT=",
+            "API_PROXY_TARGET=",
             "POSTGRES_PASSWORD",
         ):
             self.assertIn(marker, runtime)
@@ -96,6 +101,10 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         frontend_up = runtime.split("  frontend-up)", 1)[1].split("    ;;", 1)[0]
         frontend_down = runtime.split("  frontend-down)", 1)[1].split("    ;;", 1)[0]
         self.assertNotIn("docker rm", backend_up)
+        self.assertLess(
+            frontend_up.index("validate_frontend_launch_contract"),
+            frontend_up.index("frontend_acceptance_up.sh"),
+        )
         self.assertLess(
             backend_up.index("validate_backend_identity"),
             backend_up.index("backend_acceptance_up.sh"),

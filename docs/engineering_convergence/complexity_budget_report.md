@@ -123,7 +123,7 @@ Generated from repository source files. This report is informational during the 
 | 810 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
-| 345 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 387 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 313 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
