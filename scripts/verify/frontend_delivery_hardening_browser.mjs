@@ -118,7 +118,48 @@ async function assertMeaningfulScreenshot(page, buffer, label) {
 }
 function recordRoute(target) { return `/r/${target.model}/${target.record_id}?action_id=${target.action_id}&menu_id=${target.menu_id}`; }
 function listRoute(target) { return `/a/${target.action_id}?menu_id=${target.menu_id}`; }
-async function canonicalSubmitAction(page, evidenceLabel) {
+function waitForRecordContractResponse(page, target) {
+  return page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try {
+      const body = JSON.parse(response.request().postData() || '{}');
+      const params = body.params || {};
+      return body.intent === 'ui.contract.v2'
+        && params.op === 'action_open'
+        && Number(params.record_id || params.recordId || params.res_id || 0) === Number(target.record_id);
+    } catch {
+      return false;
+    }
+  }, { timeout: 45000 });
+}
+async function normalizedSubmitEvidence(response, evidenceLabel) {
+  const envelope = await response.json();
+  const data = envelope?.data || envelope?.result?.data || envelope?.result || {};
+  const rules = Array.isArray(data?.actionContract?.actionRuleList) ? data.actionContract.actionRuleList : [];
+  const statuses = Array.isArray(data?.statusContract?.buttonStatus) ? data.statusContract.buttonStatus : [];
+  const submitRules = rules.filter((row) => row?.backendIdentity === 'button:object:action_submit');
+  const submitStatuses = statuses.filter((row) => row?.backendIdentity === 'button:object:action_submit');
+  const evidence = {
+    rules: submitRules.map((row) => ({
+      actionKey: row.actionKey || '', backendIdentity: row.backendIdentity || '', label: row.label || '',
+      allowed: row.allowed, enabled: row.enabled, disabled: row.disabled,
+      visibleProfiles: row.visibleProfiles || [], presentation: row.presentation || {},
+    })),
+    statuses: submitStatuses.map((row) => ({
+      visible: row.visible, disabled: row.disabled, reasonCode: row.reasonCode || '',
+    })),
+  };
+  console.log(`[frontend_delivery_hardening] NORMALIZED_ACTION_DIAGNOSTIC ${evidenceLabel} ${JSON.stringify(evidence)}`);
+  check(submitRules.length === 1, `${evidenceLabel}: normalized action_submit count must be 1; evidence=${JSON.stringify(evidence)}`);
+  check(submitRules[0].allowed === true, `${evidenceLabel}: normalized action_submit allowed=${submitRules[0].allowed}`);
+  check(submitRules[0].enabled === true, `${evidenceLabel}: normalized action_submit enabled=${submitRules[0].enabled}`);
+  check(Array.isArray(submitRules[0].visibleProfiles) && submitRules[0].visibleProfiles.includes('readonly'), `${evidenceLabel}: normalized action_submit missing readonly profile`);
+  check(submitStatuses.length === 1, `${evidenceLabel}: normalized action_submit status count must be 1`);
+  check(submitStatuses[0].visible === true && submitStatuses[0].disabled === false, `${evidenceLabel}: normalized action_submit status unavailable; evidence=${JSON.stringify(evidence)}`);
+  return evidence;
+}
+async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = null) {
+  if (normalizedEvidence) await normalizedEvidence;
   const selector = '.template-page-header-actions button[data-backend-identity="button:object:action_submit"]';
   let submit = page.locator(selector);
   if (!(await submit.count()) || !(await submit.first().isVisible())) {
@@ -591,8 +632,10 @@ async function main() {
     const detailIdentity = page.locator(`.layout-shell[data-page-identity-title="${journeyIdentity}"]`).first();
     await detailIdentity.waitFor({ timeout: 45000 });
     check((await page.title()).startsWith(`${journeyIdentity} - `), 'detail document title did not use the concise stable record identity');
+    const submitContractResponse = waitForRecordContractResponse(page, TARGETS.journey_request);
     await open(page, recordRoute(TARGETS.journey_request));
-    const submit = await canonicalSubmitAction(page, 'J10');
+    const submitEvidence = submitContractResponse.then((response) => normalizedSubmitEvidence(response, 'J10'));
+    const submit = await canonicalSubmitAction(page, 'J10', submitEvidence);
     await submit.focus(); await submit.press('Enter');
     const dialog = page.getByRole('dialog');
     await dialog.waitFor({ timeout: 15000 });

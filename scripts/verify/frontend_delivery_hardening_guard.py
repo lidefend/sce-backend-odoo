@@ -113,6 +113,7 @@ require(
     "fs.writeFileSync(path.join(OUT, 'performance.json')",
     "button:object:action_submit",
     "ACTION_DIAGNOSTIC",
+    "NORMALIZED_ACTION_DIAGNOSTIC",
     "expected=提交审批",
 )
 require(

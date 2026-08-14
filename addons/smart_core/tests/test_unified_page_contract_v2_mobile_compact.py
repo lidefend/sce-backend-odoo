@@ -702,6 +702,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "payment_submit": {
                     "enabled": True,
                     "entitlement_evaluated": True,
+                    "visible_profiles": ["create", "edit", "readonly"],
                     "enabled_when": {"required_groups": ["x.group_finance_user"]},
                 },
             },
@@ -742,6 +743,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(rules[0]["enabled"])
         self.assertFalse(rules[0]["disabled"])
         self.assertEqual(rules[0]["label"], "Submit")
+        self.assertEqual(rules[0]["visibleProfiles"], ["edit", "readonly"])
         self.assertEqual(len(statuses), 1)
         self.assertTrue(statuses[0]["visible"])
         self.assertFalse(statuses[0]["disabled"])

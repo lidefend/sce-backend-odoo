@@ -242,6 +242,14 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 "smart_construction_core.group_sc_cap_finance_user",
             ],
         )
+        self.assertEqual(
+            policies["payment_submit"]["visible_profiles"],
+            ["create", "edit", "readonly"],
+        )
+        self.assertEqual(
+            policies["payment_submit"]["enabled_when"]["profiles"],
+            ["create", "edit", "readonly"],
+        )
 
     def test_scene_action_binding_accepts_authoritative_target(self):
         self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
