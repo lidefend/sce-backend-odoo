@@ -252,6 +252,36 @@ case "$command" in
     preflight
     bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
     ;;
+  release-preflight)
+    preflight
+    if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
+      [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" && ! -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]] || {
+        echo "[acceptance.release.preflight] DENY invalid frontend pidfile" >&2; exit 2;
+      }
+      frontend_pid="$(<"$FRONTEND_ACCEPTANCE_PIDFILE")"
+      [[ "$frontend_pid" =~ ^[0-9]+$ ]] || {
+        echo "[acceptance.release.preflight] DENY invalid frontend pid" >&2; exit 2;
+      }
+      if kill -0 "$frontend_pid" 2>/dev/null; then
+        frontend_owner="$(readlink -f "/proc/$frontend_pid/cwd")"
+        echo "[acceptance.release.preflight] DENY frontend lifecycle is active owner=$frontend_owner pid=$frontend_pid" >&2
+        exit 2
+      fi
+      echo "[acceptance.release.preflight] DENY stale frontend pidfile must be closed by its owner" >&2
+      exit 2
+    fi
+    if (exec 3<>"/dev/tcp/127.0.0.1/${FRONTEND_ACCEPTANCE_PORT}") >/dev/null 2>&1; then
+      echo "[acceptance.release.preflight] DENY untracked frontend listener port=$FRONTEND_ACCEPTANCE_PORT" >&2
+      exit 2
+    fi
+    echo "[acceptance.release.preflight] PASS frontend_port=$FRONTEND_ACCEPTANCE_PORT"
+    ;;
+  release-audit)
+    preflight
+    # shellcheck source=../common/frontend_acceptance_make_identity.sh
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make verify.frontend.release.audit
+    ;;
   *)
     echo "[acceptance.runtime] DENY unknown command: $command" >&2
     exit 2

@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3780`
+- Scanned files: `3783`
 - Files requiring split plan: `39`
 - Files above warning threshold: `73`
 
@@ -98,9 +98,9 @@ Generated from repository source files. This report is informational during the 
 | 952 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
+| 916 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
-| 899 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 895 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
@@ -127,8 +127,8 @@ Generated from repository source files. This report is informational during the 
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 313 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
+| 289 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
-| 259 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 
 ## Largest Files
 
