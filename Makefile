@@ -81,7 +81,7 @@ else ifneq (,$(wildcard .env))
 ENV_FILE_RESOLVED := .env
 endif
 ENV_FILE := $(ENV_FILE_RESOLVED)
-ifneq ($(strip $(ENV_FILE_RESOLVED)),)
+ifneq ($(and $(strip $(ENV_FILE_RESOLVED)),$(if $(and $(filter true,$(GITHUB_ACTIONS)),$(filter lidefend/sce-backend-odoo,$(GITHUB_REPOSITORY)),$(filter sc-fe-release-$(GITHUB_RUN_ID),$(CI_PROJECT_NAME))),,1)),)
 include $(ENV_FILE_RESOLVED)
 export
 endif

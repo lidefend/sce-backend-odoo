@@ -42,7 +42,10 @@ local.clean.frontend: guard.prod.forbid local.clean.prepare
 	@ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/frontend_static_build.sh
 
-local.clean.install: guard.prod.forbid local.clean.up
+
+local.clean.install: guard.prod.forbid
+	@$(MAKE) --no-print-directory environment.capability.inventory
+	@$(MAKE) --no-print-directory local.clean.up
 	@$(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
 	  MODULE="$(LOCAL_CLEAN_MODULES)" WITHOUT_DEMO=--without-demo=all mod.install
 	@$(MAKE) --no-print-directory local.clean.frontend
@@ -120,36 +123,40 @@ BACKEND_ACCEPTANCE_DB ?= sc_frontend_acceptance
 BACKEND_ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(BACKEND_ACCEPTANCE_PORT)
 SC_ACCEPTANCE_RUNTIME_PROFILE ?= local
 
-acceptance.runtime.preflight: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh preflight
+acceptance.runtime.preflight: guard.prod.forbid environment.capability.inventory
+	@SC_GOVERNED_ACCEPTANCE_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh preflight
 
-acceptance.runtime.infrastructure.restore: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh infrastructure-restore
+acceptance.runtime.infrastructure.restore: guard.prod.forbid environment.capability.inventory
+	@SC_GOVERNED_ACCEPTANCE_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh infrastructure-restore
 
-frontend.acceptance.up: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-up
+frontend.acceptance.up: guard.prod.forbid environment.capability.inventory
+	@SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh frontend-up
 
-frontend.acceptance.down: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-down
+frontend.acceptance.down: guard.prod.forbid environment.capability.inventory
+	@SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh frontend-down
 
-frontend.acceptance.health:
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-health
+frontend.acceptance.health: environment.capability.inventory
+	@SC_GOVERNED_ACCEPTANCE_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-health
 
-backend.acceptance.up: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-up
-backend.acceptance.down:
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-down
-backend.acceptance.health:
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-health
+backend.acceptance.up: guard.prod.forbid environment.capability.inventory
+	@SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh backend-up
+backend.acceptance.down: environment.capability.inventory
+	@SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh backend-down
+backend.acceptance.health: environment.capability.inventory
+	@SC_GOVERNED_ACCEPTANCE_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-health
 
-backend.collection.acceptance.up: guard.prod.forbid check-compose-project check-compose-env
-	@BACKEND_ACCEPTANCE_NAME=sc-backend-odoo-collection-view-semantics BACKEND_ACCEPTANCE_PORT=18102 bash scripts/dev/backend_acceptance_up.sh
-backend.collection.acceptance.down:
-	@BACKEND_ACCEPTANCE_NAME=sc-backend-odoo-collection-view-semantics bash scripts/dev/backend_acceptance_down.sh
-frontend.collection.acceptance.up: guard.prod.forbid
-	@FRONTEND_ACCEPTANCE_PORT=5192 FRONTEND_ACCEPTANCE_PIDFILE=/tmp/sc-collection-view-semantics.pid FRONTEND_ACCEPTANCE_LOGFILE=/tmp/sc-collection-view-semantics.log VITE_API_PROXY_TARGET=http://127.0.0.1:18102 bash scripts/dev/frontend_acceptance_up.sh
-frontend.collection.acceptance.down: guard.prod.forbid
-	@FRONTEND_ACCEPTANCE_PORT=5192 FRONTEND_ACCEPTANCE_PIDFILE=/tmp/sc-collection-view-semantics.pid bash scripts/dev/frontend_acceptance_down.sh
+backend.collection.acceptance.up: guard.prod.forbid environment.capability.inventory
+	@echo "[deprecated] collection acceptance reuses the governed backend acceptance topology"
+	@$(MAKE) --no-print-directory backend.acceptance.up
+backend.collection.acceptance.down: guard.prod.forbid environment.capability.inventory
+	@echo "[DENY] no separate collection backend lifecycle exists; use backend.acceptance.down explicitly" >&2
+	@exit 2
+frontend.collection.acceptance.up: guard.prod.forbid environment.capability.inventory
+	@echo "[deprecated] collection acceptance reuses the governed frontend acceptance topology"
+	@$(MAKE) --no-print-directory frontend.acceptance.up
+frontend.collection.acceptance.down: guard.prod.forbid environment.capability.inventory
+	@echo "[DENY] no separate collection frontend lifecycle exists; use frontend.acceptance.down explicitly" >&2
+	@exit 2
 
 ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(NGINX_PORT)
 ACCEPTANCE_PROBE_OUTPUT ?= artifacts/backend/dev_acceptance_release_probe.json

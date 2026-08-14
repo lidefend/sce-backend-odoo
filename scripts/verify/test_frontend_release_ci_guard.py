@@ -70,6 +70,33 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         )
         self.assertIn("FRONTEND_ACCEPTANCE_URL_ALIASES_NOT_ALIGNED", findings(root))
 
+    def test_isolated_compose_project_must_be_exported_to_env_file_and_runner(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        workflow = root / ".github/workflows/frontend_release_gate.yml"
+        text = workflow.read_text(encoding="utf-8")
+        marker = "            printf 'COMPOSE_PROJECT_NAME=%s\\n' \"${CI_PROJECT_NAME}\"\n"
+        workflow.write_text(text.replace(marker, "", 1), encoding="utf-8")
+        self.assertIn("ISOLATED_COMPOSE_PROJECT_NOT_EXPORTED", findings(root))
+
+    def test_isolated_backend_port_must_be_exported_to_env_file_and_runner(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        workflow = root / ".github/workflows/frontend_release_gate.yml"
+        text = workflow.read_text(encoding="utf-8")
+        marker = "            printf 'ODOO_PORT=18082\\n'\n"
+        workflow.write_text(text.replace(marker, "", 1), encoding="utf-8")
+        self.assertIn("ISOLATED_BACKEND_PORT_NOT_EXPORTED", findings(root))
+
+    def test_isolated_source_revision_must_be_exported_to_env_file_and_runner(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        workflow = root / ".github/workflows/frontend_release_gate.yml"
+        text = workflow.read_text(encoding="utf-8")
+        marker = "            printf 'SC_SOURCE_REVISION=%s\\n' \"${CHECKOUT_SHA}\"\n"
+        workflow.write_text(text.replace(marker, "", 1), encoding="utf-8")
+        self.assertIn("ISOLATED_SOURCE_REVISION_NOT_EXPORTED", findings(root))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -10,6 +10,7 @@
 
 ## Database Architecture Governance
 - `docs/governance/database_architecture_policy.md` is the single authoritative database architecture policy.
+- Environment reuse is fail-closed: before any formal entry that selects or mutates a CI/acceptance environment identity, module lifecycle, fixture, or managed browser runtime, run the repository inventory entry `make environment.capability.inventory` and consume the governed Make target it reports. Pure host-only static/unit checks do not require an environment inventory. A P0-P3 product topic must not create or override a Compose project, port, database, volume, filestore, fixture identity, or temporary env file. Only an explicitly scoped P4 environment topic may change environment topology, and only after the inventory proves the required capability is absent.
 - Before any task involving database creation, copy, upgrade, migration, destruction, module lifecycle, tenant provisioning, users or multi-company design, fixture or acceptance environments, filestore/session/backup/restore, or cross-tenant interfaces and analytics, read and apply that policy.
 - Every database-writing task must resolve the target database role, tenant, environment, exact database filter, and filestore identity before any write. An unresolved role or a policy violation is a fail-closed stop.
 - UM-P1 and all later user-module productization tasks inherit this policy. UM-P2 installation rehearsal must use a newly created isolated customer-tenant rehearsal database.

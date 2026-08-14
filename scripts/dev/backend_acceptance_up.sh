@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
+: "${SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY:?DENY: use make backend.acceptance.up; direct backend acceptance startup is forbidden}"
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
+source "$ROOT_DIR/scripts/common/governed_make_entry.sh"
+require_governed_make_ancestor "backend_acceptance_up.sh" "$ROOT_DIR" "backend.acceptance.up"
 NAME="${BACKEND_ACCEPTANCE_NAME:-sc-backend-odoo-acceptance}"
 PORT="${BACKEND_ACCEPTANCE_PORT:-18082}"
 DATABASE="${BACKEND_ACCEPTANCE_DB:-sc_frontend_acceptance}"
+[[ "$NAME" == "sc-backend-odoo-acceptance" ]] || { echo "[backend.acceptance.up] DENY non-canonical container=$NAME" >&2; exit 2; }
+[[ "$PORT" == "18082" ]] || { echo "[backend.acceptance.up] DENY non-canonical port=$PORT" >&2; exit 2; }
+[[ "$DATABASE" == "sc_frontend_acceptance" ]] || { echo "[backend.acceptance.up] DENY non-canonical database=$DATABASE" >&2; exit 2; }
 if [[ ! "$DATABASE" =~ ^[a-zA-Z0-9_]+$ ]]; then
   echo "[backend.acceptance.up] invalid database identifier" >&2
   exit 2

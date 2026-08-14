@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+: "${SC_GOVERNED_MODULE_LIFECYCLE_ENTRY:?DENY: use a governed module lifecycle Make target; direct module install is forbidden}"
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 export ROOT_DIR
+source "$ROOT_DIR/scripts/common/governed_make_entry.sh"
+require_governed_make_ancestor "module install" "$ROOT_DIR" "mod.install,verify.p0.flow,gate.business_baseline"
 
 # shellcheck source=../common/env.sh
 source "$ROOT_DIR/scripts/common/env.sh"

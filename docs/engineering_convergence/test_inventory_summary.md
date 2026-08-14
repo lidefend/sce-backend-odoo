@@ -4,19 +4,19 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1161`
+- Total assets: `1163`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `169`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `767`
+- PR dedupe candidates: `769`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 443 |
+| governance | 445 |
 | contract | 324 |
 | unit | 196 |
 | odoo_integration | 100 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 986 |
+| pr_candidate | 988 |
 | integration_candidate | 124 |
 | release_candidate | 42 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 767 |
+| deduplicate_before_required | 769 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 123 |
 | keep_release_only | 42 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 988 |
+| <5m | 990 |
 | 10-30m | 125 |
 | 30-60m | 44 |
 | unknown | 3 |
@@ -152,7 +152,7 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 443 |
+| architecture owner | 445 |
 | platform owner | 324 |
 | test owner | 197 |
 | backend owner | 100 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1033 |
+| scripts/verify | 1035 |
 | scripts/ops | 67 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 12 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-190 | unit | `scripts/verify/capability_registry_smoke.py` | test owner |
 | T-ASSET-191 | unit | `scripts/verify/capability_smoke.py` | test owner |
 | T-ASSET-194 | governance | `scripts/verify/clean_product_tree_guard.py` | architecture owner |
-| ... | ... | 687 more | ... |
+| ... | ... | 689 more | ... |
 
 ## Dedupe Hotspots
 

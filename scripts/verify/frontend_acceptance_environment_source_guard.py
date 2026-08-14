@@ -50,9 +50,9 @@ def main() -> int:
     ):
         if marker not in runtime_entry:
             errors.append(f"managed runtime entry missing marker: {marker}")
-    smart_core_upgrade = runtime_entry.find('MODULE=smart_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"')
+    smart_core_upgrade = runtime_entry.find('SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 MODULE=smart_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"')
     construction_upgrade = runtime_entry.find(
-        'MODULE=smart_construction_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"'
+        'SC_GOVERNED_MODULE_LIFECYCLE_ENTRY=1 MODULE=smart_construction_core bash "$ROOT_DIR/scripts/mod/upgrade.sh"'
     )
     if smart_core_upgrade < 0 or construction_upgrade < 0 or smart_core_upgrade >= construction_upgrade:
         errors.append("managed baseline upgrade must run smart_core before smart_construction_core")

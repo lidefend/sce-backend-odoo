@@ -129,6 +129,8 @@ jobs:
             printf 'SCENE_USE_PINNED=0\n'
             printf 'SCENE_ROLLBACK=0\n'
             printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
+            printf 'ODOO_PORT=18082\n'
+            printf 'SC_SOURCE_REVISION=%s\n' "${CHECKOUT_SHA}"
             printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
             printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
             printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"
@@ -138,6 +140,7 @@ jobs:
           {
             printf 'ENV=test\n'
             printf 'ENV_FILE=%s\n' "${ci_env}"
+            printf 'COMPOSE_PROJECT_NAME=%s\n' "${CI_PROJECT_NAME}"
             printf 'DB_USER=odoo\n'
             printf 'DB_PASSWORD=%s\n' "${db_password}"
             printf 'DB_NAME=sc_frontend_acceptance\n'
@@ -149,6 +152,8 @@ jobs:
             printf 'SCENE_USE_PINNED=0\n'
             printf 'SCENE_ROLLBACK=0\n'
             printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
+            printf 'ODOO_PORT=18082\n'
+            printf 'SC_SOURCE_REVISION=%s\n' "${CHECKOUT_SHA}"
             printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
             printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
             printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"

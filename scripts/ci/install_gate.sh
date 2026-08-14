@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+: "${SC_GOVERNED_GATE_ENTRY:?DENY: use make test-install-gate; direct install_gate.sh execution is forbidden}"
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+source "$ROOT_DIR/scripts/common/governed_make_entry.sh"
+require_governed_make_ancestor "install_gate.sh" "$ROOT_DIR" "test-install-gate"
 source "$ROOT_DIR/scripts/common/guard_prod.sh"
 source "$(dirname "$0")/../_lib/common.sh"
 

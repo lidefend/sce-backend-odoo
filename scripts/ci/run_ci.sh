@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+: "${SC_GOVERNED_CI_ENTRY:?DENY: use a governed make ci.gate/ci.smoke/ci.full/ci.repro entry; direct run_ci.sh execution is forbidden}"
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+source "$ROOT_DIR/scripts/common/governed_make_entry.sh"
+require_governed_make_ancestor "run_ci.sh" "$ROOT_DIR" "ci.gate,ci.smoke,ci.full,ci.repro,test-upgrade-gate,test.e2e.fixed_data.odoo"
 source "$ROOT_DIR/scripts/common/guard_prod.sh"
 source "$(dirname "$0")/../_lib/common.sh"
 

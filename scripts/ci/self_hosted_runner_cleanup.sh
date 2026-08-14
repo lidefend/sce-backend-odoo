@@ -1,17 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
 project="${CI_PROJECT_NAME:-}"
 workspace="${GITHUB_WORKSPACE:-}"
 runner_temp="${RUNNER_TEMP:-}"
 run_id="${GITHUB_RUN_ID:-}"
 
-if [[ ! "${project}" =~ ^sc-(prof|fe-release)-[0-9]+$ ]]; then
+if [[ ! "${run_id}" =~ ^[0-9]+$ ]] || { [[ "${project}" != "sc-prof-${run_id}" ]] && [[ "${project}" != "sc-fe-release-${run_id}" ]]; }; then
   echo "[self_hosted_cleanup] invalid project scope" >&2
   exit 2
 fi
-if [[ -z "${workspace}" || "${workspace}" == "/" || "${workspace}" == "${HOME:-}" ]]; then
+if [[ "${GITHUB_ACTIONS:-}" != "true" || "${GITHUB_REPOSITORY:-}" != "lidefend/sce-backend-odoo" ]]; then
+  echo "[self_hosted_cleanup] invalid GitHub Actions identity" >&2
+  exit 2
+fi
+if [[ "$(readlink -f "${workspace:-/nonexistent}")" != "$(readlink -f "$root_dir")" ]]; then
   echo "[self_hosted_cleanup] invalid workspace scope" >&2
+  exit 2
+fi
+resolved_runner_temp="$(readlink -f "${runner_temp:-/nonexistent}")"
+if [[ ! -d "$resolved_runner_temp" || "$(basename "$resolved_runner_temp")" != "_temp" || "$resolved_runner_temp" == "/" || "$resolved_runner_temp" == "${HOME:-}" ]]; then
+  echo "[self_hosted_cleanup] invalid runner temp scope" >&2
   exit 2
 fi
 
@@ -25,8 +35,8 @@ if command -v docker >/dev/null 2>&1; then
     xargs -r docker network rm >/dev/null 2>&1 || true
 fi
 
-if [[ -n "${runner_temp}" && -d "${runner_temp}" && -n "${run_id}" ]]; then
-  find "${runner_temp}" -mindepth 1 -maxdepth 1 \
+if [[ -n "${run_id}" ]]; then
+  find "${resolved_runner_temp}" -mindepth 1 -maxdepth 1 \
     -name "sce-ci-${run_id}-*" -exec rm -rf -- {} +
 fi
 
