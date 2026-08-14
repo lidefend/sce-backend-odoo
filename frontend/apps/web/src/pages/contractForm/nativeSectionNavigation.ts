@@ -12,3 +12,15 @@ export function nativeSectionNavigationRole(node: NativeSectionAuthorityNode): N
     || authority.noBusinessFactAuthority === true;
   return projectionOnly && noBusinessAuthority ? 'subordinate' : 'primary';
 }
+
+type BusinessActionCandidate = { label?: string; enabled?: boolean };
+
+export function nextBusinessActionLabel(
+  primary: BusinessActionCandidate | null | undefined,
+  direct: BusinessActionCandidate[],
+): string {
+  const candidate = primary?.enabled !== false
+    ? primary
+    : (direct || []).find((action) => action?.enabled !== false);
+  return String(candidate?.label || '').trim();
+}

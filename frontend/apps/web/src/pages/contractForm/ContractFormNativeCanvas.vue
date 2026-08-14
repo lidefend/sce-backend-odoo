@@ -39,6 +39,19 @@
           @click="scrollToSection(item.title)"
         >{{ item.title }}<span v-if="item.hasError" class="section-error-dot" aria-label="本章节存在错误"></span></button>
       </nav>
+      <label class="form-section-nav-mobile">
+        <span>当前章节</span>
+        <select
+          data-mobile-section-selector
+          :value="activeSection"
+          aria-label="选择表单章节"
+          @change="scrollToSection(($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="item in sectionItems" :key="`mobile-${item.title}`" :value="item.title">
+            {{ item.title }}{{ item.hasError ? '（有错误）' : '' }}
+          </option>
+        </select>
+      </label>
       <span class="form-section-progress" aria-live="polite">
         {{ activeSectionIndex + 1 }}/{{ sectionItems.length }}<span v-if="sectionHasMoreBefore || sectionHasMoreAfter"> · 横向滑动</span>
       </span>
@@ -359,6 +372,8 @@ const emit = defineEmits<{
   font-weight: 600;
 }
 
+.form-section-nav-mobile { display: none; }
+
 .form-section-nav button {
   flex: 0 0 auto;
   position: relative;
@@ -441,5 +456,30 @@ const emit = defineEmits<{
     line-height: 16px;
     text-align: right;
   }
+}
+
+@media (max-width: 520px) {
+  .form-section-nav { display: none; }
+  .form-section-nav-mobile {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px 2px;
+    color: var(--sc-app-text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .form-section-nav-mobile select {
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    border: 1px solid var(--sc-app-border);
+    border-radius: 5px;
+    background: var(--sc-app-panel);
+    color: var(--sc-app-text-primary);
+  }
+  .form-section-progress { text-align: left; }
+  .form-section-progress span { display: none; }
 }
 </style>
