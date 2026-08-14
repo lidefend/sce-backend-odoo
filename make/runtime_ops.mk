@@ -1751,13 +1751,13 @@ verify.frontend.dynamic_list_optional_columns.browser: guard.prod.forbid
 FRONTEND_ACCEPTANCE_DB := $(if $(filter command line,$(origin DB_NAME)),$(DB_NAME),sc_frontend_acceptance)
 
 db.frontend.acceptance.ensure: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh db-ensure
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh db-ensure
 
 acceptance.frontend.fixture: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" bash scripts/dev/frontend_acceptance_runtime.sh fixture
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" bash scripts/dev/frontend_acceptance_operation_entry.sh fixture
 
 acceptance.frontend.release_snapshot: guard.prod.forbid
-	@SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh release-snapshot
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-snapshot
 
 frontend.acceptance.release.build:
 	@VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB) VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance scripts/dev/pnpm_exec.sh -C frontend/apps/web exec vite build --outDir dist-release
