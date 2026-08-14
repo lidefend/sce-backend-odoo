@@ -4023,6 +4023,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   pre-parse zero side effects, and invalid-operation zero side effects. The
   final authority is a full release workflow on the frozen candidate SHA.
 
+# P0 form and action assembler closeout (2026-08-14)
+
+- Branch / base SHA: `fix/p0-form-action-assembler-v2` /
+  `319a7d2f31f734b41ea45a04b383a7dc0f2ff4c0`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / normalized
+  page and action assembly / `smart_core`.
+- Standard vs User-Specific: generic contract mechanism only; no construction,
+  payment, customer, role-specific presentation, or runtime configuration is
+  introduced.
+- Reason / boundary: a published `entry_semantic_surface` must remain the only
+  primary form structure across repeated composition, while native modifiers,
+  relations, notebook capabilities and chatter remain subordinate. Actions are
+  canonicalized by stable backend identity only after every source is retained;
+  constraints merge fail-closed and product presentation has explicit priority.
+- Why Here / Why Not Elsewhere: source arbitration and canonical identity are
+  platform assembly responsibilities. Industry modules, payment-specific pages,
+  frontend inference and P4 runtime tooling must not duplicate these rules.
+- Blast radius / validation: all normalized form/action consumers. Pure-Python
+  tests cover semantic-plus-template precedence, native fallback, notebook and
+  relation preservation, object/server/window/URL identity, permission denial,
+  presentation priority and three generic Odoo page samples loaded from the
+  repository native XML fixtures through the existing Tree/Form parser. Exact
+  new-baseline static, runtime and Full Release gates remain required.
+
 # P0 authentication credential framework (2026-08-14)
 
 - Branch / base SHA: `fix/p0-auth-credential-framework-v1` /

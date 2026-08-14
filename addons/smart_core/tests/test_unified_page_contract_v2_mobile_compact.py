@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import types
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
@@ -18,6 +19,76 @@ def _load_module(module_name: str, path: Path):
     return module
 
 
+class _FixtureElement:
+    def __init__(self, element, parent=None):
+        self._element = element
+        self._parent = parent
+        self.tag = element.tag
+        self.attrib = element.attrib
+        self.text = element.text
+        self.tail = element.tail
+
+    def __iter__(self):
+        return iter([_FixtureElement(child, self) for child in self._element])
+
+    def get(self, key, default=None):
+        return self._element.get(key, default)
+
+    def getparent(self):
+        return self._parent
+
+    def xpath(self, expr):
+        if "contains(" in expr:
+            return []
+        if expr == ".//header//button":
+            return [
+                _FixtureElement(button, self)
+                for header in self._element.iter("header")
+                for button in header.iter("button")
+            ]
+        descendant = expr.startswith(".//")
+        direct = expr.startswith("./") and not descendant
+        query = expr[3:] if descendant else expr[2:] if direct else expr
+        if "/" in query or " and " in query:
+            return []
+        attr_name = ""
+        attr_value = None
+        tag = query
+        if "[@" in query and query.endswith("]"):
+            tag, predicate = query[:-1].split("[@", 1)
+            if "=" in predicate:
+                attr_name, raw_value = predicate.split("=", 1)
+                attr_value = raw_value.strip().strip("'\"")
+            else:
+                attr_name = predicate
+        candidates = list(self._element) if direct else list(self._element.iter())
+        rows = []
+        for candidate in candidates:
+            if candidate is self._element:
+                continue
+            if tag not in ("*", candidate.tag):
+                continue
+            if attr_name and candidate.get(attr_name) is None:
+                continue
+            if attr_value is not None and candidate.get(attr_name) != attr_value:
+                continue
+            rows.append(_FixtureElement(candidate, self))
+        return rows
+
+
+def _install_lxml_fixture_shim():
+    if "lxml" in sys.modules:
+        return
+    etree = types.SimpleNamespace(
+        fromstring=lambda raw: _FixtureElement(ET.fromstring(raw.decode("utf-8") if isinstance(raw, bytes) else raw)),
+        tostring=lambda node, encoding="unicode": ET.tostring(node._element, encoding=encoding),
+    )
+    lxml_module = types.ModuleType("lxml")
+    lxml_module.etree = etree
+    sys.modules["lxml"] = lxml_module
+    sys.modules["lxml.etree"] = etree
+
+
 sys.modules.setdefault("odoo", types.ModuleType("odoo"))
 sys.modules.setdefault("odoo.addons", types.ModuleType("odoo.addons"))
 smart_core_pkg = sys.modules.setdefault("odoo.addons.smart_core", types.ModuleType("odoo.addons.smart_core"))
@@ -25,6 +96,19 @@ smart_core_pkg.__path__ = [str(CORE_DIR.parent)]
 core_pkg = sys.modules.setdefault("odoo.addons.smart_core.core", types.ModuleType("odoo.addons.smart_core.core"))
 core_pkg.__path__ = [str(CORE_DIR)]
 smart_core_pkg.core = core_pkg
+odoo_pkg = sys.modules["odoo"]
+odoo_pkg._ = lambda value: value
+_install_lxml_fixture_shim()
+utils_pkg = sys.modules.setdefault("odoo.addons.smart_core.utils", types.ModuleType("odoo.addons.smart_core.utils"))
+utils_pkg.__path__ = [str(CORE_DIR.parent / "utils")]
+_load_module(
+    "odoo.addons.smart_core.utils.native_modifier",
+    CORE_DIR.parent / "utils" / "native_modifier.py",
+)
+tree_form_parser = _load_module(
+    "smart_core_tree_form_fixture_parser",
+    CORE_DIR.parent / "app_config_engine" / "services" / "view_Parser" / "parsers Tree Form.py",
+)
 
 assembler = _load_module(
     "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
@@ -34,6 +118,35 @@ client = _load_module(
     "odoo.addons.smart_core.core.unified_page_contract_v2_client",
     CORE_DIR / "unified_page_contract_v2_client.py",
 )
+
+
+class _FixtureRelationModel:
+    def sudo(self):
+        return self
+
+    def fields_get(self):
+        return {"display_name": {"name": "display_name", "type": "char", "string": "Name"}}
+
+
+class _NativeTreeFormFixtureParser(tree_form_parser._TreeFormParserMixin):
+    env = {"res.groups": _FixtureRelationModel()}
+
+    def _lossless_parse_xml(self, _xml_content):
+        # The production parser prefers the DOM result.  The lossless branch is
+        # an independent fallback and is not needed by these fixture-chain tests.
+        return {}
+
+
+def _native_view_fixture_arch(relative_path: str, record_id: str) -> str:
+    path = CORE_DIR.parents[2] / relative_path
+    root = ET.parse(path).getroot()
+    record = root.find(f".//record[@id='{record_id}']")
+    if record is None:
+        raise AssertionError(f"missing native view fixture record: {record_id}")
+    arch = record.find("./field[@name='arch']")
+    if arch is None or not list(arch):
+        raise AssertionError(f"missing native arch fixture: {record_id}")
+    return ET.tostring(list(arch)[0], encoding="unicode")
 
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
@@ -254,6 +367,863 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
         action_rule = full["actionContract"]["actionRuleList"][0]
         self.assertEqual(action_rule["visible"], visible)
+
+    def test_actions_with_same_backend_method_merge_fail_closed_and_keep_trace(self):
+        source = {
+            "model": "x.approval",
+            "view_type": "form",
+            "fields": {"state": {"name": "state", "type": "selection"}},
+            "views": {"form": {"layout": [], "header_buttons": [{
+                "key": "native_submit",
+                "label": "原生提交",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "visible": {"attrs": {"invisible": {"kind": "field_compare", "field": "state", "operator": "!=", "value": "draft"}}},
+                "visible_profiles": ["edit", "readonly"],
+                "allowed": True,
+                "enabled": True,
+                "business_available": True,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
+                "required_groups": ["base.group_user"],
+                "action_safety": {"classification": "safe", "requires_confirm": False},
+            }]},},
+            "business_actions": [{
+                "key": "semantic_submit",
+                "label": "提交审批",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "visible": {"attrs": {"invisible": {"kind": "field_compare", "field": "state", "operator": "=", "value": "cancel"}}},
+                "visible_profiles": ["readonly"],
+                "allowed": True,
+                "enabled": False,
+                "allowed_role_codes": ["approver"],
+                "presentation": {"tier": "primary"},
+                "action_safety": {"classification": "danger", "requires_confirm": True},
+            }],
+            "buttons": [{
+                "key": "compat_submit",
+                "label": "兼容提交",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+            }],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.identity.merge"
+        )
+
+        rules = full["actionContract"]["actionRuleList"]
+        submit_rules = [row for row in rules if row.get("backendIdentity") == "button:object:action_submit"]
+        self.assertEqual(len(submit_rules), 1)
+        rule = submit_rules[0]
+        self.assertEqual(rule["label"], "提交审批")
+        self.assertEqual(rule["presentationAuthority"], "product_contract")
+        self.assertEqual(rule["visibleProfiles"], ["readonly"])
+        self.assertEqual(rule["presentation"]["tier"], "primary")
+        self.assertEqual(rule["actionSafety"]["classification"], "danger")
+        self.assertTrue(rule["actionSafety"]["requires_confirm"])
+        self.assertFalse(rule["enabled"])
+        self.assertEqual(rule["permissionConstraints"]["policy"], "all_sources_must_allow")
+        self.assertEqual(len(rule["permissionConstraints"]["clauses"]), 2)
+        self.assertEqual(len(rule["sourceTrace"]), 3)
+        self.assertEqual(rule["visible"]["attrs"]["invisible"]["kind"], "any")
+        graph_targets = [
+            target
+            for targets in full["actionContract"]["dependencyGraph"].values()
+            for target in targets
+        ]
+        self.assertEqual(graph_targets.count(rule["actionId"]), 1)
+        submit_statuses = [
+            row for row in full["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity") == "button:object:action_submit"
+        ]
+        self.assertEqual(len(submit_statuses), 1)
+        self.assertTrue(submit_statuses[0]["disabled"])
+
+    def test_same_label_with_different_backend_methods_does_not_merge(self):
+        source = {
+            "model": "x.approval",
+            "view_type": "form",
+            "fields": {},
+            "business_actions": [
+                {"key": "approve_one", "label": "批准", "kind": "object", "payload": {"method": "action_approve", "type": "object"}},
+                {"key": "approve_two", "label": "批准", "kind": "object", "payload": {"method": "action_set_approved", "type": "object"}},
+            ],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.label.not.identity"
+        )
+
+        identities = [row.get("backendIdentity") for row in full["actionContract"]["actionRuleList"]]
+        self.assertIn("button:object:action_approve", identities)
+        self.assertIn("button:object:action_set_approved", identities)
+        self.assertEqual(len(identities), 2)
+
+    def test_disabled_source_keeps_canonical_action_visible_with_reason(self):
+        source = {
+            "model": "x.approval",
+            "view_type": "form",
+            "fields": {},
+            "views": {"form": {"layout": [], "header_buttons": [{
+                "key": "submit_native",
+                "label": "提交",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True,
+                "enabled": False,
+                "reason_code": "WAITING_FOR_REQUIRED_FACTS",
+            }]}},
+            "business_actions": [{
+                "key": "submit_product",
+                "label": "提交审批",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True,
+                "enabled": True,
+                "business_available": True,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
+                "presentation": {"tier": "primary"},
+            }],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.disabled.visible"
+        )
+
+        rules = full["actionContract"]["actionRuleList"]
+        self.assertEqual(len(rules), 1)
+        rule = rules[0]
+        self.assertEqual(rule["backendIdentity"], "button:object:action_submit")
+        self.assertTrue(rule["allowed"])
+        self.assertFalse(rule["enabled"])
+        self.assertFalse(rule.get("disabled", False))
+        self.assertNotEqual(
+            ((rule.get("visible") or {}).get("attrs") or {}).get("invisible"),
+            {"kind": "static", "value": True},
+        )
+        statuses = [
+            row for row in full["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity") == "button:object:action_submit"
+        ]
+        self.assertEqual(len(statuses), 1)
+        self.assertTrue(statuses[0]["visible"])
+        self.assertTrue(statuses[0]["disabled"])
+        self.assertEqual(statuses[0]["reasonCode"], "WAITING_FOR_REQUIRED_FACTS")
+
+    def test_runtime_business_action_is_promoted_to_normalized_authority(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "views": {"form": {"layout": []}},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action",
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "open_followup",
+            "label": "Open follow-up",
+            "kind": "open",
+            "level": "header",
+            "source_widget_id": "page.header",
+            "target": "self",
+            "url": "/f/x.followup/new",
+            "visible_profiles": ["readonly"],
+            "presentation": {"tier": "secondary"},
+            "allowed": True,
+            "enabled": True,
+        }]
+
+        assembler.project_runtime_business_actions(contract)
+        promoted = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("actionKey") == "open_followup"
+        ]
+
+        self.assertEqual(len(promoted), 1)
+        self.assertEqual(promoted[0]["target"]["url"], "/f/x.followup/new")
+        self.assertEqual(promoted[0]["target"]["target"], "self")
+        self.assertEqual(promoted[0]["sourceChannel"], "runtime_business_action")
+        self.assertEqual(promoted[0]["presentationAuthority"], "runtime_action_state")
+        self.assertEqual(promoted[0]["label"], "Open follow-up")
+        self.assertEqual(promoted[0]["visibleProfiles"], ["readonly"])
+        self.assertEqual(promoted[0]["targetScope"], "page")
+
+        assembler.project_runtime_business_actions(contract)
+        promoted_again = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("actionKey") == "open_followup"
+        ]
+        self.assertEqual(len(promoted_again), 1)
+
+    def test_runtime_business_action_without_explicit_permission_fails_closed(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {"model": "x.document", "view_type": "form", "views": {"form": {"layout": []}}},
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.permission",
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "open_followup",
+            "label": "Open follow-up",
+            "kind": "open",
+            "url": "/f/x.followup/new",
+        }]
+
+        assembler.project_runtime_business_actions(contract)
+        rule = next(row for row in contract["actionContract"]["actionRuleList"] if row["actionKey"] == "open_followup")
+        status = next(row for row in contract["statusContract"]["buttonStatus"] if row.get("backendIdentity") == rule["backendIdentity"])
+
+        self.assertFalse(rule["allowed"])
+        self.assertFalse(rule["enabled"])
+        self.assertTrue(rule["disabled"])
+        self.assertFalse(status["visible"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "ACTION_PERMISSION_UNRESOLVED")
+
+    def test_runtime_business_action_key_collision_remains_idempotent(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "views": {"form": {"layout": [], "header_buttons": [{
+                    "key": "approve",
+                    "label": "Native approve",
+                    "kind": "object",
+                    "payload": {"method": "action_native", "type": "object"},
+                    "allowed": True,
+                    "enabled": True,
+                }]}},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.key.collision",
+        )
+        contract["runtimeContract"]["businessActions"] = [
+            {"key": "approve", "label": "Runtime approve", "kind": "object", "method": "action_runtime", "allowed": True, "enabled": True},
+            {"key": "approve", "label": "Duplicate key", "kind": "object", "method": "action_duplicate", "allowed": True, "enabled": True},
+        ]
+
+        assembler.project_runtime_business_actions(contract)
+        assembler.project_runtime_business_actions(contract)
+
+        runtime_rules = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("backendIdentity") == "button:object:action_runtime"
+        ]
+        self.assertEqual(len(runtime_rules), 1)
+        runtime_trace = [
+            row for row in runtime_rules[0]["sourceTrace"]
+            if row.get("sourceChannel") == "runtime_business_action"
+        ]
+        self.assertEqual(len(runtime_trace), 1)
+        self.assertEqual(runtime_trace[0]["sourceActionKey"], "approve")
+        self.assertFalse(any(
+            row.get("backendIdentity") == "button:object:action_duplicate"
+            for row in contract["actionContract"]["actionRuleList"]
+        ))
+
+    def test_runtime_business_action_merges_three_sources_fail_closed(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "views": {"form": {"layout": [], "header_buttons": [{
+                "key": "native_submit",
+                "label": "Submit",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True,
+                "enabled": True,
+                "business_available": True,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
+            }]}},
+            "business_actions": [{
+                "key": "semantic_submit",
+                "label": "Submit document",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True,
+                "enabled": True,
+                "business_available": True,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
+                "presentation": {"tier": "primary"},
+            }],
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.merge",
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "runtime_submit",
+            "label": "Submit safely",
+            "kind": "object",
+            "method": "action_submit",
+            "allowed": True,
+            "enabled": False,
+            "business_available": True,
+            "authorization_allowed": True,
+            "reason_code": "RUNTIME_PRECONDITION_BLOCKED",
+            "presentation": {"tier": "primary"},
+            "action_safety": {"classification": "danger", "requires_confirm": True},
+        }]
+
+        assembler.project_runtime_business_actions(contract)
+        rules = [row for row in contract["actionContract"]["actionRuleList"] if row.get("backendIdentity") == "button:object:action_submit"]
+
+        self.assertEqual(len(rules), 1)
+        self.assertFalse(rules[0]["enabled"])
+        self.assertEqual(rules[0]["actionSafety"]["classification"], "danger")
+        self.assertTrue(rules[0]["actionSafety"]["requires_confirm"])
+        self.assertEqual(len(rules[0]["sourceTrace"]), 3)
+        self.assertEqual(rules[0]["label"], "Submit document")
+        self.assertTrue(all(
+            trace.get("authorizationAllowed") is True
+            for trace in rules[0]["sourceTrace"]
+        ), rules[0]["sourceTrace"])
+        primary = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if (row.get("presentation") or {}).get("tier") == "primary"
+        ]
+        self.assertEqual(len(primary), 1)
+        status = next(row for row in contract["statusContract"]["buttonStatus"] if row.get("backendIdentity") == "button:object:action_submit")
+        self.assertTrue(status["visible"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "RUNTIME_PRECONDITION_BLOCKED")
+        dependency_targets = {
+            target
+            for targets in contract["actionContract"]["dependencyGraph"].values()
+            for target in targets
+        }
+        self.assertEqual(dependency_targets, {rules[0]["actionId"]})
+
+    def test_runtime_action_requires_explicit_authority_to_override_presentation(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "business_actions": [{
+                "key": "submit_product", "label": "Submit for approval", "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True, "enabled": True,
+                "presentation": {"tier": "primary"},
+            }],
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.runtime.presentation.explicit"
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "submit_runtime", "label": "Runtime override", "kind": "object",
+            "method": "action_submit", "allowed": True, "enabled": True,
+            "presentation_authority": "product_contract",
+            "presentation_priority": 400,
+        }]
+        assembler.project_runtime_business_actions(contract)
+        rule = next(
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("backendIdentity") == "button:object:action_submit"
+        )
+        self.assertEqual(rule["label"], "Runtime override")
+        self.assertEqual(rule["presentationAuthority"], "product_contract")
+
+    def test_runtime_action_merges_with_entitled_native_payload_button(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "views": {"form": {"layout": [], "header_buttons": [{
+                "key": "payment_submit",
+                "label": "Submit for approval",
+                "kind": "object",
+                "payload": {
+                    "method": "action_submit",
+                    "type": "object",
+                    "groups_xmlids": ["x.group_finance_user"],
+                },
+            }]}},
+            "action_policies": {
+                "payment_submit": {
+                    "enabled": True,
+                    "entitlement_evaluated": True,
+                    "visible_profiles": ["create", "edit", "readonly"],
+                    "enabled_when": {"required_groups": ["x.group_finance_user"]},
+                },
+            },
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.entitled.native.payload",
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "payment_submit",
+            "label": "Submit",
+            "kind": "mutation",
+            "method": "action_submit",
+            "level": "header",
+            "source_widget_id": "page.header",
+            "target_scope": "page",
+            "visible_profiles": ["edit", "readonly"],
+            "allowed": True,
+            "enabled": True,
+            "disabled": False,
+            "presentation": {"tier": "primary"},
+        }]
+
+        assembler.project_runtime_business_actions(contract)
+        rules = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("backendIdentity") == "button:object:action_submit"
+        ]
+        statuses = [
+            row for row in contract["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity") == "button:object:action_submit"
+        ]
+
+        self.assertEqual(len(rules), 1)
+        self.assertTrue(rules[0]["allowed"])
+        self.assertTrue(rules[0]["enabled"])
+        self.assertFalse(rules[0]["disabled"])
+        self.assertEqual(rules[0]["label"], "Submit for approval")
+        self.assertEqual(rules[0]["visibleProfiles"], ["edit", "readonly"])
+        self.assertEqual(len(statuses), 1)
+        self.assertTrue(statuses[0]["visible"])
+        self.assertFalse(statuses[0]["disabled"])
+
+    def test_runtime_business_action_identity_matrix_and_final_seal(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {"model": "x.document", "view_type": "form", "views": {"form": {"layout": []}}},
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.identity",
+        )
+        contract["runtimeContract"]["businessActions"] = [
+            {"key": "window", "label": "Open", "kind": "open", "action_id": 81, "allowed": True, "enabled": True},
+            {"key": "object_a", "label": "Review", "kind": "object", "method": "action_review_a", "allowed": True, "enabled": True},
+            {"key": "object_b", "label": "Review", "kind": "object", "method": "action_review_b", "allowed": True, "enabled": True},
+            {"key": "url", "label": "Open", "kind": "open", "url": "/x/status", "allowed": True, "enabled": True},
+            {"key": "client", "label": "Configure", "kind": "client", "target": {"mode": "configure"}, "allowed": True, "enabled": True},
+        ]
+
+        assembler.project_runtime_business_actions(contract)
+        identities = {row["backendIdentity"] for row in contract["actionContract"]["actionRuleList"]}
+        self.assertIn("window_action:81", identities)
+        self.assertIn("button:object:action_review_a", identities)
+        self.assertIn("button:object:action_review_b", identities)
+        self.assertIn("url:/x/status", identities)
+        self.assertTrue(any(identity.startswith("target:") for identity in identities))
+
+        sealed = assembler.seal_unified_page_contract(
+            contract,
+            source_payload={"model": "x.document"},
+            source_type="ui.contract",
+            request_id="test.runtime.business.action.identity.sealed",
+            trace_id="trace.runtime.business.action.identity",
+            client_type="web_pc",
+            stage="runtime_delivery",
+            generator="test.runtime",
+            generator_version="2.2.0",
+            source_authority=assembler.source_authority_contract(),
+        )
+        digest = sealed["meta"]["lifecycle"]["integrity"]["contractSha256"]
+        semantic = {key: value for key, value in sealed.items() if key != "meta"}
+        self.assertEqual(digest, assembler.payload_sha256(semantic))
+        self.assertTrue(any(row.get("actionKey") == "window" for row in sealed["actionContract"]["actionRuleList"]))
+
+    def test_same_action_key_with_different_backend_methods_keeps_both_sources(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {},
+            "views": {"form": {"layout": [], "header_buttons": [
+                {"key": "approve", "label": "原生批准", "kind": "object", "payload": {"method": "action_approve", "type": "object"}},
+            ]}},
+            "business_actions": [
+                {"key": "approve", "label": "升级批准", "kind": "object", "payload": {"method": "action_escalate_approve", "type": "object"}},
+            ],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.same.key"
+        )
+
+        rules = full["actionContract"]["actionRuleList"]
+        self.assertEqual(len(rules), 2)
+        self.assertEqual(len({row["actionId"] for row in rules}), 2)
+        self.assertEqual(
+            {row["backendIdentity"] for row in rules},
+            {"button:object:action_approve", "button:object:action_escalate_approve"},
+        )
+
+    def test_resolved_action_policy_is_normalized_fail_closed(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {},
+            "business_actions": [
+                {"key": "publish", "label": "发布", "kind": "object", "payload": {"method": "action_publish", "type": "object"}},
+                {
+                    "key": "export", "label": "导出", "kind": "object",
+                    "payload": {"method": "action_export", "type": "object"},
+                    "required_role_key": "auditor", "allowed": True, "enabled": True,
+                },
+            ],
+            "action_policies": {
+                "publish": {
+                    "enabled": False,
+                    "allowed": False,
+                    "reason_code": "ACTION_GROUP_ACCESS_DENIED",
+                    "entitlement_evaluated": True,
+                    "enabled_when": {"required_groups": ["base.group_system"]},
+                },
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.policy.fail.closed"
+        )
+
+        rules = {row["backendIdentity"]: row for row in full["actionContract"]["actionRuleList"]}
+        rule = rules["button:object:action_publish"]
+        self.assertFalse(rule["allowed"])
+        self.assertFalse(rule["enabled"])
+        self.assertEqual(
+            rule["permissionConstraints"]["clauses"][0]["requiredGroups"],
+            ["base.group_system"],
+        )
+        statuses = {row["backendIdentity"]: row for row in full["statusContract"]["buttonStatus"]}
+        status = statuses["button:object:action_publish"]
+        self.assertFalse(status["visible"])
+        self.assertNotEqual(status.get("reasonCode"), "OK")
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "ACTION_GROUP_ACCESS_DENIED")
+        unresolved = rules["button:object:action_export"]
+        self.assertTrue(unresolved["allowed"])
+        self.assertTrue(unresolved["enabled"])
+        unresolved_status = statuses["button:object:action_export"]
+        self.assertFalse(unresolved_status["disabled"])
+
+    def test_window_and_url_actions_use_stable_distinct_identity(self):
+        source = {
+            "model": "x.collection",
+            "view_type": "tree",
+            "fields": {},
+            "business_actions": [
+                {"key": "open_records", "label": "打开", "kind": "open", "action_id": 81, "payload": {"action_id": 81}},
+                {"key": "open_help", "label": "帮助", "kind": "open", "payload": {"url": "https://example.invalid/help"}},
+                {"key": "open_route", "label": "内部帮助", "kind": "open", "payload": {"route": "/help/product"}},
+                {"key": "server_refresh", "label": "服务端刷新", "kind": "server", "payload": {"server_action_id": 91}},
+            ],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.target.identity"
+        )
+
+        identities = {row["backendIdentity"] for row in full["actionContract"]["actionRuleList"]}
+        self.assertEqual(identities, {
+            "window_action:81",
+            "url:https://example.invalid/help",
+            "route:/help/product",
+            "server_action:91",
+        })
+
+    def test_window_action_xmlid_refs_do_not_collapse_without_numeric_id(self):
+        source = {
+            "model": "res.partner",
+            "view_type": "form",
+            "fields": {},
+            "business_actions": [
+                {"key": "open_partner", "kind": "open", "label": "Partner", "payload": {"ref": "base.action_partner_form"}},
+                {"key": "open_project", "kind": "open", "label": "Project", "payload": {"xml_id": "project.open_view_project_all"}},
+            ],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.xmlid.identity"
+        )
+        rules = full["actionContract"]["actionRuleList"]
+        self.assertEqual(len(rules), 2)
+        self.assertEqual(
+            {row["backendIdentity"] for row in rules},
+            {
+                "window_action_ref:base.action_partner_form",
+                "window_action_ref:project.open_view_project_all",
+            },
+        )
+
+    def test_generic_open_keys_remain_distinct_contract_actions_without_explicit_ref(self):
+        source = {
+            "model": "x.collection",
+            "view_type": "tree",
+            "fields": {},
+            "business_actions": [
+                {"key": "open_primary", "kind": "open", "label": "Primary"},
+                {"key": "open_secondary", "kind": "open", "label": "Secondary"},
+            ],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.generic.open.identity"
+        )
+
+        rules = full["actionContract"]["actionRuleList"]
+        self.assertEqual(len(rules), 2)
+        self.assertEqual(len({row["backendIdentity"] for row in rules}), 2)
+        self.assertTrue(all(row["backendIdentity"].startswith("contract_action:") for row in rules))
+
+    def test_evaluated_entitlement_without_explicit_verdict_fails_closed(self):
+        for constraint_key, constraint_value in (
+            ("required_groups", ["base.group_system"]),
+            ("required_user_id", 42),
+        ):
+            with self.subTest(constraint=constraint_key):
+                source = {
+                    "model": "x.document",
+                    "view_type": "form",
+                    "fields": {},
+                    "business_actions": [{
+                        "key": "review",
+                        "kind": "object",
+                        "label": "Review",
+                        "payload": {"method": "action_review", "type": "object"},
+                        constraint_key: constraint_value,
+                        "entitlement_evaluated": True,
+                    }],
+                }
+
+                full = assembler.assemble_unified_page_contract_v2(
+                    source,
+                    source_type="ui.contract",
+                    client_type="web_pc",
+                    request_id=f"test.action.entitlement.no.verdict.{constraint_key}",
+                )
+
+                rule = full["actionContract"]["actionRuleList"][0]
+                self.assertFalse(rule["allowed"])
+                self.assertFalse(rule["enabled"])
+                status = full["statusContract"]["buttonStatus"][0]
+                self.assertTrue(status["disabled"])
+                self.assertEqual(status["reasonCode"], "ACTION_PERMISSION_UNRESOLVED")
+
+    def test_role_hint_is_advisory_and_does_not_create_permission_constraint(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {},
+            "business_actions": [{
+                "key": "submit",
+                "kind": "object",
+                "label": "Submit",
+                "payload": {"method": "action_submit", "type": "object"},
+                "required_role_key": "finance",
+                "allowed": True,
+                "enabled": True,
+            }],
+        }
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.action.role.hint.advisory",
+        )
+        rule = full["actionContract"]["actionRuleList"][0]
+        self.assertTrue(rule["allowed"])
+        self.assertTrue(rule["enabled"])
+        self.assertFalse(rule.get("permissionConstraints", {}).get("clauses"))
+
+    def test_three_generic_page_samples_preserve_platform_boundaries(self):
+        parser = _NativeTreeFormFixtureParser()
+        policy_fields = {
+            "company_id": {"name": "company_id", "type": "many2one"},
+            "menu_id": {"name": "menu_id", "type": "many2one"},
+            "role_group_ids": {"name": "role_group_ids", "type": "many2many", "relation": "res.groups"},
+            "visible": {"name": "visible", "type": "boolean"},
+            "active": {"name": "active", "type": "boolean"},
+            "custom_label": {"name": "custom_label", "type": "char"},
+            "effect_summary": {"name": "effect_summary", "type": "char"},
+        }
+        policy_form_arch = _native_view_fixture_arch(
+            "addons/smart_core/views/ui_menu_config_policy_views.xml",
+            "view_ui_menu_config_policy_form",
+        )
+        policy_tree_arch = _native_view_fixture_arch(
+            "addons/smart_core/views/ui_menu_config_policy_views.xml",
+            "view_ui_menu_config_policy_tree",
+        )
+        route_fields = {
+            "active": {"name": "active", "type": "boolean"},
+            "sequence": {"name": "sequence", "type": "integer"},
+            "login": {"name": "login", "type": "char"},
+            "target_db": {"name": "target_db", "type": "char"},
+            "entry_kind": {"name": "entry_kind", "type": "selection"},
+            "product_key": {"name": "product_key", "type": "char"},
+            "label": {"name": "label", "type": "char"},
+            "note": {"name": "note", "type": "text"},
+        }
+        route_form_arch = _native_view_fixture_arch(
+            "addons/smart_core/views/platform_company_access_views.xml",
+            "view_sc_login_route_form",
+        )
+        samples = [
+            {
+                "model": "ui.menu.config.policy",
+                "view_type": "form",
+                "fields": policy_fields,
+                "views": {"form": parser._parse_form_view(policy_form_arch, policy_fields, "ui.menu.config.policy")},
+                "expected": "第一步：选择要调整的菜单",
+            },
+            {
+                "model": "sc.login.route",
+                "view_type": "form",
+                "fields": route_fields,
+                "views": {"form": parser._parse_form_view(route_form_arch, route_fields, "sc.login.route")},
+                "expected": "路由信息",
+            },
+            {
+                "model": "ui.menu.config.policy",
+                "view_type": "tree",
+                "fields": policy_fields,
+                "views": {"tree": parser._parse_tree_view(policy_tree_arch, policy_fields)},
+                "expected": "menu_id",
+            },
+        ]
+
+        for index, source in enumerate(samples):
+            with self.subTest(model=source["model"]):
+                full = assembler.assemble_unified_page_contract_v2(
+                    source,
+                    source_type="ui.contract",
+                    client_type="web_pc",
+                    request_id=f"test.generic.sample.{index}",
+                )
+                self.assertEqual(full["pageInfo"]["model"], source["model"])
+                self.assertTrue(full["layoutContract"]["containerTree"])
+                self.assertIn(source["expected"], str(full["layoutContract"]["containerTree"]))
+
+    def test_production_tree_parser_row_object_action_consumes_method_and_groups_payload(self):
+        parser = _NativeTreeFormFixtureParser()
+        fields = {"name": {"name": "name", "type": "char", "string": "Name"}}
+        parsed = parser._parse_tree_view(
+            """
+            <tree>
+              <field name="name"/>
+              <button name="action_review" string="Review" type="object" groups="base.group_system"/>
+            </tree>
+            """,
+            fields,
+        )
+        source = {
+            "model": "x.document",
+            "view_type": "tree",
+            "fields": fields,
+            "views": {"tree": parsed},
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.tree.row.parser.payload"
+        )
+
+        rule = full["actionContract"]["actionRuleList"][0]
+        self.assertEqual(rule["backendIdentity"], "button:object:action_review")
+        self.assertEqual(
+            rule["permissionConstraints"]["clauses"][0]["requiredGroups"],
+            ["base.group_system"],
+        )
+        self.assertFalse(rule["allowed"])
+        self.assertFalse(rule["enabled"])
+        status = full["statusContract"]["buttonStatus"][0]
+        self.assertFalse(status["visible"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "ACTION_PERMISSION_UNRESOLVED")
+        trace = rule["sourceTrace"][0]
+        self.assertEqual(trace["sourceChannel"], "native_tree_row_action")
+        self.assertIn("base.group_system", str(trace["permissionConstraints"]))
+
+    def test_only_one_primary_is_effective_for_current_record_state(self):
+        source = {
+            "model": "x.approval",
+            "view_type": "form",
+            "record": {"state": "draft"},
+            "fields": {"state": {"name": "state", "type": "selection"}},
+            "business_actions": [
+                {
+                    "key": "submit",
+                    "label": "提交",
+                    "kind": "object",
+                    "payload": {"method": "action_submit", "type": "object"},
+                    "presentation": {"tier": "primary"},
+                    "visible": {"attrs": {"invisible": {"kind": "field_compare", "field": "state", "operator": "!=", "value": "draft"}}},
+                },
+                {
+                    "key": "approve",
+                    "label": "批准",
+                    "kind": "object",
+                    "payload": {"method": "action_approve", "type": "object"},
+                    "presentation": {"tier": "primary"},
+                    "visible": {"attrs": {"invisible": {"kind": "field_compare", "field": "state", "operator": "!=", "value": "waiting"}}},
+                },
+                {
+                    "key": "duplicate_draft_primary",
+                    "label": "草稿主动作二",
+                    "kind": "object",
+                    "payload": {"method": "action_prepare", "type": "object"},
+                    "presentation": {"tier": "primary"},
+                    "visible": {"attrs": {"invisible": {"kind": "field_compare", "field": "state", "operator": "!=", "value": "draft"}}},
+                },
+            ],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.action.single.primary"
+        )
+
+        rules = full["actionContract"]["actionRuleList"]
+        tiers = {row["backendIdentity"]: (row.get("presentation") or {}).get("tier") for row in rules}
+        self.assertEqual(tiers["button:object:action_submit"], "primary")
+        self.assertEqual(tiers["button:object:action_approve"], "primary")
+        self.assertEqual(tiers["button:object:action_prepare"], "secondary")
+        resolution = full["actionContract"]["primaryResolution"]
+        self.assertEqual(resolution["winner"], "button:object:action_submit")
+
+    def test_entry_semantic_surface_layout_wins_while_native_modifiers_and_relations_survive(self):
+        source = {
+            "model": "x.business.document",
+            "view_type": "form",
+            "governance": {"view_orchestration": {"applied": True, "form_structure_authority": "entry_semantic_surface"}},
+            "source_trace": {"view_orchestration": {"form_structure_authority": "entry_semantic_surface"}},
+            "fields": {
+                "name": {"name": "name", "type": "char", "required": True},
+                "line_ids": {"name": "line_ids", "type": "one2many", "readonly": True},
+            },
+            "views": {"form": {"layout": [
+                {"type": "group", "string": "业务主信息", "children": [{"type": "field", "name": "name", "required": True}]},
+                {"type": "notebook", "string": "从属关系", "tabs": [{"type": "page", "string": "明细", "children": [{"type": "field", "name": "line_ids", "readonly": True}]}]},
+            ]}},
+            "form_structure_contract": {
+                "source": "ui.contract.v2.form_structure_contract",
+                "slots": [{"slot": "primary_facts", "title": "分类模板", "groups": [{"name": "fallback", "title": "分类模板", "fieldRefs": ["name"]}]}],
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.semantic.surface.precedence"
+        )
+
+        tree = full["layoutContract"]["containerTree"]
+        self.assertIn("业务主信息", str(tree))
+        self.assertIn("从属关系", str(tree))
+        self.assertIn("line_ids", str(tree))
+        self.assertNotIn("分类模板", str(tree))
+        statuses = {row["widgetId"]: row for row in full["statusContract"]["widgetStatus"]}
+        self.assertTrue(statuses["field.name"]["required"])
+        self.assertTrue(statuses["field.line_ids"]["readonly"])
 
     def test_data_source_and_formal_metadata_projection_carry_source_authority(self):
         source = {

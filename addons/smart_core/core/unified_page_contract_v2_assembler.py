@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import json
 import re
 from copy import deepcopy
 from typing import Any
 
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .source_authority import build_source_authority_contract
+from .unified_page_contract_v2_runtime_actions import normalize_runtime_business_actions
 
 CONTRACT_VERSION = "2.2.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
@@ -40,6 +42,12 @@ def _list(value: Any) -> list[Any]:
 def _text(value: Any, default: str = "") -> str:
     text = str(value or "").strip()
     return text or default
+
+
+def _has_action_constraint_value(value: Any) -> bool:
+    if isinstance(value, (list, tuple, set)):
+        return any(_text(item) for item in value)
+    return value not in (None, "", False)
 
 
 def register_kanban_row_action(model_name: str, action: dict[str, Any], *, view_type: str = "kanban") -> None:
@@ -258,6 +266,7 @@ def assemble_unified_page_contract_v2(
         contract = _assemble_ui_contract(source, client_type=client_type, request_id=request_id)
     else:
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
+    _merge_action_rules_by_backend_identity(contract)
     return seal_unified_page_contract(
         contract,
         source_payload=payload if resolved != "ui.contract" else source,
@@ -753,7 +762,15 @@ def _has_governed_form_layout_overlay(source: dict[str, Any]) -> bool:
     view_governance = _dict(governance.get("view_orchestration"))
     source_trace = _dict(source.get("source_trace"))
     view_trace = _dict(source_trace.get("view_orchestration"))
-    return bool(view_trace.get("form_layout_overlay") or view_governance.get("form_layout_overlay"))
+    form_structure_authority = _text(
+        view_trace.get("form_structure_authority")
+        or view_governance.get("form_structure_authority")
+    )
+    return bool(
+        view_trace.get("form_layout_overlay")
+        or view_governance.get("form_layout_overlay")
+        or form_structure_authority == "entry_semantic_surface"
+    )
 
 
 def _ui_search_contract(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, Any]:
@@ -2294,14 +2311,25 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
     for row in _list(rows):
         if not isinstance(row, dict):
             continue
-        key = _stable_id(row.get("key") or row.get("intent"), "action")
+        source_key = _stable_id(row.get("key") or row.get("intent"), "action")
+        key = source_key
+        existing_action_ids = {
+            _text(item.get("actionId"))
+            for item in _list(_dict(contract.get("actionContract")).get("actionRuleList"))
+            if isinstance(item, dict)
+        }
+        suffix = 2
+        while f"action.{key}" in existing_action_ids:
+            key = f"{source_key}.{suffix}"
+            suffix += 1
         action_id = f"action.{key}"
-        label = _text(row.get("label") or row.get("name") or row.get("title"), key)
+        label = _text(row.get("label") or row.get("name") or row.get("title"), source_key)
         intent = _text(row.get("intent"), "ui.contract")
         source_id = _text(row.get("sourceWidgetId") or row.get("source_widget_id"), source_widget_id)
         action_rule = {
                 "actionId": action_id,
                 "actionKey": key,
+                "sourceActionKey": source_key,
                 "label": label,
                 "intent": intent,
                 "target": deepcopy(_dict(row.get("target"))),
@@ -2312,6 +2340,20 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                 "dispatchMode": "server",
                 "targetScope": _text(row.get("target_scope") or row.get("level"), "page"),
                 "refreshMode": "partial",
+                "sourceChannel": _text(row.get("source_channel"), "contract_action"),
+                "presentationAuthority": _text(row.get("presentation_authority"), "native_contract"),
+                "presentationPriority": _positive_int(row.get("presentation_priority"), 100),
+                "sourceTrace": [{
+                "actionId": action_id,
+                "sourceActionKey": source_key,
+                "sourceWidgetId": source_id,
+                    "label": label,
+                    "sourceChannel": _text(row.get("source_channel"), "contract_action"),
+                    "presentationAuthority": _text(row.get("presentation_authority"), "native_contract"),
+                    "businessAvailable": row.get("business_available"),
+                    "authorizationAllowed": row.get("authorization_allowed"),
+                    "entitlementEvaluated": bool(row.get("entitlement_evaluated")),
+                }],
             }
         # Native visibility/safety remains declarative.  Preserve it so the
         # product renderer can evaluate the same Odoo view conditions against
@@ -2323,12 +2365,433 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("visible_profiles", "visibleProfiles"),
             ("presentation", "presentation"),
             ("action_safety", "actionSafety"),
+            ("allowed", "allowed"),
+            ("enabled", "enabled"),
+            ("disabled", "disabled"),
+            ("permission_constraints", "permissionConstraints"),
+            ("entitlement_evaluated", "entitlement_evaluated"),
         ):
             if row.get(source_key) is not None:
                 action_rule[target_key] = deepcopy(row.get(source_key))
         contract["actionContract"]["actionRuleList"].append(action_rule)
         contract["actionContract"]["dependencyGraph"].setdefault(source_id, []).append(action_id)
-        contract["statusContract"]["buttonStatus"].append({"btnId": f"btn.{key}", "visible": True, "disabled": False})
+        allowed = row.get("allowed") is not False
+        enabled = row.get("enabled") is not False
+        disabled = row.get("disabled") is True or not allowed or not enabled
+        contract["statusContract"]["buttonStatus"].append({
+            "btnId": f"btn.{key}",
+            "visible": allowed,
+            "disabled": disabled,
+            **({"reasonCode": _text(row.get("reason_code"), "ACTION_NOT_ALLOWED")} if disabled else {}),
+        })
+
+
+def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]:
+    """Promote extension business actions into the canonical V2 action authority."""
+    runtime = _dict(contract.get("runtimeContract"))
+    business_actions = _list(runtime.get("businessActions"))
+    if not business_actions:
+        return contract
+
+    existing_runtime_keys = {
+        _text(trace.get("sourceActionKey") or trace.get("actionKey"))
+        for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList"))
+        if isinstance(rule, dict)
+        for trace in _list(rule.get("sourceTrace"))
+        if isinstance(trace, dict) and _text(trace.get("sourceChannel")) == "runtime_business_action"
+    }
+    normalized = normalize_runtime_business_actions(
+        business_actions,
+        existing_keys=existing_runtime_keys,
+    )
+
+    if normalized:
+        _append_actions(contract, normalized, source_widget_id="page.header")
+        _merge_action_rules_by_backend_identity(contract)
+    return contract
+
+
+def _action_backend_identity(rule: dict[str, Any]) -> str:
+    button = _dict(rule.get("button"))
+    button_type = _text(button.get("type") or button.get("buttonType"), "object").lower()
+    method = _text(button.get("name") or button.get("method"))
+    if button_type in {"server", "server_action"}:
+        server_action_id = _positive_int(button.get("server_action_id"), 0)
+        if server_action_id:
+            return f"server_action:{server_action_id}"
+    if method:
+        return f"button:{button_type}:{method}"
+    target = _dict(rule.get("target"))
+    raw_action_ref = _text(
+        target.get("action_ref")
+        or target.get("xml_id")
+        or target.get("xmlid")
+        or target.get("ref")
+    )
+    action_id = _positive_int(
+        target.get("action_id") or target.get("actionId") or raw_action_ref,
+        0,
+    )
+    if action_id:
+        return f"window_action:{action_id}"
+    if raw_action_ref:
+        return f"window_action_ref:{raw_action_ref}"
+    url = _text(target.get("url"))
+    route = _text(target.get("route"))
+    if url:
+        return f"url:{url}"
+    if route:
+        return f"route:{route}"
+    stable_target = {
+        key: target.get(key)
+        for key in ("url", "route", "target", "model", "view_type", "mode", "client_mode")
+        if target.get(key) not in (None, "")
+    }
+    if set(stable_target) == {"view_type"}:
+        stable_target = {}
+    if stable_target:
+        return "target:" + json.dumps(stable_target, ensure_ascii=False, sort_keys=True, default=str)
+    return "contract_action:" + _text(rule.get("actionId") or rule.get("actionKey"), "unknown")
+
+
+def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
+    visible = _dict(rule.get("visible"))
+    visible_attrs = _dict(visible.get("attrs"))
+    modifiers = _dict(rule.get("modifiers"))
+    for value in (rule.get("invisible"), modifiers.get("invisible"), visible_attrs.get("invisible")):
+        if value not in (None, False, "", 0):
+            return deepcopy(value)
+    if (
+        rule.get("allowed") is False
+        or rule.get("visible") is False
+    ):
+        return {"kind": "static", "value": True}
+    return None
+
+
+def _action_permission_clause(row: dict[str, Any]) -> dict[str, Any]:
+    aliases = {
+        "requiredGroups": (
+            "requiredGroups", "required_groups", "required_groups_xmlids",
+            "groups", "groups_id", "groups_xmlids",
+        ),
+        "allowedRoles": (
+            "allowedRoles", "allowed_roles", "allowed_role_codes",
+        ),
+        "allowedUsers": (
+            "allowedUsers", "allowed_users", "allowed_user_ids",
+            "required_users", "required_user_ids", "required_user_id", "required_user",
+        ),
+    }
+    clause: dict[str, Any] = {}
+    existing = _dict(row.get("permissionConstraints"))
+    for target, keys in aliases.items():
+        values: list[str] = []
+        for key in keys:
+            raw = row.get(key)
+            if raw is None:
+                raw = existing.get(key) or existing.get(target)
+            for item in raw if isinstance(raw, list) else [raw] if raw not in (None, "") else []:
+                value = _text(item)
+                if value and value not in values:
+                    values.append(value)
+        if values:
+            clause[target] = values
+    if clause and "entitlement_evaluated" in row:
+        clause["entitlementEvaluated"] = bool(row.get("entitlement_evaluated"))
+    return clause
+
+
+def _action_presentation_priority(row: dict[str, Any]) -> int:
+    return _positive_int(row.get("presentationPriority"), 100)
+
+
+def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
+    action_contract = _dict(contract.get("actionContract"))
+    rows = [deepcopy(row) for row in _list(action_contract.get("actionRuleList")) if isinstance(row, dict)]
+    if not rows:
+        return
+    merged: list[dict[str, Any]] = []
+    by_identity: dict[str, dict[str, Any]] = {}
+    for index, row in enumerate(rows):
+        identity = _action_backend_identity(row)
+        synthesized_trace = {
+            "actionId": _text(row.get("actionId")),
+            "actionKey": _text(row.get("actionKey")),
+            "sourceActionKey": _text(row.get("sourceActionKey") or row.get("actionKey")),
+            "sourceWidgetId": _text(row.get("sourceWidgetId")),
+            "label": _text(row.get("label")),
+            "sequence": index,
+            "sourceChannel": _text(row.get("sourceChannel")),
+            "presentationAuthority": _text(row.get("presentationAuthority"), "native_contract"),
+            "button": deepcopy(_dict(row.get("button"))),
+            "target": deepcopy(_dict(row.get("target"))),
+            "constraints": {
+                key: deepcopy(row.get(key))
+                for key in (
+                    "allowed", "enabled", "disabled", "business_available", "authorization_allowed",
+                    "visible", "modifiers", "invisible", "visibleProfiles",
+                )
+                if row.get(key) is not None
+            },
+            "permissionConstraints": deepcopy(_dict(row.get("permissionConstraints"))),
+            "entitlementEvaluated": bool(row.get("entitlement_evaluated")),
+            "reasonCode": _text(row.get("reasonCode") or row.get("reason_code")),
+        }
+        existing_trace = [
+            {**synthesized_trace, **deepcopy(item)}
+            for item in _list(row.get("sourceTrace"))
+            if isinstance(item, dict)
+        ]
+        trace_rows = existing_trace or [synthesized_trace]
+        existing_permission = _dict(row.get("permissionConstraints"))
+        permission_clauses = [
+            deepcopy(item)
+            for item in _list(existing_permission.get("clauses"))
+            if isinstance(item, dict)
+        ]
+        if not permission_clauses:
+            permission_clause = _action_permission_clause(row)
+            if permission_clause:
+                permission_clauses.append(permission_clause)
+        if permission_clauses:
+            row["permissionConstraints"] = {
+                "policy": "all_sources_must_allow",
+                "clauses": permission_clauses,
+            }
+        if identity not in by_identity:
+            row["backendIdentity"] = identity
+            row["sourceTrace"] = trace_rows
+            by_identity[identity] = row
+            merged.append(row)
+            continue
+        current = by_identity[identity]
+        current.setdefault("sourceTrace", []).extend(trace_rows)
+        if permission_clauses:
+            current_permission = _dict(current.get("permissionConstraints"))
+            clauses = [
+                deepcopy(item)
+                for item in _list(current_permission.get("clauses"))
+                if isinstance(item, dict)
+            ]
+            clauses.extend(permission_clauses)
+            current["permissionConstraints"] = {
+                "policy": "all_sources_must_allow",
+                "clauses": clauses,
+            }
+        constraints = [
+            value
+            for value in (_action_invisible_constraint(current), _action_invisible_constraint(row))
+            if value not in (None, False, "", 0)
+        ]
+        if constraints:
+            invisible = constraints[0] if len(constraints) == 1 else {"kind": "any", "exprs": constraints}
+            current["visible"] = {"attrs": {"invisible": invisible}}
+            current.pop("invisible", None)
+            current.pop("modifiers", None)
+        profile_sets = [
+            {str(item) for item in _list(candidate.get("visibleProfiles")) if str(item)}
+            for candidate in (current, row)
+            if candidate.get("visibleProfiles") is not None
+        ]
+        if profile_sets:
+            current["visibleProfiles"] = sorted(set.intersection(*profile_sets))
+        current["allowed"] = current.get("allowed", True) is not False and row.get("allowed", True) is not False
+        current["enabled"] = current.get("enabled", True) is not False and row.get("enabled", True) is not False
+        current["disabled"] = current.get("disabled", False) is True or row.get("disabled", False) is True
+        current_safety = _dict(current.get("actionSafety"))
+        incoming_safety = _dict(row.get("actionSafety"))
+        if incoming_safety.get("classification") == "danger" or current_safety.get("classification") == "danger":
+            stricter = incoming_safety if incoming_safety.get("classification") == "danger" else current_safety
+            current["actionSafety"] = {
+                **current_safety,
+                **incoming_safety,
+                **stricter,
+                "classification": "danger",
+                "requires_confirm": bool(
+                    current_safety.get("requires_confirm") or incoming_safety.get("requires_confirm")
+                ),
+            }
+        if _action_presentation_priority(row) > _action_presentation_priority(current):
+            current["label"] = _text(row.get("label"), _text(current.get("label")))
+            if _dict(row.get("presentation")):
+                current["presentation"] = deepcopy(row.get("presentation"))
+            current["presentationAuthority"] = _text(row.get("presentationAuthority"), "product_contract")
+            current["presentationPriority"] = _action_presentation_priority(row)
+        elif not _dict(current.get("presentation")) and _dict(row.get("presentation")):
+            current["presentation"] = deepcopy(row.get("presentation"))
+    action_contract["actionRuleList"] = merged
+    source_action_to_winner: dict[str, str] = {}
+    source_key_to_identity: dict[str, str] = {}
+    for row in merged:
+        winner_id = _text(row.get("actionId"))
+        identity = _text(row.get("backendIdentity"))
+        for trace in _list(row.get("sourceTrace")):
+            if not isinstance(trace, dict):
+                continue
+            source_id = _text(trace.get("actionId"))
+            source_key = _text(trace.get("actionKey"))
+            if source_id and winner_id:
+                source_action_to_winner[source_id] = winner_id
+            if source_key and identity:
+                source_key_to_identity[source_key] = identity
+    graph = _dict(action_contract.get("dependencyGraph"))
+    action_contract["dependencyGraph"] = {
+        source: list(dict.fromkeys(
+            source_action_to_winner.get(_text(target), _text(target))
+            for target in _list(targets)
+            if _text(target)
+        ))
+        for source, targets in graph.items()
+    }
+    action_contract["identityPolicy"] = {
+        "version": "backend_action_identity.v1",
+        "object": "button_type_and_backend_method",
+        "window": "action_id",
+        "url": "absolute_url_or_route",
+        "target": "stable_target_identity",
+        "constraintMerge": "fail_closed",
+        "presentationPrecedence": "highest_declared_authority",
+    }
+    contract["actionContract"] = action_contract
+    statuses = _list(_dict(contract.get("statusContract")).get("buttonStatus"))
+    status_by_identity: dict[str, dict[str, Any]] = {}
+    passthrough_statuses: list[dict[str, Any]] = []
+    for status in statuses:
+        if not isinstance(status, dict):
+            continue
+        btn_id = _text(status.get("btnId"))
+        key = btn_id[4:] if btn_id.startswith("btn.") else ""
+        identity = source_key_to_identity.get(key, "")
+        if not identity:
+            passthrough_statuses.append(status)
+            continue
+        if identity not in status_by_identity:
+            status_by_identity[identity] = {**status, "backendIdentity": identity}
+            continue
+        current = status_by_identity[identity]
+        current["visible"] = current.get("visible", True) is not False and status.get("visible", True) is not False
+        current["disabled"] = current.get("disabled", False) is True or status.get("disabled", False) is True
+        if not current.get("reasonCode") and status.get("reasonCode"):
+            current["reasonCode"] = status.get("reasonCode")
+    rules_by_identity = {
+        _text(row.get("backendIdentity")): row
+        for row in merged
+        if _text(row.get("backendIdentity"))
+    }
+    for identity, status in status_by_identity.items():
+        rule = rules_by_identity.get(identity) or {}
+        denied = (
+            rule.get("allowed") is False
+            or rule.get("enabled") is False
+            or rule.get("disabled") is True
+        )
+        if denied:
+            status["visible"] = status.get("visible", True) is not False and rule.get("allowed") is not False
+            status["disabled"] = True
+            trace_reason = next(
+                (
+                    _text(trace.get("reasonCode") or trace.get("reason_code"))
+                    for trace in _list(rule.get("sourceTrace"))
+                    if isinstance(trace, dict)
+                    and _text(trace.get("reasonCode") or trace.get("reason_code")) not in {"", "OK"}
+                ),
+                "",
+            )
+            if _text(status.get("reasonCode")) in {"", "OK"}:
+                status["reasonCode"] = trace_reason or "ACTION_NOT_ALLOWED"
+    contract["statusContract"]["buttonStatus"] = [*status_by_identity.values(), *passthrough_statuses]
+    _enforce_single_effective_primary_action(contract)
+
+
+def _compare_action_value(actual: Any, operator: str, expected: Any) -> bool:
+    left = actual[0] if isinstance(actual, (list, tuple)) and actual else actual
+    if operator in {"=", "=="}:
+        return left == expected
+    if operator in {"!=", "<>"}:
+        return left != expected
+    if operator == "in":
+        return isinstance(expected, (list, tuple, set)) and left in expected
+    if operator == "not in":
+        return isinstance(expected, (list, tuple, set)) and left not in expected
+    try:
+        if operator == ">":
+            return left > expected
+        if operator == ">=":
+            return left >= expected
+        if operator == "<":
+            return left < expected
+        if operator == "<=":
+            return left <= expected
+    except (TypeError, ValueError):
+        return False
+    return False
+
+
+def _evaluate_action_modifier(value: Any, record: dict[str, Any]) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if value in (None, "", 0, "0", "false", "False"):
+        return False
+    if value in (1, "1", "true", "True"):
+        return True
+    if not isinstance(value, dict):
+        return None
+    kind = _text(value.get("kind"))
+    if kind == "static":
+        return bool(value.get("value"))
+    if kind == "not":
+        resolved = _evaluate_action_modifier(value.get("expr"), record)
+        return None if resolved is None else not resolved
+    if kind in {"all", "any"}:
+        values = [_evaluate_action_modifier(item, record) for item in _list(value.get("exprs"))]
+        if kind == "all":
+            if False in values:
+                return False
+            return True if values and all(item is True for item in values) else None
+        if True in values:
+            return True
+        return False if values and all(item is False for item in values) else None
+    field = _text(value.get("field"))
+    if not field or field not in record:
+        return None
+    if kind == "field_truthy":
+        return bool(record.get(field))
+    if kind == "field_compare":
+        return _compare_action_value(record.get(field), _text(value.get("operator")), value.get("value"))
+    return None
+
+
+def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
+    action_contract = _dict(contract.get("actionContract"))
+    rows = _list(action_contract.get("actionRuleList"))
+    record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    effective: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict) or _text(_dict(row.get("presentation")).get("tier")).lower() != "primary":
+            continue
+        invisible = _action_invisible_constraint(row)
+        verdict = _evaluate_action_modifier(invisible, record) if invisible is not None else False
+        if verdict is not True:
+            effective.append(row)
+    if len(effective) <= 1:
+        return
+    winner = effective[0]
+    conflicts = []
+    for row in effective[1:]:
+        presentation = _dict(row.get("presentation"))
+        row["presentation"] = {**presentation, "tier": "secondary"}
+        conflicts.append({
+            "backendIdentity": row.get("backendIdentity"),
+            "actionId": row.get("actionId"),
+            "previousTier": "primary",
+            "effectiveTier": "secondary",
+        })
+    action_contract["primaryResolution"] = {
+        "policy": "single_effective_primary_per_record_state",
+        "winner": winner.get("backendIdentity") or winner.get("actionId"),
+        "demoted": conflicts,
+    }
 
 
 def _append_action_schema(contract: dict[str, Any], actions: dict[str, Any], *, source_widget_id: str) -> None:
@@ -2364,13 +2827,17 @@ def _append_ui_contract_actions(
 ) -> None:
     rows: list[dict[str, Any]] = []
     form_view = _dict(_dict(ui.get("views")).get("form"))
-    for header_button_source in (form_view.get("header_buttons"), ui.get("header_buttons")):
+    for source_channel, header_button_source in (
+        ("native_form_header", form_view.get("header_buttons")),
+        ("contract_header", ui.get("header_buttons")),
+    ):
         for row in _list(header_button_source):
             if isinstance(row, dict):
                 rows.append({
                     **row,
                     "level": _text(row.get("level"), "header"),
                     "target_scope": _text(row.get("target_scope"), "header"),
+                    "_source_channel": source_channel,
                 })
     active_view_type = _text(ui.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0]
     if active_view_type == "list":
@@ -2380,28 +2847,41 @@ def _append_ui_contract_actions(
     for slot in ("header", "sidebar", "footer"):
         for row in _list(active_view_toolbar.get(slot)):
             if isinstance(row, dict):
-                rows.append(row)
-    for key in ("buttons", "business_actions"):
+                rows.append({**row, "_source_channel": f"native_view_toolbar.{slot}"})
+    for key, priority, authority in (
+        ("buttons", 100, "native_contract"),
+        ("business_actions", 300, "product_contract"),
+    ):
         for row in _list(ui.get(key)):
             if isinstance(row, dict):
-                rows.append(row)
+                rows.append({
+                    **row,
+                    "_source_channel": key,
+                    "_presentation_priority": priority,
+                    "_presentation_authority": authority,
+                })
     toolbar = _dict(ui.get("toolbar"))
     for key in ("header", "sidebar", "footer"):
         for row in _list(toolbar.get(key)):
             if isinstance(row, dict):
-                rows.append(row)
+                rows.append({**row, "_source_channel": f"contract_toolbar.{key}"})
     for group in _list(ui.get("action_groups")):
         group_row = _dict(group)
         for row in _list(group_row.get("actions")):
             if isinstance(row, dict):
-                rows.append(row)
-    seen: set[str] = set()
+                rows.append({
+                    **row,
+                    "_source_channel": "product_action_group",
+                    "_presentation_priority": 250,
+                    "_presentation_authority": "product_contract",
+                })
     normalized: list[dict[str, Any]] = []
+    action_policies = _dict(ui.get("action_policies"))
     for row in rows:
-        key = _stable_id(row.get("key") or row.get("name") or row.get("type") or row.get("string"), "action")
-        if key in seen:
-            continue
-        seen.add(key)
+        raw_key = _text(row.get("key") or row.get("name") or row.get("type") or row.get("string"), "action")
+        key = _stable_id(raw_key, "action")
+        policy = _dict(action_policies.get(raw_key) or action_policies.get(key))
+        enabled_when = _dict(policy.get("enabled_when") or policy.get("enabledWhen"))
         kind = _text(row.get("kind") or row.get("type"))
         payload = _dict(row.get("payload"))
         intent = _text(row.get("intent"))
@@ -2413,10 +2893,58 @@ def _append_ui_contract_actions(
             count = _badge_count(main_data.get(badge_field)) if badge_field else None
             if count is not None and badge_label:
                 display_label = f"{count}{badge_label}"
-        if kind == "open" or intent == "open" or _positive_int(row.get("action_id"), 0):
+        permission_constraints = {
+            constraint_key: deepcopy(
+                policy.get(constraint_key)
+                if policy.get(constraint_key) is not None
+                else enabled_when.get(constraint_key)
+                if enabled_when.get(constraint_key) is not None
+                else payload.get(constraint_key)
+                if payload.get(constraint_key) is not None
+                else row.get(constraint_key)
+            )
+            for constraint_key in (
+                "required_groups", "required_groups_xmlids", "groups", "groups_id", "groups_xmlids",
+                "allowed_roles", "allowed_role_codes",
+                "allowed_users", "allowed_user_ids", "required_users", "required_user_ids",
+                "required_user_id", "required_user",
+            )
+            if (
+                policy.get(constraint_key) is not None
+                or enabled_when.get(constraint_key) is not None
+                or payload.get(constraint_key) is not None
+                or row.get(constraint_key) is not None
+            )
+        }
+        permission_constraints = {
+            key: value for key, value in permission_constraints.items()
+            if _has_action_constraint_value(value)
+        }
+        entitlement_evaluated = bool(
+            policy.get("entitlement_evaluated")
+            or row.get("entitlement_evaluated")
+        )
+        explicit_permission_verdict = any(
+            isinstance(source.get(key), bool)
+            for source in (policy, row)
+            for key in ("allowed", "enabled")
+        )
+        permission_unresolved = bool(permission_constraints) and (
+            not entitlement_evaluated or not explicit_permission_verdict
+        )
+        if (
+            kind in {"open", "url"}
+            or intent in {"open", "url"}
+            or _positive_int(row.get("action_id"), 0)
+            or any(payload.get(key) for key in ("action_id", "ref", "xml_id", "url", "route"))
+        ):
             action_intent = "ui.contract"
+            raw_action_ref = payload.get("ref") or row.get("ref")
+            raw_action_xmlid = payload.get("xml_id") or row.get("xml_id")
             target = {
                 "action_id": payload.get("action_id") or row.get("action_id"),
+                "action_ref": raw_action_ref,
+                "xml_id": raw_action_xmlid,
                 "menu_id": payload.get("menu_id") or row.get("menu_id"),
                 "model": row.get("target_model") or row.get("model"),
                 "view_type": _text(payload.get("view_mode"), "tree").split(",")[0],
@@ -2457,7 +2985,13 @@ def _append_ui_contract_actions(
         normalized.append(
             {
                 "key": key,
-                "label": _text(row.get("label") or row.get("string") or row.get("name"), key),
+                "label": _text(
+                    policy.get("label")
+                    or row.get("label")
+                    or row.get("string")
+                    or row.get("name"),
+                    key,
+                ),
                 "displayLabel": display_label,
                 "intent": action_intent,
                 "target": target,
@@ -2469,9 +3003,42 @@ def _append_ui_contract_actions(
                 "visible": deepcopy(row.get("visible")),
                 "modifiers": deepcopy(row.get("modifiers")),
                 "invisible": deepcopy(row.get("invisible")),
-                "visible_profiles": deepcopy(row.get("visible_profiles")),
-                "presentation": deepcopy(row.get("presentation")),
-                "action_safety": deepcopy(row.get("action_safety")),
+                "visible_profiles": deepcopy(
+                    policy.get("visible_profiles")
+                    if "visible_profiles" in policy
+                    else row.get("visible_profiles")
+                ),
+                "presentation": deepcopy(policy.get("presentation") or row.get("presentation")),
+                "action_safety": deepcopy(policy.get("action_safety") or row.get("action_safety")),
+                "allowed": False if permission_unresolved or policy.get("allowed") is False or row.get("allowed") is False else row.get("allowed", policy.get("allowed")),
+                "enabled": False if permission_unresolved or policy.get("enabled") is False or row.get("enabled") is False else row.get("enabled", policy.get("enabled")),
+                "disabled": True if policy.get("disabled") is True or row.get("disabled") is True else row.get("disabled", policy.get("disabled")),
+                "business_available": row.get("business_available"),
+                "authorization_allowed": row.get("authorization_allowed"),
+                "reason_code": (
+                    policy.get("reason_code")
+                    or policy.get("disabled_reason_code")
+                    or row.get("reason_code")
+                    or row.get("disabled_reason_code")
+                    or ("ACTION_PERMISSION_UNRESOLVED" if permission_unresolved else "")
+                ),
+                "permission_constraints": permission_constraints,
+                "entitlement_evaluated": entitlement_evaluated,
+                "source_channel": _text(row.get("_source_channel"), "contract_action"),
+                "presentation_priority": _positive_int(
+                    policy.get("presentation_priority")
+                    or row.get("presentation_priority")
+                    or row.get("_presentation_priority")
+                    or (300 if policy.get("label") or policy.get("presentation") else 0),
+                    100,
+                ),
+                "presentation_authority": _text(
+                    policy.get("presentation_authority")
+                    or row.get("presentation_authority")
+                    or row.get("_presentation_authority")
+                    or ("product_contract" if policy.get("label") or policy.get("presentation") else ""),
+                    "native_contract",
+                ),
             }
         )
     _append_actions(contract, normalized, source_widget_id=source_widget_id)
@@ -2484,28 +3051,137 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
         view = _dict(views.get(view_key))
         for row in _list(view.get("row_actions")):
             if isinstance(row, dict):
-                rows.append(row)
+                rows.append({**row, "_source_channel": f"native_{view_key}_row_action"})
     normalized: list[dict[str, Any]] = []
-    seen: set[str] = set()
+    action_policies = _dict(ui.get("action_policies"))
     for row in rows:
-        key = _stable_id(row.get("key") or row.get("name") or row.get("intent"), "row_action")
-        if key in seen:
-            continue
-        seen.add(key)
-        target = _dict(row.get("target"))
+        raw_key = _text(row.get("key") or row.get("name") or row.get("intent"), "row_action")
+        key = _stable_id(raw_key, "row_action")
+        policy = _dict(action_policies.get(raw_key) or action_policies.get(key))
+        enabled_when = _dict(policy.get("enabled_when") or policy.get("enabledWhen"))
+        kind = _text(row.get("kind") or row.get("type")).lower()
+        intent = _text(row.get("intent")).lower()
         payload = _dict(row.get("payload"))
-        if not target and payload:
-            target = payload
+        permission_constraints = {
+            constraint_key: deepcopy(
+                policy.get(constraint_key)
+                if policy.get(constraint_key) is not None
+                else enabled_when.get(constraint_key)
+                if enabled_when.get(constraint_key) is not None
+                else payload.get(constraint_key)
+                if payload.get(constraint_key) is not None
+                else row.get(constraint_key)
+            )
+            for constraint_key in (
+                "required_groups", "required_groups_xmlids", "groups", "groups_id", "groups_xmlids",
+                "allowed_roles", "allowed_role_codes",
+                "allowed_users", "allowed_user_ids", "required_users", "required_user_ids",
+                "required_user_id", "required_user",
+            )
+            if (
+                policy.get(constraint_key) is not None
+                or enabled_when.get(constraint_key) is not None
+                or payload.get(constraint_key) is not None
+                or row.get(constraint_key) is not None
+            )
+        }
+        permission_constraints = {
+            key: value for key, value in permission_constraints.items()
+            if _has_action_constraint_value(value)
+        }
+        entitlement_evaluated = bool(
+            policy.get("entitlement_evaluated")
+            or payload.get("entitlement_evaluated")
+            or row.get("entitlement_evaluated")
+        )
+        explicit_permission_verdict = any(
+            isinstance(source.get(verdict_key), bool)
+            for source in (policy, payload, row)
+            for verdict_key in ("allowed", "enabled")
+        )
+        permission_unresolved = bool(permission_constraints) and (
+            not entitlement_evaluated or not explicit_permission_verdict
+        )
+        if (
+            kind in {"open", "url"}
+            or intent in {"open", "url"}
+            or _positive_int(row.get("action_id"), 0)
+            or any(payload.get(candidate) for candidate in ("action_id", "ref", "xml_id", "url", "route"))
+        ):
+            target = {
+                "action_id": payload.get("action_id") or row.get("action_id"),
+                "action_ref": payload.get("ref") or row.get("ref"),
+                "xml_id": payload.get("xml_id") or row.get("xml_id"),
+                "model": row.get("target_model") or row.get("model"),
+                "view_type": _text(payload.get("view_mode"), "form").split(",")[0],
+                "domain_raw": payload.get("domain_raw"),
+                "context_raw": payload.get("context_raw"),
+                "url": payload.get("url"),
+                "route": payload.get("route") or row.get("route"),
+                "target": payload.get("target"),
+            }
+            button = {}
+        elif kind == "server" or payload.get("server_action_id"):
+            target = {}
+            button = {
+                "name": _text(row.get("name") or row.get("key"), key),
+                "type": "server_action",
+                "server_action_id": payload.get("server_action_id"),
+                "xml_id": payload.get("xml_id"),
+            }
+        else:
+            target = deepcopy(_dict(row.get("target")))
+            button = deepcopy(_dict(row.get("button")))
+            button.setdefault(
+                "name",
+                _text(
+                    row.get("name")
+                    or row.get("button_name")
+                    or row.get("method_name")
+                    or payload.get("method"),
+                    key,
+                ),
+            )
+            button.setdefault(
+                "type",
+                _text(
+                    row.get("type")
+                    or row.get("button_type")
+                    or payload.get("type"),
+                    "object",
+                ),
+            )
         normalized.append({
             "key": key,
             "name": row.get("name") or key,
             "label": _text(row.get("label") or row.get("string") or row.get("name"), key),
             "intent": _text(row.get("intent"), "open"),
             "target": target,
-            "button": _dict(row.get("button")),
+            "button": button,
             "trigger": _text(row.get("trigger") or row.get("display_mode"), "row_click"),
             "level": _text(row.get("level"), "row"),
             "target_scope": _text(row.get("target_scope"), "row"),
+            "visible": deepcopy(row.get("visible")),
+            "modifiers": deepcopy(row.get("modifiers")),
+            "invisible": deepcopy(row.get("invisible")),
+            "visible_profiles": deepcopy(row.get("visible_profiles")),
+            "presentation": deepcopy(row.get("presentation")),
+            "action_safety": deepcopy(row.get("action_safety")),
+            "allowed": False if permission_unresolved or policy.get("allowed") is False or row.get("allowed") is False else row.get("allowed", policy.get("allowed")),
+            "enabled": False if permission_unresolved or policy.get("enabled") is False or row.get("enabled") is False else row.get("enabled", policy.get("enabled")),
+            "disabled": True if policy.get("disabled") is True or row.get("disabled") is True else row.get("disabled", policy.get("disabled")),
+            "reason_code": (
+                policy.get("reason_code")
+                or policy.get("disabled_reason_code")
+                or row.get("reason_code")
+                or row.get("disabled_reason_code")
+                or ("ACTION_PERMISSION_UNRESOLVED" if permission_unresolved else "")
+            ),
+            "permission_constraints": permission_constraints,
+            "entitlement_evaluated": entitlement_evaluated,
+            "source_channel": _text(row.get("_source_channel"), "native_row_action"),
+            "presentation_authority": _text(row.get("presentation_authority"), "native_contract"),
+            "presentation_priority": _positive_int(row.get("presentation_priority"), 100),
         })
     _append_actions(contract, normalized, source_widget_id="page.row")
 

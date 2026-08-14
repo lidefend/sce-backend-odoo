@@ -111,6 +111,16 @@ require(
     "isolated performance evidence SHA mismatch",
     "warmed retained detail page reloaded its primary contract",
     "fs.writeFileSync(path.join(OUT, 'performance.json')",
+    "button:object:action_submit",
+    "ACTION_DIAGNOSTIC",
+    "NORMALIZED_ACTION_DIAGNOSTIC",
+    "expected=提交审批",
+)
+require(
+    "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+    "data-backend-identity",
+    "data-action-enabled",
+    "data-visible-profiles",
 )
 performance_policy = json.loads(
     (ROOT / "config/frontend/release_performance_budgets_v1.json").read_text(encoding="utf-8")

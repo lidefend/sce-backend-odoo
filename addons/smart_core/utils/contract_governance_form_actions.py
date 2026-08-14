@@ -45,16 +45,13 @@ def infer_action_semantic(action: dict) -> str:
 
 
 def infer_visible_profiles(action: dict) -> list[str]:
-    label = _safe_lower(action.get("label"))
-    key = _safe_lower(action.get("key"))
-    merged = f"{label} {key}"
-    if any(keyword in merged for keyword in ("创建", "提交", "create", "submit")):
-        return [_RENDER_PROFILE_CREATE, _RENDER_PROFILE_EDIT]
-    if any(keyword in merged for keyword in ("编辑", "修改", "edit", "write")):
-        return [_RENDER_PROFILE_EDIT]
-    if any(keyword in merged for keyword in _FORM_ACTION_READONLY_KEYWORDS):
-        return [_RENDER_PROFILE_CREATE, _RENDER_PROFILE_EDIT, _RENDER_PROFILE_READONLY]
-    return [_RENDER_PROFILE_CREATE, _RENDER_PROFILE_EDIT]
+    del action
+    # A native action without an explicit profile does not declare a profile
+    # restriction.  Labels and action keys are presentation, not authority:
+    # inferring create/edit from words such as "submit" hides valid workflow
+    # actions on readonly object pages before state and permission contracts
+    # can render their authoritative result.
+    return [_RENDER_PROFILE_CREATE, _RENDER_PROFILE_EDIT, _RENDER_PROFILE_READONLY]
 
 
 def annotate_form_actions(data: dict, *, is_form_contract: Callable[[dict], bool]) -> None:
@@ -87,8 +84,13 @@ def annotate_form_actions(data: dict, *, is_form_contract: Callable[[dict], bool
 
 
 def default_action_policy(semantic: str, visible_profiles: list[str], required_fields: list[str]) -> dict[str, Any]:
+    effective_profiles = visible_profiles or [
+        _RENDER_PROFILE_CREATE,
+        _RENDER_PROFILE_EDIT,
+        _RENDER_PROFILE_READONLY,
+    ]
     policy = {
-        "visible_profiles": visible_profiles or [_RENDER_PROFILE_CREATE, _RENDER_PROFILE_EDIT],
+        "visible_profiles": effective_profiles,
         "enabled_when": {},
         "disabled_reason": "",
         "semantic": semantic,
@@ -96,7 +98,7 @@ def default_action_policy(semantic: str, visible_profiles: list[str], required_f
     if semantic == "primary_action":
         policy["enabled_when"] = {
             "required_fields": required_fields[:12],
-            "profiles": [_RENDER_PROFILE_CREATE, _RENDER_PROFILE_EDIT],
+            "profiles": effective_profiles,
             "conditions": [],
         }
         policy["disabled_reason"] = _FORM_PRIMARY_DISABLED_REASON
@@ -268,10 +270,15 @@ def build_form_action_policies(
             if _safe_text(item).lower() in _RENDER_PROFILES
         ]
         policy = default_action_policy(semantic, normalized_visible, required_fields)
-        row_groups = row.get("groups_xmlids") if isinstance(row.get("groups_xmlids"), list) else []
+        payload = _as_dict(row.get("payload"))
+        row_groups = []
+        for candidate in (row.get("groups_xmlids"), payload.get("groups_xmlids")):
+            if not isinstance(candidate, list):
+                continue
+            row_groups.extend(candidate)
         required_groups = [
             _safe_text(item)
-            for item in row_groups
+            for item in dict.fromkeys(row_groups)
             if _safe_text(item)
         ]
         required_roles_raw = row.get("required_roles") if isinstance(row.get("required_roles"), list) else []

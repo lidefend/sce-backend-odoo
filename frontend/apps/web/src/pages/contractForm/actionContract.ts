@@ -11,9 +11,9 @@ export function normalizeActionSafety(value: unknown): ContractAction['actionSaf
   if (!classification) return undefined;
   return {
     classification,
-    requiresConfirm: row.requires_confirm === true,
-    confirmMessage: String(row.confirm_message || '').trim(),
-    reasonCode: String(row.reason_code || '').trim(),
+    requiresConfirm: row.requiresConfirm === true || row.requires_confirm === true,
+    confirmMessage: String(row.confirmMessage || row.confirm_message || '').trim(),
+    reasonCode: String(row.reasonCode || row.reason_code || '').trim(),
   };
 }
 
@@ -219,63 +219,8 @@ export function buildActiveContractModeActions(params: {
     });
 }
 
-export function createRootActionCandidatesFromRules(params: {
-  rules: unknown;
-  targetModel: string;
-}): ContractAction[] {
-  const rows = Array.isArray(params.rules) ? params.rules : [];
-  return rows
-    .map((raw) => (raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : null))
-    .filter((row): row is Record<string, unknown> => Boolean(row))
-    .map((row) => {
-      const sourceWidgetId = String(row.sourceWidgetId || row.source_widget_id || '').trim();
-      const targetScope = String(row.targetScope || row.target_scope || '').trim().toLowerCase();
-      const button = parseMaybeJsonRecord(row.button);
-      const buttonName = String(button.name || '').trim();
-      const buttonType = String(button.type || 'object').trim();
-      const normalizedIntent = String(row.intent || 'execute_button').trim().toLowerCase();
-      const normalizedButtonType = buttonType.toLowerCase();
-      if (
-        !buttonName
-        || sourceWidgetId !== 'page.root'
-        || (targetScope && targetScope !== 'header' && targetScope !== 'footer')
-        || (normalizedIntent && normalizedIntent !== 'execute' && normalizedIntent !== 'execute_button')
-        || (normalizedButtonType && normalizedButtonType !== 'object' && normalizedButtonType !== 'server' && normalizedButtonType !== 'server_action')
-      ) {
-        return null;
-      }
-      const action: ContractAction = {
-        key: String(row.actionKey || row.key || row.actionId || buttonName).trim() || buttonName,
-        label: String(row.label || buttonName).trim() || buttonName,
-        kind: buttonType === 'server' || buttonType === 'server_action' ? 'server' : 'object',
-        level: targetScope === 'footer' ? 'footer' : 'header',
-        selection: 'none' as const,
-        actionId: null,
-        methodName: buttonName,
-        targetModel: String(params.targetModel || '').trim(),
-        context: {},
-        domainRaw: '',
-        target: '',
-        url: '',
-        enabled: true,
-        hint: '',
-        intent: String(row.intent || 'execute_button').trim(),
-        semantic: 'primary_action',
-        sourceWidgetId,
-        clientMode: '',
-        visibleProfiles: ['create', 'edit', 'readonly'] as Array<'create' | 'edit' | 'readonly'>,
-        requiredParams: [],
-        requiresReason: false,
-      };
-      return action;
-    })
-    .filter((action): action is ContractAction => Boolean(action));
-}
-
 export function resolvePrimaryCreateFooterAction(params: {
   actions: ContractAction[];
-  fallbackRules: unknown;
-  targetModel: string;
 }): ContractAction | null {
   const mappedCandidates = params.actions.filter((action) => {
     const level = String(action.level || '').trim().toLowerCase();
@@ -287,18 +232,13 @@ export function resolvePrimaryCreateFooterAction(params: {
       && Boolean(action.methodName)
       && action.selection === 'none';
   });
-  const candidates = mappedCandidates.length
-    ? mappedCandidates
-    : createRootActionCandidatesFromRules({
-      rules: params.fallbackRules,
-      targetModel: params.targetModel,
-    });
-  if (candidates.length !== 1) return null;
-  return {
-    ...candidates[0],
-    enabled: true,
-    hint: '',
-  };
+  if (mappedCandidates.length !== 1) return null;
+  const candidate = mappedCandidates[0];
+  if (candidate.authorizationAllowed !== true) return null;
+  if (!candidate.enabled && !candidate.requiresSavedRecord) return null;
+  return candidate.requiresSavedRecord
+    ? { ...candidate, enabled: true, hint: '' }
+    : { ...candidate };
 }
 
 export function stableContractId(value: unknown, fallback: string) {

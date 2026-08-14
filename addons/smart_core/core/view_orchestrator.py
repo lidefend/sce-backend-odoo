@@ -41,9 +41,45 @@ class ViewOrchestrator:
         if not model_name or not view_type:
             return out
         normalized_view_type = "tree" if view_type == "list" else str(view_type or "").strip()
-        applied_contracts = []
-        form_layout_overlay_applied = False
-        business_config_form_fields: set[str] = set()
+        prior_governance = out.get("governance") if isinstance(out.get("governance"), dict) else {}
+        prior_view_governance = (
+            prior_governance.get("view_orchestration")
+            if isinstance(prior_governance.get("view_orchestration"), dict)
+            else {}
+        )
+        prior_source_trace = out.get("source_trace") if isinstance(out.get("source_trace"), dict) else {}
+        prior_view_trace = (
+            prior_source_trace.get("view_orchestration")
+            if isinstance(prior_source_trace.get("view_orchestration"), dict)
+            else {}
+        )
+        applied_contracts = [
+            deepcopy(item)
+            for item in (
+                prior_view_governance.get("business_config_contracts")
+                or prior_view_trace.get("business_config_contracts")
+                or []
+            )
+            if isinstance(item, dict)
+        ]
+        form_layout_overlay_applied = bool(
+            prior_view_governance.get("form_layout_overlay")
+            or prior_view_trace.get("form_layout_overlay")
+        )
+        semantic_entry_surface_applied = str(
+            prior_view_governance.get("form_structure_authority")
+            or prior_view_trace.get("form_structure_authority")
+            or ""
+        ).strip() == "entry_semantic_surface"
+        business_config_form_fields: set[str] = {
+            str(item).strip()
+            for item in (
+                prior_view_governance.get("business_config_form_fields")
+                or prior_view_trace.get("business_config_form_fields")
+                or []
+            )
+            if str(item).strip()
+        }
         if "ui.business.config.contract" in self.env:
             configs = self.env["ui.business.config.contract"]._effective_view_orchestration_contracts(
                 model_name,
@@ -58,22 +94,35 @@ class ViewOrchestrator:
                     normalized_view_type == "form"
                     and self._config_declares_layout_overlay(config, normalized_view_type, model_name)
                 )
+                declares_semantic_entry_surface = (
+                    normalized_view_type == "form"
+                    and self._config_declares_semantic_entry_surface(config, normalized_view_type, model_name)
+                )
                 if normalized_view_type == "form":
                     business_config_form_fields.update(self._config_declared_field_names(config, normalized_view_type, model_name))
                 out = self._apply_business_config_contract(out, config, normalized_view_type, model_name)
-                if out != before:
-                    applied_contracts.append({
+                if out != before or declares_form_layout_overlay or declares_semantic_entry_surface:
+                    applied_row = {
                         "id": int(config.id),
                         "name": config.name,
                         "version_no": int(config.version_no or 1),
-                        "status": str(config.status or ""),
-                        "source_kind": str(config.source_kind or "published"),
-                    })
-                    form_layout_overlay_applied = form_layout_overlay_applied or declares_form_layout_overlay
+                        "status": str(getattr(config, "status", "") or ""),
+                        "source_kind": str(getattr(config, "source_kind", "published") or "published"),
+                    }
+                    applied_contracts = [
+                        row for row in applied_contracts
+                        if int(row.get("id") or 0) != applied_row["id"]
+                    ]
+                    applied_contracts.append(applied_row)
+                form_layout_overlay_applied = form_layout_overlay_applied or declares_form_layout_overlay
+                semantic_entry_surface_applied = semantic_entry_surface_applied or declares_semantic_entry_surface
 
         # Compatibility: legacy form field policy remains an orchestration input
         # until low-code writes into ui.business.config.contract directly.
-        legacy_policy_applied = False
+        legacy_policy_applied = bool(
+            prior_view_governance.get("legacy_field_policy_overlay")
+            or prior_view_trace.get("legacy_field_policy_overlay")
+        )
         if normalized_view_type == "form" and "ui.form.field.policy" in self.env:
             before = deepcopy(out)
             out = self.env["ui.form.field.policy"].apply_to_view_contract(
@@ -84,7 +133,7 @@ class ViewOrchestrator:
                 view_id=view_id,
                 excluded_field_names=business_config_form_fields,
             )
-            legacy_policy_applied = out != before
+            legacy_policy_applied = legacy_policy_applied or out != before
 
         tenant_extension_fields = []
         if (
@@ -117,6 +166,7 @@ class ViewOrchestrator:
             "business_config_contracts": applied_contracts,
             "legacy_field_policy_overlay": bool(legacy_policy_applied),
             "form_layout_overlay": bool(form_layout_overlay_applied),
+            "form_structure_authority": "entry_semantic_surface" if semantic_entry_surface_applied else "",
             "business_config_form_fields": sorted(business_config_form_fields),
             "tenant_extension_field_count": len(tenant_extension_fields),
             "tenant_extension_source": (
@@ -134,6 +184,7 @@ class ViewOrchestrator:
             "business_config_contracts": applied_contracts,
             "legacy_field_policy_overlay": bool(legacy_policy_applied),
             "form_layout_overlay": bool(form_layout_overlay_applied),
+            "form_structure_authority": "entry_semantic_surface" if semantic_entry_surface_applied else "",
             "business_config_form_fields": sorted(business_config_form_fields),
             "tenant_extension_field_count": len(tenant_extension_fields),
         }
@@ -166,6 +217,14 @@ class ViewOrchestrator:
             return False
         spec = self._sanitize_spec_field_refs(spec, model_name)
         return isinstance(spec.get("layout"), list) and bool(spec.get("layout"))
+
+    def _config_declares_semantic_entry_surface(self, config, view_type: str, model_name: str) -> bool:
+        payload = config.contract_json if isinstance(config.contract_json, dict) else {}
+        spec = self._view_spec(payload, view_type)
+        if not isinstance(spec, dict):
+            return False
+        spec = self._sanitize_spec_field_refs(spec, model_name)
+        return self._is_entry_semantic_surface(spec) and bool(spec.get("sections"))
 
     def _config_declared_field_names(self, config, view_type: str, model_name: str) -> set[str]:
         payload = config.contract_json if isinstance(config.contract_json, dict) else {}
@@ -323,6 +382,7 @@ class ViewOrchestrator:
         return out
 
     def _apply_form_spec(self, contract: dict, spec: dict, model_name: str) -> dict:
+        native_layout = deepcopy(contract.get("layout"))
         self._apply_view_options(contract, spec, scalar_keys=("title",), dict_keys=("defaults", "context", "domain"))
         if isinstance(spec.get("layout"), list):
             contract["layout"] = deepcopy(spec.get("layout") or [])
@@ -333,7 +393,22 @@ class ViewOrchestrator:
             if effective:
                 hidden = {name for name, row in effective.items() if row.get("visible") is False}
                 if self._is_entry_semantic_surface(spec):
-                    contract["layout"] = self._entry_semantic_surface_layout(effective, spec, fields_meta)
+                    semantic_layout = self._entry_semantic_surface_layout(effective, spec, fields_meta)
+                    native_relation_fields = self._native_relation_field_names(
+                        native_layout,
+                        fields_meta,
+                    )
+                    semantic_layout = self._prune_layout_fields(
+                        semantic_layout,
+                        native_relation_fields,
+                    )
+                    semantic_field_names = self._layout_field_names(semantic_layout)
+                    contract["layout"] = self._merge_semantic_surface_with_native_subordinates(
+                        semantic_layout,
+                        native_layout,
+                        configured_fields=semantic_field_names,
+                        fields_meta=fields_meta,
+                    )
                 layout = contract.get("layout")
                 if isinstance(layout, list):
                     contract["layout"] = self._apply_node_field_rules(layout, effective, hidden)
@@ -346,6 +421,143 @@ class ViewOrchestrator:
                     contract["field_modifiers"] = field_modifiers
         self._apply_action_slots(contract, spec, default_key="header_buttons")
         return contract
+
+    def _merge_semantic_surface_with_native_subordinates(
+        self,
+        semantic_layout: list[dict[str, Any]],
+        native_layout: Any,
+        *,
+        configured_fields: set[str],
+        fields_meta: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """Retain native subordinate capabilities without a second root form.
+
+        Product sections own the primary task sequence.  Native header,
+        button-box, notebook and chatter containers remain authoritative for
+        actions, relations and collaboration.  Unconfigured x2many facts are
+        retained in one subordinate relation group.
+        """
+        subordinate_types = {"header", "statusbar", "button_box", "notebook", "attachment", "chatter"}
+        preserved: list[dict[str, Any]] = []
+        relation_fields: list[dict[str, Any]] = []
+        seen_relations: set[str] = set()
+
+        def prune_subordinate(node: dict[str, Any], *, preserve_functional_fields: bool = False) -> dict[str, Any] | None:
+            row = deepcopy(node)
+            node_type = str(row.get("type") or row.get("kind") or "").strip().lower()
+            preserve_functional_fields = preserve_functional_fields or node_type in {"header", "statusbar", "button_box"}
+            if node_type == "field":
+                name = str(row.get("name") or row.get("field") or "").strip()
+                return None if name and name in configured_fields and not preserve_functional_fields else row
+            child_keys = ("children", "pages", "tabs", "nodes", "items")
+            had_children = False
+            for key in child_keys:
+                children = row.get(key)
+                if not isinstance(children, list):
+                    continue
+                had_children = True
+                row[key] = [
+                    cleaned
+                    for child in children
+                    if isinstance(child, dict)
+                    for cleaned in [prune_subordinate(child, preserve_functional_fields=preserve_functional_fields)]
+                    if cleaned is not None
+                ]
+            if node_type in {"notebook", "page", "group", "sheet"} and had_children:
+                if not any(row.get(key) for key in child_keys if isinstance(row.get(key), list)):
+                    return None
+            return row
+
+        def visit(nodes: Any) -> None:
+            for item in nodes if isinstance(nodes, list) else []:
+                if not isinstance(item, dict):
+                    continue
+                node_type = str(item.get("type") or item.get("kind") or "").strip().lower()
+                if node_type in subordinate_types:
+                    cleaned = prune_subordinate(item)
+                    if cleaned is not None:
+                        preserved.append(cleaned)
+                    continue
+                if node_type == "field":
+                    name = str(item.get("name") or item.get("field") or "").strip()
+                    field_type = str((fields_meta.get(name) or {}).get("type") or "").strip()
+                    if name and name not in configured_fields and name not in seen_relations and field_type in {"one2many", "many2many"}:
+                        seen_relations.add(name)
+                        relation_fields.append(deepcopy(item))
+                    continue
+                for key in ("children", "pages", "tabs", "nodes", "items"):
+                    visit(item.get(key))
+
+        visit(native_layout)
+        if relation_fields:
+            preserved.append({
+                "type": "group",
+                "name": "native_subordinate_relations",
+                "string": "关联明细",
+                "label": "关联明细",
+                "collapsible": True,
+                "collapsed_by_default": True,
+                "children": relation_fields,
+                "sourceAuthority": {
+                    "kind": "odoo_native_view_subordinate_structure",
+                    "projection_only": True,
+                    "no_business_fact_authority": True,
+                },
+            })
+        return [*preserved[:1], *semantic_layout, *preserved[1:]] if preserved and str(preserved[0].get("type") or "").lower() == "header" else [*semantic_layout, *preserved]
+
+    def _native_relation_field_names(self, nodes: Any, fields_meta: dict[str, Any]) -> set[str]:
+        relation_names: set[str] = set()
+        for item in nodes if isinstance(nodes, list) else []:
+            if not isinstance(item, dict):
+                continue
+            node_type = str(item.get("type") or item.get("kind") or "").strip().lower()
+            if node_type == "field":
+                name = str(item.get("name") or item.get("field") or "").strip()
+                field_type = str((fields_meta.get(name) or {}).get("type") or "").strip()
+                if name and field_type in {"one2many", "many2many"}:
+                    relation_names.add(name)
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                relation_names.update(self._native_relation_field_names(item.get(key), fields_meta))
+        return relation_names
+
+    def _prune_layout_fields(self, nodes: Any, excluded_fields: set[str]) -> list[dict[str, Any]]:
+        cleaned: list[dict[str, Any]] = []
+        for item in nodes if isinstance(nodes, list) else []:
+            if not isinstance(item, dict):
+                continue
+            row = deepcopy(item)
+            node_type = str(row.get("type") or row.get("kind") or "").strip().lower()
+            if node_type == "field":
+                name = str(row.get("name") or row.get("field") or "").strip()
+                if name in excluded_fields:
+                    continue
+            child_keys = ("children", "pages", "tabs", "nodes", "items")
+            had_children = False
+            for key in child_keys:
+                children = row.get(key)
+                if isinstance(children, list):
+                    had_children = True
+                    row[key] = self._prune_layout_fields(children, excluded_fields)
+            if node_type in {"notebook", "page", "group", "sheet"} and had_children:
+                if not any(row.get(key) for key in child_keys if isinstance(row.get(key), list)):
+                    continue
+            cleaned.append(row)
+        return cleaned
+
+    def _layout_field_names(self, nodes: Any) -> set[str]:
+        names: set[str] = set()
+        for item in nodes if isinstance(nodes, list) else []:
+            if not isinstance(item, dict):
+                continue
+            node_type = str(item.get("type") or item.get("kind") or "").strip().lower()
+            if node_type == "field":
+                name = str(item.get("name") or item.get("field") or "").strip()
+                if name:
+                    names.add(name)
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                names.update(self._layout_field_names(item.get(key)))
+        return names
 
     def _is_entry_semantic_surface(self, spec: dict) -> bool:
         mode = str(spec.get("composition_mode") or spec.get("compositionMode") or "").strip()

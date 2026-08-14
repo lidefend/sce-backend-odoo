@@ -1979,10 +1979,32 @@ class PageAssembler:
                 action = by_method.get(method)
             if not action:
                 continue
+            authorization_verdict = action.get("authorization_allowed")
+            entitlement_evaluated = isinstance(authorization_verdict, bool)
+            business_available = bool(action.get("business_available"))
+            executable = bool(
+                entitlement_evaluated
+                and authorization_verdict
+                and action.get("allowed") is True
+                and action.get("enabled") is True
+                and action.get("disabled") is not True
+            )
             button["key"] = str(action.get("key") or button.get("key") or button.get("name") or "").strip()
             button["business_action"] = dict(action)
-            button["allowed"] = bool(action.get("allowed"))
-            button["reason_code"] = str(action.get("reason_code") or "")
+            button["business_available"] = business_available
+            button["authorization_allowed"] = bool(authorization_verdict) if entitlement_evaluated else False
+            button["entitlement_evaluated"] = entitlement_evaluated
+            button["allowed"] = executable
+            button["enabled"] = executable
+            button["disabled"] = not executable
+            source_reason = str(action.get("reason_code") or "").strip()
+            button["reason_code"] = (
+                source_reason
+                if executable or source_reason not in {"", "OK"}
+                else "ACTION_PERMISSION_UNRESOLVED"
+                if not entitlement_evaluated
+                else "ACTION_NOT_ALLOWED"
+            )
             button["blocked_message"] = str(action.get("blocked_message") or "")
             button["warning_message"] = str(action.get("warning_message") or "")
             button["advisory_warnings"] = action.get("advisory_warnings") if isinstance(action.get("advisory_warnings"), list) else []

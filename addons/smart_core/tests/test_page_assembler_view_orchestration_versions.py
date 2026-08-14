@@ -87,6 +87,47 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
 
         self.assertEqual(versions["view"], "12:native,7:9.3")
 
+    def test_business_action_injection_preserves_authoritative_entitlement(self):
+        globals_ = self.assembler._inject_form_business_actions.__func__.__globals__
+        original_hook = globals_["call_extension_hook_first"]
+        self.assembler.env = object()
+        try:
+            for verdict, source_reason, expected_allowed, expected_reason in (
+                (True, "OK", True, "OK"),
+                (False, "ACTION_GROUP_ACCESS_DENIED", False, "ACTION_GROUP_ACCESS_DENIED"),
+                (False, "OK", False, "ACTION_NOT_ALLOWED"),
+                (None, "", False, "ACTION_PERMISSION_UNRESOLVED"),
+            ):
+                action = {
+                    "key": "submit",
+                    "method": "action_submit",
+                    "allowed": verdict is not False,
+                    "enabled": verdict is not False,
+                    "disabled": verdict is False,
+                    "business_available": True,
+                    "required_role_key": "finance",
+                    "reason_code": source_reason,
+                }
+                if verdict is not None:
+                    action["authorization_allowed"] = verdict
+                globals_["call_extension_hook_first"] = lambda *_args, **_kwargs: {"actions": [action]}
+                data = {
+                    "views": {"form": {"header_buttons": [{"name": "action_submit"}]}},
+                    "render_profile": "readonly",
+                }
+                self.assembler._inject_form_business_actions(
+                    data, model_name="x.document", record_id=7, render_profile="readonly"
+                )
+                button = data["views"]["form"]["header_buttons"][0]
+                self.assertIs(button["entitlement_evaluated"], verdict is not None)
+                self.assertIs(button["allowed"], expected_allowed)
+                self.assertIs(button["enabled"], expected_allowed)
+                self.assertIs(button["disabled"], not expected_allowed)
+                self.assertEqual(button["reason_code"], expected_reason)
+                self.assertEqual(button["required_role_key"], "finance")
+        finally:
+            globals_["call_extension_hook_first"] = original_hook
+
     def test_coerce_calendar_preserves_orchestrated_slot_semantics(self):
         result = self.assembler._coerce_view_contract_semantics(
             "calendar",

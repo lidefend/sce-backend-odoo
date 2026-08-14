@@ -40,10 +40,13 @@ export function buildContractFormActions(params: {
     const placement = String(row.placement || 'header').trim().toLowerCase();
     const actionId = toPositiveInt(target.action_id) ?? toPositiveInt(target.ref);
     const hasOpenTarget = Boolean(actionId || String(target.url || '').trim() || String(target.route || '').trim());
+    const kind = hasOpenTarget || intent === 'ui.contract' ? 'open' : 'object';
+    const requiresSavedRecord = ['object', 'server', 'mutation'].includes(kind) && !params.recordId;
     return {
       key,
+      backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
       label: String(row.label || key),
-      kind: hasOpenTarget || intent === 'ui.contract' ? 'open' : 'object',
+      kind,
       level: placement,
       selection: 'none',
       actionId,
@@ -53,8 +56,10 @@ export function buildContractFormActions(params: {
       domainRaw: String(target.domain_raw || '').trim(),
       target: String(target.target || '').trim(),
       url: String(target.url || target.route || '').trim(),
-      enabled: true,
-      hint: '',
+      enabled: !requiresSavedRecord,
+      authorizationAllowed: true,
+      requiresSavedRecord,
+      hint: requiresSavedRecord ? 'requires record id' : '',
       intent,
       semantic: presentationTier === 'primary' ? 'primary_action' : presentationTier === 'secondary' ? 'secondary_action' : '',
       sourceWidgetId: String(row.sourceWidgetId || row.source_widget_id || '').trim(),
@@ -71,8 +76,18 @@ export function buildContractFormActions(params: {
     };
   };
 
+  const resolvedV2ActionContract = parseMaybeJsonRecord(resolveUnifiedPageContractV2(params.contract)?.actionContract);
+  const embeddedV2ActionRuleList = resolvedV2ActionContract.actionRuleList;
+  const hasV2ActionAuthority = Array.isArray(params.v2ActionRuleList) || Array.isArray(embeddedV2ActionRuleList);
+  const v2ActionRuleList = Array.isArray(params.v2ActionRuleList)
+    ? params.v2ActionRuleList
+    : Array.isArray(embeddedV2ActionRuleList)
+      ? embeddedV2ActionRuleList
+      : [];
   const nativeFormContract = params.contract?.views?.form as Record<string, unknown> | undefined;
-  const { workflowRows, nativeRows } = selectAuthoritativeBusinessActionRows(nativeFormContract, params.workflowActionRows);
+  const { workflowRows, nativeRows } = hasV2ActionAuthority
+    ? { workflowRows: [], nativeRows: [] }
+    : selectAuthoritativeBusinessActionRows(nativeFormContract, params.workflowActionRows);
   const workflowMethods = new Set<string>();
   workflowRows.forEach((row) => {
     const method = String(parseMaybeJsonRecord(row.payload).method || '').trim();
@@ -80,14 +95,13 @@ export function buildContractFormActions(params: {
     workflowActionMethodAliases(String(row.key || '').trim()).forEach((alias) => workflowMethods.add(alias));
   });
   const merged: Array<Record<string, unknown>> = [...workflowRows, ...nativeRows];
-  if (Array.isArray(params.contract?.buttons)) merged.push(...params.contract.buttons as Array<Record<string, unknown>>);
-  if (Array.isArray(params.contract?.toolbar?.header)) merged.push(...params.contract.toolbar.header as Array<Record<string, unknown>>);
-  if (Array.isArray(params.contract?.toolbar?.sidebar)) merged.push(...params.contract.toolbar.sidebar as Array<Record<string, unknown>>);
-  if (Array.isArray(params.contract?.toolbar?.footer)) merged.push(...params.contract.toolbar.footer as Array<Record<string, unknown>>);
-  const v2ActionRuleList = params.v2ActionRuleList?.length
-    ? params.v2ActionRuleList
-    : parseMaybeJsonRecord(resolveUnifiedPageContractV2(params.contract)?.actionContract).actionRuleList;
-  if (Array.isArray(v2ActionRuleList)) {
+  if (!hasV2ActionAuthority) {
+    if (Array.isArray(params.contract?.buttons)) merged.push(...params.contract.buttons as Array<Record<string, unknown>>);
+    if (Array.isArray(params.contract?.toolbar?.header)) merged.push(...params.contract.toolbar.header as Array<Record<string, unknown>>);
+    if (Array.isArray(params.contract?.toolbar?.sidebar)) merged.push(...params.contract.toolbar.sidebar as Array<Record<string, unknown>>);
+    if (Array.isArray(params.contract?.toolbar?.footer)) merged.push(...params.contract.toolbar.footer as Array<Record<string, unknown>>);
+  }
+  if (hasV2ActionAuthority) {
     v2ActionRuleList.forEach((raw) => {
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
       const row = raw as Record<string, unknown>;
@@ -101,14 +115,21 @@ export function buildContractFormActions(params: {
       const button = parseMaybeJsonRecord(row.button);
       const clientMode = String(target.mode || target.client_mode || '').trim();
       const buttonName = String(button.name || button.method || '').trim();
-      if (sourceWidgetId !== 'page.header' && targetScope !== 'footer' && !(sourceWidgetId === 'page.root' && buttonName)) return;
+      // V2 targetScope describes the action's mutation/navigation scope, not
+      // a visual body slot.  A page-scoped action emitted from page.root is a
+      // page-header action; widget/container/dataSource/runtime scopes are not.
+      const isHeaderAction = sourceWidgetId === 'page.header'
+        || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope));
+      const isFooterAction = targetScope === 'footer';
+      if (!isHeaderAction && !isFooterAction) return;
       const buttonType = String(button.type || button.buttonType || '').trim();
       merged.push({
         key,
+        backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
         label: String(row.label || key).trim() || key,
         kind: buttonType === 'server' || buttonType === 'server_action' ? 'server' : buttonName ? 'object' : clientMode ? 'client' : 'open',
         intent: String(row.intent || '').trim(),
-        level: targetScope === 'footer' ? 'footer' : 'header',
+        level: isFooterAction ? 'footer' : 'header',
         selection: 'none',
         sourceWidgetId,
         target,
@@ -126,17 +147,22 @@ export function buildContractFormActions(params: {
           context_raw: target.context_raw,
         },
         visible: row.visible,
+        allowed: row.allowed,
+        enabled: row.enabled,
+        disabled: row.disabled,
         modifiers: row.modifiers,
         invisible: row.invisible,
-        visible_profiles: Array.isArray(row.visible_profiles)
-          ? row.visible_profiles
+        visible_profiles: Array.isArray(row.visibleProfiles)
+          ? row.visibleProfiles
+          : Array.isArray(row.visible_profiles)
+            ? row.visible_profiles
           : ['create', 'edit', 'readonly'],
         presentation: row.presentation,
-        action_safety: row.action_safety,
+        action_safety: row.actionSafety ?? row.action_safety,
       });
     });
   }
-  merged.push(...params.sceneReadyActions);
+  if (!hasV2ActionAuthority) merged.push(...params.sceneReadyActions);
 
   const dedup = new Set<string>();
   const out: ContractAction[] = [];
@@ -148,6 +174,7 @@ export function buildContractFormActions(params: {
       if (status?.visible === false) continue;
       if (status?.disabled === true) {
         mapped.enabled = false;
+        mapped.authorizationAllowed = false;
         mapped.hint = status.reasonCode || mapped.hint || 'disabled_by_status_contract';
       }
       dedup.add(mapped.key);
@@ -181,10 +208,16 @@ export function buildContractFormActions(params: {
     const status = resolveV2ButtonStatus(key, params.v2ButtonStatus);
     if (status?.visible === false) continue;
     const contractAllowed = typeof row.allowed === 'boolean' ? row.allowed : true;
+    const contractEnabled = typeof row.enabled === 'boolean' ? row.enabled : true;
+    const contractDisabled = row.disabled === true;
     const needRecord = ['object', 'server', 'mutation'].includes(effectiveKind) || ['row', 'smart'].includes(level);
-    const enabled = contractAllowed && policy.enabled && (!needRecord || Boolean(params.recordId)) && status?.disabled !== true;
+    const authorizationAllowed = contractAllowed && contractEnabled && !contractDisabled
+      && policy.enabled && status?.disabled !== true;
+    const requiresSavedRecord = needRecord && !params.recordId;
+    const enabled = authorizationAllowed && !requiresSavedRecord;
     out.push({
       key,
+      backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
       label: normalizeActionLabel(row.label, key),
       kind: effectiveKind,
       level,
@@ -197,6 +230,8 @@ export function buildContractFormActions(params: {
       target: String(payload.target || row.target || '').trim(),
       url: String(payload.url || row.url || '').trim(),
       enabled,
+      authorizationAllowed,
+      requiresSavedRecord,
       hint: status?.disabled === true
         ? status.reasonCode || 'disabled_by_status_contract'
         : needRecord && !params.recordId

@@ -385,8 +385,12 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   const actionSafety = asRecord(raw.actionSafety);
   const submitPolicy = asRecord(raw.submitPolicy);
   const tracePolicy = asRecord(raw.tracePolicy);
+  const allowed = optionalBoolean(raw.allowed);
+  const enabled = optionalBoolean(raw.enabled);
+  const disabled = optionalBoolean(raw.disabled);
   return {
     actionId,
+    ...(optionalString(raw, 'backendIdentity') ? { backendIdentity: optionalString(raw, 'backendIdentity') } : {}),
     triggerType: decodeTriggerType(requiredString(raw, 'triggerType', path, issues), `${path}.triggerType`, issues),
     sourceWidgetId: requiredString(raw, 'sourceWidgetId', path, issues),
     targetIds: asStringArray(raw.targetIds),
@@ -401,12 +405,22 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
     ...(Object.keys(visible).length ? { visible } : {}),
     ...(Object.keys(modifiers).length ? { modifiers } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'invisible') ? { invisible: raw.invisible } : {}),
+    ...(allowed !== undefined ? { allowed } : {}),
+    ...(enabled !== undefined ? { enabled } : {}),
+    ...(disabled !== undefined ? { disabled } : {}),
     ...(asStringArray(raw.visibleProfiles).length ? { visibleProfiles: asStringArray(raw.visibleProfiles) } : {}),
     ...(Object.keys(presentation).length ? { presentation } : {}),
     ...(Object.keys(actionSafety).length ? { actionSafety } : {}),
     ...(Object.keys(submitPolicy).length ? { submitPolicy } : {}),
     ...(Object.keys(tracePolicy).length ? { tracePolicy } : {}),
   };
+}
+
+export function decodeContractV2ActionRule(value: unknown): ContractV2ActionRule {
+  const issues: DecodeIssue[] = [];
+  const decoded = decodeActionRule(value, 'actionRule', issues);
+  if (!decoded || issues.length) throw new ContractV2DecodeError(issues);
+  return decoded;
 }
 
 function decodeActionContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2ActionContract {

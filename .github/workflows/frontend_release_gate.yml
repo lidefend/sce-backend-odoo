@@ -261,6 +261,8 @@ jobs:
           path: |
             artifacts/frontend-release-audit/*.json
             artifacts/frontend-page-identity/navigation-report.json
+            artifacts/frontend-page-identity/full-surface-report.json
+            artifacts/frontend-page-identity/failure-summary.json
             artifacts/frontend-delivery-hardening/report.json
             artifacts/frontend-delivery-hardening/accessibility.json
             artifacts/frontend-delivery-hardening/performance.json

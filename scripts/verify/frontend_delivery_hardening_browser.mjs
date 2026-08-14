@@ -118,6 +118,116 @@ async function assertMeaningfulScreenshot(page, buffer, label) {
 }
 function recordRoute(target) { return `/r/${target.model}/${target.record_id}?action_id=${target.action_id}&menu_id=${target.menu_id}`; }
 function listRoute(target) { return `/a/${target.action_id}?menu_id=${target.menu_id}`; }
+function waitForRecordContractResponse(page, target) {
+  return page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try {
+      const body = JSON.parse(response.request().postData() || '{}');
+      const params = body.params || {};
+      return body.intent === 'ui.contract.v2'
+        && params.op === 'action_open'
+        && Number(params.record_id || params.recordId || params.res_id || 0) === Number(target.record_id);
+    } catch {
+      return false;
+    }
+  }, { timeout: 45000 });
+}
+async function intentRequestFromPage(page, intent, params) {
+  return page.evaluate(async ({ dbName, intentName, payload }) => {
+    const bearer = sessionStorage.getItem(`sc_auth_token:${dbName}`) || '';
+    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(dbName)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: bearer ? `Bearer ${bearer}` : '',
+        'X-Odoo-DB': dbName,
+      },
+      body: JSON.stringify({ intent: intentName, params: payload }),
+    });
+    return { status: response.status, body: await response.json().catch(() => ({})) };
+  }, { dbName: DB_NAME, intentName: intent, payload: params });
+}
+async function normalizedSubmitEvidence(response, evidenceLabel) {
+  const envelope = await response.json();
+  const data = envelope?.data || envelope?.result?.data || envelope?.result || {};
+  const rules = Array.isArray(data?.actionContract?.actionRuleList) ? data.actionContract.actionRuleList : [];
+  const statuses = Array.isArray(data?.statusContract?.buttonStatus) ? data.statusContract.buttonStatus : [];
+  const submitRules = rules.filter((row) => row?.backendIdentity === 'button:object:action_submit');
+  const submitStatuses = statuses.filter((row) => row?.backendIdentity === 'button:object:action_submit');
+  const evidence = {
+    rules: submitRules.map((row) => ({
+      actionKey: row.actionKey || '', backendIdentity: row.backendIdentity || '', label: row.label || '',
+      allowed: row.allowed, enabled: row.enabled, disabled: row.disabled,
+      visibleProfiles: row.visibleProfiles || [], presentation: row.presentation || {},
+      permissionConstraints: row.permissionConstraints || {},
+      sourceTrace: Array.isArray(row.sourceTrace) ? row.sourceTrace.map((trace) => ({
+        sourceChannel: trace?.sourceChannel || trace?.source || '',
+        sourceActionKey: trace?.sourceActionKey || trace?.actionKey || '',
+        allowed: trace?.allowed,
+        enabled: trace?.enabled,
+        disabled: trace?.disabled,
+        reasonCode: trace?.reasonCode || trace?.reason_code || '',
+        entitlementEvaluated: trace?.entitlementEvaluated ?? trace?.entitlement_evaluated,
+        businessAvailable: trace?.businessAvailable ?? trace?.business_available,
+        authorizationAllowed: trace?.authorizationAllowed ?? trace?.authorization_allowed,
+        permissionConstraints: trace?.permissionConstraints || trace?.permission_constraints || {},
+        constraints: trace?.constraints || {},
+      })) : [],
+    })),
+    statuses: submitStatuses.map((row) => ({
+      visible: row.visible, disabled: row.disabled, reasonCode: row.reasonCode || '',
+    })),
+  };
+  console.log(`[frontend_delivery_hardening] NORMALIZED_ACTION_DIAGNOSTIC ${evidenceLabel} ${JSON.stringify(evidence)}`);
+  check(submitRules.length === 1, `${evidenceLabel}: normalized action_submit count must be 1; evidence=${JSON.stringify(evidence)}`);
+  check(submitRules[0].allowed === true, `${evidenceLabel}: normalized action_submit allowed=${submitRules[0].allowed}`);
+  check(submitRules[0].enabled === true, `${evidenceLabel}: normalized action_submit enabled=${submitRules[0].enabled}`);
+  check(Array.isArray(submitRules[0].visibleProfiles) && submitRules[0].visibleProfiles.includes('readonly'), `${evidenceLabel}: normalized action_submit missing readonly profile`);
+  check(submitStatuses.length === 1, `${evidenceLabel}: normalized action_submit status count must be 1`);
+  check(submitStatuses[0].visible === true && submitStatuses[0].disabled === false, `${evidenceLabel}: normalized action_submit status unavailable; evidence=${JSON.stringify(evidence)}`);
+  return evidence;
+}
+async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = null) {
+  if (normalizedEvidence) await normalizedEvidence;
+  const selector = '.template-page-header-actions button[data-backend-identity="button:object:action_submit"]';
+  let submit = page.locator(selector);
+  if (!(await submit.count()) || !(await submit.first().isVisible())) {
+    const more = page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first();
+    if (await more.count()) {
+      await more.focus();
+      await more.press('Enter');
+    }
+    submit = page.locator(selector);
+  }
+  const actions = await page.locator('.template-page-header-actions button').evaluateAll((buttons) => buttons.map((button) => ({
+    text: String(button.textContent || '').replace(/\s+/g, ' ').trim(),
+    actionKey: button.getAttribute('data-action-key') || '',
+    backendIdentity: button.getAttribute('data-backend-identity') || '',
+    method: button.getAttribute('data-action-method') || '',
+    allowed: button.getAttribute('data-action-allowed') || '',
+    enabled: button.getAttribute('data-action-enabled') || '',
+    visibleProfiles: button.getAttribute('data-visible-profiles') || '',
+    disabled: button instanceof HTMLButtonElement ? button.disabled : false,
+    visible: Boolean(button.getClientRects().length),
+  })));
+  console.log(`[frontend_delivery_hardening] ACTION_DIAGNOSTIC ${evidenceLabel} ${JSON.stringify(actions)}`);
+  check(await submit.count() === 1, `${evidenceLabel}: canonical action_submit count must be 1; actions=${JSON.stringify(actions)}`);
+  const button = submit.first();
+  check(await button.isVisible(), `${evidenceLabel}: canonical action_submit is not visible; actions=${JSON.stringify(actions)}`);
+  const metadata = await button.evaluate((node) => ({
+    text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+    allowed: node.getAttribute('data-action-allowed'),
+    enabled: node.getAttribute('data-action-enabled'),
+    visibleProfiles: String(node.getAttribute('data-visible-profiles') || '').split(',').filter(Boolean),
+    disabled: node instanceof HTMLButtonElement ? node.disabled : true,
+  }));
+  check(metadata.text === '提交审批', `${evidenceLabel}: canonical action_submit label=${metadata.text || '<empty>'}, expected=提交审批`);
+  check(metadata.allowed === 'true', `${evidenceLabel}: canonical action_submit allowed=${metadata.allowed}`);
+  check(metadata.enabled === 'true', `${evidenceLabel}: canonical action_submit enabled=${metadata.enabled}`);
+  check(metadata.visibleProfiles.includes('readonly'), `${evidenceLabel}: canonical action_submit missing readonly profile`);
+  check(metadata.disabled === false, `${evidenceLabel}: canonical action_submit rendered disabled`);
+  return button;
+}
 function median(values) { const rows = [...values].sort((a, b) => a - b); return rows[Math.floor(rows.length / 2)] || 0; }
 function percentile95(values) {
   const rows = [...values].sort((a, b) => a - b);
@@ -423,6 +533,7 @@ async function main() {
     pass: false,
     journeys: {},
     runtime: {},
+    action_diagnostics: {},
   };
   const errorRecovery = {
     schema_version: 'frontend-error-recovery/v2',
@@ -551,10 +662,29 @@ async function main() {
     const detailIdentity = page.locator(`.layout-shell[data-page-identity-title="${journeyIdentity}"]`).first();
     await detailIdentity.waitFor({ timeout: 45000 });
     check((await page.title()).startsWith(`${journeyIdentity} - `), 'detail document title did not use the concise stable record identity');
+    const submitContractResponse = waitForRecordContractResponse(page, TARGETS.journey_request);
+    const directActions = await intentRequestFromPage(page, 'payment.request.available_actions', {
+      id: Number(TARGETS.journey_request.record_id),
+    });
+    const directEnvelope = directActions.body?.data || directActions.body?.result?.data || directActions.body?.result || {};
+    const directSubmit = (Array.isArray(directEnvelope?.actions) ? directEnvelope.actions : [])
+      .find((row) => row?.key === 'submit') || {};
+    report.action_diagnostics.direct_available_actions_submit = {
+      http_status: directActions.status,
+      allowed: directSubmit.allowed,
+      business_available: directSubmit.business_available,
+      authorization_allowed: directSubmit.authorization_allowed,
+      actor_matches_required_role: directSubmit.actor_matches_required_role,
+      handoff_required: directSubmit.handoff_required,
+      reason_code: directSubmit.reason_code || '',
+      allowed_by_state: directSubmit.allowed_by_state,
+      allowed_by_method: directSubmit.allowed_by_method,
+      allowed_by_precheck: directSubmit.allowed_by_precheck,
+    };
+    console.log(`[frontend_delivery_hardening] DIRECT_AVAILABLE_ACTION_DIAGNOSTIC J10 ${JSON.stringify(report.action_diagnostics.direct_available_actions_submit)}`);
     await open(page, recordRoute(TARGETS.journey_request));
-    const moreActions = page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first();
-    await moreActions.focus(); await moreActions.press('Enter');
-    const submit = page.locator('.template-page-header-actions button:visible').filter({ hasText: /^提交$/ }).first();
+    const submitEvidence = submitContractResponse.then((response) => normalizedSubmitEvidence(response, 'J10'));
+    const submit = await canonicalSubmitAction(page, 'J10', submitEvidence);
     await submit.focus(); await submit.press('Enter');
     const dialog = page.getByRole('dialog');
     await dialog.waitFor({ timeout: 15000 });
@@ -647,11 +777,7 @@ async function main() {
             await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
           } else if (surface.mode === 'dialog') {
             await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
-            let submitAction = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
-            if (!(await submitAction.count())) {
-              await page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first().click();
-              submitAction = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
-            }
+            const submitAction = await canonicalSubmitAction(page, `${surface.name}-${viewport.width}`);
             await submitAction.click();
             await page.getByRole('dialog').waitFor({ timeout: 15000 });
           } else if (surface.mode === 'network') {

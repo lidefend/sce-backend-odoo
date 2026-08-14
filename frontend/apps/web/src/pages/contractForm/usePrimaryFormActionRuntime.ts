@@ -27,6 +27,7 @@ export function usePrimaryFormActionRuntime(params: {
   validationErrors: Ref<string[]>;
 }) {
   async function executePrimarySubmitAction(action: ContractAction, resId: number) {
+    if (!action.enabled) return;
     if (!await params.confirmActionSafety(action)) return;
     params.busyKind.value = 'action';
     try {
@@ -64,6 +65,7 @@ export function usePrimaryFormActionRuntime(params: {
   async function runPrimaryFormAction() {
     const footerAction = params.primaryCreateFooterAction();
     if (footerAction) {
+      if (!footerAction.enabled) return;
       const saved = await params.saveRecord(
         footerAction.refreshPolicy,
         { navigateAfterCreate: false },
@@ -80,11 +82,7 @@ export function usePrimaryFormActionRuntime(params: {
         });
         return;
       }
-      await executePrimarySubmitAction({
-        ...footerAction,
-        enabled: true,
-        hint: '',
-      }, submittedRecordId);
+      await executePrimarySubmitAction(footerAction, submittedRecordId);
       return;
     }
     const submitAction = params.primarySubmitAction();
@@ -92,6 +90,7 @@ export function usePrimaryFormActionRuntime(params: {
       await params.saveRecord();
       return;
     }
+    if (!submitAction.enabled) return;
     let submittedRecordId = params.recordId.value;
     if (params.hasChanges()) {
       const saved = await params.saveRecord(submitAction.refreshPolicy);
@@ -108,11 +107,7 @@ export function usePrimaryFormActionRuntime(params: {
       });
       return;
     }
-    await executePrimarySubmitAction({
-      ...submitAction,
-      enabled: true,
-      hint: '',
-    }, submittedRecordId);
+    await executePrimarySubmitAction(submitAction, submittedRecordId);
   }
 
   return {

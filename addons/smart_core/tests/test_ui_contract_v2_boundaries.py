@@ -96,10 +96,15 @@ def _load_handler():
         captured["assembler_source"] = dict(source or {})
         return {"pageInfo": {}, "meta": {}}
 
+    def _project_runtime_business_actions(contract):
+        captured["runtime_business_actions_projected"] = True
+        return contract
+
     _install_module(
         "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
         CONTRACT_VERSION="2.0",
         assemble_unified_page_contract_v2=_assemble_unified_page_contract_v2,
+        project_runtime_business_actions=_project_runtime_business_actions,
     )
 
     def _trim_unified_page_contract_v2(contract, **kwargs):
@@ -198,6 +203,53 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertFalse(policy["enabled"])
         self.assertEqual(policy["reason_code"], "ACTION_GROUP_ACCESS_DENIED")
         self.assertNotIn("required_groups", policy["enabled_when"])
+
+    def test_native_button_payload_groups_enter_authoritative_policy(self):
+        root = Path(__file__).resolve().parents[1]
+        module_name = "test.contract_governance_form_actions"
+        spec = importlib.util.spec_from_file_location(
+            module_name,
+            root / "utils" / "contract_governance_form_actions.py",
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        policies = module.build_form_action_policies(
+            {
+                "fields": {},
+                "buttons": [{
+                    "key": "payment_submit",
+                    "label": "提交",
+                    "semantic": "primary_action",
+                    "payload": {
+                        "method": "action_submit",
+                        "type": "object",
+                        "groups_xmlids": [
+                            "smart_construction_core.group_sc_cap_business_initiator",
+                            "smart_construction_core.group_sc_cap_finance_user",
+                        ],
+                    },
+                }],
+            },
+            required_fields=[],
+            scene_profile="",
+        )
+
+        required = policies["payment_submit"]["enabled_when"]["required_groups"]
+        self.assertEqual(
+            required,
+            [
+                "smart_construction_core.group_sc_cap_business_initiator",
+                "smart_construction_core.group_sc_cap_finance_user",
+            ],
+        )
+        self.assertEqual(
+            policies["payment_submit"]["visible_profiles"],
+            ["create", "edit", "readonly"],
+        )
+        self.assertEqual(
+            policies["payment_submit"]["enabled_when"]["profiles"],
+            ["create", "edit", "readonly"],
+        )
 
     def test_scene_action_binding_accepts_authoritative_target(self):
         self.module.load_scenes_from_db_or_fallback = lambda *args, **kwargs: {
@@ -308,6 +360,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(trim_kwargs["max_widgets"], 8)
         self.assertEqual(trim_kwargs["max_actions"], 3)
         self.assertEqual(trim_kwargs["max_containers"], 2)
+        self.assertTrue(self.module._captured["runtime_business_actions_projected"])
 
     def test_request_adapter_merges_nested_params_over_top_level_payload(self):
         handler = self.module.UiContractV2Handler(
@@ -2218,6 +2271,36 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         widgets = contract["layoutContract"]["containerTree"][0]["widgetList"]
         self.assertEqual([row["fieldCode"] for row in widgets], ["amount"])
         self.assertNotIn("subject", contract["formStructureContract"]["fieldRoles"])
+
+    def test_semantic_entry_surface_does_not_append_business_policy_root_groups(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        contract = {
+            "pageInfo": {"viewType": "form", "model": "demo.business"},
+            "layoutContract": {"containerTree": [{
+                "type": "group", "string": "产品主章节", "children": [
+                    {"type": "field", "name": "name", "widgetId": "field.name"},
+                ],
+            }]},
+            "formStructureContract": {"fieldRoles": {"name": {"role": "business_fact"}}},
+        }
+        source_contract = {
+            "model": "demo.business",
+            "view_type": "form",
+            "governance": {"view_orchestration": {
+                "applied": True,
+                "form_structure_authority": "entry_semantic_surface",
+            }},
+            "business_operation_profile": {"form_structure_governance": {
+                "form_structure_authority": "entry_semantic_surface",
+                "field_groups": {"分类模板章节": ["name"]},
+                "hidden_field_names": [],
+            }},
+        }
+
+        handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
+
+        self.assertIn("产品主章节", str(contract["layoutContract"]["containerTree"]))
+        self.assertNotIn("分类模板章节", str(contract["layoutContract"]["containerTree"]))
 
     def test_tree_projection_does_not_import_form_structure_fields_into_list_profile(self):
         class _Field:

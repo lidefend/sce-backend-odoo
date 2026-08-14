@@ -95,12 +95,15 @@ class _Model:
         "end_date": object(),
         "user_id": object(),
         "state": object(),
+        "line_ids": object(),
     }
 
     def fields_get(self):
         return {
             "name": {"string": "Name", "type": "char"},
             "email": {"string": "Email", "type": "char"},
+            "state": {"string": "Status", "type": "selection"},
+            "line_ids": {"string": "Lines", "type": "one2many"},
         }
 
 
@@ -245,35 +248,135 @@ class TestViewOrchestrator(unittest.TestCase):
                 "views": {
                     "form": {
                         "composition_mode": "entry_semantic_surface",
+                        "layout": [{"type": "sheet", "children": [{"type": "field", "name": "email"}]}],
                         "sections": [
-                            {"title": "Primary", "sequence": 10, "columns": 2, "fields": ["name"]},
+                            {"title": "Primary", "sequence": 10, "columns": 2, "fields": ["name", "state"]},
                             {"title": "Contact", "sequence": 20, "columns": 2, "fields": ["email"]},
+                            {"title": "Relations", "sequence": 30, "fields": ["line_ids"]},
                         ],
                         "fields": [
                             {"name": "email", "label": "Email Alias", "sequence": 20, "group_title": "Contact"},
                             {"name": "name", "label": "Partner Name", "sequence": 10, "group_title": "Primary"},
+                            {"name": "state", "label": "Status", "sequence": 15, "group_title": "Primary"},
+                            {"name": "line_ids", "label": "Lines", "sequence": 30, "group_title": "Relations"},
                         ],
                     }
                 }
             }
         }
         source_layout = [
+            {"type": "header", "children": [
+                {"type": "field", "name": "state", "widget": "statusbar"},
+                {"type": "button", "name": "action_save"},
+            ]},
             {
                 "type": "sheet",
                 "children": [
-                    {"type": "group", "name": "native_group", "children": [{"type": "field", "name": "company_id"}]}
+                    {"type": "group", "name": "native_group", "children": [{"type": "field", "name": "company_id"}]},
+                    {"type": "notebook", "tabs": [{"type": "page", "string": "Relations", "children": [
+                        {"type": "field", "name": "name"},
+                        {
+                            "type": "field",
+                            "name": "line_ids",
+                            "widget": "one2many_list",
+                            "context": {"default_parent_id": "active_id"},
+                            "subview": {"tree": {"columns": ["display_name"]}},
+                        },
+                    ]}]},
+                    {"type": "attachment", "name": "native_attachments"},
+                    {"type": "chatter", "name": "native_chatter"},
                 ],
             }
         ]
 
-        result, _calls = self._compose(payload, {"layout": source_layout}, "form")
+        result, _calls = self._compose(
+            payload,
+            {
+                "layout": source_layout,
+                "subviews": {"line_ids": {"tree": {"columns": ["display_name"]}}},
+            },
+            "form",
+        )
 
-        self.assertEqual([group.get("string") for group in result["layout"]], ["Primary", "Contact"])
-        self.assertEqual(result["layout"][0].get("columns"), 2)
-        self.assertEqual([field.get("name") for field in result["layout"][0]["children"]], ["name"])
-        self.assertEqual(result["layout"][0]["children"][0].get("label"), "Partner Name")
-        self.assertEqual([field.get("name") for field in result["layout"][1]["children"]], ["email"])
+        primary_groups = [row for row in result["layout"] if row.get("type") == "group"]
+        self.assertEqual([group.get("string") for group in primary_groups], ["Primary", "Contact"])
+        self.assertEqual(primary_groups[0].get("columns"), 2)
+        self.assertEqual([field.get("name") for field in primary_groups[0]["children"]], ["name", "state"])
+        self.assertEqual(primary_groups[0]["children"][0].get("label"), "Partner Name")
+        self.assertEqual([field.get("name") for field in primary_groups[1]["children"]], ["email"])
         self.assertNotIn("native_group", str(result["layout"]))
+        self.assertIn("Relations", str(result["layout"]))
+        def field_occurrences(nodes, field_name):
+            count = 0
+            for node in nodes if isinstance(nodes, list) else []:
+                if not isinstance(node, dict):
+                    continue
+                if node.get("type") == "field" and node.get("name") == field_name:
+                    count += 1
+                for child_key in ("children", "pages", "tabs", "nodes", "items"):
+                    count += field_occurrences(node.get(child_key), field_name)
+            return count
+
+        self.assertEqual(field_occurrences(result["layout"], "name"), 1)
+        self.assertEqual(field_occurrences(result["layout"], "state"), 2)
+        self.assertIn("statusbar", str(result["layout"]))
+        self.assertEqual(field_occurrences(primary_groups, "line_ids"), 0)
+        self.assertEqual(field_occurrences(result["layout"], "line_ids"), 1)
+        self.assertIn("line_ids", str(result["layout"]))
+        self.assertIn("one2many_list", str(result["layout"]))
+        self.assertIn("default_parent_id", str(result["layout"]))
+        self.assertEqual(
+            result["subviews"]["line_ids"]["tree"]["columns"],
+            ["display_name"],
+        )
+        self.assertIn("native_chatter", str(result["layout"]))
+        self.assertIn("native_attachments", str(result["layout"]))
+        governance = result["governance"]["view_orchestration"]
+        trace = result["source_trace"]["view_orchestration"]
+        self.assertEqual(governance["form_structure_authority"], "entry_semantic_surface")
+        self.assertEqual(trace["form_structure_authority"], "entry_semantic_surface")
+
+        second, _calls = self._compose(payload, result, "form")
+        self.assertEqual(second["layout"], result["layout"])
+        self.assertEqual(
+            second["governance"]["view_orchestration"]["form_structure_authority"],
+            "entry_semantic_surface",
+        )
+        self.assertEqual(
+            second["source_trace"]["view_orchestration"]["form_structure_authority"],
+            "entry_semantic_surface",
+        )
+        self.assertEqual(
+            second["governance"]["view_orchestration"]["business_config_contracts"][0]["id"],
+            9,
+        )
+
+    def test_prior_legacy_policy_application_survives_later_noop(self):
+        payload = {
+            "view_orchestration": {
+                "views": {"form": {"fields": [{"name": "email", "label": "Email"}]}}
+            }
+        }
+        contract = {
+            "layout": [{"type": "sheet", "children": [{"type": "field", "name": "email"}]}],
+            "governance": {"view_orchestration": {"legacy_field_policy_overlay": True}},
+        }
+
+        result, _calls = self._compose(payload, contract, "form", legacy_policy=True)
+
+        self.assertTrue(result["governance"]["view_orchestration"]["legacy_field_policy_overlay"])
+        self.assertTrue(result["source_trace"]["view_orchestration"]["legacy_field_policy_overlay"])
+
+    def test_plain_business_form_contract_does_not_claim_semantic_structure_authority(self):
+        payload = {
+            "view_orchestration": {
+                "views": {"form": {"fields": [{"name": "name", "label": "Partner Name"}]}}
+            }
+        }
+
+        result, _calls = self._compose(payload, {"layout": []}, "form")
+
+        self.assertEqual(result["governance"]["view_orchestration"]["form_structure_authority"], "")
 
     def test_pivot_view_uses_business_config_measures_dimensions_and_defaults(self):
         payload = {
