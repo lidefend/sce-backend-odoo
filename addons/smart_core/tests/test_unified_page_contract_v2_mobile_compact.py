@@ -548,7 +548,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(promoted[0]["target"]["url"], "/f/x.followup/new")
         self.assertEqual(promoted[0]["target"]["target"], "self")
         self.assertEqual(promoted[0]["sourceChannel"], "runtime_business_action")
-        self.assertEqual(promoted[0]["presentationAuthority"], "product_contract")
+        self.assertEqual(promoted[0]["presentationAuthority"], "runtime_action_state")
+        self.assertEqual(promoted[0]["label"], "Open follow-up")
         self.assertEqual(promoted[0]["visibleProfiles"], ["readonly"])
         self.assertEqual(promoted[0]["targetScope"], "page")
 
@@ -682,6 +683,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(rules[0]["actionSafety"]["classification"], "danger")
         self.assertTrue(rules[0]["actionSafety"]["requires_confirm"])
         self.assertEqual(len(rules[0]["sourceTrace"]), 3)
+        self.assertEqual(rules[0]["label"], "Submit document")
         self.assertTrue(all(
             trace.get("authorizationAllowed") is True
             for trace in rules[0]["sourceTrace"]
@@ -701,6 +703,34 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             for target in targets
         }
         self.assertEqual(dependency_targets, {rules[0]["actionId"]})
+
+    def test_runtime_action_requires_explicit_authority_to_override_presentation(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "business_actions": [{
+                "key": "submit_product", "label": "Submit for approval", "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": True, "enabled": True,
+                "presentation": {"tier": "primary"},
+            }],
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc", request_id="test.runtime.presentation.explicit"
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "submit_runtime", "label": "Runtime override", "kind": "object",
+            "method": "action_submit", "allowed": True, "enabled": True,
+            "presentation_authority": "product_contract",
+            "presentation_priority": 400,
+        }]
+        assembler.project_runtime_business_actions(contract)
+        rule = next(
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("backendIdentity") == "button:object:action_submit"
+        )
+        self.assertEqual(rule["label"], "Runtime override")
+        self.assertEqual(rule["presentationAuthority"], "product_contract")
 
     def test_runtime_action_merges_with_entitled_native_payload_button(self):
         source = {
@@ -760,7 +790,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(rules[0]["allowed"])
         self.assertTrue(rules[0]["enabled"])
         self.assertFalse(rules[0]["disabled"])
-        self.assertEqual(rules[0]["label"], "Submit")
+        self.assertEqual(rules[0]["label"], "Submit for approval")
         self.assertEqual(rules[0]["visibleProfiles"], ["edit", "readonly"])
         self.assertEqual(len(statuses), 1)
         self.assertTrue(statuses[0]["visible"])

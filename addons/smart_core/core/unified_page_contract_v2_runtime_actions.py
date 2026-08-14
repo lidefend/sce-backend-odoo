@@ -71,8 +71,11 @@ def normalize_runtime_business_actions(
             "target_scope": target_scope,
             "source_widget_id": _text(row.get("source_widget_id"), "page.header"),
             "source_channel": "runtime_business_action",
-            "presentation_authority": _text(row.get("presentation_authority"), "product_contract"),
-            "presentation_priority": _positive_int(row.get("presentation_priority"), 300),
+            # Runtime business actions are execution/state authorities by
+            # default.  They may override published presentation only when
+            # the producer declares that authority explicitly.
+            "presentation_authority": _text(row.get("presentation_authority"), "runtime_action_state"),
+            "presentation_priority": _positive_int(row.get("presentation_priority"), 50),
             "allowed": allowed,
             "enabled": enabled,
             "disabled": row.get("disabled") is True or not allowed or not enabled,
