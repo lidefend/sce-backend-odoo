@@ -35,7 +35,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
     _ACTION_SPECS = [
         {
             "key": "submit",
-            "label": "提交",
+            "label": "提交审批",
             "intent": "payment.request.submit",
             "method": "action_submit",
             "allowed_states": {"draft"},

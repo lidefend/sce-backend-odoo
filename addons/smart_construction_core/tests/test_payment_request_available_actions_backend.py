@@ -76,6 +76,7 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         self.assertEqual(keys, {"submit", "approve", "reject", "done"})
         by_key = {str(item.get("key") or ""): item for item in actions if isinstance(item, dict)}
         submit = by_key.get("submit") or {}
+        self.assertEqual(submit.get("label"), "提交审批")
         self.assertEqual(submit.get("execute_intent"), "payment.request.execute")
         self.assertEqual((submit.get("execute_params") or {}).get("id"), payment.id)
         self.assertEqual((submit.get("execute_params") or {}).get("action"), "submit")
