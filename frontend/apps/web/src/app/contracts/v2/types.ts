@@ -84,6 +84,7 @@ export interface ContractV2LayoutContract {
 
 export interface ContractV2ActionRule {
   actionId: string;
+  backendIdentity?: string;
   triggerType: ContractV2TriggerType;
   sourceWidgetId: string;
   targetIds: string[];

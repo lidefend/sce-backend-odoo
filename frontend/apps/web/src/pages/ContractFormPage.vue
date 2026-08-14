@@ -24,7 +24,7 @@
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
       :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
-      :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel"
+      :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
       :direct-actions="headerBusinessDirectActions" :overflow-actions="headerBusinessOverflowActions" :config-actions="headerConfigActionsVisible"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @continue-processing="continueProcessing" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
@@ -1393,6 +1393,9 @@ const primaryFormActionHint = computed(() => {
   if (primarySubmitAction.value && !primarySubmitAction.value.enabled) return primarySubmitAction.value.hint;
   return primarySubmitAction.value && recordId.value && hasChanges.value ? '请先保存修改，再提交审批' : '';
 });
+const primaryBusinessFormAction = computed(() => (
+  !recordId.value ? primaryCreateFooterAction.value : primarySubmitAction.value
+));
 const draftSaveDisabled = computed(() => {
   if (busy.value) return true;
   if (!canSave.value) return true;

@@ -126,6 +126,7 @@ const normalizedWinner = buildContractFormActions({
   }],
   v2ActionRuleList: [rule('same-action', 'page.root', 'page', {
     label: 'Normalized winner',
+    backendIdentity: 'button:object:action_same',
     visibleProfiles: ['readonly'],
     actionSafety: {
       classification: 'danger', requiresConfirm: true,
@@ -140,6 +141,7 @@ const normalizedWinner = buildContractFormActions({
 });
 assert.equal(normalizedWinner.length, 1);
 assert.equal(normalizedWinner[0]?.label, 'Normalized winner');
+assert.equal(normalizedWinner[0]?.backendIdentity, 'button:object:action_same');
 assert.equal(normalizedWinner[0]?.enabled, false);
 assert.equal(normalizedWinner[0]?.authorizationAllowed, false);
 assert.deepEqual(normalizedWinner[0]?.visibleProfiles, ['readonly']);
@@ -266,6 +268,7 @@ assert.equal(deniedCreatePresentation.direct[0]?.enabled, false);
 const decodedDeniedRule = decodeContractV2ActionRule({
   ...rule('decoded-denied-submit', 'page.root', 'page'),
   actionId: 'action.decoded-denied-submit',
+  backendIdentity: 'button:object:action_decoded_denied_submit',
   targetIds: [],
   dispatchMode: 'server',
   refreshMode: 'partial',
@@ -276,6 +279,7 @@ const decodedDeniedRule = decodeContractV2ActionRule({
 assert.equal(decodedDeniedRule.allowed, false);
 assert.equal(decodedDeniedRule.enabled, false);
 assert.equal(decodedDeniedRule.disabled, true);
+assert.equal(decodedDeniedRule.backendIdentity, 'button:object:action_decoded_denied_submit');
 const decodedDeniedBuilt = buildContractFormActions({
   contract: null,
   model: 'res.partner',

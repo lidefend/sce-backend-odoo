@@ -44,6 +44,7 @@ export function buildContractFormActions(params: {
     const requiresSavedRecord = ['object', 'server', 'mutation'].includes(kind) && !params.recordId;
     return {
       key,
+      backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
       label: String(row.label || key),
       kind,
       level: placement,
@@ -124,6 +125,7 @@ export function buildContractFormActions(params: {
       const buttonType = String(button.type || button.buttonType || '').trim();
       merged.push({
         key,
+        backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
         label: String(row.label || key).trim() || key,
         kind: buttonType === 'server' || buttonType === 'server_action' ? 'server' : buttonName ? 'object' : clientMode ? 'client' : 'open',
         intent: String(row.intent || '').trim(),
@@ -215,6 +217,7 @@ export function buildContractFormActions(params: {
     const enabled = authorizationAllowed && !requiresSavedRecord;
     out.push({
       key,
+      backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
       label: normalizeActionLabel(row.label, key),
       kind: effectiveKind,
       level,

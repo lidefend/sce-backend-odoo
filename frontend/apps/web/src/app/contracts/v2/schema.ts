@@ -390,6 +390,7 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   const disabled = optionalBoolean(raw.disabled);
   return {
     actionId,
+    ...(optionalString(raw, 'backendIdentity') ? { backendIdentity: optionalString(raw, 'backendIdentity') } : {}),
     triggerType: decodeTriggerType(requiredString(raw, 'triggerType', path, issues), `${path}.triggerType`, issues),
     sourceWidgetId: requiredString(raw, 'sourceWidgetId', path, issues),
     targetIds: asStringArray(raw.targetIds),

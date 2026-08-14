@@ -17,6 +17,7 @@ export const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
 
 export type ContractAction = {
   key: string;
+  backendIdentity?: string;
   label: string;
   kind: string;
   level: string;

@@ -38,7 +38,7 @@ Generated from repository source files. This report is informational during the 
 | 1865 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1834 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1784 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1787 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1744 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1740 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1713 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
@@ -95,10 +95,10 @@ Generated from repository source files. This report is informational during the 
 | 967 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 966 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 956 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
+| 956 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 952 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
-| 922 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
@@ -160,7 +160,7 @@ Generated from repository source files. This report is informational during the 
 | 1865 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1834 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1784 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1787 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1744 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1740 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1738 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
@@ -212,8 +212,8 @@ Generated from repository source files. This report is informational during the 
 | 967 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 966 | warning | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 956 | warning | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
+| 956 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 955 | warning | Python source | `scripts/release/test_release_publication.py` |
-| 952 | warning | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 
 ## Interpretation
 

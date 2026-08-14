@@ -54,15 +54,15 @@
       <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length" class="form-header-primary-actions">
         <button v-if="showContinueProcessing" data-form-mode-action="edit" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('continue-processing')">继续办理</button>
         <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
-        <button v-if="showPrimaryFormAction" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
-        <button v-for="action in directActions" :key="`hdr-${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+        <button v-if="showPrimaryFormAction" v-bind="actionEvidenceAttributes(primaryAction)" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
+        <button v-for="action in directActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
       </span>
       <details v-if="overflowActions.length" class="form-header-more-actions">
         <summary class="sc-btn sc-btn-ghost sc-btn-sm">更多操作</summary>
-        <div><button v-for="action in overflowActions" :key="`hdr-more-${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button></div>
+        <div><button v-for="action in overflowActions" :key="`hdr-more-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button></div>
       </details>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
-      <button v-for="action in configActions" :key="`hdr-config-${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+      <button v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
       <button v-if="showDiscard" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</button>
       <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</button>
       <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</button>
@@ -84,7 +84,8 @@ const props = defineProps<{
   mode: 'create' | 'edit' | 'readonly'; modeLabel: string; dirty: boolean; changedFieldCount: number;
   showContinueProcessing: boolean;
   showDraftSave: boolean; draftSaveDisabled: boolean; draftSaveLabel: string; showPrimaryFormAction: boolean;
-  primaryFormActionDisabled: boolean; primaryFormActionHint: string; submitLabel: string; directActions: ContractAction[]; overflowActions: ContractAction[];
+  primaryFormActionDisabled: boolean; primaryFormActionHint: string; submitLabel: string; primaryAction: ContractAction | null;
+  directActions: ContractAction[]; overflowActions: ContractAction[];
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
   discardLabel: string; reloadLabel: string;
 }>();
@@ -103,6 +104,18 @@ const emit = defineEmits<{
   back: []; 'continue-processing': []; 'set-status': [value: string]; 'return-workbench': []; 'save-draft': []; 'run-primary': [];
   'run-action': [action: ContractAction]; discard: []; copy: []; export: []; reload: [];
 }>();
+
+function actionEvidenceAttributes(action: ContractAction | null) {
+  if (!action) return {};
+  return {
+    'data-action-key': action.key,
+    'data-backend-identity': action.backendIdentity || '',
+    'data-action-method': action.methodName || '',
+    'data-action-enabled': String(action.enabled),
+    'data-action-allowed': String(action.authorizationAllowed !== false),
+    'data-visible-profiles': action.visibleProfiles.join(','),
+  };
+}
 
 function updateWorkflowOverflow() {
   const track = statusTrackRef.value;

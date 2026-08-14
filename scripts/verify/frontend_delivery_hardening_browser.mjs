@@ -118,6 +118,46 @@ async function assertMeaningfulScreenshot(page, buffer, label) {
 }
 function recordRoute(target) { return `/r/${target.model}/${target.record_id}?action_id=${target.action_id}&menu_id=${target.menu_id}`; }
 function listRoute(target) { return `/a/${target.action_id}?menu_id=${target.menu_id}`; }
+async function canonicalSubmitAction(page, evidenceLabel) {
+  const selector = '.template-page-header-actions button[data-backend-identity="button:object:action_submit"]';
+  let submit = page.locator(selector);
+  if (!(await submit.count()) || !(await submit.first().isVisible())) {
+    const more = page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first();
+    if (await more.count()) {
+      await more.focus();
+      await more.press('Enter');
+    }
+    submit = page.locator(selector);
+  }
+  const actions = await page.locator('.template-page-header-actions button').evaluateAll((buttons) => buttons.map((button) => ({
+    text: String(button.textContent || '').replace(/\s+/g, ' ').trim(),
+    actionKey: button.getAttribute('data-action-key') || '',
+    backendIdentity: button.getAttribute('data-backend-identity') || '',
+    method: button.getAttribute('data-action-method') || '',
+    allowed: button.getAttribute('data-action-allowed') || '',
+    enabled: button.getAttribute('data-action-enabled') || '',
+    visibleProfiles: button.getAttribute('data-visible-profiles') || '',
+    disabled: button instanceof HTMLButtonElement ? button.disabled : false,
+    visible: Boolean(button.getClientRects().length),
+  })));
+  console.log(`[frontend_delivery_hardening] ACTION_DIAGNOSTIC ${evidenceLabel} ${JSON.stringify(actions)}`);
+  check(await submit.count() === 1, `${evidenceLabel}: canonical action_submit count must be 1; actions=${JSON.stringify(actions)}`);
+  const button = submit.first();
+  check(await button.isVisible(), `${evidenceLabel}: canonical action_submit is not visible; actions=${JSON.stringify(actions)}`);
+  const metadata = await button.evaluate((node) => ({
+    text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+    allowed: node.getAttribute('data-action-allowed'),
+    enabled: node.getAttribute('data-action-enabled'),
+    visibleProfiles: String(node.getAttribute('data-visible-profiles') || '').split(',').filter(Boolean),
+    disabled: node instanceof HTMLButtonElement ? node.disabled : true,
+  }));
+  check(metadata.text === '提交审批', `${evidenceLabel}: canonical action_submit label=${metadata.text || '<empty>'}, expected=提交审批`);
+  check(metadata.allowed === 'true', `${evidenceLabel}: canonical action_submit allowed=${metadata.allowed}`);
+  check(metadata.enabled === 'true', `${evidenceLabel}: canonical action_submit enabled=${metadata.enabled}`);
+  check(metadata.visibleProfiles.includes('readonly'), `${evidenceLabel}: canonical action_submit missing readonly profile`);
+  check(metadata.disabled === false, `${evidenceLabel}: canonical action_submit rendered disabled`);
+  return button;
+}
 function median(values) { const rows = [...values].sort((a, b) => a - b); return rows[Math.floor(rows.length / 2)] || 0; }
 function percentile95(values) {
   const rows = [...values].sort((a, b) => a - b);
@@ -552,9 +592,7 @@ async function main() {
     await detailIdentity.waitFor({ timeout: 45000 });
     check((await page.title()).startsWith(`${journeyIdentity} - `), 'detail document title did not use the concise stable record identity');
     await open(page, recordRoute(TARGETS.journey_request));
-    const moreActions = page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first();
-    await moreActions.focus(); await moreActions.press('Enter');
-    const submit = page.locator('.template-page-header-actions button:visible').filter({ hasText: /^提交$/ }).first();
+    const submit = await canonicalSubmitAction(page, 'J10');
     await submit.focus(); await submit.press('Enter');
     const dialog = page.getByRole('dialog');
     await dialog.waitFor({ timeout: 15000 });
@@ -647,11 +685,7 @@ async function main() {
             await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
           } else if (surface.mode === 'dialog') {
             await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
-            let submitAction = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
-            if (!(await submitAction.count())) {
-              await page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first().click();
-              submitAction = page.locator('.template-page-header-actions button.sc-btn-primary:visible').filter({ hasText: /^提交$/ }).first();
-            }
+            const submitAction = await canonicalSubmitAction(page, `${surface.name}-${viewport.width}`);
             await submitAction.click();
             await page.getByRole('dialog').waitFor({ timeout: 15000 });
           } else if (surface.mode === 'network') {
