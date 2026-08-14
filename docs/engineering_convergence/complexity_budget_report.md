@@ -18,7 +18,7 @@ Generated from repository source files. This report is informational during the 
 | 3486 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3338 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3160 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 3158 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 3087 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3046 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 3040 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
@@ -37,8 +37,8 @@ Generated from repository source files. This report is informational during the 
 | 1865 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1834 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 1817 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 1784 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
-| 1768 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 1744 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1740 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1713 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
@@ -140,7 +140,7 @@ Generated from repository source files. This report is informational during the 
 | 3486 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3338 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3160 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 3158 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 3087 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3046 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 3040 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
@@ -159,8 +159,8 @@ Generated from repository source files. This report is informational during the 
 | 1865 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1834 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 1817 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 1784 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
-| 1768 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 1744 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1740 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1738 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |

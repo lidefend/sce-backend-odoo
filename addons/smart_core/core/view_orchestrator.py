@@ -437,7 +437,7 @@ class ViewOrchestrator:
         actions, relations and collaboration.  Unconfigured x2many facts are
         retained in one subordinate relation group.
         """
-        subordinate_types = {"header", "statusbar", "button_box", "notebook", "chatter"}
+        subordinate_types = {"header", "statusbar", "button_box", "notebook", "attachment", "chatter"}
         preserved: list[dict[str, Any]] = []
         relation_fields: list[dict[str, Any]] = []
         seen_relations: set[str] = set()

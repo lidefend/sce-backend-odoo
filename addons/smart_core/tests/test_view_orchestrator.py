@@ -283,6 +283,7 @@ class TestViewOrchestrator(unittest.TestCase):
                             "subview": {"tree": {"columns": ["display_name"]}},
                         },
                     ]}]},
+                    {"type": "attachment", "name": "native_attachments"},
                     {"type": "chatter", "name": "native_chatter"},
                 ],
             }
@@ -329,6 +330,7 @@ class TestViewOrchestrator(unittest.TestCase):
             ["display_name"],
         )
         self.assertIn("native_chatter", str(result["layout"]))
+        self.assertIn("native_attachments", str(result["layout"]))
         governance = result["governance"]["view_orchestration"]
         trace = result["source_trace"]["view_orchestration"]
         self.assertEqual(governance["form_structure_authority"], "entry_semantic_surface")
