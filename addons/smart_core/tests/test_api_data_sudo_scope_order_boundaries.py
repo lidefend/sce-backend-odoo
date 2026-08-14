@@ -97,6 +97,13 @@ class TestApiDataSudoScopeOrderBoundaries(unittest.TestCase):
         self.assertTrue(create_calls)
         self.assertLess(policy_calls[-1].lineno, create_calls[-1].lineno)
 
+    def test_empty_create_requires_authoritative_context_defaults(self):
+        source = ast.unparse(self.create)
+        prepare_source = ast.unparse(_function(self.tree, "_prepare_create_vals"))
+
+        self.assertIn("authoritative_context_default_fields(ctx, self.env[model]._fields)", source)
+        self.assertIn("merge_orm_create_defaults(env_model, vals)", prepare_source)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -23,7 +23,12 @@ from odoo.exceptions import AccessError
 from odoo.http import request
 
 from ..core.base_handler import BaseIntentHandler
-from ..core.api_data_execution_policy import client_requested_sudo, resolve_api_data_sudo
+from ..core.api_data_execution_policy import (
+    authoritative_context_default_fields,
+    client_requested_sudo,
+    merge_orm_create_defaults,
+    resolve_api_data_sudo,
+)
 try:
     from ..core.project_context import selected_record_context_id_from_context
 except ImportError:  # pragma: no cover - compatibility for lightweight boundary tests
@@ -1477,27 +1482,7 @@ class ApiDataHandler(BaseIntentHandler):
         return list(domain or []) + self._build_search_term_domain(env_model, search_term, fields_safe), search_term
 
     def _prepare_create_vals(self, env_model, vals: Dict[str, Any]) -> Dict[str, Any]:
-        safe_vals = {k: v for k, v in (vals or {}).items() if k in env_model._fields}
-        if not safe_vals:
-            return {}
-
-        missing_for_default = [
-            name
-            for name in (env_model._fields or {}).keys()
-            if name not in safe_vals and not str(name or "").startswith("__")
-        ]
-        if missing_for_default:
-            try:
-                defaults = env_model.default_get(missing_for_default) or {}
-            except Exception:
-                defaults = {}
-            if isinstance(defaults, dict):
-                for name in missing_for_default:
-                    if name in safe_vals:
-                        continue
-                    if name in defaults and defaults.get(name) is not None:
-                        safe_vals[name] = defaults.get(name)
-
+        safe_vals = merge_orm_create_defaults(env_model, vals)
         self._apply_create_fallbacks(env_model, safe_vals)
         return safe_vals
 
@@ -2124,7 +2109,9 @@ class ApiDataHandler(BaseIntentHandler):
 
     def _op_create(self, model: str, p: Dict[str, Any], ctx: Dict[str, Any], sudo: bool):
         vals = self._dig(p, "vals") or self._dig(p, "values") or {}
-        if not isinstance(vals, dict) or not vals:
+        if not isinstance(vals, dict):
+            return self._err(400, "缺少参数 vals")
+        if not vals and not authoritative_context_default_fields(ctx, self.env[model]._fields):
             return self._err(400, "缺少参数 vals")
 
         denied = self._check_mutation_policy(model, "create")
