@@ -81,6 +81,24 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             self.assertEqual(result.returncode, 24)
             self.assertFalse((isolated_root / ".runtime").exists())
 
+    def test_collection_lifecycle_reuses_canonical_governed_targets(self) -> None:
+        source = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+        expected = {
+            "backend.collection.acceptance.up": "backend.acceptance.up",
+            "backend.collection.acceptance.down": "backend.acceptance.down",
+            "frontend.collection.acceptance.up": "frontend.acceptance.up",
+            "frontend.collection.acceptance.down": "frontend.acceptance.down",
+        }
+        for target, canonical in expected.items():
+            self.assertIn(f"{target}: {canonical}", source)
+        self.assertNotIn("BACKEND_ACCEPTANCE_PORT=18102", source)
+        self.assertNotIn("FRONTEND_ACCEPTANCE_PORT=5192", source)
+        browser = (
+            ROOT / "scripts/verify/collection_view_semantics_browser.mjs"
+        ).read_text(encoding="utf-8")
+        self.assertIn("http://127.0.0.1:5175", browser)
+        self.assertNotIn("http://127.0.0.1:5192", browser)
+
     def test_nested_database_make_calls_keep_managed_project_identity(self) -> None:
         source = (ROOT / "scripts/test/frontend_acceptance_db_ensure.sh").read_text(
             encoding="utf-8"

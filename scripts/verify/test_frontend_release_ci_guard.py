@@ -138,6 +138,25 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         )
         self.assertIn("FRONTEND_ACCEPTANCE_RUNTIME_DIRECT_MAKE_BYPASS", findings(root))
 
+    def test_make_targets_cannot_call_lower_acceptance_mutators_directly(self):
+        for lower in (
+            "backend_acceptance_up.sh",
+            "backend_acceptance_down.sh",
+            "frontend_acceptance_up.sh",
+            "frontend_acceptance_down.sh",
+        ):
+            temporary, root = self.fixture()
+            self.addCleanup(temporary.cleanup)
+            dev_make = root / "make/dev.mk"
+            dev_make.write_text(
+                dev_make.read_text(encoding="utf-8")
+                + f"\nforbidden.{lower}:\n\t@bash scripts/dev/{lower}\n",
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "FRONTEND_ACCEPTANCE_RUNTIME_DIRECT_MAKE_BYPASS", findings(root), lower
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

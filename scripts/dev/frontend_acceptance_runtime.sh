@@ -67,15 +67,11 @@ require_container_env() {
   }
 }
 
-validate_backend_runtime() {
+validate_backend_identity() {
   local container="$BACKEND_ACCEPTANCE_NAME"
   local expected_fingerprint expected_source expected_revision published_port
   docker inspect "$container" >/dev/null 2>&1 || {
     echo "[acceptance.runtime] DENY missing managed backend container: $container" >&2
-    return 1
-  }
-  [[ "$(docker inspect "$container" --format '{{.State.Running}}')" == "true" ]] || {
-    echo "[acceptance.runtime] DENY managed backend is not running: $container" >&2
     return 1
   }
   expected_source="$(readlink -f "$ROOT_DIR/addons")"
@@ -102,9 +98,18 @@ validate_backend_runtime() {
   require_container_env "$container" LIST_DB false || return 1
 }
 
+validate_backend_runtime() {
+  validate_backend_identity || return 1
+  [[ "$(docker inspect "$BACKEND_ACCEPTANCE_NAME" --format '{{.State.Running}}')" == "true" ]] || {
+    echo "[acceptance.runtime] DENY managed backend is not running: $BACKEND_ACCEPTANCE_NAME" >&2
+    return 1
+  }
+}
+
 validate_frontend_runtime() {
-  local pid process_env process_root
-  [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" ]] || {
+  local pid process_cmd process_env process_root listener listener_pid listener_group
+  [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" && ! -L "$FRONTEND_ACCEPTANCE_PIDFILE" \
+    && "$(stat -c %u "$FRONTEND_ACCEPTANCE_PIDFILE")" == "$(id -u)" ]] || {
     echo "[acceptance.runtime] DENY missing managed frontend pidfile" >&2
     return 1
   }
@@ -113,7 +118,7 @@ validate_frontend_runtime() {
     echo "[acceptance.runtime] DENY managed frontend pid is not live" >&2
     return 1
   }
-  [[ -r "/proc/$pid/environ" ]] || {
+  [[ -r "/proc/$pid/environ" && "$(stat -c %u "/proc/$pid")" == "$(id -u)" ]] || {
     echo "[acceptance.runtime] DENY managed frontend environment is unreadable" >&2
     return 1
   }
@@ -123,6 +128,11 @@ validate_frontend_runtime() {
     return 1
   }
   process_env="$(tr '\0' '\n' < "/proc/$pid/environ")"
+  process_cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline")"
+  [[ "$process_cmd" == *"frontend/apps/web"* && "$process_cmd" == *"--port $FRONTEND_ACCEPTANCE_PORT"* ]] || {
+    echo "[acceptance.runtime] DENY managed frontend command identity mismatch" >&2
+    return 1
+  }
   for expected in \
     "VITE_API_PROXY_TARGET=$VITE_API_PROXY_TARGET" \
     "VITE_ODOO_DB=$FRONTEND_ACCEPTANCE_DB" \
@@ -133,6 +143,18 @@ validate_frontend_runtime() {
       return 1
     }
   done
+  listener="$(ss -H -ltnp "sport = :$FRONTEND_ACCEPTANCE_PORT" 2>/dev/null || true)"
+  listener_pid="$(sed -nE 's/.*pid=([0-9]+).*/\1/p' <<<"$listener" | head -n 1)"
+  [[ "$listener_pid" =~ ^[0-9]+$ && -d "/proc/$listener_pid" \
+    && "$(stat -c %u "/proc/$listener_pid")" == "$(id -u)" ]] || {
+    echo "[acceptance.runtime] DENY managed frontend listener identity is missing" >&2
+    return 1
+  }
+  listener_group="$(ps -o pgid= -p "$listener_pid" | tr -d '[:space:]')"
+  [[ "$listener_group" == "$pid" ]] || {
+    echo "[acceptance.runtime] DENY managed frontend process group does not own port=$FRONTEND_ACCEPTANCE_PORT" >&2
+    return 1
+  }
 }
 
 preflight() {
@@ -181,15 +203,26 @@ case "$command" in
     ;;
   backend-up)
     preflight
-    if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1 && ! validate_backend_runtime; then
-      echo "[backend.acceptance.up] replacing backend with mismatched managed identity" >&2
-      docker rm -f "$BACKEND_ACCEPTANCE_NAME" >/dev/null
+    if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
+      validate_backend_identity || {
+        echo "[backend.acceptance.up] DENY existing backend identity mismatch" >&2
+        exit 2
+      }
     fi
     bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
     validate_backend_runtime
     ;;
   backend-down)
-    bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
+    preflight
+    if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
+      validate_backend_identity || {
+        echo "[backend.acceptance.down] DENY existing backend identity mismatch" >&2
+        exit 2
+      }
+      bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
+    else
+      echo "[backend.acceptance.down] PASS already absent"
+    fi
     ;;
   backend-health)
     preflight
@@ -199,20 +232,39 @@ case "$command" in
     ;;
   frontend-up)
     preflight
-    frontend_pid=""
-    [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" ]] && frontend_pid="$(<"$FRONTEND_ACCEPTANCE_PIDFILE")"
-    if [[ "$frontend_pid" =~ ^[0-9]+$ ]] \
-      && kill -0 "$frontend_pid" 2>/dev/null \
-      && curl -fsS "http://127.0.0.1:${FRONTEND_ACCEPTANCE_PORT}/login" >/dev/null 2>&1; then
-      validate_frontend_runtime
-      echo "[frontend.acceptance.up] REUSED governed pid=$frontend_pid port=$FRONTEND_ACCEPTANCE_PORT db=$FRONTEND_ACCEPTANCE_DB"
+    if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
+      validate_frontend_runtime || {
+        echo "[frontend.acceptance.up] DENY existing frontend identity mismatch" >&2
+        exit 2
+      }
+      frontend_pid="$(<"$FRONTEND_ACCEPTANCE_PIDFILE")"
+      if curl -fsS "http://127.0.0.1:${FRONTEND_ACCEPTANCE_PORT}/login" >/dev/null 2>&1; then
+        echo "[frontend.acceptance.up] REUSED governed pid=$frontend_pid port=$FRONTEND_ACCEPTANCE_PORT db=$FRONTEND_ACCEPTANCE_DB"
+      else
+        bash "$ROOT_DIR/scripts/dev/frontend_acceptance_up.sh"
+        validate_frontend_runtime
+      fi
     else
       bash "$ROOT_DIR/scripts/dev/frontend_acceptance_up.sh"
       validate_frontend_runtime
     fi
     ;;
   frontend-down)
-    bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"
+    preflight
+    if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
+      validate_frontend_runtime || {
+        echo "[frontend.acceptance.down] DENY existing frontend identity mismatch" >&2
+        exit 2
+      }
+      bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"
+    else
+      listener="$(ss -H -ltnp "sport = :$FRONTEND_ACCEPTANCE_PORT" 2>/dev/null || true)"
+      [[ -z "$listener" ]] || {
+        echo "[frontend.acceptance.down] DENY untracked listener owns port=$FRONTEND_ACCEPTANCE_PORT" >&2
+        exit 2
+      }
+      echo "[frontend.acceptance.down] PASS already absent"
+    fi
     ;;
   frontend-health)
     preflight

@@ -108,7 +108,14 @@ def findings(root: Path = ROOT) -> list[str]:
     frontend_make = root / "make/frontend.mk"
     if frontend_make.exists():
         make_sources.append(frontend_make.read_text(encoding="utf-8"))
-    if any("bash scripts/dev/frontend_acceptance_runtime.sh" in source for source in make_sources):
+    lower_bypasses = (
+        "bash scripts/dev/frontend_acceptance_runtime.sh",
+        "bash scripts/dev/backend_acceptance_up.sh",
+        "bash scripts/dev/backend_acceptance_down.sh",
+        "bash scripts/dev/frontend_acceptance_up.sh",
+        "bash scripts/dev/frontend_acceptance_down.sh",
+    )
+    if any(marker in source for source in make_sources for marker in lower_bypasses):
         errors.append("FRONTEND_ACCEPTANCE_RUNTIME_DIRECT_MAKE_BYPASS")
     identity_required = (
         "! -L \"$path\"",
