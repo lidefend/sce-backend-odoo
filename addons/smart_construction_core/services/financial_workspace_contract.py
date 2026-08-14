@@ -460,6 +460,8 @@ def _build_settlement_entry_actions(env, record):
         "target": "self",
         "url": "/f/payment.request/new?%s" % urlencode(route_query),
         "visible_profiles": ["readonly"],
+        "allowed": True,
+        "enabled": True,
         "route": {
             "name": "model-form",
             "params": {"model": "payment.request", "id": "new"},
@@ -594,7 +596,8 @@ def build_financial_form_business_actions(env, model_name, record_id):
                 "kind": "mutation", "level": "header", "source_widget_id": "page.header",
                 "selection": "none", "visible_profiles": ["edit", "readonly"], "method": method,
                 "intent": str(row.get("execute_intent") or row.get("intent") or "payment.request.execute"),
-                "allowed": bool(row.get("allowed")), "reason_code": str(row.get("reason_code") or ""),
+                "allowed": bool(row.get("allowed")), "enabled": bool(row.get("allowed")),
+                "disabled": not bool(row.get("allowed")), "reason_code": str(row.get("reason_code") or ""),
                 "blocked_message": str(row.get("blocked_message") or ""),
                 "warning_message": str(row.get("warning_message") or ""),
                 "advisory_warnings": list(row.get("advisory_warnings") or []),

@@ -32,6 +32,7 @@ assert workspace.get("version") == "2.0"
 assert (workspace.get("identity") or {}).get("object_label") == "付款申请"
 assert (workspace.get("state") or {}).get("semantic")
 assert submit and submit.get("allowed") is True
+assert submit.get("enabled") is True and submit.get("disabled") is False
 assert (submit.get("presentation") or {}).get("tier") == "primary"
 assert (submit.get("mutation") or {}).get("operation") == "submit"
 assert (submit.get("action_safety") or {}).get("requires_confirm") is True
@@ -60,6 +61,7 @@ assert create_payment.get("source_widget_id") == "page.header"
 assert (create_payment.get("presentation") or {}).get("tier") == "secondary"
 assert create_payment.get("target") == "self"
 assert create_payment.get("visible_profiles") == ["readonly"]
+assert create_payment.get("allowed") is True and create_payment.get("enabled") is True
 assert str(create_payment.get("url") or "").startswith("/f/payment.request/new?")
 assert "default_settlement_id=%s" % settlement.id in create_payment["url"]
 print("[verify.frontend.financial_workspace.v2_contract] PASS")
