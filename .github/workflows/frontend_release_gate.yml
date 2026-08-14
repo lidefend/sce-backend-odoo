@@ -31,7 +31,7 @@ jobs:
       CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
-      CI_PROJECT_NAME: sc-fe-release-${{ github.run_id }}
+      CI_PROJECT_NAME: sc-fe-release-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
       - name: Checkout the authoritative code object
@@ -61,6 +61,74 @@ jobs:
             --event "${GITHUB_EVENT_NAME}" \
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
+
+      - name: Generate isolated acceptance environment
+        if: steps.risk.outputs.frontend_mode == 'full'
+        run: |
+          set -euo pipefail
+          db_password="$(openssl rand -hex 32)"
+          admin_password="$(openssl rand -hex 32)"
+          jwt_secret="$(openssl rand -hex 32)"
+          bootstrap_secret="$(openssl rand -hex 32)"
+          for secret in "${db_password}" "${admin_password}" "${jwt_secret}" "${bootstrap_secret}"; do
+            echo "::add-mask::${secret}"
+          done
+          ci_env="${RUNNER_TEMP}/sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.env"
+          identity_file="${RUNNER_TEMP}/sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.identity"
+          umask 077
+          {
+            printf 'ENV=test\n'
+            printf 'ENV_FILE=%s\n' "${ci_env}"
+            printf 'COMPOSE_PROJECT_NAME=%s\n' "${CI_PROJECT_NAME}"
+            printf 'DB_USER=odoo\n'
+            printf 'DB_PASSWORD=%s\n' "${db_password}"
+            printf 'DB_NAME=sc_frontend_acceptance\n'
+            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
+            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
+            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
+            printf 'SC_BOOTSTRAP_LOGIN=frontend_release_ci\n'
+            printf 'SCENE_CHANNEL=stable\n'
+            printf 'SCENE_USE_PINNED=0\n'
+            printf 'SCENE_ROLLBACK=0\n'
+            printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
+            printf 'ODOO_PORT=18082\n'
+            printf 'SC_SOURCE_REVISION=%s\n' "${CHECKOUT_SHA}"
+            printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
+            printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
+            printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"
+            printf 'SC_ENVIRONMENT=acceptance\n'
+            printf 'SC_ALLOW_DEMO_DATA=1\n'
+          } > "${ci_env}"
+          {
+            printf 'ENV=test\n'
+            printf 'ENV_FILE=%s\n' "${ci_env}"
+            printf 'COMPOSE_PROJECT_NAME=%s\n' "${CI_PROJECT_NAME}"
+            printf 'DB_USER=odoo\n'
+            printf 'DB_PASSWORD=%s\n' "${db_password}"
+            printf 'DB_NAME=sc_frontend_acceptance\n'
+            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
+            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
+            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
+            printf 'SC_BOOTSTRAP_LOGIN=frontend_release_ci\n'
+            printf 'SCENE_CHANNEL=stable\n'
+            printf 'SCENE_USE_PINNED=0\n'
+            printf 'SCENE_ROLLBACK=0\n'
+            printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
+            printf 'ODOO_PORT=18082\n'
+            printf 'SC_SOURCE_REVISION=%s\n' "${CHECKOUT_SHA}"
+            printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
+            printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
+            printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"
+            printf 'SC_ENVIRONMENT=acceptance\n'
+            printf 'SC_ALLOW_DEMO_DATA=1\n'
+            printf 'SC_FRONTEND_RELEASE_IDENTITY_FILE=%s\n' "${identity_file}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Freeze isolated frontend release identity
+        if: steps.risk.outputs.frontend_mode == 'full'
+        run: |
+          set -euo pipefail
+          bash scripts/common/frontend_release_ci_identity.sh freeze "${GITHUB_WORKSPACE}"
 
       - name: Pin frontend Node toolchain
         if: steps.risk.outputs.frontend_mode != 'skip'
@@ -100,61 +168,6 @@ jobs:
               pnpm -C frontend/apps/web exec playwright install --with-deps chromium
             fi
           fi
-
-      - name: Generate isolated acceptance environment
-        if: steps.risk.outputs.frontend_mode == 'full'
-        run: |
-          set -euo pipefail
-          db_password="$(openssl rand -hex 32)"
-          admin_password="$(openssl rand -hex 32)"
-          jwt_secret="$(openssl rand -hex 32)"
-          bootstrap_secret="$(openssl rand -hex 32)"
-          for secret in "${db_password}" "${admin_password}" "${jwt_secret}" "${bootstrap_secret}"; do
-            echo "::add-mask::${secret}"
-          done
-          ci_env="${RUNNER_TEMP}/sce-ci-${GITHUB_RUN_ID}-frontend-release.env"
-          umask 077
-          {
-            printf 'ENV=test\n'
-            printf 'ENV_FILE=%s\n' "${ci_env}"
-            printf 'COMPOSE_PROJECT_NAME=%s\n' "${CI_PROJECT_NAME}"
-            printf 'DB_USER=odoo\n'
-            printf 'DB_PASSWORD=%s\n' "${db_password}"
-            printf 'DB_NAME=sc_frontend_acceptance\n'
-            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
-            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
-            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
-            printf 'SC_BOOTSTRAP_LOGIN=frontend_release_ci\n'
-            printf 'SCENE_CHANNEL=stable\n'
-            printf 'SCENE_USE_PINNED=0\n'
-            printf 'SCENE_ROLLBACK=0\n'
-            printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
-            printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
-            printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
-            printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"
-            printf 'SC_ENVIRONMENT=acceptance\n'
-            printf 'SC_ALLOW_DEMO_DATA=1\n'
-          } > "${ci_env}"
-          {
-            printf 'ENV=test\n'
-            printf 'ENV_FILE=%s\n' "${ci_env}"
-            printf 'DB_USER=odoo\n'
-            printf 'DB_PASSWORD=%s\n' "${db_password}"
-            printf 'DB_NAME=sc_frontend_acceptance\n'
-            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
-            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
-            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
-            printf 'SC_BOOTSTRAP_LOGIN=frontend_release_ci\n'
-            printf 'SCENE_CHANNEL=stable\n'
-            printf 'SCENE_USE_PINNED=0\n'
-            printf 'SCENE_ROLLBACK=0\n'
-            printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
-            printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
-            printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
-            printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"
-            printf 'SC_ENVIRONMENT=acceptance\n'
-            printf 'SC_ALLOW_DEMO_DATA=1\n'
-          } >> "${GITHUB_ENV}"
 
       - name: Run the single authoritative frontend release command
         id: release
@@ -265,4 +278,6 @@ jobs:
 
       - name: Clean isolated runner state
         if: always()
+        env:
+          FRONTEND_MODE: ${{ steps.risk.outputs.frontend_mode }}
         run: bash scripts/ci/self_hosted_runner_cleanup.sh

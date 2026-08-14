@@ -14,8 +14,11 @@ guard_prod_forbid
 
 export DB_NAME SC_ENVIRONMENT SC_ALLOW_DEMO_DATA
 
-make --no-print-directory db.create DB="$DB_NAME"
-make --no-print-directory mod.install \
+# shellcheck source=../common/frontend_acceptance_make_identity.sh
+source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+
+frontend_acceptance_make db.create
+frontend_acceptance_make mod.install \
   MODULE=smart_construction_bootstrap,smart_construction_bundle,smart_construction_seed,smart_construction_acceptance_fixture \
   DB_NAME="$DB_NAME"
 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'

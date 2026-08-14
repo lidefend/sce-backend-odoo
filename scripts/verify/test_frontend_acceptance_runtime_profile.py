@@ -67,22 +67,60 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
             encoding="utf-8"
         )
-        self.assertGreaterEqual(runtime.count("validate_backend_runtime"), 4)
-        self.assertGreaterEqual(runtime.count("validate_frontend_runtime"), 3)
+        self.assertGreaterEqual(runtime.count("validate_backend_identity"), 4)
+        self.assertGreaterEqual(runtime.count("validate_backend_runtime"), 2)
+        self.assertGreaterEqual(runtime.count("validate_frontend_runtime"), 5)
         for marker in (
             "/mnt/source-addons",
             "SC_SOURCE_REVISION",
             "SC_SOURCE_FINGERPRINT",
+            "SC_PRODUCT_VERSION",
             "ODOO_DBFILTER",
             "LIST_DB",
             "docker port",
             "/var/lib/odoo",
             "/proc/$pid/environ",
+            "/proc/$pid/cmdline",
+            "ss -H -ltnp",
             "VITE_API_PROXY_TARGET",
             "VITE_ODOO_DB_LOCKED=1",
+            "release_static_server.mjs",
+            "STATIC_ROOT=",
+            "STATIC_PORT=",
+            "API_PROXY_TARGET=",
             "POSTGRES_PASSWORD",
         ):
             self.assertIn(marker, runtime)
+
+    def test_runtime_mutators_validate_existing_resource_identity_before_change(self):
+        runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        backend_up = runtime.split("  backend-up)", 1)[1].split("    ;;", 1)[0]
+        backend_down = runtime.split("  backend-down)", 1)[1].split("    ;;", 1)[0]
+        frontend_up = runtime.split("  frontend-up)", 1)[1].split("    ;;", 1)[0]
+        frontend_down = runtime.split("  frontend-down)", 1)[1].split("    ;;", 1)[0]
+        self.assertNotIn("docker rm", backend_up)
+        self.assertLess(
+            frontend_up.index("validate_frontend_launch_contract"),
+            frontend_up.index("frontend_acceptance_up.sh"),
+        )
+        self.assertLess(
+            backend_up.index("validate_backend_identity"),
+            backend_up.index("backend_acceptance_up.sh"),
+        )
+        self.assertLess(
+            backend_down.index("validate_backend_identity"),
+            backend_down.index("backend_acceptance_down.sh"),
+        )
+        self.assertLess(
+            frontend_up.index("validate_frontend_runtime"),
+            frontend_up.index("frontend_acceptance_up.sh"),
+        )
+        self.assertLess(
+            frontend_down.index("validate_frontend_runtime"),
+            frontend_down.index("frontend_acceptance_down.sh"),
+        )
         for key in (
             "SC_SOURCE_REVISION",
             "SC_SOURCE_FINGERPRINT",

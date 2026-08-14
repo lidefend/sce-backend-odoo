@@ -121,35 +121,31 @@ BACKEND_ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(BACKEND_ACCEPTANCE_PORT)
 SC_ACCEPTANCE_RUNTIME_PROFILE ?= local
 
 acceptance.runtime.preflight: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh preflight
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh preflight
 
 acceptance.runtime.infrastructure.restore: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh infrastructure-restore
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh infrastructure-restore
 
 frontend.acceptance.up: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-up
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh frontend-up
 
 frontend.acceptance.down: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-down
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh frontend-down
 
 frontend.acceptance.health:
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh frontend-health
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh frontend-health
 
 backend.acceptance.up: guard.prod.forbid
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-up
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh backend-up
 backend.acceptance.down:
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-down
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh backend-down
 backend.acceptance.health:
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh backend-health
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh backend-health
 
-backend.collection.acceptance.up: guard.prod.forbid check-compose-project check-compose-env
-	@BACKEND_ACCEPTANCE_NAME=sc-backend-odoo-collection-view-semantics BACKEND_ACCEPTANCE_PORT=18102 bash scripts/dev/backend_acceptance_up.sh
-backend.collection.acceptance.down:
-	@BACKEND_ACCEPTANCE_NAME=sc-backend-odoo-collection-view-semantics bash scripts/dev/backend_acceptance_down.sh
-frontend.collection.acceptance.up: guard.prod.forbid
-	@FRONTEND_ACCEPTANCE_PORT=5192 FRONTEND_ACCEPTANCE_PIDFILE=/tmp/sc-collection-view-semantics.pid FRONTEND_ACCEPTANCE_LOGFILE=/tmp/sc-collection-view-semantics.log VITE_API_PROXY_TARGET=http://127.0.0.1:18102 bash scripts/dev/frontend_acceptance_up.sh
-frontend.collection.acceptance.down: guard.prod.forbid
-	@FRONTEND_ACCEPTANCE_PORT=5192 FRONTEND_ACCEPTANCE_PIDFILE=/tmp/sc-collection-view-semantics.pid bash scripts/dev/frontend_acceptance_down.sh
+backend.collection.acceptance.up: backend.acceptance.up
+backend.collection.acceptance.down: backend.acceptance.down
+frontend.collection.acceptance.up: frontend.acceptance.up
+frontend.collection.acceptance.down: frontend.acceptance.down
 
 ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(NGINX_PORT)
 ACCEPTANCE_PROBE_OUTPUT ?= artifacts/backend/dev_acceptance_release_probe.json

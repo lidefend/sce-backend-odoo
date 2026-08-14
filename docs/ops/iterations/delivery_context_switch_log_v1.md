@@ -3996,3 +3996,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   and its Make target change. The focused query/fetch behavior test, static
   closure guard, strict typecheck, static build, and complete frontend quick
   gate pass; no database, container, service, or acceptance fixture is touched.
+
+## 2026-08-14 — P4-CI-CREDENTIAL-ENTRY
+
+- Branch / anchor: `fix/p4-ci-credential-entry-v1` from `d7ae51b`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery / isolated
+  GitHub frontend-release credential and operation routing / workflow, Make
+  acceptance entries, and CI identity validator.
+- Standard vs User-Specific: generic release validation only; no customer,
+  construction-business, authentication, page, or product-model semantics.
+- Reason / Boundary: the workflow generates a run-scoped test credential file,
+  but the shared acceptance runtime required the local primary-worktree
+  `.env.dev` profile before it could create the isolated CI resources. The CI
+  route now treats the generated file as inert data, validates every allowed
+  key and the checkout/project/database/volume identity, and only then permits
+  the first Compose operation. Local acceptance continues through the existing
+  managed profile without rebuilding or changing its topology.
+- Database identity: role is an isolated internal acceptance tenant; tenant and
+  environment identity are the GitHub run-scoped `sc-fe-release-<run_id>`;
+  database is exactly `sc_frontend_acceptance`, filter is
+  `^sc_frontend_acceptance$`, fixture is allowed, customer business data is
+  forbidden, and DB/Redis/filestore volumes are three exact run-scoped names.
+- Blast Radius / validation: only the frontend release CI lane and the thin
+  local/CI routing boundary change. Tests cover exact identity, duplicate or
+  executable env content, SHA/project/volume drift, route overrides, Make
+  pre-parse zero side effects, and invalid-operation zero side effects. The
+  final authority is a full release workflow on the frozen candidate SHA.
