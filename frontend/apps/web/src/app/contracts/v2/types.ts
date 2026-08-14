@@ -98,6 +98,9 @@ export interface ContractV2ActionRule {
   visible?: ContractV2Dictionary;
   modifiers?: ContractV2Dictionary;
   invisible?: unknown;
+  allowed?: boolean;
+  enabled?: boolean;
+  disabled?: boolean;
   visibleProfiles?: string[];
   presentation?: ContractV2Dictionary;
   actionSafety?: ContractV2Dictionary;

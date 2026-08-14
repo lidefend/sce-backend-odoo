@@ -29,6 +29,8 @@ export type ContractAction = {
   target: string;
   url: string;
   enabled: boolean;
+  authorizationAllowed?: boolean;
+  requiresSavedRecord?: boolean;
   hint: string;
   intent: string;
   semantic: string;

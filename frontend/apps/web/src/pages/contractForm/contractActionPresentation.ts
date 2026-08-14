@@ -40,10 +40,12 @@ export function buildContractFormActions(params: {
     const placement = String(row.placement || 'header').trim().toLowerCase();
     const actionId = toPositiveInt(target.action_id) ?? toPositiveInt(target.ref);
     const hasOpenTarget = Boolean(actionId || String(target.url || '').trim() || String(target.route || '').trim());
+    const kind = hasOpenTarget || intent === 'ui.contract' ? 'open' : 'object';
+    const requiresSavedRecord = ['object', 'server', 'mutation'].includes(kind) && !params.recordId;
     return {
       key,
       label: String(row.label || key),
-      kind: hasOpenTarget || intent === 'ui.contract' ? 'open' : 'object',
+      kind,
       level: placement,
       selection: 'none',
       actionId,
@@ -53,8 +55,10 @@ export function buildContractFormActions(params: {
       domainRaw: String(target.domain_raw || '').trim(),
       target: String(target.target || '').trim(),
       url: String(target.url || target.route || '').trim(),
-      enabled: true,
-      hint: '',
+      enabled: !requiresSavedRecord,
+      authorizationAllowed: true,
+      requiresSavedRecord,
+      hint: requiresSavedRecord ? 'requires record id' : '',
       intent,
       semantic: presentationTier === 'primary' ? 'primary_action' : presentationTier === 'secondary' ? 'secondary_action' : '',
       sourceWidgetId: String(row.sourceWidgetId || row.source_widget_id || '').trim(),
@@ -101,8 +105,11 @@ export function buildContractFormActions(params: {
       const button = parseMaybeJsonRecord(row.button);
       const clientMode = String(target.mode || target.client_mode || '').trim();
       const buttonName = String(button.name || button.method || '').trim();
+      // V2 targetScope describes the action's mutation/navigation scope, not
+      // a visual body slot.  A page-scoped action emitted from page.root is a
+      // page-header action; widget/container/dataSource/runtime scopes are not.
       const isHeaderAction = sourceWidgetId === 'page.header'
-        || (sourceWidgetId === 'page.root' && targetScope === 'header');
+        || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope));
       const isFooterAction = targetScope === 'footer';
       if (!isHeaderAction && !isFooterAction) return;
       const buttonType = String(button.type || button.buttonType || '').trim();
@@ -129,6 +136,9 @@ export function buildContractFormActions(params: {
           context_raw: target.context_raw,
         },
         visible: row.visible,
+        allowed: row.allowed,
+        enabled: row.enabled,
+        disabled: row.disabled,
         modifiers: row.modifiers,
         invisible: row.invisible,
         visible_profiles: Array.isArray(row.visible_profiles)
@@ -151,6 +161,7 @@ export function buildContractFormActions(params: {
       if (status?.visible === false) continue;
       if (status?.disabled === true) {
         mapped.enabled = false;
+        mapped.authorizationAllowed = false;
         mapped.hint = status.reasonCode || mapped.hint || 'disabled_by_status_contract';
       }
       dedup.add(mapped.key);
@@ -184,8 +195,13 @@ export function buildContractFormActions(params: {
     const status = resolveV2ButtonStatus(key, params.v2ButtonStatus);
     if (status?.visible === false) continue;
     const contractAllowed = typeof row.allowed === 'boolean' ? row.allowed : true;
+    const contractEnabled = typeof row.enabled === 'boolean' ? row.enabled : true;
+    const contractDisabled = row.disabled === true;
     const needRecord = ['object', 'server', 'mutation'].includes(effectiveKind) || ['row', 'smart'].includes(level);
-    const enabled = contractAllowed && policy.enabled && (!needRecord || Boolean(params.recordId)) && status?.disabled !== true;
+    const authorizationAllowed = contractAllowed && contractEnabled && !contractDisabled
+      && policy.enabled && status?.disabled !== true;
+    const requiresSavedRecord = needRecord && !params.recordId;
+    const enabled = authorizationAllowed && !requiresSavedRecord;
     out.push({
       key,
       label: normalizeActionLabel(row.label, key),
@@ -200,6 +216,8 @@ export function buildContractFormActions(params: {
       target: String(payload.target || row.target || '').trim(),
       url: String(payload.url || row.url || '').trim(),
       enabled,
+      authorizationAllowed,
+      requiresSavedRecord,
       hint: status?.disabled === true
         ? status.reasonCode || 'disabled_by_status_contract'
         : needRecord && !params.recordId
