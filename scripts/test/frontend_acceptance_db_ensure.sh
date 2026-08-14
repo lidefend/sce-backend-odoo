@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+: "${SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY:?DENY: use make db.frontend.acceptance.ensure; direct database ensure execution is forbidden}"
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 export ROOT_DIR
+source "$ROOT_DIR/scripts/common/governed_make_entry.sh"
+require_governed_make_ancestor "frontend_acceptance_db_ensure.sh" "$ROOT_DIR" "db.frontend.acceptance.ensure"
 
 source "$ROOT_DIR/scripts/common/frontend_acceptance_guard.sh"
 guard_frontend_acceptance_scope

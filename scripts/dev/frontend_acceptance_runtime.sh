@@ -259,7 +259,7 @@ case "$command" in
     # shellcheck source=../common/compose.sh
     source "$ROOT_DIR/scripts/common/compose.sh"
     compose_dev up -d --wait db redis odoo
-    bash "$ROOT_DIR/scripts/test/frontend_acceptance_db_ensure.sh"
+    SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY=1 bash "$ROOT_DIR/scripts/test/frontend_acceptance_db_ensure.sh"
     ;;
   infrastructure-restore)
     for volume in "$DB_DATA" "$REDIS_DATA" "$ODOO_DATA"; do

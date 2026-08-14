@@ -1751,7 +1751,7 @@ verify.frontend.dynamic_list_optional_columns.browser: guard.prod.forbid
 FRONTEND_ACCEPTANCE_DB := $(if $(filter command line,$(origin DB_NAME)),$(DB_NAME),sc_frontend_acceptance)
 
 db.frontend.acceptance.ensure: guard.prod.forbid environment.capability.inventory
-	@SC_GOVERNED_ACCEPTANCE_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_runtime.sh db-ensure
+	@SC_GOVERNED_FRONTEND_DB_ENSURE_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_db_ensure_entry.sh
 
 acceptance.frontend.fixture: guard.prod.forbid environment.capability.inventory
 	@SC_GOVERNED_ACCEPTANCE_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" bash scripts/dev/frontend_acceptance_runtime.sh fixture

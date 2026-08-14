@@ -42,6 +42,8 @@ def findings(root: Path = ROOT) -> list[str]:
         "if-no-files-found: error",
     )
     errors.extend(f"WORKFLOW_CONTRACT_MISSING:{item}" for item in required_text if item not in text)
+    if text.count("printf 'COMPOSE_PROJECT_NAME=%s\\n' \"${CI_PROJECT_NAME}\"") != 2:
+        errors.append("ISOLATED_COMPOSE_PROJECT_NOT_EXPORTED")
     forbidden = (
         "continue-on-error:",
         "actions/download-artifact",

@@ -121,6 +121,14 @@ is absent. A missing local `.env` in a topic worktree is not such proof; the
 managed acceptance resolver deliberately consumes the primary worktree's
 credential authority.
 
+The frontend release workflow is an existing governed exception to the local
+fixed topology: GitHub Actions creates a per-run `sc-fe-release-${GITHUB_RUN_ID}`
+Compose project and a mode-`0600` `RUNNER_TEMP` environment file. The same
+`make db.frontend.acceptance.ensure` entry validates repository, workspace,
+checkout SHA, run ID, database/filter and three per-run volume identities before
+using that workflow-owned environment. It must not be redirected to `.env.dev`
+or to the local fixed acceptance project.
+
 This command checks:
 
 - `.env.dev/.env.test/.env.prod` presence and required keys

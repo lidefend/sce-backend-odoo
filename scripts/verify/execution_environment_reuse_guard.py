@@ -28,6 +28,19 @@ def inventory() -> dict:
         "capabilities": {
             "governed_worktree": ["make workspace.worktree.create", "make workspace.worktree.cleanup"],
             "isolated_backend_test": ["make test.safe", "make ci.gate", "make ci.smoke", "make ci.full"],
+            "isolated_frontend_release_ci": {
+                "entry": "make db.frontend.acceptance.ensure",
+                "environment_authority": "GitHub Actions RUNNER_TEMP ENV_FILE",
+                "compose_project_pattern": "sc-fe-release-${GITHUB_RUN_ID}",
+                "database": "sc_frontend_acceptance",
+                "database_filter": "^sc_frontend_acceptance$",
+                "volume_patterns": {
+                    "database": "sc-fe-release-${GITHUB_RUN_ID}-db-data",
+                    "redis": "sc-fe-release-${GITHUB_RUN_ID}-redis-data",
+                    "odoo": "sc-fe-release-${GITHUB_RUN_ID}-odoo-data",
+                },
+                "identity": ["repository", "workspace", "checkout SHA", "run ID", "0600 env file"],
+            },
             "managed_acceptance": {
                 "database": local["database"],
                 "database_filter": runtime["database_filter"],
@@ -81,8 +94,14 @@ def verify() -> list[str]:
     }
     if managed["volumes"] != expected_volumes:
         errors.append("managed acceptance volume identity drift")
+    isolated_release = expected["capabilities"]["isolated_frontend_release_ci"]
+    if isolated_release["compose_project_pattern"] != "sc-fe-release-${GITHUB_RUN_ID}":
+        errors.append("isolated frontend release project identity drift")
+    if isolated_release["database"] != "sc_frontend_acceptance" or isolated_release["database_filter"] != "^sc_frontend_acceptance$":
+        errors.append("isolated frontend release database identity drift")
 
     sources = {
+        "Makefile": (ROOT / "Makefile").read_text(encoding="utf-8"),
         "make/ci.mk": (ROOT / "make/ci.mk").read_text(encoding="utf-8"),
         "make/dev.mk": (ROOT / "make/dev.mk").read_text(encoding="utf-8"),
         "make/runtime_ops.mk": (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8"),
@@ -90,6 +109,10 @@ def verify() -> list[str]:
         "scripts/dev/frontend_acceptance_runtime.sh": (
             ROOT / "scripts/dev/frontend_acceptance_runtime.sh"
         ).read_text(encoding="utf-8"),
+        "scripts/dev/frontend_acceptance_db_ensure_entry.sh": (ROOT / "scripts/dev/frontend_acceptance_db_ensure_entry.sh").read_text(encoding="utf-8"),
+        "scripts/common/frontend_release_ci_identity.sh": (ROOT / "scripts/common/frontend_release_ci_identity.sh").read_text(encoding="utf-8"),
+        "scripts/test/frontend_acceptance_db_ensure.sh": (ROOT / "scripts/test/frontend_acceptance_db_ensure.sh").read_text(encoding="utf-8"),
+        "scripts/ci/self_hosted_runner_cleanup.sh": (ROOT / "scripts/ci/self_hosted_runner_cleanup.sh").read_text(encoding="utf-8"),
         "scripts/dev/backend_acceptance_up.sh": (ROOT / "scripts/dev/backend_acceptance_up.sh").read_text(encoding="utf-8"),
         "scripts/dev/backend_acceptance_down.sh": (ROOT / "scripts/dev/backend_acceptance_down.sh").read_text(encoding="utf-8"),
         "scripts/dev/frontend_acceptance_up.sh": (ROOT / "scripts/dev/frontend_acceptance_up.sh").read_text(encoding="utf-8"),
@@ -100,6 +123,7 @@ def verify() -> list[str]:
         "scripts/verify/collection_view_semantics_browser.mjs": (ROOT / "scripts/verify/collection_view_semantics_browser.mjs").read_text(encoding="utf-8"),
     }
     required = {
+        "Makefile": ("sc-fe-release-$(GITHUB_RUN_ID)", "CI_PROJECT_NAME", "include $(ENV_FILE_RESOLVED)"),
         "make/ci.mk": ("environment.capability.inventory", "SC_GOVERNED_CI_ENTRY=1"),
         "make/dev.mk": ("environment.capability.inventory", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
         "make/runtime_ops.mk": ("environment.capability.inventory", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
@@ -110,6 +134,10 @@ def verify() -> list[str]:
             "SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1",
             "require_governed_make_ancestor",
         ),
+        "scripts/dev/frontend_acceptance_db_ensure_entry.sh": ("SC_GOVERNED_FRONTEND_DB_ENSURE_ENTRY", "require_governed_make_ancestor", "validate_frontend_release_ci_identity", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
+        "scripts/common/frontend_release_ci_identity.sh": ("GITHUB_ACTIONS", "CI_PROJECT_NAME", "RUNNER_TEMP", "CHECKOUT_SHA", "allowed_keys", "unknown or duplicate keys", "compose command override", "route override", "sc_frontend_acceptance", "volume identity mismatch"),
+        "scripts/test/frontend_acceptance_db_ensure.sh": ("SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY", "require_governed_make_ancestor"),
+        "scripts/ci/self_hosted_runner_cleanup.sh": ('"sc-prof-${run_id}"', '"sc-fe-release-${run_id}"', "GITHUB_REPOSITORY", 'readlink -f "$root_dir"', "invalid project scope", "invalid workspace scope", "invalid runner temp scope"),
         "scripts/dev/backend_acceptance_up.sh": ("SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY", "require_governed_make_ancestor", "non-canonical port", "non-canonical database"),
         "scripts/dev/backend_acceptance_down.sh": ("SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY", "require_governed_make_ancestor", "SC_SOURCE_REVISION", "SC_SOURCE_FINGERPRINT", "SC_PRODUCT_VERSION", "sc_fe_r2_p1_01_odoo"),
         "scripts/dev/frontend_acceptance_up.sh": ("SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY", "require_governed_make_ancestor", "non-canonical pidfile", "non-canonical port", "unsupported mode", "non-canonical production dist"),
@@ -129,6 +157,12 @@ def verify() -> list[str]:
     browser_at = collection_source.find("const browser = await launchChromium")
     if min(lease_at, mkdir_at, browser_at) < 0 or not (lease_at < mkdir_at < browser_at):
         errors.append("collection browser must acquire its lease before artifact or browser side effects")
+    db_entry_source = sources["scripts/dev/frontend_acceptance_db_ensure_entry.sh"]
+    ci_identity_at = db_entry_source.find('validate_frontend_release_ci_identity "$ROOT_DIR"')
+    ci_compose_at = db_entry_source.find("compose_dev up -d --wait db redis odoo")
+    ci_ensure_at = db_entry_source.find("SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY=1")
+    if min(ci_identity_at, ci_compose_at, ci_ensure_at) < 0 or not (ci_identity_at < ci_compose_at < ci_ensure_at):
+        errors.append("isolated frontend release must validate identity before compose or database side effects")
     dev_test = (ROOT / "make/dev_test.mk").read_text(encoding="utf-8")
     if "test.safe: guard.prod.forbid environment.capability.inventory" not in dev_test:
         errors.append("make/dev_test.mk: test.safe must inventory before execution")
@@ -179,8 +213,11 @@ def verify() -> list[str]:
                 if relative != "make/ci.mk" or "SC_GOVERNED_GATE_ENTRY=1" not in line:
                     errors.append(f"ungoverned install/upgrade gate call: {relative}: {line.strip()}")
             if re.search(invocation + r".*frontend_acceptance_runtime\.sh", line):
-                if relative not in {"make/dev.mk", "make/runtime_ops.mk"} or "SC_GOVERNED_ACCEPTANCE_ENTRY=1" not in line:
+                if relative not in {"make/dev.mk", "make/runtime_ops.mk", "scripts/dev/frontend_acceptance_db_ensure_entry.sh"} or "SC_GOVERNED_ACCEPTANCE_ENTRY=1" not in line:
                     errors.append(f"ungoverned acceptance runtime call: {relative}: {line.strip()}")
+            if re.search(r"(?:\b(?:bash|sh)\b|subprocess|Popen|execFile|spawn).*frontend_acceptance_db_ensure\.sh", line):
+                if relative not in {"scripts/dev/frontend_acceptance_runtime.sh", "scripts/dev/frontend_acceptance_db_ensure_entry.sh"} or "SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY=1" not in line:
+                    errors.append(f"ungoverned frontend database ensure call: {relative}: {line.strip()}")
             if re.search(invocation + r".*(?:backend|frontend)_acceptance_(?:up|down)\.sh", line):
                 if relative != "scripts/dev/frontend_acceptance_runtime.sh" or "SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1" not in line:
                     errors.append(f"ungoverned lower acceptance call: {relative}: {line.strip()}")

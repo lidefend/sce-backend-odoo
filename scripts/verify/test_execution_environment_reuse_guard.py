@@ -27,9 +27,23 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
             report["capabilities"]["browser_coordination"]["governed_tools"],
         )
         self.assertIn("make local.clean.install", report["capabilities"]["install_upgrade_gates"])
+        isolated_release = report["capabilities"]["isolated_frontend_release_ci"]
+        self.assertEqual(isolated_release["entry"], "make db.frontend.acceptance.ensure")
+        self.assertEqual(isolated_release["compose_project_pattern"], "sc-fe-release-${GITHUB_RUN_ID}")
+        self.assertEqual(isolated_release["database"], "sc_frontend_acceptance")
 
     def test_repository_reuse_markers_are_complete(self):
         self.assertEqual(guard.verify(), [])
+
+    def test_isolated_frontend_release_orders_identity_before_first_side_effect(self):
+        source = (
+            guard.ROOT / "scripts/dev/frontend_acceptance_db_ensure_entry.sh"
+        ).read_text(encoding="utf-8")
+        identity_at = source.index('validate_frontend_release_ci_identity "$ROOT_DIR"')
+        compose_at = source.index("compose_dev up -d --wait db redis odoo")
+        ensure_at = source.index("SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY=1")
+        self.assertLess(identity_at, compose_at)
+        self.assertLess(compose_at, ensure_at)
 
     def test_identity_drift_fails_closed(self):
         cases = (
@@ -67,6 +81,8 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
             ("scripts/ci/install_gate.sh", (), "direct install_gate.sh execution is forbidden"),
             ("scripts/ci/upgrade_gate.sh", (), "direct upgrade_gate.sh execution is forbidden"),
             ("scripts/dev/frontend_acceptance_runtime.sh", ("preflight",), "direct runtime script execution is forbidden"),
+            ("scripts/dev/frontend_acceptance_db_ensure_entry.sh", (), "direct entry execution is forbidden"),
+            ("scripts/test/frontend_acceptance_db_ensure.sh", (), "direct database ensure execution is forbidden"),
             ("scripts/dev/backend_acceptance_up.sh", (), "direct backend acceptance startup is forbidden"),
             ("scripts/dev/backend_acceptance_down.sh", (), "direct backend acceptance shutdown is forbidden"),
             ("scripts/dev/frontend_acceptance_up.sh", (), "direct frontend acceptance startup is forbidden"),
@@ -99,12 +115,192 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
             ("scripts/dev/backend_acceptance_down.sh", {"SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY": "1", "BACKEND_ACCEPTANCE_NAME": "parallel-backend"}),
             ("scripts/dev/frontend_acceptance_up.sh", {"SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY": "1", "FRONTEND_ACCEPTANCE_PORT": "5192"}),
             ("scripts/dev/frontend_acceptance_down.sh", {"SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY": "1", "FRONTEND_ACCEPTANCE_PIDFILE": "/tmp/parallel.pid"}),
+            ("scripts/dev/frontend_acceptance_db_ensure_entry.sh", {"SC_GOVERNED_FRONTEND_DB_ENSURE_ENTRY": "1"}),
+            ("scripts/test/frontend_acceptance_db_ensure.sh", {"SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY": "1"}),
         )
         for relative, env in cases:
             with self.subTest(relative=relative):
                 result = self.run_script(relative, env=env)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("requires a governed repository Make target", result.stderr)
+
+    def test_isolated_frontend_release_ci_identity_accepts_only_frozen_workflow_topology(self):
+        with tempfile.TemporaryDirectory() as runner_temp:
+            run_id = "31761525749"
+            project = f"sc-fe-release-{run_id}"
+            env_file = os.path.join(runner_temp, "frontend-release.env")
+            values = {
+                "ENV": "test",
+                "ENV_FILE": env_file,
+                "COMPOSE_PROJECT_NAME": project,
+                "DB_USER": "odoo",
+                "DB_PASSWORD": "a" * 64,
+                "DB_NAME": "sc_frontend_acceptance",
+                "ADMIN_PASSWD": "b" * 64,
+                "JWT_SECRET": "c" * 64,
+                "SC_BOOTSTRAP_SECRET": "d" * 64,
+                "SC_BOOTSTRAP_LOGIN": "frontend_release_ci",
+                "SCENE_CHANNEL": "stable",
+                "SCENE_USE_PINNED": "0",
+                "SCENE_ROLLBACK": "0",
+                "ODOO_DBFILTER": "^sc_frontend_acceptance$",
+                "DB_DATA": f"{project}-db-data",
+                "REDIS_DATA": f"{project}-redis-data",
+                "ODOO_DATA": f"{project}-odoo-data",
+                "SC_ENVIRONMENT": "acceptance",
+                "SC_ALLOW_DEMO_DATA": "1",
+            }
+            with open(env_file, "w", encoding="utf-8") as handle:
+                for key, value in values.items():
+                    handle.write(f"{key}={value}\n")
+            os.chmod(env_file, 0o600)
+            base_env = {
+                **values,
+                "GITHUB_ACTIONS": "true",
+                "CI": "true",
+                "GITHUB_REPOSITORY": "lidefend/sce-backend-odoo",
+                "GITHUB_WORKSPACE": str(guard.ROOT),
+                "GITHUB_RUN_ID": run_id,
+                "CI_PROJECT_NAME": project,
+                "RUNNER_TEMP": runner_temp,
+                "CHECKOUT_SHA": subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=guard.ROOT, text=True
+                ).strip(),
+            }
+            command = (
+                "source scripts/common/frontend_release_ci_identity.sh; "
+                "validate_frontend_release_ci_identity \"$PWD\""
+            )
+            accepted = subprocess.run(
+                ["bash", "-c", command], cwd=guard.ROOT, env={**os.environ, **base_env},
+                capture_output=True, text=True,
+            )
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+            for key, value in (
+                ("COMPOSE_PROJECT_NAME", "parallel-project"),
+                ("DB_DATA", "parallel-db"),
+                ("DB_NAME", "sc_parallel"),
+                ("CHECKOUT_SHA", "0" * 40),
+            ):
+                with self.subTest(key=key):
+                    rejected = subprocess.run(
+                        ["bash", "-c", command], cwd=guard.ROOT,
+                        env={**os.environ, **base_env, key: value},
+                        capture_output=True, text=True,
+                    )
+                    self.assertNotEqual(rejected.returncode, 0)
+                    self.assertIn("DENY:", rejected.stderr)
+            with open(env_file, "a", encoding="utf-8") as handle:
+                handle.write("ENV=prod\n")
+            duplicate = subprocess.run(
+                ["bash", "-c", command], cwd=guard.ROOT, env={**os.environ, **base_env},
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(duplicate.returncode, 0)
+            self.assertIn("unknown or duplicate keys", duplicate.stderr)
+            with open(env_file, "w", encoding="utf-8") as handle:
+                for env_key, env_value in values.items():
+                    handle.write(f"{env_key}={env_value}\n")
+                handle.write("COMPOSE_BIN=bash/tmp/payload.sh\n")
+            os.chmod(env_file, 0o600)
+            payload = subprocess.run(
+                ["bash", "-c", command], cwd=guard.ROOT, env={**os.environ, **base_env},
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(payload.returncode, 0)
+            self.assertIn("unknown or duplicate keys", payload.stderr)
+            with open(env_file, "w", encoding="utf-8") as handle:
+                for env_key, env_value in values.items():
+                    handle.write(f"{env_key}={env_value}\n")
+            os.chmod(env_file, 0o600)
+            route_override = subprocess.run(
+                ["bash", "-c", command], cwd=guard.ROOT,
+                env={**os.environ, **base_env, "COMPOSE_BIN": "bash /tmp/payload.sh"},
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(route_override.returncode, 0)
+            self.assertIn("compose command override", route_override.stderr)
+
+    def test_runner_cleanup_rejects_cross_run_project_before_side_effects(self):
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = os.path.join(directory, "workspace")
+            runner_temp = os.path.join(directory, "runner-temp")
+            fake_bin = os.path.join(directory, "bin")
+            os.makedirs(workspace)
+            os.makedirs(runner_temp)
+            os.makedirs(fake_bin)
+            marker = os.path.join(directory, "side-effect")
+            for command_name in ("docker", "find"):
+                command_path = os.path.join(fake_bin, command_name)
+                with open(command_path, "w", encoding="utf-8") as handle:
+                    handle.write(f"#!/bin/sh\necho {command_name} >> '{marker}'\nexit 99\n")
+                os.chmod(command_path, 0o755)
+            result = self.run_script(
+                "scripts/ci/self_hosted_runner_cleanup.sh",
+                env={
+                    "PATH": f"{fake_bin}:{os.environ['PATH']}",
+                    "CI_PROJECT_NAME": "sc-fe-release-199",
+                    "GITHUB_RUN_ID": "200",
+                    "GITHUB_ACTIONS": "true",
+                    "GITHUB_REPOSITORY": "lidefend/sce-backend-odoo",
+                    "GITHUB_WORKSPACE": workspace,
+                    "RUNNER_TEMP": runner_temp,
+                },
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("invalid project scope", result.stderr)
+            self.assertFalse(os.path.exists(marker))
+
+    def test_runner_cleanup_rejects_parent_workspace_before_side_effects(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fake_bin = os.path.join(directory, "bin")
+            runner_temp = os.path.join(directory, "_temp")
+            os.makedirs(fake_bin)
+            os.makedirs(runner_temp)
+            marker = os.path.join(directory, "side-effect")
+            for command_name in ("docker", "find"):
+                command_path = os.path.join(fake_bin, command_name)
+                with open(command_path, "w", encoding="utf-8") as handle:
+                    handle.write(f"#!/bin/sh\necho {command_name} >> '{marker}'\nexit 99\n")
+                os.chmod(command_path, 0o755)
+            result = self.run_script(
+                "scripts/ci/self_hosted_runner_cleanup.sh",
+                env={
+                    "PATH": f"{fake_bin}:{os.environ['PATH']}",
+                    "CI_PROJECT_NAME": "sc-fe-release-200",
+                    "GITHUB_RUN_ID": "200",
+                    "GITHUB_ACTIONS": "true",
+                    "GITHUB_REPOSITORY": "lidefend/sce-backend-odoo",
+                    "GITHUB_WORKSPACE": str(guard.ROOT.parent),
+                    "RUNNER_TEMP": runner_temp,
+                },
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("invalid workspace scope", result.stderr)
+            self.assertFalse(os.path.exists(marker))
+
+    def test_frontend_release_make_does_not_parse_workflow_env_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            marker = os.path.join(directory, "prevalidate-marker")
+            env_file = os.path.join(directory, "malicious.env")
+            with open(env_file, "w", encoding="utf-8") as handle:
+                handle.write(f"$(shell touch {marker})\n")
+            result = subprocess.run(
+                ["make", "environment.capability.inventory"],
+                cwd=guard.ROOT,
+                env={
+                    **os.environ,
+                    "GITHUB_ACTIONS": "true",
+                    "GITHUB_REPOSITORY": "lidefend/sce-backend-odoo",
+                    "GITHUB_RUN_ID": "200",
+                    "CI_PROJECT_NAME": "sc-fe-release-200",
+                    "ENV_FILE": env_file,
+                },
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(os.path.exists(marker))
 
     def test_upgrade_gate_propagates_governed_token(self):
         result = self.run_script("scripts/ci/upgrade_gate.sh", env={"SC_GOVERNED_GATE_ENTRY": "1"})
@@ -116,6 +312,7 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
             ("backend.acceptance.up", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
             ("frontend.acceptance.up", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
             ("acceptance.module.upgrade", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
+            ("db.frontend.acceptance.ensure", "SC_GOVERNED_FRONTEND_DB_ENSURE_ENTRY=1"),
             ("test-upgrade-gate", "scripts/ci/upgrade_gate.sh"),
             ("test-install-gate", "SC_GOVERNED_GATE_ENTRY=1"),
         )

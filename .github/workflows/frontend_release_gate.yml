@@ -138,6 +138,7 @@ jobs:
           {
             printf 'ENV=test\n'
             printf 'ENV_FILE=%s\n' "${ci_env}"
+            printf 'COMPOSE_PROJECT_NAME=%s\n' "${CI_PROJECT_NAME}"
             printf 'DB_USER=odoo\n'
             printf 'DB_PASSWORD=%s\n' "${db_password}"
             printf 'DB_NAME=sc_frontend_acceptance\n'
