@@ -4,6 +4,7 @@ import sys
 import types
 import unittest
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 from pathlib import Path
 
 
@@ -2272,35 +2273,86 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual([row["fieldCode"] for row in widgets], ["amount"])
         self.assertNotIn("subject", contract["formStructureContract"]["fieldRoles"])
 
-    def test_semantic_entry_surface_does_not_append_business_policy_root_groups(self):
+    def test_semantic_entry_surface_is_the_only_primary_structure_and_preserves_native_subordinates(self):
         handler = self.module.UiContractV2Handler(env=object())
+        handler._form_structure_governance = lambda *_args, **_kwargs: {
+            "form_structure_authority": "entry_semantic_surface",
+            "field_groups": {
+                "对象与状态": ["name", "line_ids"],
+                "本次办理": ["amount"],
+            },
+            "hidden_field_names": [],
+        }
         contract = {
             "pageInfo": {"viewType": "form", "model": "demo.business"},
-            "layoutContract": {"containerTree": [{
-                "type": "group", "string": "产品主章节", "children": [
-                    {"type": "field", "name": "name", "widgetId": "field.name"},
-                ],
-            }]},
-            "formStructureContract": {"fieldRoles": {"name": {"role": "business_fact"}}},
+            "layoutContract": {"containerTree": [
+                {"type": "header", "children": [
+                    {"type": "field", "name": "state", "widgetId": "field.state"},
+                    {"type": "button", "name": "action_submit"},
+                ]},
+                {"type": "sheet", "string": "分类模板", "children": [
+                    {"type": "group", "string": "分类模板章节", "children": [
+                        {"type": "field", "name": "name", "widgetId": "field.name"},
+                        {"type": "field", "name": "amount", "widgetId": "field.amount"},
+                    ]},
+                    {"type": "notebook", "children": [
+                        {"type": "page", "string": "明细", "children": [
+                            {
+                                "type": "field",
+                                "name": "line_ids",
+                                "widgetId": "field.line_ids",
+                                "componentConfig": {"fieldType": "one2many", "mode": "tree"},
+                                "subview": {"type": "tree", "fields": ["product_id", "quantity"]},
+                                "modifier": {"readonly": True},
+                            },
+                        ]},
+                    ]},
+                ]},
+                {"type": "attachment", "name": "native_attachments"},
+                {"type": "chatter", "name": "native_chatter"},
+            ]},
+            "formStructureContract": {"fieldRoles": {
+                "name": {"role": "business_fact"},
+                "amount": {"role": "business_fact"},
+                "line_ids": {"role": "relation"},
+            }},
         }
         source_contract = {
             "model": "demo.business",
             "view_type": "form",
+            "fields": {
+                "name": {"name": "name", "type": "char"},
+                "amount": {"name": "amount", "type": "monetary"},
+                "line_ids": {"name": "line_ids", "type": "one2many"},
+                "state": {"name": "state", "type": "selection"},
+            },
             "governance": {"view_orchestration": {
                 "applied": True,
                 "form_structure_authority": "entry_semantic_surface",
             }},
             "business_operation_profile": {"form_structure_governance": {
                 "form_structure_authority": "entry_semantic_surface",
-                "field_groups": {"分类模板章节": ["name"]},
+                "field_groups": {"分类模板章节": ["name", "amount"]},
                 "hidden_field_names": [],
             }},
         }
 
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
 
-        self.assertIn("产品主章节", str(contract["layoutContract"]["containerTree"]))
-        self.assertNotIn("分类模板章节", str(contract["layoutContract"]["containerTree"]))
+        tree = contract["layoutContract"]["containerTree"]
+        self.assertEqual([node["type"] for node in tree], ["header", "group", "group", "notebook", "attachment", "chatter"])
+        self.assertEqual([node.get("string") for node in tree if node.get("type") == "group"], ["对象与状态", "本次办理"])
+        self.assertNotIn("分类模板章节", str(tree))
+        self.assertNotIn('"type": "sheet"', str(tree))
+        self.assertEqual(str(tree).count("'name': 'line_ids'"), 1)
+        relation = tree[3]["children"][0]["children"][0]
+        self.assertEqual(relation["subview"], {"type": "tree", "fields": ["product_id", "quantity"]})
+        self.assertEqual(relation["modifier"], {"readonly": True})
+        self.assertEqual(tree[0]["children"][0]["name"], "state")
+
+        first = deepcopy(tree)
+        handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
+        self.assertEqual(contract["layoutContract"]["containerTree"], first)
 
     def test_published_semantic_contract_rebuilds_runtime_structure_authority(self):
         class _Config:

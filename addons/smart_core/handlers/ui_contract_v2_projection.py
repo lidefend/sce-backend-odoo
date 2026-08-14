@@ -328,11 +328,35 @@ def apply_business_config_form_groups(
         for item in (governance.get("hidden_field_names") or [])
         if str(item or "").strip()
     }
+    semantic_surface_authority = bool(governance.get("semantic_surface_authority"))
+    fields_meta = (
+        source_contract.get("fields")
+        if isinstance(source_contract, dict) and isinstance(source_contract.get("fields"), dict)
+        else {}
+    )
 
     def node_field_name(node: Any) -> str:
         if not isinstance(node, dict):
             return ""
         return str(node.get("name") or node.get("field") or node.get("fieldCode") or "").strip()
+
+    def node_field_type(node: Any) -> str:
+        if not isinstance(node, dict):
+            return ""
+        name = node_field_name(node)
+        field_info = node.get("fieldInfo") if isinstance(node.get("fieldInfo"), dict) else {}
+        component_config = node.get("componentConfig") if isinstance(node.get("componentConfig"), dict) else {}
+        meta = fields_meta.get(name) if isinstance(fields_meta.get(name), dict) else {}
+        return str(
+            field_info.get("type")
+            or component_config.get("fieldType")
+            or meta.get("type")
+            or meta.get("ttype")
+            or ""
+        ).strip().lower()
+
+    def is_relation_field(node: Any) -> bool:
+        return node_field_type(node) in {"one2many", "many2many"}
 
     def remove_fields(
         nodes: list[Any],
@@ -389,6 +413,8 @@ def apply_business_config_form_groups(
             for name in (raw_names if isinstance(raw_names, list) else [])
             if str(name or "").strip()
         ]
+        if semantic_surface_authority:
+            names = [name for name in names if not is_relation_field({"type": "field", "name": name})]
         names = [name for name in names if name not in hidden_field_names and name not in configured_names]
         if not title or not names:
             continue
@@ -398,6 +424,7 @@ def apply_business_config_form_groups(
         return
 
     moved_nodes: dict[str, dict[str, Any]] = {}
+    native_tree = deepcopy(container_tree)
     container_tree = remove_fields(
         container_tree,
         configured_names,
@@ -442,5 +469,94 @@ def apply_business_config_form_groups(
         children = group.get("children") if isinstance(group.get("children"), list) else []
         children.extend(deepcopy(moved_nodes[name]) for name in names if name in moved_nodes)
         group["children"] = children
+
+    if semantic_surface_authority:
+        semantic_groups = [
+            node
+            for node in container_tree
+            if isinstance(node, dict) and group_title(node) in {title for title, _names in configured_groups}
+        ]
+        subordinate_types = {"header", "statusbar", "button_box", "attachment", "chatter"}
+        preserved: list[dict[str, Any]] = []
+        relation_nodes: list[dict[str, Any]] = []
+        seen_relations: set[str] = set()
+
+        def preserve_relation(node: dict[str, Any]) -> dict[str, Any] | None:
+            name = node_field_name(node)
+            if not name or name in seen_relations or not is_relation_field(node):
+                return None
+            seen_relations.add(name)
+            return deepcopy(node)
+
+        def prune_relation_container(node: dict[str, Any]) -> dict[str, Any] | None:
+            node_type = str(node.get("type") or node.get("containerType") or "").strip().lower()
+            if node_type == "field":
+                return preserve_relation(node)
+            row = deepcopy(node)
+            had_children = False
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                children = row.get(key)
+                if not isinstance(children, list):
+                    continue
+                had_children = True
+                row[key] = [
+                    cleaned
+                    for child in children
+                    if isinstance(child, dict)
+                    for cleaned in [prune_relation_container(child)]
+                    if cleaned is not None
+                ]
+            if had_children and not any(
+                row.get(key)
+                for key in ("children", "pages", "tabs", "nodes", "items")
+                if isinstance(row.get(key), list)
+            ):
+                return None
+            return row if had_children else None
+
+        def collect_subordinates(nodes: Any) -> None:
+            for node in nodes if isinstance(nodes, list) else []:
+                if not isinstance(node, dict):
+                    continue
+                node_type = str(node.get("type") or node.get("containerType") or "").strip().lower()
+                if node_type in subordinate_types:
+                    preserved.append(deepcopy(node))
+                    continue
+                if node_type == "notebook":
+                    cleaned = prune_relation_container(node)
+                    if cleaned is not None:
+                        preserved.append(cleaned)
+                    continue
+                if node_type == "field":
+                    relation = preserve_relation(node)
+                    if relation is not None:
+                        relation_nodes.append(relation)
+                    continue
+                for key in ("children", "pages", "tabs", "nodes", "items"):
+                    collect_subordinates(node.get(key))
+
+        collect_subordinates(native_tree)
+        if relation_nodes:
+            preserved.append({
+                "type": "notebook",
+                "name": "native_subordinate_relations",
+                "string": "关联明细",
+                "label": "关联明细",
+                "children": [{
+                    "type": "page",
+                    "name": "native_subordinate_relations_page",
+                    "string": "关联明细",
+                    "label": "关联明细",
+                    "children": relation_nodes,
+                }],
+                "sourceAuthority": {
+                    "kind": "odoo_native_view_subordinate_structure",
+                    "projection_only": True,
+                    "no_business_fact_authority": True,
+                },
+            })
+        leading = [node for node in preserved if str(node.get("type") or "").lower() == "header"]
+        trailing = [node for node in preserved if str(node.get("type") or "").lower() != "header"]
+        container_tree = [*leading, *semantic_groups, *trailing]
 
     set_v2_container_tree(contract, container_tree)

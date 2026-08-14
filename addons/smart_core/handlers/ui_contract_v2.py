@@ -781,9 +781,10 @@ class UiContractV2Handler(BaseIntentHandler):
         if str(governance.get("form_structure_authority") or "").strip() == "entry_semantic_surface":
             governance = dict(governance)
             # A published semantic entry surface owns the only root section
-            # structure.  Business-category policy remains authoritative for
-            # field state/labels, but must not append a competing group tree.
-            governance["field_groups"] = {}
+            # structure.  Its field groups must still be projected after all
+            # extensions have run; the projection layer replaces competing
+            # category roots while retaining native subordinate capabilities.
+            governance["semantic_surface_authority"] = True
         _projection.apply_business_config_form_groups(
             contract,
             governance,
