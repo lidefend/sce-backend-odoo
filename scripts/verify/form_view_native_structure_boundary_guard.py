@@ -30,18 +30,20 @@ LOW_CODE_FIELD_DIALOG_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/Lo
 
 def _load_assembler():
     package_name = "smart_core_guard.core"
-    sys.modules.setdefault("smart_core_guard", type(sys)("smart_core_guard"))
-    sys.modules.setdefault(package_name, type(sys)(package_name))
+    root_package = sys.modules.setdefault("smart_core_guard", type(sys)("smart_core_guard"))
+    core_package = sys.modules.setdefault(package_name, type(sys)(package_name))
+    root_package.__path__ = [str(ROOT / "addons/smart_core")]
+    core_package.__path__ = [str(ROOT / "addons/smart_core/core")]
 
-    source_authority_path = ROOT / "addons/smart_core/core/source_authority.py"
-    source_spec = importlib.util.spec_from_file_location(
-        f"{package_name}.source_authority",
-        source_authority_path,
-    )
-    source_module = importlib.util.module_from_spec(source_spec)
-    assert source_spec and source_spec.loader
-    sys.modules[f"{package_name}.source_authority"] = source_module
-    source_spec.loader.exec_module(source_module)
+    for dependency in ("source_authority", "contract_lifecycle"):
+        dependency_path = ROOT / f"addons/smart_core/core/{dependency}.py"
+        dependency_spec = importlib.util.spec_from_file_location(
+            f"{package_name}.{dependency}", dependency_path,
+        )
+        dependency_module = importlib.util.module_from_spec(dependency_spec)
+        assert dependency_spec and dependency_spec.loader
+        sys.modules[f"{package_name}.{dependency}"] = dependency_module
+        dependency_spec.loader.exec_module(dependency_module)
 
     spec = importlib.util.spec_from_file_location(
         f"{package_name}.unified_page_contract_v2_assembler",

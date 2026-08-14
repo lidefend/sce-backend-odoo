@@ -2219,6 +2219,36 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual([row["fieldCode"] for row in widgets], ["amount"])
         self.assertNotIn("subject", contract["formStructureContract"]["fieldRoles"])
 
+    def test_semantic_entry_surface_does_not_append_business_policy_root_groups(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        contract = {
+            "pageInfo": {"viewType": "form", "model": "demo.business"},
+            "layoutContract": {"containerTree": [{
+                "type": "group", "string": "产品主章节", "children": [
+                    {"type": "field", "name": "name", "widgetId": "field.name"},
+                ],
+            }]},
+            "formStructureContract": {"fieldRoles": {"name": {"role": "business_fact"}}},
+        }
+        source_contract = {
+            "model": "demo.business",
+            "view_type": "form",
+            "governance": {"view_orchestration": {
+                "applied": True,
+                "form_structure_authority": "entry_semantic_surface",
+            }},
+            "business_operation_profile": {"form_structure_governance": {
+                "form_structure_authority": "entry_semantic_surface",
+                "field_groups": {"分类模板章节": ["name"]},
+                "hidden_field_names": [],
+            }},
+        }
+
+        handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
+
+        self.assertIn("产品主章节", str(contract["layoutContract"]["containerTree"]))
+        self.assertNotIn("分类模板章节", str(contract["layoutContract"]["containerTree"]))
+
     def test_tree_projection_does_not_import_form_structure_fields_into_list_profile(self):
         class _Field:
             def __init__(self, field_type, string="", relation=""):

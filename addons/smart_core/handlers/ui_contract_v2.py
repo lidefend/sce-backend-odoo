@@ -776,6 +776,12 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         if runtime_governance:
             governance = {**governance, **runtime_governance}
+        if str(governance.get("form_structure_authority") or "").strip() == "entry_semantic_surface":
+            governance = dict(governance)
+            # A published semantic entry surface owns the only root section
+            # structure.  Business-category policy remains authoritative for
+            # field state/labels, but must not append a competing group tree.
+            governance["field_groups"] = {}
         _projection.apply_business_config_form_groups(
             contract,
             governance,
@@ -1950,6 +1956,11 @@ class UiContractV2Handler(BaseIntentHandler):
             business_contracts = []
         legacy_overlay = bool(view_trace.get("legacy_field_policy_overlay") or view_governance.get("legacy_field_policy_overlay"))
         form_layout_overlay = bool(view_trace.get("form_layout_overlay") or view_governance.get("form_layout_overlay"))
+        form_structure_authority = str(
+            view_trace.get("form_structure_authority")
+            or view_governance.get("form_structure_authority")
+            or ""
+        ).strip()
         field_names: list[str] = []
         field_labels: dict[str, str] = {}
         section_titles: list[str] = []
@@ -2074,6 +2085,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "business_config_contracts": [dict(item) for item in business_contracts if isinstance(item, dict)] or config_summaries,
             "legacy_field_policy_overlay": legacy_overlay,
             "form_layout_overlay": form_layout_overlay,
+            "form_structure_authority": form_structure_authority,
             "field_names": field_names,
             "field_labels": field_labels,
             "section_titles": section_titles,
