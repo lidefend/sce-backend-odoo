@@ -132,7 +132,7 @@ function waitForRecordContractResponse(page, target) {
     }
   }, { timeout: 45000 });
 }
-async function normalizedSubmitEvidence(response, evidenceLabel) {
+async function normalizedDeniedSubmitEvidence(response, evidenceLabel) {
   const envelope = await response.json();
   const data = envelope?.data || envelope?.result?.data || envelope?.result || {};
   const rules = Array.isArray(data?.actionContract?.actionRuleList) ? data.actionContract.actionRuleList : [];
@@ -151,24 +151,24 @@ async function normalizedSubmitEvidence(response, evidenceLabel) {
   };
   console.log(`[frontend_delivery_hardening] NORMALIZED_ACTION_DIAGNOSTIC ${evidenceLabel} ${JSON.stringify(evidence)}`);
   check(submitRules.length === 1, `${evidenceLabel}: normalized action_submit count must be 1; evidence=${JSON.stringify(evidence)}`);
-  check(submitRules[0].allowed === true, `${evidenceLabel}: normalized action_submit allowed=${submitRules[0].allowed}`);
-  check(submitRules[0].enabled === true, `${evidenceLabel}: normalized action_submit enabled=${submitRules[0].enabled}`);
+  check(submitRules[0].allowed === false, `${evidenceLabel}: finance manager unexpectedly allowed action_submit`);
+  check(submitRules[0].enabled === false, `${evidenceLabel}: finance manager unexpectedly enabled action_submit`);
   check(Array.isArray(submitRules[0].visibleProfiles) && submitRules[0].visibleProfiles.includes('readonly'), `${evidenceLabel}: normalized action_submit missing readonly profile`);
   check(submitStatuses.length === 1, `${evidenceLabel}: normalized action_submit status count must be 1`);
-  check(submitStatuses[0].visible === true && submitStatuses[0].disabled === false, `${evidenceLabel}: normalized action_submit status unavailable; evidence=${JSON.stringify(evidence)}`);
+  check(submitStatuses[0].visible === false && submitStatuses[0].disabled === true, `${evidenceLabel}: denied action_submit status was not fail-closed; evidence=${JSON.stringify(evidence)}`);
   return evidence;
 }
-async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = null) {
+async function canonicalCancelAction(page, evidenceLabel, normalizedEvidence = null) {
   if (normalizedEvidence) await normalizedEvidence;
-  const selector = '.template-page-header-actions button[data-backend-identity="button:object:action_submit"]';
-  let submit = page.locator(selector);
-  if (!(await submit.count()) || !(await submit.first().isVisible())) {
+  const selector = '.template-page-header-actions button[data-backend-identity="button:object:action_cancel"]';
+  let action = page.locator(selector);
+  if (!(await action.count()) || !(await action.first().isVisible())) {
     const more = page.locator('.form-header-more-actions > summary').filter({ hasText: /^更多操作$/ }).first();
     if (await more.count()) {
       await more.focus();
       await more.press('Enter');
     }
-    submit = page.locator(selector);
+    action = page.locator(selector);
   }
   const actions = await page.locator('.template-page-header-actions button').evaluateAll((buttons) => buttons.map((button) => ({
     text: String(button.textContent || '').replace(/\s+/g, ' ').trim(),
@@ -182,9 +182,9 @@ async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = n
     visible: Boolean(button.getClientRects().length),
   })));
   console.log(`[frontend_delivery_hardening] ACTION_DIAGNOSTIC ${evidenceLabel} ${JSON.stringify(actions)}`);
-  check(await submit.count() === 1, `${evidenceLabel}: canonical action_submit count must be 1; actions=${JSON.stringify(actions)}`);
-  const button = submit.first();
-  check(await button.isVisible(), `${evidenceLabel}: canonical action_submit is not visible; actions=${JSON.stringify(actions)}`);
+  check(await action.count() === 1, `${evidenceLabel}: canonical action_cancel count must be 1; actions=${JSON.stringify(actions)}`);
+  const button = action.first();
+  check(await button.isVisible(), `${evidenceLabel}: canonical action_cancel is not visible; actions=${JSON.stringify(actions)}`);
   const metadata = await button.evaluate((node) => ({
     text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
     allowed: node.getAttribute('data-action-allowed'),
@@ -192,11 +192,11 @@ async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = n
     visibleProfiles: String(node.getAttribute('data-visible-profiles') || '').split(',').filter(Boolean),
     disabled: node instanceof HTMLButtonElement ? node.disabled : true,
   }));
-  check(metadata.text === '提交审批', `${evidenceLabel}: canonical action_submit label=${metadata.text || '<empty>'}, expected=提交审批`);
-  check(metadata.allowed === 'true', `${evidenceLabel}: canonical action_submit allowed=${metadata.allowed}`);
-  check(metadata.enabled === 'true', `${evidenceLabel}: canonical action_submit enabled=${metadata.enabled}`);
-  check(metadata.visibleProfiles.includes('readonly'), `${evidenceLabel}: canonical action_submit missing readonly profile`);
-  check(metadata.disabled === false, `${evidenceLabel}: canonical action_submit rendered disabled`);
+  check(metadata.text === '取消', `${evidenceLabel}: canonical action_cancel label=${metadata.text || '<empty>'}, expected=取消`);
+  check(metadata.allowed === 'true', `${evidenceLabel}: canonical action_cancel allowed=${metadata.allowed}`);
+  check(metadata.enabled === 'true', `${evidenceLabel}: canonical action_cancel enabled=${metadata.enabled}`);
+  check(metadata.visibleProfiles.includes('readonly'), `${evidenceLabel}: canonical action_cancel missing readonly profile`);
+  check(metadata.disabled === false, `${evidenceLabel}: canonical action_cancel rendered disabled`);
   return button;
 }
 function median(values) { const rows = [...values].sort((a, b) => a - b); return rows[Math.floor(rows.length / 2)] || 0; }
@@ -634,16 +634,16 @@ async function main() {
     check((await page.title()).startsWith(`${journeyIdentity} - `), 'detail document title did not use the concise stable record identity');
     const submitContractResponse = waitForRecordContractResponse(page, TARGETS.journey_request);
     await open(page, recordRoute(TARGETS.journey_request));
-    const submitEvidence = submitContractResponse.then((response) => normalizedSubmitEvidence(response, 'J10'));
-    const submit = await canonicalSubmitAction(page, 'J10', submitEvidence);
-    await submit.focus(); await submit.press('Enter');
+    const submitEvidence = submitContractResponse.then((response) => normalizedDeniedSubmitEvidence(response, 'J10'));
+    const cancel = await canonicalCancelAction(page, 'J10', submitEvidence);
+    await cancel.focus(); await cancel.press('Enter');
     const dialog = page.getByRole('dialog');
     await dialog.waitFor({ timeout: 15000 });
-    check(await dialog.getByRole('button', { name: '确认提交' }).evaluate((node) => node === document.activeElement), 'dialog initial focus missing');
+    check(await dialog.getByRole('button', { name: '确认取消' }).evaluate((node) => node === document.activeElement), 'dialog initial focus missing');
     await page.keyboard.press('Tab'); await page.keyboard.press('Tab');
     check(await dialog.evaluate((node) => node.contains(document.activeElement)), 'dialog focus escaped');
     await page.keyboard.press('Escape');
-    check(await submit.evaluate((node) => node === document.activeElement), 'dialog focus did not return');
+    check(await cancel.evaluate((node) => node === document.activeElement), 'dialog focus did not return');
     await assertNoOverflow(page, 'J10');
     report.journeys.J10 = 'PASS';
 
@@ -728,8 +728,8 @@ async function main() {
             await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
           } else if (surface.mode === 'dialog') {
             await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
-            const submitAction = await canonicalSubmitAction(page, `${surface.name}-${viewport.width}`);
-            await submitAction.click();
+            const cancelAction = await canonicalCancelAction(page, `${surface.name}-${viewport.width}`);
+            await cancelAction.click();
             await page.getByRole('dialog').waitFor({ timeout: 15000 });
           } else if (surface.mode === 'network') {
             await page.getByRole('heading', { name: '网络连接异常' }).waitFor({ timeout: 45000 });

@@ -112,9 +112,11 @@ require(
     "warmed retained detail page reloaded its primary contract",
     "fs.writeFileSync(path.join(OUT, 'performance.json')",
     "button:object:action_submit",
+    "button:object:action_cancel",
     "ACTION_DIAGNOSTIC",
     "NORMALIZED_ACTION_DIAGNOSTIC",
-    "expected=提交审批",
+    "finance manager unexpectedly allowed action_submit",
+    "expected=取消",
 )
 require(
     "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
