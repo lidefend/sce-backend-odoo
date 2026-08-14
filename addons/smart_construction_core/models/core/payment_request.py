@@ -306,6 +306,16 @@ class PaymentRequest(models.Model):
         required=True,
         tracking=True,
     )
+    partner_transaction_eligibility = fields.Selection(
+        related="partner_id.sc_transaction_eligibility",
+        string="往来单位可办理性",
+        readonly=True,
+    )
+    partner_transaction_eligibility_reason = fields.Char(
+        related="partner_id.sc_transaction_eligibility_reason",
+        string="往来单位办理提示",
+        readonly=True,
+    )
     currency_id = fields.Many2one(
         "res.currency",
         string="币种",
@@ -518,6 +528,11 @@ class PaymentRequest(models.Model):
         readonly=True,
         index=True,
     )
+    payee_account_completeness = fields.Selection(
+        [("complete", "账户信息完整"), ("incomplete", "账户信息待补充")],
+        string="收款账户完整度",
+        compute="_compute_payee_account_completeness",
+    )
     date_request = fields.Date(
         string="单据日期",
         default=fields.Date.context_today,
@@ -574,6 +589,28 @@ class PaymentRequest(models.Model):
         string="状态",
         default="draft",
         tracking=True,
+    )
+
+    _business_fact_fields = frozenset(
+        {
+            "type",
+            "business_category_id",
+            "project_id",
+            "contract_id",
+            "settlement_id",
+            "material_settlement_id",
+            "partner_id",
+            "currency_id",
+            "amount",
+            "date_request",
+            "actual_payee_unit",
+            "payer_unit",
+            "payment_account_name",
+            "payment_bank_name",
+            "payment_account_no",
+            "outflow_line_ids",
+            "receipt_invoice_line_ids",
+        }
     )
 
     @api.depends("type", "receipt_type", "cost_category_name", "material_settlement_id", "business_category_id.code")
@@ -774,6 +811,27 @@ class PaymentRequest(models.Model):
             vals["payer_unit"] = partner.display_name or partner.name or ""
         return {key: value for key, value in vals.items() if value}
 
+    @api.depends(
+        "type",
+        "payment_account_name",
+        "payment_bank_name",
+        "payment_account_no",
+        "partner_account_name",
+        "partner_bank_name",
+        "partner_bank_account",
+    )
+    def _compute_payee_account_completeness(self):
+        for record in self:
+            if record.type != "pay":
+                record.payee_account_completeness = "complete"
+                continue
+            values = (
+                record.payment_account_name or record.partner_account_name,
+                record.payment_bank_name or record.partner_bank_name,
+                record.payment_account_no or record.partner_bank_account,
+            )
+            record.payee_account_completeness = "complete" if all(values) else "incomplete"
+
     @api.model
     def _basis_payment_request_values(self, vals):
         values = {}
@@ -847,9 +905,14 @@ class PaymentRequest(models.Model):
 
     def action_create_payment_execution(self):
         self.ensure_one()
+        self._assert_payment_execution_ready(require_authorized_actor=True)
         action = self.env.ref("smart_construction_core.action_sc_payment_execution").read()[0]
         action["view_mode"] = "form"
         action["views"] = [(False, "form")]
+        # This is a continuation of the approved request, not a detour to the
+        # payment execution ledger.  Make the create-form destination explicit
+        # so every client consumes the same authoritative handling step.
+        action["target"] = "new"
         action["context"] = {
             **dict(self.env.context or {}),
             "default_payment_request_id": self.id,
@@ -870,6 +933,21 @@ class PaymentRequest(models.Model):
             "default_note": self.note,
         }
         return action
+
+    def _assert_payment_execution_ready(self, *, require_authorized_actor=False):
+        """Fail closed before a payment request can anchor an execution record."""
+        for record in self:
+            if record.type != "pay":
+                raise UserError(_("只有付款申请可以生成付款登记。"))
+            if record.state != "approved":
+                raise UserError(_("付款申请必须处于已批准状态才能生成付款登记。"))
+            if record.payee_account_completeness != "complete":
+                raise UserError(_("收款户名、开户行和账号必须完整后才能生成付款登记。"))
+            if require_authorized_actor and not self.env.user.has_group(
+                "smart_construction_core.group_sc_cap_finance_manager"
+            ):
+                raise UserError(_("你没有生成付款登记的财务确认权限。"))
+        return True
 
     def unlink(self):
         locked = self.filtered(lambda rec: rec.state not in ("draft", "cancel"))
@@ -1032,6 +1110,12 @@ class PaymentRequest(models.Model):
         return category.id if category else False
 
     def write(self, vals):
+        changed_business_facts = self._business_fact_fields.intersection(vals)
+        locked = self.filtered(lambda rec: rec.state not in ("draft", "cancel"))
+        if changed_business_facts and locked and not self.env.context.get("allow_payment_business_fact_write"):
+            raise UserError(
+                _("付款/收款申请进入审批后，项目、依据、对象、金额和账户等业务事实不可直接修改；请取消后重新发起。")
+            )
         if "state" in vals and not self.env.context.get("allow_transition"):
             sample = self[:1]
             raise_guard(
@@ -1070,12 +1154,13 @@ class PaymentRequest(models.Model):
 
     def _snapshot_audit_payload(self):
         self.ensure_one()
+        business_category = self.business_category_id.sudo()
         return {
             "state": self.state,
             "amount": self.amount,
             "partner_id": self.partner_id.id if self.partner_id else False,
-            "business_category_id": self.business_category_id.id if self.business_category_id else False,
-            "business_category_code": self.business_category_id.code if self.business_category_id else False,
+            "business_category_id": business_category.id if business_category else False,
+            "business_category_code": business_category.code if business_category else False,
             "attachment_count": self._get_attachment_count(),
             "validation_status": self.validation_status,
         }
@@ -1254,6 +1339,33 @@ class PaymentRequest(models.Model):
         self.ensure_one()
         action_key = str(action_name or "").strip().lower()
         advisories = []
+        if action_key in ("submit", "approve") and self.type == "pay" and self.payee_account_completeness == "incomplete":
+            advisories.append(
+                self._payment_advisory(
+                    "PAYEE_ACCOUNT_INCOMPLETE",
+                    _("收款户名、开户行或账号尚未补充完整，付款执行前必须补齐。"),
+                    suggested_action="complete_payee_account",
+                    reasons=["payee account snapshot is incomplete"],
+                    hints=[_("请从往来单位默认账户带入，或核对付款依据后填写本次收款账户快照。")],
+                )
+            )
+        if (
+            action_key in ("submit", "approve")
+            and self.type == "pay"
+            and self.actual_payee_unit
+            and self.partner_id
+            and self.actual_payee_unit.strip() not in {self.partner_id.name or "", self.partner_id.display_name or ""}
+            and self._get_attachment_count() <= 0
+        ):
+            advisories.append(
+                self._payment_advisory(
+                    "THIRD_PARTY_PAYEE_EVIDENCE_REQUIRED",
+                    _("实际收款单位与合同往来单位不同，需补充委托付款等授权依据。"),
+                    suggested_action="upload_third_party_authorization",
+                    reasons=["actual payee differs from contractual counterparty"],
+                    hints=[_("请上传委托付款书或其他可追溯的第三方收款授权。")],
+                )
+            )
         if action_key == "submit" and self._get_attachment_count() <= 0:
             advisories.append(
                 self._payment_advisory(
@@ -1498,6 +1610,29 @@ class PaymentRequest(models.Model):
             if rec.contract_id.type != expected:
                 raise ValidationError(_("合同类型必须与申请类型一致。"))
 
+    @api.constrains("contract_id", "project_id", "partner_id", "currency_id", "type")
+    def _check_contract_business_identity(self):
+        for rec in self:
+            contract = rec.contract_id
+            if not contract:
+                continue
+            if contract.project_id and rec.project_id and contract.project_id != rec.project_id:
+                raise ValidationError(_("合同项目必须与付款/收款申请项目一致。"))
+            settlement_partner = (
+                rec.settlement_id.settlement_unit_id or rec.settlement_id.partner_id
+                if rec.settlement_id
+                else self.env["res.partner"]
+            )
+            if (
+                contract.partner_id
+                and rec.partner_id
+                and contract.partner_id != rec.partner_id
+                and settlement_partner != rec.partner_id
+            ):
+                raise ValidationError(_("合同往来单位必须与付款/收款申请往来单位一致；结算单明确指定结算单位的除外。"))
+            if contract.currency_id and rec.currency_id and contract.currency_id != rec.currency_id:
+                raise ValidationError(_("合同币种必须与付款/收款申请币种一致。"))
+
     @api.constrains(
         "contract_id",
         "settlement_id",
@@ -1683,6 +1818,11 @@ class PaymentRequest(models.Model):
             raise ValidationError(_("你没有提交付款/收款申请的权限。"))
         advisory_result = {}
         for rec in self:
+            if (rec.amount or 0.0) <= 0:
+                raise UserError(_("申请金额必须大于 0。"))
+            rec.partner_id._sc_assert_transaction_eligible(
+                _("付款申请") if rec.type == "pay" else _("收款申请")
+            )
             if not rec._has_payment_basis():
                 raise UserError("请先选择关联合同或结算单后再提交付款/收款申请。")
             if rec.contract_id and rec.contract_id.state == "cancel":
@@ -1695,16 +1835,23 @@ class PaymentRequest(models.Model):
             )
         for rec in self:
             before = rec._snapshot_audit_payload()
-            rec.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "submit"})
-            after = rec._snapshot_audit_payload()
-            rec._audit_transition("payment_submitted", before, after, action_name="action_submit")
-        self.invalidate_recordset()
-        for rec in self:
+            # The action has already enforced submit capability, record readability,
+            # business scope and all business guards.  Keep the authoritative state
+            # change, audit and tier initialization in one elevated service segment;
+            # sudo mode preserves the initiating uid while avoiding a post-transition
+            # record-rule intersection from breaking the approved workflow action.
+            submitted = rec.sudo()
+            submitted.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "submit"})
+            after = submitted._snapshot_audit_payload()
+            submitted._audit_transition("payment_submitted", before, after, action_name="action_submit")
+        submitted_records = self.sudo()
+        submitted_records.invalidate_recordset()
+        for rec in submitted_records:
             company = rec.company_id or self.env.company
             rec.with_company(company).with_context(
                 allowed_company_ids=[company.id],
             ).request_validation()
-        self._message_post_non_blocking(_("付款/收款申请已提交，进入审批流程。"))
+        submitted_records._message_post_non_blocking(_("付款/收款申请已提交，进入审批流程。"))
         return {"warnings": advisory_result}
 
     def action_approve(self):

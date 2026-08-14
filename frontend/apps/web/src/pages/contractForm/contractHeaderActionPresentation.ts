@@ -17,7 +17,9 @@ export function groupContractHeaderActions(params: {
   const visible = params.intakeMode
     ? []
     : params.actions
-      .filter((action) => !params.nativeTree || action.sourceWidgetId === 'page.header')
+      .filter((action) => !params.nativeTree
+        || action.sourceWidgetId === 'page.header'
+        || (action.sourceWidgetId === 'page.root' && action.level === 'header'))
       .filter((action) => Boolean(action.mutation) || !params.isSubmitAction(action));
   const business = params.configurationMode ? [] : visible.filter((action) => !isConfigurationAction(action));
   const primary = business.find((action) => action.presentationTier === 'primary');

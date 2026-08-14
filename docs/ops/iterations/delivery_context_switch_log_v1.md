@@ -3957,6 +3957,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Frontend health requires its governed PID, worktree and locked database/proxy
   environment. PostgreSQL credentials must match the credential authority.
 
+## 2026-08-13 — PFL-035-PAYMENT-EXECUTION-AUTHORIZATION-TRACE
+
+- Branch / anchor: `feature/p1-payment-request-capability-v2` from merged product
+  baseline `d7ae51b086dade4942786e2df169edbf6f02ad1d` in isolated worktree
+  `sce-backend-odoo-payment-request-p1-v2`.
+- Formal Product Layer / Layer Target / Module: P1 / construction payment
+  execution domain authority / `smart_construction_core`.
+- Standard vs User-Specific: construction-industry standard; no customer,
+  tenant-specific policy, P3 runtime configuration or frontend component
+  behavior.
+- Reason / Boundary: an existing payment execution retains its authoritative
+  payment-request, contract, project and counterparty chain. Only a superuser
+  historical synchronization carrying `history_surface_sync` may fill a
+  missing anchor on a legacy record; it may never clear or replace a nonempty
+  anchor.
+- Why Here / Why Not Elsewhere: relation authority is an ORM invariant owned by
+  the P1 domain model. UI visibility, frontend components, customer modules and
+  low-code configuration cannot enforce RPC or service calls.
+- Blast Radius / validation: `sc.payment.execution.write()` relation fields,
+  PFL-035 static anchors and focused backend tests for finance user, finance
+  manager, non-draft and historical-sync overreach. Authenticated browser
+  acceptance remains required before runtime closeout.
+
 # Product baseline 17.0.0.75 upgrade recovery (2026-08-13)
 
 - Branch / base SHA: `fix/product-baseline-upgrade-075-current-v1` /

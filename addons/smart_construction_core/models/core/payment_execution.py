@@ -344,8 +344,8 @@ class ScPaymentExecution(models.Model):
         receipt_account_name = request.payment_account_name or request.partner_account_name or ""
         receipt_bank_name = request.payment_bank_name or request.partner_bank_name or ""
         receipt_account_no = request.payment_account_no or request.partner_bank_account or ""
-        payment_account_name = request.payer_unit or ""
-        payment_account_no = request.payment_account_no or ""
+        payment_account_name = request.payer_unit or request.legacy_payment_account_name or ""
+        payment_account_no = request.legacy_payment_account_no or ""
         return {
             "project_id": request.project_id.id,
             "partner_id": request.partner_id.id,
@@ -459,7 +459,8 @@ class ScPaymentExecution(models.Model):
             if len(contracts) > 1:
                 raise ValidationError(_("多合同付款申请不得压缩到单值合同字段。"))
             if not contracts:
-                raise ValidationError(_("付款申请合同没有对应的有效来源依据。"))
+                # 合同本身是预付款、保证金等未结算付款的有效业务依据。
+                contracts |= request_contract
             if request_contract != contracts:
                 raise ValidationError(_("付款申请合同与其有效来源合同不一致。"))
         return contracts
@@ -480,11 +481,8 @@ class ScPaymentExecution(models.Model):
         if not request_id:
             return values
 
-        request = self._caller_visible_payment_relation(
-            "payment.request",
-            request_id,
-            [("type", "=", "pay")],
-        )
+        request = self._caller_visible_payment_relation("payment.request", request_id)
+        request._assert_payment_execution_ready(require_authorized_actor=current is None)
         contracts = self._payment_basis_contracts(request)
         if project_id and project_id != request.project_id.id:
             raise ValidationError(_("付款执行项目必须与付款申请项目一致。"))
@@ -518,11 +516,8 @@ class ScPaymentExecution(models.Model):
                 vals.setdefault("project_id", project_id)
             vals = self._normalize_payment_relation_values(vals)
             if vals.get("payment_request_id"):
-                request = self._caller_visible_payment_relation(
-                    "payment.request",
-                    vals["payment_request_id"],
-                    [("type", "=", "pay")],
-                )
+                request = self._caller_visible_payment_relation("payment.request", vals["payment_request_id"])
+                request._assert_payment_execution_ready(require_authorized_actor=True)
                 for field_name, value in self._payment_request_values(request).items():
                     vals.setdefault(field_name, value)
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
@@ -555,6 +550,34 @@ class ScPaymentExecution(models.Model):
     def _history_surface_allowed_write_fields(self):
         return {"attachment_ids"}
 
+    def _assert_payment_relation_anchors_immutable(self, vals):
+        """Keep an execution's authoritative request chain from being rebound."""
+        relation_fields = {"payment_request_id", "contract_id", "partner_id", "project_id"}
+        changed_fields = relation_fields.intersection(vals)
+        if not changed_fields:
+            return True
+        controlled_history_fill = bool(
+            self.env.context.get("history_surface_sync") and self.env.su
+        )
+        for rec in self:
+            for field_name in changed_fields:
+                current_id = rec[field_name].id if rec[field_name] else False
+                incoming = vals.get(field_name)
+                incoming_id = incoming.id if isinstance(incoming, models.BaseModel) else (incoming or False)
+                if current_id == incoming_id:
+                    continue
+                if (
+                    controlled_history_fill
+                    and rec.source_origin == "legacy"
+                    and not current_id
+                    and incoming_id
+                ):
+                    continue
+                raise UserError(
+                    _("付款执行一经建立，不允许改绑付款申请、合同、项目或往来单位；历史同步仅可补充空锚点。")
+                )
+        return True
+
     def write(self, vals):
         if (
             any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self)
@@ -582,10 +605,12 @@ class ScPaymentExecution(models.Model):
         if relation_fields.intersection(vals):
             result = True
             for rec in self:
+                rec._assert_payment_relation_anchors_immutable(vals)
                 normalized_vals = rec._normalize_payment_relation_values(
                     vals,
                     current=rec,
                 )
+                rec._assert_payment_relation_anchors_immutable(normalized_vals)
                 result = super(ScPaymentExecution, rec).write(normalized_vals) and result
             return result
         return super().write(vals)

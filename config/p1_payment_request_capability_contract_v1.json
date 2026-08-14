@@ -1,0 +1,38 @@
+{
+  "schema_version": "p1_payment_request_capability_contract.v1",
+  "product_stage": "P1_construction_industry_standard_product",
+  "specific_customer_or_tenant_scope": "forbidden",
+  "representative_object": {
+    "label": "付款申请",
+    "model": "payment.request",
+    "menu": "smart_construction_core.menu_sc_user_payment_apply_acceptance",
+    "action": "smart_construction_core.action_payment_request_user_payment_apply"
+  },
+  "business_boundary": {
+    "included": ["contract_and_settlement_basis", "business_identity_consistency", "counterparty_eligibility", "amount_reservation", "payee_account_snapshot", "approval_fact_lock", "payment_execution_trace"],
+    "excluded": ["customer_specific_payment_policy", "tenant_specific_approval_chain", "accounting_posting_design", "frontend_component_selection"]
+  },
+  "capabilities": [
+    {"key":"basis_classification","status":"implemented","evidence":["payment_basis_type","contract settlement material settlement and line settlement bases"]},
+    {"key":"contract_identity_consistency","status":"implemented","evidence":["_check_contract_business_identity","project currency direction and effective settlement-unit controls"]},
+    {"key":"contract_only_advance_payment","status":"implemented","evidence":["sc.payment.execution._payment_basis_contracts accepts an explicit standalone contract basis"]},
+    {"key":"settlement_reservation","status":"implemented","evidence":["_check_settlement_remaining_amount","_check_not_overpay_settlement","material settlement remaining amount"]},
+    {"key":"counterparty_eligibility","status":"implemented","evidence":["action_submit calls res.partner._sc_assert_transaction_eligible"]},
+    {"key":"payee_account_snapshot","status":"implemented","evidence":["_partner_payment_defaults","payee_account_completeness","PAYEE_ACCOUNT_INCOMPLETE advisory"]},
+    {"key":"third_party_payee_evidence","status":"implemented","evidence":["actual_payee_unit","THIRD_PARTY_PAYEE_EVIDENCE_REQUIRED advisory"]},
+    {"key":"approval_fact_lock","status":"implemented","evidence":["_business_fact_fields","payment.request.write locks submitted business facts","action_submit uses a capability-checked controlled state transition","audit snapshot reads technical category metadata without widening user access"]},
+    {"key":"execution_trace","status":"implemented","evidence":["_assert_payment_execution_ready","action_create_payment_execution","sc.payment.execution.create and _normalize_payment_relation_values","_assert_payment_relation_anchors_immutable","PFL-035 finance-user finance-manager non-draft and history-sync-overreach negative tests","approved-only native action visibility"]},
+    {"key":"task_first_native_form","status":"implemented","evidence":["申请识别与状态","项目与收款对象","结算与合同依据","本次付款事实","账户与开票信息","审批与审计"]},
+    {"key":"runtime_states","status":"runtime_verification_required","evidence":["representative_page_contracts_v01 payment request acceptance"],"gap":"empty forbidden readonly and mobile states require authenticated browser evidence"}
+  ],
+  "implementation_sequence": [
+    {"id":"P1-PR-001","status":"completed","title":"turn contract and settlement relations into enforceable payment bases"},
+    {"id":"P1-PR-002","status":"completed","title":"enforce counterparty identity eligibility and amount reservation"},
+    {"id":"P1-PR-003","status":"completed","title":"preserve account snapshots and submitted business facts"},
+    {"id":"P1-PR-004","status":"completed","title":"expose task-first native handling form"},
+    {"id":"P1-PR-005","status":"completed","title":"fail closed before creating or rebinding a linked payment execution"},
+    {"id":"P1-PR-006","status":"pending_runtime","title":"accept empty forbidden readonly and mobile states"},
+    {"id":"P1-PR-007","status":"blocked_until_business_acceptance","title":"evaluate component requirements"}
+  ],
+  "release_rule": "business controls and authenticated runtime acceptance precede component evaluation"
+}

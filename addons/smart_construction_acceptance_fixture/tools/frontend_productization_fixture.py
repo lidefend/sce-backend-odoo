@@ -145,6 +145,9 @@ def _partner(env, suffix, company):
             "is_company": True,
             "company_type": "company",
             "supplier_rank": 1,
+            "sc_account_name": name,
+            "sc_bank_name": "FE Acceptance Bank %s" % suffix,
+            "sc_bank_account": "FE-ACCEPTANCE-%s-001" % suffix,
         },
     )
 
@@ -334,15 +337,22 @@ def _request(env, suffix, sequence, project, contract, settlement, partner, stat
             "currency_id": project.company_id.currency_id.id,
             "amount": amount,
             "state": state,
+            # A payment request owns an immutable account snapshot.  Keeping
+            # only the partner default would make the form look incomplete
+            # even though the execution guard can resolve a fallback.
+            "actual_payee_unit": partner.name,
+            "payment_account_name": partner.sc_account_name,
+            "payment_bank_name": partner.sc_bank_name,
+            "payment_account_no": partner.sc_bank_account,
             "note": "FE-%s deterministic payment request" % suffix,
         },
     )
 
 
-def _execution(env, suffix, project, contract, request, partner, state, amount):
+def _execution(env, suffix, project, contract, request, partner, finance, state, amount):
     name = "FE-%s-PE-001" % suffix
     return _upsert(
-        env,
+        env(user=finance.id),
         "sc.payment.execution",
         "fe_execution_%s" % suffix.lower(),
         [("name", "=", name), ("project_id", "=", project.id)],
@@ -693,6 +703,22 @@ def ensure_fixture(env) -> Dict[str, Any]:
         [company_a, company_b],
         ["smart_construction_core.group_sc_role_finance_manager"],
     )
+    finance_user = _user(
+        env,
+        "fixture_role_pfl035_finance_user",
+        "PFL-035 Finance User",
+        company_a,
+        [company_a],
+        ["smart_construction_core.group_sc_role_finance_user"],
+    )
+    empty_finance = _user(
+        env,
+        "fixture_role_pfl035_empty_finance",
+        "PFL-035 Empty Finance User",
+        company_a,
+        [company_a],
+        ["smart_construction_core.group_sc_role_finance_user"],
+    )
     project_member = _user(
         env,
         "fixture_role_project_a_member",
@@ -774,6 +800,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
     ).unlink()
     project_a.message_subscribe(partner_ids=[project_member.partner_id.id, pm.partner_id.id])
     project_b.message_subscribe(partner_ids=[pm.partner_id.id])
+    project_a.message_subscribe(partner_ids=[finance_user.partner_id.id])
 
     _funding_baseline(env, "A", project_a)
     _funding_baseline(env, "B", project_b)
@@ -797,9 +824,110 @@ def ensure_fixture(env) -> Dict[str, Any]:
         ("validated", finance.id, request_c.id),
     )
     request_c.invalidate_recordset(["validation_status", "create_uid"])
-    _execution(env, "A", project_a, contract_a, request_a, partner_a, "paid", 1000.0)
-    _execution(env, "B", project_b, contract_b, request_b, partner_b, "draft", 1000.0)
-    _execution(env, "C", project_c, contract_c, request_c, partner_c, "confirmed", 1000.0)
+    _execution(env, "A", project_a, contract_a, request_a, partner_a, finance, "paid", 1000.0)
+    _execution(env, "C", project_c, contract_c, request_c, partner_c, finance, "confirmed", 1000.0)
+
+    # PFL-035 owns isolated records for authoritative positive and rejection
+    # paths.  They must not reuse records that already have an execution.
+    pfl035_settlement = _settlement(
+        env, "PFL035", project_a, contract_a, partner_a, "approve", 1000.0
+    )
+    pfl035_approved = _request(
+        env, "PFL035", 1, project_a, contract_a, pfl035_settlement, partner_a, "approved", 80.0
+    )
+    env["sc.payment.execution"].sudo().search(
+        [("payment_request_id", "=", pfl035_approved.id)]
+    ).unlink()
+    pfl035_draft = _request(
+        env, "PFL035", 2, project_a, contract_a, pfl035_settlement, partner_a, "draft", 40.0
+    )
+
+    income_contract = _upsert(
+        env,
+        "construction.contract",
+        "fe_pfl035_income_contract",
+        [("subject", "=", "PFL-035 Income Contract"), ("project_id", "=", project_a.id)],
+        {
+            "subject": "PFL-035 Income Contract",
+            "type": "out",
+            "project_id": project_a.id,
+            "partner_id": partner_a.id,
+            "company_id": company_a.id,
+            "tax_id": tax_a.id,
+        },
+    )
+    pfl035_receive = _upsert(
+        env,
+        "payment.request",
+        "fe_pfl035_receive_request",
+        [("name", "=", "FE-PFL035-RECEIVE-001"), ("project_id", "=", project_a.id)],
+        {
+            "name": "FE-PFL035-RECEIVE-001",
+            "type": "receive",
+            "business_category_id": _ref(
+                env, "smart_construction_core.business_category_finance_payment_apply_receive"
+            ).id,
+            "project_id": project_a.id,
+            "contract_id": income_contract.id,
+            "partner_id": partner_a.id,
+            "company_id": company_a.id,
+            "currency_id": company_a.currency_id.id,
+            "amount": 30.0,
+            "state": "approved",
+        },
+    )
+    incomplete_partner = _upsert(
+        env,
+        "res.partner",
+        "fe_pfl035_incomplete_partner",
+        [("name", "=", "PFL-035 Incomplete Payee"), ("company_id", "=", company_a.id)],
+        {
+            "name": "PFL-035 Incomplete Payee",
+            "company_id": company_a.id,
+            "is_company": True,
+            "supplier_rank": 1,
+            "sc_account_name": False,
+            "sc_bank_name": False,
+            "sc_bank_account": False,
+        },
+    )
+    incomplete_contract = _upsert(
+        env,
+        "construction.contract",
+        "fe_pfl035_incomplete_contract",
+        [("subject", "=", "PFL-035 Incomplete Account Contract"), ("project_id", "=", project_a.id)],
+        {
+            "subject": "PFL-035 Incomplete Account Contract",
+            "type": "in",
+            "project_id": project_a.id,
+            "partner_id": incomplete_partner.id,
+            "company_id": company_a.id,
+            "tax_id": tax_a.id,
+        },
+    )
+    pfl035_incomplete = _upsert(
+        env,
+        "payment.request",
+        "fe_pfl035_incomplete_request",
+        [("name", "=", "FE-PFL035-INCOMPLETE-001"), ("project_id", "=", project_a.id)],
+        {
+            "name": "FE-PFL035-INCOMPLETE-001",
+            "type": "pay",
+            "business_category_id": _ref(
+                env, "smart_construction_core.business_category_finance_payment_apply_pay"
+            ).id,
+            "project_id": project_a.id,
+            "contract_id": incomplete_contract.id,
+            "partner_id": incomplete_partner.id,
+            "company_id": company_a.id,
+            "currency_id": company_a.currency_id.id,
+            "amount": 20.0,
+            "state": "approved",
+            "payment_account_name": False,
+            "payment_bank_name": False,
+            "payment_account_no": False,
+        },
+    )
     (
         journey_settlement,
         journey_request,
@@ -822,6 +950,8 @@ def ensure_fixture(env) -> Dict[str, Any]:
         "db": env.cr.dbname,
         "users": [
             finance.login,
+            finance_user.login,
+            empty_finance.login,
             project_member.login,
             pm.login,
             contract_operator.login,
@@ -837,7 +967,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "general_contracts": 3,
             "settlements": 3,
             "payment_requests": 4,
-            "payment_executions": 3,
+            "payment_executions": 2,
         },
         "journey": {
             "settlement": journey_settlement.name,
@@ -853,5 +983,11 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "completed_request": completed_request.name,
             "hardening_request": hardening_request.name,
             "core_form_request": core_form_request.name,
+        },
+        "pfl035": {
+            "approved": pfl035_approved.name,
+            "draft": pfl035_draft.name,
+            "receive": pfl035_receive.name,
+            "incomplete": pfl035_incomplete.name,
         },
     }
