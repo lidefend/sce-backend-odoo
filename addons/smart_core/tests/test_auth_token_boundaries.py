@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import importlib.util
+import os
 import sys
 import types
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 class _AccessDenied(Exception):
@@ -125,6 +127,14 @@ class TestAuthTokenBoundaries(unittest.TestCase):
 
         auth = _load_auth(_FakeRequest("default_db", session_db="target_from_session"))
         self.assertEqual(auth._request_db_name(), "target_from_session")
+
+    def test_jwt_secret_is_explicit_and_at_least_32_bytes(self):
+        with patch.dict(os.environ, {"SC_JWT_SECRET": "short", "JWT_SECRET": ""}):
+            with self.assertRaises(_AccessDenied):
+                self.auth._get_secret_key()
+        configured = "x" * 32
+        with patch.dict(os.environ, {"SC_JWT_SECRET": configured, "JWT_SECRET": ""}):
+            self.assertEqual(self.auth._get_secret_key(), configured)
 
 
 if __name__ == "__main__":

@@ -41,3 +41,7 @@ access_sc_user_activation_batch_admin,access.sc.user.activation.batch.admin,mode
 access_sc_user_activation_delivery_audit_admin,access.sc.user.activation.delivery.audit.admin,model_sc_user_activation_delivery_audit,smart_core.group_smart_core_user_activation_admin,1,0,0,0
 access_sc_user_activation_event_admin,access.sc.user.activation.event.admin,model_sc_user_activation_event,smart_core.group_smart_core_user_activation_admin,1,0,0,0
 access_sc_user_activation_throttle_admin,access.sc.user.activation.throttle.admin,model_sc_user_activation_throttle,smart_core.group_smart_core_user_activation_admin,1,0,0,0
+access_sc_auth_credential_policy_user,access.sc.auth.credential.policy.user,model_sc_auth_credential_policy,base.group_user,1,0,0,0
+access_sc_auth_credential_policy_admin,access.sc.auth.credential.policy.admin,model_sc_auth_credential_policy,smart_core.group_smart_core_admin,1,1,1,0
+access_sc_auth_credential_throttle_admin,access.sc.auth.credential.throttle.admin,model_sc_auth_credential_throttle,smart_core.group_smart_core_admin,1,0,0,0
+access_sc_auth_credential_audit_admin,access.sc.auth.credential.audit.admin,model_sc_auth_credential_audit,smart_core.group_smart_core_admin,1,0,0,0

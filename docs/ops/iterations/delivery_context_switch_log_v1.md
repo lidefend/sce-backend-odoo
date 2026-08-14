@@ -4022,3 +4022,37 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   executable env content, SHA/project/volume drift, route overrides, Make
   pre-parse zero side effects, and invalid-operation zero side effects. The
   final authority is a full release workflow on the frozen candidate SHA.
+
+# P0 authentication credential framework (2026-08-14)
+
+- Branch / base SHA: `fix/p0-auth-credential-framework-v1` /
+  `c61b6c4363b9b0c2d6580773898625f1b7d25057`.
+- Formal Product Layer / Layer Target / Module: P0 / authentication and
+  principal orchestration / `smart_core` plus the generic account integration
+  surface.
+- Standard vs User-Specific: standard platform capability only; no customer,
+  construction-domain or business-document behavior is introduced.
+- Reason / Boundary: password-only JWT issuance could not represent long-lived
+  machine integrations without implicitly treating an API key as a password.
+  This topic keeps `res.users` and Odoo `res.users.apikeys` authoritative,
+  adds only policy/audit projections, and makes `password` and `api_key`
+  explicit non-fallback credential types. P4 may inject and redact credentials
+  but does not implement authentication; P1/PFL consume only the resulting
+  principal and existing permission decisions.
+- Security contract: machine keys exchange for 15-minute scoped JWTs; company
+  and scope may only narrow the user's existing authority; native key removal
+  plus credential epoch revokes existing tokens; raw keys and key hashes are
+  absent from policy, audit, logs and evidence; JWT signing has no default and
+  rejects secrets shorter than 32 bytes.
+- Validation scope: native one-time key creation, HTTP create/list/rotate/revoke,
+  explicit password and API-key paths, wrong/revoked/expired keys, inactive
+  users, database and company boundaries, scope non-expansion, rate limiting,
+  audit projection, immediate token invalidation, and denial of credential
+  management from machine sessions. The post-review suite additionally covers
+  all registered handler machine metadata, `chatter.post`, `global.message.send`,
+  `global.message.read`, dynamic `api.data` operations, duplicate native indexes,
+  concurrent creation, expiry projection and single-event expiry audit. The
+  prior focused suite completed `26 tests / 0 failed / 0 errors`; password
+  compatibility completed `4 tests / 0 failed / 0 errors`, and evidence-bundle
+  tests completed `10 tests / 0 failed / 0 errors`. These results must be rerun
+  on the exact frozen candidate SHA before publication.

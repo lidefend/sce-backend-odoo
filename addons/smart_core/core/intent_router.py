@@ -47,7 +47,7 @@ def resolve_handler(intent: str) -> Optional[Type[BaseIntentHandler]]:
     return None
 
 # ---------- 工具：按 db/context 构造 env/su_env ----------
-def _build_envs(params: Dict[str, Any], add_ctx: Dict[str, Any]) -> Tuple[api.Environment, api.Environment, Any]:
+def _build_envs(params: Dict[str, Any], add_ctx: Dict[str, Any], intent: str = "") -> Tuple[api.Environment, api.Environment, Any]:
     """
     返回 (env, su_env, extra_cursor)
     - 如果切换了 DB，会新开 cursor，调用方必须在 finally 里 cr.close()
@@ -56,8 +56,11 @@ def _build_envs(params: Dict[str, Any], add_ctx: Dict[str, Any]) -> Tuple[api.En
     import logging
     _logger = logging.getLogger(__name__)
     
-    target_db = (params or {}).get("db") or (params or {}).get("_login_routing_db") or request.env.cr.dbname
     cur_db = request.env.cr.dbname
+    requested_db = (params or {}).get("db") or (params or {}).get("_login_routing_db")
+    # Machine credentials are bound to the database that routed the HTTP
+    # request. Do not open a registry selected by anonymous payload data.
+    target_db = cur_db if intent == "auth.machine.token" else requested_db or cur_db
     
     # 调试：打印数据库信息
     _logger.debug("[intent_router][debug] _build_envs target_db: %s", target_db)
@@ -103,15 +106,17 @@ def _dispatch(intent: str, params: dict, context: dict):
     
     # 调试：打印参数
     _logger.debug("[intent_router][debug] _dispatch called with intent: %s", intent)
-    _logger.debug("[intent_router][debug] params: %s", params)
-    _logger.debug("[intent_router][debug] params.get('db'): %s", params.get('db'))
+    _logger.debug(
+        "[intent_router][debug] params.keys: %s",
+        ",".join(sorted(str(key) for key in (params or {}))) or "-",
+    )
     
     handler_cls = resolve_handler(intent)
     if not handler_cls:
         return {"ok": False, "error": {"code": 404, "message": f"Unknown intent: {intent}"}}
 
     # 1) 构造 env / su_env（必要时切库）
-    env, su_env, extra_cr = _build_envs(params or {}, context or {})
+    env, su_env, extra_cr = _build_envs(params or {}, context or {}, intent=intent)
     dispatch_succeeded = False
     dispatch_result = None
     try:

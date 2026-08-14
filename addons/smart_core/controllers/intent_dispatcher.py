@@ -62,6 +62,7 @@ INTENT_ALIASES = {
     "app.init": "system.init",
     "system.init": "system.init",
     "auth.login": "login",
+    "auth.machine.token": "auth.machine.token",
 }
 
 API_VERSION = "v1"

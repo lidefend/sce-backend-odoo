@@ -30,6 +30,7 @@ SENSITIVE_PATTERNS = (
     re.compile(rb"-----BEGIN (?:RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----"),
     re.compile(rb"(?i)authorization\s*:\s*bearer\s+[A-Za-z0-9._~+/-]{16,}"),
     re.compile(rb"(?i)(?:postgres|postgresql)://[^/\s:@]+:[^@\s/]+@"),
+    re.compile(rb'''(?i)["']api_key["']\s*:\s*["'][0-9a-f]{40}["']'''),
 )
 SENSITIVE_NAMES = {".env", "storageState.json", "cookies.json"}
 

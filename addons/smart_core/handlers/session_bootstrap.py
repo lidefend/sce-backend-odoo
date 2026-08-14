@@ -4,6 +4,7 @@ import os
 import logging
 from ..core.base_handler import BaseIntentHandler
 from ..security.auth import generate_token
+from ..security.credential_service import principal_for_bootstrap_user
 
 _logger = logging.getLogger(__name__)
 
@@ -66,8 +67,8 @@ class SessionBootstrapHandler(BaseIntentHandler):
             self._audit("user_not_found", ctx, login=login)
             return self.err(404, f"bootstrap user not found: {login}")
 
-        token_version = int(getattr(user, "token_version", 0) or 0)
-        token = generate_token(user.id, token_version=token_version)
+        principal = principal_for_bootstrap_user(user, database=self.env.cr.dbname)
+        token = generate_token(principal=principal)
         self._audit("ok", ctx, login=login, uid=user.id)
         return {
             "ok": True,

@@ -4,18 +4,23 @@ import logging
 import os
 import time
 import uuid
+from datetime import datetime
 from odoo.http import request
 from odoo import http, SUPERUSER_ID, api
 from odoo.exceptions import AccessDenied
 from odoo.modules.registry import Registry
 from odoo.tools import config
 
+AUTH_METHOD_API_KEY = "api_key"
+AUTH_METHOD_BOOTSTRAP_SECRET = "bootstrap_secret"
+AUTH_METHOD_PASSWORD = "password"
+PRINCIPAL_HUMAN = "human"
+
 _logger = logging.getLogger(__name__)
 
-DEFAULT_SECRET_KEY = "odoo-smart-core"
 ALGORITHM = "HS256"
 DEFAULT_EXP_SECONDS = 8 * 60 * 60  # 8h
-_warned_missing_secret = False
+MINIMUM_HMAC_SECRET_BYTES = 32
 
 SOURCE_KIND = "jwt_auth_session_proxy"
 SOURCE_AUTHORITIES = ("res.users", "ir.config_parameter", "http.authorization", "odoo.session")
@@ -35,24 +40,27 @@ def source_authority_contract() -> dict:
 
 
 def _get_secret_key():
-    global _warned_missing_secret
     secret = os.getenv("SC_JWT_SECRET") or os.getenv("JWT_SECRET")
-    env = getattr(request, "env", None)
+    try:
+        env = getattr(request, "env", None)
+    except RuntimeError:
+        env = None
     if not secret and env is not None:
         try:
             secret = env["ir.config_parameter"].sudo().get_param("sc.jwt.secret")
         except Exception:
             secret = None
-    if not secret:
-        if not _warned_missing_secret:
-            _logger.warning("JWT secret not configured; falling back to default secret.")
-            _warned_missing_secret = True
-        secret = DEFAULT_SECRET_KEY
+    if not isinstance(secret, str) or len(secret.encode("utf-8")) < MINIMUM_HMAC_SECRET_BYTES:
+        _logger.error("JWT signing secret is missing or shorter than %s bytes", MINIMUM_HMAC_SECRET_BYTES)
+        raise AccessDenied("JWT 签名密钥未安全配置")
     return secret
 
 
 def get_token_exp_seconds():
-    env = getattr(request, "env", None)
+    try:
+        env = getattr(request, "env", None)
+    except RuntimeError:
+        env = None
     raw = os.getenv("SC_JWT_EXP_SECONDS")
     if not raw and env is not None:
         try:
@@ -67,19 +75,22 @@ def get_token_exp_seconds():
         pass
     return DEFAULT_EXP_SECONDS
 
-def generate_token(user_id, token_version: int | None = None, db: str | None = None):
+def generate_token(
+    *,
+    principal,
+    expires_in: int | None = None,
+):
     now = int(time.time())
-    exp = now + get_token_exp_seconds()
+    exp = now + int(expires_in or get_token_exp_seconds())
+    if principal is None or not callable(getattr(principal, "claims", None)):
+        raise AccessDenied("Token 必须由明确身份上下文签发")
+    principal_claims = principal.claims()
     payload = {
-        "user_id": user_id,
+        **principal_claims,
         "iat": now,
         "exp": exp,
         "jti": uuid.uuid4().hex,
     }
-    if token_version is not None:
-        payload["token_version"] = int(token_version)
-    if db:
-        payload["db"] = str(db).strip()
     return jwt.encode(payload, _get_secret_key(), algorithm=ALGORITHM)
 
 def decode_token(token):
@@ -88,7 +99,11 @@ def decode_token(token):
             token,
             _get_secret_key(),
             algorithms=[ALGORITHM],
-            options={"require": ["exp", "iat", "jti", "token_version"]},
+            options={"require": [
+                "exp", "iat", "jti", "token_version", "user_id", "db",
+                "principal_type", "auth_method", "credential_id", "scope",
+                "company_id", "allowed_company_ids", "role_xmlids", "credential_epoch",
+            ]},
         )
     except jwt.ExpiredSignatureError:
         raise AccessDenied("Token 已过期")
@@ -156,7 +171,90 @@ def _session_user_id(session_uid):
     return user_id
 
 
-def get_user_from_token():
+def _validate_claim_list(payload, key):
+    value = (payload or {}).get(key)
+    if not isinstance(value, list):
+        raise AccessDenied(f"Token {key} 无效")
+    return value
+
+
+def _validated_int_claims(payload, key):
+    try:
+        values = tuple(int(value) for value in _validate_claim_list(payload, key))
+    except (TypeError, ValueError):
+        raise AccessDenied(f"Token {key} 无效")
+    if not values or any(value <= 0 for value in values) or values != tuple(sorted(set(values))):
+        raise AccessDenied(f"Token {key} 无效")
+    return values
+
+
+def _current_role_xmlids(user):
+    mapping = user.groups_id.get_external_id() or {}
+    return tuple(sorted(mapping[group.id] for group in user.groups_id if mapping.get(group.id)))
+
+
+def _validated_token_principal(payload, user, env):
+    auth_method = str(payload.get("auth_method") or "").strip()
+    principal_type = str(payload.get("principal_type") or "").strip()
+    credential_id = str(payload.get("credential_id") or "").strip()
+    scopes = tuple(str(value or "").strip() for value in _validate_claim_list(payload, "scope"))
+    allowed_company_ids = _validated_int_claims(payload, "allowed_company_ids")
+    role_xmlids = tuple(str(value or "").strip() for value in _validate_claim_list(payload, "role_xmlids"))
+    company_id = int(payload.get("company_id") or 0)
+    if (
+        not scopes
+        or not company_id
+        or company_id not in allowed_company_ids
+        or not role_xmlids
+        or role_xmlids != tuple(sorted(set(role_xmlids)))
+    ):
+        raise AccessDenied("Token 身份范围无效")
+    current_companies = set(user.company_ids.ids)
+    if not set(allowed_company_ids).issubset(current_companies):
+        raise AccessDenied("Token 公司范围已失效")
+    if role_xmlids != _current_role_xmlids(user):
+        raise AccessDenied("Token 角色范围已失效")
+    if auth_method == AUTH_METHOD_PASSWORD:
+        if principal_type != PRINCIPAL_HUMAN or credential_id or scopes != ("interactive",):
+            raise AccessDenied("Token 人类会话声明无效")
+    elif auth_method == AUTH_METHOD_API_KEY:
+        if principal_type != "machine" or not credential_id:
+            raise AccessDenied("Token 机器会话声明无效")
+        policy = env["sc.auth.credential.policy"].sudo().search(
+            [("credential_id", "=", credential_id), ("user_id", "=", user.id)],
+            limit=1,
+        )
+        now = datetime.utcnow()
+        if (
+            not policy
+            or policy.state != "active"
+            or int(policy.credential_epoch or 0) != int(payload.get("credential_epoch") or 0)
+            or not policy.native_key_exists()
+            or (policy.expires_at and policy.expires_at <= now)
+            or not set(scopes).issubset(set(policy.scope_values()))
+            or not set(allowed_company_ids).issubset(set(policy.company_ids.ids))
+            or company_id not in policy.company_ids.ids
+        ):
+            raise AccessDenied("Token 机器凭据已失效")
+    elif auth_method == AUTH_METHOD_BOOTSTRAP_SECRET:
+        if principal_type != "machine" or credential_id != "platform_bootstrap_secret" or scopes != ("bootstrap",):
+            raise AccessDenied("Token 引导凭据声明无效")
+    else:
+        raise AccessDenied("Token 认证方式无效")
+    return {
+        "user": user,
+        "payload": payload,
+        "auth_method": auth_method,
+        "principal_type": principal_type,
+        "credential_id": credential_id,
+        "scopes": scopes,
+        "company_id": company_id,
+        "allowed_company_ids": allowed_company_ids,
+        "role_xmlids": role_xmlids,
+    }
+
+
+def get_principal_from_token():
     """
     从请求中提取 Token 并解析用户对象。兼容系统原生登录与自定义 Token 登录。
     """
@@ -189,16 +287,31 @@ def get_user_from_token():
         request_user = request.env["res.users"].sudo().browse(user_id)
         if not request_user.exists():
             raise AccessDenied("Token 中指定的用户不存在")
-        return request_user
+        return _validated_token_principal(payload, request_user, request.env)
 
     elif session_uid:
         user = request.env["res.users"].browse(_session_user_id(session_uid))
         if not user.exists():
             raise AccessDenied("系统 Session 中的用户无效")
-        return user
+        return {
+            "user": user,
+            "payload": {},
+            "auth_method": AUTH_METHOD_PASSWORD,
+            "principal_type": PRINCIPAL_HUMAN,
+            "credential_id": "",
+            "scopes": ("interactive",),
+            "company_id": int(user.company_id.id or 0),
+            "allowed_company_ids": tuple(user.company_ids.ids),
+            "role_xmlids": (),
+        }
 
     else:
         raise AccessDenied("未提供 Token 或未登录 Session")
+
+
+def get_user_from_token():
+    """Backward-compatible user projection of the unified principal."""
+    return get_principal_from_token()["user"]
 
 def authenticate_user(login, password, db: str | None = None):
     """
@@ -221,32 +334,14 @@ def authenticate_user(login, password, db: str | None = None):
     db = db or session_db or query_db or env_db or config_db
     if not db:
         raise AccessDenied("未指定数据库")
-    registry = Registry(db)
-
-    with registry.cursor() as cr:
-        env = api.Environment(cr, SUPERUSER_ID, {})
-        try:
-            # Keep the API on Odoo's authoritative authentication lifecycle so
-            # active-user policy and installed credential extensions cannot be
-            # bypassed by a local password-only implementation.
-            user_id = env["res.users"].authenticate(
-                db,
-                login,
-                password,
-                {"interactive": True},
-            )
-        except AccessDenied:
-            raise AccessDenied("用户名或密码错误")
-
-        if not user_id:
-            raise AccessDenied("用户名或密码错误")
-        user_record = env["res.users"].sudo().browse(int(user_id))
-        if not user_record.exists():
-            raise AccessDenied("用户名或密码错误")
-
-        return {
-            "id": user_record.id,
-            "login": user_record.login,
-            "name": user_record.name,
-            "db": db,
-        }
+    from .credential_service import authenticate_password
+    try:
+        principal = authenticate_password(database=db, login=login, secret=password)
+    except AccessDenied:
+        raise AccessDenied("用户名或密码错误")
+    return {
+        "id": principal.user_id,
+        "login": login,
+        "db": db,
+        "principal": principal,
+    }

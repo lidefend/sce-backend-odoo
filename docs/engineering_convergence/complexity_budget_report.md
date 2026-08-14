@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3785`
+- Scanned files: `3792`
 - Files requiring split plan: `39`
 - Files above warning threshold: `73`
 
@@ -24,7 +24,7 @@ Generated from repository source files. This report is informational during the 
 | 3016 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2542 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 2509 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2437 | Python source | `addons/smart_core/handlers/api_data.py` |
+| 2451 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2421 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2301 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2291 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
@@ -46,9 +46,9 @@ Generated from repository source files. This report is informational during the 
 | 1632 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
+| 1520 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1517 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1512 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1511 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -146,7 +146,7 @@ Generated from repository source files. This report is informational during the 
 | 3016 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2542 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 2509 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2437 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
+| 2451 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2421 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2301 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 2291 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
@@ -169,9 +169,9 @@ Generated from repository source files. This report is informational during the 
 | 1632 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
+| 1520 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1517 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1512 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1511 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1483 | warning | Python source | `scripts/release/release_publication.py` |
 | 1442 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |

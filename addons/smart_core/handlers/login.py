@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import time
+from dataclasses import replace
 from typing import Dict, Any
 
 from odoo import SUPERUSER_ID, api
@@ -225,10 +226,24 @@ class LoginHandler(BaseIntentHandler):
     def handle(self):
         # 1) 取参（支持 db / database / company_id 可选）
         params: Dict[str, Any] = self.params or {}
-        login, login_error = self._text_param(params, "login")
+        credential = params.get("credential")
+        explicit_credential = credential is not None
+        if explicit_credential and not isinstance(credential, dict):
+            return self.err(400, "credential 无效")
+        credential = credential if isinstance(credential, dict) else {}
+        if explicit_credential and credential.get("type") != "password":
+            return self.err(400, "交互登录仅接受 credential.type=password")
+        credential_login = credential.get("login") if explicit_credential else None
+        credential_secret = credential.get("secret") if explicit_credential else None
+        effective_params = {
+            **params,
+            "login": credential_login if credential_login is not None else params.get("login"),
+            "password": credential_secret if explicit_credential else params.get("password"),
+        }
+        login, login_error = self._text_param(effective_params, "login")
         if login_error:
             return login_error
-        password, password_error = self._text_param(params, "password")
+        password, password_error = self._text_param(effective_params, "password")
         if password_error:
             return password_error
         # 可选：db/公司/语言/时区（按需扩展）
@@ -271,16 +286,21 @@ class LoginHandler(BaseIntentHandler):
             _logger.info("Login profile load failed for %s on %s: %s", login, auth_db, e)
             return self.err(401, "用户名或密码错误")
 
-        # 4) 生成访问令牌（JWT/HMAC 等）
-        token_version = int(profile.get("token_version") or 0)
-        token = generate_token(user_id, token_version=token_version, db=auth_db)
-        token_type = "Bearer"
-        expires_at = int(time.time()) + get_token_exp_seconds()
-
         want_company_id, company_error = _resolve_requested_company_id(want_company_id, profile.get("allowed_company_ids") or [])
         if company_error:
             status_code, message = company_error
             return self.err(status_code, message)
+
+        # 4) Sign the explicit password/human principal. Credential type is
+        # never inferred from the secret value and API keys cannot enter here.
+        principal = user_dict.get("principal")
+        if principal is None:
+            return self.err(401, "用户名或密码错误")
+        if want_company_id:
+            principal = replace(principal, company_id=int(want_company_id))
+        token = generate_token(principal=principal)
+        token_type = "Bearer"
+        expires_at = int(time.time()) + get_token_exp_seconds()
 
         user_data = {
             "id": profile["id"],
@@ -316,6 +336,15 @@ class LoginHandler(BaseIntentHandler):
                 "is_internal_user": is_internal_user,
                 "can_switch_company": can_switch_company,
             },
+            "principal": {
+                "type": principal.principal_type,
+                "auth_method": principal.auth_method,
+                "credential_id": principal.credential_id,
+                "scope": list(principal.scopes),
+                "company_id": principal.company_id,
+                "allowed_company_ids": list(principal.allowed_company_ids),
+                "role_xmlids": list(principal.role_xmlids),
+            },
             "bootstrap": {
                 "next_intent": "system.init",
                 "mode": "full",
@@ -330,6 +359,7 @@ class LoginHandler(BaseIntentHandler):
                 "compat_enabled": compat_enabled,
                 "compat_deprecated": True,
                 "compat_sunset_phase": "next_iteration",
+                "credential_input": "explicit" if explicit_credential else "legacy_password_params",
             },
             "login_route": {
                 **route_contract,

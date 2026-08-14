@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="rule_sc_auth_credential_policy_owner" model="ir.rule">
+        <field name="name">Credential policy: own records</field>
+        <field name="model_id" ref="model_sc_auth_credential_policy"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
   <!-- 基础分组：后续可用于 API 访问策略/审计权限控制 -->
   <record id="group_smart_core_user" model="res.groups">
     <field name="name">Smart Core User</field>
@@ -16,6 +26,13 @@
     <field name="name">Smart Core Admin</field>
     <field name="implied_ids" eval="[(4, ref('group_smart_core_user')), (4, ref('group_smart_core_business_config_admin'))]"/>
     <field name="category_id" ref="base.module_category_hidden"/>
+  </record>
+
+  <record id="rule_sc_auth_credential_policy_admin" model="ir.rule">
+    <field name="name">Credential policy: security administration</field>
+    <field name="model_id" ref="model_sc_auth_credential_policy"/>
+    <field name="domain_force">[(1, '=', 1)]</field>
+    <field name="groups" eval="[(4, ref('group_smart_core_admin'))]"/>
   </record>
 
   <!-- Odoo system administrators are the guaranteed recovery authority on a

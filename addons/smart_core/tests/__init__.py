@@ -40,3 +40,4 @@ from . import test_narrow_tenant_payload_importer
 from . import test_localized_display
 from . import test_user_activation
 from . import test_authentication_compatibility
+from . import test_auth_credential_framework

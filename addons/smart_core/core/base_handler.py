@@ -47,6 +47,15 @@ class BaseIntentHandler:
     ETAG_ENABLED: bool = False
     ALIASES = []              # 兼容别名
     REQUIRED_GROUPS = []      # 权限（可选）
+    # Machine callers are denied unless a concrete handler explicitly opts in.
+    # Supported values are read, write, dynamic and deny. Dynamic handlers must
+    # implement machine_access_for(params) from their own authoritative operation
+    # contract; the central scope gate never guesses from intent names.
+    MACHINE_ACCESS = "deny"
+
+    @classmethod
+    def machine_access_for(cls, params=None) -> str:
+        return str(getattr(cls, "MACHINE_ACCESS", "deny") or "deny").strip().lower()
 
     def __init__(
         self,

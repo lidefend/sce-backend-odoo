@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1165`
+- Total assets: `1166`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `169`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `771`
+- PR dedupe candidates: `772`
 
 ## By Layer
 
@@ -21,7 +21,7 @@ Generated from `test_inventory.csv`.
 | unit | 200 |
 | odoo_integration | 100 |
 | e2e | 44 |
-| security | 26 |
+| security | 27 |
 | frontend_acceptance | 24 |
 | gate | 2 |
 | data_migration | 2 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 990 |
+| pr_candidate | 991 |
 | integration_candidate | 124 |
 | release_candidate | 42 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 771 |
+| deduplicate_before_required | 772 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 123 |
 | keep_release_only | 42 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 992 |
+| <5m | 993 |
 | 10-30m | 125 |
 | 30-60m | 44 |
 | unknown | 3 |
@@ -157,7 +157,7 @@ Generated from `test_inventory.csv`.
 | test owner | 201 |
 | backend owner | 100 |
 | qa owner | 44 |
-| security owner | 26 |
+| security owner | 27 |
 | frontend owner | 25 |
 | data owner | 2 |
 
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1037 |
+| scripts/verify | 1038 |
 | scripts/ops | 67 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 12 |
@@ -240,43 +240,43 @@ Generated from `test_inventory.csv`.
 | T-ASSET-128 | governance | `scripts/verify/action_view_responsibility_map_guard.py` | architecture owner |
 | T-ASSET-130 | governance | `scripts/verify/app_config_engine_boundary_guard.py` | architecture owner |
 | T-ASSET-131 | governance | `scripts/verify/application_form_required_marker_audit.py` | architecture owner |
-| T-ASSET-134 | security | `scripts/verify/auth_xpath_guard.sh` | security owner |
-| T-ASSET-135 | unit | `scripts/verify/auto_degrade_smoke_report.py` | test owner |
-| T-ASSET-139 | governance | `scripts/verify/backend_boundary_guard.py` | architecture owner |
-| T-ASSET-140 | governance | `scripts/verify/backend_business_fact_model_audit.py` | architecture owner |
-| T-ASSET-141 | contract | `scripts/verify/backend_contract_boundary_guard.py` | platform owner |
-| T-ASSET-147 | contract | `scripts/verify/backend_contract_lifecycle_authority_guard.py` | platform owner |
-| T-ASSET-148 | contract | `scripts/verify/backend_contract_lifecycle_migration_rehearsal_prepare.py` | platform owner |
-| T-ASSET-149 | contract | `scripts/verify/backend_contract_lifecycle_runtime_probe.py` | platform owner |
-| T-ASSET-152 | governance | `scripts/verify/baseline_freeze_guard.py` | architecture owner |
-| T-ASSET-153 | governance | `scripts/verify/baseline_policy_integrity_guard.py` | architecture owner |
-| T-ASSET-158 | governance | `scripts/verify/branch_governance_consistency_guard.py` | architecture owner |
-| T-ASSET-159 | unit | `scripts/verify/build_norm_engine_acceptance_fixture.py` | test owner |
-| T-ASSET-160 | governance | `scripts/verify/business_action_coverage_audit.py` | architecture owner |
-| T-ASSET-163 | governance | `scripts/verify/business_category_dictionary_audit.py` | architecture owner |
-| T-ASSET-165 | contract | `scripts/verify/business_config_contract_snapshot.py` | platform owner |
-| T-ASSET-166 | unit | `scripts/verify/business_config_form_layout_acceptance.js` | test owner |
-| T-ASSET-167 | governance | `scripts/verify/business_config_guard_inventory.py` | architecture owner |
-| T-ASSET-169 | governance | `scripts/verify/business_config_user_language_guard.py` | architecture owner |
-| T-ASSET-170 | governance | `scripts/verify/business_core_journey_guard.py` | architecture owner |
-| T-ASSET-172 | unit | `scripts/verify/business_document_state_policy_switch_smoke.py` | test owner |
-| T-ASSET-173 | governance | `scripts/verify/business_entry_ownership_guard.py` | architecture owner |
-| T-ASSET-174 | governance | `scripts/verify/business_fact_backfill_audit.py` | architecture owner |
-| T-ASSET-176 | governance | `scripts/verify/business_flow_closure_audit.py` | architecture owner |
-| T-ASSET-177 | governance | `scripts/verify/business_form_historical_logic_coverage_audit.py` | architecture owner |
-| T-ASSET-178 | governance | `scripts/verify/business_form_interaction_capability_audit.py` | architecture owner |
-| T-ASSET-179 | governance | `scripts/verify/business_form_policy_coverage_audit.py` | architecture owner |
-| T-ASSET-180 | governance | `scripts/verify/business_form_policy_field_hit_audit.py` | architecture owner |
-| T-ASSET-183 | unit | `scripts/verify/business_form_user_perspective_acceptance.py` | test owner |
-| T-ASSET-184 | governance | `scripts/verify/business_list_config_boundary_audit.py` | architecture owner |
-| T-ASSET-186 | governance | `scripts/verify/business_shape_assembly_guard.py` | architecture owner |
-| T-ASSET-187 | contract | `scripts/verify/capability_core_health_report_schema_guard.py` | platform owner |
-| T-ASSET-188 | governance | `scripts/verify/capability_dormant_explain_guard.py` | architecture owner |
-| T-ASSET-189 | governance | `scripts/verify/capability_provider_guard.py` | architecture owner |
-| T-ASSET-190 | unit | `scripts/verify/capability_registry_smoke.py` | test owner |
-| T-ASSET-191 | unit | `scripts/verify/capability_smoke.py` | test owner |
-| T-ASSET-194 | governance | `scripts/verify/clean_product_tree_guard.py` | architecture owner |
-| ... | ... | 691 more | ... |
+| T-ASSET-134 | security | `scripts/verify/auth_credential_frontend_guard.py` | security owner |
+| T-ASSET-135 | security | `scripts/verify/auth_xpath_guard.sh` | security owner |
+| T-ASSET-136 | unit | `scripts/verify/auto_degrade_smoke_report.py` | test owner |
+| T-ASSET-140 | governance | `scripts/verify/backend_boundary_guard.py` | architecture owner |
+| T-ASSET-141 | governance | `scripts/verify/backend_business_fact_model_audit.py` | architecture owner |
+| T-ASSET-142 | contract | `scripts/verify/backend_contract_boundary_guard.py` | platform owner |
+| T-ASSET-148 | contract | `scripts/verify/backend_contract_lifecycle_authority_guard.py` | platform owner |
+| T-ASSET-149 | contract | `scripts/verify/backend_contract_lifecycle_migration_rehearsal_prepare.py` | platform owner |
+| T-ASSET-150 | contract | `scripts/verify/backend_contract_lifecycle_runtime_probe.py` | platform owner |
+| T-ASSET-153 | governance | `scripts/verify/baseline_freeze_guard.py` | architecture owner |
+| T-ASSET-154 | governance | `scripts/verify/baseline_policy_integrity_guard.py` | architecture owner |
+| T-ASSET-159 | governance | `scripts/verify/branch_governance_consistency_guard.py` | architecture owner |
+| T-ASSET-160 | unit | `scripts/verify/build_norm_engine_acceptance_fixture.py` | test owner |
+| T-ASSET-161 | governance | `scripts/verify/business_action_coverage_audit.py` | architecture owner |
+| T-ASSET-164 | governance | `scripts/verify/business_category_dictionary_audit.py` | architecture owner |
+| T-ASSET-166 | contract | `scripts/verify/business_config_contract_snapshot.py` | platform owner |
+| T-ASSET-167 | unit | `scripts/verify/business_config_form_layout_acceptance.js` | test owner |
+| T-ASSET-168 | governance | `scripts/verify/business_config_guard_inventory.py` | architecture owner |
+| T-ASSET-170 | governance | `scripts/verify/business_config_user_language_guard.py` | architecture owner |
+| T-ASSET-171 | governance | `scripts/verify/business_core_journey_guard.py` | architecture owner |
+| T-ASSET-173 | unit | `scripts/verify/business_document_state_policy_switch_smoke.py` | test owner |
+| T-ASSET-174 | governance | `scripts/verify/business_entry_ownership_guard.py` | architecture owner |
+| T-ASSET-175 | governance | `scripts/verify/business_fact_backfill_audit.py` | architecture owner |
+| T-ASSET-177 | governance | `scripts/verify/business_flow_closure_audit.py` | architecture owner |
+| T-ASSET-178 | governance | `scripts/verify/business_form_historical_logic_coverage_audit.py` | architecture owner |
+| T-ASSET-179 | governance | `scripts/verify/business_form_interaction_capability_audit.py` | architecture owner |
+| T-ASSET-180 | governance | `scripts/verify/business_form_policy_coverage_audit.py` | architecture owner |
+| T-ASSET-181 | governance | `scripts/verify/business_form_policy_field_hit_audit.py` | architecture owner |
+| T-ASSET-184 | unit | `scripts/verify/business_form_user_perspective_acceptance.py` | test owner |
+| T-ASSET-185 | governance | `scripts/verify/business_list_config_boundary_audit.py` | architecture owner |
+| T-ASSET-187 | governance | `scripts/verify/business_shape_assembly_guard.py` | architecture owner |
+| T-ASSET-188 | contract | `scripts/verify/capability_core_health_report_schema_guard.py` | platform owner |
+| T-ASSET-189 | governance | `scripts/verify/capability_dormant_explain_guard.py` | architecture owner |
+| T-ASSET-190 | governance | `scripts/verify/capability_provider_guard.py` | architecture owner |
+| T-ASSET-191 | unit | `scripts/verify/capability_registry_smoke.py` | test owner |
+| T-ASSET-192 | unit | `scripts/verify/capability_smoke.py` | test owner |
+| ... | ... | 692 more | ... |
 
 ## Dedupe Hotspots
 

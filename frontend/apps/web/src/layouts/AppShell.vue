@@ -253,6 +253,9 @@
                   <dd>{{ currentCompanyLabel }}</dd>
                 </div>
               </dl>
+              <button class="sc-btn sc-btn-sm sc-btn-ghost" type="button" @click="openApiKeyManagement">
+                集成与 API Key
+              </button>
               <button class="sc-btn sc-btn-sm sc-btn-ghost" type="button" @click="logout">
                 退出登录
               </button>
@@ -468,6 +471,7 @@ const routeAllowsEmptyMenu = computed(() => {
   ));
   return route.meta?.adminOnly === true
     || route.path.startsWith('/admin/')
+    || route.name === 'api-key-management'
     || ['my-work', 'scene-my-work'].includes(String(route.name || ''))
     || explicitActionRoute;
 });
@@ -1454,6 +1458,11 @@ function handleSelect(node: NavNode) {
 
 function returnToBusinessSurface() {
   router.push(roleLandingPath.value || '/').catch(() => {});
+}
+
+async function openApiKeyManagement() {
+  await closeRoleContext();
+  router.push('/account/api-keys').catch(() => {});
 }
 
 function resolveActivityPageRoute(page: ActivityPage): string {

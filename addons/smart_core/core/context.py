@@ -1,6 +1,6 @@
 # smart_core/core/context.py
 from odoo.http import request
-from ..security.auth import get_user_from_token
+from ..security.auth import get_principal_from_token
 from odoo.exceptions import AccessDenied
 from .intent_access_policy import is_public_context_intent
 from .request_identity import identity_id
@@ -30,12 +30,13 @@ class RequestContext:
     def source_authority_contract(cls) -> dict:
         return source_authority_contract()
 
-    def __init__(self, env, user, params, request_obj=None):
+    def __init__(self, env, user, params, request_obj=None, principal=None):
         self.env = env
         self.user = user
         self.uid = user.id if user else None
         self.params = params
         self.request = request_obj  # 新增
+        self.principal = principal
 
     @classmethod
     def from_payload(cls, payload, request_obj=None):
@@ -45,15 +46,25 @@ class RequestContext:
 
         if is_public_context_intent(intent_name):
             user = None
+            principal = None
             env = req.env
         else:
-            user = get_user_from_token()
+            principal = get_principal_from_token()
+            user = principal["user"]
             user_id = identity_id(user)
             if not user_id:
                 raise AccessDenied("Token 无效或缺少 user_id")
-            env = req.env(user=user_id)
+            allowed = list(principal.get("allowed_company_ids") or [])
+            company_id = int(principal.get("company_id") or 0)
+            ordered_companies = ([company_id] if company_id else []) + [
+                value for value in allowed if int(value) != company_id
+            ]
+            env = req.env(
+                user=user_id,
+                context={**dict(req.env.context or {}), "allowed_company_ids": ordered_companies},
+            )
 
-        ctx = cls(env, user, params, req)
+        ctx = cls(env, user, params, req, principal=principal)
         try:
             ctx.trace_id = get_trace_id(req.httprequest.headers)
         except Exception:
