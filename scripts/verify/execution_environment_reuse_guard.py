@@ -110,6 +110,7 @@ def verify() -> list[str]:
             ROOT / "scripts/dev/frontend_acceptance_runtime.sh"
         ).read_text(encoding="utf-8"),
         "scripts/dev/frontend_acceptance_db_ensure_entry.sh": (ROOT / "scripts/dev/frontend_acceptance_db_ensure_entry.sh").read_text(encoding="utf-8"),
+        "scripts/dev/frontend_acceptance_operation_entry.sh": (ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh").read_text(encoding="utf-8"),
         "scripts/common/frontend_release_ci_identity.sh": (ROOT / "scripts/common/frontend_release_ci_identity.sh").read_text(encoding="utf-8"),
         "scripts/test/frontend_acceptance_db_ensure.sh": (ROOT / "scripts/test/frontend_acceptance_db_ensure.sh").read_text(encoding="utf-8"),
         "scripts/ci/self_hosted_runner_cleanup.sh": (ROOT / "scripts/ci/self_hosted_runner_cleanup.sh").read_text(encoding="utf-8"),
@@ -135,7 +136,8 @@ def verify() -> list[str]:
             "require_governed_make_ancestor",
         ),
         "scripts/dev/frontend_acceptance_db_ensure_entry.sh": ("SC_GOVERNED_FRONTEND_DB_ENSURE_ENTRY", "require_governed_make_ancestor", "validate_frontend_release_ci_identity", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
-        "scripts/common/frontend_release_ci_identity.sh": ("GITHUB_ACTIONS", "CI_PROJECT_NAME", "RUNNER_TEMP", "CHECKOUT_SHA", "allowed_keys", "unknown or duplicate keys", "compose command override", "route override", "sc_frontend_acceptance", "volume identity mismatch"),
+        "scripts/dev/frontend_acceptance_operation_entry.sh": ("SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY", "require_governed_make_ancestor", "validate_frontend_release_ci_identity", "PortBindings", "com.docker.compose.project", "SC_SOURCE_REVISION", "source or data mount identity mismatch", "REUSED isolated_ci", "RETAINED isolated_ci", "SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1"),
+        "scripts/common/frontend_release_ci_identity.sh": ("GITHUB_ACTIONS", "CI_PROJECT_NAME", "RUNNER_TEMP", "CHECKOUT_SHA", "SC_SOURCE_REVISION", "COMPOSE_FILES", "allowed_keys", "unknown or duplicate keys", "compose command override", "route override", "sc_frontend_acceptance", "volume identity mismatch"),
         "scripts/test/frontend_acceptance_db_ensure.sh": ("SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY", "require_governed_make_ancestor"),
         "scripts/ci/self_hosted_runner_cleanup.sh": ('"sc-prof-${run_id}"', '"sc-fe-release-${run_id}"', "GITHUB_REPOSITORY", 'readlink -f "$root_dir"', "invalid project scope", "invalid workspace scope", "invalid runner temp scope"),
         "scripts/dev/backend_acceptance_up.sh": ("SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY", "require_governed_make_ancestor", "non-canonical port", "non-canonical database"),
@@ -213,13 +215,13 @@ def verify() -> list[str]:
                 if relative != "make/ci.mk" or "SC_GOVERNED_GATE_ENTRY=1" not in line:
                     errors.append(f"ungoverned install/upgrade gate call: {relative}: {line.strip()}")
             if re.search(invocation + r".*frontend_acceptance_runtime\.sh", line):
-                if relative not in {"make/dev.mk", "make/runtime_ops.mk", "scripts/dev/frontend_acceptance_db_ensure_entry.sh"} or "SC_GOVERNED_ACCEPTANCE_ENTRY=1" not in line:
+                if relative not in {"make/dev.mk", "make/runtime_ops.mk", "scripts/dev/frontend_acceptance_db_ensure_entry.sh", "scripts/dev/frontend_acceptance_operation_entry.sh"} or "SC_GOVERNED_ACCEPTANCE_ENTRY=1" not in line:
                     errors.append(f"ungoverned acceptance runtime call: {relative}: {line.strip()}")
             if re.search(r"(?:\b(?:bash|sh)\b|subprocess|Popen|execFile|spawn).*frontend_acceptance_db_ensure\.sh", line):
                 if relative not in {"scripts/dev/frontend_acceptance_runtime.sh", "scripts/dev/frontend_acceptance_db_ensure_entry.sh"} or "SC_GOVERNED_FRONTEND_DB_ENSURE_LOWER_ENTRY=1" not in line:
                     errors.append(f"ungoverned frontend database ensure call: {relative}: {line.strip()}")
             if re.search(invocation + r".*(?:backend|frontend)_acceptance_(?:up|down)\.sh", line):
-                if relative != "scripts/dev/frontend_acceptance_runtime.sh" or "SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1" not in line:
+                if relative not in {"scripts/dev/frontend_acceptance_runtime.sh", "scripts/dev/frontend_acceptance_operation_entry.sh"} or "SC_GOVERNED_ACCEPTANCE_LOWER_ENTRY=1" not in line:
                     errors.append(f"ungoverned lower acceptance call: {relative}: {line.strip()}")
     return errors
 

@@ -7,8 +7,8 @@ validate_frontend_release_ci_identity() {
   local -A allowed_keys seen_keys file_values
   for key in ENV ENV_FILE COMPOSE_PROJECT_NAME DB_USER DB_PASSWORD DB_NAME ADMIN_PASSWD \
     JWT_SECRET SC_BOOTSTRAP_SECRET SC_BOOTSTRAP_LOGIN SCENE_CHANNEL SCENE_USE_PINNED \
-    SCENE_ROLLBACK ODOO_DBFILTER DB_DATA REDIS_DATA ODOO_DATA SC_ENVIRONMENT \
-    SC_ALLOW_DEMO_DATA; do
+    SCENE_ROLLBACK ODOO_DBFILTER ODOO_PORT SC_SOURCE_REVISION DB_DATA REDIS_DATA ODOO_DATA \
+    SC_ENVIRONMENT SC_ALLOW_DEMO_DATA; do
     allowed_keys["$key"]=1
   done
   [[ "${GITHUB_ACTIONS:-}" == "true" && "${CI:-}" == "true" ]] || {
@@ -70,8 +70,8 @@ validate_frontend_release_ci_identity() {
   [[ "${COMPOSE_BIN:-docker compose}" == "docker compose" ]] || {
     echo "DENY: isolated frontend release compose command override" >&2; return 2;
   }
-  for route_variable in SC_CUSTOMER_ADDONS_ROOT COMPOSE_FILE COMPOSE_PROFILES \
-    COMPOSE_ENV_FILES DOCKER_HOST DOCKER_CONTEXT; do
+  for route_variable in SC_CUSTOMER_ADDONS_ROOT COMPOSE_FILE COMPOSE_FILES COMPOSE_FILE_BASE \
+    COMPOSE_TEST_FILES CI_FILES COMPOSE_PROFILES COMPOSE_ENV_FILES DOCKER_HOST DOCKER_CONTEXT; do
     [[ -z "${!route_variable:-}" ]] || {
       echo "DENY: isolated frontend release route override: $route_variable" >&2; return 2;
     }
@@ -80,11 +80,12 @@ validate_frontend_release_ci_identity() {
     echo "DENY: isolated frontend release project alias mismatch" >&2; return 2;
   }
   expected_head="$(git -C "$root" rev-parse HEAD)"
-  [[ "${CHECKOUT_SHA:-}" == "$expected_head" ]] || {
+  [[ "${CHECKOUT_SHA:-}" == "$expected_head" && "${SC_SOURCE_REVISION:-}" == "$expected_head" ]] || {
     echo "DENY: isolated frontend release checkout identity mismatch" >&2; return 2;
   }
   [[ "${DB_NAME:-}" == "sc_frontend_acceptance" \
     && "${ODOO_DBFILTER:-}" == '^sc_frontend_acceptance$' \
+    && "${ODOO_PORT:-}" == "18082" \
     && "${SC_ENVIRONMENT:-}" == "acceptance" \
     && "${SC_ALLOW_DEMO_DATA:-}" == "1" ]] || {
     echo "DENY: isolated frontend release database identity mismatch" >&2; return 2;

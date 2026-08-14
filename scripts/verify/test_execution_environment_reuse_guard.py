@@ -82,6 +82,7 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
             ("scripts/ci/upgrade_gate.sh", (), "direct upgrade_gate.sh execution is forbidden"),
             ("scripts/dev/frontend_acceptance_runtime.sh", ("preflight",), "direct runtime script execution is forbidden"),
             ("scripts/dev/frontend_acceptance_db_ensure_entry.sh", (), "direct entry execution is forbidden"),
+            ("scripts/dev/frontend_acceptance_operation_entry.sh", ("fixture",), "direct operation execution is forbidden"),
             ("scripts/test/frontend_acceptance_db_ensure.sh", (), "direct database ensure execution is forbidden"),
             ("scripts/dev/backend_acceptance_up.sh", (), "direct backend acceptance startup is forbidden"),
             ("scripts/dev/backend_acceptance_down.sh", (), "direct backend acceptance shutdown is forbidden"),
@@ -123,6 +124,13 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
                 result = self.run_script(relative, env=env)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("requires a governed repository Make target", result.stderr)
+        operation_result = self.run_script(
+            "scripts/dev/frontend_acceptance_operation_entry.sh",
+            "fixture",
+            env={"SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY": "1"},
+        )
+        self.assertNotEqual(operation_result.returncode, 0)
+        self.assertIn("requires a governed repository Make target", operation_result.stderr)
 
     def test_isolated_frontend_release_ci_identity_accepts_only_frozen_workflow_topology(self):
         with tempfile.TemporaryDirectory() as runner_temp:
@@ -144,6 +152,10 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
                 "SCENE_USE_PINNED": "0",
                 "SCENE_ROLLBACK": "0",
                 "ODOO_DBFILTER": "^sc_frontend_acceptance$",
+                "ODOO_PORT": "18082",
+                "SC_SOURCE_REVISION": subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=guard.ROOT, text=True
+                ).strip(),
                 "DB_DATA": f"{project}-db-data",
                 "REDIS_DATA": f"{project}-redis-data",
                 "ODOO_DATA": f"{project}-odoo-data",
@@ -220,6 +232,15 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
             )
             self.assertNotEqual(route_override.returncode, 0)
             self.assertIn("compose command override", route_override.stderr)
+            for route_key in ("COMPOSE_FILES", "COMPOSE_FILE_BASE", "COMPOSE_TEST_FILES", "CI_FILES"):
+                with self.subTest(route_key=route_key):
+                    rejected_route = subprocess.run(
+                        ["bash", "-c", command], cwd=guard.ROOT,
+                        env={**os.environ, **base_env, route_key: "-f /tmp/parallel.yml"},
+                        capture_output=True, text=True,
+                    )
+                    self.assertNotEqual(rejected_route.returncode, 0)
+                    self.assertIn(f"route override: {route_key}", rejected_route.stderr)
 
     def test_runner_cleanup_rejects_cross_run_project_before_side_effects(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -309,10 +330,12 @@ class ExecutionEnvironmentReuseGuardTest(unittest.TestCase):
 
     def test_governed_make_paths_expand_without_execution(self):
         cases = (
-            ("backend.acceptance.up", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
-            ("frontend.acceptance.up", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
+            ("backend.acceptance.up", "SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY=1"),
+            ("frontend.acceptance.up", "SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY=1"),
             ("acceptance.module.upgrade", "SC_GOVERNED_ACCEPTANCE_ENTRY=1"),
             ("db.frontend.acceptance.ensure", "SC_GOVERNED_FRONTEND_DB_ENSURE_ENTRY=1"),
+            ("acceptance.frontend.fixture", "SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY=1"),
+            ("acceptance.frontend.release_snapshot", "SC_GOVERNED_FRONTEND_ACCEPTANCE_OPERATION_ENTRY=1"),
             ("test-upgrade-gate", "scripts/ci/upgrade_gate.sh"),
             ("test-install-gate", "SC_GOVERNED_GATE_ENTRY=1"),
         )

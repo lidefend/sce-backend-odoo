@@ -44,6 +44,10 @@ def findings(root: Path = ROOT) -> list[str]:
     errors.extend(f"WORKFLOW_CONTRACT_MISSING:{item}" for item in required_text if item not in text)
     if text.count("printf 'COMPOSE_PROJECT_NAME=%s\\n' \"${CI_PROJECT_NAME}\"") != 2:
         errors.append("ISOLATED_COMPOSE_PROJECT_NOT_EXPORTED")
+    if text.count("printf 'ODOO_PORT=18082\\n'") != 2:
+        errors.append("ISOLATED_BACKEND_PORT_NOT_EXPORTED")
+    if text.count("printf 'SC_SOURCE_REVISION=%s\\n' \"${CHECKOUT_SHA}\"") != 2:
+        errors.append("ISOLATED_SOURCE_REVISION_NOT_EXPORTED")
     forbidden = (
         "continue-on-error:",
         "actions/download-artifact",

@@ -6,12 +6,12 @@ export ROOT_DIR
 
 source "$ROOT_DIR/scripts/common/frontend_acceptance_guard.sh"
 guard_frontend_acceptance_scope
-acquire_frontend_acceptance_lock lifecycle
 
 if [[ -z "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]]; then
   echo "[DENY] frontend acceptance fixture requires SC_ACCEPTANCE_FIXTURE_PASSWORD" >&2
   exit 24
 fi
+acquire_frontend_acceptance_lock lifecycle
 
 source "$ROOT_DIR/scripts/common/env.sh"
 source "$ROOT_DIR/scripts/common/guard_prod.sh"
