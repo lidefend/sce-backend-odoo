@@ -90,8 +90,8 @@ Generated from repository source files. This report is informational during the 
 | 1093 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1092 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1073 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1046 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
-| 999 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 967 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 966 | Python source | `addons/smart_core/handlers/load_contract.py` |
@@ -206,8 +206,8 @@ Generated from repository source files. This report is informational during the 
 | 1093 | warning | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1092 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1073 | warning | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1046 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1005 | warning | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
-| 999 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 990 | warning | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 980 | within_budget | XML data/view | `addons/smart_construction_core/views/support/audit_list_fields_views.xml` |
 | 967 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
