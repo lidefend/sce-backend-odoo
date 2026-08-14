@@ -1556,7 +1556,7 @@ const {
   workflowEvidenceGateRows, contractActions, headerActions, bodyActions, contractFieldLabels,
   contractFieldLabel, activeActivityAction, nativeAttachmentMaxBytes, nativeChatterActions, nativeAttachments,
   nativeCollaborationPanelProps, nativeCollaborationPanelListeners, resolveNativeAttachmentLabel, hasNativeChatterNode, nativeLayoutContainsType,
-  contractActionFromNativeRow, resolveNativeActionState, isUnifiedSubmitMethod, isUnifiedSubmitAction, nativeHeaderSubmitActionForCreate,
+  contractActionFromNativeRow, resolveNativeActionState, isUnifiedSubmitMethod, isUnifiedSubmitAction,
   primarySubmitAction, primaryCreateFooterAction, runNativeLayoutAction, advancedFieldNames, contractVisibleFields,
   coreFieldNames, fieldSemanticMeta, focusFirstValidationError, focusValidationError, hasAdvancedFields,
   nonSceneValidationErrors, policyRequiredFields, reloadLatestRecord, sceneReadyFormSurface, sceneValidationPanel,

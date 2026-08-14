@@ -162,27 +162,10 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     return Boolean(action && isUnifiedSubmitMethod(action.methodName));
   }
 
-  function nativeHeaderSubmitActionForCreate(): ContractAction | null {
-    const nativeFormContract = contract.value?.views?.form as Record<string, unknown> | undefined;
-    const rows = Array.isArray(nativeFormContract?.header_buttons)
-      ? nativeFormContract.header_buttons as Array<Record<string, unknown>>
-      : [];
-    for (const row of rows) {
-      const action = contractActionFromNativeRow(row);
-      if (!isUnifiedSubmitAction(action)) continue;
-      return {
-        ...action,
-        enabled: true,
-        hint: '',
-      };
-    }
-    return null;
-  }
-
   const primarySubmitAction = computed<ContractAction | null>(() => {
     if (isIntakeCreateMode.value) return null;
     if (!model.value) return null;
-    if (!recordId.value) return nativeHeaderSubmitActionForCreate();
+    if (!recordId.value) return null;
     const runtime = parseMaybeJsonRecord(
       v2ContractStore.value?.snapshot.runtimeContract
       || resolveUnifiedPageContractV2(contract.value)?.runtimeContract,
@@ -203,11 +186,8 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     if (isIntakeCreateMode.value) return null;
     if (!model.value || recordId.value) return null;
     if (primarySubmitAction.value) return null;
-    const v2 = resolveUnifiedPageContractV2(contract.value);
     return resolvePrimaryCreateFooterAction({
       actions: contractActions.value,
-      fallbackRules: parseMaybeJsonRecord(v2?.actionContract).actionRuleList,
-      targetModel: model.value,
     });
   });
 
@@ -404,7 +384,6 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     resolveNativeActionState,
     isUnifiedSubmitMethod,
     isUnifiedSubmitAction,
-    nativeHeaderSubmitActionForCreate,
     primarySubmitAction,
     primaryCreateFooterAction,
     runNativeLayoutAction,
