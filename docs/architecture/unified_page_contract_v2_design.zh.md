@@ -1089,6 +1089,13 @@ Batch-A 冻结时必须同时冻结：
 - `runtimeContract.workflowContract` 仅作为兼容镜像，不能成为独立事实源。
 - 覆盖口径按自定义业务工作流表单计算；标准 Odoo 模型例外必须由专项 guard 显式列出。
 
+扩展业务动作的冻结边界：
+
+- `runtimeContract.businessActions` 是行业扩展在 finalizer 阶段提交的归一化输入与溯源载体，不是前端渲染权威。
+- finalizer 完成后、trim 和 runtime seal 之前，必须将其投影至 `actionContract.actionRuleList`，并按 backend identity 执行 fail-closed 合并。
+- 扩展动作必须显式声明 `allowed` 和 `enabled`；任一结论缺失时以 `ACTION_PERMISSION_UNRESOLVED` 拒绝。
+- 交付后的唯一动作渲染权威仍是 `actionContract`；前端不得重新混入 runtime/native/raw 动作。
+
 ## 25. Open Decisions
 
 以下问题必须在 Batch-A 或 Batch-B 前拍板：

@@ -8,6 +8,7 @@ from typing import Any
 
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .source_authority import build_source_authority_contract
+from .unified_page_contract_v2_runtime_actions import normalize_runtime_business_actions
 
 CONTRACT_VERSION = "2.2.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
@@ -2343,8 +2344,9 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                 "presentationAuthority": _text(row.get("presentation_authority"), "native_contract"),
                 "presentationPriority": _positive_int(row.get("presentation_priority"), 100),
                 "sourceTrace": [{
-                    "actionId": action_id,
-                    "sourceWidgetId": source_id,
+                "actionId": action_id,
+                "sourceActionKey": source_key,
+                "sourceWidgetId": source_id,
                     "label": label,
                     "sourceChannel": _text(row.get("source_channel"), "contract_action"),
                     "presentationAuthority": _text(row.get("presentation_authority"), "native_contract"),
@@ -2379,6 +2381,31 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             "disabled": disabled,
             **({"reasonCode": _text(row.get("reason_code"), "ACTION_NOT_ALLOWED")} if disabled else {}),
         })
+
+
+def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]:
+    """Promote extension business actions into the canonical V2 action authority."""
+    runtime = _dict(contract.get("runtimeContract"))
+    business_actions = _list(runtime.get("businessActions"))
+    if not business_actions:
+        return contract
+
+    existing_runtime_keys = {
+        _text(trace.get("sourceActionKey") or trace.get("actionKey"))
+        for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList"))
+        if isinstance(rule, dict)
+        for trace in _list(rule.get("sourceTrace"))
+        if isinstance(trace, dict) and _text(trace.get("sourceChannel")) == "runtime_business_action"
+    }
+    normalized = normalize_runtime_business_actions(
+        business_actions,
+        existing_keys=existing_runtime_keys,
+    )
+
+    if normalized:
+        _append_actions(contract, normalized, source_widget_id="page.header")
+        _merge_action_rules_by_backend_identity(contract)
+    return contract
 
 
 def _action_backend_identity(rule: dict[str, Any]) -> str:
@@ -2486,9 +2513,10 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
     by_identity: dict[str, dict[str, Any]] = {}
     for index, row in enumerate(rows):
         identity = _action_backend_identity(row)
-        trace_row = {
+        synthesized_trace = {
             "actionId": _text(row.get("actionId")),
             "actionKey": _text(row.get("actionKey")),
+            "sourceActionKey": _text(row.get("sourceActionKey") or row.get("actionKey")),
             "sourceWidgetId": _text(row.get("sourceWidgetId")),
             "label": _text(row.get("label")),
             "sequence": index,
@@ -2503,28 +2531,43 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             },
             "permissionConstraints": deepcopy(_dict(row.get("permissionConstraints"))),
         }
-        permission_clause = _action_permission_clause(row)
-        if permission_clause:
+        existing_trace = [
+            {**synthesized_trace, **deepcopy(item)}
+            for item in _list(row.get("sourceTrace"))
+            if isinstance(item, dict)
+        ]
+        trace_rows = existing_trace or [synthesized_trace]
+        existing_permission = _dict(row.get("permissionConstraints"))
+        permission_clauses = [
+            deepcopy(item)
+            for item in _list(existing_permission.get("clauses"))
+            if isinstance(item, dict)
+        ]
+        if not permission_clauses:
+            permission_clause = _action_permission_clause(row)
+            if permission_clause:
+                permission_clauses.append(permission_clause)
+        if permission_clauses:
             row["permissionConstraints"] = {
                 "policy": "all_sources_must_allow",
-                "clauses": [permission_clause],
+                "clauses": permission_clauses,
             }
         if identity not in by_identity:
             row["backendIdentity"] = identity
-            row["sourceTrace"] = [trace_row]
+            row["sourceTrace"] = trace_rows
             by_identity[identity] = row
             merged.append(row)
             continue
         current = by_identity[identity]
-        current.setdefault("sourceTrace", []).append(trace_row)
-        if permission_clause:
+        current.setdefault("sourceTrace", []).extend(trace_rows)
+        if permission_clauses:
             current_permission = _dict(current.get("permissionConstraints"))
             clauses = [
                 deepcopy(item)
                 for item in _list(current_permission.get("clauses"))
                 if isinstance(item, dict)
             ]
-            clauses.append(permission_clause)
+            clauses.extend(permission_clauses)
             current["permissionConstraints"] = {
                 "policy": "all_sources_must_allow",
                 "clauses": clauses,

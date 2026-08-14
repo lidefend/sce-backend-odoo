@@ -12,6 +12,7 @@ from ..core.intent_execution_result import IntentExecutionResult
 from ..core.unified_page_contract_v2_assembler import (
     CONTRACT_VERSION,
     assemble_unified_page_contract_v2,
+    project_runtime_business_actions,
 )
 from ..core.unified_page_contract_v2_client import (
     MOBILE_CLIENT_TYPES,
@@ -720,6 +721,7 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         if isinstance(hook_payload, dict):
             contract_v2 = dict(hook_payload)
+        contract_v2 = project_runtime_business_actions(contract_v2)
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
