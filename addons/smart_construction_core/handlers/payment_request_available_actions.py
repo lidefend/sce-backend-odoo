@@ -119,10 +119,17 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         },
     }
 
-    def _current_user_group_xmlids(self) -> set[str]:
-        groups = self.env.user.groups_id
-        ext = groups.get_external_id() or {}
-        return {str(xmlid).strip() for xmlid in ext.values() if str(xmlid or "").strip()}
+    def _actor_has_capability(self, group_xmlid: str) -> bool:
+        xmlid = str(group_xmlid or "").strip()
+        if not xmlid:
+            return False
+        try:
+            # Odoo's authority includes transitive implied groups.  Directly
+            # enumerating groups_id can lose that capability inheritance and
+            # must not be used as an authorization verdict.
+            return bool(self.env.user.has_group(xmlid))
+        except Exception:
+            return False
 
     def _reason_from_exception(self, exc: Exception) -> str:
         match = re.search(r"\[SC_GUARD:([A-Z0-9_]+)\]", str(exc or ""))
@@ -200,7 +207,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "meta": {"intent": self.INTENT_TYPE, "trace_id": trace_id, "source_authority": self.SOURCE_AUTHORITY},
         }
 
-    def _action_entry(self, record, spec: dict, *, user_group_xmlids: set[str] | None = None) -> dict:
+    def _action_entry(self, record, spec: dict) -> dict:
         state = str(record.state or "")
         action_key = str(spec.get("key") or "")
         method_name = str(spec.get("method") or "")
@@ -242,7 +249,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         required_params = list(spec.get("required_params") or [])
         role_hint = self._ACTION_ROLE_HINTS.get(action_key) or {}
         required_group_xmlid = str(role_hint.get("required_group_xmlid") or "")
-        actor_matches_required_role = bool(required_group_xmlid and required_group_xmlid in (user_group_xmlids or set()))
+        actor_matches_required_role = self._actor_has_capability(required_group_xmlid)
         handoff_required = bool(required_group_xmlid and not actor_matches_required_role)
         return {
             "key": action_key,
@@ -335,8 +342,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         if not in_scope:
             return project_scope_denied_response(scope_meta)
 
-        user_group_xmlids = self._current_user_group_xmlids()
-        actions = [self._action_entry(record, spec, user_group_xmlids=user_group_xmlids) for spec in self._ACTION_SPECS]
+        actions = [self._action_entry(record, spec) for spec in self._ACTION_SPECS]
         primary_action_key = ""
         for item in actions:
             if bool(item.get("allowed")):

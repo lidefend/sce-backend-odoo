@@ -15,6 +15,17 @@ from odoo.addons.smart_core.handlers.reason_codes import (
 
 @tagged("sc_smoke", "payment_request_available_actions_backend")
 class TestPaymentRequestAvailableActionsBackend(TransactionCase):
+    def _create_user(self, login, group_xmlids):
+        groups = [self.env.ref(xmlid).id for xmlid in group_xmlids]
+        return self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": login,
+                "login": login,
+                "email": f"{login}@example.com",
+                "groups_id": [(6, 0, groups)],
+            }
+        )
+
     def _create_payment_request_minimal(self):
         project = self.env["project.project"].create({"name": "Action Matrix Project", "funding_enabled": True})
         partner = self.env["res.partner"].create({"name": "Action Matrix Partner"})
@@ -104,3 +115,18 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         self.assertTrue(bool(submit.get("allowed")))
         reject = next(item for item in actions if item.get("key") == "reject")
         self.assertIn("reason", list(reject.get("required_params") or []))
+
+    def test_finance_manager_inherits_submit_capability(self):
+        payment = self._create_payment_request_minimal()
+        manager = self._create_user(
+            "payment_submit_finance_manager",
+            ["base.group_user", "smart_construction_core.group_sc_role_finance_manager"],
+        )
+        result = PaymentRequestAvailableActionsHandler(
+            self.env(user=manager.id), payload={"id": payment.id}
+        ).handle({"id": payment.id})
+        self.assertTrue(result.get("ok"))
+        submit = next(row for row in (result.get("data") or {}).get("actions", []) if row.get("key") == "submit")
+        self.assertTrue(submit.get("allowed"))
+        self.assertTrue(submit.get("actor_matches_required_role"))
+        self.assertFalse(submit.get("handoff_required"))
