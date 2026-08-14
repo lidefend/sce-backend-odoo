@@ -1,10 +1,7 @@
 import type { ContractAction } from './types';
 
 function isConfigurationAction(action: ContractAction) {
-  const label = String(action.label || '').trim();
-  const key = String(action.key || '').trim().toLowerCase();
-  const source = String(action.sourceWidgetId || '').trim().toLowerCase();
-  return label.includes('设置') || key.includes('setting') || key.includes('config') || source.includes('setting') || source.includes('config');
+  return String(action.intent || '').trim().toLowerCase() === 'ui.local_mode';
 }
 
 export function groupContractHeaderActions(params: {
@@ -20,9 +17,9 @@ export function groupContractHeaderActions(params: {
       .filter((action) => !params.nativeTree
         || action.sourceWidgetId === 'page.header'
         || (action.sourceWidgetId === 'page.root' && action.level === 'header'))
-      .filter((action) => Boolean(action.mutation) || !params.isSubmitAction(action));
+      .filter((action) => Boolean(action.mutation) || !params.isSubmitAction(action) || !action.enabled);
   const configuration = visible
-    .filter((action) => isConfigurationAction(action) && action.enabled)
+    .filter((action) => isConfigurationAction(action))
     .map((action) => action.presentationTier === 'primary' || action.semantic === 'primary_action'
       ? { ...action, presentationTier: 'overflow', semantic: action.semantic === 'primary_action' ? 'secondary_action' : action.semantic }
       : action);

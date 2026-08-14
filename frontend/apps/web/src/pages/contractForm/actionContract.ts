@@ -11,9 +11,9 @@ export function normalizeActionSafety(value: unknown): ContractAction['actionSaf
   if (!classification) return undefined;
   return {
     classification,
-    requiresConfirm: row.requires_confirm === true,
-    confirmMessage: String(row.confirm_message || '').trim(),
-    reasonCode: String(row.reason_code || '').trim(),
+    requiresConfirm: row.requiresConfirm === true || row.requires_confirm === true,
+    confirmMessage: String(row.confirmMessage || row.confirm_message || '').trim(),
+    reasonCode: String(row.reasonCode || row.reason_code || '').trim(),
   };
 }
 

@@ -75,8 +75,18 @@ export function buildContractFormActions(params: {
     };
   };
 
+  const resolvedV2ActionContract = parseMaybeJsonRecord(resolveUnifiedPageContractV2(params.contract)?.actionContract);
+  const embeddedV2ActionRuleList = resolvedV2ActionContract.actionRuleList;
+  const hasV2ActionAuthority = Array.isArray(params.v2ActionRuleList) || Array.isArray(embeddedV2ActionRuleList);
+  const v2ActionRuleList = Array.isArray(params.v2ActionRuleList)
+    ? params.v2ActionRuleList
+    : Array.isArray(embeddedV2ActionRuleList)
+      ? embeddedV2ActionRuleList
+      : [];
   const nativeFormContract = params.contract?.views?.form as Record<string, unknown> | undefined;
-  const { workflowRows, nativeRows } = selectAuthoritativeBusinessActionRows(nativeFormContract, params.workflowActionRows);
+  const { workflowRows, nativeRows } = hasV2ActionAuthority
+    ? { workflowRows: [], nativeRows: [] }
+    : selectAuthoritativeBusinessActionRows(nativeFormContract, params.workflowActionRows);
   const workflowMethods = new Set<string>();
   workflowRows.forEach((row) => {
     const method = String(parseMaybeJsonRecord(row.payload).method || '').trim();
@@ -84,14 +94,13 @@ export function buildContractFormActions(params: {
     workflowActionMethodAliases(String(row.key || '').trim()).forEach((alias) => workflowMethods.add(alias));
   });
   const merged: Array<Record<string, unknown>> = [...workflowRows, ...nativeRows];
-  if (Array.isArray(params.contract?.buttons)) merged.push(...params.contract.buttons as Array<Record<string, unknown>>);
-  if (Array.isArray(params.contract?.toolbar?.header)) merged.push(...params.contract.toolbar.header as Array<Record<string, unknown>>);
-  if (Array.isArray(params.contract?.toolbar?.sidebar)) merged.push(...params.contract.toolbar.sidebar as Array<Record<string, unknown>>);
-  if (Array.isArray(params.contract?.toolbar?.footer)) merged.push(...params.contract.toolbar.footer as Array<Record<string, unknown>>);
-  const v2ActionRuleList = params.v2ActionRuleList?.length
-    ? params.v2ActionRuleList
-    : parseMaybeJsonRecord(resolveUnifiedPageContractV2(params.contract)?.actionContract).actionRuleList;
-  if (Array.isArray(v2ActionRuleList)) {
+  if (!hasV2ActionAuthority) {
+    if (Array.isArray(params.contract?.buttons)) merged.push(...params.contract.buttons as Array<Record<string, unknown>>);
+    if (Array.isArray(params.contract?.toolbar?.header)) merged.push(...params.contract.toolbar.header as Array<Record<string, unknown>>);
+    if (Array.isArray(params.contract?.toolbar?.sidebar)) merged.push(...params.contract.toolbar.sidebar as Array<Record<string, unknown>>);
+    if (Array.isArray(params.contract?.toolbar?.footer)) merged.push(...params.contract.toolbar.footer as Array<Record<string, unknown>>);
+  }
+  if (hasV2ActionAuthority) {
     v2ActionRuleList.forEach((raw) => {
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
       const row = raw as Record<string, unknown>;
@@ -141,15 +150,17 @@ export function buildContractFormActions(params: {
         disabled: row.disabled,
         modifiers: row.modifiers,
         invisible: row.invisible,
-        visible_profiles: Array.isArray(row.visible_profiles)
-          ? row.visible_profiles
+        visible_profiles: Array.isArray(row.visibleProfiles)
+          ? row.visibleProfiles
+          : Array.isArray(row.visible_profiles)
+            ? row.visible_profiles
           : ['create', 'edit', 'readonly'],
         presentation: row.presentation,
-        action_safety: row.action_safety,
+        action_safety: row.actionSafety ?? row.action_safety,
       });
     });
   }
-  merged.push(...params.sceneReadyActions);
+  if (!hasV2ActionAuthority) merged.push(...params.sceneReadyActions);
 
   const dedup = new Set<string>();
   const out: ContractAction[] = [];

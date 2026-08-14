@@ -1265,7 +1265,10 @@ const groupedHeaderActions = computed(() => groupContractHeaderActions({
 }));
 const headerBusinessActionPresentation = computed(() => presentContractHeaderActions({
   direct: groupedHeaderActions.value.direct, overflow: groupedHeaderActions.value.overflow,
-  excludedKeys: new Set(primaryCreateFooterAction.value ? [primaryCreateFooterAction.value.key] : []),
+  excludedKeys: new Set([
+    primaryCreateFooterAction.value?.key,
+    primarySubmitAction.value?.key,
+  ].filter((key): key is string => Boolean(key))),
 }));
 const headerBusinessDirectActions = computed(() => headerBusinessActionPresentation.value.direct);
 const headerBusinessOverflowActions = computed(() => headerBusinessActionPresentation.value.overflow);
@@ -1383,10 +1386,13 @@ const primaryFormActionDisabled = computed(() => {
   if (busy.value) return true;
   if (!canSave.value) return true;
   if (primaryCreateFooterAction.value) return false;
-  if (primarySubmitAction.value) return Boolean(recordId.value) && hasChanges.value;
+  if (primarySubmitAction.value) return !primarySubmitAction.value.enabled || (Boolean(recordId.value) && hasChanges.value);
   return isQuickSubmitDisabled.value;
 });
-const primaryFormActionHint = computed(() => primarySubmitAction.value && recordId.value && hasChanges.value ? '请先保存修改，再提交审批' : '');
+const primaryFormActionHint = computed(() => {
+  if (primarySubmitAction.value && !primarySubmitAction.value.enabled) return primarySubmitAction.value.hint;
+  return primarySubmitAction.value && recordId.value && hasChanges.value ? '请先保存修改，再提交审批' : '';
+});
 const draftSaveDisabled = computed(() => {
   if (busy.value) return true;
   if (!canSave.value) return true;
