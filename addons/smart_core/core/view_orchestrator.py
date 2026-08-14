@@ -101,7 +101,7 @@ class ViewOrchestrator:
                 if normalized_view_type == "form":
                     business_config_form_fields.update(self._config_declared_field_names(config, normalized_view_type, model_name))
                 out = self._apply_business_config_contract(out, config, normalized_view_type, model_name)
-                if out != before:
+                if out != before or declares_form_layout_overlay or declares_semantic_entry_surface:
                     applied_row = {
                         "id": int(config.id),
                         "name": config.name,
@@ -114,8 +114,8 @@ class ViewOrchestrator:
                         if int(row.get("id") or 0) != applied_row["id"]
                     ]
                     applied_contracts.append(applied_row)
-                    form_layout_overlay_applied = form_layout_overlay_applied or declares_form_layout_overlay
-                    semantic_entry_surface_applied = semantic_entry_surface_applied or declares_semantic_entry_surface
+                form_layout_overlay_applied = form_layout_overlay_applied or declares_form_layout_overlay
+                semantic_entry_surface_applied = semantic_entry_surface_applied or declares_semantic_entry_surface
 
         # Compatibility: legacy form field policy remains an orchestration input
         # until low-code writes into ui.business.config.contract directly.
@@ -133,7 +133,7 @@ class ViewOrchestrator:
                 view_id=view_id,
                 excluded_field_names=business_config_form_fields,
             )
-            legacy_policy_applied = out != before
+            legacy_policy_applied = legacy_policy_applied or out != before
 
         tenant_extension_fields = []
         if (
@@ -382,6 +382,7 @@ class ViewOrchestrator:
         return out
 
     def _apply_form_spec(self, contract: dict, spec: dict, model_name: str) -> dict:
+        native_layout = deepcopy(contract.get("layout"))
         self._apply_view_options(contract, spec, scalar_keys=("title",), dict_keys=("defaults", "context", "domain"))
         if isinstance(spec.get("layout"), list):
             contract["layout"] = deepcopy(spec.get("layout") or [])
@@ -394,7 +395,7 @@ class ViewOrchestrator:
                 if self._is_entry_semantic_surface(spec):
                     semantic_layout = self._entry_semantic_surface_layout(effective, spec, fields_meta)
                     native_relation_fields = self._native_relation_field_names(
-                        contract.get("layout"),
+                        native_layout,
                         fields_meta,
                     )
                     semantic_layout = self._prune_layout_fields(
@@ -404,7 +405,7 @@ class ViewOrchestrator:
                     semantic_field_names = self._layout_field_names(semantic_layout)
                     contract["layout"] = self._merge_semantic_surface_with_native_subordinates(
                         semantic_layout,
-                        contract.get("layout"),
+                        native_layout,
                         configured_fields=semantic_field_names,
                         fields_meta=fields_meta,
                     )
@@ -436,17 +437,18 @@ class ViewOrchestrator:
         actions, relations and collaboration.  Unconfigured x2many facts are
         retained in one subordinate relation group.
         """
-        subordinate_types = {"header", "button_box", "notebook", "chatter"}
+        subordinate_types = {"header", "statusbar", "button_box", "notebook", "chatter"}
         preserved: list[dict[str, Any]] = []
         relation_fields: list[dict[str, Any]] = []
         seen_relations: set[str] = set()
 
-        def prune_subordinate(node: dict[str, Any]) -> dict[str, Any] | None:
+        def prune_subordinate(node: dict[str, Any], *, preserve_functional_fields: bool = False) -> dict[str, Any] | None:
             row = deepcopy(node)
             node_type = str(row.get("type") or row.get("kind") or "").strip().lower()
+            preserve_functional_fields = preserve_functional_fields or node_type in {"header", "statusbar", "button_box"}
             if node_type == "field":
                 name = str(row.get("name") or row.get("field") or "").strip()
-                return None if name and name in configured_fields else row
+                return None if name and name in configured_fields and not preserve_functional_fields else row
             child_keys = ("children", "pages", "tabs", "nodes", "items")
             had_children = False
             for key in child_keys:
@@ -458,7 +460,7 @@ class ViewOrchestrator:
                     cleaned
                     for child in children
                     if isinstance(child, dict)
-                    for cleaned in [prune_subordinate(child)]
+                    for cleaned in [prune_subordinate(child, preserve_functional_fields=preserve_functional_fields)]
                     if cleaned is not None
                 ]
             if node_type in {"notebook", "page", "group", "sheet"} and had_children:

@@ -54,7 +54,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       sceneReadyActions,
       v2ButtonStatus,
       workflowActionRows: workflowContractActionRows(),
-      v2ActionRuleList: (v2ContractStore.value?.snapshot.actionContract.actionRuleList || []) as Array<Record<string, unknown>>,
+      v2ActionRuleList: v2ContractStore.value?.snapshot.actionContract.actionRuleList as Array<Record<string, unknown>> | undefined,
       policyContext: policyContext.value,
       evaluateNativeActionVisibility,
       isTierValidationActionHidden,
@@ -178,7 +178,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       ));
       if (wizardAction) return wizardAction;
     }
-    const visibleAction = headerActions.value.find((action) => isUnifiedSubmitAction(action) && action.enabled);
+    const visibleAction = headerActions.value.find((action) => isUnifiedSubmitAction(action));
     return visibleAction || null;
   });
 

@@ -102,6 +102,7 @@ class _Model:
         return {
             "name": {"string": "Name", "type": "char"},
             "email": {"string": "Email", "type": "char"},
+            "state": {"string": "Status", "type": "selection"},
             "line_ids": {"string": "Lines", "type": "one2many"},
         }
 
@@ -247,14 +248,16 @@ class TestViewOrchestrator(unittest.TestCase):
                 "views": {
                     "form": {
                         "composition_mode": "entry_semantic_surface",
+                        "layout": [{"type": "sheet", "children": [{"type": "field", "name": "email"}]}],
                         "sections": [
-                            {"title": "Primary", "sequence": 10, "columns": 2, "fields": ["name"]},
+                            {"title": "Primary", "sequence": 10, "columns": 2, "fields": ["name", "state"]},
                             {"title": "Contact", "sequence": 20, "columns": 2, "fields": ["email"]},
                             {"title": "Relations", "sequence": 30, "fields": ["line_ids"]},
                         ],
                         "fields": [
                             {"name": "email", "label": "Email Alias", "sequence": 20, "group_title": "Contact"},
                             {"name": "name", "label": "Partner Name", "sequence": 10, "group_title": "Primary"},
+                            {"name": "state", "label": "Status", "sequence": 15, "group_title": "Primary"},
                             {"name": "line_ids", "label": "Lines", "sequence": 30, "group_title": "Relations"},
                         ],
                     }
@@ -262,7 +265,10 @@ class TestViewOrchestrator(unittest.TestCase):
             }
         }
         source_layout = [
-            {"type": "header", "children": [{"type": "button", "name": "action_save"}]},
+            {"type": "header", "children": [
+                {"type": "field", "name": "state", "widget": "statusbar"},
+                {"type": "button", "name": "action_save"},
+            ]},
             {
                 "type": "sheet",
                 "children": [
@@ -294,7 +300,7 @@ class TestViewOrchestrator(unittest.TestCase):
         primary_groups = [row for row in result["layout"] if row.get("type") == "group"]
         self.assertEqual([group.get("string") for group in primary_groups], ["Primary", "Contact"])
         self.assertEqual(primary_groups[0].get("columns"), 2)
-        self.assertEqual([field.get("name") for field in primary_groups[0]["children"]], ["name"])
+        self.assertEqual([field.get("name") for field in primary_groups[0]["children"]], ["name", "state"])
         self.assertEqual(primary_groups[0]["children"][0].get("label"), "Partner Name")
         self.assertEqual([field.get("name") for field in primary_groups[1]["children"]], ["email"])
         self.assertNotIn("native_group", str(result["layout"]))
@@ -311,6 +317,8 @@ class TestViewOrchestrator(unittest.TestCase):
             return count
 
         self.assertEqual(field_occurrences(result["layout"], "name"), 1)
+        self.assertEqual(field_occurrences(result["layout"], "state"), 2)
+        self.assertIn("statusbar", str(result["layout"]))
         self.assertEqual(field_occurrences(primary_groups, "line_ids"), 0)
         self.assertEqual(field_occurrences(result["layout"], "line_ids"), 1)
         self.assertIn("line_ids", str(result["layout"]))
@@ -336,6 +344,26 @@ class TestViewOrchestrator(unittest.TestCase):
             second["source_trace"]["view_orchestration"]["form_structure_authority"],
             "entry_semantic_surface",
         )
+        self.assertEqual(
+            second["governance"]["view_orchestration"]["business_config_contracts"][0]["id"],
+            9,
+        )
+
+    def test_prior_legacy_policy_application_survives_later_noop(self):
+        payload = {
+            "view_orchestration": {
+                "views": {"form": {"fields": [{"name": "email", "label": "Email"}]}}
+            }
+        }
+        contract = {
+            "layout": [{"type": "sheet", "children": [{"type": "field", "name": "email"}]}],
+            "governance": {"view_orchestration": {"legacy_field_policy_overlay": True}},
+        }
+
+        result, _calls = self._compose(payload, contract, "form", legacy_policy=True)
+
+        self.assertTrue(result["governance"]["view_orchestration"]["legacy_field_policy_overlay"])
+        self.assertTrue(result["source_trace"]["view_orchestration"]["legacy_field_policy_overlay"])
 
     def test_plain_business_form_contract_does_not_claim_semantic_structure_authority(self):
         payload = {
