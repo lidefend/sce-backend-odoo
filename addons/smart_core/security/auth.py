@@ -225,19 +225,24 @@ def authenticate_user(login, password, db: str | None = None):
 
     with registry.cursor() as cr:
         env = api.Environment(cr, SUPERUSER_ID, {})
-        user_record = env["res.users"].sudo().search([("login", "=", login)], limit=1)
-
-        if not user_record:
-            raise AccessDenied("用户名不存在")
-
-        # ✅ 正确方式：构建含 interactive 的 context
-        context = dict(env.context, interactive=True)
-        user_env = api.Environment(cr, user_record.id, context)
-
         try:
-            user_record.with_env(user_env)._check_credentials(password,user_env)
+            # Keep the API on Odoo's authoritative authentication lifecycle so
+            # active-user policy and installed credential extensions cannot be
+            # bypassed by a local password-only implementation.
+            user_id = env["res.users"].authenticate(
+                db,
+                login,
+                password,
+                {"interactive": True},
+            )
         except AccessDenied:
-            raise AccessDenied("密码错误")
+            raise AccessDenied("用户名或密码错误")
+
+        if not user_id:
+            raise AccessDenied("用户名或密码错误")
+        user_record = env["res.users"].sudo().browse(int(user_id))
+        if not user_record.exists():
+            raise AccessDenied("用户名或密码错误")
 
         return {
             "id": user_record.id,
