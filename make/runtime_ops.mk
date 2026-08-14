@@ -1736,10 +1736,10 @@ mod.upgrade: guard.codex.fast.upgrade guard.prod.danger check-compose-project ch
 	@$(RUN_ENV) bash scripts/mod/upgrade.sh
 
 acceptance.module.upgrade: guard.codex.fast.upgrade guard.prod.danger
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" MODULE="$(MODULE)" ODOO_ARGS="$(ODOO_ARGS)" bash scripts/dev/frontend_acceptance_runtime.sh module-upgrade
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" MODULE="$(MODULE)" ODOO_ARGS="$(ODOO_ARGS)" bash scripts/dev/frontend_acceptance_operation_entry.sh module-upgrade
 
 acceptance.baseline.upgrade: guard.codex.fast.upgrade guard.prod.danger
-	@SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" ODOO_ARGS="$(ODOO_ARGS)" bash scripts/dev/frontend_acceptance_runtime.sh baseline-upgrade
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" ODOO_ARGS="$(ODOO_ARGS)" bash scripts/dev/frontend_acceptance_operation_entry.sh baseline-upgrade
 
 # ======================================================
 # ==================== Policy Ops ======================

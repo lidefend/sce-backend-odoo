@@ -3,6 +3,10 @@ set -euo pipefail
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 export ROOT_DIR
+[[ "${SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY:-}" == "operation_entry_v1" ]] || {
+  echo "[acceptance.runtime] DENY use a governed frontend acceptance Make target" >&2
+  exit 2
+}
 PROFILE="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}"
 PROFILE_RESOLVER="$ROOT_DIR/scripts/dev/frontend_acceptance_runtime_profile.py"
 

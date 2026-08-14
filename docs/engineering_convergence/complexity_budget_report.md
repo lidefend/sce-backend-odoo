@@ -127,7 +127,7 @@ Generated from repository source files. This report is informational during the 
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 313 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
-| 289 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 293 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
 
 ## Largest Files

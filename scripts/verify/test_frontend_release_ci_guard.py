@@ -24,6 +24,7 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         shutil.copy(ROOT / "config/ci/frontend_release_gate_v1.json", root / "config/ci/")
         shutil.copy(ROOT / "make/runtime_ops.mk", root / "make/")
         shutil.copy(ROOT / "make/dev.mk", root / "make/")
+        shutil.copy(ROOT / "make/frontend.mk", root / "make/")
         shutil.copy(ROOT / "Makefile", root / "Makefile")
         shutil.copy(ROOT / "docker-compose.yml", root / "docker-compose.yml")
         shutil.copy(ROOT / "scripts/common/frontend_release_ci_identity.sh", root / "scripts/common/")
@@ -124,6 +125,18 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         marker = '    verify_frozen_frontend_release_ci_identity "$root_dir"\n'
         cleanup.write_text(text.replace(marker, "", 1), encoding="utf-8")
         self.assertIn("CI_CLEANUP_NOT_BOUND_TO_FROZEN_IDENTITY", findings(root))
+
+    def test_make_targets_cannot_call_local_runtime_directly(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        frontend_make = root / "make/frontend.mk"
+        frontend_make.write_text(
+            frontend_make.read_text(encoding="utf-8")
+            + "\nforbidden.runtime.bypass:\n"
+            + "\t@bash scripts/dev/frontend_acceptance_runtime.sh db-ensure\n",
+            encoding="utf-8",
+        )
+        self.assertIn("FRONTEND_ACCEPTANCE_RUNTIME_DIRECT_MAKE_BYPASS", findings(root))
 
 
 if __name__ == "__main__":

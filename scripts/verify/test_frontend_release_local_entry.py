@@ -26,7 +26,7 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         block = source.split("verify.frontend.release.local:", 1)[1].split("\n\n", 1)[0]
         self.assertIn("fe.install.cached", block)
         self.assertLess(block.index("release-preflight"), block.index("fe.install.cached"))
-        self.assertIn("frontend_acceptance_runtime.sh release-audit", block)
+        self.assertIn("frontend_acceptance_operation_entry.sh release-audit", block)
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
             encoding="utf-8"
         )
@@ -37,6 +37,49 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         release_preflight = runtime.split("release-preflight)", 1)[1].split(";;", 1)[0]
         self.assertIn("frontend lifecycle is active owner=", release_preflight)
         self.assertIn("untracked frontend listener", release_preflight)
+
+    def test_direct_runtime_is_denied_before_any_mutator(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            marker = root / "docker-called"
+            fake_docker = root / "docker"
+            fake_docker.write_text(
+                f"#!/bin/sh\ntouch '{marker}'\nexit 0\n", encoding="utf-8"
+            )
+            fake_docker.chmod(0o755)
+            environment = dict(os.environ)
+            environment.pop("SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY", None)
+            environment["PATH"] = f"{root}:{environment['PATH']}"
+            result = subprocess.run(
+                ["bash", str(ROOT / "scripts/dev/frontend_acceptance_runtime.sh"), "db-ensure"],
+                cwd=ROOT,
+                env=environment,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("governed frontend acceptance Make target", result.stderr)
+            self.assertFalse(marker.exists())
+
+    def test_empty_fixture_password_is_denied_before_lock_side_effect(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            isolated_root = Path(temporary)
+            environment = dict(os.environ)
+            environment.update(
+                {
+                    "ROOT_DIR": str(isolated_root),
+                    "SC_ACCEPTANCE_FIXTURE_PASSWORD": "",
+                }
+            )
+            result = subprocess.run(
+                ["bash", str(ROOT / "scripts/test/frontend_productization_fixture.sh")],
+                cwd=ROOT,
+                env=environment,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 24)
+            self.assertFalse((isolated_root / ".runtime").exists())
 
     def test_nested_database_make_calls_keep_managed_project_identity(self) -> None:
         source = (ROOT / "scripts/test/frontend_acceptance_db_ensure.sh").read_text(
@@ -107,6 +150,10 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         db_ensure = operation.split("  db-ensure)", 1)[1].split("    ;;", 1)[0]
         install = db_ensure.index("frontend_acceptance_db_ensure.sh")
+        pre_restart_identity = db_ensure.index(
+            'validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required',
+            install,
+        )
         restart = db_ensure.index("compose_dev restart odoo")
         healthy = db_ensure.index("compose_dev up -d --wait odoo", restart)
         final_identity = db_ensure.index(
@@ -114,6 +161,8 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             healthy,
         )
         self.assertLess(install, restart)
+        self.assertLess(install, pre_restart_identity)
+        self.assertLess(pre_restart_identity, restart)
         self.assertLess(restart, healthy)
         self.assertLess(healthy, final_identity)
 

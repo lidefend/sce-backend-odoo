@@ -104,6 +104,12 @@ def findings(root: Path = ROOT) -> list[str]:
     for target in ("db.frontend.acceptance.ensure", "acceptance.frontend.fixture", "acceptance.frontend.release_snapshot"):
         if target not in runtime_text or "frontend_acceptance_operation_entry.sh" not in runtime_text:
             errors.append(f"CI_MAKE_ROUTE_MISSING:{target}")
+    make_sources = [makefile_text, dev_make_text, runtime_text]
+    frontend_make = root / "make/frontend.mk"
+    if frontend_make.exists():
+        make_sources.append(frontend_make.read_text(encoding="utf-8"))
+    if any("bash scripts/dev/frontend_acceptance_runtime.sh" in source for source in make_sources):
+        errors.append("FRONTEND_ACCEPTANCE_RUNTIME_DIRECT_MAKE_BYPASS")
     identity_required = (
         "! -L \"$path\"",
         "stat -c '%u'",

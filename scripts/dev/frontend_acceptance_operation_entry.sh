@@ -7,6 +7,7 @@ export ROOT_DIR
 operation="${1:?acceptance operation required}"
 
 if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
+  export SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY=operation_entry_v1
   SC_ACCEPTANCE_RUNTIME_PROFILE="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" \
     bash "$ROOT_DIR/scripts/dev/frontend_acceptance_runtime.sh" "$operation"
   exit $?
@@ -119,6 +120,7 @@ case "$operation" in
     compose_dev up -d --wait db redis odoo
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     bash "$ROOT_DIR/scripts/test/frontend_acceptance_db_ensure.sh"
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     # Module installation runs in a disposable Odoo process. Recycle the
     # already-running HTTP carrier so its registry reflects the installed
     # modules before any fixture or login request can reach it.

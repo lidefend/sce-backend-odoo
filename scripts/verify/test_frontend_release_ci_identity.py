@@ -216,7 +216,7 @@ class FrontendReleaseCIIdentityTests(unittest.TestCase):
         capture = Path(self.temp.name) / "local-delegation"
         fake_bash = bin_dir / "bash"
         fake_bash.write_text(
-            f"#!/bin/sh\nprintf '%s|%s|%s' \"$SC_ACCEPTANCE_RUNTIME_PROFILE\" \"$1\" \"$2\" > '{capture}'\n",
+            f"#!/bin/sh\nprintf '%s|%s|%s|%s' \"$SC_ACCEPTANCE_RUNTIME_PROFILE\" \"$SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY\" \"$1\" \"$2\" > '{capture}'\n",
             encoding="utf-8",
         )
         fake_bash.chmod(0o755)
@@ -236,8 +236,59 @@ class FrontendReleaseCIIdentityTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             capture.read_text(encoding="utf-8"),
-            f"local|{ROOT / 'scripts/dev/frontend_acceptance_runtime.sh'}|fixture",
+            f"local|operation_entry_v1|{ROOT / 'scripts/dev/frontend_acceptance_runtime.sh'}|fixture",
         )
+
+    def test_install_drift_is_rejected_before_odoo_restart(self) -> None:
+        root = Path(self.temp.name) / "mock-root"
+        (root / "scripts/common").mkdir(parents=True)
+        (root / "scripts/test").mkdir(parents=True)
+        identity = root / "scripts/common/frontend_release_ci_identity.sh"
+        calls = Path(self.temp.name) / "resource-validations"
+        compose_calls = Path(self.temp.name) / "compose-calls"
+        identity.write_text(
+            """verify_frozen_frontend_release_ci_identity() { :; }
+validate_frozen_frontend_release_ci_resources() {
+  count=0
+  [[ -f \"$VALIDATION_CALLS\" ]] && count=$(cat \"$VALIDATION_CALLS\")
+  count=$((count + 1)); printf '%s' \"$count\" > \"$VALIDATION_CALLS\"
+  if [[ \"$2\" == required && \"$count\" -eq 3 ]]; then
+    echo 'DENY: simulated post-install identity drift' >&2
+    return 2
+  fi
+}
+""",
+            encoding="utf-8",
+        )
+        (root / "scripts/common/compose.sh").write_text(
+            "compose_dev() { printf '%s\\n' \"$*\" >> \"$COMPOSE_CALLS\"; }\n",
+            encoding="utf-8",
+        )
+        (root / "scripts/test/frontend_acceptance_db_ensure.sh").write_text(
+            "#!/bin/sh\nexit 0\n", encoding="utf-8"
+        )
+        result = subprocess.run(
+            ["bash", str(ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh"), "db-ensure"],
+            cwd=ROOT,
+            env={
+                **os.environ,
+                "ROOT_DIR": str(root),
+                "SC_FRONTEND_RELEASE_CI_ENTRY": "1",
+                "GITHUB_ACTIONS": "true",
+                "RUNNER_TEMP": str(self.runner_temp),
+                "GITHUB_RUN_ID": self.run_id,
+                "GITHUB_RUN_ATTEMPT": self.run_attempt,
+                "VALIDATION_CALLS": str(calls),
+                "COMPOSE_CALLS": str(compose_calls),
+            },
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("post-install identity drift", result.stderr)
+        recorded = compose_calls.read_text(encoding="utf-8")
+        self.assertIn("up -d --wait db redis odoo", recorded)
+        self.assertNotIn("restart", recorded)
 
     def test_ci_frontend_lifecycle_is_bound_to_frozen_run_process_identity(self) -> None:
         source = (ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh").read_text(
