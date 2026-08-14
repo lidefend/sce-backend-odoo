@@ -113,10 +113,6 @@ class TestPaymentRequestWorkItemService(TransactionCase):
             params={},
             context={},
         )
-        if user == self.finance:
-            service._group_xmlids.add("smart_construction_core.group_sc_role_finance_manager")
-        if user == self.executive:
-            service._group_xmlids.add("smart_construction_core.group_sc_role_executive")
         return service.build()
 
     def test_finance_sees_submit_and_own_items_with_matching_counts(self):
