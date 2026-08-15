@@ -22,6 +22,15 @@
 - `FinalMenuNavigationService`、菜单配置工作台和任何兼容 API 均不得静默回退原生菜单树。
 - 前端不得决定业务页面是否发布、分组或授权，只能消费最终导航和路由权限契约。
 
+## 动作响应的目标边界
+
+- 后端对象动作返回的 `entry_target`、Action、模型、菜单、domain 和 context 是下一页面的唯一导航权威。
+- 同模型动作可以继承当前页面的业务分类、筛选、分组和分页上下文；跨模型动作必须清除这些来源页面状态，只允许保留与业务无关的 shell 诊断状态。
+- 跨模型目标必须以 `record_entry.model` 或 `compatibility_refs.model` 判定；目标模型缺失时不得由标签、URL 文字或业务关键词猜测。
+- 后端目标 Action 或目标 route 显式给出的 query 必须覆盖继承值。前端不得让来源页面的 `menu_id`、`action_id`、业务分类标签或列表状态反向覆盖目标事实。
+- ContractForm 与 ActionView 必须消费同一套跨模型继承规则；禁止各页面自行拼接一套 query 语义。
+- 目标 `context_raw` 是后端提供的 opaque contract。前端只负责传递，不解析 Python literal，也不从中推断新的业务权限或展示事实。
+
 ## 当前锁定基线
 
 - `construction.standard`：163 个正式页面。

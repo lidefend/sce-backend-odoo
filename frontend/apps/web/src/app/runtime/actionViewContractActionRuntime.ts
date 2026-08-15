@@ -1,4 +1,5 @@
 import { buildEntryTargetRouteTarget } from '../routeQuery';
+import { contractActionCarryQuery, entryTargetMenuId, entryTargetModel } from '../navigationContext';
 import type { UnifiedPageContractV2ButtonStatus } from '../contracts/unifiedPageContractV2';
 
 export type ContractActionSelection = 'none' | 'single' | 'multi';
@@ -163,6 +164,7 @@ export function buildContractActionRouteTarget(options: {
   nextActionId?: number | null;
   entryTarget?: Record<string, unknown> | null;
   carryQuery: Record<string, unknown>;
+  currentModel?: string;
   responseQuery?: Record<string, unknown> | null;
   menuId: number;
   keepSceneRoute: boolean;
@@ -180,16 +182,24 @@ export function buildContractActionRouteTarget(options: {
   const sceneKey = String(entryTarget?.scene_key || '').trim();
   const entryTargetActionId = resolveEntryTargetActionId(entryTarget);
   const nextActionId = toPositiveInt(options.nextActionId) || entryTargetActionId;
+  const targetModel = entryTargetModel(entryTarget);
+  const currentModel = String(options.currentModel || '').trim();
+  const crossesModelBoundary = Boolean(currentModel && targetModel && currentModel !== targetModel);
+  const targetMenuId = entryTargetMenuId(entryTarget);
+  const routeMenuId = targetMenuId || (crossesModelBoundary ? 0 : options.menuId);
   const query = {
-    ...options.carryQuery,
+    ...contractActionCarryQuery(options.carryQuery, {
+      currentModel,
+      targetModel,
+    }),
     ...(options.responseQuery || {}),
-    menu_id: options.menuId || undefined,
+    menu_id: routeMenuId || undefined,
     action_id: nextActionId || undefined,
   };
   if (entryTargetType && (sceneKey || entryTargetType === 'compatibility')) {
     return buildEntryTargetRouteTarget(entryTarget, {
       query,
-      menuId: options.menuId,
+      menuId: routeMenuId || undefined,
       actionId: nextActionId,
       keepSceneRoute: options.keepSceneRoute,
       routePath: options.routePath,

@@ -20,6 +20,7 @@ export const CONTRACT_NAV_QUERY_KEYS = [
   'view_mode',
   'list_offset',
   'ctx_source',
+  'entry_context',
   'group_by_cleared',
   'product_domain',
   'entry_intent',
@@ -47,6 +48,45 @@ export const BUSINESS_ENTRY_NAV_QUERY_KEYS = [
   'current_business_category_label',
   'default_business_category_label',
 ] as const;
+
+const CROSS_MODEL_SHELL_QUERY_KEYS = ['hud'] as const;
+
+function navRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+export function entryTargetModel(entryTarget: unknown): string {
+  const target = navRecord(entryTarget);
+  const recordEntry = navRecord(target.record_entry);
+  const refs = navRecord(target.compatibility_refs);
+  return String(recordEntry.model || refs.model || '').trim();
+}
+
+export function entryTargetMenuId(entryTarget: unknown): number {
+  const target = navRecord(entryTarget);
+  const recordEntry = navRecord(target.record_entry);
+  const refs = navRecord(target.compatibility_refs);
+  const parsed = Number(recordEntry.menu_id || refs.menu_id || 0);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : 0;
+}
+
+export function contractActionCarryQuery(
+  currentQuery: Record<string, unknown>,
+  options: { currentModel?: unknown; targetModel?: unknown } = {},
+) {
+  const currentModel = String(options.currentModel || '').trim();
+  const targetModel = String(options.targetModel || '').trim();
+  if (!currentModel || !targetModel || currentModel === targetModel) {
+    return pickContractNavQuery(currentQuery);
+  }
+  const shellQuery: Record<string, unknown> = {};
+  CROSS_MODEL_SHELL_QUERY_KEYS.forEach((key) => {
+    if (currentQuery[key] !== undefined) shellQuery[key] = currentQuery[key];
+  });
+  return pickContractNavQuery(shellQuery);
+}
 
 export function pickContractNavQuery(
   source: Record<string, unknown>,
