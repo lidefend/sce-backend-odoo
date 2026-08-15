@@ -7,7 +7,7 @@ from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 
 user = env["res.users"].sudo().search([("login", "=", "fixture_role_finance")], limit=1)
 request = env.ref("smart_construction_acceptance_fixture.fe_journey_payment_request_a")
-menu = env.ref("smart_construction_core.menu_sc_user_payment_apply_acceptance")
+menu = env.ref("smart_construction_core.menu_sc_user_payment_apply")
 finance_env = env(user=user.id, context={**env.context, "allowed_company_ids": user.company_ids.ids})
 params = {
     "op": "action_open",
@@ -61,7 +61,7 @@ assert create_payment.get("level") == "header"
 assert create_payment.get("source_widget_id") == "page.header"
 assert (create_payment.get("presentation") or {}).get("tier") == "secondary"
 assert create_payment.get("target") == "self"
-assert create_payment.get("visible_profiles") == ["readonly"]
+assert create_payment.get("visible_profiles") == ["edit", "readonly"]
 assert create_payment.get("allowed") is True and create_payment.get("enabled") is True
 assert create_payment.get("disabled") is False
 assert str(create_payment.get("url") or "").startswith("/f/payment.request/new?")

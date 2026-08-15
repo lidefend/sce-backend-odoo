@@ -52,7 +52,7 @@
         "smart_construction_core.menu_sc_tax_deduction_registration_user|smart_construction_core.action_sc_tax_deduction_registration_user|sc.tax.deduction.registration",
         "smart_construction_core.menu_sc_treasury_reconciliation|smart_construction_core.action_sc_treasury_reconciliation|sc.treasury.reconciliation",
         "smart_construction_core.menu_sc_user_income|smart_construction_core.action_sc_receipt_income_user_income|sc.receipt.income",
-        "smart_construction_core.menu_sc_user_payment_apply_acceptance|smart_construction_core.action_payment_request_user_payment_apply|payment.request"
+        "smart_construction_core.menu_sc_user_payment_apply|smart_construction_core.action_payment_request_user_payment_apply|payment.request"
       ],
       "browser_expected_count": 13,
       "browser_leaf_keys": [
@@ -68,7 +68,7 @@
         "smart_construction_core.menu_sc_tax_certificate_registration_user|smart_construction_core.action_sc_tax_certificate_registration_user|sc.tax.certificate.registration",
         "smart_construction_core.menu_sc_tax_deduction_registration_user|smart_construction_core.action_sc_tax_deduction_registration_user|sc.tax.deduction.registration",
         "smart_construction_core.menu_sc_user_income|smart_construction_core.action_sc_receipt_income_user_income|sc.receipt.income",
-        "smart_construction_core.menu_sc_user_payment_apply_acceptance|smart_construction_core.action_payment_request_user_payment_apply|payment.request"
+        "smart_construction_core.menu_sc_user_payment_apply|smart_construction_core.action_payment_request_user_payment_apply|payment.request"
       ]
     },
     "owner": {

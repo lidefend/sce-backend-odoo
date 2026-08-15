@@ -7,10 +7,14 @@
             <field name="arch" type="xml">
                 <search string="支付台账">
                     <field name="payment_request_id"/>
+                    <field name="payment_execution_id"/>
                     <field name="project_id"/>
                     <field name="operation_strategy"/>
                     <field name="partner_id"/>
                     <field name="ref"/>
+                    <field name="state"/>
+                    <filter string="有效台账" name="state_posted" domain="[('state', '=', 'posted')]"/>
+                    <filter string="已冲销" name="state_reversed" domain="[('state', '=', 'reversed')]"/>
                     <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
                     <filter string="公司直营" name="operation_direct" domain="[('operation_strategy', '=', 'direct')]"/>
                     <filter string="联营项目" name="operation_joint" domain="[('operation_strategy', '=', 'joint')]"/>
@@ -40,10 +44,12 @@
             <field name="arch" type="xml">
                 <tree string="支付台账" create="false" edit="false" delete="false">
                     <field name="payment_request_id"/>
+                    <field name="payment_execution_id"/>
                     <field name="project_id"/>
                     <field name="operation_strategy"/>
                     <field name="partner_id"/>
                     <field name="amount"/>
+                    <field name="state" widget="badge"/>
                     <field name="fund_plan_allocated_amount"/>
                     <field name="fund_plan_unallocated_amount"/>
                     <field name="currency_id" invisible="1"/>
@@ -62,12 +68,14 @@
                         <group>
                             <group>
                                 <field name="payment_request_id"/>
+                                <field name="payment_execution_id" readonly="1"/>
                                 <field name="project_id" readonly="1"/>
                                 <field name="operation_strategy" readonly="1"/>
                                 <field name="partner_id" readonly="1"/>
                             </group>
                             <group>
                                 <field name="amount"/>
+                                <field name="state" widget="badge"/>
                                 <field name="fund_plan_allocated_amount" readonly="1"/>
                                 <field name="fund_plan_unallocated_amount" readonly="1"/>
                                 <field name="currency_id" readonly="1" invisible="1"/>
@@ -77,6 +85,12 @@
                         </group>
                         <group>
                             <field name="note"/>
+                        </group>
+                        <group string="冲销追溯" invisible="state != 'reversed'">
+                            <field name="reversed_at" readonly="1"/>
+                            <field name="reversed_by_id" readonly="1"/>
+                            <field name="reversal_execution_id" readonly="1"/>
+                            <field name="reversal_reason" readonly="1"/>
                         </group>
                     </sheet>
                 </form>

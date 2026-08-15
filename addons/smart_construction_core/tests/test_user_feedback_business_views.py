@@ -2307,7 +2307,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                     menu.get("menu_xmlid")
                     or menu.get("page_key")
                     or menu.get("menu_key")
-                ) == "smart_construction_core.menu_sc_user_payment_apply_acceptance"
+                ) == "smart_construction_core.menu_sc_user_payment_apply"
             )
             self.assertEqual(payment_request_menu.get("integration_target"), "payment.request 收付款申请")
 
@@ -2391,7 +2391,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             "smart_construction_core.menu_sc_labor_usage_acceptance": "智慧施工管理平台 / 物资与分包 / 劳务管理 / 方单",
             "smart_construction_core.menu_sc_material_outbound": "智慧施工管理平台 / 物资与分包 / 材料管理 / 出库单",
             "smart_construction_core.menu_sc_user_income": "智慧施工管理平台 / 财务中心 / 收款管理 / 收入",
-            "smart_construction_core.menu_sc_user_payment_apply_acceptance": "智慧施工管理平台 / 财务中心 / 付款管理 / 支付申请",
+            "smart_construction_core.menu_sc_user_payment_apply": "智慧施工管理平台 / 财务中心 / 付款申请",
             "smart_construction_core.menu_sc_contractor_project_borrow": "智慧施工管理平台 / 财务中心 / 借还款 / 承包人借项目款",
             "smart_construction_core.menu_sc_fund_account_between_user": "智慧施工管理平台 / 财务中心 / 账户资金 / 账户间资金往来",
             "smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance": "智慧施工管理平台 / 组织行政 / 油卡管理 / 油卡登记",
