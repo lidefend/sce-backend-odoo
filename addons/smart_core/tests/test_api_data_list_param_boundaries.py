@@ -44,7 +44,15 @@ def _load_handler():
     _install_module("odoo.addons.smart_core.core.base_handler", BaseIntentHandler=_BaseIntentHandler)
     _install_module(
         "odoo.addons.smart_core.core.api_data_execution_policy",
+        authoritative_context_default_fields=lambda context, fields: tuple(
+            sorted(
+                key[len("default_") :]
+                for key in (context or {})
+                if key.startswith("default_") and key[len("default_") :] in fields
+            )
+        ),
         client_requested_sudo=lambda params: False,
+        merge_orm_create_defaults=lambda model, vals: dict(vals or {}),
         resolve_api_data_sudo=lambda params: False,
     )
     _install_module(
@@ -59,6 +67,10 @@ def _load_handler():
         call_extension_hook_first=lambda *args, **kwargs: None,
     )
     reason_mod = _install_module("odoo.addons.smart_core.utils.reason_codes")
+    reason_mod.REASON_CURRENCY_FIELD_MISSING = "CURRENCY_FIELD_MISSING"
+    reason_mod.REASON_CURRENCY_FIELD_NOT_READABLE = "CURRENCY_FIELD_NOT_READABLE"
+    reason_mod.REASON_CURRENCY_SCOPE_UNVERIFIED = "CURRENCY_SCOPE_UNVERIFIED"
+    reason_mod.REASON_MULTI_CURRENCY_AGGREGATION_PROHIBITED = "MULTI_CURRENCY_AGGREGATION_PROHIBITED"
     reason_mod.REASON_OK = "OK"
     reason_mod.REASON_PROJECT_SCOPE_DENIED = "PROJECT_SCOPE_DENIED"
     reason_mod.REASON_READONLY_PROJECTION_MUTATION_DENIED = "READONLY_PROJECTION_MUTATION_DENIED"
@@ -532,6 +544,138 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         self.assertEqual(context["lang"], "en_US")
         self.assertEqual(context["tz"], "Asia/Shanghai")
         self.assertIs(context["active_test"], False)
+
+    def test_request_context_preserves_operation_defaults_over_envelope_context(self):
+        module = _load_handler()
+        env = types.SimpleNamespace(
+            uid=7,
+            context={"lang": "zh_CN", "allowed_company_ids": [8]},
+            user=None,
+        )
+        handler = module.ApiDataHandler(
+            env=env,
+            params={
+                "context": {
+                    "default_settlement_id": 15,
+                    "default_contract_id": 10,
+                    "lang": "zh_CN",
+                }
+            },
+            context={"company_id": 8, "lang": "en_US"},
+        )
+
+        context = handler._request_context(
+            {
+                "context": {"company_id": 8, "lang": "en_US"},
+                "params": {
+                    "context": {
+                        "default_settlement_id": 15,
+                        "default_contract_id": 10,
+                        "lang": "zh_CN",
+                    }
+                },
+            }
+        )
+
+        self.assertEqual(context["default_settlement_id"], 15)
+        self.assertEqual(context["default_contract_id"], 10)
+        self.assertEqual(context["lang"], "zh_CN")
+        self.assertEqual(context["company_id"], 8)
+
+    def test_request_context_matches_dispatcher_payload_shape(self):
+        module = _load_handler()
+        env = types.SimpleNamespace(context={"lang": "zh_CN"}, uid=7, user=None)
+        operation_params = {
+            "op": "default_get",
+            "model": "res.partner",
+            "fields": ["name"],
+            "context": {"default_name": "operation value"},
+        }
+        payload = {
+            "intent": "api.data",
+            "params": operation_params,
+            "context": {"default_name": "envelope value"},
+        }
+        handler = module.ApiDataHandler(
+            env=env,
+            params=operation_params,
+            payload=payload,
+            context=payload["context"],
+        )
+
+        collected = handler._collect_params(
+            {
+                "payload": payload,
+                "params": operation_params,
+                "ctx": payload["context"],
+                "context": payload["context"],
+                "env": env,
+            }
+        )
+
+        self.assertEqual(handler._request_context(collected)["default_name"], "operation value")
+
+    def test_default_get_receives_merged_operation_context(self):
+        module = _load_handler()
+
+        class _Model:
+            _fields = {
+                "settlement_id": object(),
+                "settlement_period_start": object(),
+            }
+
+            def __init__(self):
+                self.context = {}
+
+            def with_context(self, context):
+                self.context = dict(context)
+                return self
+
+            def default_get(self, names):
+                self.requested = tuple(names)
+                if self.context.get("default_settlement_id") == 15:
+                    return {
+                        "settlement_id": 15,
+                        "settlement_period_start": "2026-07-01",
+                    }
+                return {}
+
+        class _Env(dict):
+            pass
+
+        env = _Env()
+        env.context = {"lang": "zh_CN"}
+        env.uid = 7
+        env.user = types.SimpleNamespace(has_group=lambda _group: True)
+        model = _Model()
+        env["x.payment"] = model
+        handler = module.ApiDataHandler(
+            env=env,
+            params={"context": {"default_settlement_id": 15}},
+            context={"company_id": 8},
+        )
+        handler._filter_readable_fields = lambda _model, names: list(names)
+        handler._apply_record_scope = lambda _model, domain, params, context: (
+            domain,
+            {"applied": False},
+        )
+        params = {
+            "context": {"company_id": 8},
+            "params": {"context": {"default_settlement_id": 15}},
+        }
+
+        data, meta = handler._op_default_get(
+            "x.payment",
+            {"fields": ["settlement_id", "settlement_period_start"]},
+            handler._request_context(params),
+            False,
+        )
+
+        self.assertEqual(
+            data["record"],
+            {"settlement_id": 15, "settlement_period_start": "2026-07-01"},
+        )
+        self.assertEqual(meta["op"], "default_get")
 
     def test_list_rejects_invalid_fields_domain_and_group_by(self):
         cases = [
