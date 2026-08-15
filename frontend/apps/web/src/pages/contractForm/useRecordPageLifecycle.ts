@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import type { ActionContract } from '@sc/schema';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
+import { contractLoadProfileOptions } from './contractRenderProfile';
 
 type LifecycleDependencies = Record<string, any>;
 
@@ -111,7 +112,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     contract.value = null;
     v2ContractStore.value = null;
     v2ContractDecodeError.value = '';
-    const profile = recordId.value ? 'edit' : 'create';
+    const profileOptions = contractLoadProfileOptions(renderProfile.value);
     const currentModel = String(model.value || '').trim();
     const contractContext = buildRouteContractContext(route.query as Record<string, unknown>);
     const contextRaw = String(route.query.context_raw || '').trim();
@@ -126,7 +127,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
           viewType: 'form',
           viewId: requestedViewId || undefined,
           recordId: recordId.value,
-          renderProfile: profile,
+          ...profileOptions,
           surface: requestedSurface.value,
           sourceMode: requestedSourceMode.value,
           context: contractContext,
@@ -151,7 +152,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         viewType: 'form',
         viewId: requestedViewId || undefined,
         recordId: recordId.value,
-        renderProfile: profile,
+        ...profileOptions,
         surface: requestedSurface.value,
         sourceMode: requestedSourceMode.value,
         context: contractContext,

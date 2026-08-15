@@ -641,6 +641,7 @@ import { useRecordFormState } from './contractForm/useRecordFormState';
 import { useRecordFormDesigner } from './contractForm/useRecordFormDesigner';
 import { useRecordRelationships } from './contractForm/useRecordRelationships';
 import { useRecordPageLifecycle } from './contractForm/useRecordPageLifecycle';
+import { resolveContractRenderProfile } from './contractForm/contractRenderProfile';
 import { useRecordActionPresentation } from './contractForm/useRecordActionPresentation';
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
 import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigationActionsRuntime';
@@ -1026,18 +1027,18 @@ function recordVersionPolicy() {
   return { tokenField };
 }
 const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
-  if (route.name === 'record') return 'readonly';
   const storeSourceContext = resolveContractV2SourceContext(v2ContractStore.value);
   const sourceContext = Object.keys(storeSourceContext).length
     ? storeSourceContext
     : resolveUnifiedPageContractV2SourceContext(contract.value);
   const head = (contract.value?.head || {}) as Record<string, unknown>;
   const profile = String(sourceContext.renderProfile || contract.value?.render_profile || head.render_profile || '').trim().toLowerCase();
-  if (profile === 'readonly') return 'readonly';
-  if (profile === 'edit') return 'edit';
-  if (profile === 'create') return 'create';
-  if (!canSave.value) return 'readonly';
-  return recordId.value ? 'edit' : 'create';
+  return resolveContractRenderProfile({
+    routeName: route.name,
+    contractProfile: profile,
+    canSave: canSave.value,
+    recordId: recordId.value,
+  });
 });
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value) || resolveUnifiedPageContractV2GlobalStatus(contract.value);
