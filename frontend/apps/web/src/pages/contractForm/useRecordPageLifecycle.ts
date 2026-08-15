@@ -4,6 +4,10 @@ import type { ActionContract } from '@sc/schema';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
+import {
+  resolveCreateRouteRelationLabels,
+  shouldHydrateCreateDefaults,
+} from './createDefaults';
 
 type LifecycleDependencies = Record<string, any>;
 
@@ -229,7 +233,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       upsertRelationOption,
       initOne2manyRows,
     };
-    if (!recordId.value) {
+    if (shouldHydrateCreateDefaults(recordId.value, renderProfile.value)) {
       const defaults = resolveCreateDefaultsFromState({ contract: contract.value, routeQuery: route.query as Record<string, unknown>, v2ContractStore: v2ContractStore.value });
       fieldNames.forEach((name) => {
         const descriptor = contract.value?.fields?.[name];
@@ -239,7 +243,13 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
           incoming: name in defaults ? defaults[name] : '',
           target: hydrationTarget,
         });
-        if (fieldType(descriptor) === 'many2one') applyRouteRelationLabel(route.query, name, Number(formData[name] || 0), (label) => { upsertRelationOption(name, { id: Number(formData[name]), label }); relationKeywords[name] = label; });
+      });
+      Object.entries(resolveCreateRouteRelationLabels(route.query as Record<string, unknown>, defaults)).forEach(([name, label]) => {
+        if (!fieldNames.includes(name)) return;
+        const id = Number(formData[name] || 0);
+        if (!Number.isFinite(id) || id <= 0) return;
+        upsertRelationOption(name, { id, label });
+        relationKeywords[name] = label;
       });
       originalValues.value = snapshotOriginalFormValues(fieldNames, formData);
       nativeLayoutVisibilityRevision.value += 1;

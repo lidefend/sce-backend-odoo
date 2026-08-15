@@ -323,16 +323,21 @@ verify.frontend.contract_header_action.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_header_action_presentation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-header-action-presentation-test.mjs >/dev/null
 	@node /tmp/contract-header-action-presentation-test.mjs
 
-.PHONY: verify.frontend.readonly_main_data_coverage.unit
+.PHONY: verify.frontend.readonly_main_data_coverage.unit verify.frontend.create_default_hydration.unit
 verify.frontend.readonly_main_data_coverage.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/readonly_main_data_coverage_test.ts --bundle --platform=node --format=esm --outfile=/tmp/readonly-main-data-coverage-test.mjs >/dev/null
 	@node /tmp/readonly-main-data-coverage-test.mjs
+
+verify.frontend.create_default_hydration.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/create_default_hydration_test.ts --bundle --platform=node --format=esm --outfile=/tmp/create-default-hydration-test.mjs >/dev/null
+	@node /tmp/create-default-hydration-test.mjs
 
 .PHONY: verify.frontend.native_section_navigation.unit
 verify.frontend.native_section_navigation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_section_navigation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-section-navigation-test.mjs >/dev/null
 	@node /tmp/native-section-navigation-test.mjs
 
+verify.frontend.quick.gate: verify.frontend.create_default_hydration.unit
 verify.frontend.quick.gate: guard.prod.forbid verify.frontend.workspace_content_alignment.guard verify.frontend.page_identity verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.frontend.grouped_contract_consistency.guard verify.frontend.grouped_drift_summary.baseline.guard verify.frontend.typecheck.strict verify.frontend.build
 	@echo "[OK] verify.frontend.quick.gate done"
 
