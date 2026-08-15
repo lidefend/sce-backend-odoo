@@ -4152,3 +4152,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   defaults, context fallback, immediate labels, deterministic route identity,
   changed-default invalidation and create/edit/readonly separation. It is wired
   into both Frontend Quick and release-unit collections.
+
+# P0 api.data operation-context authority (2026-08-15)
+
+- Branch / base SHA: `fix/p0-api-data-operation-context-v1` /
+  `9ac2aa15181579f8a69c321912ef9647f4b44b21`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / generic
+  `api.data` request-context composition / `smart_core`.
+- Standard vs User-Specific: platform mechanism only. No construction,
+  payment, customer, fixture, credential or environment semantics are added.
+- Reason / boundary: the intent envelope may carry current-record context while
+  an operation such as `default_get` carries more specific `default_*` values.
+  The generic handler previously flattened both carriers and allowed the
+  envelope context to replace the operation context. The operation params are
+  now the final authority while authenticated Odoo context and envelope context
+  remain inherited defaults.
+- Why Here / Why Not Elsewhere: request-context precedence belongs to the P0
+  ORM proxy. P1 must not duplicate source facts, and the frontend continues to
+  send both contexts without model-specific merging rules.
+- Blast radius / validation: all `api.data` operations that consume context.
+  Generic unit coverage includes the real dispatcher payload shape and
+  conflicting envelope/operation defaults. A governed acceptance HTTP probe
+  proves `default_get` receives the operation value under a conflicting
+  envelope without exposing credentials.

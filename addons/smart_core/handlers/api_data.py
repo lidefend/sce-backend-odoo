@@ -177,17 +177,39 @@ class ApiDataHandler(BaseIntentHandler):
 
         ``with_context(dict)`` replaces the existing context in Odoo.  Keeping
         the server context preserves lang/tz/company defaults for translated
-        fields while still allowing request-level overrides.
+        fields while still allowing request-level overrides.  The intent
+        envelope and the operation params may both carry a ``context``.  The
+        operation context is the more specific authority (for example
+        ``default_*`` values used by ``default_get``), so it must be merged
+        last instead of being lost when the flattened parameter dictionary
+        already contains the envelope context.
         """
         context = dict(getattr(self.env, "context", {}) or {})
-        payload_context = self._dig(p, "context") or {}
-        if not isinstance(payload_context, dict):
-            payload_context = {}
-        envelope_context = p.get("context") if isinstance(p.get("context"), dict) else {}
-        if envelope_context:
-            context.update(envelope_context)
-        if payload_context:
-            context.update(payload_context)
+
+        envelope_contexts = []
+        handler_context = getattr(self, "context", None)
+        if isinstance(handler_context, dict):
+            envelope_contexts.append(handler_context)
+        payload = getattr(self, "payload", None)
+        if isinstance(payload, dict) and isinstance(payload.get("context"), dict):
+            envelope_contexts.append(payload["context"])
+        if isinstance(p.get("context"), dict):
+            envelope_contexts.append(p["context"])
+
+        operation_contexts = []
+        handler_params = getattr(self, "params", None)
+        if isinstance(handler_params, dict) and isinstance(handler_params.get("context"), dict):
+            operation_contexts.append(handler_params["context"])
+        for carrier_key in ("params", "data", "args"):
+            carrier = p.get(carrier_key)
+            if isinstance(carrier, dict) and isinstance(carrier.get("context"), dict):
+                operation_contexts.append(carrier["context"])
+        payload_params = payload.get("params") if isinstance(payload, dict) else None
+        if isinstance(payload_params, dict) and isinstance(payload_params.get("context"), dict):
+            operation_contexts.append(payload_params["context"])
+
+        for layer in (*envelope_contexts, *operation_contexts):
+            context.update(layer)
         if "active_test" not in context:
             context["active_test"] = self._get_bool(p, "active_test", True)
         company_id, company_error = parse_positive_int(self._dig(p, "company_id", None), allow_empty=True)
