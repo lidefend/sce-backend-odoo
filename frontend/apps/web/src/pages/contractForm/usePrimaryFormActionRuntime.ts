@@ -10,6 +10,7 @@ export function usePrimaryFormActionRuntime(params: {
   busyKind: Ref<BusyKind>;
   confirmActionSafety: (action: ContractAction) => Promise<boolean>;
   errorMessage: Ref<string>;
+  executeButtonRequest?: typeof executeButton;
   hasChanges: () => boolean;
   modelName: () => string;
   navigateActionResponseResult: (result: unknown) => Promise<boolean>;
@@ -31,7 +32,7 @@ export function usePrimaryFormActionRuntime(params: {
     if (!await params.confirmActionSafety(action)) return;
     params.busyKind.value = 'action';
     try {
-      const response = await executeButton({
+      const response = await (params.executeButtonRequest || executeButton)({
         model: action.targetModel || params.modelName(),
         res_id: resId,
         button: { name: action.methodName, type: action.kind === 'server' ? 'server' : 'object' },
