@@ -55,7 +55,7 @@ def _load_page_assembler():
     _install_module(
         "odoo.addons.smart_core.app_config_engine.utils.view_utils",
         extract_tree_columns_strict=lambda *_args, **_kwargs: ([], None),
-        normalize_cols_safely=lambda value: value,
+        normalize_cols_safely=lambda value, *_args, **_kwargs: value,
     )
     module_name = "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler"
     sys.modules.pop(module_name, None)
@@ -86,6 +86,85 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assembler._append_view_version_token(versions, "7:9.3")
 
         self.assertEqual(versions["view"], "12:native,7:9.3")
+
+    def test_initial_list_data_reports_scoped_total_not_current_page_length(self):
+        class _Records:
+            def __init__(self, rows):
+                self.rows = rows
+
+            def read(self, _fields):
+                return list(self.rows)
+
+        class _Model:
+            _order = "id"
+
+            def __init__(self, total=23, row_count=10):
+                self.search_args = None
+                self.count_domain = None
+                self.total = total
+                self.row_count = row_count
+
+            def fields_get(self):
+                return {"id": {"type": "integer"}, "name": {"type": "char"}}
+
+            def search(self, domain, *, order, limit, offset):
+                self.search_args = {
+                    "domain": domain,
+                    "order": order,
+                    "limit": limit,
+                    "offset": offset,
+                }
+                return _Records([
+                    {"id": offset + index + 1, "name": f"R{offset + index + 1}"}
+                    for index in range(self.row_count)
+                ])
+
+            def search_count(self, domain):
+                self.count_domain = domain
+                return self.total
+
+        model = _Model()
+        self.assembler.env = {"x.document": model}
+        domain = [["company_id", "=", 7]]
+
+        result = self.assembler._fetch_initial_data(
+            self.assembler.env,
+            "x.document",
+            ["tree"],
+            {"domain": domain, "limit": 10, "offset": 10},
+            {"views": {"tree": {"columns": ["id", "name"]}}},
+        )
+
+        self.assertEqual(len(result["list"]["records"]), 10)
+        self.assertEqual(result["list"]["total"], 23)
+        self.assertEqual(result["list"]["next_offset"], 20)
+        self.assertEqual(model.count_domain, domain)
+        self.assertEqual(model.search_args["domain"], domain)
+
+        last_page_model = _Model(total=20)
+        last_page_env = {"x.document": last_page_model}
+        last_page = self.assembler._fetch_initial_data(
+            last_page_env,
+            "x.document",
+            ["tree"],
+            {"domain": domain, "limit": 10, "offset": 10},
+            {"views": {"tree": {"columns": ["id", "name"]}}},
+        )
+        self.assertEqual(last_page["list"]["total"], 20)
+        self.assertIsNone(last_page["list"]["next_offset"])
+
+        for total, offset, row_count in ((13, 10, 3), (0, 0, 0), (13, 20, 0)):
+            edge_model = _Model(total=total, row_count=row_count)
+            edge_page = self.assembler._fetch_initial_data(
+                {"x.document": edge_model},
+                "x.document",
+                ["tree"],
+                {"domain": domain, "limit": 10, "offset": offset},
+                {"views": {"tree": {"columns": ["id", "name"]}}},
+            )
+            self.assertEqual(edge_page["list"]["total"], total)
+            self.assertEqual(len(edge_page["list"]["records"]), row_count)
+            self.assertIsNone(edge_page["list"]["next_offset"])
 
     def test_business_action_injection_preserves_authoritative_entitlement(self):
         globals_ = self.assembler._inject_form_business_actions.__func__.__globals__

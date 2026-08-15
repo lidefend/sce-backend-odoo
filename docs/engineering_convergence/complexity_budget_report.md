@@ -12,7 +12,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 3703 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 3704 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3664 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3556 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
@@ -135,7 +135,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 3703 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 3704 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3664 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3556 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |

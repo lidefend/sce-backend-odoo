@@ -3515,8 +3515,9 @@ class PageAssembler:
             # 搜索 & 读取：只读所需列，减少 IO/序列化负担（自动应用记录规则）
             recs = Model.search(domain, order=order, limit=limit, offset=offset)
             rows = recs.read(cols)
-            next_offset = (offset + len(rows)) if len(rows) == limit else None
-            out["list"] = {"records": rows, "next_offset": next_offset}
+            total = Model.search_count(domain)
+            next_offset = (offset + len(rows)) if offset + len(rows) < total else None
+            out["list"] = {"records": rows, "total": total, "next_offset": next_offset}
 
         # 表单数据：表单视图且传了 record_id 才读取，避免列表请求混入记录事实。
         requested_view_type = str(p.get("view_type") or p.get("viewType") or "").strip().lower()
