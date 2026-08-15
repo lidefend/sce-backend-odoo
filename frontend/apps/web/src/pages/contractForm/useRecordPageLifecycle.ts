@@ -4,12 +4,16 @@ import type { ActionContract } from '@sc/schema';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
+import {
+  resolveCreateRouteRelationLabels,
+  shouldHydrateCreateDefaults,
+} from './createDefaults';
 
 type LifecycleDependencies = Record<string, any>;
 
 /** Owns authoritative contract loading, record hydration, and stale-response isolation. */
 export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
-  const { ApiError, ContractAccessPolicyError, ContractV2DecodeError, ErrorCodes, actionId, advancedExpanded, analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent, applyRouteRelationLabel, buildRouteContractContext, changedFieldCount, changedFieldSet, clearNativeAttachmentError, clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments, closeNativeChatterComposer, contract, contractAccessPolicy, contractActions, contractMeta, contractModelName, contractReadiness, coreFieldNames, createContractV2Store, decodeContractV2Snapshot, dirtyFieldSet, fieldType, formData, formDataFieldNames, formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows, initOne2manyRows, isComponentActive, layoutNodes, loadActionContractRaw, loadError, loadModelContractRaw, menuId, mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision, onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer, setOnchangeTimer, onchangeWarnings, originalValues, pickContractNavQuery, readContractFormRecord, recordId, recordIdDisplay, recordMissing, recordVersionPolicy, recordVersionToken, relationKeywords, relationOptions, renderErrorMessage, renderProfile, requestedSourceMode, requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState, resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData, restoreIntakeAutosave, retainedRouteIdentity, rights, route, router, setStatusbarValue, showHud, showOne2manyErrors, snapshotOriginalFormValues, status, toPositiveInt, upsertRelationOption, v2ContractDecodeError, v2ContractStore, v2ShadowActionCount, v2ShadowButtonStatusCount, v2ShadowFieldCodeCount, v2ShadowGlobalSourceKind, v2ShadowLayoutSourceKind, v2ShadowLegacyFieldMissingPreview, v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount, v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady, v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount, validateSurfaceMarkers, validationErrors, writableFieldCount } = dependencies;
+  const { ApiError, ContractAccessPolicyError, ContractV2DecodeError, ErrorCodes, actionId, advancedExpanded, analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent, buildRouteContractContext, changedFieldCount, changedFieldSet, clearNativeAttachmentError, clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments, closeNativeChatterComposer, contract, contractAccessPolicy, contractActions, contractMeta, contractModelName, contractReadiness, coreFieldNames, createContractV2Store, decodeContractV2Snapshot, dirtyFieldSet, formData, formDataFieldNames, formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows, initOne2manyRows, isComponentActive, layoutNodes, loadActionContractRaw, loadError, loadModelContractRaw, menuId, mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision, onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer, setOnchangeTimer, onchangeWarnings, originalValues, pickContractNavQuery, readContractFormRecord, recordId, recordIdDisplay, recordMissing, recordVersionPolicy, recordVersionToken, relationKeywords, relationOptions, renderErrorMessage, renderProfile, requestedSourceMode, requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState, resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData, restoreIntakeAutosave, retainedRouteIdentity, rights, route, router, setStatusbarValue, showHud, showOne2manyErrors, snapshotOriginalFormValues, status, toPositiveInt, upsertRelationOption, v2ContractDecodeError, v2ContractStore, v2ShadowActionCount, v2ShadowButtonStatusCount, v2ShadowFieldCodeCount, v2ShadowGlobalSourceKind, v2ShadowLayoutSourceKind, v2ShadowLegacyFieldMissingPreview, v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount, v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady, v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount, validateSurfaceMarkers, validationErrors, writableFieldCount } = dependencies;
   let activeReloadToken = 0;
   let activeReloadIdentity = '';
   let activeReloadPromise: Promise<void> | null = null;
@@ -229,7 +233,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       upsertRelationOption,
       initOne2manyRows,
     };
-    if (!recordId.value) {
+    if (shouldHydrateCreateDefaults(recordId.value, renderProfile.value)) {
       const defaults = resolveCreateDefaultsFromState({ contract: contract.value, routeQuery: route.query as Record<string, unknown>, v2ContractStore: v2ContractStore.value });
       fieldNames.forEach((name) => {
         const descriptor = contract.value?.fields?.[name];
@@ -239,7 +243,13 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
           incoming: name in defaults ? defaults[name] : '',
           target: hydrationTarget,
         });
-        if (fieldType(descriptor) === 'many2one') applyRouteRelationLabel(route.query, name, Number(formData[name] || 0), (label) => { upsertRelationOption(name, { id: Number(formData[name]), label }); relationKeywords[name] = label; });
+      });
+      Object.entries(resolveCreateRouteRelationLabels(contract.value, route.query as Record<string, unknown>, defaults)).forEach(([name, label]) => {
+        if (!fieldNames.includes(name)) return;
+        const id = Number(formData[name] || 0);
+        if (!Number.isFinite(id) || id <= 0) return;
+        upsertRelationOption(name, { id, label });
+        relationKeywords[name] = label;
       });
       originalValues.value = snapshotOriginalFormValues(fieldNames, formData);
       nativeLayoutVisibilityRevision.value += 1;

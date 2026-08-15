@@ -646,9 +646,9 @@ import { useRecordActionPresentation } from './contractForm/useRecordActionPrese
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
 import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigationActionsRuntime';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
-import { applyRouteRelationLabel } from './contractForm/routeRelationLabel';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
 import {
+  createRouteDefaultsFingerprint,
   formCreateContext as formCreateContextFromState,
   resolveCreateDefaults as resolveCreateDefaultsFromState,
 } from './contractForm/createDefaults';
@@ -736,6 +736,7 @@ function formRouteIdentity() {
     String(recordId.value ? '' : (query.view_id || query.viewId || '')),
     String(recordId.value ? '' : (query.current_business_category_code || query.default_business_category_code || '')),
     String(recordId.value ? '' : (query.allowed_business_category_codes || '')),
+    String(recordId.value ? '' : createRouteDefaultsFingerprint(query)),
   ].join('|');
 }
 const v2ShadowFieldCodes = computed(() => Array.from(v2ContractStore.value?.widgetsByFieldCode.keys() || []));
@@ -1666,7 +1667,7 @@ const {
   ApiError, ContractAccessPolicyError, ContractV2DecodeError,
   ErrorCodes, actionId, advancedExpanded,
   analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent,
-  applyRouteRelationLabel, buildRouteContractContext, changedFieldCount,
+  buildRouteContractContext, changedFieldCount,
   changedFieldSet, chatterLoading, clearNativeAttachmentError,
   clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments,
   closeNativeChatterComposer, contract, contractAccessPolicy,
