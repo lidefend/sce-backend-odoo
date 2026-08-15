@@ -1838,6 +1838,13 @@ const mobileColumnDecision = computed(() => resolveResponsiveListColumns({
 const lastVisibleColumnName = computed(() => enabledColumns.value.length === 1 ? enabledColumns.value[0] : '');
 const columnDecisionTraceJson = computed(() => JSON.stringify({
   authoritativeColumns: orderedColumnNames.value,
+  columnOptions: columnChoices.value.map((column) => ({
+    name: column.name,
+    optional: column.optional,
+    defaultVisible: column.defaultVisible,
+    type: column.type,
+    cellRole: column.cellRole,
+  })),
   enabledColumns: enabledColumns.value,
   criticalColumns: crossDeviceCriticalColumns.value,
   explicitVisibility: props.columnVisibility || {},

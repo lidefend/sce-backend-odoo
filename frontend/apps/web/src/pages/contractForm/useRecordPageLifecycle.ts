@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import type { ActionContract } from '@sc/schema';
 import type { FormRecordHydrationTarget } from './recordHydration';
+import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 
 type LifecycleDependencies = Record<string, any>;
 
@@ -246,10 +247,11 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     }
     const storeMainData = resolveContractV2MainData(v2ContractStore.value);
     const contractMainData = Object.keys(storeMainData).length ? storeMainData : resolveUnifiedPageContractV2MainData(contract.value);
-    const canUseReadonlyMainData = (
-      renderProfile.value === 'readonly'
-      && Object.keys(contractMainData).length > 0
-    );
+    const canUseReadonlyMainData = readonlyMainDataCoversFields({
+      renderProfile: renderProfile.value,
+      fieldNames,
+      mainData: contractMainData,
+    });
     let row: Record<string, unknown> | undefined;
     if (canUseReadonlyMainData) {
       row = contractMainData;
