@@ -4131,3 +4131,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   readonly coverage unit now checks the three routes, contract-profile
   precedence and both request call sites. Frontend Quick, strict typecheck,
   static build and release-unit collections pass before runtime verification.
+
+# P0 create default hydration closure (2026-08-15)
+
+- Branch / base SHA: `fix/p0-create-default-hydration-v1` /
+  `55c950d84ed1d0fb3f9d228b22448ddb3a3823a1`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend / generic
+  contract-form create initialization / `frontend/apps/web`.
+- Standard vs User-Specific: platform mechanism only. No payment, construction,
+  customer, fixture, database, credential or environment rule is introduced.
+- Reason / boundary: a create route could carry complete `default_*` identities
+  while relation labels remained dependent on later asynchronous reads, and
+  changes to most defaults were absent from the retained route identity. The
+  shared create hydration plan now fills only empty contract values, binds
+  labels to the exact route-supplied identity and fingerprints every create
+  default. Explicit contract values remain authoritative; edit and readonly
+  records never consume create defaults.
+- Blast radius / validation: all generic create forms. A generic `x.document`
+  behavior suite covers explicit contract precedence, multiple relation
+  defaults, context fallback, immediate labels, deterministic route identity,
+  changed-default invalidation and create/edit/readonly separation. It is wired
+  into both Frontend Quick and release-unit collections.
