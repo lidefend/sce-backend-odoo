@@ -8,6 +8,16 @@
 - Always follow `docs/ops/codex_workspace_execution_rules.md` before any write action.
 - Mandatory preflight before edits: `pwd` + `git rev-parse --show-toplevel` + `git branch --show-current` + `git status --short`.
 
+## Baseline Iteration Phase (Hard Lock)
+`BASELINE_ITERATION_EXECUTION_POLICY=v1`
+- This repository is in baseline-backed iteration. Before any mutation, inventory and reuse the registered worktree, Make targets, runtime profile, database, ports, volumes, fixtures, and evidence tools described in `docs/ops/codex_workspace_execution_rules.md`.
+- Business topics must consume existing governed infrastructure. They must not derive or create a Compose project, database, port, volume, credential file, fixture system, runtime profile, or test entry. A missing capability is a separately authorized P4 governance task, not an in-topic workaround.
+- Required order: governed worktree and exact baseline -> layer/scope declaration -> complete tracked+untracked fingerprint -> Quick/static guards -> non-zero targeted tests -> governed incremental module upgrade -> fixture reset -> release snapshot -> governed runtime -> user journey -> independent review -> generated reports -> `make pr.push`.
+- A validation command that reports zero tests is a failure. A command executed with an unregistered project/database/profile or manually assembled credentials is diagnostic only and cannot satisfy a gate.
+- Synthetic test data may be exempted from personal-data scanning only through the governed false-positive registry, bound to the exact rule, repository path, full immutable Git blob SHA, classification, and a synthetic-fixture reason. Never exempt a directory, wildcard, mutable branch, or all test data.
+- One candidate worktree has one writer. Every parallel read-only review and runtime report must bind the same frozen full fingerprint. Shared acceptance database mutations are serialized.
+- Do not rerun full browser acceptance while an earlier static, backend, identity, or normalized-contract gate is known to fail. Fix only the owning layer, refreeze, then resume from the earliest invalidated gate.
+
 ## Database Architecture Governance
 - `docs/governance/database_architecture_policy.md` is the single authoritative database architecture policy.
 - Before any task involving database creation, copy, upgrade, migration, destruction, module lifecycle, tenant provisioning, users or multi-company design, fixture or acceptance environments, filestore/session/backup/restore, or cross-tenant interfaces and analytics, read and apply that policy.

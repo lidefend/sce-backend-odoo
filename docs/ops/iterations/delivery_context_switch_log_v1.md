@@ -4080,3 +4080,32 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   compatibility completed `4 tests / 0 failed / 0 errors`, and evidence-bundle
   tests completed `10 tests / 0 failed / 0 errors`. These results must be rerun
   on the exact frozen candidate SHA before publication.
+
+# Baseline-backed iteration execution lock (2026-08-15)
+
+- Branch / base SHA: `fix/baseline-iteration-rules-v1` /
+  `9524263a4fd3b03bb8855d527e81941d3dc82dd1`.
+- Formal Product Layer / Layer Target / Module: P4 repository governance /
+  baseline-backed iteration execution policy / root instructions, ops rules,
+  CI governance guard and tests.
+- Standard vs User-Specific: repository-wide engineering governance. No P0
+  platform behavior, P1 construction semantics, P2 user preference, database,
+  fixture, runtime profile or frontend product behavior changes.
+- Reason / boundary: the repository already owns governed worktree, test,
+  incremental upgrade, acceptance profile, fixture, release snapshot, evidence
+  and PR publication tools. Business topics must inventory and consume those
+  authorities instead of assembling credentials or deriving projects,
+  databases, networks, ports or volumes.
+- Locked sequence: inventory -> exact baseline/worktree -> layer and scope ->
+  complete tracked+staged+untracked fingerprint -> Quick -> non-zero Targeted
+  tests -> governed incremental upgrade -> fixture -> release snapshot ->
+  governed runtime -> user journey -> independent review -> generated reports
+  -> `make pr.push`.
+- Failure contract: `0 tests` is failure; identity-domain mixing is failure;
+  full browser reruns are blocked while an earlier static/backend/identity/
+  normalized-contract gate remains red. Shared acceptance writes are serial,
+  and each report/review must bind one frozen full fingerprint.
+- Validation: the new policy guard checks one canonical policy marker across
+  the three authority documents, locks the required rule fragments and proves
+  the eight existing Make authorities remain declared. Its behavior suite
+  covers complete policy, missing locked rule and missing Make target.

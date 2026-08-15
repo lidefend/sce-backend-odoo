@@ -76,6 +76,7 @@ class PersonalDataScanTests(unittest.TestCase):
                 allowed = personal_data_scan.load_false_positives()
             self.assertIn((finding.rule_id, finding.path, finding.blob_id, finding.classification), allowed)
             self.assertNotIn((finding.rule_id, "other.py", finding.blob_id, finding.classification), allowed)
+            self.assertNotIn((finding.rule_id, finding.path, "b" * 40, finding.classification), allowed)
 
     def test_false_positive_registry_rejects_short_blob_identity(self) -> None:
         registry = {
