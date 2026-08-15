@@ -244,7 +244,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
           target: hydrationTarget,
         });
       });
-      Object.entries(resolveCreateRouteRelationLabels(route.query as Record<string, unknown>, defaults)).forEach(([name, label]) => {
+      Object.entries(resolveCreateRouteRelationLabels(contract.value, route.query as Record<string, unknown>, defaults)).forEach(([name, label]) => {
         if (!fieldNames.includes(name)) return;
         const id = Number(formData[name] || 0);
         if (!Number.isFinite(id) || id <= 0) return;

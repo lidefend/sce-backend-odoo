@@ -80,12 +80,14 @@ export function resolveCreateDefaults(params: {
 }
 
 export function resolveCreateRouteRelationLabels(
+  contract: ActionContract | null,
   routeQuery: Record<string, unknown>,
   defaults: Record<string, unknown>,
 ): Record<string, string> {
   return Object.entries(routeQuery).reduce<Record<string, string>>((labels, [key, value]) => {
     if (!key.startsWith('default_') || !key.endsWith('_label')) return labels;
     const fieldName = key.replace(/^default_/, '').replace(/_label$/, '').trim();
+    if (createDefaultFieldType(contract, fieldName) !== 'many2one') return labels;
     const relationId = Number(defaults[fieldName] || 0);
     const routeRelationId = Number(normalizeRouteDefault(routeQuery[`default_${fieldName}`]) || 0);
     const label = String(Array.isArray(value) ? value[value.length - 1] : value || '').trim();
