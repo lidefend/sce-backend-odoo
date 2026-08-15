@@ -115,7 +115,11 @@
       </div>
     </section>
     <p v-if="chatterError" class="validation-error native-chatter-message">{{ chatterError }}</p>
-    <section v-if="hasAttachments" class="native-attachment-tools">
+    <section
+      v-if="hasAttachments"
+      class="native-attachment-tools"
+      data-collaboration-capability="attachments"
+    >
       <label class="chip-btn native-attachment-upload">
         {{ attachmentUploading ? attachmentUploadingLabel : attachmentUploadLabel }}
         <input type="file" :disabled="attachmentUploading" @change="$emit('attachment-selected', $event)" />

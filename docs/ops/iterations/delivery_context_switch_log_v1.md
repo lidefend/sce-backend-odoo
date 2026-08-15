@@ -4175,3 +4175,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   conflicting envelope/operation defaults. A governed acceptance HTTP probe
   proves `default_get` receives the operation value under a conflicting
   envelope without exposing credentials.
+
+# P0 create attachment presentation closure (2026-08-15)
+
+- Branch / base SHA: `fix/p0-create-attachment-render-v1` /
+  `f8d1db0afcf4bd1a9e3a7afacbea811ba34eaffa`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend / generic
+  contract-form collaboration presentation / `frontend/apps/web`.
+- Standard vs User-Specific: platform mechanism only. No payment, construction,
+  customer, fixture, database, credential or environment semantics are added.
+- Reason / boundary: intake create mode hid the complete collaboration panel,
+  even when the normalized contract declared attachment capability and the
+  attachment runtime supported pending uploads before the first save. The
+  shared presentation rule now keeps pending attachment upload available while
+  record-bound chatter alone remains hidden until a record exists.
+- Why Here / Why Not Elsewhere: create-mode rendering of normalized attachment
+  capability belongs to the shared contract-form frontend. P1 continues to
+  declare whether attachments exist and does not receive a model-specific UI
+  exception.
+- Blast radius / validation: generic create/edit/readonly forms with native
+  collaboration contracts. The behavior test covers saved records, intake
+  attachment upload, record-bound chatter suppression and empty contracts; it
+  is wired into Frontend Quick and release-unit collections. Strict typecheck,
+  static build and the complete frontend release-unit collection pass.
