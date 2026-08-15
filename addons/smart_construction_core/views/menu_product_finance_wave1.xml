@@ -16,6 +16,7 @@
         <record id="menu_sc_fund_loan_repayment_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_project_fund_user_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_payment_user_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_user_payment_apply_acceptance" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_deduction_user_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_fund_account_user_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_receipt_user_group" model="ir.ui.menu"><field name="active">False</field></record>

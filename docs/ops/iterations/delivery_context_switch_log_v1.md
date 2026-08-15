@@ -3957,6 +3957,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Frontend health requires its governed PID, worktree and locked database/proxy
   environment. PostgreSQL credentials must match the credential authority.
 
+## 2026-08-13 — PFL-035-PAYMENT-EXECUTION-AUTHORIZATION-TRACE
+
+- Branch / anchor: `feature/p1-payment-request-capability-v2` from merged product
+  baseline `d7ae51b086dade4942786e2df169edbf6f02ad1d` in isolated worktree
+  `sce-backend-odoo-payment-request-p1-v2`.
+- Formal Product Layer / Layer Target / Module: P1 / construction payment
+  execution domain authority / `smart_construction_core`.
+- Standard vs User-Specific: construction-industry standard; no customer,
+  tenant-specific policy, P3 runtime configuration or frontend component
+  behavior.
+- Reason / Boundary: an existing payment execution retains its authoritative
+  payment-request, contract, project and counterparty chain. Only a superuser
+  historical synchronization carrying `history_surface_sync` may fill a
+  missing anchor on a legacy record; it may never clear or replace a nonempty
+  anchor.
+- Why Here / Why Not Elsewhere: relation authority is an ORM invariant owned by
+  the P1 domain model. UI visibility, frontend components, customer modules and
+  low-code configuration cannot enforce RPC or service calls.
+- Blast Radius / validation: `sc.payment.execution.write()` relation fields,
+  PFL-035 static anchors and focused backend tests for finance user, finance
+  manager, non-draft and historical-sync overreach. Authenticated browser
+  acceptance remains required before runtime closeout.
+
 # Product baseline 17.0.0.75 upgrade recovery (2026-08-13)
 
 - Branch / base SHA: `fix/product-baseline-upgrade-075-current-v1` /
@@ -4080,3 +4103,144 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   compatibility completed `4 tests / 0 failed / 0 errors`, and evidence-bundle
   tests completed `10 tests / 0 failed / 0 errors`. These results must be rerun
   on the exact frozen candidate SHA before publication.
+
+# PFL-035 payment-request formal menu identity closure (2026-08-15)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v3` / `eb267f5`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product / finance navigation authority / `smart_construction_core`.
+- Standard vs User-Specific: standard construction-product navigation; no
+  customer menu preference, runtime low-code override, or P0 renderer rule.
+- Reason / Boundary: the formal `menu_sc_user_payment_apply` entry is active
+  directly under Finance Center, while the historical acceptance alias stayed
+  active below an inactive parent. The delivery menu therefore lost its valid
+  ancestor and fell into the generic “业务菜单” group. The formal XMLID is now
+  the only navigation and acceptance authority, and the historical alias is
+  explicitly inactive in the final finance wave.
+- Why Here / Why Not Elsewhere: the menu identity and construction finance
+  placement are P1 product facts. The generic menu fallback remains unchanged;
+  no database-only repair, frontend label exception, or new environment route
+  is introduced.
+- Blast radius / validation: payment-request navigation, product-policy links,
+  related-record links, and browser runtime-ID resolvers. The finance wave guard
+  verifies the formal entry is active under Finance Center, the acceptance
+  alias is inactive, and authoritative navigation cannot reference the alias.
+
+# PFL-035 payment field completeness and industry benchmark (2026-08-15)
+
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product / payment handling facts and user journeys /
+  `smart_construction_core`.
+- Standard vs User-Specific: standard construction-payment capability only;
+  customer-specific fields and exceptions are forbidden.
+- Benchmark boundary: Oracle Primavera Unifier, Autodesk Construction Cloud /
+  GCPay, Procore Invoicing and SAP Fiori approval patterns are translated into
+  thirteen construction-payment dimensions. Contract, settlement, cost and
+  ledger facts retain their own authority; payment pages consume read-only
+  projections rather than duplicate manual entry.
+- Product increment: the payment request now projects canonical contract
+  payment terms, cumulative change and final value plus settlement period,
+  submitted/approved amount and deductions. It also projects the project
+  contract's cumulative settlement, invoice, paid and unpaid amounts so an
+  approver can reconcile this request against the contract lifecycle without
+  duplicate input. The professional field matrix classifies 39 request and 17
+  execution fields and binds each to its source,
+  applicability, gate, editability, surface and acceptance obligation.
+- Acceptance correction: fourteen user journeys replace the old equation of
+  six visual states with product completion. Current coverage remains honestly
+  declared as `0 implemented / 14 partial / 0 missing`; this is a NO-GO status,
+  not an implemented claim. Browser evidence is now matrix-driven for list
+  headers and normalized create/edit, readonly and execution-create fields.
+- Validation: field matrix guard PASS (`39 + 17` fields, `13` benchmark
+  dimensions, `14` journeys), guard unit tests `5/5`, XML parsing and JS syntax
+  PASS, and the existing governed dev test topology completed the focused Odoo
+  suite with `27 tests / 0 failed / 0 errors` (`29` module test assertions).
+- Journey increment: the browser acceptance now starts from the deterministic
+  FE-B05 approved settlement, opens the real “新建付款申请” action, verifies
+  carried contract/settlement facts, enters amount and note, uploads evidence,
+  saves, returns to the list, signs in again, reopens the record, and compares
+  the visible result with the authoritative backend row. The journey remains
+  `partial` until executed against a frozen runtime source fingerprint.
+- Execution and ledger consistency increment: payment-execution creation now
+  locks request anchors and rejects duplicate active executions from repeated
+  commands or a multi-create payload, while allowing an audited replacement
+  only after cancellation. Payment ledger admission now consumes the same
+  authoritative payment-basis classification as request submission and
+  execution: approved standard/line/material settlements retain their own
+  state gates, a valid non-cancelled contract supports contract-only payment,
+  and a missing basis or cancelled contract fails closed. This closes the
+  previous contradiction where a valid contract-only request could create a
+  payment execution but could not reach paid/ledger/reversal completion.
+- Focused backend evidence: the installed `v12` test database completed
+  `32 tests / 0 failed / 0 errors` (`34` module assertions), including active
+  execution uniqueness, contract-only paid/reversal ledger reconciliation,
+  approved-settlement admission, unapproved-settlement rejection,
+  missing-basis rejection and cancelled-contract rejection. A preceding fresh
+  uninstalled `v13` invocation returned `0 tests` and is explicitly excluded
+  from acceptance evidence.
+- Adjacent-suite closure: the five early record-rule failures were traced to
+  legacy test projects without a company. Because `payment.request.company_id`
+  is the stored project-company projection, those fixtures correctly failed
+  the allowed-company rule before reaching ledger logic. The fixtures now
+  carry the authoritative company fact; production ACLs and record rules are
+  unchanged. `TestP0LedgerGate` completed `16 tests / 0 failed / 0 errors`, and
+  `TestRecordRuleLedgerP1` completed `1 test / 0 failed / 0 errors` (`3` module
+  assertions), including positive scoped reads and negative ACL evidence.
+- Reject/correct/resubmit increment: rejection no longer invents a fallback
+  reason. An empty reason fails before state or audit mutation; an explicit
+  reason is shown as the current repair fact and recorded in the immutable
+  audit. Rejected requests expose the authoritative “重新提交审批” capability in
+  both the form and My Work, allow correction of business facts, and stop
+  reserving settlement capacity until resubmitted. Once submitted, project,
+  basis, counterparty, amount, account, note and attachments are locked again.
+  The field matrix now covers `40 payment.request + 17 sc.payment.execution`
+  facts. Focused P1 evidence is `34 tests / 0 failed / 0 errors` (`36` module
+  assertions); adjacent action/work-item evidence is `11 tests / 0 failed /
+  0 errors`, plus the isolated work-item suite `6 tests / 0 failed / 0 errors`.
+- Payment execution state-integrity increment: the professional continuation is
+  now a strict `draft -> submit/approve -> confirmed -> paid` journey. A finance
+  manager can no longer register payment directly from draft. The four source
+  anchors remain read-only in the native form and immutable at ORM level; once
+  the execution leaves draft, amount, payer/payee accounts, method, evidence and
+  handling facts are frozen. Paid/reversal continues to reconcile the request,
+  ledger and immutable request audit, and paid now adds a visible document
+  timeline entry. The isolated `v12` database was upgraded in place and the
+  focused suite completed `36 tests / 0 failed / 0 errors` (`38` module test
+  assertions), including a finance-read user rejected before submit mutation.
+  The browser journey remains honestly `missing` until a frozen
+  governed runtime performs the real approval-role handoff and paid action.
+- Scope-contraction correction: the P1 candidate no longer modifies the shared
+  My Work browser/ID/guard implementation and no longer adds a shared Make
+  target. My Work remains a consumer of payment work items; its platform
+  implementation is not owned by this form topic. The capability contract now
+  fails closed on changes under `smart_core`, `frontend`, `make`, environment or
+  runtime infrastructure, and shared `frontend_my_work_*` scripts. The formal
+  finance list file retains its historical `user_confirmed` filename, but its
+  changed content is the canonical payment-request list under Finance Center,
+  not a user/customer-specific module.
+- P0 split and financial-fact authority correction: the canonical list-column
+  visibility repair and generic readonly hydration diagnostics were moved to
+  the independent `fix/p0-list-contract-closure-v1` worktree. The P1 candidate
+  contains no `smart_core` or generic frontend implementation change. Within
+  P1, `payment.ledger` is now read-only to ordinary finance roles; caller
+  context can no longer authorize create or reversal, and only a capability-
+  checked private payment-execution path may use superuser authority. Forged
+  create/reversal contexts are rejected with zero ledger mutation.
+- Installment-payment correction: one approved request may produce multiple
+  paid executions. The database limits only a concurrent in-flight
+  `draft/confirmed` execution, while every installment posted through the
+  professional payment-execution journey is uniquely anchored to its own
+  execution. Adjacent expense-claim ledger creation retains its separately
+  governed source flow and is not claimed by this installment contract. Partial payment keeps the request approved,
+  defaults the next execution to the remaining balance, and closes the request
+  only after cumulative posted ledgers reach the approved amount. Reversing one
+  installment preserves its ledger as `reversed`, reopens exactly that balance,
+  and permits a replacement installment without erasing the other paid facts.
+- Current focused evidence: the isolated upgraded `v12` database completed
+  `53 tests / 0 failed / 0 errors`; the adjacent ledger, amount, record-rule,
+  work-item and permission suite completed `34 test methods / 44 tests / 0
+  failed / 0 errors`. The executable matrix now covers `42 payment.request +
+  19 sc.payment.execution` facts and `14` benchmark dimensions. All `14` user
+  journeys remain deliberately `0 implemented / 14 partial / 0 missing` until
+  authenticated browser, backend snapshot and audit evidence share one frozen
+  source fingerprint.

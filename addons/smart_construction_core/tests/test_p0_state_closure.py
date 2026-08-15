@@ -362,6 +362,7 @@ class TestP0StateClosure(TransactionCase):
                 "amount": 10.0,
                 "state": "approved",
                 "payment_account_name": "收款户名",
+                "payment_bank_name": "收款开户行",
                 "payment_account_no": "R-001",
                 "legacy_payment_account_name": "付款户名",
                 "legacy_payment_account_no": "P-001",
@@ -419,6 +420,11 @@ class TestP0StateClosure(TransactionCase):
                 "note": "付款申请备注",
             }
         )
+        self.env.cr.execute(
+            "UPDATE payment_request SET state=%s WHERE id=%s",
+            ("approved", pr.id),
+        )
+        pr.invalidate_recordset(["state"])
 
         values = self.env["sc.payment.execution"].sudo()._payment_request_values(pr)
         self.assertEqual(values["source_kind"], "actual_outflow")
@@ -662,6 +668,7 @@ class TestP0StateClosure(TransactionCase):
                 "amount": 10.0,
                 "state": "approved",
                 "payment_account_name": "收款户名",
+                "payment_bank_name": "收款开户行",
                 "payment_account_no": "R-002",
                 "legacy_payment_account_name": "付款户名",
                 "legacy_payment_account_no": "P-002",

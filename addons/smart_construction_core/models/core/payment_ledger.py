@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 
 
@@ -13,20 +13,22 @@ class PaymentLedger(models.Model):
         "action_open_settlement",
     }
 
-    _sql_constraints = [
-        (
-            "uniq_payment_request_id",
-            "unique(payment_request_id)",
-            "同一付款申请只能生成一条付款台账。",
-        ),
-    ]
+    _sql_constraints = []
 
     payment_request_id = fields.Many2one(
         "payment.request",
         string="付款申请",
         required=True,
-        ondelete="cascade",
+        ondelete="restrict",
         index=True,
+    )
+    payment_execution_id = fields.Many2one(
+        "sc.payment.execution",
+        string="来源付款登记",
+        ondelete="restrict",
+        index=True,
+        readonly=True,
+        copy=False,
     )
     project_id = fields.Many2one(
         "project.project",
@@ -68,6 +70,30 @@ class PaymentLedger(models.Model):
     )
     ref = fields.Char(string="外部参考")
     note = fields.Text(string="备注")
+    state = fields.Selection(
+        [("posted", "已入账"), ("reversed", "已冲销")],
+        string="台账状态",
+        default="posted",
+        required=True,
+        readonly=True,
+        index=True,
+    )
+    reversed_at = fields.Datetime(string="冲销时间", readonly=True, copy=False)
+    reversed_by_id = fields.Many2one(
+        "res.users",
+        string="冲销人",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+    )
+    reversal_execution_id = fields.Many2one(
+        "sc.payment.execution",
+        string="冲销来源付款登记",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+    )
+    reversal_reason = fields.Text(string="冲销原因", readonly=True, copy=False)
     fund_plan_allocation_ids = fields.One2many(
         "project.funding.actual.event.allocation",
         "actual_event_id",
@@ -88,6 +114,19 @@ class PaymentLedger(models.Model):
         readonly=True,
     )
 
+    def init(self):
+        """Keep every installment while preventing duplicate ledgering per execution."""
+        self._cr.execute(
+            "ALTER TABLE payment_ledger "
+            "DROP CONSTRAINT IF EXISTS payment_ledger_uniq_payment_request_id"
+        )
+        self._cr.execute("DROP INDEX IF EXISTS payment_ledger_one_posted_per_request_idx")
+        self._cr.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS payment_ledger_one_posted_per_execution_idx "
+            "ON payment_ledger (payment_execution_id) "
+            "WHERE payment_execution_id IS NOT NULL AND state = 'posted'"
+        )
+
     @api.depends("amount", "fund_plan_allocation_ids.allocated_amount")
     def _compute_fund_plan_allocation_amounts(self):
         for record in self:
@@ -100,20 +139,27 @@ class PaymentLedger(models.Model):
             )
 
     def _check_request_state(self, request):
-        if self.env.context.get("allow_payment_reversal"):
-            return
         if not request or request.state != "approved":
             raise UserError("付款申请未处于已批准状态，不能登记付款。")
-        if request.material_settlement_id:
+        basis_type = request.payment_basis_type or "none"
+        if basis_type == "material_settlement":
             if request.material_settlement_id.state == "confirmed":
                 return
             raise UserError("材料结算单未确认，不能登记付款。")
-        line_settlements = request._linked_settlement_orders()
-        if not request.settlement_id:
-            if line_settlements and all(settlement.state in ("approve", "done") for settlement in line_settlements):
+        if basis_type == "line_settlement":
+            line_settlements = request._linked_settlement_orders()
+            if line_settlements and all(
+                settlement.state in ("approve", "done")
+                for settlement in line_settlements
+            ):
                 return
-            raise UserError("付款申请未关联结算单，不能登记付款。")
-        if request.settlement_id.state not in ("approve", "done"):
+            raise UserError("付款申请明细关联的结算单未全部审批，不能登记付款。")
+        if basis_type == "contract":
+            contract = request.contract_id
+            if contract and contract.state != "cancel":
+                return
+            raise UserError("付款申请关联合同无效或已取消，不能登记付款。")
+        if basis_type == "standard_settlement" and request.settlement_id.state not in ("approve", "done"):
             ICP = self.env["ir.config_parameter"].sudo()
             soft_gate = bool(self.env.context.get("payment_soft_gate"))
             force_block = str(
@@ -122,6 +168,9 @@ class PaymentLedger(models.Model):
             if soft_gate and not force_block:
                 return
             raise UserError("结算单未处于已审批状态，不能登记付款。")
+        if basis_type == "standard_settlement":
+            return
+        raise UserError("付款申请缺少有效的合同或结算依据，不能登记付款。")
 
     def _check_amount(self):
         for rec in self:
@@ -134,7 +183,10 @@ class PaymentLedger(models.Model):
             if not req:
                 continue
             rounding = req.currency_id.rounding if req.currency_id else 0.01
-            domain = [("payment_request_id", "=", req.id)]
+            domain = [
+                ("payment_request_id", "=", req.id),
+                ("state", "=", "posted"),
+            ]
             if exclude_ids:
                 domain.append(("id", "not in", exclude_ids))
             data = self.env["payment.ledger"].read_group(
@@ -151,24 +203,42 @@ class PaymentLedger(models.Model):
         audited_history_import = bool(
             self.env.context.get("sc_tenant_payload_import")
         )
+        if not self.env.su:
+            raise AccessError(_("付款台账只能由受控付款执行服务创建。"))
         if audited_history_import:
             self.env["sc.tenant.payload.adapter"].assert_import_operator()
-        if not audited_history_import and not self.env.context.get("allow_payment_ledger_create"):
+        if not audited_history_import and not self.env.context.get("_sc_payment_ledger_internal_create"):
             raise UserError("请通过付款申请登记付款记录。")
         request_ids = []
         for vals in vals_list:
+            if not audited_history_import and vals.get("state", "posted") != "posted":
+                raise UserError("付款台账只能先登记为有效台账，再通过受控冲销改变状态。")
             req_id = vals.get("payment_request_id")
             if req_id:
                 request_ids.append(req_id)
             request = self.env["payment.request"].browse(req_id)
             if not audited_history_import:
                 self._check_request_state(request)
+                execution_id = vals.get("payment_execution_id")
+                if execution_id:
+                    execution = self.env["sc.payment.execution"].browse(execution_id).exists()
+                    if not execution or execution.payment_request_id != request:
+                        raise UserError("付款台账的来源付款登记与付款申请不一致。")
         if request_ids:
             if len(request_ids) != len(set(request_ids)):
                 raise UserError("同一付款申请不能生成多条付款台账。")
-            existing = self.search([("payment_request_id", "in", request_ids)], limit=1)
-            if existing:
-                raise UserError("付款申请已存在付款台账，禁止重复生成。")
+            self.env.cr.execute(
+                "SELECT id FROM payment_request WHERE id IN %s FOR UPDATE",
+                [tuple(sorted(set(request_ids)))],
+            )
+            for vals in vals_list:
+                domain = [
+                    ("payment_request_id", "=", vals.get("payment_request_id")),
+                    ("state", "=", "posted"),
+                    ("payment_execution_id", "=", vals.get("payment_execution_id") or False),
+                ]
+                if self.search(domain, limit=1):
+                    raise UserError("该付款登记已存在付款台账，禁止重复生成。")
         records = super().create(vals_list)
         records._check_amount()
         if not audited_history_import:
@@ -176,6 +246,23 @@ class PaymentLedger(models.Model):
         return records
 
     def write(self, vals):
+        if not self.env.su:
+            raise AccessError(_("付款台账属于受控财务事实，不允许直接修改。"))
+        if self.env.context.get("_sc_payment_ledger_internal_reversal"):
+            allowed = {
+                "state",
+                "reversed_at",
+                "reversed_by_id",
+                "reversal_execution_id",
+                "reversal_reason",
+            }
+            if set(vals) - allowed:
+                raise UserError(_("冲销付款台账时不得修改原始付款事实。"))
+            if vals.get("state") != "reversed":
+                raise UserError(_("付款台账受控状态只能变更为已冲销。"))
+            if any(record.state != "posted" for record in self):
+                raise UserError(_("只有有效付款台账可以冲销。"))
+            return super().write(vals)
         allocations = self.fund_plan_allocation_ids
         for rec in self:
             request_id = vals.get("payment_request_id", rec.payment_request_id.id)
@@ -188,13 +275,30 @@ class PaymentLedger(models.Model):
         return res
 
     def unlink(self):
+        raise UserError(_("付款台账属于财务事实，不允许删除；请通过受控冲销保留审计链。"))
+
+    def action_reverse(self, execution, reason=None):
+        self.ensure_one()
+        if not self.env.su:
+            raise AccessError(_("付款台账只能由受控付款执行服务冲销。"))
         if self.fund_plan_allocation_ids:
             raise UserError(
-                _("已有资金计划分配的付款台账不能删除，请先保留或调整审计关系。")
+                _("已有资金计划分配的付款台账不能直接冲销，请先办理分配调整。")
             )
-        for rec in self:
-            self._check_request_state(rec.payment_request_id)
-        return super().unlink()
+        if not execution or execution.payment_request_id != self.payment_request_id:
+            raise UserError(_("冲销来源付款登记与付款台账不一致。"))
+        if self.payment_execution_id and self.payment_execution_id != execution:
+            raise UserError(_("只能由生成该台账的付款登记发起冲销。"))
+        self.with_context(_sc_payment_ledger_internal_reversal=True).write(
+            {
+                "state": "reversed",
+                "reversed_at": fields.Datetime.now(),
+                "reversed_by_id": execution.env.user.id,
+                "reversal_execution_id": execution.id,
+                "reversal_reason": reason or _("付款登记撤销"),
+            }
+        )
+        return self
 
     def action_open_payment_request(self):
         self.ensure_one()
