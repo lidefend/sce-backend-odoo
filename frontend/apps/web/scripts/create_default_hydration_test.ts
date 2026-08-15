@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
   createRouteDefaultsFingerprint,
+  loadAuthoritativeCreateDefaults,
+  resolveCreateDefaultGetRequest,
   resolveCreateDefaults,
   resolveCreateRouteRelationLabels,
   shouldHydrateCreateDefaults,
@@ -73,4 +76,83 @@ assert.equal(shouldHydrateCreateDefaults(7, 'edit'), false);
 assert.equal(shouldHydrateCreateDefaults(7, 'readonly'), false);
 assert.equal(shouldHydrateCreateDefaults(null, 'readonly'), false);
 
-console.log('[create-default-hydration] PASS cases=17');
+const primaryDataSource = {
+  query: 'api.data',
+  intent: 'api.data',
+  params: {
+    op: 'default_get',
+    model: 'x.document',
+    fields: ['title', 'owner_id', 'computed_fact', 'not_on_form', 'title'],
+    context: { default_owner_id: 17 },
+  },
+};
+assert.deepEqual(resolveCreateDefaultGetRequest({
+  primaryDataSource,
+  model: 'x.document',
+  fieldNames: ['title', 'owner_id', 'computed_fact'],
+}), {
+  model: 'x.document',
+  fields: ['computed_fact', 'owner_id', 'title'],
+  context: { default_owner_id: 17 },
+}, 'the normalized data source is restricted to the current form model and fields');
+assert.throws(() => resolveCreateDefaultGetRequest({
+  primaryDataSource,
+  model: 'x.other',
+  fieldNames: ['title'],
+}), /model mismatch/);
+assert.throws(() => resolveCreateDefaultGetRequest({
+  primaryDataSource: { ...primaryDataSource, params: { ...primaryDataSource.params, op: 'read' } },
+  model: 'x.document',
+  fieldNames: ['title'],
+}), /api\.data\/default_get/);
+
+let defaultGetCalls = 0;
+const hydratedDefaults = await loadAuthoritativeCreateDefaults({
+  primaryDataSource,
+  model: 'x.document',
+  fieldNames: ['title', 'owner_id', 'computed_fact'],
+  baseDefaults: { title: 'Route title', owner_id: 17, computed_fact: '' },
+  fetchDefaults: async (request) => {
+    defaultGetCalls += 1;
+    assert.equal(request.model, 'x.document');
+    return { record: { title: 'Authoritative title', computed_fact: 'Derived fact', hidden_fact: 'blocked' } };
+  },
+});
+assert.equal(defaultGetCalls, 1, 'a declared default_get source is consumed exactly once');
+assert.deepEqual(hydratedDefaults, {
+  title: 'Authoritative title',
+  owner_id: 17,
+  computed_fact: 'Derived fact',
+}, 'authoritative model defaults override route fallbacks without injecting undeclared fields');
+const legacyDefaults = await loadAuthoritativeCreateDefaults({
+  primaryDataSource: {},
+  model: 'x.document',
+  fieldNames: ['title'],
+  baseDefaults: { title: 'Legacy fallback' },
+  fetchDefaults: async () => {
+    defaultGetCalls += 1;
+    return { record: {} };
+  },
+});
+assert.deepEqual(legacyDefaults, { title: 'Legacy fallback' });
+assert.equal(defaultGetCalls, 1, 'a legacy contract without a primary source performs no request');
+await assert.rejects(() => loadAuthoritativeCreateDefaults({
+  primaryDataSource,
+  model: 'x.document',
+  fieldNames: ['title'],
+  baseDefaults: { title: 'Must not silently win' },
+  fetchDefaults: async () => ({}),
+}), /response record is required/, 'a malformed declared response fails closed instead of using static fallbacks');
+
+const lifecycleSource = fs.readFileSync(
+  'frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts',
+  'utf8',
+);
+assert.match(lifecycleSource, /await loadAuthoritativeCreateDefaults\(/);
+assert.match(lifecycleSource, /fetchDefaults:\s*defaultContractFormRecord/);
+assert.ok(
+  lifecycleSource.indexOf('shouldHydrateCreateDefaults') < lifecycleSource.indexOf('await loadAuthoritativeCreateDefaults('),
+  'default_get consumption remains inside the create-only branch',
+);
+
+console.log('[create-default-hydration] PASS cases=28');
