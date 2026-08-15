@@ -131,6 +131,22 @@ export async function readRecord(params: {
   });
 }
 
+export async function defaultRecord(params: {
+  model: string;
+  fields?: string[] | '*';
+  context?: Record<string, unknown>;
+}) {
+  return intentRequest<{ record: Record<string, unknown> }>({
+    intent: 'api.data',
+    params: {
+      op: 'default_get',
+      model: params.model,
+      fields: params.fields ?? ['id', 'name'],
+      context: params.context ?? {},
+    },
+  });
+}
+
 export async function readRecordRaw(params: {
   model: string;
   ids: number[];
