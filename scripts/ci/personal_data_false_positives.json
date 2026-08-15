@@ -14,27 +14,6 @@
       "blob_id": "20e0342eb6382508164de58e2f8be61c6cece7bf",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
-      "blob_id": "f2156e8e1bfd60f4f58bd2ea0684a0a22a0fdb7a",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "695a8900fd45ba35b50c2b7c2e369aeb8632eeee",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
-      "blob_id": "bc2eaf30e04aac1880176f78d7183a1e3bf844d3",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
     }
   ]
 }
