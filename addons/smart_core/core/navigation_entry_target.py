@@ -167,6 +167,7 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
     # of pairing the returned action with the caller's current menu.
     effective_menu_id = _to_int(payload.get("menu_id")) or _to_int(menu_id)
     if isinstance(payload.get("entry_target"), dict) and _text(payload["entry_target"].get("type")):
+        _project_action_result_presentation(payload["entry_target"], payload)
         return payload
     params = payload.get("params") if isinstance(payload.get("params"), dict) else {}
     next_action = params.get("next") if isinstance(params.get("next"), dict) else None
@@ -231,8 +232,25 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
             compatibility_refs = entry_target.setdefault("compatibility_refs", {})
             if isinstance(compatibility_refs, dict):
                 compatibility_refs["view_id"] = view_id
+        _project_action_result_presentation(entry_target, payload)
         payload["entry_target"] = entry_target
     return payload
+
+
+def _project_action_result_presentation(entry_target: dict, payload: dict) -> None:
+    """Keep transient action display authority with its normalized target."""
+    title = _text(payload.get("name"))
+    if not title:
+        return
+    presentation = entry_target.get("presentation")
+    presentation = dict(presentation) if isinstance(presentation, dict) else {}
+    presentation.update(
+        {
+            "title": title,
+            "title_authority": "odoo_action_result",
+        }
+    )
+    entry_target["presentation"] = presentation
 
 
 def _explicit_form_view_id(payload: dict) -> int:

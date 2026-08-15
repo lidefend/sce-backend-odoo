@@ -105,6 +105,7 @@ class TestNavigationEntryTarget(unittest.TestCase):
             None,
             {
                 "type": "ir.actions.act_window",
+                "name": "Create target document",
                 "res_model": "x.relation.wizard",
                 "view_mode": "form",
                 "target": "new",
@@ -117,7 +118,37 @@ class TestNavigationEntryTarget(unittest.TestCase):
         entry_target = action["entry_target"]
         self.assertEqual(entry_target["route"], "/f/x.relation.wizard/new")
         self.assertEqual(entry_target["compatibility_refs"]["model"], "x.relation.wizard")
+        self.assertEqual(
+            entry_target["presentation"],
+            {
+                "title": "Create target document",
+                "title_authority": "odoo_action_result",
+            },
+        )
         self.assertNotIn("record_entry", entry_target)
+
+    def test_existing_entry_target_receives_action_result_title_authority(self):
+        action = navigation_entry_target.normalize_odoo_action_result(
+            None,
+            {
+                "type": "ir.actions.act_window",
+                "name": "Create reviewed item",
+                "entry_target": {
+                    "type": "compatibility",
+                    "route": "/f/x.review/new",
+                    "presentation": {"subtitle": "Review"},
+                },
+            },
+        )
+
+        self.assertEqual(
+            action["entry_target"]["presentation"],
+            {
+                "subtitle": "Review",
+                "title": "Create reviewed item",
+                "title_authority": "odoo_action_result",
+            },
+        )
 
     def test_modal_form_action_preserves_explicit_view_without_guessing_menu_action(self):
         class _ActionModel:

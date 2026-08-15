@@ -4225,3 +4225,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   same-model preservation, missing-model behavior, explicit target-query
   precedence and the real form-navigation runtime. Strict typecheck, static
   build and the complete frontend release-unit collection pass locally.
+
+# P0 action-result title authority (2026-08-15)
+
+- Branch / base SHA: `fix/p0-action-result-title-authority-v1` /
+  `7b1fe48151ee19adc72d8062d77c98b5e863e5a7`.
+- Formal Product Layer / Layer Target / Module: P0 platform / normalized action
+  continuation presentation / `smart_core` and the generic contract frontend.
+- Reason / boundary: a transient Odoo action could authoritatively override its
+  target title, but normalization discarded that title while retaining only
+  action/model/view references. The target create page therefore fell back to
+  a business-category label even though the backend returned a professional
+  continuation title.
+- Why Here / Why Not Elsewhere: action-result presentation is a shared target
+  contract fact. No payment, construction, customer, fixture, database or
+  environment special case is introduced.
+- Blast radius / validation: generic cross-model and same-model action
+  continuations. Backend normalization, route projection and final create-page
+  identity tests prove the transient title survives end to end while stale
+  source query state remains excluded.
