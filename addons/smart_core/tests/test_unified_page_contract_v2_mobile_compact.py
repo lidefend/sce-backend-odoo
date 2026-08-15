@@ -1823,6 +1823,50 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertNotIn("hidden_internal_note", rendered_names)
         self.assertEqual(sheet_children[1]["children"][0]["name"], "line_ids")
 
+    def test_readonly_form_structure_notebook_declares_subordinate_authority(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "render_profile": "readonly",
+            "fields": {
+                "name": {"name": "name", "type": "char", "string": "编号"},
+            },
+            "form_structure_contract": {
+                "source": "ui.contract.v2.form_structure_contract",
+                "mode": "business_task_form",
+                "navigation": {"title": "关联信息"},
+                "slots": [
+                    {
+                        "slot": "primary_facts",
+                        "title": "业务事实",
+                        "groups": [
+                            {"name": "identity", "title": "业务识别", "fieldRefs": ["name"]},
+                        ],
+                    },
+                ],
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.form.readonly.subordinate.notebook",
+        )
+
+        def walk(nodes):
+            for node in nodes:
+                yield node
+                yield from walk(node.get("children") or [])
+
+        notebook = next(
+            node
+            for node in walk(full["layoutContract"]["containerTree"])
+            if node.get("type") == "notebook"
+        )
+        self.assertTrue(notebook["sourceAuthority"]["projection_only"])
+        self.assertTrue(notebook["sourceAuthority"]["no_business_fact_authority"])
+
     def test_governed_form_layout_overlay_takes_precedence_over_form_structure(self):
         source = {
             "model": "res.partner",
