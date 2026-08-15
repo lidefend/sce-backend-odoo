@@ -646,7 +646,6 @@ import { useRecordActionPresentation } from './contractForm/useRecordActionPrese
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
 import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigationActionsRuntime';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
-import { applyRouteRelationLabel } from './contractForm/routeRelationLabel';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
 import {
   createRouteDefaultsFingerprint,
@@ -1668,7 +1667,7 @@ const {
   ApiError, ContractAccessPolicyError, ContractV2DecodeError,
   ErrorCodes, actionId, advancedExpanded,
   analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent,
-  applyRouteRelationLabel, buildRouteContractContext, changedFieldCount,
+  buildRouteContractContext, changedFieldCount,
   changedFieldSet, chatterLoading, clearNativeAttachmentError,
   clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments,
   closeNativeChatterComposer, contract, contractAccessPolicy,
