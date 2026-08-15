@@ -8,6 +8,7 @@ from typing import Any
 
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .source_authority import build_source_authority_contract
+from .unified_page_contract_v2_permissions import permission_auth_level, resolve_permission_rights
 from .unified_page_contract_v2_runtime_actions import normalize_runtime_business_actions
 
 CONTRACT_VERSION = "2.2.0"
@@ -2176,16 +2177,16 @@ def _ui_contract_page_auth(source: dict[str, Any], ui: dict[str, Any], render_pr
         _dict(_dict(source.get("head")).get("permissions")),
         _dict(ui.get("permissions")),
         _dict(source.get("permissions")),
-        _dict(_dict(source.get("permission_surface")).get("rights")),
-        _dict(_dict(_dict(source.get("permission_surface")).get("effective")).get("rights")),
+        _dict(source.get("permission_surface")),
     ]
     rights: dict[str, Any] = {}
     for row in permission_sources:
-        if row:
-            rights = row
+        resolved = resolve_permission_rights(row)
+        if resolved:
+            rights = resolved
             break
     if rights:
-        return "edit" if rights.get("write") is True or rights.get("create") is True else "read"
+        return permission_auth_level(rights, fallback="read")
     if render_profile in {"create", "edit"}:
         return "edit"
     return "read" if view_type in {"tree", "list", "kanban"} else "edit"
