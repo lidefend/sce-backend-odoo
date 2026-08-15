@@ -459,7 +459,12 @@ class UiContractV2Handler(BaseIntentHandler):
             "locked_columns": [],
             "must_request_columns": list(locked_profile.get("fact_columns") or columns),
         }
-        self._project_v2_source_policies(contract, {"list_profile": locked_profile})
+        self._project_v2_source_policies(contract, {
+            "list_profile": locked_profile,
+            "_canonical_list_visible_status_fields": list(
+                source_contract.get("_canonical_list_visible_status_fields") or []
+            ),
+        })
         profile_projection = ((contract.get("layoutContract") or {}).get("listProfile") or {})
         source_authority = profile_projection.get("sourceAuthority") if isinstance(profile_projection, dict) else {}
         if isinstance(source_authority, dict):
@@ -2773,6 +2778,45 @@ class UiContractV2Handler(BaseIntentHandler):
                 canonical_column_visibility[name] = False
             else:
                 canonical_column_visibility[name] = True
+        field_policies = source_contract.get("field_policies") if isinstance(source_contract.get("field_policies"), dict) else {}
+        fields_map = source_contract.get("fields") if isinstance(source_contract.get("fields"), dict) else {}
+        meta_fields = source_contract.get("meta_fields") if isinstance(source_contract.get("meta_fields"), list) else []
+        source_modifiers = source_contract.get("modifiers") if isinstance(source_contract.get("modifiers"), dict) else {}
+        modifier_patches = source_contract.get("modifiers_patch") if isinstance(source_contract.get("modifiers_patch"), dict) else {}
+        visibility_constrained_fields: set[str] = set()
+        for name in columns:
+            policy = field_policies.get(name) if isinstance(field_policies.get(name), dict) else {}
+            descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
+            if (
+                isinstance(policy.get("visible"), bool)
+                or any(key in descriptor for key in ("visible", "invisible", "column_invisible", "modifiers", "attrs"))
+                or isinstance(source_modifiers.get(name), dict)
+                or isinstance(modifier_patches.get(name), dict)
+            ):
+                visibility_constrained_fields.add(name)
+        for descriptor in meta_fields:
+            if not isinstance(descriptor, dict):
+                continue
+            name = str(descriptor.get("name") or descriptor.get("field") or descriptor.get("fieldCode") or "").strip()
+            if name and any(
+                key in descriptor
+                for key in ("visible", "invisible", "column_invisible", "modifiers", "attrs")
+            ):
+                visibility_constrained_fields.add(name)
+        for descriptor in [*raw_columns, *tree_schema_rows]:
+            if not isinstance(descriptor, dict):
+                continue
+            name = str(descriptor.get("name") or descriptor.get("field") or "").strip()
+            if name and any(
+                key in descriptor
+                for key in ("visible", "invisible", "column_invisible", "modifiers", "attrs")
+            ):
+                visibility_constrained_fields.add(name)
+        source_contract["_canonical_list_visible_status_fields"] = [
+            name
+            for name in columns
+            if canonical_column_visibility.get(name) is True and name not in visibility_constrained_fields
+        ]
         profile.update({
             "source": "ui.contract.v2.legacy_55_legacy_visible_projection" if legacy_override else "ui.contract.v2.business_operation_projection",
             "columns": columns,

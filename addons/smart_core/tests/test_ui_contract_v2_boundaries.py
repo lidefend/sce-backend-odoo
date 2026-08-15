@@ -1305,6 +1305,401 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(schema["next_action"]["optional"], "show")
         self.assertIn("recorded_at", profile["hidden_columns"])
         self.assertEqual(schema["recorded_at"]["optional"], "hide")
+        self.assertIn("next_action", source_contract["_canonical_list_visible_status_fields"])
+        self.assertNotIn("recorded_at", source_contract["_canonical_list_visible_status_fields"])
+
+    def test_canonical_list_visibility_also_updates_final_widget_status(self):
+        handler = self.module.UiContractV2Handler(env={})
+        contract = {
+            "pageInfo": {"viewType": "list"},
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "main.table",
+                    "widgetList": [
+                        {
+                            "widgetId": "field.next_action",
+                            "widgetType": "table",
+                            "fieldCode": "next_action",
+                            "componentKey": "sc.table.data",
+                        },
+                        {
+                            "widgetId": "field.recorded_at",
+                            "widgetType": "table",
+                            "fieldCode": "recorded_at",
+                            "componentKey": "sc.table.data",
+                        },
+                    ],
+                }],
+            },
+            "statusContract": {
+                "widgetStatus": [
+                    {"widgetId": "field.next_action", "visible": False, "readonly": True, "auth": "none"},
+                    {"widgetId": "field.recorded_at", "visible": True, "readonly": True, "auth": "read"},
+                ],
+            },
+        }
+        source_contract = {
+            "_canonical_list_visible_status_fields": ["next_action"],
+            "list_profile": {
+                "columns": ["next_action", "recorded_at"],
+                "hidden_columns": ["recorded_at"],
+            },
+        }
+
+        handler._project_v2_source_policies(contract, source_contract)
+
+        status = {
+            row["widgetId"]: row
+            for row in contract["statusContract"]["widgetStatus"]
+        }
+        self.assertTrue(status["field.next_action"]["visible"])
+        self.assertEqual(status["field.next_action"]["auth"], "read")
+        self.assertFalse(status["field.recorded_at"]["visible"])
+        self.assertEqual(status["field.recorded_at"]["auth"], "none")
+
+    def test_canonical_list_visibility_does_not_widen_explicit_field_policy(self):
+        handler = self.module.UiContractV2Handler(env={})
+        contract = {
+            "pageInfo": {"viewType": "list"},
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "main.table",
+                    "widgetList": [{
+                        "widgetId": "field.restricted_fact",
+                        "widgetType": "table",
+                        "fieldCode": "restricted_fact",
+                        "componentKey": "sc.table.data",
+                    }],
+                }],
+            },
+            "statusContract": {
+                "widgetStatus": [{
+                    "widgetId": "field.restricted_fact",
+                    "visible": False,
+                    "readonly": True,
+                    "auth": "none",
+                }],
+            },
+        }
+        source_contract = {
+            "_canonical_list_visible_status_fields": [],
+            "list_profile": {
+                "columns": ["restricted_fact"],
+                "hidden_columns": [],
+            },
+            "field_policies": {
+                "restricted_fact": {"visible": False},
+            },
+        }
+
+        handler._project_v2_source_policies(contract, source_contract)
+
+        status = contract["statusContract"]["widgetStatus"][0]
+        self.assertFalse(status["visible"])
+        self.assertEqual(status["auth"], "none")
+
+    def test_canonical_list_visibility_does_not_widen_native_modifier(self):
+        handler = self.module.UiContractV2Handler(env={})
+        contract = {
+            "pageInfo": {"viewType": "list"},
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "main.table",
+                    "widgetList": [{
+                        "widgetId": "field.conditional_fact",
+                        "widgetType": "table",
+                        "fieldCode": "conditional_fact",
+                        "componentKey": "sc.table.data",
+                    }],
+                }],
+            },
+            "statusContract": {
+                "widgetStatus": [{
+                    "widgetId": "field.conditional_fact",
+                    "visible": False,
+                    "readonly": True,
+                    "auth": "none",
+                }],
+            },
+        }
+        source_contract = {
+            "_canonical_list_visible_status_fields": [],
+            "views": {
+                "tree": {
+                    "columns_schema": [{
+                        "name": "conditional_fact",
+                        "optional": "show",
+                        "column_invisible": "state != 'ready'",
+                    }],
+                },
+            },
+            "list_profile": {
+                "columns": ["conditional_fact"],
+                "hidden_columns": [],
+            },
+        }
+
+        handler._project_v2_source_policies(contract, source_contract)
+
+        status = contract["statusContract"]["widgetStatus"][0]
+        self.assertFalse(status["visible"])
+        self.assertEqual(status["auth"], "none")
+
+    def test_canonical_recovery_marker_excludes_top_level_modifier_patch(self):
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *_args, **_kwargs: {
+            "x.document": {"visible": ["name", "conditional_fact"]},
+        }
+        try:
+            handler = self.module.UiContractV2Handler(env={})
+            source_contract = {
+                "model": "x.document",
+                "fields": {"name": {}, "conditional_fact": {}},
+                "views": {"tree": {"columns": ["name", "conditional_fact"]}},
+                "modifiers_patch": {"conditional_fact": {"invisible": True}},
+                "list_profile": {},
+            }
+            handler._merge_business_list_profile(
+                source_contract,
+                common_fields=[], amount_fields=[], note_field="", status_field="",
+                label_for=lambda name: name, type_for=lambda name: "char",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        recovery = source_contract["_canonical_list_visible_status_fields"]
+        self.assertIn("name", recovery)
+        self.assertNotIn("conditional_fact", recovery)
+
+    def test_canonical_recovery_marker_excludes_top_level_modifiers_and_preserves_denial(self):
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *_args, **_kwargs: {
+            "x.document": {"visible": ["name", "conditional_fact"]},
+        }
+        try:
+            handler = self.module.UiContractV2Handler(env={})
+            source_contract = {
+                "model": "x.document",
+                "fields": {"name": {}, "conditional_fact": {}},
+                "views": {"tree": {"columns": ["name", "conditional_fact"]}},
+                "modifiers": {"conditional_fact": {"invisible": True}},
+                "list_profile": {},
+            }
+            handler._merge_business_list_profile(
+                source_contract,
+                common_fields=[], amount_fields=[], note_field="", status_field="",
+                label_for=lambda name: name, type_for=lambda name: "char",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        recovery = source_contract["_canonical_list_visible_status_fields"]
+        self.assertIn("name", recovery)
+        self.assertNotIn("conditional_fact", recovery)
+
+        contract = {
+            "pageInfo": {"viewType": "list"},
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "main.table",
+                    "widgetList": [{
+                        "widgetId": "field.conditional_fact",
+                        "widgetType": "table",
+                        "fieldCode": "conditional_fact",
+                        "componentKey": "sc.table.data",
+                    }],
+                }],
+            },
+            "statusContract": {"widgetStatus": [{
+                "widgetId": "field.conditional_fact",
+                "visible": False,
+                "readonly": True,
+                "auth": "none",
+            }]},
+        }
+        handler._project_v2_source_policies(contract, source_contract)
+
+        status = contract["statusContract"]["widgetStatus"][0]
+        self.assertFalse(status["visible"])
+        self.assertEqual(status["auth"], "none")
+
+    def test_canonical_recovery_marker_excludes_meta_field_modifier(self):
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *_args, **_kwargs: {
+            "x.document": {"visible": ["name", "conditional_fact"]},
+        }
+        try:
+            handler = self.module.UiContractV2Handler(env={})
+            source_contract = {
+                "model": "x.document",
+                "fields": {"name": {}, "conditional_fact": {}},
+                "meta_fields": [
+                    {"name": "name"},
+                    {"name": "conditional_fact", "invisible": True},
+                ],
+                "views": {"tree": {"columns": ["name", "conditional_fact"]}},
+                "list_profile": {},
+            }
+            handler._merge_business_list_profile(
+                source_contract,
+                common_fields=[], amount_fields=[], note_field="", status_field="",
+                label_for=lambda name: name, type_for=lambda name: "char",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        recovery = source_contract["_canonical_list_visible_status_fields"]
+        self.assertIn("name", recovery)
+        self.assertNotIn("conditional_fact", recovery)
+
+    def test_list_canonical_visibility_recovers_form_profile_only_status(self):
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *_args, **_kwargs: {
+            "x.document": {"visible": ["readonly_fact"]},
+        }
+        try:
+            handler = self.module.UiContractV2Handler(env={})
+            source_contract = {
+                "model": "x.document",
+                "fields": {"readonly_fact": {}},
+                "field_policies": {
+                    "readonly_fact": {"visible_profiles": ["readonly"]},
+                },
+                "views": {"tree": {"columns": ["readonly_fact"]}},
+                "list_profile": {},
+            }
+            handler._merge_business_list_profile(
+                source_contract,
+                common_fields=[], amount_fields=[], note_field="", status_field="",
+                label_for=lambda name: name, type_for=lambda name: "char",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        self.assertIn(
+            "readonly_fact",
+            source_contract["_canonical_list_visible_status_fields"],
+        )
+        contract = {
+            "pageInfo": {"viewType": "list"},
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "main.table",
+                    "widgetList": [{
+                        "widgetId": "field.readonly_fact",
+                        "widgetType": "table",
+                        "fieldCode": "readonly_fact",
+                        "componentKey": "sc.table.data",
+                    }],
+                }],
+            },
+            "statusContract": {"widgetStatus": [{
+                "widgetId": "field.readonly_fact",
+                "visible": False,
+                "readonly": True,
+                "auth": "none",
+            }]},
+        }
+        handler._project_v2_source_policies(contract, source_contract)
+        status = contract["statusContract"]["widgetStatus"][0]
+        self.assertTrue(status["visible"])
+        self.assertEqual(status["auth"], "read")
+
+    def test_canonical_list_visibility_does_not_create_missing_status(self):
+        handler = self.module.UiContractV2Handler(env={})
+        contract = {
+            "pageInfo": {"viewType": "list"},
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "main.table",
+                    "widgetList": [{
+                        "widgetId": "field.next_action",
+                        "widgetType": "table",
+                        "fieldCode": "next_action",
+                        "componentKey": "sc.table.data",
+                    }],
+                }],
+            },
+            "statusContract": {"widgetStatus": []},
+        }
+        source_contract = {
+            "_canonical_list_visible_status_fields": ["next_action"],
+            "list_profile": {"columns": ["next_action"], "hidden_columns": []},
+        }
+
+        handler._project_v2_source_policies(contract, source_contract)
+
+        self.assertEqual(contract["statusContract"]["widgetStatus"], [])
+
+    def test_canonical_list_visibility_ignores_non_list_contract(self):
+        handler = self.module.UiContractV2Handler(env={})
+        contract = {
+            "pageInfo": {"viewType": "form"},
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "main.form",
+                    "widgetList": [{
+                        "widgetId": "field.next_action",
+                        "widgetType": "table",
+                        "fieldCode": "next_action",
+                        "componentKey": "sc.table.data",
+                    }],
+                }],
+            },
+            "statusContract": {"widgetStatus": [{
+                "widgetId": "field.next_action",
+                "visible": False,
+                "readonly": True,
+                "auth": "none",
+            }]},
+        }
+        source_contract = {
+            "_canonical_list_visible_status_fields": ["next_action"],
+            "list_profile": {"columns": ["next_action"], "hidden_columns": []},
+        }
+
+        handler._project_v2_source_policies(contract, source_contract)
+
+        self.assertFalse(contract["statusContract"]["widgetStatus"][0]["visible"])
+
+    def test_authoritative_second_projection_preserves_recovery_provenance(self):
+        handler = self.module.UiContractV2Handler(env={})
+        contract = {
+            "pageInfo": {"viewType": "list"},
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "main.table",
+                    "widgetList": [{
+                        "widgetId": "field.next_action",
+                        "widgetType": "table",
+                        "fieldCode": "next_action",
+                        "componentKey": "sc.table.data",
+                    }],
+                }],
+            },
+            "statusContract": {"widgetStatus": [{
+                "widgetId": "field.next_action",
+                "visible": False,
+                "readonly": True,
+                "auth": "none",
+            }]},
+        }
+        profile = {"columns": ["next_action"], "hidden_columns": []}
+        full_source = {
+            "_canonical_list_visible_status_fields": ["next_action"],
+            "list_profile": profile,
+        }
+
+        handler._project_v2_source_policies(contract, full_source)
+        handler._project_v2_source_policies(contract, {
+            "list_profile": profile,
+            "_canonical_list_visible_status_fields": ["next_action"],
+        })
+
+        status = contract["statusContract"]["widgetStatus"]
+        self.assertEqual(len(status), 1)
+        self.assertTrue(status[0]["visible"])
+        self.assertEqual(status[0]["auth"], "read")
 
     def test_action_specific_visible_overrides_product_default_hidden(self):
         class _Config:

@@ -101,6 +101,91 @@ def project_v2_source_policies(
         existing_profile.update(projected_profile)
         layout_contract["listProfile"] = existing_profile
         contract["layoutContract"] = layout_contract
+        sync_v2_list_widget_status_from_profile(contract, source_contract)
+
+
+def sync_v2_list_widget_status_from_profile(
+    contract: dict[str, Any],
+    source_contract: dict[str, Any],
+) -> None:
+    """Align table status without widening an unproven field.
+
+    The recovery list is computed before assembly while the full native and
+    policy provenance is still available.  Missing or otherwise unexplained
+    status rows remain fail-closed, hidden columns may only be tightened, and
+    this projection never grants edit.
+    """
+    page_info = contract.get("pageInfo") if isinstance(contract.get("pageInfo"), dict) else {}
+    if str(page_info.get("viewType") or page_info.get("view_type") or "").strip().lower() not in {"tree", "list"}:
+        return
+    profile = source_contract.get("list_profile") if isinstance(source_contract.get("list_profile"), dict) else {}
+    recoverable_fields = {
+        str(name or "").strip()
+        for name in (
+            source_contract.get("_canonical_list_visible_status_fields")
+            if isinstance(source_contract.get("_canonical_list_visible_status_fields"), list)
+            else []
+        )
+        if str(name or "").strip()
+    }
+    hidden_fields = {
+        str(name or "").strip()
+        for name in (
+            profile.get("hidden_columns")
+            if isinstance(profile.get("hidden_columns"), list)
+            else []
+        )
+        if str(name or "").strip()
+    }
+    if not recoverable_fields and not hidden_fields:
+        return
+    layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
+    containers = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
+    table_widgets: dict[str, str] = {}
+
+    def visit(rows: list[Any]) -> None:
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            for widget in row.get("widgetList") if isinstance(row.get("widgetList"), list) else []:
+                if not isinstance(widget, dict):
+                    continue
+                field_code = str(widget.get("fieldCode") or "").strip()
+                widget_id = str(widget.get("widgetId") or "").strip()
+                widget_type = str(widget.get("widgetType") or "").strip().lower()
+                component_key = str(widget.get("componentKey") or "").strip()
+                if (
+                    field_code in recoverable_fields | hidden_fields
+                    and widget_id
+                    and (widget_type == "table" or component_key == "sc.table.data")
+                ):
+                    table_widgets[widget_id] = field_code
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                children = row.get(key)
+                if isinstance(children, list):
+                    visit(children)
+
+    visit(containers)
+    if not table_widgets:
+        return
+
+    status_contract = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
+    widget_status = status_contract.get("widgetStatus") if isinstance(status_contract.get("widgetStatus"), list) else []
+    for row in widget_status:
+        if not isinstance(row, dict):
+            continue
+        widget_id = str(row.get("widgetId") or "").strip()
+        field_code = table_widgets.get(widget_id)
+        if not field_code:
+            continue
+        if field_code in hidden_fields:
+            row["visible"] = False
+            row["auth"] = "none"
+        elif field_code in recoverable_fields and row.get("visible") is False:
+            row["visible"] = True
+            if row.get("auth") == "none":
+                row["auth"] = "read"
+    set_v2_widget_status(contract, widget_status)
 
 
 def apply_field_policies_to_v2_status(contract_v2: dict[str, Any], source_contract: dict[str, Any]) -> None:
