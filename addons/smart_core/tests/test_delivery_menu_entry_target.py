@@ -224,6 +224,45 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
 
         self.assertEqual(projected, [])
 
+    def test_navigation_downgrades_denied_action_parent_and_keeps_authorized_child(self):
+        authorized_child = self._native_leaf(
+            label="有权子场景",
+            menu_id=13,
+            action_id=23,
+            route="/s/projects.list",
+            scene_key="projects.list",
+        )
+        denied_parent = self._native_leaf(
+            label="无权父场景",
+            menu_id=12,
+            action_id=22,
+            route="/s/projects.workspace",
+            scene_key="projects.workspace",
+        )
+        denied_parent["children"] = [authorized_child]
+
+        projected = menu_service.MenuService.filter_nav_by_route_authority(
+            [denied_parent],
+            {
+                "primary_actions": [{"menu_id": 13, "action_id": 23}],
+                "role_home_actions": [],
+                "contextual_actions": [],
+                "admin_actions": [],
+            },
+        )
+
+        self.assertEqual(len(projected), 1)
+        container = projected[0]
+        self.assertEqual(container["target_type"], "directory")
+        self.assertEqual(container["delivery_mode"], "none")
+        self.assertFalse(container["is_clickable"])
+        self.assertEqual(container["reason_code"], "DIRECTORY_ONLY")
+        for key in ("action_id", "route", "scene_key", "entry_target", "target"):
+            self.assertNotIn(key, container)
+            self.assertNotIn(key, container["meta"])
+        self.assertEqual([row["label"] for row in container["children"]], ["有权子场景"])
+        self.assertEqual(container["children"][0]["meta"]["action_id"], 23)
+
     def test_client_action_is_native_odoo_only_and_not_product_runtime_allowed(self):
         action = types.SimpleNamespace(
             active=True,

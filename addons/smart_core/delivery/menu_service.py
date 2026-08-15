@@ -515,6 +515,38 @@ class MenuService:
             if isinstance(row, dict)
         }
 
+        def as_directory_container(node: dict, children: list[dict]) -> dict:
+            """Preserve an authorized subtree without exposing its denied parent target."""
+            target_keys = {
+                "action",
+                "action_id",
+                "actionId",
+                "action_xmlid",
+                "active_match",
+                "entry_target",
+                "model",
+                "native_action_id",
+                "native_model",
+                "native_view_mode",
+                "res_model",
+                "route",
+                "scene_key",
+                "sceneKey",
+                "target",
+            }
+            candidate = {key: value for key, value in node.items() if key not in target_keys}
+            meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+            candidate["meta"] = {key: value for key, value in meta.items() if key not in target_keys}
+            candidate.update({
+                "children": children,
+                "target_type": "directory",
+                "delivery_mode": "none",
+                "is_clickable": False,
+                "availability_status": "ok",
+                "reason_code": "DIRECTORY_ONLY",
+            })
+            return candidate
+
         def walk(node: dict):
             if not isinstance(node, dict):
                 return None
@@ -531,13 +563,15 @@ class MenuService:
                 action_id = int(node.get("action_id") or meta.get("action_id") or 0)
             except (TypeError, ValueError):
                 menu_id = action_id = 0
+            children = [kept for child in node.get("children") or [] if (kept := walk(child))]
             # The SPA freezes every menu click into one menu/action/authority
             # tuple before choosing an action or scene target.  A scene_key
             # therefore cannot make an otherwise unauthorized action carrier
-            # executable; leaving it visible would create a dead menu entry.
+            # executable.  An independently authorized child remains valid,
+            # so a denied parent target becomes a directory rather than
+            # deleting the authorized subtree.
             if action_id > 0 and (menu_id, action_id) not in allowed_pairs:
-                return None
-            children = [kept for child in node.get("children") or [] if (kept := walk(child))]
+                return as_directory_container(node, children) if children else None
             candidate = dict(node)
             candidate["children"] = children
             has_route = bool(

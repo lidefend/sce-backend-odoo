@@ -27,8 +27,8 @@ Generated from repository source files. This report is informational during the 
 | 2509 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2464 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2432 | Python source | `addons/smart_core/handlers/system_init.py` |
+| 2299 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2298 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2265 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2263 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 2171 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2076 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
@@ -71,7 +71,7 @@ Generated from repository source files. This report is informational during the 
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1315 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
-| 1269 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
+| 1308 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1260 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1245 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
@@ -151,8 +151,8 @@ Generated from repository source files. This report is informational during the 
 | 2509 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2464 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2432 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
+| 2299 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2298 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2265 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2263 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 2171 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2076 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
@@ -188,7 +188,7 @@ Generated from repository source files. This report is informational during the 
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1315 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
-| 1269 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
+| 1308 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1260 | warning | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1256 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1245 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
