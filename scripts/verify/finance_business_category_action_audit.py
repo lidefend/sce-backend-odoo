@@ -25,10 +25,7 @@ CATEGORY_ACTIONS = {
         "label": "支付申请",
         "model": "payment.request",
         "action": "action_payment_request_user_payment_apply",
-        "menus": [
-            "menu_sc_user_payment_apply",
-            "menu_sc_user_payment_apply_acceptance",
-        ],
+        "menus": ["menu_sc_user_payment_apply"],
         "context": {
             "default_type": "pay",
             "default_business_category_code": "finance.payment.apply.pay",

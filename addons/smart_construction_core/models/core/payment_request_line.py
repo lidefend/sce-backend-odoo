@@ -106,8 +106,10 @@ class PaymentRequestLine(models.Model):
         }
 
     def unlink(self):
-        locked = self.filtered(lambda rec: rec.request_id and rec.request_id.state not in ("draft", "cancel"))
+        locked = self.filtered(
+            lambda rec: rec.request_id and rec.request_id.state not in ("draft", "rejected", "cancel")
+        )
         if locked:
-            raise UserError("仅草稿或已取消付款申请的明细允许删除。")
+            raise UserError("仅草稿、已驳回或已取消付款申请的明细允许删除。")
         self._sc_raise_delete_blockers(action_label="删除付款申请明细")
         return super().unlink()

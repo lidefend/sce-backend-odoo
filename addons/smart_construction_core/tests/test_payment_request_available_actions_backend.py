@@ -27,7 +27,13 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         )
 
     def _create_payment_request_minimal(self):
-        project = self.env["project.project"].create({"name": "Action Matrix Project", "funding_enabled": True})
+        project = self.env["project.project"].create(
+            {
+                "name": "Action Matrix Project",
+                "funding_enabled": True,
+                "company_id": self.env.company.id,
+            }
+        )
         partner = self.env["res.partner"].create({"name": "Action Matrix Partner"})
         contract = self.env["construction.contract"].create(
             {
@@ -65,7 +71,14 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
 
     def test_available_actions_success_shape(self):
         payment = self._create_payment_request_minimal()
-        handler = PaymentRequestAvailableActionsHandler(self.env, payload={})
+        finance_user = self._create_user(
+            "payment_actions_finance_user",
+            ["base.group_user", "smart_construction_core.group_sc_cap_finance_user"],
+        )
+        payment.project_id.user_id = finance_user
+        handler = PaymentRequestAvailableActionsHandler(
+            self.env(user=finance_user.id), payload={}
+        )
         result = handler.handle({"id": payment.id})
         self.assertTrue(result.get("ok"))
         data = result.get("data") or {}
@@ -131,3 +144,53 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         self.assertTrue(submit.get("allowed"))
         self.assertTrue(submit.get("actor_matches_required_role"))
         self.assertFalse(submit.get("handoff_required"))
+
+    def test_pay_request_done_action_requires_professional_execution(self):
+        payment = self._create_payment_request_minimal()
+        manager = self._create_user(
+            "payment_done_finance_manager",
+            ["base.group_user", "smart_construction_core.group_sc_cap_finance_manager"],
+        )
+        payment.project_id.user_id = manager
+        self.env.cr.execute(
+            "UPDATE payment_request SET state='approved', validation_status='validated' WHERE id=%s",
+            (payment.id,),
+        )
+        payment.invalidate_recordset(["state", "validation_status"])
+        result = PaymentRequestAvailableActionsHandler(
+            self.env(user=manager.id), payload={"id": payment.id}
+        ).handle({"id": payment.id})
+        done = next(
+            row
+            for row in (result.get("data") or {}).get("actions", [])
+            if row.get("key") == "done"
+        )
+        self.assertFalse(done.get("allowed"))
+        self.assertEqual(done.get("reason_code"), "PAYMENT_EXECUTION_REQUIRED")
+
+    def test_rejected_request_exposes_re_submit_as_the_legal_primary_action(self):
+        payment = self._create_payment_request_minimal()
+        finance_user = self._create_user(
+            "payment_actions_rejected_finance_user",
+            ["base.group_user", "smart_construction_core.group_sc_cap_finance_user"],
+        )
+        payment.project_id.user_id = finance_user
+        self.env.cr.execute(
+            "UPDATE payment_request SET state='rejected', reject_reason=%s WHERE id=%s",
+            ("请补充合同签章页", payment.id),
+        )
+        payment.invalidate_recordset(["state", "reject_reason"])
+        result = PaymentRequestAvailableActionsHandler(
+            self.env(user=finance_user.id), payload={"id": payment.id}
+        ).handle({"id": payment.id})
+        self.assertTrue(result.get("ok"))
+        self.assertEqual((result.get("data") or {}).get("primary_action_key"), "submit")
+        submit = next(
+            row
+            for row in (result.get("data") or {}).get("actions", [])
+            if row.get("key") == "submit"
+        )
+        self.assertEqual(submit.get("label"), "重新提交审批")
+        self.assertTrue(submit.get("allowed"))
+        self.assertTrue(submit.get("allowed_by_state"))
+        self.assertEqual(submit.get("state_required"), ["draft", "rejected"])

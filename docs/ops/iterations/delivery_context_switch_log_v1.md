@@ -4225,3 +4225,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   same-model preservation, missing-model behavior, explicit target-query
   precedence and the real form-navigation runtime. Strict typecheck, static
   build and the complete frontend release-unit collection pass locally.
+
+# PFL-035 baseline replay after cross-model action authority (2026-08-15)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v13` /
+  `7b1fe48151ee19adc72d8062d77c98b5e863e5a7`.
+- Formal Product Layer / Layer Target / Module: P1 finance product / payment
+  request and payment execution user journey / `smart_construction_core`.
+- Replay boundary: 62 non-overlapping product, fixture, contract and test files
+  were replayed byte-for-byte from local checkpoint `170dac73`; the two
+  generated convergence reports are regenerated on the new baseline and this
+  iteration record preserves the merged P0 history. No P0 frontend file is
+  carried by the P1 replay.
+- Runtime objective: repeat the governed user journey from the professional
+  payment-execution create checkpoint. The target action must render its own
+  title, category and business anchors without retaining source payment-request
+  query state. The candidate remains unimplemented until the full browser
+  journey, ledger facts and reversal path pass on this exact baseline.

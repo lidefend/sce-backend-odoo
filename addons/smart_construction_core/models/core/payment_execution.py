@@ -2,6 +2,7 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_compare
+from psycopg2.errors import UniqueViolation
 
 from ..support.state_guard import raise_guard
 
@@ -50,6 +51,7 @@ class ScPaymentExecution(models.Model):
         default="draft",
         required=True,
         index=True,
+        tracking=True,
     )
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True)
     company_id = fields.Many2one(
@@ -141,6 +143,22 @@ class ScPaymentExecution(models.Model):
     creator_name = fields.Char(string="历史录入人", index=True, readonly=True)
     created_time = fields.Datetime(string="历史录入时间", index=True, readonly=True)
     reject_reason = fields.Char(string="驳回原因", readonly=True, copy=False)
+    cancellation_kind = fields.Selection(
+        [
+            ("cancelled_before_payment", "付款前取消"),
+            ("payment_reversed", "已付款冲销"),
+        ],
+        string="撤销类型",
+        readonly=True,
+        copy=False,
+        tracking=True,
+    )
+    reversal_reason = fields.Text(
+        string="冲销原因",
+        copy=False,
+        tracking=True,
+        help="已付款记录办理冲销时必须由财务经理填写，原文同步保留到付款台账。",
+    )
     note = fields.Text(string="备注")
     attachment_ids = fields.Many2many(
         "ir.attachment",
@@ -344,8 +362,8 @@ class ScPaymentExecution(models.Model):
         receipt_account_name = request.payment_account_name or request.partner_account_name or ""
         receipt_bank_name = request.payment_bank_name or request.partner_bank_name or ""
         receipt_account_no = request.payment_account_no or request.partner_bank_account or ""
-        payment_account_name = request.payer_unit or ""
-        payment_account_no = request.payment_account_no or ""
+        payment_account_name = request.payer_unit or request.legacy_payment_account_name or ""
+        payment_account_no = request.legacy_payment_account_no or ""
         return {
             "project_id": request.project_id.id,
             "partner_id": request.partner_id.id,
@@ -355,7 +373,7 @@ class ScPaymentExecution(models.Model):
             "payment_family": "往来单位付款",
             "document_no": request.name,
             "planned_amount": request.amount or 0.0,
-            "paid_amount": request.amount or 0.0,
+            "paid_amount": request.unpaid_amount or request.amount or 0.0,
             "currency_id": request.currency_id.id,
             "receipt_account_name": receipt_account_name,
             "receipt_bank_name": receipt_bank_name,
@@ -459,7 +477,8 @@ class ScPaymentExecution(models.Model):
             if len(contracts) > 1:
                 raise ValidationError(_("多合同付款申请不得压缩到单值合同字段。"))
             if not contracts:
-                raise ValidationError(_("付款申请合同没有对应的有效来源依据。"))
+                # 合同本身是预付款、保证金等未结算付款的有效业务依据。
+                contracts |= request_contract
             if request_contract != contracts:
                 raise ValidationError(_("付款申请合同与其有效来源合同不一致。"))
         return contracts
@@ -480,11 +499,8 @@ class ScPaymentExecution(models.Model):
         if not request_id:
             return values
 
-        request = self._caller_visible_payment_relation(
-            "payment.request",
-            request_id,
-            [("type", "=", "pay")],
-        )
+        request = self._caller_visible_payment_relation("payment.request", request_id)
+        request._assert_payment_execution_ready(require_authorized_actor=current is None)
         contracts = self._payment_basis_contracts(request)
         if project_id and project_id != request.project_id.id:
             raise ValidationError(_("付款执行项目必须与付款申请项目一致。"))
@@ -507,10 +523,39 @@ class ScPaymentExecution(models.Model):
             values.setdefault("partner_id", request.partner_id.id)
         return values
 
+    @api.model
+    def _assert_unique_request_anchors(self, request_ids):
+        """Reject known duplicates; the partial unique index closes races."""
+        request_ids = [int(request_id) for request_id in request_ids if request_id]
+        if not request_ids:
+            return
+        if len(request_ids) != len(set(request_ids)):
+            raise ValidationError(_("同一付款申请不能在一次操作中生成多条付款登记。"))
+        visible_request_ids = set(
+            self.env["payment.request"].search([("id", "in", request_ids)]).ids
+        )
+        if visible_request_ids != set(request_ids):
+            raise ValidationError(_("付款申请不存在或已被删除。"))
+        existing = self.sudo().search(
+            [
+                ("payment_request_id", "in", request_ids),
+                ("state", "in", ("draft", "confirmed")),
+            ],
+            limit=1,
+        )
+        if existing:
+            raise ValidationError(
+                _("该付款申请已存在办理中的付款登记：%(execution)s")
+                % {"execution": existing.display_name}
+            )
+
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
         normalized_vals_list = []
+        self._assert_unique_request_anchors(
+            [vals.get("payment_request_id") for vals in vals_list]
+        )
         for incoming_vals in vals_list:
             vals = dict(incoming_vals)
             project_id = self._context_project_id()
@@ -518,18 +563,34 @@ class ScPaymentExecution(models.Model):
                 vals.setdefault("project_id", project_id)
             vals = self._normalize_payment_relation_values(vals)
             if vals.get("payment_request_id"):
-                request = self._caller_visible_payment_relation(
-                    "payment.request",
-                    vals["payment_request_id"],
-                    [("type", "=", "pay")],
-                )
-                for field_name, value in self._payment_request_values(request).items():
+                request = self._caller_visible_payment_relation("payment.request", vals["payment_request_id"])
+                request._assert_payment_execution_ready(require_authorized_actor=True)
+                request_values = self._payment_request_values(request)
+                for field_name in (
+                    "receipt_account_name",
+                    "receipt_bank_name",
+                    "receipt_account_no",
+                ):
+                    if field_name in vals and (vals.get(field_name) or "") != (
+                        request_values.get(field_name) or ""
+                    ):
+                        raise ValidationError(_("收款账户必须来自付款申请的权威账户快照，不允许改写。"))
+                    vals[field_name] = request_values.get(field_name) or ""
+                for field_name, value in request_values.items():
                     vals.setdefault(field_name, value)
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.payment.execution") or _("Payment Execution")
             normalized_vals_list.append(vals)
-        return super().create(normalized_vals_list)
+        try:
+            with self.env.cr.savepoint(flush=False):
+                records = super().create(normalized_vals_list)
+                records.flush_recordset(["payment_request_id", "state"])
+                return records
+        except UniqueViolation as error:
+            if error.diag.constraint_name == "sc_payment_execution_one_active_per_request_idx":
+                raise ValidationError(_("该付款申请已存在办理中的付款登记，请刷新后查看。")) from error
+            raise
 
     @api.model
     def _resolve_business_category_code(self, vals):
@@ -555,7 +616,70 @@ class ScPaymentExecution(models.Model):
     def _history_surface_allowed_write_fields(self):
         return {"attachment_ids"}
 
+    def _business_fact_fields(self):
+        """Facts frozen once the execution leaves its correction state.
+
+        State transitions, approval metadata and chatter remain managed by their
+        authoritative workflows.  The facts that determine who is paid, how
+        much is paid and through which accounts must not drift after submit.
+        """
+        return {
+            "business_category_id",
+            "date_payment",
+            "document_no",
+            "payment_family",
+            "payment_method",
+            "bank_account",
+            "payment_account_name",
+            "payment_account_no",
+            "payment_bank_name",
+            "receipt_account_name",
+            "receipt_account_no",
+            "receipt_bank_name",
+            "handler_name",
+            "planned_amount",
+            "paid_amount",
+            "invoice_amount",
+            "currency_id",
+            "note",
+            "attachment_ids",
+        }
+
+    def _assert_payment_relation_anchors_immutable(self, vals):
+        """Keep an execution's authoritative request chain from being rebound."""
+        relation_fields = {"payment_request_id", "contract_id", "partner_id", "project_id"}
+        changed_fields = relation_fields.intersection(vals)
+        if not changed_fields:
+            return True
+        controlled_history_fill = bool(
+            self.env.context.get("history_surface_sync") and self.env.su
+        )
+        for rec in self:
+            for field_name in changed_fields:
+                current_id = rec[field_name].id if rec[field_name] else False
+                incoming = vals.get(field_name)
+                incoming_id = incoming.id if isinstance(incoming, models.BaseModel) else (incoming or False)
+                if current_id == incoming_id:
+                    continue
+                if (
+                    controlled_history_fill
+                    and rec.source_origin == "legacy"
+                    and not current_id
+                    and incoming_id
+                ):
+                    continue
+                raise UserError(
+                    _("付款执行一经建立，不允许改绑付款申请、合同、项目或往来单位；历史同步仅可补充空锚点。")
+                )
+        return True
+
     def write(self, vals):
+        cancellation_metadata = {"cancellation_kind", "reversal_reason"}.intersection(vals)
+        if cancellation_metadata and not self.env.context.get("allow_payment_cancel_metadata"):
+            if "cancellation_kind" in vals:
+                raise UserError(_("撤销类型只能由付款执行的受控取消流程维护。"))
+            if any(rec.state != "paid" for rec in self):
+                raise UserError(_("只有已付款记录可以填写冲销原因。"))
         if (
             any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self)
             and not self.env.context.get("history_surface_sync")
@@ -578,19 +702,39 @@ class ScPaymentExecution(models.Model):
             } | projection_fields | self._history_surface_allowed_write_fields()
             if set(vals) - allowed:
                 raise UserError(_("历史迁移付款执行单据已确认，只允许补充业务锚点和备注。"))
+        changed_business_facts = self._business_fact_fields().intersection(vals)
+        if changed_business_facts and any(
+            rec.source_origin != "legacy" and rec.state != "draft" for rec in self
+        ):
+            raise UserError(_("付款执行提交后业务事实不可直接修改；请先按合法流程撤销，再重新办理。"))
+        immutable_receipt_fields = {
+            "receipt_account_name",
+            "receipt_bank_name",
+            "receipt_account_no",
+        }.intersection(vals)
+        for rec in self.filtered("payment_request_id"):
+            request_values = rec._payment_request_values(rec.payment_request_id)
+            if any(
+                (vals.get(field_name) or "") != (request_values.get(field_name) or "")
+                for field_name in immutable_receipt_fields
+            ):
+                raise UserError(_("收款账户来自付款申请的权威账户快照，付款登记中不可改写。"))
         relation_fields = {"payment_request_id", "contract_id", "partner_id", "project_id"}
         if relation_fields.intersection(vals):
             result = True
             for rec in self:
+                rec._assert_payment_relation_anchors_immutable(vals)
                 normalized_vals = rec._normalize_payment_relation_values(
                     vals,
                     current=rec,
                 )
+                rec._assert_payment_relation_anchors_immutable(normalized_vals)
                 result = super(ScPaymentExecution, rec).write(normalized_vals) and result
             return result
         return super().write(vals)
 
     def action_confirm(self):
+        self._assert_finance_handling_access()
         policy = self.env["sc.approval.policy"]
         for rec in self:
             if rec.state != "draft":
@@ -613,12 +757,12 @@ class ScPaymentExecution(models.Model):
         self._assert_finance_confirm_access()
         policy = self.env["sc.approval.policy"]
         for rec in self:
-            if rec.state not in ("draft", "confirmed"):
+            if rec.state != "confirmed":
                 raise_guard(
                     "PAYMENT_EXECUTION_INVALID_TRANSITION",
                     f"付款执行[{rec.display_name}]",
                     _("登记付款"),
-                    reasons=[_("只有草稿或已确认状态的付款执行可以登记付款")],
+                    reasons=[_("只有完成审批并处于已确认状态的付款执行可以登记付款")],
                 )
             rec._check_business_anchor_or_raise()
             rec._check_payment_request_scope_or_raise()
@@ -627,9 +771,17 @@ class ScPaymentExecution(models.Model):
                 raise UserError(_("付款执行尚未完成统一审批流程。"))
             rec.state = "paid"
             rec._sync_payment_request_done()
+            rec.message_post(body=_("付款登记已完成，付款申请、付款台账与审计状态已同步。"))
 
     def _has_finance_confirm_access(self):
         return self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
+
+    def _has_finance_handling_access(self):
+        return self.env.user.has_group("smart_construction_core.group_sc_cap_finance_user")
+
+    def _assert_finance_handling_access(self):
+        if not self._has_finance_handling_access():
+            raise UserError(_("你没有提交付款登记的财务办理权限。"))
 
     def _assert_finance_confirm_access(self):
         if not self._has_finance_confirm_access():
@@ -651,17 +803,26 @@ class ScPaymentExecution(models.Model):
             if request.state != "approved":
                 continue
             rounding = request.currency_id.rounding if request.currency_id else 0.01
-            if float_compare(rec.paid_amount or 0.0, request.amount or 0.0, precision_rounding=rounding) == -1:
-                raise UserError(_("实付金额低于付款申请金额，不能自动完成付款申请。"))
+            remaining_before = request.unpaid_amount or 0.0
+            if float_compare(rec.paid_amount or 0.0, remaining_before, precision_rounding=rounding) == 1:
+                raise UserError(_("本次实付金额超过付款申请剩余可付金额。"))
             before = request._snapshot_audit_payload()
             request.with_context(payment_soft_gate=True)._ensure_payment_ledger(
-                amount=request.amount or 0.0,
+                amount=rec.paid_amount or 0.0,
                 ref=rec.name,
                 note=_("auto:payment_execution_paid"),
+                execution=rec,
             )
-            request.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "done"})
+            request.invalidate_recordset(["paid_amount_total", "unpaid_amount", "is_fully_paid"])
+            if request.is_fully_paid:
+                request.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "done"})
             after = request._snapshot_audit_payload()
-            request._audit_transition("payment_paid", before, after, action_name="payment_execution_paid")
+            request._audit_transition(
+                "payment_paid" if request.is_fully_paid else "payment_partially_paid",
+                before,
+                after,
+                action_name="payment_execution_paid",
+            )
 
     def action_cancel(self):
         self._assert_finance_cancel_access()
@@ -669,6 +830,8 @@ class ScPaymentExecution(models.Model):
             if rec.source_origin == "legacy":
                 raise UserError(_("历史迁移付款执行单据不能在新系统取消。"))
             if rec.state == "paid":
+                if not (rec.reversal_reason or "").strip():
+                    raise UserError(_("撤销已付款记录前必须填写冲销原因。"))
                 rec._reverse_paid_execution()
                 continue
             if rec.state in ("legacy_confirmed", "cancel"):
@@ -678,7 +841,9 @@ class ScPaymentExecution(models.Model):
                     _("取消付款执行"),
                     reasons=[_("历史已确认或已取消的付款执行不能取消")],
                 )
-            rec.state = "cancel"
+            rec.with_context(allow_payment_cancel_metadata=True).write(
+                {"state": "cancel", "cancellation_kind": "cancelled_before_payment"}
+            )
 
     def _reverse_paid_execution(self):
         for rec in self:
@@ -691,9 +856,22 @@ class ScPaymentExecution(models.Model):
                     reasons=[_("已付款执行必须关联付款申请才能撤销")],
                 )
             ledger = self.env["payment.ledger"].sudo().search(
-                [("payment_request_id", "=", request.id)],
+                [
+                    ("payment_request_id", "=", request.id),
+                    ("payment_execution_id", "=", rec.id),
+                    ("state", "=", "posted"),
+                ],
                 limit=1,
             )
+            if not ledger:
+                ledger = self.env["payment.ledger"].sudo().search(
+                    [
+                        ("payment_request_id", "=", request.id),
+                        ("payment_execution_id", "=", False),
+                        ("state", "=", "posted"),
+                    ],
+                    limit=1,
+                )
             if not ledger:
                 raise_guard(
                     "PAYMENT_LEDGER_NOT_FOUND",
@@ -702,10 +880,15 @@ class ScPaymentExecution(models.Model):
                     reasons=[_("未找到对应付款台账，不能自动撤销")],
                 )
             before = request._snapshot_audit_payload()
-            ledger.with_context(allow_payment_reversal=True).unlink()
+            reversal_reason = (rec.reversal_reason or "").strip()
+            if not reversal_reason:
+                raise UserError(_("撤销已付款记录前必须填写冲销原因。"))
+            ledger.action_reverse(rec, reason=reversal_reason)
             if request.state == "done":
                 request.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "approved"})
-            rec.write({"state": "cancel"})
+            rec.with_context(allow_payment_cancel_metadata=True).write(
+                {"state": "cancel", "cancellation_kind": "payment_reversed"}
+            )
             after = request._snapshot_audit_payload()
             request._audit_transition("payment_reversed", before, after, action_name="payment_execution_cancel")
             rec.message_post(body=_("已撤销付款登记，并将付款申请退回已批准状态。"))
@@ -751,21 +934,49 @@ class ScPaymentExecution(models.Model):
                     _("办理付款执行"),
                     reasons=[_("实付金额必须大于0")],
                 )
-            payer_account = rec.payment_account_no or rec.bank_account or rec.payment_account_name
-            payee_account = rec.receipt_account_no or rec.receipt_account_name
-            if not payer_account:
+            request = rec.payment_request_id
+            rounding = rec.currency_id.rounding if rec.currency_id else 0.01
+            if request and float_compare(
+                rec.paid_amount or 0.0,
+                request.unpaid_amount or 0.0,
+                precision_rounding=rounding,
+            ) == 1:
+                raise_guard(
+                    "PAYMENT_EXECUTION_AMOUNT_EXCEEDS_REQUEST",
+                    f"付款执行[{rec.display_name}]",
+                    _("办理付款执行"),
+                    reasons=[_("本次实付金额不得超过付款申请剩余可付金额")],
+                )
+            payer_fields = (
+                rec.payment_account_name,
+                rec.payment_bank_name,
+                rec.payment_account_no or rec.bank_account,
+            )
+            payee_fields = (
+                rec.receipt_account_name,
+                rec.receipt_bank_name,
+                rec.receipt_account_no,
+            )
+            if not all(payer_fields):
                 raise_guard(
                     "PAYMENT_EXECUTION_MISSING_PAYER_ACCOUNT",
                     f"付款执行[{rec.display_name}]",
                     _("办理付款执行"),
-                    reasons=[_("新系统付款执行必须填写付款账户信息")],
+                    reasons=[_("新系统付款执行必须完整填写付款户名、开户行和账号")],
                 )
-            if not payee_account:
+            if not all(payee_fields):
                 raise_guard(
                     "PAYMENT_EXECUTION_MISSING_PAYEE_ACCOUNT",
                     f"付款执行[{rec.display_name}]",
                     _("办理付款执行"),
-                    reasons=[_("新系统付款执行必须填写收款账户信息")],
+                    reasons=[_("新系统付款执行必须具备完整收款户名、开户行和账号")],
+                )
+            if not (rec.payment_method or "").strip():
+                raise_guard(
+                    "PAYMENT_EXECUTION_MISSING_PAYMENT_METHOD",
+                    f"付款执行[{rec.display_name}]",
+                    _("办理付款执行"),
+                    reasons=[_("付款执行必须选择付款方式")],
                 )
 
     def _check_payment_request_scope_or_raise(self):
@@ -846,6 +1057,15 @@ class ScPaymentExecution(models.Model):
                 )
 
     def init(self):
+        self.env.cr.execute(
+            "DROP INDEX IF EXISTS sc_payment_execution_one_active_per_request_idx"
+        )
+        self.env.cr.execute(
+            "CREATE UNIQUE INDEX "
+            "sc_payment_execution_one_active_per_request_idx "
+            "ON sc_payment_execution (payment_request_id) "
+            "WHERE payment_request_id IS NOT NULL AND state IN ('draft', 'confirmed')"
+        )
         self.env.cr.execute(
             """
             UPDATE sc_payment_execution execution
