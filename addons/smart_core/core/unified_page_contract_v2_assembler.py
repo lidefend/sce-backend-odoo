@@ -1709,6 +1709,7 @@ def _form_structure_contract_layout_rows(
             "sourceAuthority": {
                 "kind": SOURCE_KIND,
                 "runtime_carrier": "form_structure_contract",
+                "projection_only": True,
                 "no_business_fact_authority": True,
             },
         })
@@ -1724,6 +1725,7 @@ def _form_structure_contract_layout_rows(
             "sourceAuthority": {
                 "kind": SOURCE_KIND,
                 "runtime_carrier": "form_structure_contract",
+                "projection_only": True,
                 "no_business_fact_authority": True,
             },
         })
