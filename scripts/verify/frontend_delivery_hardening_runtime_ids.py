@@ -34,10 +34,10 @@ payload = {
     "project": target("smart_construction_core.menu_sc_project_project", "smart_construction_acceptance_fixture.fe_project_a"),
     "contract": target("smart_construction_core.menu_sc_p1_daily_contract", "smart_construction_acceptance_fixture.fe_general_contract_a"),
     "settlement": target("smart_construction_core.menu_sc_settlement_order", "smart_construction_acceptance_fixture.fe_settlement_a"),
-    "payment_request": target("smart_construction_core.menu_sc_user_payment_apply_acceptance", "smart_construction_acceptance_fixture.fe_request_a_001"),
-    "payment_request_company_b": target("smart_construction_core.menu_sc_user_payment_apply_acceptance", "smart_construction_acceptance_fixture.fe_request_c_001"),
+    "payment_request": target("smart_construction_core.menu_sc_user_payment_apply", "smart_construction_acceptance_fixture.fe_request_a_001"),
+    "payment_request_company_b": target("smart_construction_core.menu_sc_user_payment_apply", "smart_construction_acceptance_fixture.fe_request_c_001"),
     "payment_execution": target("smart_construction_core.menu_sc_payment_execution", "smart_construction_acceptance_fixture.fe_execution_a"),
-    "journey_request": target("smart_construction_core.menu_sc_user_payment_apply_acceptance", "smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a"),
+    "journey_request": target("smart_construction_core.menu_sc_user_payment_apply", "smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a"),
     "work_settlement": target("smart_construction_core.menu_sc_settlement_order", "smart_construction_acceptance_fixture.fe_b05_work_settlement_a"),
 }
 payload["companies"] = {

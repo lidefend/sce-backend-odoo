@@ -320,7 +320,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_engineering_progress_income",
             "smart_construction_core.menu_sc_settlement_order",
             "smart_construction_core.menu_sc_settlement_adjustment",
-            "smart_construction_core.menu_sc_user_payment_apply_acceptance",
+            "smart_construction_core.menu_sc_user_payment_apply",
             "smart_construction_core.menu_sc_payment_execution",
             "smart_construction_core.menu_sc_partner_payment",
             "smart_construction_core.menu_sc_company_finance_expense",
@@ -583,6 +583,70 @@ LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
 }
 
 BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
+    "payment.request": {
+        # The payment handling list is a task surface, not a generic model
+        # dump.  These nine facts let the operator identify the request,
+        # understand the payment basis and decide the next legal step without
+        # opening every record.  Keep them ahead of audit and auxiliary
+        # columns when the responsive width budget is applied.
+        "visible": [
+            "document_status_display",
+            "name",
+            "date_request",
+            "project_name_display",
+            "payee_unit_display",
+            "related_document_text",
+            "payee_account_completeness",
+            "legal_next_action_display",
+            "request_amount_display",
+        ],
+        "critical": [
+            "document_status_display",
+            "name",
+            "date_request",
+            "project_name_display",
+            "payee_unit_display",
+            "related_document_text",
+            "payee_account_completeness",
+            "legal_next_action_display",
+            "request_amount_display",
+        ],
+        "hidden": [
+            "actual_payee_unit_display",
+            "payer_unit_display",
+            "actual_paid_amount_display",
+            "cost_type_display",
+            "note_display",
+            "payment_account_no_display",
+            "amount_uppercase_display",
+            "payee_account_name_display",
+            "payee_bank_name_display",
+            "payee_account_no_display",
+            "attachment_ids",
+        ],
+        "roles": {
+            "document_status_display": "status",
+            "name": "identity",
+            "date_request": "date",
+            "project_name_display": "relation",
+            "payee_unit_display": "relation",
+            "related_document_text": "description",
+            "payee_account_completeness": "status",
+            "legal_next_action_display": "status",
+            "request_amount_display": "money",
+            "actual_payee_unit_display": "relation",
+            "payer_unit_display": "relation",
+            "actual_paid_amount_display": "money",
+            "cost_type_display": "status",
+            "note_display": "description",
+            "payment_account_no_display": "identity",
+            "amount_uppercase_display": "text",
+            "payee_account_name_display": "identity",
+            "payee_bank_name_display": "identity",
+            "payee_account_no_display": "identity",
+            "attachment_ids": "actions",
+        },
+    },
     "project.project": {
         "critical": ["name", "project_code", "lifecycle_state", "user_id"],
         "roles": {

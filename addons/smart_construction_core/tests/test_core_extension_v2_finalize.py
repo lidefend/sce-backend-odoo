@@ -186,6 +186,39 @@ class TestCoreExtensionV2Finalize(TransactionCase):
 
         self.assertIsNone(projected)
 
+    def test_payment_request_formal_list_projects_page_and_total_amount_semantics(self):
+        action = self.env.ref(
+            "smart_construction_core.action_payment_request_user_payment_apply"
+        )
+        projected = core_extension.smart_core_finalize_projected_contract_data(
+            self.env,
+            {
+                "model": "payment.request",
+                "view_type": "tree",
+                "action_id": action.id,
+                "fields": {},
+                "views": {},
+            },
+            {"view_type": "tree"},
+        )
+
+        self.assertIsInstance(projected, dict)
+        schema = {
+            row["name"]: row
+            for row in projected["views"]["tree"]["columns_schema"]
+        }
+        amount = schema["request_amount_display"]
+        self.assertEqual(amount["display_field"], "request_amount_display")
+        self.assertEqual(amount["value_field"], "amount")
+        self.assertEqual(amount["aggregation_field"], "amount")
+        self.assertEqual(amount["data_type"], "monetary")
+        self.assertEqual(amount["currency_field"], "currency_id")
+        self.assertEqual(amount["aggregate"], "sum")
+        self.assertEqual(amount["sum"], "申请付款金额合计")
+        self.assertEqual(amount["sort_field"], "amount")
+        self.assertEqual(amount["filter_field"], "amount")
+        self.assertEqual(amount["export_field"], "amount")
+
     def test_project_list_profile_keeps_native_optional_manager_column_hidden(self):
         data = {
             "model": "project.project",

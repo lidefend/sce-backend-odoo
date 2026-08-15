@@ -196,7 +196,7 @@ PRODUCT_MENU_BUSINESS_DOMAIN_OVERRIDES = {
         "product_domain": "finance_receipt",
         "product_domain_label": "收款管理",
     },
-    "smart_construction_core.menu_sc_user_payment_apply_acceptance": {
+    "smart_construction_core.menu_sc_user_payment_apply": {
         "path_domain": "付款管理",
         "integration_target": "payment.request 收付款申请",
         "product_domain": "finance_payment",

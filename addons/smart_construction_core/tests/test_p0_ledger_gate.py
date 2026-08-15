@@ -53,6 +53,7 @@ class TestP0LedgerGate(TransactionCase):
         cls.project = _ctx("project.project").create(
             {
                 "name": "P0 Ledger Project",
+                "company_id": company.id,
                 "privacy_visibility": "followers",
                 "user_id": cls.user_finance_user.id,
             }
@@ -141,6 +142,7 @@ class TestP0LedgerGate(TransactionCase):
         cls.other_project = _ctx("project.project").create(
             {
                 "name": "P0 Ledger Project Other",
+                "company_id": company.id,
                 "privacy_visibility": "followers",
                 "user_id": cls.user_no_access.id,
             }
@@ -325,7 +327,14 @@ class TestCorePaymentAmountSemantics(TransactionCase):
         super().setUp()
         self.company = self.env.ref("base.main_company")
         self.currency = self.company.currency_id
-        self.partner = self.env["res.partner"].create({"name": "T1-B Vendor"})
+        self.partner = self.env["res.partner"].create(
+            {
+                "name": "T1-B Vendor",
+                "sc_account_name": "T1-B Vendor",
+                "sc_bank_name": "T1-B Bank",
+                "sc_bank_account": "6222000000000088",
+            }
+        )
         self.project = self._project("T1-B Project", self.company)
         self.contract = self._contract(
             "T1-B Contract", self.project, self.partner, self.company, self.currency
@@ -476,7 +485,28 @@ class TestCorePaymentAmountSemantics(TransactionCase):
             opm.settlement_actual_paid_amount_map(self.env, [self.settlement.id])[self.settlement.id],
             80.0,
         )
-        execution = self._model("sc.payment.execution").create(
+        finance_manager = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "T1-B Finance Manager",
+                "login": "t1_b_finance_manager",
+                "email": "t1_b_finance_manager@example.com",
+                "company_id": self.company.id,
+                "company_ids": [(6, 0, [self.company.id])],
+                "groups_id": [
+                    (
+                        6,
+                        0,
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref(
+                                "smart_construction_core.group_sc_cap_finance_manager"
+                            ).id,
+                        ],
+                    )
+                ],
+            }
+        )
+        execution = self._model("sc.payment.execution").with_user(finance_manager).create(
             {
                 "name": "T1-B Paid Execution",
                 "project_id": self.project.id,
@@ -489,10 +519,13 @@ class TestCorePaymentAmountSemantics(TransactionCase):
                 "state": "paid",
             }
         )
+        execution.reversal_reason = "T1-B ledger reversal evidence"
         execution._reverse_paid_execution()
         request.invalidate_recordset()
-        # 11. Reversal deletes ledger and actual paid returns to zero.
-        self.assertFalse(ledger.exists())
+        # 11. Reversal preserves the financial fact and excludes it from actual paid.
+        self.assertTrue(ledger.exists())
+        self.assertEqual(ledger.state, "reversed")
+        self.assertEqual(ledger.reversal_execution_id, execution)
         self.assertEqual(opm.settlement_actual_paid_amount_map(self.env, [self.settlement.id]), {})
 
     def test_contract_actual_paid_state_matrix(self):
