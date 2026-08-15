@@ -168,6 +168,19 @@ def object_rows(root: Path, revision_args: tuple[str, ...]) -> list[ObjectRow]:
     return rows
 
 
+def public_revision_args() -> tuple[str, ...]:
+    """Return refs that can participate in repository publication.
+
+    ``--all`` also includes local-only refs such as ``refs/stash``.  A shared
+    multi-worktree repository may legitimately have a stash whose root is
+    unrelated to the current product history, so publication checks must not
+    confuse that local recovery state with candidate history.  Local-only
+    refs remain governed by ``--local-hygiene``.
+    """
+
+    return ("--branches", "--tags", "--remotes")
+
+
 def read_blob(root: Path, object_id: str) -> bytes:
     return subprocess.run(
         ["git", "cat-file", "blob", object_id],
@@ -322,6 +335,14 @@ def local_hygiene_errors(root: Path, rules: dict[str, object]) -> tuple[set[Find
     for ref in tags:
         errors.add(Finding("RH012", ref, "TAG_REF_PRESENT"))
 
+    stash_refs = git(root, "for-each-ref", "--format=%(refname) %(objectname)", "refs/stash", check=False).splitlines()
+    for row in stash_refs:
+        ref, _separator, object_id = row.partition(" ")
+        errors.add(Finding("RH020", ref, "LOCAL_STASH_REF_PRESENT"))
+        if object_id:
+            for blob in tree_rows(root, object_id):
+                errors.update(blob_findings(root, blob, rules, rule_prefix="STASH_"))
+
     current = git(root, "branch", "--show-current", check=False).strip()
     allowed_remote_suffixes = {"main", "HEAD", current}
     remote_refs = git(root, "for-each-ref", "--format=%(refname)", "refs/remotes", check=False).splitlines()
@@ -335,6 +356,7 @@ def local_hygiene_errors(root: Path, rules: dict[str, object]) -> tuple[set[Find
         "reflog_only": len(reflog_only),
         "unreachable": len(unreachable),
         "tags": len(tags),
+        "stash_refs": len(stash_refs),
         "stale_remote_refs": len(stale_refs),
     }
 
@@ -364,7 +386,18 @@ def main(argv: list[str] | None = None) -> int:
         rules["_policy_relative"] = ""
 
     errors: set[Finding] = set()
-    roots = [line for line in git(root, "rev-list", "--max-parents=0", "--all", check=False).splitlines() if line]
+    publication_revisions = public_revision_args()
+    roots = [
+        line
+        for line in git(
+            root,
+            "rev-list",
+            "--max-parents=0",
+            *publication_revisions,
+            check=False,
+        ).splitlines()
+        if line
+    ]
     if len(roots) != 1:
         errors.add(Finding("RH001", "<repository>", "ROOT_COMMIT_COUNT"))
     allowed_remotes = rules.get("allowed_remotes", {})
@@ -379,7 +412,7 @@ def main(argv: list[str] | None = None) -> int:
         if run_git(root, "cat-file", "-e", f"{commit_id}^{{commit}}", check=False).returncode == 0:
             errors.add(Finding("RH004", f"object:{commit_id[:12]}", "OLD_COMMIT_IMPORTED"))
 
-    for row in object_rows(root, ("--all",)):
+    for row in object_rows(root, publication_revisions):
         if row.object_type == "blob" and row.path:
             errors.update(blob_findings(root, row, rules))
 
@@ -389,7 +422,13 @@ def main(argv: list[str] | None = None) -> int:
     for row in tree_rows(root, "HEAD"):
         errors.update(blob_findings(root, row, rules, scan_repository_identity=True))
 
-    hygiene = {"reflog_only": 0, "unreachable": 0, "tags": 0, "stale_remote_refs": 0}
+    hygiene = {
+        "reflog_only": 0,
+        "unreachable": 0,
+        "tags": 0,
+        "stash_refs": 0,
+        "stale_remote_refs": 0,
+    }
     if args.local_hygiene:
         local_errors, hygiene = local_hygiene_errors(root, rules)
         errors.update(local_errors)
@@ -404,9 +443,10 @@ def main(argv: list[str] | None = None) -> int:
         print("sensitive_values_recorded=false", file=sys.stderr)
         return 1
     print(
-        f"[repository_clean_history_guard] PASS roots={len(roots)} reachable_scan=all "
+        f"[repository_clean_history_guard] PASS roots={len(roots)} reachable_scan=public_refs "
         f"local_hygiene={args.local_hygiene} reflog_only={hygiene['reflog_only']} "
         f"unreachable={hygiene['unreachable']} tags={hygiene['tags']} "
+        f"stash_refs={hygiene['stash_refs']} "
         f"stale_remote_refs={hygiene['stale_remote_refs']} sensitive_values_recorded=false"
     )
     return 0

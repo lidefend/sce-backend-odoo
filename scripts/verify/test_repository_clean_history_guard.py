@@ -92,7 +92,33 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
     def test_clean_reachable_history_passes(self) -> None:
         result = self.run_guard()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("reachable_scan=all", result.stdout)
+        self.assertIn("reachable_scan=public_refs", result.stdout)
+
+    def test_unrelated_local_stash_root_does_not_pollute_public_history(self) -> None:
+        blob_id = self.git("hash-object", "-w", "--stdin", input_text="local recovery\n").stdout.strip()
+        tree_id = self.git(
+            "mktree",
+            input_text=f"100644 blob {blob_id}\tlocal.txt\n",
+        ).stdout.strip()
+        stash_commit = self.git(
+            "-c",
+            "user.name=Guard Test",
+            "-c",
+            "user.email=guard@example.invalid",
+            "commit-tree",
+            tree_id,
+            "-m",
+            "unrelated local stash root",
+        ).stdout.strip()
+        self.git("update-ref", "refs/stash", stash_commit)
+
+        result = self.run_guard()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("roots=1", result.stdout)
+
+        hygiene = self.run_guard("--local-hygiene")
+        self.assertNotEqual(hygiene.returncode, 0)
+        self.assertIn("LOCAL_STASH_REF_PRESENT", hygiene.stderr)
 
     def test_policy_requires_expected_schema(self) -> None:
         self.policy.write_text('{"schema_version":"wrong"}\n', encoding="utf-8")
