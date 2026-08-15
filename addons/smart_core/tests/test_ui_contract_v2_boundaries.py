@@ -1207,6 +1207,164 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(schema["name"]["cell_role"], "description")
         self.assertEqual(schema["sc_contact_name"]["cell_role"], "text")
 
+    def test_canonical_visibility_keeps_action_specific_hidden_over_product_default(self):
+        class _Config:
+            contract_json = {
+                "view_orchestration": {
+                    "views": {
+                        "tree": {
+                            "columns": [
+                                {"name": "name", "sequence": 10},
+                                {"name": "next_action", "sequence": 20, "visible": False},
+                            ]
+                        }
+                    }
+                }
+            }
+
+        class _ConfigModel:
+            def _effective_view_orchestration_contracts(self, model_name, view_type, action_id=0):
+                return [_Config()]
+
+        class _Env(dict):
+            def __contains__(self, key):
+                return dict.__contains__(self, key)
+
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *_args, **_kwargs: {
+            "x.document": {"visible": ["name", "next_action"]},
+        }
+        try:
+            handler = self.module.UiContractV2Handler(env=_Env({
+                "ui.business.config.contract": _ConfigModel(),
+            }))
+            source_contract = {
+                "action_id": 17,
+                "model": "x.document",
+                "fields": {"name": {}, "next_action": {}},
+                "views": {
+                    "tree": {
+                        "columns": ["name", "next_action"],
+                        "columns_schema": [
+                            {"name": "name", "type": "char"},
+                            {"name": "next_action", "type": "char", "optional": "hide"},
+                        ],
+                    }
+                },
+                "list_profile": {"hidden_columns": ["next_action"]},
+            }
+            handler._merge_business_list_profile(
+                source_contract,
+                common_fields=[], amount_fields=[], note_field="", status_field="",
+                label_for=lambda name: name, type_for=lambda name: "char",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        profile = source_contract["list_profile"]
+        schema = {row["name"]: row for row in source_contract["views"]["tree"]["columns_schema"]}
+        self.assertIn("next_action", profile["hidden_columns"])
+        self.assertEqual(schema["next_action"]["optional"], "hide")
+
+    def test_canonical_visibility_uses_one_result_for_profile_and_schema(self):
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *_args, **_kwargs: {
+            "x.document": {
+                "visible": ["name", "next_action"],
+                "hidden": ["recorded_at"],
+            },
+        }
+        try:
+            handler = self.module.UiContractV2Handler(env={})
+            source_contract = {
+                "model": "x.document",
+                "fields": {"name": {}, "next_action": {}, "recorded_at": {}},
+                "views": {
+                    "tree": {
+                        "columns": ["name", "next_action", "recorded_at"],
+                        "columns_schema": [
+                            {"name": "name", "type": "char"},
+                            {"name": "next_action", "type": "char", "optional": "hide"},
+                            {"name": "recorded_at", "type": "datetime"},
+                        ],
+                    }
+                },
+                "list_profile": {"hidden_columns": ["next_action"]},
+            }
+            handler._merge_business_list_profile(
+                source_contract,
+                common_fields=[], amount_fields=[], note_field="", status_field="",
+                label_for=lambda name: name, type_for=lambda name: "char",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        profile = source_contract["list_profile"]
+        schema = {row["name"]: row for row in source_contract["views"]["tree"]["columns_schema"]}
+        self.assertNotIn("next_action", profile["hidden_columns"])
+        self.assertEqual(schema["next_action"]["optional"], "show")
+        self.assertIn("recorded_at", profile["hidden_columns"])
+        self.assertEqual(schema["recorded_at"]["optional"], "hide")
+
+    def test_action_specific_visible_overrides_product_default_hidden(self):
+        class _Config:
+            contract_json = {
+                "view_orchestration": {
+                    "views": {
+                        "tree": {
+                            "columns": [
+                                {"name": "name", "sequence": 10},
+                                {"name": "next_action", "sequence": 20, "visible": True},
+                            ]
+                        }
+                    }
+                }
+            }
+
+        class _ConfigModel:
+            def _effective_view_orchestration_contracts(self, model_name, view_type, action_id=0):
+                return [_Config()]
+
+        class _Env(dict):
+            def __contains__(self, key):
+                return dict.__contains__(self, key)
+
+        original_hook = self.module.call_extension_hook_first
+        self.module.call_extension_hook_first = lambda *_args, **_kwargs: {
+            "x.document": {"hidden": ["next_action"]},
+        }
+        try:
+            handler = self.module.UiContractV2Handler(env=_Env({
+                "ui.business.config.contract": _ConfigModel(),
+            }))
+            source_contract = {
+                "action_id": 17,
+                "model": "x.document",
+                "fields": {"name": {}, "next_action": {}},
+                "views": {
+                    "tree": {
+                        "columns": ["name", "next_action"],
+                        "columns_schema": [
+                            {"name": "name", "type": "char"},
+                            {"name": "next_action", "type": "char", "optional": "hide"},
+                        ],
+                    }
+                },
+                "list_profile": {"hidden_columns": ["next_action"]},
+            }
+            handler._merge_business_list_profile(
+                source_contract,
+                common_fields=[], amount_fields=[], note_field="", status_field="",
+                label_for=lambda name: name, type_for=lambda name: "char",
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        profile = source_contract["list_profile"]
+        schema = {row["name"]: row for row in source_contract["views"]["tree"]["columns_schema"]}
+        self.assertNotIn("next_action", profile["hidden_columns"])
+        self.assertEqual(schema["next_action"]["optional"], "show")
+
     def test_business_column_label_replaces_raw_technical_name(self):
         original_hook = self.module.call_extension_hook_first
         self.module.call_extension_hook_first = lambda *args, **kwargs: {

@@ -2495,7 +2495,7 @@ class UiContractV2Handler(BaseIntentHandler):
         }
         direct_orchestration_columns: list[str] = []
         direct_orchestration_labels: dict[str, str] = {}
-        direct_orchestration_hidden: set[str] = set()
+        direct_orchestration_visibility: dict[str, bool] = {}
         model_name = str(
             source_contract.get("model")
             or ((source_contract.get("pageInfo") or {}).get("model") if isinstance(source_contract.get("pageInfo"), dict) else "")
@@ -2578,6 +2578,8 @@ class UiContractV2Handler(BaseIntentHandler):
                         name = str(row.get("name") or row.get("field") or row.get("field_name") or "").strip()
                         label = str(row.get("label") or row.get("string") or row.get("display_label") or "").strip()
                         visible = row.get("visible") is not False
+                        if "visible" in row and isinstance(row.get("visible"), bool):
+                            direct_orchestration_visibility[name] = bool(row.get("visible"))
                         try:
                             sequence = int(row.get("sequence") or row.get("order") or 100)
                         except Exception:
@@ -2589,7 +2591,6 @@ class UiContractV2Handler(BaseIntentHandler):
                     normalized_rows.append((sequence, index, name, label, visible))
                 for _sequence, _index, name, label, visible in sorted(normalized_rows, key=lambda item: (item[0], item[1])):
                     if not visible:
-                        direct_orchestration_hidden.add(name)
                         direct_orchestration_columns = [item for item in direct_orchestration_columns if item != name]
                         continue
                     if name not in direct_orchestration_columns:
@@ -2750,6 +2751,28 @@ class UiContractV2Handler(BaseIntentHandler):
         row_secondary = str(profile.get("row_secondary") or "").strip()
         if not row_secondary and row_primary != derived_status_field and "project_id" in columns:
             row_secondary = "project_id"
+        prior_profile_hidden = {
+            str(name or "").strip()
+            for name in (
+                profile.get("hidden_columns")
+                if isinstance(profile.get("hidden_columns"), list)
+                else []
+            )
+            if str(name or "").strip()
+        }
+        policy_default_visible_set = set(policy_default_visible)
+        canonical_column_visibility: dict[str, bool] = {}
+        for name in columns:
+            if name in direct_orchestration_visibility:
+                canonical_column_visibility[name] = direct_orchestration_visibility[name]
+            elif name in policy_default_visible_set:
+                canonical_column_visibility[name] = True
+            elif name in policy_default_hidden:
+                canonical_column_visibility[name] = False
+            elif name in native_default_hidden or name in prior_profile_hidden:
+                canonical_column_visibility[name] = False
+            else:
+                canonical_column_visibility[name] = True
         profile.update({
             "source": "ui.contract.v2.legacy_55_legacy_visible_projection" if legacy_override else "ui.contract.v2.business_operation_projection",
             "columns": columns,
@@ -2757,14 +2780,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "hidden_columns": [
                 name
                 for name in columns
-                if name in native_default_hidden
-                or name in direct_orchestration_hidden
-                or name in policy_default_hidden
-                or name in (
-                    profile.get("hidden_columns")
-                    if isinstance(profile.get("hidden_columns"), list)
-                    else []
-                )
+                if canonical_column_visibility.get(name) is False
             ],
             "column_labels": labels,
             "show_row_number": False if legacy_override else profile.get("show_row_number", True),
@@ -2820,11 +2836,7 @@ class UiContractV2Handler(BaseIntentHandler):
                         if name in policy_cell_roles
                         else {}
                     ),
-                    **(
-                        {"optional": "hide"}
-                        if name in native_default_hidden or name in direct_orchestration_hidden or name in policy_default_hidden
-                        else {}
-                    ),
+                    "optional": "show" if canonical_column_visibility.get(name, True) else "hide",
                 }
                 for name in columns
             ]
