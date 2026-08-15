@@ -174,11 +174,13 @@ def public_revision_args() -> tuple[str, ...]:
     ``--all`` also includes local-only refs such as ``refs/stash``.  A shared
     multi-worktree repository may legitimately have a stash whose root is
     unrelated to the current product history, so publication checks must not
-    confuse that local recovery state with candidate history.  Local-only
-    refs remain governed by ``--local-hygiene``.
+    confuse that local recovery state with candidate history.  ``HEAD`` is
+    explicit because governed CI checks out the exact candidate SHA in a
+    detached repository without creating branch or remote-tracking refs.
+    Local-only refs remain governed by ``--local-hygiene``.
     """
 
-    return ("--branches", "--tags", "--remotes")
+    return ("HEAD", "--branches", "--tags", "--remotes")
 
 
 def read_blob(root: Path, object_id: str) -> bytes:

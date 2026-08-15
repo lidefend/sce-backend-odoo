@@ -94,6 +94,25 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("reachable_scan=public_refs", result.stdout)
 
+    def test_detached_head_without_public_refs_remains_authoritative(self) -> None:
+        candidate = self.git("rev-parse", "HEAD").stdout.strip()
+        self.git("checkout", "--detach", candidate)
+        self.git("update-ref", "-d", "refs/heads/main")
+
+        self.assertEqual(
+            self.git(
+                "for-each-ref",
+                "--format=%(refname)",
+                "refs/heads",
+                "refs/remotes",
+                "refs/tags",
+            ).stdout.strip(),
+            "",
+        )
+        result = self.run_guard()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("roots=1", result.stdout)
+
     def test_unrelated_local_stash_root_does_not_pollute_public_history(self) -> None:
         blob_id = self.git("hash-object", "-w", "--stdin", input_text="local recovery\n").stdout.strip()
         tree_id = self.git(
