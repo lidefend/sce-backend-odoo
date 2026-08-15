@@ -91,16 +91,20 @@
                 <form string="付款登记办理">
                     <header>
                         <button name="action_confirm" string="提交审批" type="object" class="btn-primary"
+                                groups="smart_construction_core.group_sc_cap_finance_user"
                                 invisible="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
                         <button name="validate_tier" string="审批通过" type="object" class="btn-primary"
                                 invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="reject_tier" string="审批驳回" type="object"
                                 invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="action_paid" string="已付款" type="object" class="btn-primary"
-                                invisible="state not in ('draft', 'confirmed')"/>
+                                groups="smart_construction_core.group_sc_cap_finance_manager"
+                                invisible="state != 'confirmed'"/>
                         <button name="action_cancel" string="取消" type="object"
+                                groups="smart_construction_core.group_sc_cap_finance_manager"
                                 invisible="state not in ('draft', 'confirmed')"/>
                         <button name="action_cancel" string="撤销付款" type="object" class="btn-secondary"
+                                groups="smart_construction_core.group_sc_cap_finance_manager"
                                 invisible="state != 'paid'"/>
                         <field name="validation_status" invisible="1"/>
                         <field name="can_review" invisible="1"/>
@@ -110,52 +114,57 @@
                     <sheet>
                         <group>
                             <group string="办理类型">
-                                <field name="business_category_id" options="{'no_create': True}"/>
+                                <field name="business_category_id" options="{'no_create': True}" readonly="state != 'draft'"/>
                                 <field name="execution_flow_label" readonly="1"/>
                                 <field name="state" readonly="1"/>
                                 <field name="name" readonly="1"/>
                             </group>
                             <group string="付款依据">
-                                <field name="payment_request_id" domain="[('type', '=', 'pay'), ('project_id', '=', project_id)]" readonly="state == 'legacy_confirmed'"/>
-                                <field name="project_id" readonly="state == 'legacy_confirmed'"/>
+                                <field name="payment_request_id" domain="[('type', '=', 'pay'), ('project_id', '=', project_id)]" readonly="1"/>
+                                <field name="project_id" readonly="1"/>
                                 <field name="operation_strategy" readonly="1"/>
-                                <field name="partner_id" readonly="state == 'legacy_confirmed'"/>
+                                <field name="partner_id" readonly="1"/>
                                 <field name="payment_request_partner_id" readonly="1"/>
                                 <field name="actual_payee_partner_id" readonly="1"/>
                                 <field name="payment_request_partner_relation" readonly="1"/>
-                                <field name="contract_id" readonly="state == 'legacy_confirmed'"/>
+                                <field name="contract_id" readonly="1"/>
                             </group>
                         </group>
                         <group>
                             <group string="付款金额">
-                                <field name="date_payment" readonly="state == 'legacy_confirmed'"/>
-                                <field name="paid_amount" readonly="state == 'legacy_confirmed'"/>
-                                <field name="planned_amount" readonly="state == 'legacy_confirmed'"/>
-                                <field name="invoice_amount" readonly="state == 'legacy_confirmed'"/>
+                                <field name="date_payment" readonly="state != 'draft'"/>
+                                <field name="paid_amount" readonly="state != 'draft'"/>
+                                <field name="planned_amount" readonly="state != 'draft'"/>
+                                <field name="invoice_amount" readonly="state != 'draft'"/>
                                 <field name="currency_id" invisible="1"/>
                             </group>
                             <group string="办理说明">
-                                <field name="payment_method" readonly="state == 'legacy_confirmed'"/>
-                                <field name="handler_name" readonly="state == 'legacy_confirmed'"/>
-                                <field name="document_no" readonly="state == 'legacy_confirmed'"/>
-                                <field name="note" readonly="state == 'legacy_confirmed'"/>
+                                <field name="payment_method" readonly="state != 'draft'"/>
+                                <field name="handler_name" readonly="state != 'draft'"/>
+                                <field name="document_no" readonly="state != 'draft'"/>
+                                <field name="note" readonly="state != 'draft'"/>
+                                <field name="cancellation_kind" readonly="1" invisible="state not in ('paid', 'cancel')"/>
+                                <field name="reversal_reason"
+                                       placeholder="已付款冲销必须说明原因，原文将保留到付款台账"
+                                       invisible="state not in ('paid', 'cancel')"
+                                       readonly="state != 'paid'"/>
                             </group>
                         </group>
                         <group>
                             <group string="收款账户">
-                                <field name="receipt_account_name" readonly="state == 'legacy_confirmed'"/>
-                                <field name="receipt_bank_name" readonly="state == 'legacy_confirmed'"/>
-                                <field name="receipt_account_no" readonly="state == 'legacy_confirmed'"/>
+                                <field name="receipt_account_name" readonly="1"/>
+                                <field name="receipt_bank_name" readonly="1"/>
+                                <field name="receipt_account_no" readonly="1"/>
                             </group>
                             <group string="付款账户">
-                                <field name="payment_account_name" readonly="state == 'legacy_confirmed'"/>
-                                <field name="payment_bank_name" readonly="state == 'legacy_confirmed'"/>
-                                <field name="payment_account_no" readonly="state == 'legacy_confirmed'"/>
-                                <field name="bank_account" readonly="state == 'legacy_confirmed'"/>
+                                <field name="payment_account_name" readonly="state != 'draft'"/>
+                                <field name="payment_bank_name" readonly="state != 'draft'"/>
+                                <field name="payment_account_no" readonly="state != 'draft'"/>
+                                <field name="bank_account" readonly="state != 'draft'"/>
                             </group>
                         </group>
                         <group string="附件">
-                            <field name="attachment_ids" widget="many2many_binary" readonly="state == 'legacy_confirmed'"/>
+                            <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
                         </group>
                         <group string="公司-承包人资金责任">
                             <field name="company_contractor_responsibility_summary_id" invisible="1"/>

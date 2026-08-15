@@ -46,7 +46,10 @@ class PaymentSliceNativeAdapter:
     def ledger_domain(self, project):
         if not project or not self._has_fields("payment.ledger", ["project_id"]):
             return [("id", "=", 0)]
-        return [("project_id", "=", int(project.id))]
+        return [
+            ("project_id", "=", int(project.id)),
+            ("state", "=", "posted"),
+        ]
 
     def summary(self, project):
         summary = {

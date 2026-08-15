@@ -4175,3 +4175,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   conflicting envelope/operation defaults. A governed acceptance HTTP probe
   proves `default_get` receives the operation value under a conflicting
   envelope without exposing credentials.
+
+# PFL-035 payment capability rebaseline on stable contract frontend (2026-08-15)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v9` /
+  `095a74f2aa08a71904e9c395ec310fa0a444431f`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  product / payment request and payment execution journey /
+  `smart_construction_core` plus its existing acceptance fixture and audits.
+- Standard vs User-Specific: construction-industry standard only; no customer
+  preference, customer data, P0 renderer, P4 environment or runtime-profile
+  change is included.
+- Reason / boundary: preserve the reviewed PFL-035 product checkpoint while
+  consuming the merged contract-form profile and create-default baseline. The
+  governed replacement worktree was created at the exact new main SHA; 59
+  non-generated paths were replayed with blob equality to the preserved
+  checkpoint, while generated reports were deliberately retained from main
+  until the authoritative refresh step.
+- Blast radius / validation: payment request, payment execution, payment
+  ledger, their industry contracts/navigation, deterministic fixture and PFL
+  audits. Browser execution remains paused until the complete fingerprint,
+  field-matrix guard, non-zero targeted tests, normalized payload and local
+  simulated user journey all pass on this baseline.

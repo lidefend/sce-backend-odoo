@@ -41,6 +41,11 @@ class TestPaymentDomainPermissionIsolation(TransactionCase):
             ],
             [cls.company_a, cls.company_b],
         )
+        cls.fixture_finance_manager = cls._role_user(
+            "t2_fixture_finance_manager",
+            ["smart_construction_core.group_sc_cap_finance_manager"],
+            [cls.company_a, cls.company_b],
+        )
         cls.project_a_member = cls._role_user(
             "t2_project_a_member",
             [
@@ -65,7 +70,14 @@ class TestPaymentDomainPermissionIsolation(TransactionCase):
             [cls.company_a],
         )
 
-        cls.partner = cls.env["res.partner"].create({"name": "T2 Shared Supplier"})
+        cls.partner = cls.env["res.partner"].create(
+            {
+                "name": "T2 Shared Supplier",
+                "sc_account_name": "T2 Shared Supplier",
+                "sc_bank_name": "T2 Shared Bank",
+                "sc_bank_account": "6222000000000077",
+            }
+        )
         cls.project_a = cls._project("T2 Project A", cls.company_a)
         cls.project_b = cls._project("T2 Project B", cls.company_a)
         cls.project_c = cls._project("T2 Project C", cls.company_b)
@@ -165,7 +177,18 @@ class TestPaymentDomainPermissionIsolation(TransactionCase):
 
     @classmethod
     def _execution(cls, request, *, env=None, overrides=None):
-        env = env or cls.env
+        env = env or cls.env(
+            user=cls.fixture_finance_manager,
+            context={
+                **cls.env.context,
+                "allowed_company_ids": [cls.company_a.id, cls.company_b.id],
+            },
+        )
+        cls.env.cr.execute(
+            "UPDATE payment_request SET state = 'approved' WHERE id = %s",
+            (request.id,),
+        )
+        request.invalidate_recordset(["state"])
         values = {
             "project_id": request.project_id.id,
             "partner_id": request.partner_id.id,
@@ -223,7 +246,7 @@ class TestPaymentDomainPermissionIsolation(TransactionCase):
     def test_01_menu_and_backend_capability_boundaries(self):
         # 1-2: finance entry is visible; an ordinary internal user has no entry.
         menu_ids = [
-            self.env.ref("smart_construction_core.menu_sc_user_payment_apply_acceptance").id,
+            self.env.ref("smart_construction_core.menu_sc_user_payment_apply").id,
             self.env.ref("smart_construction_core.menu_sc_settlement_order").id,
             self.env.ref("smart_construction_core.menu_sc_payment_execution").id,
         ]
@@ -303,7 +326,11 @@ class TestPaymentDomainPermissionIsolation(TransactionCase):
     def test_e2e_06_finance_actions_and_denial_are_atomic(self):
         # 16: finance may create and submit a request in its authorized project.
         finance_env = self._user_env(self.finance_user)
-        request = self._request(self.project_a, self.contract_a, self.settlement_a, env=finance_env)
+        self.project_a.user_id = self.finance_user
+        action_settlement = self._settlement(self.project_a, self.contract_a)
+        request = self._request(
+            self.project_a, self.contract_a, action_settlement, env=finance_env
+        )
         self.env["ir.attachment"].create(
             {
                 "name": "t2-payment-proof.txt",
@@ -316,7 +343,11 @@ class TestPaymentDomainPermissionIsolation(TransactionCase):
         )
         request.with_context(payment_soft_gate=True).action_submit()
         self.assertEqual(request.state, "submit")
-        execution = self._execution(self.request_a, env=finance_env)
+        # The request already owns its single active execution.  A finance
+        # handler may read that in-scope fact but must not manufacture a
+        # duplicate; generation itself belongs to the manager capability.
+        execution = finance_env["sc.payment.execution"].browse(self.execution_a.id)
+        execution.check_access_rule("read")
         self.assertEqual(execution.project_id, self.project_a)
         # 17: A member cannot submit or approve B; state remains unchanged.
         self._assert_rejected_unchanged(
