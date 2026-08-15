@@ -144,7 +144,7 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 
 允许的 PR 相关 Makefile targets：
 
-* `make pr.open`
+* `make pr.create`
 
   * 创建 PR（或输出创建指引 / URL）
 
@@ -449,7 +449,7 @@ Codex 的责任是 **定位 → 修复 → 重试**。
 * `make codex.preflight`
 * `make codex.run FLOW=fast|snapshot|gate|pr|merge|cleanup|rollback`
 * `make codex.pr`
-* `make pr.open`
+* `make pr.create`
 * `make pr.update`
 * `make pr.status`
 * `make pr.push`
