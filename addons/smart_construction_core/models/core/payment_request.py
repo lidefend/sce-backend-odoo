@@ -878,14 +878,20 @@ class PaymentRequest(models.Model):
         self._sc_raise_delete_blockers(action_label="删除付款申请")
         return super().unlink()
 
-    def _get_active_funding_baseline(self, project):
-        baseline = self.env["project.funding.baseline"].sudo().search(
-            [
-                ("project_id", "=", project.id),
-                ("state", "=", "active"),
-            ],
-            limit=2,
-        )
+    def _get_active_funding_baseline(self, project, evaluation_cache=None):
+        cache = evaluation_cache if isinstance(evaluation_cache, dict) else None
+        cache_key = ("active_funding_baseline", int(project.id or 0))
+        baseline = cache.get(cache_key) if cache is not None else None
+        if baseline is None:
+            baseline = self.env["project.funding.baseline"].sudo().search(
+                [
+                    ("project_id", "=", project.id),
+                    ("state", "=", "active"),
+                ],
+                limit=2,
+            )
+            if cache is not None:
+                cache[cache_key] = baseline
         if len(baseline) != 1:
             raise_guard(
                 "P0_PAYMENT_FUNDING_BASELINE_INVALID",
@@ -896,18 +902,35 @@ class PaymentRequest(models.Model):
             )
         return baseline
 
-    def _get_reserved_amount(self, project, exclude_ids=None):
+    def _get_reserved_amount(self, project, exclude_ids=None, evaluation_cache=None):
         domain = [
             ("project_id", "=", project.id),
             ("type", "=", "pay"),
             ("state", "in", ["submit", "approve", "approved"]),
         ]
+        cache = evaluation_cache if isinstance(evaluation_cache, dict) else None
+        excluded = {int(item) for item in (exclude_ids or []) if int(item or 0) > 0}
+        current_ids = {int(item) for item in self.ids if int(item or 0) > 0}
+        can_subtract_current = bool(cache is not None and len(self) == 1 and excluded == current_ids)
+        if can_subtract_current:
+            cache_key = ("reserved_amount", int(project.id or 0))
+            if cache_key not in cache:
+                data = self.sudo().read_group(domain, ["amount:sum"], [])
+                cache[cache_key] = data[0].get("amount_sum", data[0].get("amount", 0.0)) if data else 0.0
+            reserved = cache[cache_key]
+            current_is_reserved = (
+                self.project_id.id == project.id
+                and self.type == "pay"
+                and self.state in ("submit", "approve", "approved")
+            )
+            excluded_amount = (self.amount or 0.0) if current_is_reserved else 0.0
+            return max(0.0, (reserved or 0.0) - excluded_amount)
         if exclude_ids:
             domain.append(("id", "not in", exclude_ids))
         data = self.sudo().read_group(domain, ["amount:sum"], [])
         return data[0].get("amount_sum", data[0].get("amount", 0.0)) if data else 0.0
 
-    def _check_project_funding_gate(self, project, amount, exclude_ids=None):
+    def _check_project_funding_gate(self, project, amount, exclude_ids=None, evaluation_cache=None):
         if not project or not project.is_funding_ready():
             raise_guard(
                 "P0_PAYMENT_FUNDING_NOT_READY",
@@ -916,7 +939,7 @@ class PaymentRequest(models.Model):
                 reasons=["项目未满足资金承载条件"],
                 hints=["请先完成项目资金承载设置后再提交付款申请"],
             )
-        baseline = self._get_active_funding_baseline(project)
+        baseline = self._get_active_funding_baseline(project, evaluation_cache=evaluation_cache)
         cap = baseline.total_amount or 0.0
         if cap <= 0.0:
             raise_guard(
@@ -928,7 +951,11 @@ class PaymentRequest(models.Model):
             )
         if (amount or 0.0) <= 0.0:
             raise UserError("申请金额必须大于 0。")
-        used = self._get_reserved_amount(project, exclude_ids=exclude_ids)
+        used = self._get_reserved_amount(
+            project,
+            exclude_ids=exclude_ids,
+            evaluation_cache=evaluation_cache,
+        )
         rounding = project.company_currency_id.rounding if project.company_currency_id else 0.01
         if float_compare((used or 0.0) + (amount or 0.0), cap, precision_rounding=rounding) == 1:
             raise_guard(
@@ -1250,7 +1277,7 @@ class PaymentRequest(models.Model):
         }.get(code, "")
         return self._payment_advisory(code, text or code, suggested_action=suggested)
 
-    def _collect_payment_advisories(self, action_name):
+    def _collect_payment_advisories(self, action_name, evaluation_cache=None):
         self.ensure_one()
         action_key = str(action_name or "").strip().lower()
         advisories = []
@@ -1277,7 +1304,12 @@ class PaymentRequest(models.Model):
         for check in (
             lambda: self._check_project_lifecycle(self.project_id, action_key),
             lambda: self._check_settlement_state(self.settlement_id),
-            lambda: self._check_project_funding_gate(self.project_id, self.amount, exclude_ids=self.ids),
+            lambda: self._check_project_funding_gate(
+                self.project_id,
+                self.amount,
+                exclude_ids=self.ids,
+                evaluation_cache=evaluation_cache,
+            ),
             self._check_settlement_remaining_amount,
             self._check_material_settlement_remaining_amount,
             self._check_not_overpay_settlement,

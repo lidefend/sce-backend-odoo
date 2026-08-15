@@ -333,6 +333,25 @@ class TestMyWorkBackend(TransactionCase):
         self.assertIn("sc.settlement.order", sources)
         self.assertIn("construction.contract", sources)
 
+    def test_summary_reuses_project_execution_projection_for_count_and_rows(self):
+        handler = MyWorkSummaryHandler(self.env, payload={})
+        calls = []
+
+        def load_once(_user, _limit):
+            calls.append("project_execution")
+            return []
+
+        handler._load_project_execution_items = load_once
+        with patch(
+            "odoo.addons.smart_construction_core.handlers.my_work_summary."
+            "PaymentRequestWorkItemService.build",
+            return_value={},
+        ):
+            result = handler.handle({"limit_each": 1})
+
+        self.assertTrue(result.get("ok"))
+        self.assertEqual(calls, ["project_execution"])
+
     def test_contract_target_keeps_action_without_hidden_mixed_menu(self):
         handler = MyWorkSummaryHandler(self.env, payload={})
         action_ctx = handler._resolve_action_context_for_model("construction.contract")

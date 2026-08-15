@@ -137,15 +137,27 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             return str(match.group(1) or "").strip().upper() or REASON_BUSINESS_RULE_FAILED
         return REASON_BUSINESS_RULE_FAILED
 
-    def _evaluate_prerequisites(self, record, action_key: str) -> tuple[bool, str]:
+    def _evaluate_prerequisites(
+        self,
+        record,
+        action_key: str,
+        *,
+        advisories: list[dict] | None = None,
+    ) -> tuple[bool, str]:
         key = str(action_key or "").strip()
         if key == "submit":
             if not record.contract_id:
                 return False, REASON_MISSING_PARAMS
             if record.contract_id and str(record.contract_id.state or "") == "cancel":
                 return False, REASON_BUSINESS_RULE_FAILED
-            advisories = record._collect_payment_advisories("submit") if hasattr(record, "_collect_payment_advisories") else []
-            blocking = [item for item in advisories if item.get("force_block_enabled")]
+            resolved_advisories = (
+                advisories
+                if advisories is not None
+                else record._collect_payment_advisories("submit")
+                if hasattr(record, "_collect_payment_advisories")
+                else []
+            )
+            blocking = [item for item in resolved_advisories if item.get("force_block_enabled")]
             if blocking:
                 return False, str(blocking[0].get("reason_code") or REASON_BUSINESS_RULE_FAILED)
             return True, REASON_OK
@@ -154,8 +166,14 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             no_tier_review = validation_status in ("", "no") and not record.review_ids
             if validation_status not in ("waiting", "pending", "validated") and not no_tier_review:
                 return False, REASON_BUSINESS_RULE_FAILED
-            advisories = record._collect_payment_advisories("approve") if hasattr(record, "_collect_payment_advisories") else []
-            blocking = [item for item in advisories if item.get("force_block_enabled")]
+            resolved_advisories = (
+                advisories
+                if advisories is not None
+                else record._collect_payment_advisories("approve")
+                if hasattr(record, "_collect_payment_advisories")
+                else []
+            )
+            blocking = [item for item in resolved_advisories if item.get("force_block_enabled")]
             if blocking:
                 return False, str(blocking[0].get("reason_code") or REASON_BUSINESS_RULE_FAILED)
             return True, REASON_OK
@@ -166,8 +184,14 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
                 return False, REASON_BUSINESS_RULE_FAILED
             if str(record.state or "") != "approved":
                 return False, REASON_BUSINESS_RULE_FAILED
-            advisories = record._collect_payment_advisories("done") if hasattr(record, "_collect_payment_advisories") else []
-            blocking = [item for item in advisories if item.get("force_block_enabled")]
+            resolved_advisories = (
+                advisories
+                if advisories is not None
+                else record._collect_payment_advisories("done")
+                if hasattr(record, "_collect_payment_advisories")
+                else []
+            )
+            blocking = [item for item in resolved_advisories if item.get("force_block_enabled")]
             if blocking:
                 return False, str(blocking[0].get("reason_code") or REASON_BUSINESS_RULE_FAILED)
             return True, REASON_OK
@@ -177,8 +201,12 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         key = str(action_key or "").strip()
         if key not in {"submit", "approve", "done"} or not hasattr(record, "_collect_payment_advisories"):
             return []
+        evaluation_cache = getattr(self, "_advisory_evaluation_cache", None)
+        if not isinstance(evaluation_cache, dict):
+            evaluation_cache = {}
+            self._advisory_evaluation_cache = evaluation_cache
         try:
-            return list(record._collect_payment_advisories(key) or [])
+            return list(record._collect_payment_advisories(key, evaluation_cache=evaluation_cache) or [])
         except Exception:
             return []
 
@@ -214,8 +242,16 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         fn = getattr(record, method_name, None)
         method_ok = callable(fn)
         state_ok = state in set(spec.get("allowed_states") or [])
-        advisories = self._advisories_for_action(record, action_key)
-        precheck_ok, precheck_reason = self._evaluate_prerequisites(record, action_key)
+        advisories = []
+        precheck_ok = False
+        precheck_reason = REASON_BUSINESS_RULE_FAILED
+        if method_ok and state_ok:
+            advisories = self._advisories_for_action(record, action_key)
+            precheck_ok, precheck_reason = self._evaluate_prerequisites(
+                record,
+                action_key,
+                advisories=advisories,
+            )
         allowed = bool(method_ok and state_ok and precheck_ok)
         if allowed:
             reason_code = REASON_OK

@@ -775,7 +775,8 @@ class MyWorkSummaryHandler(BaseIntentHandler):
             self._task_domain_for_user(user) or [("id", "=", -1)],
             ["id"],
         )
-        projected_execution_count = len(self._load_project_execution_items(user, limit_each))
+        project_execution_items = self._load_project_execution_items(user, limit_each)
+        projected_execution_count = len(project_execution_items)
         risk_todo_count = self._safe_count(
             "project.project",
             self._project_risk_domain_for_user(user) or [("id", "=", -1)],
@@ -803,7 +804,7 @@ class MyWorkSummaryHandler(BaseIntentHandler):
         self._append_items(items, "todo", self._load_tier_review_items(user, limit_each))
         self._append_items(items, "todo", self._load_workflow_todo_items(user, limit_each))
         self._append_items(items, "todo", self._load_task_items(user, limit_each))
-        self._append_items(items, "todo", self._load_project_execution_items(user, limit_each))
+        self._append_items(items, "todo", project_execution_items)
         self._append_items(items, "todo", self._load_project_risk_items(user, limit_each))
         self._append_items(items, "owned", self._load_owned_items(user, limit_each))
         self._append_items(items, "mentions", self._load_mention_items(partner, limit_each))

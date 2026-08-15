@@ -32,9 +32,9 @@ Generated from repository source files. This report is informational during the 
 | 2263 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 2171 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2076 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
+| 2015 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 2001 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
-| 1983 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 1865 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1834 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
@@ -99,7 +99,7 @@ Generated from repository source files. This report is informational during the 
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 952 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
-| 916 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
+| 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 915 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
@@ -156,9 +156,9 @@ Generated from repository source files. This report is informational during the 
 | 2263 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 2171 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2076 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
+| 2015 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 2001 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
-| 1983 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 1865 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1834 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |

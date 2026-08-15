@@ -41,6 +41,7 @@ class PaymentRequestWorkItemService:
         self._action_handler = PaymentRequestAvailableActionsHandler(env, payload={})
         self._action_specs = list(self._action_handler._ACTION_SPECS)
         self._state_labels = dict(self.PaymentRequest._fields["state"].selection or [])
+        self._allowed_actions_cache = {}
 
     def _active_company_id(self):
         raw = self.params.get("company_id") or self.context.get("company_id")
@@ -83,8 +84,13 @@ class PaymentRequestWorkItemService:
         )
 
     def _allowed_actions(self, record):
+        cache_key = int(record.id or 0)
+        if cache_key in self._allowed_actions_cache:
+            return list(self._allowed_actions_cache[cache_key])
         rows = []
         for spec in self._action_specs:
+            if str(record.state or "") not in set(spec.get("allowed_states") or []):
+                continue
             action = self._action_handler._action_entry(record, spec)
             if action.get("allowed") and action.get("actor_matches_required_role"):
                 rows.append(
@@ -100,7 +106,8 @@ class PaymentRequestWorkItemService:
                         "presentation": dict(action.get("presentation") or {}),
                     }
                 )
-        return rows
+        self._allowed_actions_cache[cache_key] = list(rows)
+        return list(rows)
 
     @staticmethod
     def _ref(value):
@@ -217,6 +224,11 @@ class PaymentRequestWorkItemService:
         )
         return [self._item(record, section="initiated", actions=self._allowed_actions(record)) for record in records]
 
+    def _payment_requests_by_id(self, record_ids):
+        unique_ids = list(dict.fromkeys(int(record_id or 0) for record_id in record_ids if int(record_id or 0) > 0))
+        records = self.PaymentRequest.browse(unique_ids).exists()
+        return {int(record.id): record for record in records}
+
     def _completed(self):
         Audit = self.env.get("sc.audit.log")
         if not Audit or not Audit.check_access_rights("read", raise_exception=False):
@@ -234,19 +246,24 @@ class PaymentRequestWorkItemService:
             )
         except AccessError:
             return [], "AUDIT_READ_DENIED"
+        latest_audits = []
         seen = set()
-        rows = []
         for audit in audits:
-            if audit.res_id in seen:
+            record_id = int(audit.res_id or 0)
+            if record_id <= 0 or record_id in seen:
                 continue
-            record = self.PaymentRequest.browse(audit.res_id).exists()
+            seen.add(record_id)
+            latest_audits.append(audit)
+        records_by_id = self._payment_requests_by_id(audit.res_id for audit in latest_audits)
+        rows = []
+        for audit in latest_audits:
+            record = records_by_id.get(int(audit.res_id or 0))
             if not record:
                 continue
             try:
                 record.check_access_rule("read")
             except AccessError:
                 continue
-            seen.add(audit.res_id)
             rows.append(
                 self._item(
                     record,

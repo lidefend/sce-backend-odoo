@@ -27,7 +27,13 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         )
 
     def _create_payment_request_minimal(self):
-        project = self.env["project.project"].create({"name": "Action Matrix Project", "funding_enabled": True})
+        project = self.env["project.project"].create(
+            {
+                "name": "Action Matrix Project",
+                "funding_enabled": True,
+                "company_id": self.env.company.id,
+            }
+        )
         partner = self.env["res.partner"].create({"name": "Action Matrix Partner"})
         contract = self.env["construction.contract"].create(
             {
@@ -37,17 +43,28 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
                 "partner_id": partner.id,
             }
         )
-        return self.env["payment.request"].sudo().create(
+        payment = self.env["payment.request"].sudo().create(
             {
                 "name": "INTENT-ACTIONS-PR-001",
                 "type": "pay",
                 "project_id": project.id,
-                "contract_id": contract.id,
                 "partner_id": partner.id,
                 "amount": 100,
                 "state": "draft",
             }
         )
+        self.env["payment.request.line"].sudo().create(
+            {
+                "request_id": payment.id,
+                "legacy_line_id": "INTENT-ACTIONS-LINE-%s" % payment.id,
+                "legacy_parent_id": "INTENT-ACTIONS-PARENT-%s" % payment.id,
+                "contract_id": contract.id,
+                "amount": payment.amount,
+                "current_pay_amount": payment.amount,
+            }
+        )
+        payment.write({"contract_id": contract.id})
+        return payment
 
     def test_available_actions_missing_id(self):
         handler = PaymentRequestAvailableActionsHandler(self.env, payload={})

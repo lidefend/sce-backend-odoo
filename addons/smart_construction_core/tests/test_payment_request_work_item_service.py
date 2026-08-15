@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import base64
+from types import SimpleNamespace
 
 from odoo.tests.common import TransactionCase, tagged
 
@@ -54,7 +55,6 @@ class TestPaymentRequestWorkItemService(TransactionCase):
                 "name": "WORK-ITEM-DRAFT-001",
                 "type": "pay",
                 "project_id": cls.project.id,
-                "contract_id": cls.contract.id,
                 "partner_id": cls.partner.id,
                 "amount": 100.0,
                 "state": "draft",
@@ -65,7 +65,6 @@ class TestPaymentRequestWorkItemService(TransactionCase):
                 "name": "WORK-ITEM-SUBMIT-001",
                 "type": "pay",
                 "project_id": cls.project.id,
-                "contract_id": cls.contract.id,
                 "partner_id": cls.partner.id,
                 "amount": 80.0,
                 # The work-item projection is the unit under test.  Establish
@@ -74,6 +73,18 @@ class TestPaymentRequestWorkItemService(TransactionCase):
                 "state": "draft",
             }
         )
+        for index, request in enumerate((cls.draft, cls.submitted), start=1):
+            cls.env["payment.request.line"].create(
+                {
+                    "request_id": request.id,
+                    "legacy_line_id": "WORK-ITEM-LINE-%s" % index,
+                    "legacy_parent_id": "WORK-ITEM-PARENT-%s" % index,
+                    "contract_id": cls.contract.id,
+                    "amount": request.amount,
+                    "current_pay_amount": request.amount,
+                }
+            )
+            request.write({"contract_id": cls.contract.id})
         cls.env["ir.attachment"].create(
             {
                 "name": "work-item.txt",
@@ -171,6 +182,220 @@ class TestPaymentRequestWorkItemService(TransactionCase):
 
         source = inspect.getsource(PaymentRequestWorkItemService)
         self.assertNotIn(".sudo(", source)
+
+    def test_action_projection_reuses_record_result_and_skips_impossible_states(self):
+        service = PaymentRequestWorkItemService(
+            self.env(user=self.finance.id),
+            params={},
+            context={},
+        )
+        calls = []
+        original = service._action_handler._action_entry
+
+        def counted(record, spec):
+            calls.append(str(spec.get("key") or ""))
+            return original(record, spec)
+
+        service._action_handler._action_entry = counted
+        first = service._allowed_actions(self.draft)
+        second = service._allowed_actions(self.draft)
+
+        self.assertEqual(first, second)
+        self.assertEqual(calls, ["submit"])
+
+    def test_action_entry_collects_expensive_advisories_once(self):
+        handler = PaymentRequestWorkItemService(
+            self.env(user=self.finance.id),
+            params={},
+            context={},
+        )._action_handler
+        calls = []
+        observed_caches = []
+
+        class Contract:
+            state = "active"
+
+        class Record:
+            id = 987
+            state = "draft"
+            contract_id = Contract()
+
+            def action_submit(self):
+                return True
+
+            def _collect_payment_advisories(self, action_key, evaluation_cache=None):
+                observed_caches.append(evaluation_cache)
+                calls.append(action_key)
+                return []
+
+        submit = next(spec for spec in handler._ACTION_SPECS if spec["key"] == "submit")
+        handler._action_entry(Record(), submit)
+
+        self.assertEqual(calls, ["submit"])
+        self.assertEqual(len(observed_caches), 1)
+        self.assertIsInstance(observed_caches[0], dict)
+
+    def test_action_projection_does_not_evaluate_inapplicable_state_prerequisites(self):
+        handler = PaymentRequestWorkItemService(
+            self.env(user=self.finance.id),
+            params={},
+            context={},
+        )._action_handler
+        advisory_calls = []
+
+        class Contract:
+            state = "active"
+
+        class Record:
+            id = 988
+            state = "draft"
+            contract_id = Contract()
+
+            def action_submit(self):
+                return True
+
+            def action_approve(self):
+                return True
+
+            def action_on_tier_rejected(self):
+                return True
+
+            def action_done(self):
+                return True
+
+            def _collect_payment_advisories(self, action_key, evaluation_cache=None):
+                advisory_calls.append(action_key)
+                return []
+
+        actions = [handler._action_entry(Record(), spec) for spec in handler._ACTION_SPECS]
+
+        self.assertEqual(advisory_calls, ["submit"])
+        self.assertTrue(actions[0]["allowed_by_precheck"])
+        self.assertTrue(all(not action["allowed_by_precheck"] for action in actions[1:]))
+
+    def test_action_projection_reuses_one_advisory_cache_across_records(self):
+        handler = PaymentRequestWorkItemService(
+            self.env(user=self.finance.id),
+            params={},
+            context={},
+        )._action_handler
+        observed_caches = []
+
+        class Contract:
+            state = "active"
+
+        class Record:
+            state = "draft"
+            contract_id = Contract()
+
+            def __init__(self, record_id):
+                self.id = record_id
+
+            def action_submit(self):
+                return True
+
+            def _collect_payment_advisories(self, action_key, evaluation_cache=None):
+                observed_caches.append(evaluation_cache)
+                return []
+
+        submit = next(spec for spec in handler._ACTION_SPECS if spec["key"] == "submit")
+        handler._action_entry(Record(991), submit)
+        handler._action_entry(Record(992), submit)
+
+        self.assertEqual(len(observed_caches), 2)
+        self.assertIs(observed_caches[0], observed_caches[1])
+
+    def test_funding_advisory_cache_reuses_project_facts_and_preserves_exclusion(self):
+        cache = {}
+        baseline_draft = self.draft._get_active_funding_baseline(
+            self.project,
+            evaluation_cache=cache,
+        )
+        queries_after_first_baseline = self.env.cr.sql_log_count
+        baseline_submitted = self.submitted._get_active_funding_baseline(
+            self.project,
+            evaluation_cache=cache,
+        )
+        self.assertEqual(baseline_draft, baseline_submitted)
+        self.assertEqual(self.env.cr.sql_log_count, queries_after_first_baseline)
+        self.assertIn(("active_funding_baseline", self.project.id), cache)
+
+        (self.draft | self.submitted).read(["project_id", "type", "state", "amount"])
+        without_draft = self.draft._get_reserved_amount(
+            self.project,
+            exclude_ids=self.draft.ids,
+            evaluation_cache=cache,
+        )
+        queries_after_first_reservation = self.env.cr.sql_log_count
+        without_submitted = self.submitted._get_reserved_amount(
+            self.project,
+            exclude_ids=self.submitted.ids,
+            evaluation_cache=cache,
+        )
+        self.assertEqual(without_draft, self.submitted.amount)
+        self.assertEqual(without_submitted, 0.0)
+        self.assertEqual(self.env.cr.sql_log_count, queries_after_first_reservation)
+        self.assertIn(("reserved_amount", self.project.id), cache)
+
+    def test_completed_projection_batches_payment_request_resolution(self):
+        service = PaymentRequestWorkItemService(
+            self.env(user=self.finance.id),
+            params={},
+            context={},
+        )
+        draft_id = self.draft.id
+        submitted_id = self.submitted.id
+
+        class AuditModel:
+            def check_access_rights(self, operation, raise_exception=False):
+                return operation == "read"
+
+            def search(self, domain, order=None, limit=None):
+                del domain, order, limit
+                return [
+                    SimpleNamespace(
+                        res_id=draft_id,
+                        event_code="PAYMENT_REQUEST_SUBMIT_INTENT",
+                        action="submit",
+                        ts="2026-08-15 10:00:00",
+                    ),
+                    SimpleNamespace(
+                        res_id=submitted_id,
+                        event_code="PAYMENT_REQUEST_APPROVE_INTENT",
+                        action="approve",
+                        ts="2026-08-15 09:00:00",
+                    ),
+                ]
+
+        class EnvProxy:
+            def __init__(self, env, audit_model):
+                self._env = env
+                self._audit_model = audit_model
+
+            def get(self, model_name):
+                if model_name == "sc.audit.log":
+                    return self._audit_model
+                return self._env.get(model_name)
+
+            def __getattr__(self, name):
+                return getattr(self._env, name)
+
+        service.env = EnvProxy(service.env, AuditModel())
+        resolved_batches = []
+        original = service._payment_requests_by_id
+
+        def counted(record_ids):
+            ids = list(record_ids)
+            resolved_batches.append(ids)
+            return original(ids)
+
+        service._payment_requests_by_id = counted
+        rows, unavailable_reason = service._completed()
+
+        self.assertEqual(unavailable_reason, "")
+        self.assertEqual(len(resolved_batches), 1)
+        self.assertTrue({self.draft.id, self.submitted.id}.issubset(set(resolved_batches[0])))
+        self.assertTrue({self.draft.id, self.submitted.id}.issubset({row["target"]["record_id"] for row in rows}))
 
     def test_product_handler_does_not_execute_legacy_sudo_aggregation(self):
         handler = MyWorkSummaryHandler(self.env(user=self.finance.id), payload={})
