@@ -4269,3 +4269,47 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   sections, their fields remain attached, the discarded legacy sheet does not
   survive, and a second projection is byte-for-byte idempotent. The complete
   standalone UI-contract boundary collection passes 70/70.
+
+# P1 payment work-summary performance closure (2026-08-16)
+
+- Branch / base SHA: `fix/p1-work-summary-performance-v1` /
+  `6f6aaa90b65caed16df6577993ecdb2d28319a41` (after the P0 semantic-group
+  prerequisite entered `main`).
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  standard product / payment-request work-item and work-summary read path /
+  `smart_construction_core`.
+- Standard vs User-Specific: standard payment-workflow performance only. No
+  customer exception, P0 contract behavior, frontend presentation, runtime
+  profile or environment topology is changed.
+- Reason / boundary: the product work-item projection recalculated the same
+  action advisories, active project funding baseline and reserved-payment sum
+  for every request, while the outer work summary loaded the same project
+  execution items twice. The implementation now reuses request-local shared
+  funding facts and projection results; record-specific amount, state,
+  permission and final business verdicts remain authoritative and are still
+  evaluated per request.
+- Why Here / Why Not Elsewhere: these queries implement existing P1 payment
+  funding and work-item rules. They are not generic P0 normalized-contract
+  behavior, a frontend concern, or P4 runtime configuration.
+- Blast radius / validation: `my.work.summary` and
+  `payment.request.available_actions` only. Governed `sc_test` targeted tests
+  report 36 tests with `0 failed / 0 errors` (42 test-stat entries, including
+  three pre-existing audit-model skips). With 80 synthetic payment requests,
+  the product workspace retains 80 todo plus 80 initiated items while cold
+  execution improves from 208 to 50 SQL queries and about 198 ms to 78.5 ms;
+  the outer summary improves from 407 to 111 SQL queries and about 356 ms to
+  125.4 ms. A real `/api/v1/intent` probe with a disposable finance-manager
+  identity returns the 80 visible todo items in 276–298 ms after the first
+  352 ms request. The probe identity and its randomly generated credential are
+  removed immediately after measurement.
+- Rebase verification: on exact base `6f6aaa90`, the governed targeted
+  collection again reports 42 test-stat entries / 36 executed tests with
+  `0 failed / 0 errors`; `make test.unit`, generated-report guard and
+  `git diff --check` pass. The same 80-record cold probe remains at 50 SQL
+  queries / 90.49 ms for the product workspace and 111 SQL queries / 154.26 ms
+  for the complete work summary, with the same 160-item result.
+- External local-gate note: the all-history personal-data scanner walks
+  `git rev-list --all`, so this shared multi-worktree repository also exposes
+  unrelated local PFL checkpoint blobs to `ci.local.quick`. The clean
+  `6f6aaa90` tree reproduces the same unrelated historical fixture findings;
+  no false-positive exemption or scanner change is carried by this P1 topic.
