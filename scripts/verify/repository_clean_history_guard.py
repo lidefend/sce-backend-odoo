@@ -54,6 +54,15 @@ PERSONAL_DATA_RULES = (
         "MOBILE_PHONE_PATTERN",
         re.compile(rb"(?<![0-9A-Za-z])1[3-9]\d{9}(?![0-9A-Za-z])"),
     ),
+    (
+        "PD003",
+        "BANK_ACCOUNT_PATTERN",
+        re.compile(
+            rb"(?i)(?:account(?:_no|_number)?|bank(?:_account)?|card(?:_no|_number)?|"
+            rb"receiving_account_no|payer_account|payee_account|\xe9\x93\xb6\xe8\xa1\x8c(?:\xe5\x8d\xa1|\xe8\xb4\xa6\xe5\x8f\xb7)|\xe8\xb4\xa6\xe5\x8f\xb7)"
+            rb"[^\d\n]{0,80}\d{12,24}(?!\d)"
+        ),
+    ),
 )
 
 

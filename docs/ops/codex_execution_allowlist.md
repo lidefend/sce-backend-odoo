@@ -44,6 +44,25 @@ Codex 是一个 **被严格约束的工程执行单元**。
 
 ## 1. 执行边界总原则（Hard Rules）
 
+### 1.0 基线迭代阶段
+
+`BASELINE_ITERATION_EXECUTION_POLICY=v1`
+
+仓库已进入“有产品基线、有环境基线、有工具积累”的增量迭代阶段。自治执行不再被授权临时
+拼装环境或替代入口。所有专题必须先盘点并消费仓库已登记的工作树、Make target、runtime
+profile、数据库锁、端口、卷、fixture、测试与证据工具。
+
+业务专题内禁止新增或派生 Compose project、数据库、端口、卷、凭据文件、runtime profile、
+fixture 体系或测试入口。若现有工具确实缺少能力，必须暂停业务专题并单独获得 P4 治理授权；
+不得把“临时可运行”作为补充授权。
+
+合成测试数据允许通过 `scripts/ci/personal_data_false_positives.json` 精确豁免，但登记必须绑定
+规则、仓库相对路径、完整不可变 Git blob SHA、分类和合成夹具原因。禁止按 `tests/` 目录、通配符、
+分支或“全部测试数据”豁免；文件内容变化后必须重新扫描、重新审核。
+
+权威执行顺序与失败关闭规则以
+`docs/ops/codex_workspace_execution_rules.md` 的“基线迭代执行锁”为准。
+
 ### 1.1 分支约束（最重要）
 
 Codex **只能** 在以下分支类型中执行自治操作：

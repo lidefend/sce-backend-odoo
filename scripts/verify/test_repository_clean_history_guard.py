@@ -170,6 +170,34 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
         result = self.run_guard()
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_exact_registered_synthetic_bank_account_history_is_suppressed(self) -> None:
+        path = "addons/smart_construction_core/tests/test_payment.py"
+        self.write(path, "bank_account = '622202" + "1234567890'\n")
+        blob_id = self.git("hash-object", path).stdout.strip()
+        self.register_false_positive(
+            path=path,
+            blob_id=blob_id,
+            rule_id="PD003",
+            classification="BANK_ACCOUNT_PATTERN",
+        )
+        self.commit("add governed synthetic bank fixture")
+        result = self.run_guard()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_synthetic_bank_account_registration_does_not_suppress_changed_blob(self) -> None:
+        path = "addons/smart_construction_core/tests/test_payment.py"
+        self.write(path, "bank_account = '622202" + "1234567890'\n")
+        self.register_false_positive(
+            path=path,
+            blob_id="a" * 40,
+            rule_id="PD003",
+            classification="BANK_ACCOUNT_PATTERN",
+        )
+        self.commit("add unmatched synthetic bank fixture")
+        result = self.run_guard()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("BANK_ACCOUNT_PATTERN", result.stderr)
+
     def test_registered_mobile_does_not_suppress_other_personal_data(self) -> None:
         path = "addons/smart_construction_demo/demo.py"
         self.write(
