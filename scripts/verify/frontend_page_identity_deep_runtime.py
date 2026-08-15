@@ -43,7 +43,7 @@ payload = {
         "smart_construction_acceptance_fixture.fe_settlement_a",
     ),
     "payment_request": target(
-        "smart_construction_core.menu_sc_user_payment_apply_acceptance",
+        "smart_construction_core.menu_sc_user_payment_apply",
         "smart_construction_acceptance_fixture.fe_request_a_001",
     ),
     "payment_execution": target(

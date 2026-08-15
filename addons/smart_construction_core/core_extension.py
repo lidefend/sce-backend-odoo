@@ -668,28 +668,34 @@ register_legacy_standard_list_profile({
     "profile_key": "payment.request.list",
     "model_name": "payment.request",
     "columns_order": [
-        "document_status_display", "name", "project_id", "date_request",
-        "partner_id", "amount", "actual_paid_amount_display",
-        "settlement_amount_payable", "cost_category_name", "note",
-        "settlement_id", "payment_account_no_display", "amount_uppercase",
+        "document_status_display", "name", "date_request",
+        "project_name_display", "payee_unit_display", "related_document_text",
+        "payee_account_completeness", "legal_next_action_display",
+        "request_amount_display", "actual_payee_unit_display",
+        "payer_unit_display", "actual_paid_amount_display", "cost_type_display",
+        "note_display", "payment_account_no_display", "amount_uppercase_display",
         "payee_account_name_display", "payee_bank_name_display",
-        "payee_account_no_display", "source_created_by", "source_created_at",
+        "payee_account_no_display", "attachment_ids",
     ],
     "column_labels": {
         "document_status_display": "单据状态", "name": "单据编号",
-        "project_id": "项目名称", "date_request": "申请日期",
-        "partner_id": "收款单位", "amount": "申请付款金额",
+        "date_request": "申请日期", "project_name_display": "项目名称",
+        "payee_unit_display": "收款单位", "related_document_text": "付款依据",
+        "payee_account_completeness": "账户完整度",
+        "legal_next_action_display": "下一步",
+        "request_amount_display": "申请付款金额",
+        "actual_payee_unit_display": "实际收款单位",
+        "payer_unit_display": "付款单位",
         "actual_paid_amount_display": "实际付款金额",
-        "settlement_amount_payable": "可用余额",
-        "cost_category_name": "成本分类名称", "note": "备注",
-        "settlement_id": "关联单据", "payment_account_no_display": "付款账号",
-        "amount_uppercase": "金额大写", "payee_account_name_display": "户名",
+        "cost_type_display": "类型（成本）", "note_display": "备注",
+        "payment_account_no_display": "付款账号",
+        "amount_uppercase_display": "金额大写", "payee_account_name_display": "户名",
         "payee_bank_name_display": "开户行", "payee_account_no_display": "账号",
-        "source_created_by": "填写人", "source_created_at": "录入时间",
+        "attachment_ids": "附件",
     },
     "row_primary": "name",
-    "row_secondary": "project_id",
-    "status_field": "state",
+    "row_secondary": "project_name_display",
+    "status_field": "document_status_display",
 })
 
 register_legacy_standard_list_profile({
@@ -1253,6 +1259,25 @@ def smart_core_finalize_projected_contract_data(env, data, context):
                     "optional": node.get("optional") or "",
                     "sum": node.get("sum") or "",
                 })
+                if model == "payment.request" and name == "request_amount_display":
+                    # The formal payment list presents a product-facing amount
+                    # field, while payment.request.amount remains the monetary
+                    # fact authority.  Preserve that relationship explicitly so
+                    # the generic list runtime can calculate both the current
+                    # page subtotal and the filtered result total without
+                    # parsing formatted display text.
+                    locked_schema[-1].update({
+                        "display_field": "request_amount_display",
+                        "value_field": "amount",
+                        "aggregation_field": "amount",
+                        "data_type": "monetary",
+                        "currency_field": "currency_id",
+                        "aggregate": "sum",
+                        "aggregate_label": "申请付款金额合计",
+                        "sort_field": "amount",
+                        "filter_field": "amount",
+                        "export_field": "amount",
+                    })
     except Exception:
         _logger.exception("Failed to parse locked tree view for action_id=%s", action_id)
         locked_columns = []

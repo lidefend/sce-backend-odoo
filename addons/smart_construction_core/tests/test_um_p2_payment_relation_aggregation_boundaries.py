@@ -56,11 +56,11 @@ class TestUmP2PaymentRelationAggregationBoundaries(unittest.TestCase):
         self.assertNotIn("order=", source)
         self.assertNotIn("limit=1", source)
 
-    def test_request_contract_never_becomes_a_source_without_basis(self):
+    def test_explicit_request_contract_is_a_valid_standalone_basis(self):
         source = self._source("_payment_basis_contracts")
         self.assertIn("if not contracts:", source)
-        self.assertIn("付款申请合同没有对应的有效来源依据", source)
-        self.assertNotIn("contracts |= request.contract_id", source)
+        self.assertIn("contracts |= request_contract", source)
+        self.assertIn("if request_contract != contracts:", source)
 
     def test_execution_contract_is_written_only_for_unique_basis(self):
         source = self._source("_normalize_payment_relation_values")
@@ -103,6 +103,18 @@ class TestUmP2PaymentRelationAggregationBoundaries(unittest.TestCase):
         for source in (request_constraint, line_constraint):
             self.assertIn("_payment_basis_contracts(request)", source)
             self.assertIn("_normalize_payment_relation_values({}, current=execution)", source)
+
+    def test_existing_execution_relation_anchors_are_immutable(self):
+        guard = self._source("_assert_payment_relation_anchors_immutable")
+        write = self._source("write")
+        for field_name in ("payment_request_id", "contract_id", "partner_id", "project_id"):
+            self.assertIn(field_name, guard)
+        self.assertIn('self.env.context.get("history_surface_sync")', guard)
+        self.assertIn("self.env.su", guard)
+        self.assertIn('rec.source_origin == "legacy"', guard)
+        self.assertIn("not current_id", guard)
+        self.assertIn("incoming_id", guard)
+        self.assertGreaterEqual(write.count("_assert_payment_relation_anchors_immutable"), 2)
 
 
 if __name__ == "__main__":

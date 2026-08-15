@@ -120,6 +120,23 @@ class ResPartner(models.Model):
         compute="_compute_sc_blacklist_advisory",
         help="黑名单原因和复核日期仅作治理提示，不作为操作硬阻断条件。",
     )
+    sc_transaction_eligibility = fields.Selection(
+        [
+            ("eligible", "可办理"),
+            ("review_required", "需风险复核"),
+            ("blocked", "禁止新业务"),
+        ],
+        string="交易资格",
+        compute="_compute_sc_transaction_eligibility",
+        store=True,
+        index=True,
+        help="由档案启用状态和客商风险级别统一判定，供付款申请等新业务办理复用。",
+    )
+    sc_transaction_eligibility_reason = fields.Char(
+        string="交易资格说明",
+        compute="_compute_sc_transaction_eligibility",
+        store=True,
+    )
     sc_attachment_ids = fields.Many2many(
         "ir.attachment",
         "sc_res_partner_supplier_attachment_rel",
@@ -149,6 +166,46 @@ class ResPartner(models.Model):
             if partner.sc_blacklisted and not partner.sc_blacklist_review_date:
                 suggestions.append("建议设置复核日期")
             partner.sc_blacklist_advisory = "；".join(suggestions) if suggestions else "治理信息已完善"
+
+    @api.depends("active", "sc_blacklisted", "sc_blacklist_level", "sc_blacklist_reason")
+    def _compute_sc_transaction_eligibility(self):
+        for partner in self:
+            if not partner.active:
+                partner.sc_transaction_eligibility = "blocked"
+                partner.sc_transaction_eligibility_reason = "档案已归档，不允许发起新业务。"
+            elif partner.sc_blacklisted and partner.sc_blacklist_level == "blocked":
+                partner.sc_transaction_eligibility = "blocked"
+                partner.sc_transaction_eligibility_reason = (
+                    partner.sc_blacklist_reason or "风险级别为停止合作。"
+                )
+            elif partner.sc_blacklisted:
+                partner.sc_transaction_eligibility = "review_required"
+                partner.sc_transaction_eligibility_reason = (
+                    partner.sc_blacklist_reason or "客商处于风险关注或限制合作状态。"
+                )
+            else:
+                partner.sc_transaction_eligibility = "eligible"
+                partner.sc_transaction_eligibility_reason = "档案有效，可正常发起业务。"
+
+    def _sc_assert_transaction_eligible(self, business_label=None):
+        """Fail closed when a document starts business with a blocked counterparty."""
+        label = business_label or _("业务")
+        blocked = self.filtered(
+            lambda partner: partner.sc_transaction_eligibility == "blocked"
+        )
+        if blocked:
+            details = "；".join(
+                _(
+                    "%(name)s：%(reason)s",
+                    name=partner.display_name,
+                    reason=partner.sc_transaction_eligibility_reason,
+                )
+                for partner in blocked
+            )
+            raise UserError(
+                _("无法发起%(label)s。%(details)s", label=label, details=details)
+            )
+        return True
 
     def _check_sc_blacklist_permission(self):
         if self.env.su or self.env.user.has_group(
@@ -255,4 +312,3 @@ class ResPartnerBank(models.Model):
 
     sc_account_holder_name = fields.Char(string="账户名称")
     sc_bank_name = fields.Char(string="开户银行", index=True)
-

@@ -4109,3 +4109,55 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   the three authority documents, locks the required rule fragments and proves
   the eight existing Make authorities remain declared. Its behavior suite
   covers complete policy, missing locked rule and missing Make target.
+
+# PFL-035 professional payment journey baseline refresh (2026-08-15)
+
+- Branch / exact baseline: `feature/p1-payment-request-capability-v7` /
+  `da1b02d99915174733bc36aa3934d609fcf3af7b`, after the baseline-iteration
+  execution policy entered `main` through PR #226.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  standard product / payment request, installment execution and ledger journey /
+  `smart_construction_core` plus its registered acceptance fixture and evidence
+  tools.
+- Boundary: no `smart_core`, generic frontend, Make/runtime profile, Compose,
+  database, port, volume, credential or customer-module implementation is
+  carried by this topic. Existing governed acceptance topology and collection
+  commands remain authoritative.
+- Product scope: professional payment-request facts, capability-based actions,
+  rejection/resubmission, installment execution, immutable reversal ledger,
+  formal Finance Center navigation, field-completeness contract and real user
+  journey evidence. The candidate continues to report incomplete journeys as
+  `runtime_verification_required` until authenticated evidence closes them.
+- List aggregation closure: the formal payment list binds visible
+  `request_amount_display` to authoritative monetary fact `amount`, with
+  `currency_id`, `aggregate=sum`, page subtotal and filtered-result total. The
+  generic P0 API and frontend aggregation mechanisms are reused unchanged;
+  multi-currency aggregation remains fail-closed.
+- Blast radius / validation: payment-request formal tree and normalized list
+  semantics only. Quick gates, non-zero focused Odoo tests, governed incremental
+  upgrade/fixture/reset, normalized payload, pagination/search aggregate checks
+  and the complete role journey are required before publication.
+
+# PFL-035 presentation-surface semantic closure (2026-08-15)
+
+- Branch / exact baseline: `feature/p1-payment-request-capability-v7` /
+  `da1b02d99915174733bc36aa3934d609fcf3af7b`.
+- Formal Product Layer / Layer Target / Module: P1 product contract governance /
+  payment-request field surfaces and normalized form evidence /
+  `smart_construction_core`.
+- Boundary: this checkpoint changes only the P1 field-completeness matrix, its
+  generic surface/profile verifier and existing P1 focused tests. It does not
+  modify P0 assembly, the generic frontend, browser behavior, runtime topology,
+  credentials, databases or customer-specific behavior.
+- Semantic contract: `create`, `edit` and `readonly` are distinct page modes;
+  business-state applicability remains independent. `create_edit` denotes the
+  shared create/edit surface, while `create` and `edit` express mode-specific
+  facts. Form-declaration validation derives from the single configured mapping
+  rather than a second hard-coded surface set.
+- Exact product result: the approved readonly normalized contract contains the
+  exact 40 applicable main-layout fields; the existing draft edit contract
+  contains the exact 39 applicable main-layout fields. Both retain all 42 field
+  declarations, seven product sections, native subordinate capabilities and
+  fail-closed action authority. Browser validation remains paused until these
+  static, focused-backend and normalized gates are frozen on one complete dirty
+  fingerprint.

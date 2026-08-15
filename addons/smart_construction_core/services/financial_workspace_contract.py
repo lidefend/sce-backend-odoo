@@ -94,7 +94,7 @@ WORKSPACE_DECLARATIONS = {
                 "key": "payment_requests",
                 "label": "付款申请",
                 "field": "payment_request_ids",
-                "menu_xmlid": "smart_construction_core.menu_sc_user_payment_apply_acceptance",
+                "menu_xmlid": "smart_construction_core.menu_sc_user_payment_apply",
                 "identity_fields": ("name",),
             },
         ],
@@ -168,7 +168,7 @@ WORKSPACE_DECLARATIONS = {
                 "key": "payment_request",
                 "label": "付款申请",
                 "field": "payment_request_id",
-                "menu_xmlid": "smart_construction_core.menu_sc_user_payment_apply_acceptance",
+                "menu_xmlid": "smart_construction_core.menu_sc_user_payment_apply",
                 "identity_fields": ("name",),
             },
             {
@@ -417,7 +417,7 @@ def _build_settlement_entry_actions(env, record):
     can_create = bool(PaymentRequest.check_access_rights("create", raise_exception=False))
     has_finance_capability = bool(env.user.has_group("smart_construction_core.group_sc_cap_finance_user"))
     payment_menu = env.ref(
-        "smart_construction_core.menu_sc_user_payment_apply_acceptance",
+        "smart_construction_core.menu_sc_user_payment_apply",
         raise_if_not_found=False,
     )
     action = payment_menu.action if payment_menu else None
@@ -592,8 +592,8 @@ def build_financial_form_business_actions(env, model_name, record_id):
             methods = ["action_approval_decision", *methods]
         for method in filter(None, methods):
             label = str(row.get("label") or action_key)
-            business_available = bool(row.get("allowed"))
-            authorization_allowed = bool(row.get("actor_matches_required_role"))
+            business_available = bool(row.get("business_available"))
+            authorization_allowed = bool(row.get("authorization_allowed"))
             executable = bool(business_available and authorization_allowed)
             reason_code = str(row.get("reason_code") or "")
             blocked_message = str(row.get("blocked_message") or "")
@@ -633,6 +633,118 @@ def build_financial_form_business_actions(env, model_name, record_id):
                                                 "reason": "string" if bool(row.get("requires_reason")) else ""}},
                 "refresh_policy": {"on_success": ["scene_projection"], "mode": "reload_record", "scope": "record"},
             })
+
+    execution_history = record.payment_execution_ids.filtered(
+        lambda execution: execution.active and execution.state != "cancel"
+    )
+    active_executions = execution_history.filtered(
+        lambda execution: execution.state in ("draft", "confirmed")
+    )
+    execution_business_available = bool(
+        record.type == "pay"
+        and record.state == "approved"
+        and record.payee_account_completeness == "complete"
+        and not active_executions
+    )
+    execution_authorization_allowed = bool(
+        env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
+    )
+    execution_enabled = bool(execution_business_available and execution_authorization_allowed)
+    if active_executions:
+        execution_reason_code = "PAYMENT_EXECUTION_ALREADY_EXISTS"
+        execution_blocked_message = "该申请已有办理中的付款登记，请先完成或取消现有记录。"
+    elif record.type != "pay":
+        execution_reason_code = "PAYMENT_REQUEST_TYPE_NOT_PAY"
+        execution_blocked_message = "只有付款申请可以生成付款登记。"
+    elif record.state != "approved":
+        execution_reason_code = "PAYMENT_REQUEST_NOT_APPROVED"
+        execution_blocked_message = "付款申请必须处于已批准状态。"
+    elif record.payee_account_completeness != "complete":
+        execution_reason_code = "PAYEE_ACCOUNT_INCOMPLETE"
+        execution_blocked_message = "请先补全收款户名、开户行和账号。"
+    elif not execution_authorization_allowed:
+        execution_reason_code = "ROLE_HANDOFF_REQUIRED"
+        execution_blocked_message = "请由具有付款确认能力的人员生成付款登记。"
+    else:
+        execution_reason_code = ""
+        execution_blocked_message = ""
+    actions.append({
+        "key": "payment_execution",
+        "action_key": "create_payment_execution",
+        "label": "生成付款登记",
+        "kind": "object",
+        "level": "header",
+        "target_scope": "page",
+        "source_widget_id": "page.header",
+        "selection": "none",
+        "visible_profiles": ["edit", "readonly"],
+        "method": "action_create_payment_execution",
+        "allowed": execution_enabled,
+        "enabled": execution_enabled,
+        "disabled": not execution_enabled,
+        "business_available": execution_business_available,
+        "authorization_allowed": execution_authorization_allowed,
+        "entitlement_evaluated": True,
+        "reason_code": execution_reason_code,
+        "blocked_message": execution_blocked_message,
+        "required_group_xmlids": ["smart_construction_core.group_sc_cap_finance_manager"],
+        "required_role_key": "finance_manager",
+        "required_role_label": "付款确认能力",
+        "handoff_required": bool(execution_business_available and not execution_authorization_allowed),
+        "handoff_hint": "请由具有付款确认能力的人员生成付款登记。",
+        "primary": execution_enabled,
+        "presentation": {
+            "tier": "primary" if execution_enabled else "secondary",
+            "semantic": "primary_action" if execution_enabled else "secondary_action",
+        },
+        "presentation_authority": "payment_request_execution_capability",
+        "presentation_priority": 350,
+        "action_safety": {
+            "classification": "normal",
+            "requires_confirm": False,
+            "reason_code": "PAYMENT_EXECUTION_CONTINUATION",
+        },
+        "refresh_policy": {"on_success": [], "mode": "none", "scope": "record"},
+    })
+    if execution_history:
+        actions.append({
+            "key": "view_payment_execution",
+            "action_key": "view_payment_execution",
+            "label": "查看付款登记",
+            "kind": "object",
+            "level": "header",
+            "target_scope": "page",
+            "source_widget_id": "page.header",
+            "selection": "none",
+            "visible_profiles": ["edit", "readonly"],
+            "method": "action_view_payment_execution",
+            "allowed": execution_authorization_allowed,
+            "enabled": execution_authorization_allowed,
+            "disabled": not execution_authorization_allowed,
+            "business_available": True,
+            "authorization_allowed": execution_authorization_allowed,
+            "entitlement_evaluated": True,
+            "reason_code": "" if execution_authorization_allowed else "ROLE_HANDOFF_REQUIRED",
+            "blocked_message": "" if execution_authorization_allowed else "请由具有付款确认能力的人员查看付款登记。",
+            "required_group_xmlids": ["smart_construction_core.group_sc_cap_finance_manager"],
+            "required_role_key": "finance_manager",
+            "required_role_label": "付款确认能力",
+            "handoff_required": not execution_authorization_allowed,
+            "handoff_hint": "请由具有付款确认能力的人员查看付款登记。",
+            "primary": execution_authorization_allowed,
+            "presentation": {
+                "tier": "primary" if execution_authorization_allowed else "secondary",
+                "semantic": "primary_action" if execution_authorization_allowed else "secondary_action",
+            },
+            "presentation_authority": "payment_request_execution_capability",
+            "presentation_priority": 360,
+            "action_safety": {
+                "classification": "normal",
+                "requires_confirm": False,
+                "reason_code": "PAYMENT_EXECUTION_TRACE",
+            },
+            "refresh_policy": {"on_success": [], "mode": "none", "scope": "record"},
+        })
     return {
         "actions": actions,
         "attachments": {

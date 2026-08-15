@@ -74,6 +74,17 @@ class TestPaymentRequestWorkItemService(TransactionCase):
                 "state": "draft",
             }
         )
+        cls.rejected = cls.env["payment.request"].create(
+            {
+                "name": "WORK-ITEM-REJECTED-001",
+                "type": "pay",
+                "project_id": cls.project.id,
+                "contract_id": cls.contract.id,
+                "partner_id": cls.partner.id,
+                "amount": 60.0,
+                "state": "draft",
+            }
+        )
         cls.env["ir.attachment"].create(
             {
                 "name": "work-item.txt",
@@ -86,11 +97,24 @@ class TestPaymentRequestWorkItemService(TransactionCase):
         cls.env.cr.execute(
             """UPDATE payment_request
                   SET create_uid=%s,
-                      state=CASE WHEN id=%s THEN 'submit' ELSE state END
+                      state=CASE
+                          WHEN id=%s THEN 'submit'
+                          WHEN id=%s THEN 'rejected'
+                          ELSE state
+                      END,
+                      reject_reason=CASE WHEN id=%s THEN '请补充签章页' ELSE reject_reason END
                 WHERE id IN %s""",
-            (cls.finance.id, cls.submitted.id, tuple([cls.draft.id, cls.submitted.id])),
+            (
+                cls.finance.id,
+                cls.submitted.id,
+                cls.rejected.id,
+                cls.rejected.id,
+                tuple([cls.draft.id, cls.submitted.id, cls.rejected.id]),
+            ),
         )
-        (cls.draft | cls.submitted).invalidate_recordset(["create_uid", "state"])
+        (cls.draft | cls.submitted | cls.rejected).invalidate_recordset(
+            ["create_uid", "state", "reject_reason"]
+        )
 
     @classmethod
     def _user(cls, login, group_xmlids):
@@ -121,13 +145,28 @@ class TestPaymentRequestWorkItemService(TransactionCase):
         todo_names = {item["record"]["label"] for item in by_key["todo"]["items"]}
         initiated_names = {item["record"]["label"] for item in by_key["initiated"]["items"]}
         self.assertTrue(any("WORK-ITEM-DRAFT-001" in name for name in todo_names))
-        self.assertFalse(any("WORK-ITEM-SUBMIT-001" in name for name in todo_names))
+        self.assertTrue(any("WORK-ITEM-REJECTED-001" in name for name in todo_names))
+        self.assertTrue(any("WORK-ITEM-SUBMIT-001" in name for name in todo_names))
         self.assertTrue(any("WORK-ITEM-DRAFT-001" in name for name in initiated_names))
         self.assertTrue(any("WORK-ITEM-SUBMIT-001" in name for name in initiated_names))
         self.assertEqual(workspace["counts"]["todo"], len(by_key["todo"]["items"]))
         self.assertEqual(workspace["counts"]["initiated"], len(by_key["initiated"]["items"]))
         draft = next(item for item in by_key["todo"]["items"] if "WORK-ITEM-DRAFT-001" in item["record"]["label"])
+        rejected = next(
+            item
+            for item in by_key["todo"]["items"]
+            if "WORK-ITEM-REJECTED-001" in item["record"]["label"]
+        )
         self.assertEqual([row["key"] for row in draft["actions"]], ["submit"])
+        self.assertEqual([row["key"] for row in rejected["actions"]], ["submit"])
+        submitted = next(
+            item
+            for item in by_key["todo"]["items"]
+            if "WORK-ITEM-SUBMIT-001" in item["record"]["label"]
+        )
+        self.assertEqual([row["key"] for row in submitted["actions"]], ["approve", "reject"])
+        self.assertEqual(rejected["actions"][0]["label"], "重新提交审批")
+        self.assertEqual(rejected["facts"][0], {"key": "reject_reason", "label": "驳回原因", "value": "请补充签章页"})
         self.assertEqual(draft["actions"][0]["presentation"]["tier"], "primary")
         self.assertEqual(draft["amount"]["value"], 100.0)
         self.assertEqual(

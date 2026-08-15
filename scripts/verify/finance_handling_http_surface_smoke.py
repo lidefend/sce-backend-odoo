@@ -36,7 +36,7 @@ ENTRIES = [
     {
         "key": "payment_request",
         "label": "支付申请",
-        "menu_xmlid": f"{MODULE}.menu_sc_user_payment_apply_acceptance",
+        "menu_xmlid": f"{MODULE}.menu_sc_user_payment_apply",
         "action_xmlid": f"{MODULE}.action_payment_request_user_payment_apply",
         "model": "payment.request",
         "fields": ["id", "name", "type", "state", "project_id", "partner_id", "contract_id", "settlement_id", "amount", "attachment_ids"],

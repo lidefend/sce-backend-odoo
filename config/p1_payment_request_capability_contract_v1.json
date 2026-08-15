@@ -1,0 +1,131 @@
+{
+  "schema_version": "p1_payment_request_capability_contract.v1",
+  "product_stage": "P1_construction_industry_standard_product",
+  "specific_customer_or_tenant_scope": "forbidden",
+  "change_boundary": {
+    "baseline_sha": "da1b02d99915174733bc36aa3934d609fcf3af7b",
+    "allowed_product_modules": ["addons/smart_construction_core", "addons/smart_construction_acceptance_fixture"],
+    "allowed_support_surfaces": ["config", "docs", "scripts/audit", "scripts/verify"],
+    "forbidden_surfaces": ["addons/smart_core", "frontend", "make", "scripts/common", "scripts/dev", "docker-compose.yml", "scripts/verify/frontend_my_work_"],
+    "rule": "This P1 candidate may consume platform and My Work contracts but must not modify their implementation or shared entrypoints."
+  },
+  "scope_manifest": {
+    "product_domain_and_security": [
+      "addons/smart_construction_core/__manifest__.py",
+      "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+      "addons/smart_construction_core/models/core/payment_execution.py",
+      "addons/smart_construction_core/models/core/payment_ledger.py",
+      "addons/smart_construction_core/models/core/payment_request.py",
+      "addons/smart_construction_core/models/core/payment_request_line.py",
+      "addons/smart_construction_core/models/support/operating_metrics.py",
+      "addons/smart_construction_core/models/support/partner_business.py",
+      "addons/smart_construction_core/security/ir.model.access.csv",
+      "addons/smart_construction_core/security/sc_record_rules.xml",
+      "addons/smart_construction_core/services/financial_workspace_contract.py",
+      "addons/smart_construction_core/services/payment_request_work_item_service.py",
+      "addons/smart_construction_core/services/payment_slice_native_adapter.py"
+    ],
+    "product_contract_and_navigation": [
+      "addons/smart_construction_core/core_extension.py",
+      "addons/smart_construction_core/core_extension_policy_maps.py",
+      "addons/smart_construction_core/data/payment_request_form_productization_contract.xml",
+      "addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml",
+      "addons/smart_construction_core/models/support/business_form_policy_templates.py",
+      "addons/smart_construction_core/models/support/product_policy_sync.py",
+      "addons/smart_construction_core/views/core/payment_execution_views.xml",
+      "addons/smart_construction_core/views/core/payment_ledger_views.xml",
+      "addons/smart_construction_core/views/core/payment_request_views.xml",
+      "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+      "addons/smart_construction_core/views/menu_product_finance_wave1.xml",
+      "addons/smart_construction_core/views/support/user_confirmed_formal_list_views.xml",
+      "config/frontend/authoritative_navigation_v1.json"
+    ],
+    "migration": [
+      "addons/smart_construction_core/migrations/17.0.0.131/post-migration.py"
+    ],
+    "tests": [
+      "addons/smart_construction_core/tests/__init__.py",
+      "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+      "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+      "addons/smart_construction_core/tests/test_p0_state_closure.py",
+      "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+      "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+      "addons/smart_construction_core/tests/test_payment_request_work_item_service.py",
+      "addons/smart_construction_core/tests/test_record_rule_ledger_p1.py",
+      "addons/smart_construction_core/tests/test_um_p2_payment_relation_aggregation_boundaries.py",
+      "addons/smart_construction_core/tests/test_user_feedback_business_views.py"
+    ],
+    "acceptance_fixture_and_audit": [
+      "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+      "scripts/audit/generate_nav_product_exposure.py",
+      "scripts/verify/finance_business_category_action_audit.py",
+      "scripts/verify/finance_handling_http_surface_smoke.py",
+      "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+      "scripts/verify/frontend_financial_workspace_runtime_ids.py",
+      "scripts/verify/frontend_financial_workspace_v2_contract.py",
+      "scripts/verify/frontend_page_identity_deep_runtime.py",
+      "scripts/verify/frontend_productization_fixture.py",
+      "scripts/verify/frontend_productization_fixture_runtime_ids.py",
+      "scripts/verify/pfl035_payment_request_runtime_acceptance.mjs",
+      "scripts/verify/pfl035_payment_request_runtime_ids.py",
+      "scripts/verify/product_finance_center_wave1_guard.py",
+      "scripts/verify/test_product_finance_center_wave1_guard.py"
+    ],
+    "capability_and_field_governance": [
+      "config/p1_payment_request_capability_contract_v1.json",
+      "config/p1_payment_request_field_completeness_v1.json",
+      "docs/product/p1_payment_request_industry_benchmark_v1.md",
+      "scripts/verify/p1_payment_request_capability_contract_v1.py",
+      "scripts/verify/p1_payment_request_field_completeness_guard.py",
+      "scripts/verify/test_p1_payment_request_field_completeness_guard.py"
+    ],
+    "synthetic_fixture_exemptions": [
+      "scripts/ci/personal_data_false_positives.json"
+    ],
+    "generated_and_iteration_evidence": [
+      "docs/engineering_convergence/complexity_budget_report.md",
+      "docs/engineering_convergence/module_dependency_map.md",
+      "docs/engineering_convergence/split_plan_queue.md",
+      "docs/engineering_convergence/test_inventory.csv",
+      "docs/engineering_convergence/test_inventory_summary.md",
+      "docs/ops/iterations/delivery_context_switch_log_v1.md"
+    ]
+  },
+  "representative_object": {
+    "label": "付款申请",
+    "model": "payment.request",
+    "menu": "smart_construction_core.menu_sc_user_payment_apply",
+    "action": "smart_construction_core.action_payment_request_user_payment_apply"
+  },
+  "business_boundary": {
+    "included": ["contract_and_settlement_basis", "business_identity_consistency", "counterparty_eligibility", "amount_reservation", "payee_account_snapshot", "approval_fact_lock", "payment_execution_trace", "payment_execution_state_integrity", "installment_payment_reconciliation"],
+    "excluded": ["customer_specific_payment_policy", "tenant_specific_approval_chain", "accounting_posting_design", "frontend_component_selection"]
+  },
+  "capabilities": [
+    {"key":"basis_classification","status":"implemented","evidence":["payment_basis_type","contract settlement material settlement and line settlement bases"]},
+    {"key":"contract_identity_consistency","status":"implemented","evidence":["_check_contract_business_identity","project currency direction and effective settlement-unit controls"]},
+    {"key":"contract_only_advance_payment","status":"implemented","evidence":["sc.payment.execution._payment_basis_contracts accepts an explicit standalone contract basis"]},
+    {"key":"settlement_reservation","status":"implemented","evidence":["_check_settlement_remaining_amount","_check_not_overpay_settlement","material settlement remaining amount"]},
+    {"key":"counterparty_eligibility","status":"implemented","evidence":["action_submit calls res.partner._sc_assert_transaction_eligible"]},
+    {"key":"payee_account_snapshot","status":"implemented","evidence":["_partner_payment_defaults","payee_account_completeness","PAYEE_ACCOUNT_INCOMPLETE advisory"]},
+    {"key":"third_party_payee_evidence","status":"implemented","evidence":["actual_payee_unit","THIRD_PARTY_PAYEE_EVIDENCE_REQUIRED advisory"]},
+    {"key":"approval_fact_lock","status":"implemented","evidence":["_business_fact_fields","payment.request.write locks submitted business facts","action_submit uses a capability-checked controlled state transition","audit snapshot reads technical category metadata without widening user access"]},
+    {"key":"reject_correct_resubmit","status":"implemented","evidence":["reject reason is mandatory","rejected facts become correctable","submitted facts remain locked","rejected work item exposes re-submit","payment_rejected and payment_submitted audits remain immutable"]},
+    {"key":"execution_trace","status":"implemented","evidence":["_assert_payment_execution_ready","action_create_payment_execution","sc.payment.execution.create and _normalize_payment_relation_values","_assert_payment_relation_anchors_immutable","PFL-035 finance-user finance-manager non-draft and history-sync-overreach negative tests","approved-only native action visibility"]},
+    {"key":"payment_execution_state_integrity","status":"implemented","evidence":["draft cannot call action_paid","action_confirm requires finance handling capability","action_paid requires confirmed state and finance confirmation capability","native action groups consume the same capability groups","non-draft amount account evidence and instruction facts are immutable","source request project partner and contract anchors are readonly and ORM-immutable","paid and reversal reconcile request ledger audit and chatter"]},
+    {"key":"installment_payment_reconciliation","status":"implemented","evidence":["only one draft or confirmed execution may be in flight per payment request","paid history never blocks a later installment","every ledger created by the professional payment-execution journey is uniquely anchored to that execution","adjacent expense-claim ledger creation remains outside this installment contract and retains its own controlled source flow","partial payment keeps the request approved and defaults the next execution to the remaining amount","the request closes only after cumulative posted ledgers reach the approved amount","reversal preserves the original ledger and reopens exactly the reversed remaining amount"]},
+    {"key":"task_first_native_form","status":"implemented","evidence":["payment request seven-section semantic contract","professional payment execution six-section continuation contract","four readonly execution relationship anchors","legal_next_action_display"]},
+    {"key":"runtime_states","status":"runtime_verification_required","evidence":["representative_page_contracts_v01 payment request acceptance"],"gap":"empty forbidden readonly and mobile states require authenticated browser evidence"}
+  ],
+  "implementation_sequence": [
+    {"id":"P1-PR-001","status":"completed","title":"turn contract and settlement relations into enforceable payment bases"},
+    {"id":"P1-PR-002","status":"completed","title":"enforce counterparty identity eligibility and amount reservation"},
+    {"id":"P1-PR-003","status":"completed","title":"preserve account snapshots and submitted business facts"},
+    {"id":"P1-PR-004","status":"completed","title":"expose task-first native handling form"},
+    {"id":"P1-PR-005","status":"completed","title":"fail closed before creating or rebinding a linked payment execution"},
+    {"id":"P1-PR-006","status":"pending_runtime","title":"accept empty forbidden readonly and mobile states"},
+    {"id":"P1-PR-007","status":"blocked_until_business_acceptance","title":"evaluate component requirements"}
+  ],
+  "release_rule": "business controls and authenticated runtime acceptance precede component evaluation"
+}
