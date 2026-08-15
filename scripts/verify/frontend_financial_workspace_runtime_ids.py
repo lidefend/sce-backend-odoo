@@ -23,11 +23,11 @@ payload = {
     "project": target("smart_construction_core.menu_sc_project_project", "smart_construction_acceptance_fixture.fe_project_a"),
     "contract": target("smart_construction_core.menu_sc_construction_contract", "smart_construction_acceptance_fixture.fe_contract_a"),
     "settlement": target("smart_construction_core.menu_sc_settlement_order", "smart_construction_acceptance_fixture.fe_settlement_a"),
-    "payment_request": target("smart_construction_core.menu_sc_user_payment_apply_acceptance", "smart_construction_acceptance_fixture.fe_request_a_001"),
-    "payment_request_company_b": target("smart_construction_core.menu_sc_user_payment_apply_acceptance", "smart_construction_acceptance_fixture.fe_request_c_001"),
+    "payment_request": target("smart_construction_core.menu_sc_user_payment_apply", "smart_construction_acceptance_fixture.fe_request_a_001"),
+    "payment_request_company_b": target("smart_construction_core.menu_sc_user_payment_apply", "smart_construction_acceptance_fixture.fe_request_c_001"),
     "payment_execution": target("smart_construction_core.menu_sc_payment_execution", "smart_construction_acceptance_fixture.fe_execution_a"),
     "journey_settlement": target("smart_construction_core.menu_sc_settlement_order", "smart_construction_acceptance_fixture.fe_j06_settlement_a"),
-    "journey_request": target("smart_construction_core.menu_sc_user_payment_apply_acceptance", "smart_construction_acceptance_fixture.fe_j06_payment_request_a"),
-    "core_form_request": target("smart_construction_core.menu_sc_user_payment_apply_acceptance", "smart_construction_acceptance_fixture.fe_core_form_payment_request_a"),
+    "journey_request": target("smart_construction_core.menu_sc_user_payment_apply", "smart_construction_acceptance_fixture.fe_j06_payment_request_a"),
+    "core_form_request": target("smart_construction_core.menu_sc_user_payment_apply", "smart_construction_acceptance_fixture.fe_core_form_payment_request_a"),
 }
 print("FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON=%s" % json.dumps(payload, ensure_ascii=True, separators=(",", ":")))

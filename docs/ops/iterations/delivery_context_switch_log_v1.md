@@ -4198,3 +4198,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   attachment upload, record-bound chatter suppression and empty contracts; it
   is wired into Frontend Quick and release-unit collections. Strict typecheck,
   static build and the complete frontend release-unit collection pass.
+
+# PFL-035 baseline replay after create attachment closure (2026-08-15)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v12` /
+  `a5888014a2e395f2679f886c7e16946d4898cc96`.
+- Formal Product Layer / Layer Target / Module: P1 finance product / payment
+  request and payment execution user journey / `smart_construction_core`.
+- Replay boundary: 62 non-overlapping product, fixture, contract and test files
+  were replayed byte-for-byte from local checkpoint `e0cb8fce`; the two
+  generated convergence reports were regenerated and this iteration log was
+  merged semantically. No P0 frontend file was carried by the P1 replay.
+- Runtime objective: resume the governed full user journey at the first failed
+  create checkpoint, now consuming the P0 normalized attachment capability and
+  its stable presentation marker. The candidate remains unimplemented until
+  the browser journey, relationship anchors, ledger facts and reversal path
+  complete on this exact baseline.

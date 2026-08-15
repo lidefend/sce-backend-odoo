@@ -155,6 +155,7 @@ def settlement_actual_paid_amount_map(env, settlement_ids: Iterable[int]) -> Dic
         return {}
     ledgers = env["payment.ledger"].sudo().search(
         [
+            ("state", "=", "posted"),
             "|",
             ("payment_request_id.settlement_id", "in", ids),
             ("payment_request_id.outflow_line_ids.settlement_id", "in", ids),
