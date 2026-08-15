@@ -4244,3 +4244,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   continuations. Backend normalization, route projection and final create-page
   identity tests prove the transient title survives end to end while stale
   source query state remains excluded.
+
+# P0 semantic group reparenting authority (2026-08-15)
+
+- Branch / base SHA: `fix/p0-semantic-group-reparent-v1` /
+  `da09ae2dc39f6fdd030ef9c889ffd09c3ecaf7d4`.
+- Formal Product Layer / Layer Target / Module: P0 platform / generic final
+  form-group projection / `smart_core`.
+- Reason / boundary: when a published semantic entry surface used the same
+  section title as a group nested in a legacy/category sheet, the generic
+  projector moved fields into that nested group and then discarded the legacy
+  sheet. The final normalized contract consequently lost the entire semantic
+  section and its fields. Under semantic authority, matching groups are now
+  reusable only at the authoritative top level; repeated projection remains
+  idempotent.
+- Why Here / Why Not Elsewhere: the P1 product contract, business policy,
+  native view and normalized field status all contained the missing facts.
+  Their loss occurred only in the shared P0 reparenting algorithm. No payment,
+  construction, frontend, fixture, database, credential or environment
+  special case is introduced.
+- Blast radius / validation: all semantic entry surfaces whose section titles
+  collide with nested legacy groups. A generic `demo.payment` regression
+  proves same-named receipt/payment groups survive as top-level semantic
+  sections, their fields remain attached, the discarded legacy sheet does not
+  survive, and a second projection is byte-for-byte idempotent. The complete
+  standalone UI-contract boundary collection passes 70/70.

@@ -539,7 +539,24 @@ def apply_business_config_form_groups(
         return None
 
     for index, (title, names) in enumerate(configured_groups, start=1):
-        group = find_group(container_tree, title)
+        # A semantic entry surface owns the root task-section structure.  Do
+        # not reuse an equally named group nested in the legacy/category
+        # sheet: that sheet is discarded below, which would also discard the
+        # fields just moved into it.  On repeated projection the authoritative
+        # semantic groups are already top-level, so top-level reuse remains
+        # idempotent.
+        group = (
+            next(
+                (
+                    node
+                    for node in container_tree
+                    if isinstance(node, dict) and group_title(node) == title
+                ),
+                None,
+            )
+            if semantic_surface_authority
+            else find_group(container_tree, title)
+        )
         if group is None:
             group = {
                 "type": "group",

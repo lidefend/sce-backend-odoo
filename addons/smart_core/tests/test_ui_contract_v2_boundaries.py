@@ -2907,6 +2907,65 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
         self.assertEqual(contract["layoutContract"]["containerTree"], first)
 
+    def test_semantic_entry_surface_reparents_fields_from_same_named_nested_legacy_groups(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        handler._form_structure_governance = lambda *_args, **_kwargs: {
+            "form_structure_authority": "entry_semantic_surface",
+            "field_groups": {
+                "收款账户": ["receipt_account_name", "receipt_account_no"],
+                "付款账户": ["payment_account_name", "payment_account_no"],
+            },
+            "hidden_field_names": [],
+        }
+        contract = {
+            "pageInfo": {"viewType": "form", "model": "demo.payment"},
+            "layoutContract": {"containerTree": [{
+                "type": "sheet",
+                "string": "旧业务分类表单",
+                "children": [
+                    {"type": "group", "string": "收款账户", "children": [
+                        {"type": "field", "name": "receipt_account_name", "widgetId": "field.receipt_account_name"},
+                        {"type": "field", "name": "receipt_account_no", "widgetId": "field.receipt_account_no"},
+                    ]},
+                    {"type": "group", "string": "付款账户", "children": [
+                        {"type": "field", "name": "payment_account_name", "widgetId": "field.payment_account_name"},
+                        {"type": "field", "name": "payment_account_no", "widgetId": "field.payment_account_no"},
+                    ]},
+                ],
+            }]},
+        }
+        source_contract = {
+            "model": "demo.payment",
+            "view_type": "form",
+            "fields": {
+                "receipt_account_name": {"name": "receipt_account_name", "type": "char"},
+                "receipt_account_no": {"name": "receipt_account_no", "type": "char"},
+                "payment_account_name": {"name": "payment_account_name", "type": "char"},
+                "payment_account_no": {"name": "payment_account_no", "type": "char"},
+            },
+            "governance": {"view_orchestration": {
+                "applied": True,
+                "form_structure_authority": "entry_semantic_surface",
+            }},
+        }
+
+        handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
+
+        tree = contract["layoutContract"]["containerTree"]
+        self.assertEqual([node.get("string") for node in tree], ["收款账户", "付款账户"])
+        self.assertEqual(
+            [[child.get("name") for child in node.get("children", [])] for node in tree],
+            [
+                ["receipt_account_name", "receipt_account_no"],
+                ["payment_account_name", "payment_account_no"],
+            ],
+        )
+        self.assertNotIn("旧业务分类表单", str(tree))
+
+        first = deepcopy(tree)
+        handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
+        self.assertEqual(contract["layoutContract"]["containerTree"], first)
+
     def test_published_semantic_contract_rebuilds_runtime_structure_authority(self):
         class _Config:
             id = 91
