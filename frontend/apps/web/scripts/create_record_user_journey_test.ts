@@ -63,15 +63,43 @@ const payload = buildSaveRecordPayload({
 assert.deepEqual(payload, { amount: 80, owner_id: 17, title: 'Draft A' });
 
 const events: string[] = [];
-const stored: Record<string, unknown> = {};
-const recordId = ref(0);
+const stored: Record<string, unknown> = { ...payload, id: 501, state: 'draft' };
+events.push('save-draft');
+const recordId = ref(501);
 const action = {
   key: 'submit', label: 'Submit', kind: 'object', level: 'header', selection: 'single',
   actionId: null, methodName: 'action_submit', targetModel: 'x.document', context: {},
   domainRaw: '', target: '', url: '', enabled: true, hint: '', intent: '', semantic: 'primary_action',
-  sourceWidgetId: 'page.root', clientMode: '', visibleProfiles: ['create'], requiredParams: [],
-  requiresReason: false, authorizationAllowed: true, requiresSavedRecord: true,
+  sourceWidgetId: 'page.root', clientMode: '', visibleProfiles: ['edit'], requiredParams: [],
+  requiresReason: false, authorizationAllowed: true, requiresSavedRecord: false,
 } as never;
+
+const reopened: Record<string, unknown> = {};
+for (const name of Object.keys(contract.fields)) {
+  const incoming = name === 'owner_id' ? [stored.owner_id, 'Owner A'] : stored[name];
+  applyIncomingFormFieldValue({
+    fieldName: name,
+    descriptor: contract.fields[name as keyof typeof contract.fields] as never,
+    incoming,
+    target: { formData: reopened, relationOptions, relationKeywords, upsertRelationOption, initOne2manyRows: () => undefined },
+  });
+}
+events.push('reopen-draft');
+assert.deepEqual(reopened, { amount: 80, owner_id: 17, title: 'Draft A' });
+assert.equal(relationKeywords.owner_id, 'Owner A');
+
+reopened.title = 'Draft A revised';
+const editPayload = buildSaveRecordPayload({
+  comparableFieldValue: (_name, value) => value,
+  contract,
+  dirtyFieldSet: new Set(['title']),
+  editableMap: { ...reopened },
+  formData: reopened,
+  originalValues: { amount: 80, owner_id: 17, title: 'Draft A' },
+  recordId: 501,
+});
+assert.deepEqual(editPayload, { title: 'Draft A revised' });
+
 const runtime = usePrimaryFormActionRuntime({
   actionId: () => 31,
   applyProjectionRefreshPolicy: async () => { events.push('refresh'); },
@@ -89,37 +117,23 @@ const runtime = usePrimaryFormActionRuntime({
   hasChanges: () => true,
   modelName: () => 'x.document',
   navigateActionResponseResult: async () => false,
-  primaryCreateFooterAction: () => action,
-  primarySubmitAction: () => null,
+  primaryCreateFooterAction: () => null,
+  primarySubmitAction: () => action,
   recordId,
   reload: async () => { events.push('reopen'); },
   routeMenuId: () => 41,
   saveRecord: async (_refreshPolicy, options) => {
-    events.push('save');
-    assert.equal(options?.navigateAfterCreate, false);
-    Object.assign(stored, payload, { id: 501, state: 'draft' });
-    recordId.value = 501;
-    return 501;
+    events.push('save-edit');
+    assert.equal(options, undefined);
+    Object.assign(stored, editPayload);
+    return true;
   },
   status: ref('idle'),
   submissionFeedback: ref({ kind: 'idle', message: '' }),
   validationErrors: ref([]),
 } as never);
 await runtime.runPrimaryFormAction();
-assert.deepEqual(events, ['save', 'confirm', 'submit', 'refresh', 'reopen']);
-assert.deepEqual(stored, { amount: 80, owner_id: 17, title: 'Draft A', id: 501, state: 'submit' });
+assert.deepEqual(events, ['save-draft', 'reopen-draft', 'save-edit', 'confirm', 'submit', 'refresh', 'reopen']);
+assert.deepEqual(stored, { amount: 80, owner_id: 17, title: 'Draft A revised', id: 501, state: 'submit' });
 
-const reopened: Record<string, unknown> = {};
-for (const name of Object.keys(contract.fields)) {
-  const incoming = name === 'owner_id' ? [stored.owner_id, 'Owner A'] : stored[name];
-  applyIncomingFormFieldValue({
-    fieldName: name,
-    descriptor: contract.fields[name as keyof typeof contract.fields] as never,
-    incoming,
-    target: { formData: reopened, relationOptions, relationKeywords, upsertRelationOption, initOne2manyRows: () => undefined },
-  });
-}
-assert.deepEqual(reopened, { amount: 80, owner_id: 17, title: 'Draft A' });
-assert.equal(relationKeywords.owner_id, 'Owner A');
-
-console.log('[create-record-user-journey] PASS checkpoints=defaults,edit,save,submit,reopen');
+console.log('[create-record-user-journey] PASS checkpoints=defaults,save,reopen,edit,submit,refresh');
