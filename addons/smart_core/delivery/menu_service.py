@@ -506,7 +506,7 @@ class MenuService:
 
     @staticmethod
     def filter_nav_by_route_authority(nav: list[dict], route_authority: dict | None) -> list[dict]:
-        """Keep compatibility routes only when the same payload authorizes them."""
+        """Keep action-bearing navigation only when this payload authorizes it."""
         authority = route_authority if isinstance(route_authority, dict) else {}
         allowed_pairs = {
             (int(row.get("menu_id") or 0), int(row.get("action_id") or 0))
@@ -526,19 +526,16 @@ class MenuService:
                 if isinstance(meta.get("entry_target"), dict)
                 else {}
             )
-            scene_key = str(
-                node.get("scene_key")
-                or meta.get("scene_key")
-                or entry_target.get("scene_key")
-                or ""
-            ).strip()
             try:
                 menu_id = MenuService._node_route_menu_id(node)
                 action_id = int(node.get("action_id") or meta.get("action_id") or 0)
             except (TypeError, ValueError):
                 menu_id = action_id = 0
-            is_compatibility_action = action_id > 0 and not scene_key
-            if is_compatibility_action and (menu_id, action_id) not in allowed_pairs:
+            # The SPA freezes every menu click into one menu/action/authority
+            # tuple before choosing an action or scene target.  A scene_key
+            # therefore cannot make an otherwise unauthorized action carrier
+            # executable; leaving it visible would create a dead menu entry.
+            if action_id > 0 and (menu_id, action_id) not in allowed_pairs:
                 return None
             children = [kept for child in node.get("children") or [] if (kept := walk(child))]
             candidate = dict(node)

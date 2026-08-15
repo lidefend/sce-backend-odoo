@@ -2303,6 +2303,17 @@ class SystemInitHandler(BaseIntentHandler):
             role_surface,
             nav=_final_navigation,
         )
+        # Startup overlays can reintroduce compatibility action nodes after
+        # DeliveryEngine performed its first role-scoped projection. Reconcile
+        # the final tree with this response-local authority before sealing the
+        # single navigation_v1 contract. Authorized action and scene routes
+        # are preserved; action-bearing nodes without matching authority are
+        # removed because the SPA cannot execute either target without it.
+        _final_navigation = delivery_engine.menu_service.filter_nav_by_route_authority(
+            _final_navigation,
+            _final_route_authority,
+        )
+        data["nav"] = _final_navigation
         _visible_navigation_pairs = set(MenuService._walk_nav_action_refs(_final_navigation))
         _authorized_navigation_pairs = {
             (int(_entry.get("menu_id") or 0), int(_entry.get("action_id") or 0))

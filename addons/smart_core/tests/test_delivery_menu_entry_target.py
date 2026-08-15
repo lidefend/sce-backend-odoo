@@ -166,7 +166,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             source,
         )
 
-    def test_navigation_prunes_compatibility_action_without_matching_route_authority(self):
+    def test_navigation_prunes_every_action_without_matching_route_authority(self):
         nav = [{
             "label": "业务菜单",
             "children": [
@@ -182,7 +182,10 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             ],
         }]
         authority = {
-            "primary_actions": [{"menu_id": 10, "action_id": 20}],
+            "primary_actions": [
+                {"menu_id": 10, "action_id": 20},
+                {"menu_id": 12, "action_id": 22},
+            ],
             "role_home_actions": [],
             "contextual_actions": [],
             "admin_actions": [],
@@ -194,6 +197,32 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             [row["label"] for row in projected[0]["children"]],
             ["已授权", "场景入口"],
         )
+
+    def test_navigation_prunes_scene_action_without_matching_route_authority(self):
+        nav = [{
+            "label": "业务菜单",
+            "children": [
+                self._native_leaf(
+                    label="无权场景入口",
+                    menu_id=12,
+                    action_id=22,
+                    route="/s/projects.list",
+                    scene_key="projects.list",
+                ),
+            ],
+        }]
+
+        projected = menu_service.MenuService.filter_nav_by_route_authority(
+            nav,
+            {
+                "primary_actions": [],
+                "role_home_actions": [],
+                "contextual_actions": [],
+                "admin_actions": [],
+            },
+        )
+
+        self.assertEqual(projected, [])
 
     def test_client_action_is_native_odoo_only_and_not_product_runtime_allowed(self):
         action = types.SimpleNamespace(
