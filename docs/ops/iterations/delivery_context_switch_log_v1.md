@@ -4198,3 +4198,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   attachment upload, record-bound chatter suppression and empty contracts; it
   is wired into Frontend Quick and release-unit collections. Strict typecheck,
   static build and the complete frontend release-unit collection pass.
+
+# P0 cross-model action context authority (2026-08-15)
+
+- Branch / base SHA: `fix/p0-cross-model-action-context-v1` /
+  `a5888014a2e395f2679f886c7e16946d4898cc96`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend / generic
+  action-response navigation / `frontend/apps/web`.
+- Standard vs User-Specific: platform mechanism only. No payment,
+  construction, customer, fixture, database, credential or environment
+  semantics are introduced.
+- Reason / boundary: action responses could carry an authoritative target
+  model, Action and context while the frontend retained the source page's
+  business-category, menu and list query. The source values could therefore
+  override the backend target and make a professional target form render with
+  the source form's title and context. Cross-model navigation now clears all
+  source-scoped contract state, preserves only shell diagnostics, and gives
+  the explicit backend target query final authority. Same-model navigation
+  retains its current context and an unknown target remains conservative.
+- Why Here / Why Not Elsewhere: navigation inheritance is shared frontend
+  contract behavior. P1 remains responsible for producing the target action
+  and product contract; no model name, payment label or URL keyword is used.
+- Blast radius / validation: ContractForm and ActionView action responses now
+  share the same boundary rule. Generic `x.source` to `x.target` tests cover
+  target model/action/menu/context fidelity, stale business/list reset,
+  same-model preservation, missing-model behavior, explicit target-query
+  precedence and the real form-navigation runtime. Strict typecheck, static
+  build and the complete frontend release-unit collection pass locally.

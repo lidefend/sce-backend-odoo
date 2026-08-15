@@ -1,6 +1,10 @@
 import type { ContractV2ButtonStatus } from '../../app/contracts/v2';
 import { parseMaybeJsonRecord } from '../../app/contractRuntime';
-import { pickContractNavQuery } from '../../app/navigationContext';
+import {
+  contractActionCarryQuery,
+  entryTargetModel,
+  pickContractNavQuery,
+} from '../../app/navigationContext';
 import type { ContractAction, ContractFieldGovernanceAction, ContractPromptField } from './types';
 
 export function normalizeActionSafety(value: unknown): ContractAction['actionSafety'] | undefined {
@@ -272,6 +276,7 @@ export function actionResponseNavQuery(
   currentQuery: Record<string, unknown>,
   result: object | null | undefined,
   extra?: Record<string, unknown>,
+  options: { currentModel?: unknown } = {},
 ) {
   const payload = (result && typeof result === 'object' && !Array.isArray(result))
     ? result as Record<string, unknown>
@@ -279,13 +284,20 @@ export function actionResponseNavQuery(
   const rawAction = (payload.raw_action && typeof payload.raw_action === 'object' && !Array.isArray(payload.raw_action))
     ? payload.raw_action as Record<string, unknown>
     : {};
-  const entryTarget = (payload.entry_target && typeof payload.entry_target === 'object' && !Array.isArray(payload.entry_target))
-    ? payload.entry_target as Record<string, unknown>
+  const rawEntryTarget = rawAction.entry_target;
+  const entryTargetSource = payload.entry_target || rawEntryTarget;
+  const entryTarget = (entryTargetSource && typeof entryTargetSource === 'object' && !Array.isArray(entryTargetSource))
+    ? entryTargetSource as Record<string, unknown>
     : {};
   const refs = (entryTarget.compatibility_refs && typeof entryTarget.compatibility_refs === 'object' && !Array.isArray(entryTarget.compatibility_refs))
     ? entryTarget.compatibility_refs as Record<string, unknown>
     : {};
-  return pickContractNavQuery(currentQuery, {
+  const targetModel = entryTargetModel(entryTarget) || String(rawAction.res_model || payload.res_model || '').trim();
+  const carryQuery = contractActionCarryQuery(currentQuery, {
+    currentModel: options.currentModel,
+    targetModel,
+  });
+  return pickContractNavQuery(carryQuery, {
     menu_id: payload.menu_id || rawAction.menu_id || refs.menu_id,
     action_id: payload.action_id || rawAction.id || rawAction.action_id || refs.action_id,
     view_id: payload.view_id || rawAction.view_id || refs.view_id,
@@ -300,6 +312,7 @@ export function actionResponseRouteTarget(
   target: unknown,
   result: object | null | undefined,
   extra?: Record<string, unknown>,
+  options: { currentModel?: unknown } = {},
 ) {
   const routeTarget = (target && typeof target === 'object' && !Array.isArray(target))
     ? target as Record<string, unknown>
@@ -310,8 +323,8 @@ export function actionResponseRouteTarget(
   return {
     ...routeTarget,
     query: {
+      ...actionResponseNavQuery(currentQuery, result, extra, options),
       ...targetQuery,
-      ...actionResponseNavQuery(currentQuery, result, extra),
     },
   };
 }

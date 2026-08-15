@@ -2401,6 +2401,7 @@ const { runContractAction } = useActionViewActionRuntime({
     nextActionId: typeof navigation === 'number' ? navigation : navigation.nextActionId,
     entryTarget: typeof navigation === 'number' ? null : navigation.entryTarget,
     carryQuery: resolveCarryQuery(),
+    currentModel: resolvedModelRef.value || model.value || '',
     responseQuery: typeof navigation === 'number' ? null : navigation.query,
     menuId: menuId.value,
     keepSceneRoute: keepSceneRoute.value,

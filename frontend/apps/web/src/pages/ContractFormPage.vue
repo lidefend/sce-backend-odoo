@@ -682,6 +682,7 @@ const {
 } = useActionResponseNavigation({
   router,
   currentQuery: () => route.query,
+  currentModel: () => String(route.params.model || contract.value?.head?.model || contract.value?.model || ''),
 });
 const designerRouteQueryText = (key: string) => readRouteQueryText(route.query as Record<string, unknown>, key);
 const status = ref<UiStatus>('loading');
