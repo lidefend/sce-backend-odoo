@@ -5,8 +5,8 @@ from copy import deepcopy
 from typing import Any
 
 from .source_authority import build_source_authority_contract
+from .unified_page_contract_v2_permissions import permission_auth_level, resolve_permission_rights
 
-AUTH_LEVELS = {"none", "read", "edit", "admin"}
 SOURCE_KIND = "unified_page_contract_v2_status_projection"
 SOURCE_AUTHORITIES = ("permission_surface", "access_policy", "field_modifiers", "button_status")
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -69,23 +69,14 @@ def _button_id(action_key: str) -> str:
 
 
 def _auth_from_rights(rights: dict[str, Any], fallback: str = "read") -> str:
-    if rights.get("admin") is True:
-        return "admin"
-    if rights.get("write") is True or rights.get("create") is True:
-        return "edit"
-    if rights.get("read") is True:
-        return "read"
-    if rights and not any(bool(v) for v in rights.values()):
-        return "none"
-    return fallback if fallback in AUTH_LEVELS else "read"
+    return permission_auth_level(rights, fallback=fallback)
 
 
 def _resolve_global_status(source: dict[str, Any]) -> dict[str, Any]:
     permission = _dict(source.get("permission_surface"))
     access = _dict(source.get("access_policy"))
     permissions = _dict(source.get("permissions"))
-    effective = _dict(permission.get("effective"))
-    rights = _dict(effective.get("rights")) or _dict(permission.get("rights")) or _dict(permissions.get("effective"))
+    rights = resolve_permission_rights(permission) or resolve_permission_rights(permissions)
     allowed = permission.get("allowed")
     if allowed is None:
         allowed = access.get("allowed")

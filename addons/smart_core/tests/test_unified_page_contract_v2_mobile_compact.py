@@ -114,6 +114,10 @@ assembler = _load_module(
     "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
     CORE_DIR / "unified_page_contract_v2_assembler.py",
 )
+status_projection = _load_module(
+    "odoo.addons.smart_core.core.unified_page_contract_v2_status",
+    CORE_DIR / "unified_page_contract_v2_status.py",
+)
 client = _load_module(
     "odoo.addons.smart_core.core.unified_page_contract_v2_client",
     CORE_DIR / "unified_page_contract_v2_client.py",
@@ -235,6 +239,54 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         self.assertEqual(full["statusContract"]["globalStatus"]["pageAuth"], "edit")
+
+    def test_nested_effective_rights_keep_page_and_editable_field_authority_consistent(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "render_profile": "edit",
+            "head": {"render_profile": "edit"},
+            "permissions": {
+                "effective": {
+                    "rights": {
+                        "read": True,
+                        "write": True,
+                        "create": True,
+                        "unlink": False,
+                    }
+                }
+            },
+            "fields": {"note": {"name": "note", "type": "text", "readonly": False}},
+            "meta_fields": [{"name": "note", "type": "text", "readonly": False}],
+            "record_id": 19,
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.edit.nested.rights",
+        )
+        status = status_projection.build_status_contract_v2(source, render_profile="edit")
+
+        self.assertEqual(full["statusContract"]["globalStatus"]["pageAuth"], "edit")
+        self.assertEqual(status["globalStatus"]["pageAuth"], "edit")
+        note = next(row for row in status["widgetStatus"] if row["widgetId"] == "field.note")
+        self.assertEqual(note["auth"], "edit")
+        self.assertFalse(note["readonly"])
+
+    def test_nested_effective_read_only_and_denied_rights_remain_fail_closed(self):
+        readonly = {"permissions": {"effective": {"rights": {"read": True, "write": False, "create": False}}}}
+        denied = {"permissions": {"effective": {"rights": {"read": False, "write": False, "create": False}}}}
+
+        self.assertEqual(
+            status_projection.build_status_contract_v2(readonly)["globalStatus"]["pageAuth"],
+            "read",
+        )
+        self.assertEqual(
+            status_projection.build_status_contract_v2(denied)["globalStatus"]["pageAuth"],
+            "none",
+        )
 
     def test_ui_contract_v2_uses_head_title_as_page_name(self):
         source = {

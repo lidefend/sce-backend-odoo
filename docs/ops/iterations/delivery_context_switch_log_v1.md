@@ -4313,3 +4313,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   unrelated local PFL checkpoint blobs to `ci.local.quick`. The clean
   `6f6aaa90` tree reproduces the same unrelated historical fixture findings;
   no false-positive exemption or scanner change is carried by this P1 topic.
+
+# P0 nested permission-rights status authority (2026-08-16)
+
+- Branch / base SHA: `fix/p0-permission-status-nested-rights-v1` /
+  `f971e3aa88ff6c0e3d3e915ca39aaef22f7ae030`.
+- Formal Product Layer / Layer Target / Module: P0 platform / normalized
+  global permission-status projection / `smart_core`.
+- Standard vs User-Specific: generic permission-envelope consumption for all
+  models. No construction, payment, customer, fixture, database or runtime
+  profile semantics are introduced.
+- Reason / boundary: the authoritative runtime shape is
+  `permissions.effective.rights`, but two normalized status paths treated the
+  enclosing `effective` object as the rights map. Editable fields could
+  consequently carry `auth=edit` while the same page was downgraded to
+  `pageAuth=read`.
+- Why Here / Why Not Elsewhere: permission envelope normalization is shared P0
+  contract behavior. P1 must not duplicate permission decisions and the
+  frontend must not override a contradictory backend contract.
+- Blast radius / validation: V2 global page authorization for every model.
+  Generic nested edit, read-only and all-denied fixtures prove canonical
+  extraction, page/field consistency and fail-closed behavior; existing flat
+  head-permission and readonly-profile behavior remain covered.
