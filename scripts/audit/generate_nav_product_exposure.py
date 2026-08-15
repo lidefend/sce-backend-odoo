@@ -16,7 +16,7 @@ TASK_EVIDENCE = {
     "finance": {
         "smart_construction_core.menu_sc_receipt_income": ("finance.receipt", "J05,E2E-07", "财务办理"),
         "smart_construction_core.menu_sc_settlement_order": ("finance.settlement", "J04,J05,E2E-08", "财务办理"),
-        "smart_construction_core.menu_sc_user_payment_apply_acceptance": ("finance.payment_request", "J05,J06,J08,E2E-06", "财务办理"),
+        "smart_construction_core.menu_sc_user_payment_apply": ("finance.payment_request", "J05,J06,J08,E2E-06", "财务办理"),
         "smart_construction_core.menu_sc_payment_execution": ("finance.payment_execution", "J05,J08,E2E-07", "财务办理"),
         "smart_construction_core.menu_sc_invoice_registration": ("finance.invoice_ledger", "J05,E2E-07", "财务查询"),
         "smart_construction_core.menu_sc_finance_project_capital_position": ("finance.project_funds", "J05,E2E-09", "财务分析"),
