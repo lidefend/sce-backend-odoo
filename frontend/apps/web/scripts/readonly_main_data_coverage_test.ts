@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { readonlyMainDataCoversFields } from '../src/pages/contractForm/readonlyMainDataCoverage';
+import {
+  contractLoadProfileOptions,
+  resolveContractRenderProfile,
+} from '../src/pages/contractForm/contractRenderProfile';
 
 assert.equal(readonlyMainDataCoversFields({
   renderProfile: 'readonly',
@@ -25,4 +30,39 @@ assert.equal(readonlyMainDataCoversFields({
   mainData: { id: 7 },
 }), false);
 
-console.log('[readonly-main-data-coverage] PASS cases=4');
+assert.equal(resolveContractRenderProfile({
+  routeName: 'record',
+  contractProfile: 'edit',
+  canSave: true,
+  recordId: 7,
+}), 'readonly');
+
+assert.equal(resolveContractRenderProfile({
+  routeName: 'model-form',
+  canSave: true,
+  recordId: 7,
+}), 'edit');
+
+assert.equal(resolveContractRenderProfile({
+  routeName: 'model-form',
+  canSave: true,
+  recordId: null,
+}), 'create');
+
+assert.equal(resolveContractRenderProfile({
+  routeName: 'model-form',
+  contractProfile: 'readonly',
+  canSave: true,
+  recordId: 7,
+}), 'readonly');
+
+assert.deepEqual(contractLoadProfileOptions('readonly'), { renderProfile: 'readonly' });
+
+const lifecycleSource = fs.readFileSync(
+  'frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts',
+  'utf8',
+);
+assert.equal((lifecycleSource.match(/\.\.\.profileOptions/g) || []).length, 2);
+assert.doesNotMatch(lifecycleSource, /recordId\.value\s*\?\s*['"]edit['"]\s*:\s*['"]create['"]/);
+
+console.log('[readonly-main-data-coverage] PASS cases=11');

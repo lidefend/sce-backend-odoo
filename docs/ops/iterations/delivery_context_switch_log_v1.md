@@ -4109,3 +4109,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   the three authority documents, locks the required rule fragments and proves
   the eight existing Make authorities remain declared. Its behavior suite
   covers complete policy, missing locked rule and missing Make target.
+
+# P0 readonly route profile propagation (2026-08-15)
+
+- Branch / base SHA: `fix/p0-readonly-route-profile-v1` /
+  `da1b02d99915174733bc36aa3934d609fcf3af7b`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend / shared
+  contract-form route profile resolution / generic web contract consumer.
+- Standard vs User-Specific: generic platform behavior only; no payment,
+  construction, customer, fixture, environment or database rule is added.
+- Reason / boundary: `/r/:model/:id` rendered as readonly only after its
+  action contract had already been requested with the edit profile. A shared
+  route/profile resolver now drives both the initial action-contract request,
+  its model fallback and the final renderer. `/r` resolves readonly,
+  existing `/f` resolves edit and new `/f` resolves create.
+- Why Here / Why Not Elsewhere: route mode is frontend platform context. P1
+  field matrices and product contracts remain authoritative inputs and the P0
+  normalized assembler remains unchanged; no industry-field exception is
+  introduced.
+- Blast radius / validation: all generic contract-form routes. The existing
+  readonly coverage unit now checks the three routes, contract-profile
+  precedence and both request call sites. Frontend Quick, strict typecheck,
+  static build and release-unit collections pass before runtime verification.
