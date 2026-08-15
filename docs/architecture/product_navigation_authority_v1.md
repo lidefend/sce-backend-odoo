@@ -30,6 +30,7 @@
 - 后端目标 Action 或目标 route 显式给出的 query 必须覆盖继承值。前端不得让来源页面的 `menu_id`、`action_id`、业务分类标签或列表状态反向覆盖目标事实。
 - ContractForm 与 ActionView 必须消费同一套跨模型继承规则；禁止各页面自行拼接一套 query 语义。
 - 目标 `context_raw` 是后端提供的 opaque contract。前端只负责传递，不解析 Python literal，也不从中推断新的业务权限或展示事实。
+- 临时 Action 覆盖的目标标题属于 action-result 展示权威，必须随 normalized `entry_target` 传递；目标创建页应优先消费该标题，不能退回来源业务分类或持久化 Action 名称。
 
 ## 当前锁定基线
 

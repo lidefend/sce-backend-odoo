@@ -1220,6 +1220,7 @@ const currentBusinessCategoryCode = computed(() => currentBusinessCategoryContex
 const pageIdentityInput = computed(() => buildContractFormPageIdentity({
   action: currentActionMeta.value, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs,
   businessCategoryLabel: currentBusinessCategoryLabel.value, contract: contract.value, formData,
+  entryTitle: route.query.entry_title,
   isCreate: !recordId.value, isEdit: route.name === 'model-form',
   menuName: currentMenuTitle.value, modelName: model.value, recordMissing: recordMissing.value,
   renderError: Boolean(renderErrorMessage.value), status: status.value,

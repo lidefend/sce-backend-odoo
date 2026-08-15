@@ -5,6 +5,8 @@ import {
 } from '../src/pages/contractForm/actionContract';
 import { buildContractActionRouteTarget } from '../src/app/runtime/actionViewContractActionRuntime';
 import { useActionResponseNavigation } from '../src/pages/contractForm/useActionResponseNavigation';
+import { buildContractFormPageIdentity } from '../src/app/pageIdentityAdapters';
+import { resolveProductPageIdentity } from '../src/app/pageIdentity';
 
 const sourceQuery = {
   menu_id: '501',
@@ -14,6 +16,7 @@ const sourceQuery = {
   default_business_category_code: 'source.category',
   current_business_category_label: '来源业务',
   default_business_category_label: '来源业务',
+  entry_title: 'Create source document',
   allowed_business_category_codes: 'source.category',
   search: 'source search',
   group_by: 'state',
@@ -30,6 +33,10 @@ const crossModelResult = {
   entry_target: {
     type: 'compatibility',
     route: '/f/x.target/new',
+    presentation: {
+      title: 'Create target settlement',
+      title_authority: 'odoo_action_result',
+    },
     compatibility_refs: {
       model: 'x.target',
       action_id: 626,
@@ -57,6 +64,7 @@ for (const key of [
   'domain_raw',
   'view_id',
   'entry_context',
+  'entry_title',
 ]) {
   assert.equal(crossModelQuery[key], undefined, `cross-model navigation clears source-scoped ${key}`);
 }
@@ -141,6 +149,22 @@ assert.equal(pushedQuery.action_id, 626, 'the real navigation route uses the tar
 assert.equal(pushedQuery.menu_id, 627, 'the real navigation route uses the target menu');
 assert.equal(pushedQuery.current_business_category_label, undefined, 'the real navigation route cannot inherit a source-model label');
 assert.equal(pushedQuery.context_raw, crossModelResult.context_raw, 'the real navigation route preserves backend context');
+assert.equal(pushedQuery.entry_title, 'Create target settlement', 'the normalized target keeps the transient action title');
+
+const targetPageIdentity = resolveProductPageIdentity(buildContractFormPageIdentity({
+  action: { name: 'Persisted target action' },
+  businessCategoryLabel: 'Target business category',
+  entryTitle: pushedQuery.entry_title,
+  contract: { head: { title: 'Target product contract' } },
+  formData: {},
+  isCreate: true,
+  isEdit: false,
+  modelName: 'x.target',
+  recordMissing: false,
+  renderError: false,
+  status: 'ready',
+}));
+assert.equal(targetPageIdentity.title, '新建Create target settlement', 'create identity consumes the backend action-result title before category or stored action labels');
 
 const rawOnlyTargets: Array<Record<string, unknown>> = [];
 const rawOnlyNavigation = useActionResponseNavigation({

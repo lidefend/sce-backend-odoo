@@ -41,6 +41,7 @@ export function buildContractFormPageIdentity(input: {
   action: BusinessMetadata;
   breadcrumbs?: PageBreadcrumb[];
   businessCategoryLabel?: unknown;
+  entryTitle?: unknown;
   contract: BusinessMetadata;
   formData: Record<string, unknown>;
   isCreate: boolean;
@@ -54,7 +55,7 @@ export function buildContractFormPageIdentity(input: {
   const head = input.contract?.head && typeof input.contract.head === 'object'
     ? input.contract.head as Record<string, unknown>
     : {};
-  const businessName = input.businessCategoryLabel || head.title || actionName(input.action);
+  const businessName = input.entryTitle || input.businessCategoryLabel || head.title || actionName(input.action);
   const recordName = primaryRecordName(input.contract, input.formData);
   return {
     kind: input.isCreate ? 'create' : input.isEdit ? 'edit' : 'detail',
