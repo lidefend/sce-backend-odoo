@@ -10,6 +10,7 @@ HANDLER = ROOT / "addons/smart_core/handlers/ui_contract_v2.py"
 ADAPTERS = ROOT / "addons/smart_core/handlers/ui_contract_v2_adapters.py"
 PROJECTION = ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py"
 AUTHORITY = ROOT / "addons/smart_core/handlers/ui_contract_v2_authority.py"
+CONSTANTS = ROOT / "addons/smart_core/handlers/ui_contract_v2_constants.py"
 CI = ROOT / "make/ci.mk"
 
 REQUIRED_METHODS = [
@@ -49,6 +50,7 @@ def main() -> int:
     adapters = _read(ADAPTERS)
     projection = _read(PROJECTION)
     authority = _read(AUTHORITY)
+    constants = _read(CONSTANTS)
     ci = _read(CI)
 
     if not doc:
@@ -61,6 +63,8 @@ def main() -> int:
         errors.append(f"missing projection helpers: {PROJECTION.relative_to(ROOT)}")
     if not authority:
         errors.append(f"missing authority helpers: {AUTHORITY.relative_to(ROOT)}")
+    if not constants:
+        errors.append(f"missing constants module: {CONSTANTS.relative_to(ROOT)}")
 
     for token in [
         "UI Contract V2 Responsibility Map",
@@ -117,6 +121,7 @@ def main() -> int:
             "from . import ui_contract_v2_adapters as _adapters",
             "from . import ui_contract_v2_projection as _projection",
             "from . import ui_contract_v2_authority as _authority",
+            "from .ui_contract_v2_constants import (",
             "return _adapters.params_from_payload(payload, self.params)",
             "return _adapters.headers_from_request(self.request, _logger)",
             "return _adapters.trim_limit_params(params)",
@@ -208,6 +213,16 @@ def main() -> int:
         ]:
             if token not in authority:
                 errors.append(f"ui_contract_v2_authority.py missing token: {token}")
+
+    if constants:
+        for token in [
+            "BUSINESS_OPERATION_FIELD_PRIORITY = (",
+            "BUSINESS_FORM_STRUCTURE_INTERNAL_FIELDS = {",
+            "LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {",
+            "STANDARD_LOWCODE_COLUMN_LABELS = {",
+        ]:
+            if token not in constants:
+                errors.append(f"ui_contract_v2_constants.py missing token: {token}")
 
     ci_token = "python3 scripts/verify/ui_contract_v2_responsibility_map_guard.py"
     if ci_token not in ci:

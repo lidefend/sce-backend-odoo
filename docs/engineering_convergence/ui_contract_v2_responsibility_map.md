@@ -40,6 +40,7 @@ permission truth, persistence rules, or industry-owned policy.
 | Record and view hydration | Record snapshot read, attachment display values, native group column extraction from `ir.ui.view` XML. | Read-side hydration module with strict field-count limits and tests. |
 | Scene contract projection | Scene contract source loading and scene v2 assembly path. | Scene projection helper once scene behavior tests exist. |
 | Request adapters | Payload/header parsing, trim limits, ui.contract params, result envelope, error result. | Pure request adapter module. |
+| Static vocabulary | Field priority, technical/history filters, and legacy display-label defaults. | Dedicated constants module; no runtime behavior. |
 
 ## Current Side-Effect Boundaries
 

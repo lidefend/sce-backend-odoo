@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3799`
+- Scanned files: `3800`
 - Files requiring split plan: `40`
 - Files above warning threshold: `73`
 
@@ -15,7 +15,7 @@ Generated from repository source files. This report is informational during the 
 | 3704 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3664 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3556 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 3421 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3338 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3221 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
@@ -138,7 +138,7 @@ Generated from repository source files. This report is informational during the 
 | 3704 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3664 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3556 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 3421 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3338 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3221 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |

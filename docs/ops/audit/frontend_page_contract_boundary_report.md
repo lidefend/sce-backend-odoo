@@ -1,7 +1,7 @@
 # Frontend Page Contract Boundary Report
 
 - ok: `True`
-- checked_views: `20`
+- checked_views: `21`
 - checked_layouts: `2`
 - boundary: `all-pages-contract-driven`
 - error_count: `0`
@@ -11,6 +11,7 @@
 - `frontend/apps/web/src/views/AccountActivationView.vue`
 - `frontend/apps/web/src/views/ActionView.vue`
 - `frontend/apps/web/src/views/ActionViewShell.vue`
+- `frontend/apps/web/src/views/ApiKeyManagementView.vue`
 - `frontend/apps/web/src/views/BusinessConfigSurfaceView.vue`
 - `frontend/apps/web/src/views/HomeView.vue`
 - `frontend/apps/web/src/views/LoginView.vue`

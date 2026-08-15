@@ -43,6 +43,7 @@ def main() -> int:
         "AccountActivationView.vue",
         "ActionView.vue",
         "ActionViewShell.vue",
+        "ApiKeyManagementView.vue",
         "AccessDeniedView.vue",
         "BusinessConfigSurfaceView.vue",
         "HomeView.vue",
@@ -126,6 +127,7 @@ def main() -> int:
     page_contract_exempt_views = {
         "AccessDeniedView.vue",
         "AccountActivationView.vue",
+        "ApiKeyManagementView.vue",
         "HomeView.vue",
         "NotFoundView.vue",
         "PasswordRecoveryView.vue",
@@ -147,6 +149,15 @@ def main() -> int:
             _check_forbidden(text, ["listRecords("], rel, errors)
 
     per_view_required = {
+        "ApiKeyManagementView.vue": [
+            "data-evidence-sensitive=\"api_key\"",
+            "data-secret-display=\"once\"",
+            "createAuthCredential(",
+            "rotateAuthCredential(",
+            "revokeAuthCredential(",
+            "clearOneTimeSecret();",
+            "resetSensitiveInputs();",
+        ],
         "LoginView.vue": [
             "await session.loadAppInit();",
             "session.resolveLandingPath('/')",
