@@ -160,7 +160,7 @@
           :root-columns="nativeFormRootColumns"
           :selected-field-key="selectedFormSettingsFieldKey"
           :selected-field-row-label="selectedFormSettingsFieldRow?.label || ''"
-          :show-collaboration-panel="(nativeChatterActions.length || nativeAttachments) && !isIntakeCreateMode"
+          :show-collaboration-panel="showNativeCollaborationPanel"
           :show-default-section-title="showNativeDefaultSectionTitle"
           :use-native-form-tree="useNativeFormTree"
           @field-action="onContractFieldAction"
@@ -212,7 +212,7 @@
       </PageFooterTemplate>
 
       <NativeCollaborationPanel
-        v-if="(nativeChatterActions.length || nativeAttachments) && !isIntakeCreateMode && !hasNativeChatterNode && pageSectionEnabled('chatter', true) && pageSectionTagIs('chatter', 'section')"
+        v-if="showNativeCollaborationPanel && !hasNativeChatterNode && pageSectionEnabled('chatter', true) && pageSectionTagIs('chatter', 'section')"
         :style="pageSectionStyle('chatter')"
         v-bind="nativeCollaborationPanelProps"
         v-on="nativeCollaborationPanelListeners"
@@ -260,6 +260,7 @@ import NativeCollaborationPanel, {
   type NativeCollaborationPanelProps,
 } from './contractForm/NativeCollaborationPanel.vue';
 import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
+import { shouldShowNativeCollaborationPanel } from './contractForm/collaborationPresentation';
 import RelationSearchDialog from './contractForm/RelationSearchDialog.vue';
 import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vue';
 import CurrentFormFieldSettingsPanel from './contractForm/CurrentFormFieldSettingsPanel.vue';
@@ -1081,6 +1082,11 @@ const isStandardIntakeMode = computed(() => {
   return String(route.query.intake_mode || '').trim().toLowerCase() === 'standard';
 });
 const isIntakeCreateMode = computed(() => isQuickIntakeMode.value || isStandardIntakeMode.value);
+const showNativeCollaborationPanel = computed(() => shouldShowNativeCollaborationPanel({
+  hasChatterActions: nativeChatterActions.value.length > 0,
+  hasAttachments: Boolean(nativeAttachments.value),
+  isIntakeCreateMode: isIntakeCreateMode.value,
+}));
 const intakeAutosaveKey = computed(() => {
   if (!isIntakeCreateMode.value) return '';
   const mode = isQuickIntakeMode.value ? 'quick' : 'standard';
