@@ -24,6 +24,12 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             "_visible_navigation_pairs - _authorized_navigation_pairs",
             tail,
         )
+        build_index = tail.index("build_route_authority(")
+        reconcile_index = tail.index("filter_nav_by_route_authority(")
+        verify_index = tail.index("_visible_navigation_pairs = set(")
+        self.assertLess(build_index, reconcile_index)
+        self.assertLess(reconcile_index, verify_index)
+        self.assertIn('data["nav"] = _final_navigation', tail)
         self.assertIn("canonical navigation contains unauthorized", tail)
         self.assertIn('"missing_authority_count": 0,', tail)
         for removed in (
