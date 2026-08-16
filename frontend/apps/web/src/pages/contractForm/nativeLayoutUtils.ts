@@ -1010,6 +1010,16 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   return false;
 }
 
+export function resolveNativeModifierFieldValue(
+  formData: Record<string, unknown>,
+  mainData: Record<string, unknown>,
+  field: string,
+) {
+  const name = String(field || '').trim();
+  if (!name) return undefined;
+  return Object.prototype.hasOwnProperty.call(formData, name) ? formData[name] : mainData[name];
+}
+
 export function nativeNodeWidget(node?: NativeLayoutLikeNode | null) {
   const fieldInfo = nativeNodeFieldInfo(node);
   return String(node?.widget || fieldInfo.widget || '').trim().toLowerCase();

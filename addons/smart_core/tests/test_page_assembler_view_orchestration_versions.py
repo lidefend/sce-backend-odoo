@@ -166,6 +166,70 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
             self.assertEqual(len(edge_page["list"]["records"]), row_count)
             self.assertIsNone(edge_page["list"]["next_offset"])
 
+    def test_form_initial_data_reads_hidden_action_modifier_dependencies(self):
+        class _Record:
+            id = 7
+            display_name = "Document 7"
+
+            def __init__(self):
+                self.read_fields = []
+
+            def exists(self):
+                return self
+
+            def read(self, fields):
+                self.read_fields = list(fields)
+                return [{"id": 7, "state": "approved", "type": "pay", "has_active_relation": True}]
+
+        class _Model:
+            _order = "id"
+
+            def __init__(self):
+                self.record = _Record()
+
+            def fields_get(self):
+                return {
+                    "id": {"type": "integer"},
+                    "state": {"type": "selection"},
+                    "type": {"type": "selection"},
+                    "has_active_relation": {"type": "boolean"},
+                }
+
+            def browse(self, record_id):
+                self.asserted_record_id = record_id
+                return self.record
+
+        model = _Model()
+        assembled = {
+            "views": {
+                "form": {
+                    "layout": {"type": "field", "name": "state"},
+                    "header_buttons": [{
+                        "name": "action_open_relation",
+                        "visible": {"attrs": {"invisible": {
+                            "kind": "any",
+                            "exprs": [
+                                {"kind": "field_compare", "field": "type", "operator": "!=", "value": "pay"},
+                                {"kind": "not", "expr": {"kind": "field_truthy", "field": "has_active_relation"}},
+                            ],
+                        }}},
+                    }],
+                },
+            },
+        }
+
+        result = self.assembler._fetch_initial_data(
+            {"x.document": model},
+            "x.document",
+            ["form"],
+            {"view_type": "form", "record_id": 7},
+            assembled,
+        )
+
+        self.assertEqual(result["record"]["type"], "pay")
+        self.assertTrue(result["record"]["has_active_relation"])
+        self.assertEqual(model.record.read_fields, ["state", "type", "has_active_relation"])
+
     def test_business_action_injection_preserves_authoritative_entitlement(self):
         globals_ = self.assembler._inject_form_business_actions.__func__.__globals__
         original_hook = globals_["call_extension_hook_first"]
