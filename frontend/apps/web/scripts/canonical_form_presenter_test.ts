@@ -3,6 +3,14 @@ import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
+import {
+  canonicalFieldToFormSection,
+  canonicalNodeHasContent,
+  canonicalSectionFields,
+  visibleCanonicalChildren,
+} from '../src/pages/contractForm/canonicalFormRenderer';
+import { resolveCanonicalFormActionExecution, validateCanonicalFormActionExecutors } from '../src/pages/contractForm/canonicalFormActionExecutor';
+import type { ContractAction } from '../src/pages/contractForm/types';
 
 function snapshot(): ContractV2Snapshot {
   return {
@@ -113,11 +121,31 @@ assert.equal(model.actionBar[0]?.enabled, true);
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
+const runtimeValueModel = presentContractV2Form(store, 'edit', { name: 'D-002' });
+assert.equal(
+  collectFields(runtimeValueModel.zones.primary).find((field) => field.fieldCode === 'name')?.value,
+  'D-002',
+  'runtime edits must update the ephemeral render model without changing normalized authority',
+);
+
 const readonlyModel = presentContractV2Form(store, 'readonly');
 assert.equal(
   collectFields(readonlyModel.zones.primary).find((field) => field.fieldCode === 'name')?.readonly,
   true,
   'readonly route mode must remain authoritative even when the widget status is editable',
+);
+
+const rowActionSnapshot = snapshot();
+rowActionSnapshot.actionContract.actionRuleList.push({
+  ...rowActionSnapshot.actionContract.actionRuleList[0],
+  actionId: 'action.open_form', backendIdentity: 'button:object:open_form', actionKey: 'open_form',
+  sourceWidgetId: 'page.row', targetScope: 'runtime', presentation: { tier: 'secondary' },
+});
+rowActionSnapshot.statusContract.buttonStatus.push({ btnId: 'action.open_form', visible: true, disabled: false });
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(rowActionSnapshot), 'readonly').actionBar.map((action) => action.key),
+  ['action_submit'],
+  'row/runtime actions must remain normalized evidence and must not become form action-bar controls',
 );
 
 const readOnlyPrincipal = snapshot();
@@ -181,6 +209,41 @@ aggregatedNativeChildren.layoutContract.containerTree[0].children[0].widgetList 
 const aggregatedFields = collectFields(presentContractV2Form(createContractV2Store(aggregatedNativeChildren), 'edit').zones.primary);
 assert.deepEqual(aggregatedFields.map((field) => field.fieldCode), ['name', 'state']);
 
+const duplicateAcrossRoots = snapshot();
+duplicateAcrossRoots.layoutContract.containerTree.splice(1, 0, {
+  containerId: 'legacy.identity.mirror', containerType: 'group', type: 'group', title: 'Legacy mirror', span: 24,
+  children: [], widgetList: [{
+    widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
+    componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+  }],
+});
+const deDuplicatedFields = collectFields(
+  presentContractV2Form(createContractV2Store(duplicateAcrossRoots), 'edit').zones.primary,
+);
+assert.deepEqual(
+  deDuplicatedFields.map((field) => field.widgetId),
+  ['field.name', 'field.state'],
+  'one canonical widget identity must render once even when legacy and product roots both carry it',
+);
+
+const renderedName = canonicalFieldToFormSection(deDuplicatedFields[0]);
+assert.deepEqual(
+  { key: renderedName.key, name: renderedName.name, value: renderedName.value, readonly: renderedName.readonly },
+  { key: 'field.name', name: 'name', value: 'D-001', readonly: false },
+  'renderer mapping must preserve canonical widget identity and state without native layout input',
+);
+assert.equal(canonicalNodeHasContent(model.zones.subordinate.find((node) => node.kind === 'chatter')!), true);
+assert.deepEqual(
+  canonicalSectionFields(model.zones.primary[0]).map((field) => field.fieldCode),
+  ['name'],
+  'a section mechanically owns the fields carried by its direct field nodes',
+);
+assert.equal(
+  visibleCanonicalChildren(model.zones.primary[0]).some((node) => node.kind === 'field'),
+  false,
+  'leaf field nodes must not become duplicate visual sections',
+);
+
 const invalidNativeChild = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 invalidNativeChild.layoutContract.containerTree[0].children = [{ children: [], widgetList: [] }];
 assert.throws(() => decodeContractV2Snapshot(invalidNativeChild), /requires a stable native identity/);
@@ -230,4 +293,52 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
-console.log('[canonical_form_presenter_test] PASS cases=19');
+const normalizedAction = snapshot().actionContract.actionRuleList[0];
+const contractAction = {
+  key: 'action_submit', backendIdentity: 'button:object:action_submit', label: 'Submit', kind: 'object',
+  level: 'header', selection: 'none', actionId: null, methodName: 'action_submit', targetModel: 'x.document',
+  context: {}, domainRaw: '', target: '', url: '', enabled: true, hint: '', intent: '', semantic: '',
+  sourceWidgetId: 'page.root', clientMode: '', visibleProfiles: ['edit', 'readonly'], requiredParams: [], requiresReason: false,
+} satisfies ContractAction;
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(
+    { ...normalizedAction, actionId: 'form.save', backendIdentity: 'contract_action:form.save' },
+    [],
+  ),
+  { kind: 'save' },
+  'standard normalized form.save must use the existing unified save executor',
+);
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(normalizedAction, [contractAction]),
+  { kind: 'contract-action', action: contractAction },
+  'business actions must resolve only by their normalized backend identity',
+);
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(normalizedAction, []),
+  { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING' },
+  'an unmapped normalized action must fail closed',
+);
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(normalizedAction, [contractAction, { ...contractAction }]),
+  { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_REFERENCE_AMBIGUOUS' },
+  'a duplicated normalized backend identity must fail closed',
+);
+assert.equal(
+  validateCanonicalFormActionExecutors([
+    { ...normalizedAction, actionId: 'form.save', backendIdentity: 'contract_action:form.save' },
+    { ...normalizedAction, enabled: false, disabled: true, backendIdentity: 'button:object:unmapped_disabled' },
+  ], []),
+  null,
+  'save and visible disabled actions keep the canonical page usable without inventing an executor',
+);
+assert.deepEqual(
+  validateCanonicalFormActionExecutors([normalizedAction], []),
+  {
+    reasonCode: 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING',
+    actionId: 'action.submit',
+    backendIdentity: 'button:object:action_submit',
+  },
+  'an executable action without an exact unified executor adapter must block canonical cutover',
+);
+
+console.log('[canonical_form_presenter_test] PASS cases=32');

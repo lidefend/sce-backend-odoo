@@ -486,6 +486,7 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     )
     fields = _field_rows(source, ui, view_type=view_type)
     source_context = _ui_source_context(_dict(source), _dict(ui))
+    render_profile = _text(source_context.get("renderProfile")).lower()
     source_context_context = _dict(source_context.get("context"))
     raw_field_map = _dict(ui.get("fields") or source.get("fields"))
     fields_by_name: dict[str, dict[str, Any]] = {}
@@ -696,7 +697,6 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     if source_context:
         contract["dataContract"]["dataMeta"]["sourceContext"] = deepcopy(source_context)
         contract["runtimeContract"]["sourceContext"] = deepcopy(source_context)
-        render_profile = _text(source_context.get("renderProfile")).lower()
         contract["statusContract"]["globalStatus"]["pageAuth"] = _ui_contract_page_auth(
             _dict(source),
             _dict(ui),
@@ -753,6 +753,13 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
                 source_key="field_groups",
             ),
         }
+    _append_standard_form_save_action(
+        contract,
+        source,
+        ui,
+        render_profile=render_profile,
+        layout_type=layout_type,
+    )
     _append_ui_contract_actions(contract, ui, source_widget_id="page.root", main_data=contract["dataContract"]["mainData"])
     _append_ui_contract_row_actions(contract, ui)
     _append_registered_kanban_row_action(contract, model=model, view_type=view_type)
@@ -2163,16 +2170,7 @@ def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, 
     return out
 
 
-def _ui_contract_page_auth(source: dict[str, Any], ui: dict[str, Any], render_profile: str, view_type: str) -> str:
-    if render_profile == "readonly":
-        return "read"
-    source_context = _ui_source_context(source, ui)
-    context = _dict(source_context.get("context"))
-    if (
-        context.get("sc_runtime_user_management") is True
-        and render_profile in {"create", "edit"}
-    ):
-        return "edit"
+def _ui_contract_permission_rights(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, Any]:
     permission_sources = [
         _dict(_dict(ui.get("head")).get("permissions")),
         _dict(_dict(source.get("head")).get("permissions")),
@@ -2184,13 +2182,85 @@ def _ui_contract_page_auth(source: dict[str, Any], ui: dict[str, Any], render_pr
     for row in permission_sources:
         resolved = resolve_permission_rights(row)
         if resolved:
-            rights = resolved
-            break
+            return resolved
+    return rights
+
+
+def _ui_contract_page_auth(source: dict[str, Any], ui: dict[str, Any], render_profile: str, view_type: str) -> str:
+    if render_profile == "readonly":
+        return "read"
+    source_context = _ui_source_context(source, ui)
+    context = _dict(source_context.get("context"))
+    if (
+        context.get("sc_runtime_user_management") is True
+        and render_profile in {"create", "edit"}
+    ):
+        return "edit"
+    rights = _ui_contract_permission_rights(source, ui)
     if rights:
         return permission_auth_level(rights, fallback="read")
     if render_profile in {"create", "edit"}:
         return "edit"
     return "read" if view_type in {"tree", "list", "kanban"} else "edit"
+
+
+def _append_standard_form_save_action(
+    contract: dict[str, Any],
+    source: dict[str, Any],
+    ui: dict[str, Any],
+    *,
+    render_profile: str,
+    layout_type: str,
+) -> None:
+    if layout_type != "form" or render_profile not in {"create", "edit"}:
+        return
+    rights = _ui_contract_permission_rights(source, ui)
+    required_right = "create" if render_profile == "create" else "write"
+    if rights.get(required_right) is not True:
+        return
+    action_id = "form.save"
+    backend_identity = "contract_action:form.save"
+    contract["actionContract"]["actionRuleList"].append({
+        "actionId": action_id,
+        "actionKey": action_id,
+        "sourceActionKey": action_id,
+        "backendIdentity": backend_identity,
+        "label": "保存草稿" if render_profile == "create" else "保存修改",
+        "intent": "api.data",
+        "target": {},
+        "button": {},
+        "triggerType": "submit",
+        "sourceWidgetId": "page.root",
+        "targetIds": ["page.root"],
+        "dispatchMode": "serverBlocking",
+        "targetScope": "page",
+        "refreshMode": "partial",
+        "sourceChannel": "platform_form_action",
+        "presentationAuthority": "platform_contract",
+        "presentationPriority": 100,
+        "presentation": {"tier": "secondary"},
+        "visibleProfiles": [render_profile],
+        "allowed": True,
+        "enabled": True,
+        "disabled": False,
+        "entitlement_evaluated": True,
+        "sourceTrace": [{
+            "actionId": action_id,
+            "sourceActionKey": action_id,
+            "sourceWidgetId": "page.root",
+            "sourceChannel": "platform_form_action",
+            "presentationAuthority": "platform_contract",
+            "requiredRight": required_right,
+            "entitlementEvaluated": True,
+        }],
+    })
+    contract["actionContract"]["dependencyGraph"].setdefault("page.root", []).append(action_id)
+    contract["statusContract"]["buttonStatus"].append({
+        "btnId": "btn.form.save",
+        "backendIdentity": backend_identity,
+        "visible": True,
+        "disabled": False,
+    })
 
 
 def _default_values_from_context(context: dict[str, Any]) -> dict[str, Any]:
