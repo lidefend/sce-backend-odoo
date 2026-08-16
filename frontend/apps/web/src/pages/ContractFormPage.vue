@@ -268,6 +268,7 @@ import NativeCollaborationPanel, {
 } from './contractForm/NativeCollaborationPanel.vue';
 import ContractFormDriverHost from './contractForm/ContractFormDriverHost.vue';
 import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
+import { resolveCanonicalFormActionExecution } from './contractForm/canonicalFormActionExecutor';
 import { shouldShowNativeCollaborationPanel } from './contractForm/collaborationPresentation';
 import RelationSearchDialog from './contractForm/RelationSearchDialog.vue';
 import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vue';
@@ -1662,25 +1663,18 @@ const {
 });
 
 async function runCanonicalFormAction(actionRef: ContractV2ActionRule) {
-  const backendIdentity = String(actionRef.backendIdentity || '').trim();
-  const actionKey = String(actionRef.actionKey || '').trim();
-  const candidates = contractActions.value.filter((candidate) => (
-    backendIdentity
-      ? String(candidate.backendIdentity || '').trim() === backendIdentity
-      : String(candidate.key || '').trim() === actionKey
-  ));
-  if (candidates.length !== 1) {
-    renderErrorMessage.value = candidates.length
-      ? 'CANONICAL_FORM_ACTION_REFERENCE_AMBIGUOUS'
-      : 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING';
+  const resolution = resolveCanonicalFormActionExecution(actionRef, contractActions.value);
+  if (resolution.kind === 'error') {
+    renderErrorMessage.value = resolution.reasonCode;
     return;
   }
-  const action = candidates[0];
+  if (resolution.kind === 'save') {
+    await saveRecord();
+    return;
+  }
+  const action = resolution.action;
   const primary = primaryBusinessFormAction.value;
-  if (primary && (
-    String(primary.backendIdentity || '').trim() === String(action.backendIdentity || '').trim()
-    || primary.key === action.key
-  )) {
+  if (primary && String(primary.backendIdentity || '').trim() === String(action.backendIdentity || '').trim()) {
     await runPrimaryFormAction();
     return;
   }

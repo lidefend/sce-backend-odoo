@@ -9,6 +9,8 @@ import {
   canonicalSectionFields,
   visibleCanonicalChildren,
 } from '../src/pages/contractForm/canonicalFormRenderer';
+import { resolveCanonicalFormActionExecution } from '../src/pages/contractForm/canonicalFormActionExecutor';
+import type { ContractAction } from '../src/pages/contractForm/types';
 
 function snapshot(): ContractV2Snapshot {
   return {
@@ -278,4 +280,35 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
-console.log('[canonical_form_presenter_test] PASS cases=25');
+const normalizedAction = snapshot().actionContract.actionRuleList[0];
+const contractAction = {
+  key: 'action_submit', backendIdentity: 'button:object:action_submit', label: 'Submit', kind: 'object',
+  level: 'header', selection: 'none', actionId: null, methodName: 'action_submit', targetModel: 'x.document',
+  context: {}, domainRaw: '', target: '', url: '', enabled: true, hint: '', intent: '', semantic: '',
+  sourceWidgetId: 'page.root', clientMode: '', visibleProfiles: ['edit', 'readonly'], requiredParams: [], requiresReason: false,
+} satisfies ContractAction;
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(
+    { ...normalizedAction, actionId: 'form.save', backendIdentity: 'contract_action:form.save' },
+    [],
+  ),
+  { kind: 'save' },
+  'standard normalized form.save must use the existing unified save executor',
+);
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(normalizedAction, [contractAction]),
+  { kind: 'contract-action', action: contractAction },
+  'business actions must resolve only by their normalized backend identity',
+);
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(normalizedAction, []),
+  { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING' },
+  'an unmapped normalized action must fail closed',
+);
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(normalizedAction, [contractAction, { ...contractAction }]),
+  { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_REFERENCE_AMBIGUOUS' },
+  'a duplicated normalized backend identity must fail closed',
+);
+
+console.log('[canonical_form_presenter_test] PASS cases=29');
