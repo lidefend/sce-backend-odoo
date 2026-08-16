@@ -77,10 +77,15 @@ for reason in (
 ):
     require(reason in policy, f"fail-closed reason missing: {reason}")
 require("SCENE_DRIVER_FORM_MODE_UNSUPPORTED" in policy, "readonly entitlement does not constrain form mode")
+require("SCENE_DRIVER_FORM_MODES_MISSING" in policy, "editable form entitlement does not fail closed without explicit modes")
 
 form_section = (WEB_SRC / "components/template/FormSection.vue").read_text(encoding="utf-8")
 require("from '@sc/ui/form'" in form_section, "form fields must consume the narrow driver-neutral UI export")
 require("emitFieldChange(field, $event)" in form_section, "driver field does not reuse the canonical field-change path")
+require(
+    ':model-value="contractFormDriverValue(field)"' in form_section,
+    "driver field value bypasses the canonical empty-value normalizer",
+)
 require(
     form_section.index('v-else-if="usesSceneFieldControl(field)"')
     < form_section.index('v-else-if="field.readonly"'),
@@ -90,6 +95,10 @@ scene_field_control = (UI_SRC / "components/primitives/SceneFieldControl.vue").r
 require(
     scene_field_control.count("if (props.field.readonly) return;") >= 2,
     "readonly driver controls do not fail closed before emitting changes",
+)
+require(
+    "normalizeSceneFieldControlValue(value, props.field.kind)" in scene_field_control,
+    "driver change events bypass the shared empty-value normalizer",
 )
 probe_fixture = (ROOT / "addons/smart_construction_acceptance_fixture/tools/component_driver_probe.py").read_text(encoding="utf-8")
 probe_tree = ast.parse(probe_fixture)
@@ -120,4 +129,4 @@ collection_wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRender
 require("openRow" in collection_surface, "readonly collection does not expose row navigation")
 require("'open-record'" in collection_wrapper, "driver row navigation is not returned to the unified host")
 
-print("[verify.frontend.scene_component_bridge.guard] PASS checks=30")
+print("[verify.frontend.scene_component_bridge.guard] PASS checks=31")

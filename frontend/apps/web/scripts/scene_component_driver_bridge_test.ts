@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
+import { normalizeSceneFieldControlValue } from '../../../packages/ui/src/components/primitives/sceneFieldControlValue';
 import { resolveModelContractRenderProfile } from '../src/api/modelContractProfile';
 import { resolveActionSurfaceRenderer } from '../src/app/renderers/actionSurfaceRendererRegistry';
 import { resolveContractFormComponentDriverDecision, resolveSceneComponentDriverDecision } from '../src/app/renderers/sceneComponentDriverPolicy';
-import { toContractFormDriverFieldChange, toContractFormSceneField, usesContractFormDriverField } from '../src/components/template/contractFormDriverField';
+import {
+  normalizeContractFormDriverValue,
+  toContractFormDriverFieldChange,
+  toContractFormSceneField,
+  usesContractFormDriverField,
+} from '../src/components/template/contractFormDriverField';
 import {
   readSceneComponentDriverTelemetry,
   recordSceneComponentDriverEvent,
@@ -170,6 +176,28 @@ assert.equal(readonlyForm.resolution.kit, 'tdesign-modern');
 assert.equal(resolveContractFormComponentDriverDecision({
   featureFlag: enabledFlag, actionId: 77, model: 'hr.department', renderMode: 'edit', userKit: 'tdesign-modern',
 }).reasonCode, 'SCENE_DRIVER_FORM_MODE_UNSUPPORTED');
+const formEnabledFlag = {
+  ...enabledFlag,
+  read_only_only: false,
+  form_modes: ['create', 'edit', 'readonly'],
+};
+for (const renderMode of ['create', 'edit', 'readonly'] as const) {
+  const formDecision = resolveContractFormComponentDriverDecision({
+    featureFlag: formEnabledFlag,
+    actionId: 77,
+    model: 'hr.department',
+    renderMode,
+    userKit: 'tdesign-modern',
+  });
+  assert.equal(formDecision.eligible, true, `${renderMode} must be explicitly enabled by entitlement`);
+  assert.equal(formDecision.resolution.kit, 'tdesign-modern');
+}
+assert.equal(resolveContractFormComponentDriverDecision({
+  featureFlag: { ...formEnabledFlag, form_modes: [] },
+  actionId: 77,
+  model: 'hr.department',
+  renderMode: 'edit',
+}).reasonCode, 'SCENE_DRIVER_FORM_MODES_MISSING');
 const driverField = {
   key: 'name', name: 'name', label: 'Name', type: 'char', required: true, readonly: false,
   invalid: true, inputValue: 'Draft', selectionOptions: [],
@@ -180,6 +208,18 @@ assert.deepEqual(toContractFormSceneField(driverField, 'field-name', 'Enter name
   id: 'field-name', label: 'Name', value: 'Draft', kind: 'text', required: true, readonly: false,
   invalid: true, placeholder: 'Enter name', options: [],
 });
+assert.equal(
+  toContractFormSceneField({ ...driverField, type: 'date', inputValue: false }, 'field-date', 'Choose date').value,
+  '',
+  'Odoo false empty values must not become an invalid literal driver value',
+);
+assert.equal(normalizeContractFormDriverValue(false), '');
+assert.equal(normalizeContractFormDriverValue('false'), 'false');
+assert.equal(normalizeContractFormDriverValue('false', 'date'), '');
+assert.equal(normalizeSceneFieldControlValue(false), '');
+assert.equal(normalizeSceneFieldControlValue([false]), '');
+assert.equal(normalizeSceneFieldControlValue('false', 'date'), '');
+assert.equal(normalizeSceneFieldControlValue(['2026-08-17']), '2026-08-17');
 assert.deepEqual(toContractFormDriverFieldChange(driverField, 'Updated'), {
   name: 'name', type: 'char', widget: undefined, value: 'Updated', descriptor: undefined,
 });
@@ -224,4 +264,4 @@ const telemetry = readSceneComponentDriverTelemetry();
 assert.equal(telemetry.length, 60);
 assert.equal(telemetry[0]?.timestamp, 5);
 
-console.log('[scene-component-driver-bridge] PASS cases=24');
+console.log('[scene-component-driver-bridge] PASS cases=37');

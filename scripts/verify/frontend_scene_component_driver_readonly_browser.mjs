@@ -48,7 +48,10 @@ async function main() {
   const browser = await launchChromium();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
-  const evidence = { console: [], pageerror: [], failed: [], mutations: [], systemInitPolicy: null, contractLayoutShape: null, contractSha256: '' };
+  const evidence = {
+    console: [], pageerror: [], failed: [], mutations: [], systemInitPolicy: null,
+    contractLayoutShape: null, contractSha256: '', contractResponses: [],
+  };
   page.on('console', (message) => {
     if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) evidence.console.push(message.text());
   });
@@ -84,6 +87,7 @@ async function main() {
         if (contract) {
           evidence.contractLayoutShape = { intent, nodes: summarize(contract.layoutContract.containerTree) };
           evidence.contractSha256 = String(contract?.meta?.lifecycle?.integrity?.contractSha256 || '');
+          evidence.contractResponses.push({ intent, sha256: evidence.contractSha256 });
         }
       } catch { /* shape evidence remains unavailable */ }
     }
@@ -156,7 +160,12 @@ async function main() {
         fallback: document.querySelector('[data-scene-driver-fallback="true"]') !== null,
       };
     });
-    check(evidence.systemInitPolicy?.locked_kit === 'tdesign-modern', 'system.init entitlement policy was not authoritative');
+    check(evidence.systemInitPolicy?.system_default_kit === 'tdesign-modern', 'system.init entitlement default was not authoritative');
+    check(evidence.systemInitPolicy?.allow_user_override === true, 'system.init entitlement did not allow governed driver switching');
+    check(
+      JSON.stringify(evidence.systemInitPolicy?.form_modes || []) === JSON.stringify(['create', 'edit', 'readonly']),
+      'system.init entitlement did not preserve explicit form modes',
+    );
     check(result.sourceContractSha256, 'normalized source contract identity missing');
     check(evidence.contractSha256 === result.sourceContractSha256, 'network and canvas contract identities differ');
     check(result.fieldCount > 0 && result.fieldCount === result.uniqueFieldCount, 'readonly fields are missing or duplicated');
@@ -170,14 +179,115 @@ async function main() {
 
     const screenshot = path.join(OUTPUT, 'tdesign-readonly-project.png');
     await page.screenshot({ path: screenshot, fullPage: true });
+
+    async function exerciseEditableMode(mode, editableRoute) {
+      const contractResponsesBeforeRoute = evidence.contractResponses.length;
+      await page.goto(`${BASE_URL}${editableRoute}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      const tdesignHost = page.locator('[data-contract-form-driver="tdesign-modern"]');
+      await tdesignHost.waitFor({ state: 'visible', timeout: 45000 });
+      await page.locator('[data-scene-ui-kit="tdesign-modern"]').waitFor({ state: 'visible', timeout: 45000 });
+      await page.locator('[data-product-page-mode="form"]').waitFor({ state: 'visible', timeout: 45000 });
+      await page.locator('[data-control-driver="tdesign-modern"] [data-scene-driver-control]').first().waitFor({ state: 'visible', timeout: 45000 });
+      await page.waitForTimeout(300);
+
+      const contractSha = await tdesignHost.getAttribute('data-source-contract-sha');
+      check(contractSha, `${mode} source contract identity missing`);
+      check(evidence.contractResponses.length > contractResponsesBeforeRoute, `${mode} normalized contract response missing`);
+      check(evidence.contractSha256 === contractSha, `${mode} network and canvas contract identities differ`);
+
+      const before = await page.evaluate(() => ({
+        fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
+          name: node.getAttribute('data-field-name') || '',
+          state: node.getAttribute('data-field-state') || '',
+          type: node.getAttribute('data-field-type') || '',
+        })),
+        actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
+          identity: node.getAttribute('data-backend-identity') || '',
+          disabled: node.hasAttribute('disabled'),
+        })),
+        horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+      }));
+      check(before.fields.length > 0, `${mode} fields missing`);
+      check(new Set(before.fields.map((field) => field.name)).size === before.fields.length, `${mode} fields duplicated`);
+      check(before.horizontalOverflow === 0, `${mode} driver caused horizontal overflow`);
+
+      const editable = page.locator(
+        '[data-field-type="char"] [data-control-driver="tdesign-modern"] input:not([disabled]):not([readonly]), '
+        + '[data-field-type="text"] [data-control-driver="tdesign-modern"] textarea:not([disabled]):not([readonly])',
+      ).first();
+      await editable.waitFor({ state: 'visible', timeout: 45000 });
+      const fieldName = await editable.evaluate((node) => node.closest('[data-field-name]')?.getAttribute('data-field-name') || '');
+      check(fieldName, `${mode} editable field identity missing`);
+      const originalValue = await editable.inputValue();
+      const updatedValue = `${originalValue || mode}-${mode}-driver`;
+      await editable.fill(updatedValue);
+      await editable.blur();
+
+      const contractResponsesBeforeSwitch = evidence.contractResponses.length;
+      const chooser = page.locator('[data-contract-form-driver-chooser]');
+      await chooser.selectOption('sc-native');
+      const nativeHost = page.locator('[data-contract-form-driver="sc-native"]');
+      await nativeHost.waitFor({ state: 'visible', timeout: 15000 });
+      const nativeInput = page.locator(`[data-field-name="${fieldName}"] input, [data-field-name="${fieldName}"] textarea`).first();
+      await nativeInput.waitFor({ state: 'visible', timeout: 15000 });
+      check(await nativeInput.inputValue() === updatedValue, `${mode} draft value changed during TDesign to Native switch`);
+      const nativeState = await page.evaluate(() => ({
+        sha: document.querySelector('[data-contract-form-driver="sc-native"]')?.getAttribute('data-source-contract-sha') || '',
+        fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
+          name: node.getAttribute('data-field-name') || '',
+          state: node.getAttribute('data-field-state') || '',
+          type: node.getAttribute('data-field-type') || '',
+        })),
+        actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
+          identity: node.getAttribute('data-backend-identity') || '',
+          disabled: node.hasAttribute('disabled'),
+        })),
+      }));
+      check(nativeState.sha === contractSha, `${mode} contract identity changed during driver switch`);
+      check(JSON.stringify(nativeState.fields) === JSON.stringify(before.fields), `${mode} field states changed during driver switch`);
+      check(JSON.stringify(nativeState.actions) === JSON.stringify(before.actions), `${mode} action identities changed during driver switch`);
+      check(evidence.contractResponses.length === contractResponsesBeforeSwitch, `${mode} driver switch refetched business contract`);
+
+      await page.locator('[data-contract-form-driver-chooser]').selectOption('tdesign-modern');
+      await page.locator('[data-contract-form-driver="tdesign-modern"]').waitFor({ state: 'visible', timeout: 15000 });
+      const restoredInput = page.locator(
+        `[data-field-name="${fieldName}"] [data-control-driver="tdesign-modern"] input, `
+        + `[data-field-name="${fieldName}"] [data-control-driver="tdesign-modern"] textarea`,
+      ).first();
+      await restoredInput.waitFor({ state: 'visible', timeout: 15000 });
+      check(await restoredInput.inputValue() === updatedValue, `${mode} draft value changed during Native to TDesign switch`);
+      const modeScreenshot = path.join(OUTPUT, `tdesign-${mode}-project.png`);
+      await page.screenshot({ path: modeScreenshot, fullPage: true });
+      return {
+        mode, route: editableRoute, sourceContractSha256: contractSha, fieldCount: before.fields.length,
+        actionCount: before.actions.length, editedField: fieldName, originalValue, updatedValue,
+        contractResponsesDuringSwitch: evidence.contractResponses.length - contractResponsesBeforeSwitch,
+        screenshot: { path: modeScreenshot, sha256: sha256(modeScreenshot) },
+      };
+    }
+
+    const editResult = await exerciseEditableMode(
+      'edit',
+      `/f/${encodeURIComponent(TARGET.model)}/${TARGET.record_id}?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`,
+    );
+    const createResult = await exerciseEditableMode(
+      'create',
+      `/f/${encodeURIComponent(TARGET.model)}/new?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`,
+    );
+    check(evidence.mutations.length === 0, `driver parity journey issued a business mutation: ${JSON.stringify(evidence.mutations)}`);
+    check(
+      evidence.console.length === 0 && evidence.pageerror.length === 0 && evidence.failed.length === 0,
+      `driver parity runtime errors detected: ${JSON.stringify({ console: evidence.console, pageerror: evidence.pageerror, failed: evidence.failed })}`,
+    );
     const report = {
-      schema_version: 'frontend_scene_component_driver_readonly.v1',
+      schema_version: 'frontend_scene_component_driver_form.v2',
       result: 'PASS',
       git_sha: process.env.GIT_SHA || '',
       database: DB_NAME,
       target: { ...TARGET, login: TARGET.login },
       driver: 'tdesign-modern',
       ...result,
+      editableModes: [editResult, createResult],
       runtime_errors: {
         console: evidence.console,
         pageerror: evidence.pageerror,

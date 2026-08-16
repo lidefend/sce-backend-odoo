@@ -114,7 +114,7 @@
               <SceneFieldControl
                 v-else-if="usesSceneFieldControl(field)"
                 :field="sceneField(field)"
-                :model-value="String(field.inputValue ?? '')"
+                :model-value="contractFormDriverValue(field)"
                 @update:model-value="emitFieldChange(field, $event)"
               />
               <template v-else-if="field.readonly">
@@ -350,7 +350,12 @@ import type {
 } from './formSection.types';
 import type { RelationFieldAdapter } from './relationField.types';
 import { resolveInputPlaceholder, resolveSelectPlaceholder } from './placeholder.mapper';
-import { toContractFormDriverFieldChange, toContractFormSceneField, usesContractFormDriverField } from './contractFormDriverField';
+import {
+  normalizeContractFormDriverValue,
+  toContractFormDriverFieldChange,
+  toContractFormSceneField,
+  usesContractFormDriverField,
+} from './contractFormDriverField';
 
 const props = withDefaults(defineProps<{
   title: string;
@@ -475,6 +480,10 @@ function sceneField(field: FormSectionFieldSchema) {
     fieldControlId(field),
     field.inputPlaceholder || (type === 'selection' ? selectPlaceholderText(field) : inputPlaceholderText(field)),
   );
+}
+
+function contractFormDriverValue(field: FormSectionFieldSchema) {
+  return normalizeContractFormDriverValue(field.inputValue, String(field.type || ''));
 }
 
 function defaultSpanClass(type: TemplateFieldType) {

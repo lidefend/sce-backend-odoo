@@ -48,6 +48,7 @@ class TestSceneComponentDriverFeatureFlags(unittest.TestCase):
             {
                 "enabled": True,
                 "read_only_only": True,
+                "form_modes": [],
                 "action_ids": [12],
                 "models": ["res.company"],
                 "scene_keys": [],
@@ -105,6 +106,40 @@ class TestSceneComponentDriverFeatureFlags(unittest.TestCase):
         policy = result[TARGET.SCENE_COMPONENT_DRIVER_FLAG]
         self.assertEqual(policy["locked_kit"], "tdesign-modern")
         self.assertFalse(policy["allow_user_override"])
+
+    def test_explicit_form_modes_enable_form_without_collection_authority(self):
+        result = TARGET.resolve_system_feature_flags(
+            {},
+            {
+                TARGET.SCENE_COMPONENT_DRIVER_FLAG: {
+                    "enabled": True,
+                    "read_only_only": False,
+                    "form_modes": ["create", "edit", "readonly", "unknown", "edit"],
+                    "models": ["project.project"],
+                    "allowed_kits": ["sc-native", "tdesign-modern"],
+                    "system_default_kit": "tdesign-modern",
+                }
+            },
+        )
+
+        policy = result[TARGET.SCENE_COMPONENT_DRIVER_FLAG]
+        self.assertFalse(policy["read_only_only"])
+        self.assertEqual(policy["form_modes"], ["create", "edit", "readonly"])
+
+    def test_non_readonly_policy_without_explicit_form_modes_fails_closed(self):
+        result = TARGET.resolve_system_feature_flags(
+            {},
+            {
+                TARGET.SCENE_COMPONENT_DRIVER_FLAG: {
+                    "enabled": True,
+                    "read_only_only": False,
+                    "models": ["project.project"],
+                    "allowed_kits": ["sc-native", "tdesign-modern"],
+                }
+            },
+        )
+
+        self.assertNotIn(TARGET.SCENE_COMPONENT_DRIVER_FLAG, result)
 
 
 if __name__ == "__main__":

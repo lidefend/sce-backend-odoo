@@ -48,7 +48,7 @@ Generated from repository source files. This report is informational during the 
 | 1634 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 1533 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1542 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1520 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1512 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -175,7 +175,7 @@ Generated from repository source files. This report is informational during the 
 | 1634 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 1533 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1542 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1520 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1512 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
