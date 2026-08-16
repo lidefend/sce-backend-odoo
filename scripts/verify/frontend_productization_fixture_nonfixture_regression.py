@@ -54,7 +54,43 @@ try:
         }
 
     before = snapshot()
+
+    # A successful reject/correct/resubmit browser journey leaves this
+    # fixture-owned request in a protected workflow state with changed facts.
+    # The next governed reset must remain idempotent without weakening the
+    # payment.request ORM immutability guard.
+    reject_request = env.ref(
+        "smart_construction_acceptance_fixture.fe_journey_payment_request_reject_a"
+    )
+    env.cr.execute(
+        "UPDATE payment_request "
+        "SET state='submit', validation_status='no', "
+        "note=%s, reject_reason=NULL WHERE id=%s",
+        ("fixture idempotency sentinel", reject_request.id),
+    )
+    reject_request.invalidate_recordset(
+        ["state", "validation_status", "note", "reject_reason"]
+    )
     ensure_fixture(env)
+    reject_request.invalidate_recordset(
+        ["state", "validation_status", "note", "reject_reason"]
+    )
+    if (
+        reject_request.state != "submit"
+        or reject_request.validation_status != "no"
+        or reject_request.note != "FE-B05 isolated approval journey"
+        or reject_request.reject_reason
+    ):
+        fail(
+            "approval journey reset is not idempotent: state=%s validation=%s "
+            "note=%s reject_reason=%s"
+            % (
+                reject_request.state,
+                reject_request.validation_status,
+                reject_request.note,
+                reject_request.reject_reason,
+            )
+        )
     after = snapshot()
     if before != after:
         fail("foreign project changed: before=%s after=%s" % (before, after))

@@ -4335,3 +4335,17 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Generic nested edit, read-only and all-denied fixtures prove canonical
   extraction, page/field consistency and fail-closed behavior; existing flat
   head-permission and readonly-profile behavior remain covered.
+
+# PFL-035 replay after nested permission-rights closure (2026-08-16)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v16` /
+  `b002073b798f4a9295d8651c3872c5b7a79fdb21`.
+- Formal Product Layer / Layer Target / Module: P1 finance product / payment
+  request and payment execution user journey / `smart_construction_core`.
+- Replay boundary: the frozen v15 P1 candidate was replayed into a new governed
+  worktree. The old v15 worktree remains untouched; shared P0 code is supplied
+  only by the exact mainline base and is not carried in this candidate.
+- Runtime objective: repeat the approval, rejection and rejected-record edit
+  journey after the P0 page-permission fix. Fixture reset and formal acceptance
+  runtime changes remain deferred until the candidate fingerprint and targeted
+  gates are frozen.

@@ -169,6 +169,15 @@ class PaymentRequestWorkItemService:
             {"key": "initiator", "label": "发起人", "value": str(initiator.display_name or "") if initiator else "未知"},
             {"key": "initiated_at", "label": "发起时间", "display_role": "datetime", "value": str(record.create_date or "")},
         ]
+        if record.state == "rejected":
+            facts.insert(
+                0,
+                {
+                    "key": "reject_reason",
+                    "label": "驳回原因",
+                    "value": str(record.reject_reason or "未提供原因"),
+                },
+            )
         search_text = " ".join(
             filter(
                 None,
@@ -211,7 +220,9 @@ class PaymentRequestWorkItemService:
 
     def _todo(self):
         rows = []
-        candidates = self._search([("type", "=", "pay"), ("state", "in", ["draft", "submit", "approved"])])
+        candidates = self._search(
+            [("type", "=", "pay"), ("state", "in", ["draft", "rejected", "submit", "approved"])]
+        )
         for record in candidates:
             actions = self._allowed_actions(record)
             if actions:
