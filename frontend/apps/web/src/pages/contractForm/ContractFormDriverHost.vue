@@ -1,7 +1,7 @@
 <template>
   <section
     v-if="error || !renderModel"
-    class="contract-form-driver-error"
+    class="sc-form-driver-error"
     role="alert"
     data-contract-form-driver-error
   >
@@ -10,12 +10,12 @@
   </section>
   <section
     v-else
-    class="contract-form-driver-host"
+    class="sc-form-driver-host"
     :data-contract-form-driver="activeKit"
     :data-contract-form-driver-source="driverConfig?.resolutionSource || 'safe-default'"
     :data-contract-form-driver-reason="driverConfig?.reasonCode || ''"
   >
-    <div v-if="allowUserOverride" class="contract-form-driver-chooser">
+    <div v-if="allowUserOverride" class="sc-form-driver-chooser">
       <label for="contract-form-driver-kit">界面风格</label>
       <select id="contract-form-driver-kit" :value="activeKit" data-contract-form-driver-chooser @change="changeKit">
         <option v-for="kit in allowedKits" :key="kit" :value="kit">{{ kitLabel(kit) }}</option>
@@ -81,7 +81,7 @@ function changeKit(event: Event) {
 </script>
 
 <style scoped>
-.contract-form-driver-error {
+.sc-form-driver-error {
   display: grid;
   gap: 6px;
   padding: 20px;
@@ -90,8 +90,8 @@ function changeKit(event: Event) {
   background: var(--sc-app-danger-bg);
   color: var(--sc-app-danger-text);
 }
-.contract-form-driver-host { min-width: 0; }
-.contract-form-driver-chooser {
+.sc-form-driver-host { min-width: 0; }
+.sc-form-driver-chooser {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -102,7 +102,7 @@ function changeKit(event: Event) {
   color: var(--sc-app-text-secondary);
   font-size: 12px;
 }
-.contract-form-driver-chooser select {
+.sc-form-driver-chooser select {
   min-height: 32px;
   padding: 0 30px 0 10px;
   border: 1px solid var(--sc-app-border);
