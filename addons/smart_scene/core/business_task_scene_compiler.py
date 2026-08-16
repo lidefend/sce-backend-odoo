@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Iterable
 
@@ -103,10 +104,10 @@ def _project_rows(
         row: dict[str, Any] = {"key": key}
         for field in profile_fields:
             if field in declared:
-                row[field] = declared.get(field)
+                row[field] = deepcopy(declared.get(field))
         for field in supply_fields:
             if field in supplied:
-                row[field] = supplied.get(field)
+                row[field] = deepcopy(supplied.get(field))
         out.append(row)
     return out
 

@@ -4528,7 +4528,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   the fact and permission authority; renderer drivers remain unchanged.
 - Blast radius / validation: optional Scene Contract extension only. Existing
   v1 callers are byte-for-byte compatible unless they explicitly pass both
-  task inputs. Thirty pure behavior tests cover missing supply, unresolved
+  task inputs. Thirty-one pure behavior tests cover missing supply, unresolved
   authorization, inconsistent verdicts, native vocabulary leakage, deterministic
   sealing, tamper detection, payment task states, retry-stable projection,
   role handoff, relationship continuity and account repair. Adjacent

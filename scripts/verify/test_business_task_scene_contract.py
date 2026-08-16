@@ -305,6 +305,16 @@ class BusinessTaskSceneCompilerTest(unittest.TestCase):
         compiled["task"]["state"] = "approved"
         self.assertFalse(verify_business_task_scene_contract_seal(compiled))
 
+    def test_compiled_contract_is_isolated_from_mutable_inputs(self):
+        profile = valid_profile()
+        supply = valid_supply()
+        compiled = compile_business_task_scene_contract(profile=profile, semantic_supply=supply)
+        profile["capabilities"][0]["blocked_by"].append("late_profile_mutation")
+        supply["facts"]["document_amount"]["value"] = 999
+        self.assertEqual(compiled["capabilities"][0]["blocked_by"], [])
+        self.assertEqual(compiled["facts"][0]["value"], 100)
+        self.assertTrue(verify_business_task_scene_contract_seal(compiled))
+
     def test_does_not_copy_native_supply_vocabulary(self):
         compiled = compile_business_task_scene_contract(profile=valid_profile(), semantic_supply=valid_supply())
         serialized = str(compiled)
