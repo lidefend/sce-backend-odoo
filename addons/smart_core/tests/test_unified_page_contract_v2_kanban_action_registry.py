@@ -93,7 +93,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         actions = (contract.get("actionContract") or {}).get("actionRuleList") or []
         self.assertEqual(actions[0]["actionKey"], "open_project_dashboard")
         self.assertEqual(actions[0]["sourceWidgetId"], "page.row")
-        self.assertEqual(actions[0]["triggerType"], "row_click")
+        self.assertEqual(actions[0]["triggerType"], "click")
 
     def test_native_form_header_button_is_projected_as_root_business_action(self):
         contract = self.assembler.assemble_unified_page_contract_v2(
@@ -124,7 +124,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertEqual(action["label"], "保存修正")
         self.assertEqual(action["button"], {"name": "action_apply", "type": "object"})
         self.assertEqual(action["sourceWidgetId"], "page.root")
-        self.assertEqual(action["targetScope"], "header")
+        self.assertEqual(action["targetScope"], "page")
 
 
 if __name__ == "__main__":

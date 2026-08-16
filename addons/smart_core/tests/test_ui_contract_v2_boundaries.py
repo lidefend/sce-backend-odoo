@@ -3042,9 +3042,34 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(relation["modifier"], {"readonly": True})
         self.assertEqual(tree[0]["children"][0]["name"], "state")
 
+        def assert_formal_containers(nodes):
+            for node in nodes:
+                self.assertTrue(node.get("containerId"), node)
+                self.assertTrue(node.get("containerType"), node)
+                self.assertIsInstance(node.get("span"), int, node)
+                self.assertGreaterEqual(node["span"], 1)
+                self.assertLessEqual(node["span"], 24)
+                self.assertIsInstance(node.get("children"), list, node)
+                self.assertIsInstance(node.get("widgetList"), list, node)
+                for key in ("children", "pages", "tabs", "nodes", "items"):
+                    if isinstance(node.get(key), list):
+                        assert_formal_containers(node[key])
+
+        assert_formal_containers(tree)
+        relation_notebook = tree[3]
+        relation_page = relation_notebook["children"][0]
+        self.assertEqual(relation_notebook["containerType"], "notebook")
+        self.assertEqual(relation_page["containerType"], "page")
+        status_ids = [row["containerId"] for row in contract["statusContract"]["containerStatus"]]
+        self.assertEqual(len(status_ids), len(set(status_ids)))
+        self.assertIn(relation_notebook["containerId"], status_ids)
+        self.assertIn(relation_page["containerId"], status_ids)
+
         first = deepcopy(tree)
+        first_status = deepcopy(contract["statusContract"]["containerStatus"])
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
         self.assertEqual(contract["layoutContract"]["containerTree"], first)
+        self.assertEqual(contract["statusContract"]["containerStatus"], first_status)
 
     def test_semantic_entry_surface_reparents_fields_from_same_named_nested_legacy_groups(self):
         handler = self.module.UiContractV2Handler(env=object())

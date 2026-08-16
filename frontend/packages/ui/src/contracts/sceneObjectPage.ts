@@ -29,6 +29,7 @@ export interface SceneField {
   kind: SceneFieldKind;
   required?: boolean;
   readonly?: boolean;
+  invalid?: boolean;
   placeholder?: string;
   hint?: string;
   source?: string;

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import { resolveModelContractRenderProfile } from '../src/api/modelContractProfile';
 import { resolveActionSurfaceRenderer } from '../src/app/renderers/actionSurfaceRendererRegistry';
-import { resolveSceneComponentDriverDecision } from '../src/app/renderers/sceneComponentDriverPolicy';
+import { resolveContractFormComponentDriverDecision, resolveSceneComponentDriverDecision } from '../src/app/renderers/sceneComponentDriverPolicy';
+import { toContractFormDriverFieldChange, toContractFormSceneField, usesContractFormDriverField } from '../src/components/template/contractFormDriverField';
 import {
   readSceneComponentDriverTelemetry,
   recordSceneComponentDriverEvent,
@@ -17,6 +19,27 @@ const identity = {
   breadcrumbs: ['Directory'],
   workTabs: [],
 };
+
+assert.equal(
+  resolveModelContractRenderProfile({ viewType: 'form' }),
+  'create',
+  'recordless form model requests must fail closed to the create profile',
+);
+assert.equal(
+  resolveModelContractRenderProfile({ viewType: 'form', recordId: 7 }),
+  '',
+  'existing-record model requests must not invent an edit profile',
+);
+assert.equal(
+  resolveModelContractRenderProfile({ viewType: 'form', renderProfile: 'readonly' }),
+  'readonly',
+  'an explicit governed profile must remain authoritative',
+);
+assert.equal(
+  resolveModelContractRenderProfile({ viewType: 'tree' }),
+  '',
+  'recordless collection requests must not be reclassified as create forms',
+);
 
 function normalizedContract(actions: Array<Record<string, unknown>> = []) {
   return {
@@ -139,6 +162,28 @@ assert.equal(deniedMutation.targeted, true);
 assert.equal(deniedMutation.eligible, false);
 assert.equal(deniedMutation.reasonCode, 'SCENE_DRIVER_MUTATION_ACTION_PRESENT');
 
+const readonlyForm = resolveContractFormComponentDriverDecision({
+  featureFlag: enabledFlag, actionId: 77, model: 'hr.department', renderMode: 'readonly', userKit: 'tdesign-modern',
+});
+assert.equal(readonlyForm.eligible, true);
+assert.equal(readonlyForm.resolution.kit, 'tdesign-modern');
+assert.equal(resolveContractFormComponentDriverDecision({
+  featureFlag: enabledFlag, actionId: 77, model: 'hr.department', renderMode: 'edit', userKit: 'tdesign-modern',
+}).reasonCode, 'SCENE_DRIVER_FORM_MODE_UNSUPPORTED');
+const driverField = {
+  key: 'name', name: 'name', label: 'Name', type: 'char', required: true, readonly: false,
+  invalid: true, inputValue: 'Draft', selectionOptions: [],
+};
+assert.equal(usesContractFormDriverField(driverField, 'sc-native'), false);
+assert.equal(usesContractFormDriverField(driverField, 'tdesign-modern'), true);
+assert.deepEqual(toContractFormSceneField(driverField, 'field-name', 'Enter name'), {
+  id: 'field-name', label: 'Name', value: 'Draft', kind: 'text', required: true, readonly: false,
+  invalid: true, placeholder: 'Enter name', options: [],
+});
+assert.deepEqual(toContractFormDriverFieldChange(driverField, 'Updated'), {
+  name: 'name', type: 'char', widget: undefined, value: 'Updated', descriptor: undefined,
+});
+
 const standard = resolveActionSurfaceRenderer({ semantic: 'table', label: '', groupField: '', groupedLanes: false, config: {} }, 'tree');
 assert.equal(standard.activeRendererKey, 'core.standard_collection');
 const scene = resolveActionSurfaceRenderer(
@@ -164,4 +209,4 @@ const telemetry = readSceneComponentDriverTelemetry();
 assert.equal(telemetry.length, 60);
 assert.equal(telemetry[0]?.timestamp, 5);
 
-console.log('[scene-component-driver-bridge] PASS cases=14');
+console.log('[scene-component-driver-bridge] PASS cases=21');

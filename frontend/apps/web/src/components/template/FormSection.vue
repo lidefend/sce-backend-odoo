@@ -124,6 +124,12 @@
               <template v-else-if="isRelationEditorField(field) && relationAdapter">
                 <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
               </template>
+              <SceneFieldControl
+                v-else-if="usesSceneFieldControl(field)"
+                :field="sceneField(field)"
+                :model-value="String(field.inputValue ?? '')"
+                @update:model-value="emitFieldChange(field, $event)"
+              />
               <template v-else-if="isBaseFieldType(field.type)">
                 <input
                   v-if="field.type === 'boolean'"
@@ -326,6 +332,7 @@
 
 <script setup lang="ts">
 import { computed, ref, useId, useSlots } from 'vue';
+import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
@@ -343,6 +350,7 @@ import type {
 } from './formSection.types';
 import type { RelationFieldAdapter } from './relationField.types';
 import { resolveInputPlaceholder, resolveSelectPlaceholder } from './placeholder.mapper';
+import { toContractFormDriverFieldChange, toContractFormSceneField, usesContractFormDriverField } from './contractFormDriverField';
 
 const props = withDefaults(defineProps<{
   title: string;
@@ -386,6 +394,7 @@ const props = withDefaults(defineProps<{
 });
 
 const many2oneFocusedField = ref('');
+const sceneUiKit = useOptionalSceneUiKit();
 const many2oneActiveIndex = ref<Record<string, number>>({});
 const formSectionDomId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
 
@@ -453,6 +462,19 @@ function isBaseFieldType(type: TemplateFieldType) {
 
 function isRelationEditorField(field: FormSectionFieldSchema) {
   return ['many2many', 'one2many'].includes(String(field.type || '').trim().toLowerCase());
+}
+
+function usesSceneFieldControl(field: FormSectionFieldSchema) {
+  return usesContractFormDriverField(field, sceneUiKit?.kit.value || 'sc-native');
+}
+
+function sceneField(field: FormSectionFieldSchema) {
+  const type = String(field.type || '').trim().toLowerCase();
+  return toContractFormSceneField(
+    field,
+    fieldControlId(field),
+    field.inputPlaceholder || (type === 'selection' ? selectPlaceholderText(field) : inputPlaceholderText(field)),
+  );
 }
 
 function defaultSpanClass(type: TemplateFieldType) {
@@ -613,13 +635,7 @@ function isFieldMarkedHidden(field: FormSectionFieldSchema) {
 }
 
 function emitFieldChange(field: FormSectionFieldSchema, value: string | number | boolean | null) {
-  emit('field-change', {
-    name: field.name,
-    type: field.type,
-    widget: field.widget,
-    value,
-    descriptor: field.descriptor,
-  });
+  emit('field-change', toContractFormDriverFieldChange(field, value));
 }
 
 function emitBinaryFieldChange(field: FormSectionFieldSchema, event: Event) {

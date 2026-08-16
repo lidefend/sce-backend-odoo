@@ -4,6 +4,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from .unified_page_contract_v2_action import normalize_target_scope
+
 
 def _dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
@@ -60,8 +62,7 @@ def normalize_runtime_business_actions(
         permission_resolved = isinstance(row.get("allowed"), bool) and isinstance(row.get("enabled"), bool)
         allowed = row.get("allowed") is True if permission_resolved else False
         enabled = row.get("enabled") is True if permission_resolved else False
-        raw_scope = _text(row.get("target_scope"), "page")
-        target_scope = raw_scope if raw_scope in {"widget", "container", "page", "dataSource", "runtime"} else "page"
+        target_scope = normalize_target_scope(row.get("target_scope"))
         normalized.append({
             **row,
             "key": key,
