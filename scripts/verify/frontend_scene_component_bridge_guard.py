@@ -116,6 +116,8 @@ require(
 require("component driver probe requires a non-payment action model" in probe_source, "browser probe lacks its non-payment boundary")
 require("build_scope_key(" in probe_source, "browser probe does not identify its exact persisted driver preference")
 require("preference_model.search([" in probe_source and "]).unlink()" in probe_source, "browser probe does not clean its persisted driver preference")
+require("probe_record_name" in probe_source and "probe_model.search([" in probe_source, "browser probe does not own an exact disposable create target")
+require('"create_probe_name": probe_record_name' in probe_source, "browser probe does not export its exact disposable create identity")
 require("payment.request" not in probe_source, "browser probe drifted into the payment vertical")
 acceptance_fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(encoding="utf-8")
 require("SC_ACCEPTANCE_COMPONENT_DRIVER_PROBE_MODE" in acceptance_fixture, "browser probe is not routed through the governed fixture entry")
@@ -126,6 +128,8 @@ require("selectOption('ui5-horizon')" in browser_probe, "browser probe does not 
 require("contractResponsesBeforeSwitch" in browser_probe, "browser probe does not prove driver switches avoid contract refetches")
 require("{ width: 390, height: 844 }" in browser_probe, "browser probe does not cover the governed mobile viewport")
 require("mobileModes" in browser_probe, "browser report does not retain per-mode mobile evidence")
+require("executeCreateProbe" in browser_probe, "browser probe does not execute a real unified create request")
+require("evidence.mutations.length === 1" in browser_probe, "browser probe does not enforce the exact business mutation count")
 
 form_page = (WEB_SRC / "pages/ContractFormPage.vue").read_text(encoding="utf-8")
 require(
@@ -139,4 +143,4 @@ collection_wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRender
 require("openRow" in collection_surface, "readonly collection does not expose row navigation")
 require("'open-record'" in collection_wrapper, "driver row navigation is not returned to the unified host")
 
-print("[verify.frontend.scene_component_bridge.guard] PASS checks=38")
+print("[verify.frontend.scene_component_bridge.guard] PASS checks=42")

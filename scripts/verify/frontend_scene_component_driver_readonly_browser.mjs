@@ -29,6 +29,19 @@ function requestIntent(request) {
   }
 }
 
+function requestBody(request) {
+  try {
+    return request.postDataJSON() || {};
+  } catch {
+    return {};
+  }
+}
+
+function requestOperation(request) {
+  const body = requestBody(request);
+  return String(body?.params?.op || body?.params?.payload?.op || '');
+}
+
 function isBusinessMutation(request) {
   const intent = requestIntent(request);
   if (['execute_button', 'api.data.create', 'api.data.write', 'api.data.unlink'].includes(intent)) return true;
@@ -57,7 +70,16 @@ async function main() {
   });
   page.on('pageerror', (error) => evidence.pageerror.push(error.message));
   page.on('request', (request) => {
-    if (isBusinessMutation(request)) evidence.mutations.push({ intent: requestIntent(request), url: request.url() });
+    if (isBusinessMutation(request)) {
+      const body = requestBody(request);
+      evidence.mutations.push({
+        intent: requestIntent(request),
+        op: requestOperation(request),
+        model: String(body?.params?.model || body?.params?.payload?.model || ''),
+        valueKeys: Object.keys(body?.params?.vals || body?.params?.payload?.vals || {}).sort(),
+        url: request.url(),
+      });
+    }
   });
   page.on('response', async (response) => {
     if (response.status() >= 400 && !/favicon/i.test(response.url())) evidence.failed.push({ status: response.status(), url: response.url() });
@@ -222,7 +244,7 @@ async function main() {
     await page.locator('[data-contract-form-driver-chooser]').selectOption('tdesign-modern');
     await page.locator('[data-contract-form-driver="tdesign-modern"]').waitFor({ state: 'visible', timeout: 15000 });
 
-    async function exerciseEditableMode(mode, editableRoute) {
+    async function exerciseEditableMode(mode, editableRoute, updatedValueOverride = '') {
       const contractResponsesBeforeRoute = evidence.contractResponses.length;
       await page.goto(`${BASE_URL}${editableRoute}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
       const tdesignHost = page.locator('[data-contract-form-driver="tdesign-modern"]');
@@ -261,7 +283,7 @@ async function main() {
       const fieldName = await editable.evaluate((node) => node.closest('[data-field-name]')?.getAttribute('data-field-name') || '');
       check(fieldName, `${mode} editable field identity missing`);
       const originalValue = await editable.inputValue();
-      const updatedValue = `${originalValue || mode}-${mode}-driver`;
+      const updatedValue = updatedValueOverride || `${originalValue || mode}-${mode}-driver`;
       await editable.fill(updatedValue);
       await editable.blur();
 
@@ -350,7 +372,60 @@ async function main() {
     const createResult = await exerciseEditableMode(
       'create',
       `/f/${encodeURIComponent(TARGET.model)}/new?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`,
+      String(TARGET.create_probe_name || ''),
     );
+
+    async function executeCreateProbe() {
+      check(TARGET.create_probe_name, 'create probe identity missing from governed fixture');
+      await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
+      await page.locator('[data-contract-form-driver="ui5-horizon"]').waitFor({ state: 'visible', timeout: 45000 });
+      const probeInput = page.locator('[data-field-name="name"] [data-control-driver="ui5-horizon"] ui5-input').first();
+      await probeInput.waitFor({ state: 'visible', timeout: 45000 });
+      check(
+        await probeInput.evaluate((node) => String(node.value || '')) === TARGET.create_probe_name,
+        'create probe value changed before unified save execution',
+      );
+      const createResponsePromise = page.waitForResponse((response) => {
+        const request = response.request();
+        const body = requestBody(request);
+        return requestIntent(request) === 'api.data'
+          && requestOperation(request) === 'create'
+          && String(body?.params?.model || '') === TARGET.model;
+      }, { timeout: 45000 });
+      await page.getByRole('button', { name: /^保存草稿$/ }).click();
+      const createResponse = await createResponsePromise;
+      check(createResponse.ok(), `create probe request failed with ${createResponse.status()}`);
+      const request = createResponse.request();
+      const requestPayload = requestBody(request);
+      check(requestPayload?.params?.vals?.name === TARGET.create_probe_name, 'unified create request lost the driver-neutral field value');
+      const responsePayload = await createResponse.json();
+      const findCreatedId = (value, depth = 0) => {
+        if (!value || typeof value !== 'object' || depth > 6) return 0;
+        if (Number(value.id || 0) > 0) return Number(value.id);
+        for (const nested of Object.values(value)) {
+          const found = findCreatedId(nested, depth + 1);
+          if (found > 0) return found;
+        }
+        return 0;
+      };
+      const createdId = findCreatedId(responsePayload);
+      check(createdId > 0, 'unified create response did not return a record identity');
+      await page.waitForURL((url) => !url.pathname.endsWith('/new') && url.pathname.includes(`/${createdId}`), { timeout: 45000 });
+      await page.locator('[data-contract-form-driver]').first().waitFor({ state: 'visible', timeout: 45000 });
+      const persistedName = await page.locator('[data-field-name="name"] input, [data-field-name="name"] ui5-input').first()
+        .evaluate((node) => String(node.value || node.getAttribute('value') || ''));
+      check(persistedName === TARGET.create_probe_name, 'created record did not reopen with the persisted driver-neutral value');
+      return {
+        intent: requestIntent(request),
+        op: requestOperation(request),
+        model: String(requestPayload?.params?.model || ''),
+        valueKeys: Object.keys(requestPayload?.params?.vals || {}).sort(),
+        createdId,
+        activeDriver: await page.locator('[data-contract-form-driver]').first().getAttribute('data-contract-form-driver'),
+      };
+    }
+
+    const createExecution = await executeCreateProbe();
 
     async function exerciseUi5MobileMode(mode, mobileRoute) {
       await page.setViewportSize({ width: 390, height: 844 });
@@ -396,13 +471,19 @@ async function main() {
     ]) {
       mobileModes.push(await exerciseUi5MobileMode(mode, mobileRoute));
     }
-    check(evidence.mutations.length === 0, `driver parity journey issued a business mutation: ${JSON.stringify(evidence.mutations)}`);
+    check(
+      evidence.mutations.length === 1
+        && evidence.mutations[0]?.intent === 'api.data'
+        && evidence.mutations[0]?.op === 'create'
+        && evidence.mutations[0]?.model === TARGET.model,
+      `driver parity journey issued an unexpected business mutation: ${JSON.stringify(evidence.mutations)}`,
+    );
     check(
       evidence.console.length === 0 && evidence.pageerror.length === 0 && evidence.failed.length === 0,
       `driver parity runtime errors detected: ${JSON.stringify({ console: evidence.console, pageerror: evidence.pageerror, failed: evidence.failed })}`,
     );
     const report = {
-      schema_version: 'frontend_scene_component_driver_form.v3',
+      schema_version: 'frontend_scene_component_driver_form.v4',
       result: 'PASS',
       git_sha: process.env.GIT_SHA || '',
       database: DB_NAME,
@@ -410,6 +491,7 @@ async function main() {
       driver: 'tdesign-modern',
       ...result,
       editableModes: [editResult, createResult],
+      createExecution,
       mobileModes,
       runtime_errors: {
         console: evidence.console,
