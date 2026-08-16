@@ -14,6 +14,7 @@
       :reason-code="descriptor.reasonCode"
       @open-record="emit('open-record', $event)"
       @open-action="emit('open-action', $event)"
+      @driver-change="emit('driver-change', $event)"
     />
     <slot v-else name="standard" />
   </div>
@@ -28,7 +29,11 @@ type Dict = Record<string, unknown>;
 const props = withDefaults(defineProps<{ descriptor: ActionSurfaceRendererDescriptor; preferenceScope?: string }>(), {
   preferenceScope: 'default',
 });
-const emit = defineEmits<{ 'open-record': [row: Dict]; 'open-action': [action: Dict] }>();
+const emit = defineEmits<{
+  'open-record': [row: Dict];
+  'open-action': [action: Dict];
+  'driver-change': [kit: string];
+}>();
 const rendererComponent = computed(() => (
   props.descriptor.outlet === 'component'
     ? ACTION_SURFACE_RENDERER_COMPONENTS[props.descriptor.activeRendererKey]

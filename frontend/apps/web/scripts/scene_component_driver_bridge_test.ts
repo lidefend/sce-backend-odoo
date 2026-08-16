@@ -1,0 +1,167 @@
+import assert from 'node:assert/strict';
+import { resolveActionSurfaceRenderer } from '../src/app/renderers/actionSurfaceRendererRegistry';
+import { resolveSceneComponentDriverDecision } from '../src/app/renderers/sceneComponentDriverPolicy';
+import {
+  readSceneComponentDriverTelemetry,
+  recordSceneComponentDriverEvent,
+} from '../src/app/renderers/sceneComponentDriverTelemetry';
+import {
+  resolveSceneReadonlyCollectionBridge,
+  sceneCollectionRowToRecord,
+} from '../src/app/renderers/sceneReadonlyCollectionBridge';
+
+const identity = {
+  productName: 'Enterprise Platform',
+  companyName: 'Example Company',
+  roleName: 'Reader',
+  breadcrumbs: ['Directory'],
+  workTabs: [],
+};
+
+function normalizedContract(actions: Array<Record<string, unknown>> = []) {
+  return {
+    __unified_page_contract_v2: {
+      pageInfo: {
+        pageId: 'page.department.list',
+        sceneKey: 'organization.directory',
+        pageName: 'Department Directory',
+        model: 'hr.department',
+        viewType: 'tree',
+        layoutType: 'collection',
+        contractVersion: '2.0.0',
+        clientType: 'web_pc',
+      },
+      layoutContract: {
+        layoutType: 'collection',
+        adaptMode: 'responsive',
+        containerTree: [{
+          containerId: 'main',
+          containerType: 'list',
+          title: 'Directory',
+          children: [],
+          widgetList: [
+            { widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', componentKey: 'sc.display.text' },
+            { widgetId: 'field.manager_id', widgetType: 'many2one', fieldCode: 'manager_id', label: 'Manager', componentKey: 'sc.display.text' },
+          ],
+        }],
+        listProfile: {
+          columns: ['name', 'manager_id'],
+          column_labels: { name: 'Name', manager_id: 'Manager' },
+          row_primary: 'name',
+          cross_device_critical_columns: ['name', 'manager_id'],
+          selection_policy: { enabled: false },
+          source_authority: {
+            formal_projection: true,
+            no_business_fact_authority: true,
+            source_key: 'normalized.list.profile',
+          },
+        },
+        componentRegistry: {},
+      },
+      statusContract: {
+        globalStatus: { pageVisible: true, pageAuth: 'read' },
+        widgetStatus: [
+          { widgetId: 'field.name', visible: true },
+          { widgetId: 'field.manager_id', visible: true },
+        ],
+        buttonStatus: [],
+      },
+      actionContract: { actionRuleList: actions },
+      dataContract: {},
+      runtimeContract: {},
+      meta: {},
+    },
+  };
+}
+
+const bridge = resolveSceneReadonlyCollectionBridge({
+  actionContract: normalizedContract(),
+  records: [{ id: 7, name: 'Finance', manager_id: 'Ada' }],
+  columnLabels: {},
+  totalCount: 1,
+  identity,
+});
+assert.equal(bridge.ok, true);
+assert.equal(bridge.contract?.readonly, true);
+assert.equal(bridge.contract?.selectionMode, 'none');
+assert.deepEqual(bridge.contract?.table.rows[0]?.values, { name: 'Finance', manager_id: 'Ada' });
+assert.deepEqual(
+  sceneCollectionRowToRecord(bridge.contract!.table.rows[0]!),
+  { id: '7', name: 'Finance', manager_id: 'Ada' },
+);
+
+const actionBridge = resolveSceneReadonlyCollectionBridge({
+  actionContract: normalizedContract([{ actionId: 'action.create' }]),
+  records: [],
+  columnLabels: {},
+  totalCount: 0,
+  identity,
+});
+assert.equal(actionBridge.ok, false);
+assert.equal(actionBridge.hasMutationActions, true);
+assert.equal(actionBridge.reasonCode, 'SCENE_DRIVER_MUTATION_ACTION_PRESENT');
+
+const enabledFlag = {
+  enabled: true,
+  read_only_only: true,
+  action_ids: [77],
+  allowed_kits: ['sc-native', 'tdesign-modern', 'ui5-horizon'],
+  system_default_kit: 'tdesign-modern',
+  allow_user_override: true,
+};
+assert.equal(resolveSceneComponentDriverDecision({
+  featureFlag: {}, actionId: 77, model: 'hr.department', sceneKey: '', viewMode: 'tree', pageAuth: 'read',
+  hasMutationActions: false, selectionEnabled: false,
+}).reasonCode, 'SCENE_DRIVER_POLICY_DISABLED');
+assert.equal(resolveSceneComponentDriverDecision({
+  featureFlag: {}, actionId: 77, model: 'hr.department', sceneKey: '', viewMode: 'tree', pageAuth: 'read',
+  hasMutationActions: false, selectionEnabled: false,
+}).targeted, false);
+assert.equal(resolveSceneComponentDriverDecision({
+  featureFlag: { ...enabledFlag, action_ids: [] }, actionId: 77, model: 'hr.department', sceneKey: '', viewMode: 'tree', pageAuth: 'read',
+  hasMutationActions: false, selectionEnabled: false,
+}).reasonCode, 'SCENE_DRIVER_SCOPE_EMPTY');
+
+const decision = resolveSceneComponentDriverDecision({
+  featureFlag: enabledFlag, actionId: 77, model: 'hr.department', sceneKey: '', viewMode: 'tree', pageAuth: 'read',
+  hasMutationActions: false, selectionEnabled: false, userKit: 'ui5-horizon',
+});
+assert.equal(decision.eligible, true);
+assert.equal(decision.targeted, true);
+assert.equal(decision.resolution.kit, 'ui5-horizon');
+assert.equal(decision.allowUserOverride, true);
+
+const deniedMutation = resolveSceneComponentDriverDecision({
+  featureFlag: enabledFlag, actionId: 77, model: 'hr.department', sceneKey: '', viewMode: 'tree', pageAuth: 'read',
+  hasMutationActions: true, selectionEnabled: false,
+});
+assert.equal(deniedMutation.targeted, true);
+assert.equal(deniedMutation.eligible, false);
+assert.equal(deniedMutation.reasonCode, 'SCENE_DRIVER_MUTATION_ACTION_PRESENT');
+
+const standard = resolveActionSurfaceRenderer({ semantic: 'table', label: '', groupField: '', groupedLanes: false, config: {} }, 'tree');
+assert.equal(standard.activeRendererKey, 'core.standard_collection');
+const scene = resolveActionSurfaceRenderer(
+  { semantic: 'table', label: '', groupField: '', groupedLanes: false, config: {} },
+  'tree',
+  { eligible: true, config: { contract: bridge.contract } },
+);
+assert.equal(scene.activeRendererKey, 'core.scene_collection');
+assert.equal(scene.outlet, 'component');
+
+for (let index = 0; index < 65; index += 1) {
+  recordSceneComponentDriverEvent({
+    timestamp: index,
+    actionId: 77,
+    model: 'hr.department',
+    requestedKit: 'ui5-horizon',
+    resolvedKit: 'ui5-horizon',
+    source: 'user',
+    reasonCode: '',
+  });
+}
+const telemetry = readSceneComponentDriverTelemetry();
+assert.equal(telemetry.length, 60);
+assert.equal(telemetry[0]?.timestamp, 5);
+
+console.log('[scene-component-driver-bridge] PASS cases=14');

@@ -4449,3 +4449,95 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   PFL-035 payment-execution journey only. The verifier checks one active policy,
   one active step and its OCA definition. The journey must create one pending
   `tier.review`, approve that same review, then complete payment and reversal.
+
+## Frontend intent-channel activation transport boundary (2026-08-16)
+
+- Branch / base SHA: `fix/frontend-intent-channel-auth-boundary-v1` /
+  `42f0241083f8b1e530172aa1425a62059d5079a4`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / frontend
+  intent transport guard / `frontend/apps/web` and its static verification.
+- Reason: enterprise activation intentionally uses three unauthenticated,
+  no-session, no-store bootstrap routes, while the existing guard only allowed
+  `/api/v1/intent` and therefore rejected the already frozen security design.
+- Why Here / Why Not Elsewhere: the exception belongs to the generic transport
+  boundary and is bound to one adapter plus three exact routes. It does not add
+  authentication behavior, P1 business semantics, P4 runtime configuration or
+  an `/api/v1/auth/*` wildcard.
+- Blast radius / validation: frontend static API-path classification only. The
+  target verifies the current repository, wrong-file use, unknown auth routes,
+  stale exceptions and the unchanged intent-only default before running the
+  production source scan.
+
+## Exact synthetic payment-fixture history exemption (2026-08-16)
+
+- Branch / base SHA: `fix/pd003-payment-fixture-exemption-v1` /
+  `42f0241083f8b1e530172aa1425a62059d5079a4`.
+- Formal Product Layer / Layer Target / Module: repository security governance
+  outside P0-P4 product behavior / personal-data false-positive registry /
+  `scripts/ci`.
+- Reason: the all-history scanner found one previously reachable Git blob of
+  the P1 payment capability test whose explicitly named test accounts contain
+  synthetic numeric bank-account fixtures.
+- Why Here / Why Not Elsewhere: history is immutable, so changing the current
+  payment test cannot remove the historical finding. The existing fail-closed
+  registry is the governed boundary; no product model, Business Task contract,
+  frontend, P4 environment, fixture runtime or scanner rule is changed.
+- Blast radius / validation: one exact `PD003` tuple bound to the repository
+  path, full immutable blob SHA, `BANK_ACCOUNT_PATTERN` classification and a
+  synthetic-history reason. Scanner unit tests, clean-history guard tests, the
+  full `security.personal_data_scan` target and `git diff --check` must pass;
+  path, blob or classification drift remains unsuppressed.
+
+## System-init authorized capability scene subset (2026-08-16)
+
+- Branch / base SHA: `fix/system-init-capability-scene-subset-v1` /
+  `57cf85ca41e9945b1346bdd43be7844a916cc5d7`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / startup
+  scene projection / `smart_core` system-init payload builder.
+- Reason: the startup subset previously contained only landing, fallback,
+  requested deep-link and role candidates, while already normalized capability
+  facts exposed additional authorized, deliverable scene targets. The resulting
+  scene-ready registry was incomplete even though permissions were correct.
+- Why Here / Why Not Elsewhere: system init already owns the minimal startup
+  projection and consumes normalized capability facts after governance. The
+  change does not recalculate permissions, add P1 scene names, alter delivery
+  policy, or move scene selection into the frontend.
+- Blast radius / validation: only explicit `target_scene_key` values with
+  capability state `allow` or `readonly`, runtime state `READY`, and delivery
+  level `exclusive` or `shared` join the deduplicated subset. Denied, locked,
+  preview, placeholder and missing-target rows remain excluded; explicit deep
+  links retain their existing precedence. Pure payload and scene-runtime tests
+  plus the existing scene schema/static guards prove containment.
+
+## P0 normalized component-driver production bridge (2026-08-16)
+
+- Branch / base SHA: `feature/p0-scene-component-bridge-v1` /
+  `42f0241083f8b1e530172aa1425a62059d5079a4`; latest reviewed main is
+  `0c89746904232fb168593d3610289aa0dfcb6075` and the intervening P0 changes do
+  not overlap the bridge implementation.
+- Formal Product Layer / Layer Target / Module: P0 platform product / normalized
+  readonly collection component-driver bridge / `smart_core`,
+  `frontend/apps/web`, and renderer-neutral `frontend/packages/ui`.
+- Reason / boundary: consume the existing normalized Contract V2 directly and
+  render the same in-memory presentation through SC Native, TDesign, or UI5.
+  Company subscription entitlement is the allowlist authority; user preference
+  can only narrow or choose inside that allowlist. No payment, construction, or
+  customer-specific semantic is introduced.
+- Why Here / Why Not Elsewhere: entitlement projection, preference carrier,
+  generic renderer selection, safe fallback, and telemetry are platform
+  mechanisms. P1 remains the business/page-contract authority; P2/P3 do not
+  select unlicensed drivers; P4 remains responsible only for runtime topology.
+- Blast radius / validation: formally limited to list/tree pages with explicit
+  read/readonly authority, selection disabled, and no executable normalized
+  actions. Driver load failure falls back to Native; a targeted invalid
+  normalized contract renders an explicit contract error. Row activation from
+  all drivers returns to the existing ActionView navigation runtime. Bridge
+  unit, preference and feature-flag tests, architecture guard, strict typecheck,
+  source lint, production build, Quick, Release unit, complexity guard, and
+  `git diff --check` pass.
+- Runtime status: the registered local acceptance identity is valid, but the
+  managed backend is mounted from a deleted historical worktree. Existing
+  owner-identity guards correctly refuse deletion or reuse, and no governed
+  stale-owner recovery target exists. No direct Docker mutation or new runtime
+  profile was used; live collection acceptance remains a P4-owned prerequisite
+  or an exact-SHA isolated release-lane responsibility.

@@ -415,6 +415,7 @@ export interface UserViewPreferenceContract {
     hidden_columns?: string[];
     column_order?: string[];
     column_widths?: Record<string, number>;
+    kit?: string;
     [key: string]: unknown;
   };
 }
