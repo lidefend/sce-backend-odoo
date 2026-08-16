@@ -20,6 +20,10 @@ from ..core.unified_page_contract_v2_client import (
     resolve_delivery_profile,
     trim_unified_page_contract_v2,
 )
+from ..core.unified_page_contract_v2_modifier_dependencies import (
+    FORM_RECORD_SNAPSHOT_FIELD_BUDGET,
+    hydrate_final_modifier_dependencies,
+)
 from ..core.scene_provider import load_scenes_from_db_or_fallback
 from ..core.request_params import parse_positive_int
 from ..utils.contract_governance import apply_contract_governance, resolve_contract_mode, resolve_contract_surface
@@ -592,6 +596,14 @@ class UiContractV2Handler(BaseIntentHandler):
         if isinstance(hook_payload, dict):
             contract_v2 = dict(hook_payload)
         contract_v2 = project_runtime_business_actions(contract_v2)
+        hydrate_final_modifier_dependencies(
+            self.env,
+            contract_v2,
+            model=str(model or "").strip(),
+            record_id=params.get("record_id") or params.get("recordId") or ui_params.get("record_id") or ui_params.get("recordId"),
+            view_type=str(view_type or "").strip().lower(),
+            logger=_logger,
+        )
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
@@ -3042,7 +3054,7 @@ class UiContractV2Handler(BaseIntentHandler):
             field_type = str(getattr(field, "type", "") or "")
             if field_name not in record_snapshot_fields and field_type in {"one2many", "many2many", "binary", "html"}:
                 continue
-            if field_name in record_snapshot_fields or len(field_names) < 80:
+            if field_name in record_snapshot_fields or len(field_names) < FORM_RECORD_SNAPSHOT_FIELD_BUDGET:
                 field_names.append(field_name)
         if "id" not in field_names:
             field_names.insert(0, "id")

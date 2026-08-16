@@ -11,6 +11,7 @@ from odoo import _
 from odoo.http import request
 from odoo.addons.smart_core.utils.delete_policy import resolve_unlink_policy
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
+from odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies import collect_modifier_dependency_fields
 from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     BUSINESS_CONFIG_ACTION_KEY_CURRENT_FORM_ADD_CUSTOM_FIELD,
     BUSINESS_CONFIG_ACTION_KEY_CURRENT_FORM_FIELD_CONFIGURATION,
@@ -3590,31 +3591,8 @@ class PageAssembler:
     @staticmethod
     def _collect_modifier_dependency_fields(*sources, fields_map=None):
         """Collect fields required to evaluate normalized modifier ASTs."""
-        known_fields = fields_map if isinstance(fields_map, dict) else {}
-        names = []
-
-        def walk(value):
-            if isinstance(value, list):
-                for item in value:
-                    walk(item)
-                return
-            if not isinstance(value, dict):
-                return
-            kind = str(value.get("kind") or "").strip()
-            field_name = str(value.get("field") or "").strip()
-            if (
-                kind in {"field_truthy", "field_compare"}
-                and field_name
-                and (not known_fields or field_name in known_fields)
-                and field_name not in names
-            ):
-                names.append(field_name)
-            for child in value.values():
-                walk(child)
-
-        for source in sources:
-            walk(source)
-        return names
+        known_fields = fields_map.keys() if isinstance(fields_map, dict) and fields_map else None
+        return collect_modifier_dependency_fields(*sources, known_fields=known_fields)
 
     def _to_fields_map(self, fields, env=None, model=None):
         """

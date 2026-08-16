@@ -4335,3 +4335,35 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Generic nested edit, read-only and all-denied fixtures prove canonical
   extraction, page/field consistency and fail-closed behavior; existing flat
   head-permission and readonly-profile behavior remain covered.
+
+# P0 final modifier dependency hydration (2026-08-16)
+
+- Branch / base SHA: `fix/p0-final-modifier-dependency-hydration-v1` /
+  `1e4b87099653e93053fd6eb1359908869382b6c5`.
+- Formal Product Layer / Layer Target / Module: P0 platform / final normalized
+  modifier dependency hydration / `smart_core`.
+- Standard vs User-Specific: generic form-contract correctness for all models.
+  No construction, payment, customer, frontend, fixture, database or runtime
+  profile semantics are introduced.
+- Reason / boundary: the initial form snapshot used an unqualified 80-field
+  payload budget before extension hooks and final runtime action projection.
+  A late normalized action could therefore reference a valid scalar field
+  absent from `dataContract.mainData`, causing the faithful frontend modifier
+  evaluator to hide an otherwise valid action. The 80-field budget now has an
+  explicit name and remains limited to opportunistic display hydration; fields
+  referenced by the final normalized modifier graph form a separate required
+  dependency closure.
+- Why Here / Why Not Elsewhere: dependency collection and record hydration are
+  shared P0 contract mechanics. P1 remains the business-action authority and
+  the frontend continues to render the normalized modifier without fallback or
+  model-specific inference.
+- Blast radius / validation: existing-record form contracts only. The helper
+  reads only missing, known scalar dependencies through the current-user model
+  environment after runtime actions are projected and before trim/seal. It
+  performs no read when no dependency is missing, excludes relation and large
+  payload fields, and keeps missing values fail-closed on read denial. Direct
+  behavior collections pass 74/74 handler and 12/12 PageAssembler tests;
+  `make test.unit`, UPC architecture guards, responsibility/boundary guards,
+  generated-report guard and `git diff --check` pass. `ci.local.quick` remains
+  externally blocked by pre-existing all-history P1 synthetic bank-account
+  findings; this P0 topic does not add or broaden a personal-data exemption.
