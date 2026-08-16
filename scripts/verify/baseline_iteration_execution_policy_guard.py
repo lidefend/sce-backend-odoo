@@ -30,12 +30,15 @@ DOCUMENT_REQUIREMENTS = {
         "禁止直接调用 `docker compose`",
         "acceptance 凭据不得注入 dev/test project",
         "`make pr.push`",
+        "workspace.worktree.baseline.update",
+        "1 个活跃长产品工作树",
     ),
 }
 
 MAKE_TARGET_REQUIREMENTS = {
     Path("make/codex.mk"): (
         "workspace.worktree.create",
+        "workspace.worktree.baseline.update",
         "pr.push",
     ),
     Path("make/runtime_ops.mk"): (

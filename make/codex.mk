@@ -403,7 +403,7 @@ pr.status:
 	@gh pr status || true
 
 # ------------------ Branch cleanup (Codex-safe) ------------------
-.PHONY: branch.cleanup branch.cleanup.feature workspace.worktree.create workspace.worktree.cleanup verify.workspace.worktree.guard
+.PHONY: branch.cleanup branch.cleanup.feature workspace.worktree.create workspace.worktree.baseline.update workspace.worktree.cleanup verify.workspace.worktree.guard
 
 CLEAN_BRANCH ?=
 CREATE_WORKTREE ?=
@@ -413,6 +413,11 @@ CREATE_WORKTREE_CONFIRM ?=
 CLEAN_WORKTREE_KEEP_BRANCH ?=
 CLEAN_WORKTREE_EXPECTED_HEAD ?=
 CLEAN_WORKTREE_CONFIRM ?=
+UPDATE_WORKTREE ?=
+UPDATE_WORKTREE_EXPECTED_HEAD ?=
+UPDATE_WORKTREE_BASELINE ?=
+UPDATE_WORKTREE_MODE ?= merge
+UPDATE_WORKTREE_CONFIRM ?=
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -456,6 +461,17 @@ workspace.worktree.create: guard.prod.forbid
 		--base "$(CREATE_WORKTREE_BASE)" \
 		$(if $(filter 1,$(APPLY)),--apply --confirm "$(CREATE_WORKTREE_CONFIRM)",)
 
+workspace.worktree.baseline.update: guard.prod.forbid
+	@test -n "$(UPDATE_WORKTREE)" || { echo "❌ UPDATE_WORKTREE is required"; exit 2; }
+	@test -n "$(UPDATE_WORKTREE_EXPECTED_HEAD)" || { echo "❌ UPDATE_WORKTREE_EXPECTED_HEAD is required"; exit 2; }
+	@test -n "$(UPDATE_WORKTREE_BASELINE)" || { echo "❌ UPDATE_WORKTREE_BASELINE is required"; exit 2; }
+	@python3 scripts/ops/safe_worktree_baseline_update.py \
+		--path "$(UPDATE_WORKTREE)" \
+		--expected-head "$(UPDATE_WORKTREE_EXPECTED_HEAD)" \
+		--baseline "$(UPDATE_WORKTREE_BASELINE)" \
+		--mode "$(UPDATE_WORKTREE_MODE)" \
+		$(if $(filter 1,$(APPLY)),--apply --confirm "$(UPDATE_WORKTREE_CONFIRM)",)
+
 workspace.worktree.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_WORKTREE)" ]; then echo "❌ CLEAN_WORKTREE is required"; exit 2; fi
 	@python3 scripts/ops/safe_worktree_cleanup.py \
@@ -464,8 +480,8 @@ workspace.worktree.cleanup: guard.prod.forbid
 		$(if $(filter 1,$(CLEAN_WORKTREE_KEEP_BRANCH)),--detach-keep-branch --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)" --confirm "$(CLEAN_WORKTREE_CONFIRM)",)
 
 verify.workspace.worktree.guard: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/safe_worktree_create.py scripts/ops/test_safe_worktree_create.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py
-	@python3 -m unittest scripts/ops/test_safe_worktree_create.py scripts/ops/test_safe_worktree_cleanup.py
+	@python3 -m py_compile scripts/ops/safe_worktree_create.py scripts/ops/test_safe_worktree_create.py scripts/ops/safe_worktree_baseline_update.py scripts/ops/test_safe_worktree_baseline_update.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py
+	@python3 -m unittest scripts/ops/test_safe_worktree_create.py scripts/ops/test_safe_worktree_baseline_update.py scripts/ops/test_safe_worktree_cleanup.py
 
 # ------------------ Main sync (safe) ------------------
 .PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee

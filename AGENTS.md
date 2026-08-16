@@ -16,6 +16,7 @@
 - A validation command that reports zero tests is a failure. A command executed with an unregistered project/database/profile or manually assembled credentials is diagnostic only and cannot satisfy a gate.
 - Synthetic test data may be exempted from personal-data scanning only through the governed false-positive registry, bound to the exact rule, repository path, full immutable Git blob SHA, classification, and a synthetic-fixture reason. Never exempt a directory, wildcard, mutable branch, or all test data.
 - One candidate worktree has one writer. Every parallel read-only review and runtime report must bind the same frozen full fingerprint. Shared acceptance database mutations are serialized.
+- A baseline advance does not normally justify another worktree. Reuse the single clean candidate through `make workspace.worktree.baseline.update`: use `rebase` only for an unpublished branch and `merge` for a published branch. The command must bind exact old HEAD and exact current `origin/main`, abort and restore on conflict, and be followed by refreezing and affected gates. Create a replacement worktree only when the governed update cannot preserve the candidate safely.
 - Do not rerun full browser acceptance while an earlier static, backend, identity, or normalized-contract gate is known to fail. Fix only the owning layer, refreeze, then resume from the earliest invalidated gate.
 
 ## Database Architecture Governance
