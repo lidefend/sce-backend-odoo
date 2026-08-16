@@ -4626,3 +4626,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   fields and 26 create fields with no duplicates; mobile readonly/edit/create
   each had zero horizontal overflow. The entitlement probe and random
   credential were removed by the existing cleanup path.
+
+## ContractForm unified create execution slice (2026-08-17)
+
+- Branch / base SHA: `feature/p0-contract-form-driver-action-parity-v1` /
+  `f370d22723af28c623bd721ea471637641842bd9`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend /
+  ContractForm unified action execution evidence / governed non-payment
+  acceptance fixture and generic browser guard.
+- Reason / boundary: Native, TDesign and UI5 already render the same normalized
+  form facts, but production qualification still required one real business
+  request after cross-driver switching. No vendor driver may own an API client,
+  infer a backend method or rewrite the normalized action identity.
+- Why Here / Why Not Elsewhere: request parity belongs to the generic
+  ContractForm executor boundary. The probe uses `project.project`, never
+  payment or construction workflow semantics, and does not change Contract V2,
+  P1 policy, Scene Contract or environment topology.
+- Blast radius / validation: one exact disposable project name and one exact
+  form-driver preference scope. Setup and cleanup remove both identities. The
+  browser must preserve the same draft through Native/TDesign/UI5, then execute
+  exactly one `api.data` create via the existing header save action, reopen the
+  returned record, and reject any extra create/write/unlink/execute mutation.
+- Runtime checkpoint: the governed acceptance command created one
+  `project.project` through UI5 after three-driver switching, received a stable
+  record id, reopened with the persisted name, reported no console/page/request
+  error, and cleaned the disposable record and preference on exit.

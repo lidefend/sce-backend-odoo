@@ -13,6 +13,15 @@ def apply_component_driver_probe(env, mode):
     model = str(menu.action.res_model or "").strip()
     if not model or "payment" in model:
         raise RuntimeError("component driver probe requires a non-payment action model")
+    company = _ref(env, "%s.fe_company_a" % MODULE)
+    probe_record_name = "SC Component Driver Action Probe"
+    probe_model = env[model].sudo()
+    if "company_id" not in probe_model._fields:
+        raise RuntimeError("component driver probe requires a company-owned target model")
+    probe_model.search([
+        ("name", "=", probe_record_name),
+        ("company_id", "=", company.id),
+    ]).unlink()
     probe_user = env["res.users"].sudo().search([("login", "=", "fixture_role_pm")], limit=1)
     preference_model = env["sc.user.view.preference"].sudo()
     preference_scope = preference_model.build_scope_key(
@@ -33,7 +42,6 @@ def apply_component_driver_probe(env, mode):
     if mode == "cleanup":
         return None
 
-    company = _ref(env, "%s.fe_company_a" % MODULE)
     plan = plan_model.create({
         "code": "acceptance_component_driver_probe",
         "name": "Acceptance Component Driver Probe",
@@ -66,5 +74,6 @@ def apply_component_driver_probe(env, mode):
         "model": model,
         "record_id": int(record.id),
         "record_identity": str(record.display_name),
+        "create_probe_name": probe_record_name,
         "login": "fixture_role_pm",
     }
