@@ -995,6 +995,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "project_id": project_a.id,
             "partner_id": partner_a.id,
             "company_id": company_a.id,
+            "currency_id": company_a.currency_id.id,
             "tax_id": tax_a.id,
         },
     )
@@ -1044,6 +1045,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "project_id": project_a.id,
             "partner_id": incomplete_partner.id,
             "company_id": company_a.id,
+            "currency_id": company_a.currency_id.id,
             "tax_id": tax_a.id,
         },
     )

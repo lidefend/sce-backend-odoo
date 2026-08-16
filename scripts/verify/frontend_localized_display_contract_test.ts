@@ -36,7 +36,12 @@ const formSource = readFileSync(
   new URL('../../frontend/apps/web/src/pages/ContractFormPage.vue', import.meta.url),
   'utf8',
 );
-assert.match(formSource, /showPrimaryBusinessFormAction = computed\(\(\) => canSave\.value/);
+assert.match(formSource, /resolvePrimaryBusinessActionState\(\{/);
+assert.doesNotMatch(
+  formSource,
+  /showPrimaryBusinessFormAction = computed\(\(\) => canSave\.value/,
+  'normalized business actions must not be hidden merely because the readonly form cannot save',
+);
 
 for (const relativePath of [
   '../../frontend/apps/web/src/pages/listPage/listCellPresentation.ts',

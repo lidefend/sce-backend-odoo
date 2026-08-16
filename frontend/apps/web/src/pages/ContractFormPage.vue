@@ -632,7 +632,7 @@ import { useFormAuxiliaryWatchersRuntime } from './contractForm/useFormAuxiliary
 import { useUnsavedFormGuard } from './contractForm/useUnsavedFormGuard';
 import { buildContractFormActions } from './contractForm/contractActionPresentation';
 import { focusProductFormValidationError } from './contractForm/formValidationFocus';
-import { groupContractHeaderActions } from './contractForm/contractHeaderActionPresentation';
+import { groupContractHeaderActions, resolvePrimaryBusinessActionState } from './contractForm/contractHeaderActionPresentation';
 import { resolveContractFormFieldLabels } from './contractForm/formFieldLabels';
 import { buildSaveRecordPayload, validateBeforeSaveRecord } from './contractForm/saveRecordHelpers';
 import { useCreatedRecordNavigationRuntime } from './contractForm/useCreatedRecordNavigationRuntime';
@@ -1244,9 +1244,14 @@ const submitButtonLabel = computed(() => resolveSubmitButtonLabel({
   saveLabel: formUiLabel('save'),
   savingLabel: formUiLabel('saving'),
 }));
-const showPrimaryBusinessFormAction = computed(() => canSave.value
-  && !showCurrentFormFieldConfigScope.value
-  && !isIntakeCreateMode.value);
+const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionState({
+  busy: busy.value, canSave: canSave.value,
+  configurationMode: showCurrentFormFieldConfigScope.value, intakeMode: isIntakeCreateMode.value,
+  hasChanges: hasChanges.value, hasRecord: Boolean(recordId.value),
+  primaryCreateAction: primaryCreateFooterAction.value, primarySubmitAction: primarySubmitAction.value,
+  quickSubmitDisabled: isQuickSubmitDisabled.value,
+}));
+const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
 const showContinueProcessing = computed(() => (
   route.name === 'record'
   && Boolean(recordId.value)
@@ -1394,13 +1399,7 @@ const isQuickSubmitDisabled = computed(() => {
   if (isQuickIntakeMode.value) return !quickRequiredReady.value;
   return Boolean(recordId.value) && !hasChanges.value;
 });
-const primaryFormActionDisabled = computed(() => {
-  if (busy.value) return true;
-  if (!canSave.value) return true;
-  if (primaryCreateFooterAction.value) return false;
-  if (primarySubmitAction.value) return !primarySubmitAction.value.enabled || (Boolean(recordId.value) && hasChanges.value);
-  return isQuickSubmitDisabled.value;
-});
+const primaryFormActionDisabled = computed(() => primaryBusinessActionState.value.disabled);
 const primaryFormActionHint = computed(() => {
   if (primarySubmitAction.value && !primarySubmitAction.value.enabled) return primarySubmitAction.value.hint;
   return primarySubmitAction.value && recordId.value && hasChanges.value ? '请先保存修改，再提交审批' : '';

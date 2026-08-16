@@ -16,6 +16,7 @@
       :preference-scope="String(actionId || 'default')"
       @open-record="handleRowClick"
       @open-action="openHierarchyAction"
+      @driver-change="handleSceneDriverChange"
     >
     <template #standard>
     <section v-if="vm.header.actions.length" class="page-actions">
@@ -602,7 +603,7 @@ import GroupSummaryBar from '../components/GroupSummaryBar.vue';
 import SceneBlocksRenderer from '../components/scene/SceneBlocksRenderer.vue';
 import ActionSurfaceToolbar from '../components/action/ActionSurfaceToolbar.vue';
 import ActionSurfaceRendererHost from '../components/action/ActionSurfaceRendererHost.vue';
-import { resolveActionSurfaceRenderer } from '../app/renderers/actionSurfaceRendererRegistry';
+import { useActionViewSceneComponentDriverRuntime } from '../app/action_runtime/useActionViewSceneComponentDriverRuntime';
 import { deriveListStatus } from '../app/view_state';
 import { isHudEnabled, isSceneBlocksDebugEnabled } from '../config/debug';
 import { ErrorCodes } from '../app/error_codes';
@@ -1567,7 +1568,6 @@ const viewMode = computed(() => {
 });
 const collectionPresentation = computed(() => resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(
   actionContract.value as Record<string, unknown> | null, viewMode.value), route.query.group_by));
-const surfaceRendererDescriptor = computed(() => resolveActionSurfaceRenderer(collectionPresentation.value, viewMode.value));
 const {
   viewModeLabel,
   switchViewMode,
@@ -1604,6 +1604,24 @@ const {
   actionContract,
   advancedFields,
   activeGroupByField,
+});
+const { surfaceRendererDescriptor, handleSceneDriverChange } = useActionViewSceneComponentDriverRuntime({
+  actionContract: () => actionContract.value,
+  records: () => records.value,
+  columnLabels: () => contractColumnLabels.value,
+  totalCount: () => Number(listTotalCount.value ?? records.value.length),
+  actionId: () => Number(actionId.value || 0),
+  model: () => String(resolvedModelRef.value || model.value || ''),
+  sceneKey: () => String(sceneKey.value || ''),
+  viewMode: () => viewMode.value,
+  menuTitle: () => String(currentMenuTitle.value || ''),
+  actionName: () => String(actionMeta.value?.name || ''),
+  companyName: () => String(session.user?.company_name || session.user?.company?.display_name || session.user?.company?.name || ''),
+  roleName: () => String(session.roleSurface?.role_label || session.roleSurface?.role_code || ''),
+  featureFlag: () => session.featureFlags.scene_component_drivers_v1,
+  previewKit: () => typeof route.query.scene_ui_kit === 'string' ? route.query.scene_ui_kit : '',
+  preferenceScope: () => listColumnPreferenceScope.value,
+  collectionPresentation: () => collectionPresentation.value,
 });
 const kanbanFieldLabels = computed<Record<string, string>>(() => ({
   ...contractColumnLabels.value,

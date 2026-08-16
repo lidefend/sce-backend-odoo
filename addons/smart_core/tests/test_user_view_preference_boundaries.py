@@ -39,7 +39,7 @@ class _PreferenceModel:
 
     def normalize_preference_key(self, value):
         key = str(value or "list_columns").strip() or "list_columns"
-        return key if key == "list_columns" else "list_columns"
+        return key if key in {"list_columns", "scene_ui_driver"} else "list_columns"
 
     def build_scope_key(self, *, preference_key, view_type, action_id, model_name):
         target = f"action:{action_id}" if action_id else f"model:{model_name or 'unknown'}"
@@ -270,6 +270,61 @@ class TestUserViewPreferenceBoundaries(unittest.TestCase):
                 "column_widths": {},
             },
         )
+
+    def test_set_sanitizes_scene_driver_preference(self):
+        module = _load_handler()
+        Preference = _PreferenceModel()
+        env = _Env({"sc.user.view.preference": Preference})
+        handler = module.UserViewPreferenceSetHandler(
+            env=env,
+            payload={
+                "model": "hr.department",
+                "preference_key": "scene_ui_driver",
+                "preference": {"kit": "ui5-horizon", "noise": "ignored"},
+            },
+        )
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(Preference.created_vals["value_json"], {"kit": "ui5-horizon"})
+
+    def test_get_scene_driver_preference_does_not_require_list_action_context(self):
+        module = _load_handler()
+        Preference = _PreferenceModel()
+        env = _Env({"sc.user.view.preference": Preference})
+        handler = module.UserViewPreferenceGetHandler(
+            env=env,
+            payload={
+                "model": "hr.department",
+                "preference_key": "scene_ui_driver",
+                "view_type": "list",
+            },
+        )
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["data"]["preference"], {"kit": ""})
+        self.assertEqual(result["meta"]["preference_contract"]["columns"], [])
+
+    def test_set_rejects_unknown_scene_driver_by_clearing_value(self):
+        module = _load_handler()
+        Preference = _PreferenceModel()
+        env = _Env({"sc.user.view.preference": Preference})
+        handler = module.UserViewPreferenceSetHandler(
+            env=env,
+            payload={
+                "model": "hr.department",
+                "preference_key": "scene_ui_driver",
+                "preference": {"kit": "unknown-vendor"},
+            },
+        )
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(Preference.created_vals["value_json"], {"kit": ""})
 
     def test_formal_list_allows_user_display_preference(self):
         module = _load_handler()

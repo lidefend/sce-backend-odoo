@@ -4488,6 +4488,37 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   full `security.personal_data_scan` target and `git diff --check` must pass;
   path, blob or classification drift remains unsuppressed.
 
+## P0 normalized component-driver production bridge (2026-08-16)
+
+- Branch / base SHA: `feature/p0-scene-component-bridge-v3` /
+  `0c89746904232fb168593d3610289aa0dfcb6075`.
+- Formal Product Layer / Layer Target / Module: P0 platform product / normalized
+  readonly collection component-driver bridge / `smart_core`,
+  `frontend/apps/web`, and renderer-neutral `frontend/packages/ui`.
+- Reason / boundary: consume the existing normalized Contract V2 directly and
+  render the same in-memory presentation through SC Native, TDesign, or UI5.
+  Company subscription entitlement is the allowlist authority; user preference
+  can only narrow or choose inside that allowlist. No payment, construction, or
+  customer-specific semantic is introduced.
+- Why Here / Why Not Elsewhere: entitlement projection, preference carrier,
+  generic renderer selection, safe fallback, and telemetry are platform
+  mechanisms. P1 remains the business/page-contract authority; P2/P3 do not
+  select unlicensed drivers; P4 remains responsible only for runtime topology.
+- Blast radius / validation: formally limited to list/tree pages with explicit
+  read/readonly authority, selection disabled, and no executable normalized
+  actions. Driver load failure falls back to Native; a targeted invalid
+  normalized contract renders an explicit contract error. Row activation from
+  all drivers returns to the existing ActionView navigation runtime. Bridge
+  unit, preference and feature-flag tests, architecture guard, strict typecheck,
+  source lint, production build, Quick, Release unit, complexity guard, and
+  `git diff --check` pass.
+- Runtime status: the registered local acceptance identity is valid, but the
+  managed backend is mounted from a deleted historical worktree. Existing
+  owner-identity guards correctly refuse deletion or reuse, and no governed
+  stale-owner recovery target exists. No direct Docker mutation or new runtime
+  profile was used; live collection acceptance remains a P4-owned prerequisite
+  or an exact-SHA isolated release-lane responsibility.
+
 ## System-init authorized capability scene subset (2026-08-16)
 
 - Branch / base SHA: `fix/system-init-capability-scene-subset-v1` /

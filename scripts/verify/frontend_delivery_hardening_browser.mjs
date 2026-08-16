@@ -714,6 +714,9 @@ async function main() {
     await page.waitForTimeout(1800);
     await page.goto(`${BASE_URL}/my-work`, { waitUntil: 'domcontentloaded' });
     await page.locator('.product-work').waitFor({ timeout: 45000 });
+    check((await page.locator('body').innerText()).includes('FE Company B'), 'final company B context label missing');
+    await page.locator('.count-card[data-section-key="initiated"]').click();
+    await page.locator('.work-section[data-section-key="initiated"]').waitFor({ timeout: 15000 });
     const workText = await page.locator('body').innerText();
     check(workText.includes('FE-C-PR-001') && !workText.includes(journeyName), 'stale company response polluted final B context');
     await page.unroute('**/api/v1/intent**', reorder);

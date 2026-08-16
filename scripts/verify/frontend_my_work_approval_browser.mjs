@@ -139,6 +139,8 @@ async function main() {
     await selectCompany(page, 'FE Company B');
     await openMyWork(page);
     check(!(await page.locator('body').innerText()).includes('FE-JOURNEY-PAYMENT-001'), 'J07 company B retained company A item');
+    await page.locator('.count-card[data-section-key="initiated"]').click();
+    await page.locator('.work-section[data-section-key="initiated"]').waitFor({ timeout: 15000 });
     check((await page.locator('body').innerText()).includes('FE-C-PR-001'), 'J07 company B work item missing');
     await selectCompany(page, 'FE Company A');
     await openMyWork(page);

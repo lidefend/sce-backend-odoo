@@ -21,6 +21,19 @@ def platform_feature_flags_for_user(env, user) -> dict[str, Any]:
     return flags if isinstance(flags, dict) else {}
 
 
+def platform_feature_flags_for_user_readonly(env, user) -> dict[str, Any]:
+    """Resolve current plan flags without synchronizing entitlement rows."""
+
+    if not user or not getattr(user, "company_id", None):
+        return {}
+    try:
+        plan = env["sc.entitlement"].sudo()._resolve_plan(user.company_id)
+    except Exception:
+        return {}
+    flags = getattr(plan, "feature_flags_json", None) if plan else None
+    return dict(flags) if isinstance(flags, dict) else {}
+
+
 def platform_limits_for_company(env, company) -> dict[str, Any]:
     if not company:
         return {}
