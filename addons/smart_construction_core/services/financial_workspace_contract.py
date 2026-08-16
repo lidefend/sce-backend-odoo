@@ -228,6 +228,8 @@ def inject_financial_workspace_runtime(env, contract, source, head, context, mod
         runtime["businessWorkspace"] = deepcopy(payload["business_workspace"])
     if isinstance(payload.get("actions"), list):
         runtime["businessActions"] = deepcopy(payload["actions"])
+    if isinstance(payload.get("task_semantics"), dict):
+        runtime["businessTaskSemantics"] = deepcopy(payload["task_semantics"])
     contract["runtimeContract"] = runtime
 
 
@@ -689,9 +691,11 @@ def build_financial_form_business_actions(env, model_name, record_id):
             return None
         from odoo.addons.smart_construction_core.services.settlement_business_actions import (
             build_settlement_form_actions,
+            build_settlement_task_semantics,
         )
         actions = build_settlement_form_actions(record)
-        return {"actions": actions} if actions else None
+        semantics = build_settlement_task_semantics(record)
+        return {"actions": actions, "task_semantics": semantics} if actions or semantics else None
     if model == "sc.payment.execution":
         record = _safe_record(env[model].browse(int(record_id or 0)))
         if not record:

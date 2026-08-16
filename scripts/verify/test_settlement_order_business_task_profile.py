@@ -132,7 +132,29 @@ def normalized_contract(
             "buttonStatus": statuses,
             "widgetStatus": widget_status,
         },
-        "runtimeContract": {"existing": {"kept": True}},
+        "runtimeContract": {
+            "existing": {"kept": True},
+            "businessTaskSemantics": {
+                "version": "v1",
+                "source_authority": "settlement_order_model_prechecks",
+                "blockers": {
+                    "contract_scope_consistency": {
+                        "active": False,
+                        "reason_code": "",
+                        "message": "",
+                        "missing_items": [],
+                        "source_authority": "settlement_order_model_prechecks.scope",
+                    },
+                    "amount_readiness": {
+                        "active": False,
+                        "reason_code": "",
+                        "message": "",
+                        "missing_items": [],
+                        "source_authority": "settlement_order_model_prechecks.amount",
+                    },
+                },
+            },
+        },
     }
 
 
@@ -180,6 +202,13 @@ class SettlementOrderBusinessTaskProfileTest(unittest.TestCase):
     def test_missing_scope_projects_repair_without_relaxing_page_authority(self):
         contract = normalized_contract()
         contract["dataContract"]["mainData"]["partner_id"] = False
+        scope = contract["runtimeContract"]["businessTaskSemantics"]["blockers"]["contract_scope_consistency"]
+        scope.update({
+            "active": True,
+            "reason_code": "SETTLEMENT_SCOPE_INCOMPLETE",
+            "message": "缺少往来单位。",
+            "missing_items": ["往来单位"],
+        })
         contract["statusContract"]["globalStatus"]["pageAuth"] = "readonly"
         task = business_task(contract)
         blocker = next(row for row in task["blockers"] if row["key"] == "contract_scope_consistency")
@@ -188,6 +217,11 @@ class SettlementOrderBusinessTaskProfileTest(unittest.TestCase):
         self.assertTrue(repair["visible"])
         self.assertFalse(repair["enabled"])
         self.assertEqual(task["completion"]["next_capability_key"], "settlement_order.repair_scope")
+
+    def test_missing_domain_semantics_fails_closed(self):
+        contract = normalized_contract()
+        del contract["runtimeContract"]["businessTaskSemantics"]
+        self.assertIsNone(project(contract))
 
     def test_conflicting_visible_aliases_fail_closed(self):
         contract = normalized_contract(

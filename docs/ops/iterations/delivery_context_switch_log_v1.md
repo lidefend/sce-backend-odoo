@@ -4597,6 +4597,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   and the OCA `can_review` verdict. Missing or denied authority stays visible only
   as an explicit handoff and never becomes executable.
 - The projection does not invent approval-amount or attachment requirements.
+  The domain service emits versioned blocker verdicts beside its action verdicts;
+  the terminal projection fails closed when that supply is absent or malformed.
   Active scope/amount blockers only tighten the capabilities that declare those
   blockers; cancel/reject semantics remain independently governed.
 - Multiple backend methods may implement one semantic capability across states.

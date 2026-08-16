@@ -70,47 +70,35 @@ def _repair_capability(*, active: bool, authorized: bool) -> dict:
     }
 
 
-def _blockers(record: dict) -> tuple[dict, bool, bool]:
-    scope_missing = bool(
-        not record.get("project_id")
-        or not record.get("partner_id")
-        or not as_list(record.get("line_ids"))
-        or text(record.get("compliance_state")) == "block"
+def _blockers(contract: dict) -> tuple[dict, bool, bool] | None:
+    semantics = as_dict(as_dict(contract.get("runtimeContract")).get("businessTaskSemantics"))
+    if text(semantics.get("version")) != "v1" or not text(semantics.get("source_authority")):
+        return None
+    source_rows = as_dict(semantics.get("blockers"))
+    out = {}
+    for key in ("contract_scope_consistency", "amount_readiness"):
+        row = as_dict(source_rows.get(key))
+        active = row.get("active")
+        missing_items = row.get("missing_items")
+        if not isinstance(active, bool) or not isinstance(missing_items, list):
+            return None
+        reason_code = text(row.get("reason_code"))
+        message = text(row.get("message"))
+        source_authority = text(row.get("source_authority"))
+        if not source_authority or (active and (not reason_code or not message)):
+            return None
+        out[key] = {
+            "active": active,
+            "reason_code": reason_code,
+            "message": message,
+            "missing_items": [text(item) for item in missing_items if text(item)],
+            "source_authority": source_authority,
+        }
+    return (
+        out,
+        bool(out["contract_scope_consistency"]["active"]),
+        bool(out["amount_readiness"]["active"]),
     )
-    state = text(record.get("state"))
-    amount_value = record.get("amount_total")
-    amount_missing = bool(
-        not isinstance(amount_value, (int, float))
-        or amount_value <= 0
-    )
-    return ({
-        "contract_scope_consistency": {
-            "active": scope_missing,
-            "reason_code": "SETTLEMENT_SCOPE_INCOMPLETE" if scope_missing else "",
-            "message": "请补齐项目、往来单位、结算明细并处理合同一致性问题。" if scope_missing else "",
-            "missing_items": [
-                label
-                for key, label in (
-                    ("project_id", "项目"),
-                    ("partner_id", "往来单位"),
-                    ("line_ids", "结算明细"),
-                )
-                if not record.get(key)
-            ],
-            "source_authority": "normalized_settlement_contract.domain_precheck",
-        },
-        "amount_readiness": {
-            "active": amount_missing,
-            "reason_code": "SETTLEMENT_AMOUNT_INCOMPLETE" if amount_missing else "",
-            "message": "结算金额必须大于零。" if amount_missing else "",
-            "missing_items": [
-                "结算金额"
-                for value in (amount_value,)
-                if not isinstance(value, (int, float)) or value <= 0
-            ],
-            "source_authority": "normalized_settlement_contract.domain_precheck",
-        },
-    }, scope_missing, amount_missing)
 
 
 def _current_capability(
@@ -183,7 +171,10 @@ def project_settlement_order_business_task_scene(contract: dict, *, render_profi
     state = text(record.get("state"))
     validation_status = text(record.get("validation_status"))
     complete = state in {"done", "cancel"}
-    blockers, scope_missing, amount_missing = _blockers(record)
+    blocker_projection = _blockers(contract)
+    if blocker_projection is None:
+        return None
+    blockers, scope_missing, amount_missing = blocker_projection
     capabilities = canonical_action_capabilities(contract, _CAPABILITY_METHODS)
     editable = _page_can_edit(contract)
     _apply_blocker_verdicts(

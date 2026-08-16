@@ -5,6 +5,7 @@ import unittest
 
 from addons.smart_construction_core.services.settlement_business_actions import (
     build_settlement_form_actions,
+    build_settlement_task_semantics,
 )
 
 
@@ -24,13 +25,18 @@ class FakeEnv:
 class FakeSettlement:
     _name = "sc.settlement.order"
 
-    def __init__(self, *, state="draft", validation_status="no", groups=(), can_review=False, precheck_error="", cancel_error=""):
+    def __init__(self, *, state="draft", validation_status="no", groups=(), can_review=False, precheck_error="", cancel_error="", amount_total=100):
         self.state = state
         self.validation_status = validation_status
         self.env = FakeEnv(groups)
         self.can_review = can_review
         self.precheck_error = precheck_error
         self.cancel_error = cancel_error
+        self.amount_total = amount_total
+        self.project_id = 11
+        self.partner_id = 12
+        self.legacy_fact_model = ""
+        self.line_ids = [13]
 
     def _check_business_anchor_or_raise(self):
         if self.precheck_error:
@@ -106,6 +112,16 @@ class SettlementBusinessActionsTest(unittest.TestCase):
         self.assertFalse(cancel["business_available"])
         self.assertFalse(cancel["enabled"])
         self.assertEqual(cancel["reason_code"], "SETTLEMENT_PAYMENT_EXISTS")
+
+    def test_task_semantics_materialize_model_owned_blockers(self):
+        semantics = build_settlement_task_semantics(FakeSettlement(amount_total=0))
+        self.assertEqual(semantics["version"], "v1")
+        self.assertFalse(semantics["blockers"]["contract_scope_consistency"]["active"])
+        self.assertTrue(semantics["blockers"]["amount_readiness"]["active"])
+        self.assertEqual(
+            semantics["blockers"]["amount_readiness"]["source_authority"],
+            "settlement_order_model_prechecks.amount",
+        )
 
 
 if __name__ == "__main__":

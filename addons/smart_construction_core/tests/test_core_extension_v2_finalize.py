@@ -9,6 +9,9 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.smart_construction_core import core_extension
+from odoo.addons.smart_construction_core.services.financial_workspace_contract import (
+    inject_financial_workspace_runtime,
+)
 from odoo.addons.smart_core.utils import contract_governance
 
 
@@ -170,6 +173,34 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             )
 
         self.assertEqual(projected["settlement_terminal_probe"], "readonly")
+
+    def test_financial_runtime_carries_domain_task_semantics_without_recomputation(self):
+        contract = {"runtimeContract": {"existing": {"kept": True}}}
+        semantics = {
+            "version": "v1",
+            "source_authority": "domain.precheck",
+            "blockers": {"scope": {"active": True}},
+        }
+
+        inject_financial_workspace_runtime(
+            self.env,
+            contract,
+            {"record_id": 7},
+            {},
+            {},
+            "sc.settlement.order",
+            "form",
+            lambda env, model, record_id, source: {
+                "actions": [{"key": "submit"}],
+                "task_semantics": semantics,
+            },
+        )
+
+        runtime = contract["runtimeContract"]
+        self.assertEqual(runtime["existing"], {"kept": True})
+        self.assertEqual(runtime["businessTaskSemantics"], semantics)
+        semantics["blockers"]["scope"]["active"] = False
+        self.assertTrue(runtime["businessTaskSemantics"]["blockers"]["scope"]["active"])
 
     def test_standard_product_models_do_not_register_migration_aliases(self):
         for model_name in ("payment.request", "tender.doc.purchase", "construction.contract"):
