@@ -204,6 +204,11 @@ const driverField = {
 };
 assert.equal(usesContractFormDriverField(driverField, 'sc-native'), false);
 assert.equal(usesContractFormDriverField(driverField, 'tdesign-modern'), true);
+assert.equal(
+  usesContractFormDriverField(driverField, 'ui5-horizon'),
+  true,
+  'supported editable fields must remain vendor-neutral',
+);
 assert.deepEqual(toContractFormSceneField(driverField, 'field-name', 'Enter name'), {
   id: 'field-name', label: 'Name', value: 'Draft', kind: 'text', required: true, readonly: false,
   invalid: true, placeholder: 'Enter name', options: [],
@@ -264,4 +269,4 @@ const telemetry = readSceneComponentDriverTelemetry();
 assert.equal(telemetry.length, 60);
 assert.equal(telemetry[0]?.timestamp, 5);
 
-console.log('[scene-component-driver-bridge] PASS cases=37');
+console.log('[scene-component-driver-bridge] PASS cases=38');
