@@ -4752,3 +4752,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   readonly, denied and unresolved permission inputs publish no save action.
   The Canonical action adapter recognizes only this stable platform action id
   and otherwise requires one exact normalized backend identity.
+
+## Canonical effective-action adapter correction (2026-08-17)
+
+- Branch / baseline: `fix/p0-canonical-effective-action-adapter-v1` /
+  `bc4181a7b5777dfd07c32ff4ae42cafc061d2788`.
+- P1 payment qualification proved that a raw normalized OCA action can retain
+  `enabled=true` while final buttonStatus correctly disables it. The canonical
+  cutover gate incorrectly re-read the raw action flag and demanded an executor
+  for a control that the Presenter had already made non-executable.
+- The gate now consumes the Presenter's effective `visible/enabled` action
+  state and resolves only effective executable references. It does not alter
+  normalized permissions, action status, payment behavior, or executor rules.

@@ -1668,10 +1668,7 @@ const {
 const canonicalActionExecutionError = computed(() => {
   const model = canonicalFormRenderState.value.model;
   if (!model) return '';
-  const failure = validateCanonicalFormActionExecutors(
-    model.actionBar.map((action) => action.actionRef),
-    contractActions.value,
-  );
+  const failure = validateCanonicalFormActionExecutors(model.actionBar, contractActions.value);
   return failure ? `${failure.reasonCode}:${failure.actionId}:${failure.backendIdentity}` : '';
 });
 const canonicalFormDriverError = computed(() => (

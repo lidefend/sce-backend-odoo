@@ -325,14 +325,14 @@ assert.deepEqual(
 );
 assert.equal(
   validateCanonicalFormActionExecutors([
-    { ...normalizedAction, actionId: 'form.save', backendIdentity: 'contract_action:form.save' },
-    { ...normalizedAction, enabled: false, disabled: true, backendIdentity: 'button:object:unmapped_disabled' },
+    { visible: true, enabled: true, actionRef: { ...normalizedAction, actionId: 'form.save', backendIdentity: 'contract_action:form.save' } },
+    { visible: true, enabled: false, actionRef: { ...normalizedAction, enabled: true, disabled: false, backendIdentity: 'button:object:unmapped_disabled' } },
   ], []),
   null,
   'save and visible disabled actions keep the canonical page usable without inventing an executor',
 );
 assert.deepEqual(
-  validateCanonicalFormActionExecutors([normalizedAction], []),
+  validateCanonicalFormActionExecutors([{ visible: true, enabled: true, actionRef: normalizedAction }], []),
   {
     reasonCode: 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING',
     actionId: 'action.submit',
