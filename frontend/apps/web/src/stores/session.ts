@@ -284,6 +284,7 @@ export interface SessionState {
   menuExpandedKeys: string[];
   currentAction: NavMeta | null;
   capabilities: string[];
+  featureFlags: Record<string, unknown>;
   scenes: Scene[];
   sceneVersion: string | null;
   roleSurface: RoleSurface | null;
@@ -574,6 +575,7 @@ export const useSessionStore = defineStore('session', {
     menuExpandedKeys: [],
     currentAction: null,
     capabilities: [],
+    featureFlags: {},
     scenes: [],
     sceneVersion: null,
     roleSurface: null,
@@ -832,6 +834,7 @@ export const useSessionStore = defineStore('session', {
       this.initStatus = 'idle';
       this.initError = null;
       this.initTraceId = null;
+      this.featureFlags = {};
       const cached = localStorage.getItem(sessionStorageKey());
       if (cached) {
         try {
@@ -892,6 +895,7 @@ export const useSessionStore = defineStore('session', {
       this.menuExpandedKeys = [];
       this.currentAction = null;
       this.capabilities = [];
+      this.featureFlags = {};
       this.scenes = [];
       this.sceneVersion = null;
       this.roleSurface = null;
@@ -1221,6 +1225,7 @@ export const useSessionStore = defineStore('session', {
       this.routeAuthority = null;
       this.menuTree = [];
       this.currentAction = null;
+      this.featureFlags = {};
       this.scenes = [];
       this.sceneVersion = null;
       this.sceneActionHints = {};
@@ -1336,6 +1341,11 @@ export const useSessionStore = defineStore('session', {
         console.info('[debug] system.init result', result);
       }
       this.user = result.user;
+      this.featureFlags = (
+        result.feature_flags
+        && typeof result.feature_flags === 'object'
+        && !Array.isArray(result.feature_flags)
+      ) ? result.feature_flags as Record<string, unknown> : {};
       const rawCapabilities = (result as AppInitResponse & { capabilities?: Array<string | { key?: string }> }).capabilities ?? [];
       this.capabilities = rawCapabilities
         .map((cap) => (typeof cap === 'string' ? cap : cap?.key || ''))
