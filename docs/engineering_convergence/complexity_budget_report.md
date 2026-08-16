@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3834`
+- Scanned files: `3835`
 - Files requiring split plan: `41`
-- Files above warning threshold: `76`
+- Files above warning threshold: `75`
 
 ## Split Plan Required
 
@@ -106,7 +106,6 @@ Generated from repository source files. This report is informational during the 
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 915 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
-| 905 | Python source | `addons/smart_construction_core/services/financial_workspace_contract.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |

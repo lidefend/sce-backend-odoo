@@ -4621,3 +4621,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - This checkpoint changes no P0 assembler, generic frontend, environment topology,
   fixture or browser workflow. Odoo-tagged regressions are registered for the next
   governed runtime; pure terminal tests cover missing authority and account repair.
+
+## 2026-08-16 — C3 payment-execution blocker authority closure
+
+- Formal Product Layer: P1 payment-execution domain producer and task projection.
+- Layer Target / Module: `sc.payment.execution` action and precheck authority in
+  `smart_construction_core`, consumed by the payment-execution profile in
+  `smart_construction_scene`.
+- Why Here: submission and paid posting already share exact model prechecks, but
+  their terminal task previously exposed only a disabled action. The extracted
+  domain producer now emits the same action verdict and a versioned structured
+  `payment_fact_readiness` blocker, including concrete missing facts.
+- Why Not Elsewhere: P0 normalized assembly remains unchanged; the terminal does
+  not infer payment completeness from display fields; the generic frontend receives
+  only the sealed task contract. An empty reversal reason remains an optional
+  reversal precondition and does not incorrectly block an already completed payment.
+- Blast Radius: payment-execution form action production and its terminal semantic
+  supply only. No transition, ACL, native view, environment, fixture or UI-driver
+  behavior changes. Pure behavior coverage includes missing/malformed authority,
+  repair handoff, exact action/semantics dispatch and model-precheck parity.

@@ -30,11 +30,23 @@ MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 sys.modules[MODULE_NAME] = MODULE
 SPEC.loader.exec_module(MODULE)
-build_actions = MODULE._build_payment_execution_form_actions
+ACTION_MODULE_NAME = "addons.smart_construction_core.services.payment_execution_business_actions"
+ACTION_SPEC = importlib.util.spec_from_file_location(
+    ACTION_MODULE_NAME,
+    ROOT / "addons" / "smart_construction_core" / "services" / "payment_execution_business_actions.py",
+)
+ACTION_MODULE = importlib.util.module_from_spec(ACTION_SPEC)
+assert ACTION_SPEC and ACTION_SPEC.loader
+sys.modules[ACTION_MODULE_NAME] = ACTION_MODULE
+ACTION_SPEC.loader.exec_module(ACTION_MODULE)
+build_actions = ACTION_MODULE.build_payment_execution_form_actions
+build_semantics = ACTION_MODULE.build_payment_execution_task_semantics
 build_form_actions = MODULE.build_financial_form_business_actions
 
 
 class Record:
+    _name = "sc.payment.execution"
+
     def __init__(
         self,
         *,
@@ -55,6 +67,19 @@ class Record:
         self._finance_handler = finance_handler
         self._finance_manager = finance_manager
         self._precheck_error = precheck_error
+        self.project_id = 11
+        self.payment_request_id = Request()
+        self.contract_id = 12
+        self.partner_id = 13
+        self.paid_amount = 80
+        self.payment_account_name = "FE Company"
+        self.payment_bank_name = "FE Bank"
+        self.payment_account_no = "****5678"
+        self.bank_account = ""
+        self.receipt_account_name = "FE Partner"
+        self.receipt_bank_name = "FE Receipt Bank"
+        self.receipt_account_no = "****1234"
+        self.payment_method = "bank"
 
     def _has_finance_handling_access(self):
         return self._finance_handler
@@ -71,6 +96,14 @@ class Record:
 
     def _check_company_contractor_payment_responsibility_or_raise(self):
         return None
+
+
+class Request:
+    material_settlement_id = None
+    unpaid_amount = 80
+
+    def _has_payment_basis(self):
+        return True
 
 
 def by_method(record: Record) -> dict[str, dict]:
@@ -95,6 +128,8 @@ class PaymentExecutionActionContractTest(unittest.TestCase):
             MODULE._safe_record = original
         self.assertEqual(model.record_id, 17)
         self.assertIn("action_confirm", {row["method"] for row in payload["actions"]})
+        self.assertEqual(payload["task_semantics"]["version"], "v1")
+        self.assertFalse(payload["task_semantics"]["blockers"]["payment_fact_readiness"]["active"])
 
     def test_draft_uses_model_handling_capability_and_keeps_manager_handoff_visible(self):
         rows = by_method(Record())
@@ -112,6 +147,36 @@ class PaymentExecutionActionContractTest(unittest.TestCase):
         self.assertFalse(row["enabled"])
         self.assertEqual(row["reason_code"], "PAYMENT_EXECUTION_FACTS_INCOMPLETE")
         self.assertEqual(row["blocked_message"], "缺少付款账户")
+
+    def test_task_semantics_materialize_exact_model_precheck(self):
+        record = Record(precheck_error="缺少付款账户")
+        record.payment_account_name = ""
+        semantics = build_semantics(record)
+        blocker = semantics["blockers"]["payment_fact_readiness"]
+        self.assertTrue(blocker["active"])
+        self.assertEqual(blocker["reason_code"], "PAYMENT_EXECUTION_FACTS_INCOMPLETE")
+        self.assertEqual(blocker["message"], "缺少付款账户")
+        self.assertIn("付款户名", blocker["missing_items"])
+        self.assertIn("payment_account_name", blocker["repair_field_names"])
+
+    def test_task_semantics_do_not_turn_optional_reversal_into_global_blocker(self):
+        semantics = build_semantics(Record(state="paid", finance_manager=True, reversal_reason=""))
+        self.assertFalse(semantics["blockers"]["payment_fact_readiness"]["active"])
+
+    def test_invalid_amount_is_named_by_domain_blocker(self):
+        record = Record(precheck_error="实付金额必须大于0")
+        record.paid_amount = -1
+        blocker = build_semantics(record)["blockers"]["payment_fact_readiness"]
+        self.assertTrue(blocker["active"])
+        self.assertIn("本次实付金额", blocker["missing_items"])
+        self.assertIn("paid_amount", blocker["repair_field_names"])
+
+    def test_readonly_source_gap_has_no_false_local_repair_field(self):
+        record = Record(precheck_error="收款账号缺失")
+        record.receipt_account_no = ""
+        blocker = build_semantics(record)["blockers"]["payment_fact_readiness"]
+        self.assertIn("收款账号", blocker["missing_items"])
+        self.assertNotIn("receipt_account_no", blocker["repair_field_names"])
 
     def test_pending_approval_uses_oca_can_review_verdict(self):
         denied = by_method(Record(validation_status="pending", can_review=False))

@@ -134,8 +134,15 @@ after the terminal profile is stable, so vendor controls cannot influence contra
   qualification or runtime state.
 - Payment execution submission, approval handoff, paid posting, cancellation and
   reversal now use a separate C3 task profile backed by canonical
-  `sc.payment.execution` action/status verdicts. The payment-request profile does
-  not impersonate these downstream capabilities.
+  `sc.payment.execution` action/status verdicts. Its construction-domain service
+  now owns the exact model precheck, publishes structured payment-fact blocker
+  semantics beside the action verdicts, and names missing facts without asking the
+  terminal or frontend to infer them. The terminal fails closed when that semantic
+  supply is absent or malformed and exposes a repair handoff only from canonical
+  widget editability. Optional reversal remains a completed-payment capability;
+  an empty reversal reason does not falsely turn a completed payment into a global
+  task blocker. The payment-request profile does not impersonate these downstream
+  capabilities.
 - C4 pure simulation now proves retry-stable seals, role-handoff verdict changes
   without business-fact drift, relationship-anchor continuity, and explicit
   terminal states. It is not a substitute for ORM transactions or browser evidence.

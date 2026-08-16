@@ -65,7 +65,6 @@ _INPUT_FIELDS = {
     "reversal_reason": "reversal_reason",
 }
 
-
 def _stage(state: str, validation_status: str) -> str:
     if state in {"paid", "cancel", "legacy_confirmed"}:
         return "complete"
@@ -74,6 +73,77 @@ def _stage(state: str, validation_status: str) -> str:
     if state == "confirmed":
         return "payment"
     return "preparation"
+
+
+def _blockers(contract: dict) -> tuple[dict, bool, set[str]] | None:
+    semantics = as_dict(as_dict(contract.get("runtimeContract")).get("businessTaskSemantics"))
+    if text(semantics.get("version")) != "v1" or not text(semantics.get("source_authority")):
+        return None
+    row = as_dict(as_dict(semantics.get("blockers")).get("payment_fact_readiness"))
+    active = row.get("active")
+    missing_items = row.get("missing_items")
+    repair_fields = row.get("repair_field_names")
+    if not isinstance(active, bool) or not isinstance(missing_items, list) or not isinstance(repair_fields, list):
+        return None
+    normalized_repair_fields = {text(item) for item in repair_fields if text(item)}
+    if normalized_repair_fields - set(_INPUT_FIELDS.values()):
+        return None
+    reason_code = text(row.get("reason_code"))
+    message = text(row.get("message"))
+    source_authority = text(row.get("source_authority"))
+    if not source_authority or (active and (not reason_code or not message)):
+        return None
+    blocker = {
+        "active": active,
+        "reason_code": reason_code,
+        "message": message,
+        "missing_items": [text(item) for item in missing_items if text(item)],
+        "source_authority": source_authority,
+    }
+    return {"payment_fact_readiness": blocker}, active, normalized_repair_fields
+
+
+def _payment_facts_can_edit(contract: dict, repair_fields: set[str]) -> bool:
+    if not repair_fields:
+        return False
+    for row in as_list(as_dict(contract.get("statusContract")).get("widgetStatus")):
+        if not isinstance(row, dict):
+            continue
+        widget_id = text(row.get("widgetId"))
+        if not widget_id.startswith("field.") or widget_id[6:] not in repair_fields:
+            continue
+        if row.get("visible") is True and row.get("readonly") is False and row.get("disabled") is False:
+            return True
+    return False
+
+
+def _repair_capability(*, active: bool, authorized: bool) -> dict:
+    enabled = bool(active and authorized)
+    return {
+        "visible": bool(active),
+        "business_available": bool(active),
+        "authorization_allowed": bool(authorized),
+        "enabled": enabled,
+        "reason_code": "" if enabled else "STATE_NOT_APPLICABLE" if not active else "ROLE_HANDOFF_REQUIRED",
+        "reason": "" if enabled else "当前付款事实不可编辑，请移交有权经办人。" if active else "",
+        "source_authority": "canonical_payment_execution_widget_status",
+    }
+
+
+def _apply_payment_fact_blocker(capabilities: dict[str, dict], *, blocker: dict) -> None:
+    if not blocker.get("active"):
+        return
+    for key in ("payment_execution.submit", "payment_execution.mark_paid"):
+        row = capabilities[key]
+        if not (row.get("visible") or row.get("business_available")):
+            continue
+        row.update({
+            "business_available": False,
+            "enabled": False,
+            "reason_code": text(blocker.get("reason_code")) or "PAYMENT_EXECUTION_FACTS_INCOMPLETE",
+            "reason": text(blocker.get("message")) or "付款事实尚未满足当前办理条件，请先完成阻断项。",
+            "source_authority": "canonical_action_and_payment_execution_model_prechecks",
+        })
 
 
 def _current_capability(state: str, validation_status: str, capabilities: dict[str, dict]) -> str:
@@ -100,11 +170,27 @@ def project_payment_execution_business_task_scene(contract: dict, *, render_prof
         return None
 
     source = "normalized_payment_execution_contract"
+    blocker_projection = _blockers(contract)
+    if blocker_projection is None:
+        return None
+    blockers, payment_facts_blocked, repair_fields = blocker_projection
     capabilities = canonical_action_capabilities(contract, _CAPABILITY_METHODS)
+    _apply_payment_fact_blocker(
+        capabilities,
+        blocker=blockers["payment_fact_readiness"],
+    )
+    capabilities["payment_execution.complete_facts"] = _repair_capability(
+        active=payment_facts_blocked,
+        authorized=_payment_facts_can_edit(contract, repair_fields),
+    )
     state = text(record.get("state"))
     validation_status = text(record.get("validation_status"))
     complete = state in {"paid", "cancel", "legacy_confirmed"}
-    next_key = "" if complete else _current_capability(state, validation_status, capabilities)
+    next_key = "" if complete else (
+        "payment_execution.complete_facts"
+        if payment_facts_blocked
+        else _current_capability(state, validation_status, capabilities)
+    )
     if not complete and not next_key:
         return None
 
@@ -134,7 +220,7 @@ def project_payment_execution_business_task_scene(contract: dict, *, render_prof
         },
         "facts": facts,
         "inputs": inputs,
-        "blockers": {},
+        "blockers": blockers,
         "capabilities": capabilities,
         "evidence": {
             "attachments": {"state": "ready", "count": len(as_list(record.get("attachment_ids"))), "required": False, "source_authority": source},

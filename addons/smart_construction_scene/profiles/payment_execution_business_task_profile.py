@@ -43,14 +43,22 @@ def payment_execution_task_profile_v1() -> dict:
             {"key": "note", "label": "办理说明", "group": "evidence", "input_kind": "multiline"},
             {"key": "reversal_reason", "label": "冲销原因", "group": "audit", "input_kind": "multiline"},
         ],
-        "blockers": [],
+        "blockers": [
+            {
+                "key": "payment_fact_readiness",
+                "label": "付款事实完整度",
+                "repair_capability_key": "payment_execution.complete_facts",
+                "owner": "finance_operator",
+            },
+        ],
         "capabilities": [
-            {"key": "payment_execution.submit", "label": "提交审批", "presentation": "primary", "safety": "confirm", "idempotency": "record_transition", "outcome": "submitted", "blocked_by": []},
+            {"key": "payment_execution.submit", "label": "提交审批", "presentation": "primary", "safety": "confirm", "idempotency": "record_transition", "outcome": "submitted", "blocked_by": ["payment_fact_readiness"]},
             {"key": "payment_execution.approve", "label": "审批通过", "presentation": "primary", "safety": "confirm", "idempotency": "record_transition", "outcome": "confirmed", "blocked_by": [], "handoff": "finance_approver"},
             {"key": "payment_execution.reject", "label": "审批驳回", "presentation": "secondary", "safety": "reason_required", "idempotency": "record_transition", "outcome": "rejected", "blocked_by": [], "handoff": "finance_operator"},
-            {"key": "payment_execution.mark_paid", "label": "登记已付款", "presentation": "primary", "safety": "confirm", "idempotency": "ledger_posting", "outcome": "paid", "blocked_by": [], "handoff": "finance_manager"},
+            {"key": "payment_execution.mark_paid", "label": "登记已付款", "presentation": "primary", "safety": "confirm", "idempotency": "ledger_posting", "outcome": "paid", "blocked_by": ["payment_fact_readiness"], "handoff": "finance_manager"},
             {"key": "payment_execution.cancel", "label": "取消付款登记", "presentation": "secondary", "safety": "confirm", "idempotency": "record_transition", "outcome": "cancelled", "blocked_by": [], "handoff": "finance_manager"},
             {"key": "payment_execution.reverse", "label": "冲销付款", "presentation": "secondary", "safety": "reason_required", "idempotency": "ledger_reversal", "outcome": "reversed", "blocked_by": [], "handoff": "finance_manager"},
+            {"key": "payment_execution.complete_facts", "label": "补全付款事实", "presentation": "recommended", "safety": "safe_navigation", "idempotency": "read_only", "outcome": "payment_facts_edit_opened", "blocked_by": []},
         ],
         "evidence": [
             {"key": "attachments", "label": "付款凭证", "kind": "attachment", "group": "evidence"},

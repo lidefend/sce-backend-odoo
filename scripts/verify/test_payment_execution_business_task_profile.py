@@ -105,7 +105,7 @@ def normalized_contract(*, state: str = "draft", validation_status: str = "no", 
         rules.append(rule)
         buttons.append(status)
     widget_status = [
-        {"widgetId": f"field.{field}", "visible": True, "readonly": field == "reversal_reason", "required": field in {"paid_amount", "payment_method"}, "disabled": False}
+        {"widgetId": f"field.{field}", "visible": True, "readonly": field == "reversal_reason" or state != "draft", "required": field in {"paid_amount", "payment_method"}, "disabled": False}
         for field in ("date_payment", "paid_amount", "payment_method", "payment_account_name", "payment_bank_name", "payment_account_no", "note", "reversal_reason")
     ]
     return {
@@ -113,7 +113,23 @@ def normalized_contract(*, state: str = "draft", validation_status: str = "no", 
         "dataContract": {"mainData": fields},
         "actionContract": {"actionRuleList": rules},
         "statusContract": {"buttonStatus": buttons, "widgetStatus": widget_status},
-        "runtimeContract": {"existing": {"kept": True}},
+        "runtimeContract": {
+            "existing": {"kept": True},
+            "businessTaskSemantics": {
+                "version": "v1",
+                "source_authority": "payment_execution_model_prechecks",
+                "blockers": {
+                    "payment_fact_readiness": {
+                        "active": False,
+                        "reason_code": "",
+                        "message": "",
+                        "missing_items": [],
+                        "repair_field_names": [],
+                        "source_authority": "payment_execution_model_prechecks.payment_facts",
+                    },
+                },
+            },
+        },
     }
 
 
@@ -165,6 +181,66 @@ class PaymentExecutionBusinessTaskProfileTest(unittest.TestCase):
         contract["statusContract"]["widgetStatus"] = []
         task = business_task(contract)
         self.assertTrue(all(not row["visible"] and row["readonly"] for row in task["inputs"]))
+
+    def test_domain_blocker_disables_submit_and_exposes_repair(self):
+        contract = normalized_contract()
+        blocker = contract["runtimeContract"]["businessTaskSemantics"]["blockers"]["payment_fact_readiness"]
+        blocker.update({
+            "active": True,
+            "reason_code": "PAYMENT_EXECUTION_FACTS_INCOMPLETE",
+            "message": "请补全付款事实。",
+            "missing_items": ["付款方式"],
+            "repair_field_names": ["payment_method"],
+        })
+        task = business_task(contract)
+        self.assertEqual(task["completion"]["next_capability_key"], "payment_execution.complete_facts")
+        submit = next(row for row in task["capabilities"] if row["key"] == "payment_execution.submit")
+        repair = next(row for row in task["capabilities"] if row["key"] == "payment_execution.complete_facts")
+        self.assertFalse(submit["enabled"])
+        self.assertEqual(submit["reason_code"], "PAYMENT_EXECUTION_FACTS_INCOMPLETE")
+        self.assertEqual(submit["reason"], "请补全付款事实。")
+        self.assertTrue(repair["enabled"])
+
+    def test_confirmed_blocker_keeps_repair_visible_but_hands_off(self):
+        contract = normalized_contract(state="confirmed", validation_status="validated", active_method="action_paid")
+        blocker = contract["runtimeContract"]["businessTaskSemantics"]["blockers"]["payment_fact_readiness"]
+        blocker.update({
+            "active": True,
+            "reason_code": "PAYMENT_EXECUTION_FACTS_INCOMPLETE",
+            "message": "已确认付款事实需要受控修正。",
+            "missing_items": ["付款账号"],
+            "repair_field_names": ["payment_account_no"],
+        })
+        task = business_task(contract)
+        repair = next(row for row in task["capabilities"] if row["key"] == "payment_execution.complete_facts")
+        self.assertEqual(task["completion"]["next_capability_key"], "payment_execution.complete_facts")
+        self.assertTrue(repair["visible"])
+        self.assertFalse(repair["authorization_allowed"])
+        self.assertFalse(repair["enabled"])
+
+    def test_missing_or_malformed_domain_semantics_fail_closed(self):
+        missing = normalized_contract()
+        del missing["runtimeContract"]["businessTaskSemantics"]
+        self.assertIsNone(project(missing))
+        malformed = normalized_contract()
+        malformed["runtimeContract"]["businessTaskSemantics"]["blockers"]["payment_fact_readiness"]["active"] = "no"
+        self.assertIsNone(project(malformed))
+
+    def test_readonly_source_gap_does_not_advertise_false_repair(self):
+        contract = normalized_contract()
+        blocker = contract["runtimeContract"]["businessTaskSemantics"]["blockers"]["payment_fact_readiness"]
+        blocker.update({
+            "active": True,
+            "reason_code": "PAYMENT_EXECUTION_FACTS_INCOMPLETE",
+            "message": "来源收款账户不完整。",
+            "missing_items": ["收款账号"],
+            "repair_field_names": [],
+        })
+        task = business_task(contract)
+        repair = next(row for row in task["capabilities"] if row["key"] == "payment_execution.complete_facts")
+        self.assertTrue(repair["visible"])
+        self.assertFalse(repair["authorization_allowed"])
+        self.assertFalse(repair["enabled"])
 
     def test_wrong_model_and_missing_current_action_fail_closed(self):
         wrong = normalized_contract()
