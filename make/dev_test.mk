@@ -119,6 +119,8 @@ verify.project.management.acceptance: guard.prod.forbid verify.project.managemen
 	@python3 scripts/verify/project_management_productization_acceptance_export.py
 
 verify.frontend.intent_channel.guard: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 -m unittest scripts/verify/test_frontend_intent_channel_guard.py
+	@python3 scripts/verify/user_activation_security_contract.py
 	@python3 scripts/verify/frontend_intent_channel_guard.py
 
 .PHONY: verify.frontend.contract_runtime.guard
