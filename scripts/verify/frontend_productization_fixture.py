@@ -139,6 +139,44 @@ for model_name in MODELS:
             fail("member direct read unexpectedly allowed for %s/%s" % (model_name, project.name))
 
 finance = by_login["fixture_role_finance"]
+
+pfl035_execution_policy = env.ref(
+    "smart_construction_acceptance_fixture.fe_pfl035_payment_execution_approval_policy",
+    raise_if_not_found=False,
+)
+pfl035_execution_step = env.ref(
+    "smart_construction_acceptance_fixture.fe_pfl035_payment_execution_approval_step",
+    raise_if_not_found=False,
+)
+if not pfl035_execution_policy or not pfl035_execution_step:
+    fail("missing PFL-035 payment execution approval fixture")
+if not (
+    pfl035_execution_policy.active
+    and pfl035_execution_policy.company_id == company_a
+    and pfl035_execution_policy.target_model == "sc.payment.execution"
+    and pfl035_execution_policy.approval_required
+    and pfl035_execution_policy.mode == "single"
+    and pfl035_execution_policy.runtime_state == "tier_validation"
+):
+    fail("PFL-035 payment execution approval policy is invalid")
+active_steps = pfl035_execution_policy.step_ids.filtered("active")
+if active_steps != pfl035_execution_step:
+    fail("PFL-035 payment execution approval steps are not deterministic")
+finance_manager_group = env.ref(
+    "smart_construction_core.group_sc_cap_finance_manager"
+)
+tier_definition = pfl035_execution_step.tier_definition_id
+if not (
+    pfl035_execution_step.approve_group_id == finance_manager_group
+    and pfl035_execution_step.approval_scope_key == "finance_manager"
+    and tier_definition
+    and tier_definition.active
+    and tier_definition.model == "sc.payment.execution"
+    and tier_definition.company_id == company_a
+    and tier_definition.reviewer_group_id == finance_manager_group
+):
+    fail("PFL-035 OCA tier definition is invalid")
+
 finance_a = env(user=finance, context={**env.context, "allowed_company_ids": [company_a.id]})
 finance_b = env(user=finance, context={**env.context, "allowed_company_ids": [company_b.id]})
 requests_a = finance_a["payment.request"].search([("name", "like", "FE-%-PR-%")])
@@ -345,5 +383,13 @@ print(json.dumps({
         "payment_request": journey_request.name,
         "state": journey_request.state,
         "ledger_count": len(journey_request.ledger_line_ids),
+    },
+    "pfl035_payment_execution_approval": {
+        "policy": pfl035_execution_policy.code,
+        "mode": pfl035_execution_policy.mode,
+        "step": pfl035_execution_step.name,
+        "scope": pfl035_execution_step.approval_scope_key,
+        "tier_definition_id": tier_definition.id,
+        "tier_definition_model": tier_definition.model,
     },
 }, ensure_ascii=False, indent=2))

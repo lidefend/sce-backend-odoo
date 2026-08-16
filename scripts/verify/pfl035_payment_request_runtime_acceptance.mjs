@@ -849,15 +849,56 @@ try {
   result.business_paths.push({ name: 'approved-complete-generate-execution', role: 'finance_manager', record_id: IDS.approved, execution_id: createdExecutionId, status: executionList.status, rows: executionRows, pass: positivePass });
   check(positivePass, 'positive: saved execution must trace to approved request');
 
-  // Complete the actual user task in the browser. API reads below verify the
-  // resulting facts; they never substitute for the submit/paid UI actions.
-  await clickAuthoritativeObjectAction(manager, 'action_confirm', 'execution-submit-confirm');
-  const confirmedRows = await intent(manager, 'api.data', {
-    op: 'list', model: 'sc.payment.execution', fields: ['id', 'state', 'payment_request_id'],
+  // Complete the actual user task with a capability-based role handoff.  The
+  // finance user submits the document into OCA tier validation; the finance
+  // manager reviews the generated tier.review and only then registers payment.
+  const executionUrl = manager.url();
+  const submitterContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
+  const submitter = await submitterContext.newPage();
+  attachDiagnostics(submitter, 'finance_user_execution_submitter');
+  await login(submitter, LOGINS.user, 'finance_user_execution_submitter');
+  await submitter.goto(executionUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await waitForStablePage(submitter, 'form');
+  await clickAuthoritativeObjectAction(submitter, 'action_confirm', 'execution-submit-for-oca-review');
+  const submittedRows = await intent(submitter, 'api.data', {
+    op: 'list', model: 'sc.payment.execution', fields: ['id', 'state', 'validation_status', 'review_ids', 'payment_request_id'],
     domain: [['id', '=', createdExecutionId]], limit: 1,
-  }, 'execution-confirmed-verify');
+  }, 'execution-oca-submitted-verify');
+  const submitted = submittedRows.data?.records?.[0] || null;
+  const submittedReviewIds = Array.isArray(submitted?.review_ids) ? submitted.review_ids.map(Number).filter(Boolean) : [];
+  const submittedPass = submittedRows.status === 200
+    && submitted?.state === 'draft'
+    && ['waiting', 'pending'].includes(String(submitted?.validation_status || ''))
+    && submittedReviewIds.length === 1;
+  result.business_paths.push({
+    name: 'execution-finance-user-submit-oca-review', role: 'finance_user',
+    execution_id: createdExecutionId, execution: submitted,
+    oca_review_ids: submittedReviewIds, pass: submittedPass,
+  });
+  check(submittedPass, 'execution: finance user submit must create one pending OCA review without confirming early', { row: submitted });
+  await shot(submitter, 'positive-execution-awaiting-approval');
+  await submitterContext.close();
+
+  await manager.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+  await waitForStablePage(manager, 'form');
+  await clickAuthoritativeObjectAction(manager, 'validate_tier', 'execution-finance-manager-oca-approve');
+  const confirmedRows = await intent(manager, 'api.data', {
+    op: 'list', model: 'sc.payment.execution', fields: ['id', 'state', 'validation_status', 'review_ids', 'payment_request_id'],
+    domain: [['id', '=', createdExecutionId]], limit: 1,
+  }, 'execution-oca-approved-verify');
   const confirmed = confirmedRows.data?.records?.[0] || null;
-  check(confirmedRows.status === 200 && confirmed?.state === 'confirmed', 'execution: submit must reach confirmed state', { row: confirmed });
+  const approvedReviewIds = Array.isArray(confirmed?.review_ids) ? confirmed.review_ids.map(Number).filter(Boolean) : [];
+  const approvalPass = confirmedRows.status === 200
+    && confirmed?.state === 'confirmed'
+    && confirmed?.validation_status === 'validated'
+    && approvedReviewIds.length === 1
+    && approvedReviewIds[0] === submittedReviewIds[0];
+  result.business_paths.push({
+    name: 'execution-finance-manager-oca-approve', role: 'finance_manager',
+    execution_id: createdExecutionId, execution: confirmed,
+    oca_review_ids: approvedReviewIds, pass: approvalPass,
+  });
+  check(approvalPass, 'execution: finance manager approval must validate the same OCA review and confirm execution', { row: confirmed });
   await shot(manager, 'positive-execution-confirmed');
 
   await clickAuthoritativeObjectAction(manager, 'action_paid', 'execution-register-paid');

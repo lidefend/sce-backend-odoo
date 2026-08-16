@@ -325,12 +325,34 @@ def _settlement(env, suffix, project, contract, partner, state, amount):
 
 def _request(env, suffix, sequence, project, contract, settlement, partner, state, amount):
     name = "FE-%s-PR-%03d" % (suffix, sequence)
+    xmlid_name = "fe_request_%s_%03d" % (suffix.lower(), sequence)
     category = _ref(env, "smart_construction_core.business_category_finance_payment_apply_pay")
     validation_status = "validated" if state in ("approved", "done") else "no"
-    return _upsert(
+    existing = env.ref(
+        "%s.%s" % (MODULE, xmlid_name), raise_if_not_found=False
+    )
+    if existing:
+        # A completed browser journey can leave this fixture-owned request in
+        # done/approved with OCA reviews. Restore only the disposable row to an
+        # ORM-editable phase, reconcile its facts through _upsert, then freeze
+        # the requested workflow state below. Product state guards stay intact.
+        existing.sudo().review_ids.unlink()
+        env["mail.activity"].sudo().search(
+            [("res_model", "=", "payment.request"), ("res_id", "=", existing.id)]
+        ).unlink()
+        env.cr.execute(
+            "UPDATE payment_request "
+            "SET state='draft', validation_status='no', reject_reason=NULL "
+            "WHERE id=%s",
+            (existing.id,),
+        )
+        existing.invalidate_recordset(
+            ["state", "validation_status", "reject_reason"]
+        )
+    record = _upsert(
         env,
         "payment.request",
-        "fe_request_%s_%03d" % (suffix.lower(), sequence),
+        xmlid_name,
         [("name", "=", name), ("project_id", "=", project.id)],
         {
             "name": name,
@@ -342,12 +364,6 @@ def _request(env, suffix, sequence, project, contract, settlement, partner, stat
             "partner_id": partner.id,
             "currency_id": project.company_id.currency_id.id,
             "amount": amount,
-            "state": state,
-            # Business state and tier-validation state are one workflow fact.
-            # An approved fixture with validation_status=no can render as
-            # executable but will be rejected when payment completion advances
-            # the request to done.
-            "validation_status": validation_status,
             # A payment request owns an immutable account snapshot.  Keeping
             # only the partner default would make the form look incomplete
             # even though the execution guard can resolve a fallback.
@@ -358,6 +374,14 @@ def _request(env, suffix, sequence, project, contract, settlement, partner, stat
             "note": "FE-%s deterministic payment request" % suffix,
         },
     )
+    # Business state and tier-validation state are one workflow fact. Freeze
+    # them together after all editable facts have been reconciled.
+    env.cr.execute(
+        "UPDATE payment_request SET state=%s, validation_status=%s WHERE id=%s",
+        (state, validation_status, record.id),
+    )
+    record.invalidate_recordset(["state", "validation_status"])
+    return record
 
 
 def _execution(env, suffix, project, contract, request, partner, finance, state, amount):
@@ -382,8 +406,6 @@ def _execution(env, suffix, project, contract, request, partner, finance, state,
             "active": True,
         },
     )
-
-
 def _reconcile_payment_facts(env, requests, finance):
     """Return fixture requests to a reusable state without deleting finance facts."""
     requests = requests.exists()
@@ -791,6 +813,56 @@ def ensure_fixture(env) -> Dict[str, Any]:
         [company_a],
         ["smart_construction_core.group_sc_role_finance_user"],
     )
+
+    # PFL-035 must exercise the real base_tier_validation runtime.  The
+    # company-specific policy wins over generic templates and is owned by the
+    # disposable acceptance fixture, so repeated resets remain deterministic.
+    finance_manager_group = _ref(
+        env, "smart_construction_core.group_sc_cap_finance_manager"
+    )
+    pfl035_execution_policy = _upsert(
+        env,
+        "sc.approval.policy",
+        "fe_pfl035_payment_execution_approval_policy",
+        [
+            ("target_model", "=", "sc.payment.execution"),
+            ("company_id", "=", company_a.id),
+        ],
+        {
+            "name": "PFL-035 付款执行审批",
+            "code": "fe_pfl035_payment_execution_approval",
+            "active": True,
+            "sequence": 10,
+            "company_id": company_a.id,
+            "target_model": "sc.payment.execution",
+            "approval_required": True,
+            "trigger": "submit",
+            "mode": "single",
+            "runtime_state": "tier_validation",
+            "manager_scope_key": "finance_manager",
+            "manager_group_id": finance_manager_group.id,
+            "note": "PFL-035 acceptance: finance user submits and finance manager reviews through OCA tier validation.",
+        },
+    )
+    pfl035_execution_step = _upsert(
+        env,
+        "sc.approval.step",
+        "fe_pfl035_payment_execution_approval_step",
+        [
+            ("policy_id", "=", pfl035_execution_policy.id),
+            ("name", "=", "财务经理审批"),
+        ],
+        {
+            "policy_id": pfl035_execution_policy.id,
+            "active": True,
+            "sequence": 10,
+            "name": "财务经理审批",
+            "approval_scope_key": "finance_manager",
+            "approve_group_id": finance_manager_group.id,
+            "condition_note": "全部 PFL-035 付款执行由财务经理审批",
+        },
+    )
+    pfl035_execution_policy.sync_tier_definitions()
     project_member = _user(
         env,
         "fixture_role_project_a_member",
@@ -1059,5 +1131,8 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "draft": pfl035_draft.name,
             "receive": pfl035_receive.name,
             "incomplete": pfl035_incomplete.name,
+            "execution_approval_policy": pfl035_execution_policy.code,
+            "execution_approval_step": pfl035_execution_step.name,
+            "oca_tier_definition": pfl035_execution_step.tier_definition_id.name,
         },
     }

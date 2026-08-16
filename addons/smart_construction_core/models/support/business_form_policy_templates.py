@@ -573,7 +573,20 @@ def _payment_execution_policy(title: str) -> dict:
             _section("amount", title, ["date_payment", "paid_amount", "planned_amount", "invoice_amount", "currency_id"], 30),
             _section("receipt_account", "收款账户", ["receipt_account_name", "receipt_bank_name", "receipt_account_no"], 40),
             _section("payment_account", "付款账户", ["payment_account_name", "payment_bank_name", "payment_account_no", "bank_account"], 50),
-            _section("handling", "办理说明", ["payment_method", "handler_name", "document_no", "note", "attachment_ids"], 60),
+            _section(
+                "handling",
+                "办理说明",
+                [
+                    "payment_method",
+                    "handler_name",
+                    "document_no",
+                    "note",
+                    "cancellation_kind",
+                    "reversal_reason",
+                    "attachment_ids",
+                ],
+                60,
+            ),
             _section(
                 "responsibility_balance",
                 "公司-承包人资金责任",
@@ -600,7 +613,14 @@ def _payment_execution_policy(title: str) -> dict:
             "payment_account_name",
             "payment_account_no",
         ),
-        readonly_all=("operation_strategy", "execution_flow_label", "payment_family", "source_kind") + SYSTEM_FIELDS,
+        readonly_all=(
+            "operation_strategy",
+            "execution_flow_label",
+            "payment_family",
+            "source_kind",
+            "cancellation_kind",
+        )
+        + SYSTEM_FIELDS,
         hide_create=("payment_family", "source_kind", "push_result", "kingdee_document_no"),
         readonly_only=(
             "push_result",

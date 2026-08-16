@@ -1332,6 +1332,43 @@ class TestP1PaymentRequestCapability(TransactionCase):
         for anchor in ("payment_request_id", "project_id", "partner_id", "contract_id"):
             self.assertTrue(fields[anchor]["readonly"])
 
+        execution_policy = get_business_category_form_policy_templates()[
+            "finance.payment.execution.partner"
+        ]
+        execution_policy_fields = {
+            row["name"]: row for row in execution_policy["fields"]
+        }
+        execution_policy_sections = {
+            field_name
+            for section in execution_policy["sections"]
+            for field_name in section["fields"]
+        }
+        self.assertIn("cancellation_kind", execution_policy_sections)
+        self.assertIn("reversal_reason", execution_policy_sections)
+        self.assertEqual(
+            execution_policy_fields["cancellation_kind"]["readonly_profiles"],
+            ["create", "edit", "readonly"],
+        )
+        self.assertNotIn(
+            "readonly_profiles", execution_policy_fields["reversal_reason"]
+        )
+        execution_form = self.env.ref(
+            "smart_construction_core.view_sc_payment_execution_form"
+        ).arch_db
+        execution_root = etree.fromstring(execution_form.encode("utf-8"))
+        cancellation_node = execution_root.xpath(
+            ".//field[@name='cancellation_kind']"
+        )[0]
+        reversal_node = execution_root.xpath(".//field[@name='reversal_reason']")[0]
+        self.assertEqual(cancellation_node.get("readonly"), "1")
+        self.assertEqual(
+            cancellation_node.get("invisible"), "state not in ('paid', 'cancel')"
+        )
+        self.assertEqual(
+            reversal_node.get("invisible"), "state not in ('paid', 'cancel')"
+        )
+        self.assertEqual(reversal_node.get("readonly"), "state != 'paid'")
+
         generated_contract = self.env.ref(
             "smart_construction_core.business_config_contract_payment_request_form_structure_generated"
         )
