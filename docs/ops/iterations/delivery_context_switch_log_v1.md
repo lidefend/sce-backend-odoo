@@ -4450,6 +4450,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   one active step and its OCA definition. The journey must create one pending
   `tier.review`, approve that same review, then complete payment and reversal.
 
+## Frontend intent-channel activation transport boundary (2026-08-16)
+
+- Branch / base SHA: `fix/frontend-intent-channel-auth-boundary-v1` /
+  `42f0241083f8b1e530172aa1425a62059d5079a4`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / frontend
+  intent transport guard / `frontend/apps/web` and its static verification.
+- Reason: enterprise activation intentionally uses three unauthenticated,
+  no-session, no-store bootstrap routes, while the existing guard only allowed
+  `/api/v1/intent` and therefore rejected the already frozen security design.
+- Why Here / Why Not Elsewhere: the exception belongs to the generic transport
+  boundary and is bound to one adapter plus three exact routes. It does not add
+  authentication behavior, P1 business semantics, P4 runtime configuration or
+  an `/api/v1/auth/*` wildcard.
+- Blast radius / validation: frontend static API-path classification only. The
+  target verifies the current repository, wrong-file use, unknown auth routes,
+  stale exceptions and the unchanged intent-only default before running the
+  production source scan.
+
 ## Exact synthetic payment-fixture history exemption (2026-08-16)
 
 - Branch / base SHA: `fix/pd003-payment-fixture-exemption-v1` /

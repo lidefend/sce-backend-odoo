@@ -66,6 +66,13 @@ verified recovery channel exists. Public SaaS registration remains disabled.
 The activation code and activation context are forbidden from query parameters,
 persistent browser storage, application/access logs and audit exports.
 
+The three activation/recovery bootstrap routes are the only SPA transport
+exception to the unified intent endpoint. The exception is bound to the
+dedicated activation adapter and exact route set because no authenticated
+principal exists yet and the controller must enforce `save_session=False` and
+no-store response headers. It is not a wildcard exception for `/api/v1/auth/*`;
+all authenticated product operations continue to use `/api/v1/intent`.
+
 ## Binding and mutation boundary
 
 Each credential binds the immutable user identity, tenant, environment, target login,
