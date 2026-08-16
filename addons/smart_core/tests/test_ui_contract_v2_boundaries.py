@@ -168,6 +168,145 @@ class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
 
+    def test_final_modifier_dependency_beyond_snapshot_budget_is_hydrated(self):
+        class _Field:
+            type = "selection"
+
+        class _Record:
+            def __init__(self):
+                self.read_fields = []
+
+            def exists(self):
+                return self
+
+            def read(self, fields):
+                self.read_fields.append(list(fields))
+                return [{"type": "pay"}]
+
+        class _Model:
+            def __init__(self):
+                self._fields = {"type": _Field()}
+                self.record = _Record()
+
+            def browse(self, record_id):
+                self.record_id = record_id
+                return self.record
+
+        model = _Model()
+        handler = self.module.UiContractV2Handler(env={"x.document": model})
+        contract = {
+            "actionContract": {
+                "actionRuleList": [{
+                    "backendIdentity": "button:object:action_execute",
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "type",
+                            "operator": "!=",
+                            "value": "pay",
+                        },
+                    },
+                }],
+            },
+            "dataContract": {
+                "mainData": {f"field_{index}": index for index in range(80)},
+            },
+        }
+
+        self.module.hydrate_final_modifier_dependencies(
+            handler.env,
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+        )
+
+        self.assertEqual(contract["dataContract"]["mainData"]["type"], "pay")
+        self.assertEqual(model.record_id, 42)
+        self.assertEqual(model.record.read_fields, [["type"]])
+
+    def test_final_modifier_hydration_performs_no_read_without_missing_dependency(self):
+        class _Model:
+            _fields = {"type": type("Field", (), {"type": "selection"})()}
+
+            def browse(self, _record_id):
+                raise AssertionError("record read must not occur")
+
+        handler = self.module.UiContractV2Handler(env={"x.document": _Model()})
+        contract = {
+            "actionContract": {"actionRuleList": []},
+            "dataContract": {"mainData": {"name": "Document"}},
+        }
+
+        self.module.hydrate_final_modifier_dependencies(
+            handler.env,
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+        )
+
+        self.assertEqual(contract["dataContract"]["mainData"], {"name": "Document"})
+
+    def test_final_modifier_hydration_runs_after_runtime_action_projection(self):
+        observed = {}
+        original_hydrate = self.module.hydrate_final_modifier_dependencies
+
+        def _capture_hydration(_env, contract, **_kwargs):
+            observed["projected"] = self.module._captured.get("runtime_business_actions_projected")
+            observed["contract"] = contract
+
+        self.module.hydrate_final_modifier_dependencies = _capture_hydration
+        try:
+            result = self.module.UiContractV2Handler(env={}).handle(
+                payload={"params": {"model": "res.partner", "view_type": "form"}},
+            )
+        finally:
+            self.module.hydrate_final_modifier_dependencies = original_hydrate
+
+        self.assertTrue(result.ok)
+        self.assertTrue(observed["projected"])
+        self.assertIs(observed["contract"], result.data["contract"])
+
+    def test_final_modifier_hydration_keeps_missing_value_fail_closed_on_read_denial(self):
+        class _Record:
+            def exists(self):
+                return self
+
+            def read(self, _fields):
+                raise PermissionError("denied")
+
+        class _Model:
+            _fields = {"restricted_state": type("Field", (), {"type": "selection"})()}
+
+            def browse(self, _record_id):
+                return _Record()
+
+        handler = self.module.UiContractV2Handler(env={"x.document": _Model()})
+        contract = {
+            "actionContract": {"actionRuleList": [{
+                "modifiers": {
+                    "invisible": {
+                        "kind": "field_compare",
+                        "field": "restricted_state",
+                        "operator": "!=",
+                        "value": "ready",
+                    },
+                },
+            }]},
+            "dataContract": {"mainData": {}},
+        }
+
+        self.module.hydrate_final_modifier_dependencies(
+            handler.env,
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+        )
+
+        self.assertNotIn("restricted_state", contract["dataContract"]["mainData"])
+
     def test_group_entitlement_is_resolved_and_requirement_is_not_leaked(self):
         user = types.SimpleNamespace(has_group=lambda xmlid: xmlid == "base.group_system")
         handler = self.module.UiContractV2Handler(env=types.SimpleNamespace(user=user))
