@@ -75,6 +75,37 @@ def _stage(state: str, capabilities: dict[str, dict]) -> str:
     return "preparation"
 
 
+def _blockers(contract: dict) -> dict | None:
+    semantics = _dict(_dict(contract.get("runtimeContract")).get("businessTaskSemantics"))
+    if _text(semantics.get("version")) != "v1" or not _text(semantics.get("source_authority")):
+        return None
+    source_rows = _dict(semantics.get("blockers"))
+    out = {}
+    for key in (
+        "counterparty_eligibility",
+        "payment_basis_readiness",
+        "payee_account_readiness",
+    ):
+        row = _dict(source_rows.get(key))
+        active = row.get("active")
+        missing_items = row.get("missing_items")
+        if not isinstance(active, bool) or not isinstance(missing_items, list):
+            return None
+        reason_code = _text(row.get("reason_code"))
+        message = _text(row.get("message"))
+        source_authority = _text(row.get("source_authority"))
+        if not source_authority or (active and (not reason_code or not message)):
+            return None
+        out[key] = {
+            "active": active,
+            "reason_code": reason_code,
+            "message": message,
+            "missing_items": [_text(item) for item in missing_items if _text(item)],
+            "source_authority": source_authority,
+        }
+    return out
+
+
 def project_payment_request_business_task_scene(contract: dict, *, render_profile: str = "") -> dict | None:
     """Return one sealed terminal scene or ``None`` outside payment forms."""
 
@@ -97,33 +128,9 @@ def project_payment_request_business_task_scene(contract: dict, *, render_profil
         }
         for key, field in _FACT_FIELDS.items()
     }
-    account_missing = _text(record.get("payee_account_completeness")) == "incomplete"
-    basis_missing = not any(record.get(key) for key in ("contract_id", "settlement_id", "material_settlement_id"))
-    eligibility = _text(record.get("partner_transaction_eligibility"))
-    eligibility_blocked = bool(eligibility and eligibility not in {"eligible", "review"})
-    blockers = {
-        "counterparty_eligibility": {
-            "active": eligibility_blocked,
-            "reason_code": "COUNTERPARTY_NOT_ELIGIBLE" if eligibility_blocked else "",
-            "message": _text(record.get("partner_transaction_eligibility_reason")) if eligibility_blocked else "",
-            "missing_items": ["counterparty_eligibility"] if eligibility_blocked else [],
-            "source_authority": source,
-        },
-        "payment_basis_readiness": {
-            "active": basis_missing,
-            "reason_code": "PAYMENT_BASIS_REQUIRED" if basis_missing else "",
-            "message": "请补充付款依据" if basis_missing else "",
-            "missing_items": ["payment_basis"] if basis_missing else [],
-            "source_authority": source,
-        },
-        "payee_account_readiness": {
-            "active": account_missing,
-            "reason_code": "PAYEE_ACCOUNT_INCOMPLETE" if account_missing else "",
-            "message": _text(record.get("payment_blocking_reason_display")) if account_missing else "",
-            "missing_items": ["account_name", "bank_name", "account_number"] if account_missing else [],
-            "source_authority": source,
-        },
-    }
+    blockers = _blockers(contract)
+    if blockers is None:
+        return None
     repair_by_blocker = {
         "counterparty_eligibility": "counterparty.resolve_eligibility",
         "payment_basis_readiness": "payment_request.complete_basis",

@@ -126,7 +126,11 @@ after the terminal profile is stable, so vendor controls cannot influence contra
   post-canonical extension point
   now projects the existing normalized action verdicts and hydrated facts into a
   sealed `runtimeContract.businessTaskSceneContract`; it never recomputes ACLs,
-  roles or business availability. It does not yet change the payment product
+  roles, business availability or blocker applicability. Payment-request
+  available-actions now performs the same non-mutating submission checks as the
+  model transition and emits versioned eligibility, payment-basis and payee-account
+  blocker verdicts. The terminal projection fails closed without that supply.
+  It does not yet change the payment product
   qualification or runtime state.
 - Payment execution submission, approval handoff, paid posting, cancellation and
   reversal now use a separate C3 task profile backed by canonical

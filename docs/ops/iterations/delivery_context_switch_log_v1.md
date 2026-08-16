@@ -4607,3 +4607,17 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Scope is contained to construction domain action production, generic terminal
   projection helpers, the construction terminal hook, executable tests, and this
   architecture record. No environment, P0 assembler, or UI-driver branch changes.
+
+## 2026-08-16 — C3 payment blocker authority closure
+
+- Formal Product Layer: P1 payment capability projection and task compiler input.
+- Payment submission availability now executes the same non-mutating amount,
+  counterparty eligibility, basis and settlement-cap checks as the model action;
+  a product action cannot advertise executable while its transition would reject.
+- The available-actions response materializes versioned counterparty, payment-basis
+  and payee-account blocker verdicts into normalized runtime semantics. The terminal
+  projection no longer derives blocker applicability from display fields and fails
+  closed when the domain supply is absent or malformed.
+- This checkpoint changes no P0 assembler, generic frontend, environment topology,
+  fixture or browser workflow. Odoo-tagged regressions are registered for the next
+  governed runtime; pure terminal tests cover missing authority and account repair.

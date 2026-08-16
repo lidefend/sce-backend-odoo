@@ -338,7 +338,26 @@ def normalized_payment_contract(*, authorization_allowed: bool | None = True) ->
                 }
             ]
         },
-        "runtimeContract": {},
+        "runtimeContract": {
+            "businessTaskSemantics": {
+                "version": "v1",
+                "source_authority": "payment_request_model_capability_projection",
+                "blockers": {
+                    key: {
+                        "active": False,
+                        "reason_code": "",
+                        "message": "",
+                        "missing_items": [],
+                        "source_authority": f"payment_request.{key}",
+                    }
+                    for key in (
+                        "counterparty_eligibility",
+                        "payment_basis_readiness",
+                        "payee_account_readiness",
+                    )
+                },
+            }
+        },
     }
 
 
@@ -621,6 +640,36 @@ class PaymentRequestBusinessTaskProfileTest(unittest.TestCase):
         self.assertFalse(create["enabled"])
         self.assertEqual(create["reason_code"], "ROLE_HANDOFF_REQUIRED")
         self.assertEqual(terminal["completion"]["next_capability_key"], "payment_execution.create")
+
+    def test_production_projection_requires_domain_blocker_authority(self):
+        contract = normalized_payment_contract()
+        del contract["runtimeContract"]["businessTaskSemantics"]
+        self.assertIsNone(attach_payment_request_business_task_scene(contract))
+
+    def test_account_blocker_uses_domain_verdict_and_selects_repair_handoff(self):
+        contract = normalized_payment_contract()
+        account = contract["runtimeContract"]["businessTaskSemantics"]["blockers"]["payee_account_readiness"]
+        account.update({
+            "active": True,
+            "reason_code": "PAYEE_ACCOUNT_INCOMPLETE",
+            "message": "缺少收款账号。",
+            "missing_items": ["账号"],
+        })
+        rule = contract["actionContract"]["actionRuleList"][0]
+        rule["enabled"] = False
+        rule["disabled"] = True
+        rule["sourceTrace"][0]["businessAvailable"] = False
+        status = contract["statusContract"]["buttonStatus"][0]
+        status.update({"disabled": True, "reasonCode": "PAYEE_ACCOUNT_INCOMPLETE"})
+        projected = attach_payment_request_business_task_scene(contract)
+        terminal = projected["runtimeContract"]["businessTaskContract"]
+        blocker = next(row for row in terminal["blockers"] if row["key"] == "payee_account_readiness")
+        self.assertTrue(blocker["active"])
+        self.assertEqual(blocker["missing_items"], ["账号"])
+        self.assertEqual(
+            terminal["completion"]["next_capability_key"],
+            "counterparty.maintain_settlement_account",
+        )
 
     def test_production_projection_ignores_non_payment_forms(self):
         contract = normalized_payment_contract()

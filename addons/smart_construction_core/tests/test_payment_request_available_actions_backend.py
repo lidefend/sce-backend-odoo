@@ -95,6 +95,12 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         data = result.get("data") or {}
         self.assertEqual(data.get("reason_code"), REASON_OK)
         self.assertEqual(data.get("primary_action_key"), "submit")
+        semantics = data.get("task_semantics") or {}
+        self.assertEqual(semantics.get("version"), "v1")
+        self.assertTrue(all(
+            not row.get("active")
+            for row in (semantics.get("blockers") or {}).values()
+        ))
         actions = data.get("actions") or []
         keys = {str(item.get("key") or "") for item in actions if isinstance(item, dict)}
         self.assertEqual(keys, {"submit", "approve", "reject", "done"})
@@ -140,6 +146,27 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         self.assertTrue(bool(submit.get("allowed")))
         reject = next(item for item in actions if item.get("key") == "reject")
         self.assertIn("reason", list(reject.get("required_params") or []))
+
+    def test_blocked_counterparty_disables_submit_and_projects_same_blocker(self):
+        payment = self._create_payment_request_minimal()
+        finance_user = self._create_user(
+            "payment_actions_blocked_partner_user",
+            ["base.group_user", "smart_construction_core.group_sc_cap_finance_user"],
+        )
+        payment.project_id.user_id = finance_user
+        payment.partner_id.active = False
+        result = PaymentRequestAvailableActionsHandler(
+            self.env(user=finance_user.id), payload={"id": payment.id}
+        ).handle({"id": payment.id})
+        data = result.get("data") or {}
+        submit = next(row for row in data.get("actions", []) if row.get("key") == "submit")
+        eligibility = (data.get("task_semantics") or {}).get("blockers", {}).get(
+            "counterparty_eligibility", {}
+        )
+        self.assertFalse(submit.get("allowed"))
+        self.assertFalse(submit.get("allowed_by_precheck"))
+        self.assertTrue(eligibility.get("active"))
+        self.assertEqual(eligibility.get("reason_code"), "COUNTERPARTY_NOT_ELIGIBLE")
 
     def test_finance_manager_inherits_submit_capability(self):
         payment = self._create_payment_request_minimal()

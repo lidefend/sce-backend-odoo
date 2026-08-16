@@ -161,10 +161,28 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
     ) -> tuple[bool, str]:
         key = str(action_key or "").strip()
         if key == "submit":
-            if not record.contract_id:
+            if (record.amount or 0.0) <= 0:
+                return False, REASON_MISSING_PARAMS
+            if not record.partner_id:
+                return False, REASON_MISSING_PARAMS
+            try:
+                record.partner_id._sc_assert_transaction_eligible(
+                    "付款申请" if str(record.type or "") == "pay" else "收款申请"
+                )
+            except Exception:
+                return False, "COUNTERPARTY_NOT_ELIGIBLE"
+            if not record._has_payment_basis():
                 return False, REASON_MISSING_PARAMS
             if record.contract_id and str(record.contract_id.state or "") == "cancel":
                 return False, REASON_BUSINESS_RULE_FAILED
+            for check in (
+                record._check_settlement_remaining_amount,
+                record._check_material_settlement_remaining_amount,
+            ):
+                try:
+                    check()
+                except Exception as exc:
+                    return False, self._reason_from_exception(exc)
             resolved_advisories = (
                 advisories
                 if advisories is not None
@@ -213,6 +231,67 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
                 return False, str(blocking[0].get("reason_code") or REASON_BUSINESS_RULE_FAILED)
             return True, REASON_OK
         return False, REASON_BUSINESS_RULE_FAILED
+
+    def _task_semantics(self, record) -> dict:
+        eligibility_active = False
+        eligibility_message = ""
+        try:
+            if not record.partner_id:
+                raise ValueError("请先选择往来单位。")
+            record.partner_id._sc_assert_transaction_eligible(
+                "付款申请" if str(record.type or "") == "pay" else "收款申请"
+            )
+        except Exception as exc:
+            eligibility_active = True
+            eligibility_message = str(exc or "").strip() or "往来单位当前不可办理。"
+
+        basis_active = not bool(record._has_payment_basis())
+        basis_message = "请先选择关联合同或结算单。" if basis_active else ""
+        if record.contract_id and str(record.contract_id.state or "") == "cancel":
+            basis_active = True
+            basis_message = "关联合同已取消，不能继续办理。"
+
+        account_active = bool(
+            str(record.type or "") == "pay"
+            and str(record.payee_account_completeness or "") != "complete"
+        )
+        account_labels = (
+            ("户名", "payment_account_name", "partner_account_name"),
+            ("开户行", "payment_bank_name", "partner_bank_name"),
+            ("账号", "payment_account_no", "partner_bank_account"),
+        )
+        missing_account = [
+            label
+            for label, snapshot_field, partner_field in account_labels
+            if not (record[snapshot_field] or record[partner_field])
+        ] if account_active else []
+        return {
+            "version": "v1",
+            "source_authority": "payment_request_model_capability_projection",
+            "blockers": {
+                "counterparty_eligibility": {
+                    "active": eligibility_active,
+                    "reason_code": "COUNTERPARTY_NOT_ELIGIBLE" if eligibility_active else "",
+                    "message": eligibility_message if eligibility_active else "",
+                    "missing_items": ["往来单位资格"] if eligibility_active else [],
+                    "source_authority": "payment_request.partner_transaction_eligibility",
+                },
+                "payment_basis_readiness": {
+                    "active": basis_active,
+                    "reason_code": "PAYMENT_BASIS_REQUIRED" if basis_active else "",
+                    "message": basis_message,
+                    "missing_items": ["付款依据"] if basis_active else [],
+                    "source_authority": "payment_request.payment_basis",
+                },
+                "payee_account_readiness": {
+                    "active": account_active,
+                    "reason_code": "PAYEE_ACCOUNT_INCOMPLETE" if account_active else "",
+                    "message": str(record.payment_blocking_reason_display or "") if account_active else "",
+                    "missing_items": missing_account,
+                    "source_authority": "payment_request.payee_account_completeness",
+                },
+            },
+        }
 
     def _advisories_for_action(self, record, action_key: str) -> list[dict]:
         key = str(action_key or "").strip()
@@ -424,6 +503,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
                 },
                 "actions": actions,
                 "primary_action_key": primary_action_key,
+                "task_semantics": self._task_semantics(record),
             },
             "meta": {"intent": self.INTENT_TYPE, "trace_id": trace_id, "source_authority": self.SOURCE_AUTHORITY},
         }

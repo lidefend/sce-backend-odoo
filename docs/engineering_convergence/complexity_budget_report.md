@@ -106,8 +106,8 @@ Generated from repository source files. This report is informational during the 
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 915 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
+| 905 | Python source | `addons/smart_construction_core/services/financial_workspace_contract.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
-| 904 | Python source | `addons/smart_construction_core/services/financial_workspace_contract.py` |
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |

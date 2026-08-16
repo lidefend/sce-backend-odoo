@@ -894,6 +894,7 @@ def build_financial_form_business_actions(env, model_name, record_id):
         })
     return {
         "actions": actions,
+        "task_semantics": dict(data.get("task_semantics") or {}) if isinstance(data, dict) else {},
         "attachments": {
             "enabled": True, "label": "附件",
             "upload": {"intent": "file.upload", "max_bytes": 5 * 1024 * 1024, "accepted_types": []},
