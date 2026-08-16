@@ -34,6 +34,8 @@ from odoo.addons.smart_core.core.system_init_diagnostics_helper import SystemIni
 from odoo.addons.smart_core.core.system_init_identity_payload import SystemInitIdentityPayload
 from odoo.addons.smart_core.core.system_init_nav_request_builder import SystemInitNavRequestBuilder
 from odoo.addons.smart_core.core.system_init_payload_builder import SystemInitPayloadBuilder
+from odoo.addons.smart_core.core.scene_component_driver_feature_flags import resolve_system_feature_flags
+from odoo.addons.smart_core.security.platform_company_access import platform_feature_flags_for_user_readonly
 from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     MENU_CONFIG_CONFIG_ONLY_PARAM,
     MENU_CONFIG_NAV_ENABLED_PARAM,
@@ -1818,6 +1820,10 @@ class SystemInitHandler(BaseIntentHandler):
             "normalize_capabilities",
             prepare_runtime_context_ts,
         )
+        feature_flags = resolve_system_feature_flags(
+            nav_data.get("feature_flags") or {"ai_enabled": True},
+            platform_feature_flags_for_user_readonly(env, user),
+        )
 
         # -------- 5) 汇总返回（统一蛇形命名 + 导航指纹 + 动态意图）--------
         data = SystemInitPayloadBuilder.build_base(
@@ -1831,7 +1837,7 @@ class SystemInitHandler(BaseIntentHandler):
             },
             default_route=nav_data.get("defaultRoute") or {"menu_id": None},
             intents=intents,
-            feature_flags=nav_data.get("feature_flags") or {"ai_enabled": True},
+            feature_flags=feature_flags,
             capabilities=capabilities,
             scene_channel=scene_channel,
             channel_selector=channel_selector,

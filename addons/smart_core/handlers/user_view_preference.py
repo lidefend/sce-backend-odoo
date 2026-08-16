@@ -140,6 +140,11 @@ class UserViewPreferenceGetHandler(BaseIntentHandler):
 
     def _sanitize_preference(self, preference_key, value):
         data = value if isinstance(value, dict) else {}
+        if preference_key == "scene_ui_driver":
+            kit = str(data.get("kit") or "").strip()
+            if kit not in {"sc-native", "tdesign-modern", "ui5-horizon"}:
+                kit = ""
+            return {"kit": kit}
         if preference_key == "list_columns":
             visible = self._sanitize_list(data.get("visible_columns"))
             hidden = [name for name in self._sanitize_list(data.get("hidden_columns")) if name not in set(visible)]

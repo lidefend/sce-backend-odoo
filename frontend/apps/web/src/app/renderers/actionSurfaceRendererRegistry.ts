@@ -14,6 +14,13 @@ export type ActionSurfaceRendererDescriptor = {
   reasonCode: string;
 };
 
+export type SceneCollectionRendererActivation = {
+  eligible: boolean;
+  contractError?: boolean;
+  config: Record<string, unknown>;
+  reasonCode?: string;
+};
+
 type ActionSurfaceRendererRegistration = {
   semantic: string;
   requestedRendererKey: string;
@@ -45,10 +52,35 @@ export const ACTION_SURFACE_RENDERER_REGISTRY = Object.freeze(
 export function resolveActionSurfaceRenderer(
   presentation: ActionCollectionPresentation,
   viewModeRaw: unknown,
+  sceneCollection?: SceneCollectionRendererActivation,
 ): ActionSurfaceRendererDescriptor {
   const semantic = String(presentation.semantic || '').trim().toLowerCase();
   const viewMode = String(viewModeRaw || '').trim().toLowerCase();
   const registration = ACTION_SURFACE_RENDERER_REGISTRY[semantic];
+  if (semantic === 'table' && sceneCollection?.contractError === true) {
+    return {
+      requestedRendererKey: 'core.scene_collection',
+      activeRendererKey: 'core.unsupported',
+      semantic,
+      viewMode,
+      status: 'unsupported',
+      outlet: 'component',
+      config: {},
+      reasonCode: sceneCollection.reasonCode || 'SCENE_DRIVER_NORMALIZED_ADAPTER_REJECTED',
+    };
+  }
+  if (semantic === 'table' && sceneCollection?.eligible === true) {
+    return {
+      requestedRendererKey: 'core.scene_collection',
+      activeRendererKey: 'core.scene_collection',
+      semantic,
+      viewMode,
+      status: 'ready',
+      outlet: 'component',
+      config: sceneCollection.config,
+      reasonCode: '',
+    };
+  }
   if (!registration) {
     return {
       requestedRendererKey: semantic ? `unknown.${semantic}` : 'unknown.empty',

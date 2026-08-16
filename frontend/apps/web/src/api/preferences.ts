@@ -8,6 +8,10 @@ export type ListColumnPreference = {
   column_widths?: Record<string, number>;
 };
 
+export type SceneUiDriverPreference = {
+  kit?: string;
+};
+
 export type UserViewPreferenceScope = {
   action_id?: number;
   model?: string;
@@ -27,7 +31,10 @@ export async function getUserViewPreference(scope: UserViewPreferenceScope) {
   });
 }
 
-export async function setUserViewPreference(scope: UserViewPreferenceScope, preference: ListColumnPreference) {
+export async function setUserViewPreference(
+  scope: UserViewPreferenceScope,
+  preference: ListColumnPreference | SceneUiDriverPreference,
+) {
   return intentRequest<UserViewPreferenceContract>({
     intent: 'user.view.preference.set',
     params: {

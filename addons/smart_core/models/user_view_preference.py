@@ -7,7 +7,7 @@ class ScUserViewPreference(models.Model):
     _description = "Smart Core UI-only User View Preference"
 
     UI_ONLY_SCOPE_PREFIX = "ui:"
-    SUPPORTED_PREFERENCE_KEYS = {"list_columns"}
+    SUPPORTED_PREFERENCE_KEYS = {"list_columns", "scene_ui_driver"}
     SOURCE_KIND = "ui_only_user_preference"
     SOURCE_AUTHORITIES = ("res.users", "ir.actions.actions")
     NO_BUSINESS_FACT_AUTHORITY = True
