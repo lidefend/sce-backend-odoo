@@ -29,6 +29,13 @@ function loadRuntime() {
       if (name.endsWith('routeQuery')) {
         return { buildEntryTargetRouteTarget: () => ({ name: 'action', query: {} }) };
       }
+      if (name.endsWith('navigationContext')) {
+        return {
+          contractActionCarryQuery: () => ({}),
+          entryTargetMenuId: () => 0,
+          entryTargetModel: () => '',
+        };
+      }
       throw new Error(`unexpected require: ${name}`);
     },
   };
