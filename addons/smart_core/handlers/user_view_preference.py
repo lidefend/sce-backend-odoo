@@ -314,6 +314,8 @@ class UserViewPreferenceGetHandler(BaseIntentHandler):
             ], limit=1)
         preference_key = Preference.normalize_preference_key(params.get("preference_key"))
         list_profile = {}
+        action_id = 0
+        model_name = ""
         if preference_key == "list_columns":
             action_id, _ = self._read_positive_int(params.get("action_id"), "action_id")
             model_name, _ = self._text_param(params, ("model", "model_name"))

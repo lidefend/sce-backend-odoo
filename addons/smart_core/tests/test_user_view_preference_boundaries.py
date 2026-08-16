@@ -289,6 +289,25 @@ class TestUserViewPreferenceBoundaries(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(Preference.created_vals["value_json"], {"kit": "ui5-horizon"})
 
+    def test_get_scene_driver_preference_does_not_require_list_action_context(self):
+        module = _load_handler()
+        Preference = _PreferenceModel()
+        env = _Env({"sc.user.view.preference": Preference})
+        handler = module.UserViewPreferenceGetHandler(
+            env=env,
+            payload={
+                "model": "hr.department",
+                "preference_key": "scene_ui_driver",
+                "view_type": "list",
+            },
+        )
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["data"]["preference"], {"kit": ""})
+        self.assertEqual(result["meta"]["preference_contract"]["columns"], [])
+
     def test_set_rejects_unknown_scene_driver_by_clearing_value(self):
         module = _load_handler()
         Preference = _PreferenceModel()

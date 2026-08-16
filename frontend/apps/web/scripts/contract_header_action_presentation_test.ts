@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { buildContractFormActions } from '../src/pages/contractForm/contractActionPresentation';
 import { decodeContractV2ActionRule, decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { resolvePrimaryCreateFooterAction } from '../src/pages/contractForm/actionContract';
-import { groupContractHeaderActions } from '../src/pages/contractForm/contractHeaderActionPresentation';
+import { groupContractHeaderActions, resolvePrimaryBusinessActionState } from '../src/pages/contractForm/contractHeaderActionPresentation';
 import { presentContractHeaderActions } from '../src/pages/contractForm/headerActionPresentation';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
 import { useFormActionRuntime } from '../src/pages/contractForm/useFormActionRuntime';
@@ -103,6 +103,28 @@ const grouped = groupContractHeaderActions({
   configurationMode: false,
   isSubmitAction: () => false,
 });
+
+const readonlyPrimary = action({ key: 'readonly-submit', methodName: 'action_submit', presentationTier: 'primary' });
+assert.deepEqual(resolvePrimaryBusinessActionState({
+  busy: false, canSave: false, configurationMode: false, hasChanges: false, hasRecord: true,
+  intakeMode: false, primaryCreateAction: null, primarySubmitAction: readonlyPrimary,
+  quickSubmitDisabled: true,
+}), { show: true, disabled: false });
+assert.deepEqual(resolvePrimaryBusinessActionState({
+  busy: false, canSave: false, configurationMode: false, hasChanges: false, hasRecord: true,
+  intakeMode: false, primaryCreateAction: null, primarySubmitAction: { ...readonlyPrimary, enabled: false },
+  quickSubmitDisabled: true,
+}), { show: true, disabled: true });
+assert.deepEqual(resolvePrimaryBusinessActionState({
+  busy: false, canSave: false, configurationMode: false, hasChanges: false, hasRecord: true,
+  intakeMode: false, primaryCreateAction: null, primarySubmitAction: null,
+  quickSubmitDisabled: true,
+}), { show: false, disabled: true });
+assert.deepEqual(resolvePrimaryBusinessActionState({
+  busy: false, canSave: true, configurationMode: false, hasChanges: true, hasRecord: true,
+  intakeMode: false, primaryCreateAction: null, primarySubmitAction: readonlyPrimary,
+  quickSubmitDisabled: false,
+}), { show: true, disabled: true });
 
 assert.deepEqual(built.map((item) => item.key), ['normalized-root', 'root-header-url', 'root-page-submit', 'second-primary']);
 assert.deepEqual(grouped.direct.map((item) => item.key), ['normalized-root', 'native-header']);

@@ -39,7 +39,7 @@ Generated from repository source files. This report is informational during the 
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1844 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1814 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
-| 1800 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1799 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1744 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1740 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1713 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
@@ -86,7 +86,7 @@ Generated from repository source files. This report is informational during the 
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1142 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
-| 1138 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1140 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1108 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1097 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
@@ -95,7 +95,7 @@ Generated from repository source files. This report is informational during the 
 | 1092 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1073 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1065 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
-| 1048 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
+| 1051 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1020 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
@@ -165,7 +165,7 @@ Generated from repository source files. This report is informational during the 
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1844 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1814 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
-| 1800 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1799 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1744 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1740 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1738 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
@@ -205,7 +205,7 @@ Generated from repository source files. This report is informational during the 
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1142 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
-| 1138 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1140 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1121 | warning | Python source | `scripts/release/production_backup_restore.py` |
 | 1111 | within_budget | XML data/view | `addons/smart_construction_core/views/menu_business_taxonomy.xml` |
 | 1108 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
@@ -215,7 +215,7 @@ Generated from repository source files. This report is informational during the 
 | 1092 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1073 | warning | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1065 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
-| 1048 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
+| 1051 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1020 | warning | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1005 | warning | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 

@@ -4,6 +4,32 @@ function isConfigurationAction(action: ContractAction) {
   return String(action.intent || '').trim().toLowerCase() === 'ui.local_mode';
 }
 
+export function resolvePrimaryBusinessActionState(params: {
+  busy: boolean;
+  canSave: boolean;
+  configurationMode: boolean;
+  hasChanges: boolean;
+  hasRecord: boolean;
+  intakeMode: boolean;
+  primaryCreateAction: ContractAction | null;
+  primarySubmitAction: ContractAction | null;
+  quickSubmitDisabled: boolean;
+}) {
+  const show = !params.configurationMode
+    && !params.intakeMode
+    && (params.canSave || Boolean(params.hasRecord && params.primarySubmitAction));
+  if (params.busy) return { show, disabled: true };
+  if (params.primarySubmitAction) {
+    return {
+      show,
+      disabled: !params.primarySubmitAction.enabled || (params.hasRecord && params.hasChanges),
+    };
+  }
+  if (!params.canSave) return { show, disabled: true };
+  if (params.primaryCreateAction) return { show, disabled: false };
+  return { show, disabled: params.quickSubmitDisabled };
+}
+
 export function groupContractHeaderActions(params: {
   actions: ContractAction[];
   intakeMode: boolean;
