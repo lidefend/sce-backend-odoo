@@ -302,6 +302,7 @@ pfl035_records = {
 }
 if (
     pfl035_records["approved"].state != "approved"
+    or pfl035_records["approved"].validation_status != "validated"
     or pfl035_records["approved"].type != "pay"
     or pfl035_records["approved"].payee_account_completeness != "complete"
     or env["sc.payment.execution"].sudo().search_count(
@@ -311,10 +312,15 @@ if (
     fail("PFL-035 positive request baseline is invalid")
 if pfl035_records["draft"].state != "draft" or pfl035_records["draft"].type != "pay":
     fail("PFL-035 draft rejection baseline is invalid")
-if pfl035_records["receive"].state != "approved" or pfl035_records["receive"].type != "receive":
+if (
+    pfl035_records["receive"].state != "approved"
+    or pfl035_records["receive"].validation_status != "validated"
+    or pfl035_records["receive"].type != "receive"
+):
     fail("PFL-035 receive rejection baseline is invalid")
 if (
     pfl035_records["incomplete"].state != "approved"
+    or pfl035_records["incomplete"].validation_status != "validated"
     or pfl035_records["incomplete"].type != "pay"
     or pfl035_records["incomplete"].payee_account_completeness != "incomplete"
 ):

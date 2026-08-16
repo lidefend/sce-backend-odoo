@@ -4418,3 +4418,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   permission changes are introduced.
 - Blast radius / validation: PFL-035 readonly evidence only. JavaScript syntax
   and `git diff --check` pass before the governed full user journey is rerun.
+## PFL-035 approved fixture workflow-fact alignment (2026-08-16)
+
+- Formal Product Layer: P1 construction industry standard acceptance fixture.
+- Layer Target / Module: `smart_construction_acceptance_fixture` deterministic payment-request facts and its verifier.
+- Reason: the real browser journey proved that an `approved` fixture with `validation_status=no` renders a valid payment action but is correctly rejected by the request state guard when payment completion advances it to `done`.
+- Why here: the defect is an inconsistent fixture business fact; the P1 state guard, normalized contract and frontend behavior are correct.
+- Why not elsewhere: no P0, frontend, runtime-profile, database-topology or customer-specific change is required.
+- Blast radius: approved/done synthetic payment-request fixtures only; fixture verification now fails closed on an approved PFL sample without validated workflow status.
