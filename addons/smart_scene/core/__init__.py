@@ -2,6 +2,11 @@
 
 from .scene_contract_builder import build_scene_contract
 from .scene_engine import build_scene_contract_from_specs
+from .business_task_scene_compiler import (
+    BusinessTaskCompileError,
+    compile_business_task_scene_contract,
+    verify_business_task_scene_contract_seal,
+)
 from .scene_provider_registry import (
     SceneContentProvider,
     SceneProviderRegistry,
@@ -34,4 +39,7 @@ __all__ = [
     "resolve_scene_identity",
     "build_scene_contract",
     "build_scene_contract_from_specs",
+    "BusinessTaskCompileError",
+    "compile_business_task_scene_contract",
+    "verify_business_task_scene_contract_seal",
 ]

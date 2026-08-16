@@ -4487,3 +4487,52 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   synthetic-history reason. Scanner unit tests, clean-history guard tests, the
   full `security.personal_data_scan` target and `git diff --check` must pass;
   path, blob or classification drift remains unsuppressed.
+
+## Business Task Scene Contract long-line start (2026-08-16)
+
+- Branch / base SHA: `feature/business-task-scene-contract-v1` /
+  `42f0241083f8b1e530172aa1425a62059d5079a4`.
+- Formal Product Layer / Layer Target / Module: P0 platform scene mechanism plus
+  a later P1 industry task profile / terminal scene semantics / `smart_scene`
+  and, after the platform schema freezes, `smart_construction_scene`.
+- Reason: normalized/native contract authority is now stable, but user-task
+  goals, facts, blockers, capabilities, handoffs and outcomes are still spread
+  across domain services, policies, product contracts and evidence scripts.
+  The frontend cannot become industry-agnostic while it still understands
+  native view vocabulary.
+- Why Here / Why Not Elsewhere: `smart_scene` owns the generic terminal profile
+  and fail-closed compiler mechanics. Construction payment semantics will be
+  referenced by P1 task profiles, not copied into P0. Renderer drivers remain
+  visual implementations and cannot own business verdicts. No P4 runtime,
+  fixture, customer module or database topology change belongs to this line.
+- Blast radius / validation: the first checkpoint adds only a generic terminal
+  profile validator, pure behavior tests, architecture ownership documentation
+  and a governed Make target. It forbids native/Odoo vocabulary in the terminal
+  profile, requires explicit availability and authorization verdicts, rejects
+  success reasons on disabled capabilities and permits at most one enabled
+  primary capability. No runtime or browser resource is allocated.
+
+## Business Task Scene compiler and payment readonly slice (2026-08-16)
+
+- Branch / base SHA: `feature/business-task-scene-contract-v1` /
+  `42f0241083f8b1e530172aa1425a62059d5079a4`.
+- Formal Product Layer / Layer Target / Module: P0 scene compiler in
+  `smart_scene`; P1 task declaration in `smart_construction_scene`.
+- Reason: make the terminal scene contract executable without teaching the
+  scene layer or frontend how to infer business facts from model fields,
+  workflow order, role labels or native actions.
+- Why Here / Why Not Elsewhere: the compiler is a pure allowlisted projection
+  of resolved domain facts and verdicts. The P1 payment profile owns industry
+  wording, blocker relationships, capability presentation and outcomes. It
+  does not query ORM or reimplement payment rules. The payment domain remains
+  the fact and permission authority; renderer drivers remain unchanged.
+- Blast radius / validation: optional Scene Contract extension only. Existing
+  v1 callers are byte-for-byte compatible unless they explicitly pass both
+  task inputs. Thirty pure behavior tests cover missing supply, unresolved
+  authorization, inconsistent verdicts, native vocabulary leakage, deterministic
+  sealing, tamper detection, payment task states, retry-stable projection,
+  role handoff, relationship continuity and account repair. Adjacent
+  scene definition/input/output guards pass. The complete runtime-boundary gate
+  reaches a pre-existing mainline account-activation intent-channel failure;
+  exact main reproduces the same three forbidden API-path findings, so this
+  branch does not absorb that unrelated repair.
