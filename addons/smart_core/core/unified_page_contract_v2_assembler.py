@@ -10,6 +10,7 @@ from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .source_authority import build_source_authority_contract
 from .unified_page_contract_v2_permissions import permission_auth_level, resolve_permission_rights
 from .unified_page_contract_v2_runtime_actions import normalize_runtime_business_actions
+from .unified_page_contract_v2_action import normalize_target_scope, normalize_trigger_type
 
 CONTRACT_VERSION = "2.2.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
@@ -2340,11 +2341,11 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                 "intent": intent,
                 "target": deepcopy(_dict(row.get("target"))),
                 "button": deepcopy(_dict(row.get("button"))),
-                "triggerType": _text(row.get("trigger") or row.get("display_mode"), "click"),
+                "triggerType": normalize_trigger_type(row.get("trigger") or row.get("display_mode")),
                 "sourceWidgetId": source_id,
                 "targetIds": [],
                 "dispatchMode": "server",
-                "targetScope": _text(row.get("target_scope") or row.get("level"), "page"),
+                "targetScope": normalize_target_scope(row.get("target_scope") or row.get("level")),
                 "refreshMode": "partial",
                 "sourceChannel": _text(row.get("source_channel"), "contract_action"),
                 "presentationAuthority": _text(row.get("presentation_authority"), "native_contract"),

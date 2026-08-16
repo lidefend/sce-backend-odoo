@@ -134,7 +134,7 @@
           @selected-group-title-change="onSelectedFormSettingsGroupTitleChange"
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
-        <ContractFormNativeCanvas
+        <ContractFormDriverHost :render-model="canonicalFormRenderState.model" :error="canonicalFormRenderState.error" :driver-config="contractFormDriverConfig"
           :button-label-resolver="resolveNativeButtonLabel"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
           :collaboration-panel-props="nativeCollaborationPanelProps"
@@ -163,7 +163,7 @@
           :show-collaboration-panel="showNativeCollaborationPanel"
           :show-default-section-title="showNativeDefaultSectionTitle"
           :use-native-form-tree="useNativeFormTree"
-          @field-action="onContractFieldAction"
+          @driver-change="changeContractFormDriver" @field-action="onContractFieldAction"
           @field-add-after="onContractInlineFieldAddAfter"
           @field-change="onTemplateFieldChange"
           @field-label-change="onContractInlineFieldLabelChange"
@@ -201,7 +201,6 @@
           @toggle-advanced="advancedExpanded = !advancedExpanded"
         />
       </section>
-
       <PageFooterTemplate v-if="isIntakeCreateMode" :hint="formUiLabel('create_hint')">
         <template #default>
           <button class="ghost" :disabled="busy" @click="cancelIntake">取消</button>
@@ -210,7 +209,6 @@
           </button>
         </template>
       </PageFooterTemplate>
-
       <NativeCollaborationPanel
         v-if="showNativeCollaborationPanel && !hasNativeChatterNode && pageSectionEnabled('chatter', true) && pageSectionTagIs('chatter', 'section')"
         :style="pageSectionStyle('chatter')"
@@ -218,7 +216,6 @@
         v-on="nativeCollaborationPanelListeners"
       />
     </section>
-
     <DevContextPanel
       :visible="showHud && pageSectionEnabled('dev_context', true) && pageSectionTagIs('dev_context', 'div')"
       :style="pageSectionStyle('dev_context')"
@@ -259,7 +256,7 @@ import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
   type NativeCollaborationPanelProps,
 } from './contractForm/NativeCollaborationPanel.vue';
-import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
+import ContractFormDriverHost from './contractForm/ContractFormDriverHost.vue';
 import { shouldShowNativeCollaborationPanel } from './contractForm/collaborationPresentation';
 import RelationSearchDialog from './contractForm/RelationSearchDialog.vue';
 import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vue';
@@ -647,6 +644,7 @@ import { useRecordPageLifecycle } from './contractForm/useRecordPageLifecycle';
 import { resolveContractRenderProfile } from './contractForm/contractRenderProfile';
 import { useRecordActionPresentation } from './contractForm/useRecordActionPresentation';
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
+import { resolveCanonicalFormRenderState, useContractFormComponentDriverRuntime } from './contractForm/useContractFormComponentDriverRuntime';
 import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigationActionsRuntime';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
@@ -726,6 +724,7 @@ const {
 });
 const v2ContractStore = ref<ContractV2NormalizedStore | null>(null);
 const v2ContractDecodeError = ref('');
+const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(v2ContractStore.value, v2ContractDecodeError.value, renderProfile.value));
 const v2ShadowStoreReady = computed(() => Boolean(v2ContractStore.value));
 const v2ShadowWidgetCount = computed(() => v2ContractStore.value?.widgetsById.size || 0);
 const v2ShadowActionCount = computed(() => v2ContractStore.value?.actionsById.size || 0);
@@ -1068,6 +1067,10 @@ const rights = computed(() => {
   };
 });
 const canSave = computed(() => (recordId.value ? rights.value.write : rights.value.create));
+const { driverConfig: contractFormDriverConfig, changeDriver: changeContractFormDriver } = useContractFormComponentDriverRuntime({
+  actionId: () => actionId.value || 0, model: () => model.value, renderMode: () => renderProfile.value,
+  featureFlag: () => session.featureFlags.scene_component_drivers_v1, previewKit: () => typeof route.query.scene_ui_kit === 'string' ? route.query.scene_ui_kit : '', isActive: () => isComponentActive.value && isFormPageRouteOwner(route.name),
+});
 const relationRecordCountLabel = computed(() => {
   const template = relationSearchDialog.labels.record_count || '%s 条记录';
   const count = String(relationSearchDialog.rows.length);
@@ -1487,7 +1490,6 @@ const contractMetaLine = computed(() => {
   });
   return `配置模式：${modeLabel} · 承载界面：${surfaceLabel} · 视图类型：${viewTypeLabel} · 页面状态：${profileLabels[renderProfile.value] || renderProfile.value} · 筛选项：${filters} · 流转项：${transitions} · 操作权限：${permissionLabels.join('、') || '无可用权限'}`;
 });
-
 const showDebugActions = computed(() => renderProfile.value !== 'create');
 const showDebugActionsVisible = computed(() => showHud.value && showDebugActions.value);
 const runtimeRoleCode = computed(() => String(session.roleSurface?.role_code || '').trim().toLowerCase());
@@ -1504,7 +1506,6 @@ const policyContext = computed(() => ({
   roleCode: runtimeRoleCode.value,
   roleCodes: runtimeRoleCodes.value,
 }));
-
 const warnings = computed(() => normalizeContractWarnings(contract.value?.warnings));
 
 const contractAccessPolicy = computed<ContractAccessPolicy>(() => {

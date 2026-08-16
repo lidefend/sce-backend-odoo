@@ -64,6 +64,7 @@ export interface ContractV2Container {
   required?: unknown;
   formStructure?: ContractV2Dictionary;
   formStructureRole?: ContractV2Dictionary;
+  sourceAuthority?: ContractV2Dictionary;
   children: ContractV2Container[];
   pages?: ContractV2Container[];
   tabs?: ContractV2Container[];

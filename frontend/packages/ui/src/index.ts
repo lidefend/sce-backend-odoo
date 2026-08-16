@@ -2,6 +2,8 @@ export { default as SceneObjectPage } from './components/SceneObjectPage.vue';
 export { default as SceneCollectionSurface } from './components/SceneCollectionSurface.vue';
 export { default as SceneHierarchySurface } from './components/SceneHierarchySurface.vue';
 export { default as SceneUiProvider } from './components/SceneUiProvider.vue';
+export { default as SceneFieldControl } from './components/primitives/SceneFieldControl.vue';
+export { useOptionalSceneUiKit, useSceneUiKit } from './kits/context';
 export { SCENE_UI_KITS } from './kits/types';
 export { SCENE_DESIGN_TOKEN_PROFILES, isSceneDesignTokenProfileId } from './kits/tokens';
 export { loadSceneUiDriver } from './kits/registry';

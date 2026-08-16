@@ -7,6 +7,7 @@ import type { UnifiedPageContractV2 } from '../app/contracts/unifiedPageContract
 import { adaptUnifiedPageContractV2Raw } from '../app/runtime/unifiedPageContractV2CompatProjection';
 import { currentContextEpoch } from '../app/contextEpoch';
 import { useSessionStore } from '../stores/session';
+import { resolveModelContractRenderProfile } from './modelContractProfile';
 
 type LoadActionContractOptions = {
   sceneKey?: string | null;
@@ -188,10 +189,12 @@ export async function loadActionContractRaw(actionId: number, options?: LoadActi
 }
 
 function buildModelContractParams(model: string, options?: LoadModelContractOptions) {
+  const viewType = options?.viewType || 'form';
+  const recordId = Number(options?.recordId || 0);
   const params: Record<string, unknown> = {
     op: 'model',
     model: String(model || '').trim(),
-    view_type: options?.viewType || 'form',
+    view_type: viewType,
   };
   const sceneKey = String(options?.sceneKey || '').trim();
   if (sceneKey) params.scene_key = sceneKey;
@@ -207,11 +210,18 @@ function buildModelContractParams(model: string, options?: LoadModelContractOpti
   if (Number.isFinite(viewId) && viewId > 0) {
     params.view_id = viewId;
   }
-  const recordId = Number(options?.recordId || 0);
   if (Number.isFinite(recordId) && recordId > 0) {
     params.record_id = recordId;
   }
-  const profile = String(options?.renderProfile || '').trim().toLowerCase();
+  // A form contract without a record identity is necessarily a create
+  // contract.  Normalize this at the transport boundary so an incomplete
+  // caller cannot silently request the ambiguous edit/default projection and
+  // bypass the governed create-contract cache.
+  const profile = resolveModelContractRenderProfile({
+    viewType,
+    recordId,
+    renderProfile: options?.renderProfile,
+  });
   if (profile === 'create' || profile === 'edit' || profile === 'readonly') {
     params.render_profile = profile;
   }
@@ -243,8 +253,8 @@ function buildModelContractParams(model: string, options?: LoadModelContractOpti
 
 export async function loadModelContractRaw(model: string, options?: LoadModelContractOptions) {
   const params = buildModelContractParams(model, options);
-  const cacheable = options?.renderProfile === 'create'
-    && !Number(options?.recordId || 0)
+  const cacheable = params.render_profile === 'create'
+    && !Number(params.record_id || 0)
     && !String(options?.previewToken || '').trim();
   if (cacheable) {
     const now = Date.now();

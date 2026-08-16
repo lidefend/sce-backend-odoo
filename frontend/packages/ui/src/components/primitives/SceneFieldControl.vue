@@ -35,9 +35,11 @@ function updateFromValue(value: unknown): void {
         :value="modelValue"
         format-pattern="yyyy-MM-dd"
         :placeholder="field.placeholder"
+        :disabled="field.readonly || undefined"
+        :required="field.required || undefined"
         @input="updateFromEvent"
       />
-      <ui5-select v-else-if="field.kind === 'select'" :id="field.id" @change="updateFromEvent">
+      <ui5-select v-else-if="field.kind === 'select'" :id="field.id" :disabled="field.readonly || undefined" :required="field.required || undefined" @change="updateFromEvent">
         <ui5-option
           v-for="option in field.options || []"
           :key="option.key"
@@ -51,15 +53,17 @@ function updateFromValue(value: unknown): void {
         :id="field.id"
         :value="modelValue"
         :placeholder="field.placeholder"
+        :disabled="field.readonly || undefined"
+        :required="field.required || undefined"
         growing
         growing-max-rows="5"
         @input="updateFromEvent"
       />
       <div v-else-if="field.kind === 'amount'" class="scene-primitive-amount">
-        <ui5-input :id="field.id" :value="modelValue" :placeholder="field.placeholder" inputmode="decimal" @input="updateFromEvent" />
+        <ui5-input :id="field.id" :value="modelValue" :placeholder="field.placeholder" :disabled="field.readonly || undefined" :required="field.required || undefined" inputmode="decimal" @input="updateFromEvent" />
         <span>CNY</span>
       </div>
-      <ui5-input v-else :id="field.id" :value="modelValue" :placeholder="field.placeholder" @input="updateFromEvent" />
+      <ui5-input v-else :id="field.id" :value="modelValue" :placeholder="field.placeholder" :disabled="field.readonly || undefined" :required="field.required || undefined" @input="updateFromEvent" />
     </template>
 
     <template v-else-if="componentModel === 'vue' && driverControl">
@@ -69,6 +73,9 @@ function updateFromValue(value: unknown): void {
           :id="field.id"
           :model-value="modelValue"
           :placeholder="field.placeholder"
+          :disabled="field.readonly"
+          :readonly="field.readonly"
+          :status="field.invalid ? 'error' : undefined"
           data-scene-driver-control="amount"
           @update:model-value="updateFromValue"
         />
@@ -80,6 +87,9 @@ function updateFromValue(value: unknown): void {
         :id="field.id"
         :model-value="modelValue"
         :placeholder="field.placeholder"
+        :disabled="field.readonly"
+        :readonly="field.readonly"
+        :status="field.invalid ? 'error' : undefined"
         :options="field.kind === 'select' ? driverOptions : undefined"
         :format="field.kind === 'date' ? 'YYYY-MM-DD' : undefined"
         :autosize="field.kind === 'textarea' ? { minRows: 3, maxRows: 5 } : undefined"
@@ -96,9 +106,12 @@ function updateFromValue(value: unknown): void {
         class="scene-native-control"
         type="date"
         :value="modelValue"
+        :disabled="field.readonly"
+        :required="field.required"
+        :aria-invalid="field.invalid || undefined"
         @input="updateFromEvent"
       />
-      <select v-else-if="field.kind === 'select'" :id="field.id" class="scene-native-control" :value="modelValue" @change="updateFromEvent">
+      <select v-else-if="field.kind === 'select'" :id="field.id" class="scene-native-control" :value="modelValue" :disabled="field.readonly" :required="field.required" :aria-invalid="field.invalid || undefined" @change="updateFromEvent">
         <option v-for="option in field.options || []" :key="option.key" :value="option.key">
           {{ option.label }}
         </option>
@@ -109,6 +122,9 @@ function updateFromValue(value: unknown): void {
         class="scene-native-control scene-native-control--textarea"
         :value="modelValue"
         :placeholder="field.placeholder"
+        :disabled="field.readonly"
+        :required="field.required"
+        :aria-invalid="field.invalid || undefined"
         rows="3"
         @input="updateFromEvent"
       />
@@ -120,6 +136,9 @@ function updateFromValue(value: unknown): void {
           inputmode="decimal"
           :value="modelValue"
           :placeholder="field.placeholder"
+          :disabled="field.readonly"
+          :required="field.required"
+          :aria-invalid="field.invalid || undefined"
           @input="updateFromEvent"
         />
         <span>CNY</span>
@@ -131,6 +150,9 @@ function updateFromValue(value: unknown): void {
         type="text"
         :value="modelValue"
         :placeholder="field.placeholder"
+        :disabled="field.readonly"
+        :required="field.required"
+        :aria-invalid="field.invalid || undefined"
         @input="updateFromEvent"
       />
     </template>

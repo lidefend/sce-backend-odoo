@@ -7,6 +7,97 @@ from typing import Any
 from . import ui_contract_v2_adapters as _adapters
 
 
+_CONTAINER_CHILD_KEYS = ("children", "pages", "tabs", "nodes", "items")
+
+
+def _stable_container_id(value: Any, fallback: str) -> str:
+    raw = str(value or fallback or "container").strip()
+    normalized = "".join(
+        char if char.isalnum() or char in "_.:-" else "." if char in " /" else ""
+        for char in raw
+    ).strip(".") or fallback or "container"
+    return normalized if normalized[0].isalpha() else f"id.{normalized}"
+
+
+def normalize_post_projected_container_tree(
+    contract: dict[str, Any],
+    container_tree: list[Any],
+) -> list[Any]:
+    """Restore the formal V2 container invariant after late projections.
+
+    The assembler owns the original normalized tree.  A late projection may
+    move those nodes or add presentation-only containers, but it must not emit
+    a second, weaker container dialect after assembly.  Existing identities
+    and status verdicts are preserved; only missing structural facts are
+    completed deterministically.
+    """
+    status_contract = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
+    container_status = (
+        status_contract.get("containerStatus")
+        if isinstance(status_contract.get("containerStatus"), list)
+        else []
+    )
+    status_ids = {
+        str(row.get("containerId") or "").strip()
+        for row in container_status
+        if isinstance(row, dict) and str(row.get("containerId") or "").strip()
+    }
+    seen_ids: set[str] = set()
+
+    def normalize(nodes: list[Any], parent_id: str) -> list[Any]:
+        out: list[Any] = []
+        for index, raw_node in enumerate(nodes, start=1):
+            if not isinstance(raw_node, dict):
+                out.append(raw_node)
+                continue
+            node = raw_node
+            node_type = str(node.get("containerType") or node.get("type") or "section").strip().lower() or "section"
+            formal_type = "section" if node_type == "sheet" else node_type
+            fallback = f"{parent_id}.{formal_type}.{index}" if parent_id else f"{formal_type}.{index}"
+            container_id = _stable_container_id(
+                node.get("containerId") or node.get("container_id") or node.get("name"),
+                fallback,
+            )
+            if container_id in seen_ids:
+                container_id = _stable_container_id(fallback, fallback)
+                suffix = 2
+                while container_id in seen_ids:
+                    container_id = _stable_container_id(f"{fallback}.{suffix}", fallback)
+                    suffix += 1
+            seen_ids.add(container_id)
+            node["containerId"] = container_id
+            node["containerType"] = formal_type
+            node.setdefault("type", node_type)
+            label = str(
+                node.get("title")
+                or node.get("string")
+                or node.get("label")
+                or node.get("name")
+                or container_id
+            ).strip()
+            node["title"] = label or container_id
+            span = node.get("span")
+            node["span"] = span if isinstance(span, int) and not isinstance(span, bool) and 1 <= span <= 24 else 24
+            if not isinstance(node.get("widgetList"), list):
+                node["widgetList"] = []
+            for key in _CONTAINER_CHILD_KEYS:
+                children = node.get(key)
+                if isinstance(children, list):
+                    node[key] = normalize(children, container_id)
+            if not isinstance(node.get("children"), list):
+                node["children"] = []
+            if container_id not in status_ids:
+                container_status.append({"containerId": container_id, "visible": True, "disabled": False})
+                status_ids.add(container_id)
+            out.append(node)
+        return out
+
+    normalized = normalize(container_tree, "")
+    status_contract["containerStatus"] = container_status
+    contract["statusContract"] = status_contract
+    return normalized
+
+
 def set_v2_container_tree(contract: dict[str, Any], container_tree: list[Any]) -> None:
     if not isinstance(contract, dict):
         return
@@ -661,4 +752,4 @@ def apply_business_config_form_groups(
         trailing = [node for node in preserved if str(node.get("type") or "").lower() != "header"]
         container_tree = [*leading, *semantic_groups, *trailing]
 
-    set_v2_container_tree(contract, container_tree)
+    set_v2_container_tree(contract, normalize_post_projected_container_tree(contract, container_tree))

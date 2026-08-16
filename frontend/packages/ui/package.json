@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./bridge": "./src/bridge.ts",
-    "./collection": "./src/collection.ts"
+    "./collection": "./src/collection.ts",
+    "./form": "./src/form.ts"
   },
   "dependencies": {
     "@ui5/webcomponents-base": "2.25.0",

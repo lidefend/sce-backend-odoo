@@ -46,9 +46,14 @@ ui_package = json.loads((ROOT / "frontend/packages/ui/package.json").read_text(e
 exports = ui_package.get("exports", {})
 require(exports.get("./bridge") == "./src/bridge.ts", "pure bridge export missing")
 require(exports.get("./collection") == "./src/collection.ts", "collection export missing")
+require(exports.get("./form") == "./src/form.ts", "form export missing")
 
 wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRenderer.vue").read_text(encoding="utf-8")
 require("from '@sc/ui/collection'" in wrapper, "renderer must use narrow collection export")
+form_host = (WEB_SRC / "pages/contractForm/ContractFormDriverHost.vue").read_text(encoding="utf-8")
+require("from '@sc/ui/form'" in form_host, "form driver host must use narrow form export")
+require("SceneUiProvider" in form_host and "ContractFormNativeCanvas" in form_host, "form driver does not retain the canonical form canvas")
+require("data-contract-form-driver-error" in form_host, "invalid normalized form contract does not fail closed")
 
 host = (WEB_SRC / "views/ActionView.vue").read_text(encoding="utf-8")
 runtime = (WEB_SRC / "app/action_runtime/useActionViewSceneComponentDriverRuntime.ts").read_text(encoding="utf-8")
@@ -70,10 +75,22 @@ for reason in (
     "SCENE_DRIVER_SCOPE_EMPTY",
 ):
     require(reason in policy, f"fail-closed reason missing: {reason}")
+require("SCENE_DRIVER_FORM_MODE_UNSUPPORTED" in policy, "readonly entitlement does not constrain form mode")
+
+form_section = (WEB_SRC / "components/template/FormSection.vue").read_text(encoding="utf-8")
+require("from '@sc/ui/form'" in form_section, "form fields must consume the narrow driver-neutral UI export")
+require("emitFieldChange(field, $event)" in form_section, "driver field does not reuse the canonical field-change path")
+
+form_page = (WEB_SRC / "pages/ContractFormPage.vue").read_text(encoding="utf-8")
+require(
+    form_page.index("const canSave = computed")
+    < form_page.index("useContractFormComponentDriverRuntime({"),
+    "immediate driver watchers must be installed after render-profile dependencies",
+)
 
 collection_surface = (UI_SRC / "components/SceneCollectionSurface.vue").read_text(encoding="utf-8")
 collection_wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRenderer.vue").read_text(encoding="utf-8")
 require("openRow" in collection_surface, "readonly collection does not expose row navigation")
 require("'open-record'" in collection_wrapper, "driver row navigation is not returned to the unified host")
 
-print("[verify.frontend.scene_component_bridge.guard] PASS checks=16")
+print("[verify.frontend.scene_component_bridge.guard] PASS checks=22")

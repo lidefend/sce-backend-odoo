@@ -341,6 +341,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         action_rule = full["actionContract"]["actionRuleList"][0]
         self.assertEqual(action_rule["actionKey"], "action_submit")
         self.assertEqual(action_rule["button"], {"name": "action_submit", "type": "object"})
+        self.assertEqual(action_rule["targetScope"], "page")
+        self.assertNotIn(action_rule["targetScope"], {"header", "toolbar", "smart", "row"})
 
     def test_object_button_payload_method_is_preserved_in_v2_action_contract(self):
         source = {

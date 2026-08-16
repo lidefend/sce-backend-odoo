@@ -30,6 +30,15 @@ export type SceneComponentDriverContext = {
   previewKit?: string | null;
 };
 
+export type ContractFormComponentDriverContext = {
+  featureFlag: unknown;
+  actionId: number;
+  model: string;
+  renderMode: 'create' | 'edit' | 'readonly';
+  userKit?: string | null;
+  previewKit?: string | null;
+};
+
 const SAFE_POLICY: SceneUiPreferencePolicy = Object.freeze({
   allowedKits: ['sc-native'],
   systemDefaultKit: 'sc-native',
@@ -71,6 +80,59 @@ function denied(reasonCode: string, targeted = false): SceneComponentDriverDecis
   };
 }
 
+function resolvePolicy(flag: Dict): SceneUiPreferencePolicy | null {
+  const allowedKits = sceneKitList(flag.allowed_kits);
+  if (!allowedKits.length || !allowedKits.includes('sc-native')) return null;
+  return {
+    allowedKits,
+    systemDefaultKit: String(flag.system_default_kit || 'sc-native') as SceneUiKitId,
+    organizationDefaultKit: String(flag.organization_default_kit || '') as SceneUiKitId || undefined,
+    lockedKit: String(flag.locked_kit || '') as SceneUiKitId || undefined,
+    allowUserOverride: flag.allow_user_override === true,
+    allowPreviewOverride: flag.allow_preview_override === true,
+  };
+}
+
+function scopeMatches(flag: Dict, actionId: number, model: string, sceneKey = ''): boolean | null {
+  const actionIds = positiveIntegerList(flag.action_ids);
+  const models = textList(flag.models);
+  const sceneKeys = textList(flag.scene_keys);
+  if (!actionIds.length && !models.length && !sceneKeys.length) return null;
+  return (
+    (actionId > 0 && actionIds.includes(actionId))
+    || (Boolean(model) && models.includes(model))
+    || (Boolean(sceneKey) && sceneKeys.includes(sceneKey))
+  );
+}
+
+export function resolveContractFormComponentDriverDecision(
+  context: ContractFormComponentDriverContext,
+): SceneComponentDriverDecision {
+  const flag = asDict(context.featureFlag);
+  if (flag.enabled !== true) return denied('SCENE_DRIVER_POLICY_DISABLED');
+  const matched = scopeMatches(flag, context.actionId, context.model);
+  if (matched === null) return denied('SCENE_DRIVER_SCOPE_EMPTY');
+  if (!matched) return denied('SCENE_DRIVER_SCOPE_MISMATCH');
+  if (flag.read_only_only === true && context.renderMode !== 'readonly') {
+    return denied('SCENE_DRIVER_FORM_MODE_UNSUPPORTED', true);
+  }
+  const policy = resolvePolicy(flag);
+  if (!policy) return denied('SCENE_DRIVER_ALLOWED_KITS_INVALID', true);
+  const resolution = resolveSceneUiPreference({
+    policy,
+    userKit: context.userKit,
+    previewKit: context.previewKit,
+  });
+  return {
+    eligible: true,
+    targeted: true,
+    reasonCode: '',
+    policy,
+    resolution,
+    allowUserOverride: policy.allowUserOverride === true && !policy.lockedKit,
+  };
+}
+
 export function resolveSceneComponentDriverDecision(
   context: SceneComponentDriverContext,
 ): SceneComponentDriverDecision {
@@ -80,36 +142,17 @@ export function resolveSceneComponentDriverDecision(
   if (!['tree', 'list'].includes(String(context.viewMode || '').trim().toLowerCase())) {
     return denied('SCENE_DRIVER_VIEW_UNSUPPORTED');
   }
-  const actionIds = positiveIntegerList(flag.action_ids);
-  const models = textList(flag.models);
-  const sceneKeys = textList(flag.scene_keys);
-  if (!actionIds.length && !models.length && !sceneKeys.length) {
-    return denied('SCENE_DRIVER_SCOPE_EMPTY');
-  }
-  const scopeMatched = (
-    (context.actionId > 0 && actionIds.includes(context.actionId))
-    || (Boolean(context.model) && models.includes(context.model))
-    || (Boolean(context.sceneKey) && sceneKeys.includes(context.sceneKey))
-  );
+  const scopeMatched = scopeMatches(flag, context.actionId, context.model, context.sceneKey);
+  if (scopeMatched === null) return denied('SCENE_DRIVER_SCOPE_EMPTY');
   if (!scopeMatched) return denied('SCENE_DRIVER_SCOPE_MISMATCH');
 
-  const allowedKits = sceneKitList(flag.allowed_kits);
-  if (!allowedKits.length || !allowedKits.includes('sc-native')) {
-    return denied('SCENE_DRIVER_ALLOWED_KITS_INVALID', true);
-  }
+  const policy = resolvePolicy(flag);
+  if (!policy) return denied('SCENE_DRIVER_ALLOWED_KITS_INVALID', true);
   if (!['read', 'readonly'].includes(String(context.pageAuth || '').trim().toLowerCase())) {
     return denied('SCENE_DRIVER_PAGE_NOT_READONLY', true);
   }
   if (context.hasMutationActions) return denied('SCENE_DRIVER_MUTATION_ACTION_PRESENT', true);
   if (context.selectionEnabled) return denied('SCENE_DRIVER_SELECTION_PRESENT', true);
-  const policy: SceneUiPreferencePolicy = {
-    allowedKits,
-    systemDefaultKit: String(flag.system_default_kit || 'sc-native') as SceneUiKitId,
-    organizationDefaultKit: String(flag.organization_default_kit || '') as SceneUiKitId || undefined,
-    lockedKit: String(flag.locked_kit || '') as SceneUiKitId || undefined,
-    allowUserOverride: flag.allow_user_override === true,
-    allowPreviewOverride: flag.allow_preview_override === true,
-  };
   const resolution = resolveSceneUiPreference({
     policy,
     userKit: context.userKit,

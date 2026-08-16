@@ -183,8 +183,14 @@ require(
     "frontend/apps/web/src/api/contract.ts",
     "CREATE_CONTRACT_CACHE_TTL_MS",
     "currentContextEpoch()",
-    "options?.renderProfile === 'create'",
-    "!Number(options?.recordId || 0)",
+    "resolveModelContractRenderProfile",
+    "params.render_profile === 'create'",
+    "!Number(params.record_id || 0)",
+)
+require(
+    "frontend/apps/web/src/api/modelContractProfile.ts",
+    "viewType === 'form'",
+    "? 'create'",
 )
 require(
     "frontend/apps/web/src/pages/ContractFormRoute.vue",

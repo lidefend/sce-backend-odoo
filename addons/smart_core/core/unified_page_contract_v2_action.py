@@ -24,6 +24,7 @@ def source_authority_contract() -> dict[str, Any]:
 TRIGGER_TYPES = {"change", "click", "select", "refresh", "add", "delete", "confirm", "submit", "blur", "focus"}
 DISPATCH_MODES = {"local", "server", "serverDebounced", "serverBlocking"}
 REFRESH_MODES = {"none", "partial", "full"}
+TARGET_SCOPES = {"widget", "container", "page", "dataSource", "runtime"}
 
 
 def _dict(value: Any) -> dict[str, Any]:
@@ -71,8 +72,10 @@ def _action_id(action_key: Any) -> str:
     return raw if raw.startswith("action.") else f"action.{raw}"
 
 
-def _normalize_trigger(raw: Any, fallback: str = "click") -> str:
+def normalize_trigger_type(raw: Any, fallback: str = "click") -> str:
     value = _text(raw, fallback)
+    if value == "row_click":
+        value = "click"
     return value if value in TRIGGER_TYPES else fallback
 
 
@@ -84,6 +87,22 @@ def _normalize_dispatch(raw: Any, fallback: str = "server") -> str:
 def _normalize_refresh(raw: Any, fallback: str = "partial") -> str:
     value = _text(raw, fallback)
     return value if value in REFRESH_MODES else fallback
+
+
+def normalize_target_scope(raw: Any, fallback: str = "page") -> str:
+    """Normalize the affected contract scope, not the visual action level.
+
+    Native action placement values such as header, toolbar, smart and row are
+    presentation facts.  They must never leak into the closed V2 target-scope
+    vocabulary consumed by every frontend driver.
+    """
+    value = _text(raw, fallback)
+    aliases = {
+        "data_source": "dataSource",
+        "datasource": "dataSource",
+    }
+    value = aliases.get(value, value)
+    return value if value in TARGET_SCOPES else fallback
 
 
 def _target_scope_for_intent(intent: str, fallback: str = "page") -> str:
@@ -148,11 +167,11 @@ def _append_rule(
     normalized_action_id = _action_id(action_id)
     rule = {
         "actionId": normalized_action_id,
-        "triggerType": _normalize_trigger(trigger_type),
+        "triggerType": normalize_trigger_type(trigger_type),
         "sourceWidgetId": _stable_id(source_widget_id, "page.root"),
         "targetIds": [_stable_id(item, "target") for item in (target_ids or []) if _text(item)],
         "dispatchMode": _normalize_dispatch(dispatch_mode),
-        "targetScope": target_scope if target_scope in {"widget", "container", "page", "dataSource", "runtime"} else "page",
+        "targetScope": normalize_target_scope(target_scope),
         "refreshMode": _normalize_refresh(refresh_mode),
     }
     action_contract["actionRuleList"].append(rule)
@@ -206,7 +225,7 @@ def _append_action_schema_rules(action_contract: dict[str, Any], source: dict[st
         _append_rule(
             action_contract,
             action_id=key,
-            trigger_type=_normalize_trigger(row.get("trigger"), "click"),
+            trigger_type=normalize_trigger_type(row.get("trigger"), "click"),
             source_widget_id=_text(row.get("sourceWidgetId"), "page.root"),
             target_ids=[_text(row.get("target", {}).get("scene_key"))] if isinstance(row.get("target"), dict) else [],
             dispatch_mode=_normalize_dispatch(row.get("dispatchMode"), "server"),
@@ -223,7 +242,7 @@ def _append_policy_action_rules(action_contract: dict[str, Any], source: dict[st
         _append_rule(
             action_contract,
             action_id=key,
-            trigger_type=_normalize_trigger(row.get("triggerType") or row.get("trigger"), "click"),
+            trigger_type=normalize_trigger_type(row.get("triggerType") or row.get("trigger"), "click"),
             source_widget_id=_text(row.get("sourceWidgetId"), "page.root"),
             target_ids=[_text(item) for item in _list(row.get("targetIds") or row.get("targets"))],
             dispatch_mode=_normalize_dispatch(row.get("dispatchMode"), "serverBlocking" if row.get("enabled") is False else "server"),

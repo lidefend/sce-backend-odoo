@@ -19,3 +19,7 @@ export function useSceneUiKit(): SceneUiKitContext {
   }
   return context;
 }
+
+export function useOptionalSceneUiKit(): SceneUiKitContext | null {
+  return inject(sceneUiKitKey, null);
+}

@@ -284,6 +284,8 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     componentKey,
     capabilities: asStringArray(raw.capabilities),
     componentConfig,
+    ...(asString(raw.fieldType || raw.field_type) ? { fieldType: asString(raw.fieldType || raw.field_type) } : {}),
+    ...(asString(raw.relation) ? { relation: asString(raw.relation) } : {}),
     ...(isRecord(raw.formStructureRole) ? { formStructureRole: raw.formStructureRole } : {}),
   };
 }
@@ -317,6 +319,7 @@ function decodeContainer(raw: unknown, path: string, issues: DecodeIssue[]): Con
   const modifiers = asRecord(raw.modifiers);
   const formStructure = asRecord(raw.formStructure || raw.form_structure);
   const formStructureRole = asRecord(raw.formStructureRole || raw.form_structure_role);
+  const sourceAuthority = asRecord(raw.sourceAuthority || raw.source_authority);
   return {
     containerId,
     containerType,
@@ -340,6 +343,7 @@ function decodeContainer(raw: unknown, path: string, issues: DecodeIssue[]): Con
     ...(Object.prototype.hasOwnProperty.call(raw, 'required') ? { required: raw.required } : {}),
     ...(Object.keys(formStructure).length ? { formStructure } : {}),
     ...(Object.keys(formStructureRole).length ? { formStructureRole } : {}),
+    ...(Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
     children,
     ...(pages.length ? { pages } : {}),
     ...(tabs.length ? { tabs } : {}),
