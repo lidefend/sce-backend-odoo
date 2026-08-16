@@ -115,12 +115,22 @@ after the terminal profile is stable, so vendor controls cannot influence contra
 - C0 authority and qualification conflict are documented.
 - C1 terminal vocabulary and fail-closed validation are executable.
 - C2 pure compiler, source trace and deterministic seal are executable.
+- The compiler rejects adapter vocabulary recursively across snake-case,
+  camel-case and kebab-case spellings. Its top-level and compatibility mirrors
+  are deep-copy isolated and contain one compiler pipeline event each.
 - C3 has started with a construction-standard payment-request task profile:
   thirteen first-screen facts, three blocker families, nine capabilities,
   two evidence groups and five relationship anchors. Pure behavior coverage now
   exercises draft submission, approval handoff, approved execution creation,
-  execution reopening, account repair and authorization denial. It does not yet
-  change the payment product qualification or runtime state.
+  execution reopening, account repair and authorization denial. A final
+  post-canonical extension point
+  now projects the existing normalized action verdicts and hydrated facts into a
+  sealed `runtimeContract.businessTaskSceneContract`; it never recomputes ACLs,
+  roles or business availability. It does not yet change the payment product
+  qualification or runtime state.
+- Payment execution submission, paid posting and reversal remain a separate C3
+  task profile checkpoint. They are not declared as payment-request capabilities
+  until their own canonical `sc.payment.execution` action verdicts are connected.
 - C4 pure simulation now proves retry-stable seals, role-handoff verdict changes
   without business-fact drift, relationship-anchor continuity, and explicit
   terminal states. It is not a substitute for ORM transactions or browser evidence.

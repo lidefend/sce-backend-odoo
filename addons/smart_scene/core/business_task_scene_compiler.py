@@ -14,8 +14,8 @@ from dataclasses import dataclass
 from typing import Any, Iterable
 
 from ..schemas.business_task_scene_contract import (
-    FORBIDDEN_TERMINAL_KEYS,
     check_business_task_scene_contract,
+    is_forbidden_terminal_key,
 )
 
 
@@ -54,7 +54,7 @@ def _walk_forbidden(value: Any, path: str) -> list[str]:
         for key, nested in value.items():
             key_text = _text(key)
             child = f"{path}.{key_text}"
-            if key_text.lower() in FORBIDDEN_TERMINAL_KEYS:
+            if is_forbidden_terminal_key(key_text):
                 out.append(child)
             out.extend(_walk_forbidden(nested, child))
     elif isinstance(value, list):

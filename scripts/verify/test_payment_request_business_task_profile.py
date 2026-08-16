@@ -5,6 +5,7 @@ import copy
 import importlib.util
 import json
 import sys
+import types
 import unittest
 from pathlib import Path
 
@@ -23,7 +24,24 @@ PROFILE_MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(PROFILE_MODULE)
 
-from addons.smart_scene.core.business_task_scene_compiler import compile_business_task_scene_contract  # noqa: E402
+from addons.smart_scene.core.business_task_scene_compiler import (  # noqa: E402
+    compile_business_task_scene_contract,
+    verify_business_task_scene_contract_seal,
+)
+SERVICES_PACKAGE = "addons.smart_construction_scene.services"
+services_package = types.ModuleType(SERVICES_PACKAGE)
+services_package.__path__ = [str(ROOT / "addons" / "smart_construction_scene" / "services")]
+sys.modules[SERVICES_PACKAGE] = services_package
+PROJECTION_PATH = services_package.__path__[0] + "/payment_request_business_task_projection.py"
+PROJECTION_SPEC = importlib.util.spec_from_file_location(
+    f"{SERVICES_PACKAGE}.payment_request_business_task_projection",
+    PROJECTION_PATH,
+)
+PROJECTION_MODULE = importlib.util.module_from_spec(PROJECTION_SPEC)
+assert PROJECTION_SPEC and PROJECTION_SPEC.loader
+sys.modules[PROJECTION_SPEC.name] = PROJECTION_MODULE
+PROJECTION_SPEC.loader.exec_module(PROJECTION_MODULE)
+attach_payment_request_business_task_scene = PROJECTION_MODULE.attach_payment_request_business_task_scene
 
 
 def _source(key: str) -> str:
@@ -263,6 +281,67 @@ def terminal_supply(*, state: str, state_label: str, outcome_code: str) -> dict:
     return supply
 
 
+def normalized_payment_contract(*, authorization_allowed: bool | None = True) -> dict:
+    main_data = {
+        "name": "FE-PAY-001",
+        "payment_flow_label": "付款申请",
+        "state": "approved",
+        "project_id": [7, "FE Project A"],
+        "partner_id": [8, "FE 往来单位"],
+        "contract_id": [9, "FE 合同"],
+        "settlement_id": False,
+        "material_settlement_id": False,
+        "payment_basis_type": "合同付款",
+        "amount": 80,
+        "unpaid_amount": 80,
+        "payee_account_completeness": "complete",
+        "payee_account_source_display": "往来单位默认结算账户",
+        "payment_execution_status_display": "尚未生成",
+        "payment_blocking_reason_display": "无业务阻断",
+        "legal_next_action_display": "生成付款登记",
+        "partner_transaction_eligibility": "eligible",
+        "partner_transaction_eligibility_reason": "",
+        "has_active_payment_execution": False,
+        "note": "按合同约定付款",
+        "attachment_ids": [3],
+        "review_ids": [4, 5],
+    }
+    trace = {
+        "sourceChannel": "runtime_business_action",
+        "businessAvailable": True,
+        "entitlementEvaluated": authorization_allowed is not None,
+    }
+    if authorization_allowed is not None:
+        trace["authorizationAllowed"] = authorization_allowed
+    rule = {
+        "actionId": "action.payment_execution",
+        "actionKey": "payment_execution",
+        "backendIdentity": "button:object:action_create_payment_execution",
+        "button": {"name": "action_create_payment_execution", "type": "object"},
+        "visible": True,
+        "enabled": bool(authorization_allowed),
+        "disabled": authorization_allowed is not True,
+        "presentation": {"tier": "primary"},
+        "sourceTrace": [trace],
+    }
+    return {
+        "pageInfo": {"model": "payment.request", "viewType": "form", "renderProfile": "readonly"},
+        "dataContract": {"mainData": main_data},
+        "actionContract": {"actionRuleList": [rule]},
+        "statusContract": {
+            "buttonStatus": [
+                {
+                    "btnId": "btn.payment_execution",
+                    "visible": True,
+                    "disabled": authorization_allowed is not True,
+                    **({"reasonCode": "ROLE_HANDOFF_REQUIRED"} if authorization_allowed is False else {}),
+                }
+            ]
+        },
+        "runtimeContract": {},
+    }
+
+
 class PaymentRequestBusinessTaskProfileTest(unittest.TestCase):
     def test_fact_and_input_bindings_are_declared_by_field_matrix(self):
         matrix = json.loads(
@@ -492,6 +571,61 @@ class PaymentRequestBusinessTaskProfileTest(unittest.TestCase):
             self.assertEqual(current_keys, relation_keys)
             self.assertTrue(all(row["source_authority"] for row in contract["relations"]))
 
+    def test_production_projection_attaches_sealed_terminal_scene_after_canonical_actions(self):
+        projected = attach_payment_request_business_task_scene(normalized_payment_contract())
+        self.assertIsNotNone(projected)
+        runtime = projected["runtimeContract"]
+        terminal = runtime["businessTaskContract"]
+        self.assertTrue(verify_business_task_scene_contract_seal(terminal))
+        self.assertEqual(
+            terminal["completion"]["next_capability_key"],
+            "payment_execution.create",
+        )
+        create = next(
+            row for row in terminal["capabilities"] if row["key"] == "payment_execution.create"
+        )
+        self.assertTrue(create["enabled"])
+        self.assertEqual(
+            runtime["businessTaskSceneContract"]["business_task"],
+            terminal,
+        )
+
+    def test_production_projection_does_not_infer_missing_authorization(self):
+        projected = attach_payment_request_business_task_scene(
+            normalized_payment_contract(authorization_allowed=None)
+        )
+        create = next(
+            row
+            for row in projected["runtimeContract"]["businessTaskContract"]["capabilities"]
+            if row["key"] == "payment_execution.create"
+        )
+        self.assertFalse(create["authorization_allowed"])
+        self.assertFalse(create["enabled"])
+        self.assertEqual(create["reason_code"], "ACTION_PERMISSION_UNRESOLVED")
+        self.assertEqual(
+            projected["runtimeContract"]["businessTaskContract"]["completion"]["next_capability_key"],
+            "payment_execution.create",
+        )
+
+    def test_production_projection_preserves_handoff_action_as_next_capability(self):
+        projected = attach_payment_request_business_task_scene(
+            normalized_payment_contract(authorization_allowed=False)
+        )
+        terminal = projected["runtimeContract"]["businessTaskContract"]
+        create = next(
+            row for row in terminal["capabilities"] if row["key"] == "payment_execution.create"
+        )
+        self.assertTrue(create["visible"])
+        self.assertTrue(create["business_available"])
+        self.assertFalse(create["authorization_allowed"])
+        self.assertFalse(create["enabled"])
+        self.assertEqual(create["reason_code"], "ROLE_HANDOFF_REQUIRED")
+        self.assertEqual(terminal["completion"]["next_capability_key"], "payment_execution.create")
+
+    def test_production_projection_ignores_non_payment_forms(self):
+        contract = normalized_payment_contract()
+        contract["pageInfo"]["model"] = "x.document"
+        self.assertIsNone(attach_payment_request_business_task_scene(contract))
 
 if __name__ == "__main__":
     unittest.main()

@@ -193,6 +193,16 @@ class BusinessTaskSceneContractTest(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(detail["code"], "native_vocabulary_leak")
 
+    def test_rejects_nested_camel_case_native_vocabulary(self):
+        payload = valid_payload()
+        payload["facts"][0]["value"] = {
+            "adapter": {"resModel": "x.secret", "serverActionId": 91},
+        }
+        ok, detail = check_business_task_scene_contract(payload)
+        self.assertFalse(ok)
+        self.assertEqual(detail["code"], "native_vocabulary_leak")
+        self.assertIn("business_task.facts[0].value.adapter.resModel", detail["paths"])
+
     def test_requires_explicit_authorization_verdict(self):
         payload = valid_payload()
         del payload["capabilities"][0]["authorization_allowed"]
@@ -275,6 +285,13 @@ class BusinessTaskSceneContractTest(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(detail["code"], "input_applicability_required")
 
+    def test_hidden_input_cannot_be_required(self):
+        payload = valid_payload()
+        payload["inputs"][0].update({"visible": False, "required": True})
+        ok, detail = check_business_task_scene_contract(payload)
+        self.assertFalse(ok)
+        self.assertEqual(detail["code"], "hidden_input_cannot_be_required")
+
     def test_active_blocker_requires_user_message_and_missing_items(self):
         payload = valid_payload()
         payload["blockers"] = [
@@ -345,6 +362,15 @@ class BusinessTaskSceneCompilerTest(unittest.TestCase):
             compile_business_task_scene_contract(profile=profile, semantic_supply=valid_supply())
         self.assertEqual(raised.exception.code, "native_vocabulary_in_profile")
 
+    def test_rejects_nested_camel_case_native_vocabulary_in_profile(self):
+        profile = valid_profile()
+        profile["capabilities"][0]["handoff"] = {
+            "target": {"xmlId": "base.hidden", "odooAction": "open"},
+        }
+        with self.assertRaises(BusinessTaskCompileError) as raised:
+            compile_business_task_scene_contract(profile=profile, semantic_supply=valid_supply())
+        self.assertEqual(raised.exception.code, "native_vocabulary_in_profile")
+
     def test_missing_semantic_supply_fails_closed(self):
         supply = valid_supply()
         del supply["capabilities"]["document.approve"]
@@ -380,6 +406,31 @@ class BusinessTaskSceneCompilerTest(unittest.TestCase):
         self.assertIn("business_task_scene_compiler", contract["diagnostics"]["build_pipeline"])
         self.assertIn(
             "business_task_scene_compiler",
+            contract["scene_contract_v1"]["diagnostics"]["build_pipeline"],
+        )
+        self.assertEqual(
+            contract["diagnostics"]["build_pipeline"].count("business_task_scene_compiler"),
+            1,
+        )
+        self.assertEqual(
+            contract["scene_contract_v1"]["diagnostics"]["build_pipeline"].count(
+                "business_task_scene_compiler"
+            ),
+            1,
+        )
+        self.assertIsNot(contract["business_task"], contract["scene_contract_v1"]["business_task"])
+        self.assertIsNot(
+            contract["diagnostics"]["build_pipeline"],
+            contract["scene_contract_v1"]["diagnostics"]["build_pipeline"],
+        )
+        contract["business_task"]["facts"][0]["label"] = "mutated"
+        contract["diagnostics"]["build_pipeline"].append("late_mutation")
+        self.assertEqual(
+            contract["scene_contract_v1"]["business_task"]["facts"][0]["label"],
+            "单据金额",
+        )
+        self.assertNotIn(
+            "late_mutation",
             contract["scene_contract_v1"]["diagnostics"]["build_pipeline"],
         )
 

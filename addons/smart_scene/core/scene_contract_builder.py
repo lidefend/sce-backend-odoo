@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, Dict
 
 from .business_task_scene_compiler import compile_business_task_scene_contract
@@ -184,30 +185,28 @@ def build_scene_contract(
         "extensions": _normalize_extensions(extensions),
         "diagnostics": _normalize_diagnostics(diagnostics),
     }
-    contract["scene_contract_v1"] = {
-        "contract_version": "v1",
-        "scene": dict(contract["scene"]),
-        "page": dict(contract["page"]),
-        "nav_ref": dict(contract["nav_ref"]),
-        "zones": list(contract["zones_v1"]),
-        "blocks": dict(contract["blocks"]),
-        "actions": dict(contract["actions"]),
-        "permissions": dict(contract["permissions"]),
-        "record": dict(contract["record"]),
-        "extensions": dict(contract["extensions"]),
-        "diagnostics": dict(contract["diagnostics"]),
-    }
     if business_task_profile is not None or business_task_semantic_supply is not None:
         business_task = compile_business_task_scene_contract(
             profile=dict(business_task_profile or {}),
             semantic_supply=dict(business_task_semantic_supply or {}),
         )
         contract["business_task"] = business_task
-        contract["scene_contract_v1"]["business_task"] = dict(business_task)
         contract["diagnostics"]["build_pipeline"].append("business_task_scene_compiler")
-        contract["scene_contract_v1"]["diagnostics"]["build_pipeline"].append(
-            "business_task_scene_compiler"
-        )
+    contract["scene_contract_v1"] = {
+        "contract_version": "v1",
+        "scene": deepcopy(contract["scene"]),
+        "page": deepcopy(contract["page"]),
+        "nav_ref": deepcopy(contract["nav_ref"]),
+        "zones": deepcopy(contract["zones_v1"]),
+        "blocks": deepcopy(contract["blocks"]),
+        "actions": deepcopy(contract["actions"]),
+        "permissions": deepcopy(contract["permissions"]),
+        "record": deepcopy(contract["record"]),
+        "extensions": deepcopy(contract["extensions"]),
+        "diagnostics": deepcopy(contract["diagnostics"]),
+    }
+    if "business_task" in contract:
+        contract["scene_contract_v1"]["business_task"] = deepcopy(contract["business_task"])
     verdict = validate_scene_contract_shape(contract)
     contract["diagnostics"]["scene_contract_shape"] = verdict
     return contract

@@ -8,6 +8,7 @@ inputs and diagnostics, never to this terminal profile.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, Iterable, Tuple
 
 
@@ -37,6 +38,18 @@ FORBIDDEN_TERMINAL_KEYS = {
     "server_action_id",
 }
 
+_NON_ALNUM = re.compile(r"[^a-z0-9]+")
+FORBIDDEN_TERMINAL_KEY_TOKENS = {
+    _NON_ALNUM.sub("", key.lower()) for key in FORBIDDEN_TERMINAL_KEYS
+}
+
+
+def is_forbidden_terminal_key(value: Any) -> bool:
+    """Match adapter keys across snake/camel/kebab spelling variants."""
+
+    token = _NON_ALNUM.sub("", _text(value).lower())
+    return bool(token) and token in FORBIDDEN_TERMINAL_KEY_TOKENS
+
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
@@ -59,7 +72,7 @@ def _find_forbidden_keys(value: Any, path: str = "business_task") -> list[str]:
         for key, nested in value.items():
             key_text = _text(key)
             child_path = f"{path}.{key_text}"
-            if key_text.lower() in FORBIDDEN_TERMINAL_KEYS:
+            if is_forbidden_terminal_key(key_text):
                 errors.append(child_path)
             errors.extend(_find_forbidden_keys(nested, child_path))
     elif isinstance(value, list):
@@ -123,6 +136,8 @@ def check_business_task_scene_contract(payload: dict) -> Tuple[bool, Dict[str, o
             return False, {"code": "input_source_authority_required", "key": item.get("key")}
         if not _text(item.get("applicability")):
             return False, {"code": "input_applicability_required", "key": item.get("key")}
+        if item.get("required") and not item.get("visible"):
+            return False, {"code": "hidden_input_cannot_be_required", "key": item.get("key")}
 
     blocker_keys = {str(row["key"]) for row in rows_by_section["blockers"]}
     active_blockers = {str(row["key"]) for row in rows_by_section["blockers"] if row.get("active") is True}

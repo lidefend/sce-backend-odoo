@@ -268,6 +268,30 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertTrue(observed["projected"])
         self.assertIs(observed["contract"], result.data["contract"])
 
+    def test_terminal_scene_extension_runs_after_canonical_runtime_action_projection(self):
+        observed = {}
+        original_hook = self.module.call_extension_hook_first
+
+        def _hook(_env, hook_name, _runtime_env, contract, context):
+            if hook_name != "smart_core_finalize_terminal_scene_contract":
+                return None
+            observed["projected"] = self.module._captured.get("runtime_business_actions_projected")
+            observed["subject"] = context.get("subject")
+            return {**contract, "terminalSceneAttached": True}
+
+        self.module.call_extension_hook_first = _hook
+        try:
+            result = self.module.UiContractV2Handler(env={}).handle(
+                payload={"params": {"model": "res.partner", "view_type": "form"}},
+            )
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        self.assertTrue(result.ok)
+        self.assertTrue(observed["projected"])
+        self.assertEqual(observed["subject"], "ui.contract.v2.terminal_scene")
+        self.assertTrue(result.data["contract"]["terminalSceneAttached"])
+
     def test_final_modifier_hydration_keeps_missing_value_fail_closed_on_read_denial(self):
         class _Record:
             def exists(self):
