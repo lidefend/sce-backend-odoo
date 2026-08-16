@@ -537,7 +537,7 @@ def smart_core_finalize_terminal_scene_contract(env, contract, context):
     page_info = contract.get("pageInfo") if isinstance(contract.get("pageInfo"), dict) else {}
     model = _sc_text(source.get("model") or head.get("model") or page_info.get("model"))
     view_type = _sc_text(source.get("view_type") or head.get("view_type") or page_info.get("viewType")).lower()
-    if model not in {"payment.request", "sc.payment.execution"} or view_type != "form":
+    if model not in {"payment.request", "sc.payment.execution", "sc.settlement.order"} or view_type != "form":
         return None
     meta = (context or {}).get("meta") if isinstance(context, dict) else {}
     params = meta.get("params") if isinstance(meta, dict) and isinstance(meta.get("params"), dict) else {}
@@ -554,11 +554,19 @@ def smart_core_finalize_terminal_scene_contract(env, contract, context):
             )
 
             return attach_payment_request_business_task_scene(contract, render_profile=render_profile)
-        from odoo.addons.smart_construction_scene.services.payment_execution_business_task_projection import (
-            attach_payment_execution_business_task_scene,
-        )
+        if model == "sc.payment.execution":
+            from odoo.addons.smart_construction_scene.services.payment_execution_business_task_projection import (
+                attach_payment_execution_business_task_scene,
+            )
 
-        return attach_payment_execution_business_task_scene(contract, render_profile=render_profile)
+            return attach_payment_execution_business_task_scene(contract, render_profile=render_profile)
+        if model == "sc.settlement.order":
+            from odoo.addons.smart_construction_scene.services.settlement_order_business_task_projection import (
+                attach_settlement_order_business_task_scene,
+            )
+
+            return attach_settlement_order_business_task_scene(contract, render_profile=render_profile)
+        return None
     except Exception:
         _logger.exception("Failed to attach construction terminal business-task scene for %s", model)
         return None

@@ -117,6 +117,8 @@ verify.business_task_scene_contract.unit: guard.prod.forbid
 		scripts/verify/test_cross_model_business_task_profiles.py \
 		scripts/verify/test_payment_business_task_journey_simulation.py \
 		scripts/verify/test_payment_execution_action_contract.py \
+		scripts/verify/test_settlement_business_actions.py \
+		scripts/verify/test_settlement_order_business_task_profile.py \
 		scripts/verify/test_payment_request_business_task_profile.py \
 		scripts/verify/test_payment_execution_business_task_profile.py
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/business_task_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/business-task-contract-test.mjs >/dev/null

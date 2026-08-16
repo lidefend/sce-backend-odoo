@@ -683,6 +683,15 @@ def _build_payment_execution_form_actions(record):
 def build_financial_form_business_actions(env, model_name, record_id):
     """Build only the actions and collaboration metadata consumed by the generic form."""
     model = str(model_name or "").strip()
+    if model == "sc.settlement.order":
+        record = _safe_record(env[model].browse(int(record_id or 0)))
+        if not record:
+            return None
+        from odoo.addons.smart_construction_core.services.settlement_business_actions import (
+            build_settlement_form_actions,
+        )
+        actions = build_settlement_form_actions(record)
+        return {"actions": actions} if actions else None
     if model == "sc.payment.execution":
         record = _safe_record(env[model].browse(int(record_id or 0)))
         if not record:

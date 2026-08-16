@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3830`
+- Scanned files: `3834`
 - Files requiring split plan: `41`
 - Files above warning threshold: `76`
 
@@ -43,8 +43,8 @@ Generated from repository source files. This report is informational during the 
 | 1744 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1740 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1713 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 1705 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1704 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 1697 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1634 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
@@ -107,7 +107,7 @@ Generated from repository source files. This report is informational during the 
 | 915 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
-| 891 | Python source | `addons/smart_construction_core/services/financial_workspace_contract.py` |
+| 900 | Python source | `addons/smart_construction_core/services/financial_workspace_contract.py` |
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
@@ -171,8 +171,8 @@ Generated from repository source files. This report is informational during the 
 | 1740 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1738 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1713 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 1705 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1704 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 1697 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1634 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |

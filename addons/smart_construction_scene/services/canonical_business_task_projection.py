@@ -96,7 +96,7 @@ def canonical_action_capabilities(contract: dict, capability_methods: dict[str, 
         for row in as_list(as_dict(contract.get("statusContract")).get("buttonStatus"))
         if isinstance(row, dict)
     }
-    out = {key: inactive_capability() for key in capability_methods}
+    candidates = {key: [] for key in capability_methods}
     for rule in as_list(as_dict(contract.get("actionContract")).get("actionRuleList")):
         if not isinstance(rule, dict):
             continue
@@ -108,7 +108,49 @@ def canonical_action_capabilities(contract: dict, capability_methods: dict[str, 
         if not capability_key:
             continue
         action_key = text(rule.get("actionKey"))
-        out[capability_key] = _capability_from_rule(rule, statuses.get(f"btn.{action_key}", {}))
+        candidates[capability_key].append(
+            _capability_from_rule(rule, statuses.get(f"btn.{action_key}", {}))
+        )
+    out = {}
+    for capability_key, rows in candidates.items():
+        enabled = [row for row in rows if row.get("enabled")]
+        applicable = [
+            row for row in rows
+            if row.get("visible") or row.get("business_available")
+        ]
+        if len(applicable) > 1:
+            out[capability_key] = {
+                "visible": True,
+                "business_available": True,
+                "authorization_allowed": False,
+                "enabled": False,
+                "reason_code": "ACTION_CAPABILITY_AMBIGUOUS",
+                "reason": "多个后端动作同时声明为当前办理能力。",
+                "source_authority": "canonical_action_contract",
+            }
+        elif len(enabled) == 1:
+            out[capability_key] = enabled[0]
+        elif len(enabled) > 1:
+            # Defensive fallback: executable rows are normally applicable, so
+            # this branch only protects malformed future adapters.
+            out[capability_key] = {
+                "visible": False,
+                "business_available": False,
+                "authorization_allowed": False,
+                "enabled": False,
+                "reason_code": "ACTION_CAPABILITY_AMBIGUOUS",
+                "reason": "多个后端动作同时声明为当前办理能力。",
+                "source_authority": "canonical_action_contract",
+            }
+        elif len(applicable) == 1:
+            # Alternate backend methods may represent one stateful capability.
+            # Hidden, state-inapplicable aliases must not overwrite the one
+            # visible handoff or blocker verdict.
+            out[capability_key] = applicable[0]
+        elif rows:
+            out[capability_key] = rows[0]
+        else:
+            out[capability_key] = inactive_capability()
     return out
 
 

@@ -4588,3 +4588,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   adapter-vocabulary rules as payment. The settlement vocabulary is aligned to
   the real submit/approval/complete lifecycle rather than inventing a generic
   confirm transition.
+## 2026-08-16 — C7 settlement terminal authority connection
+
+- Formal Product Layer: P1 domain producer plus terminal scene projection.
+- Layer Target: `sc.settlement.order` normalized action authority → sealed
+  `businessTaskContract`; no frontend/native-view vocabulary introduced.
+- The producer reuses real settlement model prechecks, exact capability groups,
+  and the OCA `can_review` verdict. Missing or denied authority stays visible only
+  as an explicit handoff and never becomes executable.
+- The projection does not invent approval-amount or attachment requirements.
+  Active scope/amount blockers only tighten the capabilities that declare those
+  blockers; cancel/reject semantics remain independently governed.
+- Multiple backend methods may implement one semantic capability across states.
+  One applicable method is selected deterministically; multiple simultaneously
+  enabled aliases return `ACTION_CAPABILITY_AMBIGUOUS` and fail closed.
+- Scope is contained to construction domain action production, generic terminal
+  projection helpers, the construction terminal hook, executable tests, and this
+  architecture record. No environment, P0 assembler, or UI-driver branch changes.

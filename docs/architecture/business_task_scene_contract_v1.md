@@ -139,10 +139,15 @@ after the terminal profile is stable, so vendor controls cannot influence contra
   `runtimeContract.businessTaskContract`, rejects native adapter vocabulary and
   inconsistent verdicts, and exposes a terminal presentation model from the task
   profile alone. Visual scene components remain in the independent driver checkpoint.
-- C7 vocabulary proof now compiles approval-work-item and contract-settlement
-  profiles through the same terminal schema. These declarations do not yet claim
-  production runtime projection; they freeze non-payment semantics before each
-  domain authority adapter is connected.
+- C7 vocabulary proof compiles approval-work-item and contract-settlement
+  profiles through the same terminal schema. Contract settlement is now the first
+  non-payment declaration connected to production: its domain service projects
+  real model prechecks and exact capability-group/OCA review verdicts into the
+  canonical action contract, and the final terminal hook consumes only those
+  normalized action/status verdicts. Alternate OCA/native methods for the same
+  semantic capability select the one applicable method; simultaneous enabled
+  aliases fail closed as ambiguous. Approval work-item remains declaration-only
+  until its own authority adapter is connected.
 
 ## Exit metrics
 

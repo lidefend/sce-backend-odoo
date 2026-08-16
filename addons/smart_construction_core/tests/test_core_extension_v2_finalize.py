@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 from copy import deepcopy
+import sys
+import types
+from unittest.mock import patch
 
 from lxml import etree
 from odoo.tests import tagged
@@ -134,6 +137,39 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         )
 
         self.assertIsNone(projected)
+
+    def test_terminal_finalize_dispatches_settlement_form_after_canonical_actions(self):
+        module_name = (
+            "odoo.addons.smart_construction_scene.services."
+            "settlement_order_business_task_projection"
+        )
+        module = types.ModuleType(module_name)
+        module.attach_settlement_order_business_task_scene = lambda contract, render_profile="": {
+            **deepcopy(contract),
+            "settlement_terminal_probe": render_profile,
+        }
+        contract = {
+            "pageInfo": {
+                "model": "sc.settlement.order",
+                "viewType": "form",
+                "renderProfile": "readonly",
+            }
+        }
+
+        with patch.dict(sys.modules, {module_name: module}):
+            projected = core_extension.smart_core_finalize_terminal_scene_contract(
+                self.env,
+                contract,
+                {
+                    "source_contract": {
+                        "model": "sc.settlement.order",
+                        "view_type": "form",
+                        "render_profile": "readonly",
+                    }
+                },
+            )
+
+        self.assertEqual(projected["settlement_terminal_probe"], "readonly")
 
     def test_standard_product_models_do_not_register_migration_aliases(self):
         for model_name in ("payment.request", "tender.doc.purchase", "construction.contract"):
