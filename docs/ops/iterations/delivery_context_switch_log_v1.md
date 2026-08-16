@@ -4531,3 +4531,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   produces no terminal contract. Pure compiler/profile tests, UI boundary
   tests, adjacent scene guards, generated-report guards and exact-SHA runtime
   gates are required before the long line advances.
+
+## Business Task Scene Contract payment-execution vertical slice (2026-08-16)
+
+- Branch / base SHA: `feature/business-task-scene-contract-v2` /
+  `0c89746904232fb168593d3610289aa0dfcb6075`.
+- Formal Product Layer: P0 terminal compiler helper + P1 construction payment-execution task semantics.
+- Layer Target / Module: `smart_scene`, `smart_construction_scene`, and the existing
+  `smart_construction_core` financial form action producer.
+- Why Here: the terminal scene must consume explicit canonical business availability,
+  authorization and interaction verdicts; native button groups/modifiers alone are not
+  sufficient authority for a contract-only renderer.
+- Why Not Elsewhere: the frontend must not infer payment state or roles, and the scene
+  compiler must not query ORM. Existing payment-execution model checks, finance capability
+  methods and OCA `can_review` remain the authorities.
+- Blast Radius: `sc.payment.execution` form actions and its sealed business-task projection
+  only. No environment, database topology, fixture, payment transition or frontend change.
+- Validation: 58/58 terminal/action/journey behavior tests, 75/75 P0 handler boundary tests,
+  deterministic seal/deep-copy tests, and `git diff --check`.

@@ -552,9 +552,143 @@ def build_financial_workspace_contract(env, model_name, record_id):
     }
 
 
+def _payment_execution_action_row(
+    *,
+    key,
+    label,
+    method,
+    business_available,
+    authorization_allowed,
+    reason_code="",
+    blocked_message="",
+    primary=False,
+    requires_reason=False,
+):
+    executable = bool(business_available and authorization_allowed)
+    if business_available and not authorization_allowed:
+        reason_code = "ROLE_HANDOFF_REQUIRED"
+        blocked_message = blocked_message or "请移交具有当前付款办理能力的人员。"
+    elif not executable and not reason_code:
+        reason_code = "ACTION_NOT_ALLOWED"
+    return {
+        "key": f"payment_execution_{key}",
+        "action_key": key,
+        "label": label,
+        "kind": "object",
+        "level": "header",
+        "target_scope": "page",
+        "source_widget_id": "page.header",
+        "selection": "none",
+        "visible_profiles": ["edit", "readonly"],
+        "method": method,
+        # Applicability owns visibility; enabled/disabled owns execution.
+        "allowed": True,
+        "enabled": executable,
+        "disabled": not executable,
+        "business_available": bool(business_available),
+        "authorization_allowed": bool(authorization_allowed),
+        "entitlement_evaluated": True,
+        "reason_code": "" if executable else reason_code,
+        "blocked_message": "" if executable else blocked_message,
+        "requires_reason": bool(requires_reason),
+        "primary": bool(primary and executable),
+        "presentation": {
+            "tier": "primary" if primary and executable else "secondary",
+            "semantic": "primary_action" if primary and executable else "secondary_action",
+        },
+        "presentation_authority": "payment_execution_capability",
+        "presentation_priority": 370 if primary else 320,
+        "action_safety": {
+            "classification": "danger" if requires_reason else "normal",
+            "requires_confirm": True,
+            "reason_code": "BUSINESS_STATE_TRANSITION",
+        },
+        "refresh_policy": {"on_success": ["scene_projection"], "mode": "reload_record", "scope": "record"},
+    }
+
+
+def _build_payment_execution_form_actions(record):
+    """Project model-owned state and capability verdicts without duplicating ACL logic."""
+
+    state = _text(record.state)
+    validation_status = _text(record.validation_status)
+    source_origin = _text(record.source_origin)
+    finance_handler = bool(record._has_finance_handling_access())
+    finance_manager = bool(record._has_finance_confirm_access())
+    can_review = bool(record.can_review)
+    actions = []
+
+    precheck_ok = True
+    precheck_message = ""
+    if state in {"draft", "confirmed"}:
+        try:
+            record._check_business_anchor_or_raise()
+            record._check_payment_request_scope_or_raise()
+            record._check_company_contractor_payment_responsibility_or_raise()
+        except Exception as exc:
+            precheck_ok = False
+            precheck_message = _text(exc) or "付款事实尚未满足办理条件。"
+
+    approval_pending = validation_status in {"waiting", "pending"}
+    submit_applicable = state == "draft" and not approval_pending and validation_status != "validated"
+    if submit_applicable:
+        actions.append(_payment_execution_action_row(
+            key="submit", label="提交审批", method="action_confirm",
+            business_available=precheck_ok,
+            authorization_allowed=finance_handler,
+            reason_code="PAYMENT_EXECUTION_FACTS_INCOMPLETE" if not precheck_ok else "",
+            blocked_message=precheck_message,
+            primary=True,
+        ))
+    if approval_pending:
+        actions.extend((
+            _payment_execution_action_row(
+                key="approve", label="审批通过", method="validate_tier",
+                business_available=True, authorization_allowed=can_review,
+                primary=True,
+            ),
+            _payment_execution_action_row(
+                key="reject", label="审批驳回", method="reject_tier",
+                business_available=True, authorization_allowed=can_review,
+                requires_reason=True,
+            ),
+        ))
+    if state == "confirmed":
+        actions.append(_payment_execution_action_row(
+            key="mark_paid", label="登记已付款", method="action_paid",
+            business_available=precheck_ok,
+            authorization_allowed=finance_manager,
+            reason_code="PAYMENT_EXECUTION_FACTS_INCOMPLETE" if not precheck_ok else "",
+            blocked_message=precheck_message,
+            primary=True,
+        ))
+    if source_origin != "legacy" and state in {"draft", "confirmed"}:
+        actions.append(_payment_execution_action_row(
+            key="cancel", label="取消付款登记", method="action_cancel",
+            business_available=True, authorization_allowed=finance_manager,
+        ))
+    if source_origin != "legacy" and state == "paid":
+        reversal_ready = bool(_text(record.reversal_reason))
+        actions.append(_payment_execution_action_row(
+            key="reverse", label="冲销付款", method="action_reverse_payment",
+            business_available=reversal_ready,
+            authorization_allowed=finance_manager,
+            reason_code="REVERSAL_REASON_REQUIRED" if not reversal_ready else "",
+            blocked_message="请先填写冲销原因。" if not reversal_ready else "",
+            requires_reason=True,
+        ))
+    return actions
+
+
 def build_financial_form_business_actions(env, model_name, record_id):
     """Build only the actions and collaboration metadata consumed by the generic form."""
     model = str(model_name or "").strip()
+    if model == "sc.payment.execution":
+        record = _safe_record(env[model].browse(int(record_id or 0)))
+        if not record:
+            return None
+        actions = _build_payment_execution_form_actions(record)
+        return {"actions": actions} if actions else None
     if model != "payment.request":
         try:
             record = _safe_record(env[model].browse(int(record_id or 0)))

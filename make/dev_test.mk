@@ -114,7 +114,10 @@ verify.frontend.project_management.scene_bridge.guard: guard.prod.forbid
 verify.business_task_scene_contract.unit: guard.prod.forbid
 	@PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest \
 		scripts/verify/test_business_task_scene_contract.py \
-		scripts/verify/test_payment_request_business_task_profile.py
+		scripts/verify/test_payment_business_task_journey_simulation.py \
+		scripts/verify/test_payment_execution_action_contract.py \
+		scripts/verify/test_payment_request_business_task_profile.py \
+		scripts/verify/test_payment_execution_business_task_profile.py
 
 verify.frontend.scene_contract_v1.consumption.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_scene_contract_v1_consumption_guard.py

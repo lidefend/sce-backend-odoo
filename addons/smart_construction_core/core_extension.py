@@ -537,7 +537,7 @@ def smart_core_finalize_terminal_scene_contract(env, contract, context):
     page_info = contract.get("pageInfo") if isinstance(contract.get("pageInfo"), dict) else {}
     model = _sc_text(source.get("model") or head.get("model") or page_info.get("model"))
     view_type = _sc_text(source.get("view_type") or head.get("view_type") or page_info.get("viewType")).lower()
-    if model != "payment.request" or view_type != "form":
+    if model not in {"payment.request", "sc.payment.execution"} or view_type != "form":
         return None
     meta = (context or {}).get("meta") if isinstance(context, dict) else {}
     params = meta.get("params") if isinstance(meta, dict) and isinstance(meta.get("params"), dict) else {}
@@ -548,13 +548,19 @@ def smart_core_finalize_terminal_scene_contract(env, contract, context):
         or page_info.get("renderProfile")
     ).lower()
     try:
-        from odoo.addons.smart_construction_scene.services.payment_request_business_task_projection import (
-            attach_payment_request_business_task_scene,
+        if model == "payment.request":
+            from odoo.addons.smart_construction_scene.services.payment_request_business_task_projection import (
+                attach_payment_request_business_task_scene,
+            )
+
+            return attach_payment_request_business_task_scene(contract, render_profile=render_profile)
+        from odoo.addons.smart_construction_scene.services.payment_execution_business_task_projection import (
+            attach_payment_execution_business_task_scene,
         )
 
-        return attach_payment_request_business_task_scene(contract, render_profile=render_profile)
+        return attach_payment_execution_business_task_scene(contract, render_profile=render_profile)
     except Exception:
-        _logger.exception("Failed to attach payment request terminal business-task scene")
+        _logger.exception("Failed to attach construction terminal business-task scene for %s", model)
         return None
 
 

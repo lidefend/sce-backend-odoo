@@ -2,8 +2,8 @@
 
 ## Decision
 
-This document starts the `feature/business-task-scene-contract-v1` integration line at
-baseline `42f0241083f8b1e530172aa1425a62059d5079a4`.
+This document continues on the single active `feature/business-task-scene-contract-v2`
+integration line at baseline `0c89746904232fb168593d3610289aa0dfcb6075`.
 
 The project does not introduce a fourth page protocol. `business_task` is a versioned
 terminal profile inside the existing Scene Contract. Existing native and normalized
@@ -128,9 +128,10 @@ after the terminal profile is stable, so vendor controls cannot influence contra
   sealed `runtimeContract.businessTaskSceneContract`; it never recomputes ACLs,
   roles or business availability. It does not yet change the payment product
   qualification or runtime state.
-- Payment execution submission, paid posting and reversal remain a separate C3
-  task profile checkpoint. They are not declared as payment-request capabilities
-  until their own canonical `sc.payment.execution` action verdicts are connected.
+- Payment execution submission, approval handoff, paid posting, cancellation and
+  reversal now use a separate C3 task profile backed by canonical
+  `sc.payment.execution` action/status verdicts. The payment-request profile does
+  not impersonate these downstream capabilities.
 - C4 pure simulation now proves retry-stable seals, role-handoff verdict changes
   without business-fact drift, relationship-anchor continuity, and explicit
   terminal states. It is not a substitute for ORM transactions or browser evidence.

@@ -8,8 +8,6 @@ canonical action/status authority; it never queries ORM or infers permissions.
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
-
 try:
     from odoo.addons.smart_scene.core.scene_engine import build_scene_contract_from_specs
 except ModuleNotFoundError as exc:  # pure contract-test runtime
@@ -18,6 +16,14 @@ except ModuleNotFoundError as exc:  # pure contract-test runtime
     from addons.smart_scene.core.scene_engine import build_scene_contract_from_specs
 
 from ..profiles.payment_request_business_task_profile import payment_request_task_profile_v1
+from .canonical_business_task_projection import (
+    as_dict as _dict,
+    as_list as _list,
+    canonical_action_capabilities,
+    display as _display,
+    inactive_capability as _inactive_capability,
+    text as _text,
+)
 
 
 _CAPABILITY_METHODS = {
@@ -46,100 +52,8 @@ _FACT_FIELDS = {
 }
 
 
-def _text(value: Any) -> str:
-    return str(value or "").strip()
-
-
-def _dict(value: Any) -> dict:
-    return dict(value) if isinstance(value, dict) else {}
-
-
-def _list(value: Any) -> list:
-    return list(value) if isinstance(value, list) else []
-
-
-def _display(value: Any) -> Any:
-    if isinstance(value, (list, tuple)) and len(value) >= 2:
-        return value[1]
-    if isinstance(value, dict):
-        return value.get("display_name") or value.get("label") or value.get("name") or ""
-    return value
-
-
-def _button_statuses(contract: dict) -> dict[str, dict]:
-    rows = _list(_dict(contract.get("statusContract")).get("buttonStatus"))
-    return {_text(row.get("btnId")): row for row in rows if isinstance(row, dict)}
-
-
-def _method(rule: dict) -> str:
-    button = _dict(rule.get("button"))
-    target = _dict(rule.get("target"))
-    identity = _text(rule.get("backendIdentity"))
-    return _text(button.get("name") or target.get("method") or identity.rsplit(":", 1)[-1])
-
-
-def _authority_verdict(rule: dict, key: str) -> bool | None:
-    values = [
-        trace.get(key)
-        for trace in _list(rule.get("sourceTrace"))
-        if isinstance(trace, dict) and isinstance(trace.get(key), bool)
-    ]
-    if False in values:
-        return False
-    return True if True in values else None
-
-
-def _capability_from_rule(rule: dict, status: dict) -> dict:
-    business_available = _authority_verdict(rule, "businessAvailable")
-    authorization_allowed = _authority_verdict(rule, "authorizationAllowed")
-    visible = status.get("visible") if isinstance(status.get("visible"), bool) else rule.get("visible")
-    enabled = rule.get("enabled") if isinstance(rule.get("enabled"), bool) else None
-    disabled = status.get("disabled") if isinstance(status.get("disabled"), bool) else rule.get("disabled")
-    explicit = all(
-        isinstance(value, bool)
-        for value in (business_available, authorization_allowed, visible, enabled)
-    )
-    executable = bool(explicit and business_available and authorization_allowed and visible and enabled and disabled is not True)
-    reason_code = _text(status.get("reasonCode") or rule.get("reasonCode"))
-    if not executable and (not reason_code or reason_code.upper() == "OK"):
-        reason_code = "ACTION_NOT_ALLOWED" if explicit else "ACTION_PERMISSION_UNRESOLVED"
-    return {
-        "visible": bool(visible) if isinstance(visible, bool) else False,
-        "business_available": bool(business_available) if isinstance(business_available, bool) else False,
-        "authorization_allowed": bool(authorization_allowed) if isinstance(authorization_allowed, bool) else False,
-        "enabled": executable,
-        "reason_code": "" if executable else reason_code,
-        "reason": "" if executable else _text(status.get("reason") or rule.get("hint")),
-        "source_authority": "canonical_action_contract",
-    }
-
-
-def _inactive_capability(reason_code: str = "STATE_NOT_APPLICABLE") -> dict:
-    return {
-        "visible": False,
-        "business_available": False,
-        "authorization_allowed": False,
-        "enabled": False,
-        "reason_code": reason_code,
-        "reason": "",
-        "source_authority": "canonical_action_contract",
-    }
-
-
 def _action_capabilities(contract: dict) -> dict[str, dict]:
-    statuses = _button_statuses(contract)
-    rules = _list(_dict(contract.get("actionContract")).get("actionRuleList"))
-    out = {key: _inactive_capability() for key in _CAPABILITY_METHODS}
-    for rule in rules:
-        if not isinstance(rule, dict):
-            continue
-        method = _method(rule)
-        capability_key = next((key for key, methods in _CAPABILITY_METHODS.items() if method in methods), "")
-        if not capability_key:
-            continue
-        action_key = _text(rule.get("actionKey"))
-        status = statuses.get(f"btn.{action_key}", {})
-        out[capability_key] = _capability_from_rule(rule, status)
+    out = canonical_action_capabilities(contract, _CAPABILITY_METHODS)
     for key in (
         "counterparty.resolve_eligibility",
         "payment_request.complete_basis",
