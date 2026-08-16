@@ -291,6 +291,81 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertEqual(contract["editability"], "locked")
         self.assertEqual(contract["availableActions"], [])
 
+    def test_payment_rejected_contract_is_editable_for_correction(self):
+        payment = self.env["payment.request"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "amount": 10.0,
+                "state": "rejected",
+                "reject_reason": "请修正付款依据",
+            }
+        )
+
+        contract = self.service.describe_record(payment)
+
+        self.assertEqual(contract["businessPhase"], "rejected")
+        self.assertEqual(contract["editability"], "editable")
+        self.assertIn("submit", {row["key"] for row in contract["availableActions"]})
+
+    def test_workflow_editability_never_elevates_readonly_page_authority(self):
+        payment = self.env["payment.request"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "amount": 10.0,
+                "state": "rejected",
+                "reject_reason": "只读调用者仍不可编辑",
+            }
+        )
+        source_contract = {
+            "model": "payment.request",
+            "view_type": "form",
+            "record_id": payment.id,
+        }
+        base_contract = {
+            "statusContract": {"globalStatus": {"pageAuth": "read"}},
+            "runtimeContract": {},
+        }
+
+        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+            self.env,
+            base_contract,
+            {"source_contract": source_contract, "view_type": "form"},
+        )
+
+        self.assertEqual(projected["workflowContract"]["editability"], "editable")
+        self.assertEqual(projected["statusContract"]["globalStatus"]["pageAuth"], "read")
+
+    def test_workflow_rejected_editability_preserves_existing_edit_authority(self):
+        payment = self.env["payment.request"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "amount": 10.0,
+                "state": "rejected",
+                "reject_reason": "允许有能力经办人修正",
+            }
+        )
+        source_contract = {
+            "model": "payment.request",
+            "view_type": "form",
+            "record_id": payment.id,
+        }
+        base_contract = {
+            "statusContract": {"globalStatus": {"pageAuth": "edit"}},
+            "runtimeContract": {},
+        }
+
+        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+            self.env,
+            base_contract,
+            {"source_contract": source_contract, "view_type": "form"},
+        )
+
+        self.assertEqual(projected["workflowContract"]["editability"], "editable")
+        self.assertEqual(projected["statusContract"]["globalStatus"]["pageAuth"], "edit")
+
     def test_construction_contract_approval_in_progress_disables_duplicate_submit(self):
         self.env.cr.execute(
             "UPDATE construction_contract SET validation_status=%s WHERE id=%s",
