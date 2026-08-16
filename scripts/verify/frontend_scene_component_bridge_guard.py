@@ -53,11 +53,20 @@ wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRenderer.vue").re
 require("from '@sc/ui/collection'" in wrapper, "renderer must use narrow collection export")
 form_host = (WEB_SRC / "pages/contractForm/ContractFormDriverHost.vue").read_text(encoding="utf-8")
 action_executor = (WEB_SRC / "pages/contractForm/canonicalFormActionExecutor.ts").read_text(encoding="utf-8")
+v2_assembler = (ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py").read_text(encoding="utf-8")
 require("from '@sc/ui/form'" in form_host, "form driver host must use narrow form export")
 require("SceneUiProvider" in form_host and "CanonicalFormNodeRenderer" in form_host, "form driver does not render canonical form nodes")
 require("SceneObjectPageContract" not in form_host, "ContractForm driver host must not consume the UI-internal SceneObjectPage DTO")
 require("data-contract-form-driver-error" in form_host, "invalid normalized form contract does not fail closed")
 require("actionId === 'form.save'" in action_executor, "canonical form.save is not bridged to the unified save executor")
+presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
+require(
+    "filter(isFormActionBarAction)" in presenter
+    and "sourceWidgetId === 'page.root'" in presenter
+    and "targetScope === 'footer'" in presenter,
+    "canonical form action bar does not preserve normalized placement authority",
+)
+require('action_id = "form.save"' in v2_assembler and 'required_right = "create" if render_profile == "create" else "write"' in v2_assembler, "normalized form.save is not derived from exact create/write permission")
 for forbidden_action_inference in ("actionRef.label", "candidate.methodName", "candidate.targetModel", "payment.request"):
     require(forbidden_action_inference not in action_executor, f"canonical action executor infers forbidden fact: {forbidden_action_inference}")
 for legacy_structure_input in (
@@ -165,6 +174,16 @@ for forbidden_prop in (
     require(forbidden_prop not in driver_host_call, f"product driver host still receives legacy authority: {forbidden_prop}")
 require('@action-ref="runCanonicalFormAction"' in driver_host_call, "canonical action reference does not reach unified executor adapter")
 require('ContractFormNativeCanvas v-else' in form_page and ':designer-mode="true"' in form_page, "legacy canvas is not isolated to form configuration mode")
+require(':error="canonicalFormDriverError"' in driver_host_call, "canonical action adapter failures do not fail closed in the driver host")
+require(
+    "const canonicalProductRendererActive = computed(() => !showCurrentFormFieldConfigScope.value);" in form_page,
+    "canonical product failure can reactivate the legacy product pipeline",
+)
+require(
+    "validateCanonicalFormActionExecutors(" in form_page
+    and "model.actionBar.map((action) => action.actionRef)" in form_page,
+    "canonical cutover does not validate every executable action reference",
+)
 require(
     form_page.index("const canSave = computed")
     < form_page.index("useContractFormComponentDriverRuntime({"),

@@ -239,6 +239,60 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         self.assertEqual(full["statusContract"]["globalStatus"]["pageAuth"], "edit")
+        save = next(row for row in full["actionContract"]["actionRuleList"] if row["actionId"] == "form.save")
+        self.assertEqual(save["backendIdentity"], "contract_action:form.save")
+        self.assertEqual(save["visibleProfiles"], ["edit"])
+        self.assertTrue(save["entitlement_evaluated"])
+
+    def test_ui_contract_v2_create_form_publishes_save_only_from_explicit_create_right(self):
+        base = {
+            "model": "x.document",
+            "view_type": "form",
+            "head": {"render_profile": "create"},
+            "fields": {"name": {"name": "name", "type": "char"}},
+        }
+        allowed = assembler.assemble_unified_page_contract_v2(
+            {**base, "permissions": {"read": True, "write": False, "create": True}},
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.create.save.allowed",
+        )
+        denied = assembler.assemble_unified_page_contract_v2(
+            {**base, "permissions": {"read": True, "write": True, "create": False}},
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.create.save.denied",
+        )
+        missing = assembler.assemble_unified_page_contract_v2(
+            base,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.create.save.unresolved",
+        )
+
+        save = next(row for row in allowed["actionContract"]["actionRuleList"] if row["actionId"] == "form.save")
+        self.assertEqual(save["label"], "保存草稿")
+        self.assertEqual(save["visibleProfiles"], ["create"])
+        self.assertEqual(save["sourceTrace"][0]["requiredRight"], "create")
+        self.assertNotIn("form.save", {row["actionId"] for row in denied["actionContract"]["actionRuleList"]})
+        self.assertNotIn("form.save", {row["actionId"] for row in missing["actionContract"]["actionRuleList"]})
+
+    def test_ui_contract_v2_readonly_form_never_publishes_save(self):
+        full = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "head": {"render_profile": "readonly"},
+                "permissions": {"read": True, "write": True, "create": True},
+                "fields": {"name": {"name": "name", "type": "char"}},
+                "record_id": 19,
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.readonly.no.save",
+        )
+
+        self.assertNotIn("form.save", {row["actionId"] for row in full["actionContract"]["actionRuleList"]})
 
     def test_nested_effective_rights_keep_page_and_editable_field_authority_consistent(self):
         source = {

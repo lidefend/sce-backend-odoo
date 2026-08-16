@@ -9,7 +9,7 @@ import {
   canonicalSectionFields,
   visibleCanonicalChildren,
 } from '../src/pages/contractForm/canonicalFormRenderer';
-import { resolveCanonicalFormActionExecution } from '../src/pages/contractForm/canonicalFormActionExecutor';
+import { resolveCanonicalFormActionExecution, validateCanonicalFormActionExecutors } from '../src/pages/contractForm/canonicalFormActionExecutor';
 import type { ContractAction } from '../src/pages/contractForm/types';
 
 function snapshot(): ContractV2Snapshot {
@@ -133,6 +133,19 @@ assert.equal(
   collectFields(readonlyModel.zones.primary).find((field) => field.fieldCode === 'name')?.readonly,
   true,
   'readonly route mode must remain authoritative even when the widget status is editable',
+);
+
+const rowActionSnapshot = snapshot();
+rowActionSnapshot.actionContract.actionRuleList.push({
+  ...rowActionSnapshot.actionContract.actionRuleList[0],
+  actionId: 'action.open_form', backendIdentity: 'button:object:open_form', actionKey: 'open_form',
+  sourceWidgetId: 'page.row', targetScope: 'runtime', presentation: { tier: 'secondary' },
+});
+rowActionSnapshot.statusContract.buttonStatus.push({ btnId: 'action.open_form', visible: true, disabled: false });
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(rowActionSnapshot), 'readonly').actionBar.map((action) => action.key),
+  ['action_submit'],
+  'row/runtime actions must remain normalized evidence and must not become form action-bar controls',
 );
 
 const readOnlyPrincipal = snapshot();
@@ -310,5 +323,22 @@ assert.deepEqual(
   { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_REFERENCE_AMBIGUOUS' },
   'a duplicated normalized backend identity must fail closed',
 );
+assert.equal(
+  validateCanonicalFormActionExecutors([
+    { ...normalizedAction, actionId: 'form.save', backendIdentity: 'contract_action:form.save' },
+    { ...normalizedAction, enabled: false, disabled: true, backendIdentity: 'button:object:unmapped_disabled' },
+  ], []),
+  null,
+  'save and visible disabled actions keep the canonical page usable without inventing an executor',
+);
+assert.deepEqual(
+  validateCanonicalFormActionExecutors([normalizedAction], []),
+  {
+    reasonCode: 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING',
+    actionId: 'action.submit',
+    backendIdentity: 'button:object:action_submit',
+  },
+  'an executable action without an exact unified executor adapter must block canonical cutover',
+);
 
-console.log('[canonical_form_presenter_test] PASS cases=29');
+console.log('[canonical_form_presenter_test] PASS cases=32');

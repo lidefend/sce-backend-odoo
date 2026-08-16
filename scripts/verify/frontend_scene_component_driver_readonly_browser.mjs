@@ -384,19 +384,41 @@ async function main() {
         await probeInput.evaluate((node) => String(node.value || '')) === TARGET.create_probe_name,
         'create probe value changed before unified save execution',
       );
+      const createPreflight = await page.evaluate(canonicalDomSnapshot);
+      fs.writeFileSync(path.join(OUTPUT, 'create-action-preflight.json'), `${JSON.stringify(createPreflight, null, 2)}\n`);
+      console.log(`[frontend_scene_component_driver_readonly_browser] CREATE_PREFLIGHT ${JSON.stringify(createPreflight.actions)}`);
+      const canonicalSave = page.locator('[data-canonical-action-bar] [data-action-ref="form.save"]').first();
+      await canonicalSave.waitFor({ state: 'visible', timeout: 45000 });
+      check(await canonicalSave.getAttribute('data-backend-identity'), 'canonical form.save backend identity missing');
+      check(await canonicalSave.isEnabled(), 'canonical form.save action is disabled');
       const createResponsePromise = page.waitForResponse((response) => {
         const request = response.request();
         const body = requestBody(request);
         return requestIntent(request) === 'api.data'
           && requestOperation(request) === 'create'
           && String(body?.params?.model || '') === TARGET.model;
-      }, { timeout: 45000 });
-      const canonicalSave = page.locator('[data-canonical-action-bar] [data-action-ref="form.save"]').first();
-      await canonicalSave.waitFor({ state: 'visible', timeout: 45000 });
-      check(await canonicalSave.getAttribute('data-backend-identity'), 'canonical form.save backend identity missing');
-      check(await canonicalSave.isEnabled(), 'canonical form.save action is disabled');
+      }, { timeout: Number(process.env.SCENE_COMPONENT_DRIVER_CREATE_TIMEOUT_MS || 45000) });
       await canonicalSave.click();
-      const createResponse = await createResponsePromise;
+      let createResponse;
+      try {
+        createResponse = await createResponsePromise;
+      } catch (error) {
+        const failure = await page.evaluate(() => ({
+          url: location.href,
+          contractError: document.querySelector('[data-contract-form-driver-error]')?.textContent || '',
+          validationErrors: [...document.querySelectorAll('.validation-error, .field-error-text')].map((node) => String(node.textContent || '').trim()).filter(Boolean),
+          visibleButtons: [...document.querySelectorAll('button')].filter((node) => node.getClientRects().length > 0).map((node) => ({
+            text: String(node.textContent || '').trim(),
+            actionId: node.getAttribute('data-action-ref') || '',
+            backendIdentity: node.getAttribute('data-backend-identity') || '',
+            disabled: node.hasAttribute('disabled'),
+          })),
+        }));
+        const failureScreenshot = path.join(OUTPUT, 'failure-canonical-save.png');
+        await page.screenshot({ path: failureScreenshot, fullPage: true });
+        fs.writeFileSync(path.join(OUTPUT, 'failure-canonical-save.json'), `${JSON.stringify({ ...failure, mutations: evidence.mutations, screenshot: { path: failureScreenshot, sha256: sha256(failureScreenshot) } }, null, 2)}\n`);
+        throw error;
+      }
       check(createResponse.ok(), `create probe request failed with ${createResponse.status()}`);
       const request = createResponse.request();
       const requestPayload = requestBody(request);

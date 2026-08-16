@@ -158,6 +158,14 @@ function actionTier(action: ContractV2ActionRule): CanonicalFormAction['tier'] {
   return 'secondary';
 }
 
+function isFormActionBarAction(action: ContractV2ActionRule): boolean {
+  const sourceWidgetId = text(action.sourceWidgetId);
+  const targetScope = text(action.targetScope).toLowerCase();
+  return sourceWidgetId === 'page.header'
+    || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope))
+    || targetScope === 'footer';
+}
+
 function actionStatus(
   store: ContractV2NormalizedStore,
   action: ContractV2ActionRule,
@@ -215,7 +223,7 @@ export function presentContractV2Form(
       pageVisible, pageAuth === 'none', claimedWidgetIds,
     )
   ));
-  const actions = snapshot.actionContract.actionRuleList.map((action) => (
+  const actions = snapshot.actionContract.actionRuleList.filter(isFormActionBarAction).map((action) => (
     presentAction(action, actionStatus(store, action), mode)
   ));
   const primaryCount = actions.filter((action) => action.visible && action.enabled && action.tier === 'primary').length;

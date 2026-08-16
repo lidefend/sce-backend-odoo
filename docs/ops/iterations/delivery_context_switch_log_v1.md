@@ -4745,3 +4745,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   widget and action-reference sets across Native, TDesign and UI5, including
   readonly, edit, create and 390px layouts. Driver switching must not refetch
   the contract or add a business mutation.
+- Runtime correction: removing the legacy header save exposed that generic
+  form contracts did not publish `form.save` unless an optional legacy source
+  flag happened to be present. Contract V2 now publishes this standard action
+  only for create/edit requests with an explicit matching create/write right;
+  readonly, denied and unresolved permission inputs publish no save action.
+  The Canonical action adapter recognizes only this stable platform action id
+  and otherwise requires one exact normalized backend identity.

@@ -134,7 +134,7 @@
           @selected-group-title-change="onSelectedFormSettingsGroupTitleChange"
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
-        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" :render-model="canonicalFormRenderState.model" :error="canonicalFormRenderState.error" :driver-config="contractFormDriverConfig"
+        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
           :collaboration-panel-props="nativeCollaborationPanelProps"
           :relation-adapter="relationFieldAdapter"
@@ -268,7 +268,7 @@ import NativeCollaborationPanel, {
 } from './contractForm/NativeCollaborationPanel.vue';
 import ContractFormDriverHost from './contractForm/ContractFormDriverHost.vue';
 import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
-import { resolveCanonicalFormActionExecution } from './contractForm/canonicalFormActionExecutor';
+import { resolveCanonicalFormActionExecution, validateCanonicalFormActionExecutors } from './contractForm/canonicalFormActionExecutor';
 import { shouldShowNativeCollaborationPanel } from './contractForm/collaborationPresentation';
 import RelationSearchDialog from './contractForm/RelationSearchDialog.vue';
 import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vue';
@@ -805,9 +805,9 @@ const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
   renderProfile.value,
   formData,
 ));
-const canonicalProductRendererActive = computed(() => Boolean(
-  canonicalFormRenderState.value.model && !canonicalFormRenderState.value.error && !showCurrentFormFieldConfigScope.value,
-));
+// Product routes have one rendering authority. Contract/driver failures stay in
+// the canonical host and must never reactivate the legacy product pipeline.
+const canonicalProductRendererActive = computed(() => !showCurrentFormFieldConfigScope.value);
 const nativeLayoutVisibilityRevision = ref(0);
 const advancedExpanded = ref(false);
 const {
@@ -1661,6 +1661,22 @@ const {
   useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore,
   validationErrors, visibleOne2manyRows,
 });
+
+// Cutover is allowed only when every executable canonical action has one exact
+// adapter into the existing unified executor. Disabled actions remain visible
+// with their server reason and do not require an execution adapter.
+const canonicalActionExecutionError = computed(() => {
+  const model = canonicalFormRenderState.value.model;
+  if (!model) return '';
+  const failure = validateCanonicalFormActionExecutors(
+    model.actionBar.map((action) => action.actionRef),
+    contractActions.value,
+  );
+  return failure ? `${failure.reasonCode}:${failure.actionId}:${failure.backendIdentity}` : '';
+});
+const canonicalFormDriverError = computed(() => (
+  canonicalFormRenderState.value.error || canonicalActionExecutionError.value
+));
 
 async function runCanonicalFormAction(actionRef: ContractV2ActionRule) {
   const resolution = resolveCanonicalFormActionExecution(actionRef, contractActions.value);

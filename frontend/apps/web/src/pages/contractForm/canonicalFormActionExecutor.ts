@@ -26,3 +26,21 @@ export function resolveCanonicalFormActionExecution(
   if (candidates.length > 1) return { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_REFERENCE_AMBIGUOUS' };
   return { kind: 'contract-action', action: candidates[0] };
 }
+
+export function validateCanonicalFormActionExecutors(
+  actionRefs: ContractV2ActionRule[],
+  contractActions: ContractAction[],
+): { reasonCode: Extract<CanonicalFormActionExecution, { kind: 'error' }>['reasonCode']; actionId: string; backendIdentity: string } | null {
+  for (const actionRef of actionRefs) {
+    if (actionRef.visible === false || actionRef.enabled === false || actionRef.disabled === true) continue;
+    const resolution = resolveCanonicalFormActionExecution(actionRef, contractActions);
+    if (resolution.kind === 'error') {
+      return {
+        reasonCode: resolution.reasonCode,
+        actionId: String(actionRef.actionId || '').trim(),
+        backendIdentity: String(actionRef.backendIdentity || '').trim(),
+      };
+    }
+  }
+  return null;
+}
