@@ -4367,3 +4367,35 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   generated-report guard and `git diff --check` pass. `ci.local.quick` remains
   externally blocked by pre-existing all-history P1 synthetic bank-account
   findings; this P0 topic does not add or broaden a personal-data exemption.
+
+# PFL-035 replay after nested permission-rights closure (2026-08-16)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v16` /
+  `b002073b798f4a9295d8651c3872c5b7a79fdb21`.
+- Formal Product Layer / Layer Target / Module: P1 finance product / payment
+  request and payment execution user journey / `smart_construction_core`.
+- Replay boundary: the frozen v15 P1 candidate was replayed into a new governed
+  worktree. The old v15 worktree remains untouched; shared P0 code is supplied
+  only by the exact mainline base and is not carried in this candidate.
+- Runtime objective: repeat the approval, rejection and rejected-record edit
+  journey after the P0 page-permission fix. Fixture reset and formal acceptance
+  runtime changes remain deferred until the candidate fingerprint and targeted
+  gates are frozen.
+
+# PFL-035 replay after final modifier dependency hydration (2026-08-16)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v18` /
+  `1e5eed0470cfb03a3fd17bfe16e624ab418b137e`.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  finance product / payment request and payment execution journey /
+  `smart_construction_core` plus the existing acceptance fixture and audits.
+- Replay boundary: the complete v17 checkpoint was replayed into a new governed
+  worktree. Range-diff differs only in the exact baseline SHA, mechanically
+  regenerated reports, and preservation of the newly merged P0 iteration log.
+  No P0 implementation, frontend renderer, environment topology, database,
+  credential or customer-specific exception is carried by this candidate.
+- Runtime objective: prove the final normalized contract now hydrates every
+  scalar modifier dependency after runtime business actions are projected, so
+  the approved request exposes exactly one direct `查看付款登记` action after an
+  execution is saved. Validation resumes at scope/static and the 52-test P1
+  collection before normalized payload or browser execution.

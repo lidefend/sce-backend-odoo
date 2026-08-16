@@ -156,6 +156,7 @@ class ScWorkflowContractService(models.AbstractModel):
     PROFILE_BY_MODEL = {
         "payment.request": {
             "state_field": "state",
+            "editable_phases": ["draft", "rejected"],
             "state_phase": {
                 "draft": "draft",
                 "submit": "under_review",
@@ -919,7 +920,7 @@ class ScWorkflowContractService(models.AbstractModel):
         raw_state = str(getattr(record, profile["state_field"], "") or "").strip()
         business_phase = profile["state_phase"].get(raw_state, raw_state or "unknown")
         approval_phase = self._approval_phase(record, raw_state=raw_state, business_phase=business_phase)
-        editability = self._editability(business_phase, approval_phase)
+        editability = self._editability(profile, business_phase, approval_phase)
         evidence_gate = self._evidence_gate(record)
         actions = self._available_actions(record, profile, raw_state, business_phase, approval_phase, evidence_gate)
         return {
@@ -969,9 +970,16 @@ class ScWorkflowContractService(models.AbstractModel):
         return "none"
 
     @api.model
-    def _editability(self, business_phase, approval_phase):
+    def _editability(self, profile, business_phase, approval_phase):
         if business_phase in self.TERMINAL_PHASES:
             return "locked"
+        editable_phases = {
+            str(value or "").strip()
+            for value in (profile.get("editable_phases") or ["draft"])
+            if str(value or "").strip()
+        }
+        if business_phase in editable_phases and approval_phase not in ("waiting", "pending", "approved"):
+            return "editable"
         if business_phase in ("under_review", "approved", "rejected") or approval_phase in ("waiting", "pending", "approved"):
             return "readonly"
         return "editable"
