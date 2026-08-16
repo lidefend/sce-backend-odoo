@@ -28,11 +28,12 @@ export function resolveCanonicalFormActionExecution(
 }
 
 export function validateCanonicalFormActionExecutors(
-  actionRefs: ContractV2ActionRule[],
+  actions: Array<{ visible: boolean; enabled: boolean; actionRef: ContractV2ActionRule }>,
   contractActions: ContractAction[],
 ): { reasonCode: Extract<CanonicalFormActionExecution, { kind: 'error' }>['reasonCode']; actionId: string; backendIdentity: string } | null {
-  for (const actionRef of actionRefs) {
-    if (actionRef.visible === false || actionRef.enabled === false || actionRef.disabled === true) continue;
+  for (const action of actions) {
+    if (!action.visible || !action.enabled) continue;
+    const actionRef = action.actionRef;
     const resolution = resolveCanonicalFormActionExecution(actionRef, contractActions);
     if (resolution.kind === 'error') {
       return {

@@ -36,7 +36,7 @@ Generated from repository source files. This report is informational during the 
 | 2001 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1865 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1856 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1853 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1844 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1814 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
@@ -162,7 +162,7 @@ Generated from repository source files. This report is informational during the 
 | 2001 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1865 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1856 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1853 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1844 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1814 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |

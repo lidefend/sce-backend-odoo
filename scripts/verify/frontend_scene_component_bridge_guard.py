@@ -181,7 +181,7 @@ require(
 )
 require(
     "validateCanonicalFormActionExecutors(" in form_page
-    and "model.actionBar.map((action) => action.actionRef)" in form_page,
+    and "validateCanonicalFormActionExecutors(model.actionBar, contractActions.value)" in form_page,
     "canonical cutover does not validate every executable action reference",
 )
 require(
