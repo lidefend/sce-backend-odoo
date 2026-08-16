@@ -12,7 +12,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 3704 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 3742 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3665 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3421 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
@@ -76,7 +76,7 @@ Generated from repository source files. This report is informational during the 
 | 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1245 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
-| 1230 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
+| 1240 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1195 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
@@ -136,7 +136,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 3704 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 3742 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3665 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3421 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
@@ -193,7 +193,7 @@ Generated from repository source files. This report is informational during the 
 | 1256 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1245 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1245 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
-| 1230 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
+| 1240 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1218 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1195 | warning | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |

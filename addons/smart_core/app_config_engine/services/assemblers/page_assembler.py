@@ -3537,6 +3537,15 @@ class PageAssembler:
                 try:
                     form_layout = form_view.get("layout") if isinstance(form_view, dict) else {}
                     form_fields = self._collect_form_fields(form_layout, fields_map=fields_map)
+                    modifier_fields = self._collect_modifier_dependency_fields(
+                        form_view,
+                        assembled.get("buttons"),
+                        assembled.get("toolbar"),
+                        fields_map=fields_map,
+                    )
+                    form_fields.extend(
+                        name for name in modifier_fields if name not in form_fields
+                    )
                     if not form_fields:
                         vcfg = self.su_env["app.view.config"].sudo().search([("model", "=", model), ("view_type", "=", "form")], limit=1)
                         form_layout = (vcfg.arch_parsed or {}).get("layout") or {}
@@ -3576,6 +3585,35 @@ class PageAssembler:
                 walk(ch)
 
         walk(layout or {})
+        return names
+
+    @staticmethod
+    def _collect_modifier_dependency_fields(*sources, fields_map=None):
+        """Collect fields required to evaluate normalized modifier ASTs."""
+        known_fields = fields_map if isinstance(fields_map, dict) else {}
+        names = []
+
+        def walk(value):
+            if isinstance(value, list):
+                for item in value:
+                    walk(item)
+                return
+            if not isinstance(value, dict):
+                return
+            kind = str(value.get("kind") or "").strip()
+            field_name = str(value.get("field") or "").strip()
+            if (
+                kind in {"field_truthy", "field_compare"}
+                and field_name
+                and (not known_fields or field_name in known_fields)
+                and field_name not in names
+            ):
+                names.append(field_name)
+            for child in value.values():
+                walk(child)
+
+        for source in sources:
+            walk(source)
         return names
 
     def _to_fields_map(self, fields, env=None, model=None):

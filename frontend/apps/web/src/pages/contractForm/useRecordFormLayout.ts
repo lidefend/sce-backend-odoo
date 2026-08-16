@@ -22,6 +22,7 @@ import {
   isNativeLayoutNodeVisible as isNativeLayoutNodeVisibleFromNativeLayout,
   normalizeContractV2ContainersForNativeForm as normalizeContractV2ContainersForNativeFormFromTree,
   resolveNativeButtonLabel as resolveNativeButtonLabelFromNode, resolveNativeFormRootColumns,
+  resolveNativeModifierFieldValue,
   type NativeLayoutLikeNode, type FieldSemanticMeta,
 } from './nativeLayoutUtils';
 import { normalizeNativeFormStatusbar, normalizeWorkflowPhaseStatusbar, resolveStatusbarSelectionValue } from './workflowContract';
@@ -142,7 +143,8 @@ export function useRecordFormLayout(context: {
   });
   const setStatusbarValue=(value:string)=>{const field=nativeStatusbar.value.field;if(!field||nativeStatusbar.value.readonly)return;
     context.formData[field]=resolveStatusbarSelectionValue(context.contract.value?.fields?.[field],value);context.markFieldChanged(field);};
-  const evaluateNativeModifierValue=(value:unknown)=>evaluateNativeModifierValueWithResolver(value,(field)=>context.formData[field]);
+  const modifierMainData=()=>{const store=resolveContractV2MainData(context.v2ContractStore.value);return Object.keys(store).length?store:resolveUnifiedPageContractV2MainData(context.contract.value);};
+  const evaluateNativeModifierValue=(value:unknown)=>evaluateNativeModifierValueWithResolver(value,(field)=>resolveNativeModifierFieldValue(context.formData,modifierMainData(),field));
   const evaluateNativeActionVisibility=(row:Record<string,unknown>)=>isNativeActionVisible({row,currentState:String(context.formData.state||'').trim(),evaluateModifier:evaluateNativeModifierValue,resolveAction:context.contractActionFromNativeRow});
   function isNativeLayoutNodeVisible(node:NativeFormLayoutNode){return isNativeLayoutNodeVisibleFromNativeLayout({node,editable:context.isContractFieldOrderEditable.value,evaluateModifier:evaluateNativeModifierValue,normalizeGroupTitle:normalizeFieldGroupTitle,isGroupVisible:context.effectiveGroupVisible,isFieldVisibleInDraft:(name)=>Object.prototype.hasOwnProperty.call(context.fieldVisibilityDraft,name)?context.fieldVisibilityDraft[name]:undefined,resolveAction:context.contractActionFromNativeRow});}
   function isNativeFieldVisible(name:string,node?:NativeFormLayoutNode){return isNativeFieldVisibleFromNativeLayout({name,node,statusField:nativeStatusbar.value.field,showHud:context.showHud.value,renderProfile:context.renderProfile.value,isCreate:!context.recordId.value,isNodeVisible:(item)=>isNativeLayoutNodeVisible(item as NativeFormLayoutNode),resolveDescriptor:(field,item)=>item?(item as any).descriptor||context.contract.value?.fields?.[field]:context.contract.value?.fields?.[field],resolveFieldLabel:context.contractFieldLabel,semantic:context.fieldSemanticMeta,runtimeState,evaluatePolicy:(field,descriptor)=>evaluateFieldPolicy(context.contract.value,field,{required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)},context.policyContext.value)});}

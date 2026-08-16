@@ -7,6 +7,7 @@ import { groupContractHeaderActions } from '../src/pages/contractForm/contractHe
 import { presentContractHeaderActions } from '../src/pages/contractForm/headerActionPresentation';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
 import { useFormActionRuntime } from '../src/pages/contractForm/useFormActionRuntime';
+import { evaluateNativeModifierValue, resolveNativeModifierFieldValue } from '../src/pages/contractForm/nativeLayoutUtils';
 
 const action = (overrides: Record<string, unknown>) => ({
   key: 'action',
@@ -18,6 +19,25 @@ const action = (overrides: Record<string, unknown>) => ({
   presentationTier: 'secondary',
   ...overrides,
 }) as never;
+
+const activeRelationVisibility = {
+  kind: 'any',
+  exprs: [
+    { kind: 'field_compare', field: 'type', operator: '!=', value: 'pay' },
+    { kind: 'field_compare', field: 'state', operator: '!=', value: 'approved' },
+    { kind: 'not', expr: { kind: 'field_truthy', field: 'has_active_relation' } },
+  ],
+};
+const modifierMainData = { has_active_relation: true };
+const modifierFormData = { type: 'pay', state: 'approved' };
+assert.equal(evaluateNativeModifierValue(
+  activeRelationVisibility,
+  (field) => resolveNativeModifierFieldValue(modifierFormData, modifierMainData, field),
+), false, 'normalized mainData supplies hidden modifier dependencies omitted from form hydration');
+assert.equal(evaluateNativeModifierValue(
+  activeRelationVisibility,
+  (field) => resolveNativeModifierFieldValue({ ...modifierFormData, has_active_relation: false }, modifierMainData, field),
+), true, 'hydrated formData remains authoritative when it contains the dependency');
 
 const rule = (key: string, sourceWidgetId: string, targetScope: string, overrides: Record<string, unknown> = {}) => ({
   actionKey: key,
