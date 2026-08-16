@@ -1246,6 +1246,116 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         resolution = full["actionContract"]["primaryResolution"]
         self.assertEqual(resolution["winner"], "button:object:action_submit")
 
+    def test_final_modifier_hydration_recomputes_status_and_primary_from_complete_record(self):
+        contract = {
+            "actionContract": {
+                "actionRuleList": [
+                    {
+                        "actionId": "action.create_execution",
+                        "actionKey": "create_execution",
+                        "backendIdentity": "button:object:action_create_execution",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentation": {"tier": "primary"},
+                    },
+                    {
+                        "actionId": "action.validate_tier",
+                        "actionKey": "validate_tier",
+                        "backendIdentity": "button:object:validate_tier",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentation": {"tier": "primary"},
+                        "visible": {"attrs": {"invisible": {
+                            "kind": "any",
+                            "exprs": [
+                                {"kind": "not", "expr": {"kind": "field_truthy", "field": "can_review"}},
+                                {"kind": "field_compare", "field": "validation_status", "operator": "not in", "value": ["waiting", "pending"]},
+                            ],
+                        }}},
+                    },
+                    {
+                        "actionId": "action.view_execution",
+                        "actionKey": "view_execution",
+                        "backendIdentity": "button:object:action_view_execution",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentation": {"tier": "primary"},
+                        "visible": {"attrs": {"invisible": {
+                            "kind": "not",
+                            "expr": {"kind": "field_truthy", "field": "has_active_execution"},
+                        }}},
+                    },
+                ],
+            },
+            "statusContract": {
+                "buttonStatus": [
+                    {"btnId": "btn.create_execution", "visible": True, "disabled": False},
+                    {"btnId": "btn.validate_tier", "visible": True, "disabled": False},
+                    {"btnId": "btn.view_execution", "visible": True, "disabled": False},
+                ],
+            },
+            "dataContract": {
+                "mainData": {
+                    "can_review": False,
+                    "validation_status": "validated",
+                    "has_active_execution": False,
+                },
+            },
+        }
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        statuses = {
+            row["btnId"]: row for row in contract["statusContract"]["buttonStatus"]
+        }
+        self.assertTrue(statuses["btn.create_execution"]["visible"])
+        self.assertFalse(statuses["btn.validate_tier"]["visible"])
+        self.assertFalse(statuses["btn.view_execution"]["visible"])
+        effective_primary = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if (row.get("presentation") or {}).get("tier") == "primary"
+            and statuses[f"btn.{row['actionKey']}"]["visible"]
+            and not statuses[f"btn.{row['actionKey']}"]["disabled"]
+        ]
+        self.assertEqual(
+            [row["backendIdentity"] for row in effective_primary],
+            ["button:object:action_create_execution"],
+        )
+
+    def test_final_modifier_hydration_fails_closed_when_dependency_is_missing(self):
+        contract = {
+            "actionContract": {"actionRuleList": [{
+                "actionId": "action.approve",
+                "actionKey": "approve",
+                "backendIdentity": "button:object:action_approve",
+                "allowed": True,
+                "enabled": True,
+                "disabled": False,
+                "presentation": {"tier": "primary"},
+                "visible": {"attrs": {"invisible": {
+                    "kind": "field_compare",
+                    "field": "restricted_state",
+                    "operator": "!=",
+                    "value": "ready",
+                }}},
+            }]},
+            "statusContract": {"buttonStatus": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        self.assertEqual(contract["statusContract"]["buttonStatus"], [{
+            "btnId": "btn.approve",
+            "visible": False,
+            "disabled": True,
+            "reasonCode": "ACTION_VISIBILITY_UNRESOLVED",
+        }])
+        self.assertNotIn("primaryResolution", contract["actionContract"])
+
     def test_entry_semantic_surface_layout_wins_while_native_modifiers_and_relations_survive(self):
         source = {
             "model": "x.business.document",

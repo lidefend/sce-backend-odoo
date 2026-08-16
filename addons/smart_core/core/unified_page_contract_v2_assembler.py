@@ -2773,13 +2773,38 @@ def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
     action_contract = _dict(contract.get("actionContract"))
     rows = _list(action_contract.get("actionRuleList"))
     record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    previous_resolution = _dict(action_contract.pop("primaryResolution", {}))
+    previously_demoted = {
+        _text(item.get("actionId"))
+        for item in _list(previous_resolution.get("demoted"))
+        if isinstance(item, dict) and _text(item.get("previousTier")).lower() == "primary"
+    }
+    for row in rows:
+        if isinstance(row, dict) and _text(row.get("actionId")) in previously_demoted:
+            row["presentation"] = {**_dict(row.get("presentation")), "tier": "primary"}
+    status_by_btn_id = {
+        _text(status.get("btnId")): status
+        for status in _list(_dict(contract.get("statusContract")).get("buttonStatus"))
+        if isinstance(status, dict) and _text(status.get("btnId"))
+    }
+    status_by_identity = {
+        _text(status.get("backendIdentity")): status
+        for status in status_by_btn_id.values()
+        if _text(status.get("backendIdentity"))
+    }
     effective: list[dict[str, Any]] = []
     for row in rows:
         if not isinstance(row, dict) or _text(_dict(row.get("presentation")).get("tier")).lower() != "primary":
             continue
+        if row.get("allowed") is False or row.get("enabled") is False or row.get("disabled") is True:
+            continue
+        action_key = _text(row.get("actionKey"))
+        status = status_by_identity.get(_text(row.get("backendIdentity"))) or status_by_btn_id.get(f"btn.{action_key}")
+        if status and (status.get("visible") is False or status.get("disabled") is True):
+            continue
         invisible = _action_invisible_constraint(row)
         verdict = _evaluate_action_modifier(invisible, record) if invisible is not None else False
-        if verdict is not True:
+        if verdict is False:
             effective.append(row)
     if len(effective) <= 1:
         return
@@ -2799,6 +2824,49 @@ def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
         "winner": winner.get("backendIdentity") or winner.get("actionId"),
         "demoted": conflicts,
     }
+
+
+def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
+    """Seal action visibility after late modifier dependencies are hydrated."""
+    action_contract = _dict(contract.get("actionContract"))
+    status_contract = _dict(contract.get("statusContract"))
+    rows = _list(action_contract.get("actionRuleList"))
+    statuses = _list(status_contract.get("buttonStatus"))
+    record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    status_by_btn_id = {
+        _text(status.get("btnId")): status
+        for status in statuses
+        if isinstance(status, dict) and _text(status.get("btnId"))
+    }
+    status_by_identity = {
+        _text(status.get("backendIdentity")): status
+        for status in statuses
+        if isinstance(status, dict) and _text(status.get("backendIdentity"))
+    }
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        invisible = _action_invisible_constraint(row)
+        if invisible is None:
+            continue
+        action_key = _text(row.get("actionKey"))
+        btn_id = f"btn.{action_key}"
+        status = status_by_identity.get(_text(row.get("backendIdentity"))) or status_by_btn_id.get(btn_id)
+        if status is None:
+            status = {"btnId": btn_id, "visible": True, "disabled": False}
+            statuses.append(status)
+            status_by_btn_id[btn_id] = status
+        verdict = _evaluate_action_modifier(invisible, record)
+        if verdict is True:
+            status["visible"] = False
+            status.setdefault("reasonCode", "ACTION_NOT_VISIBLE_IN_STATE")
+        elif verdict is None:
+            status["visible"] = False
+            status["disabled"] = True
+            status["reasonCode"] = "ACTION_VISIBILITY_UNRESOLVED"
+    status_contract["buttonStatus"] = statuses
+    contract["statusContract"] = status_contract
+    _enforce_single_effective_primary_action(contract)
 
 
 def _append_action_schema(contract: dict[str, Any], actions: dict[str, Any], *, source_widget_id: str) -> None:

@@ -4692,3 +4692,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   with their normalized reason and cannot execute; two visible enabled primary
   actions still fail closed. Contract V2, backend assembly, unified execution,
   driver packages, business policy and environment topology remain unchanged.
+
+## ContractForm final action-status sealing correction (2026-08-17)
+
+- Branch / base SHA: `fix/p0-canonical-button-status-key-v1` /
+  `119ee7b4b0e474be05982c7b7d9e402665183109`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend /
+  normalized action-status sealing and Canonical Form Render Model composition /
+  `smart_core` and `frontend/apps/web`.
+- Reason / boundary: governed payment qualification proved that action rules
+  use stable `actionId` values while normalized button status is keyed by the
+  canonical `btn.<actionKey>` identity. The existing ContractForm consumer
+  resolves this mapping, but the new presenter looked up only `actionId`.
+  Separately, final modifier dependency hydration populated late scalar facts
+  after action status and primary resolution had already been computed, leaving
+  the sealed button status stale.
+- Why Here / Why Not Elsewhere: joining two normalized Contract V2 carriers is
+  a generic presenter responsibility. No payment field, label, role, workflow
+  state or business permission is inferred or recomputed.
+- Blast radius / validation: after late dependency hydration and before trim /
+  seal, P0 reevaluates only normalized action modifier expressions into
+  buttonStatus and reruns the effective-primary invariant; missing dependency
+  values hide and disable the action. The presenter checks exact actionId,
+  actionKey and canonical `btn.<actionKey>` candidates, then applies those
+  unchanged normalized facts. Production-shaped backend and frontend tests
+  prove one effective primary remains, hidden/disabled reasons survive, and two
+  genuinely executable primary actions continue to fail closed.

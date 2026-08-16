@@ -101,10 +101,15 @@ def _load_handler():
         captured["runtime_business_actions_projected"] = True
         return contract
 
+    def _hydrate_final_action_modifier_status(contract):
+        captured["final_action_modifier_status_hydrated"] = True
+        return contract
+
     _install_module(
         "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
         CONTRACT_VERSION="2.0",
         assemble_unified_page_contract_v2=_assemble_unified_page_contract_v2,
+        hydrate_final_action_modifier_status=_hydrate_final_action_modifier_status,
         project_runtime_business_actions=_project_runtime_business_actions,
     )
 
@@ -267,6 +272,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertTrue(observed["projected"])
         self.assertIs(observed["contract"], result.data["contract"])
+        self.assertTrue(self.module._captured.get("final_action_modifier_status_hydrated"))
 
     def test_final_modifier_hydration_keeps_missing_value_fail_closed_on_read_denial(self):
         class _Record:

@@ -197,10 +197,10 @@ const disabledSecondaryPrimary = snapshot();
 disabledSecondaryPrimary.actionContract.actionRuleList.push({
   ...disabledSecondaryPrimary.actionContract.actionRuleList[0],
   actionId: 'action.blocked', backendIdentity: 'button:object:action_blocked', actionKey: 'action_blocked',
-  enabled: false, disabled: true,
+  enabled: true, disabled: false,
 });
 disabledSecondaryPrimary.statusContract.buttonStatus.push({
-  btnId: 'action.blocked', visible: true, disabled: true, reasonCode: 'ACTION_NOT_AVAILABLE_IN_STATE',
+  btnId: 'btn.action_blocked', visible: true, disabled: true, reasonCode: 'ACTION_NOT_AVAILABLE_IN_STATE',
 });
 const disabledSecondaryPrimaryModel = presentContractV2Form(
   createContractV2Store(disabledSecondaryPrimary),
@@ -230,4 +230,4 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
-console.log('[canonical_form_presenter_test] PASS cases=18');
+console.log('[canonical_form_presenter_test] PASS cases=19');
