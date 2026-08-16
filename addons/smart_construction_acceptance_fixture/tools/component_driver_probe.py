@@ -9,6 +9,22 @@ def apply_component_driver_probe(env, mode):
     mode = str(mode or "").strip()
     if mode not in ("setup", "cleanup"):
         raise RuntimeError("component driver probe mode must be setup or cleanup")
+    menu = _ref(env, "smart_construction_core.menu_sc_project_project")
+    model = str(menu.action.res_model or "").strip()
+    if not model or "payment" in model:
+        raise RuntimeError("component driver probe requires a non-payment action model")
+    probe_user = env["res.users"].sudo().search([("login", "=", "fixture_role_pm")], limit=1)
+    preference_model = env["sc.user.view.preference"].sudo()
+    preference_scope = preference_model.build_scope_key(
+        preference_key="scene_ui_driver",
+        view_type="form",
+        action_id=int(menu.action.id),
+        model_name=model,
+    )
+    preference_model.search([
+        ("user_id", "=", probe_user.id),
+        ("scope_key", "=", preference_scope),
+    ]).unlink()
     plan_model = env["sc.subscription.plan"].sudo()
     subscription_model = env["sc.subscription"].sudo()
     plan = plan_model.search([("code", "=", "acceptance_component_driver_probe")])
@@ -18,10 +34,6 @@ def apply_component_driver_probe(env, mode):
         return None
 
     company = _ref(env, "%s.fe_company_a" % MODULE)
-    menu = _ref(env, "smart_construction_core.menu_sc_project_project")
-    model = str(menu.action.res_model or "").strip()
-    if not model or "payment" in model:
-        raise RuntimeError("component driver probe requires a non-payment action model")
     plan = plan_model.create({
         "code": "acceptance_component_driver_probe",
         "name": "Acceptance Component Driver Probe",
@@ -33,7 +45,7 @@ def apply_component_driver_probe(env, mode):
                 "read_only_only": False,
                 "form_modes": ["create", "edit", "readonly"],
                 "models": [model],
-                "allowed_kits": ["sc-native", "tdesign-modern"],
+                "allowed_kits": ["sc-native", "tdesign-modern", "ui5-horizon"],
                 "system_default_kit": "tdesign-modern",
                 "allow_user_override": True,
                 "allow_preview_override": False,

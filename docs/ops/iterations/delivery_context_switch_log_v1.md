@@ -4600,3 +4600,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   preview, placeholder and missing-target rows remain excluded; explicit deep
   links retain their existing precedence. Pure payload and scene-runtime tests
   plus the existing scene schema/static guards prove containment.
+
+## ContractForm UI5 three-driver parity slice (2026-08-17)
+
+- Branch / base SHA: `feature/p0-contract-form-ui5-parity-v1` /
+  `48403c24509b638129a7548071b3f5b971bb069b`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend /
+  ContractForm three-driver parity / governed acceptance fixture,
+  `frontend/apps/web`, and renderer-neutral `frontend/packages/ui`.
+- Reason / boundary: the UI5 runtime and driver-neutral controls already exist
+  in mainline. This slice adds UI5 to the same explicit non-payment entitlement
+  used by Native and TDesign, without changing normalized Contract V2, P1
+  policy, the unified action executor, Scene Contract or environment topology.
+- Why Here / Why Not Elsewhere: driver eligibility and visual-control parity
+  are generic frontend platform concerns. No business model, translated label,
+  workflow state or backend method is used to select or operate a driver.
+- Blast radius / validation: the existing `project.project` acceptance target
+  only. The governed browser command proves readonly, edit and create retain
+  the same contract identities, field states, action identities and unsaved
+  draft values across Native, TDesign and UI5. Desktop and 390px UI5 evidence
+  must contain unique fields/actions, zero horizontal overflow, zero contract
+  refetches during switching and zero business mutations or runtime errors.
+- Runtime checkpoint: all three form modes passed on the registered
+  `sc_frontend_acceptance` identity. UI5 rendered 27 readonly fields, 27 edit
+  fields and 26 create fields with no duplicates; mobile readonly/edit/create
+  each had zero horizontal overflow. The entitlement probe and random
+  credential were removed by the existing cleanup path.

@@ -109,13 +109,23 @@ probe_function = next(
 require(probe_function is not None, "browser probe fixture function missing")
 probe_source = ast.get_source_segment(probe_fixture, probe_function) or ""
 require("\"models\": [model]" in probe_source, "browser probe must consume the action-owned model")
+require(
+    '"allowed_kits": ["sc-native", "tdesign-modern", "ui5-horizon"]' in probe_source,
+    "browser probe must exercise all registered production form drivers",
+)
 require("component driver probe requires a non-payment action model" in probe_source, "browser probe lacks its non-payment boundary")
+require("build_scope_key(" in probe_source, "browser probe does not identify its exact persisted driver preference")
+require("preference_model.search([" in probe_source and "]).unlink()" in probe_source, "browser probe does not clean its persisted driver preference")
 require("payment.request" not in probe_source, "browser probe drifted into the payment vertical")
 acceptance_fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(encoding="utf-8")
 require("SC_ACCEPTANCE_COMPONENT_DRIVER_PROBE_MODE" in acceptance_fixture, "browser probe is not routed through the governed fixture entry")
 browser_probe = (ROOT / "scripts/verify/frontend_scene_component_driver_readonly_browser.mjs").read_text(encoding="utf-8")
 for forbidden in ("api.data.create", "api.data.write", "api.data.unlink", "execute_button"):
     require(forbidden in browser_probe, f"readonly browser probe does not detect mutation: {forbidden}")
+require("selectOption('ui5-horizon')" in browser_probe, "browser probe does not exercise UI5 through the governed chooser")
+require("contractResponsesBeforeSwitch" in browser_probe, "browser probe does not prove driver switches avoid contract refetches")
+require("{ width: 390, height: 844 }" in browser_probe, "browser probe does not cover the governed mobile viewport")
+require("mobileModes" in browser_probe, "browser report does not retain per-mode mobile evidence")
 
 form_page = (WEB_SRC / "pages/ContractFormPage.vue").read_text(encoding="utf-8")
 require(
@@ -129,4 +139,4 @@ collection_wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRender
 require("openRow" in collection_surface, "readonly collection does not expose row navigation")
 require("'open-record'" in collection_wrapper, "driver row navigation is not returned to the unified host")
 
-print("[verify.frontend.scene_component_bridge.guard] PASS checks=31")
+print("[verify.frontend.scene_component_bridge.guard] PASS checks=38")

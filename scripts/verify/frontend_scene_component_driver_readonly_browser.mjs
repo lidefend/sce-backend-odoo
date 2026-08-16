@@ -179,6 +179,48 @@ async function main() {
 
     const screenshot = path.join(OUTPUT, 'tdesign-readonly-project.png');
     await page.screenshot({ path: screenshot, fullPage: true });
+    const readonlyState = await page.evaluate(() => ({
+      fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
+        name: node.getAttribute('data-field-name') || '',
+        state: node.getAttribute('data-field-state') || '',
+        type: node.getAttribute('data-field-type') || '',
+      })),
+      actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
+        identity: node.getAttribute('data-backend-identity') || '',
+        disabled: node.hasAttribute('disabled'),
+      })),
+    }));
+    const readonlyResponsesBeforeSwitch = evidence.contractResponses.length;
+    await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
+    const ui5ReadonlyHost = page.locator('[data-contract-form-driver="ui5-horizon"]');
+    await ui5ReadonlyHost.waitFor({ state: 'visible', timeout: 45000 });
+    await page.locator('[data-scene-ui-kit="ui5-horizon"]').waitFor({ state: 'visible', timeout: 45000 });
+    await page.locator('[data-control-driver="ui5-horizon"] ui5-input, [data-control-driver="ui5-horizon"] ui5-date-picker, [data-control-driver="ui5-horizon"] ui5-select, [data-control-driver="ui5-horizon"] ui5-textarea').first().waitFor({ state: 'visible', timeout: 45000 });
+    const ui5ReadonlyState = await page.evaluate(() => ({
+      sha: document.querySelector('[data-contract-form-driver="ui5-horizon"]')?.getAttribute('data-source-contract-sha') || '',
+      fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
+        name: node.getAttribute('data-field-name') || '',
+        state: node.getAttribute('data-field-state') || '',
+        type: node.getAttribute('data-field-type') || '',
+      })),
+      actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
+        identity: node.getAttribute('data-backend-identity') || '',
+        disabled: node.hasAttribute('disabled'),
+      })),
+      editableControls: [...document.querySelectorAll('[data-control-driver="ui5-horizon"] ui5-input, [data-control-driver="ui5-horizon"] ui5-date-picker, [data-control-driver="ui5-horizon"] ui5-select, [data-control-driver="ui5-horizon"] ui5-textarea')]
+        .filter((node) => !node.hasAttribute('disabled')).length,
+      horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+    }));
+    check(ui5ReadonlyState.sha === result.sourceContractSha256, 'readonly contract identity changed during TDesign to UI5 switch');
+    check(JSON.stringify(ui5ReadonlyState.fields) === JSON.stringify(readonlyState.fields), 'readonly field states changed during TDesign to UI5 switch');
+    check(JSON.stringify(ui5ReadonlyState.actions) === JSON.stringify(readonlyState.actions), 'readonly action identities changed during TDesign to UI5 switch');
+    check(ui5ReadonlyState.editableControls === 0, 'UI5 readonly driver exposed an editable control');
+    check(ui5ReadonlyState.horizontalOverflow === 0, 'UI5 readonly driver caused horizontal overflow');
+    check(evidence.contractResponses.length === readonlyResponsesBeforeSwitch, 'readonly UI5 switch refetched business contract');
+    const ui5ReadonlyScreenshot = path.join(OUTPUT, 'ui5-readonly-project.png');
+    await page.screenshot({ path: ui5ReadonlyScreenshot, fullPage: true });
+    await page.locator('[data-contract-form-driver-chooser]').selectOption('tdesign-modern');
+    await page.locator('[data-contract-form-driver="tdesign-modern"]').waitFor({ state: 'visible', timeout: 15000 });
 
     async function exerciseEditableMode(mode, editableRoute) {
       const contractResponsesBeforeRoute = evidence.contractResponses.length;
@@ -248,6 +290,40 @@ async function main() {
       check(JSON.stringify(nativeState.actions) === JSON.stringify(before.actions), `${mode} action identities changed during driver switch`);
       check(evidence.contractResponses.length === contractResponsesBeforeSwitch, `${mode} driver switch refetched business contract`);
 
+      await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
+      const ui5Host = page.locator('[data-contract-form-driver="ui5-horizon"]');
+      await ui5Host.waitFor({ state: 'visible', timeout: 45000 });
+      await page.locator('[data-scene-ui-kit="ui5-horizon"]').waitFor({ state: 'visible', timeout: 45000 });
+      const ui5Input = page.locator(
+        `[data-field-name="${fieldName}"] [data-control-driver="ui5-horizon"] ui5-input, `
+        + `[data-field-name="${fieldName}"] [data-control-driver="ui5-horizon"] ui5-textarea`,
+      ).first();
+      await ui5Input.waitFor({ state: 'visible', timeout: 45000 });
+      check(
+        await ui5Input.evaluate((node) => String(node.value || '')) === updatedValue,
+        `${mode} draft value changed during Native to UI5 switch`,
+      );
+      const ui5State = await page.evaluate(() => ({
+        sha: document.querySelector('[data-contract-form-driver="ui5-horizon"]')?.getAttribute('data-source-contract-sha') || '',
+        fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
+          name: node.getAttribute('data-field-name') || '',
+          state: node.getAttribute('data-field-state') || '',
+          type: node.getAttribute('data-field-type') || '',
+        })),
+        actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
+          identity: node.getAttribute('data-backend-identity') || '',
+          disabled: node.hasAttribute('disabled'),
+        })),
+        horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+      }));
+      check(ui5State.sha === contractSha, `${mode} contract identity changed during UI5 switch`);
+      check(JSON.stringify(ui5State.fields) === JSON.stringify(before.fields), `${mode} field states changed during UI5 switch`);
+      check(JSON.stringify(ui5State.actions) === JSON.stringify(before.actions), `${mode} action identities changed during UI5 switch`);
+      check(ui5State.horizontalOverflow === 0, `${mode} UI5 driver caused horizontal overflow`);
+      check(evidence.contractResponses.length === contractResponsesBeforeSwitch, `${mode} UI5 switch refetched business contract`);
+      const ui5ModeScreenshot = path.join(OUTPUT, `ui5-${mode}-project.png`);
+      await page.screenshot({ path: ui5ModeScreenshot, fullPage: true });
+
       await page.locator('[data-contract-form-driver-chooser]').selectOption('tdesign-modern');
       await page.locator('[data-contract-form-driver="tdesign-modern"]').waitFor({ state: 'visible', timeout: 15000 });
       const restoredInput = page.locator(
@@ -263,6 +339,7 @@ async function main() {
         actionCount: before.actions.length, editedField: fieldName, originalValue, updatedValue,
         contractResponsesDuringSwitch: evidence.contractResponses.length - contractResponsesBeforeSwitch,
         screenshot: { path: modeScreenshot, sha256: sha256(modeScreenshot) },
+        ui5Screenshot: { path: ui5ModeScreenshot, sha256: sha256(ui5ModeScreenshot) },
       };
     }
 
@@ -274,13 +351,58 @@ async function main() {
       'create',
       `/f/${encodeURIComponent(TARGET.model)}/new?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`,
     );
+
+    async function exerciseUi5MobileMode(mode, mobileRoute) {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`${BASE_URL}${mobileRoute}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await page.locator('[data-contract-form-driver]').first().waitFor({ state: 'visible', timeout: 45000 });
+      await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
+      const ui5Host = page.locator('[data-contract-form-driver="ui5-horizon"]');
+      await ui5Host.waitFor({ state: 'visible', timeout: 45000 });
+      await page.locator('[data-scene-ui-kit="ui5-horizon"]').waitFor({ state: 'visible', timeout: 45000 });
+      await page.locator('[data-control-driver="ui5-horizon"]').first().waitFor({ state: 'visible', timeout: 45000 });
+      await page.waitForTimeout(300);
+      const mobileState = await page.evaluate(() => {
+        const fields = [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')];
+        const actions = [...document.querySelectorAll('[data-backend-identity]')].map((node) => node.getAttribute('data-backend-identity') || '');
+        return {
+          sha: document.querySelector('[data-contract-form-driver="ui5-horizon"]')?.getAttribute('data-source-contract-sha') || '',
+          fieldCount: fields.length,
+          uniqueFieldCount: new Set(fields.map((node) => node.getAttribute('data-field-name'))).size,
+          actionCount: actions.length,
+          uniqueActionCount: new Set(actions).size,
+          horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+        };
+      });
+      check(mobileState.sha, `${mode} UI5 mobile source contract identity missing`);
+      check(mobileState.fieldCount > 0 && mobileState.fieldCount === mobileState.uniqueFieldCount, `${mode} UI5 mobile fields are missing or duplicated`);
+      check(mobileState.actionCount === mobileState.uniqueActionCount, `${mode} UI5 mobile actions are duplicated`);
+      check(mobileState.horizontalOverflow === 0, `${mode} UI5 mobile caused horizontal overflow`);
+      const mobileScreenshot = path.join(OUTPUT, `ui5-${mode}-mobile-390.png`);
+      await page.screenshot({ path: mobileScreenshot, fullPage: true });
+      return {
+        mode,
+        route: mobileRoute,
+        ...mobileState,
+        screenshot: { path: mobileScreenshot, sha256: sha256(mobileScreenshot) },
+      };
+    }
+
+    const mobileModes = [];
+    for (const [mode, mobileRoute] of [
+      ['readonly', route],
+      ['edit', `/f/${encodeURIComponent(TARGET.model)}/${TARGET.record_id}?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`],
+      ['create', `/f/${encodeURIComponent(TARGET.model)}/new?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`],
+    ]) {
+      mobileModes.push(await exerciseUi5MobileMode(mode, mobileRoute));
+    }
     check(evidence.mutations.length === 0, `driver parity journey issued a business mutation: ${JSON.stringify(evidence.mutations)}`);
     check(
       evidence.console.length === 0 && evidence.pageerror.length === 0 && evidence.failed.length === 0,
       `driver parity runtime errors detected: ${JSON.stringify({ console: evidence.console, pageerror: evidence.pageerror, failed: evidence.failed })}`,
     );
     const report = {
-      schema_version: 'frontend_scene_component_driver_form.v2',
+      schema_version: 'frontend_scene_component_driver_form.v3',
       result: 'PASS',
       git_sha: process.env.GIT_SHA || '',
       database: DB_NAME,
@@ -288,6 +410,7 @@ async function main() {
       driver: 'tdesign-modern',
       ...result,
       editableModes: [editResult, createResult],
+      mobileModes,
       runtime_errors: {
         console: evidence.console,
         pageerror: evidence.pageerror,
@@ -296,6 +419,7 @@ async function main() {
         systemInitPolicy: evidence.systemInitPolicy,
       },
       screenshot: { path: screenshot, sha256: sha256(screenshot) },
+      ui5Screenshot: { path: ui5ReadonlyScreenshot, sha256: sha256(ui5ReadonlyScreenshot) },
     };
     const reportPath = path.join(OUTPUT, 'report.json');
     fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
