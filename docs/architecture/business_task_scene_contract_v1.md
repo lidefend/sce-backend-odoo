@@ -130,6 +130,8 @@ after the terminal profile is stable, so vendor controls cannot influence contra
 - every terminal fact/input/capability has an explicit authority;
 - no frontend business component reads native/Odoo vocabulary;
 - unknown permission, applicability or action state fails closed;
+- capability visibility is an authoritative domain verdict: state-inapplicable
+  actions are hidden, while handoff and repair actions may remain visible but disabled;
 - no disabled capability reports success reason;
 - at most one enabled primary capability per task state;
 - payment-request journey gates move from `partial` only with bound task, backend, browser,

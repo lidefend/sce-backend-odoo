@@ -59,6 +59,7 @@ def valid_payload() -> dict:
             {
                 "key": "document.approve",
                 "label": "审核通过",
+                "visible": True,
                 "business_available": True,
                 "authorization_allowed": True,
                 "enabled": True,
@@ -146,6 +147,7 @@ def valid_supply() -> dict:
         "blockers": {},
         "capabilities": {
             "document.approve": {
+                "visible": True,
                 "business_available": True,
                 "authorization_allowed": True,
                 "enabled": True,
@@ -197,6 +199,20 @@ class BusinessTaskSceneContractTest(unittest.TestCase):
         ok, detail = check_business_task_scene_contract(payload)
         self.assertFalse(ok)
         self.assertEqual(detail["code"], "capability_verdict_required")
+
+    def test_requires_explicit_capability_visibility_verdict(self):
+        payload = valid_payload()
+        del payload["capabilities"][0]["visible"]
+        ok, detail = check_business_task_scene_contract(payload)
+        self.assertFalse(ok)
+        self.assertEqual(detail["code"], "capability_verdict_required")
+
+    def test_hidden_capability_cannot_be_executable(self):
+        payload = valid_payload()
+        payload["capabilities"][0]["visible"] = False
+        ok, detail = check_business_task_scene_contract(payload)
+        self.assertFalse(ok)
+        self.assertEqual(detail["code"], "capability_verdict_inconsistent")
 
     def test_disabled_capability_cannot_report_ok(self):
         payload = valid_payload()

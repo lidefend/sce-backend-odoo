@@ -67,6 +67,7 @@ def approved_ready_supply() -> dict:
         enabled = key in {"payment_execution.create", "payment_request.cancel"}
         disabled.setdefault(key, "REPAIR_NOT_REQUIRED")
         capabilities[key] = {
+            "visible": enabled,
             "business_available": enabled,
             "authorization_allowed": True,
             "enabled": enabled,
@@ -151,6 +152,7 @@ def _disable_all_capabilities(supply: dict, reason_code: str) -> None:
     for row in supply["capabilities"].values():
         row.update(
             {
+                "visible": False,
                 "business_available": False,
                 "authorization_allowed": True,
                 "enabled": False,
@@ -168,6 +170,7 @@ def draft_supply() -> dict:
     for key in ("payment_request.submit", "payment_request.cancel"):
         supply["capabilities"][key].update(
             {
+                "visible": True,
                 "business_available": True,
                 "authorization_allowed": True,
                 "enabled": True,
@@ -193,6 +196,7 @@ def approval_supply() -> dict:
     for key in ("payment_request.approve", "payment_request.reject"):
         supply["capabilities"][key].update(
             {
+                "visible": True,
                 "business_available": True,
                 "authorization_allowed": True,
                 "enabled": True,
@@ -215,6 +219,7 @@ def execution_created_supply() -> dict:
     supply["facts"]["legal_next_step"]["value"] = "查看付款登记"
     supply["capabilities"]["payment_execution.create"].update(
         {
+            "visible": False,
             "business_available": False,
             "enabled": False,
             "reason_code": "PAYMENT_EXECUTION_ALREADY_EXISTS",
@@ -222,6 +227,7 @@ def execution_created_supply() -> dict:
     )
     supply["capabilities"]["payment_execution.open"].update(
         {
+            "visible": True,
             "business_available": True,
             "authorization_allowed": True,
             "enabled": True,
@@ -337,6 +343,7 @@ class PaymentRequestBusinessTaskProfileTest(unittest.TestCase):
         create = supply["capabilities"]["payment_execution.create"]
         create.update(
             {
+                "visible": True,
                 "business_available": True,
                 "authorization_allowed": True,
                 "enabled": False,
@@ -346,6 +353,7 @@ class PaymentRequestBusinessTaskProfileTest(unittest.TestCase):
         repair = supply["capabilities"]["counterparty.maintain_settlement_account"]
         repair.update(
             {
+                "visible": True,
                 "business_available": True,
                 "authorization_allowed": True,
                 "enabled": True,
@@ -405,6 +413,7 @@ class PaymentRequestBusinessTaskProfileTest(unittest.TestCase):
         submit = supply["capabilities"]["payment_request.submit"]
         submit.update(
             {
+                "visible": True,
                 "business_available": True,
                 "authorization_allowed": False,
                 "enabled": False,
@@ -427,6 +436,7 @@ class PaymentRequestBusinessTaskProfileTest(unittest.TestCase):
         handoff_supply = copy.deepcopy(authorized_supply)
         handoff_supply["capabilities"]["payment_request.submit"].update(
             {
+                "visible": True,
                 "authorization_allowed": False,
                 "enabled": False,
                 "reason_code": "ROLE_HANDOFF_REQUIRED",

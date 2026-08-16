@@ -144,7 +144,7 @@ def check_business_task_scene_contract(payload: dict) -> Tuple[bool, Dict[str, o
     capability_keys = {str(row["key"]) for row in rows_by_section["capabilities"]}
     for capability in rows_by_section["capabilities"]:
         key = str(capability["key"])
-        for flag in ("business_available", "authorization_allowed", "enabled"):
+        for flag in ("visible", "business_available", "authorization_allowed", "enabled"):
             if not isinstance(capability.get(flag), bool):
                 return False, {"code": "capability_verdict_required", "key": key, "flag": flag}
         blocked_by = capability.get("blocked_by")
@@ -155,6 +155,7 @@ def check_business_task_scene_contract(payload: dict) -> Tuple[bool, Dict[str, o
             return False, {"code": "capability_unknown_blocker", "key": key, "blockers": unknown_blockers}
         executable = bool(capability.get("business_available")) and bool(capability.get("authorization_allowed"))
         executable = executable and not bool(set(blocked_by) & active_blockers)
+        executable = executable and bool(capability.get("visible"))
         if bool(capability.get("enabled")) != executable:
             return False, {"code": "capability_verdict_inconsistent", "key": key}
         if not capability.get("enabled"):

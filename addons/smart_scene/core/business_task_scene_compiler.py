@@ -170,6 +170,7 @@ def compile_business_task_scene_contract(
         "capabilities",
         profile_fields=("label", "presentation", "safety", "idempotency", "outcome", "blocked_by", "handoff"),
         supply_fields=(
+            "visible",
             "business_available",
             "authorization_allowed",
             "enabled",
