@@ -111,6 +111,12 @@
                   <span>{{ option.label }}</span>
                 </label>
               </div>
+              <SceneFieldControl
+                v-else-if="usesSceneFieldControl(field)"
+                :field="sceneField(field)"
+                :model-value="String(field.inputValue ?? '')"
+                @update:model-value="emitFieldChange(field, $event)"
+              />
               <template v-else-if="field.readonly">
                 <slot name="readonly" :field="field">
                   <div
@@ -124,12 +130,6 @@
               <template v-else-if="isRelationEditorField(field) && relationAdapter">
                 <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
               </template>
-              <SceneFieldControl
-                v-else-if="usesSceneFieldControl(field)"
-                :field="sceneField(field)"
-                :model-value="String(field.inputValue ?? '')"
-                @update:model-value="emitFieldChange(field, $event)"
-              />
               <template v-else-if="isBaseFieldType(field.type)">
                 <input
                   v-if="field.type === 'boolean'"

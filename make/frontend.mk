@@ -2,7 +2,7 @@
 # ==================== Frontend ========================
 # ======================================================
 .PHONY: fe.install fe.dev fe.gate verify.frontend.build prod.frontend.build verify.frontend.typecheck.strict verify.frontend.lint.src verify.frontend.page_width_contract.guard verify.frontend.quick.gate verify.frontend.contract_header_action.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.contract.operation_gateway.guard verify.frontend.suggested_action.contract_guard verify.frontend.suggested_action.catalog verify.frontend.suggested_action.parser_guard verify.frontend.suggested_action.runtime_guard verify.frontend.suggested_action.import_boundary_guard verify.frontend.suggested_action.usage_guard verify.frontend.suggested_action.trace_export_guard verify.frontend.suggested_action.topk_guard verify.frontend.suggested_action.since_filter_guard verify.frontend.suggested_action.hud_export_guard verify.frontend.cross_stack_smoke verify.frontend.no_new_any_guard verify.frontend.suggested_action.all verify.portal.scene_observability.structure_guard verify.portal.scene_observability.structure_guard.update
-.PHONY: fe.install.cached verify.frontend.release.local verify.frontend.ui5_scene_spike verify.frontend.scene_component_drivers verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard
+.PHONY: fe.install.cached verify.frontend.release.local verify.frontend.ui5_scene_spike verify.frontend.scene_component_drivers verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser
 
 fe.install:
 	@scripts/dev/pnpm_exec.sh -C frontend install
@@ -55,11 +55,31 @@ verify.frontend.ui5_scene_spike: verify.frontend.scene_component_drivers
 verify.frontend.scene_component_bridge.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_component_driver_bridge_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-component-driver-bridge-test.mjs >/dev/null
 	@node /tmp/scene-component-driver-bridge-test.mjs
+	@$(MAKE) --no-print-directory verify.frontend.canonical_form_presenter.unit
 	@python3 addons/smart_core/tests/test_user_view_preference_boundaries.py
 	@python3 addons/smart_core/tests/test_scene_component_driver_feature_flags.py
 
 verify.frontend.scene_component_bridge.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_scene_component_bridge_guard.py
+
+verify.frontend.scene_component_bridge.browser: guard.prod.forbid check-compose-project check-compose-env
+	@set -eu; \
+	password="$$(python3 -c 'import secrets; print(secrets.token_hex(24))')"; export SC_ACCEPTANCE_FIXTURE_PASSWORD="$$password"; \
+	$(MAKE) --no-print-directory db.frontend.acceptance.ensure DB_NAME=sc_frontend_acceptance; \
+	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=sc_frontend_acceptance; \
+	cleanup() { \
+	  $(MAKE) --no-print-directory frontend.acceptance.down DB_NAME=sc_frontend_acceptance || true; \
+	  $(MAKE) --no-print-directory backend.acceptance.down DB_NAME=sc_frontend_acceptance || true; \
+	  SC_ACCEPTANCE_COMPONENT_DRIVER_PROBE_MODE=cleanup $(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=sc_frontend_acceptance || true; \
+	}; \
+	trap cleanup EXIT; \
+	target_output="$$(SC_ACCEPTANCE_COMPONENT_DRIVER_PROBE_MODE=setup $(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=sc_frontend_acceptance)"; \
+	targets_json="$$(printf '%s\n' "$$target_output" | sed -n 's/^SCENE_COMPONENT_DRIVER_TARGETS_JSON=//p' | tail -n 1)"; \
+	test -n "$$targets_json" || { printf '%s\n' "$$target_output"; exit 2; }; \
+	$(MAKE) --no-print-directory backend.acceptance.up DB_NAME=sc_frontend_acceptance; \
+	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up DB_NAME=sc_frontend_acceptance; \
+	SCENE_COMPONENT_DRIVER_TARGETS_JSON="$$targets_json" DB_NAME=sc_frontend_acceptance FRONTEND_URL=http://127.0.0.1:5175 GIT_SHA="$$(git rev-parse HEAD)" \
+	  node scripts/verify/frontend_scene_component_driver_readonly_browser.mjs
 
 verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard
 

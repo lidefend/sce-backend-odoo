@@ -290,23 +290,48 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
   };
 }
 
-function decodeContainer(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2Container | null {
+function structuralContainerText(raw: ContractV2Dictionary, key: 'containerId' | 'containerType' | 'title'): string {
+  if (key === 'containerId') {
+    return asString(raw.containerId || raw.container_id || raw.widgetId || raw.widget_id || raw.name);
+  }
+  if (key === 'containerType') return asString(raw.containerType || raw.container_type || raw.type);
+  return asString(raw.title || raw.label || raw.string || raw.name || raw.widgetId || raw.widget_id);
+}
+
+function decodeContainer(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+  nestedNativeNode = false,
+): ContractV2Container | null {
   if (!isRecord(raw)) {
     issues.push({ path, message: 'container must be an object' });
     return null;
   }
-  const containerId = requiredString(raw, 'containerId', path, issues);
-  const containerType = requiredString(raw, 'containerType', path, issues);
+  const containerId = nestedNativeNode
+    ? structuralContainerText(raw, 'containerId')
+    : requiredString(raw, 'containerId', path, issues);
+  const containerType = nestedNativeNode
+    ? structuralContainerText(raw, 'containerType')
+    : requiredString(raw, 'containerType', path, issues);
+  if (nestedNativeNode && !containerId) issues.push({ path: `${path}.containerId`, message: 'requires a stable native identity' });
+  if (nestedNativeNode && !containerType) issues.push({ path: `${path}.containerType`, message: 'requires a native node type' });
   if (!containerId || !containerType) return null;
-  const children = requiredArray(raw, 'children', path, issues)
-    .map((item, index) => decodeContainer(item, `${path}.children[${index}]`, issues))
+  const childRows = nestedNativeNode && !Object.prototype.hasOwnProperty.call(raw, 'children')
+    ? []
+    : requiredArray(raw, 'children', path, issues);
+  const children = childRows
+    .map((item, index) => decodeContainer(item, `${path}.children[${index}]`, issues, true))
     .filter((item): item is ContractV2Container => Boolean(item));
   const decodeNodeList = (key: 'pages' | 'tabs' | 'nodes' | 'items'): ContractV2Container[] => (
     Array.isArray(raw[key]) ? raw[key] : []
   )
-    .map((item, index) => decodeContainer(item, `${path}.${key}[${index}]`, issues))
+    .map((item, index) => decodeContainer(item, `${path}.${key}[${index}]`, issues, true))
     .filter((item): item is ContractV2Container => Boolean(item));
-  const widgetList = requiredArray(raw, 'widgetList', path, issues)
+  const widgetRows = nestedNativeNode && !Object.prototype.hasOwnProperty.call(raw, 'widgetList')
+    ? []
+    : requiredArray(raw, 'widgetList', path, issues);
+  const widgetList = widgetRows
     .map((item, index) => decodeWidget(item, `${path}.widgetList[${index}]`, issues))
     .filter((item): item is ContractV2Widget => Boolean(item));
   const pages = decodeNodeList('pages');
@@ -327,8 +352,12 @@ function decodeContainer(raw: unknown, path: string, issues: DecodeIssue[]): Con
     ...(asString(raw.name) ? { name: asString(raw.name) } : {}),
     ...(asString(raw.string) ? { string: asString(raw.string) } : {}),
     ...(asString(raw.label) ? { label: asString(raw.label) } : {}),
-    title: requiredString(raw, 'title', path, issues),
-    span: requiredIntegerInRange(raw, 'span', path, issues, 24),
+    title: nestedNativeNode
+      ? structuralContainerText(raw, 'title') || containerId
+      : requiredString(raw, 'title', path, issues),
+    span: !Object.prototype.hasOwnProperty.call(raw, 'span')
+      ? 24
+      : requiredIntegerInRange(raw, 'span', path, issues, 24),
     ...(asString(raw.styleToken) ? { styleToken: asString(raw.styleToken) } : {}),
     ...(Number(raw.cols || raw.col) ? { cols: Number(raw.cols || raw.col) } : {}),
     ...(Number(raw.columns) ? { columns: Number(raw.columns) } : {}),

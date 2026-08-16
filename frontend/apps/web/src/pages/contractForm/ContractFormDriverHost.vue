@@ -14,6 +14,9 @@
     :data-contract-form-driver="activeKit"
     :data-contract-form-driver-source="driverConfig?.resolutionSource || 'safe-default'"
     :data-contract-form-driver-reason="driverConfig?.reasonCode || ''"
+    :data-source-contract-sha="renderModel.identity.sourceContractSha256"
+    :data-render-model-fields="String(fieldCount)"
+    :data-render-model-actions="String(renderModel.actionBar.length)"
   >
     <div v-if="allowUserOverride" class="sc-form-driver-chooser">
       <label for="contract-form-driver-kit">界面风格</label>
@@ -24,17 +27,11 @@
     <SceneUiProvider v-if="activeKit !== 'sc-native'" :kit="activeKit" fallback-kit="sc-native" density="compact">
       <ContractFormNativeCanvas
         v-bind="$attrs"
-        :data-source-contract-sha="renderModel.identity.sourceContractSha256"
-        :data-render-model-fields="String(fieldCount)"
-        :data-render-model-actions="String(renderModel.actionBar.length)"
       />
     </SceneUiProvider>
     <ContractFormNativeCanvas
       v-else
       v-bind="$attrs"
-      :data-source-contract-sha="renderModel.identity.sourceContractSha256"
-      :data-render-model-fields="String(fieldCount)"
-      :data-render-model-actions="String(renderModel.actionBar.length)"
     />
   </section>
 </template>
@@ -60,7 +57,7 @@ const props = defineProps<{
 const emit = defineEmits<{ 'driver-change': [kit: SceneUiKitId] }>();
 
 function countFields(nodes: CanonicalFormNode[]): number {
-  return nodes.reduce((total, node) => total + node.fields.length + countFields(node.children), 0);
+  return nodes.reduce((total, node) => total + node.fields.filter((field) => field.visible).length + countFields(node.children), 0);
 }
 
 const fieldCount = computed(() => props.renderModel

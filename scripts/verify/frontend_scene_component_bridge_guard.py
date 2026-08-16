@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import re
+import ast
 from pathlib import Path
 
 
@@ -80,6 +81,32 @@ require("SCENE_DRIVER_FORM_MODE_UNSUPPORTED" in policy, "readonly entitlement do
 form_section = (WEB_SRC / "components/template/FormSection.vue").read_text(encoding="utf-8")
 require("from '@sc/ui/form'" in form_section, "form fields must consume the narrow driver-neutral UI export")
 require("emitFieldChange(field, $event)" in form_section, "driver field does not reuse the canonical field-change path")
+require(
+    form_section.index('v-else-if="usesSceneFieldControl(field)"')
+    < form_section.index('v-else-if="field.readonly"'),
+    "readonly ContractForm fields bypass the selected component driver",
+)
+scene_field_control = (UI_SRC / "components/primitives/SceneFieldControl.vue").read_text(encoding="utf-8")
+require(
+    scene_field_control.count("if (props.field.readonly) return;") >= 2,
+    "readonly driver controls do not fail closed before emitting changes",
+)
+probe_fixture = (ROOT / "addons/smart_construction_acceptance_fixture/tools/component_driver_probe.py").read_text(encoding="utf-8")
+probe_tree = ast.parse(probe_fixture)
+probe_function = next(
+    (node for node in probe_tree.body if isinstance(node, ast.FunctionDef) and node.name == "apply_component_driver_probe"),
+    None,
+)
+require(probe_function is not None, "browser probe fixture function missing")
+probe_source = ast.get_source_segment(probe_fixture, probe_function) or ""
+require("\"models\": [model]" in probe_source, "browser probe must consume the action-owned model")
+require("component driver probe requires a non-payment action model" in probe_source, "browser probe lacks its non-payment boundary")
+require("payment.request" not in probe_source, "browser probe drifted into the payment vertical")
+acceptance_fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(encoding="utf-8")
+require("SC_ACCEPTANCE_COMPONENT_DRIVER_PROBE_MODE" in acceptance_fixture, "browser probe is not routed through the governed fixture entry")
+browser_probe = (ROOT / "scripts/verify/frontend_scene_component_driver_readonly_browser.mjs").read_text(encoding="utf-8")
+for forbidden in ("api.data.create", "api.data.write", "api.data.unlink", "execute_button"):
+    require(forbidden in browser_probe, f"readonly browser probe does not detect mutation: {forbidden}")
 
 form_page = (WEB_SRC / "pages/ContractFormPage.vue").read_text(encoding="utf-8")
 require(
@@ -93,4 +120,4 @@ collection_wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRender
 require("openRow" in collection_surface, "readonly collection does not expose row navigation")
 require("'open-record'" in collection_wrapper, "driver row navigation is not returned to the unified host")
 
-print("[verify.frontend.scene_component_bridge.guard] PASS checks=22")
+print("[verify.frontend.scene_component_bridge.guard] PASS checks=30")
