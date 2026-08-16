@@ -326,6 +326,7 @@ def _settlement(env, suffix, project, contract, partner, state, amount):
 def _request(env, suffix, sequence, project, contract, settlement, partner, state, amount):
     name = "FE-%s-PR-%03d" % (suffix, sequence)
     category = _ref(env, "smart_construction_core.business_category_finance_payment_apply_pay")
+    validation_status = "validated" if state in ("approved", "done") else "no"
     return _upsert(
         env,
         "payment.request",
@@ -342,6 +343,11 @@ def _request(env, suffix, sequence, project, contract, settlement, partner, stat
             "currency_id": project.company_id.currency_id.id,
             "amount": amount,
             "state": state,
+            # Business state and tier-validation state are one workflow fact.
+            # An approved fixture with validation_status=no can render as
+            # executable but will be rejected when payment completion advances
+            # the request to done.
+            "validation_status": validation_status,
             # A payment request owns an immutable account snapshot.  Keeping
             # only the partner default would make the form look incomplete
             # even though the execution guard can resolve a fallback.
@@ -698,7 +704,12 @@ def _payment_journey(env, project, contract, partner, finance):
         ]).unlink()
         env.cr.execute(
             "UPDATE payment_request SET state=%s, validation_status=%s, create_uid=%s WHERE id=%s",
-            (state, "no", finance.id, row.id),
+            (
+                state,
+                "validated" if state in ("approved", "done") else "no",
+                finance.id,
+                row.id,
+            ),
         )
         row.invalidate_recordset(["state", "validation_status", "create_uid"])
         return row
