@@ -85,17 +85,17 @@ function openRow(row: { id: string; values: Record<string, string> }): void {
   gap: 8px;
   align-items: center;
   padding: 8px 24px;
-  border-bottom: 1px solid var(--sc-border, #d9e2ec);
-  background: var(--sc-surface, #fff);
-  color: var(--sc-text-secondary, #52667a);
+  border-bottom: 1px solid var(--sc-app-border);
+  background: var(--sc-app-panel);
+  color: var(--sc-app-text-secondary);
   font-size: 12px;
 }
 .scene-driver-chooser select {
   min-height: 32px;
   padding: 0 30px 0 10px;
-  border: 1px solid var(--sc-border, #cbd7e3);
+  border: 1px solid var(--sc-app-border);
   border-radius: 8px;
-  background: var(--sc-surface, #fff);
-  color: var(--sc-text-primary, #182433);
+  background: var(--sc-app-panel);
+  color: var(--sc-app-text-primary);
 }
 </style>

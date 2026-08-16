@@ -51,9 +51,11 @@ wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRenderer.vue").re
 require("from '@sc/ui/collection'" in wrapper, "renderer must use narrow collection export")
 
 host = (WEB_SRC / "views/ActionView.vue").read_text(encoding="utf-8")
+runtime = (WEB_SRC / "app/action_runtime/useActionViewSceneComponentDriverRuntime.ts").read_text(encoding="utf-8")
+require("useActionViewSceneComponentDriverRuntime" in host, "ActionView does not delegate component-driver orchestration")
 require("session.featureFlags.scene_component_drivers_v1" in host, "backend policy flag is not consumed")
-require("resolveSceneReadonlyCollectionBridge" in host, "normalized readonly bridge is not consumed")
-require("decision.targeted" in host and "contractError" in host, "targeted normalized failures do not fail closed")
+require("resolveSceneReadonlyCollectionBridge" in runtime, "normalized readonly bridge is not consumed")
+require("currentDecision.targeted" in runtime and "contractError" in runtime, "targeted normalized failures do not fail closed")
 
 system_init = (ROOT / "addons/smart_core/handlers/system_init.py").read_text(encoding="utf-8")
 require("platform_feature_flags_for_user_readonly" in system_init, "startup flag source is not read-only entitlement")
@@ -74,4 +76,4 @@ collection_wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRender
 require("openRow" in collection_surface, "readonly collection does not expose row navigation")
 require("'open-record'" in collection_wrapper, "driver row navigation is not returned to the unified host")
 
-print("[verify.frontend.scene_component_bridge.guard] PASS checks=15")
+print("[verify.frontend.scene_component_bridge.guard] PASS checks=16")

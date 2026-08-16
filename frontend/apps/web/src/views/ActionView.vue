@@ -583,7 +583,6 @@ import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorC
 import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
 import { useRoute, useRouter } from 'vue-router';
 import type { ActionContract } from '@sc/schema';
-import type { SceneUiKitId } from '@sc/ui';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
@@ -604,10 +603,7 @@ import GroupSummaryBar from '../components/GroupSummaryBar.vue';
 import SceneBlocksRenderer from '../components/scene/SceneBlocksRenderer.vue';
 import ActionSurfaceToolbar from '../components/action/ActionSurfaceToolbar.vue';
 import ActionSurfaceRendererHost from '../components/action/ActionSurfaceRendererHost.vue';
-import { resolveActionSurfaceRenderer } from '../app/renderers/actionSurfaceRendererRegistry';
-import { resolveSceneComponentDriverDecision } from '../app/renderers/sceneComponentDriverPolicy';
-import { recordSceneComponentDriverEvent } from '../app/renderers/sceneComponentDriverTelemetry';
-import { resolveSceneReadonlyCollectionBridge } from '../app/renderers/sceneReadonlyCollectionBridge';
+import { useActionViewSceneComponentDriverRuntime } from '../app/action_runtime/useActionViewSceneComponentDriverRuntime';
 import { deriveListStatus } from '../app/view_state';
 import { isHudEnabled, isSceneBlocksDebugEnabled } from '../config/debug';
 import { ErrorCodes } from '../app/error_codes';
@@ -1205,7 +1201,6 @@ const listColumnVisibility = ref<Record<string, boolean>>({});
 const listColumnOrder = ref<string[]>([]);
 const listColumnWidths = ref<Record<string, number>>({});
 const listColumnSaveStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle');
-const sceneDriverUserKit = ref('');
 const listColumnPreferenceScope = computed(() => {
   const aid = Number(actionId.value || 0);
   const targetModel = String(resolvedModelRef.value || model.value || '').trim();
@@ -1216,10 +1211,6 @@ const listColumnPreferenceScope = computed(() => {
     preference_key: 'list_columns',
   };
 });
-const sceneDriverPreferenceScope = computed(() => ({
-  ...listColumnPreferenceScope.value,
-  preference_key: 'scene_ui_driver',
-}));
 const sceneReadyEntry = computed<Record<string, unknown> | null>(() => {
   if (!sceneContextEnabled.value || !sceneKey.value) return null;
   return findSceneReadyEntry(session.sceneReadyContractV1, sceneKey.value);
@@ -1614,55 +1605,23 @@ const {
   advancedFields,
   activeGroupByField,
 });
-const sceneReadonlyBridge = computed(() => resolveSceneReadonlyCollectionBridge({
-  actionContract: actionContract.value,
-  records: records.value,
-  columnLabels: contractColumnLabels.value,
-  totalCount: Number(listTotalCount.value ?? records.value.length),
-  identity: {
-    productName: '企业业务管理平台',
-    companyName: String(session.user?.company_name || session.user?.company?.display_name || session.user?.company?.name || ''),
-    roleName: String(session.roleSurface?.role_label || session.roleSurface?.role_code || ''),
-    breadcrumbs: [currentMenuTitle.value].filter(Boolean),
-    workTabs: [],
-  },
-  description: String(currentMenuTitle.value || actionMeta.value?.name || ''),
-}));
-const sceneDriverDecision = computed(() => resolveSceneComponentDriverDecision({
-  featureFlag: session.featureFlags.scene_component_drivers_v1,
-  actionId: Number(actionId.value || 0),
-  model: String(resolvedModelRef.value || model.value || ''),
-  sceneKey: String(sceneKey.value || sceneReadonlyBridge.value.sceneKey || ''),
-  viewMode: viewMode.value,
-  pageAuth: sceneReadonlyBridge.value.pageAuth,
-  hasMutationActions: sceneReadonlyBridge.value.hasMutationActions,
-  selectionEnabled: sceneReadonlyBridge.value.selectionEnabled,
-  userKit: sceneDriverUserKit.value,
-  previewKit: typeof route.query.scene_ui_kit === 'string' ? route.query.scene_ui_kit : '',
-}));
-const surfaceRendererDescriptor = computed(() => {
-  const bridge = sceneReadonlyBridge.value;
-  const decision = sceneDriverDecision.value;
-  const contractError = Boolean(actionContract.value) && decision.targeted && (
-    bridge.reasonCode === 'SCENE_DRIVER_NORMALIZED_V2_MISSING'
-    || (
-      bridge.reasonCode === 'SCENE_DRIVER_NORMALIZED_ADAPTER_REJECTED'
-      && !bridge.hasMutationActions
-      && !bridge.selectionEnabled
-    )
-  );
-  return resolveActionSurfaceRenderer(collectionPresentation.value, viewMode.value, {
-    eligible: bridge.ok && decision.eligible,
-    contractError,
-    reasonCode: bridge.ok ? decision.reasonCode : bridge.reasonCode,
-    config: bridge.contract ? {
-      contract: bridge.contract,
-      activeKit: decision.resolution.kit,
-      allowedKits: decision.policy.allowedKits,
-      allowUserOverride: decision.allowUserOverride,
-      resolutionSource: decision.resolution.source,
-    } : {},
-  });
+const { surfaceRendererDescriptor, handleSceneDriverChange } = useActionViewSceneComponentDriverRuntime({
+  actionContract: () => actionContract.value,
+  records: () => records.value,
+  columnLabels: () => contractColumnLabels.value,
+  totalCount: () => Number(listTotalCount.value ?? records.value.length),
+  actionId: () => Number(actionId.value || 0),
+  model: () => String(resolvedModelRef.value || model.value || ''),
+  sceneKey: () => String(sceneKey.value || ''),
+  viewMode: () => viewMode.value,
+  menuTitle: () => String(currentMenuTitle.value || ''),
+  actionName: () => String(actionMeta.value?.name || ''),
+  companyName: () => String(session.user?.company_name || session.user?.company?.display_name || session.user?.company?.name || ''),
+  roleName: () => String(session.roleSurface?.role_label || session.roleSurface?.role_code || ''),
+  featureFlag: () => session.featureFlags.scene_component_drivers_v1,
+  previewKit: () => typeof route.query.scene_ui_kit === 'string' ? route.query.scene_ui_kit : '',
+  preferenceScope: () => listColumnPreferenceScope.value,
+  collectionPresentation: () => collectionPresentation.value,
 });
 const kanbanFieldLabels = computed<Record<string, string>>(() => ({
   ...contractColumnLabels.value,
@@ -3012,7 +2971,6 @@ function handleListPageLimitChange(limit: number): void {
 }
 
 let listColumnPreferenceLoadSeq = 0;
-let sceneDriverPreferenceLoadSeq = 0;
 let listColumnSaveSeq = 0;
 let listColumnSaveQueue: Promise<void> = Promise.resolve();
 let listColumnSaveStatusTimer: number | null = null;
@@ -3030,46 +2988,6 @@ function setListColumnSaveStatus(status: 'idle' | 'saving' | 'saved' | 'error') 
       }
       listColumnSaveStatusTimer = null;
     }, 2500);
-  }
-}
-
-async function loadSceneDriverPreference(): Promise<void> {
-  const seq = ++sceneDriverPreferenceLoadSeq;
-  const scope = sceneDriverPreferenceScope.value;
-  if (!scope.action_id && !scope.model) {
-    sceneDriverUserKit.value = '';
-    return;
-  }
-  try {
-    const result = await getUserViewPreference(scope);
-    if (seq !== sceneDriverPreferenceLoadSeq) return;
-    sceneDriverUserKit.value = String(result.preference?.kit || '').trim();
-  } catch (err) {
-    if (seq === sceneDriverPreferenceLoadSeq) sceneDriverUserKit.value = '';
-    console.warn('[scene-driver] failed to load preference', err);
-  }
-}
-
-async function handleSceneDriverChange(kitRaw: string): Promise<void> {
-  const kit = String(kitRaw || '').trim() as SceneUiKitId;
-  const decisionBefore = sceneDriverDecision.value;
-  if (!decisionBefore.allowUserOverride || !decisionBefore.policy.allowedKits.includes(kit)) return;
-  sceneDriverUserKit.value = kit;
-  try {
-    await setUserViewPreference(sceneDriverPreferenceScope.value, { kit });
-    const decisionAfter = sceneDriverDecision.value;
-    recordSceneComponentDriverEvent({
-      timestamp: Date.now(),
-      actionId: Number(actionId.value || 0),
-      model: String(resolvedModelRef.value || model.value || ''),
-      requestedKit: kit,
-      resolvedKit: decisionAfter.resolution.kit,
-      source: decisionAfter.resolution.source,
-      reasonCode: decisionAfter.reasonCode,
-    });
-  } catch (err) {
-    sceneDriverUserKit.value = '';
-    console.warn('[scene-driver] failed to save preference', err);
   }
 }
 
@@ -3241,41 +3159,6 @@ watch(
   ].join('|'),
   () => {
     void loadListColumnPreference();
-  },
-  { immediate: true },
-);
-
-watch(
-  () => [
-    sceneDriverPreferenceScope.value.action_id || 0,
-    sceneDriverPreferenceScope.value.model || '',
-    JSON.stringify(session.featureFlags.scene_component_drivers_v1 || {}),
-  ].join('|'),
-  () => { void loadSceneDriverPreference(); },
-  { immediate: true },
-);
-
-watch(
-  () => [
-    Number(actionId.value || 0),
-    String(resolvedModelRef.value || model.value || ''),
-    sceneReadonlyBridge.value.ok ? 'bridge-ok' : sceneReadonlyBridge.value.reasonCode,
-    sceneDriverDecision.value.eligible ? 'eligible' : sceneDriverDecision.value.reasonCode,
-    sceneDriverDecision.value.resolution.kit,
-    sceneDriverDecision.value.resolution.source,
-  ].join('|'),
-  () => {
-    const bridge = sceneReadonlyBridge.value;
-    const decision = sceneDriverDecision.value;
-    recordSceneComponentDriverEvent({
-      timestamp: Date.now(),
-      actionId: Number(actionId.value || 0),
-      model: String(resolvedModelRef.value || model.value || ''),
-      requestedKit: String(sceneDriverUserKit.value || route.query.scene_ui_kit || ''),
-      resolvedKit: decision.resolution.kit,
-      source: decision.resolution.source,
-      reasonCode: bridge.ok ? decision.reasonCode : bridge.reasonCode,
-    });
   },
   { immediate: true },
 );
