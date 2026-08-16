@@ -51,6 +51,7 @@ from .core_extension import (  # noqa: F401
     smart_core_model_code_mapping,
     smart_core_finalize_projected_contract_data,
     smart_core_finalize_unified_page_contract_v2,
+    smart_core_finalize_terminal_scene_contract,
     smart_core_normalize_projected_contract_data,
     smart_core_normalize_unified_page_contract_v2,
     smart_core_scene_package_service_class,

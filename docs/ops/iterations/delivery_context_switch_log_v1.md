@@ -4508,3 +4508,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   preview, placeholder and missing-target rows remain excluded; explicit deep
   links retain their existing precedence. Pure payload and scene-runtime tests
   plus the existing scene schema/static guards prove containment.
+
+## Business Task Scene Contract governed baseline replay (2026-08-16)
+
+- Branch / base SHA: `feature/business-task-scene-contract-v2` /
+  `0c89746904232fb168593d3610289aa0dfcb6075`.
+- Formal Product Layer / Layer Target / Module: P0 terminal scene schema,
+  compiler and post-canonical carrier in `smart_scene` / `smart_core`; P1
+  construction payment-request semantics in `smart_construction_scene`.
+- Reason: after the authorized startup-scene subset entered main, the long-line
+  candidate was replayed from the exact new baseline through a governed
+  replacement worktree. Git history was not rebased, merged or cherry-picked.
+- Why Here / Why Not Elsewhere: P0 owns recursive adapter-vocabulary rejection,
+  deep-copy mirror isolation, sealing and the final extension point. P1 owns
+  payment wording and the pure normalized-to-task adapter. The frontend does
+  not infer payment facts, roles, permissions or workflow state; P4 runtime
+  topology is unchanged.
+- Blast radius / validation: the terminal hook runs only after runtime business
+  actions and modifier dependencies have reached canonical form. Missing
+  authorization remains disabled with an explicit reason; a handoff preserves
+  the real next capability, while absence of any authoritative next capability
+  produces no terminal contract. Pure compiler/profile tests, UI boundary
+  tests, adjacent scene guards, generated-report guards and exact-SHA runtime
+  gates are required before the long line advances.

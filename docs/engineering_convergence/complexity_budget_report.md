@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3814`
+- Scanned files: `3820`
 - Files requiring split plan: `41`
 - Files above warning threshold: `75`
 
@@ -15,10 +15,10 @@ Generated from repository source files. This report is informational during the 
 | 3720 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3665 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3433 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 3453 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3231 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 3255 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 3224 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 3087 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3055 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
@@ -44,7 +44,7 @@ Generated from repository source files. This report is informational during the 
 | 1740 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1713 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1704 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 1658 | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1691 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1634 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
@@ -141,10 +141,10 @@ Generated from repository source files. This report is informational during the 
 | 3720 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3665 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3433 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 3453 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3231 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 3255 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 3224 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 3087 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3055 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
@@ -171,7 +171,7 @@ Generated from repository source files. This report is informational during the 
 | 1738 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1713 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1704 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 1658 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1691 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1634 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |

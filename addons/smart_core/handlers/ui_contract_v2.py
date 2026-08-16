@@ -604,6 +604,26 @@ class UiContractV2Handler(BaseIntentHandler):
             view_type=str(view_type or "").strip().lower(),
             logger=_logger,
         )
+        hook_payload = call_extension_hook_first(
+            self.env,
+            "smart_core_finalize_terminal_scene_contract",
+            self.env,
+            contract_v2,
+            {
+                "source_contract": source_contract,
+                "view_type": str(view_type or "").strip().lower(),
+                "subject": "ui.contract.v2.terminal_scene",
+                "meta": {
+                    "intent": self.INTENT_TYPE,
+                    "client_type": client_type,
+                    "delivery_profile": delivery_profile,
+                    "params": dict(params),
+                    "ui_params": dict(ui_params),
+                },
+            },
+        )
+        if isinstance(hook_payload, dict):
+            contract_v2 = dict(hook_payload)
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
