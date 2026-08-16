@@ -30,12 +30,12 @@ def apply_component_driver_probe(env, mode):
         "feature_flags_json": {
             "scene_component_drivers_v1": {
                 "enabled": True,
-                "read_only_only": True,
+                "read_only_only": False,
+                "form_modes": ["create", "edit", "readonly"],
                 "models": [model],
                 "allowed_kits": ["sc-native", "tdesign-modern"],
                 "system_default_kit": "tdesign-modern",
-                "locked_kit": "tdesign-modern",
-                "allow_user_override": False,
+                "allow_user_override": True,
                 "allow_preview_override": False,
             },
         },

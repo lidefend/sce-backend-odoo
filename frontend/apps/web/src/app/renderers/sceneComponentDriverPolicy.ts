@@ -113,7 +113,15 @@ export function resolveContractFormComponentDriverDecision(
   const matched = scopeMatches(flag, context.actionId, context.model);
   if (matched === null) return denied('SCENE_DRIVER_SCOPE_EMPTY');
   if (!matched) return denied('SCENE_DRIVER_SCOPE_MISMATCH');
-  if (flag.read_only_only === true && context.renderMode !== 'readonly') {
+  const formModes = textList(flag.form_modes)
+    .filter((mode): mode is ContractFormComponentDriverContext['renderMode'] => (
+      ['create', 'edit', 'readonly'].includes(mode)
+    ));
+  const allowedFormModes = formModes.length
+    ? formModes
+    : flag.read_only_only === true ? ['readonly'] : [];
+  if (!allowedFormModes.length) return denied('SCENE_DRIVER_FORM_MODES_MISSING', true);
+  if (!allowedFormModes.includes(context.renderMode)) {
     return denied('SCENE_DRIVER_FORM_MODE_UNSUPPORTED', true);
   }
   const policy = resolvePolicy(flag);

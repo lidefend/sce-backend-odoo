@@ -9,6 +9,7 @@ from typing import Any
 
 SCENE_COMPONENT_DRIVER_FLAG = "scene_component_drivers_v1"
 SCENE_COMPONENT_DRIVER_KITS = frozenset({"sc-native", "tdesign-modern", "ui5-horizon"})
+SCENE_COMPONENT_DRIVER_FORM_MODES = frozenset({"create", "edit", "readonly"})
 
 
 def _text_list(value: Any) -> list[str]:
@@ -39,7 +40,12 @@ def normalize_scene_component_driver_policy(value: Any) -> dict[str, Any] | None
 
     if not isinstance(value, Mapping) or value.get("enabled") is not True:
         return None
-    if value.get("read_only_only") is not True:
+    read_only_only = value.get("read_only_only") is True
+    form_modes = [
+        item for item in _text_list(value.get("form_modes"))
+        if item in SCENE_COMPONENT_DRIVER_FORM_MODES
+    ]
+    if not read_only_only and not form_modes:
         return None
 
     action_ids = _positive_integer_list(value.get("action_ids"))
@@ -61,7 +67,8 @@ def normalize_scene_component_driver_policy(value: Any) -> dict[str, Any] | None
 
     normalized: dict[str, Any] = {
         "enabled": True,
-        "read_only_only": True,
+        "read_only_only": read_only_only,
+        "form_modes": form_modes,
         "action_ids": action_ids,
         "models": models,
         "scene_keys": scene_keys,

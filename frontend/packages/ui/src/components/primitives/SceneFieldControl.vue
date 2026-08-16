@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import type { SceneField } from '../../contracts/sceneObjectPage';
 import { useSceneUiKit } from '../../kits/context';
+import { normalizeSceneFieldControlValue } from './sceneFieldControlValue';
 
 const props = defineProps<{ field: SceneField; modelValue: string }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
@@ -24,7 +25,7 @@ function updateFromEvent(event: Event): void {
 
 function updateFromValue(value: unknown): void {
   if (props.field.readonly) return;
-  emit('update:modelValue', String(Array.isArray(value) ? value[0] ?? '' : value ?? ''));
+  emit('update:modelValue', normalizeSceneFieldControlValue(value, props.field.kind));
 }
 </script>
 

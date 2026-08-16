@@ -4550,6 +4550,36 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   zero. The random credential and disposable entitlement were removed by the
   command cleanup path.
 
+## ContractForm TDesign create/edit parity slice (2026-08-17)
+
+- Branch / base SHA: `feature/p0-contract-form-tdesign-edit-v1` /
+  `13ebc8ec0db348caa0f53a039add9f84b3fc569f`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend /
+  ContractForm create/edit driver parity / `smart_core` entitlement projection,
+  `frontend/apps/web`, and renderer-neutral `frontend/packages/ui`.
+- Reason / boundary: extend the already merged readonly production slice only
+  when company entitlement explicitly declares `form_modes`. The normalized
+  Contract V2, P1 page contract, unified action executor and Scene Contract are
+  unchanged; missing form-mode authority continues to fail closed.
+- Why Here / Why Not Elsewhere: render-mode eligibility, driver-neutral field
+  value adaptation and vendor event normalization are generic frontend platform
+  mechanisms. They do not belong in construction business policy, customer
+  configuration, backend contract assembly or runtime topology.
+- Blast radius / validation: supported ContractForm primitives in explicit
+  create/edit/readonly modes. Odoo empty date facts normalize consistently on
+  both input and driver-event paths, while literal text `false` remains intact.
+  The governed non-payment browser probe must prove TDesign/Native switching
+  preserves the same contract SHA, field states, action identities and unsaved
+  draft values without refetching the business contract or issuing a business
+  mutation.
+- Runtime checkpoint: the registered `sc_frontend_acceptance` command rendered
+  `project.project` in readonly, edit and create modes. Edit exposed 27 unique
+  fields and four actions; create exposed 26 unique fields and five actions.
+  Both modes preserved the edited `name` draft across TDesign -> Native ->
+  TDesign, made zero contract refetches during switching, and produced zero
+  console, page, request or business-mutation errors. Fixture entitlement and
+  random credentials were removed by the existing cleanup path.
+
 ## System-init authorized capability scene subset (2026-08-16)
 
 - Branch / base SHA: `fix/system-init-capability-scene-subset-v1` /
