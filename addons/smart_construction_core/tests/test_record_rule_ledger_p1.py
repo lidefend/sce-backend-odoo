@@ -54,7 +54,10 @@ class TestRecordRuleLedgerP1(TransactionCase):
             ["base.group_user"],
         )
 
-        project_vals = {"privacy_visibility": "followers"}
+        project_vals = {
+            "company_id": company.id,
+            "privacy_visibility": "followers",
+        }
         cls.project_same = _ctx("project.project").create(
             dict(project_vals, name="RR Ledger Project Same", user_id=cls.user_finance_user.id)
         )

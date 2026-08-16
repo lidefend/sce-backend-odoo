@@ -10,6 +10,8 @@ from odoo.exceptions import AccessError
 PASSWORD = os.environ.get("SC_ACCEPTANCE_FIXTURE_PASSWORD", "").strip()
 LOGINS = (
     "fixture_role_finance",
+    "fixture_role_pfl035_finance_user",
+    "fixture_role_pfl035_empty_finance",
     "fixture_role_project_a_member",
     "fixture_role_pm",
     "fixture_role_contract_operator",
@@ -124,6 +126,9 @@ for model_name in MODELS:
         )
     for project in (project_b, project_c):
         target = env[model_name].sudo().search([("project_id", "=", project.id)], limit=1)
+        if model_name == "sc.payment.execution" and project == project_b and not target:
+            # A draft request intentionally has no execution until approval.
+            continue
         if not target:
             fail("missing denied target for %s/%s" % (model_name, project.name))
         try:
@@ -134,11 +139,55 @@ for model_name in MODELS:
             fail("member direct read unexpectedly allowed for %s/%s" % (model_name, project.name))
 
 finance = by_login["fixture_role_finance"]
+
+pfl035_execution_policy = env.ref(
+    "smart_construction_acceptance_fixture.fe_pfl035_payment_execution_approval_policy",
+    raise_if_not_found=False,
+)
+pfl035_execution_step = env.ref(
+    "smart_construction_acceptance_fixture.fe_pfl035_payment_execution_approval_step",
+    raise_if_not_found=False,
+)
+if not pfl035_execution_policy or not pfl035_execution_step:
+    fail("missing PFL-035 payment execution approval fixture")
+if not (
+    pfl035_execution_policy.active
+    and pfl035_execution_policy.company_id == company_a
+    and pfl035_execution_policy.target_model == "sc.payment.execution"
+    and pfl035_execution_policy.approval_required
+    and pfl035_execution_policy.mode == "single"
+    and pfl035_execution_policy.runtime_state == "tier_validation"
+):
+    fail("PFL-035 payment execution approval policy is invalid")
+active_steps = pfl035_execution_policy.step_ids.filtered("active")
+if active_steps != pfl035_execution_step:
+    fail("PFL-035 payment execution approval steps are not deterministic")
+finance_manager_group = env.ref(
+    "smart_construction_core.group_sc_cap_finance_manager"
+)
+tier_definition = pfl035_execution_step.tier_definition_id
+if not (
+    pfl035_execution_step.approve_group_id == finance_manager_group
+    and pfl035_execution_step.approval_scope_key == "finance_manager"
+    and tier_definition
+    and tier_definition.active
+    and tier_definition.model == "sc.payment.execution"
+    and tier_definition.company_id == company_a
+    and tier_definition.reviewer_group_id == finance_manager_group
+):
+    fail("PFL-035 OCA tier definition is invalid")
+
 finance_a = env(user=finance, context={**env.context, "allowed_company_ids": [company_a.id]})
 finance_b = env(user=finance, context={**env.context, "allowed_company_ids": [company_b.id]})
 requests_a = finance_a["payment.request"].search([("name", "like", "FE-%-PR-%")])
 names_a = set(requests_a.mapped("name"))
-if names_a != {"FE-A-PR-001", "FE-A-PR-002", "FE-B-PR-001"}:
+if names_a != {
+    "FE-A-PR-001",
+    "FE-A-PR-002",
+    "FE-B-PR-001",
+    "FE-PFL035-PR-001",
+    "FE-PFL035-PR-002",
+}:
     fail("finance company A scope mismatch: %s" % sorted(names_a))
 requests_b = finance_b["payment.request"].search([("name", "like", "FE-%-PR-%")])
 names_b = set(requests_b.mapped("name"))
@@ -158,8 +207,10 @@ for suffix, project in (("A", project_a), ("B", project_b), ("C", project_c)):
     execution = env["sc.payment.execution"].sudo().search(
         [("name", "=", "FE-%s-PE-001" % suffix)], limit=1
     )
-    if not all((contract, settlement, request, execution)):
+    if not all((contract, settlement, request)) or (suffix != "B" and not execution):
         fail("incomplete business chain FE-%s" % suffix)
+    if suffix == "B" and execution:
+        fail("draft payment request must not have a prebuilt execution FE-B")
     if not (
         contract.project_id == project
         and settlement.project_id == project
@@ -167,22 +218,35 @@ for suffix, project in (("A", project_a), ("B", project_b), ("C", project_c)):
         and request.project_id == project
         and request.contract_id == contract
         and request.settlement_id == settlement
-        and execution.project_id == project
-        and execution.contract_id == contract
-        and execution.payment_request_id == request
+        and (
+            not execution
+            or (
+                execution.project_id == project
+                and execution.contract_id == contract
+                and execution.payment_request_id == request
+            )
+        )
     ):
         fail("business chain relation mismatch FE-%s" % suffix)
 
     expected_states = {
         "A": ("confirmed", "approve", "approved", "paid"),
-        "B": ("draft", "draft", "draft", "draft"),
+        "B": ("draft", "draft", "draft", False),
         "C": ("confirmed", "approve", "approved", "confirmed"),
     }[suffix]
-    actual_states = (contract.state, settlement.state, request.state, execution.state)
+    actual_states = (contract.state, settlement.state, request.state, execution.state if execution else False)
     if actual_states != expected_states:
         fail("business chain state mismatch FE-%s: %s" % (suffix, actual_states))
-    if request.amount != 1000.0 or execution.planned_amount != 1000.0:
+    if request.amount != 1000.0 or (execution and execution.planned_amount != 1000.0):
         fail("same-amount company isolation fixture mismatch FE-%s" % suffix)
+    if request.payee_account_completeness != "complete":
+        fail("payment request account snapshot is incomplete FE-%s" % suffix)
+    if not (
+        request.payment_account_name
+        and request.payment_bank_name
+        and request.payment_account_no
+    ):
+        fail("payment request account facts are missing FE-%s" % suffix)
 
 request_distribution = {
     suffix: env["payment.request"].sudo().search_count(
@@ -190,7 +254,7 @@ request_distribution = {
     )
     for suffix, project in (("A", project_a), ("B", project_b), ("C", project_c))
 }
-if request_distribution != {"A": 2, "B": 1, "C": 1}:
+if request_distribution != {"A": 4, "B": 1, "C": 1}:
     fail("single/multi list fixture mismatch: %s" % request_distribution)
 if env["payment.request"].sudo().search_count(
     [("name", "like", "FE-%-PR-%"), ("state", "=", "cancel")]
@@ -209,9 +273,9 @@ expected_counts = {
     "companies": 2,
     "projects": 3,
     "contracts": 3,
-    "settlements": 3,
-    "payment_requests": 4,
-    "payment_executions": 3,
+    "settlements": 4,
+    "payment_requests": 6,
+    "payment_executions": 2,
 }
 if counts != expected_counts:
     fail("fixed object counts mismatch: %s" % counts)
@@ -250,6 +314,56 @@ if not (
 ):
     fail("J13 core form baseline is not deterministic")
 
+work_settlement = env.ref(
+    "smart_construction_acceptance_fixture.fe_b05_work_settlement_a",
+    raise_if_not_found=False,
+)
+if not (
+    work_settlement
+    and work_settlement.state == "approve"
+    and str(work_settlement.settlement_period_start) == "2026-07-01"
+    and str(work_settlement.settlement_period_end) == "2026-07-31"
+    and work_settlement.submitted_amount == 200.0
+    and work_settlement.approved_amount == 200.0
+    and "审定结算金额" in (work_settlement.contract_id.contract_payment_method_text or "")
+):
+    fail("PFL-035 create/save/reopen source facts are not deterministic")
+
+pfl035_records = {
+    key: env.ref("smart_construction_acceptance_fixture.%s" % xmlid)
+    for key, xmlid in {
+        "approved": "fe_request_pfl035_001",
+        "draft": "fe_request_pfl035_002",
+        "receive": "fe_pfl035_receive_request",
+        "incomplete": "fe_pfl035_incomplete_request",
+    }.items()
+}
+if (
+    pfl035_records["approved"].state != "approved"
+    or pfl035_records["approved"].validation_status != "validated"
+    or pfl035_records["approved"].type != "pay"
+    or pfl035_records["approved"].payee_account_completeness != "complete"
+    or env["sc.payment.execution"].sudo().search_count(
+        [("payment_request_id", "=", pfl035_records["approved"].id)]
+    )
+):
+    fail("PFL-035 positive request baseline is invalid")
+if pfl035_records["draft"].state != "draft" or pfl035_records["draft"].type != "pay":
+    fail("PFL-035 draft rejection baseline is invalid")
+if (
+    pfl035_records["receive"].state != "approved"
+    or pfl035_records["receive"].validation_status != "validated"
+    or pfl035_records["receive"].type != "receive"
+):
+    fail("PFL-035 receive rejection baseline is invalid")
+if (
+    pfl035_records["incomplete"].state != "approved"
+    or pfl035_records["incomplete"].validation_status != "validated"
+    or pfl035_records["incomplete"].type != "pay"
+    or pfl035_records["incomplete"].payee_account_completeness != "incomplete"
+):
+    fail("PFL-035 incomplete-account rejection baseline is invalid")
+
 print("[verify.frontend.fixture] PASS")
 print(json.dumps({
     "db": env.cr.dbname,
@@ -269,5 +383,13 @@ print(json.dumps({
         "payment_request": journey_request.name,
         "state": journey_request.state,
         "ledger_count": len(journey_request.ledger_line_ids),
+    },
+    "pfl035_payment_execution_approval": {
+        "policy": pfl035_execution_policy.code,
+        "mode": pfl035_execution_policy.mode,
+        "step": pfl035_execution_step.name,
+        "scope": pfl035_execution_step.approval_scope_key,
+        "tier_definition_id": tier_definition.id,
+        "tier_definition_model": tier_definition.model,
     },
 }, ensure_ascii=False, indent=2))

@@ -4367,3 +4367,85 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   generated-report guard and `git diff --check` pass. `ci.local.quick` remains
   externally blocked by pre-existing all-history P1 synthetic bank-account
   findings; this P0 topic does not add or broaden a personal-data exemption.
+
+# PFL-035 replay after nested permission-rights closure (2026-08-16)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v16` /
+  `b002073b798f4a9295d8651c3872c5b7a79fdb21`.
+- Formal Product Layer / Layer Target / Module: P1 finance product / payment
+  request and payment execution user journey / `smart_construction_core`.
+- Replay boundary: the frozen v15 P1 candidate was replayed into a new governed
+  worktree. The old v15 worktree remains untouched; shared P0 code is supplied
+  only by the exact mainline base and is not carried in this candidate.
+- Runtime objective: repeat the approval, rejection and rejected-record edit
+  journey after the P0 page-permission fix. Fixture reset and formal acceptance
+  runtime changes remain deferred until the candidate fingerprint and targeted
+  gates are frozen.
+
+# PFL-035 replay after final modifier dependency hydration (2026-08-16)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v18` /
+  `1e5eed0470cfb03a3fd17bfe16e624ab418b137e`.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  finance product / payment request and payment execution journey /
+  `smart_construction_core` plus the existing acceptance fixture and audits.
+- Replay boundary: the complete v17 checkpoint was replayed into a new governed
+  worktree. Range-diff differs only in the exact baseline SHA, mechanically
+  regenerated reports, and preservation of the newly merged P0 iteration log.
+  No P0 implementation, frontend renderer, environment topology, database,
+  credential or customer-specific exception is carried by this candidate.
+- Runtime objective: prove the final normalized contract now hydrates every
+  scalar modifier dependency after runtime business actions are projected, so
+  the approved request exposes exactly one direct `查看付款登记` action after an
+  execution is saved. Validation resumes at scope/static and the 52-test P1
+  collection before normalized payload or browser execution.
+
+# PFL-035 no-active-execution acceptance semantics (2026-08-16)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v18` /
+  `1e5eed0470cfb03a3fd17bfe16e624ab418b137e`.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  finance product / PFL-035 user-journey evidence / existing runtime acceptance
+  probe only.
+- Reason / boundary: the approved fixture intentionally retains cancelled or
+  reversed execution history. The product correctly reports that history while
+  stating that no active payment execution exists, but the browser probe only
+  accepted the narrower never-generated wording. The assertion now accepts
+  both valid no-active-execution facts and separately requires the legal
+  continuation `生成付款登记`.
+- Why Here / Why Not Elsewhere: this is an evidence-contract correction. No
+  model, normalized assembler, frontend renderer, fixture topology or business
+  permission changes are introduced.
+- Blast radius / validation: PFL-035 readonly evidence only. JavaScript syntax
+  and `git diff --check` pass before the governed full user journey is rerun.
+## PFL-035 approved fixture workflow-fact alignment (2026-08-16)
+
+- Formal Product Layer: P1 construction industry standard acceptance fixture.
+- Layer Target / Module: `smart_construction_acceptance_fixture` deterministic payment-request facts and its verifier.
+- Reason: the real browser journey proved that an `approved` fixture with `validation_status=no` renders a valid payment action but is correctly rejected by the request state guard when payment completion advances it to `done`.
+- Why here: the defect is an inconsistent fixture business fact; the P1 state guard, normalized contract and frontend behavior are correct.
+- Why not elsewhere: no P0, frontend, runtime-profile, database-topology or customer-specific change is required.
+- Blast radius: approved/done synthetic payment-request fixtures only; fixture verification now fails closed on an approved PFL sample without validated workflow status.
+
+## PFL-035 real payment-execution approval journey (2026-08-16)
+
+- Formal Product Layer: P1 construction finance acceptance and professional
+  payment-execution presentation.
+- Layer Target / Module: `smart_construction_acceptance_fixture` company-level
+  approval data, `smart_construction_core` payment-execution policy fields, and
+  the existing PFL-035 browser journey.
+- Reason: the previous journey used an approved payment request but did not
+  configure payment-execution approval for FE Company A. It therefore proved
+  direct confirmation, not the real finance-user-to-finance-manager handoff.
+  The same run also showed that reversal facts existed in native/product
+  contracts but were omitted by the P1 business form policy.
+- Why here: fixture-owned policy and step records deterministically sync to an
+  OCA `tier.definition`; the browser submits as the exact finance-user
+  capability and approves as the exact finance-manager capability. P1 policy
+  now retains cancellation type and editable paid-state reversal reason.
+- Why not elsewhere: no P0 assembler, shared frontend, environment topology,
+  credential contract or customer-specific exception changes are required.
+- Blast radius / validation: FE Company A disposable acceptance data and the
+  PFL-035 payment-execution journey only. The verifier checks one active policy,
+  one active step and its OCA definition. The journey must create one pending
+  `tier.review`, approve that same review, then complete payment and reversal.

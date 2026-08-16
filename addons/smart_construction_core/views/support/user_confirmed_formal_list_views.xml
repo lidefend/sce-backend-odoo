@@ -252,27 +252,29 @@
         <field name="name">payment.request.formal.payment.apply.tree</field>
         <field name="model">payment.request</field>
         <field name="arch" type="xml">
-            <tree string="支付申请" create="false" edit="false" delete="false" default_order="created_time desc, name desc">
+            <tree string="付款申请" create="false" edit="false" delete="false" default_order="created_time desc, name desc">
                 <field name="document_status_display" string="单据状态" />
                 <field name="name" string="单据编号" />
                 <field name="date_request" string="申请日期" />
                 <field name="project_name_display" string="项目名称" />
                 <field name="payee_unit_display" string="收款单位" />
-                <field name="actual_payee_unit_display" string="实际收款单位" />
-                <field name="payer_unit_display" string="付款单位" />
-                <field name="request_amount_display" string="申请付款金额" />
-                <field name="actual_paid_amount_display" string="实际付款金额" />
-                <field name="cost_type_display" string="类型（成本）" />
-                <field name="note_display" string="备注" />
-                <field name="related_document_text" string="是否关联单据" />
-                <field name="payment_account_no_display" string="付款账号" />
-                <field name="amount_uppercase_display" string="金额大写" />
-                <field name="payee_account_name_display" string="户名" />
-                <field name="payee_bank_name_display" string="开户行" />
-                <field name="payee_account_no_display" string="账号" />
-                <field name="attachment_ids" string="附件" widget="many2many_binary" />
-                <field name="source_created_by" string="录入人" />
-                <field name="source_created_at" string="录入时间" />
+                <field name="related_document_text" string="付款依据" />
+                <field name="payee_account_completeness" string="账户完整度" />
+                <field name="legal_next_action_display" string="下一步" />
+                <field name="request_amount_display" string="申请付款金额" sum="申请付款金额合计" />
+                <field name="actual_payee_unit_display" string="实际收款单位" optional="hide" />
+                <field name="payer_unit_display" string="付款单位" optional="hide" />
+                <field name="actual_paid_amount_display" string="实际付款金额" optional="hide" />
+                <field name="cost_type_display" string="类型（成本）" optional="hide" />
+                <field name="note_display" string="备注" optional="hide" />
+                <field name="payment_account_no_display" string="付款账号" optional="hide" />
+                <field name="amount_uppercase_display" string="金额大写" optional="hide" />
+                <field name="payee_account_name_display" string="户名" optional="hide" />
+                <field name="payee_bank_name_display" string="开户行" optional="hide" />
+                <field name="payee_account_no_display" string="账号" optional="hide" />
+                <field name="attachment_ids" string="附件" widget="many2many_binary" optional="hide" />
+                <field name="source_created_by" string="录入人" optional="hide" />
+                <field name="source_created_at" string="录入时间" optional="hide" />
             </tree>
         </field>
     </record>
