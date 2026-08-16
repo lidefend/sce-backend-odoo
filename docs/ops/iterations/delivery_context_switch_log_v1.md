@@ -4487,3 +4487,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   synthetic-history reason. Scanner unit tests, clean-history guard tests, the
   full `security.personal_data_scan` target and `git diff --check` must pass;
   path, blob or classification drift remains unsuppressed.
+
+## System-init authorized capability scene subset (2026-08-16)
+
+- Branch / base SHA: `fix/system-init-capability-scene-subset-v1` /
+  `57cf85ca41e9945b1346bdd43be7844a916cc5d7`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / startup
+  scene projection / `smart_core` system-init payload builder.
+- Reason: the startup subset previously contained only landing, fallback,
+  requested deep-link and role candidates, while already normalized capability
+  facts exposed additional authorized, deliverable scene targets. The resulting
+  scene-ready registry was incomplete even though permissions were correct.
+- Why Here / Why Not Elsewhere: system init already owns the minimal startup
+  projection and consumes normalized capability facts after governance. The
+  change does not recalculate permissions, add P1 scene names, alter delivery
+  policy, or move scene selection into the frontend.
+- Blast radius / validation: only explicit `target_scene_key` values with
+  capability state `allow` or `readonly`, runtime state `READY`, and delivery
+  level `exclusive` or `shared` join the deduplicated subset. Denied, locked,
+  preview, placeholder and missing-target rows remain excluded; explicit deep
+  links retain their existing precedence. Pure payload and scene-runtime tests
+  plus the existing scene schema/static guards prove containment.
