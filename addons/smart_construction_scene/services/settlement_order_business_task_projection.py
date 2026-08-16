@@ -57,6 +57,20 @@ def _page_can_edit(contract: dict) -> bool:
     return text(global_status.get("pageAuth")).lower() in {"edit", "admin"}
 
 
+def _repair_fields_can_edit(contract: dict, field_names: set[str]) -> bool:
+    if not field_names or not _page_can_edit(contract):
+        return False
+    for row in as_list(as_dict(contract.get("statusContract")).get("widgetStatus")):
+        if not isinstance(row, dict):
+            continue
+        widget_id = text(row.get("widgetId"))
+        if not widget_id.startswith("field.") or widget_id[6:] not in field_names:
+            continue
+        if row.get("visible") is True and row.get("readonly") is False and row.get("disabled") is False:
+            return True
+    return False
+
+
 def _repair_capability(*, active: bool, authorized: bool) -> dict:
     enabled = bool(active and authorized)
     return {
@@ -70,7 +84,7 @@ def _repair_capability(*, active: bool, authorized: bool) -> dict:
     }
 
 
-def _blockers(contract: dict) -> tuple[dict, bool, bool] | None:
+def _blockers(contract: dict) -> tuple[dict, bool, bool, set[str], set[str]] | None:
     semantics = as_dict(as_dict(contract.get("runtimeContract")).get("businessTaskSemantics"))
     if text(semantics.get("version")) != "v1" or not text(semantics.get("source_authority")):
         return None
@@ -80,8 +94,10 @@ def _blockers(contract: dict) -> tuple[dict, bool, bool] | None:
         row = as_dict(source_rows.get(key))
         active = row.get("active")
         missing_items = row.get("missing_items")
-        if not isinstance(active, bool) or not isinstance(missing_items, list):
+        repair_fields = row.get("repair_field_names")
+        if not isinstance(active, bool) or not isinstance(missing_items, list) or not isinstance(repair_fields, list):
             return None
+        normalized_repair_fields = {text(item) for item in repair_fields if text(item)}
         reason_code = text(row.get("reason_code"))
         message = text(row.get("message"))
         source_authority = text(row.get("source_authority"))
@@ -93,11 +109,14 @@ def _blockers(contract: dict) -> tuple[dict, bool, bool] | None:
             "message": message,
             "missing_items": [text(item) for item in missing_items if text(item)],
             "source_authority": source_authority,
+            "repair_field_names": normalized_repair_fields,
         }
     return (
         out,
         bool(out["contract_scope_consistency"]["active"]),
         bool(out["amount_readiness"]["active"]),
+        out["contract_scope_consistency"].pop("repair_field_names"),
+        out["amount_readiness"].pop("repair_field_names"),
     )
 
 
@@ -174,16 +193,21 @@ def project_settlement_order_business_task_scene(contract: dict, *, render_profi
     blocker_projection = _blockers(contract)
     if blocker_projection is None:
         return None
-    blockers, scope_missing, amount_missing = blocker_projection
+    blockers, scope_missing, amount_missing, scope_repair_fields, amount_repair_fields = blocker_projection
     capabilities = canonical_action_capabilities(contract, _CAPABILITY_METHODS)
-    editable = _page_can_edit(contract)
     _apply_blocker_verdicts(
         capabilities,
         scope_missing=scope_missing,
         amount_missing=amount_missing,
     )
-    capabilities["settlement_order.repair_scope"] = _repair_capability(active=scope_missing, authorized=editable)
-    capabilities["settlement_order.complete_amounts"] = _repair_capability(active=amount_missing, authorized=editable)
+    capabilities["settlement_order.repair_scope"] = _repair_capability(
+        active=scope_missing,
+        authorized=_repair_fields_can_edit(contract, scope_repair_fields),
+    )
+    capabilities["settlement_order.complete_amounts"] = _repair_capability(
+        active=amount_missing,
+        authorized=_repair_fields_can_edit(contract, amount_repair_fields),
+    )
     next_key = "" if complete else _current_capability(
         state=state,
         validation_status=validation_status,

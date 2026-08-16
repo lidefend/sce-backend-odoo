@@ -39,15 +39,16 @@ def build_settlement_task_semantics(record) -> dict:
 
     if not record or _text(getattr(record, "_name", "")) != "sc.settlement.order":
         return {}
-    missing_scope = [
-        label
-        for value, label in (
-            (getattr(record, "project_id", None), "项目"),
-            (getattr(record, "partner_id", None) or getattr(record, "legacy_fact_model", None), "往来单位"),
-            (getattr(record, "line_ids", None), "结算明细"),
-        )
-        if not value
-    ]
+    missing_scope = []
+    scope_repair_fields = []
+    for value, label, field_name in (
+        (getattr(record, "project_id", None), "项目", "project_id"),
+        (getattr(record, "partner_id", None) or getattr(record, "legacy_fact_model", None), "往来单位", "partner_id"),
+        (getattr(record, "line_ids", None), "结算明细", "line_ids"),
+    ):
+        if not value:
+            missing_scope.append(label)
+            scope_repair_fields.append(field_name)
     state = _text(getattr(record, "state", ""))
     scope_ready = not missing_scope
     scope_message = ""
@@ -59,6 +60,7 @@ def build_settlement_task_semantics(record) -> dict:
         except Exception as exc:
             scope_ready = False
             scope_message = _text(exc) or "合同、项目或结算明细范围不一致。"
+            scope_repair_fields = ["contract_id", "general_contract_id", "line_ids"]
     elif missing_scope:
         scope_message = "请补齐" + "、".join(missing_scope) + "。"
     amount = getattr(record, "amount_total", None)
@@ -72,6 +74,7 @@ def build_settlement_task_semantics(record) -> dict:
                 "reason_code": "SETTLEMENT_SCOPE_INCOMPLETE" if not scope_ready else "",
                 "message": scope_message if not scope_ready else "",
                 "missing_items": missing_scope,
+                "repair_field_names": scope_repair_fields,
                 "source_authority": "settlement_order_model_prechecks.scope",
             },
             "amount_readiness": {
@@ -79,6 +82,7 @@ def build_settlement_task_semantics(record) -> dict:
                 "reason_code": "SETTLEMENT_AMOUNT_INCOMPLETE" if not amount_ready else "",
                 "message": "结算金额必须大于零。" if not amount_ready else "",
                 "missing_items": ["结算金额"] if not amount_ready else [],
+                "repair_field_names": ["line_ids"] if not amount_ready else [],
                 "source_authority": "settlement_order_model_prechecks.amount",
             },
         },

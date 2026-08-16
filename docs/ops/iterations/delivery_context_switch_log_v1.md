@@ -4640,3 +4640,16 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   supply only. No transition, ACL, native view, environment, fixture or UI-driver
   behavior changes. Pure behavior coverage includes missing/malformed authority,
   repair handoff, exact action/semantics dispatch and model-precheck parity.
+
+## 2026-08-16 — C7 exact settlement repair authority
+
+- Formal Product Layer: P1 settlement domain semantics and terminal projection.
+- The settlement domain service now publishes the exact field set capable of
+  repairing each scope or amount blocker. The terminal requires both canonical
+  page edit authority and an editable status for one of those exact fields.
+- This closes the false-positive path where a generally editable page advertised
+  “修正合同与项目” even though the missing field itself was readonly or hidden.
+  Missing/malformed repair-field authority fails closed; no role, ACL or modifier
+  is reconstructed in the scene layer.
+- Scope remains the existing `sc.settlement.order` profile and pure contract tests;
+  no OCA approval behavior, transition, native view, frontend or environment is changed.

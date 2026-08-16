@@ -157,7 +157,10 @@ after the terminal profile is stable, so vendor controls cannot influence contra
   canonical action contract. The same domain service materializes structured
   blocker verdicts into `runtimeContract.businessTaskSemantics`; the scene
   projection refuses to infer blockers from display fields and fails closed
-  when this authority is missing. The final terminal hook consumes only those
+  when this authority is missing. Blocker repair is executable only when both
+  page authority and the exact domain-declared repair field have an editable
+  canonical widget status; generic page editability cannot manufacture a repair
+  path for a readonly source fact. The final terminal hook consumes only those
   normalized action/status and blocker verdicts. Alternate OCA/native methods for the same
   semantic capability select the one applicable method; simultaneous enabled
   aliases fail closed as ambiguous. Approval work-item remains declaration-only

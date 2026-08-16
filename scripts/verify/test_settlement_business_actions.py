@@ -122,6 +122,19 @@ class SettlementBusinessActionsTest(unittest.TestCase):
             semantics["blockers"]["amount_readiness"]["source_authority"],
             "settlement_order_model_prechecks.amount",
         )
+        self.assertEqual(
+            semantics["blockers"]["amount_readiness"]["repair_field_names"],
+            ["line_ids"],
+        )
+
+    def test_scope_semantics_name_only_the_exact_editable_gap(self):
+        record = FakeSettlement()
+        record.partner_id = False
+        semantics = build_settlement_task_semantics(record)
+        scope = semantics["blockers"]["contract_scope_consistency"]
+        self.assertTrue(scope["active"])
+        self.assertEqual(scope["missing_items"], ["往来单位"])
+        self.assertEqual(scope["repair_field_names"], ["partner_id"])
 
 
 if __name__ == "__main__":

@@ -121,7 +121,10 @@ def normalized_contract(
             "required": field in {"date_settlement", "submitted_amount"},
             "disabled": False,
         }
-        for field in ("date_settlement", "submitted_amount", "approved_amount", "settlement_description")
+        for field in (
+            "date_settlement", "submitted_amount", "approved_amount", "settlement_description",
+            "project_id", "partner_id", "contract_id", "general_contract_id", "line_ids",
+        )
     ]
     return {
         "pageInfo": {"model": "sc.settlement.order", "viewType": "form", "renderProfile": "edit"},
@@ -143,6 +146,7 @@ def normalized_contract(
                         "reason_code": "",
                         "message": "",
                         "missing_items": [],
+                        "repair_field_names": [],
                         "source_authority": "settlement_order_model_prechecks.scope",
                     },
                     "amount_readiness": {
@@ -150,6 +154,7 @@ def normalized_contract(
                         "reason_code": "",
                         "message": "",
                         "missing_items": [],
+                        "repair_field_names": [],
                         "source_authority": "settlement_order_model_prechecks.amount",
                     },
                 },
@@ -208,6 +213,7 @@ class SettlementOrderBusinessTaskProfileTest(unittest.TestCase):
             "reason_code": "SETTLEMENT_SCOPE_INCOMPLETE",
             "message": "缺少往来单位。",
             "missing_items": ["往来单位"],
+            "repair_field_names": ["partner_id"],
         })
         contract["statusContract"]["globalStatus"]["pageAuth"] = "readonly"
         task = business_task(contract)
@@ -218,10 +224,35 @@ class SettlementOrderBusinessTaskProfileTest(unittest.TestCase):
         self.assertFalse(repair["enabled"])
         self.assertEqual(task["completion"]["next_capability_key"], "settlement_order.repair_scope")
 
+    def test_scope_repair_requires_the_exact_widget_authority(self):
+        contract = normalized_contract()
+        scope = contract["runtimeContract"]["businessTaskSemantics"]["blockers"]["contract_scope_consistency"]
+        scope.update({
+            "active": True,
+            "reason_code": "SETTLEMENT_SCOPE_INCOMPLETE",
+            "message": "缺少往来单位。",
+            "missing_items": ["往来单位"],
+            "repair_field_names": ["partner_id"],
+        })
+        task = business_task(contract)
+        repair = next(row for row in task["capabilities"] if row["key"] == "settlement_order.repair_scope")
+        self.assertTrue(repair["enabled"])
+        partner_status = next(
+            row for row in contract["statusContract"]["widgetStatus"]
+            if row["widgetId"] == "field.partner_id"
+        )
+        partner_status["readonly"] = True
+        task = business_task(contract)
+        repair = next(row for row in task["capabilities"] if row["key"] == "settlement_order.repair_scope")
+        self.assertFalse(repair["enabled"])
+
     def test_missing_domain_semantics_fails_closed(self):
         contract = normalized_contract()
         del contract["runtimeContract"]["businessTaskSemantics"]
         self.assertIsNone(project(contract))
+        malformed = normalized_contract()
+        del malformed["runtimeContract"]["businessTaskSemantics"]["blockers"]["amount_readiness"]["repair_field_names"]
+        self.assertIsNone(project(malformed))
 
     def test_conflicting_visible_aliases_fail_closed(self):
         contract = normalized_contract(
