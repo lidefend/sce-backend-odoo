@@ -54,7 +54,7 @@ assert.equal(resolveContractRenderProfile({
   contractProfile: 'readonly',
   canSave: true,
   recordId: 7,
-}), 'readonly');
+}), 'edit', 'the current /f/:model/:id route outranks a stale readonly contract profile');
 
 assert.deepEqual(contractLoadProfileOptions('readonly'), { renderProfile: 'readonly' });
 
