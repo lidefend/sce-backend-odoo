@@ -38,7 +38,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "label": "提交审批",
             "intent": "payment.request.submit",
             "method": "action_submit",
-            "allowed_states": {"draft"},
+            "allowed_states": {"draft", "rejected"},
             "delivery_priority": 10,
             "presentation": {"tier": "primary", "semantic": "default"},
         },
@@ -75,7 +75,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
     _NEXT_STATE_HINT = {
         "submit": "submit",
         "approve": "approved",
-        "reject": "draft",
+        "reject": "rejected",
         "done": "done",
     }
 
@@ -131,6 +131,21 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         except Exception:
             return False
 
+    def _authorization_for_action(self, record, action_key: str) -> bool:
+        """Project the model's capability verdict; role hints are never authority."""
+        key = str(action_key or "").strip()
+        if key == "submit":
+            return bool(record._has_submit_access())
+        if key in {"approve", "reject"}:
+            return bool(record._has_finance_approve_access())
+        if key == "done":
+            return bool(
+                self.env.user.has_group(
+                    "smart_construction_core.group_sc_cap_finance_manager"
+                )
+            )
+        return False
+
     def _reason_from_exception(self, exc: Exception) -> str:
         match = re.search(r"\[SC_GUARD:([A-Z0-9_]+)\]", str(exc or ""))
         if match:
@@ -180,6 +195,8 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         if key == "reject":
             return True, REASON_OK
         if key == "done":
+            if str(record.type or "") == "pay":
+                return False, "PAYMENT_EXECUTION_REQUIRED"
             if str(record.validation_status or "") != "validated":
                 return False, REASON_BUSINESS_RULE_FAILED
             if str(record.state or "") != "approved":
@@ -252,9 +269,13 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
                 action_key,
                 advisories=advisories,
             )
-        allowed = bool(method_ok and state_ok and precheck_ok)
+        business_available = bool(method_ok and state_ok and precheck_ok)
+        authorization_allowed = self._authorization_for_action(record, action_key)
+        allowed = bool(business_available and authorization_allowed)
         if allowed:
             reason_code = REASON_OK
+        elif business_available and not authorization_allowed:
+            reason_code = REASON_PERMISSION_DENIED
         elif not method_ok or not state_ok:
             reason_code = REASON_BUSINESS_RULE_FAILED
         else:
@@ -285,15 +306,21 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         required_params = list(spec.get("required_params") or [])
         role_hint = self._ACTION_ROLE_HINTS.get(action_key) or {}
         required_group_xmlid = str(role_hint.get("required_group_xmlid") or "")
-        actor_matches_required_role = self._actor_has_capability(required_group_xmlid)
-        handoff_required = bool(required_group_xmlid and not actor_matches_required_role)
+        actor_matches_required_role = authorization_allowed
+        handoff_required = bool(business_available and not authorization_allowed)
+        label = str(spec.get("label") or "")
+        if action_key == "submit" and state == "rejected":
+            label = "重新提交审批"
         return {
             "key": action_key,
-            "label": str(spec.get("label") or ""),
+            "label": label,
             "intent": str(spec.get("intent") or ""),
             "method": method_name,
             "required_params": required_params,
             "allowed": allowed,
+            "business_available": business_available,
+            "authorization_allowed": authorization_allowed,
+            "entitlement_evaluated": True,
             "reason_code": reason_code,
             "state_required": sorted(list(spec.get("allowed_states") or [])),
             "current_state": state,
