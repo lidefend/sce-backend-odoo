@@ -116,21 +116,26 @@ function presentNode(
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
+  claimedWidgetIds: Set<string>,
 ): CanonicalFormNode {
   const ownRole = zoneRole(container);
   const effectiveRole = ownRole === 'subordinate' ? ownRole : inheritedRole;
   const status: ContractV2ContainerStatus | undefined = store.containerStatusById.get(container.containerId);
   const visible = ancestorVisible && bool(status?.visible, true);
   const disabled = ancestorDisabled || bool(status?.disabled, false);
-  const widgets = widgetsOwnedByContainer(container, store).map((widget) => fieldFromWidget(
-    widget,
-    store.widgetStatusById.get(widget.widgetId),
-    values,
-    mode,
-    pageCanEdit,
-    visible,
-    disabled,
-  ));
+  const widgets = widgetsOwnedByContainer(container, store).flatMap((widget) => {
+    if (claimedWidgetIds.has(widget.widgetId)) return [];
+    claimedWidgetIds.add(widget.widgetId);
+    return [fieldFromWidget(
+      widget,
+      store.widgetStatusById.get(widget.widgetId),
+      values,
+      mode,
+      pageCanEdit,
+      visible,
+      disabled,
+    )];
+  });
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
     kind: text(container.type || container.containerType) || 'container',
@@ -142,7 +147,7 @@ function presentNode(
     reasonCode: text(status?.reasonCode),
     fields: widgets,
     children: childCollections(container).map((child, childIndex) => (
-      presentNode(child, effectiveRole, childIndex, store, values, mode, pageCanEdit, visible, disabled)
+      presentNode(child, effectiveRole, childIndex, store, values, mode, pageCanEdit, visible, disabled, claimedWidgetIds)
     )),
   };
 }
@@ -192,17 +197,23 @@ function presentAction(
 export function presentContractV2Form(
   store: ContractV2NormalizedStore,
   mode: CanonicalFormRenderMode,
+  runtimeValues?: ContractV2Dictionary,
 ): CanonicalFormRenderModel {
   const snapshot = store.snapshot;
-  const values = Object.keys(snapshot.dataContract.mainData).length
+  const contractValues = Object.keys(snapshot.dataContract.mainData).length
     ? snapshot.dataContract.mainData
     : store.primaryDataSource || {};
+  const values = runtimeValues ? { ...contractValues, ...runtimeValues } : contractValues;
   const globalStatus = snapshot.statusContract.globalStatus;
   const pageVisible = bool(globalStatus.pageVisible, true);
   const pageAuth = text(globalStatus.pageAuth);
   const pageCanEdit = mode !== 'readonly' && ['edit', 'admin'].includes(pageAuth);
+  const claimedWidgetIds = new Set<string>();
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
-    presentNode(container, zoneRole(container), index, store, values, mode, pageCanEdit, pageVisible, pageAuth === 'none')
+    presentNode(
+      container, zoneRole(container), index, store, values, mode, pageCanEdit,
+      pageVisible, pageAuth === 'none', claimedWidgetIds,
+    )
   ));
   const actions = snapshot.actionContract.actionRuleList.map((action) => (
     presentAction(action, actionStatus(store, action), mode)

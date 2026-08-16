@@ -3,6 +3,12 @@ import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
+import {
+  canonicalFieldToFormSection,
+  canonicalNodeHasContent,
+  canonicalSectionFields,
+  visibleCanonicalChildren,
+} from '../src/pages/contractForm/canonicalFormRenderer';
 
 function snapshot(): ContractV2Snapshot {
   return {
@@ -113,6 +119,13 @@ assert.equal(model.actionBar[0]?.enabled, true);
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
+const runtimeValueModel = presentContractV2Form(store, 'edit', { name: 'D-002' });
+assert.equal(
+  collectFields(runtimeValueModel.zones.primary).find((field) => field.fieldCode === 'name')?.value,
+  'D-002',
+  'runtime edits must update the ephemeral render model without changing normalized authority',
+);
+
 const readonlyModel = presentContractV2Form(store, 'readonly');
 assert.equal(
   collectFields(readonlyModel.zones.primary).find((field) => field.fieldCode === 'name')?.readonly,
@@ -181,6 +194,41 @@ aggregatedNativeChildren.layoutContract.containerTree[0].children[0].widgetList 
 const aggregatedFields = collectFields(presentContractV2Form(createContractV2Store(aggregatedNativeChildren), 'edit').zones.primary);
 assert.deepEqual(aggregatedFields.map((field) => field.fieldCode), ['name', 'state']);
 
+const duplicateAcrossRoots = snapshot();
+duplicateAcrossRoots.layoutContract.containerTree.splice(1, 0, {
+  containerId: 'legacy.identity.mirror', containerType: 'group', type: 'group', title: 'Legacy mirror', span: 24,
+  children: [], widgetList: [{
+    widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
+    componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+  }],
+});
+const deDuplicatedFields = collectFields(
+  presentContractV2Form(createContractV2Store(duplicateAcrossRoots), 'edit').zones.primary,
+);
+assert.deepEqual(
+  deDuplicatedFields.map((field) => field.widgetId),
+  ['field.name', 'field.state'],
+  'one canonical widget identity must render once even when legacy and product roots both carry it',
+);
+
+const renderedName = canonicalFieldToFormSection(deDuplicatedFields[0]);
+assert.deepEqual(
+  { key: renderedName.key, name: renderedName.name, value: renderedName.value, readonly: renderedName.readonly },
+  { key: 'field.name', name: 'name', value: 'D-001', readonly: false },
+  'renderer mapping must preserve canonical widget identity and state without native layout input',
+);
+assert.equal(canonicalNodeHasContent(model.zones.subordinate.find((node) => node.kind === 'chatter')!), true);
+assert.deepEqual(
+  canonicalSectionFields(model.zones.primary[0]).map((field) => field.fieldCode),
+  ['name'],
+  'a section mechanically owns the fields carried by its direct field nodes',
+);
+assert.equal(
+  visibleCanonicalChildren(model.zones.primary[0]).some((node) => node.kind === 'field'),
+  false,
+  'leaf field nodes must not become duplicate visual sections',
+);
+
 const invalidNativeChild = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 invalidNativeChild.layoutContract.containerTree[0].children = [{ children: [], widgetList: [] }];
 assert.throws(() => decodeContractV2Snapshot(invalidNativeChild), /requires a stable native identity/);
@@ -230,4 +278,4 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
-console.log('[canonical_form_presenter_test] PASS cases=19');
+console.log('[canonical_form_presenter_test] PASS cases=25');

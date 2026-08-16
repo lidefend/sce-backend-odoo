@@ -109,6 +109,13 @@ export interface SceneWorkTab {
   active?: boolean;
 }
 
+/**
+ * Driver-internal visual DTO for the standalone SceneObjectPage primitive.
+ *
+ * This type is not a backend/API contract, a persistence format, or an
+ * authority for ContractForm structure, permissions, values, or actions.
+ * ContractForm drivers consume the app-owned CanonicalFormRenderModel only.
+ */
 export interface SceneObjectPageContract {
   identity: {
     productName: string;

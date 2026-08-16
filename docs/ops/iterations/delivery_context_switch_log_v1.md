@@ -4718,3 +4718,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   unchanged normalized facts. Production-shaped backend and frontend tests
   prove one effective primary remains, hidden/disabled reasons survive, and two
   genuinely executable primary actions continue to fail closed.
+
+## ContractForm canonical render authority closure (2026-08-17)
+
+- Branch / base SHA: `fix/p0-canonical-render-authority-v1` /
+  `7691e55363d110b3ba938adcc7b7a7fe2c2dc1fc`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend /
+  renderer-neutral ContractForm single render chain / `frontend/apps/web` and
+  driver-neutral primitives from `frontend/packages/ui`.
+- Reason / boundary: the component adapter was selecting Native, TDesign and
+  UI5 controls, but the production page structure and actions still came from
+  legacy Canvas inputs while the Canonical Form Render Model was used only for
+  diagnostics. The host now renders canonical zones, nodes, fields and action
+  references directly; the legacy Canvas remains available only in explicit
+  low-code designer mode.
+- Why Here / Why Not Elsewhere: the presenter performs only mechanical
+  Contract V2-to-memory-ViewModel mapping. It does not infer model, label,
+  role, workflow state, permissions, modifiers or backend methods. P1 product
+  contracts, backend assembly, Scene Contract and runtime topology are frozen.
+- Blast radius / validation: ContractForm product pages only. Relation and
+  collaboration remain dedicated adapters, but their node visibility and
+  identity originate in the Render Model. All actions retain normalized
+  `actionId` and `backendIdentity` and enter the existing unified executor.
+  Pure tests, static guard, strict typecheck, production build and governed
+  non-payment browser evidence compare the full ordered canonical node,
+  widget and action-reference sets across Native, TDesign and UI5, including
+  readonly, edit, create and 390px layouts. Driver switching must not refetch
+  the contract or add a business mutation.

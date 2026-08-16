@@ -23,9 +23,9 @@
       :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
-      :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
-      :show-primary-form-action="showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
-      :direct-actions="headerBusinessDirectActions" :overflow-actions="headerBusinessOverflowActions" :config-actions="headerConfigActionsVisible"
+      :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="!canonicalProductRendererActive && showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
+      :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
+      :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @continue-processing="continueProcessing" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
@@ -134,12 +134,22 @@
           @selected-group-title-change="onSelectedFormSettingsGroupTitleChange"
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
-        <ContractFormDriverHost :render-model="canonicalFormRenderState.model" :error="canonicalFormRenderState.error" :driver-config="contractFormDriverConfig"
+        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" :render-model="canonicalFormRenderState.model" :error="canonicalFormRenderState.error" :driver-config="contractFormDriverConfig"
+          :collaboration-panel-listeners="nativeCollaborationPanelListeners"
+          :collaboration-panel-props="nativeCollaborationPanelProps"
+          :relation-adapter="relationFieldAdapter"
+          :show-collaboration-panel="showNativeCollaborationPanel"
+          @driver-change="changeContractFormDriver"
+          @field-change="onTemplateFieldChange"
+          @action-ref="runCanonicalFormAction"
+        />
+        <ContractFormNativeCanvas v-else
           :button-label-resolver="resolveNativeButtonLabel"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
           :collaboration-panel-props="nativeCollaborationPanelProps"
-          :designer-mode="showCurrentFormFieldConfigScope"
-          :field-actions="isContractFieldOrderEditable ? formSettingsFieldActions : contractFieldActions"
+          :designer-mode="true"
+          :dirty="hasChanges"
+          :field-actions="formSettingsFieldActions"
           :field-config-editable="isContractFieldOrderEditable"
           :field-order-count="fieldOrderDraft.length"
           :field-order-dragging-key="draggingFieldKey"
@@ -153,7 +163,6 @@
           :layout-nodes="nativeCanvasFormLayoutNodes"
           :layout-visibility-revision="nativeLayoutVisibilityRevision"
           :mode="renderProfile"
-          :dirty="hasChanges"
           :native-action-handler="runNativeLayoutAction"
           :native-action-state-resolver="resolveNativeActionState"
           :relation-adapter="relationFieldAdapter"
@@ -163,7 +172,7 @@
           :show-collaboration-panel="showNativeCollaborationPanel"
           :show-default-section-title="showNativeDefaultSectionTitle"
           :use-native-form-tree="useNativeFormTree"
-          @driver-change="changeContractFormDriver" @field-action="onContractFieldAction"
+          @field-action="onContractFieldAction"
           @field-add-after="onContractInlineFieldAddAfter"
           @field-change="onTemplateFieldChange"
           @field-label-change="onContractInlineFieldLabelChange"
@@ -180,6 +189,7 @@
           @native-action="runNativeLayoutAction"
         />
         <ContractModeSupportPanel
+          v-if="!canonicalProductRendererActive"
           :active-actions="activeContractModeActions"
           :advanced-expanded="advancedExpanded"
           :busy="busy"
@@ -201,7 +211,7 @@
           @toggle-advanced="advancedExpanded = !advancedExpanded"
         />
       </section>
-      <PageFooterTemplate v-if="isIntakeCreateMode" :hint="formUiLabel('create_hint')">
+      <PageFooterTemplate v-if="!canonicalProductRendererActive && isIntakeCreateMode" :hint="formUiLabel('create_hint')">
         <template #default>
           <button class="ghost" :disabled="busy" @click="cancelIntake">取消</button>
           <button class="primary" :disabled="isIntakeCreateDisabled" @click="() => saveRecord()">
@@ -210,7 +220,7 @@
         </template>
       </PageFooterTemplate>
       <NativeCollaborationPanel
-        v-if="showNativeCollaborationPanel && !hasNativeChatterNode && pageSectionEnabled('chatter', true) && pageSectionTagIs('chatter', 'section')"
+        v-if="!canonicalProductRendererActive && showNativeCollaborationPanel && !hasNativeChatterNode && pageSectionEnabled('chatter', true) && pageSectionTagIs('chatter', 'section')"
         :style="pageSectionStyle('chatter')"
         v-bind="nativeCollaborationPanelProps"
         v-on="nativeCollaborationPanelListeners"
@@ -257,6 +267,7 @@ import NativeCollaborationPanel, {
   type NativeCollaborationPanelProps,
 } from './contractForm/NativeCollaborationPanel.vue';
 import ContractFormDriverHost from './contractForm/ContractFormDriverHost.vue';
+import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
 import { shouldShowNativeCollaborationPanel } from './contractForm/collaborationPresentation';
 import RelationSearchDialog from './contractForm/RelationSearchDialog.vue';
 import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vue';
@@ -324,6 +335,7 @@ import {
   resolveContractV2ValueSource,
   type ContractV2NormalizedStore,
 } from '../app/contracts/v2';
+import type { ContractV2ActionRule } from '../app/contracts/v2/types';
 import { executeSceneMutation } from '../app/sceneMutationRuntime';
 import { isCoreSceneStrictMode } from '../app/contractStrictMode';
 import {
@@ -724,7 +736,6 @@ const {
 });
 const v2ContractStore = ref<ContractV2NormalizedStore | null>(null);
 const v2ContractDecodeError = ref('');
-const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(v2ContractStore.value, v2ContractDecodeError.value, renderProfile.value));
 const v2ShadowStoreReady = computed(() => Boolean(v2ContractStore.value));
 const v2ShadowWidgetCount = computed(() => v2ContractStore.value?.widgetsById.size || 0);
 const v2ShadowActionCount = computed(() => v2ContractStore.value?.actionsById.size || 0);
@@ -787,6 +798,15 @@ const activeFilterKey = ref('');
 const originalValues = ref<Record<string, unknown>>({});
 const recordVersionToken = ref('');
 const formData = reactive<Record<string, unknown>>({});
+const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
+  v2ContractStore.value,
+  v2ContractDecodeError.value,
+  renderProfile.value,
+  formData,
+));
+const canonicalProductRendererActive = computed(() => Boolean(
+  canonicalFormRenderState.value.model && !canonicalFormRenderState.value.error && !showCurrentFormFieldConfigScope.value,
+));
 const nativeLayoutVisibilityRevision = ref(0);
 const advancedExpanded = ref(false);
 const {
@@ -1640,6 +1660,32 @@ const {
   useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore,
   validationErrors, visibleOne2manyRows,
 });
+
+async function runCanonicalFormAction(actionRef: ContractV2ActionRule) {
+  const backendIdentity = String(actionRef.backendIdentity || '').trim();
+  const actionKey = String(actionRef.actionKey || '').trim();
+  const candidates = contractActions.value.filter((candidate) => (
+    backendIdentity
+      ? String(candidate.backendIdentity || '').trim() === backendIdentity
+      : String(candidate.key || '').trim() === actionKey
+  ));
+  if (candidates.length !== 1) {
+    renderErrorMessage.value = candidates.length
+      ? 'CANONICAL_FORM_ACTION_REFERENCE_AMBIGUOUS'
+      : 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING';
+    return;
+  }
+  const action = candidates[0];
+  const primary = primaryBusinessFormAction.value;
+  if (primary && (
+    String(primary.backendIdentity || '').trim() === String(action.backendIdentity || '').trim()
+    || primary.key === action.key
+  )) {
+    await runPrimaryFormAction();
+    return;
+  }
+  await runAction(action);
+}
 const contractReadiness = computed<FormContractReadiness>(() => {
   if (!contract.value) {
     return { usable: false, issues: ['contract not loaded'], fieldCount: 0, layoutFieldCount: 0, visibleCandidateCount: 0 };

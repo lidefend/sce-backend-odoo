@@ -54,6 +54,37 @@ function isBusinessMutation(request) {
   }
 }
 
+const canonicalDomSnapshot = () => ({
+  nodes: [...document.querySelectorAll('[data-canonical-form-zones] [data-canonical-node-id]')].map((node) => ({
+    id: node.getAttribute('data-canonical-node-id') || '',
+    kind: node.getAttribute('data-canonical-node-kind') || '',
+    zone: node.closest('[data-canonical-zone]')?.getAttribute('data-canonical-zone') || '',
+  })),
+  fields: [...document.querySelectorAll('[data-canonical-form-zones] [data-field-key]')].map((node) => ({
+    widgetId: node.getAttribute('data-field-key') || '',
+    fieldCode: node.getAttribute('data-field-name') || '',
+    state: node.getAttribute('data-field-state') || '',
+    type: node.getAttribute('data-field-type') || '',
+  })),
+  actions: [...document.querySelectorAll('[data-canonical-action-bar] [data-action-ref]')].map((node) => ({
+    actionId: node.getAttribute('data-action-ref') || '',
+    backendIdentity: node.getAttribute('data-backend-identity') || '',
+    tier: node.getAttribute('data-action-tier') || '',
+    enabled: node.getAttribute('data-action-enabled') || '',
+    disabled: node.hasAttribute('disabled'),
+  })),
+});
+
+function assertCanonicalSnapshot(snapshot, label) {
+  check(snapshot.nodes.length > 0, `${label} canonical nodes missing`);
+  check(snapshot.fields.length > 0, `${label} canonical fields missing`);
+  check(new Set(snapshot.nodes.map((node) => node.id)).size === snapshot.nodes.length, `${label} canonical nodes duplicated`);
+  check(new Set(snapshot.fields.map((field) => field.widgetId)).size === snapshot.fields.length, `${label} widget identities duplicated`);
+  check(snapshot.fields.every((field) => field.widgetId && field.fieldCode), `${label} field identity missing`);
+  check(new Set(snapshot.actions.map((action) => `${action.actionId}\u0000${action.backendIdentity}`)).size === snapshot.actions.length, `${label} action references duplicated`);
+  check(snapshot.actions.every((action) => action.actionId && action.backendIdentity), `${label} action reference missing`);
+}
+
 async function main() {
   check(PASSWORD, 'SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
   check(TARGET.model && !String(TARGET.model).includes('payment') && TARGET.record_id > 0 && TARGET.action_id > 0 && TARGET.menu_id > 0, 'invalid non-payment target');
@@ -164,7 +195,6 @@ async function main() {
 
     const result = await page.evaluate(() => {
       const host = document.querySelector('[data-contract-form-driver="tdesign-modern"]');
-      const fields = [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')];
       const driverFields = [...document.querySelectorAll('[data-control-driver="tdesign-modern"]')];
       const editableDriverControls = driverFields.filter((node) => {
         const control = node.querySelector('input, textarea, select, [contenteditable="true"]');
@@ -174,14 +204,15 @@ async function main() {
         sourceContractSha256: host?.getAttribute('data-source-contract-sha') || '',
         renderModelFields: Number(host?.getAttribute('data-render-model-fields') || 0),
         renderModelActions: Number(host?.getAttribute('data-render-model-actions') || 0),
-        fieldCount: fields.length,
-        uniqueFieldCount: new Set(fields.map((node) => node.getAttribute('data-field-name'))).size,
         driverFieldCount: driverFields.length,
         editableDriverControlCount: editableDriverControls.length,
         horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
         fallback: document.querySelector('[data-scene-driver-fallback="true"]') !== null,
       };
     });
+    result.canonical = await page.evaluate(canonicalDomSnapshot);
+    result.fieldCount = result.canonical.fields.length;
+    result.uniqueFieldCount = new Set(result.canonical.fields.map((field) => field.widgetId)).size;
     check(evidence.systemInitPolicy?.system_default_kit === 'tdesign-modern', 'system.init entitlement default was not authoritative');
     check(evidence.systemInitPolicy?.allow_user_override === true, 'system.init entitlement did not allow governed driver switching');
     check(
@@ -196,22 +227,13 @@ async function main() {
     check(result.editableDriverControlCount === 0, 'readonly driver exposed an editable control');
     check(result.horizontalOverflow === 0, 'readonly driver caused horizontal overflow');
     check(result.fallback === false, 'TDesign load unexpectedly fell back to Native');
+    assertCanonicalSnapshot(result.canonical, 'readonly TDesign');
     check(evidence.mutations.length === 0, 'readonly journey issued a business mutation');
     check(evidence.console.length === 0 && evidence.pageerror.length === 0 && evidence.failed.length === 0, 'runtime errors detected');
 
     const screenshot = path.join(OUTPUT, 'tdesign-readonly-project.png');
     await page.screenshot({ path: screenshot, fullPage: true });
-    const readonlyState = await page.evaluate(() => ({
-      fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
-        name: node.getAttribute('data-field-name') || '',
-        state: node.getAttribute('data-field-state') || '',
-        type: node.getAttribute('data-field-type') || '',
-      })),
-      actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
-        identity: node.getAttribute('data-backend-identity') || '',
-        disabled: node.hasAttribute('disabled'),
-      })),
-    }));
+    const readonlyState = result.canonical;
     const readonlyResponsesBeforeSwitch = evidence.contractResponses.length;
     await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
     const ui5ReadonlyHost = page.locator('[data-contract-form-driver="ui5-horizon"]');
@@ -220,27 +242,29 @@ async function main() {
     await page.locator('[data-control-driver="ui5-horizon"] ui5-input, [data-control-driver="ui5-horizon"] ui5-date-picker, [data-control-driver="ui5-horizon"] ui5-select, [data-control-driver="ui5-horizon"] ui5-textarea').first().waitFor({ state: 'visible', timeout: 45000 });
     const ui5ReadonlyState = await page.evaluate(() => ({
       sha: document.querySelector('[data-contract-form-driver="ui5-horizon"]')?.getAttribute('data-source-contract-sha') || '',
-      fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
-        name: node.getAttribute('data-field-name') || '',
-        state: node.getAttribute('data-field-state') || '',
-        type: node.getAttribute('data-field-type') || '',
-      })),
-      actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
-        identity: node.getAttribute('data-backend-identity') || '',
-        disabled: node.hasAttribute('disabled'),
-      })),
       editableControls: [...document.querySelectorAll('[data-control-driver="ui5-horizon"] ui5-input, [data-control-driver="ui5-horizon"] ui5-date-picker, [data-control-driver="ui5-horizon"] ui5-select, [data-control-driver="ui5-horizon"] ui5-textarea')]
         .filter((node) => !node.hasAttribute('disabled')).length,
       horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
     }));
+    ui5ReadonlyState.canonical = await page.evaluate(canonicalDomSnapshot);
+    assertCanonicalSnapshot(ui5ReadonlyState.canonical, 'readonly UI5');
     check(ui5ReadonlyState.sha === result.sourceContractSha256, 'readonly contract identity changed during TDesign to UI5 switch');
-    check(JSON.stringify(ui5ReadonlyState.fields) === JSON.stringify(readonlyState.fields), 'readonly field states changed during TDesign to UI5 switch');
-    check(JSON.stringify(ui5ReadonlyState.actions) === JSON.stringify(readonlyState.actions), 'readonly action identities changed during TDesign to UI5 switch');
+    check(JSON.stringify(ui5ReadonlyState.canonical) === JSON.stringify(readonlyState), 'readonly canonical DOM changed during TDesign to UI5 switch');
     check(ui5ReadonlyState.editableControls === 0, 'UI5 readonly driver exposed an editable control');
     check(ui5ReadonlyState.horizontalOverflow === 0, 'UI5 readonly driver caused horizontal overflow');
     check(evidence.contractResponses.length === readonlyResponsesBeforeSwitch, 'readonly UI5 switch refetched business contract');
     const ui5ReadonlyScreenshot = path.join(OUTPUT, 'ui5-readonly-project.png');
     await page.screenshot({ path: ui5ReadonlyScreenshot, fullPage: true });
+    await page.locator('[data-contract-form-driver-chooser]').selectOption('sc-native');
+    await page.locator('[data-contract-form-driver="sc-native"]').waitFor({ state: 'visible', timeout: 15000 });
+    const nativeReadonlyState = await page.evaluate(() => ({
+      sha: document.querySelector('[data-contract-form-driver="sc-native"]')?.getAttribute('data-source-contract-sha') || '',
+    }));
+    nativeReadonlyState.canonical = await page.evaluate(canonicalDomSnapshot);
+    assertCanonicalSnapshot(nativeReadonlyState.canonical, 'readonly Native');
+    check(nativeReadonlyState.sha === result.sourceContractSha256, 'readonly contract identity changed during UI5 to Native switch');
+    check(JSON.stringify(nativeReadonlyState.canonical) === JSON.stringify(readonlyState), 'readonly canonical DOM changed during UI5 to Native switch');
+    check(evidence.contractResponses.length === readonlyResponsesBeforeSwitch, 'readonly Native switch refetched business contract');
     await page.locator('[data-contract-form-driver-chooser]').selectOption('tdesign-modern');
     await page.locator('[data-contract-form-driver="tdesign-modern"]').waitFor({ state: 'visible', timeout: 15000 });
 
@@ -260,19 +284,10 @@ async function main() {
       check(evidence.contractSha256 === contractSha, `${mode} network and canvas contract identities differ`);
 
       const before = await page.evaluate(() => ({
-        fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
-          name: node.getAttribute('data-field-name') || '',
-          state: node.getAttribute('data-field-state') || '',
-          type: node.getAttribute('data-field-type') || '',
-        })),
-        actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
-          identity: node.getAttribute('data-backend-identity') || '',
-          disabled: node.hasAttribute('disabled'),
-        })),
         horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       }));
-      check(before.fields.length > 0, `${mode} fields missing`);
-      check(new Set(before.fields.map((field) => field.name)).size === before.fields.length, `${mode} fields duplicated`);
+      before.canonical = await page.evaluate(canonicalDomSnapshot);
+      assertCanonicalSnapshot(before.canonical, `${mode} TDesign`);
       check(before.horizontalOverflow === 0, `${mode} driver caused horizontal overflow`);
 
       const editable = page.locator(
@@ -297,19 +312,11 @@ async function main() {
       check(await nativeInput.inputValue() === updatedValue, `${mode} draft value changed during TDesign to Native switch`);
       const nativeState = await page.evaluate(() => ({
         sha: document.querySelector('[data-contract-form-driver="sc-native"]')?.getAttribute('data-source-contract-sha') || '',
-        fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
-          name: node.getAttribute('data-field-name') || '',
-          state: node.getAttribute('data-field-state') || '',
-          type: node.getAttribute('data-field-type') || '',
-        })),
-        actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
-          identity: node.getAttribute('data-backend-identity') || '',
-          disabled: node.hasAttribute('disabled'),
-        })),
       }));
+      nativeState.canonical = await page.evaluate(canonicalDomSnapshot);
+      assertCanonicalSnapshot(nativeState.canonical, `${mode} Native`);
       check(nativeState.sha === contractSha, `${mode} contract identity changed during driver switch`);
-      check(JSON.stringify(nativeState.fields) === JSON.stringify(before.fields), `${mode} field states changed during driver switch`);
-      check(JSON.stringify(nativeState.actions) === JSON.stringify(before.actions), `${mode} action identities changed during driver switch`);
+      check(JSON.stringify(nativeState.canonical) === JSON.stringify(before.canonical), `${mode} canonical DOM changed during driver switch`);
       check(evidence.contractResponses.length === contractResponsesBeforeSwitch, `${mode} driver switch refetched business contract`);
 
       await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
@@ -327,20 +334,12 @@ async function main() {
       );
       const ui5State = await page.evaluate(() => ({
         sha: document.querySelector('[data-contract-form-driver="ui5-horizon"]')?.getAttribute('data-source-contract-sha') || '',
-        fields: [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')].map((node) => ({
-          name: node.getAttribute('data-field-name') || '',
-          state: node.getAttribute('data-field-state') || '',
-          type: node.getAttribute('data-field-type') || '',
-        })),
-        actions: [...document.querySelectorAll('[data-backend-identity]')].map((node) => ({
-          identity: node.getAttribute('data-backend-identity') || '',
-          disabled: node.hasAttribute('disabled'),
-        })),
         horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       }));
+      ui5State.canonical = await page.evaluate(canonicalDomSnapshot);
+      assertCanonicalSnapshot(ui5State.canonical, `${mode} UI5`);
       check(ui5State.sha === contractSha, `${mode} contract identity changed during UI5 switch`);
-      check(JSON.stringify(ui5State.fields) === JSON.stringify(before.fields), `${mode} field states changed during UI5 switch`);
-      check(JSON.stringify(ui5State.actions) === JSON.stringify(before.actions), `${mode} action identities changed during UI5 switch`);
+      check(JSON.stringify(ui5State.canonical) === JSON.stringify(before.canonical), `${mode} canonical DOM changed during UI5 switch`);
       check(ui5State.horizontalOverflow === 0, `${mode} UI5 driver caused horizontal overflow`);
       check(evidence.contractResponses.length === contractResponsesBeforeSwitch, `${mode} UI5 switch refetched business contract`);
       const ui5ModeScreenshot = path.join(OUTPUT, `ui5-${mode}-project.png`);
@@ -357,8 +356,8 @@ async function main() {
       const modeScreenshot = path.join(OUTPUT, `tdesign-${mode}-project.png`);
       await page.screenshot({ path: modeScreenshot, fullPage: true });
       return {
-        mode, route: editableRoute, sourceContractSha256: contractSha, fieldCount: before.fields.length,
-        actionCount: before.actions.length, editedField: fieldName, originalValue, updatedValue,
+        mode, route: editableRoute, sourceContractSha256: contractSha, fieldCount: before.canonical.fields.length,
+        actionCount: before.canonical.actions.length, canonical: before.canonical, editedField: fieldName, originalValue, updatedValue,
         contractResponsesDuringSwitch: evidence.contractResponses.length - contractResponsesBeforeSwitch,
         screenshot: { path: modeScreenshot, sha256: sha256(modeScreenshot) },
         ui5Screenshot: { path: ui5ModeScreenshot, sha256: sha256(ui5ModeScreenshot) },
@@ -392,7 +391,11 @@ async function main() {
           && requestOperation(request) === 'create'
           && String(body?.params?.model || '') === TARGET.model;
       }, { timeout: 45000 });
-      await page.getByRole('button', { name: /^保存草稿$/ }).click();
+      const canonicalSave = page.locator('[data-canonical-action-bar] [data-action-ref="form.save"]').first();
+      await canonicalSave.waitFor({ state: 'visible', timeout: 45000 });
+      check(await canonicalSave.getAttribute('data-backend-identity'), 'canonical form.save backend identity missing');
+      check(await canonicalSave.isEnabled(), 'canonical form.save action is disabled');
+      await canonicalSave.click();
       const createResponse = await createResponsePromise;
       check(createResponse.ok(), `create probe request failed with ${createResponse.status()}`);
       const request = createResponse.request();
@@ -437,18 +440,16 @@ async function main() {
       await page.locator('[data-scene-ui-kit="ui5-horizon"]').waitFor({ state: 'visible', timeout: 45000 });
       await page.locator('[data-control-driver="ui5-horizon"]').first().waitFor({ state: 'visible', timeout: 45000 });
       await page.waitForTimeout(300);
-      const mobileState = await page.evaluate(() => {
-        const fields = [...document.querySelectorAll('[data-product-page-mode="form"] [data-field-name]')];
-        const actions = [...document.querySelectorAll('[data-backend-identity]')].map((node) => node.getAttribute('data-backend-identity') || '');
-        return {
+      const mobileState = await page.evaluate(() => ({
           sha: document.querySelector('[data-contract-form-driver="ui5-horizon"]')?.getAttribute('data-source-contract-sha') || '',
-          fieldCount: fields.length,
-          uniqueFieldCount: new Set(fields.map((node) => node.getAttribute('data-field-name'))).size,
-          actionCount: actions.length,
-          uniqueActionCount: new Set(actions).size,
           horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
-        };
-      });
+      }));
+      mobileState.canonical = await page.evaluate(canonicalDomSnapshot);
+      mobileState.fieldCount = mobileState.canonical.fields.length;
+      mobileState.uniqueFieldCount = new Set(mobileState.canonical.fields.map((field) => field.widgetId)).size;
+      mobileState.actionCount = mobileState.canonical.actions.length;
+      mobileState.uniqueActionCount = new Set(mobileState.canonical.actions.map((action) => `${action.actionId}\u0000${action.backendIdentity}`)).size;
+      assertCanonicalSnapshot(mobileState.canonical, `${mode} UI5 mobile`);
       check(mobileState.sha, `${mode} UI5 mobile source contract identity missing`);
       check(mobileState.fieldCount > 0 && mobileState.fieldCount === mobileState.uniqueFieldCount, `${mode} UI5 mobile fields are missing or duplicated`);
       check(mobileState.actionCount === mobileState.uniqueActionCount, `${mode} UI5 mobile actions are duplicated`);
