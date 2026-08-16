@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3812`
+- Scanned files: `3822`
 - Files requiring split plan: `41`
 - Files above warning threshold: `75`
 
@@ -12,9 +12,9 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
+| 3800 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3720 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3665 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3433 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
@@ -27,7 +27,7 @@ Generated from repository source files. This report is informational during the 
 | 2547 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 2509 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2464 | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2432 | Python source | `addons/smart_core/handlers/system_init.py` |
+| 2438 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2315 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 2299 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2298 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
@@ -37,7 +37,7 @@ Generated from repository source files. This report is informational during the 
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1865 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1834 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 1844 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1814 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 1800 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1744 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
@@ -138,9 +138,9 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
+| 3800 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3720 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3665 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3433 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
@@ -153,7 +153,7 @@ Generated from repository source files. This report is informational during the 
 | 2547 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 2509 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2464 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2432 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
+| 2438 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2315 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 2299 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2298 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
@@ -163,7 +163,7 @@ Generated from repository source files. This report is informational during the 
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1865 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1834 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 1844 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1814 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 1800 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1744 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
