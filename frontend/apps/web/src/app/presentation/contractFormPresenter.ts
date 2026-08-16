@@ -196,7 +196,7 @@ export function presentContractV2Form(
   const actions = snapshot.actionContract.actionRuleList.map((action) => (
     presentAction(action, store.buttonStatusById.get(action.actionId), mode)
   ));
-  const primaryCount = actions.filter((action) => action.visible && action.tier === 'primary').length;
+  const primaryCount = actions.filter((action) => action.visible && action.enabled && action.tier === 'primary').length;
   if (primaryCount > 1) throw new Error('CANONICAL_FORM_MULTIPLE_PRIMARY_ACTIONS');
   return {
     identity: {
