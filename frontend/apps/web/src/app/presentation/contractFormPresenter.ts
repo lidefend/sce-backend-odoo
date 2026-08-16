@@ -153,6 +153,17 @@ function actionTier(action: ContractV2ActionRule): CanonicalFormAction['tier'] {
   return 'secondary';
 }
 
+function actionStatus(
+  store: ContractV2NormalizedStore,
+  action: ContractV2ActionRule,
+): ContractV2ButtonStatus | undefined {
+  const actionKey = text(action.actionKey);
+  const statusKey = actionKey.startsWith('btn.') ? actionKey : `btn.${actionKey}`;
+  return store.buttonStatusById.get(action.actionId)
+    || (actionKey ? store.buttonStatusById.get(actionKey) : undefined)
+    || (actionKey ? store.buttonStatusById.get(statusKey) : undefined);
+}
+
 function presentAction(
   action: ContractV2ActionRule,
   status: ContractV2ButtonStatus | undefined,
@@ -194,7 +205,7 @@ export function presentContractV2Form(
     presentNode(container, zoneRole(container), index, store, values, mode, pageCanEdit, pageVisible, pageAuth === 'none')
   ));
   const actions = snapshot.actionContract.actionRuleList.map((action) => (
-    presentAction(action, store.buttonStatusById.get(action.actionId), mode)
+    presentAction(action, actionStatus(store, action), mode)
   ));
   const primaryCount = actions.filter((action) => action.visible && action.enabled && action.tier === 'primary').length;
   if (primaryCount > 1) throw new Error('CANONICAL_FORM_MULTIPLE_PRIMARY_ACTIONS');

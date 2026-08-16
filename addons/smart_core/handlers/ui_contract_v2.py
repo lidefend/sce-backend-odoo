@@ -12,6 +12,7 @@ from ..core.intent_execution_result import IntentExecutionResult
 from ..core.unified_page_contract_v2_assembler import (
     CONTRACT_VERSION,
     assemble_unified_page_contract_v2,
+    hydrate_final_action_modifier_status,
     project_runtime_business_actions,
 )
 from ..core.unified_page_contract_v2_client import (
@@ -604,6 +605,7 @@ class UiContractV2Handler(BaseIntentHandler):
             view_type=str(view_type or "").strip().lower(),
             logger=_logger,
         )
+        hydrate_final_action_modifier_status(contract_v2)
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
