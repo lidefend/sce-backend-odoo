@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
@@ -8,7 +9,7 @@ function snapshot(): ContractV2Snapshot {
     pageInfo: {
       pageId: 'page.x.document.form', sceneKey: 'x.document.form', pageName: 'Document',
       model: 'x.document', viewType: 'form', layoutType: 'form', renderMode: 'governed',
-      contractVersion: '2', clientType: 'web_pc',
+      contractVersion: '2.0.0', clientType: 'web_pc',
     },
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
@@ -97,7 +98,7 @@ function collectFields(nodes: ReturnType<typeof presentContractV2Form>['zones'][
 
 const source = snapshot();
 const before = JSON.stringify(source);
-const store = createContractV2Store(source);
+const store = createContractV2Store(decodeContractV2Snapshot(source));
 const model = presentContractV2Form(store, 'edit');
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
@@ -106,10 +107,39 @@ const fields = collectFields([...model.zones.primary, ...model.zones.subordinate
 assert.deepEqual(fields.map((field) => field.fieldCode), ['name', 'state', 'line_ids']);
 assert.equal(fields.find((field) => field.fieldCode === 'name')?.required, true);
 assert.equal(fields.find((field) => field.fieldCode === 'state')?.visible, false);
-assert.equal(model.actionBar[0]?.actionRef, source.actionContract.actionRuleList[0]);
+assert.equal(model.actionBar[0]?.actionRef, store.snapshot.actionContract.actionRuleList[0]);
+assert.deepEqual(model.actionBar[0]?.actionRef, source.actionContract.actionRuleList[0]);
 assert.equal(model.actionBar[0]?.enabled, true);
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
+
+const productionNativeChildren = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
+delete productionNativeChildren.layoutContract.containerTree[0].span;
+const nativeChild = productionNativeChildren.layoutContract.containerTree[0].children[0] as Record<string, unknown>;
+nativeChild.widgetId = 'field.name';
+delete nativeChild.containerId;
+delete nativeChild.containerType;
+delete nativeChild.title;
+delete nativeChild.span;
+const normalizedNativeChild = decodeContractV2Snapshot(productionNativeChildren).layoutContract.containerTree[0].children[0];
+assert.equal(decodeContractV2Snapshot(productionNativeChildren).layoutContract.containerTree[0].span, 24);
+assert.equal(normalizedNativeChild.containerId, 'field.name');
+assert.equal(normalizedNativeChild.containerType, 'field');
+assert.equal(normalizedNativeChild.title, 'name');
+assert.equal(normalizedNativeChild.span, 24);
+
+const aggregatedNativeChildren = snapshot();
+aggregatedNativeChildren.layoutContract.containerTree[0].children[0].widgetList = [];
+const aggregatedFields = collectFields(presentContractV2Form(createContractV2Store(aggregatedNativeChildren), 'edit').zones.primary);
+assert.deepEqual(aggregatedFields.map((field) => field.fieldCode), ['name', 'state']);
+
+const invalidNativeChild = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
+invalidNativeChild.layoutContract.containerTree[0].children = [{ children: [], widgetList: [] }];
+assert.throws(() => decodeContractV2Snapshot(invalidNativeChild), /requires a stable native identity/);
+
+const invalidExplicitSpan = snapshot();
+invalidExplicitSpan.layoutContract.containerTree[0].span = 0;
+assert.throws(() => decodeContractV2Snapshot(invalidExplicitSpan), /span must be an integer between 1 and 24/);
 
 const missingIdentity = snapshot();
 delete missingIdentity.actionContract.actionRuleList[0].backendIdentity;
@@ -123,4 +153,4 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
-console.log('[canonical_form_presenter_test] PASS cases=8');
+console.log('[canonical_form_presenter_test] PASS cases=12');

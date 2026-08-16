@@ -17,11 +17,13 @@ const driverOptions = computed(() => (props.field.options || []).map((option) =>
 })));
 
 function updateFromEvent(event: Event): void {
+  if (props.field.readonly) return;
   const target = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
   emit('update:modelValue', target?.value || '');
 }
 
 function updateFromValue(value: unknown): void {
+  if (props.field.readonly) return;
   emit('update:modelValue', String(Array.isArray(value) ? value[0] ?? '' : value ?? ''));
 }
 </script>

@@ -17,14 +17,20 @@ source "$ROOT_DIR/scripts/common/env.sh"
 source "$ROOT_DIR/scripts/common/guard_prod.sh"
 guard_prod_forbid
 
-export DB_NAME SC_ENVIRONMENT SC_ALLOW_DEMO_DATA SC_ACCEPTANCE_FIXTURE_PASSWORD
+export DB_NAME SC_ENVIRONMENT SC_ALLOW_DEMO_DATA SC_ACCEPTANCE_FIXTURE_PASSWORD SC_ACCEPTANCE_COMPONENT_DRIVER_PROBE_MODE
 
 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'
 import json
 import os
+from odoo.addons.smart_construction_acceptance_fixture.tools.component_driver_probe import apply_component_driver_probe
 from odoo.addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture import ensure_fixture
 
 summary = ensure_fixture(env)
+probe_mode = str(os.environ.get("SC_ACCEPTANCE_COMPONENT_DRIVER_PROBE_MODE") or "").strip()
+if probe_mode:
+    probe_target = apply_component_driver_probe(env, probe_mode)
+    if probe_target:
+        print("SCENE_COMPONENT_DRIVER_TARGETS_JSON=" + json.dumps(probe_target, ensure_ascii=True, separators=(",", ":")))
 env.cr.commit()
 finance = env.ref("smart_construction_acceptance_fixture.fe_user_finance")
 authenticated_uid = env["res.users"].sudo().authenticate(

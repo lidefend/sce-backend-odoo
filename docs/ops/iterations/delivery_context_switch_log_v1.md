@@ -4519,6 +4519,37 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   profile was used; live collection acceptance remains a P4-owned prerequisite
   or an exact-SHA isolated release-lane responsibility.
 
+## ContractForm TDesign readonly production vertical slice (2026-08-17)
+
+- Branch / base SHA: `feature/p0-contract-form-tdesign-readonly-v1` /
+  `f4fe5da8db5a97568ef7b60fee6a0eccd0e1af90`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend /
+  ContractForm readonly component-driver presentation /
+  `frontend/apps/web` and renderer-neutral `frontend/packages/ui`.
+- Reason / boundary: normalized Contract V2, the in-memory render model, driver
+  policy, dynamic loaders and Native fallback are already in mainline, but
+  readonly fields still bypass the selected driver. This slice reuses the
+  existing ContractForm structure and unified action executor while delegating
+  only supported readonly field controls to the governed driver.
+- Why Here / Why Not Elsewhere: readonly control rendering is a generic
+  frontend presentation mechanism. No P1 contract, backend assembler, Scene
+  Contract, model-specific rule, translated-label inference, database fixture
+  or runtime topology change is permitted.
+- Blast radius / validation: readonly ContractForm fields of the existing
+  supported primitive set only. Native rendering remains the safe fallback;
+  relation, HTML, attachment, activity, status and action zones retain their
+  current renderers. Readonly driver controls must emit no mutations. Targeted
+  bridge tests, source guard, strict typecheck, production build and a governed
+  non-payment readonly browser probe are required before create/edit expansion.
+- Runtime checkpoint: the governed `sc_frontend_acceptance` collection command
+  rendered `project.project` readonly through the locked TDesign entitlement.
+  The response and DOM shared one Contract V2 SHA; the Canonical Render Model
+  and DOM each exposed 27 unique visible fields, 18 supported fields used the
+  TDesign driver, no editable control or Native fallback appeared, horizontal
+  overflow was zero, and console/page/request/business-mutation counts were all
+  zero. The random credential and disposable entitlement were removed by the
+  command cleanup path.
+
 ## System-init authorized capability scene subset (2026-08-16)
 
 - Branch / base SHA: `fix/system-init-capability-scene-subset-v1` /

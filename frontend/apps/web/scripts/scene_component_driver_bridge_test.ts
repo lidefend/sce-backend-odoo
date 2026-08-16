@@ -183,6 +183,21 @@ assert.deepEqual(toContractFormSceneField(driverField, 'field-name', 'Enter name
 assert.deepEqual(toContractFormDriverFieldChange(driverField, 'Updated'), {
   name: 'name', type: 'char', widget: undefined, value: 'Updated', descriptor: undefined,
 });
+assert.equal(
+  usesContractFormDriverField({ ...driverField, readonly: true }, 'tdesign-modern'),
+  true,
+  'supported readonly fields must be rendered by the selected professional driver',
+);
+assert.equal(
+  usesContractFormDriverField({ ...driverField, readonly: true }, 'ui5-horizon'),
+  true,
+  'readonly driver delegation must remain vendor-neutral',
+);
+assert.equal(
+  usesContractFormDriverField({ ...driverField, readonly: true, type: 'html' }, 'tdesign-modern'),
+  false,
+  'unsupported rich readonly values must retain the safe Native renderer',
+);
 
 const standard = resolveActionSurfaceRenderer({ semantic: 'table', label: '', groupField: '', groupedLanes: false, config: {} }, 'tree');
 assert.equal(standard.activeRendererKey, 'core.standard_collection');
@@ -209,4 +224,4 @@ const telemetry = readSceneComponentDriverTelemetry();
 assert.equal(telemetry.length, 60);
 assert.equal(telemetry[0]?.timestamp, 5);
 
-console.log('[scene-component-driver-bridge] PASS cases=21');
+console.log('[scene-component-driver-bridge] PASS cases=24');

@@ -70,11 +70,18 @@ function childCollections(container: ContractV2Container): ContractV2Container[]
   ];
 }
 
-function descendantWidgetIds(container: ContractV2Container): Set<string> {
+function descendantWidgetIds(container: ContractV2Container, store: ContractV2NormalizedStore): Set<string> {
   const ids = new Set<string>();
   childCollections(container).forEach((child) => {
     child.widgetList.forEach((widget) => ids.add(widget.widgetId));
-    descendantWidgetIds(child).forEach((widgetId) => ids.add(widgetId));
+    const kind = text(child.type || child.containerType).toLowerCase();
+    if (kind === 'field') {
+      const fieldInfo = asDict(child.fieldInfo || child.field_info);
+      const fieldCode = text(child.name || fieldInfo.name || child.attributes?.name);
+      const synthesized = store.widgetsByFieldCode.get(fieldCode);
+      if (synthesized) ids.add(synthesized.widgetId);
+    }
+    descendantWidgetIds(child, store).forEach((widgetId) => ids.add(widgetId));
   });
   return ids;
 }
@@ -83,7 +90,7 @@ function widgetsOwnedByContainer(
   container: ContractV2Container,
   store: ContractV2NormalizedStore,
 ): ContractV2Widget[] {
-  const descendants = descendantWidgetIds(container);
+  const descendants = descendantWidgetIds(container, store);
   const direct = container.widgetList.filter((widget) => !descendants.has(widget.widgetId));
   if (direct.length) return direct;
   const kind = text(container.type || container.containerType).toLowerCase();
