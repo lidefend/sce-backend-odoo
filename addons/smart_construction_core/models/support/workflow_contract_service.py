@@ -306,6 +306,12 @@ class ScWorkflowContractService(models.AbstractModel):
         },
         "sc.payment.execution": {
             "state_field": "state",
+            # A paid execution is terminal for its payment lifecycle, but the
+            # finance manager must still be able to enter the reversal reason.
+            # Native modifiers and the form policy remain the field-level
+            # authority; this only prevents the workflow summary from locking
+            # the entire page before those constraints are evaluated.
+            "field_editable_phases": ["done"],
             "state_phase": {
                 "draft": "draft",
                 "confirmed": "approved",
@@ -971,6 +977,13 @@ class ScWorkflowContractService(models.AbstractModel):
 
     @api.model
     def _editability(self, profile, business_phase, approval_phase):
+        field_editable_phases = {
+            str(value or "").strip()
+            for value in (profile.get("field_editable_phases") or [])
+            if str(value or "").strip()
+        }
+        if business_phase in field_editable_phases:
+            return "editable"
         if business_phase in self.TERMINAL_PHASES:
             return "locked"
         editable_phases = {

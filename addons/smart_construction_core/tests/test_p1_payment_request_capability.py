@@ -771,9 +771,9 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(ledger.amount, request.amount)
 
         with self.assertRaisesRegex(UserError, "必须填写冲销原因"):
-            execution.action_cancel()
+            execution.action_reverse_payment()
         execution.reversal_reason = "银行退票，撤销原付款并重新办理"
-        execution.action_cancel()
+        execution.action_reverse_payment()
         request.invalidate_recordset(["state"])
         execution.invalidate_recordset(["state"])
         self.assertEqual(execution.state, "cancel")
@@ -955,8 +955,22 @@ class TestP1PaymentRequestCapability(TransactionCase):
         root = etree.fromstring(arch.encode())
         paid_button = root.xpath(".//button[@name='action_paid']")
         submit_button = root.xpath(".//button[@name='action_confirm']")
+        source_root = etree.parse(
+            str(
+                Path(__file__).resolve().parents[1]
+                / "views"
+                / "core"
+                / "payment_execution_views.xml"
+            )
+        )
+        cancel_button = source_root.xpath(".//button[@name='action_cancel']")
+        reverse_button = source_root.xpath(
+            ".//button[@name='action_reverse_payment']"
+        )
         self.assertEqual(len(paid_button), 1)
         self.assertEqual(len(submit_button), 1)
+        self.assertEqual(len(cancel_button), 1)
+        self.assertEqual(len(reverse_button), 1)
         self.assertIn('name="action_confirm"', arch)
         self.assertIn('string="提交审批"', arch)
         self.assertEqual(paid_button[0].get("invisible"), "state != 'confirmed'")
@@ -968,6 +982,10 @@ class TestP1PaymentRequestCapability(TransactionCase):
             submit_button[0].get("groups"),
             "smart_construction_core.group_sc_cap_finance_user",
         )
+        self.assertEqual(
+            cancel_button[0].get("invisible"), "state not in ('draft', 'confirmed')"
+        )
+        self.assertEqual(reverse_button[0].get("invisible"), "state != 'paid'")
         self.assertIn('name="paid_amount" readonly="state != \'draft\'"', arch)
         self.assertIn('name="payment_account_no" readonly="state != \'draft\'"', arch)
         self.assertIn('name="receipt_account_name" readonly="1"', arch)

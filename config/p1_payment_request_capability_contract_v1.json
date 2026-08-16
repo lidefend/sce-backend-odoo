@@ -3,7 +3,7 @@
   "product_stage": "P1_construction_industry_standard_product",
   "specific_customer_or_tenant_scope": "forbidden",
   "change_boundary": {
-    "baseline_sha": "1e5eed0470cfb03a3fd17bfe16e624ab418b137e",
+    "baseline_sha": "5c376eca5dc11349b51b17bd4ae0c16bcf8e6c64",
     "allowed_product_modules": ["addons/smart_construction_core", "addons/smart_construction_acceptance_fixture"],
     "allowed_support_surfaces": ["config", "docs", "scripts/audit", "scripts/verify"],
     "forbidden_surfaces": ["addons/smart_core", "frontend", "make", "scripts/common", "scripts/dev", "docker-compose.yml", "scripts/verify/frontend_my_work_"],
@@ -119,7 +119,7 @@
     {"key":"payment_execution_state_integrity","status":"implemented","evidence":["draft cannot call action_paid","action_confirm requires finance handling capability","action_paid requires confirmed state and finance confirmation capability","native action groups consume the same capability groups","non-draft amount account evidence and instruction facts are immutable","source request project partner and contract anchors are readonly and ORM-immutable","paid and reversal reconcile request ledger audit and chatter"]},
     {"key":"installment_payment_reconciliation","status":"implemented","evidence":["only one draft or confirmed execution may be in flight per payment request","paid history never blocks a later installment","every ledger created by the professional payment-execution journey is uniquely anchored to that execution","adjacent expense-claim ledger creation remains outside this installment contract and retains its own controlled source flow","partial payment keeps the request approved and defaults the next execution to the remaining amount","the request closes only after cumulative posted ledgers reach the approved amount","reversal preserves the original ledger and reopens exactly the reversed remaining amount"]},
     {"key":"task_first_native_form","status":"implemented","evidence":["payment request seven-section semantic contract","professional payment execution six-section continuation contract","four readonly execution relationship anchors","legal_next_action_display"]},
-    {"key":"runtime_states","status":"runtime_verification_required","evidence":["representative_page_contracts_v01 payment request acceptance"],"gap":"empty forbidden readonly and mobile states require authenticated browser evidence"}
+    {"key":"runtime_states","status":"implemented","evidence":["representative_page_contracts_v01 payment request acceptance","authenticated browser evidence pfl035-full-user-journey-v19-5a0bedf-attempt1: six states, eleven business paths, twenty stable screenshots, zero unexpected console or request failures"]}
   ],
   "implementation_sequence": [
     {"id":"P1-PR-001","status":"completed","title":"turn contract and settlement relations into enforceable payment bases"},
@@ -127,7 +127,7 @@
     {"id":"P1-PR-003","status":"completed","title":"preserve account snapshots and submitted business facts"},
     {"id":"P1-PR-004","status":"completed","title":"expose task-first native handling form"},
     {"id":"P1-PR-005","status":"completed","title":"fail closed before creating or rebinding a linked payment execution"},
-    {"id":"P1-PR-006","status":"pending_runtime","title":"accept empty forbidden readonly and mobile states"},
+    {"id":"P1-PR-006","status":"completed","title":"accept empty forbidden readonly and mobile states"},
     {"id":"P1-PR-007","status":"blocked_until_business_acceptance","title":"evaluate component requirements"}
   ],
   "release_rule": "business controls and authenticated runtime acceptance precede component evaluation"

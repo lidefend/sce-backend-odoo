@@ -441,6 +441,25 @@ class TestWorkflowContractBackend(TransactionCase):
         with self.assertRaises(UserError):
             execution.action_confirm()
 
+    def test_paid_payment_execution_keeps_field_scoped_reversal_editability(self):
+        execution = self.env["sc.payment.execution"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_id": self.contract.id,
+                "paid_amount": 100.0,
+                "payment_account_no": "payer-001",
+                "receipt_account_no": "payee-001",
+                "state": "paid",
+            }
+        )
+
+        contract = self.service.describe_record(execution)
+
+        self.assertEqual(contract["businessPhase"], "done")
+        self.assertEqual(contract["editability"], "editable")
+        self.assertIn("cancel", {row["key"] for row in contract["availableActions"]})
+
     def test_receipt_income_missing_request_disables_submit_and_backend_blocks_confirm(self):
         receipt = self.env["sc.receipt.income"].create(
             {

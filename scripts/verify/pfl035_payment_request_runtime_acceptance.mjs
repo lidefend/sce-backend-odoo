@@ -379,8 +379,47 @@ async function shot(page, name) {
 }
 
 async function clickAuthoritativeObjectAction(page, methodName, evidenceName) {
-  const button = page.locator(`button[data-backend-identity="button:object:${methodName}"]:visible`);
+  const button = page.locator(`button[data-backend-identity="button:object:${methodName}"]`);
   check(await button.count() === 1, `${evidenceName}: expected one authoritative action`, { method: methodName });
+  if (!await button.isVisible()) {
+    const overflow = button.locator('xpath=ancestor::details[contains(@class, "form-header-more-actions")][1]');
+    check(await overflow.count() === 1, `${evidenceName}: authoritative action is hidden outside the governed overflow`, { method: methodName });
+    await overflow.locator('summary').click();
+    await button.waitFor({ state: 'visible', timeout: 10000 });
+  }
+  let actionResponseSeen = false;
+  let resolveContractRefresh;
+  let rejectContractRefresh;
+  const contractRefresh = new Promise((resolve, reject) => {
+    resolveContractRefresh = resolve;
+    rejectContractRefresh = reject;
+  });
+  const refreshTimeout = setTimeout(() => {
+    rejectContractRefresh(new Error(`${evidenceName}: action completed without a subsequent ui.contract.v2 refresh`));
+  }, 45000);
+  const observeRefresh = async (response) => {
+    const request = response.request();
+    if (request.method() !== 'POST') return;
+    let payload = null;
+    try {
+      payload = request.postDataJSON();
+    } catch {
+      return;
+    }
+    if (
+      payload?.intent === 'execute_button'
+      && clean(payload?.params?.button?.name) === methodName
+      && response.status() < 400
+    ) {
+      actionResponseSeen = true;
+      return;
+    }
+    if (actionResponseSeen && payload?.intent === 'ui.contract.v2' && response.status() < 400) {
+      clearTimeout(refreshTimeout);
+      resolveContractRefresh();
+    }
+  };
+  page.on('response', observeRefresh);
   await button.click();
   const dialog = page.getByRole('dialog');
   const visible = await dialog.first().waitFor({ state: 'visible', timeout: 2500 }).then(() => true).catch(() => false);
@@ -389,7 +428,13 @@ async function clickAuthoritativeObjectAction(page, methodName, evidenceName) {
     await confirm.waitFor({ state: 'visible', timeout: 10000 });
     await confirm.click();
   }
-  await waitForStablePage(page, 'form');
+  try {
+    await contractRefresh;
+    await waitForStablePage(page, 'form');
+  } finally {
+    clearTimeout(refreshTimeout);
+    page.off('response', observeRefresh);
+  }
 }
 
 async function captureState(page, spec) {
@@ -931,10 +976,13 @@ try {
   await shot(manager, 'positive-execution-paid');
 
   const reversalReason = '验收冲销：验证付款事实保留、申请回退与重新办理入口';
+  const traceabilitySection = manager.locator('[data-section-tab="责任与追溯"]');
+  await traceabilitySection.waitFor({ state: 'visible', timeout: 30000 });
+  await traceabilitySection.click();
   const reversalInput = manager.locator('[data-field-name="reversal_reason"] input, [data-field-name="reversal_reason"] textarea').first();
   await reversalInput.waitFor({ state: 'visible', timeout: 30000 });
   await reversalInput.fill(reversalReason);
-  await clickAuthoritativeObjectAction(manager, 'action_cancel', 'execution-reverse-paid');
+  await clickAuthoritativeObjectAction(manager, 'action_reverse_payment', 'execution-reverse-paid');
   const [reversedExecutionRows, reversedRequestRows, reversedLedgerRows] = await Promise.all([
     intent(manager, 'api.data', {
       op: 'list', model: 'sc.payment.execution', fields: ['id', 'state', 'cancellation_kind', 'reversal_reason'],
@@ -1009,7 +1057,7 @@ try {
   await forbiddenContext.close();
 
   const expectedRejectCount = result.failed_requests.filter((row) => row.expected && row.status === 400).length;
-  const expectedResourceErrors = result.console_errors.filter((row) => /status of 400 \(BAD REQUEST\)/.test(row.text)).slice(0, expectedRejectCount);
+  const expectedResourceErrors = result.console_errors.filter((row) => /status of 400 \(bad request\)/i.test(row.text)).slice(0, expectedRejectCount);
   const expectedResourceErrorSet = new Set(expectedResourceErrors);
   result.expected_console_errors = expectedResourceErrors;
   result.unexpected_console_errors = result.console_errors.filter((row) => !expectedResourceErrorSet.has(row));

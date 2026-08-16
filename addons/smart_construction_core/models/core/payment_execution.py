@@ -830,9 +830,7 @@ class ScPaymentExecution(models.Model):
             if rec.source_origin == "legacy":
                 raise UserError(_("历史迁移付款执行单据不能在新系统取消。"))
             if rec.state == "paid":
-                if not (rec.reversal_reason or "").strip():
-                    raise UserError(_("撤销已付款记录前必须填写冲销原因。"))
-                rec._reverse_paid_execution()
+                rec.action_reverse_payment()
                 continue
             if rec.state in ("legacy_confirmed", "cancel"):
                 raise_guard(
@@ -844,6 +842,23 @@ class ScPaymentExecution(models.Model):
             rec.with_context(allow_payment_cancel_metadata=True).write(
                 {"state": "cancel", "cancellation_kind": "cancelled_before_payment"}
             )
+
+    def action_reverse_payment(self):
+        """Reverse a posted payment without conflating it with pre-payment cancel."""
+        self._assert_finance_cancel_access()
+        for rec in self:
+            if rec.source_origin == "legacy":
+                raise UserError(_("历史迁移付款执行单据不能在新系统冲销。"))
+            if rec.state != "paid":
+                raise_guard(
+                    "PAYMENT_EXECUTION_REVERSAL_INVALID_STATE",
+                    f"付款执行[{rec.display_name}]",
+                    _("冲销已付款"),
+                    reasons=[_("只有已付款的付款执行才能冲销")],
+                )
+            if not (rec.reversal_reason or "").strip():
+                raise UserError(_("撤销已付款记录前必须填写冲销原因。"))
+            rec._reverse_paid_execution()
 
     def _reverse_paid_execution(self):
         for rec in self:
