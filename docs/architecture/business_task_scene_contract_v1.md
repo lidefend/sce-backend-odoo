@@ -139,6 +139,10 @@ after the terminal profile is stable, so vendor controls cannot influence contra
   `runtimeContract.businessTaskContract`, rejects native adapter vocabulary and
   inconsistent verdicts, and exposes a terminal presentation model from the task
   profile alone. Visual scene components remain in the independent driver checkpoint.
+- C7 vocabulary proof now compiles approval-work-item and contract-settlement
+  profiles through the same terminal schema. These declarations do not yet claim
+  production runtime projection; they freeze non-payment semantics before each
+  domain authority adapter is connected.
 
 ## Exit metrics
 

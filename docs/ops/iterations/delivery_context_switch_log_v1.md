@@ -4569,3 +4569,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   recursively nested adapter vocabulary fail closed. The 58 Python task/journey
   tests, frontend terminal behavior test, strict typecheck, Vite build and diff check
   pass before the independent driver branch is considered for C6.
+
+## Business Task Scene Contract cross-model vocabulary proof (2026-08-16)
+
+- Branch / base SHA: `feature/business-task-scene-contract-v2` /
+  `0c89746904232fb168593d3610289aa0dfcb6075`.
+- Formal Product Layer / Layer Target / Module: P1 task semantics /
+  approval work item and contract settlement / `smart_construction_scene`.
+- Reason: payment alone cannot prove that the terminal language is generic. The
+  next slice freezes two non-payment task profiles before adding their domain
+  adapters: one approval decision and one settlement handling journey.
+- Why Here / Why Not Elsewhere: profiles own goal, wording, grouping, blockers,
+  evidence and expected outcomes. They do not read ORM, infer authorization,
+  publish backend method names or claim runtime projection. The approval and
+  settlement domain services remain the future semantic-supply authorities.
+- Blast radius / validation: declarations and pure compiler tests only. Both
+  profiles pass the same schema, seal, primary-action, source-authority and
+  adapter-vocabulary rules as payment. The settlement vocabulary is aligned to
+  the real submit/approval/complete lifecycle rather than inventing a generic
+  confirm transition.
