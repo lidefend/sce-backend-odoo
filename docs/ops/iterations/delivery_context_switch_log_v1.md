@@ -4426,3 +4426,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why here: the defect is an inconsistent fixture business fact; the P1 state guard, normalized contract and frontend behavior are correct.
 - Why not elsewhere: no P0, frontend, runtime-profile, database-topology or customer-specific change is required.
 - Blast radius: approved/done synthetic payment-request fixtures only; fixture verification now fails closed on an approved PFL sample without validated workflow status.
+
+## PFL-035 real payment-execution approval journey (2026-08-16)
+
+- Formal Product Layer: P1 construction finance acceptance and professional
+  payment-execution presentation.
+- Layer Target / Module: `smart_construction_acceptance_fixture` company-level
+  approval data, `smart_construction_core` payment-execution policy fields, and
+  the existing PFL-035 browser journey.
+- Reason: the previous journey used an approved payment request but did not
+  configure payment-execution approval for FE Company A. It therefore proved
+  direct confirmation, not the real finance-user-to-finance-manager handoff.
+  The same run also showed that reversal facts existed in native/product
+  contracts but were omitted by the P1 business form policy.
+- Why here: fixture-owned policy and step records deterministically sync to an
+  OCA `tier.definition`; the browser submits as the exact finance-user
+  capability and approves as the exact finance-manager capability. P1 policy
+  now retains cancellation type and editable paid-state reversal reason.
+- Why not elsewhere: no P0 assembler, shared frontend, environment topology,
+  credential contract or customer-specific exception changes are required.
+- Blast radius / validation: FE Company A disposable acceptance data and the
+  PFL-035 payment-execution journey only. The verifier checks one active policy,
+  one active step and its OCA definition. The journey must create one pending
+  `tier.review`, approve that same review, then complete payment and reversal.
