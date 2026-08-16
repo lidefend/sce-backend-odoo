@@ -1,0 +1,29 @@
+/*
+ * TDesign supplies interaction primitives; SC scene tokens remain the product
+ * authority. Keeping this bridge inside the driver prevents vendor variables
+ * from leaking into the scene contract or page components.
+ */
+.scene-ui-provider[data-scene-ui-kit='tdesign-modern'] {
+  --td-brand-color: var(--sc-scene-brand);
+  --td-brand-color-hover: #0052a9;
+  --td-brand-color-active: #003f88;
+  --td-brand-color-focus: rgba(10, 110, 209, 0.24);
+  --td-brand-color-light: var(--sc-scene-accent-soft);
+  --td-success-color: var(--sc-scene-success);
+  --td-warning-color: var(--sc-scene-warning);
+  --td-bg-color-page: var(--sc-scene-bg);
+  --td-bg-color-container: var(--sc-scene-surface);
+  --td-text-color-primary: var(--sc-scene-text);
+  --td-text-color-secondary: var(--sc-scene-muted);
+  --td-border-level-1-color: var(--sc-scene-border);
+  --td-component-stroke: #9cadbe;
+  --td-radius-default: 6px;
+  --td-radius-medium: 9px;
+  --td-font-family: inherit;
+  --td-font-family-medium: inherit;
+}
+
+.scene-ui-provider[data-scene-ui-kit='tdesign-modern'] .t-input,
+.scene-ui-provider[data-scene-ui-kit='tdesign-modern'] .t-textarea__inner {
+  min-height: var(--sc-scene-control-height);
+}
