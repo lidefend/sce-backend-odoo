@@ -4467,3 +4467,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   target verifies the current repository, wrong-file use, unknown auth routes,
   stale exceptions and the unchanged intent-only default before running the
   production source scan.
+
+## Exact synthetic payment-fixture history exemption (2026-08-16)
+
+- Branch / base SHA: `fix/pd003-payment-fixture-exemption-v1` /
+  `42f0241083f8b1e530172aa1425a62059d5079a4`.
+- Formal Product Layer / Layer Target / Module: repository security governance
+  outside P0-P4 product behavior / personal-data false-positive registry /
+  `scripts/ci`.
+- Reason: the all-history scanner found one previously reachable Git blob of
+  the P1 payment capability test whose explicitly named test accounts contain
+  synthetic numeric bank-account fixtures.
+- Why Here / Why Not Elsewhere: history is immutable, so changing the current
+  payment test cannot remove the historical finding. The existing fail-closed
+  registry is the governed boundary; no product model, Business Task contract,
+  frontend, P4 environment, fixture runtime or scanner rule is changed.
+- Blast radius / validation: one exact `PD003` tuple bound to the repository
+  path, full immutable blob SHA, `BANK_ACCOUNT_PATTERN` classification and a
+  synthetic-history reason. Scanner unit tests, clean-history guard tests, the
+  full `security.personal_data_scan` target and `git diff --check` must pass;
+  path, blob or classification drift remains unsuppressed.
