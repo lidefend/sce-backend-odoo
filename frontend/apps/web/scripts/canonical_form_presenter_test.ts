@@ -113,6 +113,54 @@ assert.equal(model.actionBar[0]?.enabled, true);
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
+const readonlyModel = presentContractV2Form(store, 'readonly');
+assert.equal(
+  collectFields(readonlyModel.zones.primary).find((field) => field.fieldCode === 'name')?.readonly,
+  true,
+  'readonly route mode must remain authoritative even when the widget status is editable',
+);
+
+const readOnlyPrincipal = snapshot();
+readOnlyPrincipal.statusContract.globalStatus.pageAuth = 'read';
+const readOnlyPrincipalModel = presentContractV2Form(createContractV2Store(readOnlyPrincipal), 'edit');
+assert.equal(
+  collectFields(readOnlyPrincipalModel.zones.primary).find((field) => field.fieldCode === 'name')?.readonly,
+  true,
+  'page read authority must not become editable through the requested route mode',
+);
+
+const unresolvedWidgetStatus = snapshot();
+unresolvedWidgetStatus.statusContract.widgetStatus = unresolvedWidgetStatus.statusContract.widgetStatus
+  .filter((status) => status.widgetId !== 'field.name');
+const unresolvedField = collectFields(
+  presentContractV2Form(createContractV2Store(unresolvedWidgetStatus), 'edit').zones.primary,
+).find((field) => field.fieldCode === 'name');
+assert.deepEqual(
+  { visible: unresolvedField?.visible, readonly: unresolvedField?.readonly, disabled: unresolvedField?.disabled, reasonCode: unresolvedField?.reasonCode },
+  { visible: false, readonly: true, disabled: true, reasonCode: 'WIDGET_STATUS_UNRESOLVED' },
+  'a field without normalized status authority must fail closed',
+);
+
+const hiddenContainer = snapshot();
+hiddenContainer.statusContract.containerStatus = [{ containerId: 'section.identity', visible: false, disabled: false }];
+const hiddenContainerFields = collectFields(presentContractV2Form(createContractV2Store(hiddenContainer), 'edit').zones.primary);
+assert.equal(
+  hiddenContainerFields.find((field) => field.fieldCode === 'name')?.visible,
+  false,
+  'container visibility must constrain descendant fields',
+);
+
+const disabledContainer = snapshot();
+disabledContainer.statusContract.containerStatus = [{ containerId: 'section.identity', visible: true, disabled: true }];
+const disabledContainerField = collectFields(
+  presentContractV2Form(createContractV2Store(disabledContainer), 'edit').zones.primary,
+).find((field) => field.fieldCode === 'name');
+assert.deepEqual(
+  { readonly: disabledContainerField?.readonly, disabled: disabledContainerField?.disabled },
+  { readonly: true, disabled: true },
+  'container disabled state must constrain descendant fields',
+);
+
 const productionNativeChildren = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 delete productionNativeChildren.layoutContract.containerTree[0].span;
 const nativeChild = productionNativeChildren.layoutContract.containerTree[0].children[0] as Record<string, unknown>;
@@ -153,4 +201,4 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
-console.log('[canonical_form_presenter_test] PASS cases=12');
+console.log('[canonical_form_presenter_test] PASS cases=17');
