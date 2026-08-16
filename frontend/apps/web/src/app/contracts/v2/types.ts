@@ -14,6 +14,119 @@ export type ContractV2PatchOperation = 'replace' | 'merge' | 'append' | 'remove'
 export type ContractV2PageRenderMode = 'governed';
 export type ContractV2Dictionary = Record<string, unknown>;
 
+export interface BusinessTaskV1Task {
+  key: string;
+  goal: string;
+  outcome: string;
+  mode: string;
+  stage: string;
+  state: string;
+}
+
+export interface BusinessTaskV1Fact {
+  key: string;
+  label: string;
+  importance: string;
+  group: string;
+  presentation: unknown;
+  value: unknown;
+  valueState: string;
+  sourceAuthority: string;
+  applicability: string;
+}
+
+export interface BusinessTaskV1Input {
+  key: string;
+  label: string;
+  group: string;
+  inputKind: string;
+  help: string;
+  value: unknown;
+  visible: boolean;
+  readonly: boolean;
+  required: boolean;
+  sourceAuthority: string;
+  applicability: string;
+}
+
+export interface BusinessTaskV1Blocker {
+  key: string;
+  label: string;
+  repairCapabilityKey: string;
+  owner: string;
+  active: boolean;
+  reasonCode: string;
+  message: string;
+  missingItems: string[];
+  sourceAuthority: string;
+}
+
+export interface BusinessTaskV1Capability {
+  key: string;
+  label: string;
+  presentation: string;
+  safety: string;
+  idempotency: string;
+  outcome: string;
+  blockedBy: string[];
+  handoff: string;
+  visible: boolean;
+  businessAvailable: boolean;
+  authorizationAllowed: boolean;
+  enabled: boolean;
+  reasonCode: string;
+  reason: string;
+  sourceAuthority: string;
+}
+
+export interface BusinessTaskV1Evidence {
+  key: string;
+  label: string;
+  kind: string;
+  group: string;
+  state: string;
+  count: number | null;
+  required: boolean | null;
+  sourceAuthority: string;
+}
+
+export interface BusinessTaskV1Relation {
+  key: string;
+  label: string;
+  kind: string;
+  group: string;
+  state: string;
+  count: number | null;
+  summary: string;
+  sourceAuthority: string;
+}
+
+export interface BusinessTaskV1Completion {
+  complete: boolean;
+  nextCapabilityKey: string;
+  outcomeCode: string;
+}
+
+export interface BusinessTaskContractV1 {
+  profileVersion: 'v1';
+  task: BusinessTaskV1Task;
+  facts: BusinessTaskV1Fact[];
+  inputs: BusinessTaskV1Input[];
+  blockers: BusinessTaskV1Blocker[];
+  capabilities: BusinessTaskV1Capability[];
+  evidence: BusinessTaskV1Evidence[];
+  relations: BusinessTaskV1Relation[];
+  completion: BusinessTaskV1Completion;
+  trace: {
+    compiler: string;
+    profileKey: string;
+    profileSha256: string;
+    semanticSupplySha256: string;
+    sourceAuthorities: string[];
+    sealedContractSha256: string;
+  };
+}
+
 export interface ContractV2PageInfo {
   pageId: string;
   sceneKey: string;
@@ -207,6 +320,7 @@ export interface ContractV2RuntimeContract {
   aiEnvelope?: ContractV2Dictionary;
   interactionMode?: string;
   actionTarget?: string;
+  businessTaskContract?: BusinessTaskContractV1;
 }
 
 export interface ContractV2Lifecycle {

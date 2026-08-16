@@ -4549,3 +4549,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   only. No environment, database topology, fixture, payment transition or frontend change.
 - Validation: 58/58 terminal/action/journey behavior tests, 75/75 P0 handler boundary tests,
   deterministic seal/deep-copy tests, and `git diff --check`.
+
+## Business Task Scene Contract frontend terminal boundary (2026-08-16)
+
+- Branch / base SHA: `feature/business-task-scene-contract-v2` /
+  `0c89746904232fb168593d3610289aa0dfcb6075`.
+- Formal Product Layer / Layer Target / Module: P0 terminal consumer boundary /
+  Contract V2 frontend schema and normalized store / `frontend/apps/web`.
+- Reason: the backend already emitted a sealed `runtimeContract.businessTaskContract`,
+  but the frontend decoder discarded it. A renderer therefore had no governed task
+  source and could only reconstruct product meaning from fields and actions.
+- Why Here / Why Not Elsewhere: the V2 transport boundary now strictly decodes the
+  terminal task and exposes a framework-neutral presentation model. It does not add
+  a visual component, bind UI5/TDesign, infer domain state, or fall back to native
+  view/action vocabulary.
+- Blast radius / validation: optional terminal-task decoding and typed store access
+  only. Malformed verdicts, hidden-required inputs, duplicate primaries, invalid
+  completion links, success reasons on disabled capabilities, invalid seals and
+  recursively nested adapter vocabulary fail closed. The 58 Python task/journey
+  tests, frontend terminal behavior test, strict typecheck, Vite build and diff check
+  pass before the independent driver branch is considered for C6.

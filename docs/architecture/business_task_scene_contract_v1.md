@@ -135,6 +135,10 @@ after the terminal profile is stable, so vendor controls cannot influence contra
 - C4 pure simulation now proves retry-stable seals, role-handoff verdict changes
   without business-fact drift, relationship-anchor continuity, and explicit
   terminal states. It is not a substitute for ORM transactions or browser evidence.
+- C5 now has a framework-neutral frontend boundary: Contract V2 strictly decodes
+  `runtimeContract.businessTaskContract`, rejects native adapter vocabulary and
+  inconsistent verdicts, and exposes a terminal presentation model from the task
+  profile alone. Visual scene components remain in the independent driver checkpoint.
 
 ## Exit metrics
 

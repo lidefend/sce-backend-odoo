@@ -1,4 +1,5 @@
 import type {
+  BusinessTaskContractV1,
   ContractV2ActionRule,
   ContractV2ButtonStatus,
   ContractV2Container,
@@ -10,6 +11,7 @@ import type {
   ContractV2Widget,
   ContractV2WidgetStatus,
 } from './types';
+import { presentBusinessTaskContract, type BusinessTaskPresentation } from './businessTaskContract';
 
 export type ContractV2SourceContext = {
   context?: ContractV2Dictionary;
@@ -201,6 +203,17 @@ export function resolveContractV2GlobalStatus(store: ContractV2NormalizedStore |
 export function resolveContractV2MainData(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
   if (!store) return {};
   return asDict(store.snapshot.dataContract.mainData);
+}
+
+export function resolveContractV2BusinessTask(store: ContractV2NormalizedStore | null): BusinessTaskContractV1 | null {
+  return store?.snapshot.runtimeContract.businessTaskContract || null;
+}
+
+export function resolveContractV2BusinessTaskPresentation(
+  store: ContractV2NormalizedStore | null,
+): BusinessTaskPresentation | null {
+  const contract = resolveContractV2BusinessTask(store);
+  return contract ? presentBusinessTaskContract(contract) : null;
 }
 
 export function resolveContractV2ValueSource(store: ContractV2NormalizedStore | null): ContractV2ValueSource {

@@ -34,6 +34,7 @@ import type {
   ContractV2Widget,
   ContractV2WidgetStatus,
 } from './types';
+import { decodeBusinessTaskContractV1 } from './businessTaskContract';
 
 type DecodeIssue = {
   path: string;
@@ -638,6 +639,14 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
       .map((item, index) => decodePatchOperation(asString(item), `runtimeContract.patchOperations[${index}]`, issues))
       .filter((item): item is ContractV2PatchOperation => Boolean(item))
     : [];
+  const businessTaskIssues: DecodeIssue[] = [];
+  const businessTaskContract = source.businessTaskContract === undefined
+    ? null
+    : decodeBusinessTaskContractV1(source.businessTaskContract, businessTaskIssues);
+  issues.push(...businessTaskIssues.map((issue) => ({
+    path: `runtimeContract.${issue.path}`,
+    message: issue.message,
+  })));
   return {
     patchStrategy: decodePatchStrategy(requiredString(source, 'patchStrategy', 'runtimeContract', issues), 'runtimeContract.patchStrategy', issues),
     cachePolicy: decodeCachePolicy(requiredString(source, 'cachePolicy', 'runtimeContract', issues), 'runtimeContract.cachePolicy', issues),
@@ -653,6 +662,7 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     ...(isRecord(source.aiEnvelope) ? { aiEnvelope: source.aiEnvelope } : {}),
     ...(asString(source.interactionMode) ? { interactionMode: asString(source.interactionMode) } : {}),
     ...(asString(source.actionTarget) ? { actionTarget: asString(source.actionTarget) } : {}),
+    ...(businessTaskContract ? { businessTaskContract } : {}),
   };
 }
 
