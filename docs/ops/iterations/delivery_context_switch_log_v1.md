@@ -4651,3 +4651,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `project.project` through UI5 after three-driver switching, received a stable
   record id, reopened with the persisted name, reported no console/page/request
   error, and cleaned the disposable record and preference on exit.
+
+## ContractForm canonical status composition slice (2026-08-17)
+
+- Branch / base SHA: `feature/p0-contract-form-driver-compatibility-matrix-v1` /
+  `47eea1c04d599813291a280b10e1bec4e2f43d3c`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend /
+  Canonical Form Render Model status composition / `frontend/apps/web`.
+- Reason / boundary: the driver bridge already proves Native, TDesign and UI5
+  render and execute against one normalized contract. Before expanding vendor
+  controls or enabling an industry page, the ephemeral Render Model must
+  mechanically preserve route mode, global page authority, ancestor container
+  status and widget status without relying on the legacy Canvas to correct it.
+- Why Here / Why Not Elsewhere: status composition is a generic presenter
+  responsibility. No P1 field, model, translated label, workflow state,
+  backend assembler, Scene Contract, environment or fixture rule is changed.
+- Blast radius / validation: ContractForm Render Model fields only. Readonly
+  mode and read-only page authority force readonly controls; hidden or disabled
+  containers constrain descendants; missing widget status fails closed with a
+  stable reason. Native/TDesign/UI5 continue using the same unified executor
+  and existing Canvas fallback while presenter, bridge, guard, typecheck,
+  build and governed browser parity tests prove containment.

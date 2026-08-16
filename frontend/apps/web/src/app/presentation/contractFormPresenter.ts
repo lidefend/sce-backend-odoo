@@ -42,7 +42,12 @@ function fieldFromWidget(
   widget: ContractV2Widget,
   status: ContractV2WidgetStatus | undefined,
   values: ContractV2Dictionary,
+  mode: CanonicalFormRenderMode,
+  pageCanEdit: boolean,
+  ancestorVisible: boolean,
+  ancestorDisabled: boolean,
 ): CanonicalFormField {
+  const statusResolved = Boolean(status);
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
@@ -51,11 +56,11 @@ function fieldFromWidget(
     fieldType: text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type),
     componentKey: widget.componentKey,
     span: widget.span,
-    visible: bool(status?.visible, true),
-    readonly: bool(status?.readonly, false),
+    visible: ancestorVisible && statusResolved && bool(status?.visible, true),
+    readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || !statusResolved || bool(status?.readonly, false),
     required: bool(status?.required, false),
-    disabled: bool(status?.disabled, false),
-    reasonCode: text(status?.reasonCode),
+    disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
+    reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
     componentConfig: Object.freeze({ ...widget.componentConfig }),
   };
 }
@@ -107,14 +112,24 @@ function presentNode(
   index: number,
   store: ContractV2NormalizedStore,
   values: ContractV2Dictionary,
+  mode: CanonicalFormRenderMode,
+  pageCanEdit: boolean,
+  ancestorVisible: boolean,
+  ancestorDisabled: boolean,
 ): CanonicalFormNode {
   const ownRole = zoneRole(container);
   const effectiveRole = ownRole === 'subordinate' ? ownRole : inheritedRole;
   const status: ContractV2ContainerStatus | undefined = store.containerStatusById.get(container.containerId);
+  const visible = ancestorVisible && bool(status?.visible, true);
+  const disabled = ancestorDisabled || bool(status?.disabled, false);
   const widgets = widgetsOwnedByContainer(container, store).map((widget) => fieldFromWidget(
     widget,
     store.widgetStatusById.get(widget.widgetId),
     values,
+    mode,
+    pageCanEdit,
+    visible,
+    disabled,
   ));
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
@@ -122,12 +137,12 @@ function presentNode(
     title: text(container.title || container.label || container.string),
     zoneRole: effectiveRole,
     columns: Number(container.cols || container.columns || 1) || 1,
-    visible: bool(status?.visible, true),
-    disabled: bool(status?.disabled, false),
+    visible,
+    disabled,
     reasonCode: text(status?.reasonCode),
     fields: widgets,
     children: childCollections(container).map((child, childIndex) => (
-      presentNode(child, effectiveRole, childIndex, store, values)
+      presentNode(child, effectiveRole, childIndex, store, values, mode, pageCanEdit, visible, disabled)
     )),
   };
 }
@@ -171,15 +186,18 @@ export function presentContractV2Form(
   const values = Object.keys(snapshot.dataContract.mainData).length
     ? snapshot.dataContract.mainData
     : store.primaryDataSource || {};
+  const globalStatus = snapshot.statusContract.globalStatus;
+  const pageVisible = bool(globalStatus.pageVisible, true);
+  const pageAuth = text(globalStatus.pageAuth);
+  const pageCanEdit = mode !== 'readonly' && ['edit', 'admin'].includes(pageAuth);
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
-    presentNode(container, zoneRole(container), index, store, values)
+    presentNode(container, zoneRole(container), index, store, values, mode, pageCanEdit, pageVisible, pageAuth === 'none')
   ));
   const actions = snapshot.actionContract.actionRuleList.map((action) => (
     presentAction(action, store.buttonStatusById.get(action.actionId), mode)
   ));
   const primaryCount = actions.filter((action) => action.visible && action.tier === 'primary').length;
   if (primaryCount > 1) throw new Error('CANONICAL_FORM_MULTIPLE_PRIMARY_ACTIONS');
-  const globalStatus = snapshot.statusContract.globalStatus;
   return {
     identity: {
       pageId: snapshot.pageInfo.pageId,
@@ -191,8 +209,8 @@ export function presentContractV2Form(
     },
     shell: {
       title: snapshot.pageInfo.pageName,
-      pageVisible: bool(globalStatus.pageVisible, true),
-      pageAuth: text(globalStatus.pageAuth),
+      pageVisible,
+      pageAuth,
       reasonCode: text(globalStatus.reasonCode),
     },
     actionBar: actions,
