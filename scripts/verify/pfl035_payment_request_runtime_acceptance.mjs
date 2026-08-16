@@ -735,7 +735,12 @@ try {
   check(/办理事项\s*付款申请/.test(readonlyFacts.body_sample), 'readonly detail: handling subject must be explicit');
   check(readonlyFacts.body_sample.includes('账户信息完整'), 'readonly detail: account completeness missing');
   check(/本次申请账户快照|往来单位默认结算账户/.test(readonlyFacts.body_sample), 'readonly detail: account source missing');
-  check(readonlyFacts.body_sample.includes('尚未生成'), 'readonly detail: execution status missing');
+  check(
+    /尚未生成|尚无有效付款登记/.test(readonlyFacts.body_sample),
+    'readonly detail: no-active-execution status missing',
+    { sample: readonlyFacts.body_sample },
+  );
+  check(readonlyFacts.body_sample.includes('生成付款登记'), 'readonly detail: legal continuation missing');
   check(readonlyFacts.body_sample.includes('无业务阻断'), 'readonly detail: blocking summary missing');
   assertNormalizedFieldSurface('payment.request', IDS.approved, 'readonly');
 

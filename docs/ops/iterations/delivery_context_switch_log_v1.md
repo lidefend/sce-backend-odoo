@@ -4399,3 +4399,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   the approved request exposes exactly one direct `查看付款登记` action after an
   execution is saved. Validation resumes at scope/static and the 52-test P1
   collection before normalized payload or browser execution.
+
+# PFL-035 no-active-execution acceptance semantics (2026-08-16)
+
+- Branch / base SHA: `feature/p1-payment-request-capability-v18` /
+  `1e5eed0470cfb03a3fd17bfe16e624ab418b137e`.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  finance product / PFL-035 user-journey evidence / existing runtime acceptance
+  probe only.
+- Reason / boundary: the approved fixture intentionally retains cancelled or
+  reversed execution history. The product correctly reports that history while
+  stating that no active payment execution exists, but the browser probe only
+  accepted the narrower never-generated wording. The assertion now accepts
+  both valid no-active-execution facts and separately requires the legal
+  continuation `生成付款登记`.
+- Why Here / Why Not Elsewhere: this is an evidence-contract correction. No
+  model, normalized assembler, frontend renderer, fixture topology or business
+  permission changes are introduced.
+- Blast radius / validation: PFL-035 readonly evidence only. JavaScript syntax
+  and `git diff --check` pass before the governed full user journey is rerun.
