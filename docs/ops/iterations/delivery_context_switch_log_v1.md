@@ -4672,3 +4672,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   stable reason. Native/TDesign/UI5 continue using the same unified executor
   and existing Canvas fallback while presenter, bridge, guard, typecheck,
   build and governed browser parity tests prove containment.
+
+## ContractForm effective-primary composition correction (2026-08-17)
+
+- Branch / base SHA: `fix/p0-canonical-effective-primary-v1` /
+  `859b293dfe319abf140d2965e7cd8148c51598e9`.
+- Formal Product Layer / Layer Target / Module: P0 platform frontend /
+  Canonical Form Render Model action validation / `frontend/apps/web`.
+- Reason / boundary: the first payment-request three-driver qualification
+  exposed a normalized action set containing one enabled primary action and a
+  second visible but state-disabled primary action. The existing product header
+  correctly retained the disabled action as evidence without treating it as an
+  executable primary, while the new presenter rejected the whole page.
+- Why Here / Why Not Elsewhere: effective-primary validation is a generic,
+  mechanical Render Model invariant. It must not be repaired by payment model,
+  translated label, role, workflow-state or P1 policy special cases.
+- Blast radius / validation: only the presenter validation predicate and its
+  pure behavior test change. Visible disabled actions remain in the action bar
+  with their normalized reason and cannot execute; two visible enabled primary
+  actions still fail closed. Contract V2, backend assembly, unified execution,
+  driver packages, business policy and environment topology remain unchanged.

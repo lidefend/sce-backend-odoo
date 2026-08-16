@@ -193,6 +193,35 @@ const missingIdentity = snapshot();
 delete missingIdentity.actionContract.actionRuleList[0].backendIdentity;
 assert.throws(() => presentContractV2Form(createContractV2Store(missingIdentity), 'edit'), /ACTION_REFERENCE_MISSING/);
 
+const disabledSecondaryPrimary = snapshot();
+disabledSecondaryPrimary.actionContract.actionRuleList.push({
+  ...disabledSecondaryPrimary.actionContract.actionRuleList[0],
+  actionId: 'action.blocked', backendIdentity: 'button:object:action_blocked', actionKey: 'action_blocked',
+  enabled: false, disabled: true,
+});
+disabledSecondaryPrimary.statusContract.buttonStatus.push({
+  btnId: 'action.blocked', visible: true, disabled: true, reasonCode: 'ACTION_NOT_AVAILABLE_IN_STATE',
+});
+const disabledSecondaryPrimaryModel = presentContractV2Form(
+  createContractV2Store(disabledSecondaryPrimary),
+  'edit',
+);
+assert.equal(
+  disabledSecondaryPrimaryModel.actionBar.filter((action) => action.visible && action.enabled && action.tier === 'primary').length,
+  1,
+  'a visible disabled primary must not compete with the one effective primary action',
+);
+assert.deepEqual(
+  disabledSecondaryPrimaryModel.actionBar.find((action) => action.key === 'action_blocked'),
+  {
+    key: 'action_blocked', label: 'Submit', tier: 'primary', visible: true, enabled: false,
+    reasonCode: 'ACTION_NOT_AVAILABLE_IN_STATE', visibleProfiles: ['edit', 'readonly'],
+    safety: { level: 'danger', requiresConfirmation: true },
+    actionRef: disabledSecondaryPrimary.actionContract.actionRuleList[1],
+  },
+  'disabled action evidence must remain visible and fail closed',
+);
+
 const duplicatePrimary = snapshot();
 duplicatePrimary.actionContract.actionRuleList.push({
   ...duplicatePrimary.actionContract.actionRuleList[0],
@@ -201,4 +230,4 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
-console.log('[canonical_form_presenter_test] PASS cases=17');
+console.log('[canonical_form_presenter_test] PASS cases=18');
