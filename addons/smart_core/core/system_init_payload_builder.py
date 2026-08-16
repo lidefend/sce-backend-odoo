@@ -194,6 +194,28 @@ class SystemInitPayloadBuilder:
                 minimal[key] = raw.get(key)
         return minimal
 
+    @staticmethod
+    def _authorized_delivery_capability_scene_keys(row: dict) -> list[str]:
+        capabilities = row.get("capabilities") if isinstance(row.get("capabilities"), list) else []
+        scene_keys: list[str] = []
+        for capability in capabilities:
+            if not isinstance(capability, dict):
+                continue
+            capability_state = str(capability.get("capability_state") or "").strip().lower()
+            runtime_state = str(capability.get("state") or "").strip().upper()
+            delivery_level = str(capability.get("delivery_level") or "").strip().lower()
+            scene_key = str(capability.get("target_scene_key") or "").strip()
+            if capability_state not in {"allow", "readonly"}:
+                continue
+            if runtime_state != "READY":
+                continue
+            if delivery_level not in {"exclusive", "shared"}:
+                continue
+            if not scene_key or scene_key in scene_keys:
+                continue
+            scene_keys.append(scene_key)
+        return scene_keys
+
     @classmethod
     def _build_minimal_init_meta(cls, row: dict, *, params: dict | None = None) -> dict:
         params = params if isinstance(params, dict) else {}
@@ -224,6 +246,10 @@ class SystemInitPayloadBuilder:
             if not scene_key or scene_key in scene_subset:
                 continue
             scene_subset.append(scene_key)
+
+        for scene_key in cls._authorized_delivery_capability_scene_keys(row):
+            if scene_key not in scene_subset:
+                scene_subset.append(scene_key)
 
         return {
             "contract_mode": str(row.get("contract_mode") or "default"),

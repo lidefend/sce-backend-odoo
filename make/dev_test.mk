@@ -2321,6 +2321,7 @@ verify.scene.provider_shape.guard: guard.prod.forbid
 
 .PHONY: verify.scene.contract_v1.field_schema.guard
 verify.scene.contract_v1.field_schema.guard: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_system_init_capability_scene_subset.py
 	@python3 scripts/verify/scene_contract_v1_field_schema_guard.py
 
 verify.capability.provider.guard: guard.prod.forbid
