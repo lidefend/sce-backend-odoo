@@ -23,7 +23,9 @@ DIRECT_TRANSPORT_EXCEPTIONS = {
         }
     ),
 }
-API_PATH_RE = re.compile(r"['\"](/api/[a-zA-Z0-9_./-]+)['\"]")
+API_PATH_RE = re.compile(
+    r"(?P<quote>['\"`])(?P<value>/api/[a-zA-Z0-9_./-]+(?:[?#][^'\"`\r\n]*)?)(?P=quote)"
+)
 
 
 def _iter_files(web_src: Path = WEB_SRC):
@@ -50,7 +52,8 @@ def scan_api_paths(root: Path = ROOT) -> tuple[list[str], set[str], set[tuple[st
         rel = path.relative_to(root).as_posix()
         text = path.read_text(encoding="utf-8", errors="ignore")
         for match in API_PATH_RE.finditer(text):
-            api_path = str(match.group(1) or "").strip()
+            api_reference = str(match.group("value") or "").strip()
+            api_path = re.split(r"[?#]", api_reference, maxsplit=1)[0]
             if not api_path:
                 continue
             found_paths.add(api_path)
