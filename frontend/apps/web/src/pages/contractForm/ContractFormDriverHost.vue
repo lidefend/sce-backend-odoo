@@ -32,9 +32,11 @@
         :overflow-context-nodes="floorplan.overflowContextNodes"
         :risk-nodes="floorplan.riskNodes"
         :audit-nodes="floorplan.auditNodes"
+        :relation-nodes="floorplan.relationNodes"
         :subordinate-nodes="subordinateNodes"
+        :decision-mode="floorplan.decisionMode"
         :relation-adapter="relationAdapter"
-        :has-collaboration="showCollaborationPanel && hasCollaborationNode"
+        :has-collaboration="showCollaborationPanel"
         @field-change="emit('field-change', $event)"
       >
         <template v-if="floorplan.blockedActions.length" #blocking>
@@ -45,7 +47,7 @@
             </span>
           </section>
         </template>
-        <template v-if="showCollaborationPanel && hasCollaborationNode" #collaboration>
+        <template v-if="showCollaborationPanel" #collaboration>
           <NativeCollaborationPanel
             v-bind="collaborationPanelProps"
             v-on="collaborationPanelListeners"
@@ -144,8 +146,8 @@ const allowUserOverride = computed(() => (
   && allowedKits.value.length > 1
 ));
 const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel) : {
-  summaryNodes: [], taskNodes: [], contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], subordinateNodes: [],
-  blockedActions: [], directActions: [], overflowActions: [], effectivePrimaryKey: '',
+  summaryNodes: [], taskNodes: [], contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], relationNodes: [], subordinateNodes: [],
+  blockedActions: [], directActions: [], overflowActions: [], effectivePrimaryKey: '', decisionMode: false,
 });
 const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
 const directActions = computed(() => floorplan.value.directActions);
@@ -153,8 +155,6 @@ const overflowActions = computed(() => floorplan.value.overflowActions);
 const subordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
-const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
-
 function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
 }

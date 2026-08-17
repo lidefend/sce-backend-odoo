@@ -4820,3 +4820,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   plus initial page refs are extracted into typed composables. The page is 1800
   lines without raising the limit or changing render, permission, action, data,
   environment, or business behavior.
+
+## Approved decision-page floorplan checkpoint (2026-08-17)
+
+- Branch / parent SHA: `feature/p1-payment-component-product-closure-v1` /
+  `8ec7ac6271400fb36feadb9696eacd02911f40da`.
+- Formal Product Layer / Layer Target / Module: P0 platform presentation inside
+  the PFL-035 outcome / Canonical readonly floorplan / `frontend/apps/web`.
+- Reason / boundary: compact summary cards, a neutral current-task bar,
+  relation and activity regions, and collapsed audit presentation are derived
+  mechanically from existing Canonical roles, field types, notebook nodes and
+  the established collaboration visibility fact. Normalized fields, actions,
+  permissions, source trace, P1 contracts and backend code are unchanged.
+- Blast radius / validation: semantic readonly ContractForm pages only; create
+  and edit retain the prior canvas and action bar. Presenter 49 cases,
+  component bridge 38 cases, architecture guard 63 checks, strict typecheck,
+  acceptance production build (4620 modules), and the Approved-only browser
+  probe bind the candidate before any additional product state is exercised.

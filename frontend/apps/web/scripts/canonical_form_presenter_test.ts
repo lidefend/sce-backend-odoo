@@ -206,8 +206,13 @@ assert.deepEqual(
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.overflowContextNodes).map((field) => field.fieldCode),
-  ['context_24', 'context_25', 'context_26'],
+  ['context_24', 'context_25'],
   'overflow must retain complete blocks and all subsequent context in original order',
+);
+assert.deepEqual(
+  collectFields(semanticContextFloorplan.relationNodes).map((field) => field.fieldCode),
+  ['context_26'],
+  'relation-capable canonical facts must form an independent relation region',
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.auditNodes).map((field) => field.fieldCode),
@@ -232,6 +237,7 @@ const semanticAtomicFields = collectFields([
   ...semanticContextFloorplan.contextNodes,
   ...semanticContextFloorplan.overflowContextNodes,
   ...semanticContextFloorplan.auditNodes,
+  ...semanticContextFloorplan.relationNodes,
   ...semanticContextFloorplan.subordinateNodes,
 ]);
 assert.deepEqual(

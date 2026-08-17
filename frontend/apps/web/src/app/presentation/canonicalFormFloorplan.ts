@@ -12,11 +12,13 @@ export type CanonicalFormFloorplan = {
   overflowContextNodes: CanonicalFormNode[];
   riskNodes: CanonicalFormNode[];
   auditNodes: CanonicalFormNode[];
+  relationNodes: CanonicalFormNode[];
   subordinateNodes: CanonicalFormNode[];
   blockedActions: CanonicalFormAction[];
   directActions: CanonicalFormAction[];
   overflowActions: CanonicalFormAction[];
   effectivePrimaryKey: string;
+  decisionMode: boolean;
 };
 
 function hasEditableField(node: CanonicalFormNode): boolean {
@@ -116,6 +118,36 @@ function visibleFieldCount(node: CanonicalFormNode): number {
     + node.children.reduce((total, child) => total + visibleFieldCount(child), 0);
 }
 
+function nodeHasRelationCapability(node: CanonicalFormNode): boolean {
+  const kind = node.kind.trim().toLowerCase();
+  return ['notebook', 'relation'].includes(kind)
+    || node.semanticRole === 'relation'
+    || node.fields.some((field) => (
+      field.semanticRole === 'relation'
+      || ['one2many', 'many2many'].includes(field.fieldType.trim().toLowerCase())
+    ))
+    || node.children.some(nodeHasRelationCapability);
+}
+
+function flattenPresentableFields(nodes: CanonicalFormNode[], region: string): CanonicalFormNode[] {
+  const projected: CanonicalFormNode[] = [];
+  function visit(node: CanonicalFormNode) {
+    node.fields.filter((field) => field.visible && hasPresentableValue(field)).forEach((field) => {
+      projected.push({
+        ...node,
+        nodeId: `${node.nodeId}.${region}.${field.widgetId}`,
+        title: '',
+        columns: 1,
+        fields: [field],
+        children: [],
+      });
+    });
+    node.children.forEach(visit);
+  }
+  nodes.forEach(visit);
+  return projected;
+}
+
 function allVisibleFieldsPresentable(node: CanonicalFormNode): boolean {
   return node.fields.every((field) => !field.visible || hasPresentableValue(field))
     && node.children.every(allVisibleFieldsPresentable);
@@ -155,15 +187,19 @@ export function composeCanonicalFormFloorplan(
   const primaryNodes = visibleNodes(renderModel.zones.primary, renderModel.identity.mode);
   const editableNodes = primaryNodes.filter(hasEditableField);
   const semanticReadonly = renderModel.identity.mode === 'readonly' && primaryNodes.some(nodeHasSemanticRole);
-  const summaryNodes = semanticReadonly ? roleNodes(primaryNodes, ['summary'], false, true, true) : [];
+  const summaryNodes = semanticReadonly
+    ? flattenPresentableFields(roleNodes(primaryNodes, ['summary'], false, true, true), 'summary')
+    : [];
   const riskNodes = semanticReadonly ? roleNodes(primaryNodes, ['risk'], false, true, true) : [];
   const auditNodes = semanticReadonly ? roleNodes(primaryNodes, ['audit'], false, false, true) : [];
   const taskNodes = semanticReadonly
     ? roleNodes(primaryNodes, ['task'], false, true, true)
     : (editableNodes.length ? editableNodes : primaryNodes);
   const taskIds = new Set(taskNodes.map((node) => node.nodeId));
+  const relationNodes = semanticReadonly ? primaryNodes.filter(nodeHasRelationCapability) : [];
+  const relationIds = new Set(relationNodes.map((node) => node.nodeId));
   const allContextNodes = semanticReadonly
-    ? roleNodes(primaryNodes, ['context', 'relation', 'activity'], true)
+    ? roleNodes(primaryNodes.filter((node) => !relationIds.has(node.nodeId)), ['context', 'activity'], true)
     : primaryNodes.filter((node) => !taskIds.has(node.nodeId));
   const emptySemanticNodes = semanticReadonly
     ? roleNodes(primaryNodes, ['summary', 'task', 'risk'], false, false, true)
@@ -205,6 +241,7 @@ export function composeCanonicalFormFloorplan(
     overflowContextNodes: [...contextPartition.overflow, ...emptySemanticNodes],
     riskNodes,
     auditNodes,
+    relationNodes,
     subordinateNodes: visibleNodes(renderModel.zones.subordinate, renderModel.identity.mode),
     blockedActions,
     directActions,
@@ -212,5 +249,6 @@ export function composeCanonicalFormFloorplan(
       !directActions.includes(action) && !blockedActions.includes(action)
     )),
     effectivePrimaryKey: effectivePrimary?.key || '',
+    decisionMode: semanticReadonly,
   };
 }
