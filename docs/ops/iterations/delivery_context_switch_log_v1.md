@@ -4764,3 +4764,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - The gate now consumes the Presenter's effective `visible/enabled` action
   state and resolves only effective executable references. It does not alter
   normalized permissions, action status, payment behavior, or executor rules.
+
+## Payment request golden floorplan product phase (2026-08-17)
+
+- Branch / baseline: `feature/p1-payment-component-product-closure-v1` /
+  `b83408843736ba72d25f3fe6c43671af3576ceeb`.
+- Formal Product Layer / Layer Target / Module: PFL-035 product outcome with P1
+  construction-product page composition and reusable P0 semantic presentation
+  components / `payment.request`, `smart_construction_core`, and ContractForm.
+- Standard vs User-Specific: construction-industry standard product. No tenant
+  preference, low-code runtime override, customer data baseline, or ops repair
+  is introduced.
+- Why Here: Normalized Contract V2 and the Canonical Render Model already own
+  transport, permission, state, action, and renderer-neutral field identity.
+  The remaining product gap is organizing those facts into a professional
+  payment task floorplan.
+- Why Not Elsewhere: no new Scene Contract, component driver, backend contract
+  version, environment profile, database, fixture system, or payment-specific
+  frontend inference is authorized. TDesign supplies the default controls but
+  does not own business semantics.
+- Blast Radius / validation: the first vertical is limited to payment-request
+  create, draft/rejected edit, approved handling, blocked repair, completed
+  readonly, and 390px mobile. Native/UI5 remain parity implementations. The
+  existing payment product contract and normalized action references remain
+  authoritative; browser qualification must prove one primary action, named
+  relations, no empty readonly task controls, no migration text, no duplicate
+  groups, no overflow, and no unexpected browser/network errors.
