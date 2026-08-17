@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import ast
+import hashlib
 import importlib.util
+import subprocess
 import sys
 import types
 import unittest
@@ -167,6 +169,29 @@ def _load_handler():
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     module._captured = captured
+    return module
+
+
+def _load_frozen_projection(revision="cb6e276115cf3f8a3e7605362e869bf211a7a021"):
+    repository = Path(__file__).resolve().parents[3]
+    relative_path = "addons/smart_core/handlers/ui_contract_v2_projection.py"
+    source = subprocess.check_output(
+        ["git", "show", "%s:%s" % (revision, relative_path)],
+        cwd=repository,
+        text=True,
+    )
+    expected_sha256 = "97df397d74ed5e4950e7446b3907e789475cad790f5ef5a635836da1a4b75e03"
+    actual_sha256 = hashlib.sha256(source.encode("utf-8")).hexdigest()
+    if actual_sha256 != expected_sha256:
+        raise AssertionError(
+            "frozen cb6e276 projection source drifted: %s" % actual_sha256
+        )
+    module_name = "odoo.addons.smart_core.handlers.ui_contract_v2_projection_frozen_cb6e276"
+    module = types.ModuleType(module_name)
+    module.__file__ = "%s:%s" % (revision, relative_path)
+    module.__package__ = "odoo.addons.smart_core.handlers"
+    sys.modules[module_name] = module
+    exec(compile(source, module.__file__, "exec"), module.__dict__)
     return module
 
 
@@ -3022,6 +3047,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(contract, before)
 
     def test_sparse_semantic_roles_are_the_only_four_state_contract_delta(self):
+        frozen_projection = _load_frozen_projection()
         def strip_allowed_role_delta(value):
             if isinstance(value, list):
                 return [strip_allowed_role_delta(item) for item in value]
@@ -3045,7 +3071,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 "type": "header", "containerType": "header", "containerId": "header.main",
                 "span": 24, "children": [], "widgetList": [],
             }, {
-                "type": "group", "containerType": "group", "containerId": "group.main", "title": "main", "string": "main",
+                "type": "group", "containerType": "group", "containerId": "group.main", "title": "native", "string": "native",
                 "span": 24, "children": [{
                     "type": "field", "containerType": "field", "containerId": "field.name",
                     "span": 12, "name": "name", "children": [], "widgetList": [],
@@ -3132,8 +3158,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     "enabled": enabled,
                     "disabled": not enabled,
                 })
-                baseline_governance = {
-                    "field_groups": {"main": ["name", "native_extra"]},
+                baseline_governance = {"field_groups": {"main": ["name", "native_extra"]}}
+                candidate_governance = {
+                    **baseline_governance,
                     "configured_sections": [{
                         "identity": "key:main", "key": "main", "title": "main",
                         "fields": ["name", "native_extra"],
@@ -3143,11 +3170,11 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     "name": {"type": "char"}, "native_extra": {"type": "char"},
                     "line_ids": {"type": "one2many"},
                 }}
-                self.module._projection.apply_business_config_form_groups(
+                candidate = deepcopy(baseline)
+                frozen_projection.apply_business_config_form_groups(
                     baseline, baseline_governance, source_contract=source_contract,
                 )
-                candidate = deepcopy(baseline)
-                governance = {**baseline_governance, "field_semantic_roles": {
+                governance = {**candidate_governance, "field_semantic_roles": {
                     "name": "summary", "native_extra": "context", "line_ids": "relation",
                 }, "section_semantic_roles": {"main": "audit"}}
                 self.module._projection.apply_business_config_form_groups(
@@ -3157,7 +3184,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 self.assertEqual(strip_allowed_role_delta(candidate), strip_allowed_role_delta(baseline))
                 projected_group = next(
                     node for node in candidate["layoutContract"]["containerTree"]
-                    if node.get("sourceSectionKey") == "main"
+                    if node.get("containerId") == "business_config_group_1"
                 )
                 self.assertEqual(
                     projected_group["formStructureRole"],
@@ -3406,6 +3433,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(governance_without_key["configured_sections"][0]["key"], "")
 
     def test_real_payment_contract_uses_stable_audit_identity_and_role_only_delta(self):
+        frozen_projection = _load_frozen_projection()
         repository = Path(__file__).resolve().parents[3]
         product_xml = repository / "addons/smart_construction_core/data/payment_request_form_productization_contract.xml"
         xml_root = ET.parse(product_xml).getroot()
@@ -3489,19 +3517,24 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         governance["semantic_surface_authority"] = True
         baseline_governance = deepcopy(governance)
         baseline_governance["field_semantic_roles"] = {}
-        baseline_governance["section_semantic_roles"] = {}
+        baseline_governance.pop("section_semantic_roles", None)
+        baseline_governance.pop("configured_sections", None)
 
         baseline = deepcopy(base_contract)
-        self.module._projection.apply_business_config_form_groups(
+        frozen_projection.apply_business_config_form_groups(
             baseline, baseline_governance, source_contract=source_contract,
         )
         candidate = deepcopy(base_contract)
+        self.module._projection.apply_business_config_form_groups(
+            candidate, governance, source_contract=source_contract,
+        )
         renamed_governance = deepcopy(governance)
         for section in renamed_governance["configured_sections"]:
             if section.get("key") == "approval_audit":
                 section["title"] = "Approval & Audit"
+        renamed_candidate = deepcopy(base_contract)
         self.module._projection.apply_business_config_form_groups(
-            candidate, renamed_governance, source_contract=source_contract,
+            renamed_candidate, renamed_governance, source_contract=source_contract,
         )
 
         def strip_semantic_roles(value):
@@ -3524,9 +3557,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         audit_group = next(
             node for node in candidate["layoutContract"]["containerTree"]
-            if node.get("sourceSectionKey") == "approval_audit"
+            if node.get("containerId") == "business_config_group_7"
         )
-        self.assertEqual(audit_group["title"], "Approval & Audit")
+        self.assertEqual(audit_group["title"], "审批与审计")
         self.assertEqual(audit_group["formStructureRole"], {"role": "audit"})
         self.assertIn("legacy_source_table", [node.get("name") for node in audit_group["children"]])
         container_types = [
@@ -3553,18 +3586,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             self.assertIsNotNone(field)
             self.assertEqual(field["formStructureRole"]["role"], "audit")
 
-        baseline_for_rename = deepcopy(baseline)
-        baseline_audit = next(
-            node for node in baseline_for_rename["layoutContract"]["containerTree"]
-            if node.get("sourceSectionKey") == "approval_audit"
+        self.assertEqual(strip_semantic_roles(candidate), strip_semantic_roles(baseline))
+        renamed_audit = next(
+            node for node in renamed_candidate["layoutContract"]["containerTree"]
+            if node.get("containerId") == "business_config_group_7"
         )
-        baseline_audit["title"] = "Approval & Audit"
-        baseline_audit["string"] = "Approval & Audit"
-        baseline_audit["label"] = "Approval & Audit"
-        self.assertEqual(strip_semantic_roles(candidate), strip_semantic_roles(baseline_for_rename))
+        self.assertEqual(renamed_audit["title"], "Approval & Audit")
+        self.assertEqual(renamed_audit["formStructureRole"], {"role": "audit"})
         first = deepcopy(candidate)
         self.module._projection.apply_business_config_form_groups(
-            candidate, renamed_governance, source_contract=source_contract,
+            candidate, governance, source_contract=source_contract,
         )
         self.assertEqual(candidate, first)
 

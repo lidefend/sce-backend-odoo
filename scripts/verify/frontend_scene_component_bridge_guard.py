@@ -114,11 +114,13 @@ require(
 require("_apply_normalized_action_surface_policy" not in v2_assembler, "iteration one must not repartition canonical actions")
 require(
     'section_semantic_roles[section_key] = semantic_role' in v2_handler
-    and 'group["sourceSectionKey"] = section_key' in v2_projection
+    and 'expected_container_id = "business_config_group_%s" % index' in v2_projection
+    and 'find_group_by_container_id(container_tree, expected_container_id)' in v2_projection
     and 'section_semantic_roles.get(section_key)' in v2_projection
     and 'section_semantic_roles.get(title)' not in v2_projection,
-    "section semantic role is not joined through a stable source section key",
+    "section semantic role is not joined by stable product key onto the existing container identity",
 )
+require("sourceSectionKey" not in v2_projection, "sparse product intent added an unversioned terminal section identity")
 for forbidden_action_inference in ("actionRef.label", "candidate.methodName", "candidate.targetModel", "payment.request"):
     require(forbidden_action_inference not in action_executor, f"canonical action executor infers forbidden fact: {forbidden_action_inference}")
 for legacy_structure_input in (
@@ -268,4 +270,4 @@ collection_wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRender
 require("openRow" in collection_surface, "readonly collection does not expose row navigation")
 require("'open-record'" in collection_wrapper, "driver row navigation is not returned to the unified host")
 
-print("[verify.frontend.scene_component_bridge.guard] PASS checks=62")
+print("[verify.frontend.scene_component_bridge.guard] PASS checks=63")

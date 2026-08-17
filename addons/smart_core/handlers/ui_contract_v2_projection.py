@@ -688,16 +688,16 @@ def apply_business_config_form_groups(
                         return found
         return None
 
-    def find_group_by_section_key(nodes: list[Any], section_key: str) -> dict[str, Any] | None:
+    def find_group_by_container_id(nodes: list[Any], container_id: str) -> dict[str, Any] | None:
         for node in nodes:
             if not isinstance(node, dict):
                 continue
-            if str(node.get("sourceSectionKey") or "").strip() == section_key:
+            if str(node.get("containerId") or "").strip() == container_id:
                 return node
             for key in ("children", "pages", "tabs", "nodes", "items"):
                 children = node.get(key)
                 if isinstance(children, list):
-                    found = find_group_by_section_key(children, section_key)
+                    found = find_group_by_container_id(children, container_id)
                     if found is not None:
                         return found
         return None
@@ -710,7 +710,8 @@ def apply_business_config_form_groups(
         # fields just moved into it.  On repeated projection the authoritative
         # semantic groups are already top-level, so top-level reuse remains
         # idempotent.
-        group = find_group_by_section_key(container_tree, section_key) if section_key else (
+        expected_container_id = "business_config_group_%s" % index
+        group = find_group_by_container_id(container_tree, expected_container_id) if section_key else (
             next(
                 (
                     node
@@ -725,15 +726,13 @@ def apply_business_config_form_groups(
         if group is None:
             group = {
                 "type": "group",
-                "name": "business_config_group_%s" % index,
+                "name": expected_container_id,
                 "string": title,
                 "label": title,
                 "children": [],
                 "widgetList": [],
             }
             container_tree.append(group)
-        if section_key:
-            group["sourceSectionKey"] = section_key
         apply_form_layout_governance_to_group(group, title, source_contract=source_contract)
         semantic_role = section_semantic_roles.get(section_key) if section_key else ""
         if semantic_role:
