@@ -230,6 +230,14 @@ assert.deepEqual(
   ['notebook', 'attachment', 'chatter'],
   'audit classification must not absorb relation, attachment, or chatter zones',
 );
+assert.equal(
+  collectFields(semanticContextFloorplan.relationNodes).some((relationField) => (
+    collectFields(semanticContextFloorplan.subordinateNodes)
+      .some((subordinateField) => subordinateField.widgetId === relationField.widgetId)
+  )),
+  false,
+  'relation and subordinate regions must not duplicate canonical widget identities',
+);
 const semanticAtomicFields = collectFields([
   ...semanticContextFloorplan.summaryNodes,
   ...semanticContextFloorplan.taskNodes,

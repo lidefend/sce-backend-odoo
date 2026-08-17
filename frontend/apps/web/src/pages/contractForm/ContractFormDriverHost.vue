@@ -36,7 +36,7 @@
         :subordinate-nodes="subordinateNodes"
         :decision-mode="floorplan.decisionMode"
         :relation-adapter="relationAdapter"
-        :has-collaboration="showCollaborationPanel"
+        :has-collaboration="showCollaborationPanel && hasCollaborationNode"
         @field-change="emit('field-change', $event)"
       >
         <template v-if="floorplan.blockedActions.length" #blocking>
@@ -47,7 +47,7 @@
             </span>
           </section>
         </template>
-        <template v-if="showCollaborationPanel" #collaboration>
+        <template v-if="showCollaborationPanel && hasCollaborationNode" #collaboration>
           <NativeCollaborationPanel
             v-bind="collaborationPanelProps"
             v-on="collaborationPanelListeners"
@@ -155,6 +155,8 @@ const overflowActions = computed(() => floorplan.value.overflowActions);
 const subordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
+const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
+
 function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
 }

@@ -4830,8 +4830,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Reason / boundary: compact summary cards, a neutral current-task bar,
   relation and activity regions, and collapsed audit presentation are derived
   mechanically from existing Canonical roles, field types, notebook nodes and
-  the established collaboration visibility fact. Normalized fields, actions,
-  permissions, source trace, P1 contracts and backend code are unchanged.
+  explicit normalized subordinate collaboration capability. Runtime
+  collaboration visibility may only suppress that capability, never create it.
+  Normalized fields, actions, permissions, source trace, P1 contracts and
+  backend code are unchanged.
 - Blast radius / validation: semantic readonly ContractForm pages only; create
   and edit retain the prior canvas and action bar. Presenter 49 cases,
   component bridge 38 cases, architecture guard 63 checks, strict typecheck,
