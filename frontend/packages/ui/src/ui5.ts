@@ -1,0 +1,21 @@
+import '@ui5/webcomponents/dist/Button.js';
+import '@ui5/webcomponents/dist/DatePicker.js';
+import '@ui5/webcomponents/dist/Input.js';
+import '@ui5/webcomponents/dist/Label.js';
+import '@ui5/webcomponents/dist/Option.js';
+import '@ui5/webcomponents/dist/Select.js';
+import '@ui5/webcomponents/dist/Tab.js';
+import '@ui5/webcomponents/dist/TabContainer.js';
+import '@ui5/webcomponents/dist/TextArea.js';
+import '@ui5/webcomponents/dist/Title.js';
+import '@ui5/webcomponents/dist/Toolbar.js';
+import '@ui5/webcomponents-fiori/dist/DynamicPage.js';
+import '@ui5/webcomponents-fiori/dist/DynamicPageHeader.js';
+import '@ui5/webcomponents-fiori/dist/DynamicPageTitle.js';
+
+import '@ui5/webcomponents-icons/dist/attachment.js';
+import '@ui5/webcomponents-icons/dist/document.js';
+import '@ui5/webcomponents-icons/dist/history.js';
+import '@ui5/webcomponents-icons/dist/nav-back.js';
+import '@ui5/webcomponents-icons/dist/save.js';
+import '@ui5/webcomponents-icons/dist/workflow-tasks.js';
