@@ -52,10 +52,19 @@ require(exports.get("./form") == "./src/form.ts", "form export missing")
 wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRenderer.vue").read_text(encoding="utf-8")
 require("from '@sc/ui/collection'" in wrapper, "renderer must use narrow collection export")
 form_host = (WEB_SRC / "pages/contractForm/ContractFormDriverHost.vue").read_text(encoding="utf-8")
+object_task_page = (WEB_SRC / "pages/contractForm/ObjectTaskPage.vue").read_text(encoding="utf-8")
+form_floorplan = (WEB_SRC / "app/presentation/canonicalFormFloorplan.ts").read_text(encoding="utf-8")
 action_executor = (WEB_SRC / "pages/contractForm/canonicalFormActionExecutor.ts").read_text(encoding="utf-8")
 v2_assembler = (ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py").read_text(encoding="utf-8")
 require("from '@sc/ui/form'" in form_host, "form driver host must use narrow form export")
-require("SceneUiProvider" in form_host and "CanonicalFormNodeRenderer" in form_host, "form driver does not render canonical form nodes")
+require("SceneUiProvider" in form_host and "ObjectTaskPage" in form_host, "form driver does not render the canonical object-task floorplan")
+require("CanonicalFormNodeRenderer" in object_task_page, "object-task floorplan does not render canonical form nodes")
+require("composeCanonicalFormFloorplan" in form_host and "renderModel.zones" in form_floorplan, "floorplan does not consume canonical zones")
+for forbidden_floorplan_fact in ("payment.request", "sc.payment.execution", "付款申请", "财务经理"):
+    require(
+        forbidden_floorplan_fact not in form_floorplan and forbidden_floorplan_fact not in object_task_page,
+        f"generic object-task floorplan contains business inference: {forbidden_floorplan_fact}",
+    )
 require("SceneObjectPageContract" not in form_host, "ContractForm driver host must not consume the UI-internal SceneObjectPage DTO")
 require("data-contract-form-driver-error" in form_host, "invalid normalized form contract does not fail closed")
 require(
@@ -96,14 +105,9 @@ for legacy_structure_input in (
     'v-bind="$attrs"',
 ):
     require(legacy_structure_input not in form_host, f"form driver retains legacy structure authority: {legacy_structure_input}")
-for canonical_input in (
-    "renderModel.zones",
-    "renderModel.actionBar",
-    "action.actionRef",
-    "data-canonical-form-zones",
-    "data-canonical-action-bar",
-):
+for canonical_input in ("renderModel.actionBar", "action.actionRef", "data-canonical-action-bar"):
     require(canonical_input in form_host, f"form driver does not consume canonical authority: {canonical_input}")
+require("data-canonical-form-zones" in object_task_page, "object-task floorplan does not expose canonical zone evidence")
 
 host = (WEB_SRC / "views/ActionView.vue").read_text(encoding="utf-8")
 runtime = (WEB_SRC / "app/action_runtime/useActionViewSceneComponentDriverRuntime.ts").read_text(encoding="utf-8")

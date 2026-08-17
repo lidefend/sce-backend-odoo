@@ -3,6 +3,7 @@ import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
+import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
 import {
   canonicalFieldToFormSection,
   canonicalNodeHasContent,
@@ -120,6 +121,47 @@ assert.deepEqual(model.actionBar[0]?.actionRef, source.actionContract.actionRule
 assert.equal(model.actionBar[0]?.enabled, true);
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
+
+const editFloorplan = composeCanonicalFormFloorplan(model);
+assert.deepEqual(editFloorplan.taskNodes.map((node) => node.nodeId), ['section.identity']);
+assert.deepEqual(editFloorplan.contextNodes, []);
+assert.deepEqual(
+  editFloorplan.subordinateNodes.map((node) => node.nodeId),
+  model.zones.subordinate.map((node) => node.nodeId),
+  'floorplan composition must preserve subordinate node identity and order',
+);
+const readonlyFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(store, 'readonly'));
+assert.deepEqual(
+  readonlyFloorplan.taskNodes.map((node) => node.nodeId),
+  ['section.identity'],
+  'readonly pages must keep the canonical primary content in the main canvas',
+);
+assert.deepEqual(readonlyFloorplan.contextNodes, []);
+
+const contextRailSnapshot = snapshot();
+contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
+  containerId: 'section.context', containerType: 'group', type: 'group', title: 'Context', span: 24,
+  children: [{
+    containerId: 'field.reference', containerType: 'field', type: 'field', name: 'reference', title: '', span: 24,
+    children: [], widgetList: [{
+      widgetId: 'field.reference', widgetType: 'char', fieldCode: 'reference', label: 'Reference', span: 24,
+      componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+    }],
+  }], widgetList: [],
+});
+contextRailSnapshot.statusContract.widgetStatus.push({
+  widgetId: 'field.reference', visible: true, readonly: true, required: false, disabled: false,
+});
+contextRailSnapshot.dataContract.mainData.reference = 'REF-001';
+const contextRailModel = presentContractV2Form(createContractV2Store(contextRailSnapshot), 'edit');
+const contextRailFloorplan = composeCanonicalFormFloorplan(contextRailModel);
+assert.deepEqual(contextRailFloorplan.taskNodes.map((node) => node.nodeId), ['section.identity']);
+assert.deepEqual(contextRailFloorplan.contextNodes.map((node) => node.nodeId), ['section.context']);
+assert.deepEqual(
+  collectFields([...contextRailFloorplan.taskNodes, ...contextRailFloorplan.contextNodes]).map((field) => field.widgetId),
+  collectFields(contextRailModel.zones.primary).map((field) => field.widgetId),
+  'floorplan lanes must preserve the exact canonical field identity set and order within each lane',
+);
 
 const runtimeValueModel = presentContractV2Form(store, 'edit', { name: 'D-002' });
 assert.equal(
@@ -327,6 +369,11 @@ assert.deepEqual(
   },
   'disabled action evidence must remain visible and fail closed',
 );
+assert.deepEqual(
+  composeCanonicalFormFloorplan(disabledSecondaryPrimaryModel).blockedActions.map((action) => action.key),
+  ['action_blocked'],
+  'a blocked canonical primary must remain explicit floorplan evidence',
+);
 
 const duplicatePrimary = snapshot();
 duplicatePrimary.actionContract.actionRuleList.push({
@@ -401,4 +448,4 @@ assert.deepEqual(
   'an executable action without an exact unified executor adapter must block canonical cutover',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=38');
+console.log('[canonical_form_presenter_test] PASS cases=45');

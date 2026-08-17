@@ -4790,3 +4790,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   authoritative; browser qualification must prove one primary action, named
   relations, no empty readonly task controls, no migration text, no duplicate
   groups, no overflow, and no unexpected browser/network errors.
+
+## Canonical ObjectTaskPage floorplan checkpoint (2026-08-17)
+
+- Branch / parent SHA: `feature/p1-payment-component-product-closure-v1` /
+  `0af58add6001d196037388b7bd9691c9897ce3bf`.
+- Formal Product Layer / Layer Target / Module: P0 platform presentation inside
+  the PFL-035 outcome / generic ContractForm floorplan / `frontend/apps/web`.
+- Reason / boundary: the Canonical Render Model already owns the production
+  field, node and action inputs. This checkpoint adds only an ephemeral pure
+  grouping into task canvas, business context and subordinate regions, plus a
+  renderer-neutral ObjectTaskPage shell and sticky unified action bar.
+- Why Here / Why Not Elsewhere: grouping is derived only from canonical
+  visible/readonly/disabled facts and existing node order. No model, label,
+  role, workflow state, permission, modifier or next-step inference is added;
+  normalized Contract V2, P1 payment contracts, backend code, Scene Contract,
+  UI packages and runtime topology remain unchanged.
+- Blast radius / validation: ContractForm product rendering only. Tests prove
+  exact canonical widget identity preservation across task/context lanes,
+  readonly primary-content preservation, subordinate order, and blocked-primary
+  evidence. Presenter 45 cases, component bridge 38 cases, preference 13 cases,
+  feature flag 7 cases, architecture guard, strict typecheck, lint (zero errors),
+  acceptance production build (4618 modules), and diff check pass before live
+  payment qualification.
