@@ -2,6 +2,7 @@
 import ast
 import hashlib
 import importlib.util
+import json
 import subprocess
 import sys
 import types
@@ -339,17 +340,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertNotIn("restricted_state", contract["dataContract"]["mainData"])
 
-    def test_visible_floorplan_facts_share_one_bounded_hydration_read(self):
-        field_names = [
-            "payee_account_source_display",
-            "payee_account_completeness",
-            "payment_execution_status_display",
-            "payment_blocking_reason_display",
-            "payment_basis_type",
-        ]
+    def test_real_project_form_contract_uses_the_same_visible_hydration_closure(self):
+        root = Path(__file__).resolve().parents[3]
+        fixture_path = root / "docs/architecture/unified_page_contract_v2/examples/form_project.json"
+        contract = json.loads(fixture_path.read_text(encoding="utf-8"))
+        self.assertEqual(contract["pageInfo"]["model"], "project.project")
+        contract["dataContract"]["mainData"] = {}
 
         class _Field:
-            type = "char"
+            def __init__(self, field_type):
+                self.type = field_type
 
         class _Record:
             def __init__(self):
@@ -360,11 +360,11 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
             def read(self, fields):
                 self.read_fields.append(list(fields))
-                return [{name: "value:%s" % name for name in fields}]
+                return [{"name": "Bridge Project", "stage_id": (7, "Started")}]
 
         class _Model:
             def __init__(self):
-                self._fields = {name: _Field() for name in field_names}
+                self._fields = {"name": _Field("char"), "stage_id": _Field("many2one")}
                 self.record = _Record()
 
             def browse(self, record_id):
@@ -373,25 +373,6 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         model = _Model()
         handler = self.module.UiContractV2Handler(env={"project.project": model})
-        widgets = [
-            {"type": "field", "name": name, "widgetId": "field.%s" % name}
-            for name in field_names
-        ]
-        contract = {
-            "layoutContract": {"containerTree": [{"type": "group", "children": widgets}]},
-            "formStructureContract": {"fieldRoles": {
-                "payee_account_completeness": {"role": "summary"},
-                "payment_execution_status_display": {"role": "summary"},
-                "payment_blocking_reason_display": {"role": "risk"},
-                "payment_basis_type": {"role": "summary"},
-            }},
-            "statusContract": {"widgetStatus": [
-                {"widgetId": "field.%s" % name, "visible": True}
-                for name in field_names
-            ]},
-            "actionContract": {"actionRuleList": []},
-            "dataContract": {"mainData": {}},
-        }
 
         self.module.hydrate_final_modifier_dependencies(
             handler.env,
@@ -401,18 +382,12 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             view_type="form",
         )
 
-        self.assertEqual(set(contract["dataContract"]["mainData"]), set(field_names))
-        self.assertEqual(len(model.record.read_fields), 1)
         self.assertEqual(
-            model.record.read_fields[0],
-            [
-                "payee_account_completeness",
-                "payment_execution_status_display",
-                "payment_blocking_reason_display",
-                "payment_basis_type",
-                "payee_account_source_display",
-            ],
+            contract["dataContract"]["mainData"],
+            {"name": "Bridge Project", "stage_id": (7, "Started")},
         )
+        self.assertEqual(len(model.record.read_fields), 1)
+        self.assertEqual(model.record.read_fields[0], ["name", "stage_id"])
 
     def test_hidden_and_subordinate_fields_do_not_expand_visible_hydration(self):
         class _Model:
