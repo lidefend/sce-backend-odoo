@@ -139,7 +139,7 @@ probe_function = next(
 )
 require(probe_function is not None, "browser probe fixture function missing")
 probe_source = ast.get_source_segment(probe_fixture, probe_function) or ""
-require("\"models\": [model]" in probe_source, "browser probe must consume the action-owned model")
+require("\"models\": [model, payment_model]" in probe_source, "browser probe must consume both qualified action-owned models")
 require(
     '"allowed_kits": ["sc-native", "tdesign-modern", "ui5-horizon"]' in probe_source,
     "browser probe must exercise all registered production form drivers",
@@ -149,7 +149,16 @@ require("build_scope_key(" in probe_source, "browser probe does not identify its
 require("preference_model.search([" in probe_source and "]).unlink()" in probe_source, "browser probe does not clean its persisted driver preference")
 require("probe_record_name" in probe_source and "probe_model.search([" in probe_source, "browser probe does not own an exact disposable create target")
 require('"create_probe_name": probe_record_name' in probe_source, "browser probe does not export its exact disposable create identity")
-require("payment.request" not in probe_source, "browser probe drifted into the payment vertical")
+require(
+    '"smart_construction_core.action_payment_request_user_payment_apply"' in probe_source
+    and '"smart_construction_core.menu_sc_user_payment_apply"' in probe_source,
+    "payment qualification is not bound to the formal action and menu",
+)
+require(
+    '"%s.fe_request_pfl035_001" % MODULE' in probe_source
+    and '"%s.fe_request_pfl035_002" % MODULE' in probe_source,
+    "payment qualification is not bound to deterministic fixture records",
+)
 acceptance_fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(encoding="utf-8")
 require("SC_ACCEPTANCE_COMPONENT_DRIVER_PROBE_MODE" in acceptance_fixture, "browser probe is not routed through the governed fixture entry")
 browser_probe = (ROOT / "scripts/verify/frontend_scene_component_driver_readonly_browser.mjs").read_text(encoding="utf-8")
@@ -162,6 +171,9 @@ require("{ width: 390, height: 844 }" in browser_probe, "browser probe does not 
 require("mobileModes" in browser_probe, "browser report does not retain per-mode mobile evidence")
 require("executeCreateProbe" in browser_probe, "browser probe does not execute a real unified create request")
 require("evidence.mutations.length === 1" in browser_probe, "browser probe does not enforce the exact business mutation count")
+require("paymentQualification" in browser_probe, "browser report does not retain the payment qualification")
+require("expected_primary_sections" in browser_probe, "payment qualification does not verify the product section contract")
+require("payment qualification issued a business mutation" in browser_probe, "payment qualification does not prove zero payment mutations")
 
 form_page = (WEB_SRC / "pages/ContractFormPage.vue").read_text(encoding="utf-8")
 driver_host_call = form_page[form_page.index("<ContractFormDriverHost"):form_page.index("<ContractFormNativeCanvas")]

@@ -29,6 +29,7 @@ WORK_ITEM_TEST = ROOT / "addons/smart_construction_core/tests/test_payment_reque
 ALLOWED_CLASSIFICATIONS = {"required", "conditional", "derived", "optional", "audit"}
 ALLOWED_BENCHMARK_STATUSES = {"implemented", "partial", "gap"}
 ALLOWED_JOURNEY_COVERAGE = {"implemented", "partial", "missing"}
+ALLOWED_FIELD_ZONES = {"primary", "subordinate"}
 FORM_SURFACE_PROFILE_MAPPING = {
     "create_edit": {"create", "edit"},
     "create": {"create"},
@@ -75,6 +76,10 @@ def validate() -> list[str]:
         errors.append("form surface/profile mapping drifted")
     if (payload.get("scope") or {}).get("customer_specific_rules") != "forbidden":
         errors.append("customer-specific field rules must remain forbidden")
+    if (payload.get("scope") or {}).get("field_rules_semantics") != (
+        "minimum_product_completeness_obligations_not_a_surface_allowlist"
+    ):
+        errors.append("field completeness rules must not override the P1 product surface authority")
 
     aggregation = payload.get("list_aggregation_requirements") or {}
     expected_aggregation = {
@@ -150,6 +155,8 @@ def validate() -> list[str]:
             errors.append(f"model field missing: {identity[0]}.{identity[1]}")
         if rule["classification"] not in ALLOWED_CLASSIFICATIONS:
             errors.append(f"invalid classification for {identity[0]}.{identity[1]}")
+        if rule.get("zone", "primary") not in ALLOWED_FIELD_ZONES:
+            errors.append(f"invalid field zone for {identity[0]}.{identity[1]}")
         if not isinstance(rule["surfaces"], list) or not rule["surfaces"]:
             errors.append(f"surfaces missing for {identity[0]}.{identity[1]}")
         unknown_surfaces = sorted(set(rule["surfaces"]) - ALLOWED_SURFACES)

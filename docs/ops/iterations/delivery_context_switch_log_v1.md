@@ -4764,3 +4764,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - The gate now consumes the Presenter's effective `visible/enabled` action
   state and resolves only effective executable references. It does not alter
   normalized permissions, action status, payment behavior, or executor rules.
+
+## Payment-request canonical driver qualification (2026-08-17)
+
+- Branch / baseline: `feature/p1-payment-request-component-driver-qualification-v1` /
+  `bc4181a7b5777dfd07c32ff4ae42cafc061d2788`.
+- Formal Product Layer / target: P1 product qualification / existing payment
+  request normalized contract rendered through the production component bridge.
+- Boundary: no payment model, policy, field, workflow, normalized assembler or
+  component implementation changes. The governed acceptance fixture exports
+  the existing formal action/menu and approved/draft record identities and
+  grants the same temporary driver entitlement to the existing finance user.
+- Exit: the P1 product contract remains the page-surface authority; the field
+  completeness matrix is a minimum-obligation check rather than an allowlist.
+  Approved readonly preserves 61 primary fields, five subordinate capabilities
+  and seven effective sections; draft edit preserves 44 primary fields, three
+  subordinate capabilities and six effective sections because approval facts
+  are not applicable in edit. Both modes retain unique backend action
+  identities and one enabled primary action across Native, TDesign and UI5.
+  Switching must not refetch the contract or issue any payment mutation.

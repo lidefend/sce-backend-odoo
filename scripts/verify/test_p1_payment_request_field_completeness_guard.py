@@ -18,6 +18,19 @@ class PaymentRequestFieldCompletenessGuardTest(unittest.TestCase):
         for rule in payload["field_rules"]:
             self.assertTrue(rule["acceptance"], f"missing acceptance for {rule['model']}.{rule['field']}")
             self.assertTrue(rule["surfaces"], f"missing surfaces for {rule['model']}.{rule['field']}")
+            self.assertIn(rule.get("zone", "primary"), guard.ALLOWED_FIELD_ZONES)
+
+    def test_field_matrix_is_a_minimum_obligation_not_a_surface_allowlist(self) -> None:
+        payload = json.loads(guard.MATRIX.read_text(encoding="utf-8"))
+        self.assertEqual(
+            payload["scope"]["field_rules_semantics"],
+            "minimum_product_completeness_obligations_not_a_surface_allowlist",
+        )
+        attachment = next(
+            rule for rule in payload["field_rules"]
+            if rule["model"] == "payment.request" and rule["field"] == "attachment_ids"
+        )
+        self.assertEqual(attachment["zone"], "subordinate")
 
     def test_form_surface_profile_mapping_keeps_create_and_edit_distinct(self) -> None:
         self.assertEqual(

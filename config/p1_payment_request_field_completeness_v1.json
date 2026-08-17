@@ -10,7 +10,8 @@
   "scope": {
     "models": ["payment.request", "sc.payment.execution"],
     "customer_specific_rules": "forbidden",
-    "authority": "model_native_view_product_contract"
+    "authority": "model_native_view_product_contract",
+    "field_rules_semantics": "minimum_product_completeness_obligations_not_a_surface_allowlist"
   },
   "classification": {
     "required": "The user must provide or the system must deterministically derive the fact before the declared gate.",
@@ -112,7 +113,7 @@
     {"model":"payment.request","field":"legal_next_action_display","label":"下一步","classification":"derived","source":"backend_action_contract","applicability":"always","required_gate":"render","editability":"readonly","surfaces":["list","create","edit","readonly","mobile"],"acceptance":"matches_unique_legal_primary_action"},
     {"model":"payment.request","field":"reject_reason","label":"当前驳回原因","classification":"derived","source":"approval_decision_and_immutable_audit","applicability":"state_rejected","required_gate":"render","editability":"server_action_only","surfaces":["edit","readonly","mobile"],"acceptance":"required_on_reject_visible_until_resubmit_and_preserved_in_audit"},
     {"model":"payment.request","field":"note","label":"办理说明","classification":"optional","source":"user_input","applicability":"always","required_gate":"none","editability":"draft_or_rejected_with_initiate_capability","surfaces":["create_edit","readonly"],"acceptance":"persists_after_reopen"},
-    {"model":"payment.request","field":"attachment_ids","label":"附件","classification":"conditional","source":"user_evidence","applicability":"policy_or_exception_requires_evidence","required_gate":"submit_when_required","editability":"draft_or_rejected_with_initiate_capability","surfaces":["create_edit","readonly"],"acceptance":"persists_and_remains_downloadable"},
+    {"model":"payment.request","field":"attachment_ids","label":"附件","classification":"conditional","source":"user_evidence","applicability":"policy_or_exception_requires_evidence","required_gate":"submit_when_required","editability":"draft_or_rejected_with_initiate_capability","surfaces":["create_edit","readonly"],"zone":"subordinate","acceptance":"persists_and_remains_downloadable"},
     {"model":"sc.payment.execution","field":"payment_request_id","label":"来源申请","classification":"required","source":"approved_payment_request","applicability":"from_payment_request","required_gate":"save","editability":"readonly_anchor","surfaces":["execution_create","execution_readonly"],"acceptance":"business_name_not_numeric_id"},
     {"model":"sc.payment.execution","field":"project_id","label":"项目","classification":"required","source":"payment_request_anchor","applicability":"from_payment_request","required_gate":"save","editability":"readonly_anchor","surfaces":["execution_create","execution_readonly"],"acceptance":"matches_request_and_cannot_rebind"},
     {"model":"sc.payment.execution","field":"partner_id","label":"收款单位","classification":"required","source":"payment_request_anchor","applicability":"from_payment_request","required_gate":"save","editability":"readonly_anchor","surfaces":["execution_create","execution_readonly"],"acceptance":"matches_request_and_cannot_rebind"},

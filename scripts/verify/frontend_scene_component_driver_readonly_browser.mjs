@@ -10,6 +10,18 @@ const DB_NAME = process.env.DB_NAME || 'sc_frontend_acceptance';
 const PASSWORD = process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const TARGET = JSON.parse(process.env.SCENE_COMPONENT_DRIVER_TARGETS_JSON || '{}');
 const OUTPUT = process.env.SCENE_COMPONENT_DRIVER_ARTIFACTS || 'artifacts/frontend-scene-component-driver';
+const FIELD_MATRIX = JSON.parse(fs.readFileSync('config/p1_payment_request_field_completeness_v1.json', 'utf8'));
+
+function requiredPaymentPrimaryFields(profile, state) {
+  const mapping = FIELD_MATRIX.form_surface_profile_mapping || {};
+  return (FIELD_MATRIX.field_rules || [])
+    .filter((rule) => rule.model === 'payment.request')
+    .filter((rule) => (rule.surfaces || []).some((surface) => (mapping[surface] || []).includes(profile)))
+    .filter((rule) => rule.zone !== 'subordinate')
+    .filter((rule) => rule.applicability !== 'state_rejected' || state === 'rejected')
+    .map((rule) => String(rule.field || ''))
+    .filter(Boolean);
+}
 
 function check(value, message) {
   if (!value) throw new Error(message);
@@ -54,6 +66,27 @@ function isBusinessMutation(request) {
   }
 }
 
+async function login(page, loginName) {
+  await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.locator('#login-username, input[autocomplete="username"]').first().fill(loginName);
+  await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(PASSWORD);
+  const database = page.locator('input').nth(2);
+  if (await database.isEnabled().catch(() => false)) await database.fill(DB_NAME);
+  await page.getByRole('button', { name: /^登录$/ }).click();
+  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
+  await page.locator('.layout-shell').waitFor({ timeout: 45000 });
+}
+
+async function logout(page) {
+  const logoutButton = page.getByRole('button', { name: '退出登录' });
+  if (!(await logoutButton.isVisible().catch(() => false))) {
+    const menuButton = page.getByRole('button', { name: '菜单', exact: true });
+    if (await menuButton.isVisible().catch(() => false)) await menuButton.click();
+  }
+  await logoutButton.click();
+  await page.waitForURL((url) => url.pathname.includes('/login'), { timeout: 30000 });
+}
+
 const canonicalDomSnapshot = () => ({
   nodes: [...document.querySelectorAll('[data-canonical-form-zones] [data-canonical-node-id]')].map((node) => ({
     id: node.getAttribute('data-canonical-node-id') || '',
@@ -88,13 +121,23 @@ function assertCanonicalSnapshot(snapshot, label) {
 async function main() {
   check(PASSWORD, 'SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
   check(TARGET.model && !String(TARGET.model).includes('payment') && TARGET.record_id > 0 && TARGET.action_id > 0 && TARGET.menu_id > 0, 'invalid non-payment target');
+  const paymentTarget = TARGET.payment_target || {};
+  check(
+    paymentTarget.model === 'payment.request'
+      && paymentTarget.record_id > 0
+      && paymentTarget.draft_record_id > 0
+      && paymentTarget.action_id > 0
+      && paymentTarget.menu_id > 0
+      && paymentTarget.login,
+    'invalid governed payment qualification target',
+  );
   fs.mkdirSync(OUTPUT, { recursive: true });
   const browser = await launchChromium();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   const evidence = {
     console: [], pageerror: [], failed: [], mutations: [], systemInitPolicy: null,
-    contractLayoutShape: null, contractSha256: '', contractResponses: [],
+    contractLayoutShape: null, contractActionSummary: null, contractSha256: '', contractResponses: [],
   };
   page.on('console', (message) => {
     if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) evidence.console.push(message.text());
@@ -139,6 +182,21 @@ async function main() {
         }));
         if (contract) {
           evidence.contractLayoutShape = { intent, nodes: summarize(contract.layoutContract.containerTree) };
+          const buttonStatus = new Map((contract?.statusContract?.buttonStatus || []).map((row) => [String(row?.btnId || ''), row]));
+          evidence.contractActionSummary = (contract?.actionContract?.actionRuleList || []).map((row) => ({
+            actionId: String(row?.actionId || ''),
+            actionKey: String(row?.actionKey || ''),
+            backendIdentity: String(row?.backendIdentity || ''),
+            sourceWidgetId: String(row?.sourceWidgetId || ''),
+            targetScope: String(row?.targetScope || ''),
+            triggerType: String(row?.triggerType || ''),
+            tier: String(row?.presentation?.tier || ''),
+            visibleProfiles: Array.isArray(row?.visibleProfiles) ? row.visibleProfiles : [],
+            allowed: row?.allowed,
+            enabled: row?.enabled,
+            disabled: row?.disabled,
+            status: buttonStatus.get(String(row?.actionId || '')) || null,
+          }));
           evidence.contractSha256 = String(contract?.meta?.lifecycle?.integrity?.contractSha256 || '');
           evidence.contractResponses.push({ intent, sha256: evidence.contractSha256 });
         }
@@ -152,14 +210,7 @@ async function main() {
     } catch { /* evidence remains fail-closed below */ }
   });
   try {
-    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await page.locator('#login-username, input[autocomplete="username"]').first().fill(TARGET.login);
-    await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(PASSWORD);
-    const database = page.locator('input').nth(2);
-    if (await database.isEnabled().catch(() => false)) await database.fill(DB_NAME);
-    await page.getByRole('button', { name: /^登录$/ }).click();
-    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
-    await page.locator('.layout-shell').waitFor({ timeout: 45000 });
+    await login(page, TARGET.login);
 
     const route = `/r/${encodeURIComponent(TARGET.model)}/${TARGET.record_id}?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`;
     await page.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -501,6 +552,150 @@ async function main() {
         && evidence.mutations[0]?.model === TARGET.model,
       `driver parity journey issued an unexpected business mutation: ${JSON.stringify(evidence.mutations)}`,
     );
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await logout(page);
+    await login(page, paymentTarget.login);
+
+    async function paymentDriverState(driverKit) {
+      return page.evaluate(({ driverKit }) => {
+        const canonical = {
+          nodes: [...document.querySelectorAll('[data-canonical-form-zones] [data-canonical-node-id]')].map((node) => ({
+            id: node.getAttribute('data-canonical-node-id') || '',
+            kind: node.getAttribute('data-canonical-node-kind') || '',
+            zone: node.closest('[data-canonical-zone]')?.getAttribute('data-canonical-zone') || '',
+          })),
+          fields: [...document.querySelectorAll('[data-canonical-form-zones] [data-field-key]')].map((node) => ({
+            widgetId: node.getAttribute('data-field-key') || '',
+            fieldCode: node.getAttribute('data-field-name') || '',
+            state: node.getAttribute('data-field-state') || '',
+            type: node.getAttribute('data-field-type') || '',
+            zone: node.closest('[data-canonical-zone]')?.getAttribute('data-canonical-zone') || '',
+          })),
+          actions: [...document.querySelectorAll('[data-canonical-action-bar] [data-action-ref]')].map((node) => ({
+            actionId: node.getAttribute('data-action-ref') || '',
+            backendIdentity: node.getAttribute('data-backend-identity') || '',
+            tier: node.getAttribute('data-action-tier') || '',
+            enabled: node.getAttribute('data-action-enabled') || '',
+            disabled: node.hasAttribute('disabled'),
+          })),
+        };
+        const primaryZone = document.querySelector('[data-canonical-zone="primary"]');
+        return {
+          driverKit,
+          sha: document.querySelector(`[data-contract-form-driver="${driverKit}"]`)?.getAttribute('data-source-contract-sha') || '',
+          canonical,
+          primarySectionIds: [...(primaryZone?.children || [])]
+            .map((node) => node.getAttribute('data-canonical-node-id') || '')
+            .filter(Boolean),
+          horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+        };
+      }, { driverKit });
+    }
+
+    async function qualifyPaymentMode(mode, paymentRoute, paymentState) {
+      await page.goto(`${BASE_URL}${paymentRoute}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      try {
+        await page.locator('[data-contract-form-driver]').first().waitFor({ state: 'visible', timeout: 12000 });
+        const chooser = page.locator('[data-contract-form-driver-chooser]');
+        await chooser.waitFor({ state: 'visible', timeout: 12000 });
+        if (await chooser.inputValue() !== 'tdesign-modern') await chooser.selectOption('tdesign-modern');
+        await page.locator('[data-contract-form-driver="tdesign-modern"]').waitFor({ state: 'visible', timeout: 12000 });
+      } catch (error) {
+        const screenshotPath = path.join(OUTPUT, `failure-payment-${mode}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        const diagnostic = await page.evaluate(() => ({
+          url: location.href,
+          text: String(document.body?.innerText || '').slice(0, 1800),
+          contractError: document.querySelector('[data-contract-form-driver-error]')?.textContent || '',
+          activeDriver: document.querySelector('[data-contract-form-driver]')?.getAttribute('data-contract-form-driver') || '',
+        }));
+        const reportPath = path.join(OUTPUT, `failure-payment-${mode}.json`);
+        fs.writeFileSync(reportPath, `${JSON.stringify({
+          ...diagnostic,
+          contractLayoutShape: evidence.contractLayoutShape,
+          contractActionSummary: evidence.contractActionSummary,
+          runtimeErrors: { console: evidence.console, pageerror: evidence.pageerror, failed: evidence.failed },
+          screenshot: { path: screenshotPath, sha256: sha256(screenshotPath) },
+        }, null, 2)}\n`);
+        throw new Error(`payment ${mode} canonical host unavailable: ${JSON.stringify({ ...diagnostic, report: reportPath })}`, { cause: error });
+      }
+      await page.locator('[data-control-driver="tdesign-modern"]').first().waitFor({ state: 'visible', timeout: 45000 });
+      await page.waitForTimeout(300);
+      const responsesBeforeSwitch = evidence.contractResponses.length;
+      const baseline = await paymentDriverState('tdesign-modern');
+      const requiredPrimaryFields = requiredPaymentPrimaryFields(mode, paymentState);
+      const primaryFields = baseline.canonical.fields.filter((field) => field.zone === 'primary');
+      const subordinateFields = baseline.canonical.fields.filter((field) => field.zone === 'subordinate');
+      const diagnosticPath = path.join(OUTPUT, `diagnostic-payment-${mode}.json`);
+      fs.writeFileSync(diagnosticPath, `${JSON.stringify({
+        mode,
+        route: paymentRoute,
+        paymentState,
+        requiredPrimaryFields,
+        primaryFields,
+        subordinateFields,
+        canonical: baseline.canonical,
+        primarySectionIds: baseline.primarySectionIds,
+        contractLayoutShape: evidence.contractLayoutShape,
+        contractActionSummary: evidence.contractActionSummary,
+      }, null, 2)}\n`);
+      assertCanonicalSnapshot(baseline.canonical, `payment ${mode} TDesign`);
+      const primaryCodes = new Set(primaryFields.map((field) => field.fieldCode));
+      const missingRequired = requiredPrimaryFields.filter((field) => !primaryCodes.has(field));
+      check(missingRequired.length === 0, `payment ${mode} missing required P1 fields: ${JSON.stringify(missingRequired)}`);
+      check(primaryFields.length === primaryCodes.size, `payment ${mode} primary fields duplicated`);
+      check(subordinateFields.length > 0, `payment ${mode} subordinate field capabilities missing`);
+      const expectedPrimarySections = Number(paymentTarget.expected_primary_sections?.[mode] || 0);
+      check(expectedPrimarySections > 0, `payment ${mode} expected primary-section authority is missing`);
+      check(baseline.primarySectionIds.length === expectedPrimarySections, `payment ${mode} expected ${expectedPrimarySections} primary sections, got ${baseline.primarySectionIds.length}`);
+      check(new Set(baseline.primarySectionIds).size === baseline.primarySectionIds.length, `payment ${mode} primary sections duplicated`);
+      check(baseline.canonical.nodes.some((node) => node.zone === 'subordinate'), `payment ${mode} subordinate zones missing`);
+      check(baseline.canonical.actions.filter((action) => action.tier === 'primary' && action.enabled === 'true').length === 1, `payment ${mode} must expose one enabled primary action`);
+      check(baseline.horizontalOverflow === 0, `payment ${mode} TDesign overflow`);
+      const drivers = [baseline];
+      for (const driverKit of ['sc-native', 'ui5-horizon']) {
+        await page.locator('[data-contract-form-driver-chooser]').selectOption(driverKit);
+        await page.locator(`[data-contract-form-driver="${driverKit}"]`).waitFor({ state: 'visible', timeout: 45000 });
+        await page.locator(`[data-scene-ui-kit="${driverKit}"]`).waitFor({ state: 'visible', timeout: 45000 });
+        await page.waitForTimeout(250);
+        const state = await paymentDriverState(driverKit);
+        check(state.sha === baseline.sha, `payment ${mode} contract identity changed in ${driverKit}`);
+        check(JSON.stringify(state.canonical) === JSON.stringify(baseline.canonical), `payment ${mode} canonical DOM changed in ${driverKit}`);
+        check(JSON.stringify(state.primarySectionIds) === JSON.stringify(baseline.primarySectionIds), `payment ${mode} sections changed in ${driverKit}`);
+        check(state.horizontalOverflow === 0, `payment ${mode} ${driverKit} overflow`);
+        drivers.push(state);
+      }
+      check(evidence.contractResponses.length === responsesBeforeSwitch, `payment ${mode} driver switch refetched contract`);
+      const screenshotPath = path.join(OUTPUT, `ui5-payment-${mode}.png`);
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      return {
+        mode,
+        route: paymentRoute,
+        sourceContractSha256: baseline.sha,
+        primaryFieldCount: primaryFields.length,
+        subordinateFieldCount: subordinateFields.length,
+        requiredPrimaryFields,
+        primarySectionIds: baseline.primarySectionIds,
+        actionIdentities: baseline.canonical.actions.map((action) => action.backendIdentity),
+        drivers: drivers.map((state) => state.driverKit),
+        screenshot: { path: screenshotPath, sha256: sha256(screenshotPath) },
+      };
+    }
+
+    const paymentQualification = [
+      await qualifyPaymentMode(
+        'readonly',
+        `/r/${encodeURIComponent(paymentTarget.model)}/${paymentTarget.record_id}?action_id=${paymentTarget.action_id}&menu_id=${paymentTarget.menu_id}`,
+        'approved',
+      ),
+      await qualifyPaymentMode(
+        'edit',
+        `/f/${encodeURIComponent(paymentTarget.model)}/${paymentTarget.draft_record_id}?action_id=${paymentTarget.action_id}&menu_id=${paymentTarget.menu_id}`,
+        'draft',
+      ),
+    ];
+    check(evidence.mutations.length === 1, `payment qualification issued a business mutation: ${JSON.stringify(evidence.mutations)}`);
     check(
       evidence.console.length === 0 && evidence.pageerror.length === 0 && evidence.failed.length === 0,
       `driver parity runtime errors detected: ${JSON.stringify({ console: evidence.console, pageerror: evidence.pageerror, failed: evidence.failed })}`,
@@ -516,6 +711,7 @@ async function main() {
       editableModes: [editResult, createResult],
       createExecution,
       mobileModes,
+      paymentQualification,
       runtime_errors: {
         console: evidence.console,
         pageerror: evidence.pageerror,
