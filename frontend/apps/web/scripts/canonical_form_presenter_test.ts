@@ -188,14 +188,14 @@ function addContextGroup(groupId: string, fieldCodes: string[]) {
 for (let index = 1; index <= 23; index += 1) addContextGroup(`context.group.${index}`, [`context_${index}`]);
 addContextGroup('context.group.boundary', ['context_24', 'context_25']);
 addContextGroup('context.group.trailing', ['context_26']);
-addContextGroup('audit.group', [
-  'validation_status', 'reject_reason', 'legacy_source_table', 'source_created_at',
+addContextGroup('governed.audit.section', [
+  'approval_fact', 'decision_note', 'source_reference', 'source_timestamp',
 ]);
 semanticContextSnapshot.layoutContract.containerTree
   .find((node) => node.containerId === 'context.group.trailing')!
   .children[0].widgetList[0].formStructureRole = { role: 'relation' };
 semanticContextSnapshot.layoutContract.containerTree
-  .find((node) => node.containerId === 'audit.group')!
+  .find((node) => node.containerId === 'governed.audit.section')!
   .formStructureRole = { role: 'audit' };
 const semanticContextModel = presentContractV2Form(createContractV2Store(semanticContextSnapshot), 'readonly');
 const semanticContextFloorplan = composeCanonicalFormFloorplan(semanticContextModel);
@@ -211,12 +211,12 @@ assert.deepEqual(
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.auditNodes).map((field) => field.fieldCode),
-  ['validation_status', 'reject_reason', 'legacy_source_table', 'source_created_at'],
-  'a declared audit section must enter the audit region as a complete canonical block',
+  ['approval_fact', 'decision_note', 'source_reference', 'source_timestamp'],
+  'a generic declared audit section must enter the audit region as a complete canonical block',
 );
 assert.equal(
   collectFields([...semanticContextFloorplan.contextNodes, ...semanticContextFloorplan.overflowContextNodes])
-    .some((field) => ['validation_status', 'reject_reason', 'legacy_source_table', 'source_created_at'].includes(field.fieldCode)),
+    .some((field) => ['approval_fact', 'decision_note', 'source_reference', 'source_timestamp'].includes(field.fieldCode)),
   false,
   'audit-section fields must not leak into ordinary context regions',
 );

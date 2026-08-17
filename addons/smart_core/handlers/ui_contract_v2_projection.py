@@ -514,14 +514,14 @@ def apply_business_config_form_groups(
         ).items()
         if str(name).strip() and str(role).strip()
     }
-    group_semantic_roles = {
-        str(title): str(role).strip().lower()
-        for title, role in (
-            governance.get("group_semantic_roles")
-            if isinstance(governance.get("group_semantic_roles"), dict)
+    section_semantic_roles = {
+        str(section_key): str(role).strip().lower()
+        for section_key, role in (
+            governance.get("section_semantic_roles")
+            if isinstance(governance.get("section_semantic_roles"), dict)
             else {}
         ).items()
-        if str(title).strip() and str(role).strip()
+        if str(section_key).strip() and str(role).strip()
     }
     fields_meta = (
         source_contract.get("fields")
@@ -596,9 +596,23 @@ def apply_business_config_form_groups(
         set_v2_container_tree(contract, container_tree)
 
     field_groups = governance.get("field_groups") if isinstance(governance.get("field_groups"), dict) else {}
-    configured_groups: list[tuple[str, list[str]]] = []
+    configured_groups: list[tuple[str, str, list[str]]] = []
     configured_names: set[str] = set()
-    for raw_title, raw_names in field_groups.items():
+    configured_sections = (
+        governance.get("configured_sections")
+        if isinstance(governance.get("configured_sections"), list)
+        else []
+    )
+    section_rows = configured_sections or [
+        {"key": "", "title": title, "fields": names}
+        for title, names in field_groups.items()
+    ]
+    for section in section_rows:
+        if not isinstance(section, dict):
+            continue
+        section_key = str(section.get("key") or "").strip()
+        raw_title = section.get("title")
+        raw_names = section.get("fields")
         title = str(raw_title or "").strip()
         if title and not form_layout_group_visible_from_governance(governance, title):
             continue
@@ -613,7 +627,7 @@ def apply_business_config_form_groups(
         if not title or not names:
             continue
         configured_names.update(names)
-        configured_groups.append((title, names))
+        configured_groups.append((section_key, title, names))
     def apply_product_field_roles(nodes: Any) -> None:
         for node in nodes if isinstance(nodes, list) else []:
             if not isinstance(node, dict):
@@ -674,14 +688,29 @@ def apply_business_config_form_groups(
                         return found
         return None
 
-    for index, (title, names) in enumerate(configured_groups, start=1):
+    def find_group_by_section_key(nodes: list[Any], section_key: str) -> dict[str, Any] | None:
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            if str(node.get("sourceSectionKey") or "").strip() == section_key:
+                return node
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                children = node.get(key)
+                if isinstance(children, list):
+                    found = find_group_by_section_key(children, section_key)
+                    if found is not None:
+                        return found
+        return None
+
+    projected_groups: list[dict[str, Any]] = []
+    for index, (section_key, title, names) in enumerate(configured_groups, start=1):
         # A semantic entry surface owns the root task-section structure.  Do
         # not reuse an equally named group nested in the legacy/category
         # sheet: that sheet is discarded below, which would also discard the
         # fields just moved into it.  On repeated projection the authoritative
         # semantic groups are already top-level, so top-level reuse remains
         # idempotent.
-        group = (
+        group = find_group_by_section_key(container_tree, section_key) if section_key else (
             next(
                 (
                     node
@@ -703,21 +732,20 @@ def apply_business_config_form_groups(
                 "widgetList": [],
             }
             container_tree.append(group)
+        if section_key:
+            group["sourceSectionKey"] = section_key
         apply_form_layout_governance_to_group(group, title, source_contract=source_contract)
-        semantic_role = group_semantic_roles.get(title)
+        semantic_role = section_semantic_roles.get(section_key) if section_key else ""
         if semantic_role:
             existing_role = group.get("formStructureRole") if isinstance(group.get("formStructureRole"), dict) else {}
             group["formStructureRole"] = {**existing_role, "role": semantic_role}
         children = group.get("children") if isinstance(group.get("children"), list) else []
         children.extend(deepcopy(moved_nodes[name]) for name in names if name in moved_nodes)
         group["children"] = children
+        projected_groups.append(group)
 
     if semantic_surface_authority:
-        semantic_groups = [
-            node
-            for node in container_tree
-            if isinstance(node, dict) and group_title(node) in {title for title, _names in configured_groups}
-        ]
+        semantic_groups = projected_groups
         subordinate_types = {"header", "statusbar", "button_box", "attachment", "chatter"}
         preserved: list[dict[str, Any]] = []
         relation_nodes: list[dict[str, Any]] = []

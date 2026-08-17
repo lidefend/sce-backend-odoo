@@ -22,7 +22,8 @@
                             'semantic_anchors': [
                                 {'role': 'summary', 'fields': ['name', 'state', 'project_id', 'actual_payee_unit', 'payment_basis_type', 'amount', 'payee_account_completeness', 'payment_execution_status_display']},
                                 {'role': 'task', 'fields': ['legal_next_action_display']},
-                                {'role': 'risk', 'fields': ['payment_blocking_reason_display', 'partner_transaction_eligibility_reason', 'settlement_compliance_message']}
+                                {'role': 'risk', 'fields': ['payment_blocking_reason_display', 'partner_transaction_eligibility_reason', 'settlement_compliance_message']},
+                                {'role': 'audit', 'fields': ['validation_status', 'reject_reason']}
                             ],
                             'sections': [
                                 {'title': '申请识别与状态', 'sequence': 10, 'columns': 2, 'fields': ['state', 'validation_status', 'name', 'type', 'payment_flow_label', 'payee_account_completeness', 'payee_account_source_display', 'payment_execution_status_display', 'payment_blocking_reason_display', 'legal_next_action_display', 'reject_reason', 'date_request', 'amount', 'unpaid_amount', 'business_category_id']},
@@ -31,7 +32,7 @@
                                 {'title': '本次付款事实', 'sequence': 40, 'columns': 2, 'fields': ['amount_uppercase', 'accepted_amount_uppercase', 'request_amount_display', 'settlement_amount_total', 'settlement_paid_amount', 'settlement_remaining_amount', 'settlement_amount_payable', 'paid_amount_total', 'currency_id']},
                                 {'title': '账户与开票信息', 'sequence': 50, 'columns': 2, 'fields': ['payer_unit', 'actual_payee_unit', 'payment_account_name', 'payment_bank_name', 'payment_account_no', 'partner_account_name', 'partner_bank_name', 'partner_bank_account']},
                                 {'title': '说明与附件', 'sequence': 60, 'columns': 2, 'fields': ['note', 'attachment_ids', 'payment_request_attachment_text_display']},
-                                {'title': '审批与审计', 'sequence': 70, 'columns': 2, 'semantic_role': 'audit', 'fields': ['legacy_source_table', 'legacy_record_id', 'legacy_document_state', 'creator_name', 'created_time', 'source_created_by', 'source_created_at', 'active']}
+                                {'key': 'approval_audit', 'title': '审批与审计', 'sequence': 70, 'columns': 2, 'semantic_role': 'audit', 'fields': ['legacy_source_table', 'legacy_record_id', 'legacy_document_state', 'creator_name', 'created_time', 'source_created_by', 'source_created_at', 'active']}
                             ],
                             'fields': [
                                 {'name': 'state', 'sequence': 10, 'readonly': True},

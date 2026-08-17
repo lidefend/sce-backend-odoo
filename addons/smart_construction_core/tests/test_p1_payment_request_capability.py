@@ -1385,14 +1385,17 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 "payment_blocking_reason_display", "partner_transaction_eligibility_reason",
                 "settlement_compliance_message",
             ],
+            "audit": ["validation_status", "reject_reason"],
         })
-        self.assertEqual(sum(len(fields) for fields in anchors.values()), 12)
+        self.assertEqual(sum(len(fields) for role, fields in anchors.items() if role != "audit"), 12)
+        self.assertEqual(sum(len(fields) for fields in anchors.values()), 14)
         self.assertNotIn("selection_labels", str(product_payload))
         audit_sections = [
             section for section in product_payload["sections"]
             if section.get("semantic_role") == "audit"
         ]
         self.assertEqual(len(audit_sections), 1)
+        self.assertEqual(audit_sections[0]["key"], "approval_audit")
         self.assertEqual(audit_sections[0]["title"], "审批与审计")
         self.assertIn("validation_status", product_payload["sections"][0]["fields"])
         self.assertIn("reject_reason", product_payload["sections"][0]["fields"])

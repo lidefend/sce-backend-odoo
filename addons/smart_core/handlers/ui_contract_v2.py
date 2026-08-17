@@ -1851,7 +1851,8 @@ class UiContractV2Handler(BaseIntentHandler):
         field_names: list[str] = []
         field_labels: dict[str, str] = {}
         field_semantic_roles: dict[str, str] = {}
-        group_semantic_roles: dict[str, str] = {}
+        section_semantic_roles: dict[str, str] = {}
+        configured_sections: list[dict[str, Any]] = []
         allowed_semantic_roles = {"summary", "task", "context", "risk", "relation", "activity", "audit"}
         section_titles: list[str] = []
         field_groups: dict[str, list[str]] = {}
@@ -1966,6 +1967,7 @@ class UiContractV2Handler(BaseIntentHandler):
             sections = form_spec.get("sections") if isinstance(form_spec.get("sections"), list) else []
             for row in sections:
                 if isinstance(row, dict):
+                    section_key = str(row.get("key") or "").strip()
                     title = str(row.get("title") or row.get("label") or row.get("name") or "").strip()
                     fields = [
                         str(item or "").strip()
@@ -1973,6 +1975,7 @@ class UiContractV2Handler(BaseIntentHandler):
                         if str(item or "").strip()
                     ]
                 else:
+                    section_key = ""
                     title = str(row or "").strip()
                     fields = []
                 if title and title not in section_titles:
@@ -1992,10 +1995,29 @@ class UiContractV2Handler(BaseIntentHandler):
                         columns = normalize_columns(row.get("columns")) or normalize_columns(row.get("cols"))
                         if columns:
                             group_columns[title] = columns
-                if title and isinstance(row, dict):
+                semantic_role = ""
+                if isinstance(row, dict):
                     semantic_role = str(row.get("semantic_role") or "").strip().lower()
-                    if semantic_role in allowed_semantic_roles:
-                        group_semantic_roles[title] = semantic_role
+                if section_key and semantic_role in allowed_semantic_roles:
+                    section_semantic_roles[section_key] = semantic_role
+                if title and fields:
+                    section_identity = "key:%s" % section_key if section_key else "title:%s" % title
+                    existing_section = next(
+                        (item for item in configured_sections if item.get("identity") == section_identity),
+                        None,
+                    )
+                    if existing_section is None:
+                        configured_sections.append({
+                            "identity": section_identity,
+                            "key": section_key,
+                            "title": title,
+                            "fields": list(fields),
+                        })
+                    else:
+                        existing_section["title"] = title
+                        for name in fields:
+                            if name not in existing_section["fields"]:
+                                existing_section["fields"].append(name)
         applied = bool(view_governance.get("applied") or business_contracts or legacy_overlay or field_names)
         if not applied:
             return {}
@@ -2009,7 +2031,8 @@ class UiContractV2Handler(BaseIntentHandler):
             "field_names": field_names,
             "field_labels": field_labels,
             "field_semantic_roles": field_semantic_roles,
-            "group_semantic_roles": group_semantic_roles,
+            "section_semantic_roles": section_semantic_roles,
+            "configured_sections": configured_sections,
             "section_titles": section_titles,
             "field_groups": field_groups,
             "hidden_field_names": sorted(hidden_field_names),

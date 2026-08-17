@@ -56,6 +56,8 @@ object_task_page = (WEB_SRC / "pages/contractForm/ObjectTaskPage.vue").read_text
 form_floorplan = (WEB_SRC / "app/presentation/canonicalFormFloorplan.ts").read_text(encoding="utf-8")
 action_executor = (WEB_SRC / "pages/contractForm/canonicalFormActionExecutor.ts").read_text(encoding="utf-8")
 v2_assembler = (ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py").read_text(encoding="utf-8")
+v2_handler = (ROOT / "addons/smart_core/handlers/ui_contract_v2.py").read_text(encoding="utf-8")
+v2_projection = (ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py").read_text(encoding="utf-8")
 require("from '@sc/ui/form'" in form_host, "form driver host must use narrow form export")
 require("SceneUiProvider" in form_host and "ObjectTaskPage" in form_host, "form driver does not render the canonical object-task floorplan")
 require("CanonicalFormNodeRenderer" in object_task_page, "object-task floorplan does not render canonical form nodes")
@@ -110,6 +112,13 @@ require(
     "normalized form.save is not derived from exact create/write permission",
 )
 require("_apply_normalized_action_surface_policy" not in v2_assembler, "iteration one must not repartition canonical actions")
+require(
+    'section_semantic_roles[section_key] = semantic_role' in v2_handler
+    and 'group["sourceSectionKey"] = section_key' in v2_projection
+    and 'section_semantic_roles.get(section_key)' in v2_projection
+    and 'section_semantic_roles.get(title)' not in v2_projection,
+    "section semantic role is not joined through a stable source section key",
+)
 for forbidden_action_inference in ("actionRef.label", "candidate.methodName", "candidate.targetModel", "payment.request"):
     require(forbidden_action_inference not in action_executor, f"canonical action executor infers forbidden fact: {forbidden_action_inference}")
 for legacy_structure_input in (
@@ -259,4 +268,4 @@ collection_wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRender
 require("openRow" in collection_surface, "readonly collection does not expose row navigation")
 require("'open-record'" in collection_wrapper, "driver row navigation is not returned to the unified host")
 
-print("[verify.frontend.scene_component_bridge.guard] PASS checks=61")
+print("[verify.frontend.scene_component_bridge.guard] PASS checks=62")

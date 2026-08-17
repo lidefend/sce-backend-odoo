@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import ast
 import importlib.util
 import sys
 import types
@@ -3131,7 +3132,13 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     "enabled": enabled,
                     "disabled": not enabled,
                 })
-                baseline_governance = {"field_groups": {"main": ["name", "native_extra"]}}
+                baseline_governance = {
+                    "field_groups": {"main": ["name", "native_extra"]},
+                    "configured_sections": [{
+                        "identity": "key:main", "key": "main", "title": "main",
+                        "fields": ["name", "native_extra"],
+                    }],
+                }
                 source_contract = {"fields": {
                     "name": {"type": "char"}, "native_extra": {"type": "char"},
                     "line_ids": {"type": "one2many"},
@@ -3140,20 +3147,24 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     baseline, baseline_governance, source_contract=source_contract,
                 )
                 candidate = deepcopy(baseline)
-                governance = {"field_groups": {"main": ["name", "native_extra"]}, "field_semantic_roles": {
+                governance = {**baseline_governance, "field_semantic_roles": {
                     "name": "summary", "native_extra": "context", "line_ids": "relation",
-                }, "group_semantic_roles": {"main": "audit"}}
+                }, "section_semantic_roles": {"main": "audit"}}
                 self.module._projection.apply_business_config_form_groups(
                     candidate, governance, source_contract=source_contract,
                 )
 
                 self.assertEqual(strip_allowed_role_delta(candidate), strip_allowed_role_delta(baseline))
+                projected_group = next(
+                    node for node in candidate["layoutContract"]["containerTree"]
+                    if node.get("sourceSectionKey") == "main"
+                )
                 self.assertEqual(
-                    candidate["layoutContract"]["containerTree"][1]["formStructureRole"],
+                    projected_group["formStructureRole"],
                     {"role": "audit"},
                 )
                 self.assertEqual(
-                    candidate["layoutContract"]["containerTree"][1]["children"][0]["formStructureRole"],
+                    projected_group["children"][0]["formStructureRole"],
                     {"slot": "identity", "group": "main", "role": "summary"},
                 )
                 first = deepcopy(candidate)
@@ -3342,7 +3353,10 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                             "semantic_anchors": [
                                 {"role": "summary", "fields": ["name"]},
                             ],
-                            "sections": [{"title": "产品主章节", "semantic_role": "audit", "fields": ["name"]}],
+                            "sections": [{
+                                "key": "approval_audit", "title": "产品主章节",
+                                "semantic_role": "audit", "fields": ["name"],
+                            }],
                             "fields": [{"name": "name"}],
                         },
                     },
@@ -3374,7 +3388,185 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(governance["form_structure_authority"], "entry_semantic_surface")
         self.assertEqual(governance["section_titles"], ["产品主章节"])
         self.assertEqual(governance["field_semantic_roles"], {"name": "summary"})
-        self.assertEqual(governance["group_semantic_roles"], {"产品主章节": "audit"})
+        self.assertEqual(governance["section_semantic_roles"], {"approval_audit": "audit"})
+        self.assertEqual(governance["configured_sections"], [{
+            "identity": "key:approval_audit", "key": "approval_audit",
+            "title": "产品主章节", "fields": ["name"],
+        }])
+
+        without_key = deepcopy(_Config.contract_json)
+        without_key["view_orchestration"]["views"]["form"]["sections"][0].pop("key")
+        _Config.contract_json = without_key
+        governance_without_key = handler._form_structure_governance(
+            source,
+            model="demo.business",
+            view_type="form",
+        )
+        self.assertEqual(governance_without_key["section_semantic_roles"], {})
+        self.assertEqual(governance_without_key["configured_sections"][0]["key"], "")
+
+    def test_real_payment_contract_uses_stable_audit_identity_and_role_only_delta(self):
+        repository = Path(__file__).resolve().parents[3]
+        product_xml = repository / "addons/smart_construction_core/data/payment_request_form_productization_contract.xml"
+        xml_root = ET.parse(product_xml).getroot()
+        record = next(
+            row for row in xml_root.iter("record")
+            if row.get("id") == "business_config_contract_payment_request_pay_productized_form_v1"
+        )
+        raw_contract = next(
+            field.get("eval") for field in record.findall("field")
+            if field.get("name") == "contract_json"
+        )
+        product_contract = ast.literal_eval(raw_contract)
+        form_spec = product_contract["view_orchestration"]["views"]["form"]
+
+        class _Config:
+            id = 775
+            name = "payment_request_pay_productized_form_v1"
+            priority = 700
+            view_type = "form"
+            contract_json = product_contract
+
+        class _ConfigModel:
+            def _effective_view_orchestration_contracts(self, *args, **kwargs):
+                return [_Config()]
+
+        class _Env:
+            def __getitem__(self, model):
+                if model == "ui.business.config.contract":
+                    return _ConfigModel()
+                raise KeyError(model)
+
+        fields = []
+        for section in form_spec["sections"]:
+            for name in section["fields"]:
+                if name not in fields:
+                    fields.append(name)
+        field_nodes = [{
+            "type": "field", "containerType": "field", "containerId": "field.%s" % name,
+            "name": name, "title": name, "span": 12, "children": [], "widgetList": [],
+            "modifiers": {"readonly": [["state", "!=", "draft"]]},
+        } for name in fields]
+        base_contract = {
+            "pageInfo": {"viewType": "form", "model": "payment.request"},
+            "layoutContract": {"containerTree": [{
+                "type": "group", "containerType": "group", "containerId": "native.main",
+                "title": "Native", "span": 24, "children": field_nodes, "widgetList": [],
+            }, {
+                "type": "notebook", "containerType": "notebook", "containerId": "native.relations",
+                "title": "Relations", "span": 24, "children": [], "widgetList": [],
+            }, {
+                "type": "attachment", "containerType": "attachment", "containerId": "native.attachment",
+                "title": "Attachments", "span": 24, "children": [], "widgetList": [],
+            }, {
+                "type": "chatter", "containerType": "chatter", "containerId": "native.chatter",
+                "title": "Activity", "span": 24, "children": [], "widgetList": [],
+            }]},
+            "formStructureContract": {"fieldRoles": {
+                name: {"slot": "body", "group": "native"} for name in fields
+            }},
+            "statusContract": {"containerStatus": [], "widgetStatus": [], "buttonStatus": [{
+                "actionKey": "payment.execute", "visible": True, "disabled": False,
+            }]},
+            "actionContract": {"actionRuleList": [{
+                "actionKey": "payment.execute", "backendIdentity": "button:object:action_execute",
+                "allowed": True, "enabled": True, "disabled": False,
+                "sourceTrace": [{"sourceChannel": "native", "sourceActionKey": "action_execute"}],
+            }], "dependencyGraph": {"payment.execute": ["state"]}},
+            "dataContract": {"mainData": {"id": 30, "state": "approved"}},
+        }
+        source_contract = {
+            "model": "payment.request", "view_type": "form",
+            "fields": {
+                name: {"name": name, "type": "many2many" if name == "attachment_ids" else "char"}
+                for name in fields
+            },
+        }
+        handler = self.module.UiContractV2Handler(env=_Env())
+        governance = handler._form_structure_governance(
+            source_contract, model="payment.request", view_type="form",
+        )
+        governance["semantic_surface_authority"] = True
+        baseline_governance = deepcopy(governance)
+        baseline_governance["field_semantic_roles"] = {}
+        baseline_governance["section_semantic_roles"] = {}
+
+        baseline = deepcopy(base_contract)
+        self.module._projection.apply_business_config_form_groups(
+            baseline, baseline_governance, source_contract=source_contract,
+        )
+        candidate = deepcopy(base_contract)
+        renamed_governance = deepcopy(governance)
+        for section in renamed_governance["configured_sections"]:
+            if section.get("key") == "approval_audit":
+                section["title"] = "Approval & Audit"
+        self.module._projection.apply_business_config_form_groups(
+            candidate, renamed_governance, source_contract=source_contract,
+        )
+
+        def strip_semantic_roles(value):
+            if isinstance(value, list):
+                return [strip_semantic_roles(item) for item in value]
+            if not isinstance(value, dict):
+                return value
+            cleaned = {key: strip_semantic_roles(item) for key, item in value.items()}
+            role = cleaned.get("formStructureRole")
+            if isinstance(role, dict):
+                role.pop("role", None)
+                if not role:
+                    cleaned.pop("formStructureRole", None)
+            field_roles = cleaned.get("fieldRoles")
+            if isinstance(field_roles, dict):
+                for field_role in field_roles.values():
+                    if isinstance(field_role, dict):
+                        field_role.pop("role", None)
+            return cleaned
+
+        audit_group = next(
+            node for node in candidate["layoutContract"]["containerTree"]
+            if node.get("sourceSectionKey") == "approval_audit"
+        )
+        self.assertEqual(audit_group["title"], "Approval & Audit")
+        self.assertEqual(audit_group["formStructureRole"], {"role": "audit"})
+        self.assertIn("legacy_source_table", [node.get("name") for node in audit_group["children"]])
+        container_types = [
+            node.get("containerType") for node in candidate["layoutContract"]["containerTree"]
+        ]
+        self.assertIn("notebook", container_types)
+        self.assertIn("attachment", container_types)
+        self.assertIn("chatter", container_types)
+
+        def find_field(nodes, name):
+            for node in nodes:
+                if not isinstance(node, dict):
+                    continue
+                if node.get("name") == name and node.get("containerType") == "field":
+                    return node
+                for key in ("children", "pages", "tabs", "nodes", "items"):
+                    child = find_field(node.get(key) or [], name)
+                    if child is not None:
+                        return child
+            return None
+
+        for name in ("validation_status", "reject_reason"):
+            field = find_field(candidate["layoutContract"]["containerTree"], name)
+            self.assertIsNotNone(field)
+            self.assertEqual(field["formStructureRole"]["role"], "audit")
+
+        baseline_for_rename = deepcopy(baseline)
+        baseline_audit = next(
+            node for node in baseline_for_rename["layoutContract"]["containerTree"]
+            if node.get("sourceSectionKey") == "approval_audit"
+        )
+        baseline_audit["title"] = "Approval & Audit"
+        baseline_audit["string"] = "Approval & Audit"
+        baseline_audit["label"] = "Approval & Audit"
+        self.assertEqual(strip_semantic_roles(candidate), strip_semantic_roles(baseline_for_rename))
+        first = deepcopy(candidate)
+        self.module._projection.apply_business_config_form_groups(
+            candidate, renamed_governance, source_contract=source_contract,
+        )
+        self.assertEqual(candidate, first)
 
     def test_tree_projection_does_not_import_form_structure_fields_into_list_profile(self):
         class _Field:
