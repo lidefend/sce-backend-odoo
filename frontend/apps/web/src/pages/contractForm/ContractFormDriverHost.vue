@@ -27,7 +27,7 @@
     <SceneUiProvider :kit="activeKit" fallback-kit="sc-native" density="compact">
       <nav v-if="visibleActions.length" class="canonical-form-action-bar" aria-label="表单业务动作" data-canonical-action-bar>
         <button
-          v-for="action in visibleActions"
+          v-for="action in directActions"
           :key="action.key"
           type="button"
           :class="['canonical-form-action', `canonical-form-action--${action.tier}`, { 'is-danger': actionDanger(action) }]"
@@ -39,6 +39,24 @@
           :data-action-enabled="String(action.enabled)"
           @click="action.enabled && emit('action-ref', action.actionRef)"
         >{{ action.label }}</button>
+        <details v-if="overflowActions.length" class="canonical-form-action-overflow">
+          <summary>更多操作</summary>
+          <div class="canonical-form-action-overflow-panel">
+            <button
+              v-for="action in overflowActions"
+              :key="action.key"
+              type="button"
+              class="canonical-form-action canonical-form-action--overflow"
+              :disabled="!action.enabled"
+              :title="action.reasonCode || undefined"
+              :data-action-ref="action.actionRef.actionId"
+              :data-backend-identity="action.actionRef.backendIdentity"
+              :data-action-tier="action.tier"
+              :data-action-enabled="String(action.enabled)"
+              @click="action.enabled && emit('action-ref', action.actionRef)"
+            >{{ action.label }}</button>
+          </div>
+        </details>
       </nav>
       <div class="canonical-form-zones" data-canonical-form-zones>
         <section class="canonical-form-zone canonical-form-zone--primary" data-canonical-zone="primary">
@@ -119,6 +137,10 @@ const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 
 const allowedKits = computed<SceneUiKitId[]>(() => props.driverConfig?.allowedKits?.length ? props.driverConfig.allowedKits : ['sc-native']);
 const allowUserOverride = computed(() => props.driverConfig?.allowUserOverride === true && allowedKits.value.length > 1);
 const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
+const directActions = computed(() => visibleActions.value.filter((action) => (
+  action.enabled && !['overflow', 'configuration'].includes(action.tier)
+)));
+const overflowActions = computed(() => visibleActions.value.filter((action) => !directActions.value.includes(action)));
 const primaryNodes = computed(() => props.renderModel?.zones.primary.filter(canonicalNodeHasContent) || []);
 const subordinateNodes = computed(() => props.renderModel?.zones.subordinate
   .filter((node) => !collaborationKind(node.kind))
@@ -173,12 +195,27 @@ function changeKit(event: Event) {
   cursor: pointer;
 }
 .canonical-form-action--primary {
-  border-color: var(--sc-app-primary);
-  background: var(--sc-app-primary);
-  color: var(--sc-app-on-primary, #fff);
+  border-color: var(--sc-semantic-surface-interactive, #2563eb);
+  background: var(--sc-semantic-surface-interactive, #2563eb);
+  color: var(--sc-semantic-text-on-interactive, #fff) !important;
 }
 .canonical-form-action.is-danger { color: var(--sc-app-danger-text); }
 .canonical-form-action:disabled { cursor: not-allowed; opacity: 0.55; }
+.canonical-form-action-overflow { position: relative; }
+.canonical-form-action-overflow > summary { cursor: pointer; color: var(--sc-app-text-primary, #183247); }
+.canonical-form-action-overflow-panel {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  display: grid;
+  gap: 6px;
+  min-width: 240px;
+  padding: 10px;
+  border: 1px solid var(--sc-app-border, #cbd5df);
+  border-radius: 8px;
+  background: var(--sc-app-panel, #fff);
+  box-shadow: 0 10px 28px rgb(26 48 66 / 16%);
+}
 .canonical-form-zones { display: grid; gap: 20px; min-width: 0; }
 .canonical-form-zone { min-width: 0; }
 .canonical-form-zone--subordinate {

@@ -3,6 +3,12 @@ import type { ContractV2ActionRule } from '../contracts/v2/types';
 export type CanonicalFormRenderMode = 'create' | 'edit' | 'readonly';
 export type CanonicalFormZoneRole = 'primary' | 'subordinate';
 
+export type CanonicalRelationValue = {
+  id: string | number;
+  displayName: string;
+  model: string;
+};
+
 export type CanonicalFormAction = {
   key: string;
   label: string;
@@ -19,7 +25,7 @@ export type CanonicalFormField = {
   widgetId: string;
   fieldCode: string;
   label: string;
-  value: unknown;
+  value: unknown | CanonicalRelationValue;
   fieldType: string;
   componentKey: string;
   span: number;

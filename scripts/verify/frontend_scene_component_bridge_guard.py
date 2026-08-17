@@ -58,8 +58,26 @@ require("from '@sc/ui/form'" in form_host, "form driver host must use narrow for
 require("SceneUiProvider" in form_host and "CanonicalFormNodeRenderer" in form_host, "form driver does not render canonical form nodes")
 require("SceneObjectPageContract" not in form_host, "ContractForm driver host must not consume the UI-internal SceneObjectPage DTO")
 require("data-contract-form-driver-error" in form_host, "invalid normalized form contract does not fail closed")
+require(
+    "action.enabled && !['overflow', 'configuration'].includes(action.tier)" in form_host
+    and "overflowActions" in form_host,
+    "disabled or overflow actions can occupy the direct handling action bar",
+)
+require(
+    "var(--sc-semantic-surface-interactive, #2563eb)" in form_host
+    and "var(--sc-semantic-text-on-interactive, #fff) !important" in form_host,
+    "primary action lacks a theme-independent visible contrast fallback",
+)
 require("actionId === 'form.save'" in action_executor, "canonical form.save is not bridged to the unified save executor")
 presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
+require(
+    "mode === 'readonly' && action.actionId === 'form.save'" in presenter,
+    "readonly canonical forms can expose the generic save mutation",
+)
+require(
+    "relationParts" in presenter and "displayName" in presenter and "relationModel(widget)" in presenter,
+    "canonical relation fields do not retain normalized business display identity",
+)
 require(
     "filter(isFormActionBarAction)" in presenter
     and "sourceWidgetId === 'page.root'" in presenter

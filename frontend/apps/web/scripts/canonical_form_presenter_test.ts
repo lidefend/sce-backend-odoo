@@ -128,6 +128,49 @@ assert.equal(
   'runtime edits must update the ephemeral render model without changing normalized authority',
 );
 
+const relationSnapshot = snapshot();
+relationSnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'field.project_id', containerType: 'field', type: 'field', name: 'project_id', title: '', span: 12,
+  children: [], widgetList: [{
+    widgetId: 'field.project_id', widgetType: 'many2one', fieldCode: 'project_id', label: 'Project', span: 12,
+    componentKey: 'sc.relation.many2one', capabilities: [],
+    componentConfig: { relation: 'project.project' }, fieldType: 'many2one',
+  }],
+});
+relationSnapshot.statusContract.widgetStatus.push({
+  widgetId: 'field.project_id', visible: true, readonly: true, required: false, disabled: false,
+});
+relationSnapshot.dataContract.mainData.project_id = [852, 'Road Project'];
+const relationModel = presentContractV2Form(createContractV2Store(relationSnapshot), 'readonly', { project_id: 852 });
+const relationField = collectFields(relationModel.zones.primary).find((field) => field.fieldCode === 'project_id')!;
+assert.deepEqual(
+  relationField.value,
+  { id: 852, displayName: 'Road Project', model: 'project.project' },
+  'runtime scalar relation ids must retain the normalized business display identity',
+);
+const renderedRelation = canonicalFieldToFormSection(relationField);
+assert.deepEqual(
+  { value: renderedRelation.value, inputValue: renderedRelation.inputValue, text: renderedRelation.many2oneTextValue },
+  { value: 'Road Project', inputValue: 852, text: 'Road Project' },
+  'all drivers must receive the same relation display name instead of a naked database id',
+);
+
+const emptySnapshot = snapshot();
+emptySnapshot.dataContract.mainData.name = false;
+const emptyName = collectFields(presentContractV2Form(createContractV2Store(emptySnapshot), 'readonly').zones.primary)
+  .find((field) => field.fieldCode === 'name');
+assert.equal(emptyName?.value, null, 'non-boolean Odoo false values must normalize to one empty display fact');
+
+const duplicateTitleSnapshot = snapshot();
+duplicateTitleSnapshot.layoutContract.containerTree[1].title = 'Related';
+duplicateTitleSnapshot.layoutContract.containerTree[1].children[0].title = 'Related';
+const duplicateTitleModel = presentContractV2Form(createContractV2Store(duplicateTitleSnapshot), 'readonly');
+assert.equal(
+  duplicateTitleModel.zones.subordinate[0].children[0].title,
+  '',
+  'a nested subordinate node must not repeat the same visual title as its parent',
+);
+
 const readonlyModel = presentContractV2Form(store, 'readonly');
 assert.equal(
   collectFields(readonlyModel.zones.primary).find((field) => field.fieldCode === 'name')?.readonly,
@@ -294,6 +337,23 @@ duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visib
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
 const normalizedAction = snapshot().actionContract.actionRuleList[0];
+const readonlySaveSnapshot = snapshot();
+readonlySaveSnapshot.actionContract.actionRuleList = [{
+  ...readonlySaveSnapshot.actionContract.actionRuleList[0],
+  actionId: 'form.save', backendIdentity: 'contract_action:form.save',
+  visibleProfiles: ['create', 'edit', 'readonly'],
+}];
+readonlySaveSnapshot.statusContract.buttonStatus = [{ btnId: 'form.save', visible: true, disabled: false }];
+assert.equal(
+  presentContractV2Form(createContractV2Store(readonlySaveSnapshot), 'readonly').actionBar[0]?.visible,
+  false,
+  'readonly routes must not expose the generic save mutation even when the normalized rule lists readonly',
+);
+assert.equal(
+  presentContractV2Form(createContractV2Store(readonlySaveSnapshot), 'edit').actionBar[0]?.visible,
+  true,
+  'the same normalized save action remains available in edit mode',
+);
 const contractAction = {
   key: 'action_submit', backendIdentity: 'button:object:action_submit', label: 'Submit', kind: 'object',
   level: 'header', selection: 'none', actionId: null, methodName: 'action_submit', targetModel: 'x.document',
@@ -341,4 +401,4 @@ assert.deepEqual(
   'an executable action without an exact unified executor adapter must block canonical cutover',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=32');
+console.log('[canonical_form_presenter_test] PASS cases=38');
