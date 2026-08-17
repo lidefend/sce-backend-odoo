@@ -138,6 +138,37 @@ assert.deepEqual(
 );
 assert.deepEqual(readonlyFloorplan.contextNodes, []);
 
+const createFloorplanSnapshot = snapshot();
+createFloorplanSnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'field.empty_context', containerType: 'field', type: 'field', name: 'empty_context', title: '', span: 12,
+  children: [], widgetList: [{
+    widgetId: 'field.empty_context', widgetType: 'char', fieldCode: 'empty_context', label: 'Empty context', span: 12,
+    componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+  }],
+});
+createFloorplanSnapshot.statusContract.widgetStatus.push({
+  widgetId: 'field.empty_context', visible: true, readonly: true, required: false, disabled: false,
+});
+createFloorplanSnapshot.dataContract.mainData.empty_context = false;
+createFloorplanSnapshot.actionContract.actionRuleList = [{
+  ...createFloorplanSnapshot.actionContract.actionRuleList[0],
+  actionId: 'form.save', backendIdentity: 'contract_action:form.save', actionKey: 'form.save',
+  visibleProfiles: ['create', 'edit'], presentation: { tier: 'secondary' },
+}];
+createFloorplanSnapshot.statusContract.buttonStatus = [{ btnId: 'form.save', visible: true, disabled: false }];
+const createFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(
+  createContractV2Store(createFloorplanSnapshot),
+  'create',
+));
+assert.equal(
+  collectFields(createFloorplan.taskNodes).some((field) => field.fieldCode === 'empty_context'),
+  false,
+  'create floorplan must not reserve a control for an empty readonly fact',
+);
+assert.equal(createFloorplan.effectivePrimaryKey, 'form.save', 'create save must occupy the effective primary slot');
+assert.deepEqual(createFloorplan.directActions.map((action) => action.key), ['form.save']);
+assert.deepEqual(createFloorplan.overflowActions, []);
+
 const contextRailSnapshot = snapshot();
 contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
   containerId: 'section.context', containerType: 'group', type: 'group', title: 'Context', span: 24,
@@ -448,4 +479,4 @@ assert.deepEqual(
   'an executable action without an exact unified executor adapter must block canonical cutover',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=45');
+console.log('[canonical_form_presenter_test] PASS cases=49');

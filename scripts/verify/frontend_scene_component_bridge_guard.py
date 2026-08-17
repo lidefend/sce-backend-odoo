@@ -68,8 +68,10 @@ for forbidden_floorplan_fact in ("payment.request", "sc.payment.execution", "付
 require("SceneObjectPageContract" not in form_host, "ContractForm driver host must not consume the UI-internal SceneObjectPage DTO")
 require("data-contract-form-driver-error" in form_host, "invalid normalized form contract does not fail closed")
 require(
-    "action.enabled && !['overflow', 'configuration'].includes(action.tier)" in form_host
-    and "overflowActions" in form_host,
+    "action.enabled" in form_floorplan
+    and "!['overflow', 'configuration'].includes(action.tier)" in form_floorplan
+    and "directActions" in form_floorplan
+    and "overflowActions" in form_floorplan,
     "disabled or overflow actions can occupy the direct handling action bar",
 )
 require(

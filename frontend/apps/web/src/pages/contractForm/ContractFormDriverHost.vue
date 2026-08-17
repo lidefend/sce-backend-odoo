@@ -53,12 +53,13 @@
               v-for="action in directActions"
               :key="action.key"
               type="button"
-              :class="['canonical-form-action', `canonical-form-action--${action.tier}`, { 'is-danger': actionDanger(action) }]"
+              :class="['canonical-form-action', `canonical-form-action--${effectiveActionTier(action)}`, { 'is-danger': actionDanger(action) }]"
               :disabled="!action.enabled"
               :title="action.reasonCode || undefined"
               :data-action-ref="action.actionRef.actionId"
               :data-backend-identity="action.actionRef.backendIdentity"
-              :data-action-tier="action.tier"
+              :data-action-tier="effectiveActionTier(action)"
+              :data-normalized-action-tier="action.tier"
               :data-action-enabled="String(action.enabled)"
               @click="action.enabled && emit('action-ref', action.actionRef)"
             >{{ action.label }}</button>
@@ -134,15 +135,11 @@ const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 
 const allowedKits = computed<SceneUiKitId[]>(() => props.driverConfig?.allowedKits?.length ? props.driverConfig.allowedKits : ['sc-native']);
 const allowUserOverride = computed(() => props.driverConfig?.allowUserOverride === true && allowedKits.value.length > 1);
 const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel) : {
-  taskNodes: [], contextNodes: [], subordinateNodes: [], blockedActions: [],
+  taskNodes: [], contextNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [], effectivePrimaryKey: '',
 });
 const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
-const directActions = computed(() => visibleActions.value.filter((action) => (
-  action.enabled && !['overflow', 'configuration'].includes(action.tier)
-)));
-const overflowActions = computed(() => visibleActions.value.filter((action) => (
-  !directActions.value.includes(action) && !floorplan.value.blockedActions.includes(action)
-)));
+const directActions = computed(() => floorplan.value.directActions);
+const overflowActions = computed(() => floorplan.value.overflowActions);
 const subordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
@@ -155,6 +152,10 @@ function collaborationKind(kind: string) {
 function actionDanger(action: CanonicalFormAction) {
   const classification = String(action.safety.classification || action.safety.level || '').trim().toLowerCase();
   return classification === 'danger' || action.safety.destructive === true;
+}
+
+function effectiveActionTier(action: CanonicalFormAction) {
+  return floorplan.value.effectivePrimaryKey === action.key ? 'primary' : action.tier;
 }
 
 function kitLabel(kit: SceneUiKitId) {
