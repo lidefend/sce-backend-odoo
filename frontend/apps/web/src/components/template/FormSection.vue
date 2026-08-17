@@ -117,6 +117,9 @@
                 :model-value="contractFormDriverValue(field)"
                 @update:model-value="emitFieldChange(field, $event)"
               />
+              <template v-else-if="isRelationEditorField(field) && relationAdapter">
+                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
+              </template>
               <template v-else-if="field.readonly">
                 <slot name="readonly" :field="field">
                   <div
@@ -126,9 +129,6 @@
                   />
                   <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
-              </template>
-              <template v-else-if="isRelationEditorField(field) && relationAdapter">
-                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
               </template>
               <template v-else-if="isBaseFieldType(field.type)">
                 <input

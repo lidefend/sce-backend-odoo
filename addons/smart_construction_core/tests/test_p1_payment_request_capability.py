@@ -1371,6 +1371,31 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(len(product_payload["sections"]), 7)
         self.assertIn("legal_next_action_display", product_payload["sections"][0]["fields"])
         self.assertIn("payment_blocking_reason_display", product_payload["sections"][0]["fields"])
+        anchors = {
+            row["role"]: row["fields"]
+            for row in product_payload["semantic_anchors"]
+        }
+        self.assertEqual(anchors, {
+            "summary": [
+                "name", "state", "project_id", "actual_payee_unit", "payment_basis_type", "amount",
+                "payee_account_completeness", "payment_execution_status_display",
+            ],
+            "task": ["legal_next_action_display"],
+            "risk": [
+                "payment_blocking_reason_display", "partner_transaction_eligibility_reason",
+                "settlement_compliance_message",
+            ],
+        })
+        self.assertEqual(sum(len(fields) for fields in anchors.values()), 12)
+        self.assertNotIn("selection_labels", str(product_payload))
+        audit_sections = [
+            section for section in product_payload["sections"]
+            if section.get("semantic_role") == "audit"
+        ]
+        self.assertEqual(len(audit_sections), 1)
+        self.assertEqual(audit_sections[0]["title"], "审批与审计")
+        self.assertIn("validation_status", product_payload["sections"][0]["fields"])
+        self.assertIn("reject_reason", product_payload["sections"][0]["fields"])
         self.assertEqual(product_payload["actions"][0]["name"], "action_create_payment_execution")
         self.assertEqual(product_payload["actions"][0]["style"], "primary")
         self.assertEqual(

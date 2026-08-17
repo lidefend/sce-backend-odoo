@@ -505,6 +505,24 @@ def apply_business_config_form_groups(
         if str(item or "").strip()
     }
     semantic_surface_authority = bool(governance.get("semantic_surface_authority"))
+    field_semantic_roles = {
+        str(name): str(role).strip().lower()
+        for name, role in (
+            governance.get("field_semantic_roles")
+            if isinstance(governance.get("field_semantic_roles"), dict)
+            else {}
+        ).items()
+        if str(name).strip() and str(role).strip()
+    }
+    group_semantic_roles = {
+        str(title): str(role).strip().lower()
+        for title, role in (
+            governance.get("group_semantic_roles")
+            if isinstance(governance.get("group_semantic_roles"), dict)
+            else {}
+        ).items()
+        if str(title).strip() and str(role).strip()
+    }
     fields_meta = (
         source_contract.get("fields")
         if isinstance(source_contract, dict) and isinstance(source_contract.get("fields"), dict)
@@ -596,7 +614,34 @@ def apply_business_config_form_groups(
             continue
         configured_names.update(names)
         configured_groups.append((title, names))
+    def apply_product_field_roles(nodes: Any) -> None:
+        for node in nodes if isinstance(nodes, list) else []:
+            if not isinstance(node, dict):
+                continue
+            name = node_field_name(node)
+            role = field_semantic_roles.get(name)
+            if role:
+                existing_role = node.get("formStructureRole") if isinstance(node.get("formStructureRole"), dict) else {}
+                node["formStructureRole"] = {**existing_role, "role": role}
+            for key in (*_CONTAINER_CHILD_KEYS, "widgetList"):
+                apply_product_field_roles(node.get(key))
+
+    apply_product_field_roles(container_tree)
+    structure = contract.get("formStructureContract") if isinstance(contract.get("formStructureContract"), dict) else {}
+    if field_semantic_roles:
+        roles = structure.get("fieldRoles") if isinstance(structure.get("fieldRoles"), dict) else {}
+        structure["fieldRoles"] = {
+            **roles,
+            **{
+                name: {**(roles.get(name) if isinstance(roles.get(name), dict) else {}), "role": role}
+                for name, role in field_semantic_roles.items()
+            },
+        }
+        contract["formStructureContract"] = structure
     if not configured_groups:
+        # Sparse product intent annotates the already-normalized field nodes in
+        # place.  It must not normalize, regroup, or otherwise rewrite the
+        # assembled container tree merely because semantic roles are present.
         return
 
     moved_nodes: dict[str, dict[str, Any]] = {}
@@ -659,6 +704,10 @@ def apply_business_config_form_groups(
             }
             container_tree.append(group)
         apply_form_layout_governance_to_group(group, title, source_contract=source_contract)
+        semantic_role = group_semantic_roles.get(title)
+        if semantic_role:
+            existing_role = group.get("formStructureRole") if isinstance(group.get("formStructureRole"), dict) else {}
+            group["formStructureRole"] = {**existing_role, "role": semantic_role}
         children = group.get("children") if isinstance(group.get("children"), list) else []
         children.extend(deepcopy(moved_nodes[name]) for name in names if name in moved_nodes)
         group["children"] = children

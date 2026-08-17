@@ -2971,6 +2971,197 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual([row["fieldCode"] for row in widgets], ["amount"])
         self.assertNotIn("subject", contract["formStructureContract"]["fieldRoles"])
 
+    def test_sparse_semantic_anchors_preserve_unlisted_native_fields_and_modifiers(self):
+        contract = {
+            "layoutContract": {"containerTree": [{
+                "type": "group", "containerType": "group", "containerId": "group.identity", "string": "Identity",
+                "children": [{
+                    "type": "field", "containerType": "field", "containerId": "field.validation_status",
+                    "name": "validation_status",
+                    "componentConfig": {"fieldType": "selection", "selection": [["no", "Without validation"], ["validated", "Validated"]]},
+                    "children": [], "widgetList": [],
+                }, {
+                    "type": "field", "containerType": "field", "containerId": "field.native_extra",
+                    "name": "native_extra", "modifiers": {"invisible": [["state", "=", "done"]]},
+                    "children": [], "widgetList": [],
+                }], "widgetList": [],
+            }]},
+            "statusContract": {"containerStatus": []},
+            "formStructureContract": {"fieldRoles": {"validation_status": {"slot": "identity", "group": "identity"}}},
+        }
+        governance = {
+            "field_groups": {},
+            "field_semantic_roles": {"validation_status": "audit"},
+        }
+
+        self.module._projection.apply_business_config_form_groups(contract, governance, source_contract={})
+
+        field = contract["layoutContract"]["containerTree"][0]["children"][0]
+        self.assertEqual(field["formStructureRole"]["role"], "audit")
+        self.assertEqual(field["componentConfig"]["selection"], [["no", "Without validation"], ["validated", "Validated"]])
+        self.assertEqual(contract["formStructureContract"]["fieldRoles"]["validation_status"]["role"], "audit")
+        native_extra = contract["layoutContract"]["containerTree"][0]["children"][1]
+        self.assertNotIn("formStructureRole", native_extra)
+        self.assertEqual(native_extra["modifiers"], {"invisible": [["state", "=", "done"]]})
+
+    def test_page_without_product_intent_keeps_native_tree_byte_equivalent(self):
+        contract = {
+            "layoutContract": {"containerTree": [{
+                "type": "group", "name": "native", "children": [{
+                    "type": "field", "name": "new_native_fact",
+                    "modifiers": {"readonly": [["state", "!=", "draft"]]},
+                }],
+            }]},
+            "formStructureContract": {"fieldRoles": {}},
+        }
+        before = deepcopy(contract)
+
+        self.module._projection.apply_business_config_form_groups(contract, {}, source_contract={})
+
+        self.assertEqual(contract, before)
+
+    def test_sparse_semantic_roles_are_the_only_four_state_contract_delta(self):
+        def strip_allowed_role_delta(value):
+            if isinstance(value, list):
+                return [strip_allowed_role_delta(item) for item in value]
+            if not isinstance(value, dict):
+                return value
+            cleaned = {key: strip_allowed_role_delta(item) for key, item in value.items()}
+            structure_role = cleaned.get("formStructureRole")
+            if isinstance(structure_role, dict):
+                structure_role.pop("role", None)
+                if not structure_role:
+                    cleaned.pop("formStructureRole", None)
+            if isinstance(cleaned.get("fieldRoles"), dict):
+                for field_role in cleaned["fieldRoles"].values():
+                    if isinstance(field_role, dict):
+                        field_role.pop("role", None)
+            return cleaned
+
+        base_contract = {
+            "pageInfo": {"viewType": "form", "model": "x.document"},
+            "layoutContract": {"containerTree": [{
+                "type": "header", "containerType": "header", "containerId": "header.main",
+                "span": 24, "children": [], "widgetList": [],
+            }, {
+                "type": "group", "containerType": "group", "containerId": "group.main", "title": "main", "string": "main",
+                "span": 24, "children": [{
+                    "type": "field", "containerType": "field", "containerId": "field.name",
+                    "span": 12, "name": "name", "children": [], "widgetList": [],
+                    "formStructureRole": {"slot": "identity", "group": "main"},
+                    "componentConfig": {"fieldType": "char", "widget": "text"},
+                    "modifiers": {"readonly": [["state", "!=", "draft"]]},
+                }, {
+                    "type": "field", "containerType": "field", "containerId": "field.native_extra",
+                    "span": 12, "name": "native_extra", "children": [], "widgetList": [],
+                    "componentConfig": {"fieldType": "char"},
+                    "modifiers": {"invisible": [["state", "=", "cancel"]]},
+                }], "widgetList": [{
+                    "widgetId": "widget.name", "fieldCode": "name", "widgetType": "field",
+                    "componentConfig": {"fieldType": "char"},
+                }],
+            }, {
+                "type": "notebook", "containerType": "notebook", "containerId": "notebook.relations",
+                "span": 24, "children": [{
+                    "type": "page", "containerType": "page", "containerId": "page.lines",
+                    "span": 24, "children": [{
+                        "type": "field", "containerType": "field", "containerId": "field.line_ids",
+                        "span": 24, "name": "line_ids", "children": [], "widgetList": [],
+                        "componentConfig": {"fieldType": "one2many"},
+                    }], "widgetList": [],
+                }], "widgetList": [],
+            }, {
+                "type": "attachment", "containerType": "attachment", "containerId": "attachment.main",
+                "span": 24, "children": [], "widgetList": [],
+            }, {
+                "type": "chatter", "containerType": "chatter", "containerId": "chatter.main",
+                "span": 24, "children": [], "widgetList": [],
+            }]},
+            "formStructureContract": {"fieldRoles": {
+                "name": {"slot": "identity", "group": "main"},
+                "native_extra": {"slot": "body", "group": "main"},
+                "line_ids": {"slot": "subordinate", "group": "relations"},
+            }},
+            "statusContract": {
+                "containerStatus": [
+                    {"containerId": "header.main", "visible": True, "disabled": False},
+                    {"containerId": "group.main", "visible": True, "disabled": False},
+                    {"containerId": "notebook.relations", "visible": True, "disabled": False},
+                ],
+                "widgetStatus": [{
+                    "widgetId": "widget.name", "visible": True, "readonly": False,
+                    "required": True, "disabled": False,
+                }],
+                "buttonStatus": [{
+                    "actionKey": "document.submit", "visible": True, "disabled": False,
+                    "reasonCode": "OK",
+                }],
+            },
+            "actionContract": {
+                "actionRuleList": [{
+                    "actionKey": "document.submit", "backendIdentity": "button:object:action_submit",
+                    "allowed": True, "enabled": True, "disabled": False,
+                    "presentation": {"tier": "primary"},
+                    "sourceTrace": [{"sourceChannel": "native", "sourceActionKey": "action_submit"}],
+                }],
+                "dependencyGraph": {"document.submit": ["field.name"]},
+            },
+            "dataContract": {
+                "mainData": {"id": 7, "name": "DOC-007", "native_extra": "kept"},
+                "dataMeta": {"source": "orm", "revision": "baseline"},
+            },
+        }
+        cases = (
+            ("create", "draft", False, True),
+            ("readonly", "draft", True, False),
+            ("readonly", "approved", True, True),
+            ("readonly", "blocked", True, False),
+        )
+        for mode, state, readonly, enabled in cases:
+            with self.subTest(mode=mode, state=state):
+                baseline = deepcopy(base_contract)
+                baseline["pageInfo"].update({"renderProfile": mode, "state": state})
+                baseline["statusContract"]["widgetStatus"][0]["readonly"] = readonly
+                baseline["statusContract"]["buttonStatus"][0].update({
+                    "disabled": not enabled,
+                    "reasonCode": "OK" if enabled else "ACTION_NOT_ALLOWED",
+                })
+                baseline["actionContract"]["actionRuleList"][0].update({
+                    "allowed": enabled,
+                    "enabled": enabled,
+                    "disabled": not enabled,
+                })
+                baseline_governance = {"field_groups": {"main": ["name", "native_extra"]}}
+                source_contract = {"fields": {
+                    "name": {"type": "char"}, "native_extra": {"type": "char"},
+                    "line_ids": {"type": "one2many"},
+                }}
+                self.module._projection.apply_business_config_form_groups(
+                    baseline, baseline_governance, source_contract=source_contract,
+                )
+                candidate = deepcopy(baseline)
+                governance = {"field_groups": {"main": ["name", "native_extra"]}, "field_semantic_roles": {
+                    "name": "summary", "native_extra": "context", "line_ids": "relation",
+                }, "group_semantic_roles": {"main": "audit"}}
+                self.module._projection.apply_business_config_form_groups(
+                    candidate, governance, source_contract=source_contract,
+                )
+
+                self.assertEqual(strip_allowed_role_delta(candidate), strip_allowed_role_delta(baseline))
+                self.assertEqual(
+                    candidate["layoutContract"]["containerTree"][1]["formStructureRole"],
+                    {"role": "audit"},
+                )
+                self.assertEqual(
+                    candidate["layoutContract"]["containerTree"][1]["children"][0]["formStructureRole"],
+                    {"slot": "identity", "group": "main", "role": "summary"},
+                )
+                first = deepcopy(candidate)
+                self.module._projection.apply_business_config_form_groups(
+                    candidate, governance, source_contract=source_contract,
+                )
+                self.assertEqual(candidate, first)
+
     def test_semantic_entry_surface_is_the_only_primary_structure_and_preserves_native_subordinates(self):
         handler = self.module.UiContractV2Handler(env=object())
         handler._form_structure_governance = lambda *_args, **_kwargs: {
@@ -3148,7 +3339,10 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                         "form": {
                             "composition_mode": "entry_semantic_surface",
                             "columns": 2,
-                            "sections": [{"title": "产品主章节", "fields": ["name"]}],
+                            "semantic_anchors": [
+                                {"role": "summary", "fields": ["name"]},
+                            ],
+                            "sections": [{"title": "产品主章节", "semantic_role": "audit", "fields": ["name"]}],
                             "fields": [{"name": "name"}],
                         },
                     },
@@ -3179,6 +3373,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertEqual(governance["form_structure_authority"], "entry_semantic_surface")
         self.assertEqual(governance["section_titles"], ["产品主章节"])
+        self.assertEqual(governance["field_semantic_roles"], {"name": "summary"})
+        self.assertEqual(governance["group_semantic_roles"], {"产品主章节": "audit"})
 
     def test_tree_projection_does_not_import_form_structure_fields_into_list_profile(self):
         class _Field:

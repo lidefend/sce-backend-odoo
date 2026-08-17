@@ -92,7 +92,7 @@ require("actionId === 'form.save'" in action_executor, "canonical form.save is n
 presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
 require(
     "mode === 'readonly' && action.actionId === 'form.save'" in presenter,
-    "readonly canonical forms can expose the generic save mutation",
+    "iteration one must retain the cb6e276 readonly save boundary",
 )
 require(
     "relationParts" in presenter and "displayName" in presenter and "relationModel(widget)" in presenter,
@@ -102,9 +102,14 @@ require(
     "filter(isFormActionBarAction)" in presenter
     and "sourceWidgetId === 'page.root'" in presenter
     and "targetScope === 'footer'" in presenter,
-    "canonical form action bar does not preserve normalized placement authority",
+    "iteration one changed the cb6e276 canonical form action collection",
 )
-require('action_id = "form.save"' in v2_assembler and 'required_right = "create" if render_profile == "create" else "write"' in v2_assembler, "normalized form.save is not derived from exact create/write permission")
+require(
+    'action_id = "form.save"' in v2_assembler
+    and 'required_right = "create" if render_profile == "create" else "write"' in v2_assembler,
+    "normalized form.save is not derived from exact create/write permission",
+)
+require("_apply_normalized_action_surface_policy" not in v2_assembler, "iteration one must not repartition canonical actions")
 for forbidden_action_inference in ("actionRef.label", "candidate.methodName", "candidate.targetModel", "payment.request"):
     require(forbidden_action_inference not in action_executor, f"canonical action executor infers forbidden fact: {forbidden_action_inference}")
 for legacy_structure_input in (
@@ -119,6 +124,27 @@ for legacy_structure_input in (
 for canonical_input in ("renderModel.actionBar", "action.actionRef", "data-canonical-action-bar"):
     require(canonical_input in form_host, f"form driver does not consume canonical authority: {canonical_input}")
 require("data-canonical-form-zones" in object_task_page, "object-task floorplan does not expose canonical zone evidence")
+for semantic_region in ("summary", "risk", "audit"):
+    require(
+        f'data-floorplan-region="{semantic_region}"' in object_task_page,
+        f"object-task floorplan does not expose {semantic_region} semantic region",
+    )
+require(
+    "field.semanticRole" in form_floorplan
+    and "widget.formStructureRole" in presenter
+    and "semanticRole: semanticRole(container.formStructureRole)" in presenter,
+    "normalized form semantic roles do not reach the canonical floorplan",
+)
+require(
+    '<details v-if="auditNodes.length"' in object_task_page
+    and '<details v-if="auditNodes.length" open' not in object_task_page,
+    "audit region is not default-collapsed",
+)
+require(
+    'data-floorplan-region="subordinate"' in object_task_page
+    and '<slot name="collaboration" />' in object_task_page,
+    "audit classification absorbed the independent activity/chatter surface",
+)
 
 host = (WEB_SRC / "views/ActionView.vue").read_text(encoding="utf-8")
 runtime = (WEB_SRC / "app/action_runtime/useActionViewSceneComponentDriverRuntime.ts").read_text(encoding="utf-8")
@@ -154,6 +180,11 @@ require(
     form_section.index('v-else-if="usesSceneFieldControl(field)"')
     < form_section.index('v-else-if="field.readonly"'),
     "readonly ContractForm fields bypass the selected component driver",
+)
+require(
+    form_section.index('v-else-if="isRelationEditorField(field) && relationAdapter"')
+    < form_section.index('v-else-if="field.readonly"'),
+    "readonly x2many fields leak raw ids instead of using the governed relation renderer",
 )
 scene_field_control = (UI_SRC / "components/primitives/SceneFieldControl.vue").read_text(encoding="utf-8")
 require(
@@ -228,4 +259,4 @@ collection_wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRender
 require("openRow" in collection_surface, "readonly collection does not expose row navigation")
 require("'open-record'" in collection_wrapper, "driver row navigation is not returned to the unified host")
 
-print("[verify.frontend.scene_component_bridge.guard] PASS checks=59")
+print("[verify.frontend.scene_component_bridge.guard] PASS checks=61")

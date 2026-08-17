@@ -1850,6 +1850,9 @@ class UiContractV2Handler(BaseIntentHandler):
         ).strip()
         field_names: list[str] = []
         field_labels: dict[str, str] = {}
+        field_semantic_roles: dict[str, str] = {}
+        group_semantic_roles: dict[str, str] = {}
+        allowed_semantic_roles = {"summary", "task", "context", "risk", "relation", "activity", "audit"}
         section_titles: list[str] = []
         field_groups: dict[str, list[str]] = {}
         group_columns: dict[str, int] = {}
@@ -1945,6 +1948,21 @@ class UiContractV2Handler(BaseIntentHandler):
                 label = str(row.get("string") or row.get("label") or "").strip() if isinstance(row, dict) else ""
                 if name and label:
                     field_labels[name] = label
+            semantic_anchors = (
+                form_spec.get("semantic_anchors")
+                if isinstance(form_spec.get("semantic_anchors"), list)
+                else []
+            )
+            for anchor in semantic_anchors:
+                if not isinstance(anchor, dict):
+                    continue
+                role = str(anchor.get("role") or "").strip().lower()
+                if role not in allowed_semantic_roles:
+                    continue
+                for raw_name in anchor.get("fields") if isinstance(anchor.get("fields"), list) else []:
+                    name = str(raw_name or "").strip()
+                    if name:
+                        field_semantic_roles[name] = role
             sections = form_spec.get("sections") if isinstance(form_spec.get("sections"), list) else []
             for row in sections:
                 if isinstance(row, dict):
@@ -1974,6 +1992,10 @@ class UiContractV2Handler(BaseIntentHandler):
                         columns = normalize_columns(row.get("columns")) or normalize_columns(row.get("cols"))
                         if columns:
                             group_columns[title] = columns
+                if title and isinstance(row, dict):
+                    semantic_role = str(row.get("semantic_role") or "").strip().lower()
+                    if semantic_role in allowed_semantic_roles:
+                        group_semantic_roles[title] = semantic_role
         applied = bool(view_governance.get("applied") or business_contracts or legacy_overlay or field_names)
         if not applied:
             return {}
@@ -1986,6 +2008,8 @@ class UiContractV2Handler(BaseIntentHandler):
             "form_structure_authority": form_structure_authority,
             "field_names": field_names,
             "field_labels": field_labels,
+            "field_semantic_roles": field_semantic_roles,
+            "group_semantic_roles": group_semantic_roles,
             "section_titles": section_titles,
             "field_groups": field_groups,
             "hidden_field_names": sorted(hidden_field_names),

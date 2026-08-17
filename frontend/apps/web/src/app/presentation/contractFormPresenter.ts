@@ -3,6 +3,7 @@ import type {
   CanonicalFormField,
   CanonicalFormNode,
   CanonicalFormRenderModel,
+  CanonicalFormSemanticRole,
   CanonicalFormRenderMode,
   CanonicalRelationValue,
   CanonicalFormZoneRole,
@@ -28,6 +29,23 @@ function text(value: unknown): string {
 
 function bool(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
+}
+
+const FORM_SEMANTIC_ROLES = new Set<CanonicalFormSemanticRole>([
+  'summary', 'task', 'context', 'risk', 'relation', 'activity', 'audit',
+]);
+
+function semanticRole(value: unknown): CanonicalFormSemanticRole | '' {
+  const structure = asDict(value);
+  const role = text(structure.role).toLowerCase() as CanonicalFormSemanticRole;
+  return FORM_SEMANTIC_ROLES.has(role) ? role : '';
+}
+
+function fieldSemanticRole(
+  widget: ContractV2Widget,
+  container: ContractV2Container,
+): CanonicalFormSemanticRole | '' {
+  return semanticRole(widget.formStructureRole) || semanticRole(container.formStructureRole);
 }
 
 function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
@@ -86,6 +104,7 @@ function presentFieldValue(
 
 function fieldFromWidget(
   widget: ContractV2Widget,
+  container: ContractV2Container,
   status: ContractV2WidgetStatus | undefined,
   contractValues: ContractV2Dictionary,
   runtimeValues: ContractV2Dictionary | undefined,
@@ -115,6 +134,7 @@ function fieldFromWidget(
     required: bool(status?.required, false),
     disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
     reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
+    semanticRole: fieldSemanticRole(widget, container),
     componentConfig: Object.freeze({ ...widget.componentConfig }),
   };
 }
@@ -184,6 +204,7 @@ function presentNode(
     claimedWidgetIds.add(widget.widgetId);
     return [fieldFromWidget(
       widget,
+      container,
       store.widgetStatusById.get(widget.widgetId),
       contractValues,
       runtimeValues,
@@ -204,6 +225,7 @@ function presentNode(
     visible,
     disabled,
     reasonCode: text(status?.reasonCode),
+    semanticRole: semanticRole(container.formStructureRole),
     fields: widgets,
     children: childCollections(container).map((child, childIndex) => (
       presentNode(

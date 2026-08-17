@@ -138,6 +138,114 @@ assert.deepEqual(
 );
 assert.deepEqual(readonlyFloorplan.contextNodes, []);
 
+const semanticReadonlySnapshot = snapshot();
+semanticReadonlySnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
+  role: 'summary', slot: 'identity', group: 'identity',
+};
+semanticReadonlySnapshot.layoutContract.containerTree[0].children[1].widgetList[0].formStructureRole = {
+  role: 'risk', slot: 'identity', group: 'identity',
+};
+semanticReadonlySnapshot.statusContract.widgetStatus[1] = {
+  widgetId: 'field.state', visible: true, readonly: true, required: false, disabled: false,
+};
+const semanticReadonlyFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(
+  createContractV2Store(semanticReadonlySnapshot),
+  'readonly',
+));
+assert.deepEqual(
+  collectFields(semanticReadonlyFloorplan.summaryNodes).map((field) => [field.fieldCode, field.semanticRole]),
+  [['name', 'summary']],
+  'readonly summary must be projected mechanically from the normalized field-node formStructureRole',
+);
+assert.deepEqual(
+  collectFields(semanticReadonlyFloorplan.riskNodes).map((field) => [field.fieldCode, field.semanticRole]),
+  [['state', 'risk']],
+  'readonly risk facts must not fall back into the task canvas',
+);
+assert.deepEqual(semanticReadonlyFloorplan.taskNodes, []);
+assert.deepEqual(semanticReadonlyFloorplan.contextNodes, []);
+
+const semanticContextSnapshot = structuredClone(semanticReadonlySnapshot);
+function addContextGroup(groupId: string, fieldCodes: string[]) {
+  const children = fieldCodes.map((fieldCode) => ({
+    containerId: `field.${fieldCode}`, containerType: 'field', type: 'field', name: fieldCode, title: '', span: 12,
+    children: [], widgetList: [{
+      widgetId: `field.${fieldCode}`, widgetType: 'char', fieldCode, label: fieldCode, span: 12,
+      componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+    }],
+  }));
+  semanticContextSnapshot.layoutContract.containerTree.splice(-3, 0, {
+    containerId: groupId, containerType: 'group', type: 'group', title: groupId, span: 24,
+    children, widgetList: [],
+  });
+  fieldCodes.forEach((fieldCode) => {
+    semanticContextSnapshot.statusContract.widgetStatus.push({
+      widgetId: `field.${fieldCode}`, visible: true, readonly: true, required: false, disabled: false,
+    });
+    semanticContextSnapshot.dataContract.mainData[fieldCode] = fieldCode;
+  });
+}
+for (let index = 1; index <= 23; index += 1) addContextGroup(`context.group.${index}`, [`context_${index}`]);
+addContextGroup('context.group.boundary', ['context_24', 'context_25']);
+addContextGroup('context.group.trailing', ['context_26']);
+addContextGroup('audit.group', [
+  'validation_status', 'reject_reason', 'legacy_source_table', 'source_created_at',
+]);
+semanticContextSnapshot.layoutContract.containerTree
+  .find((node) => node.containerId === 'context.group.trailing')!
+  .children[0].widgetList[0].formStructureRole = { role: 'relation' };
+semanticContextSnapshot.layoutContract.containerTree
+  .find((node) => node.containerId === 'audit.group')!
+  .formStructureRole = { role: 'audit' };
+const semanticContextModel = presentContractV2Form(createContractV2Store(semanticContextSnapshot), 'readonly');
+const semanticContextFloorplan = composeCanonicalFormFloorplan(semanticContextModel);
+assert.deepEqual(
+  collectFields(semanticContextFloorplan.contextNodes).map((field) => field.fieldCode),
+  Array.from({ length: 23 }, (_, index) => `context_${index + 1}`),
+  'default context must stop before a whole block would exceed the 24-fact limit',
+);
+assert.deepEqual(
+  collectFields(semanticContextFloorplan.overflowContextNodes).map((field) => field.fieldCode),
+  ['context_24', 'context_25', 'context_26'],
+  'overflow must retain complete blocks and all subsequent context in original order',
+);
+assert.deepEqual(
+  collectFields(semanticContextFloorplan.auditNodes).map((field) => field.fieldCode),
+  ['validation_status', 'reject_reason', 'legacy_source_table', 'source_created_at'],
+  'a declared audit section must enter the audit region as a complete canonical block',
+);
+assert.equal(
+  collectFields([...semanticContextFloorplan.contextNodes, ...semanticContextFloorplan.overflowContextNodes])
+    .some((field) => ['validation_status', 'reject_reason', 'legacy_source_table', 'source_created_at'].includes(field.fieldCode)),
+  false,
+  'audit-section fields must not leak into ordinary context regions',
+);
+assert.deepEqual(
+  semanticContextFloorplan.subordinateNodes.map((node) => node.kind),
+  ['notebook', 'attachment', 'chatter'],
+  'audit classification must not absorb relation, attachment, or chatter zones',
+);
+const semanticAtomicFields = collectFields([
+  ...semanticContextFloorplan.summaryNodes,
+  ...semanticContextFloorplan.taskNodes,
+  ...semanticContextFloorplan.riskNodes,
+  ...semanticContextFloorplan.contextNodes,
+  ...semanticContextFloorplan.overflowContextNodes,
+  ...semanticContextFloorplan.auditNodes,
+  ...semanticContextFloorplan.subordinateNodes,
+]);
+assert.deepEqual(
+  new Set(semanticAtomicFields.map((field) => field.widgetId)).size,
+  semanticAtomicFields.length,
+  'floorplan regions must not duplicate canonical widget identities',
+);
+assert.deepEqual(
+  new Set(semanticAtomicFields.map((field) => field.widgetId)),
+  new Set(collectFields([...semanticContextModel.zones.primary, ...semanticContextModel.zones.subordinate])
+    .map((field) => field.widgetId)),
+  'floorplan organization must preserve 100% of canonical atomic fields',
+);
+
 const createFloorplanSnapshot = snapshot();
 createFloorplanSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.empty_context', containerType: 'field', type: 'field', name: 'empty_context', title: '', span: 12,
@@ -174,10 +282,25 @@ createBackendPrimarySnapshot.actionContract.actionRuleList.push({
   ...createBackendPrimarySnapshot.actionContract.actionRuleList[0],
   actionId: 'action.submit', backendIdentity: 'button:object:action_submit', actionKey: 'action.submit',
   presentation: { tier: 'primary' },
+}, {
+  ...createBackendPrimarySnapshot.actionContract.actionRuleList[0],
+  actionId: 'action.navigation', backendIdentity: 'window_action:91', actionKey: 'action.navigation',
+  presentation: { tier: 'overflow' },
 });
 createBackendPrimarySnapshot.statusContract.buttonStatus.push({
   btnId: 'action.submit', visible: true, disabled: false,
+}, {
+  btnId: 'action.navigation', visible: true, disabled: false,
 });
+const createBackendPrimaryModel = presentContractV2Form(
+  createContractV2Store(createBackendPrimarySnapshot),
+  'create',
+);
+assert.deepEqual(
+  createBackendPrimaryModel.actionBar.map((action) => action.key),
+  ['form.save', 'action.submit', 'action.navigation'],
+  'iteration one must preserve the cb6e276 canonical form action collection and order',
+);
 const createBackendPrimaryFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(
   createContractV2Store(createBackendPrimarySnapshot),
   'create',
@@ -188,7 +311,7 @@ assert.equal(
   'an enabled backend primary must always outrank the platform create-save fallback',
 );
 assert.deepEqual(createBackendPrimaryFloorplan.directActions.map((action) => action.key), ['action.submit']);
-assert.deepEqual(createBackendPrimaryFloorplan.overflowActions.map((action) => action.key), ['form.save']);
+assert.deepEqual(createBackendPrimaryFloorplan.overflowActions.map((action) => action.key), ['form.save', 'action.navigation']);
 
 const createBlockedPrimarySnapshot = structuredClone(createBackendPrimarySnapshot);
 createBlockedPrimarySnapshot.statusContract.buttonStatus = [
@@ -206,7 +329,11 @@ assert.equal(
 );
 assert.deepEqual(createBlockedPrimaryFloorplan.directActions, []);
 assert.deepEqual(createBlockedPrimaryFloorplan.blockedActions.map((action) => action.key), ['action.submit']);
-assert.deepEqual(createBlockedPrimaryFloorplan.overflowActions.map((action) => action.key), ['form.save']);
+assert.deepEqual(
+  createBlockedPrimaryFloorplan.overflowActions.map((action) => action.key),
+  ['form.save', 'action.navigation'],
+  'blocked primary handling must not remove any other cb6e276 action',
+);
 
 const contextRailSnapshot = snapshot();
 contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
@@ -464,13 +591,14 @@ readonlySaveSnapshot.statusContract.buttonStatus = [{ btnId: 'form.save', visibl
 assert.equal(
   presentContractV2Form(createContractV2Store(readonlySaveSnapshot), 'readonly').actionBar[0]?.visible,
   false,
-  'readonly routes must not expose the generic save mutation even when the normalized rule lists readonly',
+  'iteration one must retain the cb6e276 readonly save suppression behavior',
 );
 assert.equal(
   presentContractV2Form(createContractV2Store(readonlySaveSnapshot), 'edit').actionBar[0]?.visible,
   true,
   'the same normalized save action remains available in edit mode',
 );
+
 const contractAction = {
   key: 'action_submit', backendIdentity: 'button:object:action_submit', label: 'Submit', kind: 'object',
   level: 'header', selection: 'none', actionId: null, methodName: 'action_submit', targetModel: 'x.document',

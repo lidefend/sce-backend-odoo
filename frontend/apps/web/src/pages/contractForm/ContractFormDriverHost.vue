@@ -26,8 +26,12 @@
     </div>
     <SceneUiProvider :kit="activeKit" fallback-kit="sc-native" density="compact">
       <ObjectTaskPage
+        :summary-nodes="floorplan.summaryNodes"
         :task-nodes="floorplan.taskNodes"
         :context-nodes="floorplan.contextNodes"
+        :overflow-context-nodes="floorplan.overflowContextNodes"
+        :risk-nodes="floorplan.riskNodes"
+        :audit-nodes="floorplan.auditNodes"
         :subordinate-nodes="subordinateNodes"
         :relation-adapter="relationAdapter"
         :has-collaboration="showCollaborationPanel && hasCollaborationNode"
@@ -140,7 +144,8 @@ const allowUserOverride = computed(() => (
   && allowedKits.value.length > 1
 ));
 const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel) : {
-  taskNodes: [], contextNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [], effectivePrimaryKey: '',
+  summaryNodes: [], taskNodes: [], contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], subordinateNodes: [],
+  blockedActions: [], directActions: [], overflowActions: [], effectivePrimaryKey: '',
 });
 const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
 const directActions = computed(() => floorplan.value.directActions);
