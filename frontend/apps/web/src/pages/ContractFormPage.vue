@@ -134,7 +134,9 @@
           @selected-group-title-change="onSelectedFormSettingsGroupTitleChange"
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
-        <ContractFormNativeCanvas
+        <ContractFormDriverHost
+          :render-model="canonicalFormRenderState.model"
+          :error="canonicalFormRenderState.error"
           :button-label-resolver="resolveNativeButtonLabel"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
           :collaboration-panel-props="nativeCollaborationPanelProps"
@@ -259,7 +261,7 @@ import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
   type NativeCollaborationPanelProps,
 } from './contractForm/NativeCollaborationPanel.vue';
-import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
+import ContractFormDriverHost from './contractForm/ContractFormDriverHost.vue';
 import { shouldShowNativeCollaborationPanel } from './contractForm/collaborationPresentation';
 import RelationSearchDialog from './contractForm/RelationSearchDialog.vue';
 import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vue';
@@ -647,6 +649,7 @@ import { useRecordPageLifecycle } from './contractForm/useRecordPageLifecycle';
 import { resolveContractRenderProfile } from './contractForm/contractRenderProfile';
 import { useRecordActionPresentation } from './contractForm/useRecordActionPresentation';
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
+import { presentContractV2Form } from '../app/presentation/contractFormPresenter';
 import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigationActionsRuntime';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
@@ -726,6 +729,21 @@ const {
 });
 const v2ContractStore = ref<ContractV2NormalizedStore | null>(null);
 const v2ContractDecodeError = ref('');
+const canonicalFormRenderState = computed(() => {
+  if (v2ContractDecodeError.value) return { model: null, error: v2ContractDecodeError.value };
+  if (!v2ContractStore.value) return { model: null, error: 'NORMALIZED_FORM_CONTRACT_MISSING' };
+  try {
+    return {
+      model: presentContractV2Form(v2ContractStore.value, renderProfile.value),
+      error: '',
+    };
+  } catch (error) {
+    return {
+      model: null,
+      error: error instanceof Error ? error.message : 'CANONICAL_FORM_PRESENTATION_FAILED',
+    };
+  }
+});
 const v2ShadowStoreReady = computed(() => Boolean(v2ContractStore.value));
 const v2ShadowWidgetCount = computed(() => v2ContractStore.value?.widgetsById.size || 0);
 const v2ShadowActionCount = computed(() => v2ContractStore.value?.actionsById.size || 0);
