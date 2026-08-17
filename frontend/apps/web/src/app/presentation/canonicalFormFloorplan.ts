@@ -196,8 +196,11 @@ export function composeCanonicalFormFloorplan(
     ? roleNodes(primaryNodes, ['task'], false, true, true)
     : (editableNodes.length ? editableNodes : primaryNodes);
   const taskIds = new Set(taskNodes.map((node) => node.nodeId));
-  const relationNodes = semanticReadonly ? primaryNodes.filter(nodeHasRelationCapability) : [];
-  const relationIds = new Set(relationNodes.map((node) => node.nodeId));
+  const subordinateNodes = visibleNodes(renderModel.zones.subordinate, renderModel.identity.mode);
+  const primaryRelationNodes = semanticReadonly ? primaryNodes.filter(nodeHasRelationCapability) : [];
+  const subordinateRelationNodes = semanticReadonly ? subordinateNodes.filter(nodeHasRelationCapability) : [];
+  const relationNodes = [...primaryRelationNodes, ...subordinateRelationNodes];
+  const relationIds = new Set(primaryRelationNodes.map((node) => node.nodeId));
   const allContextNodes = semanticReadonly
     ? roleNodes(primaryNodes.filter((node) => !relationIds.has(node.nodeId)), ['context', 'activity'], true)
     : primaryNodes.filter((node) => !taskIds.has(node.nodeId));
@@ -242,7 +245,9 @@ export function composeCanonicalFormFloorplan(
     riskNodes,
     auditNodes,
     relationNodes,
-    subordinateNodes: visibleNodes(renderModel.zones.subordinate, renderModel.identity.mode),
+    subordinateNodes: semanticReadonly
+      ? subordinateNodes.filter((node) => !nodeHasRelationCapability(node))
+      : subordinateNodes,
     blockedActions,
     directActions,
     overflowActions: visibleActions.filter((action) => (

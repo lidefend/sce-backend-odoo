@@ -281,6 +281,7 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 }
 .object-task-page__overflow-context > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit > summary { cursor: pointer; font-weight: 600; }
+.object-task-page__audit:not([open]) [data-audit-content] { display: none; }
 .object-task-page__context {
   padding: 16px;
   border: 1px solid var(--sc-app-border);

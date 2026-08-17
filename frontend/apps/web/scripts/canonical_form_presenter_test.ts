@@ -211,7 +211,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.relationNodes).map((field) => field.fieldCode),
-  ['context_26'],
+  ['context_26', 'line_ids'],
   'relation-capable canonical facts must form an independent relation region',
 );
 assert.deepEqual(
@@ -227,7 +227,7 @@ assert.equal(
 );
 assert.deepEqual(
   semanticContextFloorplan.subordinateNodes.map((node) => node.kind),
-  ['notebook', 'attachment', 'chatter'],
+  ['attachment', 'chatter'],
   'audit classification must not absorb relation, attachment, or chatter zones',
 );
 assert.equal(
