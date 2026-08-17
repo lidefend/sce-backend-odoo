@@ -2,5 +2,19 @@
   "name": "@sc/ui",
   "version": "0.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@ui5/webcomponents-base": "2.25.0",
+    "@ui5/webcomponents": "2.25.0",
+    "@ui5/webcomponents-fiori": "2.25.0",
+    "@ui5/webcomponents-icons": "2.25.0",
+    "@ui5/webcomponents-localization": "2.25.0",
+    "tdesign-vue-next": "1.20.5"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.6"
+  }
 }

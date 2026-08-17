@@ -4367,3 +4367,69 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   generated-report guard and `git diff --check` pass. `ci.local.quick` remains
   externally blocked by pre-existing all-history P1 synthetic bank-account
   findings; this P0 topic does not add or broaden a personal-data exemption.
+
+# P0 renderer-neutral scene component driver lab (2026-08-16)
+
+- Branch / base SHA: `codex/p0-ui5-scene-foundation-spike-v1` /
+  `1e5eed0470cfb03a3fd17bfe16e624ab418b137e`.
+- Formal Product Layer / Layer Target / Module: P0 platform / renderer-neutral
+  scene component drivers / `frontend/packages/ui` and the isolated
+  `frontend/apps/scene-ui5-spike` validation app.
+- Standard vs User-Specific: generic platform mechanism only. The payment
+  scene is a static representative fixture; no payment model, permission,
+  backend, database, runtime profile or customer exception is introduced.
+- Reason / boundary: a scene contract must remain authoritative while the
+  component engine is replaceable. The lab places native controls, TDesign
+  Vue Next and SAP UI5 Web Components behind one lazy driver registry and one
+  provider. Scene components consume a generic component model and semantic
+  primitive ports instead of vendor imports or an `isUi5` branch.
+- Why Here / Why Not Elsewhere: driver loading, component identity, density
+  and preference are shared frontend platform concerns. Business facts and
+  draft values stay above the provider; P1 does not know which renderer is
+  active and the backend contract is unchanged.
+- Blast radius / validation: isolated UI package/app, one exact TDesign
+  dependency, static guard, browser probe and Make validation target only.
+  `make verify.frontend.scene_component_drivers` proves one contract across
+  all three drivers, desktop and 390px layouts, zero horizontal overflow,
+  no chapter navigation, no business network writes, lazy vendor loading,
+  user preference persistence and preservation of unsaved field state across
+  driver replacement. The production frontend renderer remains untouched.
+- Follow-up capability closure: the common contract and all three drivers now
+  include contract-driven risk notices, two relation-detail tables and a
+  submit-review overlay. Editable values and overlay-open state are both owned
+  above the replaceable provider, so the browser probe proves continuity while
+  switching an open UI5 dialog to a TDesign drawer. Invalid preview or stored
+  driver identifiers fail closed through a generic organization/user
+  preference policy resolver. The formal boundary, loading budget and
+  production-entry criteria are frozen in
+  `docs/architecture/scene_component_driver_foundation_v1.md`.
+- Loading resilience follow-up: the provider now distinguishes requested and
+  resolved drivers, exposes a visible fallback fact and returns to the native
+  safe driver when an optional driver loader fails. The browser injects a UI5
+  load failure and proves the page remains usable without network or console
+  errors. TDesign heavy primitives and UI5 alert/table/dialog registration are
+  split behind async primitive boundaries; a request-quiescence gate prevents
+  route/driver changes from aborting late supplier dependencies.
+- Scene coverage follow-up: the renderer-neutral contract now has isolated
+  collection and hierarchy surfaces in addition to the object page. Native,
+  TDesign and UI5 render all three scene categories; collection selection and
+  hierarchy expansion remain above the provider and survive driver switches.
+  The 390 collection profile uses contract-backed cards rather than horizontal
+  page overflow. Preference resolution now exposes the authority source and
+  proves organization lock, user override, organization default, system
+  default and safe fallback without leaking driver identifiers into a
+  business contract.
+- Accessibility and token follow-up: the provider now maps a vendor-neutral
+  semantic token profile independently from the selected component driver.
+  Enterprise-neutral, business-soft and accessible-contrast profiles change
+  visual semantics without rebuilding business state. Browser gates verify a
+  persisted high-contrast preference, at least 7:1 text/surface contrast,
+  visible keyboard focus, unique ids, accessible names, Space/Enter collection
+  selection and keyboard hierarchy collapse across driver replacement.
+- Normalized collection pilot follow-up: an explicit P0 adapter now maps a
+  frozen, non-payment company-directory `Unified Page Contract V2` snapshot
+  into the renderer-neutral collection surface. The adapter rejects missing
+  read-only authority, source authority, widget declarations or exact columns;
+  it also rejects enabled selection and non-empty actions instead of inferring
+  `name`, `document` or `status`. A build feature plus preview switch keeps the pilot reversible;
+  it does not touch the production frontend, backend, database or fixture.
