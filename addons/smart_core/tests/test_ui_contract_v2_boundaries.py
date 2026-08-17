@@ -339,6 +339,219 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertNotIn("restricted_state", contract["dataContract"]["mainData"])
 
+    def test_visible_floorplan_facts_share_one_bounded_hydration_read(self):
+        field_names = [
+            "payee_account_source_display",
+            "payee_account_completeness",
+            "payment_execution_status_display",
+            "payment_blocking_reason_display",
+            "payment_basis_type",
+        ]
+
+        class _Field:
+            type = "char"
+
+        class _Record:
+            def __init__(self):
+                self.read_fields = []
+
+            def exists(self):
+                return self
+
+            def read(self, fields):
+                self.read_fields.append(list(fields))
+                return [{name: "value:%s" % name for name in fields}]
+
+        class _Model:
+            def __init__(self):
+                self._fields = {name: _Field() for name in field_names}
+                self.record = _Record()
+
+            def browse(self, record_id):
+                self.record_id = record_id
+                return self.record
+
+        model = _Model()
+        handler = self.module.UiContractV2Handler(env={"project.project": model})
+        widgets = [
+            {"type": "field", "name": name, "widgetId": "field.%s" % name}
+            for name in field_names
+        ]
+        contract = {
+            "layoutContract": {"containerTree": [{"type": "group", "children": widgets}]},
+            "formStructureContract": {"fieldRoles": {
+                "payee_account_completeness": {"role": "summary"},
+                "payment_execution_status_display": {"role": "summary"},
+                "payment_blocking_reason_display": {"role": "risk"},
+                "payment_basis_type": {"role": "summary"},
+            }},
+            "statusContract": {"widgetStatus": [
+                {"widgetId": "field.%s" % name, "visible": True}
+                for name in field_names
+            ]},
+            "actionContract": {"actionRuleList": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        self.module.hydrate_final_modifier_dependencies(
+            handler.env,
+            contract,
+            model="project.project",
+            record_id=42,
+            view_type="form",
+        )
+
+        self.assertEqual(set(contract["dataContract"]["mainData"]), set(field_names))
+        self.assertEqual(len(model.record.read_fields), 1)
+        self.assertEqual(
+            model.record.read_fields[0],
+            [
+                "payee_account_completeness",
+                "payment_execution_status_display",
+                "payment_blocking_reason_display",
+                "payment_basis_type",
+                "payee_account_source_display",
+            ],
+        )
+
+    def test_hidden_and_subordinate_fields_do_not_expand_visible_hydration(self):
+        class _Model:
+            _fields = {
+                "hidden_fact": type("Field", (), {"type": "char"})(),
+                "audit_fact": type("Field", (), {"type": "char"})(),
+            }
+
+            def browse(self, _record_id):
+                raise AssertionError("hidden or subordinate fields must not be read")
+
+        handler = self.module.UiContractV2Handler(env={"project.project": _Model()})
+        contract = {
+            "layoutContract": {"containerTree": [
+                {"type": "field", "name": "hidden_fact", "widgetId": "field.hidden_fact"},
+                {"type": "group", "formStructureRole": {"role": "audit"}, "children": [
+                    {"type": "field", "name": "audit_fact", "widgetId": "field.audit_fact"},
+                ]},
+            ]},
+            "formStructureContract": {"fieldRoles": {
+                "hidden_fact": {"role": "summary"},
+            }},
+            "statusContract": {"widgetStatus": [
+                {"widgetId": "field.hidden_fact", "visible": False},
+                {"widgetId": "field.audit_fact", "visible": True},
+            ]},
+            "actionContract": {"actionRuleList": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        self.module.hydrate_final_modifier_dependencies(
+            handler.env,
+            contract,
+            model="project.project",
+            record_id=42,
+            view_type="form",
+        )
+
+        self.assertEqual(contract["dataContract"]["mainData"], {})
+
+    def test_visible_layout_hydration_is_bounded_and_keeps_semantic_priority(self):
+        ordinary = ["context_%02d" % index for index in range(30)]
+        names = ordinary + ["late_summary"]
+
+        class _Field:
+            type = "char"
+
+        class _Record:
+            def __init__(self):
+                self.read_fields = []
+
+            def exists(self):
+                return self
+
+            def read(self, fields):
+                self.read_fields.append(list(fields))
+                return [{name: name for name in fields}]
+
+        record = _Record()
+
+        class _Model:
+            _fields = {name: _Field() for name in names}
+
+            def browse(self, _record_id):
+                return record
+
+        handler = self.module.UiContractV2Handler(env={"project.project": _Model()})
+        contract = {
+            "layoutContract": {"containerTree": [{
+                "type": "group",
+                "children": [
+                    {"type": "field", "name": name, "widgetId": "field.%s" % name}
+                    for name in names
+                ],
+            }]},
+            "formStructureContract": {"fieldRoles": {"late_summary": {"role": "summary"}}},
+            "statusContract": {"widgetStatus": [
+                {"widgetId": "field.%s" % name, "visible": True}
+                for name in names
+            ]},
+            "actionContract": {"actionRuleList": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        self.module.hydrate_final_modifier_dependencies(
+            handler.env,
+            contract,
+            model="project.project",
+            record_id=42,
+            view_type="form",
+        )
+
+        self.assertEqual(len(record.read_fields), 1)
+        self.assertEqual(len(record.read_fields[0]), 24)
+        self.assertEqual(record.read_fields[0][0], "late_summary")
+        self.assertIn("late_summary", contract["dataContract"]["mainData"])
+
+    def test_visible_layout_hydration_fails_closed_on_read_denial(self):
+        class _Record:
+            def exists(self):
+                return self
+
+            def read(self, _fields):
+                raise PermissionError("denied")
+
+        class _Model:
+            _fields = {"restricted_summary": type("Field", (), {"type": "char"})()}
+
+            def browse(self, _record_id):
+                return _Record()
+
+        handler = self.module.UiContractV2Handler(env={"project.project": _Model()})
+        contract = {
+            "layoutContract": {"containerTree": [{
+                "type": "field",
+                "name": "restricted_summary",
+                "widgetId": "field.restricted_summary",
+            }]},
+            "formStructureContract": {"fieldRoles": {
+                "restricted_summary": {"role": "summary"},
+            }},
+            "statusContract": {"widgetStatus": [{
+                "widgetId": "field.restricted_summary",
+                "visible": True,
+            }]},
+            "actionContract": {"actionRuleList": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        self.module.hydrate_final_modifier_dependencies(
+            handler.env,
+            contract,
+            model="project.project",
+            record_id=42,
+            view_type="form",
+        )
+
+        self.assertNotIn("restricted_summary", contract["dataContract"]["mainData"])
+
     def test_group_entitlement_is_resolved_and_requirement_is_not_leaked(self):
         user = types.SimpleNamespace(has_group=lambda xmlid: xmlid == "base.group_system")
         handler = self.module.UiContractV2Handler(env=types.SimpleNamespace(user=user))
