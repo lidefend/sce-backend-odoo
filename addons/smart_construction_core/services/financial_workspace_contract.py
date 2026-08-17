@@ -640,9 +640,12 @@ def build_financial_form_business_actions(env, model_name, record_id):
     active_executions = execution_history.filtered(
         lambda execution: execution.state in ("draft", "confirmed")
     )
+    has_payment_basis = bool(record._has_payment_basis())
     execution_business_available = bool(
         record.type == "pay"
         and record.state == "approved"
+        and not record.is_fully_paid
+        and has_payment_basis
         and record.payee_account_completeness == "complete"
         and not active_executions
     )
@@ -656,9 +659,18 @@ def build_financial_form_business_actions(env, model_name, record_id):
     elif record.type != "pay":
         execution_reason_code = "PAYMENT_REQUEST_TYPE_NOT_PAY"
         execution_blocked_message = "只有付款申请可以生成付款登记。"
+    elif record.state not in ("approved", "done"):
+        execution_reason_code = "PAYMENT_REQUEST_NOT_APPROVED"
+        execution_blocked_message = "付款申请必须处于已批准状态。"
+    elif record.is_fully_paid:
+        execution_reason_code = "PAYMENT_REQUEST_FULLY_PAID"
+        execution_blocked_message = "付款申请已足额付款，不能继续生成付款登记。"
     elif record.state != "approved":
         execution_reason_code = "PAYMENT_REQUEST_NOT_APPROVED"
         execution_blocked_message = "付款申请必须处于已批准状态。"
+    elif not has_payment_basis:
+        execution_reason_code = "PAYMENT_EXECUTION_BASIS_MISSING"
+        execution_blocked_message = "请先补充关联合同或已审批结算单。"
     elif record.payee_account_completeness != "complete":
         execution_reason_code = "PAYEE_ACCOUNT_INCOMPLETE"
         execution_blocked_message = "请先补全收款户名、开户行和账号。"

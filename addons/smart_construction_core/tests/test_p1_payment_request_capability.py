@@ -210,6 +210,36 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertFalse(action["primary"])
         self.assertEqual(action["reason_code"], "ROLE_HANDOFF_REQUIRED")
 
+    def test_execution_continuation_requires_authoritative_payment_basis(self):
+        request = self.env["payment.request"].create(
+            {
+                "type": "pay",
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "amount": 100,
+                "payment_account_name": self.partner.sc_account_name,
+                "payment_bank_name": self.partner.sc_bank_name,
+                "payment_account_no": self.partner.sc_bank_account,
+            }
+        )
+        self._set_request_state(request)
+
+        self.assertFalse(request._has_payment_basis())
+        self.assertEqual(request.payee_account_completeness, "complete")
+        self.assertIn("缺少合同或结算依据", request.payment_blocking_reason_display)
+        self.assertEqual(request.legal_next_action_display, "补充合同或结算依据")
+
+        action = self._execution_action(self.env, request)
+        self.assertFalse(action["business_available"])
+        self.assertTrue(action["authorization_allowed"])
+        self.assertFalse(action["allowed"])
+        self.assertFalse(action["enabled"])
+        self.assertTrue(action["disabled"])
+        self.assertFalse(action["primary"])
+        self.assertEqual(action["reason_code"], "PAYMENT_EXECUTION_BASIS_MISSING")
+        with self.assertRaisesRegex(UserError, "关联合同或已审批结算单"):
+            request.action_create_payment_execution()
+
     def test_execution_continuation_is_disabled_after_execution_exists(self):
         request, execution = self._approved_execution()
         action = self._execution_action(self.env, request)
@@ -269,7 +299,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertTrue(statuses[view_identity].get("visible"), statuses[view_identity])
         self.assertFalse(statuses[view_identity].get("disabled"), statuses[view_identity])
         self.assertEqual(request.legal_next_action_display, "查看付款登记")
-        self.assertEqual(request.payment_execution_status_display, "已生成：草稿")
+        self.assertEqual(request.payment_execution_status_display, "办理中：草稿")
         self.assertEqual(execution.state, "draft")
 
     def test_finance_manager_can_read_same_company_project_and_contract_anchors(self):
@@ -856,6 +886,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(request.state, "approved")
         self.assertEqual(request.paid_amount_total, 40)
         self.assertEqual(request.unpaid_amount, 60)
+        self.assertIn("历史登记", request.payment_execution_status_display)
+        self.assertIn("当前无办理中付款登记", request.payment_execution_status_display)
 
         second = self.env["sc.payment.execution"].create({
             "payment_request_id": request.id,
@@ -875,6 +907,14 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(request.state, "done")
         self.assertEqual(request.paid_amount_total, 100)
         self.assertEqual(request.unpaid_amount, 0)
+        self.assertIn("已足额付款", request.payment_execution_status_display)
+        completed_action = self._execution_action(self.env, request)
+        self.assertFalse(completed_action["business_available"])
+        self.assertFalse(completed_action["enabled"])
+        self.assertTrue(completed_action["disabled"])
+        self.assertEqual(completed_action["reason_code"], "PAYMENT_REQUEST_FULLY_PAID")
+        with self.assertRaisesRegex(UserError, "已足额付款"):
+            request.action_create_payment_execution()
         ledgers = self.env["payment.ledger"].search([
             ("payment_request_id", "=", request.id),
             ("state", "=", "posted"),
