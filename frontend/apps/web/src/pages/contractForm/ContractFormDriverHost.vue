@@ -110,6 +110,7 @@ const props = defineProps<{
     activeKit: SceneUiKitId;
     allowedKits: SceneUiKitId[];
     allowUserOverride: boolean;
+    showUserDriverChooser?: boolean;
     resolutionSource: string;
     reasonCode: string;
   };
@@ -133,7 +134,11 @@ const fieldCount = computed(() => props.renderModel
   : 0);
 const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'sc-native');
 const allowedKits = computed<SceneUiKitId[]>(() => props.driverConfig?.allowedKits?.length ? props.driverConfig.allowedKits : ['sc-native']);
-const allowUserOverride = computed(() => props.driverConfig?.allowUserOverride === true && allowedKits.value.length > 1);
+const allowUserOverride = computed(() => (
+  props.driverConfig?.showUserDriverChooser === true
+  && props.driverConfig?.allowUserOverride === true
+  && allowedKits.value.length > 1
+));
 const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel) : {
   taskNodes: [], contextNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [], effectivePrimaryKey: '',
 });

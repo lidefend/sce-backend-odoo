@@ -169,6 +169,45 @@ assert.equal(createFloorplan.effectivePrimaryKey, 'form.save', 'create save must
 assert.deepEqual(createFloorplan.directActions.map((action) => action.key), ['form.save']);
 assert.deepEqual(createFloorplan.overflowActions, []);
 
+const createBackendPrimarySnapshot = structuredClone(createFloorplanSnapshot);
+createBackendPrimarySnapshot.actionContract.actionRuleList.push({
+  ...createBackendPrimarySnapshot.actionContract.actionRuleList[0],
+  actionId: 'action.submit', backendIdentity: 'button:object:action_submit', actionKey: 'action.submit',
+  presentation: { tier: 'primary' },
+});
+createBackendPrimarySnapshot.statusContract.buttonStatus.push({
+  btnId: 'action.submit', visible: true, disabled: false,
+});
+const createBackendPrimaryFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(
+  createContractV2Store(createBackendPrimarySnapshot),
+  'create',
+));
+assert.equal(
+  createBackendPrimaryFloorplan.effectivePrimaryKey,
+  'action.submit',
+  'an enabled backend primary must always outrank the platform create-save fallback',
+);
+assert.deepEqual(createBackendPrimaryFloorplan.directActions.map((action) => action.key), ['action.submit']);
+assert.deepEqual(createBackendPrimaryFloorplan.overflowActions.map((action) => action.key), ['form.save']);
+
+const createBlockedPrimarySnapshot = structuredClone(createBackendPrimarySnapshot);
+createBlockedPrimarySnapshot.statusContract.buttonStatus = [
+  { btnId: 'form.save', visible: true, disabled: false },
+  { btnId: 'action.submit', visible: true, disabled: true, reasonCode: 'ACTION_NOT_AVAILABLE_IN_STATE' },
+];
+const createBlockedPrimaryFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(
+  createContractV2Store(createBlockedPrimarySnapshot),
+  'create',
+));
+assert.equal(
+  createBlockedPrimaryFloorplan.effectivePrimaryKey,
+  '',
+  'a disabled backend primary must block create-save promotion instead of failing open',
+);
+assert.deepEqual(createBlockedPrimaryFloorplan.directActions, []);
+assert.deepEqual(createBlockedPrimaryFloorplan.blockedActions.map((action) => action.key), ['action.submit']);
+assert.deepEqual(createBlockedPrimaryFloorplan.overflowActions.map((action) => action.key), ['form.save']);
+
 const contextRailSnapshot = snapshot();
 contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
   containerId: 'section.context', containerType: 'group', type: 'group', title: 'Context', span: 24,

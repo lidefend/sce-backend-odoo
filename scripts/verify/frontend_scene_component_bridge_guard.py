@@ -68,6 +68,15 @@ for forbidden_floorplan_fact in ("payment.request", "sc.payment.execution", "付
 require("SceneObjectPageContract" not in form_host, "ContractForm driver host must not consume the UI-internal SceneObjectPage DTO")
 require("data-contract-form-driver-error" in form_host, "invalid normalized form contract does not fail closed")
 require(
+    "showUserDriverChooser?: boolean" in form_host
+    and "props.driverConfig?.showUserDriverChooser === true" in form_host,
+    "user-visible component supplier chooser is not default-closed behind an explicit product exposure",
+)
+require(
+    "showUserDriverChooser: false" in (WEB_SRC / "pages/contractForm/useContractFormComponentDriverRuntime.ts").read_text(encoding="utf-8"),
+    "ContractForm runtime exposes the component supplier chooser by default",
+)
+require(
     "action.enabled" in form_floorplan
     and "!['overflow', 'configuration'].includes(action.tier)" in form_floorplan
     and "directActions" in form_floorplan

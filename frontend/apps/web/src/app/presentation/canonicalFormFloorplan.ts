@@ -73,11 +73,11 @@ export function composeCanonicalFormFloorplan(
   const taskNodes = editableNodes.length ? editableNodes : primaryNodes;
   const taskIds = new Set(taskNodes.map((node) => node.nodeId));
   const visibleActions = renderModel.actionBar.filter((action) => action.visible);
-  const canonicalPrimary = visibleActions.find((action) => action.enabled && action.tier === 'primary');
-  const createSave = renderModel.identity.mode === 'create'
+  const canonicalPrimary = visibleActions.find((action) => action.tier === 'primary');
+  const createSave = renderModel.identity.mode === 'create' && !canonicalPrimary
     ? visibleActions.find((action) => action.enabled && action.actionRef.actionId === 'form.save')
     : undefined;
-  const effectivePrimary = canonicalPrimary || createSave;
+  const effectivePrimary = canonicalPrimary?.enabled ? canonicalPrimary : createSave;
   const secondaryCandidates = visibleActions.filter((action) => (
     action.enabled
     && action !== effectivePrimary

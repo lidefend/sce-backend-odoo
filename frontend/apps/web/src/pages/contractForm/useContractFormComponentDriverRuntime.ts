@@ -36,6 +36,7 @@ export function useContractFormComponentDriverRuntime(options: ContractFormCompo
     activeKit: options.isActive() && decision.value.eligible ? decision.value.resolution.kit : 'sc-native' as SceneUiKitId,
     allowedKits: options.isActive() && decision.value.eligible ? [...decision.value.policy.allowedKits] : ['sc-native'] as SceneUiKitId[],
     allowUserOverride: options.isActive() && decision.value.eligible && decision.value.allowUserOverride,
+    showUserDriverChooser: false,
     resolutionSource: decision.value.resolution.source,
     reasonCode: decision.value.reasonCode,
   }));
