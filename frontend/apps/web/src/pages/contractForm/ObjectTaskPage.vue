@@ -93,21 +93,21 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 }
 .object-task-page__context {
   padding: 16px;
-  border: 1px solid var(--sc-app-border, #d7e0e8);
+  border: 1px solid var(--sc-app-border);
   border-radius: 12px;
-  background: var(--sc-app-panel, #fff);
+  background: var(--sc-app-panel);
 }
 .object-task-page__subordinate {
   padding-top: 16px;
-  border-top: 1px solid var(--sc-app-border, #d7e0e8);
+  border-top: 1px solid var(--sc-app-border);
 }
 .object-task-page__actions {
   position: sticky;
   z-index: 10;
   bottom: 0;
   min-width: 0;
-  border-top: 1px solid var(--sc-app-border, #d7e0e8);
-  background: color-mix(in srgb, var(--sc-app-panel, #fff) 94%, transparent);
+  border-top: 1px solid var(--sc-app-border);
+  background: color-mix(in srgb, var(--sc-app-panel) 94%, transparent);
   backdrop-filter: blur(8px);
 }
 @media (max-width: 960px) {

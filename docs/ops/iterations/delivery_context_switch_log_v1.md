@@ -4813,3 +4813,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   feature flag 7 cases, architecture guard, strict typecheck, lint (zero errors),
   acceptance production build (4618 modules), and diff check pass before live
   payment qualification.
+- Release-gate correction: the first local release pass rejected page-local
+  color fallbacks and exposed a pre-existing 1853/1800 ContractForm coordinator
+  limit before browser startup. The floorplan now consumes registered semantic
+  color/shadow tokens only, and the read-only Contract V2 shadow diagnostics
+  plus initial page refs are extracted into typed composables. The page is 1800
+  lines without raising the limit or changing render, permission, action, data,
+  environment, or business behavior.

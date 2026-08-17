@@ -182,10 +182,10 @@ function changeKit(event: Event) {
   display: grid;
   gap: 4px;
   padding: 12px 16px;
-  border: 1px solid var(--sc-app-warning-border, #e8b44c);
+  border: 1px solid var(--sc-app-warning-border);
   border-radius: 10px;
-  background: var(--sc-app-warning-bg, #fff8e6);
-  color: var(--sc-app-text-primary, #183247);
+  background: var(--sc-app-warning-bg);
+  color: var(--sc-app-warning-text);
 }
 .canonical-form-action-bar {
   display: flex;
@@ -205,14 +205,14 @@ function changeKit(event: Event) {
   cursor: pointer;
 }
 .canonical-form-action--primary {
-  border-color: var(--sc-semantic-surface-interactive, #2563eb);
-  background: var(--sc-semantic-surface-interactive, #2563eb);
-  color: var(--sc-semantic-text-on-interactive, #fff) !important;
+  border-color: var(--sc-semantic-surface-interactive);
+  background: var(--sc-semantic-surface-interactive);
+  color: var(--sc-semantic-text-on-interactive) !important;
 }
 .canonical-form-action.is-danger { color: var(--sc-app-danger-text); }
 .canonical-form-action:disabled { cursor: not-allowed; opacity: 0.55; }
 .canonical-form-action-overflow { position: relative; }
-.canonical-form-action-overflow > summary { cursor: pointer; color: var(--sc-app-text-primary, #183247); }
+.canonical-form-action-overflow > summary { cursor: pointer; color: var(--sc-app-text-primary); }
 .canonical-form-action-overflow-panel {
   position: absolute;
   z-index: 20;
@@ -221,10 +221,10 @@ function changeKit(event: Event) {
   gap: 6px;
   min-width: 240px;
   padding: 10px;
-  border: 1px solid var(--sc-app-border, #cbd5df);
+  border: 1px solid var(--sc-app-border);
   border-radius: 8px;
-  background: var(--sc-app-panel, #fff);
-  box-shadow: 0 10px 28px rgb(26 48 66 / 16%);
+  background: var(--sc-app-panel);
+  box-shadow: var(--sc-app-shadow-popover);
 }
 .sc-form-driver-chooser {
   display: flex;

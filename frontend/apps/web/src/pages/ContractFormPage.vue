@@ -294,7 +294,7 @@ import { ApiError } from '../api/client';
 import { executeButton } from '../api/executeButton';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
-import type { ActionContract, FieldDescriptor } from '@sc/schema';
+import type { FieldDescriptor } from '@sc/schema';
 import { useSessionStore } from '../stores/session';
 import { ErrorCodes } from '../app/error_codes';
 import {
@@ -324,16 +324,13 @@ import {
 } from '../app/runtime/contractFormDataRuntime';
 import {
   collectContractV2ButtonStatusById,
-  collectContractV2FieldStatusByCode,
   ContractV2DecodeError,
   createContractV2Store,
   decodeContractV2Snapshot,
   resolveContractV2ContainerTree,
-  resolveContractV2FormStructureContract,
   resolveContractV2GlobalStatus,
   resolveContractV2MainData,
   resolveContractV2SourceContext,
-  resolveContractV2ValueSource,
   type ContractV2NormalizedStore,
 } from '../app/contracts/v2';
 import type { ContractV2ActionRule } from '../app/contracts/v2/types';
@@ -586,13 +583,11 @@ import {
   MANY2ONE_SEARCH_MORE_OPTION,
   RECORD_CONTEXT_CHANGED_EVENT,
   ContractAccessPolicyError,
-  type BusyKind,
   type ContractAccessPolicy,
   type ContractAction,
   type ContractFieldGovernanceAction,
   type ContractFieldGovernanceRow,
   type FormRuntimeStateEvent,
-  type FormConfigAuditResult,
   type LayoutNode,
   type LowCodeFieldSize,
   type NativeChatterAction,
@@ -603,8 +598,6 @@ import {
   type RelationSearchColumn,
   type RelationSearchRow,
   type RelationUiLabels,
-  type SubmissionFeedback,
-  type UiStatus,
 } from './contractForm/types';
 import {
   clearIntakeAutosavePayload,
@@ -659,6 +652,8 @@ import { useRecordActionPresentation } from './contractForm/useRecordActionPrese
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
 import { resolveCanonicalFormRenderState, useContractFormComponentDriverRuntime } from './contractForm/useContractFormComponentDriverRuntime';
 import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigationActionsRuntime';
+import { useContractV2ShadowDiagnostics } from './contractForm/useContractV2ShadowDiagnostics';
+import { useContractFormPageState } from './contractForm/useContractFormPageState';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
 import {
@@ -696,30 +691,16 @@ const {
   currentModel: () => String(route.params.model || contract.value?.head?.model || contract.value?.model || ''),
 });
 const designerRouteQueryText = (key: string) => readRouteQueryText(route.query as Record<string, unknown>, key);
-const status = ref<UiStatus>('loading');
-const isComponentActive = ref(true);
-const instanceRouteIdentity = ref('');
-const retainedRouteIdentity = ref('');
-const renderErrorMessage = ref('');
-const recordMissing = ref(false);
-const errorMessage = ref('');
-const loadError = reactive<{ status: number | null; reason: string; trace: string }>({ status: null, reason: '', trace: '' });
-const validationErrors = ref<string[]>([]);
-const submissionFeedback = ref<SubmissionFeedback>(null);
-const formConflict = ref(false);
+const {
+  status, isComponentActive, instanceRouteIdentity, retainedRouteIdentity, renderErrorMessage,
+  recordMissing, errorMessage, loadError, validationErrors, submissionFeedback, formConflict,
+  showOne2manyErrors, busyKind, activeContractMode, formSettingsActiveTab, contractModeFeedback,
+  contract, contractMeta,
+} = useContractFormPageState();
 const intentConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
-const showOne2manyErrors = ref(false);
-const busyKind = ref<BusyKind>(null);
-const activeContractMode = ref('');
-const formSettingsActiveTab = ref<'structure' | 'fields' | 'details' | 'actions'>('fields');
-const contractModeFeedback = ref('');
-const contract = ref<ActionContract | null>(null);
-const contractMeta = ref<Record<string, unknown> | null>(null);
 const initialFormLoading = computed(() => status.value === 'loading' && !contract.value);
 type PageStatusEvent = Extract<FormRuntimeStateEvent, { kind: 'status' }>;
-function applyPageStatusEvent(event: PageStatusEvent) {
-  applyFormRuntimeStatusEvent({ status, errorMessage }, event);
-}
+const applyPageStatusEvent = (event: PageStatusEvent) => applyFormRuntimeStatusEvent({ status, errorMessage }, event);
 const {
   copyContractJson,
   exportContractJson,
@@ -737,10 +718,6 @@ const {
 });
 const v2ContractStore = ref<ContractV2NormalizedStore | null>(null);
 const v2ContractDecodeError = ref('');
-const v2ShadowStoreReady = computed(() => Boolean(v2ContractStore.value));
-const v2ShadowWidgetCount = computed(() => v2ContractStore.value?.widgetsById.size || 0);
-const v2ShadowActionCount = computed(() => v2ContractStore.value?.actionsById.size || 0);
-const v2ShadowButtonStatusCount = computed(() => v2ContractStore.value?.buttonStatusById.size || 0);
 function formRouteIdentity() {
   const query = route.query as Record<string, unknown>;
   return [
@@ -754,47 +731,19 @@ function formRouteIdentity() {
     String(recordId.value ? '' : createRouteDefaultsFingerprint(query)),
   ].join('|');
 }
-const v2ShadowFieldCodes = computed(() => Array.from(v2ContractStore.value?.widgetsByFieldCode.keys() || []));
-const v2ShadowFieldCodeCount = computed(() => v2ShadowFieldCodes.value.length);
-const v2ShadowLegacyFieldMissing = computed(() => {
-  const legacyFields = contract.value?.fields || {};
-  return v2ShadowFieldCodes.value.filter((fieldCode) => !(fieldCode in legacyFields));
+const {
+  v2ShadowStoreReady, v2ShadowWidgetCount, v2ShadowActionCount, v2ShadowButtonStatusCount,
+  v2ShadowFieldCodeCount, v2ShadowLegacyFieldOverlapCount, v2ShadowLegacyFieldMissingPreview,
+  v2ShadowFormStructureContract, v2ShadowFormStructureSlotCount, v2ShadowLayoutSourceKind,
+  v2ShadowGlobalSourceKind, v2ShadowSourceContextKind, v2ShadowStatusFieldCount,
+  v2ShadowValueSourceKind, v2ShadowValueFieldCount, v2ShadowMainDataFieldCount,
+  v2ShadowReadonlyValueCount,
+} = useContractV2ShadowDiagnostics({
+  store: v2ContractStore,
+  legacyFields: () => contract.value?.fields || {},
+  nativeLayoutCount: () => nativeFormLayoutNodes.value.length,
+  layoutNodes: () => layoutNodes.value,
 });
-const v2ShadowLegacyFieldOverlapCount = computed(() => v2ShadowFieldCodeCount.value - v2ShadowLegacyFieldMissing.value.length);
-const v2ShadowLegacyFieldMissingPreview = computed(() => v2ShadowLegacyFieldMissing.value.slice(0, 8).join(',') || '-');
-const v2ShadowFormStructureContract = computed(() => resolveContractV2FormStructureContract(v2ContractStore.value));
-const v2ShadowFormStructureSlotCount = computed(() => {
-  const slots = v2ShadowFormStructureContract.value.slots;
-  return Array.isArray(slots) ? slots.length : 0;
-});
-const v2ShadowLayoutSourceKind = computed(() => {
-  const containers = resolveContractV2ContainerTree(v2ContractStore.value);
-  if (containers.length) return 'v2_store';
-  return nativeFormLayoutNodes.value.length ? 'legacy_layout' : 'none';
-});
-const v2ShadowGlobalSourceKind = computed(() => (resolveContractV2GlobalStatus(v2ContractStore.value) ? 'v2_store' : 'legacy_resolver'));
-const v2ShadowSourceContextKind = computed(() => (Object.keys(resolveContractV2SourceContext(v2ContractStore.value)).length ? 'v2_store' : 'legacy_resolver'));
-const v2ShadowStatusFieldCount = computed(() => Object.keys(collectContractV2FieldStatusByCode(v2ContractStore.value)).length);
-const v2ShadowValueSource = computed(() => resolveContractV2ValueSource(v2ContractStore.value));
-const v2ShadowValueSourceKind = computed(() => v2ShadowValueSource.value.kind);
-const v2ShadowValueFieldCount = computed(() => (
-  v2ShadowFieldCodes.value.filter((fieldCode) => (
-    Object.prototype.hasOwnProperty.call(v2ShadowValueSource.value.values, fieldCode)
-  )).length
-));
-const v2ShadowMainDataFieldCount = computed(() => (
-  v2ShadowFieldCodes.value.filter((fieldCode) => (
-    Object.prototype.hasOwnProperty.call(resolveContractV2MainData(v2ContractStore.value), fieldCode)
-  )).length
-));
-const v2ShadowReadonlyValueCount = computed(() => (
-  layoutNodes.value.filter((node) => (
-    node.kind === 'field'
-    && node.readonly
-    && Boolean(v2ContractStore.value?.widgetsByFieldCode.has(node.name))
-    && Object.prototype.hasOwnProperty.call(v2ShadowValueSource.value.values, node.name)
-  )).length
-));
 const activeFilterKey = ref('');
 const originalValues = ref<Record<string, unknown>>({});
 const recordVersionToken = ref('');
@@ -1845,9 +1794,7 @@ useFormAuxiliaryWatchersRuntime({
   recordId: () => recordId.value,
   router,
 });
-
 watch(() => route.query.config_mode, (mode) => applyRouteConfigMode(mode), { immediate: true });
-
 </script>
 
 <style scoped src="./contractForm/ContractFormPage.css"></style>

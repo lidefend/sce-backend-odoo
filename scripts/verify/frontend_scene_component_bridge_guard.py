@@ -73,9 +73,9 @@ require(
     "disabled or overflow actions can occupy the direct handling action bar",
 )
 require(
-    "var(--sc-semantic-surface-interactive, #2563eb)" in form_host
-    and "var(--sc-semantic-text-on-interactive, #fff) !important" in form_host,
-    "primary action lacks a theme-independent visible contrast fallback",
+    "var(--sc-semantic-surface-interactive)" in form_host
+    and "var(--sc-semantic-text-on-interactive) !important" in form_host,
+    "primary action does not consume the registered interactive contrast tokens",
 )
 require("actionId === 'form.save'" in action_executor, "canonical form.save is not bridged to the unified save executor")
 presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
