@@ -1,7 +1,10 @@
 # ======================================================
 # ================== Contract ==========================
 # ======================================================
-.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass
+.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint
+
+verify.contract.lint:
+	@python3 scripts/verify/contracts_lint.py
 
 INTENT_SURFACE_MD ?= artifacts/intent_surface_report.md
 INTENT_SURFACE_JSON ?= artifacts/intent_surface_report.json
@@ -62,4 +65,3 @@ gate.contract.bootstrap:
 gate.contract.bootstrap-pass:
 	@$(MAKE) --no-print-directory verify.contract.preflight
 	@DB="$(DB_NAME)" CASES_FILE="docs/contract/cases.yml" REF_DIR="docs/contract/snapshots" CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" scripts/contract/gate_contract.sh --bootstrap --bootstrap-pass
-

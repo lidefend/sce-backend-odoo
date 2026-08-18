@@ -1,0 +1,24 @@
+paths:
+  /payment-requests:
+    get:
+      operationRef: '#/paths/~1payment-requests/get'
+    post:
+      operationRef: '#/paths/~1payment-requests/post'
+
+  /payment-requests/{id}:
+    get:
+      operationRef: '#/paths/~1payment-requests~1{id}/get'
+    patch:
+      operationRef: '#/paths/~1payment-requests~1{id}/patch'
+
+  /payment-requests/{id}/submit:
+    post:
+      operationRef: '#/paths/~1payment-requests~1{id}~1submit/post'
+
+  /payment-requests/{id}/approve:
+    post:
+      operationRef: '#/paths/~1payment-requests~1{id}~1approve/post'
+
+  /payment-requests/{id}/reject:
+    post:
+      operationRef: '#/paths/~1payment-requests~1{id}~1reject/post'
