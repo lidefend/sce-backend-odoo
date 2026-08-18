@@ -22,7 +22,7 @@ function assertNotContains(label, snippet) {
 function main() {
   assertContains('raw.target passthrough', 'raw.target && typeof raw.target === \'object\'');
   assertContains('raw.layout passthrough', 'layout: normalizeSceneLayout(raw.layout)');
-  assertContains('fallback route kept', 'route: `/workbench?scene=${raw.code}`');
+  assertContains('fallback route kept', 'raw.route || `/s/${raw.code}`');
   assertNotContains('forced workbench target', 'target: { route: `/workbench?scene=${raw.code}` },');
   console.log('[fe_scene_registry_coerce_smoke] PASS');
 }

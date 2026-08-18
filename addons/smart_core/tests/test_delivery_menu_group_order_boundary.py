@@ -54,6 +54,15 @@ def _install_stubs(extension_hook=None):
         "odoo.addons.smart_core.delivery.menu_delivery_convergence_service",
         MenuDeliveryConvergenceService=_MenuDeliveryConvergenceService,
     )
+
+    class _MenuFactService:
+        def __init__(self, env=None):
+            self.env = env
+
+    _install_module(
+        "odoo.addons.smart_core.delivery.menu_fact_service",
+        MenuFactService=_MenuFactService,
+    )
     _install_module(
         "odoo.addons.smart_core.delivery.native_config_menu_projection",
         native_config_delivery_groups=lambda env=None: [],
