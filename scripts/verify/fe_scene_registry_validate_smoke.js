@@ -21,11 +21,12 @@ async function main() {
 
   let ok = true;
 
+  const LAYOUT = { kind: 'list', sidebar: 'fixed', header: 'full' };
   const scenes = [
-    { key: 'alpha', label: 'Alpha', route: '/alpha', target: { route: '/alpha' } },
-    { key: 'alpha', label: 'DupKey', route: '/beta', target: { route: '/beta' } },
-    { key: 'beta', label: 'DupRoute', route: '/alpha', target: { route: '/alpha' } },
-    { key: 'gamma', label: '', route: '/gamma', target: { route: '/gamma' } },
+    { key: 'alpha', label: 'Alpha', route: '/alpha', target: { route: '/alpha' }, layout: LAYOUT },
+    { key: 'alpha', label: 'DupKey', route: '/beta', target: { route: '/beta' }, layout: LAYOUT },
+    { key: 'beta', label: 'DupRoute', route: '/alpha', target: { route: '/alpha' }, layout: LAYOUT },
+    { key: 'gamma', label: '', route: '/gamma', target: { route: '/gamma' }, layout: LAYOUT },
   ];
 
   const result = validateSceneRegistry(scenes);

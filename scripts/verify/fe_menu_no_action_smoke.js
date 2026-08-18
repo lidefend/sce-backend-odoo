@@ -24,8 +24,8 @@ async function main() {
   const menuTree = [
     { menu_id: 1, name: 'Root', children: [
       { menu_id: 2, name: 'Group', children: [{ menu_id: 3, name: 'Leaf', meta: { action_id: 99 } }] },
-      { menu_id: 5, name: 'Scene Group', children: [{ menu_id: 6, name: 'Scene Leaf', meta: { scene_key: 'projects.list' } }] },
-      { menu_id: 7, name: 'Hybrid Leaf', meta: { action_id: 100, scene_key: 'project.management' } },
+      { menu_id: 5, name: 'Scene Group', children: [{ menu_id: 6, name: 'Scene Leaf', meta: { scene_key: 'projects.list', scene_source: 'scene_contract' } }] },
+      { menu_id: 7, name: 'Hybrid Leaf', meta: { action_id: 100, scene_key: 'project.management', scene_source: 'scene_contract' } },
       { menu_id: 4, name: 'Broken' },
     ] },
   ];

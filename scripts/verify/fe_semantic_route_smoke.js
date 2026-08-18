@@ -1,36 +1,36 @@
 #!/usr/bin/env node
 'use strict';
 
-const path = require('path');
-const { pathToFileURL } = require('url');
+// Semantic route smoke. The retired static frontend scene config
+// (frontend/apps/web/src/config/scenesCore.js) was replaced by the
+// backend-driven scene registry; well-known semantic routes are now pinned
+// in sceneRegistry.ts SCENE_ROUTE_OVERRIDES. This smoke asserts those pins
+// statically so accidental removal is caught.
 
-function assertEqual(label, actual, expected) {
-  const ok = JSON.stringify(actual) === JSON.stringify(expected);
-  if (!ok) {
-    console.error(`FAIL: ${label} -> expected=${JSON.stringify(expected)} actual=${JSON.stringify(actual)}`);
-    return false;
+const fs = require('fs');
+const path = require('path');
+
+const file = path.resolve(__dirname, '../../frontend/apps/web/src/app/resolvers/sceneRegistry.ts');
+const src = fs.readFileSync(file, 'utf8');
+
+function assertContains(label, snippet) {
+  if (!src.includes(snippet)) {
+    throw new Error(`${label} missing: ${snippet}`);
   }
   console.log(`PASS: ${label}`);
-  return true;
 }
 
-async function main() {
-  const modulePath = path.resolve(__dirname, '../../frontend/apps/web/src/config/scenesCore.js');
-  const moduleUrl = pathToFileURL(modulePath).href;
-  const { SCENES } = await import(moduleUrl);
-
-  const byKey = new Map(SCENES.map((scene) => [scene.key, scene]));
-  let ok = true;
-
-  ok = assertEqual('scene projects route', byKey.get('projects')?.route, '/projects') && ok;
-  ok = assertEqual('scene project-record route', byKey.get('project-record')?.route, '/projects/:id') && ok;
-
-  if (!ok) {
-    process.exit(1);
-  }
+function main() {
+  assertContains('workspace.home semantic route pinned', "'workspace.home': '/s/workspace.home'");
+  assertContains('my_work.workspace semantic route pinned', "'my_work.workspace': '/my-work'");
+  assertContains('scene route override resolution kept', 'const override = SCENE_ROUTE_OVERRIDES[code];');
+  assertContains('native ui contract prefixes guard kept', "const NATIVE_UI_CONTRACT_ROUTE_PREFIXES = ['/a/', '/f/', '/r/'];");
+  console.log('[fe_semantic_route_smoke] PASS');
 }
 
-main().catch((err) => {
-  console.error(`FAIL: ${err.message}`);
+try {
+  main();
+} catch (err) {
+  console.error(`[fe_semantic_route_smoke] FAIL: ${err.message}`);
   process.exit(1);
-});
+}
