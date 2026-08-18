@@ -10,9 +10,16 @@ def apply_component_driver_probe(env, mode):
     if mode not in ("setup", "cleanup"):
         raise RuntimeError("component driver probe mode must be setup or cleanup")
     menu = _ref(env, "smart_construction_core.menu_sc_project_project")
-    model = str(menu.action.res_model or "").strip()
+    action = menu.action
+    model = str(action.res_model or "").strip()
     if not model or "payment" in model:
         raise RuntimeError("component driver probe requires a non-payment action model")
+    form_view_id = next(
+        (int(view_id or 0) for view_id, view_type in (action.views or []) if view_type == "form" and int(view_id or 0) > 0),
+        0,
+    )
+    if form_view_id <= 0:
+        raise RuntimeError("component driver probe requires an action-bound form view")
     company = _ref(env, "%s.fe_company_a" % MODULE)
     probe_record_name = "SC Component Driver Action Probe"
     probe_model = env[model].sudo()
@@ -70,6 +77,7 @@ def apply_component_driver_probe(env, mode):
     record = _ref(env, "%s.fe_project_a" % MODULE)
     return {
         "action_id": int(menu.action.id),
+        "view_id": form_view_id,
         "menu_id": int(menu.id),
         "model": model,
         "record_id": int(record.id),

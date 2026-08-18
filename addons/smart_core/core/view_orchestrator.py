@@ -100,7 +100,13 @@ class ViewOrchestrator:
                 )
                 if normalized_view_type == "form":
                     business_config_form_fields.update(self._config_declared_field_names(config, normalized_view_type, model_name))
-                out = self._apply_business_config_contract(out, config, normalized_view_type, model_name)
+                out = self._apply_business_config_contract(
+                    out,
+                    config,
+                    normalized_view_type,
+                    model_name,
+                    preserve_native_members=bool(view_id),
+                )
                 if out != before or declares_form_layout_overlay or declares_semantic_entry_surface:
                     applied_row = {
                         "id": int(config.id),
@@ -192,7 +198,15 @@ class ViewOrchestrator:
         out["source_trace"] = source_trace
         return out
 
-    def _apply_business_config_contract(self, contract: dict, config, view_type: str, model_name: str) -> dict:
+    def _apply_business_config_contract(
+        self,
+        contract: dict,
+        config,
+        view_type: str,
+        model_name: str,
+        *,
+        preserve_native_members: bool = False,
+    ) -> dict:
         payload = config.contract_json if isinstance(config.contract_json, dict) else {}
         spec = self._view_spec(payload, view_type)
         if not spec:
@@ -202,7 +216,12 @@ class ViewOrchestrator:
             return contract
         out = deepcopy(contract or {})
         if view_type == "form":
-            return self._apply_form_spec(out, spec, model_name)
+            return self._apply_form_spec(
+                out,
+                spec,
+                model_name,
+                preserve_native_members=preserve_native_members,
+            )
         if view_type in {"tree", "list"}:
             return self._apply_list_spec(out, spec)
         if view_type == "search":
@@ -382,10 +401,22 @@ class ViewOrchestrator:
             out["layout"] = sanitize_layout_nodes(out.get("layout"))
         return out
 
-    def _apply_form_spec(self, contract: dict, spec: dict, model_name: str) -> dict:
+    def _apply_form_spec(
+        self,
+        contract: dict,
+        spec: dict,
+        model_name: str,
+        *,
+        preserve_native_members: bool = False,
+    ) -> dict:
         native_layout = deepcopy(contract.get("layout"))
         self._apply_view_options(contract, spec, scalar_keys=("title",), dict_keys=("defaults", "context", "domain"))
-        if isinstance(spec.get("layout"), list):
+        semantic_surface = self._is_entry_semantic_surface(spec)
+        if (
+            isinstance(spec.get("layout"), list)
+            and not semantic_surface
+            and not preserve_native_members
+        ):
             contract["layout"] = deepcopy(spec.get("layout") or [])
         rows = self._normalized_rows(spec.get("fields") or spec.get("field_slots"))
         if rows:
@@ -393,34 +424,24 @@ class ViewOrchestrator:
             effective = {row["name"]: row for row in rows if row.get("name") in fields_meta}
             if effective:
                 hidden = {name for name, row in effective.items() if row.get("visible") is False}
-                if self._is_entry_semantic_surface(spec):
-                    semantic_layout = self._entry_semantic_surface_layout(effective, spec, fields_meta)
-                    native_relation_fields = self._native_relation_field_names(
-                        native_layout,
-                        fields_meta,
-                    )
-                    semantic_layout = self._prune_layout_fields(
-                        semantic_layout,
-                        native_relation_fields,
-                    )
-                    semantic_field_names = self._layout_field_names(semantic_layout)
-                    contract["layout"] = self._merge_semantic_surface_with_native_subordinates(
-                        semantic_layout,
-                        native_layout,
-                        configured_fields=semantic_field_names,
-                        fields_meta=fields_meta,
-                    )
+                if semantic_surface:
+                    # An entry semantic surface is a sparse product annotation
+                    # over the effective Odoo view.  It must never replace the
+                    # parsed native tree or manufacture missing field nodes.
+                    contract["layout"] = deepcopy(native_layout) if isinstance(native_layout, list) else []
                 layout = contract.get("layout")
                 if isinstance(layout, list):
                     contract["layout"] = self._apply_node_field_rules(layout, effective, hidden)
-                    self._sort_form_field_nodes(contract["layout"], effective)
-                    self._append_missing_form_fields(contract["layout"], effective, fields_meta)
+                    if not semantic_surface and not preserve_native_members:
+                        self._sort_form_field_nodes(contract["layout"], effective)
+                        self._append_missing_form_fields(contract["layout"], effective, fields_meta)
                 field_modifiers = contract.get("field_modifiers")
                 if isinstance(field_modifiers, dict):
                     for name in hidden:
                         field_modifiers.pop(name, None)
                     contract["field_modifiers"] = field_modifiers
-        self._apply_action_slots(contract, spec, default_key="header_buttons")
+        if not preserve_native_members:
+            self._apply_action_slots(contract, spec, default_key="header_buttons")
         return contract
 
     def _merge_semantic_surface_with_native_subordinates(

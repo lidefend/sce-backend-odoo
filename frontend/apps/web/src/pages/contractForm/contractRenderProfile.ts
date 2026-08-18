@@ -6,23 +6,24 @@ export function contractLoadProfileOptions(profile: ContractRenderProfile): {
   return { renderProfile: profile };
 }
 
-export function resolveContractRenderProfile(input: {
+export function resolveRequestedContractRenderProfile(input: {
   routeName: unknown;
-  contractProfile?: unknown;
-  canSave: boolean;
   recordId: number | null;
 }): ContractRenderProfile {
   const routeName = String(input.routeName || '').trim();
   if (routeName === 'record') return 'readonly';
-  // The current route/record identity is authoritative. In particular, a
-  // contract loaded for /f/:model/new must not keep the page in create mode
-  // after saving navigates to /f/:model/:id.
   if (routeName === 'model-form') return input.recordId ? 'edit' : 'create';
-
-  const contractProfile = String(input.contractProfile || '').trim().toLowerCase();
-  if (contractProfile === 'readonly' || contractProfile === 'edit' || contractProfile === 'create') {
-    return contractProfile;
-  }
-  if (!input.canSave) return 'readonly';
   return input.recordId ? 'edit' : 'create';
+}
+
+export function resolveEffectiveContractRenderProfile(input: {
+  backendProfile?: unknown;
+  normalizedReady: boolean;
+  requestedProfile: ContractRenderProfile;
+}): ContractRenderProfile {
+  const backendProfile = String(input.backendProfile || '').trim().toLowerCase();
+  if (backendProfile === 'readonly' || backendProfile === 'edit' || backendProfile === 'create') {
+    return backendProfile;
+  }
+  return input.normalizedReady ? 'readonly' : input.requestedProfile;
 }

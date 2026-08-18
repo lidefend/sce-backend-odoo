@@ -261,29 +261,19 @@ class ContractService:
 
     def _fix_form_statusbar_field(self, data):
         """
-        目的：消除 form.statusbar.field 与实际可用字段不一致的问题
-        策略：
-          - 如果 form.statusbar.field 不在 fields 集合里，则优先用 workflow.state_field
-          - 如果 workflow.state_field 也不存在，则尝试回落到 'stage_id' 或删除 statusbar
+        目的：校验显式 native form.statusbar.field。
+        缺少显式 statusbar 或引用未知字段时保持无状态条；禁止根据
+        workflow/state/stage_id 补造原生视图未声明的页面能力。
         """
         try:
             views = data['data']['views']
             fields = data['data']['fields']
-            workflow = data['data'].get('workflow', {})
             form = views.get('form', {})
             statusbar = form.get('statusbar', {})
 
             sb_field = statusbar.get('field')
             if not sb_field or sb_field not in fields:
-                # 优先用 workflow.state_field
-                wf_field = workflow.get('state_field')
-                if wf_field and wf_field in fields:
-                    statusbar['field'] = wf_field
-                elif 'stage_id' in fields:
-                    statusbar['field'] = 'stage_id'
-                else:
-                    # 实在没有可用的状态字段，移除 statusbar 避免前端报错
-                    form.pop('statusbar', None)
+                form['statusbar'] = {'field': None, 'states': []}
 
             # 回写
             views['form'] = form
@@ -532,7 +522,8 @@ class ContractService:
             statusbar = form.get('statusbar')
             if statusbar:
                 sb_field = statusbar.get('field')
-                assert sb_field in fields, "statusbar.field 不在 fields 集合中：%s" % sb_field
+                if sb_field:
+                    assert sb_field in fields, "statusbar.field 不在 fields 集合中：%s" % sb_field
 
             # 2) object 按钮必须有 method
             for btn in data['data'].get('buttons', []):

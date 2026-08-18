@@ -45,8 +45,8 @@ The following files were produced or updated and can be used for auditability:
 - `artifacts/backend/scene_base_contract_source_mix_role_matrix_report.md`
 - `artifacts/backend/scene_product_delivery_readiness_report.json`
 - `artifacts/backend/scene_product_delivery_readiness_report.md`
-- `docs/ops/audits/scene_ready_strict_contract_guard_report.md`
-- `docs/ops/audits/scene_ready_strict_gap_full_audit.md`
+- `docs/audit/scene_ready_strict_contract_guard_report.md`
+- `docs/audit/scene_ready_strict_gap_full_audit.md`
 - `artifacts/backend/history/scene_governance_index.json`
 - `artifacts/backend/history/scene_governance_index.md`
 

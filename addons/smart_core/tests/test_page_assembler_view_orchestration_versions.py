@@ -27,6 +27,7 @@ def _load_page_assembler():
         if name == "odoo" or name.startswith("odoo."):
             sys.modules.pop(name, None)
     odoo = _install_module("odoo", _=lambda value: value)
+    _install_module("odoo.exceptions", AccessError=type("AccessError", (Exception,), {}))
     _install_module("odoo.http", request=types.SimpleNamespace(env=None))
     odoo.http = sys.modules["odoo.http"]
     _install_module("odoo.addons")
@@ -71,6 +72,75 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
     def setUp(self):
         self.PageAssembler = _load_page_assembler()
         self.assembler = self.PageAssembler.__new__(self.PageAssembler)
+
+    def test_record_rule_rights_are_distinct_from_model_acl(self):
+        AccessError = sys.modules["odoo.exceptions"].AccessError
+
+        class Record:
+            def exists(self):
+                return self
+
+            def check_access_rule(self, operation):
+                if operation in {"write", "unlink"}:
+                    raise AccessError(operation)
+
+        class Model:
+            def browse(self, _record_id):
+                return Record()
+
+        class Env:
+            def __getitem__(self, _model_name):
+                return Model()
+
+        self.assertEqual(
+            self.PageAssembler._record_rule_rights(Env(), "x.document", 7),
+            {"read": True, "write": False, "create": True, "unlink": False, "duplicate": True},
+        )
+        self.assertEqual(
+            self.PageAssembler._record_rule_rights(Env(), "x.document", None),
+            {"read": True, "write": False, "create": True, "unlink": False, "duplicate": False},
+        )
+
+    def test_request_context_cannot_relax_action_crud_restrictions(self):
+        merged = self.PageAssembler._merge_entry_context(
+            {
+                "edit": False,
+                "create": "false",
+                "no_delete": True,
+                "no_duplicate": "1",
+                "default_project_id": 7,
+            },
+            {
+                "edit": True,
+                "write": True,
+                "create": True,
+                "delete": True,
+                "no_delete": False,
+                "duplicate": True,
+                "no_duplicate": False,
+                "default_project_id": 9,
+            },
+        )
+
+        self.assertIs(merged["edit"], False)
+        self.assertIs(merged["write"], False)
+        self.assertIs(merged["create"], False)
+        self.assertIs(merged["delete"], False)
+        self.assertIs(merged["no_delete"], True)
+        self.assertIs(merged["duplicate"], False)
+        self.assertIs(merged["no_duplicate"], True)
+        self.assertEqual(merged["default_project_id"], 9)
+
+    def test_request_context_can_tighten_action_crud_capabilities(self):
+        merged = self.PageAssembler._merge_entry_context(
+            {"edit": True, "create": True, "delete": True},
+            {"edit": False, "no_create": True, "delete": False},
+        )
+
+        self.assertIs(merged["edit"], False)
+        self.assertIs(merged["create"], False)
+        self.assertIs(merged["no_create"], True)
+        self.assertIs(merged["delete"], False)
 
     def test_append_view_version_token_adds_search_orchestration_version(self):
         versions = {"view": "12:native", "search": 4}

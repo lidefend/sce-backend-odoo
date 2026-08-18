@@ -164,7 +164,8 @@ function collectV2LayoutButtons(v2Contract: Dict): Dict[] {
   const seen = new Set<string>();
   const root = asDict(v2Contract);
   const buttonStatus = collectUnifiedPageContractV2ButtonStatus(root);
-  const resolveButtonStatus = (key: string) => buttonStatus[contractButtonStatusId(key)] || {};
+  const resolveButtonStatus = (key: string): { disabled?: unknown; visible?: unknown; reasonCode?: unknown } =>
+    buttonStatus[contractButtonStatusId(key)] || {};
   const mainData = asDict(asDict(root.dataContract).mainData);
   const layoutContract = asDict(root.layoutContract);
   const findCountField = (shortLabel: string): string => {
@@ -282,9 +283,12 @@ function collectV2Statusbar(v2Contract: Dict): Dict | null {
   walkV2LayoutNodes(asList(layoutContract.containerTree), (row) => {
     if (statusField) return;
     if (String(row.type || row.kind || '').trim().toLowerCase() !== 'field') return;
-    const name = stableFieldName(String(row.name || row.field || ''));
-    if (!['lifecycle_state', 'state', 'stage_id'].includes(name)) return;
     const fieldInfo = asDict(row.fieldInfo || row.field_info);
+    const attributes = asDict(row.attributes);
+    const widget = String(row.widget || fieldInfo.widget || attributes.widget || '').trim().toLowerCase();
+    if (widget !== 'statusbar') return;
+    const name = stableFieldName(String(row.name || row.field || ''));
+    if (!name) return;
     const selection = Array.isArray(fieldInfo.selection) ? fieldInfo.selection : [];
     const mapped = selection.map((item) => {
       const pair = Array.isArray(item) ? item : [];

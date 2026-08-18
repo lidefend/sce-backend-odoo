@@ -73,5 +73,5 @@
 - 看板：`docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md`
 - backlog：`docs/product/capability_gap_backlog_v1.md`
 - 上下文恢复日志：`docs/ops/iterations/delivery_context_switch_log_v1.md`
-- 动作闭环报告：`docs/ops/audit/product_delivery_action_closure_report.md`
-- 模块覆盖报告：`docs/ops/audit/product_delivery_module9_smoke_report.md`
+- 动作闭环报告：`docs/audit/product_delivery_action_closure_report.md`
+- 模块覆盖报告：`docs/audit/product_delivery_module9_smoke_report.md`

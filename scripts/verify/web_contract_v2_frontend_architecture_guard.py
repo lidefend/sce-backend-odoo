@@ -20,9 +20,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 WEB_ROOT = ROOT / "frontend/apps/web/src"
 REPORT_JSON = ROOT / "artifacts/backend/web_contract_v2_frontend_architecture_guard.json"
-REPORT_MD = ROOT / "docs/ops/audit/web_contract_v2_frontend_architecture_guard_report.md"
-ROUTE_MATRIX = ROOT / "docs/ops/audits/web_frontend_contract_v2_route_runtime_matrix_v1.md"
-AUDIT_DOC = ROOT / "docs/ops/audits/web_frontend_contract_v2_architecture_audit_v1.md"
+REPORT_MD = ROOT / "docs/audit/web_contract_v2_frontend_architecture_guard_report.md"
+ROUTE_MATRIX = ROOT / "docs/audit/web_frontend_contract_v2_route_runtime_matrix_v1.md"
+AUDIT_DOC = ROOT / "docs/audit/web_frontend_contract_v2_architecture_audit_v1.md"
 
 
 @dataclass(frozen=True)
@@ -323,9 +323,9 @@ REQUIRED_WORKFLOW_STATUSBAR_CONTRACT_TOKENS: tuple[tuple[Path, str], ...] = (
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "function normalizeNativeFormStatusbar"),
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "const statusbar = dictOrEmpty(workflow.statusbar)"),
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "if (!input.recordId)"),
-    (WEB_ROOT / "pages/contractForm/useRecordFormLayout.ts", "fallback:normalizeWorkflowPhaseStatusbar(context.currentWorkflowContract())"),
+    (WEB_ROOT / "pages/contractForm/useRecordFormLayout.ts", "fallback:{visible:false,field:'',current:'',states:[],reachedValues:[],readonly:true}"),
     (WEB_ROOT / "pages/ContractFormPage.vue", "recordId: recordId.value"),
-    (ROOT / "docs/ops/audit/workflow_state_unification_plan.md", "New-record forms must not render workflow statusbar"),
+    (ROOT / "docs/audit/workflow_state_unification_plan.md", "New-record forms must not render workflow statusbar"),
     (ROOT / "make/ci.mk", "verify.workflow_contract.browser.create_statusbar.host"),
 )
 
@@ -432,13 +432,20 @@ def validate_form_store_selector_boundary() -> list[str]:
     errors: list[str] = []
     page = read(WEB_ROOT / "pages/ContractFormPage.vue")
     store = read(WEB_ROOT / "app/contracts/v2/store.ts")
+    # The v2 shadow diagnostics pipeline extracted from the page lives in a
+    # dedicated composable module that ContractFormPage imports and consumes
+    # (useContractV2ShadowDiagnostics). The selector boundary therefore spans
+    # the page plus that module; the forbidden local-selector ban applies to
+    # the same combined surface so reimplementations cannot hide there.
+    diagnostics = read(WEB_ROOT / "pages/contractForm/useContractV2ShadowDiagnostics.ts")
+    selector_surface = page + "\n" + diagnostics
     for token in REQUIRED_FORM_STORE_SELECTOR_TOKENS:
         if token not in store:
             errors.append(f"v2 store selector boundary missing store token: {token}")
-        if token not in page:
+        if token not in selector_surface:
             errors.append(f"ContractFormPage must consume v2 store selector token: {token}")
     for token in FORBIDDEN_FORM_LOCAL_SELECTOR_TOKENS:
-        if token in page:
+        if token in selector_surface:
             errors.append(f"ContractFormPage must not define local v2 selector: {token}")
     return errors
 

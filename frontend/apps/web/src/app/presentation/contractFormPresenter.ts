@@ -3,7 +3,9 @@ import type {
   CanonicalFormField,
   CanonicalFormNode,
   CanonicalFormRenderModel,
+  CanonicalFormSemanticRole,
   CanonicalFormRenderMode,
+  CanonicalRelationValue,
   CanonicalFormZoneRole,
 } from './canonicalFormRenderModel';
 import type {
@@ -29,6 +31,23 @@ function bool(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
 
+const FORM_SEMANTIC_ROLES = new Set<CanonicalFormSemanticRole>([
+  'summary', 'task', 'context', 'risk', 'relation', 'activity', 'audit',
+]);
+
+function semanticRole(value: unknown): CanonicalFormSemanticRole | '' {
+  const structure = asDict(value);
+  const role = text(structure.role).toLowerCase() as CanonicalFormSemanticRole;
+  return FORM_SEMANTIC_ROLES.has(role) ? role : '';
+}
+
+function fieldSemanticRole(
+  widget: ContractV2Widget,
+  container: ContractV2Container,
+): CanonicalFormSemanticRole | '' {
+  return semanticRole(widget.formStructureRole) || semanticRole(container.formStructureRole);
+}
+
 function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
   const authority = asDict(container.sourceAuthority
     || container.attributes?.sourceAuthority || container.attributes?.source_authority);
@@ -38,21 +57,76 @@ function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
   return projectionOnly && noBusinessAuthority ? 'subordinate' : 'primary';
 }
 
+function relationModel(widget: ContractV2Widget): string {
+  return text(widget.relation
+    || widget.componentConfig.relation
+    || widget.componentConfig.relationModel
+    || widget.componentConfig.relation_model);
+}
+
+function relationParts(value: unknown): { id: string | number; displayName: string } | null {
+  if (Array.isArray(value) && value.length) {
+    return { id: value[0] as string | number, displayName: text(value[1]) };
+  }
+  const row = asDict(value);
+  const id = row.id as string | number | undefined;
+  if (id !== undefined && id !== null && text(id)) {
+    return { id, displayName: text(row.display_name || row.displayName || row.label || row.name) };
+  }
+  return null;
+}
+
+function presentFieldValue(
+  widget: ContractV2Widget,
+  contractValue: unknown,
+  runtimeValue: unknown,
+  hasRuntimeValue: boolean,
+): unknown | CanonicalRelationValue {
+  const fieldType = text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type).toLowerCase();
+  const selected = hasRuntimeValue ? runtimeValue : contractValue;
+  if (fieldType === 'many2one') {
+    const runtimeRelation = relationParts(runtimeValue);
+    const contractRelation = relationParts(contractValue);
+    const relation = runtimeRelation || contractRelation;
+    if (!relation) return null;
+    const runtimeId = hasRuntimeValue && runtimeValue !== null && typeof runtimeValue !== 'object'
+      ? runtimeValue as string | number
+      : relation.id;
+    const displayName = runtimeRelation?.displayName
+      || (String(runtimeId) === String(contractRelation?.id ?? '') ? contractRelation?.displayName : '')
+      || '';
+    return Object.freeze({ id: runtimeId, displayName, model: relationModel(widget) });
+  }
+  if (fieldType !== 'boolean' && (selected === false || selected === null || selected === undefined)) return null;
+  if (['date', 'datetime'].includes(fieldType) && text(selected).toLowerCase() === 'false') return null;
+  return selected;
+}
+
 function fieldFromWidget(
   widget: ContractV2Widget,
+  container: ContractV2Container,
   status: ContractV2WidgetStatus | undefined,
-  values: ContractV2Dictionary,
+  contractValues: ContractV2Dictionary,
+  runtimeValues: ContractV2Dictionary | undefined,
   mode: CanonicalFormRenderMode,
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
+  const hasRuntimeValue = Boolean(runtimeValues)
+    && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
     label: widget.label,
-    value: values[widget.fieldCode],
+    hideLabel: container.nolabel === true,
+    value: presentFieldValue(
+      widget,
+      contractValues[widget.fieldCode],
+      runtimeValues?.[widget.fieldCode],
+      hasRuntimeValue,
+    ),
     fieldType: text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type),
     componentKey: widget.componentKey,
     span: widget.span,
@@ -61,6 +135,7 @@ function fieldFromWidget(
     required: bool(status?.required, false),
     disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
     reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
+    semanticRole: fieldSemanticRole(widget, container),
     componentConfig: Object.freeze({ ...widget.componentConfig }),
   };
 }
@@ -111,12 +186,15 @@ function presentNode(
   inheritedRole: CanonicalFormZoneRole,
   index: number,
   store: ContractV2NormalizedStore,
-  values: ContractV2Dictionary,
+  contractValues: ContractV2Dictionary,
+  runtimeValues: ContractV2Dictionary | undefined,
   mode: CanonicalFormRenderMode,
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
   claimedWidgetIds: Set<string>,
+  actionsByIdentity: ReadonlyMap<string, CanonicalFormAction>,
+  ancestorTitle = '',
 ): CanonicalFormNode {
   const ownRole = zoneRole(container);
   const effectiveRole = ownRole === 'subordinate' ? ownRole : inheritedRole;
@@ -128,26 +206,45 @@ function presentNode(
     claimedWidgetIds.add(widget.widgetId);
     return [fieldFromWidget(
       widget,
+      container,
       store.widgetStatusById.get(widget.widgetId),
-      values,
+      contractValues,
+      runtimeValues,
       mode,
       pageCanEdit,
       visible,
       disabled,
     )];
   });
+  const nodeKind = text(container.type || container.containerType) || 'container';
+  // A native field `string`/`label` labels the control; it is not a container
+  // heading. Keeping those facts separate prevents duplicate field titles.
+  const rawTitle = nodeKind === 'field'
+    ? text(container.title)
+    : text(container.title || container.label || container.string);
+  const title = rawTitle && rawTitle === ancestorTitle ? '' : rawTitle;
+  const nodeAction = asDict(container.action);
+  const actionIdentity = text(nodeAction.backendIdentity);
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
-    kind: text(container.type || container.containerType) || 'container',
-    title: text(container.title || container.label || container.string),
+    kind: nodeKind,
+    title,
+    text: text(container.text),
+    attributes: Object.freeze({ ...container.attributes }),
     zoneRole: effectiveRole,
     columns: Number(container.cols || container.columns || 1) || 1,
     visible,
     disabled,
     reasonCode: text(status?.reasonCode),
+    semanticRole: semanticRole(container.formStructureRole),
+    action: actionIdentity ? actionsByIdentity.get(actionIdentity) || null : null,
+    nativeWidget: nodeKind === 'widget' ? text(container.widget || container.name) : '',
     fields: widgets,
     children: childCollections(container).map((child, childIndex) => (
-      presentNode(child, effectiveRole, childIndex, store, values, mode, pageCanEdit, visible, disabled, claimedWidgetIds)
+      presentNode(
+        child, effectiveRole, childIndex, store, contractValues, runtimeValues,
+        mode, pageCanEdit, visible, disabled, claimedWidgetIds, actionsByIdentity, rawTitle || ancestorTitle,
+      )
     )),
   };
 }
@@ -193,7 +290,9 @@ function presentAction(
     key: action.actionKey || action.actionId,
     label: text(action.label || action.actionKey || action.actionId),
     tier: actionTier(action),
-    visible: profiles.includes(mode) && status?.visible !== false,
+    visible: profiles.includes(mode)
+      && status?.visible !== false
+      && !(mode === 'readonly' && action.actionId === 'form.save'),
     enabled: allowed && enabled,
     reasonCode: text(status?.reasonCode) || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
     visibleProfiles: profiles,
@@ -211,21 +310,22 @@ export function presentContractV2Form(
   const contractValues = Object.keys(snapshot.dataContract.mainData).length
     ? snapshot.dataContract.mainData
     : store.primaryDataSource || {};
-  const values = runtimeValues ? { ...contractValues, ...runtimeValues } : contractValues;
   const globalStatus = snapshot.statusContract.globalStatus;
   const pageVisible = bool(globalStatus.pageVisible, true);
   const pageAuth = text(globalStatus.pageAuth);
   const pageCanEdit = mode !== 'readonly' && ['edit', 'admin'].includes(pageAuth);
   const claimedWidgetIds = new Set<string>();
-  const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
-    presentNode(
-      container, zoneRole(container), index, store, values, mode, pageCanEdit,
-      pageVisible, pageAuth === 'none', claimedWidgetIds,
-    )
-  ));
-  const actions = snapshot.actionContract.actionRuleList.filter(isFormActionBarAction).map((action) => (
+  const allActions = snapshot.actionContract.actionRuleList.map((action) => (
     presentAction(action, actionStatus(store, action), mode)
   ));
+  const actionsByIdentity = new Map(allActions.map((action) => [text(action.actionRef.backendIdentity), action]));
+  const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
+    presentNode(
+      container, zoneRole(container), index, store, contractValues, runtimeValues, mode, pageCanEdit,
+      pageVisible, pageAuth === 'none', claimedWidgetIds, actionsByIdentity,
+    )
+  ));
+  const actions = allActions.filter((action) => isFormActionBarAction(action.actionRef));
   const primaryCount = actions.filter((action) => action.visible && action.enabled && action.tier === 'primary').length;
   if (primaryCount > 1) throw new Error('CANONICAL_FORM_MULTIPLE_PRIMARY_ACTIONS');
   return {

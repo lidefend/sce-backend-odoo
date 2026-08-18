@@ -59,7 +59,7 @@ class OdooViewParser(_BaseViewParserMixin,
 
     # ---------------- 公共入口 ----------------
     @api.model
-    def parse_odoo_view(self, model_name, view_type):
+    def parse_odoo_view(self, model_name, view_type, view_data=None):
         """
         保真解析 Odoo 原生视图，返回完整结构（单视图或多视图）
         返回：
@@ -69,15 +69,17 @@ class OdooViewParser(_BaseViewParserMixin,
         view_types = self._normalize_view_types(view_type)
 
         if len(view_types) > 1:
+            if view_data:
+                raise ValueError("explicit view_data requires exactly one view type")
             out = {}
             for vt in view_types:
                 out[vt] = self._get_and_parse_view(model_name, vt)
             return out
         else:
-            return self._get_and_parse_view(model_name, view_types[0])
+            return self._get_and_parse_view(model_name, view_types[0], view_data=view_data)
 
     # ---------------- 主流程 ----------------
-    def _get_and_parse_view(self, model_name, view_type):
+    def _get_and_parse_view(self, model_name, view_type, *, view_data=None):
         """
         获取最终视图（已合并继承）并解析为标准化结构
         - 首选 model.get_view(view_type=...)
@@ -87,7 +89,7 @@ class OdooViewParser(_BaseViewParserMixin,
         # groups while resolving inherited XML, and the custom client must
         # receive the same structure as the native client for that user.
         model = self.env[model_name]
-        odoo_view = self._safe_get_view_data(model, view_type)
+        odoo_view = view_data if isinstance(view_data, dict) else self._safe_get_view_data(model, view_type)
         arch = (odoo_view or {}).get('arch') or ''
         fields_info = self._enrich_view_fields_info(model, arch, (odoo_view or {}).get('fields') or {})
         toolbar_raw = (odoo_view or {}).get('toolbar') or {}

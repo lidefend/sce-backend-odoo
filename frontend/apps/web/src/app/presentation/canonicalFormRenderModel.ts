@@ -2,6 +2,13 @@ import type { ContractV2ActionRule } from '../contracts/v2/types';
 
 export type CanonicalFormRenderMode = 'create' | 'edit' | 'readonly';
 export type CanonicalFormZoneRole = 'primary' | 'subordinate';
+export type CanonicalFormSemanticRole = 'summary' | 'task' | 'context' | 'risk' | 'relation' | 'activity' | 'audit';
+
+export type CanonicalRelationValue = {
+  id: string | number;
+  displayName: string;
+  model: string;
+};
 
 export type CanonicalFormAction = {
   key: string;
@@ -19,7 +26,8 @@ export type CanonicalFormField = {
   widgetId: string;
   fieldCode: string;
   label: string;
-  value: unknown;
+  hideLabel: boolean;
+  value: unknown | CanonicalRelationValue;
   fieldType: string;
   componentKey: string;
   span: number;
@@ -28,6 +36,7 @@ export type CanonicalFormField = {
   required: boolean;
   disabled: boolean;
   reasonCode: string;
+  semanticRole: CanonicalFormSemanticRole | '';
   componentConfig: Readonly<Record<string, unknown>>;
 };
 
@@ -35,11 +44,16 @@ export type CanonicalFormNode = {
   nodeId: string;
   kind: string;
   title: string;
+  text: string;
+  attributes: Readonly<Record<string, unknown>>;
   zoneRole: CanonicalFormZoneRole;
   columns: number;
   visible: boolean;
   disabled: boolean;
   reasonCode: string;
+  semanticRole: CanonicalFormSemanticRole | '';
+  action: CanonicalFormAction | null;
+  nativeWidget: string;
   fields: CanonicalFormField[];
   children: CanonicalFormNode[];
 };

@@ -29,6 +29,14 @@ class TestNativeModifier(unittest.TestCase):
         self.assertEqual(value["kind"], "any")
         self.assertEqual([row["field"] for row in value["exprs"]], ["state", "preview_error_count"])
 
+    def test_field_to_field_comparison_preserves_rhs_identity(self):
+        value = MODULE.normalize_native_modifier("completed_count < required_count")
+
+        self.assertEqual(value["field"], "completed_count")
+        self.assertEqual(value["operator"], "<")
+        self.assertEqual(value["value_field"], "required_count")
+        self.assertNotIn("value", value)
+
 
 if __name__ == "__main__":
     unittest.main()

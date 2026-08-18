@@ -1,0 +1,140 @@
+name: backend_test_suite
+
+# R9 (productization audit): automated entry for the backend Odoo test
+# suite, which needs a live database. Runs nightly on the default branch
+# and on demand; each module with a tests/ directory is installed and
+# tested in an isolated per-run database.
+
+on:
+  schedule:
+    - cron: "37 19 * * *"  # 03:37 Asia/Shanghai nightly
+  workflow_dispatch:
+    inputs:
+      head_ref:
+        description: "Branch or tag to test (default: default branch)"
+        required: false
+        default: ""
+      modules:
+        description: "Comma-separated module override (default: all modules with tests/)"
+        required: false
+        default: ""
+      test_tags:
+        description: "Odoo --test-tags override (default: module default tags)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-test-suite-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backend_suite:
+    if: >-
+      github.repository == 'lidefend/sce-backend-odoo' &&
+      (github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner))
+    runs-on: [self-hosted, huawei, ubuntu22]
+    timeout-minutes: 240
+
+    env:
+      CI_REMOTE_URL: https://github.com/lidefend/sce-backend-odoo.git
+      HEAD_REF: ${{ github.event.inputs.head_ref || github.ref_name }}
+      HEAD_SHA: ${{ github.sha }}
+      COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}
+      DB_NAME: sc_suite_ci
+      TEST_TAGS_INPUT: ${{ github.event.inputs.test_tags }}
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout exact authoritative GitHub commit
+        run: |
+          set -euo pipefail
+          find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          git init "${GITHUB_WORKSPACE}"
+          git remote add origin "${CI_REMOTE_URL}"
+          for attempt in 1 2 3 4 5; do
+            if timeout 90 git fetch --no-tags origin \
+              "+refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}" && \
+              git cat-file -e "${HEAD_SHA}^{commit}" 2>/dev/null; then
+              git checkout --detach "${HEAD_SHA}"
+              git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+              exit 0
+            fi
+            sleep "$((attempt * 5))"
+          done
+          echo "GitHub checkout failed for ${HEAD_REF}/${HEAD_SHA}" >&2
+          exit 1
+
+      - name: Resolve module list
+        run: |
+          set -euo pipefail
+          override="${{ github.event.inputs.modules }}"
+          if [ -n "${override}" ]; then
+            MODULES="${override//,/ }"
+          else
+            MODULES="$(find addons -maxdepth 2 -type d -name tests -printf '%h\n' \
+              | while read -r dir; do
+                  [ -f "${dir}/__manifest__.py" ] && basename "${dir}"
+                done | sort -u | tr '\n' ' ')"
+          fi
+          test -n "${MODULES}" || { echo "no modules with tests/ found"; exit 1; }
+          echo "MODULES=${MODULES}" >> "${GITHUB_ENV}"
+          printf 'backend suite modules:\n%s\n' "${MODULES}"
+
+      - name: Build images and start database
+        run: |
+          set -euo pipefail
+          docker --version
+          docker compose version
+          docker compose pull || true
+          docker compose build
+          docker compose up -d db redis
+          for i in $(seq 1 60); do
+            if docker compose exec -T db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
+              echo "Postgres is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs --no-color --tail=200 db
+          exit 1
+
+      - name: Run backend test suite per module
+        run: |
+          set -uo pipefail
+          failed=0
+          for module in ${MODULES}; do
+            echo "===== backend suite: ${module} ====="
+            if [ -n "${TEST_TAGS_INPUT}" ]; then
+              if ! make test MODULE="${module}" TEST_TAGS="${TEST_TAGS_INPUT}" DB_NAME="${DB_NAME}"; then
+                echo "::error::backend suite failed for module ${module}"
+                failed=1
+              fi
+            else
+              if ! make test MODULE="${module}" DB_NAME="${DB_NAME}"; then
+                echo "::error::backend suite failed for module ${module}"
+                failed=1
+              fi
+            fi
+          done
+          test "${failed}" -eq 0
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker compose ps || true
+          docker compose logs --no-color --tail=200 || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down -v --remove-orphans || true
+          bash scripts/ci/self_hosted_runner_cleanup.sh || true

@@ -21,8 +21,9 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 58,
+      "test_refs": 72,
       "request_schema_hint": [
+        "context",
         "fields",
         "fields[]",
         "limit",
@@ -256,7 +257,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": true,
-      "test_refs": 7,
+      "test_refs": 9,
       "request_schema_hint": [
         "action",
         "assignee_id",
@@ -487,7 +488,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": true,
-      "test_refs": 3,
+      "test_refs": 4,
       "request_schema_hint": [
         "company_id",
         "context",
@@ -760,6 +761,179 @@
       "inferred_example": null
     },
     {
+      "intent": "auth.credential.create",
+      "owner": {
+        "module": "addons/smart_core/handlers/auth_credentials.py",
+        "class": "AuthCredentialCreateHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "company_ids",
+        "credential",
+        "expires_at",
+        "name",
+        "scope"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "__inferred__",
+          "snapshot_file": "",
+          "request_keys": [
+            "company_ids",
+            "credential",
+            "expires_at",
+            "name",
+            "scope"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [],
+          "inferred": true,
+          "source": "handler_params_scan"
+        }
+      ],
+      "inferred_example": {
+        "case": "__inferred__",
+        "snapshot_file": "",
+        "request_keys": [
+          "company_ids",
+          "credential",
+          "expires_at",
+          "name",
+          "scope"
+        ],
+        "response_data_keys": [],
+        "response_error_keys": [],
+        "inferred": true,
+        "source": "handler_params_scan"
+      }
+    },
+    {
+      "intent": "auth.credential.list",
+      "owner": {
+        "module": "addons/smart_core/handlers/auth_credentials.py",
+        "class": "AuthCredentialListHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 4,
+      "request_schema_hint": [],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "__inferred__",
+          "snapshot_file": "",
+          "request_keys": [],
+          "response_data_keys": [],
+          "response_error_keys": [],
+          "inferred": true,
+          "source": "handler_params_scan"
+        }
+      ],
+      "inferred_example": {
+        "case": "__inferred__",
+        "snapshot_file": "",
+        "request_keys": [],
+        "response_data_keys": [],
+        "response_error_keys": [],
+        "inferred": true,
+        "source": "handler_params_scan"
+      }
+    },
+    {
+      "intent": "auth.credential.revoke",
+      "owner": {
+        "module": "addons/smart_core/handlers/auth_credentials.py",
+        "class": "AuthCredentialRevokeHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "credential_id"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "__inferred__",
+          "snapshot_file": "",
+          "request_keys": [
+            "credential_id"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [],
+          "inferred": true,
+          "source": "handler_params_scan"
+        }
+      ],
+      "inferred_example": {
+        "case": "__inferred__",
+        "snapshot_file": "",
+        "request_keys": [
+          "credential_id"
+        ],
+        "response_data_keys": [],
+        "response_error_keys": [],
+        "inferred": true,
+        "source": "handler_params_scan"
+      }
+    },
+    {
+      "intent": "auth.credential.rotate",
+      "owner": {
+        "module": "addons/smart_core/handlers/auth_credentials.py",
+        "class": "AuthCredentialRotateHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "credential",
+        "credential_id"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "__inferred__",
+          "snapshot_file": "",
+          "request_keys": [
+            "credential",
+            "credential_id"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [],
+          "inferred": true,
+          "source": "handler_params_scan"
+        }
+      ],
+      "inferred_example": {
+        "case": "__inferred__",
+        "snapshot_file": "",
+        "request_keys": [
+          "credential",
+          "credential_id"
+        ],
+        "response_data_keys": [],
+        "response_error_keys": [],
+        "inferred": true,
+        "source": "handler_params_scan"
+      }
+    },
+    {
       "intent": "auth.logout",
       "owner": {
         "module": "addons/smart_core/handlers/login.py",
@@ -791,6 +965,50 @@
         }
       ],
       "inferred_example": null
+    },
+    {
+      "intent": "auth.machine.token",
+      "owner": {
+        "module": "addons/smart_core/handlers/auth_credentials.py",
+        "class": "AuthMachineTokenHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 5,
+      "request_schema_hint": [
+        "credential",
+        "db"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "__inferred__",
+          "snapshot_file": "",
+          "request_keys": [
+            "credential",
+            "db"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [],
+          "inferred": true,
+          "source": "handler_params_scan"
+        }
+      ],
+      "inferred_example": {
+        "case": "__inferred__",
+        "snapshot_file": "",
+        "request_keys": [
+          "credential",
+          "db"
+        ],
+        "response_data_keys": [],
+        "response_error_keys": [],
+        "inferred": true,
+        "source": "handler_params_scan"
+      }
     },
     {
       "intent": "business.evidence.trace",
@@ -1035,7 +1253,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 1,
+      "test_refs": 5,
       "request_schema_hint": [
         "body",
         "mention_partner_ids",
@@ -1098,6 +1316,7 @@
         "include_audit",
         "limit",
         "model",
+        "offset",
         "record_id",
         "res_id"
       ],
@@ -1929,7 +2148,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 0,
+      "test_refs": 1,
       "request_schema_hint": [
         "conversation_key",
         "message_ids"
@@ -1967,7 +2186,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 0,
+      "test_refs": 1,
       "request_schema_hint": [
         "body",
         "recipient_user_ids",
@@ -2826,9 +3045,10 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 216,
+      "test_refs": 439,
       "request_schema_hint": [
         "company_id",
+        "credential",
         "login",
         "password"
       ],
@@ -12271,6 +12491,7 @@
         "limit_each",
         "page",
         "page_size",
+        "product_workspace",
         "reason_code",
         "search",
         "section",
@@ -12707,6 +12928,41 @@
       "inferred_example": null
     },
     {
+      "intent": "payment.request.create_execution",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/payment_request_approval.py",
+        "class": "PaymentRequestCreateExecutionHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 0,
+      "request_schema_hint": [],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "__inferred__",
+          "snapshot_file": "",
+          "request_keys": [],
+          "response_data_keys": [],
+          "response_error_keys": [],
+          "inferred": true,
+          "source": "handler_params_scan"
+        }
+      ],
+      "inferred_example": {
+        "case": "__inferred__",
+        "snapshot_file": "",
+        "request_keys": [],
+        "response_data_keys": [],
+        "response_error_keys": [],
+        "inferred": true,
+        "source": "handler_params_scan"
+      }
+    },
+    {
       "intent": "payment.request.done",
       "owner": {
         "module": "addons/smart_construction_core/handlers/payment_request_approval.py",
@@ -12859,6 +13115,41 @@
         }
       ],
       "inferred_example": null
+    },
+    {
+      "intent": "payment.request.mark_reversed",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/payment_request_approval.py",
+        "class": "PaymentRequestCancelByContractHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 0,
+      "request_schema_hint": [],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "__inferred__",
+          "snapshot_file": "",
+          "request_keys": [],
+          "response_data_keys": [],
+          "response_error_keys": [],
+          "inferred": true,
+          "source": "handler_params_scan"
+        }
+      ],
+      "inferred_example": {
+        "case": "__inferred__",
+        "snapshot_file": "",
+        "request_keys": [],
+        "response_data_keys": [],
+        "response_error_keys": [],
+        "inferred": true,
+        "source": "handler_params_scan"
+      }
     },
     {
       "intent": "payment.request.reject",
@@ -13108,18 +13399,14 @@
     {
       "intent": "project.context.search",
       "owner": {
-        "module": "addons/smart_core/handlers/project_context.py",
-        "class": "ProjectContextSearchHandler"
+        "module": "",
+        "class": ""
       },
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
       "test_refs": 0,
-      "request_schema_hint": [
-        "limit",
-        "query",
-        "search"
-      ],
+      "request_schema_hint": [],
       "response_data_schema_hint": [
         "catalog_case",
         "catalog_case.coverage",
@@ -13153,8 +13440,9 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 21,
+      "test_refs": 75,
       "request_schema_hint": [
+        "params",
         "project_id"
       ],
       "response_data_schema_hint": [
@@ -13730,7 +14018,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 6,
+      "test_refs": 15,
       "request_schema_hint": [
         "block_key",
         "params"
@@ -13768,7 +14056,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 14,
+      "test_refs": 39,
       "request_schema_hint": [
         "params",
         "project_id"
@@ -14216,7 +14504,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 0,
+      "test_refs": 10,
       "request_schema_hint": [
         "params"
       ],
@@ -14290,7 +14578,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 1,
+      "test_refs": 15,
       "request_schema_hint": [
         "params"
       ],
@@ -14437,7 +14725,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 1,
+      "test_refs": 7,
       "request_schema_hint": [
         "menu_id",
         "name",
@@ -14541,6 +14829,55 @@
         }
       ],
       "inferred_example": null
+    },
+    {
+      "intent": "record.context.search",
+      "owner": {
+        "module": "addons/smart_core/handlers/project_context.py",
+        "class": "RecordContextSearchHandler"
+      },
+      "aliases": [
+        "project.context.search"
+      ],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "limit",
+        "query",
+        "search"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "__inferred__",
+          "snapshot_file": "",
+          "request_keys": [
+            "limit",
+            "query",
+            "search"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [],
+          "inferred": true,
+          "source": "handler_params_scan"
+        }
+      ],
+      "inferred_example": {
+        "case": "__inferred__",
+        "snapshot_file": "",
+        "request_keys": [
+          "limit",
+          "query",
+          "search"
+        ],
+        "response_data_keys": [],
+        "response_error_keys": [],
+        "inferred": true,
+        "source": "handler_params_scan"
+      }
     },
     {
       "intent": "release.operator.approve",
@@ -15013,6 +15350,47 @@
         }
       ],
       "inferred_example": null
+    },
+    {
+      "intent": "route.authority.validate",
+      "owner": {
+        "module": "addons/smart_core/handlers/route_authority_validate.py",
+        "class": "RouteAuthorityValidateHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 0,
+      "request_schema_hint": [
+        "action_id"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "__inferred__",
+          "snapshot_file": "",
+          "request_keys": [
+            "action_id"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [],
+          "inferred": true,
+          "source": "handler_params_scan"
+        }
+      ],
+      "inferred_example": {
+        "case": "__inferred__",
+        "snapshot_file": "",
+        "request_keys": [
+          "action_id"
+        ],
+        "response_data_keys": [],
+        "response_error_keys": [],
+        "inferred": true,
+        "source": "handler_params_scan"
+      }
     },
     {
       "intent": "scene.governance.export_contract",
@@ -16069,7 +16447,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 51,
+      "test_refs": 90,
       "request_schema_hint": [
         "op",
         "source_mode"
@@ -16103,7 +16481,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 12,
+      "test_refs": 15,
       "request_schema_hint": [
         "actionId",
         "action_id",
@@ -16112,12 +16490,8 @@
         "context_raw",
         "domainRaw",
         "domain_raw",
-        "id",
-        "menuId",
         "menu_id",
         "model",
-        "modelCode",
-        "model_code",
         "op",
         "profile",
         "recordId",
@@ -16126,18 +16500,14 @@
         "render_profile",
         "requestId",
         "request_id",
-        "resId",
-        "res_id",
         "sceneKey",
         "scene_key",
         "sourceType",
         "source_type",
-        "subject",
         "viewId",
         "viewType",
         "view_id",
-        "view_type",
-        "with_data"
+        "view_type"
       ],
       "response_data_schema_hint": [
         "catalog_case",

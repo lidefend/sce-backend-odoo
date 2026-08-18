@@ -34,7 +34,7 @@ else
   WITHOUT_DEMO_FLAG="--without-demo=all"
 fi
 
-DEMO_LOGFILE="${DEMO_LOGFILE:-/tmp/demo_install.log}"
+DEMO_LOGFILE="${DEMO_LOGFILE:-/var/lib/odoo/demo_install.log}"
 ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH:-/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons,/mnt/addons_external/oca_server_ux}"
 
 log "install seed/demo modules on ${DB_NAME}"
@@ -54,8 +54,8 @@ compose_dev run --rm -T \
   -e DEMO_LOGFILE="${DEMO_LOGFILE}" \
   --entrypoint /bin/bash odoo -lc 'bash -s' <<'BASH_IN_CONTAINER'
 set -euo pipefail
-set -o pipefail
 
+set +e
 odoo --config="$ODOO_CONF" \
   --db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" \
   --addons-path="$ODOO_ADDONS_PATH" \
@@ -66,6 +66,7 @@ odoo --config="$ODOO_CONF" \
   2>&1 | tee "$DEMO_LOGFILE"
 
 rc=${PIPESTATUS[0]}
+set -e
 if [ "$rc" -ne 0 ]; then
   tail -n 200 "$DEMO_LOGFILE" || true
 fi

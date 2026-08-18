@@ -8,10 +8,6 @@ TARGET_ENV_FILE="${TARGET_ENV_FILE:-${ROOT_DIR}/.env.local.clean}"
 [[ "${TARGET_ENV_FILE}" = /* ]] || TARGET_ENV_FILE="${ROOT_DIR}/${TARGET_ENV_FILE}"
 [[ "${SOURCE_ENV_FILE}" = /* ]] || SOURCE_ENV_FILE="${ROOT_DIR}/${SOURCE_ENV_FILE}"
 
-frontend_dist="${ROOT_DIR}/frontend/apps/web/dist-clean"
-mkdir -p "${frontend_dist}"
-chmod 755 "${frontend_dist}"
-
 if [[ -f "${TARGET_ENV_FILE}" ]]; then
   chmod 600 "${TARGET_ENV_FILE}"
   echo "[local.clean.prepare] reuse ${TARGET_ENV_FILE}"
@@ -51,6 +47,25 @@ for value in "${nginx_port}" "${odoo_port}"; do
     exit 2
   fi
 done
+
+existing_volumes=()
+for volume in "${db_data}" "${redis_data}" "${odoo_data}"; do
+  if docker volume inspect "${volume}" >/dev/null 2>&1; then
+    existing_volumes+=("${volume}")
+  fi
+done
+if (( ${#existing_volumes[@]} > 0 )); then
+  if [[ "${LOCAL_CLEAN_PREPARE_FOR_REBUILD:-0}" != "1" \
+    || "${CONFIRM_LOCAL_CLEAN_REBUILD:-}" != "REBUILD_ISOLATED_REHEARSAL" ]]; then
+    echo "[local.clean.prepare] DENY credential authority is missing while isolated volumes exist: ${existing_volumes[*]}" >&2
+    echo "[local.clean.prepare] use the governed local.clean.rebuild confirmation; do not generate new credentials over old volumes" >&2
+    exit 2
+  fi
+fi
+
+frontend_dist="${ROOT_DIR}/frontend/apps/web/dist-clean"
+mkdir -p "${frontend_dist}"
+chmod 755 "${frontend_dist}"
 
 umask 077
 db_password="$(random_secret 24)"

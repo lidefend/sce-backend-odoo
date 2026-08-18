@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 INPUT_JSON = ROOT / "artifacts/backend/model_view_fact_layer_audit.json"
 REPORT_JSON = ROOT / "artifacts/backend/model_view_standardization_plan.json"
-REPORT_MD = ROOT / "docs/ops/audit/model_view_standardization_plan.md"
+REPORT_MD = ROOT / "docs/audit/model_view_standardization_plan.md"
 
 
 FRAMEWORKS = {

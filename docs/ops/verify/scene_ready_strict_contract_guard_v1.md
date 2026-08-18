@@ -28,9 +28,9 @@ make verify.scene.ready.strict_gap.full_audit
 ## 报告产物
 
 - `artifacts/backend/scene_ready_strict_contract_guard_report.json`
-- `docs/ops/audits/scene_ready_strict_contract_guard_report.md`
+- `docs/audit/scene_ready_strict_contract_guard_report.md`
 - `artifacts/backend/scene_ready_strict_gap_full_audit.json`
-- `docs/ops/audits/scene_ready_strict_gap_full_audit.md`
+- `docs/audit/scene_ready_strict_gap_full_audit.md`
 
 其中 `strict_gap_full_audit` 为**全场景严格检查**：
 - 对 `scene_ready_contract_v1.scenes[*]` 逐一检查 surface/view_modes/sections/action_surface/projection 最小契约完整性；

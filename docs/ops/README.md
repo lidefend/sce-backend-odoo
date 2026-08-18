@@ -3,8 +3,8 @@
 本目录聚合发布、验证、运行治理相关文档。
 
 ## 主要入口
-- Release 证据目录: `docs/ops/releases/`
-- 菜单场景覆盖率证据（当前基线）: `docs/ops/releases/current/menu_scene_coverage_evidence.md`
+- Release 证据目录: `docs/releases/`
+- 菜单场景覆盖率证据（当前基线）: `docs/releases/current/menu_scene_coverage_evidence.md`
 - 验证入口（含 strict/兼容模式说明）: `docs/ops/verify/README.md`
 - 三环境统一运行手册（dev/test/prod）: `docs/ops/environment_tiers_unified_runbook_v1.md`
 - 生产发布链路规范（dev -> prod-sim -> release package -> prod）: `docs/ops/production_release_flow_standard_v1.md`
@@ -31,9 +31,9 @@
 - 角色菜单差异审计:
   - `make audit.nav.role_diff DB_NAME=sc_demo`
   - outputs: `artifacts/audit/role_nav_diff.latest.json`, `artifacts/audit/role_nav_diff.latest.md`
-- Phase 11 Backend Closure: `docs/ops/releases/current/phase_11_backend_closure.md`
-- Phase 11.1 Contract Visibility: `docs/ops/releases/current/phase_11_1_contract_visibility.md`
-- 临时归档（非正式、仅追溯）: `docs/ops/releases/archive/temp/`
+- Phase 11 Backend Closure: `docs/releases/current/phase_11_backend_closure.md`
+- Phase 11.1 Contract Visibility: `docs/releases/current/phase_11_1_contract_visibility.md`
+- 临时归档（非正式、仅追溯）: `docs/releases/archive/temp/`
 
 ## 与契约/审计的关系
 - Contract 总览: `docs/contract/README.md`

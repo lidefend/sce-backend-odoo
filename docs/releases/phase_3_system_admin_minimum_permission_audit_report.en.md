@@ -6,7 +6,7 @@ Verify that release-mode permission baselines do not depend on `admin` as a busi
 ## 2. Audit Scope
 - Prod-like fixture baseline: `scripts/verify/baselines/role_capability_floor_prod_like.json`
 - Runtime role-floor artifact: `artifacts/backend/role_capability_floor_prod_like.json`
-- Write-intent permission audit: `docs/ops/audit/write_intent_permission_audit.md`
+- Write-intent permission audit: `docs/audit/write_intent_permission_audit.md`
 
 ## 3. Verification Command
 - `make verify.role.system_admin.minimum_permission_audit.guard`

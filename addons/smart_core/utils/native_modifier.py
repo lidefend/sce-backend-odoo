@@ -56,12 +56,19 @@ def _python_expr(node: ast.AST) -> Any:
         field = _field_name(node.left)
         operator = _operator(node.ops[0])
         if field and operator:
-            return {
+            normalized = {
                 "kind": "field_compare",
                 "field": field,
                 "operator": operator,
                 "value": _literal(node.comparators[0]),
             }
+            comparator = node.comparators[0]
+            if isinstance(comparator, (ast.Name, ast.Attribute)):
+                right_field = _field_name(comparator)
+                if right_field not in ("True", "False", "None"):
+                    normalized.pop("value", None)
+                    normalized["value_field"] = right_field
+            return normalized
     return None
 
 

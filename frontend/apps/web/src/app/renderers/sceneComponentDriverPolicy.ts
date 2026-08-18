@@ -40,7 +40,7 @@ export type ContractFormComponentDriverContext = {
 };
 
 const SAFE_POLICY: SceneUiPreferencePolicy = Object.freeze({
-  allowedKits: ['sc-native'],
+  allowedKits: ['sc-native' as SceneUiKitId],
   systemDefaultKit: 'sc-native',
   allowUserOverride: false,
   allowPreviewOverride: false,

@@ -29,7 +29,7 @@ This runbook verifies whether `prod-sim` is properly isolated from the default d
 ## Outputs and pass criteria
 - PASS signal: command ends with `PASS`
 - Report files:
-  - `docs/ops/audit/delivery_simulation_report.md`
+  - `docs/audit/delivery_simulation_report.md`
   - `artifacts/backend/delivery_simulation_report.json`
 
 ## Common issues

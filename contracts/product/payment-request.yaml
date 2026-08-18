@@ -1,0 +1,52 @@
+id: payment_request
+version: 1
+
+title: 支付申请
+type: business-page
+product: smart_construction
+
+navigation:
+  group: finance
+  title: 支付申请
+  route: /payment-requests
+
+pages:
+  list:
+    route: /payment-requests
+  detail:
+    route: /payment-requests/{id}
+  create:
+    route: /payment-requests/new
+
+capabilities:
+  - payment_request.read
+  - payment_request.create
+  - payment_request.update
+  - payment_request.submit
+  - payment_request.approve
+  - payment_request.reject
+  - payment_request.mark_reversed
+
+roles:
+  project_manager:
+    capabilities:
+      - payment_request.read
+      - payment_request.create
+      - payment_request.update
+      - payment_request.submit
+  finance_manager:
+    capabilities:
+      - payment_request.read
+      - payment_request.approve
+      - payment_request.reject
+  finance_cashier:
+    capabilities:
+      - payment_request.read
+
+constraints:
+  create_edit_readonly_profiles: [create, edit, readonly]
+  page_variants:
+    - list
+    - create
+    - readonly
+    - edit

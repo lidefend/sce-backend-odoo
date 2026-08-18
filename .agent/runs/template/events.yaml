@@ -1,0 +1,7 @@
+events:
+  - type:
+      analysis.completed
+  - type:
+      change.completed
+  - type:
+      verification.completed

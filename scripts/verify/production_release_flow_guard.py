@@ -17,9 +17,9 @@ FILES = {
     "prod_policy": ROOT / "docs/ops/prod_command_policy.md",
     "verify_readme": ROOT / "docs/ops/verify/README.md",
     "release_checklist": ROOT / "docs/ops/release_checklist_v2.0.0.md",
-    "release_index_en": ROOT / "docs/ops/releases/README.md",
-    "release_index_zh": ROOT / "docs/ops/releases/README.zh.md",
-    "template": ROOT / "docs/ops/releases/templates/production_deployment_record_TEMPLATE.zh.md",
+    "release_index_en": ROOT / "docs/releases/README.md",
+    "release_index_zh": ROOT / "docs/releases/README.zh.md",
+    "template": ROOT / "docs/releases/templates/production_deployment_record_TEMPLATE.zh.md",
     "record_guard": ROOT / "scripts/verify/production_deployment_record_guard.py",
     "makefile": ROOT / "Makefile",
 }
@@ -33,7 +33,7 @@ FLOW_TOKENS = (
     "全量代码树对齐",
     "数据对齐",
     "生产不得直接用日常开发目录整包覆盖",
-    "docs/ops/releases/templates/production_deployment_record_TEMPLATE.zh.md",
+    "docs/releases/templates/production_deployment_record_TEMPLATE.zh.md",
     "make verify.production_deployment.record.guard",
     "该 guard 会拒绝具体生产部署记录中的开放占位",
     "make verify.business_system.usability_readiness.prod",
@@ -172,7 +172,7 @@ PROD_POLICY_TOKENS = (
 
 CHECKLIST_TOKENS = (
     "docs/ops/production_release_flow_standard_v1.md",
-    "docs/ops/releases/templates/production_deployment_record_TEMPLATE.zh.md",
+    "docs/releases/templates/production_deployment_record_TEMPLATE.zh.md",
     "make verify.production_deployment.record.guard",
     "rerun `make verify.production_release.flow.guard` to verify the production release-flow control plane remains wired at deployment time",
 )
@@ -182,7 +182,7 @@ INDEX_TOKENS = (
 )
 
 RECORD_GUARD_TOKENS = (
-    "DEFAULT_GLOB = \"docs/ops/releases/current/production_deployment_*.md\"",
+    "DEFAULT_GLOB = \"docs/releases/current/production_deployment_*.md\"",
     "REQUIRED_VALIDATION_TOKENS",
     "REQUIRED_CLOSURE_TOKENS",
     "FORBIDDEN_OPEN_ENDED_TOKENS",

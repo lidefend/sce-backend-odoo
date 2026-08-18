@@ -1410,6 +1410,160 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         }])
         self.assertNotIn("primaryResolution", contract["actionContract"])
 
+    def test_form_field_modifiers_are_attached_to_native_field_status(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "fields": {"location": {"name": "location", "type": "char"}},
+                "views": {"form": {
+                    "layout": [{"type": "sheet", "children": [
+                        {"type": "field", "name": "location"},
+                    ]}],
+                    "field_modifiers": {"location": {"readonly": 1, "invisible": 1}},
+                }},
+                "record": {"location": "secret"},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.native.field.modifier",
+        )
+
+        status = next(
+            row for row in contract["statusContract"]["widgetStatus"]
+            if row["widgetId"] == "field.location"
+        )
+        self.assertFalse(status["visible"])
+        self.assertTrue(status["readonly"])
+
+    def test_native_form_layout_buttons_enter_canonical_action_authority(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "fields": {"state": {"name": "state", "type": "selection"}},
+                "views": {"form": {"layout": [{"type": "sheet", "children": [
+                    {"type": "button", "name": "91", "action": {
+                        "name": "91", "label": "Open Lines", "kind": "open", "intent": "open",
+                        "payload": {"ref": "91", "type": "action"},
+                    }},
+                    {"type": "button", "name": "91", "action": {
+                        "name": "91", "label": "Open Lines Again", "kind": "open", "intent": "open",
+                        "payload": {"ref": "91", "type": "action"},
+                    }},
+                    {"type": "button", "name": "action_approve", "action": {
+                        "name": "action_approve", "label": "Approve", "kind": "object", "intent": "execute",
+                        "payload": {"method": "action_approve", "type": "object"},
+                    }},
+                ]}]}},
+                "record": {"state": "ready"},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.native.layout.actions",
+        )
+
+        identities = {
+            row["backendIdentity"]
+            for row in contract["actionContract"]["actionRuleList"]
+        }
+        self.assertEqual(identities, {"window_action:91", "button:object:action_approve"})
+        body_nodes = contract["layoutContract"]["containerTree"][0]["children"]
+        self.assertEqual(len({node["containerId"] for node in body_nodes}), 3)
+        self.assertEqual(
+            [node["action"]["backendIdentity"] for node in body_nodes],
+            ["window_action:91", "window_action:91", "button:object:action_approve"],
+        )
+        self.assertTrue(all(node["action"]["actionId"] for node in body_nodes))
+        open_rule = next(row for row in contract["actionContract"]["actionRuleList"] if row["backendIdentity"] == "window_action:91")
+        self.assertEqual(len(open_rule["sourceTrace"]), 2)
+        self.assertEqual(
+            {trace["sourceWidgetId"] for trace in open_rule["sourceTrace"]},
+            {body_nodes[0]["containerId"], body_nodes[1]["containerId"]},
+        )
+
+    def test_explicit_form_view_rejects_non_native_action_overlays(self):
+        native_action = {
+            "name": "action_native", "label": "Native", "kind": "object", "intent": "execute",
+            "payload": {"method": "action_native", "type": "object"},
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "fields": {"name": {"name": "name", "type": "char"}},
+                "views": {"form": {
+                    "meta": {"projection_identity": {"source_view_id": 1700}},
+                    "layout": [{"type": "sheet", "children": [
+                        {"type": "button", "name": "action_native", "action": native_action},
+                    ]}],
+                }},
+                "buttons": [{"name": "action_overlay", "kind": "object", "intent": "execute"}],
+                "toolbar": {"footer": [{"name": "action_toolbar", "kind": "object", "intent": "execute"}]},
+                "action_groups": [{"actions": [{"name": "action_grouped", "kind": "object", "intent": "execute"}]}],
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.explicit.native.actions",
+        )
+
+        identities = [row["backendIdentity"] for row in contract["actionContract"]["actionRuleList"]]
+        self.assertEqual(identities, ["button:object:action_native"])
+
+    def test_final_layout_modifier_hydration_hides_native_ancestor_from_record(self):
+        contract = {
+            "layoutContract": {"containerTree": [{
+                "type": "container",
+                "containerId": "cost.present",
+                "attributes": {"modifiers": {"invisible": {
+                    "kind": "field_compare",
+                    "field": "cost_count",
+                    "operator": "==",
+                    "value": 0,
+                }}},
+                "children": [{"type": "field", "name": "cost_count", "widgetId": "field.cost_count"}],
+            }]},
+            "statusContract": {
+                "containerStatus": [{"containerId": "cost.present", "visible": True, "disabled": False}],
+                "widgetStatus": [{"widgetId": "field.cost_count", "visible": True, "disabled": False}],
+            },
+            "dataContract": {"mainData": {"cost_count": 0}},
+        }
+
+        assembler.hydrate_final_layout_modifier_status(contract)
+
+        self.assertFalse(contract["statusContract"]["containerStatus"][0]["visible"])
+        self.assertEqual(
+            contract["statusContract"]["containerStatus"][0]["reasonCode"],
+            "NATIVE_MODIFIER_INVISIBLE",
+        )
+
+    def test_final_layout_modifier_hydration_fails_closed_when_dependency_missing(self):
+        contract = {
+            "layoutContract": {"containerTree": [{
+                "type": "container",
+                "containerId": "restricted",
+                "attributes": {"modifiers": {"invisible": {
+                    "kind": "field_truthy",
+                    "field": "restricted",
+                }}},
+            }]},
+            "statusContract": {
+                "containerStatus": [{"containerId": "restricted", "visible": True, "disabled": False}],
+                "widgetStatus": [],
+            },
+            "dataContract": {"mainData": {}},
+        }
+
+        assembler.hydrate_final_layout_modifier_status(contract)
+
+        self.assertFalse(contract["statusContract"]["containerStatus"][0]["visible"])
+        self.assertTrue(contract["statusContract"]["containerStatus"][0]["disabled"])
+        self.assertEqual(
+            contract["statusContract"]["containerStatus"][0]["reasonCode"],
+            "NATIVE_MODIFIER_UNRESOLVED",
+        )
+
     def test_entry_semantic_surface_layout_wins_while_native_modifiers_and_relations_survive(self):
         source = {
             "model": "x.business.document",
@@ -1518,6 +1672,88 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(profile["sourceAuthority"]["no_business_fact_authority"])
         self.assertTrue(profile["sourceAuthority"]["formal_projection"])
         self.assertNotIn("legacyContractProjection", full["dataContract"]["dataMeta"])
+
+    def test_form_capability_verdict_is_projected_without_frontend_recomputation(self):
+        form_capabilities = {
+            "can_create": True,
+            "can_write": False,
+            "can_delete": True,
+            "can_duplicate": False,
+            "modelRights": {"read": True, "write": True, "create": True, "unlink": True, "duplicate": True},
+            "recordRights": {"read": True, "write": True, "create": True, "unlink": True, "duplicate": True},
+            "viewCapabilities": {"read": True, "write": False, "create": True, "unlink": True, "duplicate": False},
+            "entryCapabilities": {"read": True, "write": True, "create": True, "unlink": True, "duplicate": True},
+            "effectiveRecordCapabilities": {"read": True, "write": False, "create": True, "unlink": True, "duplicate": False},
+            "effectiveRenderProfile": "readonly",
+        }
+        source = {
+            "model": "project.project",
+            "view_type": "form",
+            "record_id": 42,
+            "fields": {"name": {"name": "name", "type": "char", "string": "项目名称"}},
+            "views": {
+                "form": {
+                    "capabilities": form_capabilities,
+                    "layout": [{"type": "sheet", "children": [{"type": "field", "name": "name"}]}],
+                },
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.form.capability.verdict.projection",
+        )
+
+        status = full["statusContract"]["globalStatus"]
+        for key in (
+            "modelRights",
+            "recordRights",
+            "viewCapabilities",
+            "entryCapabilities",
+            "effectiveRecordCapabilities",
+        ):
+            self.assertEqual(status[key], form_capabilities[key])
+        self.assertEqual(status["effectiveRenderProfile"], "readonly")
+        self.assertNotIn("formCapabilities", full["dataContract"]["dataMeta"])
+
+    def test_denied_create_is_explicitly_rejected_instead_of_rendered_readonly(self):
+        denied = {"read": True, "write": False, "create": False, "unlink": False, "duplicate": False}
+        source = {
+            "model": "project.project",
+            "view_type": "form",
+            "render_profile": "create",
+            "effective_render_profile": "create",
+            "fields": {"name": {"name": "name", "type": "char", "string": "项目名称"}},
+            "views": {
+                "form": {
+                    "capabilities": {
+                        "modelRights": denied,
+                        "recordRights": {"read": True, "write": False, "create": True, "unlink": False, "duplicate": False},
+                        "viewCapabilities": {"read": True, "write": True, "create": True, "unlink": True, "duplicate": True},
+                        "entryCapabilities": {"read": True, "write": True, "create": True, "unlink": True, "duplicate": True},
+                        "effectiveRecordCapabilities": denied,
+                        "effectiveRenderProfile": "create",
+                    },
+                    "layout": [{"type": "sheet", "children": [{"type": "field", "name": "name"}]}],
+                },
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.denied.create.explicit.access.rejection",
+        )
+
+        status = full["statusContract"]["globalStatus"]
+        self.assertEqual(status["effectiveRenderProfile"], "create")
+        self.assertEqual(status["pageAuth"], "none")
+        self.assertFalse(status["pageVisible"])
+        self.assertEqual(status["reasonCode"], "FORM_CREATE_NOT_ALLOWED")
+        self.assertNotIn("form.save", [row["actionId"] for row in full["actionContract"]["actionRuleList"]])
 
     def test_form_data_source_keeps_deep_form_fields(self):
         fields = {
@@ -1628,7 +1864,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             },
         }
 
-    def test_form_structure_create_layout_starts_with_task_not_summary(self):
+    def test_form_structure_create_does_not_rebuild_fallback_native_layout(self):
         full = assembler.assemble_unified_page_contract_v2(
             self._source_with_form_structure_summary("create"),
             source_type="ui.contract",
@@ -1636,19 +1872,14 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             request_id="test.web.create.form.no.summary.first",
         )
 
-        sheet = full["layoutContract"]["containerTree"][0]
-        self.assertEqual([child["type"] for child in sheet["children"]], ["group", "group"])
-        self.assertEqual([child["label"] for child in sheet["children"]], ["申请信息", "金额信息"])
-        rendered_names = [
-            node.get("name")
-            for group in sheet["children"]
-            for node in group.get("children", [])
-        ]
-        self.assertNotIn("receipt_partner_name", rendered_names)
-        self.assertNotIn("legacy_state", rendered_names)
-        self.assertNotIn("legacy_source_user", rendered_names)
+        group = full["layoutContract"]["containerTree"][0]["children"][0]
+        self.assertEqual(
+            [node.get("name") for node in group.get("children", [])],
+            ["invoice_no", "amount", "bid_id", "receipt_partner_name", "legacy_state", "legacy_source_user"],
+        )
+        self.assertNotIn("办理总览", str(full["layoutContract"]["containerTree"]))
 
-    def test_form_structure_readonly_layout_keeps_summary_first(self):
+    def test_form_structure_readonly_does_not_infer_summary_or_notebook(self):
         full = assembler.assemble_unified_page_contract_v2(
             self._source_with_form_structure_summary("readonly"),
             source_type="ui.contract",
@@ -1656,26 +1887,13 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             request_id="test.web.readonly.form.summary.first",
         )
 
-        sheet = full["layoutContract"]["containerTree"][0]
-        self.assertEqual(sheet["children"][0]["type"], "group")
-        self.assertEqual(sheet["children"][0]["label"], "办理总览")
-        self.assertEqual(sheet["children"][1]["type"], "notebook")
-        tabs = sheet["children"][1]["tabs"]
-        history_tab = next(tab for tab in tabs if tab["label"] == "明细与来源")
-        history_fields = [
-            node.get("name")
-            for group in history_tab.get("children", [])
-            for node in group.get("children", [])
-        ]
-        primary_tab = next(tab for tab in tabs if tab["label"] == "主业务事实")
-        primary_fields = [
-            node.get("name")
-            for group in primary_tab.get("children", [])
-            for node in group.get("children", [])
-        ]
-        self.assertIn("receipt_partner_name", primary_fields)
-        self.assertIn("legacy_state", history_fields)
-        self.assertIn("legacy_source_user", history_fields)
+        tree = full["layoutContract"]["containerTree"]
+        group = tree[0]["children"][0]
+        self.assertEqual(
+            [node.get("name") for node in group.get("children", [])],
+            ["invoice_no", "amount", "bid_id", "receipt_partner_name", "legacy_state", "legacy_source_user"],
+        )
+        self.assertNotIn("notebook", [node.get("type") for node in tree])
 
     def test_ui_contract_v2_preserves_tree_column_optional_hide(self):
         source = {
@@ -1887,6 +2105,13 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                                     ],
                                 },
                                 {
+                                    "type": "div",
+                                    "name": "project_risk_alert",
+                                    "class": "alert alert-warning",
+                                    "modifiers": {"invisible": [["risk_note", "=", False]]},
+                                    "children": [{"type": "field", "name": "risk_note"}],
+                                },
+                                {
                                     "type": "notebook",
                                     "name": "project_tabs",
                                     "tabs": [
@@ -1900,6 +2125,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                                                     "name": "settings_group",
                                                     "children": [
                                                         {"type": "field", "name": "company_id"},
+                                                        {"type": "field", "name": "task_ids"},
                                                     ],
                                                 }
                                             ],
@@ -1908,6 +2134,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                                 },
                             ],
                         },
+                        {"type": "attachment", "name": "project_attachments", "children": []},
+                        {"type": "chatter", "name": "project_chatter", "children": []},
                     ]
                 }
             },
@@ -1915,6 +2143,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "name": {"name": "name", "type": "char", "string": "名称"},
                 "manager_id": {"name": "manager_id", "type": "many2one", "string": "项目经理"},
                 "company_id": {"name": "company_id", "type": "many2one", "string": "公司"},
+                "risk_note": {"name": "risk_note", "type": "char", "string": "风险说明"},
+                "task_ids": {"name": "task_ids", "type": "one2many", "string": "任务"},
             },
         }
 
@@ -1926,18 +2156,25 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         tree = full["layoutContract"]["containerTree"]
-        self.assertEqual([node["type"] for node in tree], ["header", "sheet"])
+        self.assertEqual([node["type"] for node in tree], ["header", "sheet", "attachment", "chatter"])
+        self.assertEqual(tree[0]["title"], "")
+        self.assertEqual(tree[1]["title"], "")
         self.assertEqual(tree[1]["children"][0]["type"], "group")
-        self.assertEqual(tree[1]["children"][1]["type"], "notebook")
-        self.assertEqual(tree[1]["children"][1]["tabs"][0]["type"], "page")
+        self.assertEqual(tree[1]["children"][0]["title"], "基础信息")
+        self.assertEqual(tree[1]["children"][1]["title"], "")
+        self.assertEqual(tree[1]["children"][1]["type"], "div")
+        self.assertEqual(tree[1]["children"][1]["modifiers"], {"invisible": [["risk_note", "=", False]]})
+        self.assertEqual(tree[1]["children"][2]["type"], "notebook")
+        self.assertEqual(tree[1]["children"][2]["tabs"][0]["type"], "page")
         core_group = tree[1]["children"][0]
         self.assertEqual([node["name"] for node in core_group["children"]], ["name", "manager_id"])
         self.assertEqual([widget["fieldCode"] for widget in core_group["widgetList"]], ["name", "manager_id"])
-        page_group = tree[1]["children"][1]["tabs"][0]["children"][0]
-        self.assertEqual([node["name"] for node in page_group["children"]], ["company_id"])
+        page_group = tree[1]["children"][2]["tabs"][0]["children"][0]
+        self.assertEqual([node["name"] for node in page_group["children"]], ["company_id", "task_ids"])
         self.assertEqual(page_group["children"][0]["fieldInfo"]["label"], "公司")
+        self.assertEqual(page_group["children"][1]["fieldInfo"]["type"], "one2many")
 
-    def test_form_structure_contract_rebuilds_business_task_layout(self):
+    def test_form_structure_contract_annotates_without_rebuilding_native_layout(self):
         source = {
             "model": "construction.contract.income",
             "view_type": "form",
@@ -1988,6 +2225,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "mode": "business_task_form",
                 "navigation": {"title": "业务办理"},
                 "fieldRoles": {
+                    "name": {"role": "identity", "slot": "primary_facts", "group": "identity"},
                     "subject": {"role": "identity", "slot": "primary_facts", "group": "identity"},
                     "line_ids": {"role": "detail", "slot": "details_source", "group": "details"},
                 },
@@ -2026,22 +2264,18 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
         self.assertEqual(full["formStructureContract"]["source"], "ui.contract.v2.form_structure_contract")
         tree = full["layoutContract"]["containerTree"]
-        self.assertEqual([node["type"] for node in tree], ["header", "sheet"])
-        sheet_children = tree[1]["children"]
-        self.assertEqual([node["type"] for node in sheet_children], ["group", "group"])
-        self.assertEqual([node["label"] for node in sheet_children], ["业务识别", "业务明细"])
-        self.assertEqual(sheet_children[0]["formStructure"]["slot"], "primary_facts")
-        self.assertEqual(sheet_children[0]["formStructure"]["role"], "identity")
-        self.assertEqual(sheet_children[0]["children"][1]["formStructureRole"]["role"], "identity")
-        rendered_names = [
-            node.get("name")
-            for group in sheet_children
-            for node in group.get("children", [])
-        ]
-        self.assertNotIn("hidden_internal_note", rendered_names)
-        self.assertEqual(sheet_children[1]["children"][0]["name"], "line_ids")
+        self.assertEqual([node["type"] for node in tree], ["header", "sheet", "group"])
+        self.assertEqual(tree[1]["name"], "native_sheet")
+        native_name = tree[1]["children"][0]["children"][0]
+        self.assertEqual(native_name["name"], "name")
+        self.assertEqual(native_name["formStructureRole"]["role"], "identity")
+        self.assertEqual(tree[2]["name"], "hidden_native_group")
+        self.assertEqual(tree[2]["children"][0]["name"], "hidden_internal_note")
+        self.assertNotIn("subject", str(tree))
+        self.assertNotIn("line_ids", str(tree))
+        self.assertNotIn("business_orchestrated_sheet", str(tree))
 
-    def test_readonly_form_structure_notebook_declares_subordinate_authority(self):
+    def test_readonly_form_structure_does_not_manufacture_subordinate_notebook(self):
         source = {
             "model": "x.document",
             "view_type": "form",
@@ -2072,18 +2306,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             request_id="test.web.form.readonly.subordinate.notebook",
         )
 
-        def walk(nodes):
-            for node in nodes:
-                yield node
-                yield from walk(node.get("children") or [])
-
-        notebook = next(
-            node
-            for node in walk(full["layoutContract"]["containerTree"])
-            if node.get("type") == "notebook"
-        )
-        self.assertTrue(notebook["sourceAuthority"]["projection_only"])
-        self.assertTrue(notebook["sourceAuthority"]["no_business_fact_authority"])
+        self.assertNotIn("notebook", str(full["layoutContract"]["containerTree"]))
+        self.assertIn("name", str(full["layoutContract"]["containerTree"]))
 
     def test_governed_form_layout_overlay_takes_precedence_over_form_structure(self):
         source = {
@@ -2155,7 +2379,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             request_id="test.web.form.layout.overlay.precedence",
         )
 
-        self.assertNotIn("formStructureContract", full)
+        self.assertEqual(full["formStructureContract"]["source"], "ui.contract.v2.form_structure_contract")
         group = full["layoutContract"]["containerTree"][0]["children"][0]
         self.assertEqual(group["name"], "sc_custom_partner_flat_fields")
         self.assertEqual(group["columns"], 3)
@@ -2222,9 +2446,9 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         group = full["layoutContract"]["containerTree"][0]["children"][0]
-        self.assertEqual(group["label"], "基础信息")
-        self.assertEqual(group["cols"], 3)
-        self.assertEqual(group["attributes"]["col"], "3")
+        self.assertEqual(group["name"], "native_group")
+        self.assertEqual(group["cols"], 2)
+        self.assertNotIn("attributes", group)
 
     def test_form_structure_columns_apply_to_governed_form_layout(self):
         source = {
@@ -2290,9 +2514,9 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
         group = full["layoutContract"]["containerTree"][0]["children"][0]
         self.assertEqual(group["label"], "业务配置字段")
-        self.assertEqual(group["cols"], 2)
-        self.assertEqual(group["columns"], 2)
-        self.assertEqual(group["attributes"]["col"], "2")
+        self.assertNotIn("cols", group)
+        self.assertEqual(group["columns"], 3)
+        self.assertNotIn("attributes", group)
 
     def test_ui_contract_v2_preserves_relation_entry_search_dialog(self):
         search_dialog = {

@@ -154,7 +154,7 @@ export function formatAttachmentReferenceValue(value: unknown): string {
 
 export function stripInternalMigrationMetadata(value: string): string {
   return String(value || '').replace(
-    /^\s*\[migration:[a-z0-9_.:-]+\]\s+legacy_record_id=[^\s\r\n]+(?:[ \t]*\r?\n|[ \t]+)?/i,
+    /^\s*\[migration:[a-z0-9_.:-]+\](?:[ \t]+legacy_record_id=[^\s\r\n]+)?(?:[ \t]*\r?\n|[ \t]+)?/i,
     '',
   ).trimStart();
 }

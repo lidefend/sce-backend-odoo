@@ -30,7 +30,7 @@
           @mouseup="emitFieldOrderPointerDrop(field, $event)"
         >
           <div class="field-label-row">
-            <label v-if="!fieldConfigEditable" class="label" :for="fieldControlId(field)">
+            <label v-if="!fieldConfigEditable && !field.hideLabel" class="label" :for="fieldControlId(field)">
               {{ field.label }}
               <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
               <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
@@ -117,6 +117,9 @@
                 :model-value="contractFormDriverValue(field)"
                 @update:model-value="emitFieldChange(field, $event)"
               />
+              <template v-else-if="isRelationEditorField(field) && relationAdapter">
+                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
+              </template>
               <template v-else-if="field.readonly">
                 <slot name="readonly" :field="field">
                   <div
@@ -126,9 +129,6 @@
                   />
                   <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
-              </template>
-              <template v-else-if="isRelationEditorField(field) && relationAdapter">
-                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
               </template>
               <template v-else-if="isBaseFieldType(field.type)">
                 <input

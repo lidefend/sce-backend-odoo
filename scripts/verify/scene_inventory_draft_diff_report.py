@@ -339,8 +339,8 @@ def _write_diff_report(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate scene inventory draft from payload and output diff report.")
     parser.add_argument("--inventory", default="docs/ops/scene_inventory_matrix_latest.md")
-    parser.add_argument("--draft-output", default="docs/ops/audit/scene_inventory_matrix_draft.md")
-    parser.add_argument("--diff-output", default="docs/ops/audit/scene_inventory_draft_diff_report.md")
+    parser.add_argument("--draft-output", default="docs/audit/scene_inventory_matrix_draft.md")
+    parser.add_argument("--diff-output", default="docs/audit/scene_inventory_draft_diff_report.md")
     parser.add_argument(
         "--scene-files",
         nargs="*",

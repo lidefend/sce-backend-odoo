@@ -2089,7 +2089,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 ## 2026-08-01 — RC12-PRODUCTION-DEPLOYMENT-RECORD-01
 
 - Branch / anchor: `release/rc12-production-deployment-record` from `915067ba5d282bfcc03d276d49cd61c5f169a0fd`.
-- Formal Product Layer / Target / Module: P4 ops delivery; production deployment evidence in `docs/ops/releases/current`.
+- Formal Product Layer / Target / Module: P4 ops delivery; production deployment evidence in `docs/releases/current`.
 - Reason: close the completed RC12 immutable-image upgrade with a repository-governed, reviewable deployment record.
 - Standard vs User-Specific / Why Here: release evidence is generic P4 operational governance; tenant identity is recorded as deployment context only and no customer behavior is encoded.
 - Why Not Elsewhere / Blast Radius: no P0-P3, frontend, application source, image, runtime configuration, container, service, volume, or database change; only documentation and audit evidence are added.
@@ -4764,3 +4764,135 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - The gate now consumes the Presenter's effective `visible/enabled` action
   state and resolves only effective executable references. It does not alter
   normalized permissions, action status, payment behavior, or executor rules.
+
+## Payment request golden floorplan product phase (2026-08-17)
+
+- Branch / baseline: `feature/p1-payment-component-product-closure-v1` /
+  `b83408843736ba72d25f3fe6c43671af3576ceeb`.
+- Formal Product Layer / Layer Target / Module: PFL-035 product outcome with P1
+  construction-product page composition and reusable P0 semantic presentation
+  components / `payment.request`, `smart_construction_core`, and ContractForm.
+- Standard vs User-Specific: construction-industry standard product. No tenant
+  preference, low-code runtime override, customer data baseline, or ops repair
+  is introduced.
+- Why Here: Normalized Contract V2 and the Canonical Render Model already own
+  transport, permission, state, action, and renderer-neutral field identity.
+  The remaining product gap is organizing those facts into a professional
+  payment task floorplan.
+- Why Not Elsewhere: no new Scene Contract, component driver, backend contract
+  version, environment profile, database, fixture system, or payment-specific
+  frontend inference is authorized. TDesign supplies the default controls but
+  does not own business semantics.
+- Blast Radius / validation: the first vertical is limited to payment-request
+  create, draft/rejected edit, approved handling, blocked repair, completed
+  readonly, and 390px mobile. Native/UI5 remain parity implementations. The
+  existing payment product contract and normalized action references remain
+  authoritative; browser qualification must prove one primary action, named
+  relations, no empty readonly task controls, no migration text, no duplicate
+  groups, no overflow, and no unexpected browser/network errors.
+
+## Canonical ObjectTaskPage floorplan checkpoint (2026-08-17)
+
+- Branch / parent SHA: `feature/p1-payment-component-product-closure-v1` /
+  `0af58add6001d196037388b7bd9691c9897ce3bf`.
+- Formal Product Layer / Layer Target / Module: P0 platform presentation inside
+  the PFL-035 outcome / generic ContractForm floorplan / `frontend/apps/web`.
+- Reason / boundary: the Canonical Render Model already owns the production
+  field, node and action inputs. This checkpoint adds only an ephemeral pure
+  grouping into task canvas, business context and subordinate regions, plus a
+  renderer-neutral ObjectTaskPage shell and sticky unified action bar.
+- Why Here / Why Not Elsewhere: grouping is derived only from canonical
+  visible/readonly/disabled facts and existing node order. No model, label,
+  role, workflow state, permission, modifier or next-step inference is added;
+  normalized Contract V2, P1 payment contracts, backend code, Scene Contract,
+  UI packages and runtime topology remain unchanged.
+- Blast radius / validation: ContractForm product rendering only. Tests prove
+  exact canonical widget identity preservation across task/context lanes,
+  readonly primary-content preservation, subordinate order, and blocked-primary
+  evidence. Presenter 45 cases, component bridge 38 cases, preference 13 cases,
+  feature flag 7 cases, architecture guard, strict typecheck, lint (zero errors),
+  acceptance production build (4618 modules), and diff check pass before live
+  payment qualification.
+- Release-gate correction: the first local release pass rejected page-local
+  color fallbacks and exposed a pre-existing 1853/1800 ContractForm coordinator
+  limit before browser startup. The floorplan now consumes registered semantic
+  color/shadow tokens only, and the read-only Contract V2 shadow diagnostics
+  plus initial page refs are extracted into typed composables. The page is 1800
+  lines without raising the limit or changing render, permission, action, data,
+  environment, or business behavior.
+
+## Approved decision-page floorplan checkpoint (2026-08-17)
+
+- Branch / parent SHA: `feature/p1-payment-component-product-closure-v1` /
+  `8ec7ac6271400fb36feadb9696eacd02911f40da`.
+- Formal Product Layer / Layer Target / Module: P0 platform presentation inside
+  the PFL-035 outcome / Canonical readonly floorplan / `frontend/apps/web`.
+- Reason / boundary: compact summary cards, a neutral current-task bar,
+  relation and activity regions, and collapsed audit presentation are derived
+  mechanically from existing Canonical roles, field types, notebook nodes and
+  explicit normalized subordinate collaboration capability. Runtime
+  collaboration visibility may only suppress that capability, never create it.
+  Normalized fields, actions, permissions, source trace, P1 contracts and
+  backend code are unchanged.
+- Blast radius / validation: semantic readonly ContractForm pages only; create
+  and edit retain the prior canvas and action bar. Presenter 49 cases,
+  component bridge 38 cases, architecture guard 63 checks, strict typecheck,
+  acceptance production build (4620 modules), and the Approved-only browser
+  probe bind the candidate before any additional product state is exercised.## Local development lifecycle normalization (2026-08-17)
+
+- Branch / baseline: `fix/local-development-lifecycle-v2` /
+  `b834088`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling / governed
+  local database and service lifecycle / Make, ops scripts and demo fixture
+  entry guards.
+- Reason / boundary: local feature iteration, daily-data compatibility and clean
+  installation had accumulated overlapping database, project, port, volume and
+  credential conventions. They are now fixed respectively as `sc-local-dev` /
+  `sc_dev_demo`, `sc-local-sample` / `sc_dev_sample`, and `sc-local-clean` /
+  `sc_clean`, with exact governed Make entrypoints.
+- Why Here / Why Not Elsewhere: lifecycle identity, restore, snapshot, readiness,
+  disposal and credential isolation are P4 responsibilities. P1 demo producers
+  may adapt to existing domain invariants, but missing tax, approval or other
+  business samples remain P1 fixture defects and must not be synthesized by
+  Make, Compose or restore scripts.
+- Blast radius / validation: only local development environments and explicit
+  demo guards are affected; acceptance port 18082 and production identities are
+  unchanged. Lifecycle behavior tests, shell syntax, exact profile readiness,
+  paired-backup restore, health checks and diff checks prove containment.
+  The legacy demo verifier was aligned with the current registered-company tax
+  authority and stable module-owned settlement/payment XMLIDs; the governed
+  idempotent `local.dev.sync_demo` chain now passes end to end.
+
+## Product-result worktree governance lock (2026-08-17)
+
+- Branch / baseline: `fix/local-development-lifecycle-v2` / `b834088`.
+- Formal Product Layer / Layer Target / Module: P4 repository governance /
+  baseline iteration worktree policy / `AGENTS.md` and Codex workspace guards.
+- Reason / boundary: responsibility labels had been treated as automatic
+  worktree, branch and PR boundaries, creating repeated P0/P1 environments for
+  one product journey. Worktrees are now organized by one independently
+  acceptable PFL result; P0/P1 remain code ownership, commit, review and
+  rollback boundaries inside that delivery candidate.
+- Split authority: a separate worktree requires all five conditions—independent
+  value, independent acceptance, non-overlapping files, non-contending runtime
+  and independent rollback. Active worktrees are capped at one product delivery
+  plus one genuinely independent platform/environment topic.
+- Validation: the baseline iteration policy guard locks the new rules in both
+  repository instruction sources. Existing single-writer, frozen-fingerprint,
+  serialized-runtime and governed create/cleanup requirements remain unchanged.
+
+## Workspace worktree consolidation (2026-08-17)
+
+- Active worktrees were reduced to the P4 lifecycle candidate and the single
+  PFL product-delivery candidate. Seven completed or frozen linked worktrees
+  were detached through `make workspace.worktree.cleanup` while retaining their
+  local branch references.
+- Three dirty superseded component prototypes were first preserved as local-only
+  archive commits, then detached: `4e1c7c8c270cbaf1c5f8215d6d005b1c8f902468`,
+  `3923ef9076ddeb95362b8e7be34b180d5314b4d9`, and
+  `5f0363f1f4f1ced13d36a021af60cbf7d776db71`. None were pushed.
+- Two clean standalone legacy clones were not misrepresented as Git worktrees.
+  Their unique unmerged histories were preserved intact and moved reversibly to
+  `/home/lidefend/workspace/.codex-evidence/workspace-archives/20260817/`.
+- No remote branch was deleted, no business database was changed, and the
+  active product worktree's 11-file candidate was not modified.

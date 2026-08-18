@@ -968,11 +968,10 @@ def _annotate_form_actions(data: dict) -> None:
 def _apply_form_render_semantics(data: dict, contract_mode: str) -> None:
     if not _is_form_contract(data):
         return
+    requested_profile = _resolve_render_profile(data)
+    data.setdefault("render_profile", requested_profile)
     _apply_form_view_capabilities(data)
-    data["render_profile"] = _resolve_render_profile(data)
-    rights = _as_dict(_as_dict(_as_dict(data.get("permissions")).get("effective")).get("rights"))
-    if not _to_bool(rights.get("write"), fallback=False) and not _to_bool(rights.get("create"), fallback=False):
-        data["render_profile"] = _RENDER_PROFILE_READONLY
+    data.setdefault("effective_render_profile", _RENDER_PROFILE_READONLY)
     data["hide_filters_on_create"] = True
     _apply_form_field_groups(data)
     _annotate_form_actions(data)

@@ -428,7 +428,7 @@ def _write_report(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate runtime-readiness criteria for R3 scenes.")
     parser.add_argument("--inventory", default="docs/ops/scene_inventory_matrix_latest.md")
-    parser.add_argument("--output", default="docs/ops/audit/scene_r3_runtime_dashboard.md")
+    parser.add_argument("--output", default="docs/audit/scene_r3_runtime_dashboard.md")
     parser.add_argument("--max-action-chain-fail-count", type=int, default=0)
     parser.add_argument("--min-pass-rate", type=float, default=1.0)
     parser.add_argument("--min-action-chain-success-rate", type=float, default=0.50)

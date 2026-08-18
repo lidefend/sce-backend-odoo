@@ -17,8 +17,8 @@
 - Scene Catalog: `docs/contract/exports/scene_catalog.json`
 
 ## 当前阶段 Release 证据（暂不迁移）
-- Phase 11 Backend Closure: `docs/ops/releases/current/phase_11_backend_closure.md`
-- Phase 11.1 Contract Visibility: `docs/ops/releases/current/phase_11_1_contract_visibility.md`
+- Phase 11 Backend Closure: `docs/releases/current/phase_11_backend_closure.md`
+- Phase 11.1 Contract Visibility: `docs/releases/current/phase_11_1_contract_visibility.md`
 
 ## SCEMS v1.0 Release Planning
 - Master release plan: `docs/releases/construction_system_v1_release_plan.en.md`
@@ -56,7 +56,7 @@
 - Phase 6 (scope definition): `docs/releases/phase_6_pilot_scope_definition.en.md`
 - Phase 6 (rehearsal record): `docs/releases/phase_6_pilot_rehearsal_record.en.md`
 - Phase 6 (issue ledger): `docs/releases/phase_6_issue_ledger.en.md`
-- Launch record: `docs/ops/releases/current/scems_v1_0_launch.en.md`
+- Launch record: `docs/releases/current/scems_v1_0_launch.en.md`
 - Post-launch review: `docs/releases/scems_v1_0_post_launch_review.en.md`
 
 ## 快速生成/导出（现有 Make 目标）

@@ -87,12 +87,19 @@ class _TreeFormParserMixin:
             op = self._ast_compare_operator(node.ops[0])
             if not op:
                 return None
-            return {
+            normalized = {
                 'kind': 'field_compare',
                 'field': left,
                 'operator': op,
                 'value': self._ast_literal_value(node.comparators[0]),
             }
+            comparator = node.comparators[0]
+            if isinstance(comparator, (ast.Name, ast.Attribute)):
+                right_field = self._ast_field_name(comparator)
+                if right_field not in ('True', 'False', 'None'):
+                    normalized.pop('value', None)
+                    normalized['value_field'] = right_field
+            return normalized
         return None
 
     def _ast_field_name(self, node):
@@ -273,8 +280,9 @@ class _TreeFormParserMixin:
                 "visible_profiles": ["readonly", "list"],
             }
 
+        resolved_level = 'smart' if level == 'smart' else 'header' if in_header or level == 'header' else 'body'
         return {
-            "level": "header" if level != 'smart' else 'smart',
+            "level": resolved_level,
             "selection": "none",
             "visible_profiles": ["create", "edit", "readonly"],
         }
@@ -527,6 +535,7 @@ class _TreeFormParserMixin:
             "can_create": self._view_bool_attr(root, "create", True),
             "can_write": self._view_bool_attr(root, "edit", True),
             "can_delete": self._view_bool_attr(root, "delete", True),
+            "can_duplicate": self._view_bool_attr(root, "duplicate", True),
         }
 
         # 1) DOM 优先解析真实布局（避免 lossless 未还原导致空表单）
@@ -879,6 +888,14 @@ class _TreeFormParserMixin:
                 cv = self._node_to_layout_from_dom(ch, fields_info)
                 if cv:
                     children.append(cv)
+                tail = " ".join((ch.tail or "").split())
+                if tail:
+                    children.append({
+                        'type': 'text',
+                        'text': tail,
+                        'attributes': {},
+                        'children': [],
+                    })
             if children:
                 if tag == 'notebook':
                     # notebook → tabs
@@ -899,7 +916,7 @@ class _TreeFormParserMixin:
             fname = el.get('name') or ''
             if not fname:
                 return None
-            node = {'type': 'field', 'name': fname}
+            node = {'type': 'field', 'name': fname, 'attributes': _attrs(el)}
             meta = self._field_info_for_layout(fname, fields_info)
             # 覆盖 label/help/widget
             if el.get('string'):
@@ -908,6 +925,10 @@ class _TreeFormParserMixin:
                 meta['help'] = el.get('help')
             if el.get('widget'):
                 meta['widget'] = el.get('widget')
+            # Label presentation is a native view atom. Keep it explicit so
+            # downstream renderers never infer it from container shape.
+            node['label'] = meta.get('label') or fname
+            node['nolabel'] = self._view_bool_attr(el, 'nolabel', False)
             if el.get('options'):
                 options_val = self._safe_eval_expr(el.get('options'))
                 meta['widget_options'] = options_val if isinstance(options_val, dict) else {}
@@ -985,6 +1006,14 @@ class _TreeFormParserMixin:
             cv = self._node_to_layout_from_dom(ch, fields_info)
             if cv:
                 children.append(cv)
+            tail = " ".join((ch.tail or "").split())
+            if tail:
+                children.append({
+                    'type': 'text',
+                    'text': tail,
+                    'attributes': {},
+                    'children': [],
+                })
         # 确保所有节点都有 children 属性
         node['children'] = children
         return node
@@ -1007,11 +1036,10 @@ class _TreeFormParserMixin:
             sb = root.xpath(".//field[@widget='statusbar' and @name]")
             if sb:
                 field_name = sb[0].get('name')
+        # A statusbar is an explicit native-view capability. Merely having a
+        # stage/state field does not authorize the custom client to invent one.
         if not field_name:
-            if 'stage_id' in (fields_info or {}):
-                field_name = 'stage_id'
-            elif 'state' in (fields_info or {}):
-                field_name = 'state'
+            return {"field": None, "states": []}
         states = []
         # selection → 直接构造；状态字段不一定叫 state，例如 project.lifecycle_state。
         if field_name and fields_info.get(field_name, {}).get('selection'):
@@ -1412,6 +1440,8 @@ class _TreeFormParserMixin:
             for key in ('readonly', 'required', 'invisible'):
                 if attrs.get(key):
                     meta.setdefault('modifiers', {})[key] = self._normalize_modifier_value(attrs.get(key))
+            layout_node['label'] = meta.get('label') or fname
+            layout_node['nolabel'] = str(attrs.get('nolabel') or '').strip().lower() in ('1', 'true', 'yes', 'on')
             layout_node['fieldInfo'] = meta
         elif tag == 'button':
             layout_node['name'] = attrs.get('name', '')

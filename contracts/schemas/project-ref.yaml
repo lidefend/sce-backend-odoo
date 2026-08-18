@@ -1,0 +1,11 @@
+ProjectRef:
+  type: object
+  required: [id, code, name]
+  properties:
+    id:
+      type: integer
+      minimum: 1
+    code:
+      type: string
+    name:
+      type: string

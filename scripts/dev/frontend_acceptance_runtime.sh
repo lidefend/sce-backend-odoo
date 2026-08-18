@@ -67,16 +67,14 @@ require_container_env() {
   }
 }
 
-validate_backend_identity() {
+validate_backend_resource_identity() {
   local container="$BACKEND_ACCEPTANCE_NAME"
-  local expected_fingerprint expected_product_version expected_source expected_revision published_port
+  local expected_product_version expected_source published_port
   docker inspect "$container" >/dev/null 2>&1 || {
     echo "[acceptance.runtime] DENY missing managed backend container: $container" >&2
     return 1
   }
   expected_source="$(readlink -f "$ROOT_DIR/addons")"
-  expected_revision="$(git -C "$ROOT_DIR" rev-parse HEAD)"
-  expected_fingerprint="$(ROOT_DIR="$ROOT_DIR" bash "$ROOT_DIR/scripts/dev/acceptance_source_fingerprint.sh")"
   expected_product_version="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
   published_port="$(docker port "$container" 8069/tcp 2>/dev/null || true)"
   [[ "$(mount_source_of "$container" /mnt/source-addons)" == "$expected_source" ]] || {
@@ -91,13 +89,21 @@ validate_backend_identity() {
     echo "[acceptance.runtime] DENY managed backend port mapping differs from profile" >&2
     return 1
   }
-  require_container_env "$container" SC_SOURCE_REVISION "$expected_revision" || return 1
-  require_container_env "$container" SC_SOURCE_FINGERPRINT "$expected_fingerprint" || return 1
   require_container_env "$container" SC_PRODUCT_VERSION "$expected_product_version" || return 1
   require_container_env "$container" ODOO_DB "$BACKEND_ACCEPTANCE_DB" || return 1
   require_container_env "$container" DB_NAME "$BACKEND_ACCEPTANCE_DB" || return 1
   require_container_env "$container" ODOO_DBFILTER "^${BACKEND_ACCEPTANCE_DB}$" || return 1
   require_container_env "$container" LIST_DB false || return 1
+}
+
+validate_backend_identity() {
+  local container="$BACKEND_ACCEPTANCE_NAME"
+  local expected_fingerprint expected_revision
+  validate_backend_resource_identity || return 1
+  expected_revision="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+  expected_fingerprint="$(ROOT_DIR="$ROOT_DIR" bash "$ROOT_DIR/scripts/dev/acceptance_source_fingerprint.sh")"
+  require_container_env "$container" SC_SOURCE_REVISION "$expected_revision" || return 1
+  require_container_env "$container" SC_SOURCE_FINGERPRINT "$expected_fingerprint" || return 1
 }
 
 validate_backend_runtime() {
@@ -260,6 +266,19 @@ case "$command" in
     else
       echo "[backend.acceptance.down] PASS already absent"
     fi
+    ;;
+  backend-replace-stale)
+    preflight
+    if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
+      validate_backend_resource_identity || {
+        echo "[backend.acceptance.replace-stale] DENY existing backend resource identity mismatch" >&2
+        exit 2
+      }
+      bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
+    fi
+    bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
+    validate_backend_runtime
+    echo "[backend.acceptance.replace-stale] PASS backend=$BACKEND_ACCEPTANCE_NAME revision=$(git -C "$ROOT_DIR" rev-parse HEAD)"
     ;;
   backend-health)
     preflight

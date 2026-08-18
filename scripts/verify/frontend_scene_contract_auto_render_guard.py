@@ -10,7 +10,7 @@ SCENE_VIEW = ROOT / "frontend/apps/web/src/views/SceneView.vue"
 ROUTER = ROOT / "frontend/apps/web/src/router/index.ts"
 
 REPORT_JSON = ROOT / "artifacts/backend/frontend_scene_contract_auto_render_guard_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/frontend_scene_contract_auto_render_guard_report.md"
+REPORT_MD = ROOT / "docs/audit/frontend_scene_contract_auto_render_guard_report.md"
 
 
 def _read(path: Path) -> str:

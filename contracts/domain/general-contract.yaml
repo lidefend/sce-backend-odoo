@@ -1,0 +1,95 @@
+id: general_contract
+version: 1
+
+entity: ScGeneralContract
+
+title: 综合合同
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  project:
+    type: ProjectRef
+    required: false
+  contract_date:
+    type: date
+    required: false
+  expected_sign_date:
+    type: date
+    required: false
+  completion_date:
+    type: date
+    required: false
+  amount_total:
+    type: Money
+    required: true
+  amount_untaxed:
+    type: Money
+    required: false
+  settlement_amount:
+    type: Money
+    required: false
+  invoice_amount:
+    type: Money
+    required: false
+  received_amount:
+    type: Money
+    required: false
+  subcontract_mode:
+    type: string
+    enum:
+      - none
+      - professional
+      - labor
+      - material
+      - equipment
+    required: false
+  sign_status:
+    type: string
+    required: false
+  state:
+    type: string
+    enum:
+      - draft
+      - confirmed
+      - signed
+      - legacy_confirmed
+      - cancel
+
+states:
+  draft:
+    mutable: true
+    actions:
+      - edit
+      - confirm
+      - cancel
+  confirmed:
+    mutable: false
+    actions:
+      - sign
+  signed:
+    mutable: false
+    actions: []
+  legacy_confirmed:
+    mutable: false
+    actions: []
+    note: 历史数据迁移终态，仅可读。
+  cancel:
+    mutable: false
+    actions: []
+
+transitions:
+  confirm:
+    from: [draft]
+    to: confirmed
+    capability: general_contract.confirm
+  sign:
+    from: [confirmed]
+    to: signed
+    capability: general_contract.sign
+  cancel:
+    from: [draft]
+    to: cancel
+    capability: general_contract.cancel

@@ -8,6 +8,7 @@ import json
 import logging
 import re
 from odoo import _
+from odoo.exceptions import AccessError
 from odoo.http import request
 from odoo.addons.smart_core.utils.delete_policy import resolve_unlink_policy
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
@@ -44,6 +45,70 @@ class PageAssembler:
         "odoo.orm",
     )
     NO_BUSINESS_FACT_AUTHORITY = True
+
+    _ENTRY_CAPABILITY_KEYS = {
+        "read": (("read",), ("no_read",)),
+        "write": (("edit", "write"), ("no_edit", "no_write")),
+        "create": (("create",), ("no_create",)),
+        "unlink": (("delete", "unlink"), ("no_delete", "no_unlink")),
+        "duplicate": (("duplicate",), ("no_duplicate",)),
+    }
+
+    @staticmethod
+    def _context_flag(value, fallback=False):
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return fallback
+        token = str(value).strip().lower()
+        if token in {"1", "true", "yes", "y", "on"}:
+            return True
+        if token in {"0", "false", "no", "n", "off"}:
+            return False
+        return fallback
+
+    @classmethod
+    def _entry_context_allows(cls, context, positive_keys, negative_keys):
+        context = context if isinstance(context, dict) else {}
+        if any(cls._context_flag(context.get(key), False) for key in negative_keys if key in context):
+            return False
+        if any(not cls._context_flag(context.get(key), True) for key in positive_keys if key in context):
+            return False
+        return True
+
+    @classmethod
+    def _merge_entry_context(cls, action_context, request_context):
+        action_context = dict(action_context or {})
+        request_context = dict(request_context or {})
+        merged = dict(action_context)
+        merged.update(request_context)
+        for _operation, (positive_keys, negative_keys) in cls._ENTRY_CAPABILITY_KEYS.items():
+            allowed = cls._entry_context_allows(action_context, positive_keys, negative_keys)
+            allowed = allowed and cls._entry_context_allows(request_context, positive_keys, negative_keys)
+            if allowed:
+                continue
+            for key in positive_keys:
+                merged[key] = False
+            for key in negative_keys:
+                merged[key] = True
+        return merged
+
+    @staticmethod
+    def _record_rule_rights(env, model_name, record_id):
+        rights = {"read": True, "write": False, "create": True, "unlink": False, "duplicate": False}
+        if not record_id or int(record_id or 0) <= 0:
+            return rights
+        record = env[model_name].browse(int(record_id)).exists()
+        if not record:
+            return rights
+        for operation in ("read", "write", "unlink"):
+            try:
+                record.check_access_rule(operation)
+                rights[operation] = True
+            except AccessError:
+                rights[operation] = False
+        rights["duplicate"] = rights["read"]
+        return rights
 
     @classmethod
     def source_authority_contract(cls):
@@ -208,13 +273,11 @@ class PageAssembler:
         action_domain, action_domain_raw = self._normalize_action_domain(action, action_eval_context)
         action_context, action_context_raw = self._normalize_action_context(action, action_eval_context)
         request_context = p.get("context") if isinstance(p.get("context"), dict) else {}
-        effective_context = dict(action_context or {})
+        effective_context = self._merge_entry_context(action_context, request_context)
         env_context = self.env.context if isinstance(self.env.context, dict) else {}
         for key in ("current_project_id", "default_project_id", "allowed_company_ids", "lang", "tz"):
             if env_context.get(key) and key not in effective_context:
                 effective_context[key] = env_context.get(key)
-        if request_context:
-            effective_context.update(request_context)
         allowed_codes = self._normalize_business_category_codes(
             effective_context.get("allowed_business_category_codes")
         )
@@ -419,16 +482,11 @@ class PageAssembler:
         )
         effective_permissions["rights"] = effective_rights
         permissions_root["effective"] = effective_permissions
+        permissions_root["record"] = {
+            "rights": self._record_rule_rights(env, model, requested_record_id),
+            "record_id": requested_record_id or None,
+        }
         data["permissions"] = permissions_root
-        if isinstance(effective_context, dict) and effective_context.get("create") is False:
-            permissions_root = data["permissions"] if isinstance(data.get("permissions"), dict) else {}
-            effective_permissions = permissions_root.get("effective") if isinstance(permissions_root.get("effective"), dict) else {}
-            effective_rights = effective_permissions.get("rights") if isinstance(effective_permissions.get("rights"), dict) else {}
-            permissions_root["create"] = False
-            effective_rights["create"] = False
-            effective_permissions["rights"] = effective_rights
-            permissions_root["effective"] = effective_permissions
-            data["permissions"] = permissions_root
         data["delete_policy"] = resolve_unlink_policy(env, model)
 
         # 6) 动作按钮 + 工具栏（元数据可 su_env，最终显隐由前端结合 groups/permissions 再次裁剪）
@@ -483,8 +541,6 @@ class PageAssembler:
         # 8) head（标题/ACL 概览/上下文）
         #    - ACL 概览继续用 check_access_rights（仅四权），与 permissions.effective.rights 一致
         can_create = env[model].check_access_rights('create', raise_exception=False)
-        if isinstance(effective_context, dict) and effective_context.get("create") is False:
-            can_create = False
         data["head"] = {
             "title": self._resolve_page_title(model, action),
             "model": model,

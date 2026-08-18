@@ -120,6 +120,63 @@ class TestUiContractIdBoundaries(unittest.TestCase):
         self.assertEqual(result["error"]["code"], 400)
         self.assertIn("record_id", result["error"]["message"])
 
+    def test_action_open_rejects_invalid_view_id(self):
+        result = self.handler._op_action_open({"action_id": "7", "view_id": "bad"}, {})
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["code"], 400)
+        self.assertIn("view_id", result["error"]["message"])
+
+    def test_action_open_forwards_explicit_form_view_id(self):
+        action = types.SimpleNamespace(
+            id=7,
+            res_model="x.model",
+            context="{}",
+            exists=lambda: True,
+        )
+
+        class _ActionModel:
+            def sudo(self):
+                return self
+
+            def with_context(self, _context):
+                return self
+
+            def browse(self, _action_id):
+                return action
+
+        class _Env(dict):
+            context = {}
+            user = types.SimpleNamespace(lang="")
+
+        self.handler.env = _Env({"ir.actions.act_window": _ActionModel()})
+        captured = {}
+
+        def _dispatch_model_contract(**kwargs):
+            captured.update(kwargs)
+            return {}, {}
+
+        self.handler._dispatch_model_contract = _dispatch_model_contract
+        self.handler._finalize_projected_contract = lambda **kwargs: kwargs["data"]
+
+        self.handler._op_action_open(
+            {
+                "action_id": "7",
+                "record_id": "11",
+                "view_type": "form",
+                "view_id": "1700",
+                "render_profile": "readonly",
+            },
+            {},
+        )
+
+        self.assertEqual(captured["model"], "x.model")
+        self.assertEqual(captured["view_type"], "form")
+        self.assertEqual(captured["view_id"], 1700)
+        self.assertEqual(captured["action_id"], 7)
+        self.assertEqual(captured["record_id"], 11)
+        self.assertEqual(captured["render_profile"], "readonly")
+
     def test_model_rejects_invalid_optional_ids(self):
         self.handler.env = {"x.model": object()}
 

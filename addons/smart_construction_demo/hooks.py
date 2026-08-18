@@ -4,8 +4,10 @@ import os
 
 def guard_demo_scope(env):
     db_name = str(env.cr.dbname or "").strip()
-    if not (db_name == "sc_demo" or db_name.startswith("sc_demo_")):
-        raise RuntimeError("smart_construction_demo requires a sc_demo database")
+    if not (
+        db_name in {"sc_demo", "sc_dev_demo"} or db_name.startswith("sc_demo_")
+    ):
+        raise RuntimeError("smart_construction_demo requires an authorized demo database")
     if os.environ.get("SC_ENVIRONMENT") != "demo":
         raise RuntimeError("smart_construction_demo requires SC_ENVIRONMENT=demo")
     if os.environ.get("SC_ALLOW_DEMO_DATA") != "1":

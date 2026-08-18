@@ -294,7 +294,7 @@ import { ApiError } from '../api/client';
 import { executeButton } from '../api/executeButton';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
-import type { ActionContract, FieldDescriptor } from '@sc/schema';
+import type { FieldDescriptor } from '@sc/schema';
 import { useSessionStore } from '../stores/session';
 import { ErrorCodes } from '../app/error_codes';
 import {
@@ -324,16 +324,13 @@ import {
 } from '../app/runtime/contractFormDataRuntime';
 import {
   collectContractV2ButtonStatusById,
-  collectContractV2FieldStatusByCode,
   ContractV2DecodeError,
   createContractV2Store,
   decodeContractV2Snapshot,
   resolveContractV2ContainerTree,
-  resolveContractV2FormStructureContract,
+  resolveContractV2EffectiveFormCapabilities,
   resolveContractV2GlobalStatus,
   resolveContractV2MainData,
-  resolveContractV2SourceContext,
-  resolveContractV2ValueSource,
   type ContractV2NormalizedStore,
 } from '../app/contracts/v2';
 import type { ContractV2ActionRule } from '../app/contracts/v2/types';
@@ -358,7 +355,6 @@ import {
   resolveUnifiedPageContractV2PrimaryDataSource,
   resolveUnifiedPageContractV2,
   resolveUnifiedPageContractV2GlobalStatus,
-  resolveUnifiedPageContractV2SourceContext,
   resolveUnifiedPageContractV2VisibleFields,
 } from '../app/contracts/unifiedPageContractV2';
 import {
@@ -586,13 +582,11 @@ import {
   MANY2ONE_SEARCH_MORE_OPTION,
   RECORD_CONTEXT_CHANGED_EVENT,
   ContractAccessPolicyError,
-  type BusyKind,
   type ContractAccessPolicy,
   type ContractAction,
   type ContractFieldGovernanceAction,
   type ContractFieldGovernanceRow,
   type FormRuntimeStateEvent,
-  type FormConfigAuditResult,
   type LayoutNode,
   type LowCodeFieldSize,
   type NativeChatterAction,
@@ -603,14 +597,8 @@ import {
   type RelationSearchColumn,
   type RelationSearchRow,
   type RelationUiLabels,
-  type SubmissionFeedback,
-  type UiStatus,
 } from './contractForm/types';
-import {
-  clearIntakeAutosavePayload,
-  persistIntakeAutosavePayload,
-  restoreIntakeAutosavePayload,
-} from './contractForm/intakeAutosave';
+import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import {
   applyIncomingFormFieldValue,
   snapshotOriginalFormValues,
@@ -654,11 +642,16 @@ import { useRecordFormState } from './contractForm/useRecordFormState';
 import { useRecordFormDesigner } from './contractForm/useRecordFormDesigner';
 import { useRecordRelationships } from './contractForm/useRecordRelationships';
 import { useRecordPageLifecycle } from './contractForm/useRecordPageLifecycle';
-import { resolveContractRenderProfile } from './contractForm/contractRenderProfile';
+import {
+  resolveEffectiveContractRenderProfile,
+  resolveRequestedContractRenderProfile,
+} from './contractForm/contractRenderProfile';
 import { useRecordActionPresentation } from './contractForm/useRecordActionPresentation';
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
 import { resolveCanonicalFormRenderState, useContractFormComponentDriverRuntime } from './contractForm/useContractFormComponentDriverRuntime';
 import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigationActionsRuntime';
+import { useContractV2ShadowDiagnostics } from './contractForm/useContractV2ShadowDiagnostics';
+import { useContractFormPageState } from './contractForm/useContractFormPageState';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
 import {
@@ -696,30 +689,16 @@ const {
   currentModel: () => String(route.params.model || contract.value?.head?.model || contract.value?.model || ''),
 });
 const designerRouteQueryText = (key: string) => readRouteQueryText(route.query as Record<string, unknown>, key);
-const status = ref<UiStatus>('loading');
-const isComponentActive = ref(true);
-const instanceRouteIdentity = ref('');
-const retainedRouteIdentity = ref('');
-const renderErrorMessage = ref('');
-const recordMissing = ref(false);
-const errorMessage = ref('');
-const loadError = reactive<{ status: number | null; reason: string; trace: string }>({ status: null, reason: '', trace: '' });
-const validationErrors = ref<string[]>([]);
-const submissionFeedback = ref<SubmissionFeedback>(null);
-const formConflict = ref(false);
+const {
+  status, isComponentActive, instanceRouteIdentity, retainedRouteIdentity, renderErrorMessage,
+  recordMissing, errorMessage, loadError, validationErrors, submissionFeedback, formConflict,
+  showOne2manyErrors, busyKind, activeContractMode, formSettingsActiveTab, contractModeFeedback,
+  contract, contractMeta,
+} = useContractFormPageState();
 const intentConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
-const showOne2manyErrors = ref(false);
-const busyKind = ref<BusyKind>(null);
-const activeContractMode = ref('');
-const formSettingsActiveTab = ref<'structure' | 'fields' | 'details' | 'actions'>('fields');
-const contractModeFeedback = ref('');
-const contract = ref<ActionContract | null>(null);
-const contractMeta = ref<Record<string, unknown> | null>(null);
 const initialFormLoading = computed(() => status.value === 'loading' && !contract.value);
 type PageStatusEvent = Extract<FormRuntimeStateEvent, { kind: 'status' }>;
-function applyPageStatusEvent(event: PageStatusEvent) {
-  applyFormRuntimeStatusEvent({ status, errorMessage }, event);
-}
+const applyPageStatusEvent = (event: PageStatusEvent) => applyFormRuntimeStatusEvent({ status, errorMessage }, event);
 const {
   copyContractJson,
   exportContractJson,
@@ -737,10 +716,6 @@ const {
 });
 const v2ContractStore = ref<ContractV2NormalizedStore | null>(null);
 const v2ContractDecodeError = ref('');
-const v2ShadowStoreReady = computed(() => Boolean(v2ContractStore.value));
-const v2ShadowWidgetCount = computed(() => v2ContractStore.value?.widgetsById.size || 0);
-const v2ShadowActionCount = computed(() => v2ContractStore.value?.actionsById.size || 0);
-const v2ShadowButtonStatusCount = computed(() => v2ContractStore.value?.buttonStatusById.size || 0);
 function formRouteIdentity() {
   const query = route.query as Record<string, unknown>;
   return [
@@ -754,47 +729,19 @@ function formRouteIdentity() {
     String(recordId.value ? '' : createRouteDefaultsFingerprint(query)),
   ].join('|');
 }
-const v2ShadowFieldCodes = computed(() => Array.from(v2ContractStore.value?.widgetsByFieldCode.keys() || []));
-const v2ShadowFieldCodeCount = computed(() => v2ShadowFieldCodes.value.length);
-const v2ShadowLegacyFieldMissing = computed(() => {
-  const legacyFields = contract.value?.fields || {};
-  return v2ShadowFieldCodes.value.filter((fieldCode) => !(fieldCode in legacyFields));
+const {
+  v2ShadowStoreReady, v2ShadowWidgetCount, v2ShadowActionCount, v2ShadowButtonStatusCount,
+  v2ShadowFieldCodeCount, v2ShadowLegacyFieldOverlapCount, v2ShadowLegacyFieldMissingPreview,
+  v2ShadowFormStructureContract, v2ShadowFormStructureSlotCount, v2ShadowLayoutSourceKind,
+  v2ShadowGlobalSourceKind, v2ShadowSourceContextKind, v2ShadowStatusFieldCount,
+  v2ShadowValueSourceKind, v2ShadowValueFieldCount, v2ShadowMainDataFieldCount,
+  v2ShadowReadonlyValueCount,
+} = useContractV2ShadowDiagnostics({
+  store: v2ContractStore,
+  legacyFields: () => contract.value?.fields || {},
+  nativeLayoutCount: () => nativeFormLayoutNodes.value.length,
+  layoutNodes: () => layoutNodes.value,
 });
-const v2ShadowLegacyFieldOverlapCount = computed(() => v2ShadowFieldCodeCount.value - v2ShadowLegacyFieldMissing.value.length);
-const v2ShadowLegacyFieldMissingPreview = computed(() => v2ShadowLegacyFieldMissing.value.slice(0, 8).join(',') || '-');
-const v2ShadowFormStructureContract = computed(() => resolveContractV2FormStructureContract(v2ContractStore.value));
-const v2ShadowFormStructureSlotCount = computed(() => {
-  const slots = v2ShadowFormStructureContract.value.slots;
-  return Array.isArray(slots) ? slots.length : 0;
-});
-const v2ShadowLayoutSourceKind = computed(() => {
-  const containers = resolveContractV2ContainerTree(v2ContractStore.value);
-  if (containers.length) return 'v2_store';
-  return nativeFormLayoutNodes.value.length ? 'legacy_layout' : 'none';
-});
-const v2ShadowGlobalSourceKind = computed(() => (resolveContractV2GlobalStatus(v2ContractStore.value) ? 'v2_store' : 'legacy_resolver'));
-const v2ShadowSourceContextKind = computed(() => (Object.keys(resolveContractV2SourceContext(v2ContractStore.value)).length ? 'v2_store' : 'legacy_resolver'));
-const v2ShadowStatusFieldCount = computed(() => Object.keys(collectContractV2FieldStatusByCode(v2ContractStore.value)).length);
-const v2ShadowValueSource = computed(() => resolveContractV2ValueSource(v2ContractStore.value));
-const v2ShadowValueSourceKind = computed(() => v2ShadowValueSource.value.kind);
-const v2ShadowValueFieldCount = computed(() => (
-  v2ShadowFieldCodes.value.filter((fieldCode) => (
-    Object.prototype.hasOwnProperty.call(v2ShadowValueSource.value.values, fieldCode)
-  )).length
-));
-const v2ShadowMainDataFieldCount = computed(() => (
-  v2ShadowFieldCodes.value.filter((fieldCode) => (
-    Object.prototype.hasOwnProperty.call(resolveContractV2MainData(v2ContractStore.value), fieldCode)
-  )).length
-));
-const v2ShadowReadonlyValueCount = computed(() => (
-  layoutNodes.value.filter((node) => (
-    node.kind === 'field'
-    && node.readonly
-    && Boolean(v2ContractStore.value?.widgetsByFieldCode.has(node.name))
-    && Object.prototype.hasOwnProperty.call(v2ShadowValueSource.value.values, node.name)
-  )).length
-));
 const activeFilterKey = ref('');
 const originalValues = ref<Record<string, unknown>>({});
 const recordVersionToken = ref('');
@@ -1051,25 +998,29 @@ function recordVersionPolicy() {
   if (!tokenField || requestParam !== 'if_match') return null;
   return { tokenField };
 }
+const requestedRenderProfile = computed<'create' | 'edit' | 'readonly'>(() => (
+  resolveRequestedContractRenderProfile({ routeName: route.name, recordId: recordId.value })
+));
 const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
-  const storeSourceContext = resolveContractV2SourceContext(v2ContractStore.value);
-  const sourceContext = Object.keys(storeSourceContext).length
-    ? storeSourceContext
-    : resolveUnifiedPageContractV2SourceContext(contract.value);
-  const head = (contract.value?.head || {}) as Record<string, unknown>;
-  const profile = String(sourceContext.renderProfile || contract.value?.render_profile || head.render_profile || '').trim().toLowerCase();
-  return resolveContractRenderProfile({
-    routeName: route.name,
-    contractProfile: profile,
-    canSave: canSave.value,
-    recordId: recordId.value,
+  const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
+  return resolveEffectiveContractRenderProfile({
+    backendProfile: globalStatus?.effectiveRenderProfile,
+    normalizedReady: Boolean(v2ContractStore.value),
+    requestedProfile: requestedRenderProfile.value,
   });
 });
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value) || resolveUnifiedPageContractV2GlobalStatus(contract.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
   if (globalStatus?.pageVisible === false || pageAuth === 'none') {
-    return { read: false, write: false, create: false, unlink: false };
+    return { read: false, write: false, create: false, unlink: false, duplicate: false };
+  }
+  const authoritative = resolveContractV2EffectiveFormCapabilities(v2ContractStore.value);
+  if (authoritative) {
+    return authoritative;
+  }
+  if (v2ContractStore.value) {
+    return { read: false, write: false, create: false, unlink: false, duplicate: false };
   }
   const head = contract.value?.head?.permissions;
   const effective = contract.value?.permissions?.effective?.rights;
@@ -1085,9 +1036,14 @@ const rights = computed(() => {
     write: pageAuth === 'read' ? false : resolve('write'),
     create: pageAuth === 'read' ? false : resolve('create'),
     unlink: pageAuth === 'read' ? false : resolve('unlink'),
+    duplicate: false,
   };
 });
-const canSave = computed(() => (recordId.value ? rights.value.write : rights.value.create));
+const canSave = computed(() => (
+  renderProfile.value === 'edit'
+    ? rights.value.write
+    : renderProfile.value === 'create' && rights.value.create
+));
 const { driverConfig: contractFormDriverConfig, changeDriver: changeContractFormDriver } = useContractFormComponentDriverRuntime({
   actionId: () => actionId.value || 0, model: () => model.value, renderMode: () => renderProfile.value,
   featureFlag: () => session.featureFlags.scene_component_drivers_v1, previewKit: () => typeof route.query.scene_ui_kit === 'string' ? route.query.scene_ui_kit : '', isActive: () => isComponentActive.value && isFormPageRouteOwner(route.name),
@@ -1447,23 +1403,11 @@ const isIntakeCreateDisabled = computed(() => {
   if (isQuickIntakeMode.value) return isQuickSubmitDisabled.value;
   return isStandardCreateDisabled.value;
 });
-function persistIntakeAutosave() {
-  const key = intakeAutosaveKey.value;
-  if (!key || recordId.value) return;
-  persistIntakeAutosavePayload(key, formData as Record<string, unknown>, intakeAutosaveFields.value);
-}
-function restoreIntakeAutosave() {
-  const key = intakeAutosaveKey.value;
-  if (!key || recordId.value) return;
-  Object.entries(restoreIntakeAutosavePayload(key, intakeAutosaveFields.value)).forEach(([field, value]) => {
-    formData[field] = value as never;
-  });
-}
-function clearIntakeAutosave() {
-  const key = intakeAutosaveKey.value;
-  if (!key) return;
-  clearIntakeAutosavePayload(key);
-}
+const {
+  persist: persistIntakeAutosave, restore: restoreIntakeAutosave, clear: clearIntakeAutosave,
+} = useIntakeAutosaveRuntime({
+  key: intakeAutosaveKey, hasRecord: recordId, formData, fields: intakeAutosaveFields,
+});
 const contractMetaLine = computed(() => {
   if (!contract.value) return '';
   const mode = String(contractMeta.value?.contract_mode || '-');
@@ -1749,7 +1693,7 @@ const {
   pickContractNavQuery, defaultContractFormRecord, readContractFormRecord, recordId,
   recordIdDisplay, recordMissing, recordVersionPolicy,
   recordVersionToken, relationKeywords, relationOptions,
-  renderErrorMessage, renderProfile, requestedSourceMode,
+  renderErrorMessage, renderProfile: requestedRenderProfile, requestedSourceMode,
   requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState,
   resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData,
   resolveUnifiedPageContractV2PrimaryDataSource,
@@ -1845,9 +1789,7 @@ useFormAuxiliaryWatchersRuntime({
   recordId: () => recordId.value,
   router,
 });
-
 watch(() => route.query.config_mode, (mode) => applyRouteConfigMode(mode), { immediate: true });
-
 </script>
 
 <style scoped src="./contractForm/ContractFormPage.css"></style>

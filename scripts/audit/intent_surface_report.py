@@ -137,7 +137,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Generate intent surface report.")
     parser.add_argument(
         "--output-md",
-        default="docs/ops/audit/intent_surface_report.md",
+        default="docs/audit/intent_surface_report.md",
         help="Markdown output path",
     )
     parser.add_argument(

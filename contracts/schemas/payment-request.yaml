@@ -1,0 +1,76 @@
+PaymentRequest:
+  type: object
+  required:
+    - id
+    - code
+    - project
+    - amount
+    - reason
+    - status
+  properties:
+    id:
+      type: integer
+      minimum: 1
+    code:
+      type: string
+    project:
+      $ref: './project-ref.yaml#/ProjectRef'
+    contract:
+      oneOf:
+        - $ref: './contract-ref.yaml#/ContractRef'
+        - type: 'null'
+    amount:
+      $ref: './money.yaml#/Money'
+    reason:
+      type: string
+    status:
+      type: string
+      enum:
+        - draft
+        - submitted
+        - approved
+        - rejected
+        - paid
+        - reversed
+
+CreatePaymentRequest:
+  type: object
+  required:
+    - project_id
+    - amount
+    - reason
+  properties:
+    project_id:
+      type: integer
+      minimum: 1
+    contract_id:
+      type: integer
+      minimum: 1
+    amount:
+      type: number
+      minimum: 0
+    reason:
+      type: string
+
+UpdatePaymentRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    reason:
+      type: string
+    amount:
+      type: number
+      minimum: 0
+
+PaymentRequestList:
+  type: object
+  required:
+    - items
+    - pagination
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/PaymentRequest'
+    pagination:
+      $ref: './common.yaml#/components/schemas/Page'

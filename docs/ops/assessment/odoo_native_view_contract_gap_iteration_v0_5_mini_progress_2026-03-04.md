@@ -80,6 +80,6 @@
 4. `Makefile`
 5. `docs/ops/assessment/odoo_native_view_contract_gap_iteration_v0_5_mini_progress_2026-03-04.md`
 6. `scripts/verify/scene_contract_coverage_brief.py`
-7. `docs/ops/releases/current/phase_11_2_contract_preflight_strict_rollout.md`
+7. `docs/releases/current/phase_11_2_contract_preflight_strict_rollout.md`
 8. `scripts/contract/export_evidence.py`
 9. `scripts/verify/baselines/contract_evidence_schema_guard.json`

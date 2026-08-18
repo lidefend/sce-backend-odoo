@@ -3,6 +3,7 @@ import type { ActionContract } from '@sc/schema';
 export type RenderProfile = 'create' | 'edit' | 'readonly';
 
 type FieldPolicy = {
+  visible?: boolean;
   visible_profiles?: string[];
   required_profiles?: string[];
   readonly_profiles?: string[];

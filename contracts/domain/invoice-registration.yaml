@@ -1,0 +1,80 @@
+id: invoice_registration
+version: 1
+
+entity: ScInvoiceRegistration
+
+title: 发票登记
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  project:
+    type: ProjectRef
+    required: true
+  invoice_no:
+    type: string
+    required: false
+  invoice_code:
+    type: string
+    required: false
+  invoice_date:
+    type: date
+    required: false
+  invoice_type:
+    type: string
+    required: false
+  tax_rate:
+    type: string
+    required: false
+  recognition_date:
+    type: date
+    required: false
+  recipient_unit_name:
+    type: string
+    required: false
+  state:
+    type: string
+    enum:
+      - draft
+      - confirmed
+      - registered
+      - legacy_confirmed
+      - cancel
+
+states:
+  draft:
+    mutable: true
+    actions:
+      - edit
+      - confirm
+      - cancel
+  confirmed:
+    mutable: false
+    actions:
+      - register
+  registered:
+    mutable: false
+    actions: []
+  legacy_confirmed:
+    mutable: false
+    actions: []
+    note: 历史数据迁移终态，仅可读。
+  cancel:
+    mutable: false
+    actions: []
+
+transitions:
+  confirm:
+    from: [draft]
+    to: confirmed
+    capability: invoice_registration.confirm
+  register:
+    from: [confirmed]
+    to: registered
+    capability: invoice_registration.register
+  cancel:
+    from: [draft]
+    to: cancel
+    capability: invoice_registration.cancel

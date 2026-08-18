@@ -78,7 +78,7 @@ verify.frontend.scene_component_bridge.browser: guard.prod.forbid check-compose-
 	test -n "$$targets_json" || { printf '%s\n' "$$target_output"; exit 2; }; \
 	$(MAKE) --no-print-directory backend.acceptance.up DB_NAME=sc_frontend_acceptance; \
 	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up DB_NAME=sc_frontend_acceptance; \
-	SCENE_COMPONENT_DRIVER_TARGETS_JSON="$$targets_json" DB_NAME=sc_frontend_acceptance FRONTEND_URL=http://127.0.0.1:5175 GIT_SHA="$$(git rev-parse HEAD)" \
+	SCENE_COMPONENT_DRIVER_TARGETS_JSON="$$targets_json" DB_NAME=sc_frontend_acceptance FRONTEND_URL=http://127.0.0.1:5175 ODOO_URL=http://127.0.0.1:18082 GIT_SHA="$$(git rev-parse HEAD)" \
 	  node scripts/verify/frontend_scene_component_driver_readonly_browser.mjs
 
 verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard
@@ -239,8 +239,8 @@ gate.scene.r3.runtime.strict: verify.scene.r3.runtime.strict
 .PHONY: verify.scene.r3.runtime.quick
 verify.scene.r3.runtime.quick: guard.prod.forbid gate.scene.r3.runtime.strict
 	@echo "[verify.scene.r3.runtime.quick] summary"
-	@sed -n '/^## Summary/,/^## Gate Thresholds/p' docs/ops/audit/scene_r3_runtime_dashboard.md | sed '$$d'
-	@sed -n '/^## Gate Result/,/^## Checks/p' docs/ops/audit/scene_r3_runtime_dashboard.md | sed '$$d'
+	@sed -n '/^## Summary/,/^## Gate Thresholds/p' docs/audit/scene_r3_runtime_dashboard.md | sed '$$d'
+	@sed -n '/^## Gate Result/,/^## Checks/p' docs/audit/scene_r3_runtime_dashboard.md | sed '$$d'
 
 .PHONY: verify.scene.role.surface.consistency.guard
 verify.scene.role.surface.consistency.guard: guard.prod.forbid

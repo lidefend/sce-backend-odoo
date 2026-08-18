@@ -58,7 +58,7 @@ guard_seed_db_explicit_prod() {
 is_demo_db() {
   local db="${DB_NAME:-${DB:-}}"
   case "${db}" in
-    sc_demo|sc_test|sc_demo_*|sc_test_*)
+    sc_demo|sc_test|sc_demo_*|sc_test_*|sc_dev_demo)
       return 0
       ;;
   esac

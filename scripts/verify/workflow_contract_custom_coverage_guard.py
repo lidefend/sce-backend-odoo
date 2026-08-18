@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-INVENTORY = ROOT / "docs/ops/audit/workflow_state_inventory_sc_demo.md"
+INVENTORY = ROOT / "docs/audit/workflow_state_inventory_sc_demo.md"
 ALLOWED_STANDARD_UNCOVERED = {
     "account.move",
     "purchase.order",

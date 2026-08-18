@@ -72,10 +72,8 @@ def normalize_post_projected_container_tree(
                 node.get("title")
                 or node.get("string")
                 or node.get("label")
-                or node.get("name")
-                or container_id
             ).strip()
-            node["title"] = label or container_id
+            node["title"] = label
             span = node.get("span")
             node["span"] = span if isinstance(span, int) and not isinstance(span, bool) and 1 <= span <= 24 else 24
             if not isinstance(node.get("widgetList"), list):
@@ -499,257 +497,46 @@ def apply_business_config_form_groups(
     container_tree = layout_contract.get("containerTree") if isinstance(layout_contract.get("containerTree"), list) else []
     if not container_tree:
         return
-    hidden_field_names = {
-        str(item or "").strip()
-        for item in (governance.get("hidden_field_names") or [])
-        if str(item or "").strip()
+    field_semantic_roles = {
+        str(name): str(role).strip().lower()
+        for name, role in (
+            governance.get("field_semantic_roles")
+            if isinstance(governance.get("field_semantic_roles"), dict)
+            else {}
+        ).items()
+        if str(name).strip() and str(role).strip()
     }
-    semantic_surface_authority = bool(governance.get("semantic_surface_authority"))
-    fields_meta = (
-        source_contract.get("fields")
-        if isinstance(source_contract, dict) and isinstance(source_contract.get("fields"), dict)
-        else {}
-    )
-
     def node_field_name(node: Any) -> str:
         if not isinstance(node, dict):
             return ""
         return str(node.get("name") or node.get("field") or node.get("fieldCode") or "").strip()
 
-    def node_field_type(node: Any) -> str:
-        if not isinstance(node, dict):
-            return ""
-        name = node_field_name(node)
-        field_info = node.get("fieldInfo") if isinstance(node.get("fieldInfo"), dict) else {}
-        component_config = node.get("componentConfig") if isinstance(node.get("componentConfig"), dict) else {}
-        meta = fields_meta.get(name) if isinstance(fields_meta.get(name), dict) else {}
-        return str(
-            field_info.get("type")
-            or component_config.get("fieldType")
-            or meta.get("type")
-            or meta.get("ttype")
-            or ""
-        ).strip().lower()
-
-    def is_relation_field(node: Any) -> bool:
-        return node_field_type(node) in {"one2many", "many2many"}
-
-    def remove_fields(
-        nodes: list[Any],
-        names: set[str],
-        *,
-        collect: dict[str, dict[str, Any]] | None = None,
-        include_widget_nodes: bool = True,
-    ) -> list[Any]:
-        out: list[Any] = []
-        for node in nodes:
+    def apply_product_field_roles(nodes: Any) -> None:
+        for node in nodes if isinstance(nodes, list) else []:
             if not isinstance(node, dict):
-                out.append(node)
                 continue
-            node_type = str(node.get("type") or node.get("containerType") or "").strip().lower()
             name = node_field_name(node)
-            is_field_node = node_type == "field" or (
-                include_widget_nodes and bool(str(node.get("widgetId") or "").strip())
-            )
-            if is_field_node and name in names:
-                if collect is not None:
-                    collect.setdefault(name, deepcopy(node))
-                continue
-            next_node = node
-            for key in ("children", "pages", "tabs", "nodes", "items", "widgetList"):
-                children = next_node.get(key)
-                if isinstance(children, list):
-                    next_node = dict(next_node)
-                    next_node[key] = remove_fields(
-                        children,
-                        names,
-                        collect=collect,
-                        include_widget_nodes=include_widget_nodes,
-                    )
-            out.append(next_node)
-        return out
+            role = field_semantic_roles.get(name)
+            if role:
+                existing_role = node.get("formStructureRole") if isinstance(node.get("formStructureRole"), dict) else {}
+                node["formStructureRole"] = {**existing_role, "role": role}
+            for key in (*_CONTAINER_CHILD_KEYS, "widgetList"):
+                apply_product_field_roles(node.get(key))
 
-    if hidden_field_names:
-        container_tree = remove_fields(container_tree, hidden_field_names)
-        structure = contract.get("formStructureContract") if isinstance(contract.get("formStructureContract"), dict) else {}
+    apply_product_field_roles(container_tree)
+    structure = contract.get("formStructureContract") if isinstance(contract.get("formStructureContract"), dict) else {}
+    if field_semantic_roles:
         roles = structure.get("fieldRoles") if isinstance(structure.get("fieldRoles"), dict) else {}
-        if roles:
-            structure["fieldRoles"] = {name: role for name, role in roles.items() if name not in hidden_field_names}
-        set_v2_container_tree(contract, container_tree)
-
-    field_groups = governance.get("field_groups") if isinstance(governance.get("field_groups"), dict) else {}
-    configured_groups: list[tuple[str, list[str]]] = []
-    configured_names: set[str] = set()
-    for raw_title, raw_names in field_groups.items():
-        title = str(raw_title or "").strip()
-        if title and not form_layout_group_visible_from_governance(governance, title):
-            continue
-        names = [
-            str(name or "").strip()
-            for name in (raw_names if isinstance(raw_names, list) else [])
-            if str(name or "").strip()
-        ]
-        if semantic_surface_authority:
-            names = [name for name in names if not is_relation_field({"type": "field", "name": name})]
-        names = [name for name in names if name not in hidden_field_names and name not in configured_names]
-        if not title or not names:
-            continue
-        configured_names.update(names)
-        configured_groups.append((title, names))
-    if not configured_groups:
-        return
-
-    moved_nodes: dict[str, dict[str, Any]] = {}
-    native_tree = deepcopy(container_tree)
-    container_tree = remove_fields(
-        container_tree,
-        configured_names,
-        collect=moved_nodes,
-        include_widget_nodes=False,
-    )
-
-    def group_title(node: Any) -> str:
-        if not isinstance(node, dict):
-            return ""
-        if str(node.get("type") or node.get("containerType") or "").strip().lower() != "group":
-            return ""
-        return str(node.get("string") or node.get("label") or node.get("title") or "").strip()
-
-    def find_group(nodes: list[Any], title: str) -> dict[str, Any] | None:
-        for node in nodes:
-            if not isinstance(node, dict):
-                continue
-            if group_title(node) == title:
-                return node
-            for key in ("children", "pages", "tabs", "nodes", "items"):
-                children = node.get(key)
-                if isinstance(children, list):
-                    found = find_group(children, title)
-                    if found is not None:
-                        return found
-        return None
-
-    for index, (title, names) in enumerate(configured_groups, start=1):
-        # A semantic entry surface owns the root task-section structure.  Do
-        # not reuse an equally named group nested in the legacy/category
-        # sheet: that sheet is discarded below, which would also discard the
-        # fields just moved into it.  On repeated projection the authoritative
-        # semantic groups are already top-level, so top-level reuse remains
-        # idempotent.
-        group = (
-            next(
-                (
-                    node
-                    for node in container_tree
-                    if isinstance(node, dict) and group_title(node) == title
-                ),
-                None,
-            )
-            if semantic_surface_authority
-            else find_group(container_tree, title)
-        )
-        if group is None:
-            group = {
-                "type": "group",
-                "name": "business_config_group_%s" % index,
-                "string": title,
-                "label": title,
-                "children": [],
-                "widgetList": [],
-            }
-            container_tree.append(group)
-        apply_form_layout_governance_to_group(group, title, source_contract=source_contract)
-        children = group.get("children") if isinstance(group.get("children"), list) else []
-        children.extend(deepcopy(moved_nodes[name]) for name in names if name in moved_nodes)
-        group["children"] = children
-
-    if semantic_surface_authority:
-        semantic_groups = [
-            node
-            for node in container_tree
-            if isinstance(node, dict) and group_title(node) in {title for title, _names in configured_groups}
-        ]
-        subordinate_types = {"header", "statusbar", "button_box", "attachment", "chatter"}
-        preserved: list[dict[str, Any]] = []
-        relation_nodes: list[dict[str, Any]] = []
-        seen_relations: set[str] = set()
-
-        def preserve_relation(node: dict[str, Any]) -> dict[str, Any] | None:
-            name = node_field_name(node)
-            if not name or name in seen_relations or not is_relation_field(node):
-                return None
-            seen_relations.add(name)
-            return deepcopy(node)
-
-        def prune_relation_container(node: dict[str, Any]) -> dict[str, Any] | None:
-            node_type = str(node.get("type") or node.get("containerType") or "").strip().lower()
-            if node_type == "field":
-                return preserve_relation(node)
-            row = deepcopy(node)
-            had_children = False
-            for key in ("children", "pages", "tabs", "nodes", "items"):
-                children = row.get(key)
-                if not isinstance(children, list):
-                    continue
-                had_children = True
-                row[key] = [
-                    cleaned
-                    for child in children
-                    if isinstance(child, dict)
-                    for cleaned in [prune_relation_container(child)]
-                    if cleaned is not None
-                ]
-            if had_children and not any(
-                row.get(key)
-                for key in ("children", "pages", "tabs", "nodes", "items")
-                if isinstance(row.get(key), list)
-            ):
-                return None
-            return row if had_children else None
-
-        def collect_subordinates(nodes: Any) -> None:
-            for node in nodes if isinstance(nodes, list) else []:
-                if not isinstance(node, dict):
-                    continue
-                node_type = str(node.get("type") or node.get("containerType") or "").strip().lower()
-                if node_type in subordinate_types:
-                    preserved.append(deepcopy(node))
-                    continue
-                if node_type == "notebook":
-                    cleaned = prune_relation_container(node)
-                    if cleaned is not None:
-                        preserved.append(cleaned)
-                    continue
-                if node_type == "field":
-                    relation = preserve_relation(node)
-                    if relation is not None:
-                        relation_nodes.append(relation)
-                    continue
-                for key in ("children", "pages", "tabs", "nodes", "items"):
-                    collect_subordinates(node.get(key))
-
-        collect_subordinates(native_tree)
-        if relation_nodes:
-            preserved.append({
-                "type": "notebook",
-                "name": "native_subordinate_relations",
-                "string": "关联明细",
-                "label": "关联明细",
-                "children": [{
-                    "type": "page",
-                    "name": "native_subordinate_relations_page",
-                    "string": "关联明细",
-                    "label": "关联明细",
-                    "children": relation_nodes,
-                }],
-                "sourceAuthority": {
-                    "kind": "odoo_native_view_subordinate_structure",
-                    "projection_only": True,
-                    "no_business_fact_authority": True,
-                },
-            })
-        leading = [node for node in preserved if str(node.get("type") or "").lower() == "header"]
-        trailing = [node for node in preserved if str(node.get("type") or "").lower() != "header"]
-        container_tree = [*leading, *semantic_groups, *trailing]
-
-    set_v2_container_tree(contract, normalize_post_projected_container_tree(contract, container_tree))
+        structure["fieldRoles"] = {
+            **roles,
+            **{
+                name: {**(roles.get(name) if isinstance(roles.get(name), dict) else {}), "role": role}
+                for name, role in field_semantic_roles.items()
+            },
+        }
+        contract["formStructureContract"] = structure
+    # Product intent may annotate native nodes, but it must not use field lists
+    # to move them, manufacture groups, infer relation regions, or normalize
+    # the tree a second time.  The effective parsed Odoo view is the structural
+    # authority and has already been normalized by the assembler.
+    return

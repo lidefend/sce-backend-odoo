@@ -697,8 +697,8 @@ verify.scene.delivery.readiness: guard.prod.forbid
 	SC_SCENE_READY_STRICT_GAP_FULL_AUDIT_STATE_FILE=$${SC_SCENE_READY_STRICT_GAP_FULL_AUDIT_STATE_FILE:-artifacts/backend/scene_contract_v1_field_schema_state.json} \
 	$(MAKE) --no-print-directory verify.scene.ready.strict_gap.full_audit
 	@$(MAKE) --no-print-directory verify.scene.product_delivery.readiness.guard
-	@echo "[INFO] strict guard report: docs/ops/audits/scene_ready_strict_contract_guard_report.md"
-	@echo "[INFO] strict full audit report: docs/ops/audits/scene_ready_strict_gap_full_audit.md"
+	@echo "[INFO] strict guard report: docs/audit/scene_ready_strict_contract_guard_report.md"
+	@echo "[INFO] strict full audit report: docs/audit/scene_ready_strict_gap_full_audit.md"
 	@echo "[OK] verify.scene.delivery.readiness done"
 
 .PHONY: verify.scene.delivery.readiness.role_matrix
@@ -2384,6 +2384,7 @@ verify.round.v0_6.mini: guard.prod.forbid
 	@echo "[OK] verify.round.v0_6.mini done"
 
 verify.contract.preflight: guard.prod.forbid
+	@$(MAKE) --no-print-directory verify.contract.lint
 	@if [ "$(BASELINE_FREEZE_ENFORCE)" = "1" ]; then \
 	  $(MAKE) --no-print-directory verify.baseline.freeze_guard; \
 	else \

@@ -25,50 +25,68 @@
       </select>
     </div>
     <SceneUiProvider :kit="activeKit" fallback-kit="sc-native" density="compact">
-      <nav v-if="visibleActions.length" class="canonical-form-action-bar" aria-label="表单业务动作" data-canonical-action-bar>
-        <button
-          v-for="action in visibleActions"
-          :key="action.key"
-          type="button"
-          :class="['canonical-form-action', `canonical-form-action--${action.tier}`, { 'is-danger': actionDanger(action) }]"
-          :disabled="!action.enabled"
-          :title="action.reasonCode || undefined"
-          :data-action-ref="action.actionRef.actionId"
-          :data-backend-identity="action.actionRef.backendIdentity"
-          :data-action-tier="action.tier"
-          :data-action-enabled="String(action.enabled)"
-          @click="action.enabled && emit('action-ref', action.actionRef)"
-        >{{ action.label }}</button>
-      </nav>
-      <div class="canonical-form-zones" data-canonical-form-zones>
-        <section class="canonical-form-zone canonical-form-zone--primary" data-canonical-zone="primary">
+      <article class="sc-native-contract-page" data-native-contract-structure>
+        <main class="sc-native-contract-tree" data-canonical-zone="primary">
           <CanonicalFormNodeRenderer
             v-for="node in primaryNodes"
             :key="node.nodeId"
             :node="node"
             :relation-adapter="relationAdapter"
             @field-change="emit('field-change', $event)"
+            @action-ref="emit('action-ref', $event)"
           />
-        </section>
-        <section
-          v-if="subordinateNodes.length || showCollaborationPanel"
-          class="canonical-form-zone canonical-form-zone--subordinate"
-          data-canonical-zone="subordinate"
-        >
+        </main>
+        <section v-if="subordinateNodes.length" class="sc-native-contract-subordinate" data-canonical-zone="subordinate">
           <CanonicalFormNodeRenderer
             v-for="node in subordinateNodes"
             :key="node.nodeId"
             :node="node"
             :relation-adapter="relationAdapter"
             @field-change="emit('field-change', $event)"
+            @action-ref="emit('action-ref', $event)"
           />
+        </section>
+        <section v-if="showCollaborationPanel && hasCollaborationNode" class="sc-native-contract-collaboration">
           <NativeCollaborationPanel
-            v-if="showCollaborationPanel && hasCollaborationNode"
             v-bind="collaborationPanelProps"
             v-on="collaborationPanelListeners"
           />
         </section>
-      </div>
+        <nav v-if="visibleActions.length" class="canonical-form-action-bar" aria-label="表单业务动作" data-canonical-action-bar>
+            <button
+              v-for="action in directActions"
+              :key="action.key"
+              type="button"
+              :class="['canonical-form-action', `canonical-form-action--${action.tier}`, { 'is-danger': actionDanger(action) }]"
+              :disabled="!action.enabled"
+              :title="action.reasonCode || undefined"
+              :data-action-ref="action.actionRef.actionId"
+              :data-backend-identity="action.actionRef.backendIdentity"
+              :data-action-tier="action.tier"
+              :data-normalized-action-tier="action.tier"
+              :data-action-enabled="String(action.enabled)"
+              @click="action.enabled && emit('action-ref', action.actionRef)"
+            >{{ action.label }}</button>
+            <details v-if="overflowActions.length" class="canonical-form-action-overflow">
+              <summary>更多操作</summary>
+              <div class="canonical-form-action-overflow-panel">
+                <button
+                  v-for="action in overflowActions"
+                  :key="action.key"
+                  type="button"
+                  class="canonical-form-action canonical-form-action--overflow"
+                  :disabled="!action.enabled"
+                  :title="action.reasonCode || undefined"
+                  :data-action-ref="action.actionRef.actionId"
+                  :data-backend-identity="action.actionRef.backendIdentity"
+                  :data-action-tier="action.tier"
+                  :data-action-enabled="String(action.enabled)"
+                  @click="action.enabled && emit('action-ref', action.actionRef)"
+                >{{ action.label }}</button>
+              </div>
+            </details>
+        </nav>
+      </article>
     </SceneUiProvider>
   </section>
 </template>
@@ -85,7 +103,6 @@ import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
   type NativeCollaborationPanelProps,
 } from './NativeCollaborationPanel.vue';
-import { canonicalNodeHasContent } from './canonicalFormRenderer';
 
 const props = defineProps<{
   renderModel: CanonicalFormRenderModel | null;
@@ -94,6 +111,7 @@ const props = defineProps<{
     activeKit: SceneUiKitId;
     allowedKits: SceneUiKitId[];
     allowUserOverride: boolean;
+    showUserDriverChooser?: boolean;
     resolutionSource: string;
     reasonCode: string;
   };
@@ -117,12 +135,17 @@ const fieldCount = computed(() => props.renderModel
   : 0);
 const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'sc-native');
 const allowedKits = computed<SceneUiKitId[]>(() => props.driverConfig?.allowedKits?.length ? props.driverConfig.allowedKits : ['sc-native']);
-const allowUserOverride = computed(() => props.driverConfig?.allowUserOverride === true && allowedKits.value.length > 1);
+const allowUserOverride = computed(() => (
+  props.driverConfig?.showUserDriverChooser === true
+  && props.driverConfig?.allowUserOverride === true
+  && allowedKits.value.length > 1
+));
 const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
-const primaryNodes = computed(() => props.renderModel?.zones.primary.filter(canonicalNodeHasContent) || []);
-const subordinateNodes = computed(() => props.renderModel?.zones.subordinate
-  .filter((node) => !collaborationKind(node.kind))
-  .filter(canonicalNodeHasContent) || []);
+const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
+const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
+const primaryNodes = computed(() => props.renderModel?.zones.primary || []);
+const subordinateNodes = computed(() => (props.renderModel?.zones.subordinate || [])
+  .filter((node) => !collaborationKind(node.kind)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
 
 function collaborationKind(kind: string) {
@@ -155,13 +178,22 @@ function changeKit(event: Event) {
   color: var(--sc-app-danger-text);
 }
 .sc-form-driver-host { min-width: 0; }
+.canonical-form-blocking-notice {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px;
+  border: 1px solid var(--sc-app-warning-border);
+  border-radius: 10px;
+  background: var(--sc-app-warning-bg);
+  color: var(--sc-app-warning-text);
+}
 .canonical-form-action-bar {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 24px;
-  border-bottom: 1px solid var(--sc-app-border);
+  background: transparent;
 }
 .canonical-form-action {
   min-height: 36px;
@@ -173,17 +205,26 @@ function changeKit(event: Event) {
   cursor: pointer;
 }
 .canonical-form-action--primary {
-  border-color: var(--sc-app-primary);
-  background: var(--sc-app-primary);
-  color: var(--sc-app-on-primary, #fff);
+  border-color: var(--sc-semantic-surface-interactive);
+  background: var(--sc-semantic-surface-interactive);
+  color: var(--sc-semantic-text-on-interactive) !important;
 }
 .canonical-form-action.is-danger { color: var(--sc-app-danger-text); }
 .canonical-form-action:disabled { cursor: not-allowed; opacity: 0.55; }
-.canonical-form-zones { display: grid; gap: 20px; min-width: 0; }
-.canonical-form-zone { min-width: 0; }
-.canonical-form-zone--subordinate {
-  padding-top: 16px;
-  border-top: 1px solid var(--sc-app-border);
+.canonical-form-action-overflow { position: relative; }
+.canonical-form-action-overflow > summary { cursor: pointer; color: var(--sc-app-text-primary); }
+.canonical-form-action-overflow-panel {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  display: grid;
+  gap: 6px;
+  min-width: 240px;
+  padding: 10px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-panel);
+  box-shadow: var(--sc-app-shadow-popover);
 }
 .sc-form-driver-chooser {
   display: flex;

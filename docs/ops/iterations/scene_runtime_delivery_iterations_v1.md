@@ -13,7 +13,7 @@
   - `docs/architecture/ui_base_vs_scene_ready_contract_v1.md`
   - `docs/architecture/app_shell_vs_page_scene_contract_v1.md`
   - `docs/contracts/ui_base_contract_schema_v1.md`
-  - `docs/ops/audits/current_response_contract_gap_audit_v1.md`
+  - `docs/audit/current_response_contract_gap_audit_v1.md`
 
 ### Commit Unit 2：后端链路打通
 
@@ -30,7 +30,7 @@
   - `frontend/apps/web/src/app/resolvers/sceneRegistry.ts`
   - `frontend/apps/web/src/views/ActionView.vue`
   - `frontend/apps/web/src/pages/ContractFormPage.vue`
-  - `docs/ops/audits/frontend_direct_base_contract_usage_audit_v1.md`
+  - `docs/audit/frontend_direct_base_contract_usage_audit_v1.md`
 
 ### Commit Unit 4：行业三件套与样板
 

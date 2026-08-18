@@ -195,6 +195,14 @@ export function resolveContractV2GlobalStatus(store: ContractV2NormalizedStore |
     ...(typeof row.pageVisible === 'boolean' ? { pageVisible: row.pageVisible } : {}),
     ...(asText(row.pageAuth) ? { pageAuth: asText(row.pageAuth) } : {}),
     ...(asText(row.reasonCode) ? { reasonCode: asText(row.reasonCode) } : {}),
+    ...(Object.keys(asDict(row.modelRights)).length ? { modelRights: asDict(row.modelRights) } : {}),
+    ...(Object.keys(asDict(row.recordRights)).length ? { recordRights: asDict(row.recordRights) } : {}),
+    ...(Object.keys(asDict(row.viewCapabilities)).length ? { viewCapabilities: asDict(row.viewCapabilities) } : {}),
+    ...(Object.keys(asDict(row.entryCapabilities)).length ? { entryCapabilities: asDict(row.entryCapabilities) } : {}),
+    ...(Object.keys(asDict(row.effectiveRecordCapabilities)).length
+      ? { effectiveRecordCapabilities: asDict(row.effectiveRecordCapabilities) }
+      : {}),
+    ...(asText(row.effectiveRenderProfile) ? { effectiveRenderProfile: asText(row.effectiveRenderProfile) } : {}),
   };
 }
 
@@ -235,5 +243,28 @@ export function resolveContractV2SourceContext(store: ContractV2NormalizedStore 
     ...(contextRaw ? { contextRaw } : {}),
     ...(domainRaw ? { domainRaw } : {}),
     ...(renderProfile ? { renderProfile } : {}),
+  };
+}
+
+export interface ContractV2EffectiveFormCapabilities {
+  read: boolean;
+  write: boolean;
+  create: boolean;
+  unlink: boolean;
+  duplicate: boolean;
+}
+
+export function resolveContractV2EffectiveFormCapabilities(
+  store: ContractV2NormalizedStore | null,
+): ContractV2EffectiveFormCapabilities | null {
+  const status = resolveContractV2GlobalStatus(store);
+  const effective = asDict(status?.effectiveRecordCapabilities);
+  if (!Object.keys(effective).length) return null;
+  return {
+    read: effective.read === true,
+    write: effective.write === true,
+    create: effective.create === true,
+    unlink: effective.unlink === true,
+    duplicate: effective.duplicate === true,
   };
 }

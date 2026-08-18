@@ -71,6 +71,7 @@
         class="input"
         multiple
         size="6"
+        :aria-label="field.label || `${field.name} 选项列表`"
         :value="adapter.relationIds(field.name).map((id) => String(id))"
         @change="adapter.setRelationMultiField(field.name, $event.target as HTMLSelectElement)"
       >

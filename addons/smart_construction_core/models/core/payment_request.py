@@ -1010,6 +1010,10 @@ class PaymentRequest(models.Model):
     @api.depends(
         "type",
         "state",
+        "contract_id",
+        "settlement_id",
+        "material_settlement_id",
+        "outflow_line_ids.settlement_id",
         "payment_account_name",
         "payment_bank_name",
         "payment_account_no",
@@ -1029,17 +1033,35 @@ class PaymentRequest(models.Model):
                     "审批已驳回：%s。请修正业务事实后重新提交审批。"
                 ) % (record.reject_reason or _("未提供原因"))
                 continue
-            if record.type != "pay" or record.payee_account_completeness == "complete":
+            if record.type != "pay":
                 record.payment_blocking_reason_display = _("无业务阻断")
                 continue
+            blockers = []
+            if not record._has_payment_basis():
+                blockers.append(_("缺少合同或结算依据"))
             missing = [
                 label
                 for label, snapshot_field, partner_field in labels
                 if not (record[snapshot_field] or record[partner_field])
             ]
-            record.payment_blocking_reason_display = _(
-                "阻断付款执行：缺少%s。请维护往来单位默认结算账户，或在草稿申请中补全。"
-            ) % "、".join(missing)
+            if missing:
+                blockers.append(_("缺少%s") % "、".join(missing))
+            if not blockers:
+                record.payment_blocking_reason_display = _("无业务阻断")
+                continue
+            repair_hint = (
+                _("请补充关联合同或已审批结算单，并维护完整收款账户后再办理付款登记。")
+                if len(blockers) > 1
+                else (
+                    _("请补充关联合同或已审批结算单后再办理付款登记。")
+                    if not record._has_payment_basis()
+                    else _("请维护往来单位默认结算账户，或在草稿申请中补全。")
+                )
+            )
+            record.payment_blocking_reason_display = _("阻断付款执行：%s。%s") % (
+                "；".join(blockers),
+                repair_hint,
+            )
 
     @api.depends(
         "state",
@@ -1053,6 +1075,7 @@ class PaymentRequest(models.Model):
         "payee_account_completeness",
         "payment_execution_ids.state",
         "payment_execution_ids.active",
+        "is_fully_paid",
     )
     def _compute_payment_handling_summary(self):
         execution_state_labels = dict(self.env["sc.payment.execution"]._fields["state"].selection)
@@ -1074,11 +1097,19 @@ class PaymentRequest(models.Model):
                 lambda execution: execution.state in ("draft", "confirmed")
             )
             record.has_active_payment_execution = bool(open_executions)
-            if execution_history:
+            if open_executions:
+                latest = open_executions[0]
+                record.payment_execution_status_display = _("办理中：%s") % execution_state_labels.get(
+                    latest.state,
+                    latest.state,
+                )
+            elif execution_history:
                 latest = execution_history[0]
-                record.payment_execution_status_display = _("已生成：%s") % execution_state_labels.get(
-                    latest.state,
-                    latest.state,
+                latest_state = execution_state_labels.get(latest.state, latest.state)
+                record.payment_execution_status_display = (
+                    _("已足额付款；最近登记：%s") % latest_state
+                    if record.is_fully_paid
+                    else _("历史登记：%s；当前无办理中付款登记") % latest_state
                 )
             else:
                 cancelled = record.payment_execution_ids.filtered(
@@ -1093,9 +1124,14 @@ class PaymentRequest(models.Model):
     @api.depends(
         "state",
         "type",
+        "contract_id",
+        "settlement_id",
+        "material_settlement_id",
+        "outflow_line_ids.settlement_id",
         "payee_account_completeness",
         "payment_execution_ids.state",
         "payment_execution_ids.active",
+        "is_fully_paid",
     )
     def _compute_legal_next_action_display(self):
         user = self.env.user
@@ -1119,6 +1155,10 @@ class PaymentRequest(models.Model):
                 record.legal_next_action_display = _("审批处理") if can_approve else _("等待审批")
             elif record.state == "approved" and executions:
                 record.legal_next_action_display = _("查看付款登记")
+            elif record.state == "approved" and record.type == "pay" and record.is_fully_paid:
+                record.legal_next_action_display = _("已足额付款")
+            elif record.state == "approved" and record.type == "pay" and not record._has_payment_basis():
+                record.legal_next_action_display = _("补充合同或结算依据")
             elif record.state == "approved" and record.type == "pay" and record.payee_account_completeness != "complete":
                 record.legal_next_action_display = _("补全收款账户")
             elif record.state == "approved" and record.type == "pay":
@@ -1285,8 +1325,12 @@ class PaymentRequest(models.Model):
         for record in self:
             if record.type != "pay":
                 raise UserError(_("只有付款申请可以生成付款登记。"))
+            if record.is_fully_paid:
+                raise UserError(_("付款申请已足额付款，不能继续生成付款登记。"))
             if record.state != "approved":
                 raise UserError(_("付款申请必须处于已批准状态才能生成付款登记。"))
+            if not record._has_payment_basis():
+                raise UserError(_("请先补充关联合同或已审批结算单后再生成付款登记。"))
             if record.payee_account_completeness != "complete":
                 raise UserError(_("收款户名、开户行和账号必须完整后才能生成付款登记。"))
             if require_authorized_actor and not self.env.user.has_group(

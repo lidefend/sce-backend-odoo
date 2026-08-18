@@ -19,4 +19,4 @@
 
 ## Evidence
 - 默认首页可打开性证据：`artifacts/product/role_home_openability_report.json`
-- 审计视图：`docs/ops/audit/role_home_openability_report.md`
+- 审计视图：`docs/audit/role_home_openability_report.md`

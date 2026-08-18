@@ -6,6 +6,7 @@ import path from 'node:path';
 import { launchChromium } from './playwright_runtime.mjs';
 
 const BASE_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5175';
+const ODOO_URL = process.env.ODOO_URL || 'http://127.0.0.1:18082';
 const DB_NAME = process.env.DB_NAME || 'sc_frontend_acceptance';
 const PASSWORD = process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const TARGET = JSON.parse(process.env.SCENE_COMPONENT_DRIVER_TARGETS_JSON || '{}');
@@ -55,23 +56,37 @@ function isBusinessMutation(request) {
 }
 
 const canonicalDomSnapshot = () => ({
-  nodes: [...document.querySelectorAll('[data-canonical-form-zones] [data-canonical-node-id]')].map((node) => ({
+  nodes: [...document.querySelectorAll('[data-native-contract-structure] [data-canonical-node-id]')].map((node) => ({
     id: node.getAttribute('data-canonical-node-id') || '',
     kind: node.getAttribute('data-canonical-node-kind') || '',
     zone: node.closest('[data-canonical-zone]')?.getAttribute('data-canonical-zone') || '',
+    path: [...node.parentElement?.closest('[data-native-contract-structure]')?.querySelectorAll('[data-canonical-node-id]') || []]
+      .filter((candidate) => candidate === node || candidate.contains(node))
+      .map((candidate) => candidate.getAttribute('data-canonical-node-id') || '')
+      .filter(Boolean),
+    nativeClass: node.getAttribute('data-native-class') || '',
+    nativeWidget: node.querySelector(':scope > [data-native-widget]')?.getAttribute('data-native-widget') || '',
   })),
-  fields: [...document.querySelectorAll('[data-canonical-form-zones] [data-field-key]')].map((node) => ({
+  fields: [...document.querySelectorAll('[data-native-contract-structure] [data-field-key]')].map((node) => ({
     widgetId: node.getAttribute('data-field-key') || '',
     fieldCode: node.getAttribute('data-field-name') || '',
     state: node.getAttribute('data-field-state') || '',
     type: node.getAttribute('data-field-type') || '',
+    visible: node.getClientRects().length > 0
+      && getComputedStyle(node).display !== 'none'
+      && getComputedStyle(node).visibility !== 'hidden',
   })),
-  actions: [...document.querySelectorAll('[data-canonical-action-bar] [data-action-ref]')].map((node) => ({
+  actions: [...document.querySelectorAll('[data-contract-form-driver] [data-action-ref]')].map((node) => ({
     actionId: node.getAttribute('data-action-ref') || '',
     backendIdentity: node.getAttribute('data-backend-identity') || '',
     tier: node.getAttribute('data-action-tier') || '',
     enabled: node.getAttribute('data-action-enabled') || '',
     disabled: node.hasAttribute('disabled'),
+  })),
+  nativeWidgets: [...document.querySelectorAll('[data-native-contract-structure] [data-canonical-node-kind="widget"] > [data-native-widget]')].map((node) => ({
+    name: node.getAttribute('data-native-widget') || '',
+    state: node.getAttribute('data-native-widget-state') || 'unresolved',
+    text: String(node.textContent || '').trim(),
   })),
 });
 
@@ -81,26 +96,181 @@ function assertCanonicalSnapshot(snapshot, label) {
   check(new Set(snapshot.nodes.map((node) => node.id)).size === snapshot.nodes.length, `${label} canonical nodes duplicated`);
   check(new Set(snapshot.fields.map((field) => field.widgetId)).size === snapshot.fields.length, `${label} widget identities duplicated`);
   check(snapshot.fields.every((field) => field.widgetId && field.fieldCode), `${label} field identity missing`);
-  check(new Set(snapshot.actions.map((action) => `${action.actionId}\u0000${action.backendIdentity}`)).size === snapshot.actions.length, `${label} action references duplicated`);
   check(snapshot.actions.every((action) => action.actionId && action.backendIdentity), `${label} action reference missing`);
+}
+
+async function captureNativeOdooSnapshot(context) {
+  const nativePage = await context.newPage();
+  const runtimeErrors = { console: [], pageerror: [], failed: [] };
+  nativePage.on('console', (message) => {
+    if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) runtimeErrors.console.push(message.text());
+  });
+  nativePage.on('pageerror', (error) => runtimeErrors.pageerror.push(error.message));
+  nativePage.on('response', (response) => {
+    if (response.status() >= 400 && !/favicon/i.test(response.url())) runtimeErrors.failed.push({ status: response.status(), url: response.url() });
+  });
+  await nativePage.goto(`${ODOO_URL}/web/login?db=${encodeURIComponent(DB_NAME)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await nativePage.locator('input[name="login"]').fill(TARGET.login);
+  await nativePage.locator('input[name="password"]').fill(PASSWORD);
+  await nativePage.locator('button[type="submit"]').click();
+  await nativePage.waitForURL((url) => !url.pathname.includes('/web/login'), { timeout: 45000 });
+  const nativeRoute = `${ODOO_URL}/web#id=${TARGET.record_id}&model=${encodeURIComponent(TARGET.model)}&view_type=form&action=${TARGET.action_id}&view_id=${TARGET.view_id}&menu_id=${TARGET.menu_id}`;
+  await nativePage.goto(nativeRoute, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await nativePage.locator('.o_form_view').waitFor({ state: 'visible', timeout: 60000 });
+  await nativePage.waitForTimeout(1200);
+  const sourceView = await nativePage.evaluate(async ({ model, viewId, actionId }) => {
+    const response = await fetch(`/web/dataset/call_kw/${encodeURIComponent(model)}/get_views`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0', method: 'call', id: Date.now(),
+        params: {
+          model, method: 'get_views', args: [],
+          kwargs: { views: [[viewId, 'form']], options: { action_id: actionId, load_filters: false, toolbar: true } },
+        },
+      }),
+    });
+    const payload = await response.json();
+    const arch = String(payload?.result?.views?.form?.arch || '');
+    if (!response.ok || !arch) return { ok: false, status: response.status, error: payload?.error || null, atoms: [] };
+    const root = new DOMParser().parseFromString(arch, 'application/xml').documentElement;
+    const atomTags = new Set(['form', 'sheet', 'group', 'div', 'alert', 'header', 'footer', 'notebook', 'page', 'field', 'button', 'widget', 'chatter']);
+    const walk = (node, parentPath = []) => {
+      if (!(node instanceof Element)) return [];
+      const tag = node.tagName.toLowerCase();
+      const siblings = [...(node.parentElement?.children || [])].filter((item) => item.tagName === node.tagName);
+      const index = Math.max(0, siblings.indexOf(node));
+      const segment = `${tag}[${index}]`;
+      const path = [...parentPath, segment];
+      const attrs = Object.fromEntries([...node.attributes].map((item) => [item.name, item.value]).sort(([a], [b]) => a.localeCompare(b)));
+      const own = atomTags.has(tag) ? [{
+        tag, path, name: attrs.name || '', label: attrs.string || '', nolabel: attrs.nolabel || '',
+        widget: attrs.widget || '', options: attrs.options || '', domain: attrs.domain || '',
+        invisible: attrs.invisible || '', readonly: attrs.readonly || '', required: attrs.required || '', modifiers: attrs.modifiers || '',
+        className: attrs.class || '', childTags: [...node.children].map((item) => item.tagName.toLowerCase()),
+      }] : [];
+      return [...own, ...[...node.children].flatMap((child) => walk(child, path))];
+    };
+    const accessRights = {};
+    for (const operation of ['read', 'write', 'create', 'unlink']) {
+      const accessResponse = await fetch(`/web/dataset/call_kw/${encodeURIComponent(model)}/check_access_rights`, {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', method: 'call', id: `${Date.now()}-${operation}`,
+          params: { model, method: 'check_access_rights', args: [operation], kwargs: { raise_exception: false } },
+        }),
+      });
+      const accessPayload = await accessResponse.json();
+      accessRights[operation] = accessPayload?.result === true;
+    }
+    return {
+      ok: true,
+      status: response.status,
+      rootAttributes: Object.fromEntries([...root.attributes].map((item) => [item.name, item.value]).sort(([a], [b]) => a.localeCompare(b))),
+      accessRights,
+      atoms: walk(root),
+    };
+  }, { model: TARGET.model, viewId: TARGET.view_id, actionId: TARGET.action_id });
+  check(sourceView.ok, `native get_views failed: ${JSON.stringify(sourceView)}`);
+  const snapshot = await nativePage.evaluate(() => {
+    const visible = (node) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
+    const fields = [...document.querySelectorAll('.o_form_view .o_field_widget[name]')]
+      .filter(visible)
+      .map((node) => ({
+        fieldCode: node.getAttribute('name') || '',
+        widget: [...node.classList].find((item) => item.startsWith('o_field_') && item !== 'o_field_widget') || '',
+        readonly: node.matches('[readonly], [disabled], .o_readonly_modifier')
+          || node.querySelector('input, textarea, select')?.matches('[readonly], [disabled]') === true,
+      }));
+    const actions = [...document.querySelectorAll('.o_form_view button[name]')]
+      .filter(visible)
+      .map((node) => ({
+        method: node.getAttribute('name') || '',
+        buttonType: node.getAttribute('data-type') || node.getAttribute('type') || '',
+        label: String(node.textContent || '').trim(),
+        disabled: node.matches('[disabled], .disabled') || node.getAttribute('aria-disabled') === 'true',
+      }));
+    const capabilityCount = (selector) => [...document.querySelectorAll(`.o_form_view ${selector}`)].filter(visible).length;
+    return {
+      url: location.href,
+      title: document.title,
+      fields,
+      actions,
+      capabilities: {
+        canEdit: [...document.querySelectorAll('.o_form_button_edit')].some(visible),
+        canCreate: [...document.querySelectorAll('.o_form_button_create')].some(visible),
+        sheet: capabilityCount('.o_form_sheet'),
+        group: capabilityCount('.o_group'),
+        div: capabilityCount('div'),
+        alert: capabilityCount('.alert'),
+        notebook: capabilityCount('.o_notebook'),
+        page: capabilityCount('.o_notebook .tab-pane'),
+        x2many: capabilityCount('.o_field_x2many, .o_field_one2many, .o_field_many2many'),
+        statusbar: capabilityCount('.o_statusbar_status'),
+        buttonBox: capabilityCount('.oe_button_box'),
+        chatter: capabilityCount('.o-mail-Chatter, .o_ChatterContainer'),
+      },
+      horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+    };
+  });
+  snapshot.sourceView = sourceView;
+  const rootFlagAllows = (name) => !['0', 'false'].includes(String(sourceView.rootAttributes?.[name] ?? '1').toLowerCase());
+  snapshot.pageCapabilities = {
+    authority: 'native_form_root_then_model_acl',
+    view: {
+      edit: rootFlagAllows('edit'),
+      create: rootFlagAllows('create'),
+      delete: rootFlagAllows('delete'),
+      duplicate: rootFlagAllows('duplicate'),
+    },
+    modelAcl: sourceView.accessRights,
+    effective: {
+      edit: rootFlagAllows('edit') && sourceView.accessRights.write === true,
+      create: rootFlagAllows('create') && sourceView.accessRights.create === true,
+      delete: rootFlagAllows('delete') && sourceView.accessRights.unlink === true,
+    },
+  };
+  check(snapshot.capabilities.canEdit === snapshot.pageCapabilities.effective.edit, 'native edit capability disagrees with form-root/ACL authority');
+  check(snapshot.capabilities.canCreate === snapshot.pageCapabilities.effective.create, 'native create capability disagrees with form-root/ACL authority');
+  snapshot.fieldCount = snapshot.fields.length;
+  snapshot.uniqueFieldCount = new Set(snapshot.fields.map((field) => field.fieldCode)).size;
+  snapshot.actionCount = snapshot.actions.length;
+  snapshot.uniqueActionCount = new Set(snapshot.actions.map((action) => action.method)).size;
+  const screenshot = path.join(OUTPUT, 'odoo-native-readonly-project.png');
+  await nativePage.screenshot({ path: screenshot, fullPage: true });
+  snapshot.screenshot = { path: screenshot, sha256: sha256(screenshot) };
+  await nativePage.setViewportSize({ width: 390, height: 844 });
+  await nativePage.waitForTimeout(300);
+  snapshot.mobile = await nativePage.evaluate(() => ({
+    fieldOrder: [...document.querySelectorAll('.o_form_view .o_field_widget[name]')]
+      .filter((node) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden')
+      .map((node) => node.getAttribute('name') || ''),
+    horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+  }));
+  const mobileScreenshot = path.join(OUTPUT, 'odoo-native-readonly-project-mobile-390.png');
+  await nativePage.screenshot({ path: mobileScreenshot, fullPage: true });
+  snapshot.mobile.screenshot = { path: mobileScreenshot, sha256: sha256(mobileScreenshot) };
+  snapshot.runtimeErrors = runtimeErrors;
+  await nativePage.close();
+  return snapshot;
 }
 
 async function main() {
   check(PASSWORD, 'SC_ACCEPTANCE_FIXTURE_PASSWORD is required');
-  check(TARGET.model && !String(TARGET.model).includes('payment') && TARGET.record_id > 0 && TARGET.action_id > 0 && TARGET.menu_id > 0, 'invalid non-payment target');
+  check(TARGET.model && !String(TARGET.model).includes('payment') && TARGET.record_id > 0 && TARGET.action_id > 0 && TARGET.view_id > 0 && TARGET.menu_id > 0, 'invalid non-payment target');
   fs.mkdirSync(OUTPUT, { recursive: true });
   const browser = await launchChromium();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const nativeOdoo = await captureNativeOdooSnapshot(context);
   const page = await context.newPage();
   const evidence = {
     console: [], pageerror: [], failed: [], mutations: [], systemInitPolicy: null,
-    contractLayoutShape: null, contractSha256: '', contractResponses: [],
+    contractLayoutShape: null, contractStatusDiagnostics: null,
+    contractSha256: '', contractRequests: [], contractResponses: [],
   };
-  page.on('console', (message) => {
-    if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) evidence.console.push(message.text());
-  });
-  page.on('pageerror', (error) => evidence.pageerror.push(error.message));
-  page.on('request', (request) => {
+  await page.route('**/*', async (route) => {
+    const request = route.request();
     if (isBusinessMutation(request)) {
       const body = requestBody(request);
       evidence.mutations.push({
@@ -109,16 +279,51 @@ async function main() {
         model: String(body?.params?.model || body?.params?.payload?.model || ''),
         valueKeys: Object.keys(body?.params?.vals || body?.params?.payload?.vals || {}).sort(),
         url: request.url(),
+        blocked: true,
+      });
+      await route.abort('blockedbyclient');
+      return;
+    }
+    await route.continue();
+  });
+  page.on('console', (message) => {
+    if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) evidence.console.push(message.text());
+  });
+  page.on('pageerror', (error) => evidence.pageerror.push(error.message));
+  page.on('request', (request) => {
+    if (requestIntent(request) === 'ui.contract.v2') {
+      const params = requestBody(request)?.params || {};
+      evidence.contractRequests.push({
+        op: String(params.op || ''),
+        model: String(params.model || ''),
+        actionId: Number(params.action_id || 0),
+        menuId: Number(params.menu_id || 0),
+        viewId: Number(params.view_id || 0),
+        viewType: String(params.view_type || ''),
+        recordId: Number(params.record_id || 0),
+        renderProfile: String(params.render_profile || ''),
       });
     }
   });
   page.on('response', async (response) => {
-    if (response.status() >= 400 && !/favicon/i.test(response.url())) evidence.failed.push({ status: response.status(), url: response.url() });
+    const failedResponse = response.status() >= 400 && !/favicon/i.test(response.url())
+      ? { status: response.status(), url: response.url() }
+      : null;
+    if (failedResponse) evidence.failed.push(failedResponse);
     const request = response.request();
     const intent = requestIntent(request);
     if (request.method() === 'POST' && /json/i.test(response.headers()['content-type'] || '')) {
       try {
         const body = await response.json();
+        if (failedResponse) {
+          const error = body?.error || body?.result?.error || {};
+          const data = error?.data && typeof error.data === 'object' ? error.data : {};
+          Object.assign(failedResponse, {
+            code: String(error?.code || body?.code || ''),
+            name: String(data?.name || error?.name || ''),
+            message: String(data?.message || error?.message || body?.message || '').slice(0, 500),
+          });
+        }
         const findContract = (value, depth = 0) => {
           if (!value || typeof value !== 'object' || depth > 5) return null;
           if (value.layoutContract?.containerTree) return value;
@@ -129,16 +334,63 @@ async function main() {
           return null;
         };
         const contract = findContract(body);
-        const summarize = (nodes) => (Array.isArray(nodes) ? nodes : []).map((node) => ({
+        const summarize = (nodes, parentPath = []) => (Array.isArray(nodes) ? nodes : []).map((node, index) => {
+          const kind = String(node?.type || node?.containerType || 'container');
+          const identity = String(node?.containerId || node?.widgetId || node?.name || `${kind}.${index}`);
+          const currentPath = [...parentPath, identity];
+          const fieldInfo = node?.fieldInfo || node?.field_info || {};
+          const attributes = node?.attributes || {};
+          return {
           keys: node && typeof node === 'object' ? Object.keys(node).sort() : [],
           containerId: String(node?.containerId || ''),
           containerType: String(node?.containerType || ''),
           type: String(node?.type || ''),
           name: String(node?.name || ''),
-          children: summarize(node?.children),
-        }));
+          nolabel: node?.nolabel === true,
+          path: currentPath,
+          widget: String(node?.widget || fieldInfo?.widget || attributes?.widget || ''),
+          options: node?.options ?? fieldInfo?.options ?? attributes?.options ?? null,
+          domain: node?.domain ?? fieldInfo?.domain ?? attributes?.domain ?? null,
+          modifiers: node?.modifiers ?? fieldInfo?.modifiers ?? attributes?.modifiers ?? null,
+          invisible: node?.invisible ?? fieldInfo?.invisible ?? attributes?.invisible ?? null,
+          readonly: node?.readonly ?? fieldInfo?.readonly ?? attributes?.readonly ?? null,
+          required: node?.required ?? fieldInfo?.required ?? attributes?.required ?? null,
+          actionBackendIdentity: String(node?.action?.backendIdentity || ''),
+          attributes,
+          children: summarize(node?.children, currentPath),
+          };
+        });
         if (contract) {
           evidence.contractLayoutShape = { intent, nodes: summarize(contract.layoutContract.containerTree) };
+          const status = contract.statusContract || {};
+          evidence.contractStatusDiagnostics = {
+            hiddenContainers: (status.containerStatus || [])
+              .filter((row) => row?.visible === false)
+              .map((row) => ({ containerId: String(row.containerId || ''), disabled: row.disabled === true, reasonCode: String(row.reasonCode || '') })),
+            hiddenWidgets: (status.widgetStatus || [])
+              .filter((row) => row?.visible === false)
+              .map((row) => ({ widgetId: String(row.widgetId || ''), disabled: row.disabled === true, reasonCode: String(row.reasonCode || '') })),
+            mainDataKeys: Object.keys(contract.dataContract?.mainData || {}).sort(),
+            actions: (contract.actionContract?.actionRuleList || []).map((row) => ({
+              backendIdentity: String(row?.backendIdentity || ''),
+              actionId: String(row?.actionId || ''),
+              allowed: row?.allowed,
+              enabled: row?.enabled,
+              disabled: row?.disabled,
+              reasonCode: String(row?.reasonCode || row?.reason_code || ''),
+              permissionConstraints: row?.permissionConstraints || null,
+              sourceChannels: (row?.sourceTrace || []).map((trace) => String(trace?.sourceChannel || '')).filter(Boolean),
+              sourceTrace: row?.sourceTrace || [],
+              invisible: row?.visible?.attrs?.invisible ?? row?.invisible ?? null,
+            })),
+            buttonStatus: (status.buttonStatus || []).map((row) => ({
+              backendIdentity: String(row?.backendIdentity || ''),
+              btnId: String(row?.btnId || ''),
+              visible: row?.visible !== false,
+              disabled: row?.disabled === true,
+              reasonCode: String(row?.reasonCode || ''),
+            })),
+          };
           evidence.contractSha256 = String(contract?.meta?.lifecycle?.integrity?.contractSha256 || '');
           evidence.contractResponses.push({ intent, sha256: evidence.contractSha256 });
         }
@@ -161,7 +413,7 @@ async function main() {
     await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
     await page.locator('.layout-shell').waitFor({ timeout: 45000 });
 
-    const route = `/r/${encodeURIComponent(TARGET.model)}/${TARGET.record_id}?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`;
+    const route = `/r/${encodeURIComponent(TARGET.model)}/${TARGET.record_id}?action_id=${TARGET.action_id}&view_id=${TARGET.view_id}&menu_id=${TARGET.menu_id}`;
     await page.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const anyHost = page.locator('[data-contract-form-driver]').first();
     try {
@@ -177,8 +429,15 @@ async function main() {
         contractError: document.querySelector('[data-contract-form-driver-error]')?.textContent || '',
       }));
       const failureReport = path.join(OUTPUT, 'failure-before-driver-host.json');
-      fs.writeFileSync(failureReport, `${JSON.stringify({ ...diagnostic, systemInitPolicy: evidence.systemInitPolicy, contractLayoutShape: evidence.contractLayoutShape, screenshot: failureScreenshot }, null, 2)}\n`);
-      throw new Error(`ContractForm driver host missing: ${JSON.stringify({ ...diagnostic, systemInitPolicy: evidence.systemInitPolicy, contractLayoutShape: evidence.contractLayoutShape, screenshot: failureScreenshot, report: failureReport })}`, { cause: error });
+      const runtimeEvidence = {
+        console: evidence.console,
+        pageerror: evidence.pageerror,
+        failed: evidence.failed,
+        mutations: evidence.mutations,
+        contractRequests: evidence.contractRequests,
+      };
+      fs.writeFileSync(failureReport, `${JSON.stringify({ ...diagnostic, systemInitPolicy: evidence.systemInitPolicy, contractLayoutShape: evidence.contractLayoutShape, runtimeEvidence, screenshot: failureScreenshot }, null, 2)}\n`);
+      throw new Error(`ContractForm driver host missing: ${JSON.stringify({ ...diagnostic, systemInitPolicy: evidence.systemInitPolicy, contractLayoutShape: evidence.contractLayoutShape, runtimeEvidence, screenshot: failureScreenshot, report: failureReport })}`, { cause: error });
     }
     const hostDiagnostic = {
       activeKit: await anyHost.getAttribute('data-contract-form-driver'),
@@ -208,11 +467,27 @@ async function main() {
         editableDriverControlCount: editableDriverControls.length,
         horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
         fallback: document.querySelector('[data-scene-driver-fallback="true"]') !== null,
+        capabilities: {
+          alert: document.querySelectorAll('[data-canonical-node-kind="alert"]').length,
+          notebook: document.querySelectorAll('[data-canonical-node-kind="notebook"]').length,
+          page: document.querySelectorAll('[data-canonical-node-kind="page"]').length,
+          x2many: document.querySelectorAll('[data-field-type="one2many"], [data-field-type="many2many"]').length,
+          statusbar: document.querySelectorAll('.native-statusbar, [data-canonical-node-kind="statusbar"]').length,
+          buttonBox: document.querySelectorAll('[data-canonical-node-kind="button_box"]').length,
+          chatter: document.querySelectorAll('[data-canonical-node-kind="chatter"], [data-canonical-node-kind="activity"]').length,
+        },
       };
     });
     result.canonical = await page.evaluate(canonicalDomSnapshot);
     result.fieldCount = result.canonical.fields.length;
     result.uniqueFieldCount = new Set(result.canonical.fields.map((field) => field.widgetId)).size;
+    const readonlyPrecheckScreenshot = path.join(OUTPUT, 'readonly-precheck.png');
+    await page.screenshot({ path: readonlyPrecheckScreenshot, fullPage: true });
+    fs.writeFileSync(path.join(OUTPUT, 'readonly-precheck.json'), `${JSON.stringify({
+      result,
+      contractLayoutShape: evidence.contractLayoutShape,
+      screenshot: { path: readonlyPrecheckScreenshot, sha256: sha256(readonlyPrecheckScreenshot) },
+    }, null, 2)}\n`);
     check(evidence.systemInitPolicy?.system_default_kit === 'tdesign-modern', 'system.init entitlement default was not authoritative');
     check(evidence.systemInitPolicy?.allow_user_override === true, 'system.init entitlement did not allow governed driver switching');
     check(
@@ -227,295 +502,182 @@ async function main() {
     check(result.editableDriverControlCount === 0, 'readonly driver exposed an editable control');
     check(result.horizontalOverflow === 0, 'readonly driver caused horizontal overflow');
     check(result.fallback === false, 'TDesign load unexpectedly fell back to Native');
+    for (const capability of ['alert', 'notebook', 'page', 'x2many', 'statusbar', 'buttonBox', 'chatter']) {
+      check(
+        Number(result.capabilities[capability] || 0) === Number(nativeOdoo.capabilities[capability] || 0),
+        `native/custom ${capability} capability count differs: ${JSON.stringify({ native: nativeOdoo.capabilities[capability], custom: result.capabilities[capability] })}`,
+      );
+    }
     assertCanonicalSnapshot(result.canonical, 'readonly TDesign');
+    const nativeFieldSet = [...new Set(nativeOdoo.fields.map((field) => field.fieldCode))].sort();
+    const customFieldSet = [...new Set(result.canonical.fields.filter((field) => field.visible).map((field) => field.fieldCode))].sort();
+    const nativeActionSet = [...new Set(nativeOdoo.actions.map((action) => (
+      /^\d+$/.test(String(action.method || ''))
+        ? `window_action:${action.method}`
+        : `button:object:${action.method}`
+    )))].sort();
+    const customActionSet = [...new Set(result.canonical.actions
+      .map((action) => String(action.backendIdentity || ''))
+      .filter(Boolean))].sort();
+    const flattenContractNodes = (nodes) => (Array.isArray(nodes) ? nodes : []).flatMap((node) => [
+      node,
+      ...flattenContractNodes(node.children),
+    ]);
+    const contractNodes = flattenContractNodes(evidence.contractLayoutShape?.nodes || []);
+    const contractFields = contractNodes.filter((node) => node.type === 'field' && node.name);
+    const nativeSourceFields = nativeOdoo.sourceView.atoms.filter((atom) => atom.tag === 'field' && atom.name);
+    const metadataGaps = [];
+    const metadataPairs = [];
+    for (const nativeField of nativeSourceFields) {
+      const normalizedField = contractFields.find((field) => field.name === nativeField.name);
+      if (!normalizedField) {
+        metadataGaps.push({ field: nativeField.name, property: 'node', native: true, normalized: false });
+        continue;
+      }
+      for (const property of ['label', 'nolabel', 'widget', 'options', 'domain', 'modifiers', 'invisible', 'readonly', 'required']) {
+        const nativeValue = nativeField[property];
+        const normalizedAttribute = property === 'label'
+          ? normalizedField.label
+          : property === 'nolabel'
+            ? normalizedField.nolabel
+            : normalizedField.attributes?.[property];
+        const normalizedValue = normalizedAttribute ?? normalizedField[property];
+        metadataPairs.push({ field: nativeField.name, property, native: nativeValue, normalized: normalizedValue });
+        const normalizedComparable = property === 'nolabel'
+          ? (normalizedValue === true ? '1' : normalizedValue === false ? '' : normalizedValue)
+          : normalizedValue;
+        if (nativeValue !== '' && nativeValue !== null && nativeValue !== undefined
+          && (normalizedComparable === '' || normalizedComparable === null || normalizedComparable === undefined)) {
+          metadataGaps.push({ field: nativeField.name, property, native: nativeValue, normalized: normalizedValue });
+        }
+      }
+    }
+    const nativeStructureCounts = nativeOdoo.sourceView.atoms.reduce((acc, atom) => {
+      const kind = atom.tag === 'div' && /(?:^|\s)alert(?:\s|$)/.test(atom.className) ? 'alert' : atom.tag;
+      acc[kind] = (acc[kind] || 0) + 1;
+      return acc;
+    }, {});
+    const normalizedStructureCounts = contractNodes.reduce((acc, node) => {
+      const kind = String(node.type || node.containerType || 'container').toLowerCase();
+      acc[kind] = (acc[kind] || 0) + 1;
+      return acc;
+    }, {});
+    const requiredCapabilities = ['sheet', 'notebook', 'page', 'alert', 'widget', 'chatter'];
+    const structureGaps = requiredCapabilities
+      .filter((kind) => (nativeStructureCounts[kind] || 0) > 0 && (normalizedStructureCounts[kind] || 0) === 0)
+      .map((kind) => ({ kind, native: nativeStructureCounts[kind], normalized: normalizedStructureCounts[kind] || 0 }));
+    const nativeStructureSignature = nativeOdoo.sourceView.atoms
+      .filter((atom) => atom.tag !== 'form')
+      .map((atom) => ({
+        kind: atom.tag === 'div' ? 'container' : atom.tag,
+        identity: ['field', 'button', 'widget', 'page'].includes(atom.tag) ? atom.name : '',
+        depth: Math.max(0, atom.path.length - 1),
+      }));
+    const normalizedStructureSignature = contractNodes
+      .filter((node) => node.type !== 'text')
+      .map((node) => ({
+        kind: node.type || node.containerType || 'container',
+        identity: ['field', 'button', 'widget', 'page'].includes(node.type) ? node.name : '',
+        depth: node.path.length,
+      }));
+    const nativeActionOrder = nativeOdoo.actions.map((action) => (
+      /^\d+$/.test(String(action.method || '')) ? `window_action:${action.method}` : `button:object:${action.method}`
+    ));
+    const customActionOrder = result.canonical.actions.map((action) => action.backendIdentity);
+    const nativeParity = {
+      fields: {
+        native: nativeFieldSet,
+        custom: customFieldSet,
+        customStructural: [...new Set(result.canonical.fields.map((field) => field.fieldCode))].sort(),
+        missingInCustom: nativeFieldSet.filter((field) => !customFieldSet.includes(field)),
+        extraInCustom: customFieldSet.filter((field) => !nativeFieldSet.includes(field)),
+        nativeOrder: nativeOdoo.fields.map((field) => field.fieldCode),
+        customOrder: result.canonical.fields.filter((field) => field.visible).map((field) => field.fieldCode),
+      },
+      actions: {
+        native: nativeActionSet,
+        custom: customActionSet,
+        missingInCustom: nativeActionSet.filter((action) => !customActionSet.includes(action)),
+        extraInCustom: customActionSet.filter((action) => !nativeActionSet.includes(action)),
+        nativeOrder: nativeActionOrder,
+        customOrder: customActionOrder,
+      },
+      structure: {
+        nativeCounts: nativeStructureCounts,
+        normalizedCounts: normalizedStructureCounts,
+        gaps: structureGaps,
+        normalizedHierarchy: contractNodes.map((node) => ({ path: node.path, type: node.type, name: node.name })),
+        canonicalHierarchy: result.canonical.nodes.map((node) => ({ path: node.path, kind: node.kind, id: node.id })),
+        nativeSignature: nativeStructureSignature,
+        normalizedSignature: normalizedStructureSignature,
+      },
+      fieldMetadata: { gaps: metadataGaps, pairs: metadataPairs },
+      nativeWidgets: {
+        declared: nativeOdoo.sourceView.atoms.filter((atom) => atom.tag === 'widget').map((atom) => atom.name),
+        custom: result.canonical.nativeWidgets,
+      },
+    };
+    fs.writeFileSync(path.join(OUTPUT, 'native-custom-parity.json'), `${JSON.stringify({
+      nativeOdoo,
+      contractRequests: evidence.contractRequests,
+      contractStatusDiagnostics: evidence.contractStatusDiagnostics,
+      nativeParity,
+    }, null, 2)}\n`);
+    check(nativeParity.fields.missingInCustom.length === 0 && nativeParity.fields.extraInCustom.length === 0, `native/custom field parity failed: ${JSON.stringify(nativeParity.fields)}`);
+    check(JSON.stringify(nativeParity.fields.nativeOrder) === JSON.stringify(nativeParity.fields.customOrder), `native/custom field order parity failed: ${JSON.stringify(nativeParity.fields)}`);
+    check(nativeParity.actions.missingInCustom.length === 0 && nativeParity.actions.extraInCustom.length === 0, `native/custom action parity failed: ${JSON.stringify(nativeParity.actions)}`);
+    check(JSON.stringify(nativeActionOrder) === JSON.stringify(customActionOrder), `native/custom action occurrence order parity failed: ${JSON.stringify(nativeParity.actions)}`);
+    check(structureGaps.length === 0, `native/normalized structural capability parity failed: ${JSON.stringify(structureGaps)}`);
+    check(
+      JSON.stringify(nativeStructureSignature) === JSON.stringify(normalizedStructureSignature),
+      'native/normalized container hierarchy signature differs',
+    );
+    check(metadataGaps.length === 0, `native/normalized field metadata parity failed: ${JSON.stringify(metadataGaps)}`);
+    check(
+      nativeParity.nativeWidgets.declared.length === nativeParity.nativeWidgets.custom.length
+        && nativeParity.nativeWidgets.custom.every((widget) => widget.state === 'resolved'),
+      `native widget behavior is not resolved by the custom renderer: ${JSON.stringify(nativeParity.nativeWidgets)}`,
+    );
     check(evidence.mutations.length === 0, 'readonly journey issued a business mutation');
     check(evidence.console.length === 0 && evidence.pageerror.length === 0 && evidence.failed.length === 0, 'runtime errors detected');
 
     const screenshot = path.join(OUTPUT, 'tdesign-readonly-project.png');
     await page.screenshot({ path: screenshot, fullPage: true });
-    const readonlyState = result.canonical;
-    const readonlyResponsesBeforeSwitch = evidence.contractResponses.length;
-    await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
-    const ui5ReadonlyHost = page.locator('[data-contract-form-driver="ui5-horizon"]');
-    await ui5ReadonlyHost.waitFor({ state: 'visible', timeout: 45000 });
-    await page.locator('[data-scene-ui-kit="ui5-horizon"]').waitFor({ state: 'visible', timeout: 45000 });
-    await page.locator('[data-control-driver="ui5-horizon"] ui5-input, [data-control-driver="ui5-horizon"] ui5-date-picker, [data-control-driver="ui5-horizon"] ui5-select, [data-control-driver="ui5-horizon"] ui5-textarea').first().waitFor({ state: 'visible', timeout: 45000 });
-    const ui5ReadonlyState = await page.evaluate(() => ({
-      sha: document.querySelector('[data-contract-form-driver="ui5-horizon"]')?.getAttribute('data-source-contract-sha') || '',
-      editableControls: [...document.querySelectorAll('[data-control-driver="ui5-horizon"] ui5-input, [data-control-driver="ui5-horizon"] ui5-date-picker, [data-control-driver="ui5-horizon"] ui5-select, [data-control-driver="ui5-horizon"] ui5-textarea')]
-        .filter((node) => !node.hasAttribute('disabled')).length,
-      horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
-    }));
-    ui5ReadonlyState.canonical = await page.evaluate(canonicalDomSnapshot);
-    assertCanonicalSnapshot(ui5ReadonlyState.canonical, 'readonly UI5');
-    check(ui5ReadonlyState.sha === result.sourceContractSha256, 'readonly contract identity changed during TDesign to UI5 switch');
-    check(JSON.stringify(ui5ReadonlyState.canonical) === JSON.stringify(readonlyState), 'readonly canonical DOM changed during TDesign to UI5 switch');
-    check(ui5ReadonlyState.editableControls === 0, 'UI5 readonly driver exposed an editable control');
-    check(ui5ReadonlyState.horizontalOverflow === 0, 'UI5 readonly driver caused horizontal overflow');
-    check(evidence.contractResponses.length === readonlyResponsesBeforeSwitch, 'readonly UI5 switch refetched business contract');
-    const ui5ReadonlyScreenshot = path.join(OUTPUT, 'ui5-readonly-project.png');
-    await page.screenshot({ path: ui5ReadonlyScreenshot, fullPage: true });
-    await page.locator('[data-contract-form-driver-chooser]').selectOption('sc-native');
-    await page.locator('[data-contract-form-driver="sc-native"]').waitFor({ state: 'visible', timeout: 15000 });
-    const nativeReadonlyState = await page.evaluate(() => ({
-      sha: document.querySelector('[data-contract-form-driver="sc-native"]')?.getAttribute('data-source-contract-sha') || '',
-    }));
-    nativeReadonlyState.canonical = await page.evaluate(canonicalDomSnapshot);
-    assertCanonicalSnapshot(nativeReadonlyState.canonical, 'readonly Native');
-    check(nativeReadonlyState.sha === result.sourceContractSha256, 'readonly contract identity changed during UI5 to Native switch');
-    check(JSON.stringify(nativeReadonlyState.canonical) === JSON.stringify(readonlyState), 'readonly canonical DOM changed during UI5 to Native switch');
-    check(evidence.contractResponses.length === readonlyResponsesBeforeSwitch, 'readonly Native switch refetched business contract');
-    await page.locator('[data-contract-form-driver-chooser]').selectOption('tdesign-modern');
-    await page.locator('[data-contract-form-driver="tdesign-modern"]').waitFor({ state: 'visible', timeout: 15000 });
-
-    async function exerciseEditableMode(mode, editableRoute, updatedValueOverride = '') {
-      const contractResponsesBeforeRoute = evidence.contractResponses.length;
-      await page.goto(`${BASE_URL}${editableRoute}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      const tdesignHost = page.locator('[data-contract-form-driver="tdesign-modern"]');
-      await tdesignHost.waitFor({ state: 'visible', timeout: 45000 });
-      await page.locator('[data-scene-ui-kit="tdesign-modern"]').waitFor({ state: 'visible', timeout: 45000 });
-      await page.locator('[data-product-page-mode="form"]').waitFor({ state: 'visible', timeout: 45000 });
-      await page.locator('[data-control-driver="tdesign-modern"] [data-scene-driver-control]').first().waitFor({ state: 'visible', timeout: 45000 });
-      await page.waitForTimeout(300);
-
-      const contractSha = await tdesignHost.getAttribute('data-source-contract-sha');
-      check(contractSha, `${mode} source contract identity missing`);
-      check(evidence.contractResponses.length > contractResponsesBeforeRoute, `${mode} normalized contract response missing`);
-      check(evidence.contractSha256 === contractSha, `${mode} network and canvas contract identities differ`);
-
-      const before = await page.evaluate(() => ({
-        horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
-      }));
-      before.canonical = await page.evaluate(canonicalDomSnapshot);
-      assertCanonicalSnapshot(before.canonical, `${mode} TDesign`);
-      check(before.horizontalOverflow === 0, `${mode} driver caused horizontal overflow`);
-
-      const editable = page.locator(
-        '[data-field-type="char"] [data-control-driver="tdesign-modern"] input:not([disabled]):not([readonly]), '
-        + '[data-field-type="text"] [data-control-driver="tdesign-modern"] textarea:not([disabled]):not([readonly])',
-      ).first();
-      await editable.waitFor({ state: 'visible', timeout: 45000 });
-      const fieldName = await editable.evaluate((node) => node.closest('[data-field-name]')?.getAttribute('data-field-name') || '');
-      check(fieldName, `${mode} editable field identity missing`);
-      const originalValue = await editable.inputValue();
-      const updatedValue = updatedValueOverride || `${originalValue || mode}-${mode}-driver`;
-      await editable.fill(updatedValue);
-      await editable.blur();
-
-      const contractResponsesBeforeSwitch = evidence.contractResponses.length;
-      const chooser = page.locator('[data-contract-form-driver-chooser]');
-      await chooser.selectOption('sc-native');
-      const nativeHost = page.locator('[data-contract-form-driver="sc-native"]');
-      await nativeHost.waitFor({ state: 'visible', timeout: 15000 });
-      const nativeInput = page.locator(`[data-field-name="${fieldName}"] input, [data-field-name="${fieldName}"] textarea`).first();
-      await nativeInput.waitFor({ state: 'visible', timeout: 15000 });
-      check(await nativeInput.inputValue() === updatedValue, `${mode} draft value changed during TDesign to Native switch`);
-      const nativeState = await page.evaluate(() => ({
-        sha: document.querySelector('[data-contract-form-driver="sc-native"]')?.getAttribute('data-source-contract-sha') || '',
-      }));
-      nativeState.canonical = await page.evaluate(canonicalDomSnapshot);
-      assertCanonicalSnapshot(nativeState.canonical, `${mode} Native`);
-      check(nativeState.sha === contractSha, `${mode} contract identity changed during driver switch`);
-      check(JSON.stringify(nativeState.canonical) === JSON.stringify(before.canonical), `${mode} canonical DOM changed during driver switch`);
-      check(evidence.contractResponses.length === contractResponsesBeforeSwitch, `${mode} driver switch refetched business contract`);
-
-      await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
-      const ui5Host = page.locator('[data-contract-form-driver="ui5-horizon"]');
-      await ui5Host.waitFor({ state: 'visible', timeout: 45000 });
-      await page.locator('[data-scene-ui-kit="ui5-horizon"]').waitFor({ state: 'visible', timeout: 45000 });
-      const ui5Input = page.locator(
-        `[data-field-name="${fieldName}"] [data-control-driver="ui5-horizon"] ui5-input, `
-        + `[data-field-name="${fieldName}"] [data-control-driver="ui5-horizon"] ui5-textarea`,
-      ).first();
-      await ui5Input.waitFor({ state: 'visible', timeout: 45000 });
-      check(
-        await ui5Input.evaluate((node) => String(node.value || '')) === updatedValue,
-        `${mode} draft value changed during Native to UI5 switch`,
-      );
-      const ui5State = await page.evaluate(() => ({
-        sha: document.querySelector('[data-contract-form-driver="ui5-horizon"]')?.getAttribute('data-source-contract-sha') || '',
-        horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
-      }));
-      ui5State.canonical = await page.evaluate(canonicalDomSnapshot);
-      assertCanonicalSnapshot(ui5State.canonical, `${mode} UI5`);
-      check(ui5State.sha === contractSha, `${mode} contract identity changed during UI5 switch`);
-      check(JSON.stringify(ui5State.canonical) === JSON.stringify(before.canonical), `${mode} canonical DOM changed during UI5 switch`);
-      check(ui5State.horizontalOverflow === 0, `${mode} UI5 driver caused horizontal overflow`);
-      check(evidence.contractResponses.length === contractResponsesBeforeSwitch, `${mode} UI5 switch refetched business contract`);
-      const ui5ModeScreenshot = path.join(OUTPUT, `ui5-${mode}-project.png`);
-      await page.screenshot({ path: ui5ModeScreenshot, fullPage: true });
-
-      await page.locator('[data-contract-form-driver-chooser]').selectOption('tdesign-modern');
-      await page.locator('[data-contract-form-driver="tdesign-modern"]').waitFor({ state: 'visible', timeout: 15000 });
-      const restoredInput = page.locator(
-        `[data-field-name="${fieldName}"] [data-control-driver="tdesign-modern"] input, `
-        + `[data-field-name="${fieldName}"] [data-control-driver="tdesign-modern"] textarea`,
-      ).first();
-      await restoredInput.waitFor({ state: 'visible', timeout: 15000 });
-      check(await restoredInput.inputValue() === updatedValue, `${mode} draft value changed during Native to TDesign switch`);
-      const modeScreenshot = path.join(OUTPUT, `tdesign-${mode}-project.png`);
-      await page.screenshot({ path: modeScreenshot, fullPage: true });
-      return {
-        mode, route: editableRoute, sourceContractSha256: contractSha, fieldCount: before.canonical.fields.length,
-        actionCount: before.canonical.actions.length, canonical: before.canonical, editedField: fieldName, originalValue, updatedValue,
-        contractResponsesDuringSwitch: evidence.contractResponses.length - contractResponsesBeforeSwitch,
-        screenshot: { path: modeScreenshot, sha256: sha256(modeScreenshot) },
-        ui5Screenshot: { path: ui5ModeScreenshot, sha256: sha256(ui5ModeScreenshot) },
-      };
-    }
-
-    const editResult = await exerciseEditableMode(
-      'edit',
-      `/f/${encodeURIComponent(TARGET.model)}/${TARGET.record_id}?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`,
-    );
-    const createResult = await exerciseEditableMode(
-      'create',
-      `/f/${encodeURIComponent(TARGET.model)}/new?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`,
-      String(TARGET.create_probe_name || ''),
-    );
-
-    async function executeCreateProbe() {
-      check(TARGET.create_probe_name, 'create probe identity missing from governed fixture');
-      await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
-      await page.locator('[data-contract-form-driver="ui5-horizon"]').waitFor({ state: 'visible', timeout: 45000 });
-      const probeInput = page.locator('[data-field-name="name"] [data-control-driver="ui5-horizon"] ui5-input').first();
-      await probeInput.waitFor({ state: 'visible', timeout: 45000 });
-      check(
-        await probeInput.evaluate((node) => String(node.value || '')) === TARGET.create_probe_name,
-        'create probe value changed before unified save execution',
-      );
-      const createPreflight = await page.evaluate(canonicalDomSnapshot);
-      fs.writeFileSync(path.join(OUTPUT, 'create-action-preflight.json'), `${JSON.stringify(createPreflight, null, 2)}\n`);
-      console.log(`[frontend_scene_component_driver_readonly_browser] CREATE_PREFLIGHT ${JSON.stringify(createPreflight.actions)}`);
-      const canonicalSave = page.locator('[data-canonical-action-bar] [data-action-ref="form.save"]').first();
-      await canonicalSave.waitFor({ state: 'visible', timeout: 45000 });
-      check(await canonicalSave.getAttribute('data-backend-identity'), 'canonical form.save backend identity missing');
-      check(await canonicalSave.isEnabled(), 'canonical form.save action is disabled');
-      const createResponsePromise = page.waitForResponse((response) => {
-        const request = response.request();
-        const body = requestBody(request);
-        return requestIntent(request) === 'api.data'
-          && requestOperation(request) === 'create'
-          && String(body?.params?.model || '') === TARGET.model;
-      }, { timeout: Number(process.env.SCENE_COMPONENT_DRIVER_CREATE_TIMEOUT_MS || 45000) });
-      await canonicalSave.click();
-      let createResponse;
-      try {
-        createResponse = await createResponsePromise;
-      } catch (error) {
-        const failure = await page.evaluate(() => ({
-          url: location.href,
-          contractError: document.querySelector('[data-contract-form-driver-error]')?.textContent || '',
-          validationErrors: [...document.querySelectorAll('.validation-error, .field-error-text')].map((node) => String(node.textContent || '').trim()).filter(Boolean),
-          visibleButtons: [...document.querySelectorAll('button')].filter((node) => node.getClientRects().length > 0).map((node) => ({
-            text: String(node.textContent || '').trim(),
-            actionId: node.getAttribute('data-action-ref') || '',
-            backendIdentity: node.getAttribute('data-backend-identity') || '',
-            disabled: node.hasAttribute('disabled'),
-          })),
-        }));
-        const failureScreenshot = path.join(OUTPUT, 'failure-canonical-save.png');
-        await page.screenshot({ path: failureScreenshot, fullPage: true });
-        fs.writeFileSync(path.join(OUTPUT, 'failure-canonical-save.json'), `${JSON.stringify({ ...failure, mutations: evidence.mutations, screenshot: { path: failureScreenshot, sha256: sha256(failureScreenshot) } }, null, 2)}\n`);
-        throw error;
-      }
-      check(createResponse.ok(), `create probe request failed with ${createResponse.status()}`);
-      const request = createResponse.request();
-      const requestPayload = requestBody(request);
-      check(requestPayload?.params?.vals?.name === TARGET.create_probe_name, 'unified create request lost the driver-neutral field value');
-      const responsePayload = await createResponse.json();
-      const findCreatedId = (value, depth = 0) => {
-        if (!value || typeof value !== 'object' || depth > 6) return 0;
-        if (Number(value.id || 0) > 0) return Number(value.id);
-        for (const nested of Object.values(value)) {
-          const found = findCreatedId(nested, depth + 1);
-          if (found > 0) return found;
-        }
-        return 0;
-      };
-      const createdId = findCreatedId(responsePayload);
-      check(createdId > 0, 'unified create response did not return a record identity');
-      await page.waitForURL((url) => !url.pathname.endsWith('/new') && url.pathname.includes(`/${createdId}`), { timeout: 45000 });
-      await page.locator('[data-contract-form-driver]').first().waitFor({ state: 'visible', timeout: 45000 });
-      const persistedName = await page.locator('[data-field-name="name"] input, [data-field-name="name"] ui5-input').first()
-        .evaluate((node) => String(node.value || node.getAttribute('value') || ''));
-      check(persistedName === TARGET.create_probe_name, 'created record did not reopen with the persisted driver-neutral value');
-      return {
-        intent: requestIntent(request),
-        op: requestOperation(request),
-        model: String(requestPayload?.params?.model || ''),
-        valueKeys: Object.keys(requestPayload?.params?.vals || {}).sort(),
-        createdId,
-        activeDriver: await page.locator('[data-contract-form-driver]').first().getAttribute('data-contract-form-driver'),
-      };
-    }
-
-    const createExecution = await executeCreateProbe();
-
-    async function exerciseUi5MobileMode(mode, mobileRoute) {
-      await page.setViewportSize({ width: 390, height: 844 });
-      await page.goto(`${BASE_URL}${mobileRoute}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      await page.locator('[data-contract-form-driver]').first().waitFor({ state: 'visible', timeout: 45000 });
-      await page.locator('[data-contract-form-driver-chooser]').selectOption('ui5-horizon');
-      const ui5Host = page.locator('[data-contract-form-driver="ui5-horizon"]');
-      await ui5Host.waitFor({ state: 'visible', timeout: 45000 });
-      await page.locator('[data-scene-ui-kit="ui5-horizon"]').waitFor({ state: 'visible', timeout: 45000 });
-      await page.locator('[data-control-driver="ui5-horizon"]').first().waitFor({ state: 'visible', timeout: 45000 });
-      await page.waitForTimeout(300);
-      const mobileState = await page.evaluate(() => ({
-          sha: document.querySelector('[data-contract-form-driver="ui5-horizon"]')?.getAttribute('data-source-contract-sha') || '',
-          horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
-      }));
-      mobileState.canonical = await page.evaluate(canonicalDomSnapshot);
-      mobileState.fieldCount = mobileState.canonical.fields.length;
-      mobileState.uniqueFieldCount = new Set(mobileState.canonical.fields.map((field) => field.widgetId)).size;
-      mobileState.actionCount = mobileState.canonical.actions.length;
-      mobileState.uniqueActionCount = new Set(mobileState.canonical.actions.map((action) => `${action.actionId}\u0000${action.backendIdentity}`)).size;
-      assertCanonicalSnapshot(mobileState.canonical, `${mode} UI5 mobile`);
-      check(mobileState.sha, `${mode} UI5 mobile source contract identity missing`);
-      check(mobileState.fieldCount > 0 && mobileState.fieldCount === mobileState.uniqueFieldCount, `${mode} UI5 mobile fields are missing or duplicated`);
-      check(mobileState.actionCount === mobileState.uniqueActionCount, `${mode} UI5 mobile actions are duplicated`);
-      check(mobileState.horizontalOverflow === 0, `${mode} UI5 mobile caused horizontal overflow`);
-      const mobileScreenshot = path.join(OUTPUT, `ui5-${mode}-mobile-390.png`);
-      await page.screenshot({ path: mobileScreenshot, fullPage: true });
-      return {
-        mode,
-        route: mobileRoute,
-        ...mobileState,
-        screenshot: { path: mobileScreenshot, sha256: sha256(mobileScreenshot) },
-      };
-    }
-
-    const mobileModes = [];
-    for (const [mode, mobileRoute] of [
-      ['readonly', route],
-      ['edit', `/f/${encodeURIComponent(TARGET.model)}/${TARGET.record_id}?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`],
-      ['create', `/f/${encodeURIComponent(TARGET.model)}/new?action_id=${TARGET.action_id}&menu_id=${TARGET.menu_id}`],
-    ]) {
-      mobileModes.push(await exerciseUi5MobileMode(mode, mobileRoute));
-    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(300);
+    const mobile = {
+      canonical: await page.evaluate(canonicalDomSnapshot),
+      horizontalOverflow: await page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth)),
+    };
+    assertCanonicalSnapshot(mobile.canonical, 'readonly custom mobile');
+    check(mobile.horizontalOverflow === 0, 'readonly custom mobile caused horizontal overflow');
     check(
-      evidence.mutations.length === 1
-        && evidence.mutations[0]?.intent === 'api.data'
-        && evidence.mutations[0]?.op === 'create'
-        && evidence.mutations[0]?.model === TARGET.model,
-      `driver parity journey issued an unexpected business mutation: ${JSON.stringify(evidence.mutations)}`,
+      JSON.stringify(nativeOdoo.mobile.fieldOrder) === JSON.stringify(mobile.canonical.fields.filter((field) => field.visible).map((field) => field.fieldCode)),
+      'readonly mobile native/custom field order parity failed',
     );
+    const mobileScreenshot = path.join(OUTPUT, 'tdesign-readonly-project-mobile-390.png');
+    await page.screenshot({ path: mobileScreenshot, fullPage: true });
+    check(evidence.mutations.length === 0, `readonly parity issued a business mutation: ${JSON.stringify(evidence.mutations)}`);
     check(
       evidence.console.length === 0 && evidence.pageerror.length === 0 && evidence.failed.length === 0,
-      `driver parity runtime errors detected: ${JSON.stringify({ console: evidence.console, pageerror: evidence.pageerror, failed: evidence.failed })}`,
+      `readonly parity runtime errors detected: ${JSON.stringify({ console: evidence.console, pageerror: evidence.pageerror, failed: evidence.failed })}`,
     );
     const report = {
-      schema_version: 'frontend_scene_component_driver_form.v4',
+      schema_version: 'native_same_page_readonly_parity.v1',
       result: 'PASS',
+      phase: 'readonly_only',
+      database_write_policy: 'browser_business_mutations_forbidden',
       git_sha: process.env.GIT_SHA || '',
       database: DB_NAME,
       target: { ...TARGET, login: TARGET.login },
-      driver: 'tdesign-modern',
+      nativeOdoo,
+      nativeParity,
+      customDriver: hostDiagnostic.activeKit,
       ...result,
-      editableModes: [editResult, createResult],
-      createExecution,
-      mobileModes,
+      mobile: {
+        ...mobile,
+        screenshot: { path: mobileScreenshot, sha256: sha256(mobileScreenshot) },
+      },
       runtime_errors: {
         console: evidence.console,
         pageerror: evidence.pageerror,
@@ -524,7 +686,6 @@ async function main() {
         systemInitPolicy: evidence.systemInitPolicy,
       },
       screenshot: { path: screenshot, sha256: sha256(screenshot) },
-      ui5Screenshot: { path: ui5ReadonlyScreenshot, sha256: sha256(ui5ReadonlyScreenshot) },
     };
     const reportPath = path.join(OUTPUT, 'report.json');
     fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);

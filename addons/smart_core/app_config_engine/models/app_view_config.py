@@ -336,18 +336,12 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             force_parser = bool(ctx_flags.get('contract_force_parser'))
             force_fallback = bool(ctx_flags.get('contract_force_fallback'))
 
-            # When the projection is scoped to a concrete action/view, the
-            # already-resolved view_data is the authority. The generic parser
-            # can fall back to the model default tree and leak unrelated
-            # columns into action-specific list contracts.
-            if identity.get('source_view_id'):
-                force_fallback = True
-
             parse_service = NativeParseService(self)
             fallback_service = ParseFallbackService(self)
             parsed_json = parse_service.parse_with_primary_parser(
                 model_name,
                 view_type,
+                view_data=view_data,
                 force_fallback=force_fallback,
             )
             parsed_json = fallback_service.resolve_parsed_contract(
@@ -512,7 +506,29 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 'type': 'sheet',
                 'children': [{'type': 'group', 'children': [{'type': 'field', 'name': 'name'}]}],
             }])
-            block['statusbar'] = vp.get('statusbar', {'field': 'state', 'states': []})
+            # Absence of a native statusbar is an explicit capability fact;
+            # never manufacture one from a conventional state field. Inspect
+            # the parsed native tree as well so stale cached projections cannot
+            # retain a previously inferred statusbar.
+            def has_explicit_statusbar(rows):
+                for row in rows if isinstance(rows, list) else []:
+                    if not isinstance(row, dict):
+                        continue
+                    field_info = row.get('fieldInfo') or row.get('field_info') or {}
+                    attributes = row.get('attributes') or {}
+                    widget = row.get('widget') or field_info.get('widget') or attributes.get('widget')
+                    if row.get('type') == 'field' and widget == 'statusbar':
+                        return True
+                    for child_key in ('children', 'pages', 'tabs', 'nodes', 'items'):
+                        if has_explicit_statusbar(row.get(child_key)):
+                            return True
+                return False
+
+            block['statusbar'] = (
+                vp.get('statusbar', {'field': None, 'states': []})
+                if has_explicit_statusbar(block['layout'])
+                else {'field': None, 'states': []}
+            )
             block['header_buttons'] = vp.get('header_buttons', [])
             block['button_box'] = vp.get('button_box', [])
             block['stat_buttons'] = vp.get('stat_buttons', [])

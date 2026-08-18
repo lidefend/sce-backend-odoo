@@ -1,0 +1,28 @@
+project:
+  name: sce-backend-odoo
+
+architecture:
+  backend:
+    type: odoo
+  frontend:
+    type: vue
+
+authoritative:
+  contracts:
+    path: contracts/
+
+  verification:
+    path: scripts/verify/
+
+  documentation:
+    path: docs/
+
+important_modules:
+  - smart_construction_core
+  - frontend
+
+development:
+  backend:
+    port: 18081
+  acceptance:
+    port: 18082

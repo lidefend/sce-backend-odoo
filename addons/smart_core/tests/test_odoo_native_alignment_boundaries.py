@@ -789,6 +789,170 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(identity.get("source_view_id"), view.id)
         self.assertEqual(identity.get("projection_scope"), f"view:{view.id}:res.partner:form")
 
+    def test_explicit_form_view_uses_lossless_parser_for_div_wrapped_fields(self):
+        view = self.env["ir.ui.view"].sudo().create({
+            "name": "Native alignment explicit partner form",
+            "model": "res.partner",
+            "type": "form",
+            "arch": """
+                <form>
+                  <sheet>
+                    <div name="identity_block">
+                      <field name="name"/>
+                      <field name="phone"/>
+                    </div>
+                  </sheet>
+                </form>
+            """,
+        })
+
+        projection = self.env["app.view.config"].with_context(
+            contract_view_id=view.id,
+            contract_projection_readonly=True,
+        )._generate_from_fields_view_get("res.partner", "form")
+
+        def collect_fields(nodes):
+            rows = []
+            for node in nodes or []:
+                if not isinstance(node, dict):
+                    continue
+                if node.get("type") == "field" and node.get("name"):
+                    rows.append(node["name"])
+                rows.extend(collect_fields(node.get("children")))
+            return rows
+
+        self.assertEqual(projection.source_view_id, view)
+        self.assertEqual(collect_fields((projection.arch_parsed or {}).get("layout")), ["name", "phone"])
+
+    def test_explicit_form_view_preserves_mixed_text_and_field_order(self):
+        view = self.env["ir.ui.view"].sudo().create({
+            "name": "Native alignment mixed content partner form",
+            "model": "res.partner",
+            "type": "form",
+            "arch": """
+                <form><sheet><div name="identity_line">
+                  项目编号 <field name="name" string="项目名称" nolabel="1"/> · 电话 <field name="phone"/>
+                </div></sheet></form>
+            """,
+        })
+
+        projection = self.env["app.view.config"].with_context(
+            contract_view_id=view.id,
+            contract_projection_readonly=True,
+        )._generate_from_fields_view_get("res.partner", "form")
+
+        identity_line = (projection.arch_parsed or {})["layout"][0]["children"][0]
+        self.assertEqual(identity_line.get("text"), "项目编号")
+        name_field = identity_line.get("children")[0]
+        phone_field = identity_line.get("children")[2]
+        self.assertEqual(name_field.get("label"), "项目名称")
+        self.assertIs(name_field.get("nolabel"), True)
+        self.assertEqual(phone_field.get("label"), "Phone")
+        self.assertIs(phone_field.get("nolabel"), False)
+        self.assertEqual(
+            [(row.get("type"), row.get("name"), row.get("text")) for row in identity_line.get("children") or []],
+            [
+                ("field", "name", None),
+                ("text", None, "· 电话"),
+                ("field", "phone", None),
+            ],
+        )
+
+    def test_form_parser_only_emits_explicit_native_statusbar(self):
+        plain_view = self.env["ir.ui.view"].sudo().create({
+            "name": "Native alignment project stage without statusbar",
+            "model": "project.project",
+            "type": "form",
+            "arch": '<form><sheet><field name="stage_id"/></sheet></form>',
+        })
+        explicit_view = self.env["ir.ui.view"].sudo().create({
+            "name": "Native alignment project explicit statusbar",
+            "model": "project.project",
+            "type": "form",
+            "arch": '<form><header><field name="stage_id" widget="statusbar"/></header><sheet/></form>',
+        })
+
+        plain = self.env["app.view.config"].with_context(
+            contract_view_id=plain_view.id,
+            contract_projection_readonly=True,
+        )._generate_from_fields_view_get("project.project", "form")
+        explicit = self.env["app.view.config"].with_context(
+            contract_view_id=explicit_view.id,
+            contract_projection_readonly=True,
+        )._generate_from_fields_view_get("project.project", "form")
+
+        self.assertFalse(((plain.arch_parsed or {}).get("statusbar") or {}).get("field"))
+        self.assertEqual(((plain.arch_parsed or {}).get("statusbar") or {}).get("states"), [])
+        self.assertEqual(((explicit.arch_parsed or {}).get("statusbar") or {}).get("field"), "stage_id")
+
+    def test_form_parser_preserves_native_duplicate_capability(self):
+        denied_view = self.env["ir.ui.view"].sudo().create({
+            "name": "Native alignment partner duplicate denied",
+            "model": "res.partner",
+            "type": "form",
+            "arch": '<form duplicate="0"><sheet><field name="name"/></sheet></form>',
+        })
+        default_view = self.env["ir.ui.view"].sudo().create({
+            "name": "Native alignment partner duplicate default",
+            "model": "res.partner",
+            "type": "form",
+            "arch": '<form><sheet><field name="name"/></sheet></form>',
+        })
+
+        denied = self.env["app.view.config"].with_context(
+            contract_view_id=denied_view.id,
+            contract_projection_readonly=True,
+        )._generate_from_fields_view_get("res.partner", "form")
+        allowed = self.env["app.view.config"].with_context(
+            contract_view_id=default_view.id,
+            contract_projection_readonly=True,
+        )._generate_from_fields_view_get("res.partner", "form")
+
+        self.assertIs(((denied.arch_parsed or {}).get("capabilities") or {}).get("can_duplicate"), False)
+        self.assertIs(((allowed.arch_parsed or {}).get("capabilities") or {}).get("can_duplicate"), True)
+
+    def test_project_overview_readonly_root_preserves_all_native_crud_denials(self):
+        view = self.env["ir.ui.view"].sudo().create({
+            "name": "Native alignment project overview readonly form",
+            "model": "project.project",
+            "type": "form",
+            "arch": '<form string="项目概览" create="0" edit="0" delete="0" duplicate="0"><sheet><field name="name"/></sheet></form>',
+        })
+
+        projection = self.env["app.view.config"].with_context(
+            contract_view_id=view.id,
+            contract_projection_readonly=True,
+        )._generate_from_fields_view_get("project.project", "form")
+
+        capabilities = (projection.arch_parsed or {}).get("capabilities") or {}
+        self.assertEqual(
+            {key: capabilities.get(key) for key in ("can_create", "can_write", "can_delete", "can_duplicate")},
+            {"can_create": False, "can_write": False, "can_delete": False, "can_duplicate": False},
+        )
+
+    def test_form_parser_preserves_header_and_body_button_placement(self):
+        view = self.env["ir.ui.view"].sudo().create({
+            "name": "Native alignment button placement partner form",
+            "model": "res.partner",
+            "type": "form",
+            "arch": """
+                <form>
+                  <header><button name="action_header" type="object" string="Header"/></header>
+                  <sheet><div><button name="action_body" type="object" string="Body"/></div></sheet>
+                </form>
+            """,
+        })
+
+        projection = self.env["app.view.config"].with_context(
+            contract_view_id=view.id,
+            contract_projection_readonly=True,
+        )._generate_from_fields_view_get("res.partner", "form")
+
+        parsed = projection.arch_parsed or {}
+        self.assertEqual(parsed["header_buttons"][0]["level"], "header")
+        body = parsed["layout"][1]["children"][0]["children"][0]
+        self.assertEqual(body["action"]["level"], "body")
+
     def test_form_field_policy_view_scope_only_applies_to_matching_view(self):
         view = self.env.ref("base.view_partner_form")
         Policy = self.env["ui.form.field.policy"].sudo()

@@ -8,12 +8,24 @@ source "${ROOT_DIR}/scripts/common/compose.sh"
 
 case "${profile}" in
   persistent)
-    expected_project="sc-backend-odoo-dev"
-    expected_db="sc_demo"
-    expected_filter='^sc_demo$'
-    expected_db_volume="sc_dev_db_data"
-    expected_redis_volume="sc_dev_redis_data"
-    expected_odoo_volume="sc_dev_odoo_data"
+    expected_project="sc-local-dev"
+    expected_db="sc_dev_demo"
+    expected_filter='^sc_dev_demo$'
+    expected_db_volume="sc_local_dev_db_data"
+    expected_redis_volume="sc_local_dev_redis_data"
+    expected_odoo_volume="sc_local_dev_odoo_data"
+    ;;
+  sample)
+    if [[ "${TECHNICAL_SAMPLE_DATABASE:-0}" != "1" ]]; then
+      echo "[local.env.health] FAIL sample profile is not marked as technical sample data" >&2
+      exit 2
+    fi
+    expected_project="sc-local-sample"
+    expected_db="sc_dev_sample"
+    expected_filter='^sc_dev_sample$'
+    expected_db_volume="sc_local_sample_db_data"
+    expected_redis_volume="sc_local_sample_redis_data"
+    expected_odoo_volume="sc_local_sample_odoo_data"
     ;;
   clean)
     if [[ "${ISOLATED_REHEARSAL_DATABASE:-0}" != "1" ]]; then
@@ -29,7 +41,7 @@ case "${profile}" in
     expected_product_modules="${LOCAL_CLEAN_HEALTH_MODULES:-${LOCAL_CLEAN_MODULES:-sc_norm_engine}}"
     ;;
   *)
-    echo "usage: $0 persistent|clean" >&2
+    echo "usage: $0 persistent|sample|clean" >&2
     exit 2
     ;;
 esac
@@ -67,8 +79,8 @@ check_equal mounted_odoo_volume "${actual_odoo_volume}" "${expected_odoo_volume}
 
 db_state="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${db_cid}")"
 odoo_state="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${odoo_cid}")"
-db_name="$(docker exec -e PGPASSWORD="${DB_PASSWORD}" "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc 'SELECT current_database()')"
-base_state="$(docker exec -e PGPASSWORD="${DB_PASSWORD}" "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc "SELECT state FROM ir_module_module WHERE name='base'")"
+db_name="$(docker exec "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc 'SELECT current_database()')"
+base_state="$(docker exec "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc "SELECT state FROM ir_module_module WHERE name='base'")"
 rendered_filter="$(docker exec "${odoo_cid}" sed -n 's/^[[:space:]]*dbfilter[[:space:]]*=[[:space:]]*//p' /var/lib/odoo/odoo.conf | tail -n 1)"
 
 check_equal db_health "${db_state}" healthy
@@ -81,12 +93,12 @@ if [[ -n "${expected_product_modules:-}" ]]; then
   for expected_product_module in "${product_modules[@]}"; do
     expected_product_module="$(echo "${expected_product_module}" | xargs)"
     [[ -n "${expected_product_module}" ]] || continue
-    product_state="$(docker exec -e PGPASSWORD="${DB_PASSWORD}" "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc "SELECT state FROM ir_module_module WHERE name='${expected_product_module}'")"
+    product_state="$(docker exec "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc "SELECT state FROM ir_module_module WHERE name='${expected_product_module}'")"
     check_equal "product_module_${expected_product_module}" "${product_state}" installed
   done
 fi
 if [[ ",${expected_product_modules:-}," == *",sc_norm_engine,"* ]]; then
-  clean_counts="$(docker exec -e PGPASSWORD="${DB_PASSWORD}" "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc "SELECT (SELECT count(*) FROM project_project) || ',' || (SELECT count(*) FROM sc_norm_specialty) || ',' || (SELECT count(*) FROM sc_norm_chapter) || ',' || (SELECT count(*) FROM sc_norm_item)")"
+  clean_counts="$(docker exec "${db_cid}" psql -U "${DB_USER}" -d "${DB_NAME}" -Atc "SELECT (SELECT count(*) FROM project_project) || ',' || (SELECT count(*) FROM sc_norm_specialty) || ',' || (SELECT count(*) FROM sc_norm_chapter) || ',' || (SELECT count(*) FROM sc_norm_item)")"
   check_equal clean_business_counts "${clean_counts}" '0,0,0,0'
 fi
 

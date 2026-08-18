@@ -269,6 +269,7 @@ def assemble_unified_page_contract_v2(
     else:
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
     _merge_action_rules_by_backend_identity(contract)
+    _bind_native_layout_action_references(contract)
     return seal_unified_page_contract(
         contract,
         source_payload=payload if resolved != "ui.contract" else source,
@@ -512,6 +513,16 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     widgets = []
     component_keys = set()
     form_layout = _dict(_dict(ui.get("views")).get("form"))
+    for field_name, modifiers in _dict(form_layout.get("field_modifiers")).items():
+        if not isinstance(modifiers, dict):
+            continue
+        normalized_name = _text(field_name)
+        if not normalized_name:
+            continue
+        field_source = fields_by_name.setdefault(normalized_name, {"name": normalized_name})
+        for key in ("readonly", "required", "invisible", "column_invisible"):
+            if key in modifiers and key not in field_source:
+                field_source[key] = deepcopy(modifiers.get(key))
     layout_rows = form_layout.get("layout") if isinstance(form_layout.get("layout"), list) else []
     native_layout_rows = [row for row in layout_rows if isinstance(row, dict)]
     if not any(_text(row.get("type") or row.get("kind")).lower() == "header" for row in native_layout_rows):
@@ -548,33 +559,8 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
             })
     form_subviews = _dict(form_layout.get("subviews"))
     form_structure_contract = _dict(source.get("formStructureContract") or source.get("form_structure_contract"))
-    preserve_governed_form_layout = (
-        layout_type == "form"
-        and bool(native_layout_rows)
-        and _has_governed_form_layout_overlay(source)
-    )
     form_structure_applied = False
-    if layout_type == "form" and form_structure_contract and not preserve_governed_form_layout:
-        render_profile = _text(source_context.get("renderProfile")).lower()
-        structure_rows = _form_structure_contract_layout_rows(
-            form_structure_contract,
-            fields_by_name,
-            native_layout_rows=native_layout_rows,
-            page_title=contract["pageInfo"]["pageName"],
-            render_profile=render_profile,
-        )
-        container_tree = _normalize_native_layout_nodes(
-            structure_rows,
-            fields_by_name,
-            layout_type=layout_type,
-            form_subviews=form_subviews,
-            component_keys=component_keys,
-            container_status=contract["statusContract"]["containerStatus"],
-            widget_status=contract["statusContract"]["widgetStatus"],
-            context=source_context_context,
-        )
-        form_structure_applied = True
-    elif layout_type == "form" and native_layout_rows:
+    if layout_type == "form" and native_layout_rows:
         container_tree = _normalize_native_layout_nodes(
             native_layout_rows,
             fields_by_name,
@@ -585,6 +571,9 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
             widget_status=contract["statusContract"]["widgetStatus"],
             context=source_context_context,
         )
+        if form_structure_contract:
+            _apply_form_structure_roles_to_tree(container_tree, form_structure_contract)
+            form_structure_applied = True
     elif layout_type == "form":
         container_id = "main.form"
         sheet_id = f"{container_id}.sheet"
@@ -659,18 +648,12 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
             }
         ]
         contract["statusContract"]["containerStatus"].append({"containerId": container_id, "visible": True, "disabled": False})
-    if layout_type == "form":
-        _apply_form_structure_columns_to_tree(container_tree, form_structure_contract)
-        container_tree = _remove_attachment_field_nodes(container_tree, fields_by_name)
     _standardize_business_form_default_tabs(
         container_tree,
         model=model,
         view_type=view_type,
         container_status=contract["statusContract"]["containerStatus"],
     )
-    _standardize_form_container_semantics(container_tree, model=model, view_type=view_type, source=source)
-    if layout_type == "form":
-        _apply_form_structure_columns_to_tree(container_tree, form_structure_contract)
     contract["layoutContract"]["containerTree"] = container_tree
     contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {"sc.display.text"})
     collection_view_key = "tree" if view_type in {"tree", "list"} else view_type
@@ -694,6 +677,25 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     if form_structure_contract and form_structure_applied:
         contract["formStructureContract"] = deepcopy(form_structure_contract)
     contract["dataContract"]["dataMeta"]["fieldCount"] = len(fields)
+    form_capabilities = _dict(form_layout.get("capabilities"))
+    for key in (
+        "modelRights",
+        "recordRights",
+        "viewCapabilities",
+        "entryCapabilities",
+        "effectiveRecordCapabilities",
+    ):
+        verdict = _dict(form_capabilities.get(key))
+        if verdict:
+            contract["statusContract"]["globalStatus"][key] = deepcopy(verdict)
+    effective_render_profile = _text(form_capabilities.get("effectiveRenderProfile")).lower()
+    if effective_render_profile in {"create", "edit", "readonly"}:
+        contract["statusContract"]["globalStatus"]["effectiveRenderProfile"] = effective_render_profile
+    effective_record_capabilities = _dict(form_capabilities.get("effectiveRecordCapabilities"))
+    if effective_render_profile == "create" and effective_record_capabilities.get("create") is not True:
+        contract["statusContract"]["globalStatus"]["pageVisible"] = False
+        contract["statusContract"]["globalStatus"]["pageAuth"] = "none"
+        contract["statusContract"]["globalStatus"]["reasonCode"] = "FORM_CREATE_NOT_ALLOWED"
     if source_context:
         contract["dataContract"]["dataMeta"]["sourceContext"] = deepcopy(source_context)
         contract["runtimeContract"]["sourceContext"] = deepcopy(source_context)
@@ -1121,11 +1123,15 @@ def _normalize_native_layout_nodes(
     container_status: list[dict[str, Any]],
     widget_status: list[dict[str, Any]],
     context: dict[str, Any] | None = None,
+    path: str = "native",
+    container_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
+    used_container_ids = container_ids if container_ids is not None else set()
     out: list[dict[str, Any]] = []
-    for row in rows:
+    for index, row in enumerate(rows):
         if not isinstance(row, dict):
             continue
+        node_path = f"{path}.{index}"
         node = deepcopy(row)
         node_type = _text(node.get("type") or node.get("kind"), "group").lower()
         node["type"] = node_type
@@ -1141,6 +1147,9 @@ def _normalize_native_layout_nodes(
             node["invisible"] = invisible
         if node_type == "field":
             field = _dict(fields_by_name.get(node_name)) if node_name else {}
+            for key in ("readonly", "required", "invisible", "column_invisible"):
+                if key in field and key not in node:
+                    node[key] = deepcopy(field.get(key))
             normalized = _native_field_node(node, field, layout_type=layout_type)
             if node_name:
                 subview = _dict((form_subviews or {}).get(node_name))
@@ -1157,11 +1166,17 @@ def _normalize_native_layout_nodes(
             continue
         container_id = _text(node.get("containerId") or node.get("container_id") or node_name)
         if not container_id:
-            container_id = _stable_id(node.get("title") or node.get("string") or node.get("label") or node_type, node_type)
+            explicit_label = node.get("title") or node.get("string") or node.get("label")
+            container_id = _stable_id(explicit_label, node_type) if explicit_label else f"{node_type}.{node_path}"
+        if container_id in used_container_ids:
+            container_id = f"{container_id}.{node_path}"
+        used_container_ids.add(container_id)
         node["containerId"] = container_id
         node["containerType"] = _formal_container_type(node_type)
-        node.setdefault("title", _text(node.get("title") or node.get("string") or node.get("label") or container_id, container_id))
-        node.setdefault("label", _text(node.get("label") or node.get("string") or node.get("title") or container_id, container_id))
+        # Stable container identity is structural metadata, never display copy.
+        # Anonymous native containers intentionally keep an empty title.
+        node.setdefault("title", label)
+        node.setdefault("label", label)
         container_status.append({"containerId": container_id, "visible": not bool(invisible), "disabled": False})
         for key in ("children", "pages", "tabs", "nodes", "items"):
             child_rows = _list(node.get(key))
@@ -1175,6 +1190,8 @@ def _normalize_native_layout_nodes(
                     container_status=container_status,
                     widget_status=widget_status,
                     context=context,
+                    path=f"{node_path}.{key}",
+                    container_ids=used_container_ids,
                 )
         direct_widgets: list[dict[str, Any]] = []
         for key in ("children", "pages", "tabs", "nodes", "items"):
@@ -1755,6 +1772,35 @@ def _form_structure_contract_layout_rows(
     return header_rows + [sheet]
 
 
+def _apply_form_structure_roles_to_tree(
+    container_tree: list[dict[str, Any]],
+    structure_contract: dict[str, Any],
+) -> None:
+    """Annotate native nodes without changing their structure or membership."""
+    field_roles = _dict(structure_contract.get("fieldRoles") or structure_contract.get("field_roles"))
+    if not field_roles:
+        return
+
+    def apply(node: dict[str, Any]) -> None:
+        node_type = _text(node.get("type") or node.get("kind") or node.get("containerType")).lower()
+        if node_type == "field":
+            field_name = _text(node.get("name") or node.get("field") or node.get("fieldCode"))
+            role = _dict(field_roles.get(field_name))
+            if role:
+                node["formStructureRole"] = deepcopy(role)
+                for widget in _list(node.get("widgetList")):
+                    if isinstance(widget, dict):
+                        widget["formStructureRole"] = deepcopy(role)
+        for key in ("children", "pages", "tabs", "nodes", "items"):
+            for child in _list(node.get(key)):
+                if isinstance(child, dict):
+                    apply(child)
+
+    for row in container_tree:
+        if isinstance(row, dict):
+            apply(row)
+
+
 def _form_structure_layout_columns(value: Any) -> int | None:
     try:
         columns = int(value)
@@ -2146,7 +2192,9 @@ def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, 
     action = _dict(ui.get("action"))
     head = _dict(ui.get("head"))
     render_profile = _text(
-        source.get("render_profile")
+        source.get("effective_render_profile")
+        or source.get("effectiveRenderProfile")
+        or source.get("render_profile")
         or source.get("renderProfile")
         or source_meta.get("render_profile")
         or source_meta.get("renderProfile")
@@ -2171,6 +2219,10 @@ def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, 
 
 
 def _ui_contract_permission_rights(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, Any]:
+    form_capabilities = _dict(_dict(_dict(ui.get("views")).get("form")).get("capabilities"))
+    effective_record_capabilities = _dict(form_capabilities.get("effectiveRecordCapabilities"))
+    if effective_record_capabilities:
+        return effective_record_capabilities
     permission_sources = [
         _dict(_dict(ui.get("head")).get("permissions")),
         _dict(_dict(source.get("head")).get("permissions")),
@@ -2187,8 +2239,22 @@ def _ui_contract_permission_rights(source: dict[str, Any], ui: dict[str, Any]) -
 
 
 def _ui_contract_page_auth(source: dict[str, Any], ui: dict[str, Any], render_profile: str, view_type: str) -> str:
+    rights = _ui_contract_permission_rights(source, ui)
+    record_id = _positive_int(
+        source.get("record_id")
+        or source.get("recordId")
+        or source.get("res_id")
+        or source.get("resId")
+        or ui.get("record_id")
+        or ui.get("recordId"),
+        0,
+    )
+    if record_id and rights.get("read") is not True:
+        return "none"
+    if render_profile == "create" and rights.get("create") is not True:
+        return "none"
     if render_profile == "readonly":
-        return "read"
+        return "read" if rights.get("read") is True else "none"
     source_context = _ui_source_context(source, ui)
     context = _dict(source_context.get("context"))
     if (
@@ -2196,7 +2262,6 @@ def _ui_contract_page_auth(source: dict[str, Any], ui: dict[str, Any], render_pr
         and render_profile in {"create", "edit"}
     ):
         return "edit"
-    rights = _ui_contract_permission_rights(source, ui)
     if rights:
         return permission_auth_level(rights, fallback="read")
     if render_profile in {"create", "edit"}:
@@ -2302,6 +2367,8 @@ def _positive_int(value: Any, fallback: int = 0) -> int:
 def _modifier_true(value: Any) -> bool:
     if value is True:
         return True
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return value == 1
     if isinstance(value, str):
         return value.strip().lower() in {"1", "true", "yes"}
     return False
@@ -2529,6 +2596,51 @@ def _action_backend_identity(rule: dict[str, Any]) -> str:
     if stable_target:
         return "target:" + json.dumps(stable_target, ensure_ascii=False, sort_keys=True, default=str)
     return "contract_action:" + _text(rule.get("actionId") or rule.get("actionKey"), "unknown")
+
+
+def _native_layout_action_backend_identity(action: dict[str, Any]) -> str:
+    payload = _dict(action.get("payload"))
+    kind = _text(action.get("kind") or action.get("type")).lower()
+    intent = _text(action.get("intent")).lower()
+    action_id = _positive_int(payload.get("action_id") or action.get("action_id"), 0)
+    if kind in {"open", "url"} or intent in {"open", "url"} or action_id:
+        return _action_backend_identity({
+            "target": {
+                "action_id": action_id,
+                "action_ref": payload.get("ref") or action.get("ref"),
+                "xml_id": payload.get("xml_id") or action.get("xml_id"),
+                "url": payload.get("url") or action.get("url"),
+                "route": payload.get("route") or action.get("route"),
+            },
+        })
+    return _action_backend_identity({
+        "button": {
+            "name": _text(action.get("name") or action.get("method_name") or payload.get("method")),
+            "type": _text(action.get("button_type") or payload.get("type") or action.get("type"), "object"),
+        },
+    })
+
+
+def _bind_native_layout_action_references(contract: dict[str, Any]) -> None:
+    rules = {
+        _text(rule.get("backendIdentity")): rule
+        for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList"))
+        if isinstance(rule, dict) and _text(rule.get("backendIdentity"))
+    }
+    container_tree = _list(_dict(contract.get("layoutContract")).get("containerTree"))
+    for node in _walk_native_nodes(container_tree):
+        if _text(node.get("type") or node.get("containerType")).lower() != "button":
+            continue
+        action = _dict(node.get("action"))
+        identity = _native_layout_action_backend_identity(action)
+        rule = rules.get(identity)
+        if not rule:
+            continue
+        node["action"] = {
+            **action,
+            "backendIdentity": identity,
+            "actionId": _text(rule.get("actionId")),
+        }
 
 
 def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
@@ -2835,7 +2947,14 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any]) -> bool | None
     if kind == "field_truthy":
         return bool(record.get(field))
     if kind == "field_compare":
-        return _compare_action_value(record.get(field), _text(value.get("operator")), value.get("value"))
+        value_field = _text(value.get("value_field"))
+        if value_field:
+            if value_field not in record:
+                return None
+            expected = record.get(value_field)
+        else:
+            expected = value.get("value")
+        return _compare_action_value(record.get(field), _text(value.get("operator")), expected)
     return None
 
 
@@ -2939,6 +3058,85 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
     _enforce_single_effective_primary_action(contract)
 
 
+def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
+    """Resolve native field/container visibility against final record data.
+
+    Native view modifiers remain attached to the normalized node tree.  This
+    final pass runs after modifier dependencies are hydrated, so Canonical
+    consumers receive the same ancestor visibility verdict as the Odoo form.
+    Unknown dynamic predicates fail closed.
+    """
+    if not isinstance(contract, dict):
+        return
+    layout = _dict(contract.get("layoutContract"))
+    tree = _list(layout.get("containerTree"))
+    status_contract = _dict(contract.get("statusContract"))
+    record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    container_statuses = _list(status_contract.get("containerStatus"))
+    widget_statuses = _list(status_contract.get("widgetStatus"))
+    container_by_id = {
+        _text(row.get("containerId")): row
+        for row in container_statuses
+        if isinstance(row, dict) and _text(row.get("containerId"))
+    }
+    widget_by_id = {
+        _text(row.get("widgetId")): row
+        for row in widget_statuses
+        if isinstance(row, dict) and _text(row.get("widgetId"))
+    }
+
+    def invisible_constraint(node: dict[str, Any]) -> Any:
+        attributes = _dict(node.get("attributes"))
+        attribute_modifiers = _dict(attributes.get("modifiers"))
+        modifiers = _dict(node.get("modifiers"))
+        for value in (
+            modifiers.get("invisible"),
+            attribute_modifiers.get("invisible"),
+            node.get("invisible"),
+            attributes.get("invisible"),
+        ):
+            if value is not None:
+                return value
+        return None
+
+    def visit(value: Any) -> None:
+        if isinstance(value, list):
+            for item in value:
+                visit(item)
+            return
+        if not isinstance(value, dict):
+            return
+        constraint = invisible_constraint(value)
+        if constraint is not None:
+            verdict = _evaluate_action_modifier(constraint, record)
+            node_type = _text(value.get("type") or value.get("containerType")).lower()
+            if node_type == "field":
+                widget_id = _text(value.get("widgetId") or f"field.{_text(value.get('name'))}")
+                status = widget_by_id.get(widget_id)
+            else:
+                container_id = _text(value.get("containerId"))
+                status = container_by_id.get(container_id)
+            if isinstance(status, dict):
+                if verdict is True:
+                    status["visible"] = False
+                    status.setdefault("reasonCode", "NATIVE_MODIFIER_INVISIBLE")
+                elif verdict is False:
+                    status["visible"] = True
+                    if status.get("reasonCode") in {"NATIVE_MODIFIER_INVISIBLE", "NATIVE_MODIFIER_UNRESOLVED"}:
+                        status.pop("reasonCode", None)
+                else:
+                    status["visible"] = False
+                    status["disabled"] = True
+                    status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
+        for key in ("children", "pages", "tabs", "nodes", "items"):
+            visit(value.get(key))
+
+    visit(tree)
+    status_contract["containerStatus"] = container_statuses
+    status_contract["widgetStatus"] = widget_statuses
+    contract["statusContract"] = status_contract
+
+
 def _append_action_schema(contract: dict[str, Any], actions: dict[str, Any], *, source_widget_id: str) -> None:
     for key, row in actions.items():
         action_key = _stable_id(key, "action")
@@ -2972,6 +3170,30 @@ def _append_ui_contract_actions(
 ) -> None:
     rows: list[dict[str, Any]] = []
     form_view = _dict(_dict(ui.get("views")).get("form"))
+    form_meta = _dict(form_view.get("meta"))
+    projection_identity = _dict(form_meta.get("projection_identity"))
+    explicit_form_view = _positive_int(projection_identity.get("source_view_id"), 0) > 0
+
+    def collect_native_layout_buttons(value: Any, *, parent_type: str = "") -> None:
+        if isinstance(value, list):
+            for item in value:
+                collect_native_layout_buttons(item, parent_type=parent_type)
+            return
+        if not isinstance(value, dict):
+            return
+        node_type = _text(value.get("type") or value.get("kind")).lower()
+        if node_type == "button":
+            action = _dict(value.get("action"))
+            if action and parent_type != "header" and _text(action.get("level")).lower() != "header":
+                rows.append({
+                    **action,
+                    "_source_channel": "native_form_layout_button",
+                    "sourceWidgetId": _text(value.get("containerId"), "page.root"),
+                })
+        for child_key in ("children", "pages", "tabs", "nodes", "items"):
+            collect_native_layout_buttons(value.get(child_key), parent_type=node_type)
+
+    collect_native_layout_buttons(_dict(contract.get("layoutContract")).get("containerTree"))
     for source_channel, header_button_source in (
         ("native_form_header", form_view.get("header_buttons")),
         ("contract_header", ui.get("header_buttons")),
@@ -2993,33 +3215,34 @@ def _append_ui_contract_actions(
         for row in _list(active_view_toolbar.get(slot)):
             if isinstance(row, dict):
                 rows.append({**row, "_source_channel": f"native_view_toolbar.{slot}"})
-    for key, priority, authority in (
-        ("buttons", 100, "native_contract"),
-        ("business_actions", 300, "product_contract"),
-    ):
-        for row in _list(ui.get(key)):
-            if isinstance(row, dict):
-                rows.append({
-                    **row,
-                    "_source_channel": key,
-                    "_presentation_priority": priority,
-                    "_presentation_authority": authority,
-                })
-    toolbar = _dict(ui.get("toolbar"))
-    for key in ("header", "sidebar", "footer"):
-        for row in _list(toolbar.get(key)):
-            if isinstance(row, dict):
-                rows.append({**row, "_source_channel": f"contract_toolbar.{key}"})
-    for group in _list(ui.get("action_groups")):
-        group_row = _dict(group)
-        for row in _list(group_row.get("actions")):
-            if isinstance(row, dict):
-                rows.append({
-                    **row,
-                    "_source_channel": "product_action_group",
-                    "_presentation_priority": 250,
-                    "_presentation_authority": "product_contract",
-                })
+    if not explicit_form_view:
+        for key, priority, authority in (
+            ("buttons", 100, "native_contract"),
+            ("business_actions", 300, "product_contract"),
+        ):
+            for row in _list(ui.get(key)):
+                if isinstance(row, dict):
+                    rows.append({
+                        **row,
+                        "_source_channel": key,
+                        "_presentation_priority": priority,
+                        "_presentation_authority": authority,
+                    })
+        toolbar = _dict(ui.get("toolbar"))
+        for key in ("header", "sidebar", "footer"):
+            for row in _list(toolbar.get(key)):
+                if isinstance(row, dict):
+                    rows.append({**row, "_source_channel": f"contract_toolbar.{key}"})
+        for group in _list(ui.get("action_groups")):
+            group_row = _dict(group)
+            for row in _list(group_row.get("actions")):
+                if isinstance(row, dict):
+                    rows.append({
+                        **row,
+                        "_source_channel": "product_action_group",
+                        "_presentation_priority": 250,
+                        "_presentation_authority": "product_contract",
+                    })
     normalized: list[dict[str, Any]] = []
     action_policies = _dict(ui.get("action_policies"))
     for row in rows:

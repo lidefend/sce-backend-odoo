@@ -1,0 +1,38 @@
+openapi: 3.0.0
+
+components:
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        detail:
+          type: string
+
+    Pagination:
+      type: object
+      required: [offset, limit, total]
+      properties:
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+
+    Page:
+      type: object
+      required: [items, pagination]
+      properties:
+        items:
+          type: array
+          items: {}
+        pagination:
+          $ref: '#/components/schemas/Pagination'

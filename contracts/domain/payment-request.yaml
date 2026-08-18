@@ -1,0 +1,133 @@
+id: payment_request
+version: 2
+
+entity: payment.request
+
+title: 支付申请
+
+source_of_truth:
+  model: payment.request
+  module: smart_construction_core
+  state_machine: ScStateMachine.PAYMENT_REQUEST
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  name:
+    type: string
+    title: 申请单号
+    readonly: true
+  project_id:
+    type: ProjectRef
+    required: true
+  contract_id:
+    type: ContractRef
+    required: false
+  settlement_id:
+    type: SettlementRef
+    required: false
+  amount:
+    type: Money
+    required: true
+    minimum: 0
+  state:
+    type: string
+    enum:
+      - draft
+      - submit
+      - approve
+      - approved
+      - rejected
+      - done
+      - cancel
+
+states:
+  draft:
+    label: 草稿
+    mutable: true
+    actions:
+      - edit
+      - submit
+      - cancel
+  submit:
+    label: 提交
+    mutable: false
+    actions:
+      - approve
+      - reject
+      - cancel
+  approve:
+    label: 审批中
+    mutable: false
+    actions:
+      - approve_pass
+      - reject
+      - cancel
+  approved:
+    label: 已批准
+    mutable: false
+    actions:
+      - create_execution
+      - done
+      - cancel
+  rejected:
+    label: 已驳回
+    mutable: false
+    actions:
+      - edit
+      - cancel
+  done:
+    label: 已完成
+    mutable: false
+    actions: []
+  cancel:
+    label: 已取消
+    mutable: false
+    actions: []
+
+transitions:
+  submit:
+    from: [draft]
+    to: submit
+    capability: payment_request.submit
+  approve:
+    from: [submit]
+    to: approve
+    capability: payment_request.approve
+  approve_pass:
+    from: [approve]
+    to: approved
+    capability: payment_request.approve
+  reject:
+    from: [submit, approve]
+    to: rejected
+    capability: payment_request.reject
+  resubmit:
+    from: [rejected]
+    to: draft
+    capability: payment_request.resubmit
+  done:
+    from: [approved]
+    to: done
+    capability: payment_request.complete
+  cancel:
+    from: [draft, submit, approve, approved, rejected]
+    to: cancel
+    capability: payment_request.cancel
+  create_execution:
+    from: [approved]
+    to: approved
+    capability: payment_request.create_execution
+
+notes:
+  - >-
+    状态机逐字对齐 ScStateMachine.PAYMENT_REQUEST_STATES /
+    PAYMENT_REQUEST_TRANSITIONS（models/support/state_machine.py）。
+  - >-
+    create_execution 是 approved 态的续接动作（action_create_payment_execution
+    打开付款登记表单），不改变本单状态。
+  - >-
+    v1 的 submitted/approved 直连与 paid/reversed 终态为产品语义命名，与模型
+    状态机不一致，已在 v2 废弃。

@@ -11,7 +11,7 @@ TELEMETRY_API = ROOT / "frontend/apps/web/src/api/telemetry.ts"
 USAGE_HANDLER = ROOT / "addons/smart_core/handlers/usage_track.py"
 TELEMETRY_HANDLER = ROOT / "addons/smart_construction_core/handlers/telemetry_track.py"
 REPORT_JSON = ROOT / "artifacts/backend/usage_product_clean_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/usage_product_clean_report.md"
+REPORT_MD = ROOT / "docs/audit/usage_product_clean_report.md"
 
 
 def _read(path: Path) -> str:

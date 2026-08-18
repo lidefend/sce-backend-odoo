@@ -34,7 +34,7 @@ guard.prod.danger:
 # Destructive database/demo helpers must use a separate project or database.
 DAILY_CANDIDATE_TARGET_DB ?= $(or $(DB_NAME),$(DB),$(BD))
 guard.daily_candidate.preserve:
-	@if [ "$(COMPOSE_PROJECT_NAME)" = "sc-backend-odoo-dev" ] && [ "$(DAILY_CANDIDATE_TARGET_DB)" = "sc_demo" ]; then \
+	@if { [ "$(COMPOSE_PROJECT_NAME)" = "sc-backend-odoo-dev" ] && [ "$(DAILY_CANDIDATE_TARGET_DB)" = "sc_demo" ]; } || { [ "$(COMPOSE_PROJECT_NAME)" = "sc-local-sample" ] && [ "$(DAILY_CANDIDATE_TARGET_DB)" = "sc_dev_sample" ]; }; then \
 	  echo "❌ daily candidate data is persistent: destructive reset/demo operation refused"; \
 	  echo "   Use an isolated personal/acceptance compose project and database."; \
 	  exit 2; \
@@ -163,3 +163,19 @@ check-external-addons:
 check-odoo-conf:
 	@test "$(ODOO_CONF)" = "/var/lib/odoo/odoo.conf" || \
 	  (echo "❌ ODOO_CONF must be /var/lib/odoo/odoo.conf" && exit 1)
+
+# ===== R7: guard registry lifecycle (registry / retirement) =====
+.PHONY: verify.guard.registry guard.registry.export guard.registry.seed guard.retire
+verify.guard.registry: guard.prod.forbid
+	@python3 scripts/verify/guard_registry_audit.py
+
+guard.registry.export: guard.prod.forbid
+	@python3 scripts/verify/guard_registry_audit.py --export
+
+guard.registry.seed: guard.prod.forbid
+	@python3 scripts/verify/guard_registry_audit.py --seed
+	@$(MAKE) --no-print-directory verify.guard.registry
+
+guard.retire: guard.prod.forbid
+	@test -n "$(SCRIPT)" || { echo "usage: make guard.retire SCRIPT=<filename> REASON='...'"; exit 2; }
+	@python3 scripts/verify/guard_registry_audit.py --retire "$(SCRIPT)" --reason "$(REASON)"

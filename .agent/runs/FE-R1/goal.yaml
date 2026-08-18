@@ -1,0 +1,9 @@
+run:
+  id:
+    FE-R1
+
+  goal_reference:
+    - .agent/goals/FE-R1.yaml
+
+  status:
+    completed

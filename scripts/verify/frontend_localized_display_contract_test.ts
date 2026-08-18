@@ -23,6 +23,11 @@ assert.equal(
   '公司综合平台\n业务备注',
 );
 assert.equal(
+  stripInternalMigrationMetadata('[migration:direct_payment_apply_formal]\n真实付款办理备注'),
+  '真实付款办理备注',
+  'a leading migration marker without a legacy id must not leak into product display',
+);
+assert.equal(
   formatDisplayValue('[migration:general_contract] legacy_record_id=e431f445\n公司综合平台\n业务备注'),
   '公司综合平台\n业务备注',
 );

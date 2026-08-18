@@ -1359,7 +1359,7 @@ db.reset.manual: guard.prod.forbid guard.daily_candidate.preserve check-compose-
 verify.baseline: guard.prod.danger check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/baseline.sh
 verify.demo: guard.prod.forbid check-compose-project check-compose-env
-	@$(RUN_ENV) DB_NAME=sc_demo bash scripts/verify/demo.sh
+	@$(RUN_ENV) bash scripts/verify/demo.sh
 verify.p0: guard.prod.danger check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/p0_base.sh
 verify.p0.flow: guard.prod.danger check-compose-project check-compose-env
@@ -2073,7 +2073,7 @@ codex.pr.body: guard.prod.forbid
 	@bash scripts/ops/codex_pr_body.sh "$(PR_BODY_FILE)" "artifacts/codex/$$(git rev-parse --abbrev-ref HEAD)"
 
 codex.release.note: guard.prod.forbid
-	@bash scripts/ops/codex_release_note.sh "docs/ops/releases/README.md"
+	@bash scripts/ops/codex_release_note.sh "docs/releases/README.md"
 
 db.policy:
 	@DB=$(DB) bash scripts/ops/check_db_policy.sh

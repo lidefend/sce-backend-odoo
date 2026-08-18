@@ -85,6 +85,14 @@ function requiredString(source: ContractV2Dictionary, key: string, path: string,
   return value;
 }
 
+function requiredDisplayString(source: ContractV2Dictionary, key: string, path: string, issues: DecodeIssue[]): string {
+  if (typeof source[key] !== 'string') {
+    issues.push({ path: `${path}.${key}`, message: 'must be a string' });
+    return '';
+  }
+  return asString(source[key]);
+}
+
 function optionalString(source: ContractV2Dictionary, key: string): string | undefined {
   return asString(source[key]) || undefined;
 }
@@ -295,7 +303,12 @@ function structuralContainerText(raw: ContractV2Dictionary, key: 'containerId' |
     return asString(raw.containerId || raw.container_id || raw.widgetId || raw.widget_id || raw.name);
   }
   if (key === 'containerType') return asString(raw.containerType || raw.container_type || raw.type);
-  return asString(raw.title || raw.label || raw.string || raw.name || raw.widgetId || raw.widget_id);
+  // Structural identity is never user-facing copy. Native nodes commonly carry
+  // only `name`/`widgetId`; neither is a display title.
+  if (asString(raw.type || raw.containerType || raw.container_type).toLowerCase() === 'field') {
+    return asString(raw.title);
+  }
+  return asString(raw.title || raw.label || raw.string);
 }
 
 function decodeContainer(
@@ -352,9 +365,11 @@ function decodeContainer(
     ...(asString(raw.name) ? { name: asString(raw.name) } : {}),
     ...(asString(raw.string) ? { string: asString(raw.string) } : {}),
     ...(asString(raw.label) ? { label: asString(raw.label) } : {}),
+    ...(optionalBoolean(raw.nolabel) !== undefined ? { nolabel: optionalBoolean(raw.nolabel) } : {}),
+    ...(asString(raw.text) ? { text: asString(raw.text) } : {}),
     title: nestedNativeNode
-      ? structuralContainerText(raw, 'title') || containerId
-      : requiredString(raw, 'title', path, issues),
+      ? structuralContainerText(raw, 'title')
+      : requiredDisplayString(raw, 'title', path, issues),
     span: !Object.prototype.hasOwnProperty.call(raw, 'span')
       ? 24
       : requiredIntegerInRange(raw, 'span', path, issues, 24),
@@ -574,11 +589,24 @@ function decodeDataContract(source: ContractV2Dictionary, issues: DecodeIssue[])
 }
 
 function decodeGlobalStatus(source: ContractV2Dictionary): ContractV2GlobalStatus {
+  const modelRights = asRecord(source.modelRights);
+  const recordRights = asRecord(source.recordRights);
+  const viewCapabilities = asRecord(source.viewCapabilities);
+  const entryCapabilities = asRecord(source.entryCapabilities);
+  const effectiveRecordCapabilities = asRecord(source.effectiveRecordCapabilities);
   return {
     pageVisible: optionalBoolean(source.pageVisible),
     ...(optionalString(source, 'pageAuth') ? { pageAuth: optionalString(source, 'pageAuth') } : {}),
     ...(optionalString(source, 'reasonCode')
       ? { reasonCode: optionalString(source, 'reasonCode') }
+      : {}),
+    ...(Object.keys(modelRights).length ? { modelRights } : {}),
+    ...(Object.keys(recordRights).length ? { recordRights } : {}),
+    ...(Object.keys(viewCapabilities).length ? { viewCapabilities } : {}),
+    ...(Object.keys(entryCapabilities).length ? { entryCapabilities } : {}),
+    ...(Object.keys(effectiveRecordCapabilities).length ? { effectiveRecordCapabilities } : {}),
+    ...(optionalString(source, 'effectiveRenderProfile')
+      ? { effectiveRenderProfile: optionalString(source, 'effectiveRenderProfile') }
       : {}),
   };
 }

@@ -7,8 +7,8 @@ status: active
 这里是运维与发布相关文档的入口。
 
 ## 发布与生产
-- 版本索引：`docs/ops/releases/README.zh.md`
-- 菜单场景覆盖率证据（当前基线）：`docs/ops/releases/current/menu_scene_coverage_evidence.md`
+- 版本索引：`docs/releases/README.zh.md`
+- 菜单场景覆盖率证据（当前基线）：`docs/releases/current/menu_scene_coverage_evidence.md`
 - 生产命令策略：`docs/ops/prod_command_policy.md`
 - 生产发布链路规范：`docs/ops/production_release_flow_standard_v1.md`
 - 生产环境正式部署规范：`docs/ops/production_deployment_runbook_v1.md`
