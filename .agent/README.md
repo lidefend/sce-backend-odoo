@@ -1,21 +1,33 @@
-# .agent 工程上下文（P0 恢复工作副本）
+# .agent 工程上下文
 
-## 仓库定位
+## 项目定位
 
-`sce-backend-odoo` 的恢复/桥接工作副本：P0 UI5 场景基础恢复 v2 + 场景组件桥 v1 +
-canonical effective primary v1。目录名本身记录变更谱系。
+这是施工企业 ERP 系统。
 
-## 血缘规则
-
-- 父仓库：`sce-backend-odoo`（权威实现所在）
-- 本副本只承载恢复/桥接任务期间的改动，任务结束后回流父仓库或整体归档
-- 禁止与父仓库长期并行演进造成分叉
+- Backend: Odoo
+- Frontend: Vue (Contract-driven)
+- Database: PostgreSQL
 
 ## AI 工作原则
 
-执行策略以本仓库根目录 `AGENTS.md` 与 `ARCHITECTURE_GUARD.md` 为准。
+1. Contract First
+2. Small Change First
+3. Evidence Required
+4. Preserve History
+5. No Unverified Change
 
-## 本目录约定
+## AI 修改规则
 
-- `context.yaml`：仓库身份、血缘关系与权威路径
-- `goals/`、`workflows/`、`runs/`：涉及本仓库的工程任务按需创建
+AI 修改代码前必须执行：
+
+1. 找到相关 contract / 上下文依据
+2. 明确对应 goal
+3. 执行对应 verify
+4. 输出 evidence 与变更结果
+
+该目录用于记录：
+
+- 当前上下文（.agent/context.yaml）
+- 目标/任务（.agent/goals）
+- 决策约束（.agent/decisions）
+- 执行记录（.agent/runs）

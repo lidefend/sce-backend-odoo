@@ -1,0 +1,69 @@
+id: receipt_income
+version: 1
+
+entity: ScReceiptIncome
+
+title: 收款与收入登记
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  project:
+    type: ProjectRef
+    required: true
+  currency:
+    type: string
+    required: true
+    default: CNY
+  reject_reason:
+    type: string
+    required: false
+  note:
+    type: string
+    required: false
+  state:
+    type: string
+    enum:
+      - draft
+      - confirmed
+      - received
+      - legacy_confirmed
+      - cancel
+
+states:
+  draft:
+    mutable: true
+    actions:
+      - edit
+      - confirm
+      - cancel
+  confirmed:
+    mutable: false
+    actions:
+      - mark_received
+  received:
+    mutable: false
+    actions: []
+  legacy_confirmed:
+    mutable: false
+    actions: []
+    note: 历史数据迁移终态，仅可读。
+  cancel:
+    mutable: false
+    actions: []
+
+transitions:
+  confirm:
+    from: [draft]
+    to: confirmed
+    capability: receipt_income.confirm
+  mark_received:
+    from: [confirmed]
+    to: received
+    capability: receipt_income.mark_received
+  cancel:
+    from: [draft]
+    to: cancel
+    capability: receipt_income.cancel

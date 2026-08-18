@@ -1,0 +1,13 @@
+workflow:
+  id: frontend-improvement
+
+  purpose:
+    frontend_product_iteration
+
+  steps:
+    - load_goal
+    - read_contract
+    - inspect_current_state
+    - implement_change
+    - run_browser_validation
+    - collect_evidence

@@ -692,7 +692,7 @@ ci: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_h
 
 # Backend/static half of the professional gate. The required frontend workflow is
 # the single authority for frontend install, lint, typecheck, build and browsers.
-ci.professional.backend: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.unified_page_contract.v2.web_architecture test.unit test.contract test.e2e.preflight
+ci.professional.backend: guard.prod.forbid verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.unified_page_contract.v2.web_architecture test.unit test.contract test.e2e.preflight
 	@git diff --check
 	@echo "[OK] professional backend/static quality gate passed"
 

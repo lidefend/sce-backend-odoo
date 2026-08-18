@@ -47,6 +47,16 @@ class _BasePaymentApprovalHandler(BaseIntentHandler):
     AUDIT_EVENT_CODE = ""
     ACTION_METHOD = ""
     ACTION_NAME = ""
+    _CONTRACT_STATE_MAP = {
+        "submit": "submitted",
+        "done": "paid",
+        "cancel": "reversed",
+    }
+
+    @staticmethod
+    def _to_contract_state(state: str | None) -> str:
+        raw_state = str(state or "").strip()
+        return _BasePaymentApprovalHandler._CONTRACT_STATE_MAP.get(raw_state, raw_state)
 
     @classmethod
     def source_authority_contract(cls) -> dict:
@@ -208,6 +218,8 @@ class _BasePaymentApprovalHandler(BaseIntentHandler):
             return
 
     def _build_success_data(self, payment_request, action_result, *, replay_window_expired: bool) -> dict:
+        raw_state = str(payment_request.state or "")
+        contract_state = self._to_contract_state(raw_state)
         reason_code = REASON_REPLAY_WINDOW_EXPIRED if replay_window_expired else REASON_OK
         success_data = {
             "success": True,
@@ -217,7 +229,8 @@ class _BasePaymentApprovalHandler(BaseIntentHandler):
             "payment_request": {
                 "id": int(payment_request.id),
                 "name": str(payment_request.name or ""),
-                "state": str(payment_request.state or ""),
+                "state": contract_state,
+                "state_backend": raw_state,
                 "type": str(payment_request.type or ""),
                 "amount": float(payment_request.amount or 0.0),
                 "currency_id": int(payment_request.currency_id.id or 0) if payment_request.currency_id else 0,
@@ -465,4 +478,29 @@ class PaymentRequestDoneHandler(_BasePaymentApprovalHandler):
     ACCESS_GROUPS = [
         "smart_construction_core.group_sc_cap_finance_manager",
         "smart_core.group_smart_core_finance_approver",
+    ]
+
+
+class PaymentRequestCreateExecutionHandler(_BasePaymentApprovalHandler):
+    INTENT_TYPE = "payment.request.create_execution"
+    DESCRIPTION = "Create payment execution continuation via intent-compatible action"
+    VERSION = "1.0.0"
+    AUDIT_EVENT_CODE = "PAYMENT_REQUEST_CREATE_EXECUTION_INTENT"
+    ACTION_METHOD = "action_create_payment_execution"
+    ACTION_NAME = "create_execution"
+    ACCESS_GROUPS = [
+        "smart_construction_core.group_sc_cap_finance_manager",
+        "smart_core.group_smart_core_finance_approver",
+    ]
+
+
+class PaymentRequestCancelByContractHandler(_BasePaymentApprovalHandler):
+    INTENT_TYPE = "payment.request.mark_reversed"
+    DESCRIPTION = "Reverse payment request via compatibility alias"
+    VERSION = "1.0.0"
+    AUDIT_EVENT_CODE = "PAYMENT_REQUEST_CANCEL_INTENT"
+    ACTION_METHOD = "action_cancel"
+    ACTION_NAME = "mark_reversed"
+    ACCESS_GROUPS = [
+        "smart_construction_core.group_sc_cap_finance_manager",
     ]

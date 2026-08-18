@@ -1,0 +1,27 @@
+capability:
+  id:
+    backend
+
+  purpose:
+    backend_business_development
+
+  provides:
+    - odoo_model_change
+    - business_logic_change
+    - backend_test_execution
+    - security_rule_review
+
+  constraints:
+    allowed:
+      - backend_source_change
+
+    forbidden:
+      - uncontrolled_data_migration
+      - production_data_write
+
+  approval_required:
+    security_change: true
+
+  evidence_required:
+    - backend_test_result
+    - security_verification

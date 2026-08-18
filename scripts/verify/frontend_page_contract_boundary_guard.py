@@ -13,7 +13,7 @@ ROUTER = ROOT / "frontend/apps/web/src/router/index.ts"
 CONTRACT_FORM_ROUTE = ROOT / "frontend/apps/web/src/pages/ContractFormRoute.vue"
 
 REPORT_JSON = ROOT / "artifacts/backend/frontend_page_contract_boundary_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/frontend_page_contract_boundary_report.md"
+REPORT_MD = ROOT / "docs/audit/frontend_page_contract_boundary_report.md"
 WORKSPACE_HOME_BUILDER = ROOT / "addons/smart_core/core/workspace_home_contract_builder.py"
 PAGE_CONTRACTS_BUILDER = ROOT / "addons/smart_core/core/page_contracts_builder.py"
 

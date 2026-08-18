@@ -199,7 +199,7 @@ def _write_report(path: Path, queue: list[dict[str, str]]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate R1/R0 to R2 upgrade queue report from inventory.")
     parser.add_argument("--inventory", default="docs/ops/scene_inventory_matrix_latest.md")
-    parser.add_argument("--output", default="docs/ops/audit/scene_r1_r2_upgrade_queue.md")
+    parser.add_argument("--output", default="docs/audit/scene_r1_r2_upgrade_queue.md")
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parents[2]

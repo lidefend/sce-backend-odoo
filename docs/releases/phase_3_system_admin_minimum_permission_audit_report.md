@@ -6,7 +6,7 @@
 ## 2. 审计范围
 - prod-like 角色夹具基线：`scripts/verify/baselines/role_capability_floor_prod_like.json`
 - 运行态角色验证产物：`artifacts/backend/role_capability_floor_prod_like.json`
-- 写意图权限审计：`docs/ops/audit/write_intent_permission_audit.md`
+- 写意图权限审计：`docs/audit/write_intent_permission_audit.md`
 
 ## 3. 验证命令
 - `make verify.role.system_admin.minimum_permission_audit.guard`

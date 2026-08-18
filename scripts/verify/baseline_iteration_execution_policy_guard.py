@@ -17,6 +17,9 @@ DOCUMENT_REQUIREMENTS = {
         "zero tests is a failure",
         "full immutable Git blob SHA",
         "Shared acceptance database mutations are serialized",
+        "one independently acceptable product result (PFL)",
+        "All five conditions are mandatory",
+        "At most two active worktrees are allowed",
     ),
     Path("docs/ops/codex_execution_allowlist.md"): (
         "禁止新增或派生 Compose project",
@@ -30,6 +33,9 @@ DOCUMENT_REQUIREMENTS = {
         "禁止直接调用 `docker compose`",
         "acceptance 凭据不得注入 dev/test project",
         "`make pr.push`",
+        "以产品结果组织工作树（Hard Lock）",
+        "同时活跃工作树硬上限为两个",
+        "同一 PFL 内的 P0/P1 修改继续留在同一产品工作树",
     ),
 }
 

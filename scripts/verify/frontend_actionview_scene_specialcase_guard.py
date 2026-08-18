@@ -10,7 +10,7 @@ from typing import List
 ROOT = Path(__file__).resolve().parents[2]
 ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 REPORT_JSON = ROOT / "artifacts/backend/frontend_actionview_scene_specialcase_guard_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/frontend_actionview_scene_specialcase_guard_report.md"
+REPORT_MD = ROOT / "docs/audit/frontend_actionview_scene_specialcase_guard_report.md"
 
 RUNTIME_IMPORT_PATTERN = re.compile(r"from '../app/runtime/([^']+)';")
 

@@ -9,7 +9,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_GLOB = "docs/ops/releases/current/production_deployment_*.md"
+DEFAULT_GLOB = "docs/releases/current/production_deployment_*.md"
 REQUIRED_HEADINGS = [
     "# Production Deployment Record",
     "## 1. 基本信息",

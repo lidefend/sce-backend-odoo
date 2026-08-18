@@ -1,0 +1,6 @@
+evidence:
+  verification:
+    - browser
+    - accessibility
+  source:
+    - git-history

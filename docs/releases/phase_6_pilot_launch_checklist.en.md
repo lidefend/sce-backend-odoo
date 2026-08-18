@@ -47,7 +47,7 @@ Complete pilot run, feedback closure, and official launch to ensure v1.0 is prod
 
 ## 5. Deliverables
 - Pilot report (suggested: `artifacts/release/phase6_pilot_report.md`)
-- Launch record (suggested: `docs/ops/releases/current/scems_v1_0_launch.md`)
+- Launch record (suggested: `docs/releases/current/scems_v1_0_launch.md`)
 - Post-launch review (suggested: `docs/releases/scems_v1_0_post_launch_review.md`)
 
 ## 6. Exit Criteria

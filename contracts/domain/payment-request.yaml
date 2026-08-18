@@ -1,0 +1,91 @@
+id: payment_request
+version: 1
+
+entity: PaymentRequest
+
+title: 支付申请
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  code:
+    type: string
+    readonly: true
+  project:
+    type: ProjectRef
+    required: true
+  contract:
+    type: ContractRef
+    required: false
+  amount:
+    type: Money
+    required: true
+    minimum: 0
+  reason:
+    type: string
+    required: true
+    maxLength: 1000
+  status:
+    type: string
+    enum:
+      - draft
+      - submitted
+      - approved
+      - rejected
+      - paid
+      - reversed
+
+states:
+  draft:
+    mutable: true
+    actions:
+      - edit
+      - submit
+  submitted:
+    mutable: false
+    actions:
+      - approve
+      - reject
+      - withdraw
+  approved:
+    mutable: false
+    actions:
+      - create_execution
+      - reverse
+  rejected:
+    mutable: false
+    actions:
+      - edit
+      - submit
+  paid:
+    mutable: false
+    actions:
+      - reverse
+      - close
+  reversed:
+    mutable: false
+    actions: []
+
+transitions:
+  submit:
+    from: [draft]
+    to: submitted
+    capability: payment_request.submit
+  approve:
+    from: [submitted]
+    to: approved
+    capability: payment_request.approve
+  reject:
+    from: [submitted]
+    to: rejected
+    capability: payment_request.reject
+  create_execution:
+    from: [approved]
+    to: approved
+    capability: payment_request.create_execution
+  reverse:
+    from: [approved, paid]
+    to: reversed
+    capability: payment_request.mark_reversed

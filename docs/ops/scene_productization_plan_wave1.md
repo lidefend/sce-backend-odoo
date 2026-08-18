@@ -49,7 +49,7 @@
 - Day 3：已完成（`projects.intake` 已补正式 profile，进入 R2）。
 - Day 4：已完成（`projects.list/project.management/projects.ledger` 已统一主线 profile 联动）。
 - Day 5：已完成（`contract.center/cost.analysis/finance.workspace` 已完成模板化并进入 R2）。
-- Day 6：已完成（已生成覆盖率看板 `docs/ops/audit/scene_coverage_dashboard.md`）。
+- Day 6：已完成（已生成覆盖率看板 `docs/audit/scene_coverage_dashboard.md`）。
 - Day 7：已完成（新增 `scene_inventory_freeze_guard`，冻结“新增 scene 先入 inventory”规则）。
 
 ## 阶段结果
@@ -68,7 +68,7 @@
 - `scripts/verify/scene_maturity_guard.py`
 - `scripts/verify/scene_coverage_dashboard_report.py`
 - `scripts/verify/scene_inventory_freeze_guard.py`
-- `docs/ops/audit/scene_coverage_dashboard.md`
+- `docs/audit/scene_coverage_dashboard.md`
 
 ## 验收标准
 

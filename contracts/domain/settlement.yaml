@@ -1,0 +1,78 @@
+id: settlement
+version: 1
+
+entity: ProjectSettlement
+
+title: 项目结算
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  name:
+    type: string
+    readonly: true
+    note: 结算单号，序列生成。
+  project:
+    type: ProjectRef
+    required: true
+  type:
+    type: string
+    enum:
+      - pay
+      - receive
+    required: true
+  contract:
+    type: ContractRef
+    required: false
+  partner:
+    type: string
+    required: true
+  amount:
+    type: Money
+    required: false
+    note: Phase 1 允许人工录入，不做自动汇总。
+  date_settle:
+    type: date
+    required: false
+  state:
+    type: string
+    enum:
+      - draft
+      - confirmed
+      - done
+      - cancel
+
+states:
+  draft:
+    mutable: true
+    actions:
+      - edit
+      - confirm
+      - cancel
+  confirmed:
+    mutable: false
+    actions:
+      - complete
+      - cancel
+  done:
+    mutable: false
+    actions: []
+  cancel:
+    mutable: false
+    actions: []
+
+transitions:
+  confirm:
+    from: [draft]
+    to: confirmed
+    capability: settlement.confirm
+  complete:
+    from: [confirmed]
+    to: done
+    capability: settlement.complete
+  cancel:
+    from: [draft, confirmed]
+    to: cancel
+    capability: settlement.cancel

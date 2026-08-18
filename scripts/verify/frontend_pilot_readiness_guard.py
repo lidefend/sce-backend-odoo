@@ -8,10 +8,10 @@ required = [
     "config/release/odoo.release-rehearsal.conf.template",
     "scripts/release/rehearsal_guard.py", "scripts/release/release_data_compatibility.py",
     "scripts/release/rehearsal_backup_restore.sh", "scripts/release/release_readiness_report.py",
-    "docs/release/frontend_pilot_release_candidate_v1.md", "docs/release/frontend_pilot_runbook_v1.md",
-    "docs/release/frontend_backup_restore_drill_v1.md", "docs/release/frontend_rollback_runbook_v1.md",
-    "docs/release/frontend_monitoring_baseline_v1.md", "docs/release/frontend_data_compatibility_v1.md",
-    "docs/release/frontend_pilot_signoff_v1.md",
+    "docs/releases/frontend_pilot_release_candidate_v1.md", "docs/releases/frontend_pilot_runbook_v1.md",
+    "docs/releases/frontend_backup_restore_drill_v1.md", "docs/releases/frontend_rollback_runbook_v1.md",
+    "docs/releases/frontend_monitoring_baseline_v1.md", "docs/releases/frontend_data_compatibility_v1.md",
+    "docs/releases/frontend_pilot_signoff_v1.md",
 ]
 missing = [path for path in required if not (root / path).is_file()]
 if missing:

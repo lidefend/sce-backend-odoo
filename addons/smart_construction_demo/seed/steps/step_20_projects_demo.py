@@ -52,14 +52,29 @@ def _get_showroom_projects(env):
     return Project.search(domain)
 
 
-def _ensure_project(env, code, vals):
+def _ensure_project(env, code, vals, owned_xmlid=None):
     Project = env["project.project"].sudo()
     project = Project.search([("project_code", "=", code)], limit=1)
+    owned_project = (
+        env.ref(owned_xmlid, raise_if_not_found=False) if owned_xmlid else False
+    )
+    if not project and owned_project:
+        project = owned_project
     if not project:
         project = Project.search([("name", "=", vals["name"])], limit=1)
     if project:
+        if (
+            project.project_code
+            and project.project_code != code
+            and project != owned_project
+        ):
+            raise UserError(
+                "Demo project identity drift: %s has code %s, expected %s"
+                % (project.display_name, project.project_code, code)
+            )
         update_vals = dict(vals)
         update_vals.pop("lifecycle_state", None)
+        update_vals["project_code"] = code
         project.write(update_vals)
     else:
         vals = dict(vals)
@@ -109,6 +124,17 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
     header = Boq.search(
         [("project_id", "=", project.id), ("code", "=", f"{code_prefix}-G")], limit=1
     )
+    leaf_code = f"{code_prefix}-001"
+    existing = Boq.search(
+        [("project_id", "=", project.id), ("code", "=", leaf_code)], limit=1
+    )
+    if version.state in ("published", "superseded"):
+        if not header or not existing:
+            raise UserError(
+                "Demo BOQ immutable snapshot is incomplete for project %s"
+                % project.display_name
+            )
+        return
     header_vals = {
         "version_id": version.id,
         "project_id": project.id,
@@ -119,7 +145,7 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
         "uom_id": uom_unit.id if uom_unit else False,
         "quantity": 0.0,
         "price": 0.0,
-        "line_type": "heading",
+        "line_type": "group",
     }
     if header:
         header.write(header_vals)
@@ -130,7 +156,7 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
         "version_id": version.id,
         "project_id": project.id,
         "parent_id": header.id,
-        "code": f"{code_prefix}-001",
+        "code": leaf_code,
         "name": "基础工程量",
         "section_type": "building",
         "uom_id": uom_unit.id if uom_unit else False,
@@ -138,9 +164,6 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
         "price": 3200.0,
         "line_type": "item",
     }
-    existing = Boq.search(
-        [("project_id", "=", project.id), ("code", "=", leaf_vals["code"])], limit=1
-    )
     if existing:
         existing.write(leaf_vals)
     else:
@@ -385,6 +408,7 @@ def run(env):
             "actual_percent": 52.0,
             "start_date": today,
         },
+        owned_xmlid="smart_construction_demo.sc_demo_project",
     )
 
     root = _ensure_wbs(env, exec_project, "WBS-001", "道路实施阶段", "phase", None)
@@ -609,7 +633,6 @@ def run(env):
         vals["sc_project_showcase"] = True
         if vals:
             project.write(vals)
-
     ICP.set_param("sc.seed.demo.project_init", str(init_project.id))
     ICP.set_param("sc.seed.demo.project_tender", str(tender_project.id))
     ICP.set_param("sc.seed.demo.project_exec", str(exec_project.id))

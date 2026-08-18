@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REPORT_JSON = ROOT / "artifacts/backend/frontend_contract_consumer_intrusion_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/frontend_contract_consumer_intrusion_report.md"
+REPORT_MD = ROOT / "docs/audit/frontend_contract_consumer_intrusion_report.md"
 
 
 @dataclass(frozen=True)

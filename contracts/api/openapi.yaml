@@ -1,0 +1,122 @@
+openapi: 3.0.3
+info:
+  title: Payment Request Contract API
+  version: 0.1.0
+  description: Contract-first API for payment request business domain.
+
+servers:
+  - url: /api/v1
+
+paths:
+  /payment-requests:
+    get:
+      summary: 列表支付申请
+      operationId: listPaymentRequests
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRequestList'
+    post:
+      summary: 创建支付申请
+      operationId: createPaymentRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/payment-request.yaml#/CreatePaymentRequest'
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/payment-request.yaml#/PaymentRequest'
+
+  /payment-requests/{id}:
+    get:
+      summary: 读取支付申请
+      operationId: getPaymentRequest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/payment-request.yaml#/PaymentRequest'
+    patch:
+      summary: 更新支付申请
+      operationId: updatePaymentRequest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/payment-request.yaml#/UpdatePaymentRequest'
+      responses:
+        '200':
+          description: ok
+
+  /payment-requests/{id}/submit:
+    post:
+      summary: 提交支付申请
+      operationId: submitPaymentRequest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+
+  /payment-requests/{id}/approve:
+    post:
+      summary: 审批通过
+      operationId: approvePaymentRequest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+
+  /payment-requests/{id}/reject:
+    post:
+      summary: 审批驳回
+      operationId: rejectPaymentRequest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+
+components:
+  schemas:
+    PaymentRequest: { $ref: '../schemas/payment-request.yaml#/PaymentRequest' }
+    PaymentRequestList: { $ref: '../schemas/payment-request.yaml#/PaymentRequestList' }
+    CreatePaymentRequest: { $ref: '../schemas/payment-request.yaml#/CreatePaymentRequest' }
+    UpdatePaymentRequest: { $ref: '../schemas/payment-request.yaml#/UpdatePaymentRequest' }

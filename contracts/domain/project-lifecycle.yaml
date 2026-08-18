@@ -1,0 +1,102 @@
+id: project_lifecycle
+version: 1
+
+entity: ProjectProject
+
+title: 项目生命周期
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  name:
+    type: string
+    required: true
+  lifecycle_state:
+    type: string
+    enum:
+      - draft
+      - in_progress
+      - paused
+      - done
+      - closing
+      - warranty
+      - closed
+    note: 项目级联动控制主状态：暂停/关闭禁止新增进度、成本等业务数据；结算中限制部分操作。
+  execution_state:
+    type: string
+    enum:
+      - ready
+      - in_progress
+      - blocked
+      - done
+    note: 执行推进轻量状态机，由 project.execution.advance 统一推进。
+
+states:
+  draft:
+    mutable: true
+    actions:
+      - start
+      - pause
+      - close
+  in_progress:
+    mutable: true
+    actions:
+      - pause
+      - complete
+      - start_closing
+      - close
+  paused:
+    mutable: false
+    actions:
+      - resume
+      - close
+  done:
+    mutable: false
+    actions:
+      - start_closing
+      - start_warranty
+      - close
+  closing:
+    mutable: false
+    actions:
+      - start_warranty
+      - close
+  warranty:
+    mutable: false
+    actions:
+      - close
+  closed:
+    mutable: false
+    actions: []
+
+transitions:
+  start:
+    from: [draft]
+    to: in_progress
+    capability: project_lifecycle.start
+  pause:
+    from: [draft, in_progress]
+    to: paused
+    capability: project_lifecycle.pause
+  resume:
+    from: [paused]
+    to: in_progress
+    capability: project_lifecycle.resume
+  complete:
+    from: [in_progress]
+    to: done
+    capability: project_lifecycle.complete
+  start_closing:
+    from: [in_progress, done]
+    to: closing
+    capability: project_lifecycle.start_closing
+  start_warranty:
+    from: [done, closing]
+    to: warranty
+    capability: project_lifecycle.start_warranty
+  close:
+    from: [draft, in_progress, paused, done, closing, warranty]
+    to: closed
+    capability: project_lifecycle.close

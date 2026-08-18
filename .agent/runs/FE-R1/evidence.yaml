@@ -1,0 +1,13 @@
+evidence:
+
+  goal:
+    FE-R1
+
+  verification:
+    - browser_validation
+    - responsive_validation
+    - accessibility_validation
+
+  source:
+    - git_history
+    - existing_FE-R1_records

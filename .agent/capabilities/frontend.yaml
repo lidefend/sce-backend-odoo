@@ -1,0 +1,23 @@
+capability:
+  id:
+    frontend
+
+  purpose:
+    frontend_development
+
+  provides:
+    - vue_component_change
+    - css_layout_change
+    - browser_validation
+
+  constraints:
+    allowed:
+      - frontend_source_change
+
+    forbidden:
+      - database_change
+      - permission_change
+
+  evidence_required:
+    - browser_result
+    - screenshot

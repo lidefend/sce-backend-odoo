@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 GOVERNANCE_FILE = ROOT / "addons/smart_core/utils/contract_governance.py"
 
 REPORT_JSON = ROOT / "artifacts/backend/contract_governance_determinism_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/contract_governance_determinism_report.md"
+REPORT_MD = ROOT / "docs/audit/contract_governance_determinism_report.md"
 ITERATIONS = 20
 
 

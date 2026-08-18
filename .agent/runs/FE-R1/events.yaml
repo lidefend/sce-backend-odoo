@@ -1,0 +1,29 @@
+events:
+
+  - type:
+      goal.started
+
+    description:
+      FE-R1 investigation started
+
+  - type:
+      analysis.completed
+
+    findings:
+      - outer_container_scroll
+      - inner_table_scroll
+
+  - type:
+      change.completed
+
+    area:
+      frontend_layout
+
+  - type:
+      verification.completed
+
+    result:
+      PASS
+
+  - type:
+      completed

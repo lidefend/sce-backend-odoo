@@ -15,7 +15,7 @@ GOVERNANCE_MODULES = (
 FORM_PAGE = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
 FORM_COMPONENTS = ROOT / "frontend/apps/web/src/pages/contractForm"
 REPORT_JSON = ROOT / "artifacts/backend/render_semantic_ready_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/render_semantic_ready_report.md"
+REPORT_MD = ROOT / "docs/audit/render_semantic_ready_report.md"
 
 
 def _read(path: Path) -> str:

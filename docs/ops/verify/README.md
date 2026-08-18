@@ -243,7 +243,7 @@
     - `cost.project_budget`
   - Emits reports:
     - `artifacts/backend/product_delivery_action_closure_report.json`
-    - `docs/ops/audit/product_delivery_action_closure_report.md`
+    - `docs/audit/product_delivery_action_closure_report.md`
 - `make verify.product.delivery.action_closure.schema.guard`
   - Verifies product delivery action closure JSON/MD report shape and summary counts.
 - `make verify.product.delivery.module_capability.smoke`
@@ -251,7 +251,7 @@
   - Backward-compatible alias: `make verify.product.delivery.module9.smoke`.
   - Emits reports:
     - `artifacts/backend/product_delivery_module9_smoke_report.json`
-    - `docs/ops/audit/product_delivery_module9_smoke_report.md`
+    - `docs/audit/product_delivery_module9_smoke_report.md`
 - `make verify.product.delivery.module_capability.schema.guard`
   - Verifies product delivery module capability JSON/MD report shape and runtime count consistency.
 - `make verify.intent.canonical_alias.snapshot.schema.guard`
@@ -305,7 +305,7 @@
   - Verifies explicit prod-sim acceptance evidence under the recorded run directory.
   - Requires strict LEGACY_SOURCE release acceptance JSON/MD and no-legacy replay acceptance JSON to target `sc_prod_sim`; no default run directory is inferred.
 - `make verify.production_deployment.record.guard`
-  - Verifies concrete production deployment records under `docs/ops/releases/current/production_deployment_*.md`, or a single record via `PRODUCTION_DEPLOYMENT_RECORD=<path>`.
+  - Verifies concrete production deployment records under `docs/releases/current/production_deployment_*.md`, or a single record via `PRODUCTION_DEPLOYMENT_RECORD=<path>`.
   - Enforces required sections, explicit `incremental package` / `full tree` / `hotfix` release type, sha256 evidence, production backup paths, post-deployment validation PASS rows, demo cleanup evidence, and explicit non-full-alignment wording when full-tree alignment is not checked.
   - For full-tree releases, requires production Git authority evidence: `production_git_authority_guard: PASS`, `HEAD=live_remote_main=EXPECTED_RELEASE_SHA=`, clean Git status, and the approved remote URL.
   - The deployment record template requires future full-tree releases to preserve the full `production_git_authority_guard` JSON evidence with `status`, `branch`, `head`, `expected_release_sha`, `live_remote_main_sha`, `remote_url`, `status_porcelain`, `detached_head`, `live_remote_query_ok`, and `stale_remote_ref_detected`.
@@ -347,7 +347,7 @@
   - Checks `docs/ops/iterations/delivery_context_switch_log_v1.md` has no `active_commit: pending` drift points.
   - Writes reports:
     - `artifacts/backend/product_delivery_governance_truth_guard_report.json`
-    - `docs/ops/audit/product_delivery_governance_truth_guard_report.md`
+    - `docs/audit/product_delivery_governance_truth_guard_report.md`
 - `make verify.product.delivery.governance_truth.schema.guard`
   - Verifies the governance truth JSON/MD report shape after the guard writes evidence.
   - Enforces summary, snapshot, errors, and warnings fields and required Markdown report sections.

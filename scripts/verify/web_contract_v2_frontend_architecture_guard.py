@@ -20,9 +20,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 WEB_ROOT = ROOT / "frontend/apps/web/src"
 REPORT_JSON = ROOT / "artifacts/backend/web_contract_v2_frontend_architecture_guard.json"
-REPORT_MD = ROOT / "docs/ops/audit/web_contract_v2_frontend_architecture_guard_report.md"
-ROUTE_MATRIX = ROOT / "docs/ops/audits/web_frontend_contract_v2_route_runtime_matrix_v1.md"
-AUDIT_DOC = ROOT / "docs/ops/audits/web_frontend_contract_v2_architecture_audit_v1.md"
+REPORT_MD = ROOT / "docs/audit/web_contract_v2_frontend_architecture_guard_report.md"
+ROUTE_MATRIX = ROOT / "docs/audit/web_frontend_contract_v2_route_runtime_matrix_v1.md"
+AUDIT_DOC = ROOT / "docs/audit/web_frontend_contract_v2_architecture_audit_v1.md"
 
 
 @dataclass(frozen=True)
@@ -325,7 +325,7 @@ REQUIRED_WORKFLOW_STATUSBAR_CONTRACT_TOKENS: tuple[tuple[Path, str], ...] = (
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "if (!input.recordId)"),
     (WEB_ROOT / "pages/contractForm/useRecordFormLayout.ts", "fallback:normalizeWorkflowPhaseStatusbar(context.currentWorkflowContract())"),
     (WEB_ROOT / "pages/ContractFormPage.vue", "recordId: recordId.value"),
-    (ROOT / "docs/ops/audit/workflow_state_unification_plan.md", "New-record forms must not render workflow statusbar"),
+    (ROOT / "docs/audit/workflow_state_unification_plan.md", "New-record forms must not render workflow statusbar"),
     (ROOT / "make/ci.mk", "verify.workflow_contract.browser.create_statusbar.host"),
 )
 

@@ -36,14 +36,14 @@ demo.ownership_cleanup.apply: guard.prod.forbid check-compose-project check-comp
 audit.tenant.boundary.legacy_carriers: guard.prod.forbid
 	@test -n "$(SC_CUSTOMER_REPOSITORY_ROOT)" || { echo "SC_CUSTOMER_REPOSITORY_ROOT is required for the final carrier inventory" >&2; exit 2; }
 	@python3 scripts/audit/tenant_boundary_06_legacy_carrier_inventory.py \
-		--output docs/ops/audit/tenant_boundary_06_legacy_carrier_inventory.csv \
+		--output docs/audit/tenant_boundary_06_legacy_carrier_inventory.csv \
 		$(if $(TENANT_BOUNDARY_HISTORY_COUNTS),--history-counts "$(TENANT_BOUNDARY_HISTORY_COUNTS)",) \
 		$(if $(SC_CUSTOMER_REPOSITORY_ROOT),--customer-root "$(SC_CUSTOMER_REPOSITORY_ROOT)",)
 
 audit.tenant.boundary.history_counts: guard.prod.forbid check-compose-env
 	@test -n "$(TENANT_BOUNDARY_HISTORY_COUNT_OUTPUT)" || { echo "TENANT_BOUNDARY_HISTORY_COUNT_OUTPUT is required" >&2; exit 2; }
 	@python3 scripts/audit/tenant_boundary_06_history_counts.py \
-		--inventory docs/ops/audit/tenant_boundary_06_legacy_carrier_inventory.csv \
+		--inventory docs/audit/tenant_boundary_06_legacy_carrier_inventory.csv \
 		--output "$(TENANT_BOUNDARY_HISTORY_COUNT_OUTPUT)" \
 		--project "$(CANDIDATE_PROJECT)" --database "$(CANDIDATE_DB)" --db-user "$(DB_USER)" \
 		$(if $(TENANT_BOUNDARY_CUSTOMER_MODULE),--customer-module "$(TENANT_BOUNDARY_CUSTOMER_MODULE)",) \

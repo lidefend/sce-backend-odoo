@@ -47,7 +47,7 @@
 
 ## 5. 交付产物
 - 试运行报告（建议：`artifacts/release/phase6_pilot_report.md`）
-- 首发记录（建议：`docs/ops/releases/current/scems_v1_0_launch.md`）
+- 首发记录（建议：`docs/releases/current/scems_v1_0_launch.md`）
 - 发布总结（建议：`docs/releases/scems_v1_0_post_launch_review.md`）
 
 ## 6. 退出条件

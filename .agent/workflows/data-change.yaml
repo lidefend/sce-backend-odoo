@@ -1,0 +1,15 @@
+workflow:
+  id:
+    data-change
+
+  purpose:
+    safe_data_change_iteration
+
+  steps:
+    - load_goal
+    - confirm_data_source
+    - verify_data_baseline
+    - create_snapshot
+    - execute_data_change
+    - validate_result
+    - collect_evidence

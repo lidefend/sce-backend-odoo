@@ -29,7 +29,7 @@
 ## 产出与判定
 - PASS 标志：命令末尾输出 `PASS`
 - 报告文件：
-  - `docs/ops/audit/delivery_simulation_report.md`
+  - `docs/audit/delivery_simulation_report.md`
   - `artifacts/backend/delivery_simulation_report.json`
 
 ## 常见问题

@@ -1,0 +1,7 @@
+version: 1
+
+# 保留扩展层，当前首阶段不纳入自动化执行。
+extensions:
+  permission_model: external
+  source: acl_and_record_rule
+  notes: 先通过现有 smart_core 权限链验证，再逐步迁移。

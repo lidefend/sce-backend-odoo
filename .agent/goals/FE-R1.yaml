@@ -1,0 +1,36 @@
+goal:
+  id: FE-R1
+
+  title:
+    single_vertical_scroll
+
+  status:
+    completed
+
+  objective:
+    remove_nested_scroll_problem
+
+  background:
+    problem:
+      - outer_container_scroll
+      - inner_table_scroll
+      - pagination_layout_conflict
+
+  scope:
+    type:
+      - frontend_layout
+
+  constraints:
+    - no_business_logic_change
+    - no_api_change
+    - no_permission_change
+
+  acceptance:
+    - desktop_browser_pass
+    - mobile_browser_pass
+    - accessibility_pass
+
+  evidence:
+    source:
+      - FE-R1 verification records
+      - related git commits

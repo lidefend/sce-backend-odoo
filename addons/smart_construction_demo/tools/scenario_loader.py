@@ -393,24 +393,21 @@ def load_base_seed(env, mode: str = "update") -> None:
 
 
 def _ensure_s69_payment_ledger(env) -> None:
-    """Create the S69 payment ledger through the guarded model context."""
+    """Create the S69 ledger through the payment-request service boundary."""
     module = "smart_construction_demo"
     request = env.ref(f"{module}.sc_demo_payment_request_069_pay", raise_if_not_found=False)
     if not request:
         return
     Ledger = env["payment.ledger"].sudo()
     ledger = Ledger.search([("payment_request_id", "=", request.id)], limit=1)
-    values = {
-        "payment_request_id": request.id,
-        "amount": 120000.0,
-        "paid_at": "2025-08-24 10:00:00",
-        "ref": "S69-PAY-LEDGER-001",
-        "note": "S69 支付台账样例。",
-    }
     if ledger:
-        ledger.write(values)
-    else:
-        Ledger.with_context(allow_payment_ledger_create=True).create(values)
+        return
+    request.sudo().with_context(payment_soft_gate=True)._ensure_payment_ledger(
+        amount=120000.0,
+        paid_at="2025-08-24 10:00:00",
+        ref="S69-PAY-LEDGER-001",
+        note="S69 支付台账样例。",
+    )
 
 
 def _ensure_s78_project_document_wbs(env) -> None:

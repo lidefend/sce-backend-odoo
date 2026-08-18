@@ -2089,7 +2089,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 ## 2026-08-01 — RC12-PRODUCTION-DEPLOYMENT-RECORD-01
 
 - Branch / anchor: `release/rc12-production-deployment-record` from `915067ba5d282bfcc03d276d49cd61c5f169a0fd`.
-- Formal Product Layer / Target / Module: P4 ops delivery; production deployment evidence in `docs/ops/releases/current`.
+- Formal Product Layer / Target / Module: P4 ops delivery; production deployment evidence in `docs/releases/current`.
 - Reason: close the completed RC12 immutable-image upgrade with a repository-governed, reviewable deployment record.
 - Standard vs User-Specific / Why Here: release evidence is generic P4 operational governance; tenant identity is recorded as deployment context only and no customer behavior is encoded.
 - Why Not Elsewhere / Blast Radius: no P0-P3, frontend, application source, image, runtime configuration, container, service, volume, or database change; only documentation and audit evidence are added.
@@ -4838,4 +4838,61 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   and edit retain the prior canvas and action bar. Presenter 49 cases,
   component bridge 38 cases, architecture guard 63 checks, strict typecheck,
   acceptance production build (4620 modules), and the Approved-only browser
-  probe bind the candidate before any additional product state is exercised.
+  probe bind the candidate before any additional product state is exercised.## Local development lifecycle normalization (2026-08-17)
+
+- Branch / baseline: `fix/local-development-lifecycle-v2` /
+  `b834088`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling / governed
+  local database and service lifecycle / Make, ops scripts and demo fixture
+  entry guards.
+- Reason / boundary: local feature iteration, daily-data compatibility and clean
+  installation had accumulated overlapping database, project, port, volume and
+  credential conventions. They are now fixed respectively as `sc-local-dev` /
+  `sc_dev_demo`, `sc-local-sample` / `sc_dev_sample`, and `sc-local-clean` /
+  `sc_clean`, with exact governed Make entrypoints.
+- Why Here / Why Not Elsewhere: lifecycle identity, restore, snapshot, readiness,
+  disposal and credential isolation are P4 responsibilities. P1 demo producers
+  may adapt to existing domain invariants, but missing tax, approval or other
+  business samples remain P1 fixture defects and must not be synthesized by
+  Make, Compose or restore scripts.
+- Blast radius / validation: only local development environments and explicit
+  demo guards are affected; acceptance port 18082 and production identities are
+  unchanged. Lifecycle behavior tests, shell syntax, exact profile readiness,
+  paired-backup restore, health checks and diff checks prove containment.
+  The legacy demo verifier was aligned with the current registered-company tax
+  authority and stable module-owned settlement/payment XMLIDs; the governed
+  idempotent `local.dev.sync_demo` chain now passes end to end.
+
+## Product-result worktree governance lock (2026-08-17)
+
+- Branch / baseline: `fix/local-development-lifecycle-v2` / `b834088`.
+- Formal Product Layer / Layer Target / Module: P4 repository governance /
+  baseline iteration worktree policy / `AGENTS.md` and Codex workspace guards.
+- Reason / boundary: responsibility labels had been treated as automatic
+  worktree, branch and PR boundaries, creating repeated P0/P1 environments for
+  one product journey. Worktrees are now organized by one independently
+  acceptable PFL result; P0/P1 remain code ownership, commit, review and
+  rollback boundaries inside that delivery candidate.
+- Split authority: a separate worktree requires all five conditions—independent
+  value, independent acceptance, non-overlapping files, non-contending runtime
+  and independent rollback. Active worktrees are capped at one product delivery
+  plus one genuinely independent platform/environment topic.
+- Validation: the baseline iteration policy guard locks the new rules in both
+  repository instruction sources. Existing single-writer, frozen-fingerprint,
+  serialized-runtime and governed create/cleanup requirements remain unchanged.
+
+## Workspace worktree consolidation (2026-08-17)
+
+- Active worktrees were reduced to the P4 lifecycle candidate and the single
+  PFL product-delivery candidate. Seven completed or frozen linked worktrees
+  were detached through `make workspace.worktree.cleanup` while retaining their
+  local branch references.
+- Three dirty superseded component prototypes were first preserved as local-only
+  archive commits, then detached: `4e1c7c8c270cbaf1c5f8215d6d005b1c8f902468`,
+  `3923ef9076ddeb95362b8e7be34b180d5314b4d9`, and
+  `5f0363f1f4f1ced13d36a021af60cbf7d776db71`. None were pushed.
+- Two clean standalone legacy clones were not misrepresented as Git worktrees.
+  Their unique unmerged histories were preserved intact and moved reversibly to
+  `/home/lidefend/workspace/.codex-evidence/workspace-archives/20260817/`.
+- No remote branch was deleted, no business database was changed, and the
+  active product worktree's 11-file candidate was not modified.

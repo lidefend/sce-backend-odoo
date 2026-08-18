@@ -7,6 +7,7 @@ from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.smart_construction_core.handlers.payment_request_approval import (
     PaymentRequestApproveHandler,
     PaymentRequestDoneHandler,
+    PaymentRequestCancelByContractHandler,
     PaymentRequestRejectHandler,
     PaymentRequestSubmitHandler,
 )
@@ -192,3 +193,46 @@ class TestPaymentRequestApprovalIntentBackend(TransactionCase):
         self.assertEqual(data.get("reason_code"), REASON_OK)
         self.assertEqual(data.get("intent_action"), "done")
         self.assertEqual(((data.get("payment_request") or {}).get("id")), payment_request.id)
+
+    def test_payment_request_done_returns_paid_contract_state(self):
+        payment_request = self._create_payment_request_minimal()
+        payment_request.sudo().with_context(allow_transition=True).write({"state": "approved"})
+
+        def _mark_done(record):
+            record.with_context(allow_transition=True).write({"state": "done"})
+            return {"ok": True}
+
+        handler = PaymentRequestDoneHandler(self.env, payload={})
+        with patch(
+            "odoo.addons.smart_construction_core.models.core.payment_request.PaymentRequest.action_done",
+            autospec=True,
+            side_effect=_mark_done,
+        ):
+            result = handler.handle({"id": payment_request.id, "request_id": "req-pr-done-state-map"})
+        self.assertTrue(result.get("ok"))
+        payment_request_data = result.get("data", {}).get("payment_request", {})
+        self.assertEqual(payment_request_data.get("state"), "paid")
+        self.assertEqual(payment_request_data.get("state_backend"), "done")
+
+    def test_payment_request_cancel_by_contract_returns_reversed_contract_state(self):
+        payment_request = self._create_payment_request_minimal()
+        payment_request.sudo().with_context(allow_transition=True).write({"state": "approved"})
+
+        def _cancel(record):
+            record.with_context(allow_transition=True).write({"state": "cancel"})
+            return {"ok": True}
+
+        handler = PaymentRequestCancelByContractHandler(self.env, payload={})
+        with patch(
+            "odoo.addons.smart_construction_core.models.core.payment_request.PaymentRequest.action_cancel",
+            autospec=True,
+            side_effect=_cancel,
+        ):
+            result = handler.handle({"id": payment_request.id, "request_id": "req-pr-cancel-alias"})
+        self.assertTrue(result.get("ok"))
+        data = result.get("data") or {}
+        self.assertEqual(data.get("reason_code"), REASON_OK)
+        self.assertEqual(data.get("intent_action"), "mark_reversed")
+        payment_request_data = data.get("payment_request", {})
+        self.assertEqual(payment_request_data.get("state"), "reversed")
+        self.assertEqual(payment_request_data.get("state_backend"), "cancel")

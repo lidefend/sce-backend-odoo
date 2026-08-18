@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE = ROOT / "addons/smart_construction_core"
-DEFAULT_OUTPUT = ROOT / "docs/ops/audit/tenant_boundary_06_legacy_carrier_inventory.csv"
+DEFAULT_OUTPUT = ROOT / "docs/audit/tenant_boundary_06_legacy_carrier_inventory.csv"
 FIELDS = (
     "path",
     "symbol_or_xmlid",

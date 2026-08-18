@@ -1,0 +1,11 @@
+ContractRef:
+  type: object
+  required: [id, number, name]
+  properties:
+    id:
+      type: integer
+      minimum: 1
+    number:
+      type: string
+    name:
+      type: string

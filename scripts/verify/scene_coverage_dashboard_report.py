@@ -124,7 +124,7 @@ def _build_report(rows: list[dict[str, str]]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate scene maturity coverage dashboard report.")
     parser.add_argument("--inventory", default="docs/ops/scene_inventory_matrix_latest.md")
-    parser.add_argument("--output", default="docs/ops/audit/scene_coverage_dashboard.md")
+    parser.add_argument("--output", default="docs/audit/scene_coverage_dashboard.md")
     args = parser.parse_args()
 
     inventory = Path(args.inventory)
