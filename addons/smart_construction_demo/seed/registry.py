@@ -15,6 +15,9 @@ _REGISTRY: Dict[str, SeedStep] = {}
 _PROFILES: Dict[str, List[str]] = {
     "demo_full": [
         "dictionary",
+        "project_skeleton",
+        "boq_sample",
+        "metrics_smoke",
         "company_currency_cny",
         "demo_10_users",
         "demo_user_prefs",
@@ -41,8 +44,13 @@ def list_steps() -> List[str]:
 
 def _guard_demo_scope(env) -> None:
     db_name = str(getattr(getattr(env, "cr", None), "dbname", "") or "").strip()
-    if not (db_name == "sc_demo" or db_name.startswith("sc_demo_")):
-        raise RuntimeError("demo data requires a sc_demo database (got %s)" % (db_name or "<empty>"))
+    if not (
+        db_name in {"sc_demo", "sc_dev_demo"} or db_name.startswith("sc_demo_")
+    ):
+        raise RuntimeError(
+            "demo data requires an authorized demo database (got %s)"
+            % (db_name or "<empty>")
+        )
     if os.environ.get("SC_ENVIRONMENT") != "demo":
         raise RuntimeError("demo data requires SC_ENVIRONMENT=demo")
     if os.environ.get("SC_ALLOW_DEMO_DATA") != "1":

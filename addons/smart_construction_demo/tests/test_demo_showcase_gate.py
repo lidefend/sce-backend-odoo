@@ -76,15 +76,32 @@ class TestDemoShowcaseGate(TransactionCase):
                 guard_demo_scope(_NoOrmEnvironment(dbname))
 
     def test_demo_scope_rejects_production_database_before_orm(self):
-        self._assert_scope_denied("production", "demo", "1", "secret", "sc_demo database")
+        self._assert_scope_denied("production", "demo", "1", "secret", "authorized demo database")
 
     def test_demo_scope_rejects_history_database_before_orm(self):
         self._assert_scope_denied(
-            "history_rehearsal", "demo", "1", "secret", "sc_demo database"
+            "history_rehearsal", "demo", "1", "secret", "authorized demo database"
         )
 
     def test_demo_scope_rejects_empty_database_before_orm(self):
-        self._assert_scope_denied("", "demo", "1", "secret", "sc_demo database")
+        self._assert_scope_denied("", "demo", "1", "secret", "authorized demo database")
+
+    def test_local_feature_demo_database_is_authorized(self):
+        with patch.dict(
+            os.environ,
+            {
+                "SC_ENVIRONMENT": "demo",
+                "SC_ALLOW_DEMO_DATA": "1",
+                "SC_DEMO_USER_PASSWORD": "secret",
+            },
+            clear=False,
+        ):
+            guard_demo_scope(_NoOrmEnvironment("sc_dev_demo"))
+
+    def test_technical_sample_database_is_not_demo_authority(self):
+        self._assert_scope_denied(
+            "sc_dev_sample", "demo", "1", "secret", "authorized demo database"
+        )
 
     def test_demo_scope_rejects_unauthorized_environment_before_orm(self):
         self._assert_scope_denied("sc_demo", "production", "1", "secret", "SC_ENVIRONMENT")
