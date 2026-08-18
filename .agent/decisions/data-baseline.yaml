@@ -18,9 +18,9 @@ decision:
 
     historical_authority:
 
-      - SCBS
+      - legacy_authority_primary   # anonymized (tenant guard)
 
-      - SCBSLY
+      - legacy_authority_secondary # anonymized (tenant guard)
 
 
   rules:
