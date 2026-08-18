@@ -253,7 +253,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     fieldGroupBase, fieldGroupDraft, effectiveGroupVisible, lowCodeFormLayoutBase,
     nativeLayoutVisibilityRevision, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels,
     formLayoutColumnsDraft, fieldVisibilityDraft, contractActionFromNativeRow, policyContext, rights,
-    markFieldChanged, layoutNodes: () => layoutNodes.value,
+    currentWorkflowContract, markFieldChanged, layoutNodes: () => layoutNodes.value,
   });
 
   const { layoutNodes, nativeFieldSchemasForNodes } = useRecordFormFieldSchemas({
