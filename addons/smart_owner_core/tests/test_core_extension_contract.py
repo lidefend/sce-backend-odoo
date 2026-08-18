@@ -36,8 +36,8 @@ class TestOwnerCoreExtensionContract(TransactionCase):
             self.assertIsNotNone(item["handler"])
         # productization storefront intents must stay registered
         for required in (
-            "owner.payment_request.submit",
-            "owner.payment_request.approve",
+            "owner.payment.request.submit",
+            "owner.payment.request.approve",
             "owner.approval.center",
         ):
             self.assertIn(required, intents)
