@@ -11,6 +11,7 @@ SYSTEM_INIT_PATH = ROOT / "addons" / "smart_core" / "handlers" / "system_init.py
 SESSION_PATH = ROOT / "frontend" / "apps" / "web" / "src" / "stores" / "session.ts"
 STRATEGY_PATH = ROOT / "frontend" / "apps" / "web" / "src" / "app" / "sceneValidationRecoveryStrategy.ts"
 FORM_PATH = ROOT / "frontend" / "apps" / "web" / "src" / "pages" / "ContractFormPage.vue"
+FORM_SEMANTICS_PATH = ROOT / "frontend" / "apps" / "web" / "src" / "pages" / "contractForm" / "useRecordContractSemantics.ts"
 BEHAVIOR_BASELINE_PATH = ROOT / "scripts" / "verify" / "baselines" / "scene_validation_recovery_strategy_behavior_smoke_guard.json"
 
 
@@ -101,7 +102,7 @@ def _resolve_action(strategy: dict[str, list[str]], ctx: dict[str, object]) -> s
 
 def main() -> int:
     errors: list[str] = []
-    for path in (SYSTEM_INIT_PATH, SESSION_PATH, STRATEGY_PATH, FORM_PATH, BEHAVIOR_BASELINE_PATH):
+    for path in (SYSTEM_INIT_PATH, SESSION_PATH, STRATEGY_PATH, FORM_PATH, FORM_SEMANTICS_PATH, BEHAVIOR_BASELINE_PATH):
         if not path.is_file():
             errors.append(f"missing file: {path}")
     if errors:
@@ -114,6 +115,7 @@ def main() -> int:
     session_text = SESSION_PATH.read_text(encoding="utf-8")
     strategy_text = STRATEGY_PATH.read_text(encoding="utf-8")
     form_text = FORM_PATH.read_text(encoding="utf-8")
+    form_semantics_text = FORM_SEMANTICS_PATH.read_text(encoding="utf-8")
     behavior_baseline = json.loads(BEHAVIOR_BASELINE_PATH.read_text(encoding="utf-8"))
 
     _assert(
@@ -164,14 +166,16 @@ def main() -> int:
             errors,
         )
 
-    panel_idx = _index_of(form_text, "const sceneValidationPanel = computed(() =>")
-    resolver_idx = _index_of(form_text, "resolveSceneValidationSuggestedAction({")
-    hint_idx = _index_of(form_text, "suggestedAction,")
-    _assert(panel_idx >= 0, "form page missing scene validation panel", errors)
-    _assert(resolver_idx >= 0, "form page missing suggested action resolver", errors)
+    # Since the contractForm composable refactor, the validation panel is built in
+    # useRecordContractSemantics.ts and consumed by ContractFormPage.vue rendering.
+    panel_idx = _index_of(form_semantics_text, "const sceneValidationPanel = computed(() => buildSceneValidationPanel({")
+    resolver_idx = _index_of(form_semantics_text, "suggestedAction: resolveSceneValidationSuggestedAction({")
+    hint_idx = _index_of(form_text, ':suggested-action="sceneValidationPanel.suggestedAction"')
+    _assert(panel_idx >= 0, "form semantics composable missing scene validation panel", errors)
+    _assert(resolver_idx >= 0, "form semantics composable missing suggested action resolver", errors)
     _assert(hint_idx >= 0, "form page missing suggestedAction output", errors)
-    if panel_idx >= 0 and resolver_idx >= 0 and hint_idx >= 0:
-        _assert(panel_idx < resolver_idx < hint_idx, "form page suggested action wiring order invalid", errors)
+    if panel_idx >= 0 and resolver_idx >= 0:
+        _assert(panel_idx < resolver_idx, "form semantics suggested action wiring order invalid", errors)
 
     runtime_payload = behavior_baseline.get("runtime_payload") if isinstance(behavior_baseline, dict) else {}
     cases = behavior_baseline.get("cases") if isinstance(behavior_baseline, dict) else []
