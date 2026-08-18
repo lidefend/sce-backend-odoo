@@ -1,0 +1,110 @@
+{
+  "registry_version": 1,
+  "generated_from": "contracts/registry.yaml",
+  "contracts": [
+    {
+      "path": "product/payment-request.yaml",
+      "kind": "product",
+      "domain": "payment_request",
+      "version": 1
+    },
+    {
+      "path": "domain/payment-request.yaml",
+      "kind": "domain",
+      "domain": "payment_request",
+      "version": 1
+    },
+    {
+      "path": "domain/payment-execution.yaml",
+      "kind": "domain",
+      "domain": "payment_execution",
+      "version": 1
+    },
+    {
+      "path": "domain/general-contract.yaml",
+      "kind": "domain",
+      "domain": "general_contract",
+      "version": 1
+    },
+    {
+      "path": "domain/settlement.yaml",
+      "kind": "domain",
+      "domain": "settlement",
+      "version": 1
+    },
+    {
+      "path": "domain/expense-claim.yaml",
+      "kind": "domain",
+      "domain": "expense_claim",
+      "version": 1
+    },
+    {
+      "path": "domain/invoice-registration.yaml",
+      "kind": "domain",
+      "domain": "invoice_registration",
+      "version": 1
+    },
+    {
+      "path": "domain/receipt-income.yaml",
+      "kind": "domain",
+      "domain": "receipt_income",
+      "version": 1
+    },
+    {
+      "path": "domain/project-lifecycle.yaml",
+      "kind": "domain",
+      "domain": "project_lifecycle",
+      "version": 1
+    },
+    {
+      "path": "schemas/common.yaml",
+      "kind": "schema",
+      "version": 1
+    },
+    {
+      "path": "schemas/contract-ref.yaml",
+      "kind": "schema",
+      "version": 1
+    },
+    {
+      "path": "schemas/money.yaml",
+      "kind": "schema",
+      "version": 1
+    },
+    {
+      "path": "schemas/project-ref.yaml",
+      "kind": "schema",
+      "version": 1
+    },
+    {
+      "path": "schemas/payment-request.yaml",
+      "kind": "schema",
+      "version": 1
+    },
+    {
+      "path": "api/openapi.yaml",
+      "kind": "api",
+      "version": "0.1.0"
+    },
+    {
+      "path": "api/payment-request.yaml",
+      "kind": "api",
+      "version": 1
+    },
+    {
+      "path": "extensions/permission.yaml",
+      "kind": "extension",
+      "version": 1
+    },
+    {
+      "path": "extensions/ui.yaml",
+      "kind": "extension",
+      "version": 1
+    },
+    {
+      "path": "extensions/workflow.yaml",
+      "kind": "extension",
+      "version": 1
+    }
+  ]
+}

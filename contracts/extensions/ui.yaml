@@ -1,3 +1,5 @@
+version: 1
+
 # 保留扩展层，当前首阶段仅说明：UI 仅消费 formStructureRole/component元信息。
 ui:
   render_profile:

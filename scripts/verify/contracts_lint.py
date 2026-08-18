@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Validate local contract artifacts under contracts/ directory."""
+"""Validate local contract artifacts under contracts/ directory.
+
+R6 (PRODUCTIZATION-P1): contracts carry explicit versions.
+- product/ domain/ extensions/ documents must declare a `version` key (positive int);
+- contracts/registry.yaml is the authoritative version registry and must cover
+  every *.yaml under contracts/ (excluding generated/ and the registry itself)
+  with matching versions;
+- api/openapi.yaml version authority is info.version, mirrored in the registry;
+- schemas/ are pure schema maps: version lives in the registry only.
+"""
 
 from __future__ import annotations
 
@@ -146,6 +155,77 @@ def require_mapping(path: Path, data: Any, required_keys: List[str], errors: Lis
             errors.append(f"{path}: missing required key '{key}'")
 
 
+def check_version_key(path: Path, data: Any, errors: List[str]) -> None:
+    if not isinstance(data, dict):
+        return
+    version = data.get("version")
+    if version is None:
+        errors.append(f"{path}: missing required key 'version' (R6: contracts must be versioned)")
+    elif not isinstance(version, int) or isinstance(version, bool) or version < 1:
+        errors.append(f"{path}: 'version' must be a positive integer, got {version!r}")
+
+
+def check_registry(
+    root: Path,
+    docs: Dict[Path, Dict[str, Any]],
+    errors: List[str],
+) -> None:
+    registry_path = root.resolve() / "registry.yaml"
+    registry = docs.get(registry_path.resolve())
+    if registry is None:
+        errors.append(f"{registry_path}: contract version registry missing")
+        return
+
+    entries = registry.get("contracts")
+    if not isinstance(entries, list) or not entries:
+        errors.append(f"{registry_path}: 'contracts' must be a non-empty list")
+        return
+
+    seen: Dict[str, Dict[str, Any]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            errors.append(f"{registry_path}: registry entries must be mappings")
+            continue
+        rel = entry.get("path")
+        if not rel:
+            errors.append(f"{registry_path}: registry entry missing 'path'")
+            continue
+        if rel in seen:
+            errors.append(f"{registry_path}: duplicate registry path '{rel}'")
+            continue
+        seen[rel] = entry
+        kind = entry.get("kind")
+        if kind not in {"product", "domain", "schema", "api", "extension"}:
+            errors.append(f"{registry_path}: '{rel}' invalid kind '{kind}'")
+
+    # coverage + version consistency
+    root_resolved = root.resolve()
+    for path, doc in docs.items():
+        rel = path.relative_to(root_resolved).as_posix()
+        if rel.startswith("generated/") or rel == "registry.yaml":
+            continue
+        entry = seen.get(rel)
+        if entry is None:
+            errors.append(f"{registry_path}: contract file not registered: {rel}")
+            continue
+        registry_version = entry.get("version")
+        if registry_version is None:
+            errors.append(f"{registry_path}: '{rel}' missing version")
+            continue
+        if entry.get("kind") in {"product", "domain", "extension"}:
+            doc_version = doc.get("version") if isinstance(doc, dict) else None
+            if doc_version != registry_version:
+                errors.append(
+                    f"{registry_path}: '{rel}' registry version {registry_version!r} != document version {doc_version!r}"
+                )
+        elif rel == "api/openapi.yaml" and isinstance(doc, dict):
+            info_version = (doc.get("info") or {}).get("version")
+            if info_version != registry_version:
+                errors.append(
+                    f"{registry_path}: '{rel}' registry version {registry_version!r} != info.version {info_version!r}"
+                )
+
+
 def check_openapi_shape(data: Dict[str, Any], path: Path, errors: List[str], op_ids: List[Tuple[str, str]]) -> None:
     if "openapi" not in data:
         errors.append(f"{path}: missing required key 'openapi'")
@@ -193,8 +273,16 @@ def main() -> int:
         return 2
 
     required_files = [
+        root / "registry.yaml",
         root / "product" / "payment-request.yaml",
         root / "domain" / "payment-request.yaml",
+        root / "domain" / "payment-execution.yaml",
+        root / "domain" / "general-contract.yaml",
+        root / "domain" / "settlement.yaml",
+        root / "domain" / "expense-claim.yaml",
+        root / "domain" / "invoice-registration.yaml",
+        root / "domain" / "receipt-income.yaml",
+        root / "domain" / "project-lifecycle.yaml",
         root / "api" / "openapi.yaml",
         root / "api" / "payment-request.yaml",
         root / "schemas" / "common.yaml",
@@ -221,9 +309,16 @@ def main() -> int:
 
     for p in (root / "product").glob("*.yaml"):
         require_mapping(p, docs[p.resolve()], ["id", "title", "pages", "capabilities", "roles"], errors)
+        check_version_key(p, docs[p.resolve()], errors)
 
     for p in (root / "domain").glob("*.yaml"):
         require_mapping(p, docs[p.resolve()], ["id", "title", "entity", "identity", "fields", "states", "transitions"], errors)
+        check_version_key(p, docs[p.resolve()], errors)
+
+    for p in (root / "extensions").glob("*.yaml"):
+        check_version_key(p, docs[p.resolve()], errors)
+
+    check_registry(root, docs, errors)
 
     openapi_path = root / "api" / "openapi.yaml"
     if openapi_path.resolve() in docs:

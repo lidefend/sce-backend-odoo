@@ -1,0 +1,85 @@
+id: payment_execution
+version: 1
+
+entity: ScPaymentExecution
+
+title: 付款执行
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  project:
+    type: ProjectRef
+    required: true
+  partner:
+    type: string
+    required: false
+  contract:
+    type: ContractRef
+    required: false
+  payment_request:
+    type: ContractRef
+    required: false
+  state:
+    type: string
+    enum:
+      - draft
+      - confirmed
+      - paid
+      - legacy_confirmed
+      - cancel
+  cancellation_kind:
+    type: string
+    enum:
+      - cancelled_before_payment
+      - payment_reversed
+    required: false
+  reject_reason:
+    type: string
+    required: false
+
+states:
+  draft:
+    mutable: true
+    actions:
+      - edit
+      - confirm
+      - cancel
+  confirmed:
+    mutable: false
+    actions:
+      - mark_paid
+      - cancel
+  paid:
+    mutable: false
+    actions:
+      - reverse_payment
+  legacy_confirmed:
+    mutable: false
+    actions: []
+    note: 历史数据迁移终态，仅可读。
+  cancel:
+    mutable: false
+    actions: []
+
+transitions:
+  confirm:
+    from: [draft]
+    to: confirmed
+    capability: payment_execution.confirm
+  mark_paid:
+    from: [confirmed]
+    to: paid
+    capability: payment_execution.mark_paid
+  reverse_payment:
+    from: [paid]
+    to: cancel
+    capability: payment_execution.reverse_payment
+    note: 已付款冲销，落 cancellation_kind=payment_reversed。
+  cancel:
+    from: [draft, confirmed]
+    to: cancel
+    capability: payment_execution.cancel
+    note: 付款前取消，落 cancellation_kind=cancelled_before_payment。

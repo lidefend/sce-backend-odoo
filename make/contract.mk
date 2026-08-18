@@ -1,10 +1,14 @@
 # ======================================================
 # ================== Contract ==========================
 # ======================================================
-.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint
+.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint
 
 verify.contract.lint:
 	@python3 scripts/verify/contracts_lint.py
+	@$(MAKE) --no-print-directory contract.registry.export
+
+contract.registry.export:
+	@python3 scripts/contract/export_contract_registry.py
 
 INTENT_SURFACE_MD ?= artifacts/intent_surface_report.md
 INTENT_SURFACE_JSON ?= artifacts/intent_surface_report.json

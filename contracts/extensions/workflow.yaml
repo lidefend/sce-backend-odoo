@@ -1,3 +1,5 @@
+version: 1
+
 # 保留扩展层，当前首阶段仅记录关键领域动作。
 actions:
   - payment_request.submit

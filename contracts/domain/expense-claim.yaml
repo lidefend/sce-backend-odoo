@@ -1,0 +1,79 @@
+id: expense_claim
+version: 1
+
+entity: ScExpenseClaim
+
+title: 费用与保证金单据
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  project:
+    type: ProjectRef
+    required: true
+  payment_state:
+    type: string
+    required: false
+  payment_request:
+    type: ContractRef
+    required: false
+  currency:
+    type: string
+    required: true
+    default: CNY
+  state:
+    type: string
+    enum:
+      - draft
+      - submit
+      - approved
+      - done
+      - legacy_confirmed
+      - cancel
+
+states:
+  draft:
+    mutable: true
+    actions:
+      - edit
+      - submit
+      - cancel
+  submit:
+    mutable: false
+    actions:
+      - approve
+      - cancel
+  approved:
+    mutable: false
+    actions:
+      - complete
+  done:
+    mutable: false
+    actions: []
+  legacy_confirmed:
+    mutable: false
+    actions: []
+    note: 历史数据迁移终态，仅可读。
+  cancel:
+    mutable: false
+    actions: []
+
+transitions:
+  submit:
+    from: [draft]
+    to: submit
+    capability: expense_claim.submit
+  approve:
+    from: [submit]
+    to: approved
+    capability: expense_claim.approve
+  complete:
+    from: [approved]
+    to: done
+    capability: expense_claim.complete
+  cancel:
+    from: [draft, submit]
+    to: cancel
+    capability: expense_claim.cancel

@@ -1,3 +1,5 @@
+version: 1
+
 # 保留扩展层，当前首阶段不纳入自动化执行。
 extensions:
   permission_model: external
