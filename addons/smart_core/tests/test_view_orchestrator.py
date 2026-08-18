@@ -134,7 +134,7 @@ class TestViewOrchestrator(unittest.TestCase):
     def setUp(self):
         self.ViewOrchestrator = _load_orchestrator()
 
-    def _compose(self, payload, contract, view_type, *, legacy_policy=False):
+    def _compose(self, payload, contract, view_type, *, legacy_policy=False, view_id=22):
         env = _Env({"ui.business.config.contract": _ConfigModel(payload), "res.partner": _Model()})
         if legacy_policy:
             env["ui.form.field.policy"] = _LegacyPolicyModel()
@@ -143,7 +143,7 @@ class TestViewOrchestrator(unittest.TestCase):
             model_name="res.partner",
             view_type=view_type,
             action_id=11,
-            view_id=22,
+            view_id=view_id,
         )
         return result, env["ui.business.config.contract"].calls
 
@@ -188,10 +188,7 @@ class TestViewOrchestrator(unittest.TestCase):
         )
 
         self.assertNotIn("Legacy Contact", str(result["layout"]))
-        self.assertEqual(
-            [row.get("string") for row in result["layout"] if row.get("type") == "group"],
-            ["Identity"],
-        )
+        self.assertEqual(result["layout"], source["layout"])
         self.assertIn("one2many_list", str(result["layout"]))
         self.assertEqual(env["ui.form.field.policy"].calls, [{"allow_layout_append": False}])
 
@@ -268,7 +265,7 @@ class TestViewOrchestrator(unittest.TestCase):
             }
         ]
 
-        result, _calls = self._compose(payload, {"layout": source_layout}, "form")
+        result, _calls = self._compose(payload, {"layout": source_layout}, "form", view_id=None)
 
         sheet = result["layout"][0]
         group = sheet["children"][0]
@@ -306,12 +303,75 @@ class TestViewOrchestrator(unittest.TestCase):
             }
         }
 
-        result, _calls = self._compose(payload, {"layout": []}, "form")
+        result, _calls = self._compose(payload, {"layout": []}, "form", view_id=None)
 
         group = result["layout"][0]["children"][0]
         self.assertEqual(group.get("string"), "Primary")
         self.assertEqual([row.get("name") for row in group.get("children")], ["name", "email"])
         self.assertNotIn("business_config_orchestration_fields", str(result["layout"]))
+
+    def test_explicit_form_view_preserves_native_member_set(self):
+        payload = {
+            "view_orchestration": {
+                "views": {
+                    "form": {
+                        "actions": [{"name": "configured_only", "intent": "record.configured"}],
+                        "fields": [
+                            {"name": "name", "sequence": 10},
+                            {"name": "email", "sequence": 20},
+                        ],
+                    }
+                }
+            }
+        }
+        source_layout = [{
+            "type": "sheet",
+            "children": [{"type": "group", "children": [{"type": "field", "name": "name"}]}],
+        }]
+
+        result, _calls = self._compose(
+            payload,
+            {"layout": source_layout, "header_buttons": [{"name": "native_only", "intent": "record.native"}]},
+            "form",
+            view_id=1700,
+        )
+
+        self.assertIn("name", str(result["layout"]))
+        self.assertNotIn("email", str(result["layout"]))
+        self.assertNotIn("business_config_orchestration_fields", str(result["layout"]))
+        self.assertEqual(result["header_buttons"], [{"name": "native_only", "intent": "record.native"}])
+
+    def test_explicit_form_view_preserves_native_field_order(self):
+        payload = {
+            "view_orchestration": {
+                "views": {
+                    "form": {
+                        "fields": [
+                            {"name": "email", "sequence": 10, "readonly": True},
+                            {"name": "name", "sequence": 20},
+                        ],
+                    }
+                }
+            }
+        }
+        source_layout = [{
+            "type": "sheet",
+            "children": [
+                {"type": "field", "name": "name"},
+                {"type": "field", "name": "email"},
+            ],
+        }]
+
+        result, _calls = self._compose(
+            payload,
+            {"layout": source_layout},
+            "form",
+            view_id=1700,
+        )
+
+        fields = result["layout"][0]["children"]
+        self.assertEqual([field["name"] for field in fields], ["name", "email"])
+        self.assertTrue(fields[1]["readonly"])
 
     def test_form_view_can_compose_entry_semantic_surface_without_layout_overlay(self):
         payload = {
@@ -369,13 +429,8 @@ class TestViewOrchestrator(unittest.TestCase):
             "form",
         )
 
-        primary_groups = [row for row in result["layout"] if row.get("type") == "group"]
-        self.assertEqual([group.get("string") for group in primary_groups], ["Primary", "Contact"])
-        self.assertEqual(primary_groups[0].get("columns"), 2)
-        self.assertEqual([field.get("name") for field in primary_groups[0]["children"]], ["name", "state"])
-        self.assertEqual(primary_groups[0]["children"][0].get("label"), "Partner Name")
-        self.assertEqual([field.get("name") for field in primary_groups[1]["children"]], ["email"])
-        self.assertNotIn("native_group", str(result["layout"]))
+        self.assertEqual([row.get("type") for row in result["layout"]], ["header", "sheet"])
+        self.assertIn("native_group", str(result["layout"]))
         self.assertIn("Relations", str(result["layout"]))
         def field_occurrences(nodes, field_name):
             count = 0
@@ -389,10 +444,10 @@ class TestViewOrchestrator(unittest.TestCase):
             return count
 
         self.assertEqual(field_occurrences(result["layout"], "name"), 1)
-        self.assertEqual(field_occurrences(result["layout"], "state"), 2)
+        self.assertEqual(field_occurrences(result["layout"], "state"), 1)
         self.assertIn("statusbar", str(result["layout"]))
-        self.assertEqual(field_occurrences(primary_groups, "line_ids"), 0)
         self.assertEqual(field_occurrences(result["layout"], "line_ids"), 1)
+        self.assertEqual(field_occurrences(result["layout"], "email"), 0)
         self.assertIn("line_ids", str(result["layout"]))
         self.assertIn("one2many_list", str(result["layout"]))
         self.assertIn("default_parent_id", str(result["layout"]))
@@ -586,7 +641,7 @@ class TestViewOrchestrator(unittest.TestCase):
             }
         }
 
-        result, _calls = self._compose(payload, {"layout": [], "header_buttons": []}, "form")
+        result, _calls = self._compose(payload, {"layout": [], "header_buttons": []}, "form", view_id=None)
 
         self.assertEqual(result["header_buttons"][0]["intent"], "record.approve")
         self.assertEqual(result["stat_buttons"][0]["intent"], "analytics.open")
@@ -627,7 +682,7 @@ class TestViewOrchestrator(unittest.TestCase):
             ]
         }
 
-        result, _calls = self._compose(payload, contract, "form")
+        result, _calls = self._compose(payload, contract, "form", view_id=None)
         field = result["layout"][0]["children"][0]
 
         self.assertEqual(field["label"], "Contact Email")
@@ -720,7 +775,7 @@ class TestViewOrchestrator(unittest.TestCase):
             ]
         }
 
-        result, _calls = self._compose(payload, contract, "form")
+        result, _calls = self._compose(payload, contract, "form", view_id=None)
 
         self.assertEqual([node["name"] for node in result["layout"][0]["children"]], ["email", "name"])
 

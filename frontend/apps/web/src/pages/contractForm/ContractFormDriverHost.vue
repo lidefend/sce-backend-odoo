@@ -25,46 +25,44 @@
       </select>
     </div>
     <SceneUiProvider :kit="activeKit" fallback-kit="sc-native" density="compact">
-      <ObjectTaskPage
-        :summary-nodes="floorplan.summaryNodes"
-        :task-nodes="floorplan.taskNodes"
-        :context-nodes="floorplan.contextNodes"
-        :overflow-context-nodes="floorplan.overflowContextNodes"
-        :risk-nodes="floorplan.riskNodes"
-        :audit-nodes="floorplan.auditNodes"
-        :relation-nodes="floorplan.relationNodes"
-        :subordinate-nodes="subordinateNodes"
-        :decision-mode="floorplan.decisionMode"
-        :relation-adapter="relationAdapter"
-        :has-collaboration="showCollaborationPanel && hasCollaborationNode"
-        @field-change="emit('field-change', $event)"
-      >
-        <template v-if="floorplan.blockedActions.length" #blocking>
-          <section class="canonical-form-blocking-notice" role="status" data-canonical-blocking-notice>
-            <strong>当前办理暂不可执行</strong>
-            <span v-for="action in floorplan.blockedActions" :key="action.key">
-              {{ action.label }}：{{ action.reasonCode || 'ACTION_NOT_ALLOWED' }}
-            </span>
-          </section>
-        </template>
-        <template v-if="showCollaborationPanel && hasCollaborationNode" #collaboration>
+      <article class="sc-native-contract-page" data-native-contract-structure>
+        <main class="sc-native-contract-tree" data-canonical-zone="primary">
+          <CanonicalFormNodeRenderer
+            v-for="node in primaryNodes"
+            :key="node.nodeId"
+            :node="node"
+            :relation-adapter="relationAdapter"
+            @field-change="emit('field-change', $event)"
+            @action-ref="emit('action-ref', $event)"
+          />
+        </main>
+        <section v-if="subordinateNodes.length" class="sc-native-contract-subordinate" data-canonical-zone="subordinate">
+          <CanonicalFormNodeRenderer
+            v-for="node in subordinateNodes"
+            :key="node.nodeId"
+            :node="node"
+            :relation-adapter="relationAdapter"
+            @field-change="emit('field-change', $event)"
+            @action-ref="emit('action-ref', $event)"
+          />
+        </section>
+        <section v-if="showCollaborationPanel && hasCollaborationNode" class="sc-native-contract-collaboration">
           <NativeCollaborationPanel
             v-bind="collaborationPanelProps"
             v-on="collaborationPanelListeners"
           />
-        </template>
-        <template v-if="visibleActions.length" #actions>
-          <nav class="canonical-form-action-bar" aria-label="表单业务动作" data-canonical-action-bar>
+        </section>
+        <nav v-if="visibleActions.length" class="canonical-form-action-bar" aria-label="表单业务动作" data-canonical-action-bar>
             <button
               v-for="action in directActions"
               :key="action.key"
               type="button"
-              :class="['canonical-form-action', `canonical-form-action--${effectiveActionTier(action)}`, { 'is-danger': actionDanger(action) }]"
+              :class="['canonical-form-action', `canonical-form-action--${action.tier}`, { 'is-danger': actionDanger(action) }]"
               :disabled="!action.enabled"
               :title="action.reasonCode || undefined"
               :data-action-ref="action.actionRef.actionId"
               :data-backend-identity="action.actionRef.backendIdentity"
-              :data-action-tier="effectiveActionTier(action)"
+              :data-action-tier="action.tier"
               :data-normalized-action-tier="action.tier"
               :data-action-enabled="String(action.enabled)"
               @click="action.enabled && emit('action-ref', action.actionRef)"
@@ -87,9 +85,8 @@
                 >{{ action.label }}</button>
               </div>
             </details>
-          </nav>
-        </template>
-      </ObjectTaskPage>
+        </nav>
+      </article>
     </SceneUiProvider>
   </section>
 </template>
@@ -99,15 +96,13 @@ import { computed } from 'vue';
 import { SCENE_UI_KITS, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalFormAction, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
-import { composeCanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
+import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
   type NativeCollaborationPanelProps,
 } from './NativeCollaborationPanel.vue';
-import ObjectTaskPage from './ObjectTaskPage.vue';
-import { canonicalNodeHasContent } from './canonicalFormRenderer';
 
 const props = defineProps<{
   renderModel: CanonicalFormRenderModel | null;
@@ -145,16 +140,12 @@ const allowUserOverride = computed(() => (
   && props.driverConfig?.allowUserOverride === true
   && allowedKits.value.length > 1
 ));
-const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel) : {
-  summaryNodes: [], taskNodes: [], contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], relationNodes: [], subordinateNodes: [],
-  blockedActions: [], directActions: [], overflowActions: [], effectivePrimaryKey: '', decisionMode: false,
-});
 const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
-const directActions = computed(() => floorplan.value.directActions);
-const overflowActions = computed(() => floorplan.value.overflowActions);
-const subordinateNodes = computed(() => floorplan.value.subordinateNodes
-  .filter((node) => !collaborationKind(node.kind))
-  .filter(canonicalNodeHasContent));
+const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
+const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
+const primaryNodes = computed(() => props.renderModel?.zones.primary || []);
+const subordinateNodes = computed(() => (props.renderModel?.zones.subordinate || [])
+  .filter((node) => !collaborationKind(node.kind)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
 
 function collaborationKind(kind: string) {
@@ -164,10 +155,6 @@ function collaborationKind(kind: string) {
 function actionDanger(action: CanonicalFormAction) {
   const classification = String(action.safety.classification || action.safety.level || '').trim().toLowerCase();
   return classification === 'danger' || action.safety.destructive === true;
-}
-
-function effectiveActionTier(action: CanonicalFormAction) {
-  return floorplan.value.effectivePrimaryKey === action.key ? 'primary' : action.tier;
 }
 
 function kitLabel(kit: SceneUiKitId) {

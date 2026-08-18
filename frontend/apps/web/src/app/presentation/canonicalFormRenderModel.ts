@@ -26,6 +26,7 @@ export type CanonicalFormField = {
   widgetId: string;
   fieldCode: string;
   label: string;
+  hideLabel: boolean;
   value: unknown | CanonicalRelationValue;
   fieldType: string;
   componentKey: string;
@@ -43,12 +44,16 @@ export type CanonicalFormNode = {
   nodeId: string;
   kind: string;
   title: string;
+  text: string;
+  attributes: Readonly<Record<string, unknown>>;
   zoneRole: CanonicalFormZoneRole;
   columns: number;
   visible: boolean;
   disabled: boolean;
   reasonCode: string;
   semanticRole: CanonicalFormSemanticRole | '';
+  action: CanonicalFormAction | null;
+  nativeWidget: string;
   fields: CanonicalFormField[];
   children: CanonicalFormNode[];
 };

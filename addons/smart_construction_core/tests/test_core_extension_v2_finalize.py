@@ -124,6 +124,32 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertIn("responsibility_ids", field_names)
         self.assertNotIn("collaborator_ids", field_names)
 
+    def test_explicit_project_form_view_keeps_native_field_membership(self):
+        contract = self._base_project_contract()
+
+        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+            self.env,
+            contract,
+            {
+                "source_contract": {
+                    "model": "project.project",
+                    "view_type": "form",
+                    "render_profile": "readonly",
+                },
+                "view_type": "form",
+                "meta": {"params": {"viewId": 1700}},
+            },
+        )
+
+        self.assertIsNone(projected)
+        field_names = {
+            row.get("name") or str(row.get("widgetId") or "").replace("field.", "")
+            for row in self._field_nodes(contract["layoutContract"]["containerTree"], include_widget_list=False)
+        }
+        self.assertIn("user_id", field_names)
+        self.assertNotIn("responsibility_ids", field_names)
+        self.assertNotIn("collaborator_ids", field_names)
+
     def test_non_project_contract_is_unchanged_without_workflow_record(self):
         contract = self._base_project_contract()
 
@@ -251,6 +277,25 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(profile["column_labels"]["manager_id"], "项目经理")
         manager_schema = next(row for row in data["views"]["tree"]["columns_schema"] if row["name"] == "manager_id")
         self.assertEqual(manager_schema["optional"], "hide")
+
+    def test_project_governance_does_not_change_explicit_native_form_membership(self):
+        data = {
+            "model": "project.project",
+            "view_type": "form",
+            "fields": {
+                "user_id": {"type": "many2one", "string": "项目负责人"},
+            },
+            "views": {"form": {
+                "meta": {"projection_identity": {"source_view_id": 1700}},
+                "layout": [{"type": "field", "name": "user_id"}],
+            }},
+        }
+
+        contract_governance.apply_project_form_domain_override(data, "user")
+
+        self.assertEqual(data["views"]["form"]["layout"], [{"type": "field", "name": "user_id"}])
+        self.assertNotIn("responsibility_ids", data["fields"])
+        self.assertNotIn("collaborator_ids", data["fields"])
 
     def test_partner_trace_columns_have_business_labels(self):
         labels = core_extension.smart_core_legacy_visible_business_column_labels(self.env)

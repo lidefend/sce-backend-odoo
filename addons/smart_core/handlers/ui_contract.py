@@ -560,6 +560,10 @@ class UiContractHandler(BaseIntentHandler):
         record_id, record_error = parse_positive_int(raw_record, allow_empty=True)
         if record_error:
             return self._err(400, "非法的 record_id")
+        raw_view = self._get_param(p, "view_id", "viewId")
+        view_id, view_error = parse_positive_int(raw_view, allow_empty=True)
+        if view_error:
+            return self._err(400, "非法的 view_id")
         requested_view_type = (self._get_param(p, "view_type", "viewType") or "").strip().lower()
         render_profile = str(
             self._get_param(p, "render_profile", "renderProfile", "profile", "mode") or ""
@@ -584,6 +588,7 @@ class UiContractHandler(BaseIntentHandler):
                 data, versions = self._dispatch_model_contract(
                     model=action.res_model,
                     view_type="form",
+                    view_id=view_id,
                     action_id=action_id,
                     record_id=record_id,
                     render_profile=render_profile,

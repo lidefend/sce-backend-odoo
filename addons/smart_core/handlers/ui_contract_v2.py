@@ -13,6 +13,7 @@ from ..core.unified_page_contract_v2_assembler import (
     CONTRACT_VERSION,
     assemble_unified_page_contract_v2,
     hydrate_final_action_modifier_status,
+    hydrate_final_layout_modifier_status,
     project_runtime_business_actions,
 )
 from ..core.unified_page_contract_v2_client import (
@@ -605,6 +606,7 @@ class UiContractV2Handler(BaseIntentHandler):
             view_type=str(view_type or "").strip().lower(),
             logger=_logger,
         )
+        hydrate_final_layout_modifier_status(contract_v2)
         hydrate_final_action_modifier_status(contract_v2)
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
@@ -1014,8 +1016,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 request_context["allowed_business_category_codes"] = allowed_codes
             if request_context:
                 current_context = source_contract.get("context") if isinstance(source_contract.get("context"), dict) else {}
-                merged_context = dict(current_context)
-                merged_context.update(request_context)
+                merged_context = PageAssembler._merge_entry_context(current_context, request_context)
                 source_contract["context"] = merged_context
                 head = source_contract.get("head") if isinstance(source_contract.get("head"), dict) else {}
                 head = dict(head)

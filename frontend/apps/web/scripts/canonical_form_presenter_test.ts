@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
-import { createContractV2Store } from '../src/app/contracts/v2/store';
+import { createContractV2Store, resolveContractV2EffectiveFormCapabilities } from '../src/app/contracts/v2/store';
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
+import { adaptUnifiedPageContractV2Raw } from '../src/app/runtime/unifiedPageContractV2CompatProjection';
 import {
   canonicalFieldToFormSection,
   canonicalNodeHasContent,
@@ -27,6 +28,7 @@ function snapshot(): ContractV2Snapshot {
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,
         children: [{
           containerId: 'field.name', containerType: 'field', type: 'field', name: 'name', title: '', span: 12,
+          label: 'Name', nolabel: true,
           children: [], widgetList: [{
             widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
             componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
@@ -71,7 +73,17 @@ function snapshot(): ContractV2Snapshot {
       }], dependencyGraph: { 'action.submit': ['field.name'] },
     },
     statusContract: {
-      globalStatus: { pageVisible: true, pageAuth: 'edit', reasonCode: '' },
+      globalStatus: {
+        pageVisible: true,
+        pageAuth: 'edit',
+        reasonCode: '',
+        modelRights: { read: true, write: true, create: true, unlink: true, duplicate: true },
+        recordRights: { read: true, write: true, create: true, unlink: true, duplicate: true },
+        viewCapabilities: { read: true, write: true, create: true, unlink: true, duplicate: true },
+        entryCapabilities: { read: true, write: true, create: true, unlink: true, duplicate: true },
+        effectiveRecordCapabilities: { read: true, write: true, create: true, unlink: true, duplicate: true },
+        effectiveRenderProfile: 'edit',
+      },
       widgetStatus: [
         { widgetId: 'field.name', visible: true, readonly: false, required: true, disabled: false },
         { widgetId: 'field.state', visible: false, readonly: true, required: false, disabled: true, reasonCode: 'STATE_CONTEXT_ONLY' },
@@ -108,6 +120,10 @@ function collectFields(nodes: ReturnType<typeof presentContractV2Form>['zones'][
 const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
+assert.deepEqual(resolveContractV2EffectiveFormCapabilities(store), {
+  read: true, write: true, create: true, unlink: true, duplicate: true,
+});
+assert.equal(store.snapshot.statusContract.globalStatus.effectiveRenderProfile, 'edit');
 const model = presentContractV2Form(store, 'edit');
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
@@ -115,11 +131,33 @@ assert.deepEqual(model.zones.subordinate.map((node) => node.kind), ['notebook', 
 const fields = collectFields([...model.zones.primary, ...model.zones.subordinate]);
 assert.deepEqual(fields.map((field) => field.fieldCode), ['name', 'state', 'line_ids']);
 assert.equal(fields.find((field) => field.fieldCode === 'name')?.required, true);
+assert.equal(fields.find((field) => field.fieldCode === 'name')?.hideLabel, true);
+assert.equal(fields.find((field) => field.fieldCode === 'state')?.hideLabel, false);
+assert.equal(canonicalFieldToFormSection(fields.find((field) => field.fieldCode === 'name')!).hideLabel, true);
 assert.equal(fields.find((field) => field.fieldCode === 'state')?.visible, false);
 assert.equal(model.actionBar[0]?.actionRef, store.snapshot.actionContract.actionRuleList[0]);
 assert.deepEqual(model.actionBar[0]?.actionRef, source.actionContract.actionRuleList[0]);
 assert.equal(model.actionBar[0]?.enabled, true);
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
+
+const bodyActionSnapshot = structuredClone(snapshot());
+bodyActionSnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'button.action_open_lines', containerType: 'button', type: 'button', title: 'Open Lines', span: 24,
+  action: { actionId: 'action.open_lines', backendIdentity: 'window_action:91' },
+  children: [], widgetList: [],
+});
+bodyActionSnapshot.actionContract.actionRuleList.push({
+  actionId: 'action.open_lines', backendIdentity: 'window_action:91', triggerType: 'click',
+  sourceWidgetId: 'button.action_open_lines', targetIds: [], dispatchMode: 'clientRoute', targetScope: 'page',
+  refreshMode: 'none', actionKey: 'open_lines', label: 'Open Lines', allowed: true, enabled: true,
+  disabled: false, visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'overflow' },
+});
+bodyActionSnapshot.statusContract.buttonStatus.push({ btnId: 'action.open_lines', visible: true, disabled: false });
+const bodyActionModel = presentContractV2Form(createContractV2Store(bodyActionSnapshot), 'readonly');
+const bodyActionNode = bodyActionModel.zones.primary[0].children.find((node) => node.nodeId === 'button.action_open_lines');
+assert.equal(bodyActionNode?.action?.actionRef.backendIdentity, 'window_action:91');
+assert.equal(canonicalNodeHasContent(bodyActionNode!), true);
+assert.deepEqual(bodyActionModel.actionBar.map((action) => action.key), ['action_submit']);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
 const editFloorplan = composeCanonicalFormFloorplan(model);
@@ -497,8 +535,52 @@ const normalizedNativeChild = decodeContractV2Snapshot(productionNativeChildren)
 assert.equal(decodeContractV2Snapshot(productionNativeChildren).layoutContract.containerTree[0].span, 24);
 assert.equal(normalizedNativeChild.containerId, 'field.name');
 assert.equal(normalizedNativeChild.containerType, 'field');
-assert.equal(normalizedNativeChild.title, 'name');
+assert.equal(normalizedNativeChild.title, '', 'native identity must not become a visible title');
 assert.equal(normalizedNativeChild.span, 24);
+
+const anonymousNativeContainer = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
+const anonymousGroup = anonymousNativeContainer.layoutContract.containerTree[0].children[0] as Record<string, unknown>;
+anonymousGroup.containerId = 'container.native.0.children.0';
+anonymousGroup.containerType = 'group';
+anonymousGroup.type = 'group';
+delete anonymousGroup.title;
+delete anonymousGroup.label;
+delete anonymousGroup.string;
+anonymousGroup.name = 'native_internal_group';
+assert.equal(
+  decodeContractV2Snapshot(anonymousNativeContainer).layoutContract.containerTree[0].children[0].title,
+  '',
+  'anonymous native container identity must remain non-visual',
+);
+
+const anonymousNativeRoot = snapshot();
+anonymousNativeRoot.layoutContract.containerTree[0].title = '';
+assert.equal(
+  decodeContractV2Snapshot(anonymousNativeRoot).layoutContract.containerTree[0].title,
+  '',
+  'anonymous native root container must support an explicitly empty display title',
+);
+
+const mixedNativeContent = snapshot();
+mixedNativeContent.layoutContract.containerTree[0].children.splice(1, 0, {
+  containerId: 'text.native.identity.separator',
+  containerType: 'text',
+  type: 'text',
+  title: '',
+  text: '· 状态',
+  span: 24,
+  children: [],
+  widgetList: [],
+});
+mixedNativeContent.statusContract.containerStatus.push({
+  containerId: 'text.native.identity.separator', visible: true, disabled: false,
+});
+const mixedNativeModel = presentContractV2Form(createContractV2Store(mixedNativeContent), 'edit');
+assert.deepEqual(
+  mixedNativeModel.zones.primary[0].children.map((node) => [node.kind, node.text]),
+  [['field', ''], ['text', '· 状态'], ['field', '']],
+  'canonical presenter must preserve mixed native field/text order',
+);
 
 const aggregatedNativeChildren = snapshot();
 aggregatedNativeChildren.layoutContract.containerTree[0].children[0].widgetList = [];
@@ -531,13 +613,13 @@ assert.deepEqual(
 assert.equal(canonicalNodeHasContent(model.zones.subordinate.find((node) => node.kind === 'chatter')!), true);
 assert.deepEqual(
   canonicalSectionFields(model.zones.primary[0]).map((field) => field.fieldCode),
-  ['name'],
-  'a section mechanically owns the fields carried by its direct field nodes',
+  [],
+  'a parent must not hoist fields out of native child-node order',
 );
 assert.equal(
   visibleCanonicalChildren(model.zones.primary[0]).some((node) => node.kind === 'field'),
-  false,
-  'leaf field nodes must not become duplicate visual sections',
+  true,
+  'leaf field nodes must remain in native child-node order',
 );
 
 const invalidNativeChild = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
@@ -660,4 +742,28 @@ assert.deepEqual(
   'an executable action without an exact unified executor adapter must block canonical cutover',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=49');
+const implicitStateSnapshot = snapshot();
+const implicitStateProjection = adaptUnifiedPageContractV2Raw(
+  { ok: true, data: implicitStateSnapshot } as never,
+  { view_type: 'form' },
+);
+assert.equal(
+  implicitStateProjection.data?.views?.form?.statusbar,
+  undefined,
+  'a state selection without an explicit native statusbar widget must not fabricate a statusbar',
+);
+const explicitStatusbarSnapshot = snapshot();
+const explicitStatusbarField = explicitStatusbarSnapshot.layoutContract.containerTree[0]?.children[1] as unknown as Record<string, unknown>;
+explicitStatusbarField.widget = 'statusbar';
+explicitStatusbarField.fieldInfo = { widget: 'statusbar', selection: [['draft', 'Draft'], ['done', 'Done']] };
+const explicitStatusbarProjection = adaptUnifiedPageContractV2Raw(
+  { ok: true, data: explicitStatusbarSnapshot } as never,
+  { view_type: 'form' },
+);
+assert.deepEqual(
+  explicitStatusbarProjection.data?.views?.form?.statusbar,
+  { field: 'state', states: [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }] },
+  'an explicit native statusbar widget must remain available to the compatibility renderer',
+);
+
+console.log('[canonical_form_presenter_test] PASS cases=51');

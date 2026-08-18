@@ -47,6 +47,8 @@ export interface ContractV2Container {
   name?: string;
   string?: string;
   label?: string;
+  nolabel?: boolean;
+  text?: string;
   title: string;
   span: number;
   styleToken?: string;
@@ -149,6 +151,12 @@ export interface ContractV2GlobalStatus {
   pageVisible?: boolean;
   pageAuth?: 'none' | 'read' | 'edit' | 'admin' | string;
   reasonCode?: string;
+  modelRights?: ContractV2Dictionary;
+  recordRights?: ContractV2Dictionary;
+  viewCapabilities?: ContractV2Dictionary;
+  entryCapabilities?: ContractV2Dictionary;
+  effectiveRecordCapabilities?: ContractV2Dictionary;
+  effectiveRenderProfile?: 'create' | 'edit' | 'readonly' | string;
 }
 
 export interface ContractV2WidgetStatus {

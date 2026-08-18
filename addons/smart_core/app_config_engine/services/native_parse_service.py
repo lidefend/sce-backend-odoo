@@ -35,7 +35,14 @@ class NativeParseService:
     def __init__(self, owner):
         self.owner = owner
 
-    def parse_with_primary_parser(self, model_name: str, view_type: str, *, force_fallback: bool = False) -> Any:
+    def parse_with_primary_parser(
+        self,
+        model_name: str,
+        view_type: str,
+        *,
+        view_data: dict | None = None,
+        force_fallback: bool = False,
+    ) -> Any:
         """Try parser-native extraction and return raw parsed payload."""
         parsed_json = None
         model_exists = self.owner._model_exists("app.view.parser")
@@ -46,7 +53,11 @@ class NativeParseService:
             # Keep the parser in the request user's environment. Odoo applies
             # group-based view pruning while composing inherited views; using
             # sudo here can produce a different form from the native client.
-            parsed_json = self.owner.env["app.view.parser"].parse_odoo_view(model_name, view_type)
+            parsed_json = self.owner.env["app.view.parser"].parse_odoo_view(
+                model_name,
+                view_type,
+                view_data=view_data,
+            )
             if self.owner._looks_like_parser_wrapper(parsed_json):
                 _logger.debug("VIEW_PARSE_DEBUG: unwrap parser wrapper → %s.%s", model_name, view_type)
                 parsed_json = self.owner._unwrap_contract_shape(view_type, parsed_json)

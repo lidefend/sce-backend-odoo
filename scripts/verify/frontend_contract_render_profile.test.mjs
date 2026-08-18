@@ -15,28 +15,36 @@ const output = await build({
 });
 const source = output.outputFiles[0].text;
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
-const { contractLoadProfileOptions, resolveContractRenderProfile } = await import(moduleUrl);
+const {
+  contractLoadProfileOptions,
+  resolveEffectiveContractRenderProfile,
+  resolveRequestedContractRenderProfile,
+} = await import(moduleUrl);
 
 assert.deepEqual(contractLoadProfileOptions('readonly'), { renderProfile: 'readonly' });
 
-assert.equal(resolveContractRenderProfile({
-  routeName: 'record', contractProfile: 'edit', canSave: true, recordId: 41,
+assert.equal(resolveRequestedContractRenderProfile({
+  routeName: 'record', recordId: 41,
 }), 'readonly', '/r/:model/:id must remain readonly even when a stale contract says edit');
 
-assert.equal(resolveContractRenderProfile({
-  routeName: 'model-form', contractProfile: 'readonly', canSave: true, recordId: 41,
+assert.equal(resolveRequestedContractRenderProfile({
+  routeName: 'model-form', recordId: 41,
 }), 'edit', '/f/:model/:id must request edit from the current route identity');
 
-assert.equal(resolveContractRenderProfile({
-  routeName: 'model-form', contractProfile: 'create', canSave: true, recordId: 41,
-}), 'edit', 'a saved record must not inherit the preceding create contract profile');
-
-assert.equal(resolveContractRenderProfile({
-  routeName: 'model-form', contractProfile: 'edit', canSave: true, recordId: null,
+assert.equal(resolveRequestedContractRenderProfile({
+  routeName: 'model-form', recordId: null,
 }), 'create', '/f/:model/new must request create from the current route identity');
 
-assert.equal(resolveContractRenderProfile({
-  routeName: 'contract-preview', contractProfile: 'readonly', canSave: true, recordId: 41,
-}), 'readonly', 'non-record preview routes may still consume an explicit contract profile');
+assert.equal(resolveEffectiveContractRenderProfile({
+  backendProfile: 'readonly', normalizedReady: true, requestedProfile: 'edit',
+}), 'readonly', 'backend record/view/entry denial must downgrade an /f/:model/:id edit request');
+
+assert.equal(resolveEffectiveContractRenderProfile({
+  backendProfile: '', normalizedReady: true, requestedProfile: 'edit',
+}), 'readonly', 'a normalized contract without a backend profile verdict must fail closed');
+
+assert.equal(resolveEffectiveContractRenderProfile({
+  backendProfile: '', normalizedReady: false, requestedProfile: 'create',
+}), 'create', 'before the response arrives the route-derived request profile remains available');
 
 console.log('[frontend_contract_render_profile_test] PASS');

@@ -120,6 +120,7 @@ function fieldFromWidget(
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
     label: widget.label,
+    hideLabel: container.nolabel === true,
     value: presentFieldValue(
       widget,
       contractValues[widget.fieldCode],
@@ -192,6 +193,7 @@ function presentNode(
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
   claimedWidgetIds: Set<string>,
+  actionsByIdentity: ReadonlyMap<string, CanonicalFormAction>,
   ancestorTitle = '',
 ): CanonicalFormNode {
   const ownRole = zoneRole(container);
@@ -214,23 +216,34 @@ function presentNode(
       disabled,
     )];
   });
-  const rawTitle = text(container.title || container.label || container.string);
+  const nodeKind = text(container.type || container.containerType) || 'container';
+  // A native field `string`/`label` labels the control; it is not a container
+  // heading. Keeping those facts separate prevents duplicate field titles.
+  const rawTitle = nodeKind === 'field'
+    ? text(container.title)
+    : text(container.title || container.label || container.string);
   const title = rawTitle && rawTitle === ancestorTitle ? '' : rawTitle;
+  const nodeAction = asDict(container.action);
+  const actionIdentity = text(nodeAction.backendIdentity);
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
-    kind: text(container.type || container.containerType) || 'container',
+    kind: nodeKind,
     title,
+    text: text(container.text),
+    attributes: Object.freeze({ ...container.attributes }),
     zoneRole: effectiveRole,
     columns: Number(container.cols || container.columns || 1) || 1,
     visible,
     disabled,
     reasonCode: text(status?.reasonCode),
     semanticRole: semanticRole(container.formStructureRole),
+    action: actionIdentity ? actionsByIdentity.get(actionIdentity) || null : null,
+    nativeWidget: nodeKind === 'widget' ? text(container.widget || container.name) : '',
     fields: widgets,
     children: childCollections(container).map((child, childIndex) => (
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
-        mode, pageCanEdit, visible, disabled, claimedWidgetIds, rawTitle || ancestorTitle,
+        mode, pageCanEdit, visible, disabled, claimedWidgetIds, actionsByIdentity, rawTitle || ancestorTitle,
       )
     )),
   };
@@ -302,15 +315,17 @@ export function presentContractV2Form(
   const pageAuth = text(globalStatus.pageAuth);
   const pageCanEdit = mode !== 'readonly' && ['edit', 'admin'].includes(pageAuth);
   const claimedWidgetIds = new Set<string>();
+  const allActions = snapshot.actionContract.actionRuleList.map((action) => (
+    presentAction(action, actionStatus(store, action), mode)
+  ));
+  const actionsByIdentity = new Map(allActions.map((action) => [text(action.actionRef.backendIdentity), action]));
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
       container, zoneRole(container), index, store, contractValues, runtimeValues, mode, pageCanEdit,
-      pageVisible, pageAuth === 'none', claimedWidgetIds,
+      pageVisible, pageAuth === 'none', claimedWidgetIds, actionsByIdentity,
     )
   ));
-  const actions = snapshot.actionContract.actionRuleList.filter(isFormActionBarAction).map((action) => (
-    presentAction(action, actionStatus(store, action), mode)
-  ));
+  const actions = allActions.filter((action) => isFormActionBarAction(action.actionRef));
   const primaryCount = actions.filter((action) => action.visible && action.enabled && action.tier === 'primary').length;
   if (primaryCount > 1) throw new Error('CANONICAL_FORM_MULTIPLE_PRIMARY_ACTIONS');
   return {

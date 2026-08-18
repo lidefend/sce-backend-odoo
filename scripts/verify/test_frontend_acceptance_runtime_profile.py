@@ -98,6 +98,7 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         )
         backend_up = runtime.split("  backend-up)", 1)[1].split("    ;;", 1)[0]
         backend_down = runtime.split("  backend-down)", 1)[1].split("    ;;", 1)[0]
+        backend_replace = runtime.split("  backend-replace-stale)", 1)[1].split("    ;;", 1)[0]
         frontend_up = runtime.split("  frontend-up)", 1)[1].split("    ;;", 1)[0]
         frontend_down = runtime.split("  frontend-down)", 1)[1].split("    ;;", 1)[0]
         self.assertNotIn("docker rm", backend_up)
@@ -113,6 +114,12 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             backend_down.index("validate_backend_identity"),
             backend_down.index("backend_acceptance_down.sh"),
         )
+        self.assertLess(
+            backend_replace.index("validate_backend_resource_identity"),
+            backend_replace.index("backend_acceptance_down.sh"),
+        )
+        self.assertIn("validate_backend_runtime", backend_replace)
+        self.assertNotIn("validate_backend_identity ||", backend_replace)
         self.assertLess(
             frontend_up.index("validate_frontend_runtime"),
             frontend_up.index("frontend_acceptance_up.sh"),

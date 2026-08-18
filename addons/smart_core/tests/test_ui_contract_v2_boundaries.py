@@ -109,11 +109,16 @@ def _load_handler():
         captured["final_action_modifier_status_hydrated"] = True
         return contract
 
+    def _hydrate_final_layout_modifier_status(contract):
+        captured["final_layout_modifier_status_hydrated"] = True
+        return contract
+
     _install_module(
         "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
         CONTRACT_VERSION="2.0",
         assemble_unified_page_contract_v2=_assemble_unified_page_contract_v2,
         hydrate_final_action_modifier_status=_hydrate_final_action_modifier_status,
+        hydrate_final_layout_modifier_status=_hydrate_final_layout_modifier_status,
         project_runtime_business_actions=_project_runtime_business_actions,
     )
 
@@ -299,6 +304,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertTrue(observed["projected"])
         self.assertIs(observed["contract"], result.data["contract"])
+        self.assertTrue(self.module._captured.get("final_layout_modifier_status_hydrated"))
         self.assertTrue(self.module._captured.get("final_action_modifier_status_hydrated"))
 
     def test_final_modifier_hydration_keeps_missing_value_fail_closed_on_read_denial(self):
@@ -3146,7 +3152,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertIn("amount", structure["fieldRoles"])
         self.assertNotIn("tax_note", structure["fieldRoles"])
 
-    def test_final_v2_layout_prunes_hidden_priority_fields_without_configured_groups(self):
+    def test_final_v2_layout_preserves_hidden_native_fields_for_status_projection(self):
         handler = self.module.UiContractV2Handler(env=object())
         contract = {
             "pageInfo": {"viewType": "form"},
@@ -3180,10 +3186,10 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
 
         fields = contract["layoutContract"]["containerTree"][0]["children"]
-        self.assertEqual([row["name"] for row in fields], ["amount"])
+        self.assertEqual([row["name"] for row in fields], ["subject", "amount"])
         widgets = contract["layoutContract"]["containerTree"][0]["widgetList"]
-        self.assertEqual([row["fieldCode"] for row in widgets], ["amount"])
-        self.assertNotIn("subject", contract["formStructureContract"]["fieldRoles"])
+        self.assertEqual([row["fieldCode"] for row in widgets], ["subject", "amount"])
+        self.assertIn("subject", contract["formStructureContract"]["fieldRoles"])
 
     def test_sparse_semantic_anchors_preserve_unlisted_native_fields_and_modifiers(self):
         contract = {
@@ -3234,8 +3240,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertEqual(contract, before)
 
-    def test_sparse_semantic_roles_are_the_only_four_state_contract_delta(self):
-        frozen_projection = _load_frozen_projection()
+    def test_sparse_semantic_roles_annotate_native_tree_without_structural_delta(self):
         def strip_allowed_role_delta(value):
             if isinstance(value, list):
                 return [strip_allowed_role_delta(item) for item in value]
@@ -3346,9 +3351,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     "enabled": enabled,
                     "disabled": not enabled,
                 })
-                baseline_governance = {"field_groups": {"main": ["name", "native_extra"]}}
                 candidate_governance = {
-                    **baseline_governance,
+                    "field_groups": {"main": ["name", "native_extra"]},
                     "configured_sections": [{
                         "identity": "key:main", "key": "main", "title": "main",
                         "fields": ["name", "native_extra"],
@@ -3359,9 +3363,6 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     "line_ids": {"type": "one2many"},
                 }}
                 candidate = deepcopy(baseline)
-                frozen_projection.apply_business_config_form_groups(
-                    baseline, baseline_governance, source_contract=source_contract,
-                )
                 governance = {**candidate_governance, "field_semantic_roles": {
                     "name": "summary", "native_extra": "context", "line_ids": "relation",
                 }, "section_semantic_roles": {"main": "audit"}}
@@ -3370,14 +3371,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 )
 
                 self.assertEqual(strip_allowed_role_delta(candidate), strip_allowed_role_delta(baseline))
-                projected_group = next(
-                    node for node in candidate["layoutContract"]["containerTree"]
-                    if node.get("containerId") == "business_config_group_1"
-                )
-                self.assertEqual(
-                    projected_group["formStructureRole"],
-                    {"role": "audit"},
-                )
+                projected_group = candidate["layoutContract"]["containerTree"][1]
+                self.assertEqual(projected_group["containerId"], "group.main")
+                self.assertNotIn("formStructureRole", projected_group)
                 self.assertEqual(
                     projected_group["children"][0]["formStructureRole"],
                     {"slot": "identity", "group": "main", "role": "summary"},
@@ -3388,7 +3384,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 )
                 self.assertEqual(candidate, first)
 
-    def test_semantic_entry_surface_is_the_only_primary_structure_and_preserves_native_subordinates(self):
+    def test_semantic_entry_surface_preserves_complete_native_structure(self):
         handler = self.module.UiContractV2Handler(env=object())
         handler._form_structure_governance = lambda *_args, **_kwargs: {
             "form_structure_authority": "entry_semantic_surface",
@@ -3452,49 +3448,24 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             }},
         }
 
+        native_tree = deepcopy(contract["layoutContract"]["containerTree"])
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
 
         tree = contract["layoutContract"]["containerTree"]
-        self.assertEqual([node["type"] for node in tree], ["header", "group", "group", "notebook", "attachment", "chatter"])
-        self.assertEqual([node.get("string") for node in tree if node.get("type") == "group"], ["对象与状态", "本次办理"])
-        self.assertNotIn("分类模板章节", str(tree))
-        self.assertNotIn('"type": "sheet"', str(tree))
+        self.assertEqual(tree, native_tree)
+        self.assertEqual([node["type"] for node in tree], ["header", "sheet", "attachment", "chatter"])
+        self.assertIn("分类模板章节", str(tree))
         self.assertEqual(str(tree).count("'name': 'line_ids'"), 1)
-        relation = tree[3]["children"][0]["children"][0]
+        relation = tree[1]["children"][1]["children"][0]["children"][0]
         self.assertEqual(relation["subview"], {"type": "tree", "fields": ["product_id", "quantity"]})
         self.assertEqual(relation["modifier"], {"readonly": True})
         self.assertEqual(tree[0]["children"][0]["name"], "state")
 
-        def assert_formal_containers(nodes):
-            for node in nodes:
-                self.assertTrue(node.get("containerId"), node)
-                self.assertTrue(node.get("containerType"), node)
-                self.assertIsInstance(node.get("span"), int, node)
-                self.assertGreaterEqual(node["span"], 1)
-                self.assertLessEqual(node["span"], 24)
-                self.assertIsInstance(node.get("children"), list, node)
-                self.assertIsInstance(node.get("widgetList"), list, node)
-                for key in ("children", "pages", "tabs", "nodes", "items"):
-                    if isinstance(node.get(key), list):
-                        assert_formal_containers(node[key])
-
-        assert_formal_containers(tree)
-        relation_notebook = tree[3]
-        relation_page = relation_notebook["children"][0]
-        self.assertEqual(relation_notebook["containerType"], "notebook")
-        self.assertEqual(relation_page["containerType"], "page")
-        status_ids = [row["containerId"] for row in contract["statusContract"]["containerStatus"]]
-        self.assertEqual(len(status_ids), len(set(status_ids)))
-        self.assertIn(relation_notebook["containerId"], status_ids)
-        self.assertIn(relation_page["containerId"], status_ids)
-
         first = deepcopy(tree)
-        first_status = deepcopy(contract["statusContract"]["containerStatus"])
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
         self.assertEqual(contract["layoutContract"]["containerTree"], first)
-        self.assertEqual(contract["statusContract"]["containerStatus"], first_status)
 
-    def test_semantic_entry_surface_reparents_fields_from_same_named_nested_legacy_groups(self):
+    def test_semantic_entry_surface_does_not_reparent_native_fields(self):
         handler = self.module.UiContractV2Handler(env=object())
         handler._form_structure_governance = lambda *_args, **_kwargs: {
             "form_structure_authority": "entry_semantic_surface",
@@ -3539,15 +3510,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
 
         tree = contract["layoutContract"]["containerTree"]
-        self.assertEqual([node.get("string") for node in tree], ["收款账户", "付款账户"])
+        self.assertEqual([node.get("string") for node in tree], ["旧业务分类表单"])
         self.assertEqual(
-            [[child.get("name") for child in node.get("children", [])] for node in tree],
+            [[child.get("name") for child in group.get("children", [])]
+             for group in tree[0]["children"]],
             [
                 ["receipt_account_name", "receipt_account_no"],
                 ["payment_account_name", "payment_account_no"],
             ],
         )
-        self.assertNotIn("旧业务分类表单", str(tree))
+        self.assertIn("旧业务分类表单", str(tree))
 
         first = deepcopy(tree)
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
@@ -3620,8 +3592,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(governance_without_key["section_semantic_roles"], {})
         self.assertEqual(governance_without_key["configured_sections"][0]["key"], "")
 
-    def test_real_payment_contract_uses_stable_audit_identity_and_role_only_delta(self):
-        frozen_projection = _load_frozen_projection()
+    def test_real_payment_contract_only_annotates_existing_native_fields(self):
         repository = Path(__file__).resolve().parents[3]
         product_xml = repository / "addons/smart_construction_core/data/payment_request_form_productization_contract.xml"
         xml_root = ET.parse(product_xml).getroot()
@@ -3703,15 +3674,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             source_contract, model="payment.request", view_type="form",
         )
         governance["semantic_surface_authority"] = True
-        baseline_governance = deepcopy(governance)
-        baseline_governance["field_semantic_roles"] = {}
-        baseline_governance.pop("section_semantic_roles", None)
-        baseline_governance.pop("configured_sections", None)
-
         baseline = deepcopy(base_contract)
-        frozen_projection.apply_business_config_form_groups(
-            baseline, baseline_governance, source_contract=source_contract,
-        )
         candidate = deepcopy(base_contract)
         self.module._projection.apply_business_config_form_groups(
             candidate, governance, source_contract=source_contract,
@@ -3743,13 +3706,11 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                         field_role.pop("role", None)
             return cleaned
 
-        audit_group = next(
-            node for node in candidate["layoutContract"]["containerTree"]
-            if node.get("containerId") == "business_config_group_7"
+        self.assertEqual(
+            [node.get("containerId") for node in candidate["layoutContract"]["containerTree"]],
+            ["native.main", "native.relations", "native.attachment", "native.chatter"],
         )
-        self.assertEqual(audit_group["title"], "审批与审计")
-        self.assertEqual(audit_group["formStructureRole"], {"role": "audit"})
-        self.assertIn("legacy_source_table", [node.get("name") for node in audit_group["children"]])
+        self.assertNotIn("business_config_group_", str(candidate))
         container_types = [
             node.get("containerType") for node in candidate["layoutContract"]["containerTree"]
         ]
@@ -3775,12 +3736,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             self.assertEqual(field["formStructureRole"]["role"], "audit")
 
         self.assertEqual(strip_semantic_roles(candidate), strip_semantic_roles(baseline))
-        renamed_audit = next(
-            node for node in renamed_candidate["layoutContract"]["containerTree"]
-            if node.get("containerId") == "business_config_group_7"
-        )
-        self.assertEqual(renamed_audit["title"], "Approval & Audit")
-        self.assertEqual(renamed_audit["formStructureRole"], {"role": "audit"})
+        self.assertEqual(candidate, renamed_candidate)
         first = deepcopy(candidate)
         self.module._projection.apply_business_config_form_groups(
             candidate, governance, source_contract=source_contract,

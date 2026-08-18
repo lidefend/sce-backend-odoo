@@ -328,9 +328,9 @@ import {
   createContractV2Store,
   decodeContractV2Snapshot,
   resolveContractV2ContainerTree,
+  resolveContractV2EffectiveFormCapabilities,
   resolveContractV2GlobalStatus,
   resolveContractV2MainData,
-  resolveContractV2SourceContext,
   type ContractV2NormalizedStore,
 } from '../app/contracts/v2';
 import type { ContractV2ActionRule } from '../app/contracts/v2/types';
@@ -355,7 +355,6 @@ import {
   resolveUnifiedPageContractV2PrimaryDataSource,
   resolveUnifiedPageContractV2,
   resolveUnifiedPageContractV2GlobalStatus,
-  resolveUnifiedPageContractV2SourceContext,
   resolveUnifiedPageContractV2VisibleFields,
 } from '../app/contracts/unifiedPageContractV2';
 import {
@@ -647,7 +646,10 @@ import { useRecordFormState } from './contractForm/useRecordFormState';
 import { useRecordFormDesigner } from './contractForm/useRecordFormDesigner';
 import { useRecordRelationships } from './contractForm/useRecordRelationships';
 import { useRecordPageLifecycle } from './contractForm/useRecordPageLifecycle';
-import { resolveContractRenderProfile } from './contractForm/contractRenderProfile';
+import {
+  resolveEffectiveContractRenderProfile,
+  resolveRequestedContractRenderProfile,
+} from './contractForm/contractRenderProfile';
 import { useRecordActionPresentation } from './contractForm/useRecordActionPresentation';
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
 import { resolveCanonicalFormRenderState, useContractFormComponentDriverRuntime } from './contractForm/useContractFormComponentDriverRuntime';
@@ -1000,25 +1002,29 @@ function recordVersionPolicy() {
   if (!tokenField || requestParam !== 'if_match') return null;
   return { tokenField };
 }
+const requestedRenderProfile = computed<'create' | 'edit' | 'readonly'>(() => (
+  resolveRequestedContractRenderProfile({ routeName: route.name, recordId: recordId.value })
+));
 const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
-  const storeSourceContext = resolveContractV2SourceContext(v2ContractStore.value);
-  const sourceContext = Object.keys(storeSourceContext).length
-    ? storeSourceContext
-    : resolveUnifiedPageContractV2SourceContext(contract.value);
-  const head = (contract.value?.head || {}) as Record<string, unknown>;
-  const profile = String(sourceContext.renderProfile || contract.value?.render_profile || head.render_profile || '').trim().toLowerCase();
-  return resolveContractRenderProfile({
-    routeName: route.name,
-    contractProfile: profile,
-    canSave: canSave.value,
-    recordId: recordId.value,
+  const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
+  return resolveEffectiveContractRenderProfile({
+    backendProfile: globalStatus?.effectiveRenderProfile,
+    normalizedReady: Boolean(v2ContractStore.value),
+    requestedProfile: requestedRenderProfile.value,
   });
 });
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value) || resolveUnifiedPageContractV2GlobalStatus(contract.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
   if (globalStatus?.pageVisible === false || pageAuth === 'none') {
-    return { read: false, write: false, create: false, unlink: false };
+    return { read: false, write: false, create: false, unlink: false, duplicate: false };
+  }
+  const authoritative = resolveContractV2EffectiveFormCapabilities(v2ContractStore.value);
+  if (authoritative) {
+    return authoritative;
+  }
+  if (v2ContractStore.value) {
+    return { read: false, write: false, create: false, unlink: false, duplicate: false };
   }
   const head = contract.value?.head?.permissions;
   const effective = contract.value?.permissions?.effective?.rights;
@@ -1034,9 +1040,14 @@ const rights = computed(() => {
     write: pageAuth === 'read' ? false : resolve('write'),
     create: pageAuth === 'read' ? false : resolve('create'),
     unlink: pageAuth === 'read' ? false : resolve('unlink'),
+    duplicate: false,
   };
 });
-const canSave = computed(() => (recordId.value ? rights.value.write : rights.value.create));
+const canSave = computed(() => (
+  renderProfile.value === 'edit'
+    ? rights.value.write
+    : renderProfile.value === 'create' && rights.value.create
+));
 const { driverConfig: contractFormDriverConfig, changeDriver: changeContractFormDriver } = useContractFormComponentDriverRuntime({
   actionId: () => actionId.value || 0, model: () => model.value, renderMode: () => renderProfile.value,
   featureFlag: () => session.featureFlags.scene_component_drivers_v1, previewKit: () => typeof route.query.scene_ui_kit === 'string' ? route.query.scene_ui_kit : '', isActive: () => isComponentActive.value && isFormPageRouteOwner(route.name),
@@ -1698,7 +1709,7 @@ const {
   pickContractNavQuery, defaultContractFormRecord, readContractFormRecord, recordId,
   recordIdDisplay, recordMissing, recordVersionPolicy,
   recordVersionToken, relationKeywords, relationOptions,
-  renderErrorMessage, renderProfile, requestedSourceMode,
+  renderErrorMessage, renderProfile: requestedRenderProfile, requestedSourceMode,
   requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState,
   resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData,
   resolveUnifiedPageContractV2PrimaryDataSource,

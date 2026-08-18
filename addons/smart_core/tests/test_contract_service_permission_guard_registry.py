@@ -89,6 +89,29 @@ def _load_contract_service():
 
 
 class TestContractServicePermissionGuardRegistry(unittest.TestCase):
+    @staticmethod
+    def _strict_contract(*, statusbar, fields=None):
+        return {
+            "data": {
+                "fields": fields or {},
+                "views": {"form": {"statusbar": statusbar}, "tree": {"columns": []}},
+                "buttons": [],
+            }
+        }
+
+    def test_strict_check_accepts_explicit_absence_of_native_statusbar(self):
+        module = _load_contract_service()
+        service = object.__new__(module.ContractService)
+
+        service._self_check_strict(self._strict_contract(statusbar={"field": None, "states": []}))
+
+    def test_strict_check_rejects_unknown_explicit_native_statusbar_field(self):
+        module = _load_contract_service()
+        service = object.__new__(module.ContractService)
+
+        with self.assertRaisesRegex(AssertionError, "statusbar.field"):
+            service._self_check_strict(self._strict_contract(statusbar={"field": "state", "states": []}))
+
     def test_tautology_permission_guard_groups_are_extension_registered(self):
         module = _load_contract_service()
 

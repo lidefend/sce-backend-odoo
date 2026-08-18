@@ -148,6 +148,16 @@ def _append_project_responsibility_section(data: dict) -> None:
 def _apply_project_ledger_form_surface_governance(data: dict, contract_mode: str) -> None:
     if contract_mode != "user" or not _is_project_form_contract(data):
         return
+    views = data.get("views") if isinstance(data.get("views"), dict) else {}
+    form = views.get("form") if isinstance(views.get("form"), dict) else {}
+    meta = form.get("meta") if isinstance(form.get("meta"), dict) else {}
+    identity = meta.get("projection_identity") if isinstance(meta.get("projection_identity"), dict) else {}
+    try:
+        explicit_view_id = int(identity.get("source_view_id") or 0)
+    except (TypeError, ValueError):
+        explicit_view_id = 0
+    if explicit_view_id > 0:
+        return
     fields_map = _as_dict(data.get("fields"))
     _set_field_label(fields_map, "partner_id", "业主单位")
     _set_field_label(fields_map, "owner_id", "业主单位")

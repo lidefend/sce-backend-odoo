@@ -282,9 +282,12 @@ function collectV2Statusbar(v2Contract: Dict): Dict | null {
   walkV2LayoutNodes(asList(layoutContract.containerTree), (row) => {
     if (statusField) return;
     if (String(row.type || row.kind || '').trim().toLowerCase() !== 'field') return;
-    const name = stableFieldName(String(row.name || row.field || ''));
-    if (!['lifecycle_state', 'state', 'stage_id'].includes(name)) return;
     const fieldInfo = asDict(row.fieldInfo || row.field_info);
+    const attributes = asDict(row.attributes);
+    const widget = String(row.widget || fieldInfo.widget || attributes.widget || '').trim().toLowerCase();
+    if (widget !== 'statusbar') return;
+    const name = stableFieldName(String(row.name || row.field || ''));
+    if (!name) return;
     const selection = Array.isArray(fieldInfo.selection) ? fieldInfo.selection : [];
     const mapped = selection.map((item) => {
       const pair = Array.isArray(item) ? item : [];

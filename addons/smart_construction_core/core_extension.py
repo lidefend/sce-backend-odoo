@@ -431,6 +431,39 @@ def _sc_text(value) -> str:
     return str(value or "").strip()
 
 
+def _sc_explicit_source_view_id(source: dict, head: dict | None = None, context: dict | None = None) -> int:
+    head = head if isinstance(head, dict) else {}
+    context = context if isinstance(context, dict) else {}
+    meta = context.get("meta") if isinstance(context.get("meta"), dict) else {}
+    params = meta.get("params") if isinstance(meta.get("params"), dict) else {}
+    views = source.get("views") if isinstance(source.get("views"), dict) else {}
+    form = views.get("form") if isinstance(views.get("form"), dict) else {}
+    form_meta = form.get("meta") if isinstance(form.get("meta"), dict) else {}
+    projection_identity = (
+        form_meta.get("projection_identity")
+        if isinstance(form_meta.get("projection_identity"), dict)
+        else {}
+    )
+    for value in (
+        source.get("source_view_id"),
+        source.get("view_id"),
+        source.get("viewId"),
+        head.get("source_view_id"),
+        head.get("view_id"),
+        head.get("viewId"),
+        params.get("view_id"),
+        params.get("viewId"),
+        projection_identity.get("source_view_id"),
+    ):
+        try:
+            view_id = int(value or 0)
+        except (TypeError, ValueError):
+            continue
+        if view_id > 0:
+            return view_id
+    return 0
+
+
 def _sc_field_code(node: dict) -> str:
     return _project_layout.sc_field_code(node)
 
@@ -509,6 +542,12 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     )
     _sc_normalize_construction_diary_form(out, source, model=model, view_type=view_type)
     if model != "project.project" or view_type != "form":
+        return out if out != contract else None
+    # An action-bound form view is the structural authority.  Project-wide
+    # convenience overlays may still serve generic model fallback requests,
+    # but must not remove or inject fields outside an explicitly selected
+    # native view.
+    if _sc_explicit_source_view_id(source, head, context):
         return out if out != contract else None
     layout = out.get("layoutContract") if isinstance(out.get("layoutContract"), dict) else {}
     tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
@@ -1191,6 +1230,8 @@ def smart_core_finalize_projected_contract_data(env, data, context):
     model = str(data.get("model") or head.get("model") or "").strip()
     view_type = str(data.get("view_type") or head.get("view_type") or (context or {}).get("view_type") or "").strip().lower()
     if model == "project.project" and (view_type == "form" or isinstance((data.get("views") or {}).get("form") if isinstance(data.get("views"), dict) else None, dict)):
+        if _sc_explicit_source_view_id(data, head, context):
+            return None
         projected = dict(data)
         try:
             from odoo.addons.smart_construction_core.services.contract_governance_overrides import (

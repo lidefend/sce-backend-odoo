@@ -45,6 +45,14 @@ def collect_modifier_dependency_fields(*sources: Any, known_fields: Any = None) 
             and field_name not in names
         ):
             names.append(field_name)
+        value_field = str(value.get("value_field") or "").strip()
+        if (
+            kind == "field_compare"
+            and value_field
+            and (allowed is None or value_field in allowed)
+            and value_field not in names
+        ):
+            names.append(value_field)
         for child in value.values():
             walk(child)
 

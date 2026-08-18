@@ -59,9 +59,18 @@ v2_assembler = (ROOT / "addons/smart_core/core/unified_page_contract_v2_assemble
 v2_handler = (ROOT / "addons/smart_core/handlers/ui_contract_v2.py").read_text(encoding="utf-8")
 v2_projection = (ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py").read_text(encoding="utf-8")
 require("from '@sc/ui/form'" in form_host, "form driver host must use narrow form export")
-require("SceneUiProvider" in form_host and "ObjectTaskPage" in form_host, "form driver does not render the canonical object-task floorplan")
-require("CanonicalFormNodeRenderer" in object_task_page, "object-task floorplan does not render canonical form nodes")
-require("composeCanonicalFormFloorplan" in form_host and "renderModel.zones" in form_floorplan, "floorplan does not consume canonical zones")
+require(
+    "SceneUiProvider" in form_host
+    and "CanonicalFormNodeRenderer" in form_host
+    and "data-native-contract-structure" in form_host,
+    "form driver does not directly render the normalized native structure",
+)
+require(
+    "composeCanonicalFormFloorplan" not in form_host
+    and "renderModel?.zones.primary" in form_host
+    and "renderModel?.zones.subordinate" in form_host,
+    "form driver still routes native structure through a frontend floorplan policy",
+)
 for forbidden_floorplan_fact in ("payment.request", "sc.payment.execution", "付款申请", "财务经理"):
     require(
         forbidden_floorplan_fact not in form_floorplan and forbidden_floorplan_fact not in object_task_page,
@@ -79,11 +88,10 @@ require(
     "ContractForm runtime exposes the component supplier chooser by default",
 )
 require(
-    "action.enabled" in form_floorplan
-    and "!['overflow', 'configuration'].includes(action.tier)" in form_floorplan
-    and "directActions" in form_floorplan
-    and "overflowActions" in form_floorplan,
-    "disabled or overflow actions can occupy the direct handling action bar",
+    "['primary', 'secondary'].includes(action.tier)" in form_host
+    and "['overflow', 'configuration'].includes(action.tier)" in form_host
+    and ":data-action-tier=\"action.tier\"" in form_host,
+    "form driver does not mechanically preserve normalized action tiers",
 )
 require(
     "var(--sc-semantic-surface-interactive)" in form_host
@@ -92,6 +100,7 @@ require(
 )
 require("actionId === 'form.save'" in action_executor, "canonical form.save is not bridged to the unified save executor")
 presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
+canonical_node_renderer = (WEB_SRC / "pages/contractForm/CanonicalFormNodeRenderer.vue").read_text(encoding="utf-8")
 require(
     "mode === 'readonly' && action.actionId === 'form.save'" in presenter,
     "iteration one must retain the cb6e276 readonly save boundary",
@@ -101,10 +110,18 @@ require(
     "canonical relation fields do not retain normalized business display identity",
 )
 require(
-    "filter(isFormActionBarAction)" in presenter
+    (
+        "filter(isFormActionBarAction)" in presenter
+        or "filter((action) => isFormActionBarAction(action.actionRef))" in presenter
+    )
     and "sourceWidgetId === 'page.root'" in presenter
     and "targetScope === 'footer'" in presenter,
     "iteration one changed the cb6e276 canonical form action collection",
+)
+require(
+    "actionsByIdentity.get(actionIdentity)" in presenter
+    and "node.action.actionRef" in canonical_node_renderer,
+    "native body action occurrences must reuse canonical action references",
 )
 require(
     'action_id = "form.save"' in v2_assembler
@@ -113,12 +130,11 @@ require(
 )
 require("_apply_normalized_action_surface_policy" not in v2_assembler, "iteration one must not repartition canonical actions")
 require(
-    'section_semantic_roles[section_key] = semantic_role' in v2_handler
-    and 'expected_container_id = "business_config_group_%s" % index' in v2_projection
-    and 'find_group_by_container_id(container_tree, expected_container_id)' in v2_projection
-    and 'section_semantic_roles.get(section_key)' in v2_projection
-    and 'section_semantic_roles.get(title)' not in v2_projection,
-    "section semantic role is not joined by stable product key onto the existing container identity",
+    "apply_product_field_roles(container_tree)" in v2_projection
+    and "business_config_group_" not in v2_projection
+    and "native_subordinate_relations" not in v2_projection
+    and "remove_fields(" not in v2_projection,
+    "post-assembly projection can still delete, move, or manufacture native form nodes",
 )
 require("sourceSectionKey" not in v2_projection, "sparse product intent added an unversioned terminal section identity")
 for forbidden_action_inference in ("actionRef.label", "candidate.methodName", "candidate.targetModel", "payment.request"):
@@ -134,27 +150,14 @@ for legacy_structure_input in (
     require(legacy_structure_input not in form_host, f"form driver retains legacy structure authority: {legacy_structure_input}")
 for canonical_input in ("renderModel.actionBar", "action.actionRef", "data-canonical-action-bar"):
     require(canonical_input in form_host, f"form driver does not consume canonical authority: {canonical_input}")
-require("data-canonical-form-zones" in object_task_page, "object-task floorplan does not expose canonical zone evidence")
-for semantic_region in ("summary", "risk", "audit"):
-    require(
-        f'data-floorplan-region="{semantic_region}"' in object_task_page,
-        f"object-task floorplan does not expose {semantic_region} semantic region",
-    )
 require(
-    "field.semanticRole" in form_floorplan
-    and "widget.formStructureRole" in presenter
+    "widget.formStructureRole" in presenter
     and "semanticRole: semanticRole(container.formStructureRole)" in presenter,
-    "normalized form semantic roles do not reach the canonical floorplan",
+    "normalized form semantic roles do not survive the canonical mechanical mapping",
 )
 require(
-    '<details v-if="auditNodes.length"' in object_task_page
-    and '<details v-if="auditNodes.length" open' not in object_task_page,
-    "audit region is not default-collapsed",
-)
-require(
-    'data-floorplan-region="subordinate"' in object_task_page
-    and '<slot name="collaboration" />' in object_task_page,
-    "audit classification absorbed the independent activity/chatter surface",
+    "showCollaborationPanel && hasCollaborationNode" in form_host,
+    "frontend manufactures collaboration without normalized subordinate capability",
 )
 
 host = (WEB_SRC / "views/ActionView.vue").read_text(encoding="utf-8")
@@ -224,19 +227,34 @@ require("build_scope_key(" in probe_source, "browser probe does not identify its
 require("preference_model.search([" in probe_source and "]).unlink()" in probe_source, "browser probe does not clean its persisted driver preference")
 require("probe_record_name" in probe_source and "probe_model.search([" in probe_source, "browser probe does not own an exact disposable create target")
 require('"create_probe_name": probe_record_name' in probe_source, "browser probe does not export its exact disposable create identity")
+require('"view_id": form_view_id' in probe_source, "browser probe does not bind the action-owned native form view")
 require("payment.request" not in probe_source, "browser probe drifted into the payment vertical")
 acceptance_fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(encoding="utf-8")
 require("SC_ACCEPTANCE_COMPONENT_DRIVER_PROBE_MODE" in acceptance_fixture, "browser probe is not routed through the governed fixture entry")
 browser_probe = (ROOT / "scripts/verify/frontend_scene_component_driver_readonly_browser.mjs").read_text(encoding="utf-8")
-require('data-action-ref="form.save"' in browser_probe, "browser qualification must execute canonical form.save by stable action_ref")
 for forbidden in ("api.data.create", "api.data.write", "api.data.unlink", "execute_button"):
     require(forbidden in browser_probe, f"readonly browser probe does not detect mutation: {forbidden}")
-require("selectOption('ui5-horizon')" in browser_probe, "browser probe does not exercise UI5 through the governed chooser")
-require("contractResponsesBeforeSwitch" in browser_probe, "browser probe does not prove driver switches avoid contract refetches")
+require(
+    "await page.route('**/*'" in browser_probe
+    and "route.abort('blockedbyclient')" in browser_probe
+    and "evidence.mutations.length === 0" in browser_probe,
+    "readonly parity probe does not fail closed before a business mutation reaches the backend",
+)
+require(
+    "user.view.preference.set" not in browser_probe
+    and "selectGovernedDriver" not in browser_probe
+    and "exerciseEditableMode" not in browser_probe
+    and "executeCreateProbe" not in browser_probe,
+    "readonly parity probe still changes driver preference or enters edit/create",
+)
 require("{ width: 390, height: 844 }" in browser_probe, "browser probe does not cover the governed mobile viewport")
-require("mobileModes" in browser_probe, "browser report does not retain per-mode mobile evidence")
-require("executeCreateProbe" in browser_probe, "browser probe does not execute a real unified create request")
-require("evidence.mutations.length === 1" in browser_probe, "browser probe does not enforce the exact business mutation count")
+require("native_same_page_readonly_parity.v1" in browser_probe, "browser report is not explicitly readonly-only parity evidence")
+for required in (
+    "normalizedHierarchy", "canonicalHierarchy", "nativeStructureSignature",
+    "normalizedStructureSignature", "fieldMetadata", "sourceView", "pageCapabilities",
+    "native widget behavior is not resolved",
+):
+    require(required in browser_probe, f"readonly parity report omits native atom evidence: {required}")
 
 form_page = (WEB_SRC / "pages/ContractFormPage.vue").read_text(encoding="utf-8")
 driver_host_call = form_page[form_page.index("<ContractFormDriverHost"):form_page.index("<ContractFormNativeCanvas")]
@@ -263,6 +281,12 @@ require(
     form_page.index("const canSave = computed")
     < form_page.index("useContractFormComponentDriverRuntime({"),
     "immediate driver watchers must be installed after render-profile dependencies",
+)
+record_form_layout = (WEB_SRC / "pages/contractForm/useRecordFormLayout.ts").read_text(encoding="utf-8")
+require(
+    "normalizeWorkflowPhaseStatusbar" not in record_form_layout
+    and "fallback:{visible:false,field:'',current:'',states:[],reachedValues:[],readonly:true}" in record_form_layout,
+    "form statusbar can still be fabricated from workflow fallback",
 )
 
 collection_surface = (UI_SRC / "components/SceneCollectionSurface.vue").read_text(encoding="utf-8")

@@ -21,6 +21,7 @@ export type FormSectionFieldSchema = {
   key: string;
   name: string;
   label: string;
+  hideLabel?: boolean;
   type: TemplateFieldType;
   widget?: string;
   widgetSemantics?: Record<string, unknown>;
