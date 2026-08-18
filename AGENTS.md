@@ -16,7 +16,16 @@
 - A validation command that reports zero tests is a failure. A command executed with an unregistered project/database/profile or manually assembled credentials is diagnostic only and cannot satisfy a gate.
 - Synthetic test data may be exempted from personal-data scanning only through the governed false-positive registry, bound to the exact rule, repository path, full immutable Git blob SHA, classification, and a synthetic-fixture reason. Never exempt a directory, wildcard, mutable branch, or all test data.
 - One candidate worktree has one writer. Every parallel read-only review and runtime report must bind the same frozen full fingerprint. Shared acceptance database mutations are serialized.
+- Worktrees are organized by one independently acceptable product result (PFL), not by P0/P1 responsibility labels. P0/P1 determine code ownership, commit boundaries, review and rollback order; they do not automatically require separate worktrees, branches, PRs or runtime environments.
+- Split a worktree only when the proposed topic can deliver independent value, can be accepted without another topic, does not modify the same files, does not contend for the same runtime, and can be rolled back independently. All five conditions are mandatory.
+- At most two active worktrees are allowed: one product-delivery worktree and one genuinely independent platform/environment worktree. Before creating a third, finish, freeze or governably clean up an existing worktree.
 - Do not rerun full browser acceptance while an earlier static, backend, identity, or normalized-contract gate is known to fail. Fix only the owning layer, refreeze, then resume from the earliest invalidated gate.
+
+### Local development lifecycle (Hard Lock)
+- Local feature iteration uses only `make local.dev.*`: project `sc-local-dev`, database `sc_dev_demo`, and fixed `sc_local_dev_*` volumes. It is the persistent demo-backed feature database.
+- Daily-data compatibility uses only `make local.sample.*`: project `sc-local-sample`, database `sc_dev_sample`, and fixed `sc_local_sample_*` volumes. It is technical sample data and is not feature/demo authority.
+- Clean installation uses only `make local.clean.*`: project `sc-local-clean`, database `sc_clean`, and fixed `sc_local_clean_*` volumes. It is disposable and contains no demo/fixture authority.
+- Never assemble local Compose, database, dbfilter, port, volume, or credential commands by hand. Never use one profile's env file or volumes with another profile. Preserve/refresh/discard/rebuild only through their exact governed Make targets and confirmations.
 
 ## Database Architecture Governance
 - `docs/governance/database_architecture_policy.md` is the single authoritative database architecture policy.
@@ -44,3 +53,22 @@
   - User product changes must separate function/preference from data baseline. Stable customer preferences and stable customer data can both belong to P2, but they need separate carriers, replay paths, and validation evidence. One-off data repair remains P4 until it is customer-confirmed as a long-term data baseline.
   - Low-code configuration is an editing surface and runtime carrier, not the final architectural owner. If a low-code change becomes a confirmed standard, move it to the industry module; if it becomes a confirmed customer preference, move it to the custom module; if it is experimental, it may remain runtime data.
   - Ops scripts are for migration, repair, replay, and verification. They must not be the long-term source of truth for platform behavior, industry defaults, or customer preferences.
+
+## AI Engineering Context
+
+This repository maintains AI engineering context under `.agent/`.
+
+Before making changes:
+
+1. Read `.agent/context.yaml`
+2. Identify related goals under `.agent/goals/`
+3. Check related decisions under `.agent/decisions/`
+
+When executing work:
+
+- Follow existing contracts.
+- Preserve recorded architecture decisions.
+- Prefer small incremental changes.
+- Generate verification evidence for completed work.
+
+The `.agent/` directory records engineering context and decisions. It does not replace existing source code, contracts, tests, or CI rules.

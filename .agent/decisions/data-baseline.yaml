@@ -1,0 +1,32 @@
+decision:
+
+  id:
+    DATA-DECISION-001
+
+
+  topic:
+    data_source_baseline
+
+
+  decision:
+
+
+    candidate_main_database:
+
+      - sc_demo
+
+
+    historical_authority:
+
+      - SCBS
+
+      - SCBSLY
+
+
+  rules:
+
+    - do_not_treat_local_dev_database_as_business_source
+
+
+  status:
+    active

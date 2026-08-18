@@ -1,0 +1,35 @@
+goal:
+
+  id:
+    REPO-BASELINE-AUDIT
+
+  title:
+    repository_current_state_audit
+
+  objective:
+    create_current_repository_baseline
+
+  scope:
+
+    include:
+      - architecture
+      - contracts
+      - frontend
+      - backend
+      - verification
+      - deployment
+
+  constraints:
+
+    - no_source_code_change
+    - no_business_logic_change
+    - audit_only
+
+  acceptance:
+
+    - repository_structure_documented
+    - current_risks_identified
+    - next_iteration_direction_proposed
+
+  status:
+    planned

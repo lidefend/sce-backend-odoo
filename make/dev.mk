@@ -1,7 +1,7 @@
 # ======================================================
 # ==================== Dev =============================
 # ======================================================
-.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish release.daily_product_navigation.snapshot local.dev.snapshot local.dev.health local.clean.prepare local.clean.up local.clean.frontend local.clean.install local.clean.rebuild local.clean.health local.env.status
+.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish release.daily_product_navigation.snapshot local.dev.demo_credentials.prepare local.dev.ready local.dev.up local.dev.down local.dev.restart local.dev.logs local.dev.ps local.dev.test local.dev.upgrade local.dev.sync_demo local.dev.snapshot local.dev.rebuild_demo local.dev.verify_demo local.dev.health local.sample.require_env local.sample.ready local.sample.prepare local.sample.up local.sample.down local.sample.logs local.sample.snapshot local.sample.restore local.sample.discard local.sample.health local.clean.require_env local.clean.prepare local.clean.up local.clean.down local.clean.logs local.clean.frontend local.clean.install local.clean.rebuild local.clean.health local.env.status verify.local.development_lifecycle.unit
 up: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/up.sh
 down: check-compose-project check-compose-env
@@ -15,58 +15,179 @@ ps: check-compose-project check-compose-env
 odoo-shell: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/shell.sh
 
-# Local development uses two deliberately separate lifecycle units:
-# - sc_demo: persistent, realistic iteration data; never rebuilt here.
-# - sc_clean: disposable clean-install regression; destructive rebuild requires
-#   an exact confirmation phrase and is guarded inside the script as well.
+# Local development uses three deliberately separate lifecycle units:
+# - sc_dev_demo: persistent feature demo synchronized with current product code.
+# - sc_dev_sample: disposable compatibility sample restored from daily development.
+# - sc_clean: disposable clean-install rehearsal without demo data.
 LOCAL_DEV_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.dev
-LOCAL_CLEAN_ENV_FILE ?= .env.local.clean
+LOCAL_SAMPLE_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.sample
+LOCAL_CLEAN_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.clean
 LOCAL_CLEAN_MODULES ?= sc_norm_engine
+LOCAL_ENV_ISOLATE = env \
+	-u DB_NAME -u DB -u BD -u DB_USER -u DB_PASSWORD \
+	-u DB_DATA -u REDIS_DATA -u ODOO_DATA -u ODOO_DB -u ODOO_DBFILTER \
+	-u ODOO_PORT -u LIST_DB -u COMPOSE_PROJECT_NAME -u PROJECT -u ODOO_CONF \
+	-u SC_ENVIRONMENT -u SC_ALLOW_DEMO_DATA -u ISOLATED_DEMO_TENANT
 
-local.dev.snapshot: guard.prod.forbid
-	@ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
-	  bash scripts/dev/local_dev_snapshot.sh
+verify.local.development_lifecycle.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_local_development_lifecycle
 
-local.dev.health: guard.prod.forbid
-	@ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+local.dev.demo_credentials.prepare: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" TARGET_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/dev/local_dev_demo_credentials_prepare.sh
+
+local.dev.ready: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_dev_readiness.sh
+
+local.dev.up: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" up
+
+local.dev.down: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" down
+
+local.dev.restart: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" restart
+
+local.dev.logs: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_environment_doctor.sh persistent
+
+local.dev.ps: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ps
+
+local.dev.test: guard.prod.forbid local.dev.ready
+	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE="$(MODULE)" TEST_TAGS="$(TEST_TAGS)" test.safe
+
+local.dev.upgrade: guard.prod.forbid local.dev.ready
+	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE="$(MODULE)" mod.upgrade
+
+local.dev.sync_demo: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" demo.load.full
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" up
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_demo
+
+local.dev.snapshot: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_dev_snapshot.sh persistent
+local.dev.rebuild_demo: guard.prod.forbid local.dev.demo_credentials.prepare
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  CONFIRM_LOCAL_DEV_DEMO_REBUILD="$${CONFIRM_LOCAL_DEV_DEMO_REBUILD:-}" \
+	  bash scripts/dev/local_dev_demo_rebuild.sh
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_demo
+
+local.dev.verify_demo: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" verify.demo
+
+local.sample.require_env: guard.prod.forbid
+	@test -f "$(LOCAL_SAMPLE_ENV_FILE)" || { echo "sample env is not prepared: $(LOCAL_SAMPLE_ENV_FILE)" >&2; exit 2; }
+
+local.sample.ready: local.sample.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_sample_readiness.sh
+
+local.sample.prepare: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  TARGET_ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" bash scripts/dev/local_sample_env_prepare.sh
+
+local.sample.up: guard.prod.forbid local.sample.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" up
+
+local.sample.down: guard.prod.forbid local.sample.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" down
+
+local.sample.logs: guard.prod.forbid local.sample.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_environment_doctor.sh sample
+
+local.sample.snapshot: guard.prod.forbid local.sample.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_dev_snapshot.sh sample
+
+LOCAL_DEV_SAMPLE_BACKUP_DIR ?=
+local.sample.restore: guard.prod.forbid local.sample.prepare
+	@test -n "$(LOCAL_DEV_SAMPLE_BACKUP_DIR)" || (echo "LOCAL_DEV_SAMPLE_BACKUP_DIR is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  LOCAL_DEV_SAMPLE_BACKUP_DIR="$(LOCAL_DEV_SAMPLE_BACKUP_DIR)" \
+	  CONFIRM_LOCAL_DEV_SAMPLE_RESTORE="$${CONFIRM_LOCAL_DEV_SAMPLE_RESTORE:-}" \
+	  bash scripts/dev/local_dev_sample_restore.sh
+
+local.sample.discard: guard.prod.forbid local.sample.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  CONFIRM_LOCAL_DEV_SAMPLE_DISCARD="$${CONFIRM_LOCAL_DEV_SAMPLE_DISCARD:-}" \
+	  bash scripts/dev/local_sample_discard.sh
+
+local.sample.health: guard.prod.forbid local.sample.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_environment_health.sh sample
+
+local.dev.health: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/local_environment_health.sh persistent
+
+local.clean.require_env: guard.prod.forbid
+	@test -f "$(LOCAL_CLEAN_ENV_FILE)" || { echo "clean env is not prepared: $(LOCAL_CLEAN_ENV_FILE)" >&2; exit 2; }
 
 local.clean.prepare: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  TARGET_ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" bash scripts/dev/local_clean_env_prepare.sh
 
 local.clean.up: guard.prod.forbid local.clean.prepare
-	@$(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" up
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" up
+
+local.clean.down: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" down
+
+local.clean.logs: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_environment_doctor.sh clean
 
 local.clean.frontend: guard.prod.forbid local.clean.prepare
-	@ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/frontend_static_build.sh
 
 local.clean.install: guard.prod.forbid local.clean.up
-	@$(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
 	  MODULE="$(LOCAL_CLEAN_MODULES)" WITHOUT_DEMO=--without-demo=all mod.install
-	@$(MAKE) --no-print-directory local.clean.frontend
-	@$(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.clean.frontend
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
 
+local.clean.rebuild: export LOCAL_CLEAN_PREPARE_FOR_REBUILD=1
 local.clean.rebuild: guard.prod.forbid local.clean.prepare
-	@ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  CONFIRM_LOCAL_CLEAN_REBUILD="$${CONFIRM_LOCAL_CLEAN_REBUILD:-}" \
 	  LOCAL_CLEAN_MODULES="$(LOCAL_CLEAN_MODULES)" bash scripts/dev/local_clean_rebuild.sh
 
-local.clean.health: guard.prod.forbid local.clean.prepare
-	@ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+local.clean.health: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  LOCAL_CLEAN_HEALTH_MODULES="$(LOCAL_CLEAN_HEALTH_MODULES)" \
 	  bash scripts/dev/local_environment_health.sh clean
 
 local.env.status: guard.prod.forbid
-	@ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
-	  bash scripts/dev/local_environment_health.sh persistent
-	@if [ -f "$(LOCAL_CLEAN_ENV_FILE)" ]; then \
-	  ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
-	    bash scripts/dev/local_environment_health.sh clean; \
+	@status=0; \
+	if [ -f "$(LOCAL_DEV_ENV_FILE)" ]; then \
+	  $(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	    bash scripts/dev/local_environment_health.sh persistent || status=1; \
 	else \
-	  echo "[local.env.status] clean environment is not prepared"; \
-	fi
+	  echo "[local.env.status] feature demo environment is not prepared"; status=1; \
+	fi; \
+	if [ -f "$(LOCAL_SAMPLE_ENV_FILE)" ]; then \
+	  $(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_SAMPLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	    bash scripts/dev/local_environment_health.sh sample || status=1; \
+	else \
+	  echo "[local.env.status] technical sample environment is not prepared"; status=1; \
+	fi; \
+	if [ -f "$(LOCAL_CLEAN_ENV_FILE)" ]; then \
+	  $(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	    bash scripts/dev/local_environment_health.sh clean || status=1; \
+	else \
+	  echo "[local.env.status] clean environment is not prepared"; status=1; \
+	fi; \
+	exit $$status
 
 FRONTEND_DEV_LOG ?= /tmp/sc-frontend-dev.log
 FRONTEND_DEV_PID ?= /tmp/sc-frontend-dev.pid

@@ -1,0 +1,37 @@
+decision:
+
+  id:
+    FE-DECISION-001
+
+  topic:
+    frontend_productization_priority
+
+
+  decision:
+
+    prioritize:
+
+      - list_page
+
+      - form_page
+
+
+    defer:
+
+      - dashboard_redesign
+
+
+  reason:
+
+    - business_users_mainly_operate_transaction_pages
+
+    - list_and_form_experience_has_higher_frequency
+
+
+  related_goals:
+
+    - FE-R2-P1-01
+
+
+  status:
+    active

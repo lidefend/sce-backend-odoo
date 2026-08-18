@@ -2,8 +2,8 @@
 set -euo pipefail
 
 guard_demo_data_scope() {
-  if [[ "${DB_NAME:-}" != "sc_demo" && "${DB_NAME:-}" != sc_demo_* ]]; then
-    echo "[DENY] demo data requires a sc_demo database (got ${DB_NAME:-<empty>})" >&2
+  if [[ "${DB_NAME:-}" != "sc_demo" && "${DB_NAME:-}" != sc_demo_* && "${DB_NAME:-}" != "sc_dev_demo" ]]; then
+    echo "[DENY] demo data requires a governed demo database (got ${DB_NAME:-<empty>})" >&2
     return 30
   fi
   if [[ "${SC_ENVIRONMENT:-}" != "demo" ]]; then

@@ -1,0 +1,31 @@
+decision:
+
+  id:
+    ARCH-DECISION-001
+
+
+  topic:
+    contract_first_architecture
+
+
+  decision:
+
+    contracts_are_system_boundary: true
+
+
+  rules:
+
+    - domain_rules_should_not_exist_only_in_frontend
+
+    - api_changes_require_contract_update
+
+    - implementation_should_follow_contract
+
+
+  related:
+
+    - contracts/
+
+
+  status:
+    active

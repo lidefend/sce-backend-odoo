@@ -1,0 +1,29 @@
+capability:
+  id:
+    git
+
+  purpose:
+    source_control_management
+
+  provides:
+    - create_branch
+    - create_commit
+    - generate_diff
+    - create_pull_request
+    - merge_change
+
+  constraints:
+    allowed:
+      - feature_branch_workflow
+
+    forbidden:
+      - direct_main_branch_change
+      - bypass_review_process
+
+  evidence_required:
+    - commit_sha
+    - diff_summary
+    - verification_result
+
+  approval_required:
+    merge_to_main: true

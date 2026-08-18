@@ -1,0 +1,51 @@
+goal:
+
+  id:
+    FE-R2-P1-01
+
+  title:
+    frontend_list_productization
+
+  status:
+    completed
+
+  objective:
+    establish_unified_business_list_experience
+
+  background:
+
+    problem:
+
+      - inconsistent_list_pages
+      - unclear_information_hierarchy
+      - inconsistent_empty_states
+      - inconsistent_filters
+
+  scope:
+
+    modules:
+
+      - payment_request
+      - contract_center
+      - project_ledger
+
+  constraints:
+
+    - preserve_existing_business_logic
+    - preserve_existing_permissions
+    - no_unrelated_redesign
+
+  acceptance:
+
+    - unified_page_structure
+    - consistent_filter_behavior
+    - clear_empty_state
+    - responsive_support
+    - browser_verification_pass
+
+  evidence:
+
+    source:
+
+      - FE-R2-P1-01 verification records
+      - related git history

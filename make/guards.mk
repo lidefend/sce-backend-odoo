@@ -34,7 +34,7 @@ guard.prod.danger:
 # Destructive database/demo helpers must use a separate project or database.
 DAILY_CANDIDATE_TARGET_DB ?= $(or $(DB_NAME),$(DB),$(BD))
 guard.daily_candidate.preserve:
-	@if [ "$(COMPOSE_PROJECT_NAME)" = "sc-backend-odoo-dev" ] && [ "$(DAILY_CANDIDATE_TARGET_DB)" = "sc_demo" ]; then \
+	@if { [ "$(COMPOSE_PROJECT_NAME)" = "sc-backend-odoo-dev" ] && [ "$(DAILY_CANDIDATE_TARGET_DB)" = "sc_demo" ]; } || { [ "$(COMPOSE_PROJECT_NAME)" = "sc-local-sample" ] && [ "$(DAILY_CANDIDATE_TARGET_DB)" = "sc_dev_sample" ]; }; then \
 	  echo "❌ daily candidate data is persistent: destructive reset/demo operation refused"; \
 	  echo "   Use an isolated personal/acceptance compose project and database."; \
 	  exit 2; \

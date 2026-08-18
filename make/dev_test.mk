@@ -2384,6 +2384,7 @@ verify.round.v0_6.mini: guard.prod.forbid
 	@echo "[OK] verify.round.v0_6.mini done"
 
 verify.contract.preflight: guard.prod.forbid
+	@$(MAKE) --no-print-directory verify.contract.lint
 	@if [ "$(BASELINE_FREEZE_ENFORCE)" = "1" ]; then \
 	  $(MAKE) --no-print-directory verify.baseline.freeze_guard; \
 	else \
