@@ -598,11 +598,7 @@ import {
   type RelationSearchRow,
   type RelationUiLabels,
 } from './contractForm/types';
-import {
-  clearIntakeAutosavePayload,
-  persistIntakeAutosavePayload,
-  restoreIntakeAutosavePayload,
-} from './contractForm/intakeAutosave';
+import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import {
   applyIncomingFormFieldValue,
   snapshotOriginalFormValues,
@@ -1407,23 +1403,11 @@ const isIntakeCreateDisabled = computed(() => {
   if (isQuickIntakeMode.value) return isQuickSubmitDisabled.value;
   return isStandardCreateDisabled.value;
 });
-function persistIntakeAutosave() {
-  const key = intakeAutosaveKey.value;
-  if (!key || recordId.value) return;
-  persistIntakeAutosavePayload(key, formData as Record<string, unknown>, intakeAutosaveFields.value);
-}
-function restoreIntakeAutosave() {
-  const key = intakeAutosaveKey.value;
-  if (!key || recordId.value) return;
-  Object.entries(restoreIntakeAutosavePayload(key, intakeAutosaveFields.value)).forEach(([field, value]) => {
-    formData[field] = value as never;
-  });
-}
-function clearIntakeAutosave() {
-  const key = intakeAutosaveKey.value;
-  if (!key) return;
-  clearIntakeAutosavePayload(key);
-}
+const {
+  persist: persistIntakeAutosave, restore: restoreIntakeAutosave, clear: clearIntakeAutosave,
+} = useIntakeAutosaveRuntime({
+  key: intakeAutosaveKey, hasRecord: recordId, formData, fields: intakeAutosaveFields,
+});
 const contractMetaLine = computed(() => {
   if (!contract.value) return '';
   const mode = String(contractMeta.value?.contract_mode || '-');

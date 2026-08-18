@@ -164,7 +164,8 @@ function collectV2LayoutButtons(v2Contract: Dict): Dict[] {
   const seen = new Set<string>();
   const root = asDict(v2Contract);
   const buttonStatus = collectUnifiedPageContractV2ButtonStatus(root);
-  const resolveButtonStatus = (key: string) => buttonStatus[contractButtonStatusId(key)] || {};
+  const resolveButtonStatus = (key: string): { disabled?: unknown; visible?: unknown; reasonCode?: unknown } =>
+    buttonStatus[contractButtonStatusId(key)] || {};
   const mainData = asDict(asDict(root.dataContract).mainData);
   const layoutContract = asDict(root.layoutContract);
   const findCountField = (shortLabel: string): string => {
