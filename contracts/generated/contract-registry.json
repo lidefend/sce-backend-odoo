@@ -12,7 +12,7 @@
       "path": "domain/payment-request.yaml",
       "kind": "domain",
       "domain": "payment_request",
-      "version": 1
+      "version": 2
     },
     {
       "path": "domain/payment-execution.yaml",
