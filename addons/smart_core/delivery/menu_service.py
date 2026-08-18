@@ -624,6 +624,12 @@ class MenuService:
             ("role_home_menu_xmlids", "role_home_actions", "ROLE_HOME_ACTION"),
             ("contextual_menu_xmlids", "contextual_actions", "CONTEXTUAL_ROUTE"),
             ("admin_menu_xmlids", "admin_actions", "ADMIN_ROUTE"),
+            # Top-level principal containers (e.g. project / contract center)
+            # live in role_surface.menu_xmlids. They are directory menus
+            # without their own action, so the existing fallback below
+            # promotes them to menu_containers with route /m/:menuId so
+            # workspace home quick_links that reference them stay navigable.
+            ("menu_xmlids", "primary_actions", "PRIMARY_NAV"),
         )
         for field, bucket, route_kind in menu_fields:
             for menu_xmlid in surface.get(field) or []:

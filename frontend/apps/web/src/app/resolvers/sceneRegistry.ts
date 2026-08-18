@@ -280,6 +280,15 @@ function toSceneFromSceneReadyEntry(entry: unknown): Scene | null {
   const handlingEntryCatalogRow = (row.handling_entry_catalog && typeof row.handling_entry_catalog === 'object')
     ? row.handling_entry_catalog as Record<string, unknown>
     : {};
+  const runtimeHandoffRow = (row.runtime_handoff_surface && typeof row.runtime_handoff_surface === 'object')
+    ? row.runtime_handoff_surface as Record<string, unknown>
+    : {};
+  const productDeliveryRow = (row.product_delivery_surface && typeof row.product_delivery_surface === 'object')
+    ? row.product_delivery_surface as Record<string, unknown>
+    : {};
+  const switchSurfaceRow = (row.switch_surface && typeof row.switch_surface === 'object')
+    ? row.switch_surface as Record<string, unknown>
+    : {};
   const blockRows = Array.isArray(row.blocks)
     ? row.blocks as Array<Record<string, unknown>>
     : [];
@@ -334,11 +343,15 @@ function toSceneFromSceneReadyEntry(entry: unknown): Scene | null {
     },
     filters: searchFilters,
     default_sort: defaultSort,
+    runtime_handoff_surface: runtimeHandoffRow,
     scene_ready: {
       search_surface: searchRow,
       permission_surface: permissionRow,
       action_surface: actionSurfaceRow,
       workflow_surface: workflowRow,
+      runtime_handoff_surface: runtimeHandoffRow,
+      product_delivery_surface: productDeliveryRow,
+      switch_surface: switchSurfaceRow,
       handling_entry_catalog: handlingEntryCatalogRow,
       actions: actionsRow,
       scene_blocks: sceneBlocksRow,
